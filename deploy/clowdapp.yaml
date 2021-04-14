@@ -80,7 +80,7 @@ parameters:
   value: quay.io/cloudservices/edge-api
 - description: Determines Clowder deployment
   name: CLOWDER_ENABLED
-  value: "True"
+  value: "true"
 - description: ClowdEnv Name
   name: ENV_NAME
   requred: false
@@ -101,4 +101,4 @@ parameters:
   value: "{}"
 - description: Determines if Cloud Watch logging is enabled
   name: ENABLE_CLOUDWATCH_LOGGING
-  value: "False"
+  value: "false"
