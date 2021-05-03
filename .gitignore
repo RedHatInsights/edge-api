@@ -17,3 +17,12 @@
 .vscode/
 
 edge-api
+
+quay-cloudservices-pull.yaml
+
+
+# pyenv
+.python-version
+
+# bonfire config
+default_config.yaml

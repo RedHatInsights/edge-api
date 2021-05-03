@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Template
 metadata:
-  name: edge-apiVersion
+  name: edge-api
 objects:
 - apiVersion: cloud.redhat.com/v1alpha1
   kind: ClowdApp
@@ -58,8 +58,6 @@ objects:
           requests:
             cpu: 500m
             memory: 512Mi
-    dependencies:
-    - playbook-dispatcher
     database:
       name: edge
 
