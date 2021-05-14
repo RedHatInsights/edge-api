@@ -1,7 +1,9 @@
 module github.com/redhatinsights/edge-api
+
 require (
 	github.com/RedHatInsights/platform-go-middlewares v0.3.0 // indirect
 	github.com/go-chi/chi v4.0.2+incompatible
+	github.com/mattn/go-sqlite3 v1.14.7 // indirect
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/pkg/errors v0.8.1 // indirect
@@ -18,6 +20,8 @@ require (
 	golang.org/x/text v0.3.2 // indirect
 	golang.org/x/tools v0.0.0-20190603193455-b012c1979805 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
+	gorm.io/driver/sqlite v1.1.4 // indirect
+	gorm.io/gorm v1.21.9 // indirect
 )
 
 go 1.14

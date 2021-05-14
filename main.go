@@ -9,21 +9,15 @@ import (
 
 	"github.com/redhatinsights/edge-api/config"
 	l "github.com/redhatinsights/edge-api/logger"
+	"github.com/redhatinsights/edge-api/pkg/commits"
+	"github.com/redhatinsights/edge-api/pkg/common"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
-
-
-func statausOk(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-}
-
 
 func main() {
 	l.InitLogger()
@@ -36,16 +30,9 @@ func main() {
 		middleware.Recoverer,
 	)
 
-	var sub chi.Router = chi.NewRouter()
-	if cfg.Auth {
-		sub.With(identity.EnforceIdentity).Get("/", statausOk)
-	} else {
-		sub.Get("/", statausOk)
-	}
-
-	r.Mount("/api/edge/v1", sub)
-	r.Get("/", statausOk)
-	mr.Get("/", statausOk)
+	r.Mount("/api/edge/v1", commits.MakeRouter())
+	r.Get("/", common.StatusOK)
+	mr.Get("/", common.StatusOK)
 	mr.Handle("/metrics", promhttp.Handler())
 
 	srv := http.Server{
@@ -60,14 +47,14 @@ func main() {
 
 	idleConnsClosed := make(chan struct{})
 	go func() {
-		sigint := make(chan os.Signal)
+		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt)
 		<-sigint
 		if err := srv.Shutdown(context.Background()); err != nil {
-			l.Log.WithFields(logrus.Fields{"error": err}).Fatal("HTTP Server Shutdown failed")
+			log.WithFields(log.Fields{"error": err}).Fatal("HTTP Server Shutdown failed")
 		}
 		if err := msrv.Shutdown(context.Background()); err != nil {
-			l.Log.WithFields(logrus.Fields{"error": err}).Fatal("HTTP Server Shutdown failed")
+			log.WithFields(log.Fields{"error": err}).Fatal("HTTP Server Shutdown failed")
 		}
 		close(idleConnsClosed)
 	}()
@@ -75,14 +62,14 @@ func main() {
 	go func() {
 
 		if err := msrv.ListenAndServe(); err != http.ErrServerClosed {
-			l.Log.WithFields(logrus.Fields{"error": err}).Fatal("Metrics Service Stopped")
+			log.WithFields(log.Fields{"error": err}).Fatal("Metrics Service Stopped")
 		}
 	}()
 
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-		l.Log.WithFields(logrus.Fields{"error": err}).Fatal("Service Stopped")
+		log.WithFields(log.Fields{"error": err}).Fatal("Service Stopped")
 	}
 
 	<-idleConnsClosed
-	l.Log.Info("Everything has shut down, goodbye")
+	log.Info("Everything has shut down, goodbye")
 }
