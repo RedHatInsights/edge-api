@@ -37,7 +37,7 @@ func Get() *EdgeConfig {
 	// }
 
 	options.SetDefault("LogLevel", "INFO")
-	options.SetDefault("Auth", true)
+	options.SetDefault("Auth", false)
 	options.SetDefault("Debug", false)
 	options.AutomaticEnv()
 	kubenv := viper.New()

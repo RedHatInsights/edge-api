@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	log "github.com/sirupsen/logrus"
 )
@@ -23,7 +24,6 @@ func main() {
 	l.InitLogger()
 	cfg := config.Get()
 	r := chi.NewRouter()
-	mr := chi.NewRouter()
 	r.Use(
 		request_id.ConfiguredRequestID("x-rh-insights-request-id"),
 		middleware.RealIP,
@@ -31,8 +31,14 @@ func main() {
 		middleware.Logger,
 	)
 
-	r.Mount("/api/edge/v1", commits.MakeRouter())
+	if cfg.Auth {
+		r.Use(identity.EnforceIdentity)
+	}
+
 	r.Get("/", common.StatusOK)
+	r.Route("/api/edge/v1/commits", commits.MakeRouter)
+
+	mr := chi.NewRouter()
 	mr.Get("/", common.StatusOK)
 	mr.Handle("/metrics", promhttp.Handler())
 

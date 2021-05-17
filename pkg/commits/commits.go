@@ -7,9 +7,6 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi"
-	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/common"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
 	log "github.com/sirupsen/logrus"
 
 	"gorm.io/driver/sqlite"
@@ -40,26 +37,19 @@ func init() {
 	db.AutoMigrate(&Commit{})
 }
 
-func MakeRouter() chi.Router {
+func MakeRouter(sub chi.Router) {
 
-	cfg := config.Get()
-	var sub chi.Router = chi.NewRouter()
-
-	if cfg.Auth {
-		sub.With(identity.EnforceIdentity).Get("/", common.StatusOK)
-	} else {
-		sub.Get("/", common.StatusOK)
-	}
-
-	sub.Post("/commits", Add)
-	sub.Get("/commits", GetAll)
-	sub.Route("/commits/{commitId}", func(r chi.Router) {
+	sub.Post("/", Add)
+	sub.Get("/", GetAll)
+	sub.Route("/{commitId}", func(r chi.Router) {
 		r.Use(CommitCtx)
 		r.Get("/", GetById)
 	})
-
-	return sub
 }
+
+type key int
+
+const commitKey key = 0
 
 func CommitCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -75,7 +65,7 @@ func CommitCtx(next http.Handler) http.Handler {
 				http.Error(w, result.Error.Error(), http.StatusNotFound)
 				return
 			}
-			ctx := context.WithValue(r.Context(), "commit", &commit)
+			ctx := context.WithValue(r.Context(), commitKey, &commit)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
 	})
@@ -88,6 +78,7 @@ func Add(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	// more code goes here to make sure we don't fuck up
 
 	db.Create(&commit)
 }
@@ -105,7 +96,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 
 func GetById(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	commit, ok := ctx.Value("commit").(*Commit)
+	commit, ok := ctx.Value(commitKey).(*Commit)
 	if !ok {
 		http.Error(w, "must pass id", http.StatusBadRequest)
 	}
