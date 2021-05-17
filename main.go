@@ -28,6 +28,7 @@ func main() {
 		request_id.ConfiguredRequestID("x-rh-insights-request-id"),
 		middleware.RealIP,
 		middleware.Recoverer,
+		middleware.Logger,
 	)
 
 	r.Mount("/api/edge/v1", commits.MakeRouter())

@@ -1,8 +1,10 @@
 package commits
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/config"
@@ -34,6 +36,7 @@ func init() {
 		panic("failed to connect database")
 	}
 
+	log.Infof("Migrating database...")
 	db.AutoMigrate(&Commit{})
 }
 
@@ -41,6 +44,7 @@ func MakeRouter() chi.Router {
 
 	cfg := config.Get()
 	var sub chi.Router = chi.NewRouter()
+
 	if cfg.Auth {
 		sub.With(identity.EnforceIdentity).Get("/", common.StatusOK)
 	} else {
@@ -49,19 +53,33 @@ func MakeRouter() chi.Router {
 
 	sub.Post("/commits", Add)
 	sub.Get("/commits", GetAll)
-	// sub.Get("/commits/{commitId}", GetById)
+	sub.Route("/commits/{commitId}", func(r chi.Router) {
+		r.Use(CommitCtx)
+		r.Get("/", GetById)
+	})
 
 	return sub
 }
 
-// func CommitCtx(next http.Handler) http.Handler {
-// 	var commit *Commit
-// 	var err error
-
-// 	if commitId := chi.URLParam(r, "commitId"); commitId != "" {
-// 		commit = db.GET()
-// 	}
-// }
+func CommitCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var commit Commit
+		if commitId := chi.URLParam(r, "commitId"); commitId != "" {
+			id, err := strconv.Atoi(commitId)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			result := db.First(&commit, id)
+			if result.Error != nil {
+				http.Error(w, result.Error.Error(), http.StatusNotFound)
+				return
+			}
+			ctx := context.WithValue(r.Context(), "commit", &commit)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		}
+	})
+}
 
 func Add(w http.ResponseWriter, r *http.Request) {
 
@@ -70,8 +88,6 @@ func Add(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	log.Printf("commit = %+v\n", commit)
 
 	db.Create(&commit)
 }
@@ -85,4 +101,14 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(&commits)
+}
+
+func GetById(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	commit, ok := ctx.Value("commit").(*Commit)
+	if !ok {
+		http.Error(w, "must pass id", http.StatusBadRequest)
+	}
+
+	json.NewEncoder(w).Encode(commit)
 }
