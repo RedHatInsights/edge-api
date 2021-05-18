@@ -7,9 +7,8 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi"
-	log "github.com/sirupsen/logrus"
 
-	"gorm.io/driver/sqlite"
+	"github.com/redhatinsights/edge-api/pkg/db"
 	"gorm.io/gorm"
 )
 
@@ -24,21 +23,7 @@ type Commit struct {
 	TarURL        string
 }
 
-var db *gorm.DB
-
-func init() {
-	var err error
-	db, err = gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-	}
-
-	log.Infof("Migrating database...")
-	db.AutoMigrate(&Commit{})
-}
-
 func MakeRouter(sub chi.Router) {
-
 	sub.Post("/", Add)
 	sub.Get("/", GetAll)
 	sub.Route("/{commitId}", func(r chi.Router) {
@@ -60,7 +45,7 @@ func CommitCtx(next http.Handler) http.Handler {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			result := db.First(&commit, id)
+			result := db.DB.First(&commit, id)
 			if result.Error != nil {
 				http.Error(w, result.Error.Error(), http.StatusNotFound)
 				return
@@ -80,12 +65,12 @@ func Add(w http.ResponseWriter, r *http.Request) {
 	}
 	// more code goes here to make sure we don't fuck up
 
-	db.Create(&commit)
+	db.DB.Create(&commit)
 }
 
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	var commits []Commit
-	result := db.Find(&commits)
+	result := db.DB.Find(&commits)
 	if result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusBadRequest)
 		return

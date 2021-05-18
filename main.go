@@ -11,6 +11,7 @@ import (
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
+	"github.com/redhatinsights/edge-api/pkg/db"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -22,6 +23,9 @@ import (
 
 func main() {
 	l.InitLogger()
+
+	db.InitDB()
+
 	cfg := config.Get()
 	r := chi.NewRouter()
 	r.Use(
