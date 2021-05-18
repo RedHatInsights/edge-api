@@ -4,38 +4,31 @@ import (
 	"os"
 
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
 // Log is an instance of the global logrus.Logger
-var Log *logrus.Logger
-var logLevel logrus.Level
-
+var logLevel log.Level
 
 // InitLogger initializes the API logger
-func InitLogger() *logrus.Logger {
+func InitLogger() {
 
 	cfg := config.Get()
+
 	logconfig := viper.New()
 	logconfig.SetEnvPrefix("EDGE")
 	logconfig.AutomaticEnv()
 
 	switch cfg.LogLevel {
 	case "DEBUG":
-		logLevel = logrus.DebugLevel
+		logLevel = log.DebugLevel
 	case "ERROR":
-		logLevel = logrus.ErrorLevel
+		logLevel = log.ErrorLevel
 	default:
-		logLevel = logrus.InfoLevel
+		logLevel = log.InfoLevel
 	}
 
-	Log = &logrus.Logger{
-		Out:          os.Stdout,
-		Level:        logLevel,
-		Hooks:        make(logrus.LevelHooks),
-		ReportCaller: true,
-	}
-
-	return Log
+	log.SetOutput(os.Stdout)
+	log.SetLevel(logLevel)
 }
