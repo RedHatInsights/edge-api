@@ -17,7 +17,7 @@ func InitDB() {
 	cfg := config.Get()
 
 	if cfg.Database != nil {
-		dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=enable",
+		dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d",
 			cfg.Database.Hostname,
 			cfg.Database.User,
 			cfg.Database.Password,
@@ -31,6 +31,6 @@ func InitDB() {
 
 	DB, err = gorm.Open(dia, &gorm.Config{})
 	if err != nil {
-		panic("failed to connect database")
+		panic(fmt.Sprintf("failed to connect database: %s", err.Error()))
 	}
 }
