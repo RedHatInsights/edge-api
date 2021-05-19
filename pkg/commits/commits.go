@@ -1,14 +1,20 @@
 package commits
 
 import (
+	"archive/tar"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi"
 
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"gorm.io/gorm"
@@ -16,14 +22,17 @@ import (
 
 type Commit struct {
 	gorm.Model
-	Name          string
-	Account       string
-	Hash          string
-	BuildDate     string
-	BuildNumber   uint
-	BlueprintToml string
-	NEVRAManifest string
-	TarURL        string
+	Name                 string
+	Account              string
+	ImageBuildHash       string
+	ImageBuildParentHash string
+	ImageBuildTarURL     string
+	OSTreeCommit         string
+	OSTreeParentCommit   string
+	BuildDate            string
+	BuildNumber          uint
+	BlueprintToml        string
+	NEVRAManifest        string
 }
 
 func MakeRouter(sub chi.Router) {
@@ -32,6 +41,7 @@ func MakeRouter(sub chi.Router) {
 	sub.Route("/{commitId}", func(r chi.Router) {
 		r.Use(CommitCtx)
 		r.Get("/", GetById)
+		r.Get("/repo/*", ServeRepo)
 	})
 }
 
@@ -65,6 +75,11 @@ func CommitCtx(next http.Handler) http.Handler {
 }
 
 func getAccount(r *http.Request) (string, error) {
+
+	if config.Get().Debug {
+		return "0000000", nil
+	}
+
 	ident := identity.Get(r.Context())
 	if ident.Identity.AccountNumber != "" {
 		return ident.Identity.AccountNumber, nil
@@ -112,7 +127,68 @@ func GetById(w http.ResponseWriter, r *http.Request) {
 	commit, ok := ctx.Value(commitKey).(*Commit)
 	if !ok {
 		http.Error(w, "must pass id", http.StatusBadRequest)
+		return
 	}
 
 	json.NewEncoder(w).Encode(commit)
+}
+
+func ServeRepo(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	commit, ok := ctx.Value(commitKey).(*Commit)
+	if !ok {
+		http.Error(w, "must pass id", http.StatusBadRequest)
+		return
+	}
+
+	path := filepath.Join("/tmp", commit.ImageBuildHash)
+	_, err := os.Stat(path)
+	if os.IsNotExist(err) {
+		resp, err := http.Get(commit.ImageBuildTarURL)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		untar(resp.Body, path)
+	}
+
+	_r := strings.Index(r.URL.Path, "/repo")
+
+	pathPrefix := string(r.URL.Path[:_r+5])
+	fs := http.StripPrefix(pathPrefix, http.FileServer(http.Dir(path)))
+	fs.ServeHTTP(w, r)
+
+}
+
+func untar(rc io.ReadCloser, dst string) error {
+	defer rc.Close()
+	tarReader := tar.NewReader(rc)
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return err
+		}
+
+		path := filepath.Join(dst, header.Name)
+		info := header.FileInfo()
+		if info.IsDir() {
+			if err = os.MkdirAll(path, info.Mode()); err != nil {
+				return err
+			}
+			continue
+		}
+
+		file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		_, err = io.Copy(file, tarReader)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

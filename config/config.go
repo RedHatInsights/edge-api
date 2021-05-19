@@ -1,8 +1,6 @@
 package config
 
 import (
-	"os"
-
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 
 	"github.com/spf13/viper"
@@ -17,7 +15,6 @@ type EdgeConfig struct {
 	LogGroup    string
 	LogLevel    string
 	Debug       bool
-	UseClowder  bool
 	Database    *dbConfig
 }
 
@@ -68,7 +65,6 @@ func Get() *EdgeConfig {
 		Debug:       options.GetBool("Debug"),
 		LogGroup:    options.GetString("LogGroup"),
 		LogLevel:    options.GetString("LogLevel"),
-		UseClowder:  os.Getenv("CLOWDER_ENABLED") == "true",
 		Database:    dbCfg,
 	}
 }
