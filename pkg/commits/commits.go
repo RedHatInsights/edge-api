@@ -219,6 +219,8 @@ func Patch(w http.ResponseWriter, r *http.Request) {
 		commit.Arch = incoming.Arch
 	}
 
+	commit.UpdatedAt = time.Now()
+
 	db.DB.Save(&commit)
 	json.NewEncoder(w).Encode(commit)
 }
