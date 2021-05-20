@@ -26,11 +26,9 @@ type dbConfig struct {
 	Name     string
 }
 
-// Get returns an initialized EdgeConfig
-func Get() *EdgeConfig {
+var config *EdgeConfig
 
-	var dbCfg *dbConfig
-
+func Init() {
 	options := viper.New()
 	options.SetDefault("WebPort", 3000)
 	options.SetDefault("MetricsPort", 8080)
@@ -38,26 +36,12 @@ func Get() *EdgeConfig {
 	options.SetDefault("LogLevel", "INFO")
 	options.SetDefault("Auth", false)
 	options.SetDefault("Debug", false)
-
-	if clowder.IsClowderEnabled() {
-		cfg := clowder.LoadedConfig
-		options.SetDefault("WebPort", cfg.PublicPort)
-		options.SetDefault("MetricsPort", cfg.MetricsPort)
-		options.SetDefault("LogGroup", cfg.Logging.Cloudwatch.LogGroup)
-		dbCfg = &dbConfig{
-			User:     cfg.Database.Username,
-			Password: cfg.Database.Password,
-			Hostname: cfg.Database.Hostname,
-			Port:     uint(cfg.Database.Port),
-			Name:     cfg.Database.Name,
-		}
-	}
-
 	options.AutomaticEnv()
+
 	kubenv := viper.New()
 	kubenv.AutomaticEnv()
 
-	return &EdgeConfig{
+	config = &EdgeConfig{
 		Hostname:    kubenv.GetString("Hostname"),
 		Auth:        options.GetBool("Auth"),
 		WebPort:     options.GetInt("WebPort"),
@@ -65,6 +49,26 @@ func Get() *EdgeConfig {
 		Debug:       options.GetBool("Debug"),
 		LogGroup:    options.GetString("LogGroup"),
 		LogLevel:    options.GetString("LogLevel"),
-		Database:    dbCfg,
 	}
+
+	if clowder.IsClowderEnabled() {
+		cfg := clowder.LoadedConfig
+
+		config.WebPort = *cfg.PublicPort
+		config.MetricsPort = cfg.MetricsPort
+		config.LogGroup = cfg.Logging.Cloudwatch.LogGroup
+
+		config.Database = &dbConfig{
+			User:     cfg.Database.Username,
+			Password: cfg.Database.Password,
+			Hostname: cfg.Database.Hostname,
+			Port:     uint(cfg.Database.Port),
+			Name:     cfg.Database.Name,
+		}
+	}
+}
+
+// Get returns an initialized EdgeConfig
+func Get() *EdgeConfig {
+	return config
 }
