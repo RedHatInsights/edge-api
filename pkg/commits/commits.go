@@ -53,6 +53,7 @@ func MakeRouter(sub chi.Router) {
 		r.Get("/", GetById)
 		r.Get("/repo/*", ServeRepo)
 		r.Put("/", Update)
+		r.Patch("/", Patch)
 	})
 }
 
@@ -154,6 +155,74 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	incoming.UpdatedAt = time.Now()
 	incoming.Account = commit.Account
 	db.DB.Save(&incoming)
+
+	json.NewEncoder(w).Encode(incoming)
+}
+
+func Patch(w http.ResponseWriter, r *http.Request) {
+	commit := getCommit(w, r)
+	if commit == nil {
+		return
+	}
+
+	incoming, err := commitFromReadCloser(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if incoming.Name != "" {
+		commit.Name = incoming.Name
+	}
+
+	if incoming.ImageBuildHash != "" {
+		commit.ImageBuildHash = incoming.ImageBuildHash
+	}
+
+	if incoming.ImageBuildParentHash != "" {
+		commit.ImageBuildParentHash = incoming.ImageBuildParentHash
+	}
+
+	if incoming.ImageBuildTarURL != "" {
+		commit.ImageBuildTarURL = incoming.ImageBuildTarURL
+	}
+
+	if incoming.OSTreeCommit != "" {
+		commit.OSTreeCommit = incoming.OSTreeCommit
+	}
+
+	if incoming.OSTreeParentCommit != "" {
+		commit.OSTreeParentCommit = incoming.OSTreeParentCommit
+	}
+
+	if incoming.OSTreeRef != "" {
+		commit.OSTreeRef = incoming.OSTreeRef
+	}
+
+	if incoming.BuildDate != "" {
+		commit.BuildDate = incoming.BuildDate
+	}
+
+	if incoming.BuildNumber != 0 {
+		commit.BuildNumber = incoming.BuildNumber
+	}
+
+	if incoming.BlueprintToml != "" {
+		commit.BlueprintToml = incoming.BlueprintToml
+	}
+
+	if incoming.NEVRAManifest != "" {
+		commit.NEVRAManifest = incoming.NEVRAManifest
+	}
+
+	if incoming.Arch != "" {
+		commit.Arch = incoming.Arch
+	}
+
+	commit.UpdatedAt = time.Now()
+
+	db.DB.Save(&commit)
+	json.NewEncoder(w).Encode(commit)
 }
 
 func ServeRepo(w http.ResponseWriter, r *http.Request) {
