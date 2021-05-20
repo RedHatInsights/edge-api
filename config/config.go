@@ -16,6 +16,7 @@ type EdgeConfig struct {
 	LogLevel    string
 	Debug       bool
 	Database    *dbConfig
+	BucketName  string
 }
 
 type dbConfig struct {
@@ -36,6 +37,7 @@ func Init() {
 	options.SetDefault("LogLevel", "INFO")
 	options.SetDefault("Auth", false)
 	options.SetDefault("Debug", false)
+	options.SetDefault("EdgeTarballsBucket", "rh-edge-tarballs")
 	options.AutomaticEnv()
 
 	kubenv := viper.New()
@@ -49,6 +51,7 @@ func Init() {
 		Debug:       options.GetBool("Debug"),
 		LogGroup:    options.GetString("LogGroup"),
 		LogLevel:    options.GetString("LogLevel"),
+		BucketName:  options.GetString("EdgeTarballsBucket"),
 	}
 
 	if clowder.IsClowderEnabled() {
@@ -65,6 +68,8 @@ func Init() {
 			Port:     uint(cfg.Database.Port),
 			Name:     cfg.Database.Name,
 		}
+
+		config.BucketName = clowder.ObjectBuckets[config.BucketName].RequestedName
 	}
 }
 
