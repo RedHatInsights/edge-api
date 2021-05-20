@@ -19,10 +19,6 @@ FROM registry.redhat.io/ubi8-minimal:latest
 
 COPY --from=builder /go/bin/edge-api /usr/bin
 
-RUN curl -L -o /usr/bin/haberdasher \
-    https://github.com/RedHatInsights/haberdasher/releases/latest/download/haberdasher_linux_amd64 && \
-    chmod 755 /usr/bin/haberdasher
-
 USER 1001
 
 CMD ["edge-api"]
