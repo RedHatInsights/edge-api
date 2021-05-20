@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi"
 
@@ -35,6 +36,13 @@ type Commit struct {
 	NEVRAManifest        string
 }
 
+func commitFromReadCloser(rc io.ReadCloser) (*Commit, error) {
+	defer rc.Close()
+	var commit Commit
+	err := json.NewDecoder(rc).Decode(&commit)
+	return &commit, err
+}
+
 func MakeRouter(sub chi.Router) {
 	sub.Post("/", Add)
 	sub.Get("/", GetAll)
@@ -42,6 +50,7 @@ func MakeRouter(sub chi.Router) {
 		r.Use(CommitCtx)
 		r.Get("/", GetById)
 		r.Get("/repo/*", ServeRepo)
+		r.Put("/", Update)
 	})
 }
 
@@ -90,9 +99,8 @@ func getAccount(r *http.Request) (string, error) {
 
 func Add(w http.ResponseWriter, r *http.Request) {
 
-	var commit Commit
-	var err error
-	if err = json.NewDecoder(r.Body).Decode(&commit); err != nil {
+	commit, err := commitFromReadCloser(r.Body)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -123,14 +131,27 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetById(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	commit, ok := ctx.Value(commitKey).(*Commit)
-	if !ok {
-		http.Error(w, "must pass id", http.StatusBadRequest)
+	if commit := getCommit(w, r); commit != nil {
+		json.NewEncoder(w).Encode(commit)
+	}
+}
+
+func Update(w http.ResponseWriter, r *http.Request) {
+	commit := getCommit(w, r)
+	if commit == nil {
 		return
 	}
 
-	json.NewEncoder(w).Encode(commit)
+	incoming, err := commitFromReadCloser(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	incoming.ID = commit.ID
+	incoming.CreatedAt = time.Now()
+	incoming.UpdatedAt = time.Now()
+	incoming.Account = commit.Account
+	db.DB.Save(&incoming)
 }
 
 func ServeRepo(w http.ResponseWriter, r *http.Request) {
@@ -158,6 +179,16 @@ func ServeRepo(w http.ResponseWriter, r *http.Request) {
 	fs := http.StripPrefix(pathPrefix, http.FileServer(http.Dir(path)))
 	fs.ServeHTTP(w, r)
 
+}
+
+func getCommit(w http.ResponseWriter, r *http.Request) *Commit {
+	ctx := r.Context()
+	commit, ok := ctx.Value(commitKey).(*Commit)
+	if !ok {
+		http.Error(w, "must pass id", http.StatusBadRequest)
+		return nil
+	}
+	return commit
 }
 
 func untar(rc io.ReadCloser, dst string) error {
