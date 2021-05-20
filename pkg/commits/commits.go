@@ -195,6 +195,10 @@ func Patch(w http.ResponseWriter, r *http.Request) {
 		commit.OSTreeParentCommit = incoming.OSTreeParentCommit
 	}
 
+	if incoming.OSTreeRef != "" {
+		commit.OSTreeRef = incoming.OSTreeRef
+	}
+
 	if incoming.BuildDate != "" {
 		commit.BuildDate = incoming.BuildDate
 	}
@@ -209,6 +213,10 @@ func Patch(w http.ResponseWriter, r *http.Request) {
 
 	if incoming.NEVRAManifest != "" {
 		commit.NEVRAManifest = incoming.NEVRAManifest
+	}
+
+	if incoming.Arch != "" {
+		commit.Arch = incoming.Arch
 	}
 
 	db.DB.Save(&commit)
