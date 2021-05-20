@@ -22,8 +22,8 @@ import (
 )
 
 func main() {
+	config.Init()
 	l.InitLogger()
-
 	db.InitDB()
 
 	cfg := config.Get()
