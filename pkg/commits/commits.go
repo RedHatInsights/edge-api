@@ -30,10 +30,12 @@ type Commit struct {
 	ImageBuildTarURL     string
 	OSTreeCommit         string
 	OSTreeParentCommit   string
+	OSTreeRef            string
 	BuildDate            string
 	BuildNumber          uint
 	BlueprintToml        string
 	NEVRAManifest        string
+	Arch                 string
 }
 
 func commitFromReadCloser(rc io.ReadCloser) (*Commit, error) {
