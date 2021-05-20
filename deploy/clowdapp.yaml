@@ -58,6 +58,8 @@ objects:
           requests:
             cpu: 500m
             memory: 512Mi
+    objectStore:
+    - ${EDGE_TARBALLS_BUCKET}
     database:
       name: edge
 
@@ -82,21 +84,8 @@ parameters:
 - description: ClowdEnv Name
   name: ENV_NAME
   requred: false
-- description: Emitter for haberdasher logs [stderr|kafka]
-  name: HABERDASHER_EMITTER
-  value: stderr
-- description: Bootstrap server for haberdasher kafka emitter
-  name: HABERDASHER_KAFKA_BOOTSTRAP
-  value: ""
-- description: Kafka topic for haberdasher kafka emitter
-  name: HABERDASHER_KAFKA_TOPIC
-  value: ""
-- description: Haberdasher tags for unstrutured logs
-  name: HABERDASHER_TAGS
-  value: "[]"
-- description: Haberdasher labels for unstructured logs
-  name: HABERDASHER_LABELS
-  value: "{}"
 - description: Determines if Cloud Watch logging is enabled
   name: ENABLE_CLOUDWATCH_LOGGING
   value: "false"
+- name: EDGE_TARBALLS_BUCKET
+  value: rh-edge-tarballs
