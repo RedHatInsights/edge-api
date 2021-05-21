@@ -159,18 +159,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(incoming)
 }
 
-func Patch(w http.ResponseWriter, r *http.Request) {
-	commit := getCommit(w, r)
-	if commit == nil {
-		return
-	}
-
-	incoming, err := commitFromReadCloser(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
+func applyPatch(commit *Commit, incoming *Commit) {
 	if incoming.Name != "" {
 		commit.Name = incoming.Name
 	}
@@ -220,6 +209,21 @@ func Patch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	commit.UpdatedAt = time.Now()
+}
+
+func Patch(w http.ResponseWriter, r *http.Request) {
+	commit := getCommit(w, r)
+	if commit == nil {
+		return
+	}
+
+	incoming, err := commitFromReadCloser(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	applyPatch(commit, incoming)
 
 	db.DB.Save(&commit)
 	json.NewEncoder(w).Encode(commit)
