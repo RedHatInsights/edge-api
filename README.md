@@ -92,11 +92,10 @@ Development of this project utilizes several tools listed below:
 [Git](https://git-scm.com/) is a free and open source distributed version control system designed to handle everything from small to very large projects with speed and efficiency. You can install Git on your system if its not already avaible using the following [documentation](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git).
 
 ### Golang
-[Golang](https://golang.org/) is the development code utilized by the `edge-api application. You can get setup to develop with Golang by following the [install documentation](https://golang.org/doc/install).
-
+%[Golang](https://golang.org/) is the development code utilized by the `edge-api` application. You can get setup to develop with Golang by following the [install documentation](https://golang.org/doc/install).
 
 ### Python
-[Python](https://www.python.org/) is only necessary to support the usage of [Bonfire](https://github.com/RedHatInsights/bonfire), which is used for deployment and testing of the `edge-api` application. It is recommended to use Python 3.6 with this project. While you may use the Python included with your Operating System you may also find tools like `[pyenv](https://github.com/pyenv/pyenv)` to be useful for maintaining multiple Python versions. Currently, the development dependencies are obtained using `[pipenv](https://pipenv.pypa.io/en/latest/)`.
+[Python](https://www.python.org/) is only necessary to support the usage of [Bonfire](https://github.com/RedHatInsights/bonfire), which is used for deployment and testing of the `edge-api` application. It is recommended to use Python 3.6 with this project. While you may use the Python included with your Operating System you may also find tools like [pyenv](https://github.com/pyenv/pyenv) to be useful for maintaining multiple Python versions. Currently, the development dependencies are obtained using [pipenv](https://pipenv.pypa.io/en/latest/).
 
 ### Minikube
 [Minikube](https://minikube.sigs.k8s.io/docs/)) provides a local single node [Kubernetes](https://kubernetes.io/) cluster for development purposes. You can find setup information for minikube in the following **[Get Started!](https://minikube.sigs.k8s.io/docs/start/)** docs. Before starting your cluster you will need to make several [configuration updates noted in the Clowder documentation](https://github.com/RedHatInsights/clowder#getting-clowder).
