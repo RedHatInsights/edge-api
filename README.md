@@ -163,7 +163,7 @@ make deploy-env NAMESPACE=test
 ```
 10. Deploy the application to the namespace
 ```
-make deploy NAMESPACE=test
+make deploy-app NAMESPACE=test
 ```
 
 Now the application should be running. You can test this by port-forwarding the app in one terminal and running a curl command in another as follows:
