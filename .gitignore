@@ -25,4 +25,4 @@ quay-cloudservices-pull.yaml
 .python-version
 
 # bonfire config
-default_config.yaml
+config.yaml
