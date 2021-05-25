@@ -112,7 +112,8 @@ Development of this project utilizes several tools listed below:
 [Podman](https://podman.io/) / [Docker](https://www.docker.com/) are used to build a container for the `edge-api` that will run in [Kubernetes](https://kubernetes.io/) / [Red Hat OpenShift](https://www.openshift.com/). Get started with Podman following this [installation document](https://podman.io/getting-started/installation). Get started with Docker folling this [installation document](https://docs.docker.com/get-docker/).
 
 ## OpenShift CLI
-[OpenShift CLI](https://docs.openshift.com/container-platform/4.7/cli_reference/openshift_cli/getting-started-cli.html) 
+[OpenShift CLI](https://docs.openshift.com/container-platform/4.7/cli_reference/openshift_cli/getting-started-cli.html) is used by Bonfire because of its templating capabitilies to generate the files that will be deployed to your local Kubernetes cluster. Follow the instructions on [Installing the OpenShift CLI](https://docs.openshift.com/container-platform/4.7/cli_reference/openshift_cli/getting-started-cli.html#installing-openshift-cli) to install it in your machine.
+
 ## Setup
 
 Follwing the information above you should have Docker or Podman, a minikube cluster running with Clowder installed, a Python environment with `bonfire` installed. Now move on to running the `edge-api` application.
