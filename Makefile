@@ -68,7 +68,7 @@ deploy-env:
 	bonfire deploy-env -n $(NAMESPACE)
 
 deploy-app:
-	bonfire deploy edge -n $(NAMESPACE)
+	bonfire deploy edge -n $(NAMESPACE) -c default_config.yaml
 
 scale-down:
 	$(KUBECTL) scale --replicas=0 deployment/edge-api-service -n $(NAMESPACE)
