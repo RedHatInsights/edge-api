@@ -92,11 +92,10 @@ Development of this project utilizes several tools listed below:
 [Git](https://git-scm.com/) is a free and open source distributed version control system designed to handle everything from small to very large projects with speed and efficiency. You can install Git on your system if its not already avaible using the following [documentation](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git).
 
 ### Golang
-[Golang](https://golang.org/) is the development code utilized by the `edge-api application. You can get setup to develop with Golang by following the [install documentation](https://golang.org/doc/install).
-
+%[Golang](https://golang.org/) is the development code utilized by the `edge-api` application. You can get setup to develop with Golang by following the [install documentation](https://golang.org/doc/install).  The dependencies are handle by [Go modules](https://blog.golang.org/using-go-modules) and specified on the `go.mod` file.
 
 ### Python
-[Python](https://www.python.org/) is only necessary to support the usage of [Bonfire](https://github.com/RedHatInsights/bonfire), which is used for deployment and testing of the `edge-api` application. It is recommended to use Python 3.6 with this project. While you may use the Python included with your Operating System you may also find tools like `[pyenv](https://github.com/pyenv/pyenv)` to be useful for maintaining multiple Python versions. Currently, the development dependencies are obtained using `[pipenv](https://pipenv.pypa.io/en/latest/)`.
+[Python](https://www.python.org/) is only necessary to support the usage of [Bonfire](https://github.com/RedHatInsights/bonfire), which is used for deployment and testing of the `edge-api` application. It is recommended to use Python 3.6 with this project. While you may use the Python included with your Operating System you may also find tools like [pyenv](https://github.com/pyenv/pyenv) to be useful for maintaining multiple Python versions. Currently, the development dependencies are obtained using [pipenv](https://pipenv.pypa.io/en/latest/). Pipenv creates a Python virtual environment with the dependencies specified on the `Pipfile` and the virtual environment created is unique to this project, allowing different project to have different dependencies.
 
 ### Minikube
 [Minikube](https://minikube.sigs.k8s.io/docs/)) provides a local single node [Kubernetes](https://kubernetes.io/) cluster for development purposes. You can find setup information for minikube in the following **[Get Started!](https://minikube.sigs.k8s.io/docs/start/)** docs. Before starting your cluster you will need to make several [configuration updates noted in the Clowder documentation](https://github.com/RedHatInsights/clowder#getting-clowder).
@@ -105,14 +104,7 @@ Development of this project utilizes several tools listed below:
 [Clowder](https://github.com/RedHatInsights/clowder) is a kubernetes operator designed to make it easy to deploy applications running on the cloud.redhat.com platform in production, testing and local development environments. This operator normalizes how application are configured with common interactions from database to, message queue and topics, to object storage. Clowder also helps define consistent mechanisms for driving integration tests with noted application dependencies and Job Invocations. [Getting started with Clowder](https://github.com/RedHatInsights/clowder#getting-clowder) is quite simple using a single command to deploy the operator.
 
 ### Bonfire
-[Bonfire](https://github.com/RedHatInsights/bonfire) is CLI tool used to deploy ephemeral environments for testing cloud.redhat.com applications. `bonfire` interacts with a local configuration file to obtain applications' OpenShift templates, process them, and deploy them. Once you have obtained the Python related tools above you should simple be able to run the following command to obtain Bonfire:
-```
-pipenv install --dev
-```
-Run the following command to start using Bonfire in the new virtual environment:
-```
-pipenv shell
-```
+[Bonfire](https://github.com/RedHatInsights/bonfire) is CLI tool used to deploy ephemeral environments for testing cloud.redhat.com applications. `bonfire` interacts with a local configuration file to obtain applications' OpenShift templates, process them, and deploy them. There is a `Pipfile` on this repository that specificies bonfire as a dependency, and if you run the installation steps above, you will have it installed on your virtual environment.
 
 ### Podman / Docker
 [Podman](https://podman.io/) / [Docker](https://www.docker.com/) are used to build a container for the `edge-api` that will run in [Kubernetes](https://kubernetes.io/) / [Red Hat OpenShift](https://www.openshift.com/). Get started with Podman following this [installation document](https://podman.io/getting-started/installation). Get started with Docker folling this [installation document](https://docs.docker.com/get-docker/).
