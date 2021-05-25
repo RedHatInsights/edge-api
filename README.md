@@ -8,8 +8,9 @@
 The **edge-api** project is an API server for fleet edge management capabilities. The API server will provide [Restful web services](https://www.redhat.com/en/topics/api/what-is-a-rest-api).
 This is a [Golang](https://golang.org/) project developed using Golang 1.14. *Make sure you have at least this version installed.*
 
+## <a name="archictecture">Project Architecture</a>
 
-Below you can see where the `edge-api application sits in respect to the interaction with the user and the device at the edge to be managed.
+Below you can see where the `edge-api` application sits in respect to the interaction with the user and the device at the edge to be managed.
 
 ```
                                           ┌──────────┐
@@ -87,12 +88,13 @@ Development of this project utilizes several tools listed below:
 - [Clowder](https://github.com/RedHatInsights/clowder)
 - [Bonfire](https://github.com/RedHatInsights/bonfire)
 - [Podman](https://podman.io/) / [Docker](https://www.docker.com/)
+- [OpenShift CLI](https://docs.openshift.com/container-platform/4.7/cli_reference/openshift_cli/getting-started-cli.html)
 
 ### Git
 [Git](https://git-scm.com/) is a free and open source distributed version control system designed to handle everything from small to very large projects with speed and efficiency. You can install Git on your system if its not already avaible using the following [documentation](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git).
 
 ### Golang
-%[Golang](https://golang.org/) is the development code utilized by the `edge-api` application. You can get setup to develop with Golang by following the [install documentation](https://golang.org/doc/install).  The dependencies are handle by [Go modules](https://blog.golang.org/using-go-modules) and specified on the `go.mod` file.
+[Golang](https://golang.org/) is the development code utilized by the `edge-api` application. You can get setup to develop with Golang by following the [install documentation](https://golang.org/doc/install).  The dependencies are handle by [Go modules](https://blog.golang.org/using-go-modules) and specified on the `go.mod` file.
 
 ### Python
 [Python](https://www.python.org/) is only necessary to support the usage of [Bonfire](https://github.com/RedHatInsights/bonfire), which is used for deployment and testing of the `edge-api` application. It is recommended to use Python 3.6 with this project. While you may use the Python included with your Operating System you may also find tools like [pyenv](https://github.com/pyenv/pyenv) to be useful for maintaining multiple Python versions. Currently, the development dependencies are obtained using [pipenv](https://pipenv.pypa.io/en/latest/). Pipenv creates a Python virtual environment with the dependencies specified on the `Pipfile` and the virtual environment created is unique to this project, allowing different project to have different dependencies.
@@ -109,7 +111,8 @@ Development of this project utilizes several tools listed below:
 ### Podman / Docker
 [Podman](https://podman.io/) / [Docker](https://www.docker.com/) are used to build a container for the `edge-api` that will run in [Kubernetes](https://kubernetes.io/) / [Red Hat OpenShift](https://www.openshift.com/). Get started with Podman following this [installation document](https://podman.io/getting-started/installation). Get started with Docker folling this [installation document](https://docs.docker.com/get-docker/).
 
-
+## OpenShift CLI
+[OpenShift CLI](https://docs.openshift.com/container-platform/4.7/cli_reference/openshift_cli/getting-started-cli.html) 
 ## Setup
 
 Follwing the information above you should have Docker or Podman, a minikube cluster running with Clowder installed, a Python environment with `bonfire` installed. Now move on to running the `edge-api` application.
