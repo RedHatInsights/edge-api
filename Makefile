@@ -55,11 +55,11 @@ build:
 	$(CONTAINERER) build . -t $(CONTAINER_TAG)
 
 bonfire-config-local:
-	@cp default_config.yaml.local.example default_config.yaml
-	@sed -i ${OS_SED} 's|REPO|$(PWD)|g' default_config.yaml
+	@cp default_config.yaml.local.example config.yaml
+	@sed -i ${OS_SED} 's|REPO|$(PWD)|g' config.yaml
 
 bonfire-config-github:
-	@cp default_config.yaml.github.example default_config.yaml
+	@cp default_config.yaml.github.example config.yaml
 
 create-ns:
 	$(KUBECTL) create ns $(NAMESPACE)
@@ -68,7 +68,7 @@ deploy-env:
 	bonfire deploy-env -n $(NAMESPACE)
 
 deploy-app:
-	bonfire deploy edge -n $(NAMESPACE) -c default_config.yaml
+	bonfire deploy edge -n $(NAMESPACE)
 
 scale-down:
 	$(KUBECTL) scale --replicas=0 deployment/edge-api-service -n $(NAMESPACE)
