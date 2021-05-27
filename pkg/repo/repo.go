@@ -55,8 +55,8 @@ func CreateRepo(w http.ResponseWriter, r *http.Request) {
 
 	res := &createResponse{
 		RepoURL: filepath.Join(
-			chi.RouteContext(r.Context()).RoutePath,
-			path),
+			chi.RouteContext(r.Context()).RoutePattern(),
+			cr.Name),
 	}
 
 	w.WriteHeader(http.StatusCreated)
