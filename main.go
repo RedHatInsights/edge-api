@@ -12,6 +12,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/repo"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -50,7 +51,10 @@ func main() {
 	}
 
 	r.Get("/", common.StatusOK)
-	r.Route("/api/edge/v1/commits", commits.MakeRouter)
+	r.Route("/api/edge/v1", func(s chi.Router) {
+		s.Route("/commits", commits.MakeRouter)
+		s.Route("/repos", repo.MakeRouter)
+	})
 
 	mr := chi.NewRouter()
 	mr.Get("/", common.StatusOK)

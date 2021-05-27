@@ -1,7 +1,6 @@
 package commits
 
 import (
-	"archive/tar"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -16,6 +15,7 @@ import (
 	"github.com/go-chi/chi"
 
 	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"gorm.io/gorm"
@@ -260,7 +260,7 @@ func ServeRepo(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		untar(resp.Body, path)
+		common.Untar(resp.Body, path)
 	}
 
 	_r := strings.Index(r.URL.Path, "/repo")
@@ -279,37 +279,4 @@ func getCommit(w http.ResponseWriter, r *http.Request) *Commit {
 		return nil
 	}
 	return commit
-}
-
-func untar(rc io.ReadCloser, dst string) error {
-	defer rc.Close()
-	tarReader := tar.NewReader(rc)
-	for {
-		header, err := tarReader.Next()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return err
-		}
-
-		path := filepath.Join(dst, header.Name)
-		info := header.FileInfo()
-		if info.IsDir() {
-			if err = os.MkdirAll(path, info.Mode()); err != nil {
-				return err
-			}
-			continue
-		}
-
-		file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-		_, err = io.Copy(file, tarReader)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
