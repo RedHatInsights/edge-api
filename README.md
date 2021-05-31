@@ -136,7 +136,7 @@ DEBUG=true go run main.go
 ```
 4. Open another terminal and make sure you can reach the API.
 ```
-curl -v http://localhost:8000/
+curl -v http://localhost:3000/
 ```
 
 If you find a error message saying that you don't have [gcc](https://gcc.gnu.org) installed, [install it](https://gcc.gnu.org/install/).
