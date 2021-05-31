@@ -55,11 +55,11 @@ build:
 	$(CONTAINERER) build . -t $(CONTAINER_TAG)
 
 bonfire-config-local:
-	@cp default_config.yaml.local.example default_config.yaml
-	@sed -i ${OS_SED} 's|REPO|$(PWD)|g' default_config.yaml
+	@cp default_config.yaml.local.example config.yaml
+	@sed -i ${OS_SED} 's|REPO|$(PWD)|g' config.yaml
 
 bonfire-config-github:
-	@cp default_config.yaml.github.example default_config.yaml
+	@cp default_config.yaml.github.example config.yaml
 
 create-ns:
 	$(KUBECTL) create ns $(NAMESPACE)

@@ -57,6 +57,11 @@ func MakeRouter(sub chi.Router) {
 	})
 }
 
+// This provides type safety in the context object for our "commit" key.  We
+// _could_ use a string but we shouldn't just in case someone else decides that
+// "commit" would make the perfect key in the context object.  See the
+// documentation: https://golang.org/pkg/context/#WithValue for further
+// rationale.
 type key int
 
 const commitKey key = 0
@@ -150,9 +155,10 @@ func Update(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	now := time.Now()
 	incoming.ID = commit.ID
-	incoming.CreatedAt = time.Now()
-	incoming.UpdatedAt = time.Now()
+	incoming.CreatedAt = now
+	incoming.UpdatedAt = now
 	incoming.Account = commit.Account
 	db.DB.Save(&incoming)
 
