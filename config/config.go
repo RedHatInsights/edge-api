@@ -12,7 +12,7 @@ type EdgeConfig struct {
 	Auth        bool
 	WebPort     int
 	MetricsPort int
-	LogGroup    string
+	Logging     *loggingConfig
 	LogLevel    string
 	Debug       bool
 	Database    *dbConfig
@@ -25,6 +25,14 @@ type dbConfig struct {
 	Hostname string
 	Port     uint
 	Name     string
+}
+
+//
+type loggingConfig struct {
+	AccessKeyId     string
+	SecretAccessKey string
+	LogGroup        string
+	Region          string
 }
 
 var config *EdgeConfig
@@ -49,7 +57,6 @@ func Init() {
 		WebPort:     options.GetInt("WebPort"),
 		MetricsPort: options.GetInt("MetricsPort"),
 		Debug:       options.GetBool("Debug"),
-		LogGroup:    options.GetString("LogGroup"),
 		LogLevel:    options.GetString("LogLevel"),
 		BucketName:  options.GetString("EdgeTarballsBucket"),
 	}
@@ -59,7 +66,6 @@ func Init() {
 
 		config.WebPort = *cfg.PublicPort
 		config.MetricsPort = cfg.MetricsPort
-		config.LogGroup = cfg.Logging.Cloudwatch.LogGroup
 
 		config.Database = &dbConfig{
 			User:     cfg.Database.Username,
@@ -70,6 +76,13 @@ func Init() {
 		}
 
 		config.BucketName = clowder.ObjectBuckets[config.BucketName].RequestedName
+
+		config.Logging = &loggingConfig{
+			AccessKeyId:     cfg.Logging.Cloudwatch.AccessKeyId,
+			SecretAccessKey: cfg.Logging.Cloudwatch.SecretAccessKey,
+			LogGroup:        cfg.Logging.Cloudwatch.LogGroup,
+			Region:          cfg.Logging.Cloudwatch.Region,
+		}
 	}
 }
 
