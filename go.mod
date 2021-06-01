@@ -3,6 +3,7 @@ module github.com/redhatinsights/edge-api
 require (
 	github.com/RedHatInsights/platform-go-middlewares v0.3.0 // indirect
 	github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6 // indirect
+	github.com/aws/aws-sdk-go v1.38.51 // indirect
 	github.com/coreos/go-etcd v2.0.0+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible
@@ -17,7 +18,7 @@ require (
 	github.com/prometheus/client_golang v1.10.0
 	github.com/prometheus/common v0.25.0 // indirect
 	github.com/redhatinsights/app-common-go v1.5.0
-	github.com/redhatinsights/platform-go-middlewares v0.8.0
+	github.com/redhatinsights/platform-go-middlewares v0.8.1
 	github.com/segmentio/kafka-go v0.2.4
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/afero v1.6.0 // indirect
