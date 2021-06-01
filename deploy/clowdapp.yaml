@@ -51,6 +51,8 @@ objects:
           value: ${HABERDASHER_TAGS}
         - name: ENABLE_CLOUDWATCH_LOGGING
           value: ${ENABLE_CLOUDWATCH_LOGGING}
+        - name: Auth
+          value: ${ENABLE_RH_IDENITY_PROCESSING}
         resources:
           limits:
             cpu: ${{CPU_LIMIT}}
@@ -89,3 +91,5 @@ parameters:
   value: "false"
 - name: EDGE_TARBALLS_BUCKET
   value: rh-edge-tarballs
+- name: ENABLE_RH_IDENITY_PROCESSING
+  value: "true"
