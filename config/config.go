@@ -35,7 +35,7 @@ func Init() {
 	options.SetDefault("MetricsPort", 8080)
 	options.SetDefault("LogGroup", "platform-dev")
 	options.SetDefault("LogLevel", "INFO")
-	options.SetDefault("Auth", false)
+	options.SetDefault("Auth", true)
 	options.SetDefault("Debug", false)
 	options.SetDefault("EdgeTarballsBucket", "rh-edge-tarballs")
 	options.AutomaticEnv()
