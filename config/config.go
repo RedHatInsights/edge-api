@@ -29,7 +29,7 @@ type dbConfig struct {
 
 //
 type loggingConfig struct {
-	AccessKeyId     string
+	AccessKeyID     string
 	SecretAccessKey string
 	LogGroup        string
 	Region          string
@@ -37,13 +37,13 @@ type loggingConfig struct {
 
 var config *EdgeConfig
 
+// Init configuration for service
 func Init() {
 	options := viper.New()
 	options.SetDefault("WebPort", 3000)
 	options.SetDefault("MetricsPort", 8080)
-	options.SetDefault("LogGroup", "platform-dev")
 	options.SetDefault("LogLevel", "INFO")
-	options.SetDefault("Auth", true)
+	options.SetDefault("Auth", false)
 	options.SetDefault("Debug", false)
 	options.SetDefault("EdgeTarballsBucket", "rh-edge-tarballs")
 	options.AutomaticEnv()
@@ -78,7 +78,7 @@ func Init() {
 		config.BucketName = clowder.ObjectBuckets[config.BucketName].RequestedName
 
 		config.Logging = &loggingConfig{
-			AccessKeyId:     cfg.Logging.Cloudwatch.AccessKeyId,
+			AccessKeyID:     cfg.Logging.Cloudwatch.AccessKeyId,
 			SecretAccessKey: cfg.Logging.Cloudwatch.SecretAccessKey,
 			LogGroup:        cfg.Logging.Cloudwatch.LogGroup,
 			Region:          cfg.Logging.Cloudwatch.Region,

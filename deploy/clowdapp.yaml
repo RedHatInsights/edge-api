@@ -41,7 +41,7 @@ objects:
           value: ${CLOWDER_ENABLED}
         - name: ENABLE_CLOUDWATCH_LOGGING
           value: ${ENABLE_CLOUDWATCH_LOGGING}
-        - name: Auth
+        - name: AUTH
           value: ${ENABLE_RH_IDENITY_PROCESSING}
         resources:
           limits:

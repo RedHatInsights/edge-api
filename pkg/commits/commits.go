@@ -21,6 +21,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// Commit represents an OSTree commit from image builder
 type Commit struct {
 	gorm.Model
 	Name                 string
@@ -45,12 +46,13 @@ func commitFromReadCloser(rc io.ReadCloser) (*Commit, error) {
 	return &commit, err
 }
 
+// MakeRouter adds support for operations on commits
 func MakeRouter(sub chi.Router) {
 	sub.Post("/", Add)
 	sub.Get("/", GetAll)
 	sub.Route("/{commitId}", func(r chi.Router) {
 		r.Use(CommitCtx)
-		r.Get("/", GetById)
+		r.Get("/", GetByID)
 		r.Get("/repo/*", ServeRepo)
 		r.Put("/", Update)
 		r.Patch("/", Patch)
@@ -66,6 +68,7 @@ type key int
 
 const commitKey key = 0
 
+// CommitCtx is a handler for Commit requests
 func CommitCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var commit Commit
@@ -74,8 +77,8 @@ func CommitCtx(next http.Handler) http.Handler {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		if commitId := chi.URLParam(r, "commitId"); commitId != "" {
-			id, err := strconv.Atoi(commitId)
+		if commitID := chi.URLParam(r, "commitId"); commitID != "" {
+			id, err := strconv.Atoi(commitID)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
@@ -105,6 +108,7 @@ func getAccount(r *http.Request) (string, error) {
 
 }
 
+// Add a commit object to the database for an account
 func Add(w http.ResponseWriter, r *http.Request) {
 
 	commit, err := commitFromReadCloser(r.Body)
@@ -122,6 +126,7 @@ func Add(w http.ResponseWriter, r *http.Request) {
 	db.DB.Create(&commit)
 }
 
+// GetAll commit objects from the database for an account
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	var commits []Commit
 	account, err := getAccount(r)
@@ -138,12 +143,14 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&commits)
 }
 
-func GetById(w http.ResponseWriter, r *http.Request) {
+// GetByID obtains a commit from the database for an account
+func GetByID(w http.ResponseWriter, r *http.Request) {
 	if commit := getCommit(w, r); commit != nil {
 		json.NewEncoder(w).Encode(commit)
 	}
 }
 
+// Update a commit object in the database for an an account
 func Update(w http.ResponseWriter, r *http.Request) {
 	commit := getCommit(w, r)
 	if commit == nil {
@@ -217,6 +224,7 @@ func applyPatch(commit *Commit, incoming *Commit) {
 	commit.UpdatedAt = time.Now()
 }
 
+// Patch a commit object in the database for an account
 func Patch(w http.ResponseWriter, r *http.Request) {
 	commit := getCommit(w, r)
 	if commit == nil {
@@ -235,6 +243,7 @@ func Patch(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(commit)
 }
 
+// ServeRepo creates a file server for a commit object
 func ServeRepo(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	commit, ok := ctx.Value(commitKey).(*Commit)

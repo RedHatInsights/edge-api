@@ -12,12 +12,17 @@ USER root
 RUN go get -d -v
 # Build the binary.
 RUN CGO_ENABLED=0 go build -o /go/bin/edge-api
+
+# Build the migration binary.
+RUN CGO_ENABLED=0 go build -o /go/bin/edge-api-migrate cmd/migrate/migrate.go
+
 ############################
 # STEP 2 build a small image
 ############################
 FROM registry.redhat.io/ubi8-minimal:latest
 
 COPY --from=builder /go/bin/edge-api /usr/bin
+COPY --from=builder /go/bin/edge-api-migrate /usr/bin
 
 USER 1001
 

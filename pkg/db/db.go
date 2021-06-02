@@ -9,8 +9,10 @@ import (
 	"gorm.io/gorm"
 )
 
+// DB ORM variable
 var DB *gorm.DB
 
+// InitDB to configure database connectivity
 func InitDB() {
 	var err error
 	var dia gorm.Dialector
