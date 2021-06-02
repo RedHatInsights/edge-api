@@ -3,7 +3,6 @@ package commits
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -14,10 +13,8 @@ import (
 
 	"github.com/go-chi/chi"
 
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"gorm.io/gorm"
 )
 
@@ -72,7 +69,7 @@ const commitKey key = 0
 func CommitCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var commit Commit
-		account, err := getAccount(r)
+		account, err := common.GetAccount(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -94,20 +91,6 @@ func CommitCtx(next http.Handler) http.Handler {
 	})
 }
 
-func getAccount(r *http.Request) (string, error) {
-
-	if config.Get().Debug {
-		return "0000000", nil
-	}
-
-	ident := identity.Get(r.Context())
-	if ident.Identity.AccountNumber != "" {
-		return ident.Identity.AccountNumber, nil
-	}
-	return "", fmt.Errorf("cannot find account number")
-
-}
-
 // Add a commit object to the database for an account
 func Add(w http.ResponseWriter, r *http.Request) {
 
@@ -117,7 +100,7 @@ func Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	commit.Account, err = getAccount(r)
+	commit.Account, err = common.GetAccount(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -129,7 +112,7 @@ func Add(w http.ResponseWriter, r *http.Request) {
 // GetAll commit objects from the database for an account
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	var commits []Commit
-	account, err := getAccount(r)
+	account, err := common.GetAccount(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

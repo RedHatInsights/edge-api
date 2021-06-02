@@ -2,11 +2,29 @@ package common
 
 import (
 	"archive/tar"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
+
+func GetAccount(r *http.Request) (string, error) {
+
+	if config.Get().Debug {
+		return "0000000", nil
+	}
+
+	ident := identity.Get(r.Context())
+	if ident.Identity.AccountNumber != "" {
+		return ident.Identity.AccountNumber, nil
+	}
+	return "", fmt.Errorf("cannot find account number")
+
+}
 
 // StatusOK returns a simple 200 status code
 func StatusOK(w http.ResponseWriter, r *http.Request) {
