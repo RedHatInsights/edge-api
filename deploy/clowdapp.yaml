@@ -39,16 +39,6 @@ objects:
         env:
         - name: CLOWDER_ENABLED
           value: ${CLOWDER_ENABLED}
-        - name: HABERDASHER_EMITTER
-          value: ${HABERDASHER_EMITTER}
-        - name: HABERDASHER_KAFKA_BOOTSTRAP
-          value: ${HABERDASHER_KAFKA_BOOTSTRAP}
-        - name: HABERDASHER_KAFKA_TOPIC
-          value: ${HABERDASHER_KAFKA_TOPIC}
-        - name: HABERDASHER_LABELS
-          value: ${HABERDASHER_LABELS}
-        - name: HABERDASHER_TAGS
-          value: ${HABERDASHER_TAGS}
         - name: ENABLE_CLOUDWATCH_LOGGING
           value: ${ENABLE_CLOUDWATCH_LOGGING}
         - name: Auth
@@ -88,7 +78,7 @@ parameters:
   requred: false
 - description: Determines if Cloud Watch logging is enabled
   name: ENABLE_CLOUDWATCH_LOGGING
-  value: "false"
+  value: "true"
 - name: EDGE_TARBALLS_BUCKET
   value: rh-edge-tarballs
 - name: ENABLE_RH_IDENITY_PROCESSING
