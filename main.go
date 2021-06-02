@@ -51,9 +51,18 @@ func main() {
 	}
 
 	r.Get("/", common.StatusOK)
+
+	var server repo.Server
+	server = &repo.FileServer{
+		BasePath: "/tmp",
+	}
+	if cfg.BucketName != "" {
+		server = repo.NewS3Proxy()
+	}
+
 	r.Route("/api/edge/v1", func(s chi.Router) {
 		s.Route("/commits", commits.MakeRouter)
-		s.Route("/repos", repo.MakeRouter)
+		s.Route("/repos", repo.MakeRouter(server))
 	})
 
 	mr := chi.NewRouter()

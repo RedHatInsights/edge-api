@@ -17,6 +17,8 @@ type EdgeConfig struct {
 	Debug       bool
 	Database    *dbConfig
 	BucketName  string
+	AccessKey   string
+	SecretKey   string
 }
 
 type dbConfig struct {
@@ -76,6 +78,8 @@ func Init() {
 		}
 
 		config.BucketName = clowder.ObjectBuckets[config.BucketName].RequestedName
+		config.AccessKey = *cfg.ObjectStore.AccessKey
+		config.SecretKey = *cfg.ObjectStore.SecretKey
 
 		config.Logging = &loggingConfig{
 			AccessKeyID:     cfg.Logging.Cloudwatch.AccessKeyId,
@@ -83,6 +87,7 @@ func Init() {
 			LogGroup:        cfg.Logging.Cloudwatch.LogGroup,
 			Region:          cfg.Logging.Cloudwatch.Region,
 		}
+
 	}
 }
 

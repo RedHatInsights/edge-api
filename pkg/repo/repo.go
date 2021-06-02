@@ -4,16 +4,17 @@ import (
 	"encoding/json"
 	"net/http"
 	"path/filepath"
-	"strings"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/common"
 )
 
-func MakeRouter(sub chi.Router) {
-	sub.Post("/", CreateRepo)
-	sub.Get("/", GetAll)
-	sub.Get("/{name}/*", ServeRepo)
+func MakeRouter(server Server) func(sub chi.Router) {
+	return func(sub chi.Router) {
+		sub.Post("/", CreateRepo)
+		sub.Get("/", GetAll)
+		sub.Get("/{name}/*", server.ServeRepo)
+	}
 }
 
 type createRequest struct {
@@ -64,18 +65,4 @@ func CreateRepo(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetAll(w http.ResponseWriter, r *http.Request) {
-}
-
-func ServeRepo(w http.ResponseWriter, r *http.Request) {
-	name := chi.URLParam(r, "name")
-	if name == "" {
-		http.Error(w, "repo name not provided", http.StatusBadRequest)
-		return
-	}
-	_r := strings.Index(r.URL.Path, name)
-	pathPrefix := string(r.URL.Path[:_r+len(name)])
-
-	path := filepath.Join("/tmp", name)
-	fs := http.StripPrefix(pathPrefix, http.FileServer(http.Dir(path)))
-	fs.ServeHTTP(w, r)
 }
