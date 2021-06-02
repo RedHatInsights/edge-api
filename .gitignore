@@ -26,3 +26,6 @@ quay-cloudservices-pull.yaml
 
 # bonfire config
 config.yaml
+
+# sqlite database
+*.db
