@@ -28,8 +28,8 @@ func InitLogger() {
 		logLevel = log.InfoLevel
 	}
 
-	if cfg.Logging != nil {
-		cred := credentials.NewStaticCredentials(cfg.Logging.AccessKeyId, cfg.Logging.SecretAccessKey, "")
+	if cfg.Logging != nil && cfg.Logging.Region != "" {
+		cred := credentials.NewStaticCredentials(cfg.Logging.AccessKeyID, cfg.Logging.SecretAccessKey, "")
 		awsconf := aws.NewConfig().WithRegion(cfg.Logging.Region).WithCredentials(cred)
 		hook, err := lc.NewBatchingHook(cfg.Logging.LogGroup, cfg.Hostname, awsconf, 10*time.Second)
 		if err != nil {
