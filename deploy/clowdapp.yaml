@@ -16,6 +16,13 @@ objects:
       web: true
       podSpec:
         image: ${IMAGE}:${IMAGE_TAG}
+        initContainers:
+        - name: run-migrations
+          command:
+            - bash
+            - -c
+            - edge-api-migrate
+          inheritEnv: true
         livenessProbe:
           failureThreshold: 3
           httpGet:
