@@ -15,6 +15,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/common"
 )
 
+//Server is an interface for a served repository
 type Server interface {
 	ServeRepo(w http.ResponseWriter, r *http.Request)
 }
@@ -29,10 +30,12 @@ func getNameAndPrefix(r *http.Request) (string, string, error) {
 	return name, pathPrefix, nil
 }
 
+//FileServer defines the how the files are served for the repository
 type FileServer struct {
 	BasePath string
 }
 
+//ServeRepo provides file serving of the repository
 func (s *FileServer) ServeRepo(w http.ResponseWriter, r *http.Request) {
 	name, pathPrefix, err := getNameAndPrefix(r)
 	if err != nil {
@@ -44,11 +47,13 @@ func (s *FileServer) ServeRepo(w http.ResponseWriter, r *http.Request) {
 	fs.ServeHTTP(w, r)
 }
 
+//S3Proxy defines the mechanism to proxy data from S3
 type S3Proxy struct {
 	Client *s3.S3
 	Bucket string
 }
 
+//NewS3Proxy creates a method to obtain a new S3 proxy
 func NewS3Proxy() *S3Proxy {
 	cfg := config.Get()
 	sess := session.Must(session.NewSession())
