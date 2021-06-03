@@ -77,9 +77,10 @@ func Init() {
 			Name:     cfg.Database.Name,
 		}
 
-		config.BucketName = clowder.ObjectBuckets[config.BucketName].RequestedName
-		config.AccessKey = *cfg.ObjectStore.AccessKey
-		config.SecretKey = *cfg.ObjectStore.SecretKey
+		bucket, _ := clowder.ObjectBuckets[config.BucketName]
+		config.BucketName = bucket.RequestedName
+		config.AccessKey = *bucket.AccessKey
+		config.SecretKey = *bucket.SecretKey
 
 		config.Logging = &loggingConfig{
 			AccessKeyID:     cfg.Logging.Cloudwatch.AccessKeyId,

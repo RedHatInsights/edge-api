@@ -9,6 +9,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/common"
 )
 
+//MakeRouter defines the available actions for Repos
 func MakeRouter(server Server) func(sub chi.Router) {
 	return func(sub chi.Router) {
 		sub.Post("/", CreateRepo)
@@ -26,6 +27,7 @@ type createResponse struct {
 	RepoURL string
 }
 
+// CreateRepo creates a repository from a tar file
 func CreateRepo(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var cr createRequest
@@ -64,5 +66,6 @@ func CreateRepo(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
+// GetAll repositories
 func GetAll(w http.ResponseWriter, r *http.Request) {
 }

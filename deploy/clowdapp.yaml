@@ -50,6 +50,8 @@ objects:
           value: ${ENABLE_CLOUDWATCH_LOGGING}
         - name: AUTH
           value: ${ENABLE_RH_IDENITY_PROCESSING}
+        - name: EDGETARBALLSBUCKET
+          value: ${EDGE_TARBALLS_BUCKET}
         resources:
           limits:
             cpu: ${{CPU_LIMIT}}

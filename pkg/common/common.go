@@ -12,6 +12,7 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
 
+// GetAccount from http request header
 func GetAccount(r *http.Request) (string, error) {
 
 	if config.Get().Debug {
@@ -32,6 +33,7 @@ func StatusOK(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// Untar file to destination path
 func Untar(rc io.ReadCloser, dst string) error {
 	defer rc.Close()
 	tarReader := tar.NewReader(rc)
