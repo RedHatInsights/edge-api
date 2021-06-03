@@ -13,16 +13,20 @@ func main() {
 	l.InitLogger()
 	cfg := config.Get()
 	log.WithFields(log.Fields{
-		"Hostname": cfg.Hostname,
-		"Auth": cfg.Auth,
-		"WebPort": cfg.WebPort,
-		"MetricsPort": cfg.MetricsPort, 
-		"LogLevel": cfg.LogLevel, 
-		"Debug": cfg.Debug, 
-		"BucketName": cfg.BucketName,
-		}).Info("Configuration Values:")
+		"Hostname":    cfg.Hostname,
+		"Auth":        cfg.Auth,
+		"WebPort":     cfg.WebPort,
+		"MetricsPort": cfg.MetricsPort,
+		"LogLevel":    cfg.LogLevel,
+		"Debug":       cfg.Debug,
+		"BucketName":  cfg.BucketName,
+	}).Info("Configuration Values:")
 	db.InitDB()
 	err := db.DB.AutoMigrate(&commits.Commit{})
+	if err != nil {
+		panic(err)
+	}
+	err = db.DB.AutoMigrate(&commits.UpdateRecord{})
 	if err != nil {
 		panic(err)
 	}

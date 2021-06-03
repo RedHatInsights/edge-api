@@ -1,7 +1,6 @@
 package repo
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -10,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/common"
 )
@@ -18,16 +16,6 @@ import (
 //Server is an interface for a served repository
 type Server interface {
 	ServeRepo(w http.ResponseWriter, r *http.Request)
-}
-
-func getNameAndPrefix(r *http.Request) (string, string, error) {
-	name := chi.URLParam(r, "name")
-	if name == "" {
-		return "", "", fmt.Errorf("repo name not provided")
-	}
-	_r := strings.Index(r.URL.Path, name)
-	pathPrefix := string(r.URL.Path[:_r+len(name)])
-	return name, pathPrefix, nil
 }
 
 //FileServer defines the how the files are served for the repository
