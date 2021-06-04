@@ -15,6 +15,7 @@ CONTAINER_TAG="quay.io/cloudservices/edge-api"
 
 KUBECTL=kubectl
 NAMESPACE=default
+TEST_OPTIONS="-race"
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of:"
