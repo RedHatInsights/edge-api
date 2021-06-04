@@ -3,13 +3,27 @@ package repo
 import (
 	"bytes"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
+
+	"encoding/json"
+	"net/http"
+	"path/filepath"
+
+	"gorm.io/gorm"
 )
 
+// LocalRepo is the representation of the OSTree repo built locally into a
+// directory such that we can then push it to S3 compatible storage.
 type LocalRepo struct {
-	path string
+	gorm.Model
+	UpdateCommit string // The new update target commmit
+	// A slice of old commits that we need to pull and
+	// generate static deltas for
+	OldCommits []string
 }
 
 type RepoMode string
@@ -84,3 +98,49 @@ func (repo *LocalRepo) UpdateSummary() error {
 	return err
 }
 
+//Server is an interface for a served repository
+type RepoBuilder interface {
+	ServeRepo(w http.ResponseWriter, r *http.Request)
+}
+
+type repoBuildRequest struct {
+	UpdateCommit string
+	OldCommits   []string
+}
+
+type repoBuildResponse struct {
+	status string
+}
+
+// CreateRepo creates a repository from a tar file
+func RepoBuilder(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	var rbr repoBuildRequest
+	err := json.NewDecoder(r.Body).Decode(&cr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if rbr.UpdateCommit == "" {
+		http.Error(w, "UpdateCommit must be set", http.StatusBadRequest)
+		return
+	}
+
+	if len(rbr.OldCommits) > 0 {
+		// FIXME : need to deal with this
+	}
+
+	path := filepath.Join("/tmp/repobuilder/", rbr.UpdateCommit)
+	err := os.MkdirAll(path)
+	if err != nil {
+		http.Error(w, strings.join("Unable to create ", path), http.StatusInternalServerError)
+	}
+
+	res := &repoBuildResponse{
+		status: strings.Join("RepoBuild: ", rbr.UpdateCommit, "started"),
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(res)
+}

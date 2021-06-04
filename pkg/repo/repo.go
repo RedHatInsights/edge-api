@@ -15,6 +15,8 @@ func MakeRouter(server Server) func(sub chi.Router) {
 		sub.Post("/", CreateRepo)
 		sub.Get("/", GetAll)
 		sub.Get("/{name}/*", server.ServeRepo)
+		sub.Post("/build", RepoBuilder)
+		sub.Post("/build/{id}/*", GetBuilds)
 	}
 }
 
