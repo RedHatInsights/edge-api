@@ -114,6 +114,21 @@ Development of this project utilizes several tools listed below:
 ### OpenShift CLI
 [OpenShift CLI](https://docs.openshift.com/container-platform/4.7/cli_reference/openshift_cli/getting-started-cli.html) is used by Bonfire because of its templating capabitilies to generate the files that will be deployed to your local Kubernetes cluster. Follow the instructions on [Installing the OpenShift CLI](https://docs.openshift.com/container-platform/4.7/cli_reference/openshift_cli/getting-started-cli.html#installing-openshift-cli) to install it in your machine.
 
+## Setup with ansible playbook
+For these steps, you need to have ansible and go already installed.
+1. Download the playbook
+```
+curl https://github.com/RedHatInsights/edge-api/blob/main/edge-api-playbook.yml --output edge-api-playbook.yml
+```
+2. Execute the playbook
+```
+ansible-playbook edge-api-playbook.yml 
+```
+3. Open another tab and make sure you can reach the API.
+```
+curl -v http://localhost:3000/
+```
+
 ## Setup
 
 For these steps, only git and Docker are necessary from the information above. Keep in mind that you might need to run inside of a Kubernetes cluster if you want to test more complex use-case scenarios.
@@ -130,11 +145,11 @@ cd edge-api
 ```
 go run cmd/migrate/migrate.go
 ```
-3. Run the project in debug mode. Debug mode allows unauthenticated calls and it's essential for local development.
+4. Run the project in debug mode. Debug mode allows unauthenticated calls and it's essential for local development.
 ```
 DEBUG=true go run main.go
 ```
-4. Open another terminal and make sure you can reach the API.
+5. Open another terminal and make sure you can reach the API.
 ```
 curl -v http://localhost:3000/
 ```

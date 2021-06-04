@@ -1,0 +1,13 @@
+- name: "edge-api-locally"
+  hosts: localhost
+  tasks:
+  - name: clone the project
+    command: "git clone git@github.com:RedHatInsights/edge-api.git"
+    register: result
+    ignore_errors: True 
+  - name: change directories to the project
+    command: "cd edge-api"
+  - name: run the migrations
+    command: "go run cmd/migrate/migrate.go"
+  - name: run project
+    command: "go run main.go"
