@@ -13,6 +13,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/repo"
+	"github.com/redhatinsights/edge-api/pkg/updates"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -29,14 +30,14 @@ func main() {
 
 	cfg := config.Get()
 	log.WithFields(log.Fields{
-		"Hostname": cfg.Hostname,
-		"Auth": cfg.Auth,
-		"WebPort": cfg.WebPort,
-		"MetricsPort": cfg.MetricsPort, 
-		"LogLevel": cfg.LogLevel, 
-		"Debug": cfg.Debug, 
-		"BucketName": cfg.BucketName,
-		}).Info("Configuration Values:")
+		"Hostname":    cfg.Hostname,
+		"Auth":        cfg.Auth,
+		"WebPort":     cfg.WebPort,
+		"MetricsPort": cfg.MetricsPort,
+		"LogLevel":    cfg.LogLevel,
+		"Debug":       cfg.Debug,
+		"BucketName":  cfg.BucketName,
+	}).Info("Configuration Values:")
 
 	r := chi.NewRouter()
 	r.Use(
@@ -63,6 +64,7 @@ func main() {
 	r.Route("/api/edge/v1", func(s chi.Router) {
 		s.Route("/commits", commits.MakeRouter)
 		s.Route("/repos", repo.MakeRouter(server))
+		s.Route("/updates", updates.MakeRouter)
 	})
 
 	mr := chi.NewRouter()
