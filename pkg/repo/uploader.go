@@ -33,17 +33,34 @@ type FileUploader struct {
 	BaseDir string
 }
 
-//NewS3Proxy creates a method to obtain a new S3 proxy
-func NewS3Uploader() *S3Uploader {
-	cfg := config.Get()
-	sess := session.Must(session.NewSession())
-	client := s3.New(sess)
-	uploader := s3manager.NewUploader(sess)
-	return &S3Uploader{
-		Client:            client,
-		S3ManagerUploader: uploader,
-		Bucket:            cfg.BucketName,
+// UploadReopo uploads the repo to a backing object storage bucket
+// the repository is uploaded to
+//  bucket/$account/$name/
+func (u *FileUploader) UploadRepo(w http.ResponseWriter, r *http.Request) {
+
+	name, _, err := getNameAndPrefix(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
+
+	account, err := common.GetAccount(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// FIXME: might experiment with doing this concurrently but I've read that
+	//		  that can get you rate limited by S3 pretty quickly so we'll mess
+	//		  with that later.
+	filepath.Walk(filepath.Join("/tmp", name), func(path string, info os.FileInfo, err error) error {
+		err = u.UploadFileToS3(path, filepath.Join(account, "/", string(name)))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return err
+		}
+		return nil
+	})
 }
 
 //NewS3Uploader creates a method to obtain a new S3 uploader
