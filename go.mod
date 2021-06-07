@@ -1,14 +1,13 @@
 module github.com/redhatinsights/edge-api
 
 require (
-	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/RedHatInsights/platform-go-middlewares v0.3.0 // indirect
 	github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6 // indirect
 	github.com/aws/aws-sdk-go v1.38.51
 	github.com/coreos/go-etcd v2.0.0+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible
-	github.com/go-openapi/runtime v0.19.29 // indirect
+	github.com/go-openapi/runtime v0.19.29
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/jackc/pgproto3/v2 v2.0.7 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
