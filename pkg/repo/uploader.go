@@ -16,7 +16,7 @@ import (
 
 //uploader is an interface for uploading repository
 type Uploader interface {
-	UploadRepo(w http.ResponseWriter, r *http.Request)
+	UploadRepo(src string, r *http.Request) (string, err)
 }
 
 //S3Uploader defines the mechanism to upload data to S3
@@ -33,18 +33,10 @@ type FileUploader struct {
 	BaseDir string
 }
 
-// UploadReopo uploads the repo to a backing object storage bucket
-// the repository is uploaded to
-//  bucket/$account/$name/
-// This is Basically a dummy function
-func (u *FileUploader) UploadRepo(w http.ResponseWriter, r *http.Request) {
-
-	name, _, err := getNameAndPrefix(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
+// This is Basically a dummy function that returns the src, but allows offline
+// development without S3 and satisfies the interface
+func (u *FileUploader) UploadRepo(src string, r *http.Request) (string, err) {
+	return src, nil
 }
 
 //NewS3Uploader creates a method to obtain a new S3 uploader
@@ -63,18 +55,11 @@ func NewS3Uploader() *S3Uploader {
 // UploadReopo uploads the repo to a backing object storage bucket
 // the repository is uploaded to
 //  bucket/$account/$name/
-func (u *S3Uploader) UploadRepo(w http.ResponseWriter, r *http.Request) {
-
-	name, _, err := getNameAndPrefix(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+func (u *S3Uploader) UploadRepo(src string, r *http.Request) (string, err) {
 
 	account, err := common.GetAccount(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return err
 	}
 
 	// FIXME: might experiment with doing this concurrently but I've read that
@@ -83,7 +68,6 @@ func (u *S3Uploader) UploadRepo(w http.ResponseWriter, r *http.Request) {
 	filepath.Walk(filepath.Join("/tmp", name), func(path string, info os.FileInfo, err error) error {
 		err = u.UploadFileToS3(path, filepath.Join(account, "/", string(name)))
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
 			return err
 		}
 		return nil

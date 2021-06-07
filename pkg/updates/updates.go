@@ -106,7 +106,7 @@ func Add(w http.ResponseWriter, r *http.Request) {
 
 	db.DB.Create(&update)
 
-	go RepoBuilder(&update)
+	go RepoBuilder(&update, &r)
 }
 
 // GetAll update objects from the database for an account
@@ -169,7 +169,7 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *UpdateRecord {
 Build an update repo with the set of commits all merged into a single repo
 with static deltas generated between them all
 */
-func RepoBuilder(ur *UpdateRecord) error {
+func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 	ur.State = "BUILDING"
 	db.DB.Update(&ur)
 
@@ -212,12 +212,14 @@ func RepoBuilder(ur *UpdateRecord) error {
 	}
 
 	cfg := config.Get()
+	var uploader repo.Uploader
 	uploader = &repo.FileUploader{
 		BasePath: path,
 	}
 	if cfg.BucketName != "" {
 		uploader = repo.NewS3Uploader()
 	}
+	err := uploader.Upload(filepath.Join(path, "repo"), &r)
 
 	return nil
 }
