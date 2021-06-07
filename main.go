@@ -39,7 +39,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func DocsMiddleware(handler http.Handler) http.Handler {
+func setupDocsMiddleware(handler http.Handler) http.Handler {
 	opt := redoc.RedocOpts{
 		SpecURL: "/swagger.yml",
 	}
@@ -68,7 +68,7 @@ func main() {
 		middleware.RealIP,
 		middleware.Recoverer,
 		middleware.Logger,
-		DocsMiddleware,
+		setupDocsMiddleware,
 	)
 	r.Get("/swagger.yml", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./swagger.yml")

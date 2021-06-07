@@ -1,6 +1,7 @@
 module github.com/redhatinsights/edge-api
 
 require (
+	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/RedHatInsights/platform-go-middlewares v0.3.0 // indirect
 	github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6 // indirect
 	github.com/aws/aws-sdk-go v1.38.51
