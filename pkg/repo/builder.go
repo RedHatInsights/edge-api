@@ -9,10 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"encoding/json"
-	"net/http"
-	"path/filepath"
-
+	"github.com/redhatinsights/edge-api/pkg/updates"
 	"gorm.io/gorm"
 )
 
@@ -37,12 +34,6 @@ const (
 
 func (mode RepoMode) String() string {
 	return string(mode)
-}
-
-func NewLocalRepo(path string) *LocalRepo {
-	return &LocalRepo{
-		path: path,
-	}
 }
 
 func (repo *LocalRepo) Path() string {
@@ -98,38 +89,8 @@ func (repo *LocalRepo) UpdateSummary() error {
 	return err
 }
 
-//Server is an interface for a served repository
-type RepoBuilder interface {
-	ServeRepo(w http.ResponseWriter, r *http.Request)
-}
-
-type repoBuildRequest struct {
-	UpdateCommit string
-	OldCommits   []string
-}
-
-type repoBuildResponse struct {
-	status string
-}
-
 // CreateRepo creates a repository from a tar file
-func RepoBuilder(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-	var rbr repoBuildRequest
-	err := json.NewDecoder(r.Body).Decode(&cr)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	if rbr.UpdateCommit == "" {
-		http.Error(w, "UpdateCommit must be set", http.StatusBadRequest)
-		return
-	}
-
-	if len(rbr.OldCommits) > 0 {
-		// FIXME : need to deal with this
-	}
+func RepoBuilder(ur *updates.UpdateRecord) (string, error) {
 
 	path := filepath.Join("/tmp/repobuilder/", rbr.UpdateCommit)
 	err := os.MkdirAll(path)
@@ -137,10 +98,9 @@ func RepoBuilder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, strings.join("Unable to create ", path), http.StatusInternalServerError)
 	}
 
-	res := &repoBuildResponse{
-		status: strings.Join("RepoBuild: ", rbr.UpdateCommit, "started"),
+	if len(rbr.OldCommits) > 0 {
+		// FIXME : need to deal with this
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(res)
+	return path, nil
 }

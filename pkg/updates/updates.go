@@ -4,8 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -14,6 +18,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"gorm.io/gorm"
+
+	"github.com/cavaliercoder/grab"
 )
 
 // Update reporesents the combination of an OSTree commit and a set of Inventory
@@ -26,9 +32,9 @@ import (
 // Server (pkg/repo/server.go).
 type UpdateRecord struct {
 	gorm.Model
-	updateCommit   *commits.Commit
-	oldCommits     []*commits.Commit
-	inventoryHosts []string
+	UpdateCommit   *commits.Commit
+	OldCommits     []*commits.Commit
+	InventoryHosts []string
 }
 
 func updateFromReadCloser(rc io.ReadCloser) (*UpdateRecord, error) {
@@ -150,4 +156,111 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *UpdateRecord {
 		return nil
 	}
 	return update
+}
+
+// CreateRepo creates a repository from a tar file
+func RepoBuilder(ur *UpdateRecord) (string, error) {
+
+	path := filepath.Join("/tmp/update/", strconv.FormatUint(uint64(ur.ID), 10))
+	err := os.MkdirAll(path, os.FileMode(int(0755)))
+	if err != nil {
+		return path, err
+	}
+	err := os.Chdir(path)
+	if err != nil {
+		return path, err
+	}
+
+	stagePath := filepath.Join(path, "staging")
+	err := os.MkdirAll(stagePath, os.FileMode(int(0755)))
+	if err != nil {
+		return stagePath, err
+	}
+	err := os.Chdir(stagePath)
+	if err != nil {
+		return stagePath, err
+	}
+
+	for _, commit := range ur.OldCommits {
+		oldCommitPath := filepath.Join(stagePath, commit.OSTreeCommit)
+		err := os.MkdirAll(oldCommitPath, os.FileMode(int(0755)))
+		if err != nil {
+			return "", err
+		}
+		err := os.Chdir(oldCommitPath)
+		if err != nil {
+			return oldCommitPath, err
+		}
+
+		// Save the tarball to the OSBuild Hash ID
+		resp, err := grab.Get(strings.Join([]string{commit.ImageBuildHash, "tar"}, "."), commit.ImageBuildTarURL)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		tarFile, err := os.Open(filepath.Join(commit.ImageBuildHash, ".tar"))
+		if err != nil {
+			return "", err
+		}
+		defer tarFile.Close()
+		common.Untar(tarFile)
+
+		oldCommitRepoPath := filepath.Join(oldCommitPath, commit.OSTreeCommit, "repo")
+		err := os.Chdir(oldCommitRepoPath)
+		if err != nil {
+			return oldCommitRepoPath, err
+		}
+
+	}
+	err := os.Chdir(stagePath)
+	if err != nil {
+		return stagePath, err
+	}
+
+	updateCommitPath := filepath.Join(stagePath, ur.UpdateCommit.OSTreeCommit)
+	err := os.MkdirAll(updateCommitPath, os.FileMode(int(0755)))
+	if err != nil {
+		return "", err
+	}
+	resp, err := grab.Get(".", commit.ImageBuildTarURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	/*
+		# directory setup
+		mkdir tmp
+		cd tmp
+		mkdir tar1 tar2
+
+		# grab first tarball
+		pushd tar1
+		curl -LO https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/33.20210412.3.0/x86_64/fedora-coreos-33.20210412.3.0-ostree.x86_64.tar
+		tar xf fedora-coreos-33.20210412.3.0-ostree.x86_64.tar
+		ostree --repo=./ refs
+		popd
+
+		# grab second tarball
+		cd tar2
+		curl -LO https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/34.20210427.3.0/x86_64/fedora-coreos-34.20210427.3.0-ostree.x86_64.tar
+		tar xf fedora-coreos-34.20210427.3.0-ostree.x86_64.tar
+		ostree --repo=./ refs
+
+		# combine into one repo
+		ostree --repo=./ pull-local ../tar1/ 33.20210412.3.0
+
+		# now both are in the repo in the tar2 directory. compare commits
+		rpm-ostree --repo=./ db diff 33.20210412.3.0 34.20210427.3.0
+
+		# now generate a static delta
+		ostree --repo=./ static-delta generate --from=33.20210412.3.0 --to=34.20210427.3.0
+
+		# static delta files are under the `deltas` directory
+	*/
+
+	if len(ur.OldCommits) > 0 {
+		// FIXME : need to deal with this
+	}
+
+	return path, nil
 }
