@@ -7,6 +7,7 @@ require (
 	github.com/coreos/go-etcd v2.0.0+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible
+	github.com/go-openapi/runtime v0.19.29 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/jackc/pgproto3/v2 v2.0.7 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect

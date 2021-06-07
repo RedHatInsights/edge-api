@@ -1,0 +1,15 @@
+basePath: /
+consumes:
+- application/json
+host: localhost
+info:
+  description: An API server for fleet edge management capabilities.
+  title: Edge API
+  version: 0.0.1
+paths: {}
+produces:
+- application/json
+schemes:
+- http
+- https
+swagger: "2.0"
