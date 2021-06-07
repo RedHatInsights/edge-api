@@ -57,8 +57,12 @@ func main() {
 	server = &repo.FileServer{
 		BasePath: "/tmp",
 	}
+	uploader = &repo.FileUploader{
+		BasePath: "/tmp/uploader",
+	}
 	if cfg.BucketName != "" {
 		server = repo.NewS3Proxy()
+		uploader = repo.NewS3Uploader()
 	}
 
 	r.Route("/api/edge/v1", func(s chi.Router) {

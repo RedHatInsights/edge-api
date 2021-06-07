@@ -21,9 +21,16 @@ type Uploader interface {
 
 //S3Uploader defines the mechanism to upload data to S3
 type S3Uploader struct {
-	Client   *s3.S3
-	Uploader *s3manager.Uploader
-	Bucket   string
+	Client            *s3.S3
+	S3ManagerUploader *s3manager.Uploader
+	Bucket            string
+}
+
+// File Uploader isn't actually an uploader but implements the interface in
+// order to allow the workflow to be done to completion on a local machine
+// without S3
+type FileUploader struct {
+	BaseDir string
 }
 
 //NewS3Proxy creates a method to obtain a new S3 proxy
@@ -33,9 +40,22 @@ func NewS3Uploader() *S3Uploader {
 	client := s3.New(sess)
 	uploader := s3manager.NewUploader(sess)
 	return &S3Uploader{
-		Client:   client,
-		Uploader: uploader,
-		Bucket:   cfg.BucketName,
+		Client:            client,
+		S3ManagerUploader: uploader,
+		Bucket:            cfg.BucketName,
+	}
+}
+
+//NewS3Uploader creates a method to obtain a new S3 uploader
+func NewS3Uploader() *S3Uploader {
+	cfg := config.Get()
+	sess := session.Must(session.NewSession())
+	client := s3.New(sess)
+	uploader := s3manager.NewUploader(sess)
+	return &S3Uploader{
+		Client:            client,
+		S3ManagerUploader: uploader,
+		Bucket:            cfg.BucketName,
 	}
 }
 
@@ -77,7 +97,7 @@ func (u *S3Uploader) UploadFileToS3(fname string, S3path string) error {
 		return fmt.Errorf("failed to open file %q, %v", fname, err)
 	}
 	// Upload the file to S3.
-	_, err = u.Uploader.Upload(&s3manager.UploadInput{
+	_, err = u.S3ManagerUploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(u.Bucket),
 		Key:    aws.String(S3path),
 		Body:   f,
