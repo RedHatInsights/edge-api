@@ -31,4 +31,4 @@ require (
 	gorm.io/gorm v1.21.10
 )
 
-go 1.14
+go 1.15
