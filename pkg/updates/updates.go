@@ -1,12 +1,14 @@
 package updates
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -35,6 +37,7 @@ type UpdateRecord struct {
 	UpdateCommit   *commits.Commit
 	OldCommits     []*commits.Commit
 	InventoryHosts []string
+	State          string
 }
 
 func updateFromReadCloser(rc io.ReadCloser) (*UpdateRecord, error) {
@@ -100,6 +103,13 @@ func Add(w http.ResponseWriter, r *http.Request) {
 	}
 
 	db.DB.Create(&update)
+
+	// FIXME: this isn't right, need this to be async
+	path, err := RepoBuilder(&update)
+	if err != nil {
+		http.Error(w, "Failed to build update ostree repo", http.StatusInternalServerError)
+	}
+
 }
 
 // GetAll update objects from the database for an account
@@ -158,8 +168,13 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *UpdateRecord {
 	return update
 }
 
-// CreateRepo creates a repository from a tar file
+/* RepoBuilder
+Build an update repo with the set of commits all merged into a single repo
+with static deltas generated between them all
+*/
 func RepoBuilder(ur *UpdateRecord) (string, error) {
+	ur.State = "BUILDING"
+	db.DB.Update(&ur)
 
 	path := filepath.Join("/tmp/update/", strconv.FormatUint(uint64(ur.ID), 10))
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
@@ -170,97 +185,122 @@ func RepoBuilder(ur *UpdateRecord) (string, error) {
 	if err != nil {
 		return path, err
 	}
-
-	stagePath := filepath.Join(path, "staging")
-	err := os.MkdirAll(stagePath, os.FileMode(int(0755)))
-	if err != nil {
-		return stagePath, err
-	}
-	err := os.Chdir(stagePath)
-	if err != nil {
-		return stagePath, err
-	}
-
-	for _, commit := range ur.OldCommits {
-		oldCommitPath := filepath.Join(stagePath, commit.OSTreeCommit)
-		err := os.MkdirAll(oldCommitPath, os.FileMode(int(0755)))
-		if err != nil {
-			return "", err
-		}
-		err := os.Chdir(oldCommitPath)
-		if err != nil {
-			return oldCommitPath, err
-		}
-
-		// Save the tarball to the OSBuild Hash ID
-		resp, err := grab.Get(strings.Join([]string{commit.ImageBuildHash, "tar"}, "."), commit.ImageBuildTarURL)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		tarFile, err := os.Open(filepath.Join(commit.ImageBuildHash, ".tar"))
-		if err != nil {
-			return "", err
-		}
-		defer tarFile.Close()
-		common.Untar(tarFile)
-
-		oldCommitRepoPath := filepath.Join(oldCommitPath, commit.OSTreeCommit, "repo")
-		err := os.Chdir(oldCommitRepoPath)
-		if err != nil {
-			return oldCommitRepoPath, err
-		}
-
-	}
-	err := os.Chdir(stagePath)
-	if err != nil {
-		return stagePath, err
-	}
-
-	updateCommitPath := filepath.Join(stagePath, ur.UpdateCommit.OSTreeCommit)
-	err := os.MkdirAll(updateCommitPath, os.FileMode(int(0755)))
-	if err != nil {
-		return "", err
-	}
-	resp, err := grab.Get(".", commit.ImageBuildTarURL)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	/*
-		# directory setup
-		mkdir tmp
-		cd tmp
-		mkdir tar1 tar2
-
-		# grab first tarball
-		pushd tar1
-		curl -LO https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/33.20210412.3.0/x86_64/fedora-coreos-33.20210412.3.0-ostree.x86_64.tar
-		tar xf fedora-coreos-33.20210412.3.0-ostree.x86_64.tar
-		ostree --repo=./ refs
-		popd
-
-		# grab second tarball
-		cd tar2
-		curl -LO https://builds.coreos.fedoraproject.org/prod/streams/stable/builds/34.20210427.3.0/x86_64/fedora-coreos-34.20210427.3.0-ostree.x86_64.tar
-		tar xf fedora-coreos-34.20210427.3.0-ostree.x86_64.tar
-		ostree --repo=./ refs
-
-		# combine into one repo
-		ostree --repo=./ pull-local ../tar1/ 33.20210412.3.0
-
-		# now both are in the repo in the tar2 directory. compare commits
-		rpm-ostree --repo=./ db diff 33.20210412.3.0 34.20210427.3.0
-
-		# now generate a static delta
-		ostree --repo=./ static-delta generate --from=33.20210412.3.0 --to=34.20210427.3.0
-
-		# static delta files are under the `deltas` directory
-	*/
+	DownloadExtractVersionRepo(&ur.UpdateCommit, path)
 
 	if len(ur.OldCommits) > 0 {
-		// FIXME : need to deal with this
+		stagePath := filepath.Join(path, "staging")
+		err := os.MkdirAll(stagePath, os.FileMode(int(0755)))
+		if err != nil {
+			return stagePath, err
+		}
+		err := os.Chdir(stagePath)
+		if err != nil {
+			return stagePath, err
+		}
+
+		// If there are any old commits, we need to download them all to be merged
+		// into the update commit repo
+		//
+		// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
+		for _, commit := range ur.OldCommits {
+			DownloadExtractVersionRepo(&commit, filepath.Join(stagePath, commit.OSTreeCommit))
+			RepoPullLocalStaticDeltas(&ur.UpdateCommit, &commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
+		}
+
 	}
 
 	return path, nil
+}
+
+// DownloadAndExtractRepo
+//	Download and Extract the repo tarball to dest dir
+func DownloadExtractVersionRepo(c *Commit, dest string) error {
+	// ensure the destination directory exists and then chdir there
+	err := os.MkdirAll(dest, os.FileMode(int(0755)))
+	if err != nil {
+		return err
+	}
+	err := os.Chdir(dest)
+	if err != nil {
+		return err
+	}
+
+	// Save the tarball to the OSBuild Hash ID and then extract it
+	tarFileName := strings.Join([]string{commit.ImageBuildHash, "tar"}, ".")
+	resp, err := grab.Get(filepath.Join(dest, tarFileName), commit.ImageBuildTarURL)
+	if err != nil {
+		return err
+	}
+
+	tarFile, err := os.Open(filepath.Join(dest, tarFileName))
+	if err != nil {
+		return err
+	}
+	common.Untar(tarFile, filepath.Join(dest))
+	tarFile.Close()
+
+	err := os.Remove(filepath.Join(dest, tarFileName))
+	if err != nil {
+		return err
+	}
+
+	// FIXME: The repo path is hard coded because this is how it comes from
+	//		  osbuild composer but we might want to revisit this later
+	//
+	// commit the version metadata to the current ref
+	cmd := exec.Command("ostree", "--repo", "./repo", "commit", c.OSTreeRef, "--add-metadata-string", fmt.Sprint("version=%s.%s", c.BuildDate, c.BuildNumber))
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// RepoPullLocalStaticDeltas
+//	Pull local repo into the new update repo and compute static deltas
+//
+//  uprepo should be where the update commit lives, u is the update commit
+//  oldrepo should be where the old commit lives, o is the commit to be merged
+
+func RepoPullLocalStaticDeltas(u *Commit, o *Commit, uprepo string, oldrepo string) error {
+	err := os.Chdir(dest)
+	if err != nil {
+		return err
+	}
+
+	updateRevParse, err := RepoRevParse(uprepo, u.OSTreeRef)
+	oldRevParse, err := RepoRevParse(oldrepo, o.OSTreeRef)
+
+	// pull the local repo at the exact rev (which was HEAD of o.OSTreeRef)
+	cmd := exec.Command("ostree", "--repo", uprepo, "pull-local", oldrepo, oldRevParse)
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+
+	// generate static delta
+	cmd := exec.Command("ostree", "--repo", uprepo, "static-delta", "generate", "--from", oldRevParse, "--to", updateRevParse)
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
+	return nil
+
+}
+
+// Handle the RevParse separate since we need the stdout parsed
+func RepoRevParse(path string, ref string) (string, error) {
+	cmd := exec.Command("ostree", "rev-parse", "--repo", path, ref)
+
+	var res bytes.Buffer
+	cmd.Stdout = &res
+
+	err := cmd.Run()
+
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(res.String()), nil
 }

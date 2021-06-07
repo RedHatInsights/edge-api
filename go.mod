@@ -4,6 +4,7 @@ require (
 	github.com/RedHatInsights/platform-go-middlewares v0.3.0 // indirect
 	github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6 // indirect
 	github.com/aws/aws-sdk-go v1.38.51
+	github.com/cavaliercoder/grab v2.0.0+incompatible // indirect
 	github.com/coreos/go-etcd v2.0.0+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible
