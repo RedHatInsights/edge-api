@@ -6,7 +6,7 @@
 # <a name="intro">Getting Started</a>
 
 The **edge-api** project is an API server for fleet edge management capabilities. The API server will provide [Restful web services](https://www.redhat.com/en/topics/api/what-is-a-rest-api).
-This is a [Golang](https://golang.org/) project developed using Golang 1.14. *Make sure you have at least this version installed.*
+This is a [Golang](https://golang.org/) project developed using Golang 1.15. *Make sure you have at least this version installed.*
 
 ## <a name="archictecture">Project Architecture</a>
 
