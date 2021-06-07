@@ -20,7 +20,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/edge-api/pkg/repo"
 	"gorm.io/gorm"
 
 	"github.com/cavaliercoder/grab"
@@ -106,7 +105,7 @@ func Add(w http.ResponseWriter, r *http.Request) {
 
 	db.DB.Create(&update)
 
-	go RepoBuilder(&update, &r)
+	go RepoBuilder(update, r)
 }
 
 // GetAll update objects from the database for an account
@@ -170,15 +169,17 @@ Build an update repo with the set of commits all merged into a single repo
 with static deltas generated between them all
 */
 func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
-	ur.State = "BUILDING"
-	db.DB.Update(&ur)
+	var updaterec UpdateRecord
+	db.DB.First(&updaterec, ur.ID)
+	updaterec.State = "BUILDING"
+	db.DB.Save(&updaterec)
 
 	path := filepath.Join("/tmp/update/", strconv.FormatUint(uint64(ur.ID), 10))
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
 		return err
 	}
-	err := os.Chdir(path)
+	err = os.Chdir(path)
 	if err != nil {
 		return err
 	}
@@ -186,11 +187,11 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 
 	if len(ur.OldCommits) > 0 {
 		stagePath := filepath.Join(path, "staging")
-		err := os.MkdirAll(stagePath, os.FileMode(int(0755)))
+		err = os.MkdirAll(stagePath, os.FileMode(int(0755)))
 		if err != nil {
 			return err
 		}
-		err := os.Chdir(stagePath)
+		err = os.Chdir(stagePath)
 		if err != nil {
 			return err
 		}
@@ -206,33 +207,36 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 
 	}
 
-	err := os.RemoveAll(stagePath)
+	err = os.RemoveAll(stagePath)
 	if err != nil {
 		return err
 	}
 
 	cfg := config.Get()
-	var uploader repo.Uploader
-	uploader = &repo.FileUploader{
+	var uploader Uploader
+	uploader = &FileUploader{
 		BasePath: path,
 	}
 	if cfg.BucketName != "" {
-		uploader = repo.NewS3Uploader()
+		uploader = NewS3Uploader()
 	}
-	err := uploader.Upload(filepath.Join(path, "repo"), &r)
+	err = uploader.Upload(filepath.Join(path, "repo"), &r)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
 // DownloadAndExtractRepo
 //	Download and Extract the repo tarball to dest dir
-func DownloadExtractVersionRepo(c *Commit, dest string) error {
+func DownloadExtractVersionRepo(c *commits.Commit, dest string) error {
 	// ensure the destination directory exists and then chdir there
 	err := os.MkdirAll(dest, os.FileMode(int(0755)))
 	if err != nil {
 		return err
 	}
-	err := os.Chdir(dest)
+	err = os.Chdir(dest)
 	if err != nil {
 		return err
 	}
@@ -251,7 +255,7 @@ func DownloadExtractVersionRepo(c *Commit, dest string) error {
 	common.Untar(tarFile, filepath.Join(dest))
 	tarFile.Close()
 
-	err := os.Remove(filepath.Join(dest, tarFileName))
+	err = os.Remove(filepath.Join(dest, tarFileName))
 	if err != nil {
 		return err
 	}
@@ -261,7 +265,7 @@ func DownloadExtractVersionRepo(c *Commit, dest string) error {
 	//
 	// commit the version metadata to the current ref
 	cmd := exec.Command("ostree", "--repo", "./repo", "commit", c.OSTreeRef, "--add-metadata-string", fmt.Sprint("version=%s.%s", c.BuildDate, c.BuildNumber))
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		return err
 	}
@@ -275,25 +279,31 @@ func DownloadExtractVersionRepo(c *Commit, dest string) error {
 //  uprepo should be where the update commit lives, u is the update commit
 //  oldrepo should be where the old commit lives, o is the commit to be merged
 
-func RepoPullLocalStaticDeltas(u *Commit, o *Commit, uprepo string, oldrepo string) error {
+func RepoPullLocalStaticDeltas(u *commits.Commit, o *commits.Commit, uprepo string, oldrepo string) error {
 	err := os.Chdir(dest)
 	if err != nil {
 		return err
 	}
 
 	updateRevParse, err := RepoRevParse(uprepo, u.OSTreeRef)
+	if err != nil {
+		return err
+	}
 	oldRevParse, err := RepoRevParse(oldrepo, o.OSTreeRef)
+	if err != nil {
+		return err
+	}
 
 	// pull the local repo at the exact rev (which was HEAD of o.OSTreeRef)
 	cmd := exec.Command("ostree", "--repo", uprepo, "pull-local", oldrepo, oldRevParse)
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		return err
 	}
 
 	// generate static delta
 	cmd := exec.Command("ostree", "--repo", uprepo, "static-delta", "generate", "--from", oldRevParse, "--to", updateRevParse)
-	err := cmd.Run()
+	err = cmd.Run()
 	if err != nil {
 		return err
 	}
