@@ -36,6 +36,7 @@ type FileUploader struct {
 // UploadReopo uploads the repo to a backing object storage bucket
 // the repository is uploaded to
 //  bucket/$account/$name/
+// This is Basically a dummy function
 func (u *FileUploader) UploadRepo(w http.ResponseWriter, r *http.Request) {
 
 	name, _, err := getNameAndPrefix(r)
@@ -44,23 +45,6 @@ func (u *FileUploader) UploadRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	account, err := common.GetAccount(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	// FIXME: might experiment with doing this concurrently but I've read that
-	//		  that can get you rate limited by S3 pretty quickly so we'll mess
-	//		  with that later.
-	filepath.Walk(filepath.Join("/tmp", name), func(path string, info os.FileInfo, err error) error {
-		err = u.UploadFileToS3(path, filepath.Join(account, "/", string(name)))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return err
-		}
-		return nil
-	})
 }
 
 //NewS3Uploader creates a method to obtain a new S3 uploader

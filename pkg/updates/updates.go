@@ -16,9 +16,11 @@ import (
 
 	"github.com/go-chi/chi"
 
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/repo"
 	"gorm.io/gorm"
 
 	"github.com/cavaliercoder/grab"
@@ -104,12 +106,7 @@ func Add(w http.ResponseWriter, r *http.Request) {
 
 	db.DB.Create(&update)
 
-	// FIXME: this isn't right, need this to be async
-	path, err := RepoBuilder(&update)
-	if err != nil {
-		http.Error(w, "Failed to build update ostree repo", http.StatusInternalServerError)
-	}
-
+	go RepoBuilder(&update)
 }
 
 // GetAll update objects from the database for an account
@@ -172,18 +169,18 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *UpdateRecord {
 Build an update repo with the set of commits all merged into a single repo
 with static deltas generated between them all
 */
-func RepoBuilder(ur *UpdateRecord) (string, error) {
+func RepoBuilder(ur *UpdateRecord) error {
 	ur.State = "BUILDING"
 	db.DB.Update(&ur)
 
 	path := filepath.Join("/tmp/update/", strconv.FormatUint(uint64(ur.ID), 10))
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
-		return path, err
+		return err
 	}
 	err := os.Chdir(path)
 	if err != nil {
-		return path, err
+		return err
 	}
 	DownloadExtractVersionRepo(&ur.UpdateCommit, path)
 
@@ -191,11 +188,11 @@ func RepoBuilder(ur *UpdateRecord) (string, error) {
 		stagePath := filepath.Join(path, "staging")
 		err := os.MkdirAll(stagePath, os.FileMode(int(0755)))
 		if err != nil {
-			return stagePath, err
+			return err
 		}
 		err := os.Chdir(stagePath)
 		if err != nil {
-			return stagePath, err
+			return err
 		}
 
 		// If there are any old commits, we need to download them all to be merged
@@ -209,7 +206,20 @@ func RepoBuilder(ur *UpdateRecord) (string, error) {
 
 	}
 
-	return path, nil
+	err := os.RemoveAll(stagePath)
+	if err != nil {
+		return err
+	}
+
+	cfg := config.Get()
+	uploader = &repo.FileUploader{
+		BasePath: path,
+	}
+	if cfg.BucketName != "" {
+		uploader = repo.NewS3Uploader()
+	}
+
+	return nil
 }
 
 // DownloadAndExtractRepo
