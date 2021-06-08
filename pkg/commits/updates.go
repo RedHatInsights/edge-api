@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -36,8 +37,8 @@ type UpdateRecord struct {
 	gorm.Model
 	UpdateCommitID uint
 	Account        string
-	OldCommitIDs   []uint   `gorm:"type:uint[]"`
-	InventoryHosts []string `gorm:"type:text[]"`
+	OldCommitIDs   []uint `gorm:"type:uint[]"`
+	InventoryHosts string
 	State          string
 }
 
@@ -54,6 +55,14 @@ func updateFromReadCloser(rc io.ReadCloser) (*UpdateRecord, error) {
 	defer rc.Close()
 	var update UpdateRecord
 	err := json.NewDecoder(rc).Decode(&update)
+
+	if !(update.UpdateCommitID > 0) {
+		return nil, errors.New("Invalid UpdateCommitID provided")
+	}
+	if update.InventoryHosts == "" {
+		return nil, errors.New("Inventory Hosts to update required")
+	}
+
 	return &update, err
 }
 
@@ -104,6 +113,31 @@ func UpdatesAdd(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	update.Account, err = common.GetAccount(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Check to make sure we're not duplicating the job
+	// FIXME - this didn't work and I don't have time to debug right now
+	/*
+		var dupeRecord UpdateRecord
+		queryDuplicate := map[string]interface{}{
+			"Account":        update.Account,
+			"UpdateCommitID": update.UpdateCommitID,
+			"InventoryHosts": update.InventoryHosts,
+			"OldCommitIDs":   update.OldCommitIDs,
+		}
+		result := db.DB.Where(queryDuplicate).Find(&dupeRecord)
+		if result.Error == nil {
+			if dupeRecord.UpdateCommitID != 0 {
+				http.Error(w, "Can not submit duplicate update job", http.StatusInternalServerError)
+				return
+			}
+		}
+	*/
 
 	db.DB.Create(&update)
 
@@ -239,6 +273,11 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 	if err != nil {
 		return err
 	}
+
+	var updateRecDone UpdateRecord
+	db.DB.First(&updateRecDone, ur.ID)
+	updateRecDone.State = "DONE"
+	db.DB.Save(&updateRecDone)
 
 	return nil
 }
