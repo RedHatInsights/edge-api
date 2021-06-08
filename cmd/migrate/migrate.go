@@ -27,7 +27,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	err := db.DB.AutoMigrate(&updates.Update{})
+	err = db.DB.AutoMigrate(&updates.UpdateRecord{})
 	if err != nil {
 		panic(err)
 	}
