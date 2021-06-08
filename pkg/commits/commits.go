@@ -34,7 +34,6 @@ type Commit struct {
 	BlueprintToml        string
 	NEVRAManifest        string
 	Arch                 string
-	Updates              UpdateRecord `gorm:"many2many:update_commits;"`
 }
 
 func commitFromReadCloser(rc io.ReadCloser) (*Commit, error) {

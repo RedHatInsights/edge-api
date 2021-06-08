@@ -34,11 +34,20 @@ import (
 // Server (pkg/repo/server.go).
 type UpdateRecord struct {
 	gorm.Model
-	UpdateCommitID int
-	UpdateCommit   *Commit
-	OldCommits     []*Commit `gorm:"many2many:update_commits;"`
-	InventoryHosts []string  `gorm:"type:text[]"`
+	UpdateCommitID uint
+	Account        string
+	OldCommitIDs   []uint   `gorm:"type:uint[]"`
+	InventoryHosts []string `gorm:"type:text[]"`
 	State          string
+}
+
+func getCommitFromDB(commitID uint) (*Commit, error) {
+	var commit Commit
+	result := db.DB.First(&commit, commitID)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &commit, nil
 }
 
 func updateFromReadCloser(rc io.ReadCloser) (*UpdateRecord, error) {
@@ -167,8 +176,13 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 	updaterec.State = "BUILDING"
 	db.DB.Save(&updaterec)
 
+	updateCommit, err := getCommitFromDB(ur.UpdateCommitID)
+	if err != nil {
+		return err
+	}
+
 	path := filepath.Join("/tmp/update/", strconv.FormatUint(uint64(ur.ID), 10))
-	err := os.MkdirAll(path, os.FileMode(int(0755)))
+	err = os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
 		return err
 	}
@@ -176,9 +190,9 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	DownloadExtractVersionRepo(ur.UpdateCommit, path)
+	DownloadExtractVersionRepo(updateCommit, path)
 
-	if len(ur.OldCommits) > 0 {
+	if len(ur.OldCommitIDs) > 0 {
 		stagePath := filepath.Join(path, "staging")
 		err = os.MkdirAll(stagePath, os.FileMode(int(0755)))
 		if err != nil {
@@ -193,9 +207,13 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 		// into the update commit repo
 		//
 		// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
-		for _, commit := range ur.OldCommits {
+		for _, commitID := range ur.OldCommitIDs {
+			commit, err := getCommitFromDB(commitID)
+			if err != nil {
+				return err
+			}
 			DownloadExtractVersionRepo(commit, filepath.Join(stagePath, commit.OSTreeCommit))
-			RepoPullLocalStaticDeltas(ur.UpdateCommit, commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
+			RepoPullLocalStaticDeltas(updateCommit, commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
 		}
 
 		// Once all the old commits have been pulled into the update commit's repo
