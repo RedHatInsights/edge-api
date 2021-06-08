@@ -1,4 +1,4 @@
-package updates
+package commits
 
 import (
 	"bytes"
@@ -17,7 +17,6 @@ import (
 	"github.com/go-chi/chi"
 
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"gorm.io/gorm"
@@ -35,8 +34,9 @@ import (
 // Server (pkg/repo/server.go).
 type UpdateRecord struct {
 	gorm.Model
-	UpdateCommit   *commits.Commit
-	OldCommits     []*commits.Commit
+	UpdateCommitID int
+	UpdateCommit   *Commit
+	OldCommits     []*Commit `gorm:"many2many:update_commits;"`
 	InventoryHosts []string
 	State          string
 }
@@ -49,22 +49,15 @@ func updateFromReadCloser(rc io.ReadCloser) (*UpdateRecord, error) {
 }
 
 // MakeRouter adds support for operations on commits
-func MakeRouter(sub chi.Router) {
-	sub.Post("/", Add)
-	sub.Get("/", GetAll)
+func UpdatesMakeRouter(sub chi.Router) {
+	sub.Post("/", UpdatesAdd)
+	sub.Get("/", UpdatesGetAll)
 	sub.Route("/{updateID}", func(r chi.Router) {
 		r.Use(UpdateCtx)
-		r.Get("/", GetByID)
-		r.Put("/", Update)
+		r.Get("/", UpdatesGetByID)
+		r.Put("/", UpdatesUpdate)
 	})
 }
-
-// This provides type safety in the context object for our "update" key.  We
-// _could_ use a string but we shouldn't just in case someone else decides that
-// "update" would make the perfect key in the context object.  See the
-// documentation: https://golang.org/pkg/context/#WithValue for further
-// rationale.
-type key int
 
 const updateKey key = 0
 
@@ -95,7 +88,7 @@ func UpdateCtx(next http.Handler) http.Handler {
 }
 
 // Add an object to the database for an account
-func Add(w http.ResponseWriter, r *http.Request) {
+func UpdatesAdd(w http.ResponseWriter, r *http.Request) {
 
 	update, err := updateFromReadCloser(r.Body)
 	if err != nil {
@@ -109,7 +102,7 @@ func Add(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetAll update objects from the database for an account
-func GetAll(w http.ResponseWriter, r *http.Request) {
+func UpdatesGetAll(w http.ResponseWriter, r *http.Request) {
 	var updates []UpdateRecord
 	account, err := common.GetAccount(r)
 	if err != nil {
@@ -127,14 +120,14 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetByID obtains an update from the database for an account
-func GetByID(w http.ResponseWriter, r *http.Request) {
+func UpdatesGetByID(w http.ResponseWriter, r *http.Request) {
 	if update := getUpdate(w, r); update != nil {
 		json.NewEncoder(w).Encode(update)
 	}
 }
 
 // Update a update object in the database for an an account
-func Update(w http.ResponseWriter, r *http.Request) {
+func UpdatesUpdate(w http.ResponseWriter, r *http.Request) {
 	update := getUpdate(w, r)
 	if update == nil {
 		return
@@ -234,7 +227,7 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 
 // DownloadAndExtractRepo
 //	Download and Extract the repo tarball to dest dir
-func DownloadExtractVersionRepo(c *commits.Commit, dest string) error {
+func DownloadExtractVersionRepo(c *Commit, dest string) error {
 	// ensure the destination directory exists and then chdir there
 	err := os.MkdirAll(dest, os.FileMode(int(0755)))
 	if err != nil {
@@ -268,7 +261,7 @@ func DownloadExtractVersionRepo(c *commits.Commit, dest string) error {
 	//		  osbuild composer but we might want to revisit this later
 	//
 	// commit the version metadata to the current ref
-	cmd := exec.Command("ostree", "--repo", "./repo", "commit", c.OSTreeRef, "--add-metadata-string", fmt.Sprint("version=%s.%s", c.BuildDate, c.BuildNumber))
+	cmd := exec.Command("ostree", "--repo", "./repo", "commit", c.OSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber))
 	err = cmd.Run()
 	if err != nil {
 		return err
@@ -283,7 +276,7 @@ func DownloadExtractVersionRepo(c *commits.Commit, dest string) error {
 //  uprepo should be where the update commit lives, u is the update commit
 //  oldrepo should be where the old commit lives, o is the commit to be merged
 
-func RepoPullLocalStaticDeltas(u *commits.Commit, o *commits.Commit, uprepo string, oldrepo string) error {
+func RepoPullLocalStaticDeltas(u *Commit, o *Commit, uprepo string, oldrepo string) error {
 	err := os.Chdir(uprepo)
 	if err != nil {
 		return err

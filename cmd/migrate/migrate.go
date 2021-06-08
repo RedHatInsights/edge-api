@@ -5,7 +5,6 @@ import (
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/edge-api/pkg/updates"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -27,7 +26,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	err = db.DB.AutoMigrate(&updates.UpdateRecord{})
+	err = db.DB.AutoMigrate(&commits.UpdateRecord{})
 	if err != nil {
 		panic(err)
 	}

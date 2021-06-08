@@ -13,7 +13,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/repo"
-	"github.com/redhatinsights/edge-api/pkg/updates"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -61,7 +60,6 @@ func main() {
 	r.Route("/api/edge/v1", func(s chi.Router) {
 		s.Route("/commits", commits.MakeRouter)
 		s.Route("/repos", repo.MakeRouter(server))
-		s.Route("/updates", updates.MakeRouter)
 	})
 
 	mr := chi.NewRouter()

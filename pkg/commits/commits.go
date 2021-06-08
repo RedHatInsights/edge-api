@@ -34,6 +34,7 @@ type Commit struct {
 	BlueprintToml        string
 	NEVRAManifest        string
 	Arch                 string
+	Updates              UpdateRecord `gorm:"many2many:update_commits;"`
 }
 
 func commitFromReadCloser(rc io.ReadCloser) (*Commit, error) {
@@ -54,6 +55,7 @@ func MakeRouter(sub chi.Router) {
 		r.Put("/", Update)
 		r.Patch("/", Patch)
 	})
+	sub.Route("/updates", UpdatesMakeRouter)
 }
 
 // This provides type safety in the context object for our "commit" key.  We
