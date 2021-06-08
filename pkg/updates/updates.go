@@ -183,7 +183,7 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	DownloadExtractVersionRepo(&ur.UpdateCommit, path)
+	DownloadExtractVersionRepo(ur.UpdateCommit, path)
 
 	if len(ur.OldCommits) > 0 {
 		stagePath := filepath.Join(path, "staging")
@@ -201,26 +201,29 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 		//
 		// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
 		for _, commit := range ur.OldCommits {
-			DownloadExtractVersionRepo(&commit, filepath.Join(stagePath, commit.OSTreeCommit))
-			RepoPullLocalStaticDeltas(&ur.UpdateCommit, &commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
+			DownloadExtractVersionRepo(commit, filepath.Join(stagePath, commit.OSTreeCommit))
+			RepoPullLocalStaticDeltas(ur.UpdateCommit, commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
 		}
 
-	}
+		// Once all the old commits have been pulled into the update commit's repo
+		// and has static deltas generated, then we don't need the old commits
+		// anymore.
+		err = os.RemoveAll(stagePath)
+		if err != nil {
+			return err
+		}
 
-	err = os.RemoveAll(stagePath)
-	if err != nil {
-		return err
 	}
 
 	cfg := config.Get()
 	var uploader Uploader
 	uploader = &FileUploader{
-		BasePath: path,
+		BaseDir: path,
 	}
 	if cfg.BucketName != "" {
 		uploader = NewS3Uploader()
 	}
-	err = uploader.Upload(filepath.Join(path, "repo"), &r)
+	_, err = uploader.UploadRepo(filepath.Join(path, "repo"), r)
 	if err != nil {
 		return err
 	}
@@ -242,8 +245,8 @@ func DownloadExtractVersionRepo(c *commits.Commit, dest string) error {
 	}
 
 	// Save the tarball to the OSBuild Hash ID and then extract it
-	tarFileName := strings.Join([]string{commit.ImageBuildHash, "tar"}, ".")
-	resp, err := grab.Get(filepath.Join(dest, tarFileName), commit.ImageBuildTarURL)
+	tarFileName := strings.Join([]string{c.ImageBuildHash, "tar"}, ".")
+	_, err = grab.Get(filepath.Join(dest, tarFileName), c.ImageBuildTarURL)
 	if err != nil {
 		return err
 	}

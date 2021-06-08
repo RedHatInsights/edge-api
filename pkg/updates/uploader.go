@@ -16,7 +16,7 @@ import (
 
 //uploader is an interface for uploading repository
 type Uploader interface {
-	UploadRepo(src string, r *http.Request) (string, err)
+	UploadRepo(src string, r *http.Request) (string, error)
 }
 
 //S3Uploader defines the mechanism to upload data to S3
@@ -35,7 +35,7 @@ type FileUploader struct {
 
 // This is Basically a dummy function that returns the src, but allows offline
 // development without S3 and satisfies the interface
-func (u *FileUploader) UploadRepo(src string, r *http.Request) (string, err) {
+func (u *FileUploader) UploadRepo(src string, r *http.Request) (string, error) {
 	return src, nil
 }
 
@@ -55,7 +55,7 @@ func NewS3Uploader() *S3Uploader {
 // UploadReopo uploads the repo to a backing object storage bucket
 // the repository is uploaded to
 //  bucket/$account/$name/
-func (u *S3Uploader) UploadRepo(src string, r *http.Request) (string, err) {
+func (u *S3Uploader) UploadRepo(src string, r *http.Request) (string, error) {
 
 	account, err := common.GetAccount(r)
 	if err != nil {
