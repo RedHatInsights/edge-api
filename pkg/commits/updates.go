@@ -37,7 +37,7 @@ type UpdateRecord struct {
 	UpdateCommitID int
 	UpdateCommit   *Commit
 	OldCommits     []*Commit `gorm:"many2many:update_commits;"`
-	InventoryHosts []string
+	InventoryHosts []string  `gorm:"type:text[]"`
 	State          string
 }
 
