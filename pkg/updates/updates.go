@@ -223,7 +223,8 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 	if cfg.BucketName != "" {
 		uploader = NewS3Uploader()
 	}
-	_, err = uploader.UploadRepo(filepath.Join(path, "repo"), r)
+	// FIXME: Need to actually do something with the return string for Server
+	_, err = uploader.UploadRepo(ur.ID, filepath.Join(path, "repo"), r)
 	if err != nil {
 		return err
 	}
@@ -283,7 +284,7 @@ func DownloadExtractVersionRepo(c *commits.Commit, dest string) error {
 //  oldrepo should be where the old commit lives, o is the commit to be merged
 
 func RepoPullLocalStaticDeltas(u *commits.Commit, o *commits.Commit, uprepo string, oldrepo string) error {
-	err := os.Chdir(dest)
+	err := os.Chdir(uprepo)
 	if err != nil {
 		return err
 	}
@@ -305,7 +306,7 @@ func RepoPullLocalStaticDeltas(u *commits.Commit, o *commits.Commit, uprepo stri
 	}
 
 	// generate static delta
-	cmd := exec.Command("ostree", "--repo", uprepo, "static-delta", "generate", "--from", oldRevParse, "--to", updateRevParse)
+	cmd = exec.Command("ostree", "--repo", uprepo, "static-delta", "generate", "--from", oldRevParse, "--to", updateRevParse)
 	err = cmd.Run()
 	if err != nil {
 		return err

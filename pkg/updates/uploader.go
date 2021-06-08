@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -16,7 +17,7 @@ import (
 
 //uploader is an interface for uploading repository
 type Uploader interface {
-	UploadRepo(src string, r *http.Request) (string, error)
+	UploadRepo(repoID uint, src string, r *http.Request) (string, error)
 }
 
 //S3Uploader defines the mechanism to upload data to S3
@@ -35,7 +36,7 @@ type FileUploader struct {
 
 // This is Basically a dummy function that returns the src, but allows offline
 // development without S3 and satisfies the interface
-func (u *FileUploader) UploadRepo(src string, r *http.Request) (string, error) {
+func (u *FileUploader) UploadRepo(repoID uint, src string, r *http.Request) (string, error) {
 	return src, nil
 }
 
@@ -55,23 +56,26 @@ func NewS3Uploader() *S3Uploader {
 // UploadReopo uploads the repo to a backing object storage bucket
 // the repository is uploaded to
 //  bucket/$account/$name/
-func (u *S3Uploader) UploadRepo(src string, r *http.Request) (string, error) {
+func (u *S3Uploader) UploadRepo(repoID uint, src string, r *http.Request) (string, error) {
 
 	account, err := common.GetAccount(r)
 	if err != nil {
-		return err
+		return "", err
 	}
+	s3path := fmt.Sprintf("s3://%s/%s/%d", u.Bucket, account, repoID)
 
 	// FIXME: might experiment with doing this concurrently but I've read that
 	//		  that can get you rate limited by S3 pretty quickly so we'll mess
 	//		  with that later.
-	filepath.Walk(filepath.Join("/tmp", name), func(path string, info os.FileInfo, err error) error {
-		err = u.UploadFileToS3(path, filepath.Join(account, "/", string(name)))
+	filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		err = u.UploadFileToS3(path, filepath.Join(account, "/", strconv.FormatUint(uint64(repoID), 10)))
 		if err != nil {
 			return err
 		}
 		return nil
 	})
+
+	return s3path, nil
 }
 
 // UploadFileToS3 takes a FILename path as a string and then uploads that to
