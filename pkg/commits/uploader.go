@@ -72,6 +72,7 @@ func (u *S3Uploader) UploadRepo(repoID uint, src string, r *http.Request) (strin
 	//		  that can get you rate limited by S3 pretty quickly so we'll mess
 	//		  with that later.
 	filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		log.Info(fmt.Sprintf("S3Uploader::UploadRepo::path: %#v", path))
 		err = u.UploadFileToS3(path, filepath.Join(account, "/", strconv.FormatUint(uint64(repoID), 10)))
 		if err != nil {
 			return err
@@ -85,16 +86,20 @@ func (u *S3Uploader) UploadRepo(repoID uint, src string, r *http.Request) (strin
 // UploadFileToS3 takes a FILename path as a string and then uploads that to
 // the supplied location in s3
 func (u *S3Uploader) UploadFileToS3(fname string, S3path string) error {
+	log.Info(fmt.Sprintf("S3Uploader::UploadFileToS3::fname: %#v", fname))
+	log.Info(fmt.Sprintf("S3Uploader::UploadFileToS3::S3path: %#v", S3path))
 	f, err := os.Open(fname)
 	if err != nil {
 		return fmt.Errorf("failed to open file %q, %v", fname, err)
 	}
+	defer f.Close()
 	// Upload the file to S3.
-	_, err = u.S3ManagerUploader.Upload(&s3manager.UploadInput{
+	result, err := u.S3ManagerUploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(u.Bucket),
 		Key:    aws.String(S3path),
 		Body:   f,
 	})
+	log.Info(fmt.Sprintf("S3Uploader::UploadRepo::result: %#v", result))
 	if err != nil {
 		return err
 	}
