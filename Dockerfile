@@ -1,7 +1,7 @@
 ############################
 # STEP 1 build executable binary
 ############################
-FROM registry.redhat.io/rhel8/go-toolset:latest AS builder
+FROM registry.redhat.io/rhel8/go-toolset:1.15 AS builder
 WORKDIR $GOPATH/src/mypackage/myapp/
 COPY . .
 # Use go mod

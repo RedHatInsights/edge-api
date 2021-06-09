@@ -6,7 +6,7 @@
 # <a name="intro">Getting Started</a>
 
 The **edge-api** project is an API server for fleet edge management capabilities. The API server will provide [Restful web services](https://www.redhat.com/en/topics/api/what-is-a-rest-api).
-This is a [Golang](https://golang.org/) project developed using Golang 1.14. *Make sure you have at least this version installed.*
+This is a [Golang](https://golang.org/) project developed using Golang 1.15. *Make sure you have at least this version installed.*
 
 ## <a name="archictecture">Project Architecture</a>
 
@@ -236,3 +236,16 @@ Golang also provides a unit test infrastructure `test`. Run unit tests with the 
 ```
 make test
 ```
+
+## Generating API docs
+
+[go-swagger](https://github.com/go-swagger) is a tool that, amongst other things, parses comments in the code to generate a file in the [Open API 2.0 spec](https://github.com/OAI/OpenAPI-Specification/blob/main/versions/2.0.md).
+
+To generate the API docs, you need to [install go-swagger](https://goswagger.io/install.html). Then you can use the following command:
+```
+make generate-docs
+```
+
+The [go-swagger docs](https://goswagger.io/) have several examples on how to annotate the code and [this example](https://github.com/go-swagger/go-swagger/tree/master/fixtures/goparsing/petstore) is useful when it comes to understanding all the possiblities.
+
+The API will serve the docs under a `/docs` endpoint.
