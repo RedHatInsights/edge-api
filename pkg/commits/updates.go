@@ -280,7 +280,11 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 		uploader = NewS3Uploader()
 	}
 	// FIXME: Need to actually do something with the return string for Server
-	repoURL, err := uploader.UploadRepo(ur.ID, filepath.Join(path, "repo"), r)
+	account, err := common.GetAccount(r)
+	if err != nil {
+		return err
+	}
+	repoURL, err := uploader.UploadRepo(ur.ID, filepath.Join(path, "repo"), account)
 	if err != nil {
 		return err
 	}

@@ -2,7 +2,6 @@ package commits
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -12,13 +11,12 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/common"
 	log "github.com/sirupsen/logrus"
 )
 
 //uploader is an interface for uploading repository
 type Uploader interface {
-	UploadRepo(repoID uint, src string, r *http.Request) (string, error)
+	UploadRepo(repoID uint, src string, account string) (string, error)
 }
 
 //S3Uploader defines the mechanism to upload data to S3
@@ -37,16 +35,21 @@ type FileUploader struct {
 
 // This is Basically a dummy function that returns the src, but allows offline
 // development without S3 and satisfies the interface
-func (u *FileUploader) UploadRepo(repoID uint, src string, r *http.Request) (string, error) {
+func (u *FileUploader) UploadRepo(repoID uint, src string, account string) (string, error) {
 	return src, nil
 }
 
 //NewS3Uploader creates a method to obtain a new S3 uploader
 func NewS3Uploader() *S3Uploader {
 	cfg := config.Get()
-	sess := session.Must(session.NewSession())
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		// Force enable Shared Config support
+		SharedConfigState: session.SharedConfigEnable,
+	}))
 	client := s3.New(sess)
-	uploader := s3manager.NewUploader(sess)
+	uploader := s3manager.NewUploader(sess, func(u *s3manager.Uploader) {
+		u.Concurrency = 1
+	})
 	return &S3Uploader{
 		Client:            client,
 		S3ManagerUploader: uploader,
@@ -57,24 +60,27 @@ func NewS3Uploader() *S3Uploader {
 // UploadReopo uploads the repo to a backing object storage bucket
 // the repository is uploaded to
 //  bucket/$account/$name/
-func (u *S3Uploader) UploadRepo(repoID uint, src string, r *http.Request) (string, error) {
+func (u *S3Uploader) UploadRepo(repoID uint, src string, account string) (string, error) {
 
 	log.Info(fmt.Sprintf("S3Uploader::UploadRepo::repoID: %#v", repoID))
 	log.Info(fmt.Sprintf("S3Uploader::UploadRepo::src: %#v", src))
-	account, err := common.GetAccount(r)
 	log.Info(fmt.Sprintf("S3Uploader::UploadRepo::account: %#v", account))
-	if err != nil {
-		return "", err
-	}
 	s3path := fmt.Sprintf("s3://%s/%s/%d", u.Bucket, account, repoID)
 
 	// FIXME: might experiment with doing this concurrently but I've read that
 	//		  that can get you rate limited by S3 pretty quickly so we'll mess
 	//		  with that later.
 	filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			log.Infof("incoming error!: %#v", err)
+		}
 		log.Info(fmt.Sprintf("S3Uploader::UploadRepo::path: %#v", path))
+		if info.IsDir() {
+			return nil
+		}
 		err = u.UploadFileToS3(path, filepath.Join(account, "/", strconv.FormatUint(uint64(repoID), 10)))
 		if err != nil {
+			log.Infof("error: %w", err)
 			return err
 		}
 		return nil
@@ -94,11 +100,12 @@ func (u *S3Uploader) UploadFileToS3(fname string, S3path string) error {
 	}
 	defer f.Close()
 	// Upload the file to S3.
-	result, err := u.S3ManagerUploader.Upload(&s3manager.UploadInput{
+	result, err := u.Client.PutObject(&s3.PutObjectInput{
 		Bucket: aws.String(u.Bucket),
 		Key:    aws.String(S3path),
 		Body:   f,
 	})
+
 	log.Info(fmt.Sprintf("S3Uploader::UploadRepo::result: %#v", result))
 	if err != nil {
 		return err
