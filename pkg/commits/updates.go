@@ -23,6 +23,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/cavaliercoder/grab"
+	log "github.com/sirupsen/logrus"
 )
 
 // Update reporesents the combination of an OSTree commit and a set of Inventory
@@ -37,9 +38,10 @@ type UpdateRecord struct {
 	gorm.Model
 	UpdateCommitID uint
 	Account        string
-	OldCommitIDs   []uint `gorm:"type:uint[]"`
+	OldCommitIDs   string
 	InventoryHosts string
 	State          string
+	UpdateRepoURL  string
 }
 
 func getCommitFromDB(commitID uint) (*Commit, error) {
@@ -55,6 +57,9 @@ func updateFromReadCloser(rc io.ReadCloser) (*UpdateRecord, error) {
 	defer rc.Close()
 	var update UpdateRecord
 	err := json.NewDecoder(rc).Decode(&update)
+
+	log.Info(fmt.Sprintf("updateFromReadCloser::update: %#v", update))
+	log.Info(fmt.Sprintf("updateFromReadCloser::update.UpdateCommitID: %d", update.UpdateCommitID))
 
 	if !(update.UpdateCommitID > 0) {
 		return nil, errors.New("Invalid UpdateCommitID provided")
@@ -214,8 +219,10 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 	if err != nil {
 		return err
 	}
+	log.Info(fmt.Sprintf("RepoBuilder::updateCommit: %#v", updateCommit))
 
 	path := filepath.Join("/tmp/update/", strconv.FormatUint(uint64(ur.ID), 10))
+	log.Info(fmt.Sprintf("RepoBuilder::path: %#v", path))
 	err = os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
 		return err
@@ -241,8 +248,12 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 		// into the update commit repo
 		//
 		// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
-		for _, commitID := range ur.OldCommitIDs {
-			commit, err := getCommitFromDB(commitID)
+		for _, commitID := range strings.Split(ur.OldCommitIDs, ",") {
+			cID_uint, err := strconv.ParseUint(commitID, 10, 64)
+			if err != nil {
+				return err
+			}
+			commit, err := getCommitFromDB(uint(cID_uint))
 			if err != nil {
 				return err
 			}
@@ -269,7 +280,7 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 		uploader = NewS3Uploader()
 	}
 	// FIXME: Need to actually do something with the return string for Server
-	_, err = uploader.UploadRepo(ur.ID, filepath.Join(path, "repo"), r)
+	repoURL, err := uploader.UploadRepo(ur.ID, filepath.Join(path, "repo"), r)
 	if err != nil {
 		return err
 	}
@@ -277,6 +288,7 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 	var updateRecDone UpdateRecord
 	db.DB.First(&updateRecDone, ur.ID)
 	updateRecDone.State = "DONE"
+	updateRecDone.UpdateRepoURL = repoURL
 	db.DB.Save(&updateRecDone)
 
 	return nil
@@ -286,6 +298,7 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 //	Download and Extract the repo tarball to dest dir
 func DownloadExtractVersionRepo(c *Commit, dest string) error {
 	// ensure the destination directory exists and then chdir there
+	log.Info(fmt.Sprintf("DownloadExtractVersionRepo::dest: %#v", dest))
 	err := os.MkdirAll(dest, os.FileMode(int(0755)))
 	if err != nil {
 		return err
@@ -297,6 +310,7 @@ func DownloadExtractVersionRepo(c *Commit, dest string) error {
 
 	// Save the tarball to the OSBuild Hash ID and then extract it
 	tarFileName := strings.Join([]string{c.ImageBuildHash, "tar"}, ".")
+	log.Info(fmt.Sprintf("DownloadExtractVersionRepo::tarFileName: %#v", tarFileName))
 	_, err = grab.Get(filepath.Join(dest, tarFileName), c.ImageBuildTarURL)
 	if err != nil {
 		return err

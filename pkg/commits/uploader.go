@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/common"
+	log "github.com/sirupsen/logrus"
 )
 
 //uploader is an interface for uploading repository
@@ -58,7 +59,10 @@ func NewS3Uploader() *S3Uploader {
 //  bucket/$account/$name/
 func (u *S3Uploader) UploadRepo(repoID uint, src string, r *http.Request) (string, error) {
 
+	log.Info(fmt.Sprintf("S3Uploader::UploadRepo::repoID: %#v", repoID))
+	log.Info(fmt.Sprintf("S3Uploader::UploadRepo::src: %#v", src))
 	account, err := common.GetAccount(r)
+	log.Info(fmt.Sprintf("S3Uploader::UploadRepo::account: %#v", account))
 	if err != nil {
 		return "", err
 	}
