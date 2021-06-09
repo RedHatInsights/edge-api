@@ -27,6 +27,7 @@ func TestPatch(t *testing.T) {
 
 func TestGetAllEmpty(t *testing.T) {
 	config.Init()
+	config.Get().Debug = true
 	db.InitDB()
 	err := db.DB.AutoMigrate(Commit{})
 	if err != nil {
@@ -70,9 +71,9 @@ func TestGetAll(t *testing.T) {
 		GetAll(response, request)
 		got := response.Body.String()
 		if !strings.Contains(got, "0000000") {
+			db.DB.Delete(&cmt)
 			t.Errorf("got %q", got)
 		}
 	})
 	db.DB.Delete(&cmt)
-
 }
