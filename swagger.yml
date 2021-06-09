@@ -1,12 +1,51 @@
 basePath: /
 consumes:
 - application/json
-host: localhost
+definitions:
+  image:
+    properties:
+      Description:
+        type: string
+      OutputType:
+        type: string
+      Packages:
+        items:
+          type: string
+        type: array
+      ReleaseName:
+        type: string
+      Status:
+        type: string
+    title: An Image is what generates a OSTree Commit.
+    type: object
+    x-go-name: Image
+    x-go-package: github.com/redhatinsights/edge-api/pkg/images
+host: localhost:3000
 info:
   description: An API server for fleet edge management capabilities.
   title: Edge API
   version: 0.0.1
-paths: {}
+paths:
+  /images:
+    post:
+      description: It is used to create a new image on the hosted image builder.
+      operationId: createImage
+      parameters:
+      - description: The image to create.
+        in: body
+        name: image
+        required: true
+        schema:
+          $ref: '#/definitions/image'
+        x-go-name: Image
+      responses:
+        "200":
+          description: image
+          schema:
+            $ref: '#/definitions/image'
+      summary: Creates an image on hosted image builder.
+      tags:
+      - image
 produces:
 - application/json
 schemes:

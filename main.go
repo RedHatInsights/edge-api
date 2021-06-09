@@ -3,7 +3,7 @@
 //  An API server for fleet edge management capabilities.
 //
 //     Schemes: http, https
-//     Host: localhost
+//     Host: localhost:3000
 //     BasePath: /
 //     Version: 0.0.1
 //
@@ -29,6 +29,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/images"
 	"github.com/redhatinsights/edge-api/pkg/repo"
 
 	"github.com/go-chi/chi"
@@ -91,6 +92,7 @@ func main() {
 	r.Route("/api/edge/v1", func(s chi.Router) {
 		s.Route("/commits", commits.MakeRouter)
 		s.Route("/repos", repo.MakeRouter(server))
+		s.Route("/images", images.MakeRouter)
 	})
 
 	mr := chi.NewRouter()
