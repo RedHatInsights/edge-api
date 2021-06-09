@@ -82,4 +82,7 @@ restart-app:
 	sleep 5
 	$(MAKE) scale-up NAMESPACE=$(NAMESPACE)
 
+generate-docs:
+	swagger generate spec -o ./swagger.yml
+
 .PHONY: help build
