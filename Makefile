@@ -85,4 +85,7 @@ restart-app:
 generate-docs:
 	swagger generate spec -o ./swagger.yml
 
+validate-swagger:
+	swagger validate ./swagger.yml
+
 .PHONY: help build
