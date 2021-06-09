@@ -70,15 +70,15 @@ func main() {
 		middleware.Logger,
 		setupDocsMiddleware,
 	)
-	r.Get("/swagger.yml", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./swagger.yml")
-	})
 
 	if cfg.Auth {
 		r.Use(identity.EnforceIdentity)
 	}
 
 	r.Get("/", common.StatusOK)
+	r.Get("/swagger.yml", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./swagger.yml")
+	})
 
 	var server repo.Server
 	server = &repo.FileServer{
