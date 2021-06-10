@@ -26,8 +26,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var UPDATE_TMPPATH = "/tmp/updates/"
-
 // Update reporesents the combination of an OSTree commit and a set of Inventory
 // hosts that need to have the commit deployed to them
 //
@@ -212,6 +210,8 @@ Build an update repo with the set of commits all merged into a single repo
 with static deltas generated between them all
 */
 func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
+	cfg := config.Get()
+
 	var updaterec UpdateRecord
 	db.DB.First(&updaterec, ur.ID)
 	updaterec.State = "BUILDING"
@@ -223,7 +223,7 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 	}
 	log.Debugf("RepoBuilder::updateCommit: %#v", updateCommit)
 
-	path := filepath.Join(UPDATE_TMPPATH, strconv.FormatUint(uint64(ur.ID), 10))
+	path := filepath.Join(cfg.UpdateTempPath, strconv.FormatUint(uint64(ur.ID), 10))
 	log.Debugf("RepoBuilder::path: %#v", path)
 	err = os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
@@ -273,7 +273,6 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 
 	}
 
-	cfg := config.Get()
 	var uploader Uploader
 	uploader = &FileUploader{
 		BaseDir: path,
@@ -287,7 +286,7 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 		return err
 	}
 
-	// NOTE: This relies on the file path being UPDATE_TMPPATH/UpdateRecord.ID
+	// NOTE: This relies on the file path being cfg.UpdateTempPath/UpdateRecord.ID
 	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), account)
 	if err != nil {
 		return err

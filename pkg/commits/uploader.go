@@ -61,6 +61,7 @@ func NewS3Uploader() *S3Uploader {
 // the repository is uploaded to
 //  bucket/$account/$name/
 func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
+	cfg := config.Get()
 
 	log.Debugf("S3Uploader::UploadRepo::src: %#v", src)
 	log.Debugf("S3Uploader::UploadRepo::account: %#v", account)
@@ -78,7 +79,7 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 		}
 
 		err = u.UploadFileToS3(path,
-			fmt.Sprintf("%s/%s", account, strings.TrimPrefix(path, UPDATE_TMPPATH)),
+			fmt.Sprintf("%s/%s", account, strings.TrimPrefix(path, cfg.UpdateTempPath)),
 		)
 		if err != nil {
 			log.Warnf("error: %w", err)
@@ -88,7 +89,7 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 	})
 
 	region := *u.Client.Config.Region
-	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s/%s", u.Bucket, region, account, strings.TrimPrefix(src, UPDATE_TMPPATH))
+	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s/%s", u.Bucket, region, account, strings.TrimPrefix(src, cfg.UpdateTempPath))
 	return s3URL, nil
 }
 
