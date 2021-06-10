@@ -2,11 +2,11 @@ package images
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/errors"
+	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
 // MakeRouter adds support for operations on images
@@ -23,21 +23,7 @@ type CreateImageRequest struct {
 	//
 	// in: body
 	// required: true
-	Image *Image
-}
-
-// An Image is what generates a OSTree Commit.
-//
-// swagger:model image
-type Image struct {
-	Distribution string // rhel-8
-	Architecture string // x86_64
-	OSTreeRef    string // "rhel/8/x86_64/edge"
-	OSTreeURL    string
-	Description  string
-	OutputType   string // ISO/TAR
-	Packages     []string
-	Status       string
+	Image *models.Image
 }
 
 // Create swagger:route POST /images image createImage
@@ -51,13 +37,18 @@ type Image struct {
 //   400: badRequest
 func Create(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	var image Image
-	err := json.NewDecoder(r.Body).Decode(&image)
-	if err != nil {
+	var image models.Image
+	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	fmt.Println(image)
+	if err := image.ValidateRequest(); err != nil {
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+
 }
