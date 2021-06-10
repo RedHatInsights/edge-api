@@ -14,6 +14,7 @@ type Image struct {
 	OutputType   string
 	Packages     []string
 	Status       string
+	ComposeJobID string
 }
 
 func (i *Image) ValidateRequest() error {

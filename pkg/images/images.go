@@ -50,5 +50,8 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-
+	// TODO: Integrate with Image Builder API
+	// TODO: Save Image + Image Status + JobID on our DB
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(&image)
 }
