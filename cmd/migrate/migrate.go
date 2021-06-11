@@ -23,7 +23,7 @@ func main() {
 		"BucketName":  cfg.BucketName,
 	}).Info("Configuration Values:")
 	db.InitDB()
-	err := db.DB.AutoMigrate(&models.Commit{}, &commits.UpdateRecord{}, &models.Image{})
+	err := db.DB.AutoMigrate(&models.Commit{}, &commits.UpdateRecord{}, &models.Package{}, &models.Image{})
 	if err != nil {
 		panic(err)
 	}
