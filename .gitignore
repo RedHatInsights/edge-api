@@ -29,3 +29,6 @@ config.yaml
 
 # sqlite database
 *.db
+
+# env variables file
+.env
