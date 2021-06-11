@@ -82,7 +82,7 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 			fmt.Sprintf("%s/%s", account, strings.TrimPrefix(path, cfg.UpdateTempPath)),
 		)
 		if err != nil {
-			log.Warnf("error: %w", err)
+			log.Warnf("error:  %#v", err)
 			return err
 		}
 		return nil
