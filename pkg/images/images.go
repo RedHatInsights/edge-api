@@ -5,7 +5,9 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
+	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
+	"github.com/redhatinsights/edge-api/pkg/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
@@ -37,7 +39,7 @@ type CreateImageRequest struct {
 //   400: badRequest
 func Create(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	var image models.Image
+	var image *models.Image
 	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.Status)
@@ -50,8 +52,21 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	// TODO: Integrate with Image Builder API
-	// TODO: Save Image + Image Status + JobID on our DB
+
+	image, err := imagebuilder.Client.Compose(image)
+	if err != nil {
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	tx := db.DB.Create(&image)
+	if tx.Error != nil {
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&image)
 }

@@ -29,6 +29,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/images"
 	"github.com/redhatinsights/edge-api/pkg/repo"
 
@@ -47,11 +48,15 @@ func setupDocsMiddleware(handler http.Handler) http.Handler {
 	return redoc.Redoc(opt, handler)
 }
 
-func main() {
+func Init() {
 	config.Init()
 	l.InitLogger()
 	db.InitDB()
+	imagebuilder.InitClient()
+}
 
+func main() {
+	Init()
 	cfg := config.Get()
 	log.WithFields(log.Fields{
 		"Hostname":    cfg.Hostname,

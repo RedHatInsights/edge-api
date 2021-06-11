@@ -1,6 +1,20 @@
 package imagebuilder
 
-import "github.com/redhatinsights/edge-api/pkg/models"
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+
+	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/models"
+)
+
+var Client *ImageBuilderClient
+
+func InitClient() {
+	Client = new(ImageBuilderClient)
+}
 
 // A lot of this code comes from https://github.com/osbuild/osbuild-composer
 
@@ -20,9 +34,9 @@ type UploadRequest struct {
 
 type UploadTypes string
 type ImageRequest struct {
-	Architecture  string        `json:"architecture"`
-	ImageType     string        `json:"image_type"`
-	UploadRequest UploadRequest `json:"upload_request"`
+	Architecture  string         `json:"architecture"`
+	ImageType     string         `json:"image_type"`
+	UploadRequest *UploadRequest `json:"upload_request"`
 }
 
 type ComposeRequest struct {
@@ -42,7 +56,42 @@ type ImageBuilderClientInterface interface {
 
 type ImageBuilderClient struct{}
 
-func (c *ImageBuilderClient) Compose(image models.Image) (*ComposeResult, error) {
+func (c *ImageBuilderClient) Compose(image *models.Image) (*models.Image, error) {
 	cr := &ComposeResult{}
-	return cr, nil
+	imgReq := ImageRequest{
+		Architecture: image.Commit.Arch,
+		ImageType:    "rhel-edge-commit",
+		UploadRequest: &UploadRequest{
+			Options: nil,
+			Type:    "aws.s3",
+		},
+	}
+	body := &ComposeRequest{
+		Customizations: &Customizations{
+			Packages: image.Packages,
+		},
+		Ostree: &OSTree{
+			Ref: image.Commit.OSTreeRef,
+			URL: image.Commit.OSTreeParentCommit,
+		},
+		Distribution:  image.Distribution,
+		ImageRequests: []ImageRequest{imgReq},
+	}
+
+	payloadBuf := new(bytes.Buffer)
+	json.NewEncoder(payloadBuf).Encode(body)
+	cfg := config.Get()
+	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/compose", cfg.ImageBuilderConfig.Url), payloadBuf)
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+
+	image.ComposeJobID = cr.Id
+
+	return image, nil
 }
