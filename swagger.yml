@@ -2,6 +2,49 @@ basePath: /
 consumes:
 - application/json
 definitions:
+  Commit:
+    description: Commit represents an OSTree commit from image builder
+    properties:
+      Account:
+        type: string
+      Arch:
+        type: string
+      BlueprintToml:
+        type: string
+      BuildDate:
+        type: string
+      BuildNumber:
+        format: uint64
+        type: integer
+      CreatedAt:
+        format: date-time
+        type: string
+      DeletedAt:
+        $ref: '#/definitions/DeletedAt'
+      ID:
+        format: uint64
+        type: integer
+      ImageBuildHash:
+        type: string
+      ImageBuildParentHash:
+        type: string
+      ImageBuildTarURL:
+        type: string
+      NEVRAManifest:
+        type: string
+      Name:
+        type: string
+      OSTreeCommit:
+        type: string
+      OSTreeParentCommit:
+        type: string
+      OSTreeRef:
+        type: string
+      UpdatedAt:
+        format: date-time
+        type: string
+    type: object
+    x-go-package: github.com/redhatinsights/edge-api/pkg/models
   DeletedAt:
     $ref: '#/definitions/NullTime'
   NullTime:
@@ -21,6 +64,8 @@ definitions:
     properties:
       Account:
         type: string
+      Commit:
+        $ref: '#/definitions/Commit'
       ComposeJobID:
         type: string
       CreatedAt:
