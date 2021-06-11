@@ -19,6 +19,7 @@ type Image struct {
 	Packages     *[]string
 	Status       string
 	ComposeJobID string
+	CommitID     int
 	Commit       *Commit
 }
 
@@ -26,7 +27,7 @@ func (i *Image) ValidateRequest() error {
 	if i.Distribution == "" {
 		return errors.New("distribution can't be empty")
 	}
-	if i.Commit.Arch == "" {
+	if i.Commit == nil || i.Commit.Arch == "" {
 		return errors.New("architecture can't be empty")
 	}
 	if i.OutputType != "tar" {
