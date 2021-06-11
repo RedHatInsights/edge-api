@@ -1,27 +1,32 @@
 package models
 
-import "errors"
+import (
+	"errors"
+
+	"gorm.io/gorm"
+)
 
 // An Image is what generates a OSTree Commit.
 //
 // swagger:model image
 type Image struct {
+	gorm.Model
+	Name         string
+	Account      string
 	Distribution string // rhel-8
-	Architecture string // x86_64
-	OSTreeRef    string // "rhel/8/x86_64/edge"
-	OSTreeURL    string
 	Description  string
 	OutputType   string
 	Packages     []string
 	Status       string
 	ComposeJobID string
+	commit       *Commit
 }
 
 func (i *Image) ValidateRequest() error {
 	if i.Distribution == "" {
 		return errors.New("distribution can't be empty")
 	}
-	if i.Architecture == "" {
+	if i.commit.Arch == "" {
 		return errors.New("architecture can't be empty")
 	}
 	if i.OutputType != "tar" {

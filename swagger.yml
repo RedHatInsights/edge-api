@@ -2,9 +2,40 @@ basePath: /
 consumes:
 - application/json
 definitions:
+  DeletedAt:
+    $ref: '#/definitions/NullTime'
+  NullTime:
+    description: |-
+      NullTime implements the Scanner interface so
+      it can be used as a scan destination, similar to NullString.
+    properties:
+      Time:
+        format: date-time
+        type: string
+      Valid:
+        type: boolean
+    title: NullTime represents a time.Time that may be null.
+    type: object
+    x-go-package: database/sql
   image:
     properties:
+      Account:
+        type: string
+      ComposeJobID:
+        type: string
+      CreatedAt:
+        format: date-time
+        type: string
+      DeletedAt:
+        $ref: '#/definitions/DeletedAt'
       Description:
+        type: string
+      Distribution:
+        type: string
+      ID:
+        format: uint64
+        type: integer
+      Name:
         type: string
       OutputType:
         type: string
@@ -12,14 +43,15 @@ definitions:
         items:
           type: string
         type: array
-      ReleaseName:
-        type: string
       Status:
+        type: string
+      UpdatedAt:
+        format: date-time
         type: string
     title: An Image is what generates a OSTree Commit.
     type: object
     x-go-name: Image
-    x-go-package: github.com/redhatinsights/edge-api/pkg/images
+    x-go-package: github.com/redhatinsights/edge-api/pkg/models
 host: localhost:3000
 info:
   description: An API server for fleet edge management capabilities.
@@ -33,16 +65,19 @@ paths:
       parameters:
       - description: The image to create.
         in: body
-        name: image
+        name: Image
         required: true
         schema:
           $ref: '#/definitions/image'
-        x-go-name: Image
       responses:
         "200":
           description: image
           schema:
             $ref: '#/definitions/image'
+        "400":
+          $ref: '#/responses/badRequest'
+        "500":
+          $ref: '#/responses/genericError'
       summary: Creates an image on hosted image builder.
       tags:
       - image

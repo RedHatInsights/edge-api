@@ -15,30 +15,12 @@ import (
 
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
-	"gorm.io/gorm"
+	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
-// Commit represents an OSTree commit from image builder
-type Commit struct {
-	gorm.Model
-	Name                 string
-	Account              string
-	ImageBuildHash       string
-	ImageBuildParentHash string
-	ImageBuildTarURL     string
-	OSTreeCommit         string
-	OSTreeParentCommit   string
-	OSTreeRef            string
-	BuildDate            string
-	BuildNumber          uint
-	BlueprintToml        string
-	NEVRAManifest        string
-	Arch                 string
-}
-
-func commitFromReadCloser(rc io.ReadCloser) (*Commit, error) {
+func commitFromReadCloser(rc io.ReadCloser) (*models.Commit, error) {
 	defer rc.Close()
-	var commit Commit
+	var commit models.Commit
 	err := json.NewDecoder(rc).Decode(&commit)
 	return &commit, err
 }
@@ -48,7 +30,7 @@ func MakeRouter(sub chi.Router) {
 	sub.Post("/", Add)
 	sub.Get("/", GetAll)
 	sub.Route("/{commitId}", func(r chi.Router) {
-		r.Use(CommitCtx)
+		r.Use(commitCtx)
 		r.Get("/", GetByID)
 		r.Get("/repo/*", ServeRepo)
 		r.Put("/", Update)
@@ -65,10 +47,10 @@ type key int
 
 const commitKey key = 0
 
-// CommitCtx is a handler for Commit requests
-func CommitCtx(next http.Handler) http.Handler {
+// commitCtx is a handler for commit requests
+func commitCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var commit Commit
+		var commit models.Commit
 		account, err := common.GetAccount(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -111,7 +93,7 @@ func Add(w http.ResponseWriter, r *http.Request) {
 
 // GetAll commit objects from the database for an account
 func GetAll(w http.ResponseWriter, r *http.Request) {
-	var commits []Commit
+	var commits []models.Commit
 	account, err := common.GetAccount(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -155,7 +137,7 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(incoming)
 }
 
-func applyPatch(commit *Commit, incoming *Commit) {
+func applyPatch(commit *models.Commit, incoming *models.Commit) {
 	if incoming.Name != "" {
 		commit.Name = incoming.Name
 	}
@@ -229,7 +211,7 @@ func Patch(w http.ResponseWriter, r *http.Request) {
 // ServeRepo creates a file server for a commit object
 func ServeRepo(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	commit, ok := ctx.Value(commitKey).(*Commit)
+	commit, ok := ctx.Value(commitKey).(*models.Commit)
 	if !ok {
 		http.Error(w, "must pass id", http.StatusBadRequest)
 		return
@@ -254,9 +236,9 @@ func ServeRepo(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func getCommit(w http.ResponseWriter, r *http.Request) *Commit {
+func getCommit(w http.ResponseWriter, r *http.Request) *models.Commit {
 	ctx := r.Context()
-	commit, ok := ctx.Value(commitKey).(*Commit)
+	commit, ok := ctx.Value(commitKey).(*models.Commit)
 	if !ok {
 		http.Error(w, "must pass id", http.StatusBadRequest)
 		return nil
