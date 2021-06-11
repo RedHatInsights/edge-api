@@ -10,6 +10,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	log "github.com/sirupsen/logrus"
 )
 
 // MakeRouter adds support for operations on images
@@ -42,12 +43,14 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var image *models.Image
 	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
+		log.Error(err)
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
 	if err := image.ValidateRequest(); err != nil {
+		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
@@ -56,6 +59,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 
 	image, err := imagebuilder.Client.Compose(image)
 	if err != nil {
+		log.Error(err)
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
@@ -63,6 +67,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	}
 	image.Account, err = common.GetAccount(r)
 	if err != nil {
+		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
@@ -71,6 +76,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	image.Commit.Account = image.Account
 	tx := db.DB.Create(&image)
 	if tx.Error != nil {
+		log.Error(err)
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
