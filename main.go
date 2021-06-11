@@ -1,3 +1,19 @@
+// Package main Edge API
+//
+//  An API server for fleet edge management capabilities.
+//
+//     Schemes: http, https
+//     Host: localhost
+//     BasePath: /
+//     Version: 0.0.1
+//
+//     Consumes:
+//     - application/json
+//
+//     Produces:
+//     - application/json
+//
+// swagger:meta
 package main
 
 import (
@@ -7,6 +23,7 @@ import (
 	"os"
 	"os/signal"
 
+	redoc "github.com/go-openapi/runtime/middleware"
 	"github.com/redhatinsights/edge-api/config"
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/commits"
@@ -22,6 +39,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func setupDocsMiddleware(handler http.Handler) http.Handler {
+	opt := redoc.RedocOpts{
+		SpecURL: "/swagger.yml",
+	}
+	return redoc.Redoc(opt, handler)
+}
+
 func main() {
 	config.Init()
 	l.InitLogger()
@@ -29,14 +53,14 @@ func main() {
 
 	cfg := config.Get()
 	log.WithFields(log.Fields{
-		"Hostname": cfg.Hostname,
-		"Auth": cfg.Auth,
-		"WebPort": cfg.WebPort,
-		"MetricsPort": cfg.MetricsPort, 
-		"LogLevel": cfg.LogLevel, 
-		"Debug": cfg.Debug, 
-		"BucketName": cfg.BucketName,
-		}).Info("Configuration Values:")
+		"Hostname":    cfg.Hostname,
+		"Auth":        cfg.Auth,
+		"WebPort":     cfg.WebPort,
+		"MetricsPort": cfg.MetricsPort,
+		"LogLevel":    cfg.LogLevel,
+		"Debug":       cfg.Debug,
+		"BucketName":  cfg.BucketName,
+	}).Info("Configuration Values:")
 
 	r := chi.NewRouter()
 	r.Use(
@@ -44,6 +68,7 @@ func main() {
 		middleware.RealIP,
 		middleware.Recoverer,
 		middleware.Logger,
+		setupDocsMiddleware,
 	)
 
 	if cfg.Auth {
@@ -51,6 +76,9 @@ func main() {
 	}
 
 	r.Get("/", common.StatusOK)
+	r.Get("/swagger.yml", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./swagger.yml")
+	})
 
 	var server repo.Server
 	server = &repo.FileServer{
