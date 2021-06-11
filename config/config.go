@@ -8,17 +8,18 @@ import (
 
 // EdgeConfig represents the runtime configuration
 type EdgeConfig struct {
-	Hostname    string
-	Auth        bool
-	WebPort     int
-	MetricsPort int
-	Logging     *loggingConfig
-	LogLevel    string
-	Debug       bool
-	Database    *dbConfig
-	BucketName  string
-	AccessKey   string
-	SecretKey   string
+	Hostname           string
+	Auth               bool
+	WebPort            int
+	MetricsPort        int
+	Logging            *loggingConfig
+	LogLevel           string
+	Debug              bool
+	Database           *dbConfig
+	BucketName         string
+	AccessKey          string
+	SecretKey          string
+	ImageBuilderConfig *imageBuilderConfig
 }
 
 type dbConfig struct {
@@ -27,6 +28,10 @@ type dbConfig struct {
 	Hostname string
 	Port     uint
 	Name     string
+}
+
+type imageBuilderConfig struct {
+	Url string
 }
 
 //
@@ -48,6 +53,7 @@ func Init() {
 	options.SetDefault("Auth", false)
 	options.SetDefault("Debug", false)
 	options.SetDefault("EdgeTarballsBucket", "rh-edge-tarballs")
+	options.SetDefault("ImageBuilderUrl", "http://image-builder:8080")
 	options.AutomaticEnv()
 
 	kubenv := viper.New()
@@ -61,6 +67,9 @@ func Init() {
 		Debug:       options.GetBool("Debug"),
 		LogLevel:    options.GetString("LogLevel"),
 		BucketName:  options.GetString("EdgeTarballsBucket"),
+		ImageBuilderConfig: &imageBuilderConfig{
+			Url: options.GetString("ImageBuilderUrl"),
+		},
 	}
 
 	if clowder.IsClowderEnabled() {
@@ -88,7 +97,6 @@ func Init() {
 			LogGroup:        cfg.Logging.Cloudwatch.LogGroup,
 			Region:          cfg.Logging.Cloudwatch.Region,
 		}
-
 	}
 }
 
