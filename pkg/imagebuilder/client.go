@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -66,7 +69,7 @@ func (c *ImageBuilderClient) Compose(image *models.Image) (*models.Image, error)
 			Type:    "aws.s3",
 		},
 	}
-	body := &ComposeRequest{
+	reqBody := &ComposeRequest{
 		Customizations: &Customizations{
 			Packages: image.Packages,
 		},
@@ -79,9 +82,11 @@ func (c *ImageBuilderClient) Compose(image *models.Image) (*models.Image, error)
 	}
 
 	payloadBuf := new(bytes.Buffer)
-	json.NewEncoder(payloadBuf).Encode(body)
+	json.NewEncoder(payloadBuf).Encode(reqBody)
 	cfg := config.Get()
-	req, _ := http.NewRequest("POST", fmt.Sprintf("%s/compose", cfg.ImageBuilderConfig.Url), payloadBuf)
+	url := fmt.Sprintf("%s/compose", cfg.ImageBuilderConfig.Url)
+	log.Info("Requesting url", url)
+	req, _ := http.NewRequest("POST", url, payloadBuf)
 
 	client := &http.Client{}
 	res, err := client.Do(req)
@@ -89,8 +94,17 @@ func (c *ImageBuilderClient) Compose(image *models.Image) (*models.Image, error)
 		return nil, err
 	}
 
-	defer res.Body.Close()
+	respBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
 
+	err = json.Unmarshal(respBody, &cr)
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
 	image.ComposeJobID = cr.Id
 
 	return image, nil
