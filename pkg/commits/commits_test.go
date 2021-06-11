@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -11,6 +12,30 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 )
 
+var cmt Commit
+
+func TestMain(m *testing.M) {
+	setUp()
+	retCode := m.Run()
+	tearDown()
+	os.Exit(retCode)
+}
+
+func setUp() {
+	config.Init()
+	config.Get().Debug = true
+	db.InitDB()
+}
+
+func tearDown() {
+	db.DB.Delete(&cmt)
+}
+
+func mockCommit() {
+	cmt.Account = "0000000"
+	cmt.Name = "Test"
+	db.DB.Create(&cmt)
+}
 func TestPatch(t *testing.T) {
 	commitOne := &Commit{
 		OSTreeRef: "one",
@@ -27,9 +52,6 @@ func TestPatch(t *testing.T) {
 }
 
 func TestGetAllEmpty(t *testing.T) {
-	config.Init()
-	config.Get().Debug = true
-	db.InitDB()
 	err := db.DB.AutoMigrate(Commit{})
 	if err != nil {
 		panic(err)
@@ -51,20 +73,12 @@ func TestGetAllEmpty(t *testing.T) {
 }
 
 func TestGetAll(t *testing.T) {
-	config.Init()
-	config.Get().Debug = true
-
-	db.InitDB()
 	err := db.DB.AutoMigrate(Commit{})
 	if err != nil {
 		panic(err)
 	}
 
-	var cmt Commit
-	cmt.Account = "0000000"
-	cmt.Name = "Test"
-	db.DB.Create(&cmt)
-
+	mockCommit()
 	t.Run("returns Get all commits", func(t *testing.T) {
 		request, _ := http.NewRequest(http.MethodGet, "/", nil)
 		response := httptest.NewRecorder()
@@ -72,28 +86,18 @@ func TestGetAll(t *testing.T) {
 		GetAll(response, request)
 		got := response.Body.String()
 		if !strings.Contains(got, "0000000") {
-			db.DB.Delete(&cmt)
 			t.Errorf("got %q", got)
 		}
 	})
-	db.DB.Delete(&cmt)
 }
 
 func TestGetById(t *testing.T) {
-	config.Init()
-	config.Get().Debug = true
-
-	db.InitDB()
 	err := db.DB.AutoMigrate(Commit{})
 	if err != nil {
 		panic(err)
 	}
 
-	var cmt Commit
-	cmt.Account = "0000000"
-	cmt.Name = "Test"
-	db.DB.Create(&cmt)
-
+	mockCommit()
 	t.Run("returns Get commit by id", func(t *testing.T) {
 
 		request, _ := http.NewRequest(http.MethodGet, "/", nil)
@@ -104,11 +108,10 @@ func TestGetById(t *testing.T) {
 		GetByID(response, request)
 		got := response.Body.String()
 		if !strings.Contains(got, "0000000") {
-			db.DB.Delete(&cmt)
 			t.Errorf("got %q", got)
 		}
 	})
-	db.DB.Delete(&cmt)
+
 }
 
 func TestGetByIdFail(t *testing.T) {
@@ -121,10 +124,7 @@ func TestGetByIdFail(t *testing.T) {
 		panic(err)
 	}
 
-	var cmt Commit
-	cmt.Account = "0000000"
-	cmt.Name = "Test"
-	db.DB.Create(&cmt)
+	mockCommit()
 
 	t.Run("returns Error", func(t *testing.T) {
 
@@ -135,28 +135,18 @@ func TestGetByIdFail(t *testing.T) {
 		got := response.Body.String()
 		want := "must pass id\n"
 		if got != want {
-			db.DB.Delete(&cmt)
 			t.Errorf("got %q, want %q", got, want)
 		}
 	})
-	db.DB.Delete(&cmt)
 }
 
 func TestGetCommit(t *testing.T) {
-	config.Init()
-	config.Get().Debug = true
-
-	db.InitDB()
 	err := db.DB.AutoMigrate(Commit{})
 	if err != nil {
 		panic(err)
 	}
 
-	var cmt Commit
-	cmt.Account = "0000000"
-	cmt.Name = "Test"
-	db.DB.Create(&cmt)
-
+	mockCommit()
 	t.Run("returns Get commit ", func(t *testing.T) {
 
 		request, _ := http.NewRequest(http.MethodGet, "/", nil)
@@ -168,28 +158,18 @@ func TestGetCommit(t *testing.T) {
 		got := response.Code
 		want := http.StatusOK
 		if got != want {
-			db.DB.Delete(&cmt)
 			t.Errorf("got %q", got)
 		}
 	})
-	db.DB.Delete(&cmt)
 }
 
 func TestServeRepo(t *testing.T) {
-	config.Init()
-	config.Get().Debug = true
-
-	db.InitDB()
 	err := db.DB.AutoMigrate(Commit{})
 	if err != nil {
 		panic(err)
 	}
 
-	var cmt Commit
-	cmt.Account = "0000000"
-	cmt.Name = "Test"
-	db.DB.Create(&cmt)
-
+	mockCommit()
 	t.Run("returns Get commit ", func(t *testing.T) {
 
 		request, _ := http.NewRequest(http.MethodGet, "/repo", nil)
@@ -203,9 +183,8 @@ func TestServeRepo(t *testing.T) {
 		got := response.Code
 		want := http.StatusOK
 		if got != want {
-			db.DB.Delete(&cmt)
 			t.Errorf("got %q", got)
 		}
 	})
-	db.DB.Delete(&cmt)
+
 }
