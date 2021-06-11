@@ -15,6 +15,7 @@ import (
 
 // MakeRouter adds support for operations on images
 func MakeRouter(sub chi.Router) {
+	sub.Get("/", GetAll)
 	sub.Post("/", Create)
 }
 
@@ -84,4 +85,27 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&image)
+}
+
+// GetAll image objects from the database for an account
+func GetAll(w http.ResponseWriter, r *http.Request) {
+	var images []models.Image
+	account, err := common.GetAccount(r)
+	if err != nil {
+		log.Info(err)
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	result := db.DB.Where("account = ?", account).Find(&images)
+	if result.Error != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+
+	json.NewEncoder(w).Encode(&images)
 }
