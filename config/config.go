@@ -8,17 +8,18 @@ import (
 
 // EdgeConfig represents the runtime configuration
 type EdgeConfig struct {
-	Hostname           string
-	Auth               bool
-	WebPort            int
-	MetricsPort        int
-	Logging            *loggingConfig
-	LogLevel           string
-	Debug              bool
-	Database           *dbConfig
-	BucketName         string
-	AccessKey          string
-	SecretKey          string
+	Hostname       string
+	Auth           bool
+	WebPort        int
+	MetricsPort    int
+	Logging        *loggingConfig
+	LogLevel       string
+	Debug          bool
+	Database       *dbConfig
+	BucketName     string
+	AccessKey      string
+	SecretKey      string
+	UpdateTempPath string
 	ImageBuilderConfig *imageBuilderConfig
 }
 
@@ -53,13 +54,18 @@ func Init() {
 	options.SetDefault("Auth", false)
 	options.SetDefault("Debug", false)
 	options.SetDefault("EdgeTarballsBucket", "rh-edge-tarballs")
+<<<<<<< HEAD
 	options.SetDefault("ImageBuilderUrl", "http://image-builder:8080")
+=======
+	options.SetDefault("UpdateTempPath", "/tmp/updates/")
+>>>>>>> d1d138867c0b2d2c46acf529280a698db1551caa
 	options.AutomaticEnv()
 
 	kubenv := viper.New()
 	kubenv.AutomaticEnv()
 
 	config = &EdgeConfig{
+<<<<<<< HEAD
 		Hostname:    kubenv.GetString("Hostname"),
 		Auth:        options.GetBool("Auth"),
 		WebPort:     options.GetInt("WebPort"),
@@ -70,6 +76,16 @@ func Init() {
 		ImageBuilderConfig: &imageBuilderConfig{
 			Url: options.GetString("ImageBuilderUrl"),
 		},
+=======
+		Hostname:       kubenv.GetString("Hostname"),
+		Auth:           options.GetBool("Auth"),
+		WebPort:        options.GetInt("WebPort"),
+		MetricsPort:    options.GetInt("MetricsPort"),
+		Debug:          options.GetBool("Debug"),
+		LogLevel:       options.GetString("LogLevel"),
+		BucketName:     options.GetString("EdgeTarballsBucket"),
+		UpdateTempPath: options.GetString("UpdateTempPath"),
+>>>>>>> d1d138867c0b2d2c46acf529280a698db1551caa
 	}
 
 	if clowder.IsClowderEnabled() {

@@ -36,6 +36,7 @@ func MakeRouter(sub chi.Router) {
 		r.Put("/", Update)
 		r.Patch("/", Patch)
 	})
+	sub.Route("/updates", UpdatesMakeRouter)
 }
 
 // This provides type safety in the context object for our "commit" key.  We
