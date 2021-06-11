@@ -30,7 +30,7 @@ func MakeRouter(sub chi.Router) {
 	sub.Post("/", Add)
 	sub.Get("/", GetAll)
 	sub.Route("/{commitId}", func(r chi.Router) {
-		r.Use(commitCtx)
+		r.Use(CommitCtx)
 		r.Get("/", GetByID)
 		r.Get("/repo/*", ServeRepo)
 		r.Put("/", Update)
@@ -47,8 +47,8 @@ type key int
 
 const commitKey key = 0
 
-// commitCtx is a handler for commit requests
-func commitCtx(next http.Handler) http.Handler {
+// CommitCtx is a handler for Commit requests
+func CommitCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var commit models.Commit
 		account, err := common.GetAccount(r)
