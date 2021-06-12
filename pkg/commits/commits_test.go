@@ -2,6 +2,7 @@ package commits
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -36,6 +37,11 @@ func mockCommit() {
 	cmt.Name = "Test"
 	db.DB.Create(&cmt)
 }
+
+type bodyResponse struct {
+	Account string `json:"Account"`
+}
+
 func TestPatch(t *testing.T) {
 	commitOne := &Commit{
 		OSTreeRef: "one",
@@ -61,12 +67,11 @@ func TestGetAllEmpty(t *testing.T) {
 		response := httptest.NewRecorder()
 
 		GetAll(response, request)
+		got := []string{}
+		json.NewDecoder(response.Body).Decode(&got)
 
-		got := response.Body.String()
-		want := "[]\n"
-
-		if got != want {
-			t.Errorf("got %q, want %q", got, want)
+		if len(got) != 0 {
+			t.Errorf("got %q", got)
 		}
 	})
 
@@ -106,9 +111,10 @@ func TestGetById(t *testing.T) {
 		ctx = context.WithValue(ctx, commitKey, &cmt)
 		request = request.WithContext(ctx)
 		GetByID(response, request)
-		got := response.Body.String()
-		if !strings.Contains(got, "0000000") {
-			t.Errorf("got %q", got)
+		var bodyResp *bodyResponse
+		json.NewDecoder(response.Body).Decode(&bodyResp)
+		if bodyResp.Account != "0000000" {
+			t.Errorf("got %q", bodyResp.Account)
 		}
 	})
 
