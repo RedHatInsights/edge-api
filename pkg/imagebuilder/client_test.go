@@ -19,7 +19,6 @@ func TestInitClient(t *testing.T) {
 
 func TestComposeImage(t *testing.T) {
 	config.Init()
-	config.Get().Debug = true
 
 	InitClient()
 

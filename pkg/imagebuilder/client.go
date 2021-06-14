@@ -13,7 +13,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
-var Client *ImageBuilderClient
+var Client ImageBuilderClientInterface
 
 func InitClient() {
 	Client = new(ImageBuilderClient)
@@ -54,7 +54,7 @@ type ComposeResult struct {
 }
 
 type ImageBuilderClientInterface interface {
-	Compose(image models.Image) (*ComposeResult, error)
+	Compose(image *models.Image) (*models.Image, error)
 }
 
 type ImageBuilderClient struct{}
