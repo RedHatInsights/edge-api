@@ -30,8 +30,6 @@ definitions:
         type: string
       ImageBuildTarURL:
         type: string
-      NEVRAManifest:
-        type: string
       Name:
         type: string
       OSTreeCommit:
@@ -40,6 +38,10 @@ definitions:
         type: string
       OSTreeRef:
         type: string
+      Packages:
+        items:
+          $ref: '#/definitions/Package'
+        type: array
       UpdatedAt:
         format: date-time
         type: string
@@ -60,12 +62,32 @@ definitions:
     title: NullTime represents a time.Time that may be null.
     type: object
     x-go-package: database/sql
+  Package:
+    properties:
+      CreatedAt:
+        format: date-time
+        type: string
+      DeletedAt:
+        $ref: '#/definitions/DeletedAt'
+      ID:
+        format: uint64
+        type: integer
+      Name:
+        type: string
+      UpdatedAt:
+        format: date-time
+        type: string
+    type: object
+    x-go-package: github.com/redhatinsights/edge-api/pkg/models
   image:
     properties:
       Account:
         type: string
       Commit:
         $ref: '#/definitions/Commit'
+      CommitID:
+        format: int64
+        type: integer
       ComposeJobID:
         type: string
       CreatedAt:
@@ -84,10 +106,6 @@ definitions:
         type: string
       OutputType:
         type: string
-      Packages:
-        items:
-          type: string
-        type: array
       Status:
         type: string
       UpdatedAt:

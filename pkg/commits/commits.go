@@ -179,10 +179,6 @@ func applyPatch(commit *models.Commit, incoming *models.Commit) {
 		commit.BlueprintToml = incoming.BlueprintToml
 	}
 
-	if incoming.NEVRAManifest != "" {
-		commit.NEVRAManifest = incoming.NEVRAManifest
-	}
-
 	if incoming.Arch != "" {
 		commit.Arch = incoming.Arch
 	}

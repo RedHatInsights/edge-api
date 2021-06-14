@@ -16,7 +16,6 @@ type Commit struct {
 	BuildDate            string
 	BuildNumber          uint
 	BlueprintToml        string
-	NEVRAManifest        string
 	Arch                 string
 	Packages             []Package `gorm:"many2many:image_packages;"`
 }
