@@ -71,7 +71,7 @@ func (c *ImageBuilderClient) Compose(image *models.Image) (*models.Image, error)
 	}
 	reqBody := &ComposeRequest{
 		Customizations: &Customizations{
-			Packages: image.GetPackagesList(),
+			Packages: image.Commit.GetPackagesList(),
 		},
 		Ostree: &OSTree{
 			Ref: image.Commit.OSTreeRef,

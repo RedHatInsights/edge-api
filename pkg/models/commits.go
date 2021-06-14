@@ -18,4 +18,18 @@ type Commit struct {
 	BlueprintToml        string
 	NEVRAManifest        string
 	Arch                 string
+	Packages             []Package `gorm:"many2many:image_packages;"`
+}
+
+type Package struct {
+	gorm.Model
+	Name string
+}
+
+func (c *Commit) GetPackagesList() *[]string {
+	pkgs := make([]string, len(c.Packages))
+	for i, p := range c.Packages {
+		pkgs[i] = p.Name
+	}
+	return &pkgs
 }
