@@ -22,15 +22,21 @@ type Image struct {
 	Commit       *Commit
 }
 
+const (
+	DistributionCantBeNilMessage   = "distribution can't be empty"
+	ArchitectureCantBeEmptyMessage = "architecture can't be empty"
+	OnlyTarAcceptedMessage         = "only tar architecture supported for now"
+)
+
 func (i *Image) ValidateRequest() error {
 	if i.Distribution == "" {
-		return errors.New("distribution can't be empty")
+		return errors.New(DistributionCantBeNilMessage)
 	}
 	if i.Commit == nil || i.Commit.Arch == "" {
-		return errors.New("architecture can't be empty")
+		return errors.New(ArchitectureCantBeEmptyMessage)
 	}
 	if i.OutputType != "tar" {
-		return errors.New("only tar architecture supported for now")
+		return errors.New(OnlyTarAcceptedMessage)
 	}
 	return nil
 }
