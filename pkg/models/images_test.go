@@ -45,3 +45,16 @@ func TestValidateRequestWithIsoOutputType(t *testing.T) {
 		t.Errorf("expected only tar accepted error")
 	}
 }
+
+func TestValidateRequest(t *testing.T) {
+	img := &Image{
+		Distribution: "rhel-8",
+		Commit:       &Commit{Arch: "x86_64"},
+		OutputType:   "tar",
+	}
+
+	err := img.ValidateRequest()
+	if err != nil {
+		t.Errorf("Image object should be valid")
+	}
+}
