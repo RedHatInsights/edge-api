@@ -17,7 +17,7 @@ type Commit struct {
 	BuildNumber          uint
 	BlueprintToml        string
 	Arch                 string
-	Packages             []Package `gorm:"many2many:image_packages;"`
+	Packages             []Package `gorm:"many2many:commit_packages;"`
 }
 
 type Package struct {

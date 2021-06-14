@@ -57,6 +57,7 @@ func TestCreate(t *testing.T) {
 	config.Init()
 	config.Get().Debug = true
 	db.InitDB()
+
 	imagebuilder.Client = &MockImageBuilderClient{}
 	var jsonStr = []byte(`{"Distribution": "rhel-8", "OutputType": "tar", "Commit": {"Arch": "x86_64", "Packages" : [ { "name" : "vim"  } ]}}`)
 	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
