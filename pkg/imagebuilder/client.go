@@ -84,7 +84,7 @@ func (c *ImageBuilderClient) Compose(image *models.Image) (*models.Image, error)
 	payloadBuf := new(bytes.Buffer)
 	json.NewEncoder(payloadBuf).Encode(reqBody)
 	cfg := config.Get()
-	url := fmt.Sprintf("%s/compose", cfg.ImageBuilderConfig.Url)
+	url := fmt.Sprintf("%s/compose", cfg.ImageBuilderConfig.URL)
 	log.Info("Requesting url", url)
 	req, _ := http.NewRequest("POST", url, payloadBuf)
 

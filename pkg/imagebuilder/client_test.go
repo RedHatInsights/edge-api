@@ -27,7 +27,7 @@ func TestComposeImage(t *testing.T) {
 		fmt.Fprintln(w, `{"id": "compose-job-id-returned-from-image-builder"}`)
 	}))
 	defer ts.Close()
-	config.Get().ImageBuilderConfig.Url = ts.URL
+	config.Get().ImageBuilderConfig.URL = ts.URL
 
 	pkgs := []models.Package{
 		models.Package{
