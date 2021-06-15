@@ -23,9 +23,16 @@ type Image struct {
 }
 
 const (
+	// Errors
 	DistributionCantBeNilMessage   = "distribution can't be empty"
 	ArchitectureCantBeEmptyMessage = "architecture can't be empty"
 	OnlyTarAcceptedMessage         = "only tar architecture supported for now"
+
+	// Status
+	ImageStatusCreated  = "created"
+	ImageStatusBuilding = "building"
+	ImageStatusError    = "error"
+	ImageStatusSuccess  = "success"
 )
 
 func (i *Image) ValidateRequest() error {

@@ -35,3 +35,15 @@ func NewBadRequest(message string) *BadRequest {
 	err.Status = http.StatusBadRequest
 	return err
 }
+
+type NotFound struct {
+	APIError
+}
+
+func NewNotFound(message string) *NotFound {
+	err := new(NotFound)
+	err.Code = "NOT_FOUND"
+	err.Title = message
+	err.Status = http.StatusNotFound
+	return err
+}
