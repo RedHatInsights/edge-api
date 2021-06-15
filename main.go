@@ -48,7 +48,7 @@ func setupDocsMiddleware(handler http.Handler) http.Handler {
 	return redoc.Redoc(opt, handler)
 }
 
-func Init() {
+func initDependencies() {
 	config.Init()
 	l.InitLogger()
 	db.InitDB()
@@ -56,7 +56,7 @@ func Init() {
 }
 
 func main() {
-	Init()
+	initDependencies()
 	cfg := config.Get()
 	log.WithFields(log.Fields{
 		"Hostname":    cfg.Hostname,

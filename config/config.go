@@ -32,7 +32,7 @@ type dbConfig struct {
 }
 
 type imageBuilderConfig struct {
-	Url string
+	URL string
 }
 
 //
@@ -71,7 +71,7 @@ func Init() {
 		BucketName:     options.GetString("EdgeTarballsBucket"),
 		UpdateTempPath: options.GetString("UpdateTempPath"),
 		ImageBuilderConfig: &imageBuilderConfig{
-			Url: options.GetString("ImageBuilderUrl"),
+			URL: options.GetString("ImageBuilderUrl"),
 		},
 	}
 
