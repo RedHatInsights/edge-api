@@ -2,11 +2,13 @@ package images
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -57,6 +59,12 @@ func TestCreate(t *testing.T) {
 	config.Init()
 	config.Get().Debug = true
 	db.InitDB()
+	db.DB.AutoMigrate(&models.Commit{}, &commits.UpdateRecord{}, &models.Package{}, &models.Image{}) // We need to discuss all-things testing against databases and setup, teardown and test suites
+
+	var commits []models.Commit
+	db.DB.Find(&commits)
+	fmt.Println(commits)
+	fmt.Println(db.DB)
 
 	imagebuilder.Client = &MockImageBuilderClient{}
 	var jsonStr = []byte(`{"Distribution": "rhel-8", "OutputType": "tar", "Commit": {"Arch": "x86_64", "Packages" : [ { "name" : "vim"  } ]}}`)
@@ -69,8 +77,8 @@ func TestCreate(t *testing.T) {
 
 	handler.ServeHTTP(rr, req)
 
-	if status := rr.Code; status != http.StatusBadRequest {
+	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusBadRequest)
+			status, http.StatusOK)
 	}
 }
