@@ -32,7 +32,7 @@ func MakeRouter(sub chi.Router) {
 // rationale.
 type key int
 
-const imageKey key = 0
+const imageKey key = 1
 
 // ImageCtx is a handler for Commit requests
 func ImageCtx(next http.Handler) http.Handler {
