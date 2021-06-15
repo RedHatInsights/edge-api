@@ -2,7 +2,6 @@ package images
 
 import (
 	"bytes"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -60,11 +59,6 @@ func TestCreate(t *testing.T) {
 	config.Get().Debug = true
 	db.InitDB()
 	db.DB.AutoMigrate(&models.Commit{}, &commits.UpdateRecord{}, &models.Package{}, &models.Image{}) // We need to discuss all-things testing against databases and setup, teardown and test suites
-
-	var commits []models.Commit
-	db.DB.Find(&commits)
-	fmt.Println(commits)
-	fmt.Println(db.DB)
 
 	imagebuilder.Client = &MockImageBuilderClient{}
 	var jsonStr = []byte(`{"Distribution": "rhel-8", "OutputType": "tar", "Commit": {"Arch": "x86_64", "Packages" : [ { "name" : "vim"  } ]}}`)

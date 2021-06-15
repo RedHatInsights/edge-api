@@ -2,7 +2,6 @@ package images
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -76,10 +75,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	image.Commit.Account = image.Account
-	fmt.Println(db.DB)
-	tx := db.DB.Create(&image.Commit)
-	fmt.Println("ERROR ", tx.Error)
-	tx = db.DB.Create(&image)
+	tx := db.DB.Create(&image)
 	if tx.Error != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
