@@ -55,10 +55,11 @@ func TestCreateWasCalledWithAccountNotSet(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
+	// TODO: We need to discuss all-things testing against databases and setup, teardown and test suites
 	config.Init()
 	config.Get().Debug = true
 	db.InitDB()
-	db.DB.AutoMigrate(&models.Commit{}, &commits.UpdateRecord{}, &models.Package{}, &models.Image{}) // We need to discuss all-things testing against databases and setup, teardown and test suites
+	db.DB.AutoMigrate(&models.Commit{}, &commits.UpdateRecord{}, &models.Package{}, &models.Image{})
 
 	imagebuilder.Client = &MockImageBuilderClient{}
 	var jsonStr = []byte(`{"Distribution": "rhel-8", "OutputType": "tar", "Commit": {"Arch": "x86_64", "Packages" : [ { "name" : "vim"  } ]}}`)
