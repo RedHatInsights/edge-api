@@ -8,17 +8,18 @@ import (
 
 // EdgeConfig represents the runtime configuration
 type EdgeConfig struct {
-	Hostname    string
-	Auth        bool
-	WebPort     int
-	MetricsPort int
-	Logging     *loggingConfig
-	LogLevel    string
-	Debug       bool
-	Database    *dbConfig
-	BucketName  string
-	AccessKey   string
-	SecretKey   string
+	Hostname       string
+	Auth           bool
+	WebPort        int
+	MetricsPort    int
+	Logging        *loggingConfig
+	LogLevel       string
+	Debug          bool
+	Database       *dbConfig
+	BucketName     string
+	AccessKey      string
+	SecretKey      string
+	UpdateTempPath string
 }
 
 type dbConfig struct {
@@ -48,19 +49,21 @@ func Init() {
 	options.SetDefault("Auth", false)
 	options.SetDefault("Debug", false)
 	options.SetDefault("EdgeTarballsBucket", "rh-edge-tarballs")
+	options.SetDefault("UpdateTempPath", "/tmp/updates/")
 	options.AutomaticEnv()
 
 	kubenv := viper.New()
 	kubenv.AutomaticEnv()
 
 	config = &EdgeConfig{
-		Hostname:    kubenv.GetString("Hostname"),
-		Auth:        options.GetBool("Auth"),
-		WebPort:     options.GetInt("WebPort"),
-		MetricsPort: options.GetInt("MetricsPort"),
-		Debug:       options.GetBool("Debug"),
-		LogLevel:    options.GetString("LogLevel"),
-		BucketName:  options.GetString("EdgeTarballsBucket"),
+		Hostname:       kubenv.GetString("Hostname"),
+		Auth:           options.GetBool("Auth"),
+		WebPort:        options.GetInt("WebPort"),
+		MetricsPort:    options.GetInt("MetricsPort"),
+		Debug:          options.GetBool("Debug"),
+		LogLevel:       options.GetString("LogLevel"),
+		BucketName:     options.GetString("EdgeTarballsBucket"),
+		UpdateTempPath: options.GetString("UpdateTempPath"),
 	}
 
 	if clowder.IsClowderEnabled() {
