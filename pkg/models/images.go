@@ -2,7 +2,6 @@ package models
 
 import (
 	"errors"
-	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -39,7 +38,6 @@ func (i *Image) ValidateRequest() error {
 	if i.Commit == nil || i.Commit.Arch == "" {
 		return errors.New(ArchitectureCantBeEmptyMessage)
 	}
-	fmt.Println(i.ImageType)
 	if i.ImageType != ImageTypeCommit && i.ImageType != ImageTypeInstaller {
 		return errors.New(ImageTypeNotAccepted)
 	}
