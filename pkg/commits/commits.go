@@ -89,7 +89,9 @@ func Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db.DB.Create(&commit)
+	if err := db.DB.Create(&commit).Error; err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
 }
 
 // GetAll commit objects from the database for an account
@@ -133,7 +135,10 @@ func Update(w http.ResponseWriter, r *http.Request) {
 	incoming.CreatedAt = now
 	incoming.UpdatedAt = now
 	incoming.Account = commit.Account
-	db.DB.Save(&incoming)
+	if err := db.DB.Save(&incoming).Error; err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	json.NewEncoder(w).Encode(incoming)
 }
@@ -201,7 +206,10 @@ func Patch(w http.ResponseWriter, r *http.Request) {
 
 	applyPatch(commit, incoming)
 
-	db.DB.Save(&commit)
+	if err := db.DB.Save(&commit).Error; err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	json.NewEncoder(w).Encode(commit)
 }
 

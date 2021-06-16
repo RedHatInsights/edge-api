@@ -62,6 +62,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
+		err.Title = "Failed creating image compose"
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
 		return
