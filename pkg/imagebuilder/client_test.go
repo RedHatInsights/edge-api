@@ -37,7 +37,7 @@ func TestComposeImage(t *testing.T) {
 			Name: "ansible",
 		},
 	}
-	img := &models.Image{Distribution: "rhel-8", OutputType: "tar", Commit: &models.Commit{
+	img := &models.Image{Distribution: "rhel-8", ImageType: models.ImageTypeInstaller, Commit: &models.Commit{
 		Arch:     "x86_64",
 		Packages: pkgs,
 	}}

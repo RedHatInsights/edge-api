@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -15,7 +16,7 @@ type Image struct {
 	Account      string
 	Distribution string // rhel-8
 	Description  string
-	OutputType   string
+	ImageType    string
 	Status       string
 	ComposeJobID string
 	CommitID     int
@@ -25,7 +26,10 @@ type Image struct {
 const (
 	DistributionCantBeNilMessage   = "distribution can't be empty"
 	ArchitectureCantBeEmptyMessage = "architecture can't be empty"
-	OnlyTarAcceptedMessage         = "only tar architecture supported for now"
+	ImageTypeNotAccepted           = "Image type must be rhel-edge-installer or rhel-edge-commit"
+
+	ImageTypeInstaller = "rhel-edge-installer"
+	ImageTypeCommit    = "rhel-edge-commit"
 )
 
 func (i *Image) ValidateRequest() error {
@@ -35,8 +39,9 @@ func (i *Image) ValidateRequest() error {
 	if i.Commit == nil || i.Commit.Arch == "" {
 		return errors.New(ArchitectureCantBeEmptyMessage)
 	}
-	if i.OutputType != "tar" {
-		return errors.New(OnlyTarAcceptedMessage)
+	fmt.Println(i.ImageType)
+	if i.ImageType != ImageTypeCommit && i.ImageType != ImageTypeInstaller {
+		return errors.New(ImageTypeNotAccepted)
 	}
 	return nil
 }

@@ -63,7 +63,7 @@ func (c *ImageBuilderClient) Compose(image *models.Image) (*models.Image, error)
 	cr := &ComposeResult{}
 	imgReq := ImageRequest{
 		Architecture: image.Commit.Arch,
-		ImageType:    "rhel-edge-commit",
+		ImageType:    image.ImageType,
 		UploadRequest: &UploadRequest{
 			Options: nil,
 			Type:    "aws.s3",

@@ -30,19 +30,40 @@ func TestValidateRequestWithEmptyArchitecture(t *testing.T) {
 		t.Errorf("expected architecture can't be empty")
 	}
 }
-func TestValidateRequestWithIsoOutputType(t *testing.T) {
+func TestValidateRequestWithEdgeInstallerOutputType(t *testing.T) {
 	img := &Image{
 		Distribution: "rhel-8",
 		Commit:       &Commit{Arch: "x86_64"},
-		OutputType:   "iso",
+		ImageType:    ImageTypeInstaller,
+	}
+
+	err := img.ValidateRequest()
+	if err != nil {
+		t.Errorf("Error not expected")
+	}
+}
+func TestValidateRequestWithEdgeCommitImageType(t *testing.T) {
+	img := &Image{
+		Distribution: "rhel-8",
+		Commit:       &Commit{Arch: "x86_64"},
+		ImageType:    ImageTypeCommit,
+	}
+
+	err := img.ValidateRequest()
+	if err != nil {
+		t.Errorf("Error not expected")
+	}
+}
+func TestValidateRequestWithWrongImageType(t *testing.T) {
+	img := &Image{
+		Distribution: "rhel-8",
+		Commit:       &Commit{Arch: "x86_64"},
+		ImageType:    "wrong image type",
 	}
 
 	err := img.ValidateRequest()
 	if err == nil {
 		t.Errorf("Error expected")
-	}
-	if err.Error() != OnlyTarAcceptedMessage {
-		t.Errorf("expected only tar accepted error")
 	}
 }
 
@@ -50,7 +71,7 @@ func TestValidateRequest(t *testing.T) {
 	img := &Image{
 		Distribution: "rhel-8",
 		Commit:       &Commit{Arch: "x86_64"},
-		OutputType:   "tar",
+		ImageType:    ImageTypeCommit,
 	}
 
 	err := img.ValidateRequest()
