@@ -1,12 +1,16 @@
 package commits
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/redhatinsights/edge-api/pkg/models"
+)
 
 func TestPatch(t *testing.T) {
-	commitOne := &Commit{
+	commitOne := &models.Commit{
 		OSTreeRef: "one",
 	}
-	commitTwo := &Commit{
+	commitTwo := &models.Commit{
 		OSTreeRef: "two",
 	}
 

@@ -14,14 +14,15 @@ import (
 
 // GetAccount from http request header
 func GetAccount(r *http.Request) (string, error) {
+	if config.Get() != nil {
+		if config.Get().Debug {
+			return "0000000", nil
+		}
 
-	if config.Get().Debug {
-		return "0000000", nil
-	}
-
-	ident := identity.Get(r.Context())
-	if ident.Identity.AccountNumber != "" {
-		return ident.Identity.AccountNumber, nil
+		ident := identity.Get(r.Context())
+		if ident.Identity.AccountNumber != "" {
+			return ident.Identity.AccountNumber, nil
+		}
 	}
 	return "", fmt.Errorf("cannot find account number")
 

@@ -20,6 +20,7 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/models"
 	"gorm.io/gorm"
 
 	"github.com/cavaliercoder/grab"
@@ -44,8 +45,8 @@ type UpdateRecord struct {
 	UpdateRepoURL  string
 }
 
-func getCommitFromDB(commitID uint) (*Commit, error) {
-	var commit Commit
+func getCommitFromDB(commitID uint) (*models.Commit, error) {
+	var commit models.Commit
 	result := db.DB.First(&commit, commitID)
 	if result.Error != nil {
 		return nil, result.Error
@@ -303,7 +304,7 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 
 // DownloadAndExtractRepo
 //	Download and Extract the repo tarball to dest dir
-func DownloadExtractVersionRepo(c *Commit, dest string) error {
+func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
 	// ensure the destination directory exists and then chdir there
 	log.Debugf("DownloadExtractVersionRepo::dest: %#v", dest)
 	err := os.MkdirAll(dest, os.FileMode(int(0755)))
@@ -354,7 +355,7 @@ func DownloadExtractVersionRepo(c *Commit, dest string) error {
 //  uprepo should be where the update commit lives, u is the update commit
 //  oldrepo should be where the old commit lives, o is the commit to be merged
 
-func RepoPullLocalStaticDeltas(u *Commit, o *Commit, uprepo string, oldrepo string) error {
+func RepoPullLocalStaticDeltas(u *models.Commit, o *models.Commit, uprepo string, oldrepo string) error {
 	err := os.Chdir(uprepo)
 	if err != nil {
 		return err
