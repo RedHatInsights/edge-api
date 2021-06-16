@@ -1,12 +1,149 @@
 basePath: /
 consumes:
 - application/json
-host: localhost
+definitions:
+  Commit:
+    description: Commit represents an OSTree commit from image builder
+    properties:
+      Account:
+        type: string
+      Arch:
+        type: string
+      BlueprintToml:
+        type: string
+      BuildDate:
+        type: string
+      BuildNumber:
+        format: uint64
+        type: integer
+      CreatedAt:
+        format: date-time
+        type: string
+      DeletedAt:
+        $ref: '#/definitions/DeletedAt'
+      ID:
+        format: uint64
+        type: integer
+      ImageBuildHash:
+        type: string
+      ImageBuildParentHash:
+        type: string
+      ImageBuildTarURL:
+        type: string
+      Name:
+        type: string
+      OSTreeCommit:
+        type: string
+      OSTreeParentCommit:
+        type: string
+      OSTreeRef:
+        type: string
+      Packages:
+        items:
+          $ref: '#/definitions/Package'
+        type: array
+      UpdatedAt:
+        format: date-time
+        type: string
+    type: object
+    x-go-package: github.com/redhatinsights/edge-api/pkg/models
+  DeletedAt:
+    $ref: '#/definitions/NullTime'
+  NullTime:
+    description: |-
+      NullTime implements the Scanner interface so
+      it can be used as a scan destination, similar to NullString.
+    properties:
+      Time:
+        format: date-time
+        type: string
+      Valid:
+        type: boolean
+    title: NullTime represents a time.Time that may be null.
+    type: object
+    x-go-package: database/sql
+  Package:
+    properties:
+      CreatedAt:
+        format: date-time
+        type: string
+      DeletedAt:
+        $ref: '#/definitions/DeletedAt'
+      ID:
+        format: uint64
+        type: integer
+      Name:
+        type: string
+      UpdatedAt:
+        format: date-time
+        type: string
+    type: object
+    x-go-package: github.com/redhatinsights/edge-api/pkg/models
+  image:
+    properties:
+      Account:
+        type: string
+      Commit:
+        $ref: '#/definitions/Commit'
+      CommitID:
+        format: int64
+        type: integer
+      ComposeJobID:
+        type: string
+      CreatedAt:
+        format: date-time
+        type: string
+      DeletedAt:
+        $ref: '#/definitions/DeletedAt'
+      Description:
+        type: string
+      Distribution:
+        type: string
+      ID:
+        format: uint64
+        type: integer
+      Name:
+        type: string
+      OutputType:
+        type: string
+      Status:
+        type: string
+      UpdatedAt:
+        format: date-time
+        type: string
+    title: An Image is what generates a OSTree Commit.
+    type: object
+    x-go-name: Image
+    x-go-package: github.com/redhatinsights/edge-api/pkg/models
+host: localhost:3000
 info:
   description: An API server for fleet edge management capabilities.
   title: Edge API
   version: 0.0.1
-paths: {}
+paths:
+  /images:
+    post:
+      description: It is used to create a new image on the hosted image builder.
+      operationId: createImage
+      parameters:
+      - description: The image to create.
+        in: body
+        name: Image
+        required: true
+        schema:
+          $ref: '#/definitions/image'
+      responses:
+        "200":
+          description: image
+          schema:
+            $ref: '#/definitions/image'
+        "400":
+          $ref: '#/responses/badRequest'
+        "500":
+          $ref: '#/responses/genericError'
+      summary: Creates an image on hosted image builder.
+      tags:
+      - image
 produces:
 - application/json
 schemes:

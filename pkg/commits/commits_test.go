@@ -11,9 +11,10 @@ import (
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
-var cmt Commit
+var cmt models.Commit
 
 func TestMain(m *testing.M) {
 	setUp()
@@ -43,10 +44,10 @@ type bodyResponse struct {
 }
 
 func TestPatch(t *testing.T) {
-	commitOne := &Commit{
+	commitOne := &models.Commit{
 		OSTreeRef: "one",
 	}
-	commitTwo := &Commit{
+	commitTwo := &models.Commit{
 		OSTreeRef: "two",
 	}
 
@@ -58,7 +59,7 @@ func TestPatch(t *testing.T) {
 }
 
 func TestGetAllEmpty(t *testing.T) {
-	err := db.DB.AutoMigrate(Commit{})
+	err := db.DB.AutoMigrate(&models.Commit{})
 	if err != nil {
 		panic(err)
 	}
@@ -78,7 +79,7 @@ func TestGetAllEmpty(t *testing.T) {
 }
 
 func TestGetAll(t *testing.T) {
-	err := db.DB.AutoMigrate(Commit{})
+	err := db.DB.AutoMigrate(models.Commit{})
 	if err != nil {
 		panic(err)
 	}
@@ -97,7 +98,7 @@ func TestGetAll(t *testing.T) {
 }
 
 func TestGetById(t *testing.T) {
-	err := db.DB.AutoMigrate(Commit{})
+	err := db.DB.AutoMigrate(models.Commit{})
 	if err != nil {
 		panic(err)
 	}
@@ -125,7 +126,7 @@ func TestGetByIdFail(t *testing.T) {
 	config.Get().Debug = true
 
 	db.InitDB()
-	err := db.DB.AutoMigrate(Commit{})
+	err := db.DB.AutoMigrate(models.Commit{})
 	if err != nil {
 		panic(err)
 	}
@@ -147,7 +148,7 @@ func TestGetByIdFail(t *testing.T) {
 }
 
 func TestGetCommit(t *testing.T) {
-	err := db.DB.AutoMigrate(Commit{})
+	err := db.DB.AutoMigrate(models.Commit{})
 	if err != nil {
 		panic(err)
 	}
@@ -170,7 +171,7 @@ func TestGetCommit(t *testing.T) {
 }
 
 func TestServeRepo(t *testing.T) {
-	err := db.DB.AutoMigrate(Commit{})
+	err := db.DB.AutoMigrate(models.Commit{})
 	if err != nil {
 		panic(err)
 	}

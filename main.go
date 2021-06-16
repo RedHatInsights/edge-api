@@ -3,7 +3,7 @@
 //  An API server for fleet edge management capabilities.
 //
 //     Schemes: http, https
-//     Host: localhost
+//     Host: localhost:3000
 //     BasePath: /
 //     Version: 0.0.1
 //
@@ -29,6 +29,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/imagebuilder"
+	"github.com/redhatinsights/edge-api/pkg/images"
 	"github.com/redhatinsights/edge-api/pkg/repo"
 
 	"github.com/go-chi/chi"
@@ -46,11 +48,15 @@ func setupDocsMiddleware(handler http.Handler) http.Handler {
 	return redoc.Redoc(opt, handler)
 }
 
-func main() {
+func initDependencies() {
 	config.Init()
 	l.InitLogger()
 	db.InitDB()
+	imagebuilder.InitClient()
+}
 
+func main() {
+	initDependencies()
 	cfg := config.Get()
 	log.WithFields(log.Fields{
 		"Hostname":    cfg.Hostname,
@@ -84,10 +90,14 @@ func main() {
 	server = &repo.FileServer{
 		BasePath: "/tmp",
 	}
+	if cfg.BucketName != "" {
+		server = repo.NewS3Proxy()
+	}
 
 	r.Route("/api/edge/v1", func(s chi.Router) {
 		s.Route("/commits", commits.MakeRouter)
 		s.Route("/repos", repo.MakeRouter(server))
+		s.Route("/images", images.MakeRouter)
 	})
 
 	mr := chi.NewRouter()

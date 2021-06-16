@@ -5,6 +5,7 @@ import (
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -22,7 +23,7 @@ func main() {
 		"BucketName":  cfg.BucketName,
 	}).Info("Configuration Values:")
 	db.InitDB()
-	err := db.DB.AutoMigrate(&commits.Commit{}, &commits.UpdateRecord{})
+	err := db.DB.AutoMigrate(&models.Commit{}, &commits.UpdateRecord{}, &models.Package{}, &models.Image{})
 	if err != nil {
 		panic(err)
 	}

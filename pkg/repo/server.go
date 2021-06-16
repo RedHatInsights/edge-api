@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/common"
+	log "github.com/sirupsen/logrus"
 )
 
 //Server is an interface for a served repository
@@ -25,12 +26,14 @@ type FileServer struct {
 
 //ServeRepo provides file serving of the repository
 func (s *FileServer) ServeRepo(w http.ResponseWriter, r *http.Request) {
+	log.Debugf("FileServer::ServeRepo::r: %#v", r)
 	name, pathPrefix, err := getNameAndPrefix(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	path := filepath.Join(s.BasePath, name)
+	log.Debugf("FileServer::ServeRepo::path: %#v", path)
 	fs := http.StripPrefix(pathPrefix, http.FileServer(http.Dir(path)))
 	fs.ServeHTTP(w, r)
 }
@@ -44,7 +47,10 @@ type S3Proxy struct {
 //NewS3Proxy creates a method to obtain a new S3 proxy
 func NewS3Proxy() *S3Proxy {
 	cfg := config.Get()
-	sess := session.Must(session.NewSession())
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		// Force enable Shared Config support
+		SharedConfigState: session.SharedConfigEnable,
+	}))
 	client := s3.New(sess)
 	return &S3Proxy{
 		Client: client,
@@ -58,6 +64,8 @@ func NewS3Proxy() *S3Proxy {
 // to:
 //  bucket/$account/$name/path/in/repo
 func (p *S3Proxy) ServeRepo(w http.ResponseWriter, r *http.Request) {
+
+	log.Debugf("S3Proxy::ServeRepo::r: %#v", r)
 
 	_, pathPrefix, err := getNameAndPrefix(r)
 	if err != nil {
@@ -73,6 +81,7 @@ func (p *S3Proxy) ServeRepo(w http.ResponseWriter, r *http.Request) {
 
 	_r := strings.Index(r.URL.Path, pathPrefix)
 	realPath := filepath.Join(account, string(r.URL.Path[_r+len(pathPrefix):]))
+	log.Debugf("S3Proxy::ServeRepo::realPath: %#v", realPath)
 
 	o, err := p.Client.GetObject(&s3.GetObjectInput{
 		Bucket: aws.String(p.Bucket),
