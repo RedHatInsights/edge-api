@@ -141,7 +141,7 @@ func (c *ImageBuilderClient) Compose(image *models.Image) (*models.Image, error)
 func (c *ImageBuilderClient) GetStatus(image *models.Image) (*models.Image, error) {
 	cs := &ComposeStatus{}
 	cfg := config.Get()
-	url := fmt.Sprintf("%s/composes/%s", cfg.ImageBuilderConfig.Url, image.ComposeJobID)
+	url := fmt.Sprintf("%s/composes/%s", cfg.ImageBuilderConfig.URL, image.ComposeJobID)
 	req, _ := http.NewRequest("GET", url, nil)
 
 	client := &http.Client{}
