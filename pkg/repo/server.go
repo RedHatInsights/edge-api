@@ -88,7 +88,7 @@ func (p *S3Proxy) ServeRepo(w http.ResponseWriter, r *http.Request) {
 		Key:    aws.String(realPath),
 	})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
