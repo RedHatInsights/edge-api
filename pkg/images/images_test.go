@@ -100,7 +100,9 @@ func TestGetStatus(t *testing.T) {
 		Account:      "0000000",
 		ComposeJobID: "123",
 		Status:       models.ImageStatusBuilding,
+		Commit:       &models.Commit{},
 	}
+	db.DB.Create(&image)
 	ctx := context.WithValue(req.Context(), imageKey, &image)
 	handler := http.HandlerFunc(GetStatusByID)
 	handler.ServeHTTP(rr, req.WithContext(ctx))
