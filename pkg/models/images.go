@@ -29,10 +29,10 @@ const (
 	OnlyTarAcceptedMessage         = "only tar architecture supported for now"
 
 	// Status
-	ImageStatusCreated  = "created"
-	ImageStatusBuilding = "building"
-	ImageStatusError    = "error"
-	ImageStatusSuccess  = "success"
+	ImageStatusCreated  = "CREATED"
+	ImageStatusBuilding = "BUILDING"
+	ImageStatusError    = "ERROR"
+	ImageStatusSuccess  = "SUCCESS"
 )
 
 func (i *Image) ValidateRequest() error {

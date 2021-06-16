@@ -54,20 +54,19 @@ type ComposeStatus struct {
 	ImageStatus ImageStatus `json:"image_status"`
 }
 type ImageStatus struct {
-	Status       ImageStatusValue `json:"status"`
+	Status       imageStatusValue `json:"status"`
 	UploadStatus *UploadStatus    `json:"upload_status,omitempty"`
 }
 
-type ImageStatusValue string
+type imageStatusValue string
 
-// List of ImageStatusValue
 const (
-	ImageStatusValue_building    ImageStatusValue = "building"
-	ImageStatusValue_failure     ImageStatusValue = "failure"
-	ImageStatusValue_pending     ImageStatusValue = "pending"
-	ImageStatusValue_registering ImageStatusValue = "registering"
-	ImageStatusValue_success     ImageStatusValue = "success"
-	ImageStatusValue_uploading   ImageStatusValue = "uploading"
+	imageStatusBulding     imageStatusValue = "building"
+	imageStatusFailure     imageStatusValue = "failure"
+	imageStatusPending     imageStatusValue = "pending"
+	imageStatusRegistering imageStatusValue = "registering"
+	imageStatusSuccess     imageStatusValue = "success"
+	imageStatusUploading   imageStatusValue = "uploading"
 )
 
 type UploadStatus struct {
@@ -161,9 +160,9 @@ func (c *ImageBuilderClient) GetStatus(image *models.Image) (*models.Image, erro
 	}
 
 	defer res.Body.Close()
-	if cs.ImageStatus.Status == ImageStatusValue_success {
+	if cs.ImageStatus.Status == imageStatusSuccess {
 		image.Status = models.ImageStatusSuccess
-	} else if cs.ImageStatus.Status == ImageStatusValue_failure {
+	} else if cs.ImageStatus.Status == imageStatusFailure {
 		image.Status = models.ImageStatusError
 	}
 	// TODO: We might wanna update db here
