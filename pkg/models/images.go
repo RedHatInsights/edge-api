@@ -13,7 +13,7 @@ type Image struct {
 	gorm.Model
 	Name         string
 	Account      string
-	Distribution string // rhel-8
+	Distribution string
 	Description  string
 	OutputType   string
 	Status       string

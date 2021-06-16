@@ -70,14 +70,17 @@ const (
 )
 
 type UploadStatus struct {
-	Options interface{} `json:"options"`
-	Status  string      `json:"status"`
-	Type    UploadTypes `json:"type"`
+	Options AWSS3UploadStatus `json:"options"`
+	Status  string            `json:"status"`
+	Type    UploadTypes       `json:"type"`
 }
 type ComposeResult struct {
 	Id string `json:"id"`
 }
 
+type AWSS3UploadStatus struct {
+	Url string `json:"url"`
+}
 type ImageBuilderClientInterface interface {
 	Compose(image *models.Image) (*models.Image, error)
 	GetStatus(image *models.Image) (*models.Image, error)
@@ -162,9 +165,10 @@ func (c *ImageBuilderClient) GetStatus(image *models.Image) (*models.Image, erro
 	defer res.Body.Close()
 	if cs.ImageStatus.Status == imageStatusSuccess {
 		image.Status = models.ImageStatusSuccess
+		image.Commit.ImageBuildTarURL = cs.ImageStatus.UploadStatus.Options.Url
+		// TODO: What to do if it's an installer?
 	} else if cs.ImageStatus.Status == imageStatusFailure {
 		image.Status = models.ImageStatusError
 	}
-	// TODO: We might wanna update db here
 	return image, nil
 }

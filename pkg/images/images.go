@@ -34,7 +34,7 @@ type key int
 
 const imageKey key = 1
 
-// ImageCtx is a handler for Commit requests
+// ImageCtx is a handler for Image requests
 func ImageCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var image models.Image
@@ -54,6 +54,13 @@ func ImageCtx(next http.Handler) http.Handler {
 				return
 			}
 			result := db.DB.Where("account = ?", account).First(&image, id)
+			if result.Error != nil {
+				err := errors.NewNotFound(err.Error())
+				w.WriteHeader(err.Status)
+				json.NewEncoder(w).Encode(&err)
+				return
+			}
+			result = db.DB.Where("account = ?", account).First(&image.Commit, image.CommitID)
 			if result.Error != nil {
 				err := errors.NewNotFound(err.Error())
 				w.WriteHeader(err.Status)
@@ -104,16 +111,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	// TODO: We probably want to save the image and the commit here with a created status and save them with an error afterwards
-	image, err := imagebuilder.Client.Compose(image)
-	if err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
-	image.Account, err = common.GetAccount(r)
+	account, err := common.GetAccount(r)
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
@@ -121,8 +119,27 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	image.Commit.Account = image.Account
+	image.Account = account
+	image.Commit.Account = account
+	image.Status = models.ImageStatusCreated
 	tx := db.DB.Create(&image)
+	if tx.Error != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	image, err = imagebuilder.Client.Compose(image)
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	image.Status = models.ImageStatusBuilding
+	tx = db.DB.Save(&image)
 	if tx.Error != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -173,9 +190,33 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 func GetStatusByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		if image.Status == models.ImageStatusBuilding {
-			// Get updated status from img builder API
 			var err error
 			image, err = imagebuilder.Client.GetStatus(image)
+			if err != nil {
+				log.Error(err)
+				err := errors.NewInternalServerError()
+				w.WriteHeader(err.Status)
+				json.NewEncoder(w).Encode(&err)
+				return
+			}
+			if image.Status != models.ImageStatusBuilding {
+				tx := db.DB.Save(&image.Commit)
+				if tx.Error != nil {
+					log.Error(err)
+					err := errors.NewInternalServerError()
+					w.WriteHeader(err.Status)
+					json.NewEncoder(w).Encode(&err)
+					return
+				}
+				tx = db.DB.Save(&image)
+				if tx.Error != nil {
+					log.Error(err)
+					err := errors.NewInternalServerError()
+					w.WriteHeader(err.Status)
+					json.NewEncoder(w).Encode(&err)
+					return
+				}
+			}
 			if err != nil {
 				log.Error(err)
 				err := errors.NewInternalServerError()
