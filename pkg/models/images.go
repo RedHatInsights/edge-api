@@ -13,7 +13,7 @@ type Image struct {
 	gorm.Model
 	Name         string
 	Account      string
-	Distribution string // rhel-8
+	Distribution string
 	Description  string
 	ImageType    string
 	Status       string
@@ -23,12 +23,20 @@ type Image struct {
 }
 
 const (
+	// Errors
 	DistributionCantBeNilMessage   = "distribution can't be empty"
 	ArchitectureCantBeEmptyMessage = "architecture can't be empty"
 	ImageTypeNotAccepted           = "Image type must be rhel-edge-installer or rhel-edge-commit"
-
+  
+  // ImageTypes
 	ImageTypeInstaller = "rhel-edge-installer"
 	ImageTypeCommit    = "rhel-edge-commit"
+
+	// Status
+	ImageStatusCreated  = "CREATED"
+	ImageStatusBuilding = "BUILDING"
+	ImageStatusError    = "ERROR"
+	ImageStatusSuccess  = "SUCCESS"
 )
 
 func (i *Image) ValidateRequest() error {

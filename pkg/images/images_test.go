@@ -2,6 +2,9 @@ package images
 
 import (
 	"bytes"
+	"context"
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -35,6 +38,10 @@ type MockImageBuilderClient struct{}
 func (c *MockImageBuilderClient) Compose(image *models.Image) (*models.Image, error) {
 	return image, nil
 }
+func (c *MockImageBuilderClient) GetStatus(image *models.Image) (*models.Image, error) {
+	image.Status = models.ImageStatusError
+	return image, nil
+}
 
 func TestCreateWasCalledWithAccountNotSet(t *testing.T) {
 	imagebuilder.Client = &MockImageBuilderClient{}
@@ -55,7 +62,6 @@ func TestCreateWasCalledWithAccountNotSet(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	// TODO: We need to discuss all-things testing against databases and setup, teardown and test suites
 	config.Init()
 	config.Get().Debug = true
 	db.InitDB()
@@ -75,5 +81,53 @@ func TestCreate(t *testing.T) {
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusOK)
+	}
+}
+func TestGetStatus(t *testing.T) {
+	config.Init()
+	config.Get().Debug = true
+	db.InitDB()
+	db.DB.AutoMigrate(&models.Commit{}, &commits.UpdateRecord{}, &models.Package{}, &models.Image{})
+
+	imagebuilder.Client = &MockImageBuilderClient{}
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+
+	var image = models.Image{
+		Account:      "0000000",
+		ComposeJobID: "123",
+		Status:       models.ImageStatusBuilding,
+		Commit:       &models.Commit{},
+	}
+	db.DB.Create(&image)
+	ctx := context.WithValue(req.Context(), imageKey, &image)
+	handler := http.HandlerFunc(GetStatusByID)
+	handler.ServeHTTP(rr, req.WithContext(ctx))
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+		return
+	}
+
+	var ir struct {
+		Status string
+	}
+	respBody, err := ioutil.ReadAll(rr.Body)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	err = json.Unmarshal(respBody, &ir)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if ir.Status != models.ImageStatusError { // comes from the mock above
+		t.Errorf("wrong image status: got %v want %v",
+			ir.Status, models.ImageStatusError)
 	}
 }
