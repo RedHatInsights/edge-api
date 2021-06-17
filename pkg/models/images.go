@@ -15,7 +15,7 @@ type Image struct {
 	Account      string
 	Distribution string
 	Description  string
-	OutputType   string
+	ImageType    string
 	Status       string
 	ComposeJobID string
 	CommitID     int
@@ -26,7 +26,11 @@ const (
 	// Errors
 	DistributionCantBeNilMessage   = "distribution can't be empty"
 	ArchitectureCantBeEmptyMessage = "architecture can't be empty"
-	OnlyTarAcceptedMessage         = "only tar architecture supported for now"
+	ImageTypeNotAccepted           = "Image type must be rhel-edge-installer or rhel-edge-commit"
+  
+  // ImageTypes
+	ImageTypeInstaller = "rhel-edge-installer"
+	ImageTypeCommit    = "rhel-edge-commit"
 
 	// Status
 	ImageStatusCreated  = "CREATED"
@@ -42,8 +46,8 @@ func (i *Image) ValidateRequest() error {
 	if i.Commit == nil || i.Commit.Arch == "" {
 		return errors.New(ArchitectureCantBeEmptyMessage)
 	}
-	if i.OutputType != "tar" {
-		return errors.New(OnlyTarAcceptedMessage)
+	if i.ImageType != ImageTypeCommit && i.ImageType != ImageTypeInstaller {
+		return errors.New(ImageTypeNotAccepted)
 	}
 	return nil
 }
