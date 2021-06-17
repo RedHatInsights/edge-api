@@ -3,6 +3,7 @@ package imagebuilder
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -123,6 +124,9 @@ func (c *ImageBuilderClient) Compose(image *models.Image) (*models.Image, error)
 		return nil, err
 	}
 
+	if res.StatusCode != http.StatusOK {
+		return nil, errors.New("error requesting image builder")
+	}
 	respBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
@@ -152,6 +156,9 @@ func (c *ImageBuilderClient) GetStatus(image *models.Image) (*models.Image, erro
 		return nil, err
 	}
 
+	if res.StatusCode != http.StatusOK {
+		return nil, errors.New("error requesting image builder")
+	}
 	respBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
