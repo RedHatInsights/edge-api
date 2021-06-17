@@ -1,6 +1,7 @@
 package commits
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -194,4 +195,67 @@ func TestServeRepo(t *testing.T) {
 		}
 	})
 
+}
+
+func TestAdd(t *testing.T) {
+	err := db.DB.AutoMigrate(models.Commit{})
+	if err != nil {
+		panic(err)
+	}
+	mockCommit()
+	t.Run("returns Add Commit ", func(t *testing.T) {
+
+		var jsonStr = []byte(`{ "Account": "123", "Name" :"test" }`)
+		request, _ := http.NewRequest(http.MethodGet, "/", bytes.NewBuffer(jsonStr))
+		response := httptest.NewRecorder()
+
+		Add(response, request)
+		got := response.Code
+		want := http.StatusOK
+		if got != want {
+			t.Errorf("got %q", got)
+		}
+	})
+}
+
+func TestAddError(t *testing.T) {
+	err := db.DB.AutoMigrate(models.Commit{})
+	if err != nil {
+		panic(err)
+	}
+
+	t.Run("returns Add Commit ", func(t *testing.T) {
+
+		var jsonStr = []byte(`{bad json}`)
+		request, _ := http.NewRequest(http.MethodGet, "/", bytes.NewBuffer(jsonStr))
+		response := httptest.NewRecorder()
+
+		Add(response, request)
+		got := response.Code
+		want := http.StatusBadRequest
+		if got != want {
+			t.Errorf("got %q", got)
+		}
+	})
+}
+
+//To continue
+func TestCommitCtx(t *testing.T) {
+	err := db.DB.AutoMigrate(models.Commit{})
+	if err != nil {
+		panic(err)
+	}
+	mockCommit()
+
+	t.Run("returns Get commitCtx ", func(t *testing.T) {
+		next := http.HandlerFunc(final)
+		got := CommitCtx(next)
+		if got == nil {
+			t.Errorf("got %q", got)
+		}
+
+	})
+}
+func final(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("OK"))
 }
