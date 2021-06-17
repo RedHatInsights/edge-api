@@ -3,6 +3,7 @@ package imagebuilder
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -36,6 +37,7 @@ type UploadRequest struct {
 }
 
 type UploadTypes string
+
 type ImageRequest struct {
 	Architecture  string         `json:"architecture"`
 	ImageType     string         `json:"image_type"`
@@ -49,12 +51,40 @@ type ComposeRequest struct {
 	Ostree         *OSTree         `json:"ostree,omitempty"`
 }
 
+type ComposeStatus struct {
+	ImageStatus ImageStatus `json:"image_status"`
+}
+type ImageStatus struct {
+	Status       imageStatusValue `json:"status"`
+	UploadStatus *UploadStatus    `json:"upload_status,omitempty"`
+}
+
+type imageStatusValue string
+
+const (
+	imageStatusBulding     imageStatusValue = "building"
+	imageStatusFailure     imageStatusValue = "failure"
+	imageStatusPending     imageStatusValue = "pending"
+	imageStatusRegistering imageStatusValue = "registering"
+	imageStatusSuccess     imageStatusValue = "success"
+	imageStatusUploading   imageStatusValue = "uploading"
+)
+
+type UploadStatus struct {
+	Options S3UploadStatus `json:"options"`
+	Status  string         `json:"status"`
+	Type    UploadTypes    `json:"type"`
+}
 type ComposeResult struct {
 	Id string `json:"id"`
 }
 
+type S3UploadStatus struct {
+	URL string `json:"url"`
+}
 type ImageBuilderClientInterface interface {
 	Compose(image *models.Image) (*models.Image, error)
+	GetStatus(image *models.Image) (*models.Image, error)
 }
 
 type ImageBuilderClient struct{}
@@ -94,6 +124,9 @@ func (c *ImageBuilderClient) Compose(image *models.Image) (*models.Image, error)
 		return nil, err
 	}
 
+	if res.StatusCode != http.StatusOK {
+		return nil, errors.New("error requesting image builder")
+	}
 	respBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
@@ -106,6 +139,43 @@ func (c *ImageBuilderClient) Compose(image *models.Image) (*models.Image, error)
 
 	defer res.Body.Close()
 	image.ComposeJobID = cr.Id
+	image.Status = models.ImageStatusBuilding
 
+	return image, nil
+}
+
+func (c *ImageBuilderClient) GetStatus(image *models.Image) (*models.Image, error) {
+	cs := &ComposeStatus{}
+	cfg := config.Get()
+	url := fmt.Sprintf("%s/composes/%s", cfg.ImageBuilderConfig.URL, image.ComposeJobID)
+	req, _ := http.NewRequest("GET", url, nil)
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, errors.New("error requesting image builder")
+	}
+	respBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(respBody, &cs)
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+	if cs.ImageStatus.Status == imageStatusSuccess {
+		image.Status = models.ImageStatusSuccess
+		image.Commit.ImageBuildTarURL = cs.ImageStatus.UploadStatus.Options.URL
+		// TODO: What to do if it's an installer?
+	} else if cs.ImageStatus.Status == imageStatusFailure {
+		image.Status = models.ImageStatusError
+	}
 	return image, nil
 }
