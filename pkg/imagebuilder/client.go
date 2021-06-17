@@ -70,7 +70,7 @@ const (
 )
 
 type UploadStatus struct {
-	Options AWSS3UploadStatus `json:"options"`
+	Options S3UploadStatus `json:"options"`
 	Status  string            `json:"status"`
 	Type    UploadTypes       `json:"type"`
 }
