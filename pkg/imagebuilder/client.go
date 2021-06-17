@@ -71,7 +71,7 @@ const (
 )
 
 type UploadStatus struct {
-	Options AWSS3UploadStatus `json:"options"`
+	Options S3UploadStatus `json:"options"`
 	Status  string            `json:"status"`
 	Type    UploadTypes       `json:"type"`
 }
@@ -79,7 +79,7 @@ type ComposeResult struct {
 	Id string `json:"id"`
 }
 
-type AWSS3UploadStatus struct {
+type S3UploadStatus struct {
 	Url string `json:"url"`
 }
 type ImageBuilderClientInterface interface {
