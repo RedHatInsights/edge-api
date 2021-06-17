@@ -24,6 +24,7 @@ func TestComposeImage(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
 		fmt.Fprintln(w, `{"id": "compose-job-id-returned-from-image-builder"}`)
 	}))
 	defer ts.Close()
@@ -41,7 +42,8 @@ func TestComposeImage(t *testing.T) {
 		Arch:     "x86_64",
 		Packages: pkgs,
 	}}
-	img, err := Client.Compose(img)
+	headers := make(map[string]string)
+	img, err := Client.Compose(img, headers)
 	if err != nil {
 		t.Errorf("Shouldnt throw error")
 	}
