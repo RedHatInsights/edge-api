@@ -78,7 +78,7 @@ type ComposeResult struct {
 	Id string `json:"id"`
 }
 
-type AWSS3UploadStatus struct {
+type S3UploadStatus struct {
 	Url string `json:"url"`
 }
 type ImageBuilderClientInterface interface {
