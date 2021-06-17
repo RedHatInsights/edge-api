@@ -40,6 +40,7 @@ type UploadTypes string
 type ImageRequest struct {
 	Architecture  string         `json:"architecture"`
 	ImageType     string         `json:"image_type"`
+	Ostree        *OSTree        `json:"ostree,omitempty"`
 	UploadRequest *UploadRequest `json:"upload_request"`
 }
 
@@ -47,7 +48,6 @@ type ComposeRequest struct {
 	Customizations *Customizations `json:"customizations,omitempty"`
 	Distribution   string          `json:"distribution"`
 	ImageRequests  []ImageRequest  `json:"image_requests"`
-	Ostree         *OSTree         `json:"ostree,omitempty"`
 }
 
 type ComposeStatus struct {
@@ -93,6 +93,10 @@ func (c *ImageBuilderClient) Compose(image *models.Image, headers map[string]str
 	imgReq := ImageRequest{
 		Architecture: image.Commit.Arch,
 		ImageType:    image.ImageType,
+		Ostree: &OSTree{
+			Ref: image.Commit.OSTreeRef,
+			URL: image.Commit.OSTreeParentCommit,
+		},
 		UploadRequest: &UploadRequest{
 			Options: make(map[string]string),
 			Type:    "aws.s3",
@@ -102,10 +106,7 @@ func (c *ImageBuilderClient) Compose(image *models.Image, headers map[string]str
 		Customizations: &Customizations{
 			Packages: image.Commit.GetPackagesList(),
 		},
-		Ostree: &OSTree{
-			Ref: image.Commit.OSTreeRef,
-			URL: image.Commit.OSTreeParentCommit,
-		},
+
 		Distribution:  image.Distribution,
 		ImageRequests: []ImageRequest{imgReq},
 	}
