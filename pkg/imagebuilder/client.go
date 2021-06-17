@@ -72,15 +72,15 @@ const (
 
 type UploadStatus struct {
 	Options S3UploadStatus `json:"options"`
-	Status  string            `json:"status"`
-	Type    UploadTypes       `json:"type"`
+	Status  string         `json:"status"`
+	Type    UploadTypes    `json:"type"`
 }
 type ComposeResult struct {
 	Id string `json:"id"`
 }
 
 type S3UploadStatus struct {
-	Url string `json:"url"`
+	URL string `json:"url"`
 }
 type ImageBuilderClientInterface interface {
 	Compose(image *models.Image) (*models.Image, error)
@@ -172,7 +172,7 @@ func (c *ImageBuilderClient) GetStatus(image *models.Image) (*models.Image, erro
 	defer res.Body.Close()
 	if cs.ImageStatus.Status == imageStatusSuccess {
 		image.Status = models.ImageStatusSuccess
-		image.Commit.ImageBuildTarURL = cs.ImageStatus.UploadStatus.Options.Url
+		image.Commit.ImageBuildTarURL = cs.ImageStatus.UploadStatus.Options.URL
 		// TODO: What to do if it's an installer?
 	} else if cs.ImageStatus.Status == imageStatusFailure {
 		image.Status = models.ImageStatusError
