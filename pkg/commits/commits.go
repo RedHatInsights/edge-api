@@ -28,7 +28,7 @@ func commitFromReadCloser(rc io.ReadCloser) (*models.Commit, error) {
 // MakeRouter adds support for operations on commits
 func MakeRouter(sub chi.Router) {
 	sub.Post("/", Add)
-	sub.Get("/", GetAll)
+	sub.With(common.Paginate).Get("/", GetAll)
 	sub.Route("/{commitId}", func(r chi.Router) {
 		r.Use(CommitCtx)
 		r.Get("/", GetByID)
@@ -98,11 +98,12 @@ func Add(w http.ResponseWriter, r *http.Request) {
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	var commits []models.Commit
 	account, err := common.GetAccount(r)
+	pagination := common.GetPagination(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	result := db.DB.Where("account = ?", account).Find(&commits)
+	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&commits)
 	if result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusBadRequest)
 		return

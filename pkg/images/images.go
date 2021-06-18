@@ -17,7 +17,7 @@ import (
 
 // MakeRouter adds support for operations on images
 func MakeRouter(sub chi.Router) {
-	sub.Get("/", GetAll)
+	sub.With(common.Paginate).Get("/", GetAll)
 	sub.Post("/", Create)
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageCtx)
@@ -155,6 +155,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 // GetAll image objects from the database for an account
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	var images []models.Image
+	pagination := common.GetPagination(r)
 	account, err := common.GetAccount(r)
 	if err != nil {
 		log.Info(err)
@@ -163,7 +164,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	result := db.DB.Where("account = ?", account).Find(&images)
+	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&images)
 	if result.Error != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
