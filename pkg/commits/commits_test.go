@@ -202,7 +202,6 @@ func TestAdd(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	mockCommit()
 	t.Run("returns Add Commit ", func(t *testing.T) {
 
 		var jsonStr = []byte(`{ "Account": "123", "Name" :"test" }`)
@@ -224,13 +223,82 @@ func TestAddError(t *testing.T) {
 		panic(err)
 	}
 
-	t.Run("returns Add Commit ", func(t *testing.T) {
+	t.Run("returns Error ", func(t *testing.T) {
 
 		var jsonStr = []byte(`{bad json}`)
 		request, _ := http.NewRequest(http.MethodGet, "/", bytes.NewBuffer(jsonStr))
 		response := httptest.NewRecorder()
 
 		Add(response, request)
+		got := response.Code
+		want := http.StatusBadRequest
+		if got != want {
+			t.Errorf("got %q", got)
+		}
+	})
+}
+
+func TestUpdate(t *testing.T) {
+	err := db.DB.AutoMigrate(models.Commit{})
+	if err != nil {
+		panic(err)
+	}
+	mockCommit()
+	t.Run("returns update Commit ", func(t *testing.T) {
+		var jsonStr = []byte(`{ "Account": "123"}`)
+
+		request, _ := http.NewRequest(http.MethodGet, "/", bytes.NewBuffer(jsonStr))
+		response := httptest.NewRecorder()
+		ctx := request.Context()
+		ctx = context.WithValue(ctx, commitKey, &cmt)
+		request = request.WithContext(ctx)
+		Update(response, request)
+		got := response.Code
+		want := http.StatusOK
+		if got != want {
+			t.Errorf("got %q", got)
+		}
+	})
+}
+
+func TestPatchF(t *testing.T) {
+	err := db.DB.AutoMigrate(models.Commit{})
+	if err != nil {
+		panic(err)
+	}
+	mockCommit()
+	t.Run("returns update Commit ", func(t *testing.T) {
+		var jsonStr = []byte(`{ "Account": "123"}`)
+
+		request, _ := http.NewRequest(http.MethodGet, "/", bytes.NewBuffer(jsonStr))
+		response := httptest.NewRecorder()
+		ctx := request.Context()
+		ctx = context.WithValue(ctx, commitKey, &cmt)
+		request = request.WithContext(ctx)
+		Patch(response, request)
+		got := response.Code
+		want := http.StatusOK
+		if got != want {
+			t.Errorf("got %q", got)
+		}
+	})
+}
+
+func TestPatchError(t *testing.T) {
+	err := db.DB.AutoMigrate(models.Commit{})
+	if err != nil {
+		panic(err)
+	}
+	mockCommit()
+	t.Run("returns update Commit ", func(t *testing.T) {
+		var jsonStr = []byte(`{bad json}`)
+
+		request, _ := http.NewRequest(http.MethodGet, "/", bytes.NewBuffer(jsonStr))
+		response := httptest.NewRecorder()
+		ctx := request.Context()
+		ctx = context.WithValue(ctx, commitKey, &cmt)
+		request = request.WithContext(ctx)
+		Patch(response, request)
 		got := response.Code
 		want := http.StatusBadRequest
 		if got != want {
