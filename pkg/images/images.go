@@ -150,14 +150,14 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go func() {
-		for {
-			updateImageStatus(image, r)
-			if image.Status != models.ImageStatusBuilding {
-				break
-			}
-		}
-	}()
+	// go func() {
+	// 	for {
+	// 		image, _ := updateImageStatus(image, r)
+	// 		if image.Status != models.ImageStatusBuilding {
+	// 			break
+	// 		}
+	// 	}
+	// }()
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&image)
@@ -205,13 +205,15 @@ func updateImageStatus(image *models.Image, r *http.Request) (*models.Image, err
 	if err != nil {
 		return image, err
 	}
-	tx := db.DB.Save(&image.Commit)
-	if tx.Error != nil {
-		return image, err
-	}
-	tx = db.DB.Save(&image)
-	if tx.Error != nil {
-		return image, err
+	if image.Status != models.ImageStatusBuilding {
+		tx := db.DB.Save(&image.Commit)
+		if tx.Error != nil {
+			return image, err
+		}
+		tx = db.DB.Save(&image)
+		if tx.Error != nil {
+			return image, err
+		}
 	}
 	return image, nil
 }
@@ -220,16 +222,14 @@ func updateImageStatus(image *models.Image, r *http.Request) (*models.Image, err
 func GetStatusByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		if image.Status == models.ImageStatusBuilding {
-			if image.Status != models.ImageStatusBuilding {
-				var err error
-				image, err = updateImageStatus(image, r)
-				if err != nil {
-					log.Error(err)
-					err := errors.NewInternalServerError()
-					w.WriteHeader(err.Status)
-					json.NewEncoder(w).Encode(&err)
-					return
-				}
+			var err error
+			image, err = updateImageStatus(image, r)
+			if err != nil {
+				log.Error(err)
+				err := errors.NewInternalServerError()
+				w.WriteHeader(err.Status)
+				json.NewEncoder(w).Encode(&err)
+				return
 			}
 		}
 		json.NewEncoder(w).Encode(struct {
