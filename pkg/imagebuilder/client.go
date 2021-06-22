@@ -3,7 +3,6 @@ package imagebuilder
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -83,13 +82,13 @@ type S3UploadStatus struct {
 	URL string `json:"url"`
 }
 type ImageBuilderClientInterface interface {
-	Compose(image *models.Image) (*models.Image, error)
-	GetStatus(image *models.Image) (*models.Image, error)
+	Compose(image *models.Image, headers map[string]string) (*models.Image, error)
+	GetStatus(image *models.Image, headers map[string]string) (*models.Image, error)
 }
 
 type ImageBuilderClient struct{}
 
-func (c *ImageBuilderClient) Compose(image *models.Image) (*models.Image, error) {
+func (c *ImageBuilderClient) Compose(image *models.Image, headers map[string]string) (*models.Image, error) {
 	cr := &ComposeResult{}
 	imgReq := ImageRequest{
 		Architecture: image.Commit.Arch,
@@ -99,7 +98,7 @@ func (c *ImageBuilderClient) Compose(image *models.Image) (*models.Image, error)
 			URL: image.Commit.OSTreeParentCommit,
 		},
 		UploadRequest: &UploadRequest{
-			Options: nil,
+			Options: make(map[string]string),
 			Type:    "aws.s3",
 		},
 	}
@@ -115,9 +114,13 @@ func (c *ImageBuilderClient) Compose(image *models.Image) (*models.Image, error)
 	payloadBuf := new(bytes.Buffer)
 	json.NewEncoder(payloadBuf).Encode(reqBody)
 	cfg := config.Get()
-	url := fmt.Sprintf("%s/compose", cfg.ImageBuilderConfig.URL)
+	url := fmt.Sprintf("%s/v1/compose", cfg.ImageBuilderConfig.URL)
 	log.Infof("Requesting url: %s", url)
 	req, _ := http.NewRequest("POST", url, payloadBuf)
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
+	req.Header.Add("Content-Type", "application/json")
 
 	client := &http.Client{}
 	res, err := client.Do(req)
@@ -125,8 +128,9 @@ func (c *ImageBuilderClient) Compose(image *models.Image) (*models.Image, error)
 		return nil, err
 	}
 
-	if res.StatusCode != http.StatusOK {
-		return nil, errors.New("error requesting image builder")
+	if res.StatusCode != http.StatusCreated {
+		body, _ := ioutil.ReadAll(res.Body)
+		return nil, fmt.Errorf("error requesting image builder, got status code %d and body %s", res.StatusCode, body)
 	}
 	respBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
@@ -145,11 +149,15 @@ func (c *ImageBuilderClient) Compose(image *models.Image) (*models.Image, error)
 	return image, nil
 }
 
-func (c *ImageBuilderClient) GetStatus(image *models.Image) (*models.Image, error) {
+func (c *ImageBuilderClient) GetStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
 	cs := &ComposeStatus{}
 	cfg := config.Get()
-	url := fmt.Sprintf("%s/composes/%s", cfg.ImageBuilderConfig.URL, image.ComposeJobID)
+	url := fmt.Sprintf("%s/v1/composes/%s", cfg.ImageBuilderConfig.URL, image.ComposeJobID)
 	req, _ := http.NewRequest("GET", url, nil)
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
+	req.Header.Add("Content-Type", "application/json")
 
 	client := &http.Client{}
 	res, err := client.Do(req)
@@ -158,7 +166,8 @@ func (c *ImageBuilderClient) GetStatus(image *models.Image) (*models.Image, erro
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, errors.New("error requesting image builder")
+		body, _ := ioutil.ReadAll(res.Body)
+		return nil, fmt.Errorf("error requesting image builder, got status code %d and body %s", res.StatusCode, body)
 	}
 	respBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {

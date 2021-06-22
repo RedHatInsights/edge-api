@@ -35,10 +35,10 @@ func TestCreateWasCalledWithWrongBody(t *testing.T) {
 
 type MockImageBuilderClient struct{}
 
-func (c *MockImageBuilderClient) Compose(image *models.Image) (*models.Image, error) {
+func (c *MockImageBuilderClient) Compose(image *models.Image, headers map[string]string) (*models.Image, error) {
 	return image, nil
 }
-func (c *MockImageBuilderClient) GetStatus(image *models.Image) (*models.Image, error) {
+func (c *MockImageBuilderClient) GetStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
 	image.Status = models.ImageStatusError
 	return image, nil
 }

@@ -131,7 +131,8 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	image, err = imagebuilder.Client.Compose(image)
+	headers := common.GetOutgoingHeaders(r)
+	image, err = imagebuilder.Client.Compose(image, headers)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -192,7 +193,8 @@ func GetStatusByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		if image.Status == models.ImageStatusBuilding {
 			var err error
-			image, err = imagebuilder.Client.GetStatus(image)
+			headers := common.GetOutgoingHeaders(r)
+			image, err = imagebuilder.Client.GetStatus(image, headers)
 			if err != nil {
 				log.Error(err)
 				err := errors.NewInternalServerError()

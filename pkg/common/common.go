@@ -28,6 +28,17 @@ func GetAccount(r *http.Request) (string, error) {
 
 }
 
+func GetOutgoingHeaders(r *http.Request) map[string]string {
+	out := make(map[string]string)
+	headers := []string{"x-rh-identity", "x-rh-insights-request-id"}
+	for _, key := range headers {
+		if value := r.Header.Get(key); value != "" {
+			out[key] = value
+		}
+	}
+	return out
+}
+
 // StatusOK returns a simple 200 status code
 func StatusOK(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
