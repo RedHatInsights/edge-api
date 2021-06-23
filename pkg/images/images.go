@@ -152,7 +152,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 
 	go func(id uint) {
 		var i *models.Image
-		db.DB.First(&i, image.ID)
+		db.DB.First(&i, id)
 		for {
 			i, err := updateImageStatus(i, r)
 			if err != nil {
