@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/redhatinsights/edge-api/config"
@@ -88,7 +89,22 @@ func (p *S3Proxy) ServeRepo(w http.ResponseWriter, r *http.Request) {
 		Key:    aws.String(realPath),
 	})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case s3.ErrCodeNoSuchKey:
+				log.Debugf("S3Proxy::ServeRepo::s3.ErrCodeNoSuchKey: %#v", realPath)
+				http.Error(w, err.Error(), http.StatusNotFound)
+			case s3.ErrCodeInvalidObjectState:
+				log.Debugf("S3Proxy::ServeRepo::s3.ErrCodeInvalidObjectState: %#v", realPath)
+				http.Error(w, err.Error(), http.StatusNotFound)
+			default:
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+		} else {
+			// log the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			log.Debugf("S3Proxy::ServeRepo::UnhandledS3Error: %#v", err.Error())
+		}
 		return
 	}
 
