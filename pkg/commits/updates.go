@@ -206,10 +206,10 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *UpdateRecord {
 	return update
 }
 
-/* RepoBuilder
-Build an update repo with the set of commits all merged into a single repo
+/* Build an update repo with the set of commits all merged into a single repo
 with static deltas generated between them all
 */
+// RepoBuilder Build an update repo
 func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 	cfg := config.Get()
 
@@ -302,7 +302,7 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 	return nil
 }
 
-// DownloadAndExtractRepo Download and Extract the repo tarball to dest dir
+// DownloadExtractVersionRepo Download and Extract the repo tarball to dest dir
 func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
 	// ensure the destination directory exists and then chdir there
 	log.Debugf("DownloadExtractVersionRepo::dest: %#v", dest)
@@ -348,11 +348,9 @@ func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
 	return nil
 }
 
-// RepoPullLocalStaticDeltas
-//	Pull local repo into the new update repo and compute static deltas
-//
 //  uprepo should be where the update commit lives, u is the update commit
 //  oldrepo should be where the old commit lives, o is the commit to be merged
+// RepoPullLocalStaticDeltas pull local repo into the new update repo and compute static deltas
 func RepoPullLocalStaticDeltas(u *models.Commit, o *models.Commit, uprepo string, oldrepo string) error {
 	err := os.Chdir(uprepo)
 	if err != nil {
