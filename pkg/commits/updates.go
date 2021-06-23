@@ -27,7 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Update reporesents the combination of an OSTree commit and a set of Inventory
+// UpdateRecord reporesents the combination of an OSTree commit and a set of Inventory
 // hosts that need to have the commit deployed to them
 //
 // This will ultimately kick off a transaction where the old version(s) of
@@ -72,7 +72,7 @@ func updateFromReadCloser(rc io.ReadCloser) (*UpdateRecord, error) {
 	return &update, err
 }
 
-// MakeRouter adds support for operations on commits
+// UpdatesMakeRouter adds support for operations on commits
 func UpdatesMakeRouter(sub chi.Router) {
 	sub.Post("/", UpdatesAdd)
 	sub.Get("/", UpdatesGetAll)
@@ -111,7 +111,7 @@ func UpdateCtx(next http.Handler) http.Handler {
 	})
 }
 
-// Add an object to the database for an account
+// UpdatesAdd add an object to the database for an account
 func UpdatesAdd(w http.ResponseWriter, r *http.Request) {
 
 	update, err := updateFromReadCloser(r.Body)
@@ -150,7 +150,7 @@ func UpdatesAdd(w http.ResponseWriter, r *http.Request) {
 	go RepoBuilder(update, r)
 }
 
-// GetAll update objects from the database for an account
+// UpdatesGetAll update objects from the database for an account
 func UpdatesGetAll(w http.ResponseWriter, r *http.Request) {
 	var updates []UpdateRecord
 	account, err := common.GetAccount(r)
@@ -168,14 +168,14 @@ func UpdatesGetAll(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&updates)
 }
 
-// GetByID obtains an update from the database for an account
+// UpdatesGetByID obtains an update from the database for an account
 func UpdatesGetByID(w http.ResponseWriter, r *http.Request) {
 	if update := getUpdate(w, r); update != nil {
 		json.NewEncoder(w).Encode(update)
 	}
 }
 
-// Update a update object in the database for an an account
+// UpdatesUpdate a update object in the database for an an account
 func UpdatesUpdate(w http.ResponseWriter, r *http.Request) {
 	update := getUpdate(w, r)
 	if update == nil {
@@ -210,6 +210,7 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *UpdateRecord {
 Build an update repo with the set of commits all merged into a single repo
 with static deltas generated between them all
 */
+
 func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 	cfg := config.Get()
 
