@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-//CommitDownloader
+// CommitDownloader download function that puts the source_url into the destination_path on the local filesystem
 func CommitDownloader(sourceURL string, destinationPath string) error {
 
 	resp, err := http.Get(sourceURL)

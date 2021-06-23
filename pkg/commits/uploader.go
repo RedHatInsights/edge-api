@@ -58,8 +58,7 @@ func NewS3Uploader() *S3Uploader {
 }
 
 // UploadReopo uploads the repo to a backing object storage bucket
-// the repository is uploaded to
-//  bucket/$account/$name/
+// the repository is uploaded to bucket/$account/$name/
 func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 	cfg := config.Get()
 
