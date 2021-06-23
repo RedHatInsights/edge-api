@@ -206,9 +206,8 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *UpdateRecord {
 	return update
 }
 
-/* RepoBuilder build an update repo with the set of commits all merged into a single repo
-with static deltas generated between them all
-*/
+// RepoBuilder build an update repo with the set of commits all merged into a single repo
+// with static deltas generated between them all
 func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 	cfg := config.Get()
 
@@ -251,11 +250,11 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 		//
 		// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
 		for _, commitID := range strings.Split(ur.OldCommitIDs, ",") {
-			cID_uint, err := strconv.ParseUint(commitID, 10, 64)
+			cIDUint, err := strconv.ParseUint(commitID, 10, 64)
 			if err != nil {
 				return err
 			}
-			commit, err := getCommitFromDB(uint(cID_uint))
+			commit, err := getCommitFromDB(uint(cIDUint))
 			if err != nil {
 				return err
 			}
@@ -347,9 +346,9 @@ func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
 	return nil
 }
 
+// RepoPullLocalStaticDeltas pull local repo into the new update repo and compute static deltas
 //  uprepo should be where the update commit lives, u is the update commit
 //  oldrepo should be where the old commit lives, o is the commit to be merged
-// RepoPullLocalStaticDeltas pull local repo into the new update repo and compute static deltas
 func RepoPullLocalStaticDeltas(u *models.Commit, o *models.Commit, uprepo string, oldrepo string) error {
 	err := os.Chdir(uprepo)
 	if err != nil {
