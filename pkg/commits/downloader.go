@@ -6,15 +6,16 @@ import (
 	"os"
 )
 
-func CommitDownloader(source_url string, destination_path string) error {
+//CommitDownloader
+func CommitDownloader(sourceURL string, destinationPath string) error {
 
-	resp, err := http.Get(source_url)
+	resp, err := http.Get(sourceURL)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
-	out, err := os.Create(destination_path)
+	out, err := os.Create(destinationPath)
 	if err != nil {
 		return err
 	}
