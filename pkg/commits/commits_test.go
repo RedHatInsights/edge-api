@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -28,6 +27,10 @@ func setUp() {
 	config.Init()
 	config.Get().Debug = true
 	db.InitDB()
+	err := db.DB.AutoMigrate(&models.Commit{})
+	if err != nil {
+		panic(err)
+	}
 }
 
 func tearDown() {
@@ -60,10 +63,7 @@ func TestPatch(t *testing.T) {
 }
 
 func TestGetAllEmpty(t *testing.T) {
-	err := db.DB.AutoMigrate(&models.Commit{})
-	if err != nil {
-		panic(err)
-	}
+
 	t.Run("returns empty commits", func(t *testing.T) {
 		request, _ := http.NewRequest(http.MethodGet, "/", nil)
 		response := httptest.NewRecorder()
@@ -80,32 +80,23 @@ func TestGetAllEmpty(t *testing.T) {
 }
 
 func TestGetAll(t *testing.T) {
-	err := db.DB.AutoMigrate(models.Commit{})
-	if err != nil {
-		panic(err)
-	}
-
 	mockCommit()
-	t.Run("returns Get all commits", func(t *testing.T) {
+	t.Run("returns Get all commits successfully", func(t *testing.T) {
 		request, _ := http.NewRequest(http.MethodGet, "/", nil)
 		response := httptest.NewRecorder()
 
 		GetAll(response, request)
-		got := response.Body.String()
-		if !strings.Contains(got, "0000000") {
+		got := response.Code
+		want := http.StatusOK
+		if got != want {
 			t.Errorf("got %q", got)
 		}
 	})
 }
 
 func TestGetById(t *testing.T) {
-	err := db.DB.AutoMigrate(models.Commit{})
-	if err != nil {
-		panic(err)
-	}
-
 	mockCommit()
-	t.Run("returns Get commit by id", func(t *testing.T) {
+	t.Run("returns Get commit by id successfully", func(t *testing.T) {
 
 		request, _ := http.NewRequest(http.MethodGet, "/", nil)
 		response := httptest.NewRecorder()
@@ -123,18 +114,9 @@ func TestGetById(t *testing.T) {
 }
 
 func TestGetByIdFail(t *testing.T) {
-	config.Init()
-	config.Get().Debug = true
-
-	db.InitDB()
-	err := db.DB.AutoMigrate(models.Commit{})
-	if err != nil {
-		panic(err)
-	}
-
 	mockCommit()
 
-	t.Run("returns Error", func(t *testing.T) {
+	t.Run("returns Error on get by id", func(t *testing.T) {
 
 		request, _ := http.NewRequest(http.MethodGet, "/", nil)
 		response := httptest.NewRecorder()
@@ -149,13 +131,8 @@ func TestGetByIdFail(t *testing.T) {
 }
 
 func TestGetCommit(t *testing.T) {
-	err := db.DB.AutoMigrate(models.Commit{})
-	if err != nil {
-		panic(err)
-	}
-
 	mockCommit()
-	t.Run("returns Get commit ", func(t *testing.T) {
+	t.Run("returns Get commit successfully", func(t *testing.T) {
 
 		request, _ := http.NewRequest(http.MethodGet, "/", nil)
 		response := httptest.NewRecorder()
@@ -172,13 +149,8 @@ func TestGetCommit(t *testing.T) {
 }
 
 func TestServeRepo(t *testing.T) {
-	err := db.DB.AutoMigrate(models.Commit{})
-	if err != nil {
-		panic(err)
-	}
-
 	mockCommit()
-	t.Run("returns Get commit ", func(t *testing.T) {
+	t.Run("returns Serve Repo successfully", func(t *testing.T) {
 
 		request, _ := http.NewRequest(http.MethodGet, "/repo", nil)
 		response := httptest.NewRecorder()
@@ -198,11 +170,7 @@ func TestServeRepo(t *testing.T) {
 }
 
 func TestAdd(t *testing.T) {
-	err := db.DB.AutoMigrate(models.Commit{})
-	if err != nil {
-		panic(err)
-	}
-	t.Run("returns Add Commit ", func(t *testing.T) {
+	t.Run("returns Add Commit successfully", func(t *testing.T) {
 
 		var jsonStr = []byte(`{ "Account": "123", "Name" :"test" }`)
 		request, _ := http.NewRequest(http.MethodGet, "/", bytes.NewBuffer(jsonStr))
@@ -218,12 +186,7 @@ func TestAdd(t *testing.T) {
 }
 
 func TestAddError(t *testing.T) {
-	err := db.DB.AutoMigrate(models.Commit{})
-	if err != nil {
-		panic(err)
-	}
-
-	t.Run("returns Error ", func(t *testing.T) {
+	t.Run("returns Error on add a commit", func(t *testing.T) {
 
 		var jsonStr = []byte(`{bad json}`)
 		request, _ := http.NewRequest(http.MethodGet, "/", bytes.NewBuffer(jsonStr))
@@ -239,12 +202,8 @@ func TestAddError(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	err := db.DB.AutoMigrate(models.Commit{})
-	if err != nil {
-		panic(err)
-	}
 	mockCommit()
-	t.Run("returns update Commit ", func(t *testing.T) {
+	t.Run("returns update Commit successfully", func(t *testing.T) {
 		var jsonStr = []byte(`{ "Account": "123"}`)
 
 		request, _ := http.NewRequest(http.MethodGet, "/", bytes.NewBuffer(jsonStr))
@@ -262,12 +221,8 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestPatchF(t *testing.T) {
-	err := db.DB.AutoMigrate(models.Commit{})
-	if err != nil {
-		panic(err)
-	}
 	mockCommit()
-	t.Run("returns update Commit ", func(t *testing.T) {
+	t.Run("returns Patch ", func(t *testing.T) {
 		var jsonStr = []byte(`{ "Account": "123"}`)
 
 		request, _ := http.NewRequest(http.MethodGet, "/", bytes.NewBuffer(jsonStr))
@@ -285,12 +240,9 @@ func TestPatchF(t *testing.T) {
 }
 
 func TestPatchError(t *testing.T) {
-	err := db.DB.AutoMigrate(models.Commit{})
-	if err != nil {
-		panic(err)
-	}
+
 	mockCommit()
-	t.Run("returns update Commit ", func(t *testing.T) {
+	t.Run("returns Patch Error ", func(t *testing.T) {
 		var jsonStr = []byte(`{bad json}`)
 
 		request, _ := http.NewRequest(http.MethodGet, "/", bytes.NewBuffer(jsonStr))
@@ -309,10 +261,10 @@ func TestPatchError(t *testing.T) {
 
 //To continue
 func TestCommitCtx(t *testing.T) {
-	err := db.DB.AutoMigrate(models.Commit{})
-	if err != nil {
-		panic(err)
-	}
+	// err := db.DB.AutoMigrate(models.Commit{})
+	// if err != nil {
+	// 	panic(err)
+	// }
 	mockCommit()
 
 	t.Run("returns Get commitCtx ", func(t *testing.T) {
