@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -15,6 +16,19 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
+
+func setUp() {
+	config.Init()
+	config.Get().Debug = true
+	db.InitDB()
+	db.DB.AutoMigrate(&models.Commit{}, &commits.UpdateRecord{}, &models.Package{}, &models.Image{})
+}
+
+func TestMain(m *testing.M) {
+	setUp()
+	retCode := m.Run()
+	os.Exit(retCode)
+}
 
 func TestCreateWasCalledWithWrongBody(t *testing.T) {
 	var jsonStr = []byte(`{bad json}`)
@@ -44,6 +58,7 @@ func (c *MockImageBuilderClient) GetStatus(image *models.Image, headers map[stri
 }
 
 func TestCreateWasCalledWithAccountNotSet(t *testing.T) {
+	config.Get().Debug = false
 	imagebuilder.Client = &MockImageBuilderClient{}
 	var jsonStr = []byte(`{"Distribution": "rhel-8", "ImageType": "rhel-edge-installer", "Commit": {"Arch": "x86_64", "Packages" : [ { "name" : "vim"  } ]}}`)
 	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
@@ -59,14 +74,10 @@ func TestCreateWasCalledWithAccountNotSet(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusBadRequest)
 	}
+	config.Get().Debug = true
 }
 
 func TestCreate(t *testing.T) {
-	config.Init()
-	config.Get().Debug = true
-	db.InitDB()
-	db.DB.AutoMigrate(&models.Commit{}, &commits.UpdateRecord{}, &models.Package{}, &models.Image{})
-
 	imagebuilder.Client = &MockImageBuilderClient{}
 	var jsonStr = []byte(`{"Distribution": "rhel-8", "ImageType": "rhel-edge-installer", "Commit": {"Arch": "x86_64", "Packages" : [ { "name" : "vim"  } ]}}`)
 	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
@@ -84,11 +95,6 @@ func TestCreate(t *testing.T) {
 	}
 }
 func TestGetStatus(t *testing.T) {
-	config.Init()
-	config.Get().Debug = true
-	db.InitDB()
-	db.DB.AutoMigrate(&models.Commit{}, &commits.UpdateRecord{}, &models.Package{}, &models.Image{})
-
 	imagebuilder.Client = &MockImageBuilderClient{}
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
