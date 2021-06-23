@@ -58,7 +58,7 @@ func TestPatch(t *testing.T) {
 	applyPatch(commitOne, commitTwo)
 
 	if commitOne.OSTreeRef != "two" {
-		t.Errorf("expected two got %s", commitOne.OSTreeRef)
+		t.Errorf("Expected two got %s", commitOne.OSTreeRef)
 	}
 }
 
@@ -73,7 +73,7 @@ func TestGetAllEmpty(t *testing.T) {
 		json.NewDecoder(response.Body).Decode(&got)
 
 		if len(got) != 0 {
-			t.Errorf("got %q", got)
+			t.Errorf("Expected zero but got %q", got)
 		}
 	})
 
@@ -89,7 +89,7 @@ func TestGetAll(t *testing.T) {
 		got := response.Code
 		want := http.StatusOK
 		if got != want {
-			t.Errorf("got %q", got)
+			t.Errorf("Expected status code to be %q but got %q", want, got)
 		}
 	})
 }
@@ -107,7 +107,7 @@ func TestGetById(t *testing.T) {
 		var bodyResp *bodyResponse
 		json.NewDecoder(response.Body).Decode(&bodyResp)
 		if bodyResp.Account != "0000000" {
-			t.Errorf("got %q", bodyResp.Account)
+			t.Errorf("Expected status code to be 0000000 but got %q", bodyResp.Account)
 		}
 	})
 
@@ -125,7 +125,7 @@ func TestGetByIdFail(t *testing.T) {
 		got := response.Body.String()
 		want := "must pass id\n"
 		if got != want {
-			t.Errorf("got %q, want %q", got, want)
+			t.Errorf("Expected status code to be %q but got %q", want, got)
 		}
 	})
 }
@@ -143,7 +143,7 @@ func TestGetCommit(t *testing.T) {
 		got := response.Code
 		want := http.StatusOK
 		if got != want {
-			t.Errorf("got %q", got)
+			t.Errorf("Expected status code to be %q but got %q", want, got)
 		}
 	})
 }
@@ -163,7 +163,7 @@ func TestServeRepo(t *testing.T) {
 		got := response.Code
 		want := http.StatusOK
 		if got != want {
-			t.Errorf("got %q", got)
+			t.Errorf("Expected status code to be %q but got %q", want, got)
 		}
 	})
 
@@ -180,7 +180,7 @@ func TestAdd(t *testing.T) {
 		got := response.Code
 		want := http.StatusOK
 		if got != want {
-			t.Errorf("got %q", got)
+			t.Errorf("Expected status code to be %q but got %q", want, got)
 		}
 	})
 }
@@ -196,7 +196,7 @@ func TestAddError(t *testing.T) {
 		got := response.Code
 		want := http.StatusBadRequest
 		if got != want {
-			t.Errorf("got %q", got)
+			t.Errorf("Expected status code to be %q but got %q", want, got)
 		}
 	})
 }
@@ -215,7 +215,7 @@ func TestUpdate(t *testing.T) {
 		got := response.Code
 		want := http.StatusOK
 		if got != want {
-			t.Errorf("got %q", got)
+			t.Errorf("Expected status code to be %q but got %q", want, got)
 		}
 	})
 }
@@ -234,7 +234,7 @@ func TestPatchF(t *testing.T) {
 		got := response.Code
 		want := http.StatusOK
 		if got != want {
-			t.Errorf("got %q", got)
+			t.Errorf("Expected status code to be %q but got %q", want, got)
 		}
 	})
 }
@@ -254,24 +254,19 @@ func TestPatchError(t *testing.T) {
 		got := response.Code
 		want := http.StatusBadRequest
 		if got != want {
-			t.Errorf("got %q", got)
+			t.Errorf("Expected status code to be %q but got %q", want, got)
 		}
 	})
 }
 
-//To continue
 func TestCommitCtx(t *testing.T) {
-	// err := db.DB.AutoMigrate(models.Commit{})
-	// if err != nil {
-	// 	panic(err)
-	// }
 	mockCommit()
 
 	t.Run("returns Get commitCtx ", func(t *testing.T) {
 		next := http.HandlerFunc(final)
 		got := CommitCtx(next)
 		if got == nil {
-			t.Errorf("got %q", got)
+			t.Errorf("Expected not nil response got %q", got)
 		}
 
 	})
