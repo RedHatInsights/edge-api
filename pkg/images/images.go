@@ -150,14 +150,19 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// go func() {
-	// 	for {
-	// 		image, _ := updateImageStatus(image, r)
-	// 		if image.Status != models.ImageStatusBuilding {
-	// 			break
-	// 		}
-	// 	}
-	// }()
+	go func(id uint) {
+		var i *models.Image
+		db.DB.First(&i, image.ID)
+		for {
+			i, err := updateImageStatus(i, r)
+			if err != nil {
+				panic(err)
+			}
+			if i.Status != models.ImageStatusBuilding {
+				break
+			}
+		}
+	}(image.ID)
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&image)
