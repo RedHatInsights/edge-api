@@ -17,7 +17,7 @@ import (
 
 // MakeRouter adds support for operations on images
 func MakeRouter(sub chi.Router) {
-	sub.Get("/", GetAll)
+	sub.With(common.Paginate).Get("/", GetAll)
 	sub.Post("/", Create)
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageCtx)
@@ -131,7 +131,8 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	image, err = imagebuilder.Client.Compose(image)
+	headers := common.GetOutgoingHeaders(r)
+	image, err = imagebuilder.Client.Compose(image, headers)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -148,6 +149,21 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
+
+	go func(id uint) {
+		var i *models.Image
+		db.DB.Joins("Commit").First(&i, id)
+		for {
+			i, err := updateImageStatus(i, r)
+			if err != nil {
+				panic(err)
+			}
+			if i.Status != models.ImageStatusBuilding {
+				break
+			}
+		}
+	}(image.ID)
+
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&image)
 }
@@ -155,6 +171,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 // GetAll image objects from the database for an account
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	var images []models.Image
+	pagination := common.GetPagination(r)
 	account, err := common.GetAccount(r)
 	if err != nil {
 		log.Info(err)
@@ -163,7 +180,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	result := db.DB.Where("account = ?", account).Find(&images)
+	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&images)
 	if result.Error != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -187,37 +204,32 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 	return image
 }
 
+func updateImageStatus(image *models.Image, r *http.Request) (*models.Image, error) {
+	log.Info("Requesting image status on image builder")
+	headers := common.GetOutgoingHeaders(r)
+	image, err := imagebuilder.Client.GetStatus(image, headers)
+	if err != nil {
+		return image, err
+	}
+	if image.Status != models.ImageStatusBuilding {
+		tx := db.DB.Save(&image.Commit)
+		if tx.Error != nil {
+			return image, err
+		}
+		tx = db.DB.Save(&image)
+		if tx.Error != nil {
+			return image, err
+		}
+	}
+	return image, nil
+}
+
 // GetStatusByID returns the image status. If still building, goes to image builder API.
 func GetStatusByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		if image.Status == models.ImageStatusBuilding {
 			var err error
-			image, err = imagebuilder.Client.GetStatus(image)
-			if err != nil {
-				log.Error(err)
-				err := errors.NewInternalServerError()
-				w.WriteHeader(err.Status)
-				json.NewEncoder(w).Encode(&err)
-				return
-			}
-			if image.Status != models.ImageStatusBuilding {
-				tx := db.DB.Save(&image.Commit)
-				if tx.Error != nil {
-					log.Error(err)
-					err := errors.NewInternalServerError()
-					w.WriteHeader(err.Status)
-					json.NewEncoder(w).Encode(&err)
-					return
-				}
-				tx = db.DB.Save(&image)
-				if tx.Error != nil {
-					log.Error(err)
-					err := errors.NewInternalServerError()
-					w.WriteHeader(err.Status)
-					json.NewEncoder(w).Encode(&err)
-					return
-				}
-			}
+			image, err = updateImageStatus(image, r)
 			if err != nil {
 				log.Error(err)
 				err := errors.NewInternalServerError()

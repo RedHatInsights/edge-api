@@ -27,8 +27,8 @@ const (
 	DistributionCantBeNilMessage   = "distribution can't be empty"
 	ArchitectureCantBeEmptyMessage = "architecture can't be empty"
 	ImageTypeNotAccepted           = "Image type must be rhel-edge-installer or rhel-edge-commit"
-  
-  // ImageTypes
+
+	// ImageTypes
 	ImageTypeInstaller = "rhel-edge-installer"
 	ImageTypeCommit    = "rhel-edge-commit"
 
