@@ -206,10 +206,9 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *UpdateRecord {
 	return update
 }
 
-/* Build an update repo with the set of commits all merged into a single repo
+/* RepoBuilder build an update repo with the set of commits all merged into a single repo
 with static deltas generated between them all
 */
-// RepoBuilder Build an update repo
 func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 	cfg := config.Get()
 
