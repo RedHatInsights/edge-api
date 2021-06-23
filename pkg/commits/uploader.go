@@ -14,7 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-//uploader is an interface for uploading repository
+//Uploader is an interface for uploading repository
 type Uploader interface {
 	UploadRepo(src string, account string) (string, error)
 }
@@ -26,7 +26,7 @@ type S3Uploader struct {
 	Bucket            string
 }
 
-// File Uploader isn't actually an uploader but implements the interface in
+// FileUploader isn't actually an uploader but implements the interface in
 // order to allow the workflow to be done to completion on a local machine
 // without S3
 type FileUploader struct {
