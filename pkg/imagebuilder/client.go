@@ -180,6 +180,7 @@ func (c *ImageBuilderClient) GetStatus(image *models.Image, headers map[string]s
 	}
 
 	defer res.Body.Close()
+	log.Info(fmt.Sprintf("Got image status %s", cs.ImageStatus.Status))
 	if cs.ImageStatus.Status == imageStatusSuccess {
 		image.Status = models.ImageStatusSuccess
 		image.Commit.ImageBuildTarURL = cs.ImageStatus.UploadStatus.Options.URL

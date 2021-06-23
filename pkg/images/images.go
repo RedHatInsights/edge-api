@@ -149,6 +149,21 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
+
+	go func(id uint) {
+		var i *models.Image
+		db.DB.Joins("Commit").First(&i, id)
+		for {
+			i, err := updateImageStatus(i, r)
+			if err != nil {
+				panic(err)
+			}
+			if i.Status != models.ImageStatusBuilding {
+				break
+			}
+		}
+	}(image.ID)
+
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&image)
 }
@@ -189,38 +204,32 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 	return image
 }
 
+func updateImageStatus(image *models.Image, r *http.Request) (*models.Image, error) {
+	log.Info("Requesting image status on image builder")
+	headers := common.GetOutgoingHeaders(r)
+	image, err := imagebuilder.Client.GetStatus(image, headers)
+	if err != nil {
+		return image, err
+	}
+	if image.Status != models.ImageStatusBuilding {
+		tx := db.DB.Save(&image.Commit)
+		if tx.Error != nil {
+			return image, err
+		}
+		tx = db.DB.Save(&image)
+		if tx.Error != nil {
+			return image, err
+		}
+	}
+	return image, nil
+}
+
 // GetStatusByID returns the image status. If still building, goes to image builder API.
 func GetStatusByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		if image.Status == models.ImageStatusBuilding {
 			var err error
-			headers := common.GetOutgoingHeaders(r)
-			image, err = imagebuilder.Client.GetStatus(image, headers)
-			if err != nil {
-				log.Error(err)
-				err := errors.NewInternalServerError()
-				w.WriteHeader(err.Status)
-				json.NewEncoder(w).Encode(&err)
-				return
-			}
-			if image.Status != models.ImageStatusBuilding {
-				tx := db.DB.Save(&image.Commit)
-				if tx.Error != nil {
-					log.Error(err)
-					err := errors.NewInternalServerError()
-					w.WriteHeader(err.Status)
-					json.NewEncoder(w).Encode(&err)
-					return
-				}
-				tx = db.DB.Save(&image)
-				if tx.Error != nil {
-					log.Error(err)
-					err := errors.NewInternalServerError()
-					w.WriteHeader(err.Status)
-					json.NewEncoder(w).Encode(&err)
-					return
-				}
-			}
+			image, err = updateImageStatus(image, r)
 			if err != nil {
 				log.Error(err)
 				err := errors.NewInternalServerError()
