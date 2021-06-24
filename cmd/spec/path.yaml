@@ -1,0 +1,44 @@
+info:
+  license:
+    name: MIT
+  title: edge-api
+  version: 1.0.0
+openapi: 3.0.0
+paths:
+  /api/v1/user:
+    post:
+      operationId: createImage
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/v1.Image'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.Image'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.NotFound'
+          description: OK
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: Error
+      summary: create image
+      tags:
+      - Image

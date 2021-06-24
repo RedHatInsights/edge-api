@@ -6,9 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// An Image is what generates a OSTree Commit.
-//
-// swagger:model image
+// Image is what generates a OSTree Commit.
 type Image struct {
 	gorm.Model
 	Name         string

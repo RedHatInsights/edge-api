@@ -1,0 +1,125 @@
+components:
+  schemas:
+    v1.BadRequest:
+      properties:
+        Code:
+          type: string
+        Status:
+          type: integer
+        Title:
+          type: string
+      type: object
+    v1.Image:
+      properties:
+        Account:
+          type: string
+        Commit:
+          properties:
+            Account:
+              type: string
+            Arch:
+              type: string
+            BlueprintToml:
+              type: string
+            BuildDate:
+              type: string
+            BuildNumber: {}
+            ImageBuildHash:
+              type: string
+            ImageBuildParentHash:
+              type: string
+            ImageBuildTarURL:
+              type: string
+            Name:
+              type: string
+            OSTreeCommit:
+              type: string
+            OSTreeParentCommit:
+              type: string
+            OSTreeRef:
+              type: string
+            Packages:
+              items:
+                properties:
+                  Name:
+                    type: string
+                type: object
+              type: array
+          type: object
+        CommitID:
+          type: integer
+        ComposeJobID:
+          type: string
+        Description:
+          type: string
+        Distribution:
+          type: string
+        ImageType:
+          type: string
+        Name:
+          type: string
+        Status:
+          type: string
+      type: object
+    v1.InternalServerError:
+      properties:
+        Code:
+          type: string
+        Status:
+          type: integer
+        Title:
+          type: string
+      type: object
+    v1.NotFound:
+      properties:
+        Code:
+          type: string
+        Status:
+          type: integer
+        Title:
+          type: string
+      type: object
+info:
+  license:
+    name: MIT
+  title: edge-api
+  version: 1.0.0
+openapi: 3.0.0
+paths:
+  /api/v1/user:
+    post:
+      operationId: createImage
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/v1.Image'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.Image'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.NotFound'
+          description: OK
+        default:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: Error
+      summary: create image
+      tags:
+      - Image
