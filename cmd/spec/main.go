@@ -55,7 +55,7 @@ func main() {
 	schema, err := yaml.JSONToYAML(b.Bytes())
 	checkErr(err)
 
-	paths, err := ioutil.ReadFile("./path.yaml")
+	paths, err := ioutil.ReadFile("./cmd/spec/path.yaml")
 
 	b = &bytes.Buffer{}
 	b.Write(schema)
@@ -66,9 +66,9 @@ func main() {
 
 	jsonB, err := doc.MarshalJSON()
 	checkErr(err)
-	err = ioutil.WriteFile("openapi.json", jsonB, 0666)
+	err = ioutil.WriteFile("./cmd/spec/openapi.json", jsonB, 0666)
 	checkErr(err)
-	err = ioutil.WriteFile("openapi.yaml", b.Bytes(), 0666)
+	err = ioutil.WriteFile("./cmd/spec/openapi.yaml", b.Bytes(), 0666)
 	checkErr(err)
 }
 
