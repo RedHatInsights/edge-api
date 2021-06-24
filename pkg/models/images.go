@@ -19,6 +19,7 @@ type Image struct {
 	Status       string
 	ComposeJobID string
 	CommitID     int
+	Version      int `gorm:"default:1"`
 	Commit       *Commit
 }
 
