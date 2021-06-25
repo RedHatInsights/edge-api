@@ -117,5 +117,92 @@ paths:
                 $ref: '#/components/schemas/v1.InternalServerError'
           description: There was an internal server error.
       summary: Composes an image on Image Builder
-      tags:
-      - Image
+    get:
+      operationId: listImages
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items: 
+                  $ref: '#/components/schemas/v1.Image'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Lists all images for an account.
+  /api/edge/v1/images/{imageId}:
+    get:
+      operationId: getImage
+      parameters:
+        - name: imageId
+          in: path
+          required: true
+          description: ImageID
+          schema:
+            type : integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.Image'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Get an image by id.
+  /api/edge/v1/images/{imageId}/status:
+    get:
+      operationId: getImageStatus
+      parameters:
+        - name: imageId
+          in: path
+          required: true
+          description: ImageID
+          schema:
+            type : integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Status:
+                    type: string
+                    example: BUILDING
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Get image status.
+      description: This method goes to image builder if the image is still building and updates the status if needed.
