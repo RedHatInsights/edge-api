@@ -8,19 +8,20 @@ import (
 
 // EdgeConfig represents the runtime configuration
 type EdgeConfig struct {
-	Hostname           string
-	Auth               bool
-	WebPort            int
-	MetricsPort        int
-	Logging            *loggingConfig
-	LogLevel           string
-	Debug              bool
-	Database           *dbConfig
-	BucketName         string
-	AccessKey          string
-	SecretKey          string
-	UpdateTempPath     string
-	ImageBuilderConfig *imageBuilderConfig
+	Hostname            string
+	Auth                bool
+	WebPort             int
+	MetricsPort         int
+	Logging             *loggingConfig
+	LogLevel            string
+	Debug               bool
+	Database            *dbConfig
+	BucketName          string
+	AccessKey           string
+	SecretKey           string
+	UpdateTempPath      string
+	ImageBuilderConfig  *imageBuilderConfig
+	cloudConectorConfig *cloudConectorConfig
 }
 
 type dbConfig struct {
@@ -32,6 +33,10 @@ type dbConfig struct {
 }
 
 type imageBuilderConfig struct {
+	URL string
+}
+
+type cloudConectorConfig struct {
 	URL string
 }
 
@@ -55,6 +60,7 @@ func Init() {
 	options.SetDefault("Debug", false)
 	options.SetDefault("EdgeTarballsBucket", "rh-edge-tarballs")
 	options.SetDefault("ImageBuilderUrl", "http://image-builder:8080")
+	options.SetDefault("CloudConectorUrl", "https://qa.cloud.redhat.com/")
 	options.SetDefault("UpdateTempPath", "/tmp/updates/")
 	options.AutomaticEnv()
 
@@ -72,6 +78,9 @@ func Init() {
 		UpdateTempPath: options.GetString("UpdateTempPath"),
 		ImageBuilderConfig: &imageBuilderConfig{
 			URL: options.GetString("ImageBuilderUrl"),
+		},
+		cloudConectorConfig: &cloudConectorConfig{
+			URL: options.GetString("CloudConectorUrl"),
 		},
 	}
 
