@@ -21,6 +21,7 @@ func MakeRouter(sub chi.Router) {
 	sub.Post("/", Create)
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageCtx)
+		r.Get("/", GetByID)
 		r.Get("/status", GetStatusByID)
 	})
 }
@@ -243,5 +244,12 @@ func GetStatusByID(w http.ResponseWriter, r *http.Request) {
 		}{
 			image.Status,
 		})
+	}
+}
+
+// GetByID obtains a image from the database for an account
+func GetByID(w http.ResponseWriter, r *http.Request) {
+	if image := getImage(w, r); image != nil {
+		json.NewEncoder(w).Encode(image)
 	}
 }
