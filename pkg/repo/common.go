@@ -15,9 +15,14 @@ func getNameAndPrefix(r *http.Request) (string, string, error) {
 	if name == "" {
 		return "", "", fmt.Errorf("repo name not provided")
 	}
-	_r := strings.Index(r.URL.Path, name)
-	log.Debugf("getNameAndPrefix::_r: %#v", _r)
-	pathPrefix := string(r.URL.Path[:_r])
-	log.Debugf("getNameAndPrefix::pathPrefix: %#v", pathPrefix)
+	pathPrefix := getPathPrefix(r.URL.Path, name)
 	return name, pathPrefix, nil
+}
+
+func getPathPrefix(path string, name string) string {
+	_r := strings.Index(path, "/"+name+"/")
+	log.Debugf("getNameAndPrefix::_r: %#v", _r)
+	pathPrefix := string(path[:_r+1])
+	log.Debugf("getNameAndPrefix::pathPrefix: %#v", pathPrefix)
+	return pathPrefix
 }

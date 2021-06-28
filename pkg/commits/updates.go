@@ -320,6 +320,7 @@ func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
 	if err != nil {
 		return err
 	}
+	log.Debugf("Download finished::tarFileName: %#v", tarFileName)
 
 	tarFile, err := os.Open(filepath.Join(dest, tarFileName))
 	if err != nil {
