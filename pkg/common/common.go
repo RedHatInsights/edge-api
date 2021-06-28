@@ -15,10 +15,13 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
 
+type contextKey int
+
 const (
-	PaginationKey = 1
-	defaultLimit  = 100
-	defaultOffset = 0
+	// PaginationKey is used to store pagination data in request context
+	PaginationKey contextKey = 1
+	defaultLimit             = 100
+	defaultOffset            = 0
 )
 
 // GetAccount from http request header
@@ -26,12 +29,11 @@ func GetAccount(r *http.Request) (string, error) {
 	if config.Get() != nil {
 		if config.Get().Debug {
 			return "0000000", nil
-		} else {
-			if r.Context().Value(identity.Key) != nil {
-				ident := identity.Get(r.Context())
-				if ident.Identity.AccountNumber != "" {
-					return ident.Identity.AccountNumber, nil
-				}
+		}
+		if r.Context().Value(identity.Key) != nil {
+			ident := identity.Get(r.Context())
+			if ident.Identity.AccountNumber != "" {
+				return ident.Identity.AccountNumber, nil
 			}
 		}
 	}
@@ -39,6 +41,8 @@ func GetAccount(r *http.Request) (string, error) {
 
 }
 
+// GetOutgoingHeaders returns Red Hat Insights headers from our request to use it
+// in other request that will be used when communicating in Red Hat Insights services
 func GetOutgoingHeaders(r *http.Request) map[string]string {
 	out := make(map[string]string)
 	headers := []string{"x-rh-identity", "x-rh-insights-request-id"}
@@ -90,11 +94,18 @@ func Untar(rc io.ReadCloser, dst string) error {
 	return nil
 }
 
+// Pagination represents pagination parameters
 type Pagination struct {
-	Limit  int
+	// Limit represents how many items to return
+	Limit int
+	// Offset represents from what item to start
 	Offset int
 }
 
+// Paginate is a middleware to get pagination params from the request and store it in
+// the request context. If no pagination was set in the request URL search parameters
+// they are set to default (see defaultLimit and defaultOffset).
+// To read pagination parameters from context use PaginationKey.
 func Paginate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pagination := Pagination{Limit: defaultLimit, Offset: defaultOffset}
@@ -119,6 +130,9 @@ func Paginate(next http.Handler) http.Handler {
 	})
 }
 
+// GetPagination is a function helper to get pagination parameters from the request context.
+// In case the router doesn't use Paginate before serving the request we still return
+// the default parameters: defaultOffset, defaultLimit
 func GetPagination(r *http.Request) Pagination {
 	pagination, ok := r.Context().Value(PaginationKey).(Pagination)
 	if !ok {
