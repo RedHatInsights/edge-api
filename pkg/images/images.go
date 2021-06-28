@@ -21,6 +21,7 @@ func MakeRouter(sub chi.Router) {
 	sub.Post("/", Create)
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageCtx)
+		r.Get("/", GetByID)
 		r.Get("/status", GetStatusByID)
 	})
 }
@@ -168,9 +169,19 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&image)
 }
 
+var imageFilters = common.ComposeFilters(
+	common.OneOfFilterHandler("status"),
+	common.OneOfFilterHandler("image_type"),
+	common.ContainFilterHandler("name"),
+	common.ContainFilterHandler("distribution"),
+	common.CreatedAtFilterHandler(),
+	common.SortFilterHandler("id", "ASC"),
+)
+
 // GetAll image objects from the database for an account
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	var images []models.Image
+	result := imageFilters(r, db.DB)
 	pagination := common.GetPagination(r)
 	account, err := common.GetAccount(r)
 	if err != nil {
@@ -180,7 +191,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&images)
+	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&images)
 	if result.Error != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -188,7 +199,6 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-
 	json.NewEncoder(w).Encode(&images)
 }
 
@@ -243,5 +253,12 @@ func GetStatusByID(w http.ResponseWriter, r *http.Request) {
 		}{
 			image.Status,
 		})
+	}
+}
+
+// GetByID obtains a image from the database for an account
+func GetByID(w http.ResponseWriter, r *http.Request) {
+	if image := getImage(w, r); image != nil {
+		json.NewEncoder(w).Encode(image)
 	}
 }
