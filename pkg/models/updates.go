@@ -45,7 +45,7 @@ type UpdateRecord struct {
 
 const (
 	// Errors
-	UpdateCommitIDCantBeNilMessage    = "update commit id can't be empty"
+	UpdateCommitIDCantBeNilMessage   = "update commit id can't be empty"
 	AccountCantBeEmptyMessage        = "account can't be empty"
 	InventoryHostsCantBeEmptyMessage = "inventory hosts can not be empty"
 
@@ -58,7 +58,7 @@ const (
 
 func (ur *UpdateRecord) ValidateRequest() error {
 	if ur.UpdateCommitID == 0 {
-		return errors.New(UpdatCommitIDCantBeNilMessage)
+		return errors.New(UpdateCommitIDCantBeNilMessage)
 	}
 	if ur.InventoryHosts == nil || len(ur.InventoryHosts) == 0 {
 		return errors.New(InventoryHostsCantBeEmptyMessage)
