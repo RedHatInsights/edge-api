@@ -24,7 +24,7 @@ type Device struct {
 /*
 UpdateRecord
 
-	Reporesents the combination of an OSTree commit and a set of Inventory
+	Represents the combination of an OSTree commit and a set of Inventory
 	hosts that need to have the commit deployed to them
 
 	This will ultimately kick off a transaction where the old version(s) of
