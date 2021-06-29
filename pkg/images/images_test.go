@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -24,7 +23,7 @@ func setUp() {
 	config.Init()
 	config.Get().Debug = true
 	db.InitDB()
-	db.DB.AutoMigrate(&models.Commit{}, &commits.UpdateRecord{}, &models.Package{}, &models.Image{})
+	db.DB.AutoMigrate(&models.Commit{}, &models.UpdateRecord{}, &models.Package{}, &models.Image{})
 	tx = db.DB.Begin()
 }
 
