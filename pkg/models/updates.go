@@ -45,7 +45,7 @@ type UpdateRecord struct {
 
 const (
 	// Errors
-	UpdatCommitIDCantBeNilMessage    = "update commit id can't be empty"
+	UpdateCommitIDCantBeNilMessage    = "update commit id can't be empty"
 	AccountCantBeEmptyMessage        = "account can't be empty"
 	InventoryHostsCantBeEmptyMessage = "inventory hosts can not be empty"
 
