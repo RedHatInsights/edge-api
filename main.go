@@ -77,7 +77,7 @@ func main() {
 	r.Get("/openapi.json", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./cmd/spec/openapi.json")
 	})
-	r.Route("/api/edge/v1/unauth-repos", repo.MakeRouter(server))
+	r.Route("/api/edge/v1/account/{account}/repos", repo.MakeRouter(server))
 
 	// Authenticated routes
 	ar := r.Group(nil)
