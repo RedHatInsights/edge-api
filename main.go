@@ -64,14 +64,17 @@ func main() {
 		setupDocsMiddleware,
 	)
 
-	if cfg.Auth {
-		r.Use(identity.EnforceIdentity)
-	}
-
+	// Unauthenticated routes
 	r.Get("/", common.StatusOK)
 	r.Get("/openapi.json", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./cmd/spec/openapi.json")
 	})
+
+	// Authenticated routes
+	ar := r.Group(nil)
+	if cfg.Auth {
+		ar.Use(identity.EnforceIdentity)
+	}
 
 	var server repo.Server
 	server = &repo.FileServer{
@@ -81,7 +84,7 @@ func main() {
 		server = repo.NewS3Proxy()
 	}
 
-	r.Route("/api/edge/v1", func(s chi.Router) {
+	ar.Route("/api/edge/v1", func(s chi.Router) {
 		s.Route("/commits", commits.MakeRouter)
 		s.Route("/repos", repo.MakeRouter(server))
 		s.Route("/images", images.MakeRouter)
