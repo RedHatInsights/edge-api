@@ -55,6 +55,14 @@ func main() {
 		"BucketName":  cfg.BucketName,
 	}).Info("Configuration Values:")
 
+	var server repo.Server
+	server = &repo.FileServer{
+		BasePath: "/tmp",
+	}
+	if cfg.BucketName != "" {
+		server = repo.NewS3Proxy()
+	}
+
 	r := chi.NewRouter()
 	r.Use(
 		request_id.ConfiguredRequestID("x-rh-insights-request-id"),
@@ -69,19 +77,12 @@ func main() {
 	r.Get("/openapi.json", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./cmd/spec/openapi.json")
 	})
+	r.Route("/api/edge/v1/unauth-repos", repo.MakeRouter(server))
 
 	// Authenticated routes
 	ar := r.Group(nil)
 	if cfg.Auth {
 		ar.Use(identity.EnforceIdentity)
-	}
-
-	var server repo.Server
-	server = &repo.FileServer{
-		BasePath: "/tmp",
-	}
-	if cfg.BucketName != "" {
-		server = repo.NewS3Proxy()
 	}
 
 	ar.Route("/api/edge/v1", func(s chi.Router) {
