@@ -83,9 +83,6 @@ restart-app:
 	$(MAKE) scale-up NAMESPACE=$(NAMESPACE)
 
 generate-docs:
-	swagger generate spec -o ./swagger.yml
-
-validate-swagger:
-	swagger validate ./swagger.yml
+	go run cmd/spec/main.go
 
 .PHONY: help build

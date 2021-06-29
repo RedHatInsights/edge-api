@@ -5,6 +5,8 @@ require (
 	github.com/cavaliercoder/grab v2.0.0+incompatible // indirect
 	github.com/coreos/go-etcd v2.0.0+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
+	github.com/getkin/kin-openapi v0.65.0 // indirect
+	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-openapi/runtime v0.19.29
 	github.com/golang/protobuf v1.5.2 // indirect
