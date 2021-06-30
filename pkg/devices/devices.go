@@ -1,6 +1,7 @@
 package devices
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
 type key int
@@ -27,83 +29,72 @@ const (
 
 // MakeRouter adds support for operations on commits
 func MakeRouter(sub chi.Router) {
-	sub.Get("/", getAll)
+	sub.Get("/", GetAll)
 	sub.Route("/{deviceId}", func(r chi.Router) {
 		r.Get("/", GetByID)
 	})
 }
 
-// getAll registered for an account
-func getAll(w http.ResponseWriter, r *http.Request) {
-	proxyURL, err := url.Parse(PROXY)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	transport := &http.Transport{Proxy: http.ProxyURL(proxyURL)}
+// GetAll obtains list of devices
+func GetAll(w http.ResponseWriter, r *http.Request) {
+	transport := SetProxy()
 	client := &http.Client{Transport: transport}
-	inventoryUrl, err := url.Parse(config.Get().InventoryConfig.URL)
-	inventoryUrl.Path = path.Join(inventoryUrl.Path, inventoryAPI)
-	fullUrl := inventoryUrl.String() + filterParams
-
-	req, err := http.NewRequest("GET", fullUrl+filterParams, nil)
+	fullUrl := SetUrl() + filterParams
+	req, err := http.NewRequest("GET", fullUrl, nil)
 	req.SetBasicAuth(usr, pwd)
-
 	resp, err := client.Do(req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	body, err := ioutil.ReadAll(resp.Body)
+	log.Printf(string(body))
 	fmt.Printf("%v\n", string(body))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	//Convert the body to type string
-	sb := string(body)
-	log.Printf(sb)
 	fmt.Fprintf(w, string(body))
+
+	var bodyResp *models.UpdateRecord
+	json.NewDecoder(resp.Body).Decode(&bodyResp)
+	fmt.Printf("%v\n", bodyResp)
+	log.Printf(string(body))
 }
 
 // GetByID obtains a specifc device info
 func GetByID(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("%v\n", r.Context())
-	// ctx := r.Context().Value("deviceId")
 	deviceId := chi.URLParam(r, "deviceId")
 	fmt.Printf("commitID: %v\n", deviceId)
-	deviceIdParam := "&hostname_or_id=" + deviceId
-	proxyURL, err := url.Parse(PROXY)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	deviceIdParam := "?hostname_or_id=" + deviceId
 
-	transport := &http.Transport{Proxy: http.ProxyURL(proxyURL)}
+	transport := SetProxy()
 	client := &http.Client{Transport: transport}
-	inventoryUrl, err := url.Parse(config.Get().InventoryConfig.URL)
-	inventoryUrl.Path = path.Join(inventoryUrl.Path, inventoryAPI)
-	fullUrl := inventoryUrl.String() + filterParams + deviceIdParam
-	fmt.Printf("fullUrl: %v\n", fullUrl)
-	req, err := http.NewRequest("GET", fullUrl+filterParams, nil)
+	fullUrl := SetUrl() + filterParams + deviceIdParam
+	req, err := http.NewRequest("GET", fullUrl, nil)
 	req.SetBasicAuth(usr, pwd)
-
 	resp, err := client.Do(req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	body, err := ioutil.ReadAll(resp.Body)
+	log.Printf(string(body))
 	fmt.Printf("%v\n", string(body))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	//Convert the body to type string
-	sb := string(body)
-	log.Printf(sb)
 	fmt.Fprintf(w, string(body))
+}
+
+func SetProxy() *http.Transport {
+	proxyURL, err := url.Parse(PROXY)
+	if err != nil {
+		return &http.Transport{}
+	}
+	transport := &http.Transport{Proxy: http.ProxyURL(proxyURL)}
+	return transport
+}
+func SetUrl() string {
+	inventoryUrl, err := url.Parse(config.Get().InventoryConfig.URL)
+	if err != nil {
+		return "Error to parse inventory url"
+	}
+	inventoryUrl.Path = path.Join(inventoryUrl.Path, inventoryAPI)
+	fullUrl := inventoryUrl.String()
+	return fullUrl
 }
