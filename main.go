@@ -1,19 +1,6 @@
 // Package main Edge API
 //
 //  An API server for fleet edge management capabilities.
-//
-//     Schemes: http, https
-//     Host: localhost:3000
-//     BasePath: /
-//     Version: 0.0.1
-//
-//     Consumes:
-//     - application/json
-//
-//     Produces:
-//     - application/json
-//
-// swagger:meta
 package main
 
 import (
@@ -44,7 +31,7 @@ import (
 
 func setupDocsMiddleware(handler http.Handler) http.Handler {
 	opt := redoc.RedocOpts{
-		SpecURL: "/swagger.yml",
+		SpecURL: "./openapi.json",
 	}
 	return redoc.Redoc(opt, handler)
 }
@@ -83,8 +70,8 @@ func main() {
 	}
 
 	r.Get("/", common.StatusOK)
-	r.Get("/swagger.yml", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./swagger.yml")
+	r.Get("/openapi.json", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./cmd/spec/openapi.json")
 	})
 
 	var server repo.Server

@@ -1,16 +1,20 @@
 package repo
 
 import (
+	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"path/filepath"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/common"
+	"github.com/redhatinsights/edge-api/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -88,7 +92,28 @@ func (p *S3Proxy) ServeRepo(w http.ResponseWriter, r *http.Request) {
 		Key:    aws.String(realPath),
 	})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case s3.ErrCodeNoSuchKey:
+				log.Debugf("S3Proxy::ServeRepo::s3.ErrCodeNoSuchKey: %#v", realPath)
+				err := errors.NewNotFound(fmt.Sprintf("S3 Object %s not found.", realPath))
+				w.WriteHeader(err.Status)
+				json.NewEncoder(w).Encode(&err)
+			case s3.ErrCodeInvalidObjectState:
+				log.Debugf("S3Proxy::ServeRepo::s3.ErrCodeInvalidObjectState: %#v", realPath)
+				err := errors.NewNotFound(fmt.Sprintf("S3 Object %s not found.", realPath))
+				w.WriteHeader(err.Status)
+				json.NewEncoder(w).Encode(&err)
+			default:
+				err := errors.NewInternalServerError()
+				w.WriteHeader(err.Status)
+				json.NewEncoder(w).Encode(&err)
+			}
+		} else {
+			// log the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			log.Debugf("S3Proxy::ServeRepo::UnhandledS3Error: %#v", err.Error())
+		}
 		return
 	}
 

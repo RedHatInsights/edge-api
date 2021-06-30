@@ -11,22 +11,29 @@ import (
 	"testing"
 
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"gorm.io/gorm"
 )
+
+var tx *gorm.DB
 
 func setUp() {
 	config.Init()
 	config.Get().Debug = true
 	db.InitDB()
-	db.DB.AutoMigrate(&models.Commit{}, &commits.UpdateRecord{}, &models.Package{}, &models.Image{})
+	db.DB.AutoMigrate(&models.Commit{}, &models.UpdateRecord{}, &models.Package{}, &models.Image{})
+	tx = db.DB.Begin()
 }
 
+func tearDown() {
+	tx.Rollback()
+}
 func TestMain(m *testing.M) {
 	setUp()
 	retCode := m.Run()
+	tearDown()
 	os.Exit(retCode)
 }
 
@@ -108,7 +115,7 @@ func TestGetStatus(t *testing.T) {
 		Status:       models.ImageStatusBuilding,
 		Commit:       &models.Commit{},
 	}
-	db.DB.Create(&image)
+	tx.Create(&image)
 	ctx := context.WithValue(req.Context(), imageKey, &image)
 	handler := http.HandlerFunc(GetStatusByID)
 	handler.ServeHTTP(rr, req.WithContext(ctx))
@@ -135,5 +142,47 @@ func TestGetStatus(t *testing.T) {
 	if ir.Status != models.ImageStatusError { // comes from the mock above
 		t.Errorf("wrong image status: got %v want %v",
 			ir.Status, models.ImageStatusError)
+	}
+}
+
+func TestGetById(t *testing.T) {
+	imagebuilder.Client = &MockImageBuilderClient{}
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+
+	var image = models.Image{
+		Account:      "0000000",
+		ComposeJobID: "123",
+		Status:       models.ImageStatusBuilding,
+		Commit:       &models.Commit{},
+	}
+	tx.Create(&image)
+	ctx := context.WithValue(req.Context(), imageKey, &image)
+	handler := http.HandlerFunc(GetByID)
+	handler.ServeHTTP(rr, req.WithContext(ctx))
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+		return
+	}
+
+	var ir models.Image
+	respBody, err := ioutil.ReadAll(rr.Body)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	err = json.Unmarshal(respBody, &ir)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if ir.ID != image.ID {
+		t.Errorf("wrong image status: got %v want %v",
+			ir.ID, image.ID)
 	}
 }
