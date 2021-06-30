@@ -306,13 +306,16 @@ func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
 	if err != nil {
 		return err
 	}
-	common.Untar(tarFile, filepath.Join(dest))
-	tarFile.Close()
-
-	err = os.Remove(filepath.Join(dest, tarFileName))
+	err = common.Untar(tarFile, filepath.Join(dest))
 	if err != nil {
 		return err
 	}
+	tarFile.Close()
+
+	// err = os.Remove(filepath.Join(dest, tarFileName))
+	// if err != nil {
+	// 	return err
+	// }
 
 	// FIXME: The repo path is hard coded because this is how it comes from
 	//		  osbuild composer but we might want to revisit this later

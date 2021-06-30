@@ -85,11 +85,11 @@ func Untar(rc io.ReadCloser, dst string) error {
 		if err != nil {
 			return err
 		}
-		defer file.Close()
 		_, err = io.Copy(file, tarReader)
 		if err != nil {
 			return err
 		}
+		file.Close()
 	}
 	return nil
 }
