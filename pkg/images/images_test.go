@@ -186,3 +186,32 @@ func TestGetById(t *testing.T) {
 			ir.ID, image.ID)
 	}
 }
+
+func TestGetStatuses(t *testing.T) {
+	expected := []APIImage{
+		{ID: "1", Name: "", Status: models.ImageStatusBuilding},
+		{ID: "blabla", Name: "", Status: "ENOTEXIST"},
+	}
+	r, err := http.NewRequest("GET", "/images/status?id=1&id=blabla", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+	result := []APIImage{}
+	GetStatuses(w, r)
+	err = json.NewDecoder(w.Result().Body).Decode(&result)
+	if err != nil {
+		t.Errorf("Failed decoding response body (%v): %s", w, err)
+	}
+	for ix, _ := range result {
+		if result[ix].Name != expected[ix].Name {
+			t.Errorf("Expected in line %d the name to be %q but got %q", ix, expected[ix].Name, result[ix].Name)
+		}
+		if result[ix].ID != expected[ix].ID {
+			t.Errorf("Expected in line %d the id to be %q but got %q", ix, expected[ix].ID, result[ix].ID)
+		}
+		if result[ix].Status != expected[ix].Status {
+			t.Errorf("Expected in line %d the status to be %q but got %q", ix, expected[ix].Status, result[ix].Status)
+		}
+	}
+}

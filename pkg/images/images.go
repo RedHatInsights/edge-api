@@ -18,6 +18,7 @@ import (
 // MakeRouter adds support for operations on images
 func MakeRouter(sub chi.Router) {
 	sub.With(common.Paginate).Get("/", GetAll)
+	sub.Get("/status", GetStatuses)
 	sub.Post("/", Create)
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageCtx)
@@ -250,4 +251,43 @@ func GetByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		json.NewEncoder(w).Encode(image)
 	}
+}
+
+type APIImage struct {
+	ID     string
+	Name   string
+	Status string
+}
+
+func GetStatuses(w http.ResponseWriter, r *http.Request) {
+	var apiImages []APIImage
+	ids, ok := r.URL.Query()["id"]
+	if !ok {
+		w.WriteHeader(http.StatusNoContent)
+		json.NewEncoder(w).Encode([]string{})
+		return
+	}
+	results := db.DB.Model(&models.Image{}).Where("id IN ?", ids).Find(&apiImages)
+	if results.Error != nil {
+		log.Error(results.Error)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	if len(apiImages) != len(ids) {
+		for _, id := range ids {
+			found := false
+			for _, apiImage := range apiImages {
+				if string(apiImage.ID) == id {
+					found = true
+					break
+				}
+			}
+			if !found {
+				apiImages = append(apiImages, APIImage{ID: id, Status: "ENOTEXIST"})
+			}
+		}
+	}
+	json.NewEncoder(w).Encode(&apiImages)
 }
