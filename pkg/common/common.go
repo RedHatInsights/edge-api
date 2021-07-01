@@ -80,13 +80,13 @@ func Untar(rc io.ReadCloser, dst string) error {
 			}
 			continue
 		}
-
 		file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
 		if err != nil {
 			return err
 		}
 		_, err = io.Copy(file, tarReader)
 		if err != nil {
+			file.Close()
 			return err
 		}
 		file.Close()
