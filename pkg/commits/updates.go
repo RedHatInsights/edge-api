@@ -21,29 +21,10 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
-	"gorm.io/gorm"
 
 	"github.com/cavaliercoder/grab"
 	log "github.com/sirupsen/logrus"
 )
-
-// UpdateRecord reporesents the combination of an OSTree commit and a set of Inventory
-// hosts that need to have the commit deployed to them
-//
-// This will ultimately kick off a transaction where the old version(s) of
-// OSTree commit that are currently deployed onto those devices are combined
-// with the new commit into a new OSTree repo, static deltas are computed, and
-// then the result is stored in a way that can be served(proxied) by a
-// Server (pkg/repo/server.go).
-type UpdateRecord struct {
-	gorm.Model
-	UpdateCommitID uint
-	Account        string
-	OldCommitIDs   string
-	InventoryHosts string
-	State          string
-	UpdateRepoURL  string
-}
 
 func getCommitFromDB(commitID uint) (*models.Commit, error) {
 	var commit models.Commit
@@ -54,9 +35,9 @@ func getCommitFromDB(commitID uint) (*models.Commit, error) {
 	return &commit, nil
 }
 
-func updateFromReadCloser(rc io.ReadCloser) (*UpdateRecord, error) {
+func updateFromReadCloser(rc io.ReadCloser) (*models.UpdateRecord, error) {
 	defer rc.Close()
-	var update UpdateRecord
+	var update models.UpdateRecord
 	err := json.NewDecoder(rc).Decode(&update)
 
 	log.Debugf("updateFromReadCloser::update: %#v", update)
@@ -65,7 +46,7 @@ func updateFromReadCloser(rc io.ReadCloser) (*UpdateRecord, error) {
 	if !(update.UpdateCommitID > 0) {
 		return nil, errors.New("Invalid UpdateCommitID provided")
 	}
-	if update.InventoryHosts == "" {
+	if len(update.InventoryHosts) == 0 {
 		return nil, errors.New("Inventory Hosts to update required")
 	}
 
@@ -88,7 +69,7 @@ const updateKey key = 0
 // UpdateCtx is a handler for Update requests
 func UpdateCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var update UpdateRecord
+		var update models.UpdateRecord
 		account, err := common.GetAccount(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -129,7 +110,7 @@ func UpdatesAdd(w http.ResponseWriter, r *http.Request) {
 	// Check to make sure we're not duplicating the job
 	// FIXME - this didn't work and I don't have time to debug right now
 	/*
-		var dupeRecord UpdateRecord
+		var dupeRecord models.UpdateRecord
 		queryDuplicate := map[string]interface{}{
 			"Account":        update.Account,
 			"UpdateCommitID": update.UpdateCommitID,
@@ -152,7 +133,7 @@ func UpdatesAdd(w http.ResponseWriter, r *http.Request) {
 
 // UpdatesGetAll update objects from the database for an account
 func UpdatesGetAll(w http.ResponseWriter, r *http.Request) {
-	var updates []UpdateRecord
+	var updates []models.UpdateRecord
 	account, err := common.GetAccount(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -196,9 +177,9 @@ func UpdatesUpdate(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(incoming)
 }
 
-func getUpdate(w http.ResponseWriter, r *http.Request) *UpdateRecord {
+func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateRecord {
 	ctx := r.Context()
-	update, ok := ctx.Value(updateKey).(*UpdateRecord)
+	update, ok := ctx.Value(updateKey).(*models.UpdateRecord)
 	if !ok {
 		http.Error(w, "must pass id", http.StatusBadRequest)
 		return nil
@@ -208,12 +189,12 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *UpdateRecord {
 
 // RepoBuilder build an update repo with the set of commits all merged into a single repo
 // with static deltas generated between them all
-func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
+func RepoBuilder(ur *models.UpdateRecord, r *http.Request) error {
 	cfg := config.Get()
 
-	var updaterec UpdateRecord
+	var updaterec models.UpdateRecord
 	db.DB.First(&updaterec, ur.ID)
-	updaterec.State = "BUILDING"
+	updaterec.Status = models.UpdateStatusCreated
 	db.DB.Save(&updaterec)
 
 	updateCommit, err := getCommitFromDB(ur.UpdateCommitID)
@@ -285,15 +266,15 @@ func RepoBuilder(ur *UpdateRecord, r *http.Request) error {
 		return err
 	}
 
-	// NOTE: This relies on the file path being cfg.UpdateTempPath/UpdateRecord.ID
+	// NOTE: This relies on the file path being cfg.UpdateTempPath/models.UpdateRecord.ID
 	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), account)
 	if err != nil {
 		return err
 	}
 
-	var updateRecDone UpdateRecord
+	var updateRecDone models.UpdateRecord
 	db.DB.First(&updateRecDone, ur.ID)
-	updateRecDone.State = "DONE"
+	updateRecDone.Status = models.UpdateStatusSuccess
 	updateRecDone.UpdateRepoURL = repoURL
 	db.DB.Save(&updateRecDone)
 
