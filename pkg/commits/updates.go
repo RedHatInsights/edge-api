@@ -307,7 +307,10 @@ func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
 	if err != nil {
 		return err
 	}
-	common.Untar(tarFile, filepath.Join(dest))
+	err = common.Untar(tarFile, filepath.Join(dest))
+	if err != nil {
+		return err
+	}
 	tarFile.Close()
 
 	err = os.Remove(filepath.Join(dest, tarFileName))
