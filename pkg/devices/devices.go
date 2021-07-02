@@ -11,9 +11,19 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
+type Inventory struct {
+	Total  int       `json:"total"`
+	Count  int       `json:"count"`
+	Result []Devices `json:"results"`
+}
+
+type Devices struct {
+	IpAddresses       []string `json:"ip_addresses"`
+	Uuid              string   `json:"bios_uuid"`
+	DisplayNamestring string   `json:"display_name"`
+}
 type key int
 
 const (
@@ -36,7 +46,7 @@ func MakeRouter(sub chi.Router) {
 }
 
 // GetAll obtains list of devices
-func GetAll(w http.ResponseWriter, r *http.Request) {
+func GetAll(w http.ResponseWriter, r *http.Request) { //(Inventory, error) {
 	transport := SetProxy()
 	client := &http.Client{Transport: transport}
 	fullUrl := SetUrl() + filterParams
@@ -52,10 +62,11 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("%v\n", string(body))
 	fmt.Fprintf(w, string(body))
 
-	var bodyResp *models.UpdateRecord
-	json.NewDecoder(resp.Body).Decode(&bodyResp)
-	fmt.Printf("%v\n", bodyResp)
-	log.Printf(string(body))
+	var bodyResp Inventory
+	json.Unmarshal([]byte(body), &bodyResp)
+	fmt.Printf("struct: %v\n", bodyResp)
+	// return bodyResp, nil
+	// fmt.Fprintf(w, string(resp.Body))
 }
 
 // GetByID obtains a specifc device info
@@ -97,4 +108,23 @@ func SetUrl() string {
 	inventoryUrl.Path = path.Join(inventoryUrl.Path, inventoryAPI)
 	fullUrl := inventoryUrl.String()
 	return fullUrl
+}
+
+func returnDevices(w http.ResponseWriter, r *http.Request) (Inventory, error) {
+	transport := SetProxy()
+	client := &http.Client{Transport: transport}
+	fullUrl := SetUrl() + filterParams
+	req, err := http.NewRequest("GET", fullUrl, nil)
+	req.SetBasicAuth(usr, pwd)
+	resp, err := client.Do(req)
+	if err != nil {
+		return Inventory{}, err
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+
+	var bodyResp Inventory
+	json.Unmarshal([]byte(body), &bodyResp)
+	fmt.Printf("struct: %v\n", bodyResp)
+	return bodyResp, nil
+
 }
