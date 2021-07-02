@@ -130,7 +130,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	image.Status = models.ImageStatusBuilding
+	image.Commit.Status = models.ImageStatusBuilding
 	tx = db.DB.Save(&image)
 	if tx.Error != nil {
 		log.Error(err)
@@ -148,7 +148,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				panic(err)
 			}
-			if i.Status != models.ImageStatusBuilding {
+			if i.Commit.Status != models.ImageStatusBuilding {
 				break
 			}
 		}
