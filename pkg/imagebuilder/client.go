@@ -137,16 +137,25 @@ func (c *ImageBuilderClient) ComposeCommit(image *models.Image, headers map[stri
 			{
 				Architecture: image.Commit.Arch,
 				ImageType:    models.ImageTypeCommit,
-				Ostree: &OSTree{
-					Ref: image.Commit.OSTreeRef,
-					URL: image.Commit.OSTreeParentCommit,
-				},
 				UploadRequest: &UploadRequest{
 					Options: make(map[string]string),
 					Type:    "aws.s3",
 				},
 			}},
 	}
+	if image.Commit.OSTreeRef != "" {
+		if req.ImageRequests[0].Ostree == nil {
+			req.ImageRequests[0].Ostree = &OSTree{}
+		}
+		req.ImageRequests[0].Ostree.Ref = image.Commit.OSTreeRef
+	}
+	if image.Commit.OSTreeRef != "" {
+		if req.ImageRequests[0].Ostree == nil {
+			req.ImageRequests[0].Ostree = &OSTree{}
+		}
+		req.ImageRequests[0].Ostree.URL = image.Commit.OSTreeParentCommit
+	}
+
 	cr, err := compose(req, headers)
 	if err != nil {
 		return nil, err
@@ -198,7 +207,7 @@ func getComposeStatus(jobId string, headers map[string]string) (*ComposeStatus, 
 		req.Header.Add(key, value)
 	}
 	req.Header.Add("Content-Type", "application/json")
-
+	log.Infof("Requesting url: %s", url)
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
