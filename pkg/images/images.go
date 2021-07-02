@@ -3,8 +3,10 @@ package images
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/common"
@@ -135,7 +137,15 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	image.Status = models.ImageStatusBuilding
 	tx = db.DB.Save(&image)
 	if tx.Error != nil {
-		log.Error(err)
+		log.Error(tx.Error)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	tx = db.DB.Save(&image.Commit)
+	if tx.Error != nil {
+		log.Error(tx.Error)
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
@@ -145,7 +155,9 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	go func(id uint) {
 		var i *models.Image
 		db.DB.Joins("Commit").First(&i, id)
+		fmt.Println("Compose job id", i.Commit.ComposeJobID)
 		for {
+			time.Sleep(1 * time.Second)
 			i, err := updateImageStatus(i, r)
 			if err != nil {
 				panic(err)
@@ -314,6 +326,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		var i *models.Image
 		db.DB.Joins("Commit").Joins("Installer").First(&i, id)
 		for {
+			time.Sleep(1 * time.Minute)
 			i, err := updateImageStatus(i, r)
 			if err != nil {
 				panic(err)
