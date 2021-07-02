@@ -5,7 +5,7 @@ import "gorm.io/gorm"
 // Commit represents an OSTree commit from image builder
 type Commit struct {
 	gorm.Model
-	Name                 string    `json:"Name"`
+	Name                 string
 	Account              string    `json:"Account"`
 	ImageBuildHash       string    `json:"ImageBuildHash"`
 	ImageBuildParentHash string    `json:"ImageBuildParentHash"`
@@ -18,6 +18,8 @@ type Commit struct {
 	BlueprintToml        string    `json:"BlueprintToml"`
 	Arch                 string    `json:"Arch"`
 	Packages             []Package `json:"Packages" gorm:"many2many:commit_packages;"`
+	ComposeJobID         string    `json:"ComposeJobID"`
+	Status               string    `json:"Status"`
 }
 
 type Package struct {

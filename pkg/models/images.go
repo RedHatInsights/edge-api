@@ -15,10 +15,11 @@ type Image struct {
 	Description  string
 	ImageType    string
 	Status       string
-	ComposeJobID string
-	CommitID     int
 	Version      int `gorm:"default:1"`
+	CommitID     int
 	Commit       *Commit
+	InstallerID  int
+	Installer    *Installer
 }
 
 const (

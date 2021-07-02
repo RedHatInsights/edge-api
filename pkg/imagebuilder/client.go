@@ -143,8 +143,8 @@ func (c *ImageBuilderClient) Compose(image *models.Image, headers map[string]str
 	}
 
 	defer res.Body.Close()
-	image.ComposeJobID = cr.Id
-	image.Status = models.ImageStatusBuilding
+	image.Commit.ComposeJobID = cr.Id
+	image.Commit.Status = models.ImageStatusBuilding
 
 	return image, nil
 }
@@ -152,7 +152,7 @@ func (c *ImageBuilderClient) Compose(image *models.Image, headers map[string]str
 func (c *ImageBuilderClient) GetStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
 	cs := &ComposeStatus{}
 	cfg := config.Get()
-	url := fmt.Sprintf("%s/v1/composes/%s", cfg.ImageBuilderConfig.URL, image.ComposeJobID)
+	url := fmt.Sprintf("%s/v1/composes/%s", cfg.ImageBuilderConfig.URL, image.Commit.ComposeJobID)
 	req, _ := http.NewRequest("GET", url, nil)
 	for key, value := range headers {
 		req.Header.Add(key, value)
