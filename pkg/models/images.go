@@ -13,7 +13,6 @@ type Image struct {
 	Account      string
 	Distribution string
 	Description  string
-	ImageType    string
 	Status       string
 	Version      int `gorm:"default:1"`
 	CommitID     int
@@ -45,9 +44,6 @@ func (i *Image) ValidateRequest() error {
 	}
 	if i.Commit == nil || i.Commit.Arch == "" {
 		return errors.New(ArchitectureCantBeEmptyMessage)
-	}
-	if i.ImageType != ImageTypeCommit && i.ImageType != ImageTypeInstaller {
-		return errors.New(ImageTypeNotAccepted)
 	}
 	return nil
 }

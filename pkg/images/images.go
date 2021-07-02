@@ -23,6 +23,7 @@ func MakeRouter(sub chi.Router) {
 		r.Use(ImageCtx)
 		r.Get("/", GetByID)
 		r.Get("/status", GetStatusByID)
+		r.Get("/installer", CreateInstallerForImage)
 	})
 }
 
@@ -122,7 +123,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	headers := common.GetOutgoingHeaders(r)
-	image, err = imagebuilder.Client.Compose(image, headers)
+	image, err = imagebuilder.Client.ComposeCommit(image, headers)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -131,6 +132,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	image.Commit.Status = models.ImageStatusBuilding
+	image.Status = models.ImageStatusBuilding
 	tx = db.DB.Save(&image)
 	if tx.Error != nil {
 		log.Error(err)
@@ -206,16 +208,30 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 func updateImageStatus(image *models.Image, r *http.Request) (*models.Image, error) {
 	log.Info("Requesting image status on image builder")
 	headers := common.GetOutgoingHeaders(r)
-	image, err := imagebuilder.Client.GetStatus(image, headers)
+	image, err := imagebuilder.Client.GetCommitStatus(image, headers)
 	if err != nil {
 		return image, err
 	}
-	if image.Status != models.ImageStatusBuilding {
+	if image.Commit.Status != models.ImageStatusBuilding {
 		tx := db.DB.Save(&image.Commit)
 		if tx.Error != nil {
 			return image, err
 		}
-		tx = db.DB.Save(&image)
+	}
+	if image.Installer != nil {
+		image, err = imagebuilder.Client.GetCommitStatus(image, headers)
+		if err != nil {
+			return image, err
+		}
+		if image.Installer.Status != models.ImageStatusBuilding {
+			tx := db.DB.Save(&image.Installer)
+			if tx.Error != nil {
+				return image, err
+			}
+		}
+	}
+	if image.Status != models.ImageStatusBuilding {
+		tx := db.DB.Save(&image)
 		if tx.Error != nil {
 			return image, err
 		}
@@ -250,4 +266,64 @@ func GetByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		json.NewEncoder(w).Encode(image)
 	}
+}
+
+// CreateInstallerForImage creates a installer for a Image
+// It requires a created image and an update for the commit
+func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
+	image := getImage(w, r)
+	image.Installer.Status = models.ImageStatusCreated
+	tx := db.DB.Save(&image)
+	if tx.Error != nil {
+		log.Error(tx.Error)
+		err := errors.NewInternalServerError()
+		err.Title = "Failed saving image status"
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	headers := common.GetOutgoingHeaders(r)
+	var update *models.UpdateRecord
+	result := db.DB.Where("updateCommitID = ?", image.Commit.ID).First(&update)
+	if result == nil {
+		err := errors.NewBadRequest("Update wasn't found in the database")
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	image, err := imagebuilder.Client.ComposeInstaller(update, image, headers)
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	image.Installer.Status = models.ImageStatusBuilding
+	image.Status = models.ImageStatusBuilding
+	tx = db.DB.Save(&image)
+	if tx.Error != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+
+	go func(id uint) {
+		var i *models.Image
+		db.DB.Joins("Commit").Joins("Installer").First(&i, id)
+		for {
+			i, err := updateImageStatus(i, r)
+			if err != nil {
+				panic(err)
+			}
+			if i.Installer.Status != models.ImageStatusBuilding {
+				break
+			}
+		}
+	}(image.ID)
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(&image)
 }

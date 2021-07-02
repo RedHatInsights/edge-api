@@ -82,37 +82,17 @@ type S3UploadStatus struct {
 	URL string `json:"url"`
 }
 type ImageBuilderClientInterface interface {
-	Compose(image *models.Image, headers map[string]string) (*models.Image, error)
-	GetStatus(image *models.Image, headers map[string]string) (*models.Image, error)
+	ComposeCommit(image *models.Image, headers map[string]string) (*models.Image, error)
+	ComposeInstaller(updateRecord *models.UpdateRecord, image *models.Image, headers map[string]string) (*models.Image, error)
+	GetCommitStatus(image *models.Image, headers map[string]string) (*models.Image, error)
+	GetInstallerStatus(image *models.Image, headers map[string]string) (*models.Image, error)
 }
 
 type ImageBuilderClient struct{}
 
-func (c *ImageBuilderClient) Compose(image *models.Image, headers map[string]string) (*models.Image, error) {
-	cr := &ComposeResult{}
-	imgReq := ImageRequest{
-		Architecture: image.Commit.Arch,
-		ImageType:    image.ImageType,
-		Ostree: &OSTree{
-			Ref: image.Commit.OSTreeRef,
-			URL: image.Commit.OSTreeParentCommit,
-		},
-		UploadRequest: &UploadRequest{
-			Options: make(map[string]string),
-			Type:    "aws.s3",
-		},
-	}
-	reqBody := &ComposeRequest{
-		Customizations: &Customizations{
-			Packages: image.Commit.GetPackagesList(),
-		},
-
-		Distribution:  image.Distribution,
-		ImageRequests: []ImageRequest{imgReq},
-	}
-
+func compose(composeReq *ComposeRequest, headers map[string]string) (*ComposeResult, error) {
 	payloadBuf := new(bytes.Buffer)
-	json.NewEncoder(payloadBuf).Encode(reqBody)
+	json.NewEncoder(payloadBuf).Encode(composeReq)
 	cfg := config.Get()
 	url := fmt.Sprintf("%s/v1/compose", cfg.ImageBuilderConfig.URL)
 	log.Infof("Requesting url: %s", url)
@@ -136,24 +116,83 @@ func (c *ImageBuilderClient) Compose(image *models.Image, headers map[string]str
 	if err != nil {
 		return nil, err
 	}
-
+	cr := &ComposeResult{}
 	err = json.Unmarshal(respBody, &cr)
 	if err != nil {
 		return nil, err
 	}
 
 	defer res.Body.Close()
+	return cr, nil
+}
+
+func (c *ImageBuilderClient) ComposeCommit(image *models.Image, headers map[string]string) (*models.Image, error) {
+	req := &ComposeRequest{
+		Customizations: &Customizations{
+			Packages: image.Commit.GetPackagesList(),
+		},
+
+		Distribution: image.Distribution,
+		ImageRequests: []ImageRequest{
+			{
+				Architecture: image.Commit.Arch,
+				ImageType:    models.ImageTypeCommit,
+				Ostree: &OSTree{
+					Ref: image.Commit.OSTreeRef,
+					URL: image.Commit.OSTreeParentCommit,
+				},
+				UploadRequest: &UploadRequest{
+					Options: make(map[string]string),
+					Type:    "aws.s3",
+				},
+			}},
+	}
+	cr, err := compose(req, headers)
+	if err != nil {
+		return nil, err
+	}
 	image.Commit.ComposeJobID = cr.Id
 	image.Commit.Status = models.ImageStatusBuilding
 	image.Status = models.ImageStatusBuilding
-
 	return image, nil
 }
 
-func (c *ImageBuilderClient) GetStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
+func (c *ImageBuilderClient) ComposeInstaller(updateRecord *models.UpdateRecord, image *models.Image, headers map[string]string) (*models.Image, error) {
+	var pkgs []string
+	req := &ComposeRequest{
+		Customizations: &Customizations{
+			Packages: &pkgs,
+		},
+
+		Distribution: image.Distribution,
+		ImageRequests: []ImageRequest{
+			{
+				Architecture: image.Commit.Arch,
+				ImageType:    models.ImageTypeInstaller,
+				Ostree: &OSTree{
+					Ref: image.Commit.OSTreeRef,
+					URL: fmt.Sprintf("http://s3httpproxy-env.eba-zswvuamp.us-east-2.elasticbeanstalk.com/%s/%d/repo", updateRecord.Account, updateRecord.ID),
+				},
+				UploadRequest: &UploadRequest{
+					Options: make(map[string]string),
+					Type:    "aws.s3",
+				},
+			}},
+	}
+	cr, err := compose(req, headers)
+	if err != nil {
+		return nil, err
+	}
+	image.Installer.ComposeJobID = cr.Id
+	image.Installer.Status = models.ImageStatusBuilding
+	image.Status = models.ImageStatusBuilding
+	return image, nil
+}
+
+func getComposeStatus(jobId string, headers map[string]string) (*ComposeStatus, error) {
 	cs := &ComposeStatus{}
 	cfg := config.Get()
-	url := fmt.Sprintf("%s/v1/composes/%s", cfg.ImageBuilderConfig.URL, image.Commit.ComposeJobID)
+	url := fmt.Sprintf("%s/v1/composes/%s", cfg.ImageBuilderConfig.URL, jobId)
 	req, _ := http.NewRequest("GET", url, nil)
 	for key, value := range headers {
 		req.Header.Add(key, value)
@@ -181,14 +220,38 @@ func (c *ImageBuilderClient) GetStatus(image *models.Image, headers map[string]s
 	}
 
 	defer res.Body.Close()
-	log.Info(fmt.Sprintf("Got image status %s", cs.ImageStatus.Status))
+	return cs, nil
+}
+
+func (c *ImageBuilderClient) GetCommitStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
+	cs, err := getComposeStatus(image.Commit.ComposeJobID, headers)
+	if err != nil {
+		return nil, err
+	}
+	log.Info(fmt.Sprintf("Got UpdateCommitID status %s", cs.ImageStatus.Status))
 	if cs.ImageStatus.Status == imageStatusSuccess {
 		image.Status = models.ImageStatusSuccess
 		image.Commit.Status = models.ImageStatusSuccess
 		image.Commit.ImageBuildTarURL = cs.ImageStatus.UploadStatus.Options.URL
-		// TODO: What to do if it's an installer?
 	} else if cs.ImageStatus.Status == imageStatusFailure {
 		image.Commit.Status = models.ImageStatusError
+		image.Status = models.ImageStatusError
+	}
+	return image, nil
+}
+
+func (c *ImageBuilderClient) GetInstallerStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
+	cs, err := getComposeStatus(image.Installer.ComposeJobID, headers)
+	if err != nil {
+		return nil, err
+	}
+	log.Info(fmt.Sprintf("Got installer status %s", cs.ImageStatus.Status))
+	if cs.ImageStatus.Status == imageStatusSuccess {
+		image.Status = models.ImageStatusSuccess
+		image.Installer.Status = models.ImageStatusSuccess
+		image.Installer.ImageBuildISOURL = cs.ImageStatus.UploadStatus.Options.URL
+	} else if cs.ImageStatus.Status == imageStatusFailure {
+		image.Installer.Status = models.ImageStatusError
 		image.Status = models.ImageStatusError
 	}
 	return image, nil
