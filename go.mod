@@ -10,6 +10,7 @@ require (
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-openapi/runtime v0.19.29
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/uuid v1.1.1 // indirect
 	github.com/jackc/pgproto3/v2 v2.0.7 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-sqlite3 v1.14.7 // indirect

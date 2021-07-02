@@ -16,10 +16,10 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/edge-api/pkg/devices"
 	"github.com/redhatinsights/edge-api/pkg/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/images"
 	"github.com/redhatinsights/edge-api/pkg/repo"
+	"github.com/redhatinsights/edge-api/pkg/updates"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -86,7 +86,8 @@ func main() {
 		s.Route("/commits", commits.MakeRouter)
 		s.Route("/repos", repo.MakeRouter(server))
 		s.Route("/images", images.MakeRouter)
-		s.Route("/devices", devices.MakeRouter)
+		// s.Route("/devices", devices.MakeRouter)
+		s.Route("/updates", updates.MakeRouter)
 	})
 
 	mr := chi.NewRouter()

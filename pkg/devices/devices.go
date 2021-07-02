@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"path"
@@ -20,9 +19,8 @@ type Inventory struct {
 }
 
 type Devices struct {
-	IpAddresses       []string `json:"ip_addresses"`
-	Uuid              string   `json:"bios_uuid"`
-	DisplayNamestring string   `json:"display_name"`
+	IpAddresses []string `json:"ip_addresses"`
+	Uuid        string   `json:"bios_uuid"`
 }
 type key int
 
@@ -37,62 +35,8 @@ const (
 	commitKey    key = 0
 )
 
-// MakeRouter adds support for operations on commits
-func MakeRouter(sub chi.Router) {
-	sub.Get("/", GetAll)
-	sub.Route("/{deviceId}", func(r chi.Router) {
-		r.Get("/", GetByID)
-	})
-}
-
-// GetAll obtains list of devices
-func GetAll(w http.ResponseWriter, r *http.Request) { //(Inventory, error) {
-	transport := SetProxy()
-	client := &http.Client{Transport: transport}
-	fullUrl := SetUrl() + filterParams
-	req, err := http.NewRequest("GET", fullUrl, nil)
-	req.SetBasicAuth(usr, pwd)
-	resp, err := client.Do(req)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	log.Printf(string(body))
-	fmt.Printf("%v\n", string(body))
-	fmt.Fprintf(w, string(body))
-
-	var bodyResp Inventory
-	json.Unmarshal([]byte(body), &bodyResp)
-	fmt.Printf("struct: %v\n", bodyResp)
-	// return bodyResp, nil
-	// fmt.Fprintf(w, string(resp.Body))
-}
-
-// GetByID obtains a specifc device info
-func GetByID(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("%v\n", r.Context())
-	deviceId := chi.URLParam(r, "deviceId")
-	fmt.Printf("commitID: %v\n", deviceId)
-	deviceIdParam := "?hostname_or_id=" + deviceId
-
-	transport := SetProxy()
-	client := &http.Client{Transport: transport}
-	fullUrl := SetUrl() + filterParams + deviceIdParam
-	req, err := http.NewRequest("GET", fullUrl, nil)
-	req.SetBasicAuth(usr, pwd)
-	resp, err := client.Do(req)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	log.Printf(string(body))
-	fmt.Printf("%v\n", string(body))
-	fmt.Fprintf(w, string(body))
-}
-
-func SetProxy() *http.Transport {
+// must move to HTTP_PROXY
+func setProxy() *http.Transport {
 	proxyURL, err := url.Parse(PROXY)
 	if err != nil {
 		return &http.Transport{}
@@ -100,7 +44,7 @@ func SetProxy() *http.Transport {
 	transport := &http.Transport{Proxy: http.ProxyURL(proxyURL)}
 	return transport
 }
-func SetUrl() string {
+func setUrl() string {
 	inventoryUrl, err := url.Parse(config.Get().InventoryConfig.URL)
 	if err != nil {
 		return "Error to parse inventory url"
@@ -110,10 +54,56 @@ func SetUrl() string {
 	return fullUrl
 }
 
-func returnDevices(w http.ResponseWriter, r *http.Request) (Inventory, error) {
-	transport := SetProxy()
+func ReturnDevices(w http.ResponseWriter, r *http.Request) (Inventory, error) {
+	transport := setProxy()
 	client := &http.Client{Transport: transport}
-	fullUrl := SetUrl() + filterParams
+	fullUrl := setUrl() + filterParams
+	req, err := http.NewRequest("GET", fullUrl, nil)
+	req.SetBasicAuth(usr, pwd)
+	resp, err := client.Do(req)
+	if err != nil {
+		return Inventory{}, err
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	var bodyResp Inventory
+	json.Unmarshal([]byte(body), &bodyResp)
+	fmt.Printf("struct: %v\n", bodyResp)
+	return bodyResp, nil
+
+}
+
+func ReturnDevicesById(w http.ResponseWriter, r *http.Request) (Inventory, error) {
+	deviceId := chi.URLParam(r, "devices")
+	deviceIdParam := "?hostname_or_id=" + deviceId
+
+	transport := setProxy()
+	client := &http.Client{Transport: transport}
+	fullUrl := setUrl() + filterParams + deviceIdParam
+	req, err := http.NewRequest("GET", fullUrl, nil)
+	req.SetBasicAuth(usr, pwd)
+	resp, err := client.Do(req)
+	defer resp.Body.Close()
+	if err != nil {
+		return Inventory{}, err
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+
+	var bodyResp Inventory
+	json.Unmarshal([]byte(body), &bodyResp)
+	fmt.Printf("struct: %v\n", bodyResp)
+	return bodyResp, nil
+
+}
+
+func ReturnDevicesByTag(w http.ResponseWriter, r *http.Request) (Inventory, error) {
+
+	tags := chi.URLParam(r, "devices")
+	tagsParam := "?tags=" + tags
+
+	transport := setProxy()
+	client := &http.Client{Transport: transport}
+	fullUrl := setUrl() + tagsParam
 	req, err := http.NewRequest("GET", fullUrl, nil)
 	req.SetBasicAuth(usr, pwd)
 	resp, err := client.Do(req)
@@ -126,5 +116,4 @@ func returnDevices(w http.ResponseWriter, r *http.Request) (Inventory, error) {
 	json.Unmarshal([]byte(body), &bodyResp)
 	fmt.Printf("struct: %v\n", bodyResp)
 	return bodyResp, nil
-
 }
