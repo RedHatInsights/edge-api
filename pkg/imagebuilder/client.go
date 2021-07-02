@@ -145,6 +145,7 @@ func (c *ImageBuilderClient) Compose(image *models.Image, headers map[string]str
 	defer res.Body.Close()
 	image.Commit.ComposeJobID = cr.Id
 	image.Commit.Status = models.ImageStatusBuilding
+	image.Status = models.ImageStatusBuilding
 
 	return image, nil
 }
@@ -183,9 +184,11 @@ func (c *ImageBuilderClient) GetStatus(image *models.Image, headers map[string]s
 	log.Info(fmt.Sprintf("Got image status %s", cs.ImageStatus.Status))
 	if cs.ImageStatus.Status == imageStatusSuccess {
 		image.Status = models.ImageStatusSuccess
+		image.Commit.Status = models.ImageStatusSuccess
 		image.Commit.ImageBuildTarURL = cs.ImageStatus.UploadStatus.Options.URL
 		// TODO: What to do if it's an installer?
 	} else if cs.ImageStatus.Status == imageStatusFailure {
+		image.Commit.Status = models.ImageStatusError
 		image.Status = models.ImageStatusError
 	}
 	return image, nil
