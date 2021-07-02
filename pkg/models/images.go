@@ -14,12 +14,12 @@ type Image struct {
 	Distribution string
 	Description  string
 	ImageType    string
-	// Status       string
-	Version     int `gorm:"default:1"`
-	CommitID    int
-	Commit      *Commit
-	InstallerID int
-	Installer   *Installer
+	Status       string
+	Version      int `gorm:"default:1"`
+	CommitID     int
+	Commit       *Commit
+	InstallerID  int
+	Installer    *Installer
 }
 
 const (
