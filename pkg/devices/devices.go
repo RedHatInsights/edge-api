@@ -83,15 +83,16 @@ func ReturnDevicesById(w http.ResponseWriter, r *http.Request) (Inventory, error
 	req, err := http.NewRequest("GET", fullUrl, nil)
 	req.SetBasicAuth(usr, pwd)
 	resp, err := client.Do(req)
-	defer resp.Body.Close()
+
 	if err != nil {
 		return Inventory{}, err
 	}
 	body, err := ioutil.ReadAll(resp.Body)
-
+	defer resp.Body.Close()
 	var bodyResp Inventory
 	json.Unmarshal([]byte(body), &bodyResp)
 	fmt.Printf("struct: %v\n", bodyResp)
+
 	return bodyResp, nil
 
 }
