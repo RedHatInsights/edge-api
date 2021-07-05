@@ -18,6 +18,7 @@ import (
 // This makes it easy to mock API calls to the Image Builder API
 var Client ImageBuilderClientInterface
 
+// InitClient initializes the client for Image Builder in this package
 func InitClient() {
 	Client = new(ImageBuilderClient)
 }
@@ -35,7 +36,7 @@ type Customizations struct {
 	Packages *[]string `json:"packages"`
 }
 
-// UploadRequests is the upload options accepted by Image Builder API
+// UploadRequest is the upload options accepted by Image Builder API
 type UploadRequest struct {
 	Options interface{} `json:"options"`
 	Type    string      `json:"type"`
@@ -88,9 +89,9 @@ type UploadStatus struct {
 	Type    UploadTypes    `json:"type"`
 }
 
-// ComposeResult has the Id of a ComposeRequest
+// ComposeResult has the ID of a ComposeRequest
 type ComposeResult struct {
-	Id string `json:"id"`
+	ID string `json:"id"`
 }
 
 // S3UploadStatus contains the URL to the S3 Bucket
@@ -180,7 +181,7 @@ func (c *ImageBuilderClient) ComposeCommit(image *models.Image, headers map[stri
 	if err != nil {
 		return nil, err
 	}
-	image.Commit.ComposeJobID = cr.Id
+	image.Commit.ComposeJobID = cr.ID
 	image.Commit.Status = models.ImageStatusBuilding
 	image.Status = models.ImageStatusBuilding
 	return image, nil
@@ -213,16 +214,16 @@ func (c *ImageBuilderClient) ComposeInstaller(updateRecord *models.UpdateRecord,
 	if err != nil {
 		return nil, err
 	}
-	image.Installer.ComposeJobID = cr.Id
+	image.Installer.ComposeJobID = cr.ID
 	image.Installer.Status = models.ImageStatusBuilding
 	image.Status = models.ImageStatusBuilding
 	return image, nil
 }
 
-func getComposeStatus(jobId string, headers map[string]string) (*ComposeStatus, error) {
+func getComposeStatus(jobID string, headers map[string]string) (*ComposeStatus, error) {
 	cs := &ComposeStatus{}
 	cfg := config.Get()
-	url := fmt.Sprintf("%s/v1/composes/%s", cfg.ImageBuilderConfig.URL, jobId)
+	url := fmt.Sprintf("%s/v1/composes/%s", cfg.ImageBuilderConfig.URL, jobID)
 	req, _ := http.NewRequest("GET", url, nil)
 	for key, value := range headers {
 		req.Header.Add(key, value)
