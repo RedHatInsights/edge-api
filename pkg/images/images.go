@@ -262,32 +262,34 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 func updateImageStatus(image *models.Image, r *http.Request) (*models.Image, error) {
 	log.Info("Requesting image status on image builder")
 	headers := common.GetOutgoingHeaders(r)
-	image, err := imagebuilder.Client.GetCommitStatus(image, headers)
-	if err != nil {
-		return image, err
-	}
-	if image.Commit.Status != models.ImageStatusBuilding {
-		tx := db.DB.Save(&image.Commit)
-		if tx.Error != nil {
+	if image.Commit.Status == models.ImageStatusBuilding {
+		image, err := imagebuilder.Client.GetCommitStatus(image, headers)
+		if err != nil {
 			return image, err
 		}
+		if image.Commit.Status != models.ImageStatusBuilding && image.Installer == nil {
+			tx := db.DB.Save(&image.Commit)
+			if tx.Error != nil {
+				return image, tx.Error
+			}
+		}
 	}
-	if image.Installer != nil {
-		image, err = imagebuilder.Client.GetInstallerStatus(image, headers)
+	if image.Installer != nil && image.Installer.Status == models.ImageStatusBuilding {
+		image, err := imagebuilder.Client.GetInstallerStatus(image, headers)
 		if err != nil {
 			return image, err
 		}
 		if image.Installer.Status != models.ImageStatusBuilding {
 			tx := db.DB.Save(&image.Installer)
 			if tx.Error != nil {
-				return image, err
+				return image, tx.Error
 			}
 		}
 	}
 	if image.Status != models.ImageStatusBuilding {
 		tx := db.DB.Save(&image)
 		if tx.Error != nil {
-			return image, err
+			return image, tx.Error
 		}
 	}
 	return image, nil
@@ -318,6 +320,17 @@ func GetStatusByID(w http.ResponseWriter, r *http.Request) {
 // GetByID obtains a image from the database for an account
 func GetByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
+		if image.Status == models.ImageStatusBuilding {
+			var err error
+			image, err = updateImageStatus(image, r)
+			if err != nil {
+				log.Error(err)
+				err := errors.NewInternalServerError()
+				w.WriteHeader(err.Status)
+				json.NewEncoder(w).Encode(&err)
+				return
+			}
+		}
 		json.NewEncoder(w).Encode(image)
 	}
 }
