@@ -34,18 +34,19 @@ func OneOfFilterHandler(name string) FilterFunc {
 	})
 }
 
-const layoutISO = "2006-01-02"
+// LayoutISO represent the date layout in the API query
+const LayoutISO = "2006-01-02"
 
 // CreatedAtFilterHandler handles the "created_at" filter
 func CreatedAtFilterHandler() FilterFunc {
 	return FilterFunc(func(r *http.Request, tx *gorm.DB) *gorm.DB {
 		if val := r.URL.Query().Get("created_at"); val != "" {
-			currentDay, err := time.Parse(layoutISO, val)
+			currentDay, err := time.Parse(LayoutISO, val)
 			if err != nil {
 				return tx
 			}
 			nextDay := currentDay.Add(time.Hour * 24)
-			tx = tx.Where("created_at BETWEEN ? AND ?", currentDay.Format(layoutISO), nextDay.Format(layoutISO))
+			tx = tx.Where("created_at BETWEEN ? AND ?", currentDay.Format(LayoutISO), nextDay.Format(LayoutISO))
 		}
 		return tx
 	})

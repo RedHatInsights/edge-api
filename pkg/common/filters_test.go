@@ -103,7 +103,7 @@ func TestOneOfFilterHandler(t *testing.T) {
 
 func TestCreatedAtFilterHandler(t *testing.T) {
 	filter := ComposeFilters(CreatedAtFilterHandler())
-	nowStr := time.Now().Format(layoutISO)
+	nowStr := time.Now().Format(LayoutISO)
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/images?created_at=%s", nowStr), nil)
 	if err != nil {
 		t.Fatalf("Failed to create request: %s", err)
@@ -112,8 +112,8 @@ func TestCreatedAtFilterHandler(t *testing.T) {
 	images := []models.Image{}
 	result.Find(&images)
 	for _, image := range images {
-		if image.CreatedAt.Format(layoutISO) != nowStr {
-			t.Errorf("Expected image created at will be %s but %s", nowStr, image.CreatedAt.Format(layoutISO))
+		if image.CreatedAt.Format(LayoutISO) != nowStr {
+			t.Errorf("Expected image created at will be %s but %s", nowStr, image.CreatedAt.Format(LayoutISO))
 		}
 	}
 }
