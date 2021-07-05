@@ -290,8 +290,12 @@ func GetStatusByID(w http.ResponseWriter, r *http.Request) {
 		}
 		json.NewEncoder(w).Encode(struct {
 			Status string
+			Name   string
+			ID     uint
 		}{
 			image.Status,
+			image.Name,
+			image.ID,
 		})
 	}
 }
