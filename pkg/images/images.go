@@ -26,7 +26,7 @@ func MakeRouter(sub chi.Router) {
 		r.Use(ImageCtx)
 		r.Get("/", GetByID)
 		r.Get("/status", GetStatusByID)
-		r.Get("/installer", CreateInstallerForImage)
+		r.Post("/installer", CreateInstallerForImage)
 	})
 }
 
@@ -333,7 +333,9 @@ func GetByID(w http.ResponseWriter, r *http.Request) {
 // It requires a created image and an update for the commit
 func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	image := getImage(w, r)
-	image.Installer.Status = models.ImageStatusCreated
+	image.Installer = &models.Installer{
+		Status: models.ImageStatusCreated,
+	}
 	tx := db.DB.Save(&image)
 	if tx.Error != nil {
 		log.Error(tx.Error)
