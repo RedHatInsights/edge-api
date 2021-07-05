@@ -273,7 +273,7 @@ func updateImageStatus(image *models.Image, r *http.Request) (*models.Image, err
 		}
 	}
 	if image.Installer != nil {
-		image, err = imagebuilder.Client.GetCommitStatus(image, headers)
+		image, err = imagebuilder.Client.GetInstallerStatus(image, headers)
 		if err != nil {
 			return image, err
 		}
