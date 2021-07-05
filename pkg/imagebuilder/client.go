@@ -13,6 +13,9 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
+// Client provides a client to make requests to the Image Builder API.
+// All API requests should go through the imagebuilder.Client
+// This makes it easy to mock API calls to the Image Builder API
 var Client ImageBuilderClientInterface
 
 func InitClient() {
@@ -21,22 +24,27 @@ func InitClient() {
 
 // A lot of this code comes from https://github.com/osbuild/osbuild-composer
 
+// OSTree gives OSTree information for an image
 type OSTree struct {
 	URL string `json:"url"`
 	Ref string `json:"ref"`
 }
 
+// Customizations is made of the packages that are baked into an image
 type Customizations struct {
 	Packages *[]string `json:"packages,omitempty"`
 }
 
+// UploadRequests is the upload options accepted by Image Builder API
 type UploadRequest struct {
 	Options interface{} `json:"options"`
 	Type    string      `json:"type"`
 }
 
+// UploadTypes is the type that represents the types of uploads accepted by Image Builder
 type UploadTypes string
 
+// ImageRequest is image-related part of a ComposeRequest
 type ImageRequest struct {
 	Architecture  string         `json:"architecture"`
 	ImageType     string         `json:"image_type"`
@@ -44,15 +52,19 @@ type ImageRequest struct {
 	UploadRequest *UploadRequest `json:"upload_request"`
 }
 
+// ComposeRequest is the request to Compose one or more Images
 type ComposeRequest struct {
 	Customizations *Customizations `json:"customizations,omitempty"`
 	Distribution   string          `json:"distribution"`
 	ImageRequests  []ImageRequest  `json:"image_requests"`
 }
 
+// ComposeStatus is the status of a ComposeRequest
 type ComposeStatus struct {
 	ImageStatus ImageStatus `json:"image_status"`
 }
+
+// ImageStatus is the status of the upload of an Image
 type ImageStatus struct {
 	Status       imageStatusValue `json:"status"`
 	UploadStatus *UploadStatus    `json:"upload_status,omitempty"`
@@ -69,18 +81,24 @@ const (
 	imageStatusUploading   imageStatusValue = "uploading"
 )
 
+// UploadStatus is the status and metadata of an Image upload
 type UploadStatus struct {
 	Options S3UploadStatus `json:"options"`
 	Status  string         `json:"status"`
 	Type    UploadTypes    `json:"type"`
 }
+
+// ComposeResult has the Id of a ComposeRequest
 type ComposeResult struct {
 	Id string `json:"id"`
 }
 
+// S3UploadStatus contains the URL to the S3 Bucket
 type S3UploadStatus struct {
 	URL string `json:"url"`
 }
+
+// ImageBuilderClientInterface is an Interface to make request to ImageBuilder
 type ImageBuilderClientInterface interface {
 	ComposeCommit(image *models.Image, headers map[string]string) (*models.Image, error)
 	ComposeInstaller(updateRecord *models.UpdateRecord, image *models.Image, headers map[string]string) (*models.Image, error)
@@ -88,6 +106,7 @@ type ImageBuilderClientInterface interface {
 	GetInstallerStatus(image *models.Image, headers map[string]string) (*models.Image, error)
 }
 
+// ImageBuilderClient is the implementation of an ImageBuilderClientInterface
 type ImageBuilderClient struct{}
 
 func compose(composeReq *ComposeRequest, headers map[string]string) (*ComposeResult, error) {
@@ -126,6 +145,7 @@ func compose(composeReq *ComposeRequest, headers map[string]string) (*ComposeRes
 	return cr, nil
 }
 
+// ComposeCommit composes a Commit on ImageBuilder
 func (c *ImageBuilderClient) ComposeCommit(image *models.Image, headers map[string]string) (*models.Image, error) {
 	req := &ComposeRequest{
 		Customizations: &Customizations{
@@ -166,6 +186,7 @@ func (c *ImageBuilderClient) ComposeCommit(image *models.Image, headers map[stri
 	return image, nil
 }
 
+// ComposeInstaller composes a Installer on ImageBuilder
 func (c *ImageBuilderClient) ComposeInstaller(updateRecord *models.UpdateRecord, image *models.Image, headers map[string]string) (*models.Image, error) {
 	var pkgs []string
 	req := &ComposeRequest{
@@ -232,6 +253,7 @@ func getComposeStatus(jobId string, headers map[string]string) (*ComposeStatus, 
 	return cs, nil
 }
 
+// GetCommitStatus gets the Commit status on Image Builder
 func (c *ImageBuilderClient) GetCommitStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
 	cs, err := getComposeStatus(image.Commit.ComposeJobID, headers)
 	if err != nil {
@@ -249,6 +271,7 @@ func (c *ImageBuilderClient) GetCommitStatus(image *models.Image, headers map[st
 	return image, nil
 }
 
+// GetInstallerStatus gets the Installer status on Image Builder
 func (c *ImageBuilderClient) GetInstallerStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
 	cs, err := getComposeStatus(image.Installer.ComposeJobID, headers)
 	if err != nil {
