@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -184,5 +185,79 @@ func TestGetById(t *testing.T) {
 	if ir.ID != image.ID {
 		t.Errorf("wrong image status: got %v want %v",
 			ir.ID, image.ID)
+	}
+}
+
+func TestValidateGetAllSearchParams(t *testing.T) {
+	tt := []struct {
+		name          string
+		params        string
+		expectedError []validationError
+	}{
+		{
+			name:   "bad status name",
+			params: "name=image1&status=ORPHANED",
+			expectedError: []validationError{
+				validationError{Key: "status", Reason: "ORPHANED is not a valid status. Status must be CREATED or BUILDING or ERROR or SUCCESS"},
+			},
+		},
+		{
+			name:   "bad image_type name",
+			params: "image_type=TYPEX",
+			expectedError: []validationError{
+				validationError{Key: "image_type", Reason: "TYPEX is not a valid image_type. Image type must be rhel-edge-installer or rhel-edge-commit"},
+			},
+		},
+		{
+			name:   "bad created_at date",
+			params: "created_at=today",
+			expectedError: []validationError{
+				validationError{Key: "created_at", Reason: `parsing time "today" as "2006-01-02": cannot parse "today" as "2006"`},
+			},
+		},
+		{
+			name:   "bad sort_by",
+			params: "sort_by=host",
+			expectedError: []validationError{
+				validationError{Key: "sort_by", Reason: "host is not a valid sort_by. Sort-by must be status or image_type or name or distribution or created_at"},
+			},
+		},
+		{
+			name:   "bad sort_by and status",
+			params: "sort_by=host&status=CREATED&status=ONHOLD",
+			expectedError: []validationError{
+				validationError{Key: "sort_by", Reason: "host is not a valid sort_by. Sort-by must be status or image_type or name or distribution or created_at"},
+				validationError{Key: "status", Reason: "ONHOLD is not a valid status. Status must be CREATED or BUILDING or ERROR or SUCCESS"},
+			},
+		},
+	}
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	for _, te := range tt {
+		req, err := http.NewRequest("GET", fmt.Sprintf("/images?%s", te.params), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		w := httptest.NewRecorder()
+		validateGetAllSearchParams(next).ServeHTTP(w, req)
+
+		resp := w.Result()
+		jsonBody := []validationError{}
+		err = json.NewDecoder(resp.Body).Decode(&jsonBody)
+		if err != nil {
+			t.Errorf("failed decoding response body: %s", err.Error())
+		}
+		for _, exErr := range te.expectedError {
+			found := false
+			for _, jsErr := range jsonBody {
+				if jsErr.Key == exErr.Key && jsErr.Reason == exErr.Reason {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("in %q: was expected to have %v but not found in %v", te.name, exErr, jsonBody)
+			}
+		}
 	}
 }

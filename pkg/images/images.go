@@ -3,8 +3,11 @@ package images
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/common"
@@ -17,7 +20,7 @@ import (
 
 // MakeRouter adds support for operations on images
 func MakeRouter(sub chi.Router) {
-	sub.With(common.Paginate).Get("/", GetAll)
+	sub.With(validateGetAllSearchParams).With(common.Paginate).Get("/", GetAll)
 	sub.Post("/", Create)
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageCtx)
@@ -34,6 +37,8 @@ func MakeRouter(sub chi.Router) {
 type key int
 
 const imageKey key = 1
+
+var validStatuses = []string{models.ImageStatusCreated, models.ImageStatusBuilding, models.ImageStatusError, models.ImageStatusSuccess}
 
 // ImageCtx is a handler for Image requests
 func ImageCtx(next http.Handler) http.Handler {
@@ -164,8 +169,54 @@ var imageFilters = common.ComposeFilters(
 	common.ContainFilterHandler("name"),
 	common.ContainFilterHandler("distribution"),
 	common.CreatedAtFilterHandler(),
-	common.SortFilterHandler("id", "ASC"),
+	common.SortFilterHandler("created_at", "DESC"),
 )
+
+type validationError struct {
+	Key    string
+	Reason string
+}
+
+func validateGetAllSearchParams(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		errs := []validationError{}
+		if statuses, ok := r.URL.Query()["status"]; ok {
+			for _, status := range statuses {
+				if status != models.ImageStatusCreated && status != models.ImageStatusBuilding && status != models.ImageStatusError && status != models.ImageStatusSuccess {
+					errs = append(errs, validationError{Key: "status", Reason: fmt.Sprintf("%s is not a valid status. Status must be %s", status, strings.Join(validStatuses, " or "))})
+				}
+			}
+		}
+		if imageTypes, ok := r.URL.Query()["image_type"]; ok {
+			for _, imageType := range imageTypes {
+				if imageType != models.ImageTypeCommit && imageType != models.ImageTypeInstaller {
+					errs = append(errs, validationError{Key: "image_type", Reason: fmt.Sprintf("%s is not a valid image_type. %s", imageType, models.ImageTypeNotAccepted)})
+				}
+			}
+		}
+		if val := r.URL.Query().Get("created_at"); val != "" {
+			if _, err := time.Parse(common.LayoutISO, val); err != nil {
+				errs = append(errs, validationError{Key: "created_at", Reason: err.Error()})
+			}
+		}
+		if val := r.URL.Query().Get("sort_by"); val != "" {
+			name := val
+			if string(val[0]) == "-" {
+				name = val[1:]
+			}
+			if name != "status" && name != "image_type" && name != "name" && name != "distribution" && name != "created_at" {
+				errs = append(errs, validationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must be status or image_type or name or distribution or created_at", name)})
+			}
+		}
+
+		if len(errs) == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(&errs)
+	})
+}
 
 // GetAll image objects from the database for an account
 func GetAll(w http.ResponseWriter, r *http.Request) {
