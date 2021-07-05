@@ -60,14 +60,7 @@ func ImageCtx(next http.Handler) http.Handler {
 				json.NewEncoder(w).Encode(&err)
 				return
 			}
-			result := db.DB.Where("account = ?", account).First(&image, id)
-			if result.Error != nil {
-				err := errors.NewNotFound(err.Error())
-				w.WriteHeader(err.Status)
-				json.NewEncoder(w).Encode(&err)
-				return
-			}
-			result = db.DB.Where("account = ?", account).First(&image.Commit, image.CommitID)
+			result := db.DB.Where("`images`.account = ?", account).Joins("Commit").Joins("Installer").First(&image, id)
 			if result.Error != nil {
 				err := errors.NewNotFound(err.Error())
 				w.WriteHeader(err.Status)
@@ -347,8 +340,8 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	}
 	headers := common.GetOutgoingHeaders(r)
 	var update *models.UpdateRecord
-	result := db.DB.Where("updateCommitID = ?", image.Commit.ID).First(&update)
-	if result == nil {
+	result := db.DB.Where("update_commit_id = ? and status = ?", image.Commit.ID, models.UpdateStatusSuccess).Last(&update)
+	if result.Error != nil {
 		err := errors.NewBadRequest("Update wasn't found in the database")
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
@@ -365,6 +358,14 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	image.Installer.Status = models.ImageStatusBuilding
 	image.Status = models.ImageStatusBuilding
 	tx = db.DB.Save(&image)
+	if tx.Error != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	tx = db.DB.Save(&image.Installer)
 	if tx.Error != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
