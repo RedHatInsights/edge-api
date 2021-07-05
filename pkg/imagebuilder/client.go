@@ -32,7 +32,7 @@ type OSTree struct {
 
 // Customizations is made of the packages that are baked into an image
 type Customizations struct {
-	Packages *[]string `json:"packages,omitempty"`
+	Packages *[]string `json:"packages"`
 }
 
 // UploadRequests is the upload options accepted by Image Builder API
@@ -54,7 +54,7 @@ type ImageRequest struct {
 
 // ComposeRequest is the request to Compose one or more Images
 type ComposeRequest struct {
-	Customizations *Customizations `json:"customizations,omitempty"`
+	Customizations *Customizations `json:"customizations"`
 	Distribution   string          `json:"distribution"`
 	ImageRequests  []ImageRequest  `json:"image_requests"`
 }
@@ -114,7 +114,7 @@ func compose(composeReq *ComposeRequest, headers map[string]string) (*ComposeRes
 	json.NewEncoder(payloadBuf).Encode(composeReq)
 	cfg := config.Get()
 	url := fmt.Sprintf("%s/v1/compose", cfg.ImageBuilderConfig.URL)
-	log.Infof("Requesting url: %s", url)
+	log.Infof("Requesting url: %s with payloadBuf %s", url, payloadBuf.String())
 	req, _ := http.NewRequest("POST", url, payloadBuf)
 	for key, value := range headers {
 		req.Header.Add(key, value)
@@ -188,7 +188,7 @@ func (c *ImageBuilderClient) ComposeCommit(image *models.Image, headers map[stri
 
 // ComposeInstaller composes a Installer on ImageBuilder
 func (c *ImageBuilderClient) ComposeInstaller(updateRecord *models.UpdateRecord, image *models.Image, headers map[string]string) (*models.Image, error) {
-	var pkgs []string
+	pkgs := make([]string, 0)
 	req := &ComposeRequest{
 		Customizations: &Customizations{
 			Packages: &pkgs,
@@ -200,7 +200,7 @@ func (c *ImageBuilderClient) ComposeInstaller(updateRecord *models.UpdateRecord,
 				Architecture: image.Commit.Arch,
 				ImageType:    models.ImageTypeInstaller,
 				Ostree: &OSTree{
-					Ref: image.Commit.OSTreeRef,
+					Ref: "rhel/8/x86_64/edge", //image.Commit.OSTreeRef,
 					URL: fmt.Sprintf("http://s3httpproxy-env.eba-zswvuamp.us-east-2.elasticbeanstalk.com/%s/%d/repo", updateRecord.Account, updateRecord.ID),
 				},
 				UploadRequest: &UploadRequest{
