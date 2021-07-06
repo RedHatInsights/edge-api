@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
@@ -83,6 +84,8 @@ type CreateImageRequest struct {
 }
 
 // Create creates an image on hosted image builder.
+// It always creates a commit on Image Builder.
+// We're creating a update on the background to transfer the commit to our repo.
 func Create(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var image *models.Image
@@ -162,6 +165,16 @@ func Create(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
+		log.Info("Commit %d for Image %d is ready. Creating OSTree repo.", image.Commit.ID, image.ID)
+		update := &models.UpdateRecord{
+			UpdateCommitID: image.Commit.ID,
+			Account:        image.Account,
+		}
+		db.DB.Create(&update)
+		commits.RepoBuilder(update)
+
+		// TODO: This is also where we need to get the metadata from image builder
+		// in a separate goroutine
 	}(image.ID)
 
 	w.WriteHeader(http.StatusOK)
