@@ -340,7 +340,8 @@ func GetByID(w http.ResponseWriter, r *http.Request) {
 func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	image := getImage(w, r)
 	image.Installer = &models.Installer{
-		Status: models.ImageStatusCreated,
+		Status:  models.ImageStatusCreated,
+		Account: image.Account,
 	}
 	tx := db.DB.Save(&image)
 	if tx.Error != nil {
