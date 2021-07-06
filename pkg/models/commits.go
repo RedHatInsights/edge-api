@@ -27,10 +27,23 @@ type Package struct {
 	Name string `json:"Name"`
 }
 
+var requiredPackages = [6]string{
+	"ansible",
+	"rhc",
+	"rhc-playbook-worker",
+	"subscription-manager",
+	"subscription-manager-plugin-ostree",
+	"insights-client",
+}
+
 func (c *Commit) GetPackagesList() *[]string {
-	pkgs := make([]string, len(c.Packages))
+	l := len(requiredPackages)
+	pkgs := make([]string, len(c.Packages)+l)
+	for i, p := range requiredPackages {
+		pkgs[i] = p
+	}
 	for i, p := range c.Packages {
-		pkgs[i] = p.Name
+		pkgs[i+l] = p.Name
 	}
 	return &pkgs
 }

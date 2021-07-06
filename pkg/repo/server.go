@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/errors"
@@ -77,10 +78,13 @@ func (p *S3Proxy) ServeRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	account, err := common.GetAccount(r)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	account := chi.URLParam(r, "account")
+	if account == "" {
+		account, err = common.GetAccount(r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 
 	_r := strings.Index(r.URL.Path, pathPrefix)
