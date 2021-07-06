@@ -13,14 +13,17 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
+// pkg instance of ImageBuilderClientInterface
 var Client ImageBuilderClientInterface
 
+// initialize pkg instance of ImageBuilderClient
 func InitClient() {
 	Client = new(ImageBuilderClient)
 }
 
 // A lot of this code comes from https://github.com/osbuild/osbuild-composer
 
+// struct type to represnt an OSTree
 type OSTree struct {
 	URL string `json:"url"`
 	Ref string `json:"ref"`
