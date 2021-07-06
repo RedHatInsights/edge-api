@@ -20,7 +20,9 @@ var Client ImageBuilderClientInterface
 
 // InitClient initializes the client for Image Builder in this package
 func InitClient() {
-	Client = new(ImageBuilderClient)
+	Client = &ImageBuilderClient{
+		RepoURL: config.Get().S3ProxyURL,
+	}
 }
 
 // A lot of this code comes from https://github.com/osbuild/osbuild-composer
@@ -108,7 +110,9 @@ type ImageBuilderClientInterface interface {
 }
 
 // ImageBuilderClient is the implementation of an ImageBuilderClientInterface
-type ImageBuilderClient struct{}
+type ImageBuilderClient struct {
+	RepoURL string
+}
 
 func compose(composeReq *ComposeRequest, headers map[string]string) (*ComposeResult, error) {
 	payloadBuf := new(bytes.Buffer)
@@ -202,7 +206,7 @@ func (c *ImageBuilderClient) ComposeInstaller(updateRecord *models.UpdateRecord,
 				ImageType:    models.ImageTypeInstaller,
 				Ostree: &OSTree{
 					Ref: "rhel/8/x86_64/edge", //image.Commit.OSTreeRef,
-					URL: fmt.Sprintf("http://s3httpproxy-env.eba-zswvuamp.us-east-2.elasticbeanstalk.com/%s/%d/repo", updateRecord.Account, updateRecord.ID),
+					URL: fmt.Sprintf("%s/%s/%d/repo", c.RepoURL, updateRecord.Account, updateRecord.ID),
 				},
 				UploadRequest: &UploadRequest{
 					Options: make(map[string]string),
