@@ -156,7 +156,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		db.DB.Joins("Commit").First(&i, id)
 		fmt.Println("Compose job id", i.Commit.ComposeJobID)
 		for {
-			time.Sleep(1 * time.Second)
+			time.Sleep(1 * time.Minute)
 			i, err := updateImageStatus(i, r)
 			if err != nil {
 				panic(err)
