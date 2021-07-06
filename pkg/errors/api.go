@@ -28,7 +28,7 @@ func NewInternalServerError() *InternalServerError {
 	return err
 }
 
-// InternalServerError defines a error when the client's input generates an error
+// BadRequest defines a error when the client's input generates an error
 type BadRequest struct {
 	APIError
 }
