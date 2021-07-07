@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
+	"github.com/prometheus/common/log"
 	"github.com/redhatinsights/edge-api/config"
 )
 
@@ -42,7 +43,7 @@ const (
 func ReturnDevices(w http.ResponseWriter, r *http.Request) (Inventory, error) {
 	url := fmt.Sprintf("%s/api/inventory/v1/hosts", config.Get().InventoryConfig.URL)
 	fullURL := url + filterParams
-	fmt.Printf("Requesting url: %s\n", fullURL)
+	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	req.Header.Add("Content-Type", "application/json")
 
@@ -58,7 +59,7 @@ func ReturnDevices(w http.ResponseWriter, r *http.Request) (Inventory, error) {
 	defer resp.Body.Close()
 	var bodyResp Inventory
 	json.Unmarshal([]byte(body), &bodyResp)
-	fmt.Printf("struct: %v\n", bodyResp)
+	log.Infof("struct: %v\n", bodyResp)
 	return bodyResp, nil
 
 }
@@ -70,7 +71,7 @@ func ReturnDevicesByID(w http.ResponseWriter, r *http.Request) (Inventory, error
 
 	url := fmt.Sprintf("%s/api/inventory/v1/hosts", config.Get().InventoryConfig.URL)
 	fullURL := url + filterParams + deviceIDParam
-	fmt.Printf("Requesting url: %s\n", fullURL)
+	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	req.Header.Add("Content-Type", "application/json")
 
@@ -90,11 +91,11 @@ func ReturnDevicesByID(w http.ResponseWriter, r *http.Request) (Inventory, error
 	if err != nil {
 		return Inventory{}, err
 	}
-	fmt.Printf("fullbody: %v\n", string(body))
+	log.Infof("fullbody: %v\n", string(body))
 	defer resp.Body.Close()
 	var bodyResp Inventory
 	json.Unmarshal([]byte(body), &bodyResp)
-	fmt.Printf("struct: %v\n", bodyResp)
+	log.Infof("struct: %v\n", bodyResp)
 
 	return bodyResp, nil
 
@@ -108,7 +109,7 @@ func ReturnDevicesByTag(w http.ResponseWriter, r *http.Request) (Inventory, erro
 
 	url := fmt.Sprintf("%s/api/inventory/v1/hosts", config.Get().InventoryConfig.URL)
 	fullURL := url + filterParams + tagsParam
-	fmt.Printf("Requesting url: %s\n", fullURL)
+	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	req.Header.Add("Content-Type", "application/json")
 
@@ -127,6 +128,6 @@ func ReturnDevicesByTag(w http.ResponseWriter, r *http.Request) (Inventory, erro
 	}
 	var bodyResp Inventory
 	json.Unmarshal([]byte(body), &bodyResp)
-	fmt.Printf("struct: %v\n", bodyResp)
+	log.Infof("struct: %v\n", bodyResp)
 	return bodyResp, nil
 }
