@@ -22,6 +22,7 @@ type EdgeConfig struct {
 	UpdateTempPath     string
 	OpenAPIFilePath    string
 	ImageBuilderConfig *imageBuilderConfig
+	S3ProxyURL         string
 }
 
 type dbConfig struct {
@@ -76,6 +77,7 @@ func Init() {
 		ImageBuilderConfig: &imageBuilderConfig{
 			URL: options.GetString("ImageBuilderUrl"),
 		},
+		S3ProxyURL: options.GetString("S3ProxyURL"),
 	}
 
 	if clowder.IsClowderEnabled() {

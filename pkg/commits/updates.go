@@ -26,6 +26,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var RepoBuilderInstance RepoBuilderInterface
+
+// InitRepoBuilder initializes the repository builder in this package
+func InitRepoBuilder() {
+	RepoBuilderInstance = &RepoBuilder{}
+}
+
 func getCommitFromDB(commitID uint) (*models.Commit, error) {
 	var commit models.Commit
 	result := db.DB.First(&commit, commitID)
@@ -128,7 +135,7 @@ func UpdatesAdd(w http.ResponseWriter, r *http.Request) {
 
 	db.DB.Create(&update)
 
-	go RepoBuilder(update, r)
+	go RepoBuilderInstance.BuildRepo(update)
 }
 
 // UpdatesGetAll update objects from the database for an account
@@ -187,9 +194,17 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateRecord {
 	return update
 }
 
-// RepoBuilder build an update repo with the set of commits all merged into a single repo
+// RepoBuilderInterface defines the interface of a repository builder
+type RepoBuilderInterface interface {
+	BuildRepo(ur *models.UpdateRecord) error
+}
+
+// RepoBuilder is the implementation of a RepoBuilderInterface
+type RepoBuilder struct{}
+
+// BuildRepo build an update repo with the set of commits all merged into a single repo
 // with static deltas generated between them all
-func RepoBuilder(ur *models.UpdateRecord, r *http.Request) error {
+func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) error {
 	cfg := config.Get()
 
 	var updaterec models.UpdateRecord
@@ -261,13 +276,9 @@ func RepoBuilder(ur *models.UpdateRecord, r *http.Request) error {
 		uploader = NewS3Uploader()
 	}
 	// FIXME: Need to actually do something with the return string for Server
-	account, err := common.GetAccount(r)
-	if err != nil {
-		return err
-	}
 
 	// NOTE: This relies on the file path being cfg.UpdateTempPath/models.UpdateRecord.ID
-	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), account)
+	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), ur.Account)
 	if err != nil {
 		return err
 	}

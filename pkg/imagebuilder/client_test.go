@@ -4,12 +4,28 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
+func setUp() {
+	config.Init()
+	config.Get().Debug = true
+}
+
+func tearDown() {
+
+}
+
+func TestMain(m *testing.M) {
+	setUp()
+	retCode := m.Run()
+	tearDown()
+	os.Exit(retCode)
+}
 func TestInitClient(t *testing.T) {
 	InitClient()
 	if Client == nil {
@@ -31,26 +47,26 @@ func TestComposeImage(t *testing.T) {
 	config.Get().ImageBuilderConfig.URL = ts.URL
 
 	pkgs := []models.Package{
-		models.Package{
+		{
 			Name: "vim",
 		},
-		models.Package{
+		{
 			Name: "ansible",
 		},
 	}
-	img := &models.Image{Distribution: "rhel-8", ImageType: models.ImageTypeInstaller, Commit: &models.Commit{
+	img := &models.Image{Distribution: "rhel-8", Commit: &models.Commit{
 		Arch:     "x86_64",
 		Packages: pkgs,
 	}}
 	headers := make(map[string]string)
-	img, err := Client.Compose(img, headers)
+	img, err := Client.ComposeCommit(img, headers)
 	if err != nil {
 		t.Errorf("Shouldnt throw error")
 	}
 	if img == nil {
 		t.Errorf("Image shouldnt be nil")
 	}
-	if img != nil && img.ComposeJobID != "compose-job-id-returned-from-image-builder" {
+	if img != nil && img.Commit.ComposeJobID != "compose-job-id-returned-from-image-builder" {
 		t.Error("Compose job is not correct")
 	}
 }

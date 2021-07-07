@@ -44,18 +44,22 @@ type UpdateRecord struct {
 }
 
 const (
-	// Errors
-	UpdateCommitIDCantBeNilMessage   = "update commit id can't be empty"
-	AccountCantBeEmptyMessage        = "account can't be empty"
+	// UpdateCommitIDCantBeNilMessage is the error message when a update commit is nil
+	UpdateCommitIDCantBeNilMessage = "update commit id can't be empty"
+	// InventoryHostsCantBeEmptyMessage is the error message when the hosts are empty
 	InventoryHostsCantBeEmptyMessage = "inventory hosts can not be empty"
 
-	// Status
-	UpdateStatusCreated  = "CREATED"
+	// UpdateStatusCreated is for when a update is created
+	UpdateStatusCreated = "CREATED"
+	// UpdateStatusBuilding is for when a update is building
 	UpdateStatusBuilding = "BUILDING"
-	UpdateStatusError    = "ERROR"
-	UpdateStatusSuccess  = "SUCCESS"
+	// UpdateStatusError is for when a update is on a error state
+	UpdateStatusError = "ERROR"
+	// UpdateStatusSuccess is for when a update is available to the user
+	UpdateStatusSuccess = "SUCCESS"
 )
 
+// ValidateRequest validates a Update Record Request
 func (ur *UpdateRecord) ValidateRequest() error {
 	if ur.UpdateCommitID == 0 {
 		return errors.New(UpdateCommitIDCantBeNilMessage)
