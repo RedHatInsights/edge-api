@@ -20,8 +20,10 @@ type EdgeConfig struct {
 	AccessKey          string
 	SecretKey          string
 	UpdateTempPath     string
+	OpenAPIFilePath    string
 	ImageBuilderConfig *imageBuilderConfig
 	InventoryConfig    *inventoryConfig
+	S3ProxyURL         string
 }
 
 type dbConfig struct {
@@ -62,6 +64,7 @@ func Init() {
 	options.SetDefault("ImageBuilderUrl", "http://image-builder:8080")
 	options.SetDefault("InventoryUrl", "https://inventory-url:8080/")
 	options.SetDefault("UpdateTempPath", "/tmp/updates/")
+	options.SetDefault("OpenAPIFilePath", "./cmd/spec/openapi.json")
 	options.AutomaticEnv()
 
 	kubenv := viper.New()
@@ -76,12 +79,14 @@ func Init() {
 		LogLevel:       options.GetString("LogLevel"),
 		BucketName:     options.GetString("EdgeTarballsBucket"),
 		UpdateTempPath: options.GetString("UpdateTempPath"),
+		OpenAPIFilePath: options.GetString("OpenAPIFilePath"),
 		ImageBuilderConfig: &imageBuilderConfig{
 			URL: options.GetString("ImageBuilderUrl"),
 		},
 		InventoryConfig: &inventoryConfig{
 			URL: options.GetString("InventoryUrl"),
 		},
+		S3ProxyURL: options.GetString("S3ProxyURL"),
 	}
 
 	if clowder.IsClowderEnabled() {

@@ -22,28 +22,24 @@ func setUp() {
 		{
 			Name:         "Motion Sensor 1",
 			Distribution: "rhel-8",
-			ImageType:    "rhel-edge-installer",
 			Status:       models.ImageStatusError,
 			Commit:       &models.Commit{Arch: "arm7"},
 		},
 		{
 			Name:         "Pressure Sensor 1",
 			Distribution: "fedora-33",
-			ImageType:    "rhel-edge-commit",
 			Status:       models.ImageStatusSuccess,
 			Commit:       &models.Commit{Arch: "x86_64"},
 		},
 		{
 			Name:         "Pressure Sensor 2",
 			Distribution: "rhel-8",
-			ImageType:    "rhel-edge-commit",
 			Status:       models.ImageStatusCreated,
 			Commit:       &models.Commit{Arch: "x86_64"},
 		},
 		{
 			Name:         "Motion Sensor 2",
 			Distribution: "rhel-8",
-			ImageType:    "rhel-edge-installer",
 			Status:       models.ImageStatusBuilding,
 			Commit:       &models.Commit{Arch: "arm7"},
 		},
@@ -103,7 +99,7 @@ func TestOneOfFilterHandler(t *testing.T) {
 
 func TestCreatedAtFilterHandler(t *testing.T) {
 	filter := ComposeFilters(CreatedAtFilterHandler())
-	nowStr := time.Now().Format(layoutISO)
+	nowStr := time.Now().Format(LayoutISO)
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/images?created_at=%s", nowStr), nil)
 	if err != nil {
 		t.Fatalf("Failed to create request: %s", err)
@@ -112,8 +108,8 @@ func TestCreatedAtFilterHandler(t *testing.T) {
 	images := []models.Image{}
 	result.Find(&images)
 	for _, image := range images {
-		if image.CreatedAt.Format(layoutISO) != nowStr {
-			t.Errorf("Expected image created at will be %s but %s", nowStr, image.CreatedAt.Format(layoutISO))
+		if image.CreatedAt.Format(LayoutISO) != nowStr {
+			t.Errorf("Expected image created at will be %s but %s", nowStr, image.CreatedAt.Format(LayoutISO))
 		}
 	}
 }
