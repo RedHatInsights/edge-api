@@ -44,13 +44,11 @@ type UpdateRecord struct {
 }
 
 const (
-	// Errors
 	// UpdateCommitIDCantBeNilMessage is the error message when a update commit is nil
 	UpdateCommitIDCantBeNilMessage = "update commit id can't be empty"
 	// InventoryHostsCantBeEmptyMessage is the error message when the hosts are empty
 	InventoryHostsCantBeEmptyMessage = "inventory hosts can not be empty"
 
-	// Status
 	// UpdateStatusCreated is for when a update is created
 	UpdateStatusCreated = "CREATED"
 	// UpdateStatusBuilding is for when a update is building

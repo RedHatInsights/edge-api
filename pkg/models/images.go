@@ -22,19 +22,16 @@ type Image struct {
 }
 
 const (
-	// Errors
 	// DistributionCantBeNilMessage is the error message when a distribution is nil
 	DistributionCantBeNilMessage = "distribution can't be empty"
 	// ArchitectureCantBeEmptyMessage is the error message when the architecture is empty
 	ArchitectureCantBeEmptyMessage = "architecture can't be empty"
 
-	// ImageTypes
 	// ImageTypeInstaller is the installer image type on Image Builder
 	ImageTypeInstaller = "rhel-edge-installer"
 	// ImageTypeCommit is the installer image type on Image Builder
 	ImageTypeCommit = "rhel-edge-commit"
 
-	// Status
 	// ImageStatusCreated is for when a image is created
 	ImageStatusCreated = "CREATED"
 	// ImageStatusBuilding is for when a image is building
