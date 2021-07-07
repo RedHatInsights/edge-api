@@ -22,28 +22,24 @@ func setUp() {
 		{
 			Name:         "Motion Sensor 1",
 			Distribution: "rhel-8",
-			ImageType:    "rhel-edge-installer",
 			Status:       models.ImageStatusError,
 			Commit:       &models.Commit{Arch: "arm7"},
 		},
 		{
 			Name:         "Pressure Sensor 1",
 			Distribution: "fedora-33",
-			ImageType:    "rhel-edge-commit",
 			Status:       models.ImageStatusSuccess,
 			Commit:       &models.Commit{Arch: "x86_64"},
 		},
 		{
 			Name:         "Pressure Sensor 2",
 			Distribution: "rhel-8",
-			ImageType:    "rhel-edge-commit",
 			Status:       models.ImageStatusCreated,
 			Commit:       &models.Commit{Arch: "x86_64"},
 		},
 		{
 			Name:         "Motion Sensor 2",
 			Distribution: "rhel-8",
-			ImageType:    "rhel-edge-installer",
 			Status:       models.ImageStatusBuilding,
 			Commit:       &models.Commit{Arch: "arm7"},
 		},

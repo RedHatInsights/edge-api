@@ -34,7 +34,6 @@ func TestValidateRequestWithEdgeInstallerOutputType(t *testing.T) {
 	img := &Image{
 		Distribution: "rhel-8",
 		Commit:       &Commit{Arch: "x86_64"},
-		ImageType:    ImageTypeInstaller,
 	}
 
 	err := img.ValidateRequest()
@@ -46,7 +45,6 @@ func TestValidateRequestWithEdgeCommitImageType(t *testing.T) {
 	img := &Image{
 		Distribution: "rhel-8",
 		Commit:       &Commit{Arch: "x86_64"},
-		ImageType:    ImageTypeCommit,
 	}
 
 	err := img.ValidateRequest()
@@ -54,24 +52,11 @@ func TestValidateRequestWithEdgeCommitImageType(t *testing.T) {
 		t.Errorf("Error not expected")
 	}
 }
-func TestValidateRequestWithWrongImageType(t *testing.T) {
-	img := &Image{
-		Distribution: "rhel-8",
-		Commit:       &Commit{Arch: "x86_64"},
-		ImageType:    "wrong image type",
-	}
-
-	err := img.ValidateRequest()
-	if err == nil {
-		t.Errorf("Error expected")
-	}
-}
 
 func TestValidateRequest(t *testing.T) {
 	img := &Image{
 		Distribution: "rhel-8",
 		Commit:       &Commit{Arch: "x86_64"},
-		ImageType:    ImageTypeCommit,
 	}
 
 	err := img.ValidateRequest()
