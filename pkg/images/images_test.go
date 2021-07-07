@@ -10,9 +10,9 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -33,6 +33,8 @@ func setUp() {
 		},
 	}
 	db.DB.Create(&image)
+	imagebuilder.Client = &MockImageBuilderClient{}
+	commits.RepoBuilderInstance = &MockRepositoryBuilder{}
 }
 
 func tearDown() {
@@ -82,9 +84,14 @@ func (c *MockImageBuilderClient) GetInstallerStatus(image *models.Image, headers
 	return image, nil
 }
 
+type MockRepositoryBuilder struct{}
+
+func (rb *MockRepositoryBuilder) BuildRepo(u *models.UpdateRecord) error {
+	return nil
+}
+
 func TestCreateWasCalledWithAccountNotSet(t *testing.T) {
 	config.Get().Debug = false
-	imagebuilder.Client = &MockImageBuilderClient{}
 	var jsonStr = []byte(`{"Distribution": "rhel-8", "ImageType": "rhel-edge-installer", "Commit": {"Arch": "x86_64", "Packages" : [ { "name" : "vim"  } ]}}`)
 	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
 	if err != nil {
@@ -103,7 +110,6 @@ func TestCreateWasCalledWithAccountNotSet(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	imagebuilder.Client = &MockImageBuilderClient{}
 	var jsonStr = []byte(`{"Distribution": "rhel-8", "ImageType": "rhel-edge-installer", "Commit": {"Arch": "x86_64", "Packages" : [ { "name" : "vim"  } ]}}`)
 	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
 	if err != nil {
@@ -120,7 +126,6 @@ func TestCreate(t *testing.T) {
 	}
 }
 func TestGetStatus(t *testing.T) {
-	imagebuilder.Client = &MockImageBuilderClient{}
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -156,7 +161,6 @@ func TestGetStatus(t *testing.T) {
 }
 
 func TestGetById(t *testing.T) {
-	imagebuilder.Client = &MockImageBuilderClient{}
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -188,7 +192,6 @@ func TestGetById(t *testing.T) {
 		t.Errorf("wrong image status: got %v want %v",
 			ir.ID, image.ID)
 	}
-	time.Sleep(1 * time.Minute)
 }
 
 func TestValidateGetAllSearchParams(t *testing.T) {

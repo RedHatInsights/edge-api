@@ -171,7 +171,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 			Account:        image.Account,
 		}
 		db.DB.Create(&update)
-		commits.RepoBuilder(update)
+		commits.RepoBuilderInstance.BuildRepo(update)
 
 		// TODO: This is also where we need to get the metadata from image builder
 		// in a separate goroutine
