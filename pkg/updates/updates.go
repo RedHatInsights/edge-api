@@ -43,7 +43,7 @@ func getDevicesByID(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		} else {
-			fmt.Errorf("Invalid UUID")
+			fmt.Printf("Invalid UUID")
 		}
 	}
 
