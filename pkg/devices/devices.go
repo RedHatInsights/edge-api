@@ -7,8 +7,8 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
-	"github.com/prometheus/common/log"
 	"github.com/redhatinsights/edge-api/config"
+	log "github.com/sirupsen/logrus"
 )
 
 // Inventory list of devices
