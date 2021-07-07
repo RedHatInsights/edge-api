@@ -74,7 +74,7 @@ func Init() {
 		ImageBuilderConfig: &imageBuilderConfig{
 			URL: options.GetString("ImageBuilderUrl"),
 		},
-		S3ProxyURL: options.GetString("S3_PROXY_URL"),
+		S3ProxyURL: options.GetString("S3ProxyURL"),
 	}
 
 	if clowder.IsClowderEnabled() {
