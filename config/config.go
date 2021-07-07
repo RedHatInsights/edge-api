@@ -20,6 +20,7 @@ type EdgeConfig struct {
 	AccessKey          string
 	SecretKey          string
 	UpdateTempPath     string
+	OpenAPIFilePath    string
 	ImageBuilderConfig *imageBuilderConfig
 	S3ProxyURL         string
 }
@@ -57,6 +58,7 @@ func Init() {
 	options.SetDefault("EdgeTarballsBucket", "rh-edge-tarballs")
 	options.SetDefault("ImageBuilderUrl", "http://image-builder:8080")
 	options.SetDefault("UpdateTempPath", "/tmp/updates/")
+	options.SetDefault("OpenAPIFilePath", "./cmd/spec/openapi.json")
 	options.AutomaticEnv()
 
 	kubenv := viper.New()
@@ -71,6 +73,7 @@ func Init() {
 		LogLevel:       options.GetString("LogLevel"),
 		BucketName:     options.GetString("EdgeTarballsBucket"),
 		UpdateTempPath: options.GetString("UpdateTempPath"),
+		OpenAPIFilePath: options.GetString("OpenAPIFilePath"),
 		ImageBuilderConfig: &imageBuilderConfig{
 			URL: options.GetString("ImageBuilderUrl"),
 		},

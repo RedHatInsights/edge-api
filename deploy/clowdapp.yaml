@@ -52,6 +52,10 @@ objects:
           value: ${ENABLE_RH_IDENITY_PROCESSING}
         - name: EDGETARBALLSBUCKET
           value: ${EDGE_TARBALLS_BUCKET}
+        - name: OPENAPIFILEPATH
+          value: ${OPEN_API_FILEPATH}
+        - name: IMAGEBUILDERURL
+          value: ${IMAGEBUILDER_URL}
         resources:
           limits:
             cpu: ${{CPU_LIMIT}}
@@ -90,5 +94,9 @@ parameters:
   value: "true"
 - name: EDGE_TARBALLS_BUCKET
   value: rh-edge-tarballs
+- name: OPEN_API_FILEPATH
+  value: /var/tmp/openapi.json
 - name: ENABLE_RH_IDENITY_PROCESSING
   value: "true"
+- name: IMAGEBUILDER_URL
+  value: "http://image-builder:8080"
