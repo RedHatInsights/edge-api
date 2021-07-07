@@ -16,21 +16,27 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/models"
-	"gorm.io/gorm"
 )
 
-var tx *gorm.DB
+var image models.Image
 
 func setUp() {
 	config.Init()
 	config.Get().Debug = true
 	db.InitDB()
 	db.DB.AutoMigrate(&models.Commit{}, &models.UpdateRecord{}, &models.Package{}, &models.Image{})
-	tx = db.DB.Begin()
+	image = models.Image{
+		Account: "0000000",
+		Status:  models.ImageStatusBuilding,
+		Commit: &models.Commit{
+			Status: models.ImageStatusBuilding,
+		},
+	}
+	db.DB.Create(&image)
 }
 
 func tearDown() {
-	tx.Rollback()
+	db.DB.Delete(&image)
 }
 func TestMain(m *testing.M) {
 	setUp()
@@ -65,7 +71,6 @@ func (c *MockImageBuilderClient) ComposeInstaller(ur *models.UpdateRecord, image
 	return image, nil
 }
 func (c *MockImageBuilderClient) GetCommitStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
-	fmt.Println("hiiii")
 	image.Status = models.ImageStatusError
 	image.Commit.Status = models.ImageStatusError
 	return image, nil
@@ -121,15 +126,6 @@ func TestGetStatus(t *testing.T) {
 		t.Fatal(err)
 	}
 	rr := httptest.NewRecorder()
-
-	var image = models.Image{
-		Account: "0000000",
-		Status:  models.ImageStatusBuilding,
-		Commit: &models.Commit{
-			Status: models.ImageStatusBuilding,
-		},
-	}
-	tx.Create(&image)
 	ctx := context.WithValue(req.Context(), imageKey, &image)
 	handler := http.HandlerFunc(GetStatusByID)
 	handler.ServeHTTP(rr, req.WithContext(ctx))
@@ -167,11 +163,6 @@ func TestGetById(t *testing.T) {
 	}
 	rr := httptest.NewRecorder()
 
-	var image = models.Image{
-		Account: "0000000",
-		Status:  models.ImageStatusBuilding,
-		Commit:  &models.Commit{},
-	}
 	ctx := context.WithValue(req.Context(), imageKey, &image)
 	handler := http.HandlerFunc(GetByID)
 	handler.ServeHTTP(rr, req.WithContext(ctx))

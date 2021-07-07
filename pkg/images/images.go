@@ -156,7 +156,6 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		db.DB.Joins("Commit").First(&i, id)
 		fmt.Println("Compose job id", i.Commit.ComposeJobID)
 		for {
-			time.Sleep(1 * time.Minute)
 			i, err := updateImageStatus(i, r)
 			if err != nil {
 				panic(err)
@@ -164,8 +163,9 @@ func Create(w http.ResponseWriter, r *http.Request) {
 			if i.Commit.Status != models.ImageStatusBuilding {
 				break
 			}
+			time.Sleep(1 * time.Minute)
 		}
-		log.Info("Commit %d for Image %d is ready. Creating OSTree repo.", image.Commit.ID, image.ID)
+		log.Infof("Commit %d for Image %d is ready. Creating OSTree repo.", image.Commit.ID, image.ID)
 		update := &models.UpdateRecord{
 			UpdateCommitID: image.Commit.ID,
 			Account:        image.Account,
@@ -202,13 +202,6 @@ func validateGetAllSearchParams(next http.Handler) http.Handler {
 			for _, status := range statuses {
 				if status != models.ImageStatusCreated && status != models.ImageStatusBuilding && status != models.ImageStatusError && status != models.ImageStatusSuccess {
 					errs = append(errs, validationError{Key: "status", Reason: fmt.Sprintf("%s is not a valid status. Status must be %s", status, strings.Join(validStatuses, " or "))})
-				}
-			}
-		}
-		if imageTypes, ok := r.URL.Query()["image_type"]; ok {
-			for _, imageType := range imageTypes {
-				if imageType != models.ImageTypeCommit && imageType != models.ImageTypeInstaller {
-					errs = append(errs, validationError{Key: "image_type", Reason: fmt.Sprintf("%s is not a valid image_type. %s", imageType, models.ImageTypeNotAccepted)})
 				}
 			}
 		}
@@ -273,7 +266,7 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 }
 
 func updateImageStatus(image *models.Image, r *http.Request) (*models.Image, error) {
-	log.Info("Requesting image status on image builder")
+	log.Info("Requesting image status on image builder aa")
 	headers := common.GetOutgoingHeaders(r)
 	if image.Commit.Status == models.ImageStatusBuilding {
 		image, err := imagebuilder.Client.GetCommitStatus(image, headers)
@@ -409,7 +402,6 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		var i *models.Image
 		db.DB.Joins("Commit").Joins("Installer").First(&i, id)
 		for {
-			time.Sleep(1 * time.Minute)
 			i, err := updateImageStatus(i, r)
 			if err != nil {
 				panic(err)
@@ -417,6 +409,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 			if i.Installer.Status != models.ImageStatusBuilding {
 				break
 			}
+			time.Sleep(1 * time.Minute)
 		}
 	}(image.ID)
 
