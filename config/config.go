@@ -21,7 +21,7 @@ type EdgeConfig struct {
 	SecretKey          string
 	UpdateTempPath     string
 	ImageBuilderConfig *imageBuilderConfig
-	InventoryConfig    *InventoryConfig
+	InventoryConfig    *inventoryConfig
 }
 
 type dbConfig struct {
@@ -36,7 +36,7 @@ type imageBuilderConfig struct {
 	URL string
 }
 
-type InventoryConfig struct {
+type inventoryConfig struct {
 	URL string
 }
 
@@ -60,7 +60,7 @@ func Init() {
 	options.SetDefault("Debug", false)
 	options.SetDefault("EdgeTarballsBucket", "rh-edge-tarballs")
 	options.SetDefault("ImageBuilderUrl", "http://image-builder:8080")
-	options.SetDefault("InventoryUrl", "https://cloud.stage.redhat.com/")
+	options.SetDefault("InventoryUrl", "https://inventory-url:8080/")
 	options.SetDefault("UpdateTempPath", "/tmp/updates/")
 	options.AutomaticEnv()
 
@@ -79,7 +79,7 @@ func Init() {
 		ImageBuilderConfig: &imageBuilderConfig{
 			URL: options.GetString("ImageBuilderUrl"),
 		},
-		InventoryConfig: &InventoryConfig{
+		InventoryConfig: &inventoryConfig{
 			URL: options.GetString("InventoryUrl"),
 		},
 	}

@@ -10,31 +10,34 @@ import (
 )
 
 func MakeRouter(sub chi.Router) {
-	sub.Get("/", GetDevices)
-	sub.Route("/{devices}", func(r chi.Router) {
-		r.Get("/", GetDevices)
+	sub.Get("/", getDevices)
+	sub.Route("/device_uuid={device_uuid}", func(r chi.Router) {
+		r.Get("/", getDevicesById)
+	})
+	sub.Route("/tags={tags}", func(r chi.Router) {
+		r.Get("/", getDevicesByTag)
 	})
 }
 
-func GetDevices(w http.ResponseWriter, r *http.Request) {
-	params := parseParams(r)
-	if params != "" {
-		validUuid := isUuid(params)
+func getDevices(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("getDevices")
+	devices, err := devices.ReturnDevices(w, r)
+	fmt.Printf("devices: %v\n", devices)
+	if err != nil {
+		return
+	}
+}
+
+func getDevicesById(w http.ResponseWriter, r *http.Request) {
+	uuid, tags := parseParams(r)
+	fmt.Printf("tags: %v\n", len(tags))
+	fmt.Printf("getDevicesById: %v\n", len(uuid))
+	if len(uuid) > 0 {
+		validUuid := isUuid(uuid)
 		if validUuid {
 			devices, err := devices.ReturnDevicesById(w, r)
 			//FIXME: Load results into DB
-			// var d models.Device
-			// for _, device :=  devices {
-			// 	d.UUID = device.Uuid
-			// 	d.ConnectionState = len(device.IpAddresses) ==0 -> how is the better way to check connectivity?
-			// }
-			fmt.Printf("devices: %v\n", devices)
-			if err != nil {
-				return
-			}
-		} else {
-			devices, err := devices.ReturnDevicesByTag(w, r)
-			fmt.Printf("devices: %v\n", devices)
+			fmt.Printf("validUuid devices: %v\n", devices)
 			if err != nil {
 				return
 			}
@@ -42,11 +45,27 @@ func GetDevices(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+func getDevicesByTag(w http.ResponseWriter, r *http.Request) {
+	uuid, tags := parseParams(r)
+	fmt.Printf("tags: %v\n", len(uuid))
+	fmt.Printf("getDevicesByTag: %v\n", len(tags))
+	if len(tags) > 0 {
+		devices, err := devices.ReturnDevicesByTag(w, r)
+		fmt.Printf("devices: %v\n", devices)
+		if err != nil {
+			return
+		}
 
-func parseParams(r *http.Request) string {
-	param := chi.URLParam(r, "devices")
-	fmt.Printf("param: %v\n", param)
-	return param
+	}
+
+}
+
+func parseParams(r *http.Request) (string, string) {
+	uuid := chi.URLParam(r, "device_uuid")
+	tags := chi.URLParam(r, "tags")
+	fmt.Printf("uuid: %v\n", uuid)
+	fmt.Printf("tags: %v\n", tags)
+	return uuid, tags
 }
 
 //FIXME: Identify better option to see if is uniq or tag
