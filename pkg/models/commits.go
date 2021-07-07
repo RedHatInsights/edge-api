@@ -22,6 +22,7 @@ type Commit struct {
 	Status               string    `json:"Status"`
 }
 
+// Package represents the packages a Commit can have
 type Package struct {
 	gorm.Model
 	Name string `json:"Name"`
@@ -36,6 +37,7 @@ var requiredPackages = [6]string{
 	"insights-client",
 }
 
+// GetPackagesList returns the packages in a user-friendly list containing their names
 func (c *Commit) GetPackagesList() *[]string {
 	l := len(requiredPackages)
 	pkgs := make([]string, len(c.Packages)+l)
