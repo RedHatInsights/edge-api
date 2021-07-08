@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/common"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -46,6 +47,10 @@ func ReturnDevices(w http.ResponseWriter, r *http.Request) (Inventory, error) {
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	req.Header.Add("Content-Type", "application/json")
+	headers := common.GetOutgoingHeaders(r)
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -74,21 +79,27 @@ func ReturnDevicesByID(w http.ResponseWriter, r *http.Request) (Inventory, error
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	req.Header.Add("Content-Type", "application/json")
-
+	headers := common.GetOutgoingHeaders(r)
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
 
 	if err != nil {
+		log.Error(err)
 		return Inventory{}, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(resp.Body)
+		log.Error("error requesting inventory, got status code %d and body %s", resp.StatusCode, body)
 		return Inventory{}, fmt.Errorf("error requesting inventory, got status code %d and body %s", resp.StatusCode, body)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		log.Error(err)
 		return Inventory{}, err
 	}
 	log.Infof("fullbody: %v\n", string(body))
@@ -112,18 +123,25 @@ func ReturnDevicesByTag(w http.ResponseWriter, r *http.Request) (Inventory, erro
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	req.Header.Add("Content-Type", "application/json")
-
+	headers := common.GetOutgoingHeaders(r)
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
+
 	if err != nil {
+		log.Error(err)
 		return Inventory{}, err
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(resp.Body)
+		log.Error("error requesting inventory, got status code %d and body %s", resp.StatusCode, body)
 		return Inventory{}, fmt.Errorf("error requesting inventory, got status code %d and body %s", resp.StatusCode, body)
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		log.Error(err)
 		return Inventory{}, err
 	}
 	var bodyResp Inventory

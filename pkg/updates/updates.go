@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/edge-api/pkg/devices"
+	"github.com/redhatinsights/edge-api/pkg/errors"
 )
 
 // MakeRouter adds support for operations on update
@@ -25,6 +26,9 @@ func getDevices(w http.ResponseWriter, r *http.Request) {
 	devices, err := devices.ReturnDevices(w, r)
 	fmt.Printf("devices: %v\n", devices)
 	if err != nil {
+		err := errors.NewInternalServerError()
+		err.Title = "Failed to get inventory devices"
+		w.WriteHeader(err.Status)
 		return
 	}
 }
@@ -40,10 +44,16 @@ func getDevicesByID(w http.ResponseWriter, r *http.Request) {
 			//FIXME: Load results into DB
 			fmt.Printf("validUuid devices: %v\n", devices)
 			if err != nil {
+				err := errors.NewInternalServerError()
+				err.Title = fmt.Sprintf("Failed to get device %s", uuid)
+				w.WriteHeader(err.Status)
 				return
 			}
 		} else {
-			fmt.Printf("Invalid UUID")
+			err := errors.NewInternalServerError()
+			err.Title = fmt.Sprintf("Invalid UUID - %s", uuid)
+			w.WriteHeader(err.Status)
+			return
 		}
 	}
 
@@ -56,6 +66,9 @@ func getDevicesByTag(w http.ResponseWriter, r *http.Request) {
 		devices, err := devices.ReturnDevicesByTag(w, r)
 		fmt.Printf("devices: %v\n", devices)
 		if err != nil {
+			err := errors.NewInternalServerError()
+			err.Title = fmt.Sprintf("Failed to get devices from tag %s", tags)
+			w.WriteHeader(err.Status)
 			return
 		}
 
@@ -66,8 +79,6 @@ func getDevicesByTag(w http.ResponseWriter, r *http.Request) {
 func parseParams(r *http.Request) (string, string) {
 	uuid := chi.URLParam(r, "device_uuid")
 	tags := chi.URLParam(r, "tags")
-	fmt.Printf("uuid: %v\n", uuid)
-	fmt.Printf("tags: %v\n", tags)
 	return uuid, tags
 }
 

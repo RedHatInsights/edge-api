@@ -91,7 +91,6 @@ func main() {
 		s.Route("/commits", commits.MakeRouter)
 		s.Route("/repos", repo.MakeRouter(server))
 		s.Route("/images", images.MakeRouter)
-		// s.Route("/devices", devices.MakeRouter)
 		s.Route("/updates", updates.MakeRouter)
 	})
 
