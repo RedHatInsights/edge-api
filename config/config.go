@@ -105,10 +105,19 @@ func Init() {
 		}
 
 		bucket := clowder.ObjectBuckets[config.BucketName]
-		config.BucketName = bucket.RequestedName
-		config.BucketRegion = *bucket.Region
-		config.AccessKey = *bucket.AccessKey
-		config.SecretKey = *bucket.SecretKey
+		if bucket.RequestedName != "" {
+			config.BucketName = bucket.RequestedName
+		}
+		if *bucket.Region != "" {
+			config.BucketRegion = *bucket.Region
+		}
+		if *bucket.AccessKey != "" {
+			config.AccessKey = *bucket.AccessKey
+		}
+		if *bucket.SecretKey != "" {
+			config.SecretKey = *bucket.SecretKey
+		}
+
 		config.Logging = &loggingConfig{
 			AccessKeyID:     cfg.Logging.Cloudwatch.AccessKeyId,
 			SecretAccessKey: cfg.Logging.Cloudwatch.SecretAccessKey,
