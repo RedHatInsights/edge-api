@@ -55,12 +55,12 @@ func ReturnDevices(w http.ResponseWriter, r *http.Request) (Inventory, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Error("ReturnDevices: %s", err)
+		log.Error(fmt.Printf("ReturnDevices: %s", err))
 		return Inventory{}, err
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Error("ReturnDevices: %s", err)
+		log.Error(fmt.Printf("ReturnDevices: %s", err))
 		return Inventory{}, err
 	}
 	defer resp.Body.Close()
@@ -89,19 +89,19 @@ func ReturnDevicesByID(w http.ResponseWriter, r *http.Request) (Inventory, error
 	resp, err := client.Do(req)
 
 	if err != nil {
-		log.Error("ReturnDevicesByID: %s", err)
+		log.Error(fmt.Printf("ReturnDevicesByID: %s", err))
 		return Inventory{}, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(resp.Body)
-		log.Error("error requesting inventory, got status code %d and body %s", resp.StatusCode, body)
+		log.Error(fmt.Printf("error requesting inventory, got status code %d and body %s", resp.StatusCode, body))
 		return Inventory{}, fmt.Errorf("error requesting inventory, got status code %d and body %s", resp.StatusCode, body)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Error("ReturnDevicesByID: %s", err)
+		log.Error(fmt.Printf("ReturnDevicesByID: %s", err))
 		return Inventory{}, err
 	}
 	log.Infof("fullbody: %v\n", string(body))
@@ -133,17 +133,17 @@ func ReturnDevicesByTag(w http.ResponseWriter, r *http.Request) (Inventory, erro
 	resp, err := client.Do(req)
 
 	if err != nil {
-		log.Error("ReturnDevicesByTag: %s", err)
+		log.Error(fmt.Printf("ReturnDevicesByTag: %s", err))
 		return Inventory{}, err
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(resp.Body)
-		log.Error("error requesting inventory, got status code %d and body %s", resp.StatusCode, body)
+		log.Error(fmt.Printf("error requesting inventory, got status code %d and body %s", resp.StatusCode, body))
 		return Inventory{}, fmt.Errorf("error requesting inventory, got status code %d and body %s", resp.StatusCode, body)
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Error("ReturnDevicesByTag: %s", err)
+		log.Error(fmt.Printf("ReturnDevicesByTag: %s", err))
 		return Inventory{}, err
 	}
 	var bodyResp Inventory
