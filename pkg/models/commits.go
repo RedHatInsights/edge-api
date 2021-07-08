@@ -31,7 +31,7 @@ type Package struct {
 var requiredPackages = [6]string{
 	"ansible",
 	"rhc",
-	"rhc-playbook-worker",
+	"rhc-worker-playbook",
 	"subscription-manager",
 	"subscription-manager-plugin-ostree",
 	"insights-client",

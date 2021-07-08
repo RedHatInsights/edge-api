@@ -24,7 +24,7 @@ func TestGetPackagesList(t *testing.T) {
 	packages := []string{
 		"ansible",
 		"rhc",
-		"rhc-playbook-worker",
+		"rhc-worker-playbook",
 		"subscription-manager",
 		"subscription-manager-plugin-ostree",
 		"insights-client",
