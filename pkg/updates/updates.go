@@ -12,30 +12,23 @@ import (
 
 // MakeRouter adds support for operations on update
 func MakeRouter(sub chi.Router) {
-	sub.Get("/", getDevices)
-	sub.Route("/device_uuid={device_uuid}", func(r chi.Router) {
-		r.Get("/", getDevicesByID)
-	})
-	sub.Route("/tags={tags}", func(r chi.Router) {
-		r.Get("/", getDevicesByTag)
-	})
+	sub.Get("/{device}", deviceCtx)
+
 }
 
-func getDevices(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("getDevices")
-	devices, err := devices.ReturnDevices(w, r)
-	fmt.Printf("devices: %v\n", devices)
-	if err != nil {
-		err := errors.NewInternalServerError()
-		err.Title = "Failed to get inventory devices"
-		w.WriteHeader(err.Status)
-		return
+func deviceCtx(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("getDevices \n")
+	param := parseParams(r)
+	fmt.Printf("getDevices %s\n", param)
+	if isUUID(param) {
+		getDevicesByID(w, r)
+	} else {
+		getDevicesByTag(w, r)
 	}
 }
 
 func getDevicesByID(w http.ResponseWriter, r *http.Request) {
-	uuid, tags := parseParams(r)
-	fmt.Printf("tags: %v\n", len(tags))
+	uuid := parseParams(r)
 	fmt.Printf("getDevicesById: %v\n", len(uuid))
 	if len(uuid) > 0 {
 		validUUID := isUUID(uuid)
@@ -59,8 +52,7 @@ func getDevicesByID(w http.ResponseWriter, r *http.Request) {
 
 }
 func getDevicesByTag(w http.ResponseWriter, r *http.Request) {
-	uuid, tags := parseParams(r)
-	fmt.Printf("tags: %v\n", len(uuid))
+	tags := parseParams(r)
 	fmt.Printf("getDevicesByTag: %v\n", len(tags))
 	if len(tags) > 0 {
 		devices, err := devices.ReturnDevicesByTag(w, r)
@@ -76,10 +68,10 @@ func getDevicesByTag(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func parseParams(r *http.Request) (string, string) {
-	uuid := chi.URLParam(r, "device_uuid")
-	tags := chi.URLParam(r, "tags")
-	return uuid, tags
+func parseParams(r *http.Request) string {
+	param := chi.URLParam(r, "device")
+	fmt.Printf("param: %v\n", param)
+	return param
 }
 
 //FIXME: Identify better option to see if is uniq or tag
