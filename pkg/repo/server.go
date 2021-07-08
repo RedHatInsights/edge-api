@@ -10,6 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/go-chi/chi"
@@ -52,14 +53,23 @@ type S3Proxy struct {
 //NewS3Proxy creates a method to obtain a new S3 proxy
 func NewS3Proxy() *S3Proxy {
 	cfg := config.Get()
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		// Force enable Shared Config support
-		SharedConfigState: session.SharedConfigEnable,
-	}))
-	client := s3.New(sess)
-	if cfg.BucketRegion != "" {
-		client.Config.Region = &cfg.BucketRegion
+	var sess *session.Session
+	if cfg.Debug {
+		sess = session.Must(session.NewSessionWithOptions(session.Options{
+			// Force enable Shared Config support
+			SharedConfigState: session.SharedConfigEnable,
+		}))
+	} else {
+		var err error
+		sess, err = session.NewSession(&aws.Config{
+			Region:      &cfg.BucketRegion,
+			Credentials: credentials.NewStaticCredentials(cfg.AccessKey, cfg.SecretKey, ""),
+		})
+		if err != nil {
+			panic(err)
+		}
 	}
+	client := s3.New(sess)
 	return &S3Proxy{
 		Client: client,
 		Bucket: cfg.BucketName,
