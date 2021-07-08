@@ -70,6 +70,7 @@ func getDevicesByTag(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(err.Status)
 			return
 		}
+		json.NewEncoder(w).Encode(&devices)
 
 	}
 
