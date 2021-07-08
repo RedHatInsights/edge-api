@@ -62,7 +62,7 @@ func Init() {
 	options.SetDefault("Debug", false)
 	options.SetDefault("EdgeTarballsBucket", "rh-edge-tarballs")
 	options.SetDefault("ImageBuilderUrl", "http://image-builder:8080")
-	options.SetDefault("InventoryUrl", "https://inventory-url:8080/")
+	options.SetDefault("InventoryUrl", "https://host-inventory-service:8080/")
 	options.SetDefault("UpdateTempPath", "/tmp/updates/")
 	options.SetDefault("OpenAPIFilePath", "./cmd/spec/openapi.json")
 	options.AutomaticEnv()
