@@ -17,7 +17,7 @@ type Image struct {
 	Version      int `gorm:"default:1"`
 	CommitID     int
 	Commit       *Commit
-	InstallerID  int
+	InstallerID  *int
 	Installer    *Installer
 }
 

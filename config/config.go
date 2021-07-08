@@ -17,6 +17,7 @@ type EdgeConfig struct {
 	Debug              bool
 	Database           *dbConfig
 	BucketName         string
+	BucketRegion       string
 	AccessKey          string
 	SecretKey          string
 	UpdateTempPath     string
@@ -71,14 +72,14 @@ func Init() {
 	kubenv.AutomaticEnv()
 
 	config = &EdgeConfig{
-		Hostname:       kubenv.GetString("Hostname"),
-		Auth:           options.GetBool("Auth"),
-		WebPort:        options.GetInt("WebPort"),
-		MetricsPort:    options.GetInt("MetricsPort"),
-		Debug:          options.GetBool("Debug"),
-		LogLevel:       options.GetString("LogLevel"),
-		BucketName:     options.GetString("EdgeTarballsBucket"),
-		UpdateTempPath: options.GetString("UpdateTempPath"),
+		Hostname:        kubenv.GetString("Hostname"),
+		Auth:            options.GetBool("Auth"),
+		WebPort:         options.GetInt("WebPort"),
+		MetricsPort:     options.GetInt("MetricsPort"),
+		Debug:           options.GetBool("Debug"),
+		LogLevel:        options.GetString("LogLevel"),
+		BucketName:      options.GetString("EdgeTarballsBucket"),
+		UpdateTempPath:  options.GetString("UpdateTempPath"),
 		OpenAPIFilePath: options.GetString("OpenAPIFilePath"),
 		ImageBuilderConfig: &imageBuilderConfig{
 			URL: options.GetString("ImageBuilderUrl"),
@@ -103,11 +104,11 @@ func Init() {
 			Name:     cfg.Database.Name,
 		}
 
-		bucket, _ := clowder.ObjectBuckets[config.BucketName]
+		bucket := clowder.ObjectBuckets[config.BucketName]
 		config.BucketName = bucket.RequestedName
+		config.BucketRegion = *bucket.Region
 		config.AccessKey = *bucket.AccessKey
 		config.SecretKey = *bucket.SecretKey
-
 		config.Logging = &loggingConfig{
 			AccessKeyID:     cfg.Logging.Cloudwatch.AccessKeyId,
 			SecretAccessKey: cfg.Logging.Cloudwatch.SecretAccessKey,

@@ -10,6 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/go-chi/chi"
@@ -52,10 +53,22 @@ type S3Proxy struct {
 //NewS3Proxy creates a method to obtain a new S3 proxy
 func NewS3Proxy() *S3Proxy {
 	cfg := config.Get()
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		// Force enable Shared Config support
-		SharedConfigState: session.SharedConfigEnable,
-	}))
+	var sess *session.Session
+	if cfg.Debug {
+		sess = session.Must(session.NewSessionWithOptions(session.Options{
+			// Force enable Shared Config support
+			SharedConfigState: session.SharedConfigEnable,
+		}))
+	} else {
+		var err error
+		sess, err = session.NewSession(&aws.Config{
+			Region:      &cfg.BucketRegion,
+			Credentials: credentials.NewStaticCredentials(cfg.AccessKey, cfg.SecretKey, ""),
+		})
+		if err != nil {
+			panic(err)
+		}
+	}
 	client := s3.New(sess)
 	return &S3Proxy{
 		Client: client,
@@ -69,7 +82,6 @@ func NewS3Proxy() *S3Proxy {
 // to:
 //  bucket/$account/$name/path/in/repo
 func (p *S3Proxy) ServeRepo(w http.ResponseWriter, r *http.Request) {
-
 	log.Debugf("S3Proxy::ServeRepo::r: %#v", r)
 
 	_, pathPrefix, err := getNameAndPrefix(r)
