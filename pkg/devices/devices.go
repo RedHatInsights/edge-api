@@ -55,10 +55,12 @@ func ReturnDevices(w http.ResponseWriter, r *http.Request) (Inventory, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Error("ReturnDevices: %s", err)
 		return Inventory{}, err
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		log.Error("ReturnDevices: %s", err)
 		return Inventory{}, err
 	}
 	defer resp.Body.Close()
@@ -87,7 +89,7 @@ func ReturnDevicesByID(w http.ResponseWriter, r *http.Request) (Inventory, error
 	resp, err := client.Do(req)
 
 	if err != nil {
-		log.Error(err)
+		log.Error("ReturnDevicesByID: %s", err)
 		return Inventory{}, err
 	}
 
@@ -99,7 +101,7 @@ func ReturnDevicesByID(w http.ResponseWriter, r *http.Request) (Inventory, error
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Error(err)
+		log.Error("ReturnDevicesByID: %s", err)
 		return Inventory{}, err
 	}
 	log.Infof("fullbody: %v\n", string(body))
@@ -131,7 +133,7 @@ func ReturnDevicesByTag(w http.ResponseWriter, r *http.Request) (Inventory, erro
 	resp, err := client.Do(req)
 
 	if err != nil {
-		log.Error(err)
+		log.Error("ReturnDevicesByTag: %s", err)
 		return Inventory{}, err
 	}
 	if resp.StatusCode != http.StatusOK {
@@ -141,7 +143,7 @@ func ReturnDevicesByTag(w http.ResponseWriter, r *http.Request) (Inventory, erro
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Error(err)
+		log.Error("ReturnDevicesByTag: %s", err)
 		return Inventory{}, err
 	}
 	var bodyResp Inventory
