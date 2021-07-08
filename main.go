@@ -54,6 +54,8 @@ func main() {
 		"LogLevel":    cfg.LogLevel,
 		"Debug":       cfg.Debug,
 		"BucketName":  cfg.BucketName,
+		"BucketRegion":  cfg.BucketRegion,
+		"ImageBuilderConfig": cfg.ImageBuilderConfig.URL,
 	}).Info("Configuration Values:")
 
 	var server repo.Server
