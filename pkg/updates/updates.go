@@ -50,7 +50,7 @@ func getDevicesByID(w http.ResponseWriter, r *http.Request) {
 			}
 			json.NewEncoder(w).Encode(&devices)
 		} else {
-			err := errors.NewInternalServerError()
+			err := errors.NewBadRequest("Invalid UUID")
 			err.Title = fmt.Sprintf("Invalid UUID - %s", uuid)
 			w.WriteHeader(err.Status)
 			return
