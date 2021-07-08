@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	log "github.com/sirupsen/logrus"
@@ -30,7 +29,7 @@ type systemProfile struct {
 
 type ostree struct {
 	Checksum string `json:"checksum"`
-	Booted   string `json:"booted"`
+	Booted   bool   `json:"booted"`
 }
 
 const (
@@ -73,7 +72,7 @@ func ReturnDevices(w http.ResponseWriter, r *http.Request) (Inventory, error) {
 
 // ReturnDevicesByID will return the list of devices by uuid
 func ReturnDevicesByID(w http.ResponseWriter, r *http.Request) (Inventory, error) {
-	deviceID := chi.URLParam(r, "device_uuid")
+	deviceID := r.URL.Query().Get("device_uuid")
 	deviceIDParam := "&hostname_or_id=" + deviceID
 
 	url := fmt.Sprintf("%s/api/inventory/v1/hosts", config.Get().InventoryConfig.URL)
@@ -117,7 +116,7 @@ func ReturnDevicesByID(w http.ResponseWriter, r *http.Request) (Inventory, error
 // ReturnDevicesByTag will return the list of devices by tag
 func ReturnDevicesByTag(w http.ResponseWriter, r *http.Request) (Inventory, error) {
 
-	tags := chi.URLParam(r, "devices")
+	tags := r.URL.Query().Get("tag")
 	tagsParam := "?tags=" + tags
 
 	url := fmt.Sprintf("%s/api/inventory/v1/hosts", config.Get().InventoryConfig.URL)

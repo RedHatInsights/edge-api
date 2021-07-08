@@ -1,6 +1,7 @@
 package updates
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -8,28 +9,33 @@ import (
 	"github.com/google/uuid"
 	"github.com/redhatinsights/edge-api/pkg/devices"
 	"github.com/redhatinsights/edge-api/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 // MakeRouter adds support for operations on update
 func MakeRouter(sub chi.Router) {
-	sub.Get("/{device}", deviceCtx)
+	sub.Get("/", deviceCtx)
 
 }
 
 func deviceCtx(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("getDevices \n")
-	param := parseParams(r)
-	fmt.Printf("getDevices %s\n", param)
-	if isUUID(param) {
+	device_uuid := r.URL.Query().Get("device_uuid")
+	log.Infof("updates::deviceCtx::device_uuid: %s", device_uuid)
+	tag := r.URL.Query().Get("tag")
+	log.Infof("updates::deviceCtx::tag: %s", tag)
+
+	if device_uuid != "" {
 		getDevicesByID(w, r)
-	} else {
+	}
+	if tag != "" {
 		getDevicesByTag(w, r)
 	}
 }
 
 func getDevicesByID(w http.ResponseWriter, r *http.Request) {
-	uuid := parseParams(r)
-	fmt.Printf("getDevicesById: %v\n", len(uuid))
+	uuid := r.URL.Query().Get("device_uuid")
+	log.Debugf("updates::deviceCtx::uuid: %s", uuid)
 	if len(uuid) > 0 {
 		validUUID := isUUID(uuid)
 		if validUUID {
@@ -42,6 +48,7 @@ func getDevicesByID(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(err.Status)
 				return
 			}
+			json.NewEncoder(w).Encode(&devices)
 		} else {
 			err := errors.NewInternalServerError()
 			err.Title = fmt.Sprintf("Invalid UUID - %s", uuid)
@@ -52,8 +59,8 @@ func getDevicesByID(w http.ResponseWriter, r *http.Request) {
 
 }
 func getDevicesByTag(w http.ResponseWriter, r *http.Request) {
-	tags := parseParams(r)
-	fmt.Printf("getDevicesByTag: %v\n", len(tags))
+	tags := r.URL.Query().Get("tag")
+	log.Debugf("updates::getDevicesByTag::tag: %s", tags)
 	if len(tags) > 0 {
 		devices, err := devices.ReturnDevicesByTag(w, r)
 		fmt.Printf("devices: %v\n", devices)
@@ -66,12 +73,6 @@ func getDevicesByTag(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-}
-
-func parseParams(r *http.Request) string {
-	param := chi.URLParam(r, "device")
-	fmt.Printf("param: %v\n", param)
-	return param
 }
 
 //FIXME: Identify better option to see if is uniq or tag
