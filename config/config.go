@@ -105,16 +105,10 @@ func Init() {
 		}
 
 		bucket := clowder.ObjectBuckets[config.BucketName]
-		if bucket.RequestedName != "" {
+		if &bucket != nil {
 			config.BucketName = bucket.RequestedName
-		}
-		if *bucket.Region != "" {
 			config.BucketRegion = *bucket.Region
-		}
-		if *bucket.AccessKey != "" {
 			config.AccessKey = *bucket.AccessKey
-		}
-		if *bucket.SecretKey != "" {
 			config.SecretKey = *bucket.SecretKey
 		}
 
