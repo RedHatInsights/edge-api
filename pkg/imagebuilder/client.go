@@ -118,7 +118,7 @@ func compose(composeReq *ComposeRequest, headers map[string]string) (*ComposeRes
 	payloadBuf := new(bytes.Buffer)
 	json.NewEncoder(payloadBuf).Encode(composeReq)
 	cfg := config.Get()
-	url := fmt.Sprintf("%s/v1/compose", cfg.ImageBuilderConfig.URL)
+	url := fmt.Sprintf("%s/api/image-builder/v1/compose", cfg.ImageBuilderConfig.URL)
 	log.Infof("Requesting url: %s with payloadBuf %s", url, payloadBuf.String())
 	req, _ := http.NewRequest("POST", url, payloadBuf)
 	for key, value := range headers {
@@ -227,7 +227,7 @@ func (c *ImageBuilderClient) ComposeInstaller(updateRecord *models.UpdateRecord,
 func getComposeStatus(jobID string, headers map[string]string) (*ComposeStatus, error) {
 	cs := &ComposeStatus{}
 	cfg := config.Get()
-	url := fmt.Sprintf("%s/v1/composes/%s", cfg.ImageBuilderConfig.URL, jobID)
+	url := fmt.Sprintf("%s/api/image-builder/v1/composes/%s", cfg.ImageBuilderConfig.URL, jobID)
 	req, _ := http.NewRequest("GET", url, nil)
 	for key, value := range headers {
 		req.Header.Add(key, value)
