@@ -47,6 +47,9 @@ func NewS3Uploader() *S3Uploader {
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 	client := s3.New(sess)
+	if cfg.BucketRegion != "" {
+		client.Config.Region = &cfg.BucketRegion
+	}
 	uploader := s3manager.NewUploader(sess, func(u *s3manager.Uploader) {
 		u.Concurrency = 1
 	})

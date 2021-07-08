@@ -57,6 +57,9 @@ func NewS3Proxy() *S3Proxy {
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 	client := s3.New(sess)
+	if cfg.BucketRegion != "" {
+		client.Config.Region = &cfg.BucketRegion
+	}
 	return &S3Proxy{
 		Client: client,
 		Bucket: cfg.BucketName,
@@ -69,7 +72,6 @@ func NewS3Proxy() *S3Proxy {
 // to:
 //  bucket/$account/$name/path/in/repo
 func (p *S3Proxy) ServeRepo(w http.ResponseWriter, r *http.Request) {
-
 	log.Debugf("S3Proxy::ServeRepo::r: %#v", r)
 
 	_, pathPrefix, err := getNameAndPrefix(r)
