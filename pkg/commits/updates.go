@@ -122,7 +122,7 @@ func UpdatesAdd(w http.ResponseWriter, r *http.Request) {
 			"Account":        update.Account,
 			"UpdateCommitID": update.UpdateCommitID,
 			"InventoryHosts": update.InventoryHosts,
-			"OldCommitIDs":   update.OldCommitIDs,
+			"OldCommits":   update.OldCommits,
 		}
 		result := db.DB.Where(queryDuplicate).Find(&dupeRecord)
 		if result.Error == nil {
@@ -207,10 +207,8 @@ type RepoBuilder struct{}
 func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) error {
 	cfg := config.Get()
 
-	var updaterec models.UpdateRecord
-	db.DB.First(&updaterec, ur.ID)
-	updaterec.Status = models.UpdateStatusCreated
-	db.DB.Save(&updaterec)
+	ur.Status = models.UpdateStatusCreated
+	db.DB.Save(&ur)
 
 	updateCommit, err := getCommitFromDB(ur.UpdateCommitID)
 	if err != nil {
@@ -230,7 +228,7 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) error {
 	}
 	DownloadExtractVersionRepo(updateCommit, path)
 
-	if len(ur.OldCommitIDs) > 0 {
+	if len(ur.OldCommits) > 0 {
 		stagePath := filepath.Join(path, "staging")
 		err = os.MkdirAll(stagePath, os.FileMode(int(0755)))
 		if err != nil {
@@ -245,17 +243,9 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) error {
 		// into the update commit repo
 		//
 		// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
-		for _, commitID := range strings.Split(ur.OldCommitIDs, ",") {
-			cIDUint, err := strconv.ParseUint(commitID, 10, 64)
-			if err != nil {
-				return err
-			}
-			commit, err := getCommitFromDB(uint(cIDUint))
-			if err != nil {
-				return err
-			}
-			DownloadExtractVersionRepo(commit, filepath.Join(stagePath, commit.OSTreeCommit))
-			RepoPullLocalStaticDeltas(updateCommit, commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
+		for _, commit := range ur.OldCommits {
+			DownloadExtractVersionRepo(&commit, filepath.Join(stagePath, commit.OSTreeCommit))
+			RepoPullLocalStaticDeltas(updateCommit, &commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
 		}
 
 		// Once all the old commits have been pulled into the update commit's repo
@@ -283,11 +273,9 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) error {
 		return err
 	}
 
-	var updateRecDone models.UpdateRecord
-	db.DB.First(&updateRecDone, ur.ID)
-	updateRecDone.Status = models.UpdateStatusSuccess
-	updateRecDone.UpdateRepoURL = repoURL
-	db.DB.Save(&updateRecDone)
+	ur.Status = models.UpdateStatusSuccess
+	ur.UpdateRepoURL = repoURL
+	db.DB.Save(&ur)
 
 	return nil
 }
