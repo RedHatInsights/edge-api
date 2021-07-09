@@ -59,9 +59,9 @@ func SortFilterHandler(defaultSortKey string, defaultOrder string) FilterFunc {
 		sortOrder := defaultOrder
 		if val := r.URL.Query().Get("sort_by"); val != "" {
 			if strings.HasPrefix(val, "-") {
-				sortOrder = "DESC"
 				sortBy = val[1:]
 			} else {
+				sortOrder = "ASC"
 				sortBy = val
 			}
 		}
