@@ -28,7 +28,7 @@ const (
 	// ArchitectureCantBeEmptyMessage is the error message when the architecture is empty
 	ArchitectureCantBeEmptyMessage = "architecture can't be empty"
 	// NameCantBeInvalidMessage is the error message when the name is invalid
-	NameCantBeInvalidMessage = "invalid input for name"
+	NameCantBeInvalidMessage = "name must start with alphanumeric characters and can contain underscore and hyphen characters"
 
 	// ImageTypeInstaller is the installer image type on Image Builder
 	ImageTypeInstaller = "rhel-edge-installer"
@@ -50,7 +50,7 @@ func (i *Image) ValidateRequest() error {
 	if i.Distribution == "" {
 		return errors.New(DistributionCantBeNilMessage)
 	}
-	if re := regexp.MustCompile(`^[A-Za-z0-9]+[A-Za-z0-9\s_-]*$`).FindString(i.Name); re == "" {
+	if !regexp.MustCompile(`^[A-Za-z0-9]+[A-Za-z0-9\s_-]*$`).MatchString(i.Name) {
 		return errors.New(NameCantBeInvalidMessage)
 	}
 	if i.Commit == nil || i.Commit.Arch == "" {
