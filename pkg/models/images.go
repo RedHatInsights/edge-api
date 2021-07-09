@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"regexp"
 
 	"gorm.io/gorm"
 )
@@ -26,8 +27,8 @@ const (
 	DistributionCantBeNilMessage = "distribution can't be empty"
 	// ArchitectureCantBeEmptyMessage is the error message when the architecture is empty
 	ArchitectureCantBeEmptyMessage = "architecture can't be empty"
-	// NameCantBeEmptyMessage is the error message when the name is empty
-	NameCantBeEmptyMessage = "name can't be empty"
+	// NameCantBeInvalidMessage is the error message when the name is invalid
+	NameCantBeInvalidMessage = "invalid input for name"
 
 	// ImageTypeInstaller is the installer image type on Image Builder
 	ImageTypeInstaller = "rhel-edge-installer"
@@ -49,8 +50,8 @@ func (i *Image) ValidateRequest() error {
 	if i.Distribution == "" {
 		return errors.New(DistributionCantBeNilMessage)
 	}
-	if i.Name == "" {
-		return errors.New(NameCantBeEmptyMessage)
+	if re := regexp.MustCompile(`^[A-Za-z0-9]+[A-Za-z0-9\s_-]*$`).FindString(i.Name); re == "" {
+		return errors.New(NameCantBeInvalidMessage)
 	}
 	if i.Commit == nil || i.Commit.Arch == "" {
 		return errors.New(ArchitectureCantBeEmptyMessage)
