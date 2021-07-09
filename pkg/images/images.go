@@ -186,7 +186,7 @@ var imageFilters = common.ComposeFilters(
 	common.ContainFilterHandler("name"),
 	common.ContainFilterHandler("distribution"),
 	common.CreatedAtFilterHandler(),
-	common.SortFilterHandler("created_at", "ASC"),
+	common.SortFilterHandler("created_at", "DESC"),
 )
 
 type validationError struct {
