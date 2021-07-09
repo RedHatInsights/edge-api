@@ -1,12 +1,15 @@
 package updates
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
+	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/devices"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -15,6 +18,7 @@ import (
 // MakeRouter adds support for operations on update
 func MakeRouter(sub chi.Router) {
 	sub.Get("/", deviceCtx)
+	sub.Post("/", updateOsTree)
 
 }
 
@@ -73,6 +77,31 @@ func getDevicesByTag(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&devices)
 
 	}
+
+}
+
+func updateOsTree(w http.ResponseWriter, r *http.Request) (string, error) {
+	ostree := r.URL.Query().Get("ostree")
+	payloadBuf := new(bytes.Buffer)
+	json.NewEncoder(payloadBuf).Encode(ostree)
+	cfg := config.Get()
+	url := fmt.Sprintf("%s/api/image-builder/v1/compose", cfg.ImageBuilderConfig.URL)
+	log.Infof("Requesting url: %s with payloadBuf %s", url, payloadBuf.String())
+	req, _ := http.NewRequest("POST", url, payloadBuf)
+	headers := common.GetOutgoingHeaders(r)
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return "Error", err
+	}
+	json.NewEncoder(w).Encode(&res)
+
+	return "", nil
 
 }
 
