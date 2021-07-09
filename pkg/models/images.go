@@ -26,6 +26,8 @@ const (
 	DistributionCantBeNilMessage = "distribution can't be empty"
 	// ArchitectureCantBeEmptyMessage is the error message when the architecture is empty
 	ArchitectureCantBeEmptyMessage = "architecture can't be empty"
+	// NameCantBeEmptyMessage is the error message when the name is empty
+	NameCantBeEmptyMessage = "name can't be empty"
 
 	// ImageTypeInstaller is the installer image type on Image Builder
 	ImageTypeInstaller = "rhel-edge-installer"
@@ -46,6 +48,9 @@ const (
 func (i *Image) ValidateRequest() error {
 	if i.Distribution == "" {
 		return errors.New(DistributionCantBeNilMessage)
+	}
+	if i.Name == "" {
+		return errors.New(NameCantBeEmptyMessage)
 	}
 	if i.Commit == nil || i.Commit.Arch == "" {
 		return errors.New(ArchitectureCantBeEmptyMessage)
