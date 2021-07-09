@@ -1,35 +1,35 @@
 package updates
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
-	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/common"
+	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/devices"
 	"github.com/redhatinsights/edge-api/pkg/errors"
+	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
 
 // MakeRouter adds support for operations on update
 func MakeRouter(sub chi.Router) {
 	sub.Get("/", deviceCtx)
-	sub.Post("/", updateOsTree)
+	sub.Post("/", updateOSTree)
 
 }
 
 func deviceCtx(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("getDevices \n")
-	device_uuid := r.URL.Query().Get("device_uuid")
-	log.Infof("updates::deviceCtx::device_uuid: %s", device_uuid)
+	deviceUUID := r.URL.Query().Get("device_uuid")
+	log.Infof("updates::deviceCtx::deviceUUID: %s", deviceUUID)
 	tag := r.URL.Query().Get("tag")
 	log.Infof("updates::deviceCtx::tag: %s", tag)
 
-	if device_uuid != "" {
+	if deviceUUID != "" {
 		getDevicesByID(w, r)
 	}
 	if tag != "" {
@@ -80,28 +80,31 @@ func getDevicesByTag(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func updateOsTree(w http.ResponseWriter, r *http.Request) (string, error) {
-	ostree := r.URL.Query().Get("ostree")
-	payloadBuf := new(bytes.Buffer)
-	json.NewEncoder(payloadBuf).Encode(ostree)
-	cfg := config.Get()
-	url := fmt.Sprintf("%s/api/image-builder/v1/compose", cfg.ImageBuilderConfig.URL)
-	log.Infof("Requesting url: %s with payloadBuf %s", url, payloadBuf.String())
-	req, _ := http.NewRequest("POST", url, payloadBuf)
-	headers := common.GetOutgoingHeaders(r)
-	for key, value := range headers {
-		req.Header.Add(key, value)
-	}
-	req.Header.Add("Content-Type", "application/json")
+func updateOSTree(w http.ResponseWriter, r *http.Request) {
 
-	client := &http.Client{}
-	res, err := client.Do(req)
+	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return "Error", err
+		return
 	}
-	json.NewEncoder(w).Encode(&res)
 
-	return "", nil
+	var updateRec models.UpdateRecord
+	err = json.Unmarshal([]byte(r.Body), &updateRec)
+	if err != nil {
+		return
+	}
+
+	if updateRec.Tag != "" {
+		// FIXME
+		// - query Hosted Inventory for all devices in Inventory Tag
+		// - populate the updateRec.InventoryHosts []Device data
+		// - Then create unique set of all currently installed Commits
+		// - update updateRec.OldCommits
+	}
+
+	db.DB.Create(&updateRec)
+
+	// call RepoBuilderInstance
+	// go commits.RepoBuilderInstance(updateRec)
 
 }
 
