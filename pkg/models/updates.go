@@ -18,6 +18,7 @@ Device
 type Device struct {
 	gorm.Model
 	UUID            string
+	DesiredHash     string
 	ConnectionState int `gorm:"default:1"`
 }
 

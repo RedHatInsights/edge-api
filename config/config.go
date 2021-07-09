@@ -23,6 +23,7 @@ type EdgeConfig struct {
 	UpdateTempPath     string
 	OpenAPIFilePath    string
 	ImageBuilderConfig *imageBuilderConfig
+	InventoryConfig    *inventoryConfig
 	S3ProxyURL         string
 }
 
@@ -35,6 +36,10 @@ type dbConfig struct {
 }
 
 type imageBuilderConfig struct {
+	URL string
+}
+
+type inventoryConfig struct {
 	URL string
 }
 
@@ -58,6 +63,7 @@ func Init() {
 	options.SetDefault("Debug", false)
 	options.SetDefault("EdgeTarballsBucket", "rh-edge-tarballs")
 	options.SetDefault("ImageBuilderUrl", "http://image-builder:8080")
+	options.SetDefault("InventoryUrl", "http://host-inventory-service:8080/")
 	options.SetDefault("UpdateTempPath", "/tmp/updates/")
 	options.SetDefault("OpenAPIFilePath", "./cmd/spec/openapi.json")
 	options.AutomaticEnv()
@@ -78,6 +84,9 @@ func Init() {
 		ImageBuilderConfig: &imageBuilderConfig{
 			URL: options.GetString("ImageBuilderUrl"),
 		},
+		InventoryConfig: &inventoryConfig{
+			URL: options.GetString("InventoryUrl"),
+		},
 		S3ProxyURL: options.GetString("S3ProxyURL"),
 	}
 
@@ -96,6 +105,7 @@ func Init() {
 		}
 
 		bucket := clowder.ObjectBuckets[config.BucketName]
+
 		config.BucketName = bucket.RequestedName
 		config.BucketRegion = bucket.Region
 		config.AccessKey = *bucket.AccessKey
