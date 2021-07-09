@@ -17,7 +17,7 @@ type EdgeConfig struct {
 	Debug              bool
 	Database           *dbConfig
 	BucketName         string
-	BucketRegion       string
+	BucketRegion       *string
 	AccessKey          string
 	SecretKey          string
 	UpdateTempPath     string
@@ -105,13 +105,11 @@ func Init() {
 		}
 
 		bucket := clowder.ObjectBuckets[config.BucketName]
-		if &bucket != nil {
-			config.BucketName = bucket.RequestedName
-			config.BucketRegion = *bucket.Region
-			config.AccessKey = *bucket.AccessKey
-			config.SecretKey = *bucket.SecretKey
-		}
 
+		config.BucketName = bucket.RequestedName
+		config.BucketRegion = bucket.Region
+		config.AccessKey = *bucket.AccessKey
+		config.SecretKey = *bucket.SecretKey
 		config.Logging = &loggingConfig{
 			AccessKeyID:     cfg.Logging.Cloudwatch.AccessKeyId,
 			SecretAccessKey: cfg.Logging.Cloudwatch.SecretAccessKey,
