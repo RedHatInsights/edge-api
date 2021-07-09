@@ -47,14 +47,16 @@ func main() {
 	initDependencies()
 	cfg := config.Get()
 	log.WithFields(log.Fields{
-		"Hostname":    cfg.Hostname,
-		"Auth":        cfg.Auth,
-		"WebPort":     cfg.WebPort,
-		"MetricsPort": cfg.MetricsPort,
-		"LogLevel":    cfg.LogLevel,
-		"Debug":       cfg.Debug,
-		"BucketName":  cfg.BucketName,
-		"BucketRegion":  cfg.BucketRegion,
+		"Hostname":           cfg.Hostname,
+		"Auth":               cfg.Auth,
+		"WebPort":            cfg.WebPort,
+		"MetricsPort":        cfg.MetricsPort,
+		"LogLevel":           cfg.LogLevel,
+		"Debug":              cfg.Debug,
+		"BucketName":         cfg.BucketName,
+		"BucketRegion":       cfg.BucketRegion,
+		"AccessKey":          cfg.AccessKey,
+		"SecretKey":          cfg.SecretKey,
 		"ImageBuilderConfig": cfg.ImageBuilderConfig.URL,
 	}).Info("Configuration Values:")
 
