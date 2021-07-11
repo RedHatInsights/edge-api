@@ -182,7 +182,6 @@ func Create(w http.ResponseWriter, r *http.Request) {
 
 var imageFilters = common.ComposeFilters(
 	common.OneOfFilterHandler("status"),
-	common.OneOfFilterHandler("image_type"),
 	common.ContainFilterHandler("name"),
 	common.ContainFilterHandler("distribution"),
 	common.CreatedAtFilterHandler(),
@@ -214,8 +213,8 @@ func validateGetAllSearchParams(next http.Handler) http.Handler {
 			if string(val[0]) == "-" {
 				name = val[1:]
 			}
-			if name != "status" && name != "image_type" && name != "name" && name != "distribution" && name != "created_at" {
-				errs = append(errs, validationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must be status or image_type or name or distribution or created_at", name)})
+			if name != "status" && name != "name" && name != "distribution" && name != "created_at" {
+				errs = append(errs, validationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must be status or name or distribution or created_at", name)})
 			}
 		}
 
