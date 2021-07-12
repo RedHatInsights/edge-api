@@ -82,12 +82,15 @@ func getDevicesByTag(w http.ResponseWriter, r *http.Request) {
 
 func updateOSTree(w http.ResponseWriter, r *http.Request) {
 
+	var updateRec models.UpdateRecord
+	var ds []models.Device
+	var commits []models.Commit
+
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return
 	}
 
-	var updateRec models.UpdateRecord
 	err = json.Unmarshal([]byte(reqBody), &updateRec)
 	if err != nil {
 		return
@@ -103,22 +106,23 @@ func updateOSTree(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(err.Status)
 			return
 		}
-		// FIXME
 		// - populate the updateRec.InventoryHosts []Device data
 		for _, device := range inventory.Result {
 			fmt.Printf("Devices in this tag %v", device)
 			dd := new(models.Device)
-			// &models.Device { UUID: "myuuid" }
-			// https://tour.golang.org/moretypes/15
 			dd.UUID = device.ID
-			// dd.ConnectionState = int(device.Ostree.RpmOstreeDeployments[len(device.Ostree.RpmOstreeDeployments)-1].Booted)
-			db.DB.Create(dd)
+			booted := device.Ostree.RpmOstreeDeployments[len(device.Ostree.RpmOstreeDeployments)-1].Booted
+			dd.ConnectionState = booted
+			ds = append(ds, *dd)
+
 		}
 		// - Then create unique set of all currently installed Commits
-
 		// - update updateRec.OldCommits
+		//commits = FIXME How get the commits
+		updateRec.InventoryHosts = ds
+		updateRec.OldCommits = commits
 
-		json.NewEncoder(w).Encode(&inventory.Result)
+		json.NewEncoder(w).Encode(&updateRec)
 
 	}
 

@@ -19,7 +19,7 @@ type Device struct {
 	gorm.Model
 	UUID            string
 	DesiredHash     string
-	ConnectionState int `gorm:"default:1"`
+	ConnectionState bool `gorm:"default:true"`
 }
 
 /*
