@@ -120,6 +120,7 @@ func (u *S3Uploader) UploadFileToS3(fname string, S3path string) error {
 		Bucket: aws.String(u.Bucket),
 		Key:    aws.String(S3path),
 		Body:   f,
+		ACL:    aws.String("public-read"),
 	})
 
 	log.Debugf("S3Uploader::UploadRepo::result: %#v", result)
