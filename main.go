@@ -55,8 +55,6 @@ func main() {
 		"Debug":              cfg.Debug,
 		"BucketName":         cfg.BucketName,
 		"BucketRegion":       cfg.BucketRegion,
-		"AccessKey":          cfg.AccessKey,
-		"SecretKey":          cfg.SecretKey,
 		"ImageBuilderConfig": cfg.ImageBuilderConfig.URL,
 	}).Info("Configuration Values:")
 
