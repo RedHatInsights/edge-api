@@ -62,6 +62,7 @@ func SortFilterHandler(defaultSortKey string, defaultOrder string) FilterFunc {
 				sortOrder = "DESC"
 				sortBy = val[1:]
 			} else {
+				sortOrder = "ASC"
 				sortBy = val
 			}
 		}

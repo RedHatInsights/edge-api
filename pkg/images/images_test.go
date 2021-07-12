@@ -218,14 +218,14 @@ func TestValidateGetAllSearchParams(t *testing.T) {
 			name:   "bad sort_by",
 			params: "sort_by=host",
 			expectedError: []validationError{
-				{Key: "sort_by", Reason: "host is not a valid sort_by. Sort-by must be status or image_type or name or distribution or created_at"},
+				{Key: "sort_by", Reason: "host is not a valid sort_by. Sort-by must be status or name or distribution or created_at"},
 			},
 		},
 		{
 			name:   "bad sort_by and status",
 			params: "sort_by=host&status=CREATED&status=ONHOLD",
 			expectedError: []validationError{
-				{Key: "sort_by", Reason: "host is not a valid sort_by. Sort-by must be status or image_type or name or distribution or created_at"},
+				{Key: "sort_by", Reason: "host is not a valid sort_by. Sort-by must be status or name or distribution or created_at"},
 				{Key: "status", Reason: "ONHOLD is not a valid status. Status must be CREATED or BUILDING or ERROR or SUCCESS"},
 			},
 		},
