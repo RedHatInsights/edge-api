@@ -95,7 +95,7 @@ func updateOSTree(w http.ResponseWriter, r *http.Request) {
 
 	if updateRec.Tag != "" {
 		// - query Hosted Inventory for all devices in Inventory Tag
-		devices, err := devices.ReturnDevicesByTag(w, r)
+		inventory, err := devices.ReturnDevicesByTag(w, r)
 		// result := db.DB.Where("Tag = ?", updateRec.Tag).First(&updateRec, updateRec.Tag)
 		if err != nil {
 			err := errors.NewInternalServerError()
@@ -105,14 +105,20 @@ func updateOSTree(w http.ResponseWriter, r *http.Request) {
 		}
 		// FIXME
 		// - populate the updateRec.InventoryHosts []Device data
-		// for _, device := range devices {
-
-		// }
+		for _, device := range inventory.Result {
+			fmt.Printf("Devices in this tag %v", device)
+			dd := new(models.Device)
+			// &models.Device { UUID: "myuuid" }
+			// https://tour.golang.org/moretypes/15
+			dd.UUID = device.ID
+			// dd.ConnectionState = int(device.Ostree.RpmOstreeDeployments[len(device.Ostree.RpmOstreeDeployments)-1].Booted)
+			db.DB.Create(dd)
+		}
 		// - Then create unique set of all currently installed Commits
 
 		// - update updateRec.OldCommits
 
-		json.NewEncoder(w).Encode(&result)
+		json.NewEncoder(w).Encode(&inventory.Result)
 
 	}
 
