@@ -63,7 +63,7 @@ func ImageCtx(next http.Handler) http.Handler {
 			}
 			result := db.DB.Where("`images`.account = ?", account).Joins("Commit").Joins("Installer").First(&image, id)
 			if result.Error != nil {
-				err := errors.NewNotFound(err.Error())
+				err := errors.NewNotFound(result.Error.Error())
 				w.WriteHeader(err.Status)
 				json.NewEncoder(w).Encode(&err)
 				return
