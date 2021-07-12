@@ -88,17 +88,32 @@ func updateOSTree(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var updateRec models.UpdateRecord
-	err = json.Unmarshal([]byte(r.Body), &updateRec)
+	err = json.Unmarshal([]byte(reqBody), &updateRec)
 	if err != nil {
 		return
 	}
 
 	if updateRec.Tag != "" {
-		// FIXME
 		// - query Hosted Inventory for all devices in Inventory Tag
+		devices, err := devices.ReturnDevicesByTag(w, r)
+		// result := db.DB.Where("Tag = ?", updateRec.Tag).First(&updateRec, updateRec.Tag)
+		if err != nil {
+			err := errors.NewInternalServerError()
+			err.Title = fmt.Sprintf("No devices in this tag %s", updateRec.Tag)
+			w.WriteHeader(err.Status)
+			return
+		}
+		// FIXME
 		// - populate the updateRec.InventoryHosts []Device data
+		// for _, device := range devices {
+
+		// }
 		// - Then create unique set of all currently installed Commits
+
 		// - update updateRec.OldCommits
+
+		json.NewEncoder(w).Encode(&result)
+
 	}
 
 	db.DB.Create(&updateRec)
@@ -108,7 +123,6 @@ func updateOSTree(w http.ResponseWriter, r *http.Request) {
 
 }
 
-//FIXME: Identify better option to see if is uniq or tag
 func isUUID(param string) bool {
 	_, err := uuid.Parse(param)
 	return err == nil
