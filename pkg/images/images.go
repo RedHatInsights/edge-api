@@ -201,11 +201,6 @@ func Create(w http.ResponseWriter, r *http.Request) {
 
 		// TODO: We need to discuss this whole thist post-July deliverable
 		if i.ImageType == models.ImageTypeInstaller {
-			i, err := imagebuilder.Client.ComposeInstaller(update, i, headers)
-			if err != nil {
-				log.Error(err)
-				return
-			}
 			i.Installer = &models.Installer{
 				Status:  models.ImageStatusBuilding,
 				Account: i.Account,
@@ -217,6 +212,11 @@ func Create(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			tx = db.DB.Save(&i.Installer)
+			i, err := imagebuilder.Client.ComposeInstaller(update, i, headers)
+			if err != nil {
+				log.Error(err)
+				return
+			}
 			if tx.Error != nil {
 				log.Error(err)
 				json.NewEncoder(w).Encode(&err)
