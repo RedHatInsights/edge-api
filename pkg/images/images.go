@@ -201,7 +201,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		// TODO: This is also where we need to get the metadata from image builder
 		// in a separate goroutine
 		i.Status = models.ImageStatusSuccess
-		db.DB.Save(&image)
+		db.DB.Save(&i)
 
 		// TODO: We need to discuss this whole thist post-July deliverable
 		if i.ImageType == models.ImageTypeInstaller {
@@ -210,7 +210,10 @@ func Create(w http.ResponseWriter, r *http.Request) {
 				log.Error(err)
 				return
 			}
-			i.Installer.Status = models.ImageStatusBuilding
+			i.Installer = &models.Installer{
+				Status:  models.ImageStatusBuilding,
+				Account: image.Account,
+			}
 			i.Status = models.ImageStatusBuilding
 			tx = db.DB.Save(&i)
 			if tx.Error != nil {
