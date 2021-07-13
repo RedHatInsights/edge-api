@@ -102,3 +102,5 @@ parameters:
   value: "true"
 - name: IMAGEBUILDER_URL
   value: "http://image-builder:8080"
+- name: S3_PROXY_URL
+  required: true
