@@ -36,7 +36,8 @@ UpdateRecord
 */
 type UpdateRecord struct {
 	gorm.Model
-	UpdateCommitID uint
+	Commit         *Commit
+	CommitID       uint
 	Account        string
 	OldCommits     []Commit `gorm:"many2many:updaterecord_commits;"`
 	Tag            string
@@ -46,8 +47,6 @@ type UpdateRecord struct {
 }
 
 const (
-	// UpdateCommitIDCantBeNilMessage is the error message when a update commit is nil
-	UpdateCommitIDCantBeNilMessage = "update commit id can't be empty"
 	// InventoryHostsCantBeEmptyMessage is the error message when the hosts are empty
 	InventoryHostsCantBeEmptyMessage = "inventory hosts can not be empty"
 
@@ -63,9 +62,6 @@ const (
 
 // ValidateRequest validates a Update Record Request
 func (ur *UpdateRecord) ValidateRequest() error {
-	if ur.UpdateCommitID == 0 {
-		return errors.New(UpdateCommitIDCantBeNilMessage)
-	}
 	if ur.InventoryHosts == nil || len(ur.InventoryHosts) == 0 {
 		return errors.New(InventoryHostsCantBeEmptyMessage)
 	}
