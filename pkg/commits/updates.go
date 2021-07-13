@@ -212,11 +212,7 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) (*models.UpdateRecord,
 	updaterec.Status = models.UpdateStatusCreated
 	db.DB.Save(&updaterec)
 
-	updateCommit, err := getCommitFromDB(ur.UpdateCommitID)
-	if err != nil {
-		return nil, err
-	}
-	log.Debugf("RepoBuilder::updateCommit: %#v", updateCommit)
+	log.Debugf("RepoBuilder::updateCommit: %#v", ur.Commit)
 
 	path := filepath.Join(cfg.UpdateTempPath, strconv.FormatUint(uint64(ur.ID), 10))
 	log.Debugf("RepoBuilder::path: %#v", path)
@@ -230,7 +226,7 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) (*models.UpdateRecord,
 	}
 	DownloadExtractVersionRepo(ur.Commit, path)
 
-	if len(ur.OldCommitIDs) > 0 {
+	if len(ur.OldCommits) > 0 {
 		stagePath := filepath.Join(path, "staging")
 		err = os.MkdirAll(stagePath, os.FileMode(int(0755)))
 		if err != nil {
@@ -245,17 +241,9 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) (*models.UpdateRecord,
 		// into the update commit repo
 		//
 		// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
-		for _, commitID := range strings.Split(ur.OldCommitIDs, ",") {
-			cIDUint, err := strconv.ParseUint(commitID, 10, 64)
-			if err != nil {
-				return nil, err
-			}
-			commit, err := getCommitFromDB(uint(cIDUint))
-			if err != nil {
-				return nil, err
-			}
-			DownloadExtractVersionRepo(commit, filepath.Join(stagePath, commit.OSTreeCommit))
-			RepoPullLocalStaticDeltas(updateCommit, commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
+		for _, commit := range ur.OldCommits {
+			DownloadExtractVersionRepo(&commit, filepath.Join(stagePath, commit.OSTreeCommit))
+			RepoPullLocalStaticDeltas(ur.Commit, &commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
 		}
 
 		// Once all the old commits have been pulled into the update commit's repo
