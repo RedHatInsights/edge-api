@@ -44,7 +44,6 @@ func getDevicesByID(w http.ResponseWriter, r *http.Request) {
 		validUUID := isUUID(uuid)
 		if validUUID {
 			devices, err := devices.ReturnDevicesByID(w, r)
-			//FIXME: Load results into DB
 			fmt.Printf("validUuid devices: %v\n", devices)
 			if err != nil {
 				err := errors.NewInternalServerError()
@@ -83,9 +82,12 @@ func getDevicesByTag(w http.ResponseWriter, r *http.Request) {
 func updateOSTree(w http.ResponseWriter, r *http.Request) {
 
 	var updateRec models.UpdateRecord
+	var inventory devices.Inventory
 	inventoryHosts := updateRec.InventoryHosts
 	oldCommits := updateRec.OldCommits
-
+	deviceUUID := r.URL.Query().Get("device_uuid")
+	log.Infof("updates::deviceCtx::deviceUUID: %s", deviceUUID)
+	tag := r.URL.Query().Get("tag")
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return
@@ -96,46 +98,47 @@ func updateOSTree(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if updateRec.Tag != "" {
+	if tag != "" {
 		// - query Hosted Inventory for all devices in Inventory Tag
-		inventory, err := devices.ReturnDevicesByTag(w, r)
-		// result := db.DB.Where("Tag = ?", updateRec.Tag).First(&updateRec, updateRec.Tag)
-		if err != nil {
-			err := errors.NewInternalServerError()
-			err.Title = fmt.Sprintf("No devices in this tag %s", updateRec.Tag)
-			w.WriteHeader(err.Status)
-			return
+		inventory, err = devices.ReturnDevicesByTag(w, r)
+	} else {
+		if deviceUUID != "" {
+			// - query Hosted Inventory for device UUID
+			inventory, err = devices.ReturnDevicesByID(w, r)
 		}
-		// - populate the updateRec.InventoryHosts []Device data
-		fmt.Printf("Devices in this tag %v", inventory.Result)
-		for _, device := range inventory.Result {
-			updateDevice := new(models.Device)
-			updateDevice.UUID = device.ID
-			updateDevice.DesiredHash = updateRec.Commit.OSTreeCommit
-			inventoryHosts = append(inventoryHosts, *updateDevice)
-			updateRec.InventoryHosts = inventoryHosts
-			for _, ostreeDeployment := range device.Ostree.RpmOstreeDeployments {
-				if ostreeDeployment.Booted {
-					var oldCommit models.Commit
-					result := db.DB.Where("ostreecommit = ?", ostreeDeployment.Checksum).Take(&oldCommit)
-					if result.Error != nil {
-						http.Error(w, result.Error.Error(), http.StatusBadRequest)
-						return
-					}
-					oldCommits = append(oldCommits, oldCommit)
-					updateRec.OldCommits = oldCommits
+	}
+	if err != nil {
+		err := errors.NewInternalServerError()
+		err.Title = fmt.Sprintf("No devices in this tag %s", updateRec.Tag)
+		w.WriteHeader(err.Status)
+		return
+	}
+	// - populate the updateRec.InventoryHosts []Device data
+	fmt.Printf("Devices in this tag %v", inventory.Result)
+	for _, device := range inventory.Result {
+		updateDevice := new(models.Device)
+		updateDevice.UUID = device.ID
+		updateDevice.DesiredHash = updateRec.Commit.OSTreeCommit
+		inventoryHosts = append(inventoryHosts, *updateDevice)
+		updateRec.InventoryHosts = inventoryHosts
+		for _, ostreeDeployment := range device.Ostree.RpmOstreeDeployments {
+			if ostreeDeployment.Booted {
+				var oldCommit models.Commit
+				result := db.DB.Where("ostreecommit = ?", ostreeDeployment.Checksum).Take(&oldCommit)
+				if result.Error != nil {
+					http.Error(w, result.Error.Error(), http.StatusBadRequest)
+					return
 				}
+				oldCommits = append(oldCommits, oldCommit)
+				updateRec.OldCommits = oldCommits
 			}
-
 		}
 
-		// FIXME - need to remove duplicate OldCommit values from UpdateRecord
-
-		json.NewEncoder(w).Encode(&updateRec)
 	}
 
-	// FIXME - handle when there's no tag, but a UUID
+	// FIXME - need to remove duplicate OldCommit values from UpdateRecord
 
+	json.NewEncoder(w).Encode(&updateRec)
 	db.DB.Create(&updateRec)
 
 	// call RepoBuilderInstance
