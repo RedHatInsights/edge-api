@@ -86,8 +86,8 @@ func (c *MockImageBuilderClient) GetInstallerStatus(image *models.Image, headers
 
 type MockRepositoryBuilder struct{}
 
-func (rb *MockRepositoryBuilder) BuildRepo(u *models.UpdateRecord) error {
-	return nil
+func (rb *MockRepositoryBuilder) BuildRepo(u *models.UpdateRecord) (*models.UpdateRecord, error) {
+	return nil, nil
 }
 
 func TestCreateWasCalledWithAccountNotSet(t *testing.T) {
@@ -110,7 +110,7 @@ func TestCreateWasCalledWithAccountNotSet(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	var jsonStr = []byte(`{"Distribution": "rhel-8", "ImageType": "rhel-edge-installer", "Commit": {"Arch": "x86_64", "Packages" : [ { "name" : "vim"  } ]}}`)
+	var jsonStr = []byte(`{"Name": "image1", "Distribution": "rhel-8", "ImageType": "rhel-edge-installer", "Commit": {"Arch": "x86_64", "Packages" : [ { "name" : "vim"  } ]}}`)
 	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
 	if err != nil {
 		t.Fatal(err)
@@ -218,14 +218,14 @@ func TestValidateGetAllSearchParams(t *testing.T) {
 			name:   "bad sort_by",
 			params: "sort_by=host",
 			expectedError: []validationError{
-				{Key: "sort_by", Reason: "host is not a valid sort_by. Sort-by must be status or image_type or name or distribution or created_at"},
+				{Key: "sort_by", Reason: "host is not a valid sort_by. Sort-by must be status or name or distribution or created_at"},
 			},
 		},
 		{
 			name:   "bad sort_by and status",
 			params: "sort_by=host&status=CREATED&status=ONHOLD",
 			expectedError: []validationError{
-				{Key: "sort_by", Reason: "host is not a valid sort_by. Sort-by must be status or image_type or name or distribution or created_at"},
+				{Key: "sort_by", Reason: "host is not a valid sort_by. Sort-by must be status or name or distribution or created_at"},
 				{Key: "status", Reason: "ONHOLD is not a valid status. Status must be CREATED or BUILDING or ERROR or SUCCESS"},
 			},
 		},
