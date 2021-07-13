@@ -181,14 +181,10 @@ func Create(w http.ResponseWriter, r *http.Request) {
 			}
 			time.Sleep(1 * time.Minute)
 		}
-		log.Infof("Commit %d for Image %d is ready. Creating OSTree repo.", i.Commit.ID, i.ID)
-
-		i.Status = models.ImageStatusBuilding
-		db.DB.Save(&image)
-
+		log.Infof("Commit %#v for Image %#v is ready. Creating OSTree repo.", image.Commit, image)
 		update := &models.UpdateRecord{
-			UpdateCommitID: i.Commit.ID,
-			Account:        i.Account,
+			Commit:  image.Commit,
+			Account: image.Account,
 		}
 		db.DB.Create(&update)
 		repo, err := commits.RepoBuilderInstance.BuildRepo(update)
@@ -201,7 +197,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		// TODO: This is also where we need to get the metadata from image builder
 		// in a separate goroutine
 		i.Status = models.ImageStatusSuccess
-		db.DB.Save(&image)
+		db.DB.Save(&i)
 
 		// TODO: We need to discuss this whole thist post-July deliverable
 		if i.ImageType == models.ImageTypeInstaller {
@@ -210,7 +206,10 @@ func Create(w http.ResponseWriter, r *http.Request) {
 				log.Error(err)
 				return
 			}
-			i.Installer.Status = models.ImageStatusBuilding
+			i.Installer = &models.Installer{
+				Status:  models.ImageStatusBuilding,
+				Account: i.Account,
+			}
 			i.Status = models.ImageStatusBuilding
 			tx = db.DB.Save(&i)
 			if tx.Error != nil {
