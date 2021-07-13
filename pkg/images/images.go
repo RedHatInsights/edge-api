@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
+        "os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -476,6 +479,9 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
+	addSSHKeyToKickstart(sshKey string, w)
+	exeMkksiso(kickstart string, image string, w)
+	cleanFiles(w)
 
 	go func(id uint) {
 		var i *models.Image
@@ -494,4 +500,61 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&image)
+}
+
+// Adds user provided ssh key to the kickstart file.
+func addSSHKeyToKickstart(sshKey string, w http.ResponseWriter) {
+     if !sshKey {
+     	log.Error("No ssh key provided")
+	err := errors.NewInternalServerError()
+	w.WriteHeader(err.Status)
+	json.NewEncoder(w).Encode(&err)
+	return
+     }
+
+     kickstart, err := ioutil.ReadFile( "templateKickstart.ks" )
+     if err != nil {
+     	log.Error(err)
+	err := errors.NewInternalServerError()
+	w.WriteHeader(err.Status)
+	json.NewEncoder(w).Encode(&err)
+	return
+     }
+
+     kickstartString := strings.Replace( string(kickstart), "[REPLACESSH]", sshKey, -1 )
+     err = ioutil.WriteFile("finalKickstart.ks", []byte(kickstartString), 0777)
+     if err != nil {
+     	log.Error(err)
+	err := errors.NewInternalServerError()
+	w.WriteHeader(err.Status)
+	json.NewEncoder(w).Encode(&err)
+	return
+     }
+}
+
+// Inject the custom kickstart into the iso via mkksiso.
+func exeMkksiso( kickstart string, image string, w http.ResponseWriter ) {
+     cmd := exec.Command( "sudo",  "mkksiso", kickstart, image, image )
+     if output, err := cmd.Output(); err != nil {
+     	log.Error(err)
+	err := errors.NewInternalServerError()
+	w.WriteHeader(err.Status)
+	json.NewEncoder(w).Encode(&err)
+	return
+     } else {
+       log.Info( "mkksiso output: %s\n", output )
+     }
+}
+
+// Remove edited kickstart after use.
+func cleanFiles(w http.ResponseWriter) {
+     err := os.Remove("finalKickstart.ks")
+     if err != nil {
+     	log.Error(err)
+	err := errors.NewInternalServerError()
+	w.WriteHeader(err.Status)
+	json.NewEncoder(w).Encode(&err)
+	return
+     }
+     log.Info("Edited kickstart file removed!")
 }
