@@ -83,8 +83,8 @@ func getDevicesByTag(w http.ResponseWriter, r *http.Request) {
 func updateOSTree(w http.ResponseWriter, r *http.Request) {
 
 	var updateRec models.UpdateRecord
-	var ds []models.Device
-	var commits []models.Commit
+	inventoryHosts := updateRec.InventoryHosts
+	oldCommits := updateRec.OldCommits
 
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -107,24 +107,34 @@ func updateOSTree(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// - populate the updateRec.InventoryHosts []Device data
+		fmt.Printf("Devices in this tag %v", inventory.Result)
 		for _, device := range inventory.Result {
-			fmt.Printf("Devices in this tag %v", device)
-			dd := new(models.Device)
-			dd.UUID = device.ID
-			booted := device.Ostree.RpmOstreeDeployments[len(device.Ostree.RpmOstreeDeployments)-1].Booted
-			dd.ConnectionState = booted
-			ds = append(ds, *dd)
+			updateDevice := new(models.Device)
+			updateDevice.UUID = device.ID
+			updateDevice.DesiredHash = updateRec.Commit.OSTreeCommit
+			inventoryHosts = append(inventoryHosts, *updateDevice)
+			updateRec.InventoryHosts = inventoryHosts
+			for _, ostreeDeployment := range device.Ostree.RpmOstreeDeployments {
+				if ostreeDeployment.Booted {
+					var oldCommit models.Commit
+					result := db.DB.Where("ostreecommit = ?", ostreeDeployment.Checksum).Take(&oldCommit)
+					if result.Error != nil {
+						http.Error(w, result.Error.Error(), http.StatusBadRequest)
+						return
+					}
+					oldCommits = append(oldCommits, oldCommit)
+					updateRec.OldCommits = oldCommits
+				}
+			}
 
 		}
-		// - Then create unique set of all currently installed Commits
-		// - update updateRec.OldCommits
-		//commits = FIXME How get the commits
-		updateRec.InventoryHosts = ds
-		updateRec.OldCommits = commits
+
+		// FIXME - need to remove duplicate OldCommit values from UpdateRecord
 
 		json.NewEncoder(w).Encode(&updateRec)
-
 	}
+
+	// FIXME - handle when there's no tag, but a UUID
 
 	db.DB.Create(&updateRec)
 
