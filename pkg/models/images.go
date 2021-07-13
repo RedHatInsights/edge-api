@@ -16,6 +16,7 @@ type Image struct {
 	Description  string
 	Status       string
 	Version      int `gorm:"default:1"`
+	ImageType    string
 	CommitID     int
 	Commit       *Commit
 	InstallerID  *int
@@ -29,6 +30,8 @@ const (
 	ArchitectureCantBeEmptyMessage = "architecture can't be empty"
 	// NameCantBeInvalidMessage is the error message when the name is invalid
 	NameCantBeInvalidMessage = "name must start with alphanumeric characters and can contain underscore and hyphen characters"
+	// ImageTypeNotAccepted is the error message when an image type is not accepted
+	ImageTypeNotAccepted = "this image type is not accepted"
 
 	// ImageTypeInstaller is the installer image type on Image Builder
 	ImageTypeInstaller = "rhel-edge-installer"
@@ -55,6 +58,9 @@ func (i *Image) ValidateRequest() error {
 	}
 	if i.Commit == nil || i.Commit.Arch == "" {
 		return errors.New(ArchitectureCantBeEmptyMessage)
+	}
+	if i.ImageType != ImageTypeCommit && i.ImageType != ImageTypeInstaller {
+		return errors.New(ImageTypeNotAccepted)
 	}
 	return nil
 }
