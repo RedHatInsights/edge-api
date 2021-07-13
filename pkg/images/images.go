@@ -212,7 +212,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 			}
 			i.Installer = &models.Installer{
 				Status:  models.ImageStatusBuilding,
-				Account: image.Account,
+				Account: i.Account,
 			}
 			i.Status = models.ImageStatusBuilding
 			tx = db.DB.Save(&i)
