@@ -71,6 +71,13 @@ func ImageCtx(next http.Handler) http.Handler {
 					return
 				}
 			}
+			err = db.DB.Model(&image.Commit).Association("Packages").Find(&image.Commit.Packages)
+			if err != nil {
+				err := errors.NewInternalServerError()
+				w.WriteHeader(err.Status)
+				json.NewEncoder(w).Encode(&err)
+				return
+			}
 			if result.Error != nil {
 				err := errors.NewNotFound(result.Error.Error())
 				w.WriteHeader(err.Status)
