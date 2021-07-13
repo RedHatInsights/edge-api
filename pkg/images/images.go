@@ -164,10 +164,10 @@ func Create(w http.ResponseWriter, r *http.Request) {
 			}
 			time.Sleep(1 * time.Minute)
 		}
-		log.Infof("Commit %d for Image %d is ready. Creating OSTree repo.", image.Commit.ID, image.ID)
+		log.Infof("Commit %#v for Image %#v is ready. Creating OSTree repo.", image.Commit, image)
 		update := &models.UpdateRecord{
-			UpdateCommitID: image.Commit.ID,
-			Account:        image.Account,
+			Commit:  image.Commit,
+			Account: image.Account,
 		}
 		db.DB.Create(&update)
 		commits.RepoBuilderInstance.BuildRepo(update)

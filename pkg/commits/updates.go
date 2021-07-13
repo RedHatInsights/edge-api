@@ -48,10 +48,10 @@ func updateFromReadCloser(rc io.ReadCloser) (*models.UpdateRecord, error) {
 	err := json.NewDecoder(rc).Decode(&update)
 
 	log.Debugf("updateFromReadCloser::update: %#v", update)
-	log.Debugf("updateFromReadCloser::update.UpdateCommitID: %d", update.UpdateCommitID)
+	log.Debugf("updateFromReadCloser::update.Commit: %#v", update.Commit)
 
-	if !(update.UpdateCommitID > 0) {
-		return nil, errors.New("Invalid UpdateCommitID provided")
+	if !(update.Commit.OSTreeCommit == "") {
+		return nil, errors.New("Invalid Commit OSTree Hash provided")
 	}
 	if len(update.InventoryHosts) == 0 {
 		return nil, errors.New("Inventory Hosts to update required")
@@ -116,11 +116,11 @@ func UpdatesAdd(w http.ResponseWriter, r *http.Request) {
 
 	// Check to make sure we're not duplicating the job
 	// FIXME - this didn't work and I don't have time to debug right now
+	// FIXME - handle UpdateRecord Commit vs UpdateCommitID
 	/*
 		var dupeRecord models.UpdateRecord
 		queryDuplicate := map[string]interface{}{
 			"Account":        update.Account,
-			"UpdateCommitID": update.UpdateCommitID,
 			"InventoryHosts": update.InventoryHosts,
 			"OldCommits":   update.OldCommits,
 		}
@@ -210,15 +210,11 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) error {
 	ur.Status = models.UpdateStatusCreated
 	db.DB.Save(&ur)
 
-	updateCommit, err := getCommitFromDB(ur.UpdateCommitID)
-	if err != nil {
-		return err
-	}
-	log.Debugf("RepoBuilder::updateCommit: %#v", updateCommit)
+	log.Debugf("RepoBuilder::ur.Commit: %#v", ur.Commit)
 
 	path := filepath.Join(cfg.UpdateTempPath, strconv.FormatUint(uint64(ur.ID), 10))
 	log.Debugf("RepoBuilder::path: %#v", path)
-	err = os.MkdirAll(path, os.FileMode(int(0755)))
+	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
 		return err
 	}
@@ -226,7 +222,7 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) error {
 	if err != nil {
 		return err
 	}
-	DownloadExtractVersionRepo(updateCommit, path)
+	DownloadExtractVersionRepo(ur.Commit, path)
 
 	if len(ur.OldCommits) > 0 {
 		stagePath := filepath.Join(path, "staging")
@@ -245,7 +241,7 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) error {
 		// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
 		for _, commit := range ur.OldCommits {
 			DownloadExtractVersionRepo(&commit, filepath.Join(stagePath, commit.OSTreeCommit))
-			RepoPullLocalStaticDeltas(updateCommit, &commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
+			RepoPullLocalStaticDeltas(ur.Commit, &commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
 		}
 
 		// Once all the old commits have been pulled into the update commit's repo
