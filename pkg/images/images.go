@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-        "os/exec"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -479,7 +479,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	addSSHKeyToKickstart(sshKey string, w)
+	addSSHKeyToKickstart(sshKey string, username string, w)
 	exeMkksiso(kickstart string, image string, w)
 	cleanFiles(w)
 
@@ -502,17 +502,17 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&image)
 }
 
+// template struct for username and ssh key
+type UnameSsh struct {
+     Sshkey	string
+     Username	string
+}
+
 // Adds user provided ssh key to the kickstart file.
-func addSSHKeyToKickstart(sshKey string, w http.ResponseWriter) {
-     if !sshKey {
-     	log.Error("No ssh key provided")
-	err := errors.NewInternalServerError()
-	w.WriteHeader(err.Status)
-	json.NewEncoder(w).Encode(&err)
-	return
-     }
+func addSSHKeyToKickstart(sshKey string, username string, w http.ResponseWriter) {
+     td := UnameSsh{sshKey , username}
 
-     kickstart, err := ioutil.ReadFile( "templateKickstart.ks" )
+     t, err := template.ParseFiles("templateKickstart.ks")
      if err != nil {
      	log.Error(err)
 	err := errors.NewInternalServerError()
@@ -521,8 +521,7 @@ func addSSHKeyToKickstart(sshKey string, w http.ResponseWriter) {
 	return
      }
 
-     kickstartString := strings.Replace( string(kickstart), "[REPLACESSH]", sshKey, -1 )
-     err = ioutil.WriteFile("finalKickstart.ks", []byte(kickstartString), 0777)
+     file, err := os.Create("finalKickstart.ks")
      if err != nil {
      	log.Error(err)
 	err := errors.NewInternalServerError()
@@ -530,6 +529,16 @@ func addSSHKeyToKickstart(sshKey string, w http.ResponseWriter) {
 	json.NewEncoder(w).Encode(&err)
 	return
      }
+
+     err = t.Execute(file, td)
+     if err != nil {
+     	log.Error(err)
+	err := errors.NewInternalServerError()
+	w.WriteHeader(err.Status)
+	json.NewEncoder(w).Encode(&err)
+	return
+     }
+     file.Close()
 }
 
 // Inject the custom kickstart into the iso via mkksiso.

@@ -11,17 +11,17 @@ network --bootproto=dhcp --device=link --activate --onboot=on
 ostreesetup --nogpg --osname=rhel-edge --remote=rhel-edge --url=file:///ostree/repo --ref=rhel/8/x86_64/edge
 
 %post --log=/var/log/anaconda/post-install.log --erroronfail
-# add user admin and ssh key
-useradd -m -d /home/admin -G wheel admin
-mkdir -p /home/admin/.ssh
-chmod 755 /home/admin/.ssh
-tee /home/admin/.ssh/authorized_keys > /dev/null << STOPHERE
-[REPLACESSH]
+# add user and ssh key
+useradd -m -d /home/{{.Username}} -G wheel {{.Username}}
+mkdir -p /home/{{.Username}}/.ssh
+chmod 755 /home/{{.Username}}/.ssh
+tee /home/{{.Username}}/.ssh/authorized_keys > /dev/null << STOPHERE
+{{.Sshkey}}
 STOPHERE
-chmod 600 /home/admin/.ssh/authorized_keys
-chown admin:admin /home/admin/.ssh/authorized_keys
-# no sudo password for user admin
-echo -e 'admin\tALL=(ALL)\tNOPASSWD: ALL' >> /etc/sudoers
+chmod 600 /home/{{.Username}}/.ssh/authorized_keys
+chown {{.Username}}:{{.Username}} /home/{{.Username}}/.ssh/authorized_keys
+# no sudo password for user 
+echo -e '{{.Username}}\tALL=(ALL)\tNOPASSWD: ALL' >> /etc/sudoers
 
 %end
 
