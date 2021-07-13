@@ -196,7 +196,7 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateRecord {
 
 // RepoBuilderInterface defines the interface of a repository builder
 type RepoBuilderInterface interface {
-	BuildRepo(ur *models.UpdateRecord) error
+	BuildRepo(ur *models.UpdateRecord) (*models.UpdateRecord, error)
 }
 
 // RepoBuilder is the implementation of a RepoBuilderInterface
@@ -204,7 +204,7 @@ type RepoBuilder struct{}
 
 // BuildRepo build an update repo with the set of commits all merged into a single repo
 // with static deltas generated between them all
-func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) error {
+func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) (*models.UpdateRecord, error) {
 	cfg := config.Get()
 
 	var updaterec models.UpdateRecord
@@ -214,7 +214,7 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) error {
 
 	updateCommit, err := getCommitFromDB(ur.UpdateCommitID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	log.Debugf("RepoBuilder::updateCommit: %#v", updateCommit)
 
@@ -222,11 +222,11 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) error {
 	log.Debugf("RepoBuilder::path: %#v", path)
 	err = os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = os.Chdir(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	DownloadExtractVersionRepo(updateCommit, path)
 
@@ -234,11 +234,11 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) error {
 		stagePath := filepath.Join(path, "staging")
 		err = os.MkdirAll(stagePath, os.FileMode(int(0755)))
 		if err != nil {
-			return err
+			return nil, err
 		}
 		err = os.Chdir(stagePath)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		// If there are any old commits, we need to download them all to be merged
@@ -248,11 +248,11 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) error {
 		for _, commitID := range strings.Split(ur.OldCommitIDs, ",") {
 			cIDUint, err := strconv.ParseUint(commitID, 10, 64)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			commit, err := getCommitFromDB(uint(cIDUint))
 			if err != nil {
-				return err
+				return nil, err
 			}
 			DownloadExtractVersionRepo(commit, filepath.Join(stagePath, commit.OSTreeCommit))
 			RepoPullLocalStaticDeltas(updateCommit, commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
@@ -263,7 +263,7 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) error {
 		// anymore.
 		err = os.RemoveAll(stagePath)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 	}
@@ -280,7 +280,7 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) error {
 	// NOTE: This relies on the file path being cfg.UpdateTempPath/models.UpdateRecord.ID
 	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), ur.Account)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var updateRecDone models.UpdateRecord
@@ -289,7 +289,7 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) error {
 	updateRecDone.UpdateRepoURL = repoURL
 	db.DB.Save(&updateRecDone)
 
-	return nil
+	return &updateRecDone, nil
 }
 
 // DownloadExtractVersionRepo Download and Extract the repo tarball to dest dir

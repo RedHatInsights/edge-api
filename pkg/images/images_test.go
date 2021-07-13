@@ -86,8 +86,8 @@ func (c *MockImageBuilderClient) GetInstallerStatus(image *models.Image, headers
 
 type MockRepositoryBuilder struct{}
 
-func (rb *MockRepositoryBuilder) BuildRepo(u *models.UpdateRecord) error {
-	return nil
+func (rb *MockRepositoryBuilder) BuildRepo(u *models.UpdateRecord) (*models.UpdateRecord, error) {
+	return nil, nil
 }
 
 func TestCreateWasCalledWithAccountNotSet(t *testing.T) {

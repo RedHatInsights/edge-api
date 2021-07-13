@@ -173,6 +173,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		for {
 			i, err := updateImageStatus(i, r)
 			if err != nil {
+				log.Error(err)
 				panic(err)
 			}
 			if i.Commit.Status != models.ImageStatusBuilding {
@@ -180,16 +181,61 @@ func Create(w http.ResponseWriter, r *http.Request) {
 			}
 			time.Sleep(1 * time.Minute)
 		}
-		log.Infof("Commit %d for Image %d is ready. Creating OSTree repo.", image.Commit.ID, image.ID)
+		log.Infof("Commit %d for Image %d is ready. Creating OSTree repo.", i.Commit.ID, i.ID)
+
+		i.Status = models.ImageStatusBuilding
+		db.DB.Save(&image)
+
 		update := &models.UpdateRecord{
-			UpdateCommitID: image.Commit.ID,
-			Account:        image.Account,
+			UpdateCommitID: i.Commit.ID,
+			Account:        i.Account,
 		}
 		db.DB.Create(&update)
-		commits.RepoBuilderInstance.BuildRepo(update)
+		repo, err := commits.RepoBuilderInstance.BuildRepo(update)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		log.Infof("OSTree repo %d for commit %d and Image %d is ready. ", repo.ID, i.Commit.ID, i.ID)
 
 		// TODO: This is also where we need to get the metadata from image builder
 		// in a separate goroutine
+		i.Status = models.ImageStatusSuccess
+		db.DB.Save(&image)
+
+		// TODO: We need to discuss this whole thist post-July deliverable
+		if i.ImageType == models.ImageTypeInstaller {
+			i, err := imagebuilder.Client.ComposeInstaller(update, i, headers)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			i.Installer.Status = models.ImageStatusBuilding
+			i.Status = models.ImageStatusBuilding
+			tx = db.DB.Save(&i)
+			if tx.Error != nil {
+				log.Error(err)
+				return
+			}
+			tx = db.DB.Save(&i.Installer)
+			if tx.Error != nil {
+				log.Error(err)
+				json.NewEncoder(w).Encode(&err)
+				return
+			}
+
+			for {
+				i, err := updateImageStatus(i, r)
+				if err != nil {
+					panic(err)
+				}
+				if i.Installer.Status != models.ImageStatusBuilding {
+					break
+				}
+				time.Sleep(1 * time.Minute)
+			}
+
+		}
 	}(image.ID)
 
 	w.WriteHeader(http.StatusOK)
@@ -367,6 +413,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		Status:  models.ImageStatusCreated,
 		Account: image.Account,
 	}
+	image.ImageType = models.ImageTypeInstaller
 	tx := db.DB.Save(&image)
 	if tx.Error != nil {
 		log.Error(tx.Error)
