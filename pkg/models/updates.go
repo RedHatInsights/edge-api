@@ -39,8 +39,9 @@ type UpdateRecord struct {
 	Commit         *Commit
 	CommitID       uint
 	Account        string
-	OldCommitIDs   string
+	OldCommits     []Commit `gorm:"many2many:updaterecord_commits;"`
 	InventoryHosts []Device `gorm:"many2many:updaterecord_devices;"`
+	Tag            string
 	Status         string
 	UpdateRepoURL  string
 }
