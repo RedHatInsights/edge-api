@@ -122,7 +122,7 @@ func UpdatesAdd(w http.ResponseWriter, r *http.Request) {
 		queryDuplicate := map[string]interface{}{
 			"Account":        update.Account,
 			"InventoryHosts": update.InventoryHosts,
-			"OldCommits":   update.OldCommits,
+			"OldCommitIDs":   update.OldCommitIDs,
 		}
 		result := db.DB.Where(queryDuplicate).Find(&dupeRecord)
 		if result.Error == nil {
@@ -196,7 +196,7 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateRecord {
 
 // RepoBuilderInterface defines the interface of a repository builder
 type RepoBuilderInterface interface {
-	BuildRepo(ur *models.UpdateRecord) error
+	BuildRepo(ur *models.UpdateRecord) (*models.UpdateRecord, error)
 }
 
 // RepoBuilder is the implementation of a RepoBuilderInterface
@@ -204,44 +204,58 @@ type RepoBuilder struct{}
 
 // BuildRepo build an update repo with the set of commits all merged into a single repo
 // with static deltas generated between them all
-func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) error {
+func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) (*models.UpdateRecord, error) {
 	cfg := config.Get()
 
-	ur.Status = models.UpdateStatusCreated
-	db.DB.Save(&ur)
+	var updaterec models.UpdateRecord
+	db.DB.First(&updaterec, ur.ID)
+	updaterec.Status = models.UpdateStatusCreated
+	db.DB.Save(&updaterec)
 
-	log.Debugf("RepoBuilder::ur.Commit: %#v", ur.Commit)
+	updateCommit, err := getCommitFromDB(ur.UpdateCommitID)
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("RepoBuilder::updateCommit: %#v", updateCommit)
 
 	path := filepath.Join(cfg.UpdateTempPath, strconv.FormatUint(uint64(ur.ID), 10))
 	log.Debugf("RepoBuilder::path: %#v", path)
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = os.Chdir(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	DownloadExtractVersionRepo(ur.Commit, path)
 
-	if len(ur.OldCommits) > 0 {
+	if len(ur.OldCommitIDs) > 0 {
 		stagePath := filepath.Join(path, "staging")
 		err = os.MkdirAll(stagePath, os.FileMode(int(0755)))
 		if err != nil {
-			return err
+			return nil, err
 		}
 		err = os.Chdir(stagePath)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		// If there are any old commits, we need to download them all to be merged
 		// into the update commit repo
 		//
 		// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
-		for _, commit := range ur.OldCommits {
-			DownloadExtractVersionRepo(&commit, filepath.Join(stagePath, commit.OSTreeCommit))
-			RepoPullLocalStaticDeltas(ur.Commit, &commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
+		for _, commitID := range strings.Split(ur.OldCommitIDs, ",") {
+			cIDUint, err := strconv.ParseUint(commitID, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+			commit, err := getCommitFromDB(uint(cIDUint))
+			if err != nil {
+				return nil, err
+			}
+			DownloadExtractVersionRepo(commit, filepath.Join(stagePath, commit.OSTreeCommit))
+			RepoPullLocalStaticDeltas(updateCommit, commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
 		}
 
 		// Once all the old commits have been pulled into the update commit's repo
@@ -249,7 +263,7 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) error {
 		// anymore.
 		err = os.RemoveAll(stagePath)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 	}
@@ -266,14 +280,16 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateRecord) error {
 	// NOTE: This relies on the file path being cfg.UpdateTempPath/models.UpdateRecord.ID
 	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), ur.Account)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	ur.Status = models.UpdateStatusSuccess
-	ur.UpdateRepoURL = repoURL
-	db.DB.Save(&ur)
+	var updateRecDone models.UpdateRecord
+	db.DB.First(&updateRecDone, ur.ID)
+	updateRecDone.Status = models.UpdateStatusSuccess
+	updateRecDone.UpdateRepoURL = repoURL
+	db.DB.Save(&updateRecDone)
 
-	return nil
+	return &updateRecDone, nil
 }
 
 // DownloadExtractVersionRepo Download and Extract the repo tarball to dest dir

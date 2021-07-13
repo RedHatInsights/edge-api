@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"regexp"
 
 	"gorm.io/gorm"
 )
@@ -15,6 +16,7 @@ type Image struct {
 	Description  string
 	Status       string
 	Version      int `gorm:"default:1"`
+	ImageType    string
 	CommitID     int
 	Commit       *Commit
 	InstallerID  *int
@@ -26,6 +28,10 @@ const (
 	DistributionCantBeNilMessage = "distribution can't be empty"
 	// ArchitectureCantBeEmptyMessage is the error message when the architecture is empty
 	ArchitectureCantBeEmptyMessage = "architecture can't be empty"
+	// NameCantBeInvalidMessage is the error message when the name is invalid
+	NameCantBeInvalidMessage = "name must start with alphanumeric characters and can contain underscore and hyphen characters"
+	// ImageTypeNotAccepted is the error message when an image type is not accepted
+	ImageTypeNotAccepted = "this image type is not accepted"
 
 	// ImageTypeInstaller is the installer image type on Image Builder
 	ImageTypeInstaller = "rhel-edge-installer"
@@ -47,8 +53,14 @@ func (i *Image) ValidateRequest() error {
 	if i.Distribution == "" {
 		return errors.New(DistributionCantBeNilMessage)
 	}
+	if !regexp.MustCompile(`^[A-Za-z0-9]+[A-Za-z0-9\s_-]*$`).MatchString(i.Name) {
+		return errors.New(NameCantBeInvalidMessage)
+	}
 	if i.Commit == nil || i.Commit.Arch == "" {
 		return errors.New(ArchitectureCantBeEmptyMessage)
+	}
+	if i.ImageType != ImageTypeCommit && i.ImageType != ImageTypeInstaller {
+		return errors.New(ImageTypeNotAccepted)
 	}
 	return nil
 }

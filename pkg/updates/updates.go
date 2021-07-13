@@ -18,18 +18,17 @@ import (
 // MakeRouter adds support for operations on update
 func MakeRouter(sub chi.Router) {
 	sub.Get("/", deviceCtx)
-	sub.Post("/", updateOSTree)
 
 }
 
 func deviceCtx(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("getDevices \n")
-	deviceUUID := r.URL.Query().Get("device_uuid")
-	log.Infof("updates::deviceCtx::deviceUUID: %s", deviceUUID)
+	device_uuid := r.URL.Query().Get("device_uuid")
+	log.Infof("updates::deviceCtx::device_uuid: %s", device_uuid)
 	tag := r.URL.Query().Get("tag")
 	log.Infof("updates::deviceCtx::tag: %s", tag)
 
-	if deviceUUID != "" {
+	if device_uuid != "" {
 		getDevicesByID(w, r)
 	}
 	if tag != "" {
