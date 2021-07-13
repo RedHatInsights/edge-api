@@ -19,6 +19,7 @@ func TestValidateRequestWithEmptyDistribution(t *testing.T) {
 func TestValidateRequestWithInvalidName(t *testing.T) {
 	img := &Image{
 		Distribution: "rhel-8",
+		ImageType:    ImageTypeInstaller,
 	}
 
 	err := img.ValidateRequest()
@@ -33,7 +34,8 @@ func TestValidateRequestWithInvalidName(t *testing.T) {
 func TestValidateRequestWithEmptyArchitecture(t *testing.T) {
 	img := &Image{
 		Distribution: "rhel-8",
-		Name: "image1",
+		ImageType:    ImageTypeInstaller,
+		Name:         "image1",
 	}
 
 	err := img.ValidateRequest()
@@ -47,7 +49,8 @@ func TestValidateRequestWithEmptyArchitecture(t *testing.T) {
 func TestValidateRequestWithEdgeInstallerOutputType(t *testing.T) {
 	img := &Image{
 		Distribution: "rhel-8",
-		Name: "image1",
+		Name:         "image1",
+		ImageType:    ImageTypeInstaller,
 		Commit:       &Commit{Arch: "x86_64"},
 	}
 
@@ -59,7 +62,8 @@ func TestValidateRequestWithEdgeInstallerOutputType(t *testing.T) {
 func TestValidateRequestWithEdgeCommitImageType(t *testing.T) {
 	img := &Image{
 		Distribution: "rhel-8",
-		Name: "image1",
+		Name:         "image1",
+		ImageType:    ImageTypeCommit,
 		Commit:       &Commit{Arch: "x86_64"},
 	}
 
@@ -72,7 +76,8 @@ func TestValidateRequestWithEdgeCommitImageType(t *testing.T) {
 func TestValidateRequest(t *testing.T) {
 	img := &Image{
 		Distribution: "rhel-8",
-		Name: "image1",
+		Name:         "image1",
+		ImageType:    ImageTypeInstaller,
 		Commit:       &Commit{Arch: "x86_64"},
 	}
 
