@@ -1,0 +1,25 @@
+---
+# This playbook is meant to be an all-in-one
+- name: Run the ostree update in a single play without external deps
+  hosts: localhost
+  vars:
+    ostree_remote_name: "{{ .GO_TEMPLATE_REMOTE_NAME }}"
+    ostree_remote_url: "{{ .GO_TEMPLATE_REMOTE_URL }}"
+    ostree_content_url: "{{ .GO_TEMPLATE_CONTENT_URL }}"
+    ostree_gpg_verify: "{{ .GO_TEMPLATE_GPG_VERIFY }}"
+    ostree_remote_template: |
+      [remote "{{ .Ostree_remote_name}}"]
+      url={{.Ostree_remote_url}}
+      gpg-verify={{.Ostree_gpg_verify}}
+      gpgkeypath={{.Ostree_gpg_keypath}}
+      contenturl={{.Ostree_content_url}}
+  tasks:
+    - name: apply templated ostree remote config
+      ansible.builtin.copy:
+        content: "{{.Ostree_remote_template}}"
+        dest: /etc/ostree/remotes.d/rhel-for-edge.conf
+    - name: run rpmostree update
+      ansible.builtin.shell: rpm-ostree upgrade
+      register: rpmostree_upgrade_out
+      changed_when: '"No upgrade available" not in rpmostree_upgrade_out.stdout'
+      failed_when: 'rpmostree_upgrade_out.rc != 0'
