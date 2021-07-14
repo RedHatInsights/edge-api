@@ -22,8 +22,9 @@ type playbook struct {
 
 func main() {
 
-	filePath := "../template/template_playbook_dispatcher_ostree_upgrade_payload.yml"
-	template, err := template.ParseFiles(filePath)
+	filePath := "../template/"
+	templateName := "template_playbook_dispatcher_ostree_upgrade_payload.yml"
+	template, err := template.ParseFiles(filePath + templateName)
 	if err != nil {
 		fmt.Println(err)
 		return
