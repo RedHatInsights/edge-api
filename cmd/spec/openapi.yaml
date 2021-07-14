@@ -9,60 +9,7 @@ components:
         Title:
           type: string
       type: object
-    v1.Image:
-      properties:
-        Account:
-          type: string
-        Commit:
-          properties:
-            Account:
-              type: string
-            Arch:
-              type: string
-            BlueprintToml:
-              type: string
-            BuildDate:
-              type: string
-            BuildNumber: {}
-            ImageBuildHash:
-              type: string
-            ImageBuildParentHash:
-              type: string
-            ImageBuildTarURL:
-              type: string
-            Name:
-              type: string
-            OSTreeCommit:
-              type: string
-            OSTreeParentCommit:
-              type: string
-            OSTreeRef:
-              type: string
-            Packages:
-              items:
-                properties:
-                  Name:
-                    type: string
-                type: object
-              type: array
-          type: object
-        CommitID:
-          type: integer
-        ComposeJobID:
-          type: string
-        Description:
-          type: string
-        Distribution:
-          type: string
-        ImageType:
-          type: string
-        Name:
-          type: string
-        Status:
-          type: string
-        Version:
-          type: integer
-      type: object
+    v1.Image: {}
     v1.InternalServerError:
       properties:
         Code:
