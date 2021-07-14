@@ -40,7 +40,10 @@ func tearDown() {
 func mockCommit() {
 	cmt.Account = "0000000"
 	cmt.Name = "Test"
-	db.DB.Create(&cmt)
+	result := db.DB.Create(&cmt)
+	if result.Error != nil {
+		panic(result.Error)
+	}
 }
 
 type bodyResponse struct {
