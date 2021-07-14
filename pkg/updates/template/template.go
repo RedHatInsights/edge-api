@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"text/template"
 )
@@ -21,7 +22,7 @@ type playbook struct {
 
 func main() {
 
-	filePath := "../template/templade_playbook_dispatcher_ostree_upgrade_payload.yml"
+	filePath := "../template/template_playbook_dispatcher_ostree_upgrade_payload.yml"
 	template, err := template.ParseFiles(filePath)
 	if err != nil {
 		fmt.Println(err)
@@ -38,9 +39,16 @@ func main() {
 		Ostree_gpg_verify:       "true",
 		Ostree_gpg_keypath:      "/etc/pki/rpm-gpg/",
 		Ostree_remote_template:  "{{ ostree_remote_template }}"}
-	err = template.Execute(os.Stdout, template_data)
+	f, err := os.Create("../template/playbook.yml")
+	if err != nil {
+		log.Println("create file: ", err)
+		return
+	}
+	err = template.Execute(f, template_data)
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	f.Close()
 
 }
