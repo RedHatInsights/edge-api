@@ -8,16 +8,16 @@ import (
 )
 
 type playbook struct {
-	GO_TEMPLATE_REMOTE_NAME string
-	GO_TEMPLATE_REMOTE_URL  string
-	GO_TEMPLATE_CONTENT_URL string
-	GO_TEMPLATE_GPG_VERIFY  string
-	Ostree_remote_name      string
-	Ostree_remote_url       string
-	Ostree_content_url      string
-	Ostree_gpg_verify       string
-	Ostree_gpg_keypath      string
-	Ostree_remote_template  string
+	GoTemplateRemoteName string
+	GoTemplateRemoteURL  string
+	GoTemplateContentURL string
+	GoTemplateGpgVerify  string
+	OstreeRemoteName     string
+	OstreeRemoteURL      string
+	OstreeContentURL     string
+	OstreeGpgVerify      string
+	OstreeGpgKeypath     string
+	OstreeRemoteTemplate string
 }
 
 func main() {
@@ -28,23 +28,23 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	template_data := playbook{
-		GO_TEMPLATE_REMOTE_NAME: "GO_TEMPLATE_REMOTE_NAME",
-		GO_TEMPLATE_REMOTE_URL:  "GO_TEMPLATE_REMOTE_URL",
-		GO_TEMPLATE_CONTENT_URL: "GO_TEMPLATE_CONTENT_URL",
-		GO_TEMPLATE_GPG_VERIFY:  "GO_TEMPLATE_GPG_VERIFY",
-		Ostree_remote_name:      "{{ ostree_remote_name }}",
-		Ostree_remote_url:       "{{ ostree_remote_url }}",
-		Ostree_content_url:      "{{ ostree_content_url }}",
-		Ostree_gpg_verify:       "true",
-		Ostree_gpg_keypath:      "/etc/pki/rpm-gpg/",
-		Ostree_remote_template:  "{{ ostree_remote_template }}"}
+	templateData := playbook{
+		GoTemplateRemoteName: "GO_TEMPLATE_REMOTE_NAME",
+		GoTemplateRemoteURL:  "GO_TEMPLATE_REMOTE_URL",
+		GoTemplateContentURL: "GO_TEMPLATE_CONTENT_URL",
+		GoTemplateGpgVerify:  "GO_TEMPLATE_GPG_VERIFY",
+		OstreeRemoteName:     "{{ ostree_remote_name }}",
+		OstreeRemoteURL:      "{{ ostree_remote_url }}",
+		OstreeContentURL:     "{{ ostree_content_url }}",
+		OstreeGpgVerify:      "true",
+		OstreeGpgKeypath:     "/etc/pki/rpm-gpg/",
+		OstreeRemoteTemplate: "{{ ostree_remote_template }}"}
 	f, err := os.Create("../template/playbook.yml")
 	if err != nil {
 		log.Println("create file: ", err)
 		return
 	}
-	err = template.Execute(f, template_data)
+	err = template.Execute(f, templateData)
 	if err != nil {
 		fmt.Println(err)
 	}
