@@ -242,11 +242,23 @@ func Create(w http.ResponseWriter, r *http.Request) {
 }
 
 var imageFilters = common.ComposeFilters(
-	common.OneOfFilterHandler("images.status"),
-	common.ContainFilterHandler("images.name"),
-	common.ContainFilterHandler("images.distribution"),
-	common.CreatedAtFilterHandler(),
-	common.SortFilterHandler("images.created_at", "DESC"),
+	common.OneOfFilterHandler(&common.Filter{
+		QueryParam: "status",
+		DBField:    "images.status",
+	}),
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "name",
+		DBField:    "images.name",
+	}),
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "distribution",
+		DBField:    "images.distribution",
+	}),
+	common.CreatedAtFilterHandler(&common.Filter{
+		QueryParam: "created_at",
+		DBField:    "images.created_at",
+	}),
+	common.SortFilterHandler("images", "created_at", "DESC"),
 )
 
 type validationError struct {

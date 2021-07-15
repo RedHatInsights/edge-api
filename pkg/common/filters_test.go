@@ -55,7 +55,10 @@ func TestMain(m *testing.M) {
 }
 
 func TestContainFilterHandler(t *testing.T) {
-	filter := ComposeFilters(ContainFilterHandler("name"))
+	filter := ComposeFilters(ContainFilterHandler(&Filter{
+		QueryParam: "name",
+		DBField:    "images.name",
+	}))
 	req, err := http.NewRequest(http.MethodGet, "/images?name=Motion", nil)
 	if err != nil {
 		t.Fatalf("Failed to create request: %s", err)
@@ -71,7 +74,10 @@ func TestContainFilterHandler(t *testing.T) {
 }
 
 func TestOneOfFilterHandler(t *testing.T) {
-	filter := ComposeFilters(OneOfFilterHandler("status"))
+	filter := ComposeFilters(OneOfFilterHandler(&Filter{
+		QueryParam: "status",
+		DBField:    "images.status",
+	}))
 	req, err := http.NewRequest(http.MethodGet, "/images?status=CREATED&status=BUILDING", nil)
 	if err != nil {
 		t.Fatalf("Failed to create request: %s", err)
@@ -98,7 +104,10 @@ func TestOneOfFilterHandler(t *testing.T) {
 }
 
 func TestCreatedAtFilterHandler(t *testing.T) {
-	filter := ComposeFilters(CreatedAtFilterHandler())
+	filter := ComposeFilters(CreatedAtFilterHandler(&Filter{
+		QueryParam: "created_at",
+		DBField:    "images.created_at",
+	}))
 	nowStr := time.Now().Format(LayoutISO)
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/images?created_at=%s", nowStr), nil)
 	if err != nil {
@@ -115,7 +124,10 @@ func TestCreatedAtFilterHandler(t *testing.T) {
 }
 
 func TestSortFilterHandler(t *testing.T) {
-	filter := ComposeFilters(SortFilterHandler("id", "ASC"), ContainFilterHandler("name"))
+	filter := ComposeFilters(SortFilterHandler("images", "id", "ASC"), ContainFilterHandler(&Filter{
+		QueryParam: "name",
+		DBField:    "images.name",
+	}))
 	tt := []struct {
 		url string
 		asc bool
