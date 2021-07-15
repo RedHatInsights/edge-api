@@ -141,8 +141,21 @@ curl -v http://localhost:3000/
 
 If you find an error message saying that you don't have [gcc](https://gcc.gnu.org) installed, [install it](https://gcc.gnu.org/install/).
 
-Keep in mind that if you change the models you might need to run the migrations again.
+Keep in mind that if you change the models you might need to run the migrations again. By default, Edge API will run with a sqllite database that will be created in the first run. If you want to use your own postgresql container (which is particularly good for corner cases on migrations and queries), you can do this by:
 
+1. Run the dabatase (example with podman)
+```
+podman run -d --name postgresql_database -e POSTGRESQL_USER=user -e POSTGRESQL_PASSWORD=pass -e POSTGRESQL_DATABASE=db -p 5432:5432 rhel8/postgresql-10
+```
+2. Add some environment variables
+```
+DATABASE=pgsql
+PGSQL_USER=user
+PGSQL_PASSWORD=pass
+PGSQL_HOSTNAME=127.0.0.1
+PGSQL_PORT=5432
+PGSQL_DATABASE=db
+```
 ## Setup with Kubernetes
 
 Following the information above you should have Docker or Podman, a minikube cluster running with Clowder installed, and a Python environment with `bonfire` installed. Now move on to running the `edge-api` application.
