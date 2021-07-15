@@ -24,13 +24,13 @@ components:
             BuildDate:
               type: string
             BuildNumber: {}
+            ComposeJobID:
+              type: string
             ImageBuildHash:
               type: string
             ImageBuildParentHash:
               type: string
             ImageBuildTarURL:
-              type: string
-            Name:
               type: string
             OSTreeCommit:
               type: string
@@ -45,17 +45,30 @@ components:
                     type: string
                 type: object
               type: array
+            Status:
+              type: string
           type: object
         CommitID:
           type: integer
-        ComposeJobID:
-          type: string
         Description:
           type: string
         Distribution:
           type: string
         ImageType:
           type: string
+        Installer:
+          properties:
+            Account:
+              type: string
+            ComposeJobID:
+              type: string
+            ImageBuildISOURL:
+              type: string
+            Status:
+              type: string
+          type: object
+        InstallerID:
+          type: integer
         Name:
           type: string
         Status:
