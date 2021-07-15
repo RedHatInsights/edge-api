@@ -66,6 +66,7 @@ func Init() {
 	options.SetDefault("InventoryUrl", "http://host-inventory-service:8080/")
 	options.SetDefault("UpdateTempPath", "/tmp/updates/")
 	options.SetDefault("OpenAPIFilePath", "./cmd/spec/openapi.json")
+	options.SetDefault("Database", "sqlite")
 	options.AutomaticEnv()
 
 	kubenv := viper.New()
@@ -88,6 +89,18 @@ func Init() {
 			URL: options.GetString("InventoryUrl"),
 		},
 		S3ProxyURL: options.GetString("S3ProxyURL"),
+	}
+
+	database := options.GetString("database")
+
+	if database == "pgsql" {
+		config.Database = &dbConfig{
+			User:     options.GetString("PGSQL_USER"),
+			Password: options.GetString("PGSQL_PASSWORD"),
+			Hostname: options.GetString("PGSQL_HOSTNAME"),
+			Port:     options.GetUint("PGSQL_PORT"),
+			Name:     options.GetString("PGSQL_DATABASE"),
+		}
 	}
 
 	if clowder.IsClowderEnabled() {
