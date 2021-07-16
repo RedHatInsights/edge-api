@@ -182,17 +182,12 @@ func Create(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(1 * time.Minute)
 		}
 		log.Infof("Commit %#v for Image %#v is ready. Creating OSTree repo.", i.Commit, image)
-		update := &models.UpdateRecord{
-			Commit:  i.Commit,
-			Account: i.Account,
-		}
-		db.DB.Create(&update)
-		repo, err := commits.RepoBuilderInstance.BuildRepo(update)
+		err := commits.RepoBuilderInstance.ImportRepo(i.Commit)
 		if err != nil {
 			log.Error(err)
 			return
 		}
-		log.Infof("OSTree repo %d for commit %d and Image %d is ready. ", repo.ID, i.Commit.ID, i.ID)
+		log.Infof("OSTree repo %d for commit %d and Image %d is ready. ", i.Commit.RepoID, i.Commit.ID, i.ID)
 
 		// TODO: This is also where we need to get the metadata from image builder
 		// in a separate goroutine
@@ -212,7 +207,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			tx = db.DB.Save(&i.Installer)
-			i, err := imagebuilder.Client.ComposeInstaller(update, i, headers)
+			i, err := imagebuilder.Client.ComposeInstaller(i.Commit, i, headers)
 			if err != nil {
 				log.Error(err)
 				return
@@ -435,15 +430,15 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	headers := common.GetOutgoingHeaders(r)
-	var update *models.UpdateRecord
-	result := db.DB.Where("update_commit_id = ? and status = ?", image.Commit.ID, models.UpdateStatusSuccess).Last(&update)
+	var repo *models.Repo
+	result := db.DB.Where("ID = ?", image.Commit.RepoID).Take(&repo)
 	if result.Error != nil {
-		err := errors.NewBadRequest("Update wasn't found in the database")
+		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit))
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	image, err := imagebuilder.Client.ComposeInstaller(update, image, headers)
+	image, err := imagebuilder.Client.ComposeInstaller(image.Commit, image, headers)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()

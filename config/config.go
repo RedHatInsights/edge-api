@@ -69,6 +69,10 @@ func Init() {
 	options.SetDefault("Database", "sqlite")
 	options.AutomaticEnv()
 
+	if options.GetBool("Debug") {
+		options.Set("LogLevel", "DEBUG")
+	}
+
 	kubenv := viper.New()
 	kubenv.AutomaticEnv()
 

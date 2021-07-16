@@ -104,7 +104,7 @@ type S3UploadStatus struct {
 // ImageBuilderClientInterface is an Interface to make request to ImageBuilder
 type ImageBuilderClientInterface interface {
 	ComposeCommit(image *models.Image, headers map[string]string) (*models.Image, error)
-	ComposeInstaller(updateRecord *models.UpdateRecord, image *models.Image, headers map[string]string) (*models.Image, error)
+	ComposeInstaller(commit *models.Commit, image *models.Image, headers map[string]string) (*models.Image, error)
 	GetCommitStatus(image *models.Image, headers map[string]string) (*models.Image, error)
 	GetInstallerStatus(image *models.Image, headers map[string]string) (*models.Image, error)
 }
@@ -192,7 +192,7 @@ func (c *ImageBuilderClient) ComposeCommit(image *models.Image, headers map[stri
 }
 
 // ComposeInstaller composes a Installer on ImageBuilder
-func (c *ImageBuilderClient) ComposeInstaller(updateRecord *models.UpdateRecord, image *models.Image, headers map[string]string) (*models.Image, error) {
+func (c *ImageBuilderClient) ComposeInstaller(commit *models.Commit, image *models.Image, headers map[string]string) (*models.Image, error) {
 	pkgs := make([]string, 0)
 	req := &ComposeRequest{
 		Customizations: &Customizations{
@@ -206,7 +206,7 @@ func (c *ImageBuilderClient) ComposeInstaller(updateRecord *models.UpdateRecord,
 				ImageType:    models.ImageTypeInstaller,
 				Ostree: &OSTree{
 					Ref: "rhel/8/x86_64/edge", //image.Commit.OSTreeRef,
-					URL: fmt.Sprintf("%s/%s/%d/repo", c.RepoURL, updateRecord.Account, updateRecord.ID),
+					URL: fmt.Sprintf("%s/%s/%d/repo", c.RepoURL, commit.Account, commit.RepoID),
 				},
 				UploadRequest: &UploadRequest{
 					Options: make(map[string]string),
