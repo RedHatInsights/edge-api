@@ -242,11 +242,23 @@ func Create(w http.ResponseWriter, r *http.Request) {
 }
 
 var imageFilters = common.ComposeFilters(
-	common.OneOfFilterHandler("status"),
-	common.ContainFilterHandler("name"),
-	common.ContainFilterHandler("distribution"),
-	common.CreatedAtFilterHandler(),
-	common.SortFilterHandler("created_at", "DESC"),
+	common.OneOfFilterHandler(&common.Filter{
+		QueryParam: "status",
+		DBField:    "images.status",
+	}),
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "name",
+		DBField:    "images.name",
+	}),
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "distribution",
+		DBField:    "images.distribution",
+	}),
+	common.CreatedAtFilterHandler(&common.Filter{
+		QueryParam: "created_at",
+		DBField:    "images.created_at",
+	}),
+	common.SortFilterHandler("images", "created_at", "DESC"),
 )
 
 type validationError struct {
@@ -301,7 +313,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&images)
+	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("images.account = ?", account).Joins("Commit").Joins("Installer").Find(&images)
 	if result.Error != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
