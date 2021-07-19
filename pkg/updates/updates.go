@@ -40,6 +40,7 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 	}
 	// FIXME - need to sort out how to get this query to be against commit.account
 	result := db.DB.Where("account = ?", account).Find(&updates)
+	log.Debugf("GetUpdates::result: %#v", result)
 	if result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusBadRequest)
 		return
@@ -55,8 +56,11 @@ func isUUID(param string) bool {
 }
 
 func getCommitFromDB(commitID uint) (*models.Commit, error) {
+	log.Debugf("getCommitFromDB::commitID: %#v", commitID)
 	var commit models.Commit
 	result := db.DB.First(&commit, commitID)
+	log.Debugf("getCommitFromDB::result: %#v", result)
+	log.Debugf("getCommitFromDB::commit: %#v", commit)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -74,7 +78,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	err := json.NewDecoder(r.Body).Decode(&updateJSON)
 	log.Debugf("updateFromHTTP::updateJSON: %#v", updateJSON)
 
-	if !(updateJSON.CommitID == 0) {
+	if updateJSON.CommitID == 0 {
 		err := apierrors.NewInternalServerError()
 		err.Title = fmt.Sprint("Must provide a CommitID")
 		w.WriteHeader(err.Status)
@@ -109,6 +113,13 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 
 	update := models.UpdateTransaction{}
 	update.Commit, err = getCommitFromDB(updateJSON.CommitID)
+	log.Debugf("updateFromHTTP::update.Commit: %#v", update.Commit)
+	if err != nil {
+		err := apierrors.NewInternalServerError()
+		err.Title = fmt.Sprintf("No commit found for CommitID %d", updateJSON.CommitID)
+		w.WriteHeader(err.Status)
+		return &models.UpdateTransaction{}, err
+	}
 	inventoryHosts := update.InventoryHosts
 	oldCommits := update.OldCommits
 	// - populate the update.InventoryHosts []Device data
@@ -117,15 +128,24 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		updateDevice := new(models.Device)
 		updateDevice.UUID = device.ID
 		updateDevice.DesiredHash = update.Commit.OSTreeCommit
+		log.Debugf("updateFromHTTP::updateDevice: %#v", updateDevice)
 		inventoryHosts = append(inventoryHosts, *updateDevice)
+		log.Debugf("updateFromHTTP::inventoryHosts: %#v", inventoryHosts)
 		update.InventoryHosts = inventoryHosts
 		for _, ostreeDeployment := range device.Ostree.RpmOstreeDeployments {
 			if ostreeDeployment.Booted {
+				log.Debugf("updateFromHTTP::ostreeDeployment.Booted: %#v", ostreeDeployment)
 				var oldCommit models.Commit
-				result := db.DB.Where("ostreecommit = ?", ostreeDeployment.Checksum).Take(&oldCommit)
+				result := db.DB.Where("os_tree_commit = ?", ostreeDeployment.Checksum).Take(&oldCommit)
+				log.Debugf("updateFromHTTP::result: %#v", result)
 				if result.Error != nil {
-					http.Error(w, result.Error.Error(), http.StatusBadRequest)
-					return &models.UpdateTransaction{}, err
+					if !(result.Error.Error() == "record not found") {
+						log.Errorf("updateFromHTTP::result.Error: %#v", result.Error)
+						http.Error(w, result.Error.Error(), http.StatusBadRequest)
+						return &models.UpdateTransaction{}, err
+					} else {
+						log.Infof("Old Commit not found in database: %s", ostreeDeployment.Checksum)
+					}
 				}
 				oldCommits = append(oldCommits, oldCommit)
 				update.OldCommits = oldCommits
@@ -171,6 +191,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	log.Debugf("AddUpdate::update: %#v", update)
 
 	update.Account, err = common.GetAccount(r)
 	if err != nil {
@@ -202,7 +223,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&update)
 	db.DB.Create(&update)
 
-	go commits.RepoBuilderInstance.BuildRepo(update)
+	go commits.RepoBuilderInstance.BuildUpdateRepo(update)
 }
 
 // GetByID obtains an update from the database for an account

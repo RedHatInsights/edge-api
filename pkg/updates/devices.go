@@ -105,7 +105,6 @@ func ReturnDevicesByID(w http.ResponseWriter, r *http.Request) (Inventory, error
 		log.Error(fmt.Printf("ReturnDevicesByID: %s", err))
 		return Inventory{}, err
 	}
-	log.Infof("::Updates::ReturnDevicesByID::body: %v\n", body)
 	defer resp.Body.Close()
 	var inventory Inventory
 	json.Unmarshal([]byte(body), &inventory)

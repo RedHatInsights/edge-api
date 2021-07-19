@@ -1,6 +1,7 @@
 package commits
 
 import (
+	"errors"
 	"fmt"
 
 	"bytes"
@@ -28,26 +29,37 @@ func InitRepoBuilder() {
 
 // RepoBuilderInterface defines the interface of a repository builder
 type RepoBuilderInterface interface {
-	BuildRepo(ur *models.UpdateTransaction) (*models.UpdateTransaction, error)
+	BuildUpdateRepo(ut *models.UpdateTransaction) (*models.UpdateTransaction, error)
 	ImportRepo(c *models.Commit) error
 }
 
 // RepoBuilder is the implementation of a RepoBuilderInterface
 type RepoBuilder struct{}
 
-// BuildRepo build an update repo with the set of commits all merged into a single repo
+// BuildUpdateRepo build an update repo with the set of commits all merged into a single repo
 // with static deltas generated between them all
-func (rb *RepoBuilder) BuildRepo(ur *models.UpdateTransaction) (*models.UpdateTransaction, error) {
+func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.UpdateTransaction, error) {
+	if ut == nil {
+		log.Error("nil pointer to models.UpdateTransaction provided")
+		return &models.UpdateTransaction{}, errors.New("Invalid models.UpdateTransaction Provided: nil pointer")
+	}
+	if ut.Commit == nil {
+		log.Error("nil pointer to models.UpdateTransaction.Commit provided")
+		return &models.UpdateTransaction{}, errors.New("Invalid models.UpdateTransaction.Commit Provided: nil pointer")
+	}
 	cfg := config.Get()
 
 	var update models.UpdateTransaction
-	db.DB.First(&update, ur.ID)
+	result := db.DB.First(&update, ut.ID)
+	if result.Error != nil {
+		return nil, result.Error
+	}
 	update.Status = models.UpdateStatusCreated
 	db.DB.Save(&update)
 
-	log.Debugf("RepoBuilder::updateCommit: %#v", ur.Commit)
+	log.Debugf("RepoBuilder::updateCommit: %#v", ut.Commit)
 
-	path := filepath.Join(cfg.UpdateTempPath, strconv.FormatUint(uint64(ur.ID), 10))
+	path := filepath.Join(cfg.UpdateTempPath, strconv.FormatUint(uint64(ut.ID), 10))
 	log.Debugf("RepoBuilder::path: %#v", path)
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
@@ -57,9 +69,12 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateTransaction) (*models.UpdateTr
 	if err != nil {
 		return nil, err
 	}
-	DownloadExtractVersionRepo(ur.Commit, path)
+	err = DownloadExtractVersionRepo(ut.Commit, path)
+	if err != nil {
+		return nil, err
+	}
 
-	if len(ur.OldCommits) > 0 {
+	if len(ut.OldCommits) > 0 {
 		stagePath := filepath.Join(path, "staging")
 		err = os.MkdirAll(stagePath, os.FileMode(int(0755)))
 		if err != nil {
@@ -74,9 +89,15 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateTransaction) (*models.UpdateTr
 		// into the update commit repo
 		//
 		// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
-		for _, commit := range ur.OldCommits {
+		for _, commit := range ut.OldCommits {
 			DownloadExtractVersionRepo(&commit, filepath.Join(stagePath, commit.OSTreeCommit))
-			RepoPullLocalStaticDeltas(ur.Commit, &commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
+			if err != nil {
+				return nil, err
+			}
+			RepoPullLocalStaticDeltas(ut.Commit, &commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		// Once all the old commits have been pulled into the update commit's repo
@@ -99,15 +120,21 @@ func (rb *RepoBuilder) BuildRepo(ur *models.UpdateTransaction) (*models.UpdateTr
 	// FIXME: Need to actually do something with the return string for Server
 
 	// NOTE: This relies on the file path being cfg.UpdateTempPath/models.Repo.ID/
-	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(ur.Commit.RepoID), 10))
+	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(ut.Commit.RepoID), 10))
 	if err != nil {
 		return nil, err
 	}
 
 	var updateDone models.UpdateTransaction
-	db.DB.First(&updateDone, ur.ID)
+	result = db.DB.First(&updateDone, ut.ID)
+	if result.Error != nil {
+		return nil, result.Error
+	}
 	updateDone.Status = models.UpdateStatusSuccess
-	updateDone.Commit.Repo.URL = repoURL
+	if updateDone.Commit.Repo == nil {
+		updateDone.Commit.Repo = &models.Repo{}
+		updateDone.Commit.Repo.URL = repoURL
+	}
 	db.DB.Save(&updateDone)
 
 	return &updateDone, nil
@@ -128,6 +155,9 @@ func (rb *RepoBuilder) ImportRepo(c *models.Commit) error {
 		return err
 	}
 	DownloadExtractVersionRepo(c, path)
+	if err != nil {
+		return err
+	}
 
 	var uploader Uploader
 	uploader = &FileUploader{
@@ -154,6 +184,11 @@ func (rb *RepoBuilder) ImportRepo(c *models.Commit) error {
 
 // DownloadExtractVersionRepo Download and Extract the repo tarball to dest dir
 func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
+	// ensure we weren't passed a nil pointer
+	if c == nil {
+		log.Error("nil pointer to models.Commit provided")
+		return errors.New("Invalid Commit Provided: nil pointer")
+	}
 	// ensure the destination directory exists and then chdir there
 	log.Debugf("DownloadExtractVersionRepo::dest: %#v", dest)
 	err := os.MkdirAll(dest, os.FileMode(int(0755)))
