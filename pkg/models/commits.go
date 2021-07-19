@@ -20,7 +20,7 @@ type Commit struct {
 	Packages             []Package `json:"Packages" gorm:"many2many:commit_packages;"`
 	ComposeJobID         string    `json:"ComposeJobID"`
 	Status               string    `json:"Status"`
-	RepoID               *uint      `json:"RepoID"`
+	RepoID               uint      `json:"RepoID"`
 	Repo                 *Repo     `json:"Repo" `
 }
 
