@@ -59,7 +59,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 
 	log.Debugf("RepoBuilder::updateCommit: %#v", ut.Commit)
 
-	path := filepath.Join(cfg.RepoTempPath, "updates", strconv.FormatUint(uint64(ut.ID), 10))
+	path := filepath.Join(cfg.RepoTempPath, strconv.FormatUint(uint64(ut.RepoID), 10))
 	log.Debugf("RepoBuilder::path: %#v", path)
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
