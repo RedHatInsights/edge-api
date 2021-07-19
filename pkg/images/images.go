@@ -99,6 +99,92 @@ type CreateImageRequest struct {
 	Image *models.Image
 }
 
+func createImage(image *models.Image, account string, headers map[string]string) error {
+	image, err := imagebuilder.Client.ComposeCommit(image, headers)
+	if err != nil {
+		return err
+	}
+	image.Account = account
+	image.Commit.Account = account
+	image.Commit.Status = models.ImageStatusBuilding
+	image.Status = models.ImageStatusBuilding
+	if image.ImageType == models.ImageTypeInstaller {
+		image.Installer = &models.Installer{
+			Status:  models.ImageStatusCreated,
+			Account: image.Account,
+		}
+	}
+	tx := db.DB.Save(&image.Commit)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	tx = db.DB.Save(&image)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
+}
+
+func postProcessImage(id uint, headers map[string]string) {
+	var i *models.Image
+	db.DB.Joins("Commit").First(&i, id)
+	for {
+		i, err := updateImageStatus(i, headers)
+		if err != nil {
+			log.Error(err)
+			panic(err)
+		}
+		if i.Commit.Status != models.ImageStatusBuilding {
+			break
+		}
+		time.Sleep(1 * time.Minute)
+	}
+	log.Infof("Commit %#v for Image %#v is ready. Creating OSTree repo.", i.Commit, i)
+	update := &models.UpdateRecord{
+		Commit:  i.Commit,
+		Account: i.Account,
+	}
+	db.DB.Create(&update)
+	repo, err := commits.RepoBuilderInstance.BuildRepo(update)
+	if err != nil {
+		log.Error(err)
+		panic(err)
+	}
+	log.Infof("OSTree repo %d for commit %d and Image %d is ready. ", repo.ID, i.Commit.ID, i.ID)
+
+	// TODO: This is also where we need to get the metadata from image builder
+	// in a separate goroutine
+	i.Status = models.ImageStatusSuccess
+	db.DB.Save(&i)
+
+	// TODO: We need to discuss this whole thing post-July deliverable
+	if i.ImageType == models.ImageTypeInstaller {
+		i, err := imagebuilder.Client.ComposeInstaller(update, i, headers)
+		if err != nil {
+			log.Error(err)
+			panic(err)
+		}
+		i.Installer.Status = models.ImageStatusBuilding
+		tx := db.DB.Save(&i.Installer)
+		if tx.Error != nil {
+			log.Error(err)
+			panic(err)
+		}
+
+		for {
+			i, err := updateImageStatus(i, headers)
+			if err != nil {
+				panic(err)
+			}
+			if i.Installer.Status != models.ImageStatusBuilding {
+				break
+			}
+			time.Sleep(1 * time.Minute)
+		}
+
+	}
+}
+
 // Create creates an image on hosted image builder.
 // It always creates a commit on Image Builder.
 // We're creating a update on the background to transfer the commit to our repo.
@@ -127,118 +213,20 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	image.Account = account
-	image.Commit.Account = account
-	image.Status = models.ImageStatusCreated
-	tx := db.DB.Create(&image)
-	if tx.Error != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		err.Title = "Failed creating image compose"
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
 	headers := common.GetOutgoingHeaders(r)
-	image, err = imagebuilder.Client.ComposeCommit(image, headers)
+	err = createImage(image, account, headers)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
+		err.Title = "Failed creating image"
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	image.Commit.Status = models.ImageStatusBuilding
-	image.Status = models.ImageStatusBuilding
-	tx = db.DB.Save(&image)
-	if tx.Error != nil {
-		log.Error(tx.Error)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
-	tx = db.DB.Save(&image.Commit)
-	if tx.Error != nil {
-		log.Error(tx.Error)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
-
-	go func(id uint) {
-		var i *models.Image
-		db.DB.Joins("Commit").First(&i, id)
-		for {
-			i, err := updateImageStatus(i, r)
-			if err != nil {
-				log.Error(err)
-				panic(err)
-			}
-			if i.Commit.Status != models.ImageStatusBuilding {
-				break
-			}
-			time.Sleep(1 * time.Minute)
-		}
-		log.Infof("Commit %#v for Image %#v is ready. Creating OSTree repo.", i.Commit, image)
-		update := &models.UpdateRecord{
-			Commit:  i.Commit,
-			Account: i.Account,
-		}
-		db.DB.Create(&update)
-		repo, err := commits.RepoBuilderInstance.BuildRepo(update)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		log.Infof("OSTree repo %d for commit %d and Image %d is ready. ", repo.ID, i.Commit.ID, i.ID)
-
-		// TODO: This is also where we need to get the metadata from image builder
-		// in a separate goroutine
-		i.Status = models.ImageStatusSuccess
-		db.DB.Save(&i)
-
-		// TODO: We need to discuss this whole thist post-July deliverable
-		if i.ImageType == models.ImageTypeInstaller {
-			i.Installer = &models.Installer{
-				Status:  models.ImageStatusBuilding,
-				Account: i.Account,
-			}
-			i.Status = models.ImageStatusBuilding
-			tx = db.DB.Save(&i)
-			if tx.Error != nil {
-				log.Error(err)
-				return
-			}
-			tx = db.DB.Save(&i.Installer)
-			i, err := imagebuilder.Client.ComposeInstaller(update, i, headers)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			if tx.Error != nil {
-				log.Error(err)
-				json.NewEncoder(w).Encode(&err)
-				return
-			}
-
-			for {
-				i, err := updateImageStatus(i, r)
-				if err != nil {
-					panic(err)
-				}
-				if i.Installer.Status != models.ImageStatusBuilding {
-					break
-				}
-				time.Sleep(1 * time.Minute)
-			}
-
-		}
-	}(image.ID)
-
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&image)
+
+	go postProcessImage(image.ID, headers)
 }
 
 var imageFilters = common.ComposeFilters(
@@ -336,9 +324,8 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 	return image
 }
 
-func updateImageStatus(image *models.Image, r *http.Request) (*models.Image, error) {
+func updateImageStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
 	log.Info("Requesting image status on image builder aa")
-	headers := common.GetOutgoingHeaders(r)
 	if image.Commit.Status == models.ImageStatusBuilding {
 		image, err := imagebuilder.Client.GetCommitStatus(image, headers)
 		if err != nil {
@@ -377,7 +364,8 @@ func GetStatusByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		if image.Status == models.ImageStatusBuilding {
 			var err error
-			image, err = updateImageStatus(image, r)
+			headers := common.GetOutgoingHeaders(r)
+			image, err = updateImageStatus(image, headers)
 			if err != nil {
 				log.Error(err)
 				err := errors.NewInternalServerError()
@@ -403,7 +391,8 @@ func GetByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		if image.Status == models.ImageStatusBuilding {
 			var err error
-			image, err = updateImageStatus(image, r)
+			headers := common.GetOutgoingHeaders(r)
+			image, err = updateImageStatus(image, headers)
 			if err != nil {
 				log.Error(err)
 				err := errors.NewInternalServerError()
@@ -474,7 +463,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		var i *models.Image
 		db.DB.Joins("Commit").Joins("Installer").First(&i, id)
 		for {
-			i, err := updateImageStatus(i, r)
+			i, err := updateImageStatus(i, headers)
 			if err != nil {
 				panic(err)
 			}
