@@ -187,7 +187,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 			log.Error(err)
 			return
 		}
-		log.Infof("OSTree repo %d for commit %d and Image %d is ready. ", i.Commit.RepoID, i.Commit.ID, i.ID)
+		log.Infof("OSTree repo %d for commit %d and Image %d is ready. ", i.Commit.ID, i.Commit.ID, i.ID)
 
 		// TODO: This is also where we need to get the metadata from image builder
 		// in a separate goroutine
@@ -431,7 +431,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	}
 	headers := common.GetOutgoingHeaders(r)
 	var repo *models.Repo
-	result := db.DB.Where("ID = ?", image.Commit.RepoID).Take(&repo)
+	result := db.DB.Where("ID = ?", image.Commit.ID).Take(&repo)
 	if result.Error != nil {
 		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit))
 		w.WriteHeader(err.Status)

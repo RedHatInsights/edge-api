@@ -120,7 +120,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	// FIXME: Need to actually do something with the return string for Server
 
 	// NOTE: This relies on the file path being cfg.UpdateTempPath/models.Repo.ID/
-	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(ut.Commit.RepoID), 10))
+	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(ut.Commit.ID), 10))
 	if err != nil {
 		return nil, err
 	}
@@ -133,8 +133,8 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	updateDone.Status = models.UpdateStatusSuccess
 	if updateDone.Commit.Repo == nil {
 		updateDone.Commit.Repo = &models.Repo{}
-		updateDone.Commit.Repo.URL = repoURL
 	}
+	updateDone.Commit.Repo.URL = repoURL
 	db.DB.Save(&updateDone)
 
 	return &updateDone, nil
@@ -144,7 +144,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 func (rb *RepoBuilder) ImportRepo(c *models.Commit) error {
 	cfg := config.Get()
 
-	path := filepath.Join(cfg.UpdateTempPath, strconv.FormatUint(uint64(c.RepoID), 10))
+	path := filepath.Join(cfg.UpdateTempPath, strconv.FormatUint(uint64(c.ID), 10))
 	log.Debugf("RepoBuilder::path: %#v", path)
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
@@ -168,16 +168,21 @@ func (rb *RepoBuilder) ImportRepo(c *models.Commit) error {
 	}
 
 	// NOTE: This relies on the file path being cfg.UpdateTempPath/models.Repo.ID/
-	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(c.RepoID), 10))
+	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(c.ID), 10))
 	if err != nil {
 		return err
 	}
 
-	var repo models.Repo
-	db.DB.First(&repo, c.RepoID)
-	repo.Status = models.UpdateStatusSuccess
-	repo.URL = repoURL
-	db.DB.Save(&repo)
+	var commit models.Commit
+	result := db.DB.First(&commit, c.ID)
+	if result.Error != nil {
+		return result.Error
+	}
+	if commit.Repo == nil {
+		commit.Repo = &models.Repo{}
+	}
+	commit.Repo.URL = repoURL
+	db.DB.Save(&commit)
 
 	return nil
 }

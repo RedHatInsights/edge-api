@@ -206,7 +206,7 @@ func (c *ImageBuilderClient) ComposeInstaller(commit *models.Commit, image *mode
 				ImageType:    models.ImageTypeInstaller,
 				Ostree: &OSTree{
 					Ref: "rhel/8/x86_64/edge", //image.Commit.OSTreeRef,
-					URL: fmt.Sprintf("%s/%s/%d/repo", c.RepoURL, commit.Account, commit.RepoID),
+					URL: fmt.Sprintf("%s/%s/%d/repo", c.RepoURL, commit.Account, commit.ID),
 				},
 				UploadRequest: &UploadRequest{
 					Options: make(map[string]string),
