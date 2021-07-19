@@ -43,6 +43,8 @@ type UpdateTransaction struct {
 	InventoryHosts []Device `gorm:"many2many:updatetransaction_devices;"`
 	Tag            string
 	Status         string
+	RepoID         uint
+	Repo           *Repo
 }
 
 const (

@@ -20,7 +20,7 @@ type EdgeConfig struct {
 	BucketRegion       *string
 	AccessKey          string
 	SecretKey          string
-	UpdateTempPath     string
+	RepoTempPath       string
 	OpenAPIFilePath    string
 	ImageBuilderConfig *imageBuilderConfig
 	InventoryConfig    *inventoryConfig
@@ -64,7 +64,7 @@ func Init() {
 	options.SetDefault("EdgeTarballsBucket", "rh-edge-tarballs")
 	options.SetDefault("ImageBuilderUrl", "http://image-builder:8080")
 	options.SetDefault("InventoryUrl", "http://host-inventory-service:8080/")
-	options.SetDefault("UpdateTempPath", "/tmp/updates/")
+	options.SetDefault("RepoTempPath", "/tmp/updates/")
 	options.SetDefault("OpenAPIFilePath", "./cmd/spec/openapi.json")
 	options.SetDefault("Database", "sqlite")
 	options.AutomaticEnv()
@@ -84,7 +84,7 @@ func Init() {
 		Debug:           options.GetBool("Debug"),
 		LogLevel:        options.GetString("LogLevel"),
 		BucketName:      options.GetString("EdgeTarballsBucket"),
-		UpdateTempPath:  options.GetString("UpdateTempPath"),
+		RepoTempPath:    options.GetString("RepoTempPath"),
 		OpenAPIFilePath: options.GetString("OpenAPIFilePath"),
 		ImageBuilderConfig: &imageBuilderConfig{
 			URL: options.GetString("ImageBuilderUrl"),

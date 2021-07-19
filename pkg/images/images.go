@@ -182,7 +182,9 @@ func Create(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(1 * time.Minute)
 		}
 		log.Infof("Commit %#v for Image %#v is ready. Creating OSTree repo.", i.Commit, image)
-		err := commits.RepoBuilderInstance.ImportRepo(i.Commit)
+		var repo *models.Repo
+		repo.Commit = i.Commit
+		err := commits.RepoBuilderInstance.ImportRepo(repo)
 		if err != nil {
 			log.Error(err)
 			return

@@ -30,7 +30,7 @@ func InitRepoBuilder() {
 // RepoBuilderInterface defines the interface of a repository builder
 type RepoBuilderInterface interface {
 	BuildUpdateRepo(ut *models.UpdateTransaction) (*models.UpdateTransaction, error)
-	ImportRepo(c *models.Commit) error
+	ImportRepo(r *models.Repo) error
 }
 
 // RepoBuilder is the implementation of a RepoBuilderInterface
@@ -59,7 +59,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 
 	log.Debugf("RepoBuilder::updateCommit: %#v", ut.Commit)
 
-	path := filepath.Join(cfg.UpdateTempPath, strconv.FormatUint(uint64(ut.ID), 10))
+	path := filepath.Join(cfg.RepoTempPath, "updates", strconv.FormatUint(uint64(ut.ID), 10))
 	log.Debugf("RepoBuilder::path: %#v", path)
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
@@ -119,8 +119,8 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	}
 	// FIXME: Need to actually do something with the return string for Server
 
-	// NOTE: This relies on the file path being cfg.UpdateTempPath/models.Repo.ID/
-	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(ut.Commit.ID), 10))
+	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
+	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(ut.RepoID), 10))
 	if err != nil {
 		return nil, err
 	}
@@ -131,20 +131,20 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 		return nil, result.Error
 	}
 	updateDone.Status = models.UpdateStatusSuccess
-	if updateDone.Commit.Repo == nil {
-		updateDone.Commit.Repo = &models.Repo{}
+	if updateDone.Repo == nil {
+		updateDone.Repo = &models.Repo{}
 	}
-	updateDone.Commit.Repo.URL = repoURL
+	updateDone.Repo.URL = repoURL
 	db.DB.Save(&updateDone)
 
 	return &updateDone, nil
 }
 
 // ImportRepo (unpack and upload) a single repo
-func (rb *RepoBuilder) ImportRepo(c *models.Commit) error {
+func (rb *RepoBuilder) ImportRepo(r *models.Repo) error {
 	cfg := config.Get()
 
-	path := filepath.Join(cfg.UpdateTempPath, strconv.FormatUint(uint64(c.ID), 10))
+	path := filepath.Join(cfg.RepoTempPath, strconv.FormatUint(uint64(r.ID), 10))
 	log.Debugf("RepoBuilder::path: %#v", path)
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
@@ -154,7 +154,7 @@ func (rb *RepoBuilder) ImportRepo(c *models.Commit) error {
 	if err != nil {
 		return err
 	}
-	DownloadExtractVersionRepo(c, path)
+	DownloadExtractVersionRepo(r.Commit, path)
 	if err != nil {
 		return err
 	}
@@ -167,22 +167,19 @@ func (rb *RepoBuilder) ImportRepo(c *models.Commit) error {
 		uploader = NewS3Uploader()
 	}
 
-	// NOTE: This relies on the file path being cfg.UpdateTempPath/models.Repo.ID/
-	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(c.ID), 10))
+	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
+	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(r.ID), 10))
 	if err != nil {
 		return err
 	}
 
-	var commit models.Commit
-	result := db.DB.First(&commit, c.ID)
+	var repo models.Repo
+	result := db.DB.First(&repo, r.ID)
 	if result.Error != nil {
 		return result.Error
 	}
-	if commit.Repo == nil {
-		commit.Repo = &models.Repo{}
-	}
-	commit.Repo.URL = repoURL
-	db.DB.Save(&commit)
+	repo.URL = repoURL
+	db.DB.Save(&repo)
 
 	return nil
 }

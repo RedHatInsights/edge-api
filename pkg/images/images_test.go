@@ -89,7 +89,7 @@ type MockRepositoryBuilder struct{}
 func (rb *MockRepositoryBuilder) BuildUpdateRepo(u *models.UpdateTransaction) (*models.UpdateTransaction, error) {
 	return nil, nil
 }
-func (rb *MockRepositoryBuilder) ImportRepo(c *models.Commit) error {
+func (rb *MockRepositoryBuilder) ImportRepo(r *models.Repo) error {
 	return nil
 }
 

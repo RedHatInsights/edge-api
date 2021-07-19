@@ -55,18 +55,6 @@ func isUUID(param string) bool {
 
 }
 
-func getCommitFromDB(commitID uint) (*models.Commit, error) {
-	log.Debugf("getCommitFromDB::commitID: %#v", commitID)
-	var commit models.Commit
-	result := db.DB.First(&commit, commitID)
-	log.Debugf("getCommitFromDB::result: %#v", result)
-	log.Debugf("getCommitFromDB::commit: %#v", commit)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return &commit, nil
-}
-
 type UpdatePostJSON struct {
 	CommitID   uint   `json:"CommitID"`
 	Tag        string `json:"Tag"`
@@ -112,7 +100,9 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	}
 
 	update := models.UpdateTransaction{}
-	update.Commit, err = getCommitFromDB(updateJSON.CommitID)
+	update.Commit, err = common.GetCommitByID(updateJSON.CommitID)
+	update.Repo = &models.Repo{}
+	update.Repo.Commit = update.Commit
 	log.Debugf("updateFromHTTP::update.Commit: %#v", update.Commit)
 	if err != nil {
 		err := apierrors.NewInternalServerError()
@@ -221,9 +211,13 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	// FIXME - need to remove duplicate OldCommit values from UpdateTransaction
 
 	json.NewEncoder(w).Encode(&update)
-	db.DB.Create(&update)
+	result := db.DB.Create(&update)
+	if result.Error != nil {
+		http.Error(w, result.Error.Error(), http.StatusBadRequest)
+	}
 
 	go commits.RepoBuilderInstance.BuildUpdateRepo(update)
+
 }
 
 // GetByID obtains an update from the database for an account
