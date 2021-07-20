@@ -130,6 +130,11 @@ func createImage(image *models.Image, account string, headers map[string]string)
 }
 
 func postProcessImage(id uint, headers map[string]string) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Fatalf("%s", err)
+		}
+	}()
 	var i *models.Image
 	db.DB.Joins("Commit").Joins("Installer").First(&i, id)
 	for {
@@ -145,7 +150,13 @@ func postProcessImage(id uint, headers map[string]string) {
 	}
 	log.Infof("Commit %#v for Image %#v is ready. Creating OSTree repo.", i.Commit, i)
 	repo := &models.Repo{
-		Commit: i.Commit,
+		CommitID: i.Commit.ID,
+		Commit:   i.Commit,
+	}
+	tx := db.DB.Create(repo)
+	if tx.Error != nil {
+		log.Error(tx.Error)
+		panic(tx.Error)
 	}
 	err := commits.RepoBuilderInstance.ImportRepo(repo)
 	if err != nil {
