@@ -113,12 +113,16 @@ func createImage(image *models.Image, account string, headers map[string]string)
 			Status:  models.ImageStatusCreated,
 			Account: image.Account,
 		}
+		tx := db.DB.Create(&image.Installer)
+		if tx.Error != nil {
+			return tx.Error
+		}
 	}
-	tx := db.DB.Save(&image.Commit)
+	tx := db.DB.Create(&image.Commit)
 	if tx.Error != nil {
 		return tx.Error
 	}
-	tx = db.DB.Save(&image)
+	tx = db.DB.Create(&image)
 	if tx.Error != nil {
 		return tx.Error
 	}
