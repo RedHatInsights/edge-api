@@ -144,8 +144,9 @@ func postProcessImage(id uint, headers map[string]string) {
 		time.Sleep(1 * time.Minute)
 	}
 	log.Infof("Commit %#v for Image %#v is ready. Creating OSTree repo.", i.Commit, i)
-	var repo *models.Repo
-	repo.Commit = i.Commit
+	repo := &models.Repo{
+		Commit: i.Commit,
+	}
 	err := commits.RepoBuilderInstance.ImportRepo(repo)
 	if err != nil {
 		log.Error(err)
