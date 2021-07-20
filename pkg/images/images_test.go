@@ -24,7 +24,7 @@ func setUp() {
 	config.Init()
 	config.Get().Debug = true
 	db.InitDB()
-	db.DB.AutoMigrate(&models.Commit{}, &models.UpdateRecord{}, &models.Package{}, &models.Image{})
+	db.DB.AutoMigrate(&models.Commit{}, &models.UpdateTransaction{}, &models.Package{}, &models.Image{})
 	image = models.Image{
 		Account: "0000000",
 		Status:  models.ImageStatusBuilding,
@@ -69,7 +69,7 @@ type MockImageBuilderClient struct{}
 func (c *MockImageBuilderClient) ComposeCommit(image *models.Image, headers map[string]string) (*models.Image, error) {
 	return image, nil
 }
-func (c *MockImageBuilderClient) ComposeInstaller(ur *models.UpdateRecord, image *models.Image, headers map[string]string) (*models.Image, error) {
+func (c *MockImageBuilderClient) ComposeInstaller(c *models.Commit, image *models.Image, headers map[string]string) (*models.Image, error) {
 	return image, nil
 }
 func (c *MockImageBuilderClient) GetCommitStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
@@ -86,8 +86,11 @@ func (c *MockImageBuilderClient) GetInstallerStatus(image *models.Image, headers
 
 type MockRepositoryBuilder struct{}
 
-func (rb *MockRepositoryBuilder) BuildRepo(u *models.UpdateRecord) (*models.UpdateRecord, error) {
+func (rb *MockRepositoryBuilder) BuildUpdateRepo(u *models.UpdateTransaction) (*models.UpdateTransaction, error) {
 	return nil, nil
+}
+func (rb *MockRepositoryBuilder) ImportRepo(r *models.Repo) error {
+	return nil
 }
 
 func TestCreateWasCalledWithAccountNotSet(t *testing.T) {
