@@ -148,6 +148,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) error {
 	log.Debugf("RepoBuilder::path: %#v", path)
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 	err = os.Chdir(path)
@@ -156,6 +157,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) error {
 	}
 	DownloadExtractVersionRepo(r.Commit, path)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
@@ -170,12 +172,14 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) error {
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
 	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(r.ID), 10))
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
 	var repo models.Repo
 	result := db.DB.First(&repo, r.ID)
 	if result.Error != nil {
+		log.Error(err)
 		return result.Error
 	}
 	repo.URL = repoURL
@@ -207,22 +211,27 @@ func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
 	log.Debugf("DownloadExtractVersionRepo::tarFileName: %#v", tarFileName)
 	_, err = grab.Get(filepath.Join(dest, tarFileName), c.ImageBuildTarURL)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 	log.Debugf("Download finished::tarFileName: %#v", tarFileName)
 
 	tarFile, err := os.Open(filepath.Join(dest, tarFileName))
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 	err = common.Untar(tarFile, filepath.Join(dest))
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 	tarFile.Close()
+	log.Debugf("Unpacking tarball finished::tarFileName: %#v", tarFileName)
 
 	err = os.Remove(filepath.Join(dest, tarFileName))
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
@@ -233,6 +242,7 @@ func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
 	cmd := exec.Command("ostree", "--repo", "./repo", "commit", c.OSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber))
 	err = cmd.Run()
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
