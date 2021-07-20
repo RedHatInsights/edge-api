@@ -14,6 +14,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/playbooks"
 
 	apierrors "github.com/redhatinsights/edge-api/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -103,6 +104,13 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	update.Commit, err = common.GetCommitByID(updateJSON.CommitID)
 	update.Repo = &models.Repo{}
 	update.Repo.Commit = update.Commit
+
+	var remoteInfo playbooks.TemplateRemoteInfo
+	remoteInfo.RemoteURL = update.Repo.URL
+	remoteInfo.RemoteName = update.Repo.Commit.Name
+	remoteInfo.ContentURL = update.Repo.URL
+	playbooks.WriteTemplate(remoteInfo)
+
 	log.Debugf("updateFromHTTP::update.Commit: %#v", update.Commit)
 	if err != nil {
 		err := apierrors.NewInternalServerError()

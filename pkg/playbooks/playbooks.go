@@ -1,4 +1,4 @@
-package main
+package playbooks
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"text/template"
 )
 
-type playbook struct {
+type playboppoks struct {
 	GoTemplateRemoteName string
 	GoTemplateRemoteURL  string
 	GoTemplateContentURL string
@@ -20,7 +20,14 @@ type playbook struct {
 	OstreeRemoteTemplate string
 }
 
-func main() {
+type TemplateRemoteInfo struct {
+	RemoteName string
+	RemoteURL  string
+	ContentURL string
+	GpgVerify  string
+}
+
+func WriteTemplate(tempalteInfo TemplateRemoteInfo) {
 
 	filePath := "../template/"
 	templateName := "template_playbook_dispatcher_ostree_upgrade_payload.yml"
@@ -29,11 +36,11 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	templateData := playbook{
-		GoTemplateRemoteName: "GO_TEMPLATE_REMOTE_NAME",
-		GoTemplateRemoteURL:  "GO_TEMPLATE_REMOTE_URL",
-		GoTemplateContentURL: "GO_TEMPLATE_CONTENT_URL",
-		GoTemplateGpgVerify:  "GO_TEMPLATE_GPG_VERIFY",
+	templateData := playboppoks{
+		GoTemplateRemoteName: tempalteInfo.RemoteName,
+		GoTemplateRemoteURL:  tempalteInfo.RemoteURL,
+		GoTemplateContentURL: tempalteInfo.ContentURL,
+		GoTemplateGpgVerify:  tempalteInfo.GpgVerify,
 		OstreeRemoteName:     "{{ ostree_remote_name }}",
 		OstreeRemoteURL:      "{{ ostree_remote_url }}",
 		OstreeContentURL:     "{{ ostree_content_url }}",
