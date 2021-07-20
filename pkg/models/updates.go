@@ -23,7 +23,7 @@ type Device struct {
 }
 
 /*
-UpdateRecord
+UpdateTransaction
 
 	Represents the combination of an OSTree commit and a set of Inventory
 	hosts that need to have the commit deployed to them
@@ -34,16 +34,17 @@ UpdateRecord
 	then the result is stored in a way that can be served(proxied) by a
 	Server (pkg/repo/server.go).
 */
-type UpdateRecord struct {
+type UpdateTransaction struct {
 	gorm.Model
 	Commit         *Commit
 	CommitID       uint
 	Account        string
-	OldCommits     []Commit `gorm:"many2many:updaterecord_commits;"`
-	InventoryHosts []Device `gorm:"many2many:updaterecord_devices;"`
+	OldCommits     []Commit `gorm:"many2many:updatetransaction_commits;"`
+	InventoryHosts []Device `gorm:"many2many:updatetransaction_devices;"`
 	Tag            string
 	Status         string
-	UpdateRepoURL  string
+	RepoID         uint
+	Repo           *Repo
 }
 
 const (
@@ -61,7 +62,7 @@ const (
 )
 
 // ValidateRequest validates a Update Record Request
-func (ur *UpdateRecord) ValidateRequest() error {
+func (ur *UpdateTransaction) ValidateRequest() error {
 	if ur.InventoryHosts == nil || len(ur.InventoryHosts) == 0 {
 		return errors.New(InventoryHostsCantBeEmptyMessage)
 	}
