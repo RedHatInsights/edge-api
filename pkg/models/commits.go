@@ -22,6 +22,15 @@ type Commit struct {
 	Status               string    `json:"Status"`
 }
 
+// Repo is the delivery mechanism of a Commit over HTTP
+type Repo struct {
+	gorm.Model
+	URL      string  `json:"RepoURL"`
+	Status   string  `json:"RepoStatus"`
+	CommitID uint    `json:"CommitID"`
+	Commit   *Commit `json:"Commit"`
+}
+
 // Package represents the packages a Commit can have
 type Package struct {
 	gorm.Model

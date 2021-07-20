@@ -20,11 +20,12 @@ type EdgeConfig struct {
 	BucketRegion       *string
 	AccessKey          string
 	SecretKey          string
-	UpdateTempPath     string
+	RepoTempPath       string
 	OpenAPIFilePath    string
 	ImageBuilderConfig *imageBuilderConfig
 	InventoryConfig    *inventoryConfig
 	S3ProxyURL         string
+	DefaultOSTreeRef   string
 }
 
 type dbConfig struct {
@@ -64,23 +65,30 @@ func Init() {
 	options.SetDefault("EdgeTarballsBucket", "rh-edge-tarballs")
 	options.SetDefault("ImageBuilderUrl", "http://image-builder:8080")
 	options.SetDefault("InventoryUrl", "http://host-inventory-service:8080/")
-	options.SetDefault("UpdateTempPath", "/tmp/updates/")
+	options.SetDefault("RepoTempPath", "/tmp/repos/")
 	options.SetDefault("OpenAPIFilePath", "./cmd/spec/openapi.json")
+	options.SetDefault("Database", "sqlite")
+	options.SetDefault("DefaultOSTreeRef", "rhel/8/x86_64/edge")
 	options.AutomaticEnv()
+
+	if options.GetBool("Debug") {
+		options.Set("LogLevel", "DEBUG")
+	}
 
 	kubenv := viper.New()
 	kubenv.AutomaticEnv()
 
 	config = &EdgeConfig{
-		Hostname:        kubenv.GetString("Hostname"),
-		Auth:            options.GetBool("Auth"),
-		WebPort:         options.GetInt("WebPort"),
-		MetricsPort:     options.GetInt("MetricsPort"),
-		Debug:           options.GetBool("Debug"),
-		LogLevel:        options.GetString("LogLevel"),
-		BucketName:      options.GetString("EdgeTarballsBucket"),
-		UpdateTempPath:  options.GetString("UpdateTempPath"),
-		OpenAPIFilePath: options.GetString("OpenAPIFilePath"),
+		Hostname:         kubenv.GetString("Hostname"),
+		Auth:             options.GetBool("Auth"),
+		WebPort:          options.GetInt("WebPort"),
+		MetricsPort:      options.GetInt("MetricsPort"),
+		Debug:            options.GetBool("Debug"),
+		LogLevel:         options.GetString("LogLevel"),
+		BucketName:       options.GetString("EdgeTarballsBucket"),
+		RepoTempPath:     options.GetString("RepoTempPath"),
+		OpenAPIFilePath:  options.GetString("OpenAPIFilePath"),
+		DefaultOSTreeRef: options.GetString("DefaultOSTreeRef"),
 		ImageBuilderConfig: &imageBuilderConfig{
 			URL: options.GetString("ImageBuilderUrl"),
 		},
@@ -88,6 +96,18 @@ func Init() {
 			URL: options.GetString("InventoryUrl"),
 		},
 		S3ProxyURL: options.GetString("S3ProxyURL"),
+	}
+
+	database := options.GetString("database")
+
+	if database == "pgsql" {
+		config.Database = &dbConfig{
+			User:     options.GetString("PGSQL_USER"),
+			Password: options.GetString("PGSQL_PASSWORD"),
+			Hostname: options.GetString("PGSQL_HOSTNAME"),
+			Port:     options.GetUint("PGSQL_PORT"),
+			Name:     options.GetString("PGSQL_DATABASE"),
+		}
 	}
 
 	if clowder.IsClowderEnabled() {
