@@ -160,7 +160,7 @@ func postProcessImage(id uint, headers map[string]string) {
 
 	// TODO: We need to discuss this whole thing post-July deliverable
 	if i.ImageType == models.ImageTypeInstaller {
-		i, err := imagebuilder.Client.ComposeInstaller(i.Commit, i, headers)
+		i, err := imagebuilder.Client.ComposeInstaller(i, headers)
 		if err != nil {
 			log.Error(err)
 			panic(err)
@@ -433,7 +433,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	image, err := imagebuilder.Client.ComposeInstaller(image.Commit, image, headers)
+	image, err := imagebuilder.Client.ComposeInstaller(image, headers)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()

@@ -69,7 +69,7 @@ type MockImageBuilderClient struct{}
 func (c *MockImageBuilderClient) ComposeCommit(image *models.Image, headers map[string]string) (*models.Image, error) {
 	return image, nil
 }
-func (c *MockImageBuilderClient) ComposeInstaller(c *models.Commit, image *models.Image, headers map[string]string) (*models.Image, error) {
+func (c *MockImageBuilderClient) ComposeInstaller(image *models.Image, headers map[string]string) (*models.Image, error) {
 	return image, nil
 }
 func (c *MockImageBuilderClient) GetCommitStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
