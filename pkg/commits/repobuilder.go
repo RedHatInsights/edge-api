@@ -158,7 +158,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) error {
 	if err != nil {
 		return err
 	}
-	DownloadExtractVersionRepo(r.Commit, path)
+	err = DownloadExtractVersionRepo(r.Commit, path)
 	if err != nil {
 		log.Error(err)
 		return err
