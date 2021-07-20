@@ -218,11 +218,13 @@ func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
 
 	tarFile, err := os.Open(filepath.Join(dest, tarFileName))
 	if err != nil {
+		log.Errorf("Failed to open file: %s", filepath.Join(dest, tarFileName))
 		log.Error(err)
 		return err
 	}
 	err = common.Untar(tarFile, filepath.Join(dest))
 	if err != nil {
+		log.Errorf("Failed to untar file: %s", filepath.Join(dest, tarFileName))
 		log.Error(err)
 		return err
 	}
@@ -231,6 +233,7 @@ func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
 
 	err = os.Remove(filepath.Join(dest, tarFileName))
 	if err != nil {
+		log.Errorf("Failed to remove file: %s", filepath.Join(dest, tarFileName))
 		log.Error(err)
 		return err
 	}
@@ -242,7 +245,7 @@ func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
 	cmd := exec.Command("ostree", "--repo", "./repo", "commit", c.OSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber))
 	err = cmd.Run()
 	if err != nil {
-		log.Error(err)
+		log.Error("'ostree --repo ./ commit --add-metadata-string' command failed", err)
 		return err
 	}
 
