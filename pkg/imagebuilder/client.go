@@ -266,13 +266,16 @@ func (c *ImageBuilderClient) GetCommitStatus(image *models.Image, headers map[st
 	}
 	log.Info(fmt.Sprintf("Got UpdateCommitID status %s", cs.ImageStatus.Status))
 	if cs.ImageStatus.Status == imageStatusSuccess {
-		image.Status = models.ImageStatusSuccess
 		image.Commit.Status = models.ImageStatusSuccess
 		image.Commit.ImageBuildTarURL = cs.ImageStatus.UploadStatus.Options.URL
+		if image.Installer == nil {
+			image.Status = models.ImageStatusSuccess
+		}
 	} else if cs.ImageStatus.Status == imageStatusFailure {
 		image.Commit.Status = models.ImageStatusError
 		image.Status = models.ImageStatusError
 	}
+	log.Info(fmt.Sprintf("Set image status %s", image.Status))
 	return image, nil
 }
 

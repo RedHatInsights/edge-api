@@ -131,7 +131,7 @@ func createImage(image *models.Image, account string, headers map[string]string)
 
 func postProcessImage(id uint, headers map[string]string) {
 	var i *models.Image
-	db.DB.Joins("Commit").First(&i, id)
+	db.DB.Joins("Commit").Joins("Installer").First(&i, id)
 	for {
 		i, err := updateImageStatus(i, headers)
 		if err != nil {
