@@ -13,18 +13,18 @@ func main() {
 	l.InitLogger()
 	cfg := config.Get()
 	log.WithFields(log.Fields{
-		"Hostname":    cfg.Hostname,
-		"Auth":        cfg.Auth,
-		"WebPort":     cfg.WebPort,
-		"MetricsPort": cfg.MetricsPort,
-		"LogLevel":    cfg.LogLevel,
-		"Debug":       cfg.Debug,
-		"BucketName":  cfg.BucketName,
-		"BucketRegion":  cfg.BucketRegion,
+		"Hostname":           cfg.Hostname,
+		"Auth":               cfg.Auth,
+		"WebPort":            cfg.WebPort,
+		"MetricsPort":        cfg.MetricsPort,
+		"LogLevel":           cfg.LogLevel,
+		"Debug":              cfg.Debug,
+		"BucketName":         cfg.BucketName,
+		"BucketRegion":       cfg.BucketRegion,
 		"ImageBuilderConfig": cfg.ImageBuilderConfig.URL,
 	}).Info("Configuration Values:")
 	db.InitDB()
-	err := db.DB.AutoMigrate(&models.Commit{}, &models.UpdateRecord{}, &models.Package{}, &models.Image{})
+	err := db.DB.AutoMigrate(&models.Commit{}, &models.UpdateTransaction{}, &models.Package{}, &models.Image{}, &models.Repo{})
 	if err != nil {
 		panic(err)
 	}

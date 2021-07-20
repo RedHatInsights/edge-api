@@ -144,12 +144,9 @@ func postProcessImage(id uint, headers map[string]string) {
 		time.Sleep(1 * time.Minute)
 	}
 	log.Infof("Commit %#v for Image %#v is ready. Creating OSTree repo.", i.Commit, i)
-	update := &models.UpdateRecord{
-		Commit:  i.Commit,
-		Account: i.Account,
-	}
-	db.DB.Create(&update)
-	repo, err := commits.RepoBuilderInstance.BuildRepo(update)
+	var repo *models.Repo
+	repo.Commit = i.Commit
+	err := commits.RepoBuilderInstance.ImportRepo(repo)
 	if err != nil {
 		log.Error(err)
 		panic(err)
@@ -163,7 +160,7 @@ func postProcessImage(id uint, headers map[string]string) {
 
 	// TODO: We need to discuss this whole thing post-July deliverable
 	if i.ImageType == models.ImageTypeInstaller {
-		i, err := imagebuilder.Client.ComposeInstaller(update, i, headers)
+		i, err := imagebuilder.Client.ComposeInstaller(i.Commit, i, headers)
 		if err != nil {
 			log.Error(err)
 			panic(err)
@@ -428,15 +425,15 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	headers := common.GetOutgoingHeaders(r)
-	var update *models.UpdateRecord
-	result := db.DB.Where("update_commit_id = ? and status = ?", image.Commit.ID, models.UpdateStatusSuccess).Last(&update)
+	var repo *models.Repo
+	result := db.DB.Where("ID = ?", image.Commit.ID).Take(&repo)
 	if result.Error != nil {
-		err := errors.NewBadRequest("Update wasn't found in the database")
+		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit))
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	image, err := imagebuilder.Client.ComposeInstaller(update, image, headers)
+	image, err := imagebuilder.Client.ComposeInstaller(image.Commit, image, headers)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
