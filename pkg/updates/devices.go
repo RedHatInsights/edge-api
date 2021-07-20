@@ -1,4 +1,4 @@
-package devices
+package updates
 
 import (
 	"encoding/json"
@@ -39,6 +39,7 @@ const (
 	filterParams = "?filter[system_profile][host_type]=edge&fields[system_profile]=host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments"
 )
 
+/* FIXME - not sure if we need this or not, but keeping it just in case
 // ReturnDevices will return the list of devices without filter by tag or uuid
 func ReturnDevices(w http.ResponseWriter, r *http.Request) (Inventory, error) {
 	url := fmt.Sprintf("%s/api/inventory/v1/hosts", config.Get().InventoryConfig.URL)
@@ -69,14 +70,15 @@ func ReturnDevices(w http.ResponseWriter, r *http.Request) (Inventory, error) {
 	return bodyResp, nil
 
 }
+*/
 
 // ReturnDevicesByID will return the list of devices by uuid
 func ReturnDevicesByID(w http.ResponseWriter, r *http.Request) (Inventory, error) {
-	deviceID := r.URL.Query().Get("device_uuid")
-	deviceIDParam := "&hostname_or_id=" + deviceID
+	uCtx, _ := r.Context().Value(UpdateContextKey).(UpdateContext) // this is sanitized in updates/updates
+	deviceID := uCtx.DeviceUUID
 
 	url := fmt.Sprintf("%s/api/inventory/v1/hosts", config.Get().InventoryConfig.URL)
-	fullURL := url + filterParams + deviceIDParam
+	fullURL := url + filterParams + deviceID
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	req.Header.Add("Content-Type", "application/json")
@@ -94,7 +96,7 @@ func ReturnDevicesByID(w http.ResponseWriter, r *http.Request) (Inventory, error
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(resp.Body)
-		log.Error(fmt.Printf("error requesting inventory, got status code %d and body %s", resp.StatusCode, body))
+		log.Errorf("error requesting inventory, got status code %d and body %s", resp.StatusCode, body)
 		return Inventory{}, fmt.Errorf("error requesting inventory, got status code %d and body %s", resp.StatusCode, body)
 	}
 
@@ -103,21 +105,21 @@ func ReturnDevicesByID(w http.ResponseWriter, r *http.Request) (Inventory, error
 		log.Error(fmt.Printf("ReturnDevicesByID: %s", err))
 		return Inventory{}, err
 	}
-	log.Infof("fullbody: %v\n", string(body))
 	defer resp.Body.Close()
-	var bodyResp Inventory
-	json.Unmarshal([]byte(body), &bodyResp)
-	log.Infof("struct: %v\n", bodyResp)
+	var inventory Inventory
+	json.Unmarshal([]byte(body), &inventory)
+	log.Infof("::Updates::ReturnDevicesByID::inventory: %v\n", inventory)
 
-	return bodyResp, nil
+	return inventory, nil
 
 }
 
 // ReturnDevicesByTag will return the list of devices by tag
 func ReturnDevicesByTag(w http.ResponseWriter, r *http.Request) (Inventory, error) {
 
-	tags := r.URL.Query().Get("tag")
-	tagsParam := "?tags=" + tags
+	uCtx, _ := r.Context().Value(UpdateContextKey).(UpdateContext) // this is sanitized in updates/updates
+	tag := uCtx.Tag
+	tagsParam := "?tags=" + tag
 
 	url := fmt.Sprintf("%s/api/inventory/v1/hosts", config.Get().InventoryConfig.URL)
 	fullURL := url + filterParams + tagsParam
@@ -137,7 +139,7 @@ func ReturnDevicesByTag(w http.ResponseWriter, r *http.Request) (Inventory, erro
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(resp.Body)
-		log.Error(fmt.Printf("error requesting inventory, got status code %d and body %s", resp.StatusCode, body))
+		log.Errorf("error requesting inventory, got status code %d and body %s", resp.StatusCode, body)
 		return Inventory{}, fmt.Errorf("error requesting inventory, got status code %d and body %s", resp.StatusCode, body)
 	}
 	body, err := ioutil.ReadAll(resp.Body)
@@ -145,8 +147,8 @@ func ReturnDevicesByTag(w http.ResponseWriter, r *http.Request) (Inventory, erro
 		log.Error(fmt.Printf("ReturnDevicesByTag: %s", err))
 		return Inventory{}, err
 	}
-	var bodyResp Inventory
-	json.Unmarshal([]byte(body), &bodyResp)
-	log.Infof("struct: %v\n", bodyResp)
-	return bodyResp, nil
+	var inventory Inventory
+	json.Unmarshal([]byte(body), &inventory)
+	log.Infof("struct: %v\n", inventory)
+	return inventory, nil
 }

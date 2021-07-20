@@ -424,15 +424,15 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	headers := common.GetOutgoingHeaders(r)
-	var update *models.UpdateRecord
-	result := db.DB.Where("update_commit_id = ? and status = ?", image.Commit.ID, models.UpdateStatusSuccess).Last(&update)
+	var repo *models.Repo
+	result := db.DB.Where("ID = ?", image.Commit.ID).Take(&repo)
 	if result.Error != nil {
-		err := errors.NewBadRequest("Update wasn't found in the database")
+		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit))
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	image, err := imagebuilder.Client.ComposeInstaller(update, image, headers)
+	image, err := imagebuilder.Client.ComposeInstaller(image.Commit, image, headers)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()

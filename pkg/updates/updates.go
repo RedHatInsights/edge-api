@@ -3,150 +3,257 @@ package updates
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+
+	"context"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
+	"github.com/redhatinsights/edge-api/pkg/commits"
+	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/edge-api/pkg/devices"
-	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
+
+	apierrors "github.com/redhatinsights/edge-api/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
 
 // MakeRouter adds support for operations on update
 func MakeRouter(sub chi.Router) {
-	sub.Get("/", deviceCtx)
-
+	sub.Use(UpdateCtx)
+	sub.With(common.Paginate).Get("/", GetUpdates)
+	sub.Post("/", AddUpdate)
+	sub.Route("/{updateID}", func(r chi.Router) {
+		r.Use(UpdateCtx)
+		r.Get("/", GetByID)
+		r.Put("/", UpdatesUpdate)
+	})
 }
 
-func deviceCtx(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("getDevices \n")
-	device_uuid := r.URL.Query().Get("device_uuid")
-	log.Infof("updates::deviceCtx::device_uuid: %s", device_uuid)
-	tag := r.URL.Query().Get("tag")
-	log.Infof("updates::deviceCtx::tag: %s", tag)
-
-	if device_uuid != "" {
-		getDevicesByID(w, r)
-	}
-	if tag != "" {
-		getDevicesByTag(w, r)
-	}
-}
-
-func getDevicesByID(w http.ResponseWriter, r *http.Request) {
-	uuid := r.URL.Query().Get("device_uuid")
-	log.Debugf("updates::deviceCtx::uuid: %s", uuid)
-	if len(uuid) > 0 {
-		validUUID := isUUID(uuid)
-		if validUUID {
-			devices, err := devices.ReturnDevicesByID(w, r)
-			fmt.Printf("validUuid devices: %v\n", devices)
-			if err != nil {
-				err := errors.NewInternalServerError()
-				err.Title = fmt.Sprintf("Failed to get device %s", uuid)
-				w.WriteHeader(err.Status)
-				return
-			}
-			json.NewEncoder(w).Encode(&devices)
-		} else {
-			err := errors.NewBadRequest("Invalid UUID")
-			err.Title = fmt.Sprintf("Invalid UUID - %s", uuid)
-			w.WriteHeader(err.Status)
-			return
-		}
-	}
-
-}
-func getDevicesByTag(w http.ResponseWriter, r *http.Request) {
-	tags := r.URL.Query().Get("tag")
-	log.Debugf("updates::getDevicesByTag::tag: %s", tags)
-	if len(tags) > 0 {
-		devices, err := devices.ReturnDevicesByTag(w, r)
-		fmt.Printf("devices: %v\n", devices)
-		if err != nil {
-			err := errors.NewInternalServerError()
-			err.Title = fmt.Sprintf("Failed to get devices from tag %s", tags)
-			w.WriteHeader(err.Status)
-			return
-		}
-		json.NewEncoder(w).Encode(&devices)
-
-	}
-
-}
-
-func updateOSTree(w http.ResponseWriter, r *http.Request) {
-
-	var updateRec models.UpdateRecord
-	var inventory devices.Inventory
-	inventoryHosts := updateRec.InventoryHosts
-	oldCommits := updateRec.OldCommits
-	deviceUUID := r.URL.Query().Get("device_uuid")
-	log.Infof("updates::deviceCtx::deviceUUID: %s", deviceUUID)
-	tag := r.URL.Query().Get("tag")
-	reqBody, err := ioutil.ReadAll(r.Body)
+func GetUpdates(w http.ResponseWriter, r *http.Request) {
+	var updates []models.UpdateTransaction
+	account, err := common.GetAccount(r)
 	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// FIXME - need to sort out how to get this query to be against commit.account
+	result := db.DB.Where("account = ?", account).Find(&updates)
+	log.Debugf("GetUpdates::result: %#v", result)
+	if result.Error != nil {
+		http.Error(w, result.Error.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = json.Unmarshal([]byte(reqBody), &updateRec)
-	if err != nil {
-		return
-	}
-
-	if tag != "" {
-		// - query Hosted Inventory for all devices in Inventory Tag
-		inventory, err = devices.ReturnDevicesByTag(w, r)
-	} else {
-		if deviceUUID != "" {
-			// - query Hosted Inventory for device UUID
-			inventory, err = devices.ReturnDevicesByID(w, r)
-		}
-	}
-	if err != nil {
-		err := errors.NewInternalServerError()
-		err.Title = fmt.Sprintf("No devices in this tag %s", updateRec.Tag)
-		w.WriteHeader(err.Status)
-		return
-	}
-	// - populate the updateRec.InventoryHosts []Device data
-	fmt.Printf("Devices in this tag %v", inventory.Result)
-	for _, device := range inventory.Result {
-		updateDevice := new(models.Device)
-		updateDevice.UUID = device.ID
-		updateDevice.DesiredHash = updateRec.Commit.OSTreeCommit
-		inventoryHosts = append(inventoryHosts, *updateDevice)
-		updateRec.InventoryHosts = inventoryHosts
-		for _, ostreeDeployment := range device.Ostree.RpmOstreeDeployments {
-			if ostreeDeployment.Booted {
-				var oldCommit models.Commit
-				result := db.DB.Where("ostreecommit = ?", ostreeDeployment.Checksum).Take(&oldCommit)
-				if result.Error != nil {
-					http.Error(w, result.Error.Error(), http.StatusBadRequest)
-					return
-				}
-				oldCommits = append(oldCommits, oldCommit)
-				updateRec.OldCommits = oldCommits
-			}
-		}
-
-	}
-
-	// FIXME - need to remove duplicate OldCommit values from UpdateRecord
-
-	json.NewEncoder(w).Encode(&updateRec)
-	db.DB.Create(&updateRec)
-
-	// call RepoBuilderInstance
-	// go commits.RepoBuilderInstance(updateRec)
-
+	json.NewEncoder(w).Encode(&updates)
 }
 
 func isUUID(param string) bool {
 	_, err := uuid.Parse(param)
 	return err == nil
 
+}
+
+type UpdatePostJSON struct {
+	CommitID   uint   `json:"CommitID"`
+	Tag        string `json:"Tag"`
+	DeviceUUID string `json:"DeviceUUID"`
+}
+
+func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTransaction, error) {
+	var updateJSON UpdatePostJSON
+	err := json.NewDecoder(r.Body).Decode(&updateJSON)
+	log.Debugf("updateFromHTTP::updateJSON: %#v", updateJSON)
+
+	if updateJSON.CommitID == 0 {
+		err := apierrors.NewInternalServerError()
+		err.Title = fmt.Sprint("Must provide a CommitID")
+		w.WriteHeader(err.Status)
+		return nil, err
+	}
+	if (updateJSON.Tag == "") && (updateJSON.DeviceUUID == "") {
+		err := apierrors.NewInternalServerError()
+		err.Title = fmt.Sprint("At least one of Tag or DeviceUUID required.")
+		w.WriteHeader(err.Status)
+		return nil, err
+	}
+
+	var inventory Inventory
+	if updateJSON.Tag != "" {
+		inventory, err = ReturnDevicesByTag(w, r)
+		if err != nil {
+			err := apierrors.NewInternalServerError()
+			err.Title = fmt.Sprintf("No devices in this tag %s", updateJSON.Tag)
+			w.WriteHeader(err.Status)
+			return &models.UpdateTransaction{}, err
+		}
+	}
+	if updateJSON.DeviceUUID != "" {
+		inventory, err = ReturnDevicesByID(w, r)
+		if err != nil {
+			err := apierrors.NewInternalServerError()
+			err.Title = fmt.Sprintf("No devices found for UUID %s", updateJSON.DeviceUUID)
+			w.WriteHeader(err.Status)
+			return &models.UpdateTransaction{}, err
+		}
+	}
+
+	update := models.UpdateTransaction{}
+	update.Commit, err = common.GetCommitByID(updateJSON.CommitID)
+	update.Repo = &models.Repo{}
+	update.Repo.Commit = update.Commit
+	log.Debugf("updateFromHTTP::update.Commit: %#v", update.Commit)
+	if err != nil {
+		err := apierrors.NewInternalServerError()
+		err.Title = fmt.Sprintf("No commit found for CommitID %d", updateJSON.CommitID)
+		w.WriteHeader(err.Status)
+		return &models.UpdateTransaction{}, err
+	}
+	inventoryHosts := update.InventoryHosts
+	oldCommits := update.OldCommits
+	// - populate the update.InventoryHosts []Device data
+	fmt.Printf("Devices in this tag %v", inventory.Result)
+	for _, device := range inventory.Result {
+		updateDevice := new(models.Device)
+		updateDevice.UUID = device.ID
+		updateDevice.DesiredHash = update.Commit.OSTreeCommit
+		log.Debugf("updateFromHTTP::updateDevice: %#v", updateDevice)
+		inventoryHosts = append(inventoryHosts, *updateDevice)
+		log.Debugf("updateFromHTTP::inventoryHosts: %#v", inventoryHosts)
+		update.InventoryHosts = inventoryHosts
+		for _, ostreeDeployment := range device.Ostree.RpmOstreeDeployments {
+			if ostreeDeployment.Booted {
+				log.Debugf("updateFromHTTP::ostreeDeployment.Booted: %#v", ostreeDeployment)
+				var oldCommit models.Commit
+				result := db.DB.Where("os_tree_commit = ?", ostreeDeployment.Checksum).Take(&oldCommit)
+				log.Debugf("updateFromHTTP::result: %#v", result)
+				if result.Error != nil {
+					if !(result.Error.Error() == "record not found") {
+						log.Errorf("updateFromHTTP::result.Error: %#v", result.Error)
+						http.Error(w, result.Error.Error(), http.StatusBadRequest)
+						return &models.UpdateTransaction{}, err
+					} else {
+						log.Infof("Old Commit not found in database: %s", ostreeDeployment.Checksum)
+					}
+				}
+				oldCommits = append(oldCommits, oldCommit)
+				update.OldCommits = oldCommits
+			}
+		}
+
+	}
+
+	log.Debugf("updateFromHTTP::update: %#v", update)
+	return &update, err
+}
+
+type key int
+
+const UpdateContextKey key = 0
+
+// Implement Context interface so we can shuttle around multiple values
+type UpdateContext struct {
+	DeviceUUID string
+	Tag        string
+}
+
+// UpdateCtx is a handler for Update requests
+func UpdateCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var uCtx UpdateContext
+		uCtx.DeviceUUID = chi.URLParam(r, "DeviceUUID")
+
+		uCtx.Tag = chi.URLParam(r, "Tag")
+		log.Debugf("UpdateCtx::uCtx: %#v", uCtx)
+		ctx := context.WithValue(r.Context(), UpdateContextKey, &uCtx)
+		log.Debugf("UpdateCtx::ctx: %#v", ctx)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// AddUpdate adds an object to the database for an account
+func AddUpdate(w http.ResponseWriter, r *http.Request) {
+
+	update, err := updateFromHTTP(w, r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	log.Debugf("AddUpdate::update: %#v", update)
+
+	update.Account, err = common.GetAccount(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Check to make sure we're not duplicating the job
+	// FIXME - this didn't work and I don't have time to debug right now
+	// FIXME - handle UpdateTransaction Commit vs UpdateCommitID
+	/*
+		var dupeRecord models.UpdateTransaction
+		queryDuplicate := map[string]interface{}{
+			"Account":        update.Account,
+			"InventoryHosts": update.InventoryHosts,
+			"OldCommitIDs":   update.OldCommitIDs,
+		}
+		result := db.DB.Where(queryDuplicate).Find(&dupeRecord)
+		if result.Error == nil {
+			if dupeRecord.UpdateCommitID != 0 {
+				http.Error(w, "Can not submit duplicate update job", http.StatusInternalServerError)
+				return
+			}
+		}
+	*/
+
+	// FIXME - need to remove duplicate OldCommit values from UpdateTransaction
+
+	json.NewEncoder(w).Encode(&update)
+	result := db.DB.Create(&update)
+	if result.Error != nil {
+		http.Error(w, result.Error.Error(), http.StatusBadRequest)
+	}
+
+	go commits.RepoBuilderInstance.BuildUpdateRepo(update)
+
+}
+
+// GetByID obtains an update from the database for an account
+func GetByID(w http.ResponseWriter, r *http.Request) {
+	if update := getUpdate(w, r); update != nil {
+		json.NewEncoder(w).Encode(update)
+	}
+}
+
+// UpdatesUpdate a update object in the database for an an account
+func UpdatesUpdate(w http.ResponseWriter, r *http.Request) {
+	update := getUpdate(w, r)
+	if update == nil {
+		return
+	}
+
+	incoming, err := updateFromHTTP(w, r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	now := time.Now()
+	incoming.ID = update.ID
+	incoming.CreatedAt = now
+	incoming.UpdatedAt = now
+	db.DB.Save(&incoming)
+
+	json.NewEncoder(w).Encode(incoming)
+}
+
+func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction {
+	ctx := r.Context()
+	update, ok := ctx.Value(UpdateContextKey).(*models.UpdateTransaction)
+	if !ok {
+		http.Error(w, "must pass id", http.StatusBadRequest)
+		return nil
+	}
+	return update
 }

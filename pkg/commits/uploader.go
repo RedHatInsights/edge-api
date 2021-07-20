@@ -91,7 +91,7 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 		}
 
 		err = u.UploadFileToS3(path,
-			fmt.Sprintf("%s/%s", account, strings.TrimPrefix(path, cfg.UpdateTempPath)),
+			fmt.Sprintf("%s/%s", account, strings.TrimPrefix(path, cfg.RepoTempPath)),
 		)
 		if err != nil {
 			log.Warnf("error: %v", err)
@@ -101,7 +101,7 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 	})
 
 	region := *u.Client.Config.Region
-	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s/%s", u.Bucket, region, account, strings.TrimPrefix(src, cfg.UpdateTempPath))
+	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s/%s", u.Bucket, region, account, strings.TrimPrefix(src, cfg.RepoTempPath))
 	return s3URL, nil
 }
 
