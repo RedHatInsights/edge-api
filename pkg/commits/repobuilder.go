@@ -120,7 +120,10 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	// FIXME: Need to actually do something with the return string for Server
 
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
+	log.Debug("::BuildUpdateRepo:uploader.UploadRepo: BEGIN")
 	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(ut.RepoID), 10))
+	log.Debug("::BuildUpdateRepo:uploader.UploadRepo: FINISH")
+	log.Debugf("::BuildUpdateRepo:repoURL: %#v", repoURL)
 	if err != nil {
 		return nil, err
 	}
@@ -195,6 +198,7 @@ func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
 		log.Error("nil pointer to models.Commit provided")
 		return errors.New("Invalid Commit Provided: nil pointer")
 	}
+
 	// ensure the destination directory exists and then chdir there
 	log.Debugf("DownloadExtractVersionRepo::dest: %#v", dest)
 	err := os.MkdirAll(dest, os.FileMode(int(0755)))
@@ -242,11 +246,17 @@ func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
 	//		  osbuild composer but we might want to revisit this later
 	//
 	// commit the version metadata to the current ref
-	cmd := exec.Command("ostree", "--repo", "./repo", "commit", c.OSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber))
+	var cmd *exec.Cmd
+	if c.OSTreeRef == "" {
+		cfg := config.Get()
+		cmd = exec.Command("ostree", "--repo", "./repo", "commit", cfg.DefaultOSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber))
+	} else {
+		cmd = exec.Command("ostree", "--repo", "./repo", "commit", c.OSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber))
+	}
 	err = cmd.Run()
 	if err != nil {
 		log.Error("'ostree --repo ./ commit --add-metadata-string' command failed", err)
-		return err
+		log.Errorf("Failed Command: %s %s %s %s %s %s %s", "ostree", "--repo", "./repo", "commit", c.OSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber))
 	}
 
 	return nil

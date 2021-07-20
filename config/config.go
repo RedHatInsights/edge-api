@@ -25,6 +25,7 @@ type EdgeConfig struct {
 	ImageBuilderConfig *imageBuilderConfig
 	InventoryConfig    *inventoryConfig
 	S3ProxyURL         string
+	DefaultOSTreeRef   string
 }
 
 type dbConfig struct {
@@ -67,6 +68,7 @@ func Init() {
 	options.SetDefault("RepoTempPath", "/tmp/repos/")
 	options.SetDefault("OpenAPIFilePath", "./cmd/spec/openapi.json")
 	options.SetDefault("Database", "sqlite")
+	options.SetDefault("DefaultOSTreeRef", "rhel/8/x86_64/edge")
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
@@ -77,15 +79,16 @@ func Init() {
 	kubenv.AutomaticEnv()
 
 	config = &EdgeConfig{
-		Hostname:        kubenv.GetString("Hostname"),
-		Auth:            options.GetBool("Auth"),
-		WebPort:         options.GetInt("WebPort"),
-		MetricsPort:     options.GetInt("MetricsPort"),
-		Debug:           options.GetBool("Debug"),
-		LogLevel:        options.GetString("LogLevel"),
-		BucketName:      options.GetString("EdgeTarballsBucket"),
-		RepoTempPath:    options.GetString("RepoTempPath"),
-		OpenAPIFilePath: options.GetString("OpenAPIFilePath"),
+		Hostname:         kubenv.GetString("Hostname"),
+		Auth:             options.GetBool("Auth"),
+		WebPort:          options.GetInt("WebPort"),
+		MetricsPort:      options.GetInt("MetricsPort"),
+		Debug:            options.GetBool("Debug"),
+		LogLevel:         options.GetString("LogLevel"),
+		BucketName:       options.GetString("EdgeTarballsBucket"),
+		RepoTempPath:     options.GetString("RepoTempPath"),
+		OpenAPIFilePath:  options.GetString("OpenAPIFilePath"),
+		DefaultOSTreeRef: options.GetString("DefaultOSTreeRef"),
 		ImageBuilderConfig: &imageBuilderConfig{
 			URL: options.GetString("ImageBuilderUrl"),
 		},
