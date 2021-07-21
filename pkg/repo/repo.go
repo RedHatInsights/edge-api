@@ -68,7 +68,7 @@ func CreateRepo(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-// GetAll repositories
+// GetAll repositories. Mostly used for the development team to debug.
 func GetAll(w http.ResponseWriter, r *http.Request) {
 	var repos []models.Repo
 	account, err := common.GetAccount(r)
@@ -77,7 +77,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&repos)
+	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Joins("Commit").Where("commit.account = ?", account).Find(&repos)
 	if result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusBadRequest)
 		return
