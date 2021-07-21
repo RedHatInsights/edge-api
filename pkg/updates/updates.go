@@ -39,8 +39,7 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// FIXME - need to sort out how to get this query to be against commit.account
-	result := db.DB.Where("account = ?", account).Find(&updates)
-	log.Debugf("GetUpdates::result: %#v", result)
+	result := db.DB.Preload("DispatchRecords").Where("update_transactions.account = ?", account).Joins("Commit").Joins("Repo").Joins("Devices").Find(&updates)
 	if result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusBadRequest)
 		return
@@ -99,10 +98,13 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		}
 	}
 
+	log.Debugf("updateFromHTTP::inventory: %#v", inventory)
+
+	// Create the models.UpdateTransaction
 	update := models.UpdateTransaction{}
+
+	// Get the models.Commit from the Commit ID passed in via JSON
 	update.Commit, err = common.GetCommitByID(updateJSON.CommitID)
-	update.Repo = &models.Repo{}
-	update.Repo.Commit = update.Commit
 	log.Debugf("updateFromHTTP::update.Commit: %#v", update.Commit)
 	if err != nil {
 		err := apierrors.NewInternalServerError()
@@ -110,13 +112,47 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		w.WriteHeader(err.Status)
 		return &models.UpdateTransaction{}, err
 	}
+
+	//  Check for the existence of a Repo that already has this commit and don't duplicate
+	var repo *models.Repo
+	repo, err = common.GetRepoByCommitID(update.Commit.ID)
+	if err == nil {
+		update.Repo = repo
+	} else {
+		if !(err.Error() == "record not found") {
+			log.Errorf("updateFromHTTP::GetRepoByCommitID::repo: %#v, %#v", repo, err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return &models.UpdateTransaction{}, err
+		} else {
+			log.Infof("Old Repo not found in database for CommitID, creating new one: %d", update.Commit.ID)
+			repo := new(models.Repo)
+			repo.Commit = update.Commit
+			db.DB.Create(&repo)
+			update.Repo = repo
+
+		}
+	}
+
 	inventoryHosts := update.InventoryHosts
 	oldCommits := update.OldCommits
 	// - populate the update.InventoryHosts []Device data
 	fmt.Printf("Devices in this tag %v", inventory.Result)
 	for _, device := range inventory.Result {
-		updateDevice := new(models.Device)
-		updateDevice.UUID = device.ID
+		//  Check for the existence of a Repo that already has this commit and don't duplicate
+		var updateDevice *models.Device
+		updateDevice, err = common.GetDeviceByUUID(device.ID)
+		if err != nil {
+			if !(err.Error() == "record not found") {
+				log.Errorf("updateFromHTTP::GetDeviceByUUID::updateDevice: %#v, %#v", repo, err)
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return &models.UpdateTransaction{}, err
+			} else {
+				log.Infof("Existing Device not found in database, creating new one: %s", device.ID)
+				updateDevice = new(models.Device)
+				updateDevice.UUID = device.ID
+				db.DB.Create(&updateDevice)
+			}
+		}
 		updateDevice.DesiredHash = update.Commit.OSTreeCommit
 		log.Debugf("updateFromHTTP::updateDevice: %#v", updateDevice)
 		inventoryHosts = append(inventoryHosts, *updateDevice)
@@ -126,7 +162,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 			if ostreeDeployment.Booted {
 				log.Debugf("updateFromHTTP::ostreeDeployment.Booted: %#v", ostreeDeployment)
 				var oldCommit models.Commit
-				result := db.DB.Where("os_tree_commit = ?", ostreeDeployment.Checksum).Take(&oldCommit)
+				result := db.DB.Where("os_tree_commit = ?", ostreeDeployment.Checksum).First(&oldCommit)
 				log.Debugf("updateFromHTTP::result: %#v", result)
 				if result.Error != nil {
 					if !(result.Error.Error() == "record not found") {

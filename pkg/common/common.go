@@ -11,11 +11,8 @@ import (
 	"strconv"
 
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
-	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
-	log "github.com/sirupsen/logrus"
 )
 
 type contextKey int
@@ -142,32 +139,4 @@ func GetPagination(r *http.Request) Pagination {
 		return Pagination{Offset: defaultOffset, Limit: defaultLimit}
 	}
 	return pagination
-}
-
-// GetCommitByID
-// Pass in CommitID uint and get a *models.Commit back
-func GetCommitByID(commitID uint) (*models.Commit, error) {
-	log.Debugf("GetCommitByID::commitID: %#v", commitID)
-	var commit models.Commit
-	result := db.DB.First(&commit, commitID)
-	log.Debugf("GetCommitByID::result: %#v", result)
-	log.Debugf("GetCommitByID::commit: %#v", commit)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return &commit, nil
-}
-
-// GetRepoFromDB
-// Pass in RepoID uint and get a *models.Repo back
-func GetRepoByID(repoID uint) (*models.Repo, error) {
-	log.Debugf("GetRepoByID::repoID: %#v", repoID)
-	var repo models.Repo
-	result := db.DB.First(&repo, repoID)
-	log.Debugf("GetRepoByID::result: %#v", result)
-	log.Debugf("GetRepoByID::repo: %#v", repo)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return &repo, nil
 }
