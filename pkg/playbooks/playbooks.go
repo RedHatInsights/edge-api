@@ -52,7 +52,11 @@ func WriteTemplate(tempalteInfo TemplateRemoteInfo) {
 		OstreeGpgVerify:      "true",
 		OstreeGpgKeypath:     "/etc/pki/rpm-gpg/",
 		OstreeRemoteTemplate: "{{ ostree_remote_template }}"}
-	f, err := os.Create("../template/playbook.yml")
+
+	fname := fmt.Sprintf("playbook_dispatcher_update_%v", tempalteInfo.UpdateTransaction) + ".yml"
+	path := filePath + fname
+	f, err := os.Create(path)
+	// f, err := os.Create("../template/playbook.yml")
 	if err != nil {
 		log.Println("create file: ", err)
 		return
@@ -80,7 +84,7 @@ func uploadTemplate(tempalteInfo TemplateRemoteInfo, tempalte_path string) {
 	log.Debug("::BuildUpdateRepo:uploader.UploadRepo: BEGIN")
 	repoURL, err := uploader.UploadRepo(filepath.Join(path, "playbook"), "playbook.yml")
 	log.Debug("::BuildUpdateRepo:uploader.UploadRepo: FINISH")
-	log.Debug("::BuildUpdateRepo:repoURL: %#v", repoURL)
+	fmt.Printf("::BuildUpdateRepo:repoURL: %v", repoURL)
 	if err != nil {
 		return
 	}
