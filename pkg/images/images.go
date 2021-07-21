@@ -167,12 +167,10 @@ func postProcessImage(id uint, headers map[string]string) {
 
 	// TODO: This is also where we need to get the metadata from image builder
 	// in a separate goroutine
-	i.Status = models.ImageStatusSuccess
-	db.DB.Save(&i)
 
 	// TODO: We need to discuss this whole thing post-July deliverable
 	if i.ImageType == models.ImageTypeInstaller {
-		i, err := imagebuilder.Client.ComposeInstaller(i, headers)
+		i, err := imagebuilder.Client.ComposeInstaller(repo, i, headers)
 		if err != nil {
 			log.Error(err)
 			panic(err)
@@ -195,6 +193,13 @@ func postProcessImage(id uint, headers map[string]string) {
 			time.Sleep(1 * time.Minute)
 		}
 
+	}
+
+	if i.Commit.Status == models.ImageStatusSuccess {
+		if i.Installer != nil || i.Installer.Status == models.ImageStatusSuccess {
+			i.Status = models.ImageStatusSuccess
+			db.DB.Save(&i)
+		}
 	}
 }
 
@@ -445,7 +450,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	image, err := imagebuilder.Client.ComposeInstaller(image, headers)
+	image, err := imagebuilder.Client.ComposeInstaller(repo, image, headers)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
