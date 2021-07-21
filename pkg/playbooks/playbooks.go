@@ -2,9 +2,13 @@ package playbooks
 
 import (
 	"fmt"
-	"log"
 	"os"
+	"path/filepath"
 	"text/template"
+
+	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/commits"
+	log "github.com/sirupsen/logrus"
 )
 
 type playboppoks struct {
@@ -21,10 +25,11 @@ type playboppoks struct {
 }
 
 type TemplateRemoteInfo struct {
-	RemoteName string
-	RemoteURL  string
-	ContentURL string
-	GpgVerify  string
+	RemoteName        string
+	RemoteURL         string
+	ContentURL        string
+	GpgVerify         string
+	UpdateTransaction int
 }
 
 func WriteTemplate(tempalteInfo TemplateRemoteInfo) {
@@ -58,5 +63,25 @@ func WriteTemplate(tempalteInfo TemplateRemoteInfo) {
 	}
 
 	f.Close()
+	uploadTemplate(tempalteInfo, "../template/")
 
+}
+
+func uploadTemplate(tempalteInfo TemplateRemoteInfo, tempalte_path string) {
+	cfg := config.Get()
+	path := filepath.Join(tempalte_path, "playbook.yml")
+	var uploader commits.Uploader
+	uploader = &commits.FileUploader{
+		BaseDir: path,
+	}
+	if cfg.BucketName != "" {
+		uploader = commits.NewS3Uploader()
+	}
+	log.Debug("::BuildUpdateRepo:uploader.UploadRepo: BEGIN")
+	repoURL, err := uploader.UploadRepo(filepath.Join(path, "playbook"), "playbook.yml")
+	log.Debug("::BuildUpdateRepo:uploader.UploadRepo: FINISH")
+	log.Debug("::BuildUpdateRepo:repoURL: %#v", repoURL)
+	if err != nil {
+		return
+	}
 }

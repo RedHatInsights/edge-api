@@ -109,6 +109,8 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	remoteInfo.RemoteURL = update.Repo.URL
 	remoteInfo.RemoteName = update.Repo.Commit.Name
 	remoteInfo.ContentURL = update.Repo.URL
+	remoteInfo.UpdateTransaction = int(update.ID)
+
 	playbooks.WriteTemplate(remoteInfo)
 
 	log.Debugf("updateFromHTTP::update.Commit: %#v", update.Commit)
