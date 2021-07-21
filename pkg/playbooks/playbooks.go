@@ -25,6 +25,7 @@ type playbooks struct {
 	OstreeRemoteTemplate string
 }
 
+// TemplateRemoteInfo the values to playbook
 type TemplateRemoteInfo struct {
 	RemoteName        string
 	RemoteURL         string
@@ -33,26 +34,28 @@ type TemplateRemoteInfo struct {
 	UpdateTransaction int
 }
 
+//S3Uploader defines the mechanism to upload data to S3
 type S3Uploader struct {
 	Client            *s3.S3
 	S3ManagerUploader *s3manager.Uploader
 	Bucket            string
 }
 
-func WriteTemplate(tempalteInfo TemplateRemoteInfo) (string, error) {
+// WriteTemplate will parse the values to the template
+func WriteTemplate(templateInfo TemplateRemoteInfo) (string, error) {
 	log.Debugf("::WriteTemplate: BEGIN")
 	filePath := "pkg/playbooks/"
 	templateName := "template_playbook_dispatcher_ostree_upgrade_payload.yml"
 	template, err := template.ParseFiles(filePath + templateName)
 	if err != nil {
 		fmt.Println(err)
-		return "Playbook::WriteTemplate::Error::", err
+		return "", err
 	}
 	templateData := playbooks{
-		GoTemplateRemoteName: tempalteInfo.RemoteName,
-		GoTemplateRemoteURL:  tempalteInfo.RemoteURL,
-		GoTemplateContentURL: tempalteInfo.ContentURL,
-		GoTemplateGpgVerify:  tempalteInfo.GpgVerify,
+		GoTemplateRemoteName: templateInfo.RemoteName,
+		GoTemplateRemoteURL:  templateInfo.RemoteURL,
+		GoTemplateContentURL: templateInfo.ContentURL,
+		GoTemplateGpgVerify:  templateInfo.GpgVerify,
 		OstreeRemoteName:     "{{ ostree_remote_name }}",
 		OstreeRemoteURL:      "{{ ostree_remote_url }}",
 		OstreeContentURL:     "{{ ostree_content_url }}",
@@ -60,12 +63,12 @@ func WriteTemplate(tempalteInfo TemplateRemoteInfo) (string, error) {
 		OstreeGpgKeypath:     "/etc/pki/rpm-gpg/",
 		OstreeRemoteTemplate: "{{ ostree_remote_template }}"}
 
-	fname := fmt.Sprintf("playbook_dispatcher_update_%v", tempalteInfo.UpdateTransaction) + ".yml"
+	fname := fmt.Sprintf("playbook_dispatcher_update_%v", templateInfo.UpdateTransaction) + ".yml"
 	path := filePath + fname
 	f, err := os.Create(path)
 	if err != nil {
 		log.Println("create file: ", err)
-		return "Playbook::WriteTemplate::Error::", err
+		return "", err
 	}
 	template.Execute(f, templateData)
 
@@ -77,10 +80,10 @@ func WriteTemplate(tempalteInfo TemplateRemoteInfo) (string, error) {
 	if cfg.BucketName != "" {
 		uploader = commits.NewS3Uploader()
 	}
-	repoURL, err := uploader.UploadRepo(path, string(tempalteInfo.UpdateTransaction))
+	repoURL, err := uploader.UploadRepo(path, string(templateInfo.UpdateTransaction))
 	if err != nil {
 		log.Println("create file: ", err)
-		return "Playbook::WriteTemplate::Error::", err
+		return "", err
 
 	}
 	log.Println("create file: ", repoURL)
