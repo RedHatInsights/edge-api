@@ -30,7 +30,7 @@ func InitRepoBuilder() {
 // RepoBuilderInterface defines the interface of a repository builder
 type RepoBuilderInterface interface {
 	BuildUpdateRepo(ut *models.UpdateTransaction) (*models.UpdateTransaction, error)
-	ImportRepo(r *models.Repo) error
+	ImportRepo(r *models.Repo) (*models.Repo, error)
 }
 
 // RepoBuilder is the implementation of a RepoBuilderInterface
@@ -144,7 +144,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 }
 
 // ImportRepo (unpack and upload) a single repo
-func (rb *RepoBuilder) ImportRepo(r *models.Repo) error {
+func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 	cfg := config.Get()
 
 	path := filepath.Join(cfg.RepoTempPath, strconv.FormatUint(uint64(r.ID), 10))
@@ -152,16 +152,16 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) error {
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
 		log.Error(err)
-		return err
+		return nil, err
 	}
 	err = os.Chdir(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	err = DownloadExtractVersionRepo(r.Commit, path)
 	if err != nil {
 		log.Error(err)
-		return err
+		return nil, err
 	}
 
 	var uploader Uploader
@@ -176,19 +176,19 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) error {
 	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(r.ID), 10))
 	if err != nil {
 		log.Error(err)
-		return err
+		return nil, err
 	}
 
 	var repo models.Repo
 	result := db.DB.First(&repo, r.ID)
 	if result.Error != nil {
 		log.Error(err)
-		return result.Error
+		return nil, result.Error
 	}
 	repo.URL = repoURL
 	db.DB.Save(&repo)
 
-	return nil
+	return &repo, nil
 }
 
 // DownloadExtractVersionRepo Download and Extract the repo tarball to dest dir
