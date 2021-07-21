@@ -7,6 +7,8 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/common"
+	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
 //MakeRouter defines the available actions for Repos
@@ -68,4 +70,18 @@ func CreateRepo(w http.ResponseWriter, r *http.Request) {
 
 // GetAll repositories
 func GetAll(w http.ResponseWriter, r *http.Request) {
+	var repos []models.Repo
+	account, err := common.GetAccount(r)
+	pagination := common.GetPagination(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&repos)
+	if result.Error != nil {
+		http.Error(w, result.Error.Error(), http.StatusBadRequest)
+		return
+	}
+
+	json.NewEncoder(w).Encode(&repos)
 }
