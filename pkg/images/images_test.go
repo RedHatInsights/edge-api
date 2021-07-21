@@ -70,7 +70,7 @@ func (c *MockImageBuilderClient) ComposeCommit(image *models.Image, headers map[
 	return image, nil
 }
 
-func (c *MockImageBuilderClient) ComposeInstaller(image *models.Image, headers map[string]string) (*models.Image, error) {
+func (c *MockImageBuilderClient) ComposeInstaller(repo *models.Repo, image *models.Image, headers map[string]string) (*models.Image, error) {
 	return image, nil
 }
 
