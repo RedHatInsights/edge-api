@@ -3,15 +3,16 @@ package playbooks
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"text/template"
 
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/commits"
 	log "github.com/sirupsen/logrus"
 )
 
-type playboppoks struct {
+type playbooks struct {
 	GoTemplateRemoteName string
 	GoTemplateRemoteURL  string
 	GoTemplateContentURL string
@@ -32,16 +33,22 @@ type TemplateRemoteInfo struct {
 	UpdateTransaction int
 }
 
-func WriteTemplate(tempalteInfo TemplateRemoteInfo) {
+type S3Uploader struct {
+	Client            *s3.S3
+	S3ManagerUploader *s3manager.Uploader
+	Bucket            string
+}
 
-	filePath := "../template/"
+func WriteTemplate(tempalteInfo TemplateRemoteInfo) (string, error) {
+	log.Debugf("::WriteTemplate: BEGIN")
+	filePath := "pkg/playbooks/"
 	templateName := "template_playbook_dispatcher_ostree_upgrade_payload.yml"
 	template, err := template.ParseFiles(filePath + templateName)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return "Playbook::WriteTemplate::Error::", err
 	}
-	templateData := playboppoks{
+	templateData := playbooks{
 		GoTemplateRemoteName: tempalteInfo.RemoteName,
 		GoTemplateRemoteURL:  tempalteInfo.RemoteURL,
 		GoTemplateContentURL: tempalteInfo.ContentURL,
@@ -56,24 +63,13 @@ func WriteTemplate(tempalteInfo TemplateRemoteInfo) {
 	fname := fmt.Sprintf("playbook_dispatcher_update_%v", tempalteInfo.UpdateTransaction) + ".yml"
 	path := filePath + fname
 	f, err := os.Create(path)
-	// f, err := os.Create("../template/playbook.yml")
 	if err != nil {
 		log.Println("create file: ", err)
-		return
+		return "Playbook::WriteTemplate::Error::", err
 	}
-	err = template.Execute(f, templateData)
-	if err != nil {
-		fmt.Println(err)
-	}
+	template.Execute(f, templateData)
 
-	f.Close()
-	uploadTemplate(tempalteInfo, "../template/")
-
-}
-
-func uploadTemplate(tempalteInfo TemplateRemoteInfo, tempalte_path string) {
 	cfg := config.Get()
-	path := filepath.Join(tempalte_path, "playbook.yml")
 	var uploader commits.Uploader
 	uploader = &commits.FileUploader{
 		BaseDir: path,
@@ -81,11 +77,15 @@ func uploadTemplate(tempalteInfo TemplateRemoteInfo, tempalte_path string) {
 	if cfg.BucketName != "" {
 		uploader = commits.NewS3Uploader()
 	}
-	log.Debug("::BuildUpdateRepo:uploader.UploadRepo: BEGIN")
-	repoURL, err := uploader.UploadRepo(filepath.Join(path, "playbook"), "playbook.yml")
-	log.Debug("::BuildUpdateRepo:uploader.UploadRepo: FINISH")
-	fmt.Printf("::BuildUpdateRepo:repoURL: %v", repoURL)
+	repoURL, err := uploader.UploadRepo(path, string(tempalteInfo.UpdateTransaction))
 	if err != nil {
-		return
+		log.Println("create file: ", err)
+		return "Playbook::WriteTemplate::Error::", err
+
 	}
+	log.Println("create file: ", repoURL)
+	os.Remove(path)
+	log.Debugf("::WriteTemplate: ENDs")
+	return repoURL, nil
+
 }

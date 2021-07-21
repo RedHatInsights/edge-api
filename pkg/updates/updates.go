@@ -105,14 +105,6 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	update.Repo = &models.Repo{}
 	update.Repo.Commit = update.Commit
 
-	var remoteInfo playbooks.TemplateRemoteInfo
-	remoteInfo.RemoteURL = update.Repo.URL
-	remoteInfo.RemoteName = update.Repo.Commit.Name
-	remoteInfo.ContentURL = update.Repo.URL
-	remoteInfo.UpdateTransaction = int(update.ID)
-
-	playbooks.WriteTemplate(remoteInfo)
-
 	log.Debugf("updateFromHTTP::update.Commit: %#v", update.Commit)
 	if err != nil {
 		err := apierrors.NewInternalServerError()
@@ -120,6 +112,21 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		w.WriteHeader(err.Status)
 		return &models.UpdateTransaction{}, err
 	}
+
+	var remoteInfo playbooks.TemplateRemoteInfo
+	remoteInfo.RemoteURL = update.Repo.URL
+	remoteInfo.RemoteName = update.Repo.Commit.Name
+	remoteInfo.ContentURL = update.Repo.URL
+	remoteInfo.UpdateTransaction = int(update.ID)
+	//FIX ME Add repoURL To Dispatcher Record (@Adam)
+	repoURL, err := playbooks.WriteTemplate(remoteInfo)
+	log.Debugf("playbooks:WriteTemplate: %#v", repoURL)
+	if err != nil {
+		err := apierrors.NewInternalServerError()
+		err.Title = "Error during playbook creation"
+		w.WriteHeader(err.Status)
+	}
+
 	inventoryHosts := update.InventoryHosts
 	oldCommits := update.OldCommits
 	// - populate the update.InventoryHosts []Device data
