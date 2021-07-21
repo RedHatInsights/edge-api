@@ -80,7 +80,7 @@ func WriteTemplate(templateInfo TemplateRemoteInfo) (string, error) {
 	if cfg.BucketName != "" {
 		uploader = commits.NewS3Uploader()
 	}
-	repoURL, err := uploader.UploadRepo(path, string(templateInfo.UpdateTransaction))
+	repoURL, err := uploader.UploadRepo(path, fmt.Sprint(templateInfo.UpdateTransaction))
 	if err != nil {
 		log.Println("create file: ", err)
 		return "", err
