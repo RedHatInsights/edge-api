@@ -19,6 +19,7 @@ import (
 )
 
 var image models.Image
+var repo models.Repo
 
 func setUp() {
 	config.Init()
@@ -33,12 +34,17 @@ func setUp() {
 		},
 	}
 	db.DB.Create(&image)
+	repo = models.Repo{
+		Commit: image.Commit,
+	}
+	db.DB.Create(&repo)
 	imagebuilder.Client = &MockImageBuilderClient{}
 	commits.RepoBuilderInstance = &MockRepositoryBuilder{}
 }
 
 func tearDown() {
 	db.DB.Delete(&image)
+	db.DB.Delete(&repo)
 }
 func TestMain(m *testing.M) {
 	setUp()
@@ -91,8 +97,8 @@ type MockRepositoryBuilder struct{}
 func (rb *MockRepositoryBuilder) BuildUpdateRepo(u *models.UpdateTransaction) (*models.UpdateTransaction, error) {
 	return nil, nil
 }
-func (rb *MockRepositoryBuilder) ImportRepo(r *models.Repo) error {
-	return nil
+func (rb *MockRepositoryBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
+	return &repo, nil
 }
 
 func TestCreateWasCalledWithAccountNotSet(t *testing.T) {
