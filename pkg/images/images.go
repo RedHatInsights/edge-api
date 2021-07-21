@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -479,9 +481,58 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	addSSHKeyToKickstart(sshKey string, username string, w)
-	exeMkksiso(kickstart string, image string, w)
-	cleanFiles(w)
+	// TODO, fill these var's with real data
+	sshKey := "Example Ssh key"
+	username := "Example Username"
+	kickstart := "finalKickstart.ks"
+	imageName := "Example ISO"
+	url := "Example URL"
+	filepath := "Example filepath"
+	// TODO Download image
+	err = downloadISO(filepath, url)
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+
+	err = addSSHKeyToKickstart(sshKey, username)
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+
+	err = exeMkksiso(kickstart, imageName)
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+
+	err = uploadISO(imageName, url)
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+
+	err = cleanFiles()
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
 
 	go func(id uint) {
 		var i *models.Image
@@ -504,66 +555,94 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 
 // template struct for username and ssh key
 type UnameSsh struct {
-     Sshkey	string
-     Username	string
+	Sshkey   string
+	Username string
 }
 
 // Adds user provided ssh key to the kickstart file.
-func addSSHKeyToKickstart(sshKey string, username string, w http.ResponseWriter) {
-     td := UnameSsh{sshKey , username}
+func addSSHKeyToKickstart(sshKey string, username string) error {
+	td := UnameSsh{sshKey, username}
+	t, err := template.ParseFiles("templateKickstart.ks")
+	if err != nil {
+		return err
+	}
 
-     t, err := template.ParseFiles("templateKickstart.ks")
-     if err != nil {
-     	log.Error(err)
-	err := errors.NewInternalServerError()
-	w.WriteHeader(err.Status)
-	json.NewEncoder(w).Encode(&err)
-	return
-     }
+	file, err := os.Create("finalKickstart.ks")
+	if err != nil {
+		return err
+	}
 
-     file, err := os.Create("finalKickstart.ks")
-     if err != nil {
-     	log.Error(err)
-	err := errors.NewInternalServerError()
-	w.WriteHeader(err.Status)
-	json.NewEncoder(w).Encode(&err)
-	return
-     }
-
-     err = t.Execute(file, td)
-     if err != nil {
-     	log.Error(err)
-	err := errors.NewInternalServerError()
-	w.WriteHeader(err.Status)
-	json.NewEncoder(w).Encode(&err)
-	return
-     }
-     file.Close()
+	err = t.Execute(file, td)
+	if err != nil {
+		return err
+	}
+	file.Close()
+	return nil
 }
 
 // Inject the custom kickstart into the iso via mkksiso.
-func exeMkksiso( kickstart string, image string, w http.ResponseWriter ) {
-     cmd := exec.Command( "sudo",  "mkksiso", kickstart, image, image )
-     if output, err := cmd.Output(); err != nil {
-     	log.Error(err)
-	err := errors.NewInternalServerError()
-	w.WriteHeader(err.Status)
-	json.NewEncoder(w).Encode(&err)
-	return
-     } else {
-       log.Info( "mkksiso output: %s\n", output )
-     }
+func exeMkksiso(kickstart string, image string) error {
+	cmd := exec.Command("sudo", "mkksiso", kickstart, image, image)
+	if output, err := cmd.Output(); err != nil {
+		return err
+	} else {
+		log.Info("mkksiso output: %s\n", output)
+	}
+	return nil
 }
 
 // Remove edited kickstart after use.
-func cleanFiles(w http.ResponseWriter) {
-     err := os.Remove("finalKickstart.ks")
-     if err != nil {
-     	log.Error(err)
-	err := errors.NewInternalServerError()
-	w.WriteHeader(err.Status)
-	json.NewEncoder(w).Encode(&err)
-	return
-     }
-     log.Info("Edited kickstart file removed!")
+func cleanFiles() error {
+	err := os.Remove("finalKickstart.ks")
+	if err != nil {
+		return err
+	}
+	log.Info("Edited kickstart file removed!")
+	return nil
+}
+
+// Download created ISO into the file system.
+func downloadISO(filepath string, url string) error {
+	iso, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer iso.Close()
+
+	res, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	_, err = io.Copy(iso, res.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Upload finished ISO to S3
+func uploadISO(isoFilename string, url string) error {
+	reader, writer := io.Pipe()
+	multiWriter := multipart.NewWriter(writer)
+	defer writer.Close()
+	defer multiWriter.Close()
+
+	chunk, err := multiWriter.CreateFormFile("ISO upload", isoFilename)
+	if err != nil {
+		return err
+	}
+	isofile, err := os.Open(isoFilename)
+	if err != nil {
+		return err
+	}
+	defer isofile.Close()
+	if _, err = io.Copy(chunk, isofile); err != nil {
+		return err
+	}
+
+	http.Post(url, multiWriter.FormDataContentType(), reader)
+	return nil
 }
