@@ -158,7 +158,7 @@ func postProcessImage(id uint, headers map[string]string) {
 		log.Error(tx.Error)
 		panic(tx.Error)
 	}
-	err := commits.RepoBuilderInstance.ImportRepo(repo)
+	repo, err := commits.RepoBuilderInstance.ImportRepo(repo)
 	if err != nil {
 		log.Error(err)
 		panic(err)
