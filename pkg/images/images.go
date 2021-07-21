@@ -432,11 +432,18 @@ func GetByID(w http.ResponseWriter, r *http.Request) {
 // It requires a created image and an update for the commit
 func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	image := getImage(w, r)
-	image.Installer = &models.Installer{
-		Status:  models.ImageStatusCreated,
-		Account: image.Account,
+	// TODO AARON modify to installer and ensure it works
+	var imageInstaller *models.Installer
+	if err := json.NewDecoder(r.Body).Decode(&imageInstaller); err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
 	}
 	image.ImageType = models.ImageTypeInstaller
+	image.Installer = imageInstaller
+
 	tx := db.DB.Save(&image)
 	if tx.Error != nil {
 		log.Error(tx.Error)
@@ -481,64 +488,12 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	// TODO, fill these var's with real data
-	sshKey := "Example Ssh key"
-	username := "Example Username"
-	kickstart := "finalKickstart.ks"
-	imageName := "Example ISO"
-	url := "Example URL"
-	filepath := "Example filepath"
-	// TODO Download image
-	err = downloadISO(filepath, url)
-	if err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
-
-	err = addSSHKeyToKickstart(sshKey, username)
-	if err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
-
-	err = exeMkksiso(kickstart, imageName)
-	if err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
-
-	err = uploadISO(imageName, url)
-	if err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
-
-	err = cleanFiles()
-	if err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
 
 	go func(id uint) {
 		var i *models.Image
 		db.DB.Joins("Commit").Joins("Installer").First(&i, id)
 		for {
-			i, err := updateImageStatus(i, headers)
+			i, err := updateImageStatus(i, r)
 			if err != nil {
 				panic(err)
 			}
@@ -547,10 +502,81 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 			}
 			time.Sleep(1 * time.Minute)
 		}
+		// adding user info into ISO via kickstart file
+		if i.Installer.Status == models.ImageStatusSuccess {
+			err = addUserInfo(image, w)
+			if err != nil {
+				log.Error(err)
+				err := errors.NewInternalServerError()
+				w.WriteHeader(err.Status)
+				json.NewEncoder(w).Encode(&err)
+				return
+			}
+		}
 	}(image.ID)
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&image)
+}
+
+// Download the ISO, inject the kickstart with username and ssh key
+// re upload the ISO
+func addUserInfo(image *models.Image, w http.ResponseWriter) error {
+	// TODO, fill these var's with real data
+	sshKey := image.Installer.Sshkey
+	username := image.Installer.Username
+	kickstart := "finalKickstart.ks"
+	imageName := image.Name
+	downloadUrl := image.Installer.ImageBuildISOURL
+	uploadUrl := "Example upload URL"
+	filepath := "Example filepath"
+	// TODO Download image
+	err := downloadISO(filepath, downloadUrl)
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return err
+	}
+
+	err = addSSHKeyToKickstart(sshKey, username)
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return err
+	}
+
+	err = exeMkksiso(kickstart, imageName)
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return err
+	}
+
+	err = uploadISO(imageName, uploadUrl)
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return err
+	}
+
+	err = cleanFiles()
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return err
+	}
+
+	return nil
 }
 
 // template struct for username and ssh key
