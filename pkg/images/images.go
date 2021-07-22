@@ -514,10 +514,9 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 func addUserInfo(image *models.Image, w http.ResponseWriter) error {
 	downloadUrl := image.Installer.ImageBuildISOURL
 	uploadUrl := "Example upload URL"
-	filepath := "Example filepath"
 	imageName := image.Name
 
-	err := downloadISO(filepath, downloadUrl)
+	err := downloadISO(imageName, downloadUrl)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -548,8 +547,8 @@ func addUserInfo(image *models.Image, w http.ResponseWriter) error {
 }
 
 // Download created ISO into the file system.
-func downloadISO(filepath string, url string) error {
-	iso, err := os.Create(filepath)
+func downloadISO(isoName string, url string) error {
+	iso, err := os.Create(isoName)
 	if err != nil {
 		return err
 	}
