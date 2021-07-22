@@ -107,6 +107,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	// Get the models.Commit from the Commit ID passed in via JSON
 	update.Commit, err = common.GetCommitByID(updateJSON.CommitID)
 	log.Debugf("updateFromHTTP::update.Commit: %#v", update.Commit)
+	update.DispatchRecords = []models.DispatchRecord{}
 	if err != nil {
 		err := apierrors.NewInternalServerError()
 		err.Title = fmt.Sprintf("No commit found for CommitID %d", updateJSON.CommitID)
@@ -126,8 +127,9 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 			return &models.UpdateTransaction{}, err
 		} else {
 			log.Infof("Old Repo not found in database for CommitID, creating new one: %d", update.CommitID)
-			repo := new(models.Repo)
-			repo.Commit = update.Commit
+			repo := &models.Repo{
+				Commit: update.Commit,
+			}
 			db.DB.Create(&repo)
 			update.Repo = repo
 
@@ -148,9 +150,10 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		w.WriteHeader(err.Status)
 	}
 
-	inventoryHosts := update.InventoryHosts
+	devices := update.Devices
 	oldCommits := update.OldCommits
-	// - populate the update.InventoryHosts []Device data
+	dispatchRecords := update.DispatchRecords
+	// - populate the update.Devices []Device data
 	fmt.Printf("Devices in this tag %v", inventory.Result)
 	for _, device := range inventory.Result {
 		//  Check for the existence of a Repo that already has this commit and don't duplicate
@@ -163,16 +166,29 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 				return &models.UpdateTransaction{}, err
 			} else {
 				log.Infof("Existing Device not found in database, creating new one: %s", device.ID)
-				updateDevice = new(models.Device)
-				updateDevice.UUID = device.ID
+				updateDevice = &models.Device{
+					UUID: device.ID,
+				}
 				db.DB.Create(&updateDevice)
 			}
 		}
 		updateDevice.DesiredHash = update.Commit.OSTreeCommit
 		log.Debugf("updateFromHTTP::updateDevice: %#v", updateDevice)
-		inventoryHosts = append(inventoryHosts, *updateDevice)
-		log.Debugf("updateFromHTTP::inventoryHosts: %#v", inventoryHosts)
-		update.InventoryHosts = inventoryHosts
+		devices = append(devices, *updateDevice)
+		log.Debugf("updateFromHTTP::devices: %#v", devices)
+		update.Devices = devices
+		log.Debugf("updateFromHTTP::update.Devices: %#v", devices)
+
+		dispatchRecord := &models.DispatchRecord{
+			Device:      updateDevice,
+			PlaybookURL: "", // FIXME - need to populate this
+			Status:      models.DispatchRecordStatusCreated,
+		}
+		dispatchRecords = append(dispatchRecords, *dispatchRecord)
+		update.DispatchRecords = dispatchRecords
+		log.Debugf("updateFromHTTP::update.DispatchRecords: %#v", devices)
+
+		log.Debugf("updateFromHTTP::dispatchRecord: %#v", dispatchRecord)
 		for _, ostreeDeployment := range device.Ostree.RpmOstreeDeployments {
 			if ostreeDeployment.Booted {
 				log.Debugf("updateFromHTTP::ostreeDeployment.Booted: %#v", ostreeDeployment)
@@ -247,7 +263,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 		var dupeRecord models.UpdateTransaction
 		queryDuplicate := map[string]interface{}{
 			"Account":        update.Account,
-			"InventoryHosts": update.InventoryHosts,
+			"Devices": update.Devices,
 			"OldCommitIDs":   update.OldCommitIDs,
 		}
 		result := db.DB.Where(queryDuplicate).Find(&dupeRecord)
