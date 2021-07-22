@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -34,7 +35,7 @@ func setUp() {
 }
 
 func tearDown() {
-	db.DB.Delete(&cmt)
+	db.DB.Exec("DELETE FROM commits")
 }
 
 func mockCommit() {
@@ -70,6 +71,7 @@ func TestGetAllEmpty(t *testing.T) {
 
 		GetAll(response, request)
 		got := []string{}
+		fmt.Printf("Respose: %v\n", response.Body)
 		json.NewDecoder(response.Body).Decode(&got)
 
 		if len(got) != 0 {
@@ -92,6 +94,7 @@ func TestGetAll(t *testing.T) {
 			t.Errorf("Expected status code to be %q but got %q", want, got)
 		}
 	})
+
 }
 
 func TestGetById(t *testing.T) {

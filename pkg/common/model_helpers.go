@@ -49,7 +49,7 @@ func GetRepoByID(repoID uint) (*models.Repo, error) {
 }
 
 // GetRepoByCommitID
-// Pass in RepoID uint and get a *models.Repo back
+// Pass in Repo.CommitID uint and get a *models.Repo back
 func GetRepoByCommitID(commitID uint) (*models.Repo, error) {
 	log.Debugf("GetRepoByCommitID::commitID: %#v", commitID)
 	var repo models.Repo

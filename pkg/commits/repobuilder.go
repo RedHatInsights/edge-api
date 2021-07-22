@@ -137,14 +137,14 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	if updateDone.Repo == nil {
 		//  Check for the existence of a Repo that already has this commit and don't duplicate
 		var repo *models.Repo
-		repo, err = common.GetRepoByCommitID(update.Commit.ID)
+		repo, err = common.GetRepoByCommitID(update.CommitID)
 		if err == nil {
 			update.Repo = repo
 		} else {
 			if !(err.Error() == "record not found") {
 				log.Errorf("updateFromHTTP::GetRepoByCommitID::repo: %#v, %#v", repo, err)
 			} else {
-				log.Infof("Old Repo not found in database for CommitID, creating new one: %d", update.Commit.ID)
+				log.Infof("Old Repo not found in database for CommitID, creating new one: %d", update.CommitID)
 				updateDone.Repo = &models.Repo{}
 				updateDone.Repo.Commit = update.Commit
 			}

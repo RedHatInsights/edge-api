@@ -14,6 +14,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/playbooks"
 
 	apierrors "github.com/redhatinsights/edge-api/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -115,7 +116,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 
 	//  Check for the existence of a Repo that already has this commit and don't duplicate
 	var repo *models.Repo
-	repo, err = common.GetRepoByCommitID(update.Commit.ID)
+	repo, err = common.GetRepoByCommitID(update.CommitID)
 	if err == nil {
 		update.Repo = repo
 	} else {
@@ -124,13 +125,27 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return &models.UpdateTransaction{}, err
 		} else {
-			log.Infof("Old Repo not found in database for CommitID, creating new one: %d", update.Commit.ID)
+			log.Infof("Old Repo not found in database for CommitID, creating new one: %d", update.CommitID)
 			repo := new(models.Repo)
 			repo.Commit = update.Commit
 			db.DB.Create(&repo)
 			update.Repo = repo
 
 		}
+	}
+
+	var remoteInfo playbooks.TemplateRemoteInfo
+	remoteInfo.RemoteURL = update.Repo.URL
+	remoteInfo.RemoteName = update.Repo.Commit.Name
+	remoteInfo.ContentURL = update.Repo.URL
+	remoteInfo.UpdateTransaction = int(update.ID)
+	// FIXME Add repoURL To Dispatcher Record (@Adam)
+	repoURL, err := playbooks.WriteTemplate(remoteInfo)
+	log.Debugf("playbooks:WriteTemplate: %#v", repoURL)
+	if err != nil {
+		err := apierrors.NewInternalServerError()
+		err.Title = "Error during playbook creation"
+		w.WriteHeader(err.Status)
 	}
 
 	inventoryHosts := update.InventoryHosts
