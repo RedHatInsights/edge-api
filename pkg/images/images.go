@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strconv"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -519,16 +521,29 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 // Download the ISO, inject the kickstart with username and ssh key
 // re upload the ISO
 func addUserInfo(image *models.Image) error {
+	downloadUrl := image.Installer.ImageBuildISOURL
+	uploadUrl := "Example upload URL"
+	imageName := image.Name
 	sshKey := image.Installer.SSHKey
 	username := image.Installer.Username
 	kickstart := "finalKickstart-" + username + ".ks"
 
-	err := addSSHKeyToKickstart(sshKey, username, kickstart)
+	err := downloadISO(imageName, downloadUrl)
 	if err != nil {
 		return err
 	}
 
-	err = cleanFiles(kickstart)
+	err = addSSHKeyToKickstart(sshKey, username, kickstart)
+	if err != nil {
+		return err
+	}
+
+	err = uploadISO(image, uploadUrl)
+	if err != nil {
+		return err
+	}
+
+	err = cleanFiles("KickstartFile", imageName)
 	if err != nil {
 		return err
 	}
@@ -560,16 +575,60 @@ func addSSHKeyToKickstart(sshKey string, username string, kickstart string) erro
 		return err
 	}
 	file.Close()
+
 	return nil
 }
 
+// Download created ISO into the file system.
+func downloadISO(isoName string, url string) error {
+	iso, err := os.Create(isoName)
+	if err != nil {
+		return err
+	}
+	defer iso.Close()
+
+	res, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	_, err = io.Copy(iso, res.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Upload finished ISO to S3
+func uploadISO(image *models.Image, url string) error {
+	cfg := config.Get()
+	var uploader commits.Uploader
+	uploader = &commits.FileUploader{
+		BaseDir: "./",
+	}
+	if cfg.BucketName != "" {
+		uploader = commits.NewS3Uploader()
+	}
+	uploadPath := fmt.Sprintf("%s/isos/%s.iso", image.Account, image.Name)
+	return uploader.UploadFile(image.Name, uploadPath)
+}
+
 // Remove edited kickstart after use.
-func cleanFiles(kickstart string) error {
+func cleanFiles(kickstart string, isoName string) error {
 	err := os.Remove(kickstart)
 	if err != nil {
 		return err
 	}
 	log.Info("Kickstart file " + kickstart + " removed!")
+
+	err = os.Remove(isoName)
+	if err != nil {
+		return err
+	}
+	log.Info("ISO file " + isoName + " removed!")
+
 	return nil
 }
 
