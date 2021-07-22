@@ -522,13 +522,12 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 func addUserInfo(image *models.Image) error {
 	downloadUrl := image.Installer.ImageBuildISOURL
 	uploadUrl := "Example upload URL"
-	filepath := "Example filepath"
 	imageName := image.Name
 	sshKey := image.Installer.SSHKey
 	username := image.Installer.Username
 	kickstart := "finalKickstart-" + username + ".ks"
 
-	err := downloadISO(filepath, downloadUrl)
+	err := downloadISO(imageName, downloadUrl)
 	if err != nil {
 		return err
 	}
@@ -580,8 +579,8 @@ func addSSHKeyToKickstart(sshKey string, username string, kickstart string) erro
 }
 
 // Download created ISO into the file system.
-func downloadISO(filepath string, url string) error {
-	iso, err := os.Create(filepath)
+func downloadISO(isoName string, url string) error {
+	iso, err := os.Create(isoName)
 	if err != nil {
 		return err
 	}
