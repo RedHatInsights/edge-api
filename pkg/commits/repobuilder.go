@@ -128,13 +128,8 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 		return nil, err
 	}
 
-	var updateDone models.UpdateTransaction
-	result = db.DB.First(&updateDone, ut.ID)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	updateDone.Status = models.UpdateStatusSuccess
-	if updateDone.Repo == nil {
+	update.Status = models.UpdateStatusSuccess
+	if update.Repo == nil {
 		//  Check for the existence of a Repo that already has this commit and don't duplicate
 		var repo *models.Repo
 		repo, err = common.GetRepoByCommitID(update.CommitID)
@@ -145,16 +140,16 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 				log.Errorf("updateFromHTTP::GetRepoByCommitID::repo: %#v, %#v", repo, err)
 			} else {
 				log.Infof("Old Repo not found in database for CommitID, creating new one: %d", update.CommitID)
-				updateDone.Repo = &models.Repo{}
-				updateDone.Repo.Commit = update.Commit
+				update.Repo = &models.Repo{}
+				update.Repo.Commit = update.Commit
 			}
 		}
 
 	}
-	updateDone.Repo.URL = repoURL
-	db.DB.Save(&updateDone)
+	update.Repo.URL = repoURL
+	db.DB.Save(&update)
 
-	return &updateDone, nil
+	return &update, nil
 }
 
 // ImportRepo (unpack and upload) a single repo
