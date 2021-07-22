@@ -25,7 +25,7 @@ func setUp() {
 	config.Init()
 	config.Get().Debug = true
 	db.InitDB()
-	db.DB.AutoMigrate(&models.Commit{}, &models.UpdateTransaction{}, &models.Package{}, &models.Image{})
+	db.DB.AutoMigrate(&models.Commit{}, &models.UpdateTransaction{}, &models.Package{}, &models.Image{}, &models.Repo{})
 	image = models.Image{
 		Account: "0000000",
 		Status:  models.ImageStatusBuilding,
@@ -33,6 +33,7 @@ func setUp() {
 			Status: models.ImageStatusBuilding,
 		},
 	}
+	db.DB.Create(&image.Commit)
 	db.DB.Create(&image)
 	repo = models.Repo{
 		Commit: image.Commit,
@@ -43,6 +44,7 @@ func setUp() {
 }
 
 func tearDown() {
+	db.DB.Delete(&image.Commit)
 	db.DB.Delete(&image)
 	db.DB.Delete(&repo)
 }
@@ -270,4 +272,68 @@ func TestValidateGetAllSearchParams(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestGetRepoForImage(t *testing.T) {
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+
+	ctx := context.WithValue(req.Context(), imageKey, &image)
+	handler := http.HandlerFunc(GetRepoForImage)
+	handler.ServeHTTP(rr, req.WithContext(ctx))
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+		return
+	}
+
+	var repoResponse models.Repo
+	respBody, err := ioutil.ReadAll(rr.Body)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	err = json.Unmarshal(respBody, &repoResponse)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if repoResponse.ID != repo.ID {
+		t.Errorf("wrong repo id: got %v want %v",
+			repoResponse.ID, repo.ID)
+	}
+}
+
+func TestGetRepoForImageWhenNotFound(t *testing.T) {
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+
+	newImage := models.Image{
+		Account: "0000000",
+		Status:  models.ImageStatusBuilding,
+		Commit: &models.Commit{
+			Status: models.ImageStatusBuilding,
+		},
+	}
+	db.DB.Create(&newImage.Commit)
+	db.DB.Create(&newImage)
+	ctx := context.WithValue(req.Context(), imageKey, &newImage)
+	handler := http.HandlerFunc(GetRepoForImage)
+	handler.ServeHTTP(rr, req.WithContext(ctx))
+
+	if status := rr.Code; status != http.StatusNotFound {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusNotFound)
+		return
+	}
+
+	db.DB.Delete(&newImage.Commit)
+	db.DB.Delete(&newImage)
 }

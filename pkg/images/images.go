@@ -30,6 +30,7 @@ func MakeRouter(sub chi.Router) {
 		r.Get("/", GetByID)
 		r.Get("/status", GetStatusByID)
 		r.Post("/installer", CreateInstallerForImage)
+		r.Get("/repo", GetRepoForImage)
 	})
 }
 
@@ -429,7 +430,6 @@ func GetByID(w http.ResponseWriter, r *http.Request) {
 // It requires a created image and an update for the commit
 func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	image := getImage(w, r)
-	// TODO AARON modify to installer and ensure it works
 	var imageInstaller *models.Installer
 	if err := json.NewDecoder(r.Body).Decode(&imageInstaller); err != nil {
 		log.Error(err)
@@ -452,9 +452,9 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	}
 	headers := common.GetOutgoingHeaders(r)
 	var repo *models.Repo
-	result := db.DB.Where("ID = ?", image.Commit.ID).Take(&repo)
+	result := db.DB.Where("ID = ?", image.Commit.ID).First(&repo)
 	if result.Error != nil {
-		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit))
+		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
 		return
@@ -571,4 +571,19 @@ func cleanFiles(kickstart string) error {
 	}
 	log.Info("Kickstart file " + kickstart + " removed!")
 	return nil
+}
+
+//GetRepoForImage gets the repository for a Image
+func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
+	if image := getImage(w, r); image != nil {
+		var repo *models.Repo
+		result := db.DB.Where("commit_id = ?", image.Commit.ID).First(&repo)
+		if result.Error != nil {
+			err := errors.NewNotFound(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.Commit.ID))
+			w.WriteHeader(err.Status)
+			json.NewEncoder(w).Encode(&err)
+			return
+		}
+		json.NewEncoder(w).Encode(repo)
+	}
 }

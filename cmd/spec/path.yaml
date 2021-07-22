@@ -123,3 +123,27 @@ paths:
           description: There was an internal server error.
       summary: Get image status.
       description: This method goes to image builder if the image is still building and updates the status if needed.
+  /api/edge/v1/images/{imageId}/repo:
+    get:
+      operationId: getImageRepo
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.Repo'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Get Image OSTree repo.
+      description: Returns the information of the OSTree Repository of a particular Image.
