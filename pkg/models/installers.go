@@ -10,5 +10,5 @@ type Installer struct {
 	ComposeJobID     string `json:"ComposeJobID"`
 	Status           string `json:"Status"`
 	Username         string `json:"Username"`
-	Sshkey           string `json:"SshKey"`
+	SSHKey           string `json:"SshKey"`
 }

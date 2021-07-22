@@ -519,7 +519,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 // Download the ISO, inject the kickstart with username and ssh key
 // re upload the ISO
 func addUserInfo(image *models.Image) error {
-	sshKey := image.Installer.Sshkey
+	sshKey := image.Installer.SSHKey
 	username := image.Installer.Username
 	kickstart := "finalKickstart-" + username + ".ks"
 
