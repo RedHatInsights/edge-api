@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -490,8 +492,102 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 			}
 			time.Sleep(1 * time.Minute)
 		}
+		// adding user info into ISO via kickstart file
+		if i.Installer.Status == models.ImageStatusSuccess {
+			err = addUserInfo(image, w)
+			if err != nil {
+				log.Error(err)
+				err := errors.NewInternalServerError()
+				w.WriteHeader(err.Status)
+				json.NewEncoder(w).Encode(&err)
+				return
+			}
+		}
 	}(image.ID)
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&image)
+}
+
+// Download the ISO, inject the kickstart with username and ssh key
+// re upload the ISO
+func addUserInfo(image *models.Image, w http.ResponseWriter) error {
+	downloadUrl := image.Installer.ImageBuildISOURL
+	uploadUrl := "Example upload URL"
+	filepath := "Example filepath"
+	imageName := image.Name
+
+	err := downloadISO(filepath, downloadUrl)
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return err
+	}
+
+	err = uploadISO(imageName, uploadUrl)
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return err
+	}
+
+	err = cleanFiles("KickstartFile", imageName)
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return err
+	}
+
+	return nil
+}
+
+// Download created ISO into the file system.
+func downloadISO(filepath string, url string) error {
+	iso, err := os.Create(filepath)
+	if err != nil {
+		return err
+	}
+	defer iso.Close()
+
+	res, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	_, err = io.Copy(iso, res.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Upload finished ISO to S3
+func uploadISO(isoFilename string, url string) error {
+
+	return nil
+}
+
+// Remove edited kickstart after use.
+func cleanFiles(kickstart string, isoName string) error {
+	err := os.Remove(kickstart)
+	if err != nil {
+		return err
+	}
+	log.Info("Kickstart file " + kickstart + " removed!")
+
+	err = os.Remove(isoName)
+	if err != nil {
+		return err
+	}
+	log.Info("ISO file " + isoName + " removed!")
+
+	return nil
 }
