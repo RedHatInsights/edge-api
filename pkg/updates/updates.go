@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"context"
 	"time"
@@ -40,7 +41,7 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// FIXME - need to sort out how to get this query to be against commit.account
-	result := db.DB.Preload("DispatchRecords").Where("update_transactions.account = ?", account).Joins("Commit").Joins("Repo").Joins("Devices").Find(&updates)
+	result := db.DB.Preload("DispatchRecords").Preload("Devices").Where("update_transactions.account = ?", account).Joins("Commit").Joins("Repo").Find(&updates)
 	if result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusBadRequest)
 		return
@@ -200,16 +201,17 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 						log.Errorf("updateFromHTTP::result.Error: %#v", result.Error)
 						http.Error(w, result.Error.Error(), http.StatusBadRequest)
 						return &models.UpdateTransaction{}, err
-					} else {
-						log.Infof("Old Commit not found in database: %s", ostreeDeployment.Checksum)
 					}
 				}
-				oldCommits = append(oldCommits, oldCommit)
-				update.OldCommits = oldCommits
+				if result.RowsAffected == 0 {
+					log.Infof("Old Commit not found in database: %s", ostreeDeployment.Checksum)
+				} else {
+					oldCommits = append(oldCommits, oldCommit)
+				}
 			}
 		}
-
 	}
+	update.OldCommits = oldCommits
 
 	log.Debugf("updateFromHTTP::update: %#v", update)
 	return &update, err
@@ -289,8 +291,28 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 
 // GetByID obtains an update from the database for an account
 func GetByID(w http.ResponseWriter, r *http.Request) {
-	if update := getUpdate(w, r); update != nil {
+	var update models.UpdateTransaction
+
+	account, err := common.GetAccount(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if updateID := chi.URLParam(r, "updateID"); updateID != "" {
+		id, err := strconv.Atoi(updateID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		result := db.DB.Preload("DispatchRecords").Preload("Devices").Where("update_transactions.account = ?", account).Joins("Commit").Joins("Repo").Find(&update, id)
+		if result.Error != nil {
+			http.Error(w, result.Error.Error(), http.StatusNotFound)
+			return
+		}
 		json.NewEncoder(w).Encode(update)
+	} else {
+		json.NewEncoder(w).Encode(&models.UpdateTransaction{})
 	}
 }
 
