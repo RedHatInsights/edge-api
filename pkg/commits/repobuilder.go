@@ -136,7 +136,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 		if err == nil {
 			update.Repo = repo
 		} else {
-			if !(err.Error() == "record not found") {
+			if err.Error() != "record not found" {
 				log.Errorf("updateFromHTTP::GetRepoByCommitID::repo: %#v, %#v", repo, err)
 			} else {
 				log.Infof("Old Repo not found in database for CommitID, creating new one: %d", update.CommitID)
