@@ -198,6 +198,15 @@ func postProcessImage(id uint, headers map[string]string) {
 			time.Sleep(1 * time.Minute)
 		}
 
+		// adding user info into ISO via kickstart file
+		if i.Installer.Status == models.ImageStatusSuccess {
+			err = addUserInfo(i)
+			if err != nil {
+				log.Error(err)
+				panic(err)
+			}
+		}
+
 	}
 
 	if i.Commit.Status == models.ImageStatusSuccess {
@@ -538,10 +547,12 @@ func addUserInfo(image *models.Image) error {
 		return err
 	}
 
-	err = uploadISO(image, uploadUrl)
+	url, err := uploadISO(image, uploadUrl)
 	if err != nil {
 		return err
 	}
+	image.Installer.ImageBuildISOURL = url
+	db.DB.Save(image.Installer)
 
 	err = cleanFiles("KickstartFile", imageName)
 	if err != nil {
@@ -602,7 +613,7 @@ func downloadISO(isoName string, url string) error {
 }
 
 // Upload finished ISO to S3
-func uploadISO(image *models.Image, url string) error {
+func uploadISO(image *models.Image, url string) (string, error) {
 	cfg := config.Get()
 	var uploader commits.Uploader
 	uploader = &commits.FileUploader{
