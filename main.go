@@ -31,7 +31,7 @@ import (
 
 func setupDocsMiddleware(handler http.Handler) http.Handler {
 	opt := redoc.RedocOpts{
-		SpecURL: "./openapi.json",
+		SpecURL: "/api/edge/v1/openapi.json",
 	}
 	return redoc.Redoc(opt, handler)
 }

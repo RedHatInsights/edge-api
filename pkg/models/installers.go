@@ -9,4 +9,6 @@ type Installer struct {
 	ImageBuildISOURL string `json:"ImageBuildISOURL"`
 	ComposeJobID     string `json:"ComposeJobID"`
 	Status           string `json:"Status"`
+	Username         string `json:"Username"`
+	SSHKey           string `json:"SshKey"`
 }

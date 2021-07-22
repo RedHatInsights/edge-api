@@ -9,6 +9,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -31,6 +32,7 @@ func MakeRouter(sub chi.Router) {
 		r.Get("/", GetByID)
 		r.Get("/status", GetStatusByID)
 		r.Post("/installer", CreateInstallerForImage)
+		r.Get("/repo", GetRepoForImage)
 	})
 }
 
@@ -430,11 +432,17 @@ func GetByID(w http.ResponseWriter, r *http.Request) {
 // It requires a created image and an update for the commit
 func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	image := getImage(w, r)
-	image.Installer = &models.Installer{
-		Status:  models.ImageStatusCreated,
-		Account: image.Account,
+	var imageInstaller *models.Installer
+	if err := json.NewDecoder(r.Body).Decode(&imageInstaller); err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
 	}
 	image.ImageType = models.ImageTypeInstaller
+	image.Installer = imageInstaller
+
 	tx := db.DB.Save(&image)
 	if tx.Error != nil {
 		log.Error(tx.Error)
@@ -446,9 +454,9 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	}
 	headers := common.GetOutgoingHeaders(r)
 	var repo *models.Repo
-	result := db.DB.Where("ID = ?", image.Commit.ID).Take(&repo)
+	result := db.DB.Where("ID = ?", image.Commit.ID).First(&repo)
 	if result.Error != nil {
-		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit))
+		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
 		return
@@ -495,7 +503,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		}
 		// adding user info into ISO via kickstart file
 		if i.Installer.Status == models.ImageStatusSuccess {
-			err = addUserInfo(image, w)
+			err = addUserInfo(image)
 			if err != nil {
 				log.Error(err)
 				err := errors.NewInternalServerError()
@@ -512,36 +520,61 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 
 // Download the ISO, inject the kickstart with username and ssh key
 // re upload the ISO
-func addUserInfo(image *models.Image, w http.ResponseWriter) error {
+func addUserInfo(image *models.Image) error {
 	downloadUrl := image.Installer.ImageBuildISOURL
 	uploadUrl := "Example upload URL"
 	imageName := image.Name
+	sshKey := image.Installer.SSHKey
+	username := image.Installer.Username
+	kickstart := "finalKickstart-" + username + ".ks"
 
 	err := downloadISO(imageName, downloadUrl)
 	if err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
 		return err
 	}
+
+	err = addSSHKeyToKickstart(sshKey, username, kickstart)
+	if err != nil {
+		return err
+	}
+
 	err = uploadISO(image, uploadUrl)
 	if err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
 		return err
 	}
 
 	err = cleanFiles("KickstartFile", imageName)
 	if err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
 		return err
 	}
+
+	return nil
+}
+
+// template struct for username and ssh key
+type UnameSsh struct {
+	Sshkey   string
+	Username string
+}
+
+// Adds user provided ssh key to the kickstart file.
+func addSSHKeyToKickstart(sshKey string, username string, kickstart string) error {
+	td := UnameSsh{sshKey, username}
+	t, err := template.ParseFiles("templateKickstart.ks")
+	if err != nil {
+		return err
+	}
+
+	file, err := os.Create(kickstart)
+	if err != nil {
+		return err
+	}
+
+	err = t.Execute(file, td)
+	if err != nil {
+		return err
+	}
+	file.Close()
 
 	return nil
 }
@@ -597,4 +630,19 @@ func cleanFiles(kickstart string, isoName string) error {
 	log.Info("ISO file " + isoName + " removed!")
 
 	return nil
+}
+
+//GetRepoForImage gets the repository for a Image
+func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
+	if image := getImage(w, r); image != nil {
+		var repo *models.Repo
+		result := db.DB.Where("commit_id = ?", image.Commit.ID).First(&repo)
+		if result.Error != nil {
+			err := errors.NewNotFound(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.Commit.ID))
+			w.WriteHeader(err.Status)
+			json.NewEncoder(w).Encode(&err)
+			return
+		}
+		json.NewEncoder(w).Encode(repo)
+	}
 }
