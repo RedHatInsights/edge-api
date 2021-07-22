@@ -501,7 +501,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		}
 		// adding user info into ISO via kickstart file
 		if i.Installer.Status == models.ImageStatusSuccess {
-			err = addUserInfo(image, w)
+			err = addUserInfo(image)
 			if err != nil {
 				log.Error(err)
 				err := errors.NewInternalServerError()
@@ -518,26 +518,18 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 
 // Download the ISO, inject the kickstart with username and ssh key
 // re upload the ISO
-func addUserInfo(image *models.Image, w http.ResponseWriter) error {
+func addUserInfo(image *models.Image) error {
 	sshKey := image.Installer.Sshkey
 	username := image.Installer.Username
 	kickstart := "finalKickstart-" + username + ".ks"
 
 	err := addSSHKeyToKickstart(sshKey, username, kickstart)
 	if err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
 		return err
 	}
 
 	err = cleanFiles(kickstart)
 	if err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
 		return err
 	}
 
