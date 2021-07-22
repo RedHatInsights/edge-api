@@ -611,7 +611,7 @@ func uploadISO(image *models.Image, url string) error {
 	if cfg.BucketName != "" {
 		uploader = commits.NewS3Uploader()
 	}
-	uploadPath := fmt.Sprintf("%s/%s", image.Account, image.Installer.ImageBuildISOURL)
+	uploadPath := fmt.Sprintf("%s/isos/%s.iso", image.Account, image.Name)
 	return uploader.UploadFile(image.Name, uploadPath)
 }
 
