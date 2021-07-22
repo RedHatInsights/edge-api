@@ -8,24 +8,26 @@ import (
 
 // EdgeConfig represents the runtime configuration
 type EdgeConfig struct {
-	Hostname           string
-	Auth               bool
-	WebPort            int
-	MetricsPort        int
-	Logging            *loggingConfig
-	LogLevel           string
-	Debug              bool
-	Database           *dbConfig
-	BucketName         string
-	BucketRegion       *string
-	AccessKey          string
-	SecretKey          string
-	RepoTempPath       string
-	OpenAPIFilePath    string
-	ImageBuilderConfig *imageBuilderConfig
-	InventoryConfig    *inventoryConfig
-	S3ProxyURL         string
-	DefaultOSTreeRef   string
+	Hostname                 string
+	Auth                     bool
+	WebPort                  int
+	MetricsPort              int
+	Logging                  *loggingConfig
+	LogLevel                 string
+	Debug                    bool
+	Database                 *dbConfig
+	BucketName               string
+	BucketRegion             *string
+	AccessKey                string
+	SecretKey                string
+	RepoTempPath             string
+	OpenAPIFilePath          string
+	ImageBuilderConfig       *imageBuilderConfig
+	InventoryConfig          *inventoryConfig
+	S3ProxyURL               string
+	DefaultOSTreeRef         string
+	PlaybookDispatcherPSK    string
+	PlaybookDispatcherConfig *playbookDispatcherConfig
 }
 
 type dbConfig struct {
@@ -42,6 +44,12 @@ type imageBuilderConfig struct {
 
 type inventoryConfig struct {
 	URL string
+}
+
+type playbookDispatcherConfig struct {
+	URL    string
+	PSK    string
+	Status string
 }
 
 //
@@ -65,6 +73,9 @@ func Init() {
 	options.SetDefault("EdgeTarballsBucket", "rh-edge-tarballs")
 	options.SetDefault("ImageBuilderUrl", "http://image-builder:8080")
 	options.SetDefault("InventoryUrl", "http://host-inventory-service:8080/")
+	options.SetDefault("PlaybookDispatcherURL", "http://playbook-dispatcher:8080/")
+	options.SetDefault("PlaybookDispatcherStatusURL", "http://playbook-dispatcher:8080/")
+	options.SetDefault("PlaybookDispatcherPSK", "xxxxx")
 	options.SetDefault("RepoTempPath", "/tmp/repos/")
 	options.SetDefault("OpenAPIFilePath", "./cmd/spec/openapi.json")
 	options.SetDefault("Database", "sqlite")
@@ -94,6 +105,11 @@ func Init() {
 		},
 		InventoryConfig: &inventoryConfig{
 			URL: options.GetString("InventoryUrl"),
+		},
+		PlaybookDispatcherConfig: &playbookDispatcherConfig{
+			URL:    options.GetString("PlaybookDispatcherURL"),
+			PSK:    options.GetString("PlaybookDispatcherPSK"),
+			Status: options.GetString("PlaybookDispatcherStatusURL"),
 		},
 		S3ProxyURL: options.GetString("S3ProxyURL"),
 	}
