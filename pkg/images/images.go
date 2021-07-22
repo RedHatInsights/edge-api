@@ -4,11 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"mime/multipart"
 	"net/http"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 	"text/template"
@@ -493,7 +490,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		var i *models.Image
 		db.DB.Joins("Commit").Joins("Installer").First(&i, id)
 		for {
-			i, err := updateImageStatus(i, r)
+			i, err := updateImageStatus(i, headers)
 			if err != nil {
 				panic(err)
 			}
@@ -522,16 +519,11 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 // Download the ISO, inject the kickstart with username and ssh key
 // re upload the ISO
 func addUserInfo(image *models.Image, w http.ResponseWriter) error {
-	// TODO, fill these var's with real data
 	sshKey := image.Installer.Sshkey
 	username := image.Installer.Username
-	kickstart := "finalKickstart.ks"
-	imageName := image.Name
-	downloadUrl := image.Installer.ImageBuildISOURL
-	uploadUrl := "Example upload URL"
-	filepath := "Example filepath"
-	// TODO Download image
-	err := downloadISO(filepath, downloadUrl)
+	kickstart := "finalKickstart-" + username + ".ks"
+
+	err := addSSHKeyToKickstart(sshKey, username, kickstart)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -540,34 +532,7 @@ func addUserInfo(image *models.Image, w http.ResponseWriter) error {
 		return err
 	}
 
-	err = addSSHKeyToKickstart(sshKey, username)
-	if err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return err
-	}
-
-	err = exeMkksiso(kickstart, imageName)
-	if err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return err
-	}
-
-	err = uploadISO(imageName, uploadUrl)
-	if err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return err
-	}
-
-	err = cleanFiles()
+	err = cleanFiles(kickstart)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -586,14 +551,14 @@ type UnameSsh struct {
 }
 
 // Adds user provided ssh key to the kickstart file.
-func addSSHKeyToKickstart(sshKey string, username string) error {
+func addSSHKeyToKickstart(sshKey string, username string, kickstart string) error {
 	td := UnameSsh{sshKey, username}
 	t, err := template.ParseFiles("templateKickstart.ks")
 	if err != nil {
 		return err
 	}
 
-	file, err := os.Create("finalKickstart.ks")
+	file, err := os.Create(kickstart)
 	if err != nil {
 		return err
 	}
@@ -606,69 +571,12 @@ func addSSHKeyToKickstart(sshKey string, username string) error {
 	return nil
 }
 
-// Inject the custom kickstart into the iso via mkksiso.
-func exeMkksiso(kickstart string, image string) error {
-	cmd := exec.Command("sudo", "mkksiso", kickstart, image, image)
-	if output, err := cmd.Output(); err != nil {
-		return err
-	} else {
-		log.Info("mkksiso output: %s\n", output)
-	}
-	return nil
-}
-
 // Remove edited kickstart after use.
-func cleanFiles() error {
-	err := os.Remove("finalKickstart.ks")
+func cleanFiles(kickstart string) error {
+	err := os.Remove(kickstart)
 	if err != nil {
 		return err
 	}
-	log.Info("Edited kickstart file removed!")
-	return nil
-}
-
-// Download created ISO into the file system.
-func downloadISO(filepath string, url string) error {
-	iso, err := os.Create(filepath)
-	if err != nil {
-		return err
-	}
-	defer iso.Close()
-
-	res, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	_, err = io.Copy(iso, res.Body)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Upload finished ISO to S3
-func uploadISO(isoFilename string, url string) error {
-	reader, writer := io.Pipe()
-	multiWriter := multipart.NewWriter(writer)
-	defer writer.Close()
-	defer multiWriter.Close()
-
-	chunk, err := multiWriter.CreateFormFile("ISO upload", isoFilename)
-	if err != nil {
-		return err
-	}
-	isofile, err := os.Open(isoFilename)
-	if err != nil {
-		return err
-	}
-	defer isofile.Close()
-	if _, err = io.Copy(chunk, isofile); err != nil {
-		return err
-	}
-
-	http.Post(url, multiWriter.FormDataContentType(), reader)
+	log.Info("Kickstart file " + kickstart + " removed!")
 	return nil
 }
