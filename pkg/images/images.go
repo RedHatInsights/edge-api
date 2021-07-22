@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -526,7 +527,6 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 			}
 			time.Sleep(1 * time.Minute)
 		}
-		// adding user info into ISO via kickstart file
 		if i.Installer.Status == models.ImageStatusSuccess {
 			err = addUserInfo(image)
 			if err != nil {
@@ -570,6 +570,11 @@ func addUserInfo(image *models.Image) error {
 	}
 
 	err = addSSHKeyToKickstart(sshKey, username, kickstart)
+	if err != nil {
+		return err
+	}
+
+	err = exeInjectionScript(kickstart, image.Name)
 	if err != nil {
 		return err
 	}
@@ -710,4 +715,24 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+}
+
+// Inject the custom kickstart into the iso via mkksiso.
+func exeInjectionScript(kickstart string, image string) error {
+	absPath, err := filepath.Abs(".")
+	if err != nil {
+		return err
+	}
+
+	kickstart = absPath + kickstart
+	image = absPath + image
+	fleetBashScript := absPath + "fleetkick.sh"
+
+	cmd := exec.Command(fleetBashScript, kickstart, image, image, ".")
+	if output, err := cmd.Output(); err != nil {
+		return err
+	} else {
+		log.Info("fleetkick output: %s\n", output)
+	}
+	return nil
 }
