@@ -508,6 +508,6 @@ func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 			json.NewEncoder(w).Encode(&err)
 			return
 		}
-		json.NewEncoder(w).Encode(image)
+		json.NewEncoder(w).Encode(repo)
 	}
 }
