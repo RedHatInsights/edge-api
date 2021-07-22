@@ -76,9 +76,10 @@ func ReturnDevices(w http.ResponseWriter, r *http.Request) (Inventory, error) {
 func ReturnDevicesByID(w http.ResponseWriter, r *http.Request) (Inventory, error) {
 	uCtx, _ := r.Context().Value(UpdateContextKey).(UpdateContext) // this is sanitized in updates/updates
 	deviceID := uCtx.DeviceUUID
+	deviceIDParam := "&hostname_or_id=" + deviceID
 
 	url := fmt.Sprintf("%s/api/inventory/v1/hosts", config.Get().InventoryConfig.URL)
-	fullURL := url + filterParams + deviceID
+	fullURL := url + filterParams + deviceIDParam
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	req.Header.Add("Content-Type", "application/json")

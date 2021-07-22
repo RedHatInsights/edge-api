@@ -94,6 +94,49 @@ components:
         Title:
           type: string
       type: object
+    v1.Repo:
+      properties:
+        Commit:
+          properties:
+            Account:
+              type: string
+            Arch:
+              type: string
+            BlueprintToml:
+              type: string
+            BuildDate:
+              type: string
+            BuildNumber: {}
+            ComposeJobID:
+              type: string
+            ImageBuildHash:
+              type: string
+            ImageBuildParentHash:
+              type: string
+            ImageBuildTarURL:
+              type: string
+            OSTreeCommit:
+              type: string
+            OSTreeParentCommit:
+              type: string
+            OSTreeRef:
+              type: string
+            Packages:
+              items:
+                properties:
+                  Name:
+                    type: string
+                type: object
+              type: array
+            Status:
+              type: string
+          type: object
+        CommitID: {}
+        RepoStatus:
+          type: string
+        RepoURL:
+          type: string
+      type: object
 info:
   license:
     name: MIT
@@ -219,3 +262,27 @@ paths:
           description: There was an internal server error.
       summary: Get image status.
       description: This method goes to image builder if the image is still building and updates the status if needed.
+  /api/edge/v1/images/{imageId}/repo:
+    get:
+      operationId: getImageRepo
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.Repo'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Get Image OSTree repo.
+      description: Returns the information of the OSTree Repository of a particular Image.

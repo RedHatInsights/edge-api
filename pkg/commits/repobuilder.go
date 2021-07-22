@@ -30,7 +30,7 @@ func InitRepoBuilder() {
 // RepoBuilderInterface defines the interface of a repository builder
 type RepoBuilderInterface interface {
 	BuildUpdateRepo(ut *models.UpdateTransaction) (*models.UpdateTransaction, error)
-	ImportRepo(r *models.Repo) error
+	ImportRepo(r *models.Repo) (*models.Repo, error)
 }
 
 // RepoBuilder is the implementation of a RepoBuilderInterface
@@ -128,23 +128,32 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 		return nil, err
 	}
 
-	var updateDone models.UpdateTransaction
-	result = db.DB.First(&updateDone, ut.ID)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	updateDone.Status = models.UpdateStatusSuccess
-	if updateDone.Repo == nil {
-		updateDone.Repo = &models.Repo{}
-	}
-	updateDone.Repo.URL = repoURL
-	db.DB.Save(&updateDone)
+	update.Status = models.UpdateStatusSuccess
+	if update.Repo == nil {
+		//  Check for the existence of a Repo that already has this commit and don't duplicate
+		var repo *models.Repo
+		repo, err = common.GetRepoByCommitID(update.CommitID)
+		if err == nil {
+			update.Repo = repo
+		} else {
+			if err.Error() != "record not found" {
+				log.Errorf("updateFromHTTP::GetRepoByCommitID::repo: %#v, %#v", repo, err)
+			} else {
+				log.Infof("Old Repo not found in database for CommitID, creating new one: %d", update.CommitID)
+				update.Repo = &models.Repo{}
+				update.Repo.Commit = update.Commit
+			}
+		}
 
-	return &updateDone, nil
+	}
+	update.Repo.URL = repoURL
+	db.DB.Save(&update)
+
+	return &update, nil
 }
 
 // ImportRepo (unpack and upload) a single repo
-func (rb *RepoBuilder) ImportRepo(r *models.Repo) error {
+func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 	cfg := config.Get()
 
 	path := filepath.Join(cfg.RepoTempPath, strconv.FormatUint(uint64(r.ID), 10))
@@ -152,16 +161,16 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) error {
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
 		log.Error(err)
-		return err
+		return nil, err
 	}
 	err = os.Chdir(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	DownloadExtractVersionRepo(r.Commit, path)
+	err = DownloadExtractVersionRepo(r.Commit, path)
 	if err != nil {
 		log.Error(err)
-		return err
+		return nil, err
 	}
 
 	var uploader Uploader
@@ -176,19 +185,19 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) error {
 	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(r.ID), 10))
 	if err != nil {
 		log.Error(err)
-		return err
+		return nil, err
 	}
 
 	var repo models.Repo
 	result := db.DB.First(&repo, r.ID)
 	if result.Error != nil {
 		log.Error(err)
-		return result.Error
+		return nil, result.Error
 	}
 	repo.URL = repoURL
 	db.DB.Save(&repo)
 
-	return nil
+	return &repo, nil
 }
 
 // DownloadExtractVersionRepo Download and Extract the repo tarball to dest dir

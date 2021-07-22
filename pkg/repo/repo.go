@@ -13,7 +13,6 @@ import (
 func MakeRouter(server Server) func(sub chi.Router) {
 	return func(sub chi.Router) {
 		sub.Post("/", CreateRepo)
-		sub.Get("/", GetAll)
 		sub.Get("/{name}/*", server.ServeRepo)
 	}
 }
@@ -64,8 +63,4 @@ func CreateRepo(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(res)
-}
-
-// GetAll repositories
-func GetAll(w http.ResponseWriter, r *http.Request) {
 }
