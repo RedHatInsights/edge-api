@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -428,11 +430,17 @@ func GetByID(w http.ResponseWriter, r *http.Request) {
 // It requires a created image and an update for the commit
 func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	image := getImage(w, r)
-	image.Installer = &models.Installer{
-		Status:  models.ImageStatusCreated,
-		Account: image.Account,
+	var imageInstaller *models.Installer
+	if err := json.NewDecoder(r.Body).Decode(&imageInstaller); err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
 	}
 	image.ImageType = models.ImageTypeInstaller
+	image.Installer = imageInstaller
+
 	tx := db.DB.Save(&image)
 	if tx.Error != nil {
 		log.Error(tx.Error)
@@ -491,10 +499,78 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 			}
 			time.Sleep(1 * time.Minute)
 		}
+		// adding user info into ISO via kickstart file
+		if i.Installer.Status == models.ImageStatusSuccess {
+			err = addUserInfo(image)
+			if err != nil {
+				log.Error(err)
+				err := errors.NewInternalServerError()
+				w.WriteHeader(err.Status)
+				json.NewEncoder(w).Encode(&err)
+				return
+			}
+		}
 	}(image.ID)
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&image)
+}
+
+// Download the ISO, inject the kickstart with username and ssh key
+// re upload the ISO
+func addUserInfo(image *models.Image) error {
+	sshKey := image.Installer.SSHKey
+	username := image.Installer.Username
+	kickstart := "finalKickstart-" + username + ".ks"
+
+	err := addSSHKeyToKickstart(sshKey, username, kickstart)
+	if err != nil {
+		return err
+	}
+
+	err = cleanFiles(kickstart)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// template struct for username and ssh key
+type UnameSsh struct {
+	Sshkey   string
+	Username string
+}
+
+// Adds user provided ssh key to the kickstart file.
+func addSSHKeyToKickstart(sshKey string, username string, kickstart string) error {
+	td := UnameSsh{sshKey, username}
+	t, err := template.ParseFiles("templateKickstart.ks")
+	if err != nil {
+		return err
+	}
+
+	file, err := os.Create(kickstart)
+	if err != nil {
+		return err
+	}
+
+	err = t.Execute(file, td)
+	if err != nil {
+		return err
+	}
+	file.Close()
+	return nil
+}
+
+// Remove edited kickstart after use.
+func cleanFiles(kickstart string) error {
+	err := os.Remove(kickstart)
+	if err != nil {
+		return err
+	}
+	log.Info("Kickstart file " + kickstart + " removed!")
+	return nil
 }
 
 //GetRepoForImage gets the repository for a Image
