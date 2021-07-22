@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -537,7 +538,7 @@ func addUserInfo(image *models.Image) error {
 		return err
 	}
 
-	err = uploadISO(imageName, uploadUrl)
+	err = uploadISO(image, uploadUrl)
 	if err != nil {
 		return err
 	}
@@ -601,8 +602,17 @@ func downloadISO(isoName string, url string) error {
 }
 
 // Upload finished ISO to S3
-func uploadISO(isoFilename string, url string) error {
-	return nil
+func uploadISO(image *models.Image, url string) error {
+	cfg := config.Get()
+	var uploader commits.Uploader
+	uploader = &commits.FileUploader{
+		BaseDir: "./",
+	}
+	if cfg.BucketName != "" {
+		uploader = commits.NewS3Uploader()
+	}
+	uploadPath := fmt.Sprintf("%s/isos/%s.iso", image.Account, image.Name)
+	return uploader.UploadFile(image.Name, uploadPath)
 }
 
 // Remove edited kickstart after use.
