@@ -362,7 +362,7 @@ func updateImageStatus(image *models.Image, headers map[string]string) (*models.
 		if err != nil {
 			return image, err
 		}
-		if image.Commit.Status != models.ImageStatusBuilding && image.Installer == nil {
+		if image.Commit.Status != models.ImageStatusBuilding {
 			tx := db.DB.Save(&image.Commit)
 			if tx.Error != nil {
 				return image, tx.Error
