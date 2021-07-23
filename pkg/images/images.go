@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"text/template"
@@ -566,8 +567,13 @@ type UnameSsh struct {
 
 // Adds user provided ssh key to the kickstart file.
 func addSSHKeyToKickstart(sshKey string, username string, kickstart string) error {
+	absPath, err := filepath.Abs(".")
+	kickTemplatePath := absPath + "/pkg/images/templateKickstart.ks"
+	if err != nil {
+		return err
+	}
 	td := UnameSsh{sshKey, username}
-	t, err := template.ParseFiles("templateKickstart.ks")
+	t, err := template.ParseFiles(kickTemplatePath)
 	if err != nil {
 		return err
 	}
