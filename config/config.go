@@ -26,7 +26,6 @@ type EdgeConfig struct {
 	InventoryConfig          *inventoryConfig
 	S3ProxyURL               string
 	DefaultOSTreeRef         string
-	PlaybookDispatcherPSK    string
 	PlaybookDispatcherConfig *playbookDispatcherConfig
 }
 

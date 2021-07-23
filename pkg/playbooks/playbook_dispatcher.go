@@ -18,7 +18,7 @@ type DispatcherPayload struct {
 	Account     string
 }
 
-func ExecuteDispatcher(w http.ResponseWriter, r *http.Request, payload DispatcherPayload) {
+func ExecuteDispatcher(r *http.Request, payload DispatcherPayload) {
 	payloadBuf := new(bytes.Buffer)
 	json.NewEncoder(payloadBuf).Encode(payload)
 	cfg := config.Get()

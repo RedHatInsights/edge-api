@@ -173,6 +173,16 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		inventoryHosts = append(inventoryHosts, *updateDevice)
 		log.Debugf("updateFromHTTP::inventoryHosts: %#v", inventoryHosts)
 		update.InventoryHosts = inventoryHosts
+
+		// - Call playbook dispatcher
+		var payloadDispatcher playbooks.DispatcherPayload
+		payloadDispatcher.Recipient = updateDevice.UUID
+		payloadDispatcher.PlaybookURL = repoURL
+		payloadDispatcher.Account = update.Account
+		log.Debugf("Call Execute Dispatcher")
+		playbooks.ExecuteDispatcher(r, payloadDispatcher)
+		// - end playbook dispatcher
+
 		for _, ostreeDeployment := range device.Ostree.RpmOstreeDeployments {
 			if ostreeDeployment.Booted {
 				log.Debugf("updateFromHTTP::ostreeDeployment.Booted: %#v", ostreeDeployment)
