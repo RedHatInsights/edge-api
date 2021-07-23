@@ -17,9 +17,9 @@ type Image struct {
 	Status       string     `json:"Status"`
 	Version      int        `json:"Version" gorm:"default:1"`
 	ImageType    string     `json:"ImageType"`
-	CommitID     int        `json:"CommitID"`
+	CommitID     uint       `json:"CommitID"`
 	Commit       *Commit    `json:"Commit"`
-	InstallerID  *int       `json:"InstallerID"`
+	InstallerID  *uint      `json:"InstallerID"`
 	Installer    *Installer `json:"Installer"`
 }
 
