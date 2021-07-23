@@ -198,6 +198,13 @@ func postProcessImage(id uint, headers map[string]string) {
 			time.Sleep(1 * time.Minute)
 		}
 
+		if i.Installer.Status == models.ImageStatusSuccess {
+			err = addUserInfo(i)
+			if err != nil {
+				log.Error(err)
+				panic(err)
+			}
+		}
 	}
 
 	if i.Commit.Status == models.ImageStatusSuccess {
