@@ -461,15 +461,14 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	headers := common.GetOutgoingHeaders(r)
-	var repo *models.Repo
-	result := db.DB.Where("ID = ?", image.Commit.ID).First(&repo)
-	if result.Error != nil {
+	repo, err := common.GetRepoByCommitID(image.CommitID)
+	if err != nil {
 		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	image, err := imagebuilder.Client.ComposeInstaller(repo, image, headers)
+	image, err = imagebuilder.Client.ComposeInstaller(repo, image, headers)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -654,9 +653,8 @@ func cleanFiles(kickstart string, isoName string) error {
 //GetRepoForImage gets the repository for a Image
 func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		var repo *models.Repo
-		result := db.DB.Where("commit_id = ?", image.Commit.ID).First(&repo)
-		if result.Error != nil {
+		repo, err := common.GetRepoByCommitID(image.CommitID)
+		if err != nil {
 			err := errors.NewNotFound(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.Commit.ID))
 			w.WriteHeader(err.Status)
 			json.NewEncoder(w).Encode(&err)
