@@ -18,6 +18,7 @@ import (
 //Uploader is an interface for uploading repository
 type Uploader interface {
 	UploadRepo(src string, account string) (string, error)
+	UploadFile(fname string, uploadPath string) error
 }
 
 //S3Uploader defines the mechanism to upload data to S3
@@ -38,6 +39,12 @@ type FileUploader struct {
 // development without S3 and satisfies the interface
 func (u *FileUploader) UploadRepo(src string, account string) (string, error) {
 	return src, nil
+}
+
+// UploadFile is Basically a dummy function that returns no error but allows offline
+// development without S3 and satisfies the interface
+func (u *FileUploader) UploadFile(fname string, uploadPath string) error {
+	return nil
 }
 
 //NewS3Uploader creates a method to obtain a new S3 uploader
@@ -90,7 +97,7 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 			return nil
 		}
 
-		err = u.UploadFileToS3(path,
+		err = u.UploadFile(path,
 			fmt.Sprintf("%s/%s", account, strings.TrimPrefix(path, cfg.RepoTempPath)),
 		)
 		if err != nil {
@@ -105,11 +112,11 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 	return s3URL, nil
 }
 
-// UploadFileToS3 takes a FILename path as a string and then uploads that to
+// UploadFIle takes a Filename path as a string and then uploads that to
 // the supplied location in s3
-func (u *S3Uploader) UploadFileToS3(fname string, S3path string) error {
+func (u *S3Uploader) UploadFile(fname string, uploadPath string) error {
 	log.Debugf("S3Uploader::UploadFileToS3::fname: %#v", fname)
-	log.Debugf("S3Uploader::UploadFileToS3::S3path: %#v", S3path)
+	log.Debugf("S3Uploader::UploadFileToS3::S3path: %#v", uploadPath)
 	f, err := os.Open(fname)
 	if err != nil {
 		return fmt.Errorf("failed to open file %q, %v", fname, err)
@@ -118,7 +125,7 @@ func (u *S3Uploader) UploadFileToS3(fname string, S3path string) error {
 	// Upload the file to S3.
 	result, err := u.Client.PutObject(&s3.PutObjectInput{
 		Bucket: aws.String(u.Bucket),
-		Key:    aws.String(S3path),
+		Key:    aws.String(uploadPath),
 		Body:   f,
 		ACL:    aws.String("public-read"),
 	})

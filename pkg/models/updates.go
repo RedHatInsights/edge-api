@@ -36,20 +36,38 @@ UpdateTransaction
 */
 type UpdateTransaction struct {
 	gorm.Model
-	Commit         *Commit
-	CommitID       uint
-	Account        string
-	OldCommits     []Commit `gorm:"many2many:updatetransaction_commits;"`
-	InventoryHosts []Device `gorm:"many2many:updatetransaction_devices;"`
-	Tag            string
-	Status         string
-	RepoID         uint
-	Repo           *Repo
+	Commit          *Commit
+	CommitID        uint
+	Account         string
+	OldCommits      []Commit `gorm:"many2many:updatetransaction_commits;"`
+	Devices         []Device `gorm:"many2many:updatetransaction_devices;"`
+	Tag             string
+	Status          string
+	RepoID          uint
+	Repo            *Repo
+	DispatchRecords []DispatchRecord `gorm:"many2many:updatetransaction_dispatchrecords;"`
+}
+
+/*
+DispatchRecord
+
+	Represents the combination of a Playbook Dispatcher (https://github.com/RedHatInsights/playbook-dispatcher)
+	PlaybookURL, a pointer to a Device, and the status.
+
+	This is used within UpdateTransaction for accounting purposes.
+
+*/
+type DispatchRecord struct {
+	gorm.Model
+	PlaybookURL string
+	DeviceID    uint
+	Device      *Device
+	Status      string
 }
 
 const (
-	// InventoryHostsCantBeEmptyMessage is the error message when the hosts are empty
-	InventoryHostsCantBeEmptyMessage = "inventory hosts can not be empty"
+	// DevicesCantBeEmptyMessage is the error message when the hosts are empty
+	DevicesCantBeEmptyMessage = "devices can not be empty"
 
 	// UpdateStatusCreated is for when a update is created
 	UpdateStatusCreated = "CREATED"
@@ -61,10 +79,24 @@ const (
 	UpdateStatusSuccess = "SUCCESS"
 )
 
+const (
+	// DispatchRecordStatusCreated is for when a the DispatchRecord is created
+	DispatchRecordStatusCreated = "CREATED"
+	// DispatchRecordStatusBuilding is for when a UpdateTransaction has started
+	//		scheduling PlaybookDispatcher jobs but this one hasn't started yet
+	DispatchRecordStatusPending = "PENDING"
+	// DispatchRecordStatusRunning is for when a the DispatchRecord is running
+	DispatchRecordStatusRunning = "RUNNING"
+	// DispatchRecordStatusError is for when a playbook dispatcher job is in a error state
+	DispatchRecordStatusError = "ERROR"
+	// DispatchRecordStatusSuccess is for when a playbook dispatcher job is complete
+	DispatchRecordStatusComplete = "COMPLETE"
+)
+
 // ValidateRequest validates a Update Record Request
 func (ur *UpdateTransaction) ValidateRequest() error {
-	if ur.InventoryHosts == nil || len(ur.InventoryHosts) == 0 {
-		return errors.New(InventoryHostsCantBeEmptyMessage)
+	if ur.Devices == nil || len(ur.Devices) == 0 {
+		return errors.New(DevicesCantBeEmptyMessage)
 	}
 	return nil
 }

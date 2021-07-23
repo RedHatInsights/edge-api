@@ -4,14 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"text/template"
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -196,6 +199,13 @@ func postProcessImage(id uint, headers map[string]string) {
 			time.Sleep(1 * time.Minute)
 		}
 
+		if i.Installer.Status == models.ImageStatusSuccess {
+			err = addUserInfo(i)
+			if err != nil {
+				// TODO: Temporary. Handle error better.
+				log.Errorf("Kickstart file injection failed %s", err.Error())
+			}
+		}
 	}
 
 	if i.Commit.Status == models.ImageStatusSuccess {
@@ -451,15 +461,14 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	headers := common.GetOutgoingHeaders(r)
-	var repo *models.Repo
-	result := db.DB.Where("ID = ?", image.Commit.ID).First(&repo)
-	if result.Error != nil {
+	repo, err := common.GetRepoByCommitID(image.CommitID)
+	if err != nil {
 		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	image, err := imagebuilder.Client.ComposeInstaller(repo, image, headers)
+	image, err = imagebuilder.Client.ComposeInstaller(repo, image, headers)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -503,11 +512,8 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		if i.Installer.Status == models.ImageStatusSuccess {
 			err = addUserInfo(image)
 			if err != nil {
-				log.Error(err)
-				err := errors.NewInternalServerError()
-				w.WriteHeader(err.Status)
-				json.NewEncoder(w).Encode(&err)
-				return
+				// TODO: Temporary. Handle error better.
+				log.Errorf("Kickstart file injection failed %s", err.Error())
 			}
 		}
 	}(image.ID)
@@ -519,16 +525,29 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 // Download the ISO, inject the kickstart with username and ssh key
 // re upload the ISO
 func addUserInfo(image *models.Image) error {
+	downloadUrl := image.Installer.ImageBuildISOURL
+	uploadUrl := "Example upload URL"
+	imageName := image.Name
 	sshKey := image.Installer.SSHKey
 	username := image.Installer.Username
 	kickstart := "finalKickstart-" + username + ".ks"
 
-	err := addSSHKeyToKickstart(sshKey, username, kickstart)
+	err := downloadISO(imageName, downloadUrl)
 	if err != nil {
 		return err
 	}
 
-	err = cleanFiles(kickstart)
+	err = addSSHKeyToKickstart(sshKey, username, kickstart)
+	if err != nil {
+		return err
+	}
+
+	err = uploadISO(image, uploadUrl)
+	if err != nil {
+		return err
+	}
+
+	err = cleanFiles("KickstartFile", imageName)
 	if err != nil {
 		return err
 	}
@@ -544,8 +563,13 @@ type UnameSsh struct {
 
 // Adds user provided ssh key to the kickstart file.
 func addSSHKeyToKickstart(sshKey string, username string, kickstart string) error {
+	absPath, err := filepath.Abs(".")
+	kickTemplatePath := absPath + "/pkg/images/templateKickstart.ks"
+	if err != nil {
+		return err
+	}
 	td := UnameSsh{sshKey, username}
-	t, err := template.ParseFiles("templateKickstart.ks")
+	t, err := template.ParseFiles(kickTemplatePath)
 	if err != nil {
 		return err
 	}
@@ -560,25 +584,74 @@ func addSSHKeyToKickstart(sshKey string, username string, kickstart string) erro
 		return err
 	}
 	file.Close()
+
 	return nil
 }
 
+// Download created ISO into the file system.
+func downloadISO(isoName string, url string) error {
+	iso, err := os.Create(isoName)
+	if err != nil {
+		return err
+	}
+	defer iso.Close()
+
+	res, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	_, err = io.Copy(iso, res.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Upload finished ISO to S3
+func uploadISO(image *models.Image, url string) error {
+	cfg := config.Get()
+	var uploader commits.Uploader
+	uploader = &commits.FileUploader{
+		BaseDir: "./",
+	}
+	if cfg.BucketName != "" {
+		uploader = commits.NewS3Uploader()
+	}
+	uploadPath := fmt.Sprintf("%s/isos/%s.iso", image.Account, image.Name)
+	image.Installer.ImageBuildISOURL = fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", cfg.BucketName, *cfg.BucketRegion, uploadPath)
+	tx := db.DB.Save(&image.Installer)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return uploader.UploadFile(image.Name, uploadPath)
+}
+
 // Remove edited kickstart after use.
-func cleanFiles(kickstart string) error {
+func cleanFiles(kickstart string, isoName string) error {
 	err := os.Remove(kickstart)
 	if err != nil {
 		return err
 	}
 	log.Info("Kickstart file " + kickstart + " removed!")
+
+	err = os.Remove(isoName)
+	if err != nil {
+		return err
+	}
+	log.Info("ISO file " + isoName + " removed!")
+
 	return nil
 }
 
 //GetRepoForImage gets the repository for a Image
 func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		var repo *models.Repo
-		result := db.DB.Where("commit_id = ?", image.Commit.ID).First(&repo)
-		if result.Error != nil {
+		repo, err := common.GetRepoByCommitID(image.CommitID)
+		if err != nil {
 			err := errors.NewNotFound(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.Commit.ID))
 			w.WriteHeader(err.Status)
 			json.NewEncoder(w).Encode(&err)
