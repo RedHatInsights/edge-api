@@ -9,6 +9,7 @@ import (
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/common"
+	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -18,11 +19,11 @@ type DispatcherPayload struct {
 	Account     string
 }
 
-func ExecuteDispatcher(r *http.Request, payload DispatcherPayload) {
+func ExecuteDispatcher(r *http.Request, payload DispatcherPayload) (string, error) {
 	payloadBuf := new(bytes.Buffer)
 	json.NewEncoder(payloadBuf).Encode(payload)
 	cfg := config.Get()
-	log.Debugf("::executeDispatcher")
+	log.Debugf("::executeDispatcher::BEGIN")
 	url := cfg.PlaybookDispatcherConfig.URL
 
 	log.Infof("Requesting url: %s\n", url)
@@ -39,12 +40,14 @@ func ExecuteDispatcher(r *http.Request, payload DispatcherPayload) {
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Error(fmt.Printf("Playbook dispatcher: %s", err))
-		return
+		return models.DispatchRecordStatusError, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(resp.Body)
 		log.Errorf("error requesting inventory, got status code %d and body %s", resp.StatusCode, body)
-		return
+		return models.DispatchRecordStatusError, err
 	}
+	log.Debugf("::executeDispatcher::END")
+	return models.DispatchRecordStatusCreated, nil
 }
