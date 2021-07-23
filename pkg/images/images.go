@@ -202,8 +202,8 @@ func postProcessImage(id uint, headers map[string]string) {
 		if i.Installer.Status == models.ImageStatusSuccess {
 			err = addUserInfo(i)
 			if err != nil {
-				log.Error(err)
-				panic(err)
+				// TODO: Temporary. Handle error better.
+				log.Errorf("Kickstart file injection failed %s", err.Error())
 			}
 		}
 	}
@@ -512,11 +512,8 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		if i.Installer.Status == models.ImageStatusSuccess {
 			err = addUserInfo(image)
 			if err != nil {
-				log.Error(err)
-				err := errors.NewInternalServerError()
-				w.WriteHeader(err.Status)
-				json.NewEncoder(w).Encode(&err)
-				return
+				// TODO: Temporary. Handle error better.
+				log.Errorf("Kickstart file injection failed %s", err.Error())
 			}
 		}
 	}(image.ID)
