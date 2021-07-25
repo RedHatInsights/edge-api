@@ -24,6 +24,7 @@ import (
 // MakeRouter adds support for operations on update
 func MakeRouter(sub chi.Router) {
 	sub.Use(UpdateCtx)
+	sub.Get("/device/{DeviceUUID}", GetDeviceStatus)
 	sub.With(common.Paginate).Get("/", GetUpdates)
 	sub.Post("/", AddUpdate)
 	sub.Route("/{updateID}", func(r chi.Router) {
@@ -31,6 +32,42 @@ func MakeRouter(sub chi.Router) {
 		r.Get("/", GetByID)
 		r.Put("/", UpdatesUpdate)
 	})
+}
+
+// GetDeviceStatus returns the device with the given UUID that is associate to the account.
+// This is being used for the inventory table to determine whether the current device image
+// is the latest or older version.
+func GetDeviceStatus(w http.ResponseWriter, r *http.Request) {
+	// var devices []models.Device
+	var results []models.Device
+	//var results []models.UpdateTransaction
+	account, err := common.GetAccount(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	uuid := chi.URLParam(r, "DeviceUUID")
+	result := db.DB.
+		Select("desired_hash, connection_state, uuid").
+		Table("devices").
+		Joins(
+			`JOIN updatetransaction_devices ON
+			(updatetransaction_devices.device_id = devices.id AND devices.uuid = ?)`,
+			uuid,
+		).
+		Joins(
+			`JOIN update_transactions ON
+			(
+				update_transactions.id = updatetransaction_devices.update_transaction_id AND
+				update_transactions.account = ?
+			)`,
+			account,
+		).Find(&results)
+	if result.Error != nil {
+		http.Error(w, result.Error.Error(), http.StatusBadRequest)
+		return
+	}
+	json.NewEncoder(w).Encode(&results)
 }
 
 func GetUpdates(w http.ResponseWriter, r *http.Request) {
