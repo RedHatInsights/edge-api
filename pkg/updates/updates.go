@@ -180,13 +180,23 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		update.Devices = devices
 		log.Debugf("updateFromHTTP::update.Devices: %#v", devices)
 
+		// - Call playbook dispatcher
+		var payloadDispatcher playbooks.DispatcherPayload
+		payloadDispatcher.Recipient = updateDevice.UUID
+		payloadDispatcher.PlaybookURL = repoURL
+		payloadDispatcher.Account = update.Account
+		log.Debugf("Call Execute Dispatcher")
+		exc, err := playbooks.ExecuteDispatcher(r, payloadDispatcher)
+		// - end playbook dispatcher
+
 		dispatchRecord := &models.DispatchRecord{
 			Device:      updateDevice,
 			PlaybookURL: "", // FIXME - need to populate this
-			Status:      models.DispatchRecordStatusCreated,
+			Status:      exc,
 		}
 		dispatchRecords = append(dispatchRecords, *dispatchRecord)
 		update.DispatchRecords = dispatchRecords
+
 		log.Debugf("updateFromHTTP::update.DispatchRecords: %#v", devices)
 
 		log.Debugf("updateFromHTTP::dispatchRecord: %#v", dispatchRecord)
