@@ -158,6 +158,16 @@ func createRepoForImage(i *models.Image) *models.Repo {
 	return repo
 }
 
+func setErrorStatusOnImage(err error, i *models.Image) {
+	log.Error(err)
+	i.Status = models.ImageStatusError
+	tx := db.DB.Save(i)
+	if tx.Error != nil {
+		panic(tx.Error)
+	}
+	panic(err)
+}
+
 func postProcessImage(id uint, headers map[string]string) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -169,8 +179,7 @@ func postProcessImage(id uint, headers map[string]string) {
 	for {
 		i, err := updateImageStatus(i, headers)
 		if err != nil {
-			log.Error(err)
-			panic(err)
+			setErrorStatusOnImage(err, i)
 		}
 		if i.Commit.Status != models.ImageStatusBuilding {
 			break
@@ -188,19 +197,19 @@ func postProcessImage(id uint, headers map[string]string) {
 		i, err := imagebuilder.Client.ComposeInstaller(repo, i, headers)
 		if err != nil {
 			log.Error(err)
-			panic(err)
+			setErrorStatusOnImage(err, i)
 		}
 		i.Installer.Status = models.ImageStatusBuilding
 		tx := db.DB.Save(&i.Installer)
 		if tx.Error != nil {
 			log.Error(err)
-			panic(err)
+			setErrorStatusOnImage(err, i)
 		}
 
 		for {
 			i, err := updateImageStatus(i, headers)
 			if err != nil {
-				panic(err)
+				setErrorStatusOnImage(err, i)
 			}
 			if i.Installer.Status != models.ImageStatusBuilding {
 				break
@@ -211,8 +220,8 @@ func postProcessImage(id uint, headers map[string]string) {
 		if i.Installer.Status == models.ImageStatusSuccess {
 			err = addUserInfo(i)
 			if err != nil {
-				log.Error(err)
-				panic(err)
+				// TODO: Temporary. Handle error better.
+				log.Errorf("Kickstart file injection failed %s", err.Error())
 			}
 		}
 	}
@@ -510,7 +519,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		for {
 			i, err := updateImageStatus(i, headers)
 			if err != nil {
-				panic(err)
+				setErrorStatusOnImage(err, i)
 			}
 			if i.Installer.Status != models.ImageStatusBuilding {
 				break
@@ -521,11 +530,8 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		if i.Installer.Status == models.ImageStatusSuccess {
 			err = addUserInfo(image)
 			if err != nil {
-				log.Error(err)
-				err := errors.NewInternalServerError()
-				w.WriteHeader(err.Status)
-				json.NewEncoder(w).Encode(&err)
-				return
+				// TODO: Temporary. Handle error better.
+				log.Errorf("Kickstart file injection failed %s", err.Error())
 			}
 		}
 	}(image.ID)
