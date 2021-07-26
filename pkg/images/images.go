@@ -135,6 +135,16 @@ func createImage(image *models.Image, account string, headers map[string]string)
 	return nil
 }
 
+func setErrorStatusOnImage(err error, i *models.Image) {
+	log.Error(err)
+	i.Status = models.ImageStatusError
+	tx := db.DB.Save(i)
+	if tx.Error != nil {
+		panic(tx.Error)
+	}
+	panic(err)
+}
+
 func postProcessImage(id uint, headers map[string]string) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -146,8 +156,7 @@ func postProcessImage(id uint, headers map[string]string) {
 	for {
 		i, err := updateImageStatus(i, headers)
 		if err != nil {
-			log.Error(err)
-			panic(err)
+			setErrorStatusOnImage(err, i)
 		}
 		if i.Commit.Status != models.ImageStatusBuilding {
 			break
@@ -162,12 +171,12 @@ func postProcessImage(id uint, headers map[string]string) {
 	tx := db.DB.Create(repo)
 	if tx.Error != nil {
 		log.Error(tx.Error)
-		panic(tx.Error)
+		setErrorStatusOnImage(tx.Error, i)
 	}
 	repo, err := commits.RepoBuilderInstance.ImportRepo(repo)
 	if err != nil {
 		log.Error(err)
-		panic(err)
+		setErrorStatusOnImage(err, i)
 	}
 	log.Infof("OSTree repo %d for commit %d and Image %d is ready. ", repo.ID, i.Commit.ID, i.ID)
 
@@ -179,19 +188,19 @@ func postProcessImage(id uint, headers map[string]string) {
 		i, err := imagebuilder.Client.ComposeInstaller(repo, i, headers)
 		if err != nil {
 			log.Error(err)
-			panic(err)
+			setErrorStatusOnImage(err, i)
 		}
 		i.Installer.Status = models.ImageStatusBuilding
 		tx := db.DB.Save(&i.Installer)
 		if tx.Error != nil {
 			log.Error(err)
-			panic(err)
+			setErrorStatusOnImage(err, i)
 		}
 
 		for {
 			i, err := updateImageStatus(i, headers)
 			if err != nil {
-				panic(err)
+				setErrorStatusOnImage(err, i)
 			}
 			if i.Installer.Status != models.ImageStatusBuilding {
 				break
@@ -362,7 +371,7 @@ func updateImageStatus(image *models.Image, headers map[string]string) (*models.
 		if err != nil {
 			return image, err
 		}
-		if image.Commit.Status != models.ImageStatusBuilding && image.Installer == nil {
+		if image.Commit.Status != models.ImageStatusBuilding {
 			tx := db.DB.Save(&image.Commit)
 			if tx.Error != nil {
 				return image, tx.Error
@@ -501,7 +510,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		for {
 			i, err := updateImageStatus(i, headers)
 			if err != nil {
-				panic(err)
+				setErrorStatusOnImage(err, i)
 			}
 			if i.Installer.Status != models.ImageStatusBuilding {
 				break
