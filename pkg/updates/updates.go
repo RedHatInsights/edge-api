@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"context"
@@ -355,4 +356,30 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction
 		return nil
 	}
 	return update
+}
+
+func getDiffOnUpdate(ut models.UpdateTransaction) ([]string, []string) {
+
+	initialCommit := *ut.OldCommits[len(ut.OldCommits)-1].GetPackagesList()
+	updateCommit := *ut.Commit.GetPackagesList()
+
+	var added []string
+	for _, pkg := range updateCommit {
+		if !contains(initialCommit, pkg) {
+			added = append(added, pkg)
+		}
+	}
+
+	var removed []string
+	for _, pkg := range initialCommit {
+		if !contains(updateCommit, pkg) {
+			removed = append(removed, pkg)
+		}
+	}
+	return added, removed
+}
+
+func contains(s []string, searchterm string) bool {
+	i := sort.SearchStrings(s, searchterm)
+	return i < len(s) && s[i] == searchterm
 }
