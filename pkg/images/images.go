@@ -32,8 +32,10 @@ func MakeRouter(sub chi.Router) {
 		r.Use(ImageCtx)
 		r.Get("/", GetByID)
 		r.Get("/status", GetStatusByID)
-		r.Post("/installer", CreateInstallerForImage)
 		r.Get("/repo", GetRepoForImage)
+		r.Post("/installer", CreateInstallerForImage)
+		r.Post("/repo", CreateRepoForImage)
+		r.Post("/kickstart", CreateKickStartForImage)
 	})
 }
 
@@ -135,6 +137,27 @@ func createImage(image *models.Image, account string, headers map[string]string)
 	return nil
 }
 
+func createRepoForImage(i *models.Image) *models.Repo {
+	log.Infof("Commit %d for Image %d is ready. Creating OSTree repo.", i.Commit.ID, i.ID)
+	repo := &models.Repo{
+		CommitID: i.Commit.ID,
+		Commit:   i.Commit,
+	}
+	tx := db.DB.Create(repo)
+	if tx.Error != nil {
+		log.Error(tx.Error)
+		panic(tx.Error)
+	}
+	repo, err := commits.RepoBuilderInstance.ImportRepo(repo)
+	if err != nil {
+		log.Error(err)
+		panic(err)
+	}
+	log.Infof("OSTree repo %d for commit %d and Image %d is ready. ", repo.ID, i.Commit.ID, i.ID)
+
+	return repo
+}
+
 func setErrorStatusOnImage(err error, i *models.Image) {
 	log.Error(err)
 	i.Status = models.ImageStatusError
@@ -163,22 +186,8 @@ func postProcessImage(id uint, headers map[string]string) {
 		}
 		time.Sleep(1 * time.Minute)
 	}
-	log.Infof("Commit %#v for Image %#v is ready. Creating OSTree repo.", i.Commit, i)
-	repo := &models.Repo{
-		CommitID: i.Commit.ID,
-		Commit:   i.Commit,
-	}
-	tx := db.DB.Create(repo)
-	if tx.Error != nil {
-		log.Error(tx.Error)
-		setErrorStatusOnImage(tx.Error, i)
-	}
-	repo, err := commits.RepoBuilderInstance.ImportRepo(repo)
-	if err != nil {
-		log.Error(err)
-		setErrorStatusOnImage(err, i)
-	}
-	log.Infof("OSTree repo %d for commit %d and Image %d is ready. ", repo.ID, i.Commit.ID, i.ID)
+
+	repo := createRepoForImage(i)
 
 	// TODO: This is also where we need to get the metadata from image builder
 	// in a separate goroutine
@@ -531,6 +540,20 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&image)
 }
 
+// CreateRepoForImage creates a repo for a Image
+func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
+	image := getImage(w, r)
+
+	go func(id uint) {
+		var i *models.Image
+		db.DB.Joins("Commit").Joins("Installer").First(&i, id)
+		db.DB.First(&i.Commit, i.CommitID)
+		createRepoForImage(i)
+	}(image.ID)
+
+	w.WriteHeader(http.StatusOK)
+}
+
 // Download the ISO, inject the kickstart with username and ssh key
 // re upload the ISO
 func addUserInfo(image *models.Image) error {
@@ -667,5 +690,19 @@ func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		json.NewEncoder(w).Encode(repo)
+	}
+}
+
+func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
+	if image := getImage(w, r); image != nil {
+		err := addUserInfo(image)
+		if err != nil {
+			// TODO: Temporary. Handle error better.
+			log.Errorf("Kickstart file injection failed %s", err.Error())
+			err := errors.NewInternalServerError()
+			w.WriteHeader(err.Status)
+			json.NewEncoder(w).Encode(&err)
+			return
+		}
 	}
 }

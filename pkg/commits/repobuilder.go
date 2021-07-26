@@ -205,8 +205,10 @@ func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
 	// ensure we weren't passed a nil pointer
 	if c == nil {
 		log.Error("nil pointer to models.Commit provided")
-		return errors.New("Invalid Commit Provided: nil pointer")
+		return errors.New("invalid Commit Provided: nil pointer")
 	}
+	log.Debugf("DownloadExtractVersionRepo::CommitD: %d", c.ID)
+	log.Debugf("DownloadExtractVersionRepo::ImageBuildTarURL: %#v", c.ImageBuildTarURL)
 
 	// ensure the destination directory exists and then chdir there
 	log.Debugf("DownloadExtractVersionRepo::dest: %#v", dest)
