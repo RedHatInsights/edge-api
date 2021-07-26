@@ -35,6 +35,7 @@ func MakeRouter(sub chi.Router) {
 		r.Get("/repo", GetRepoForImage)
 		r.Post("/installer", CreateInstallerForImage)
 		r.Post("/repo", CreateRepoForImage)
+		r.Post("/kickstart", CreateKickStartForImage)
 	})
 }
 
@@ -683,5 +684,19 @@ func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		json.NewEncoder(w).Encode(repo)
+	}
+}
+
+func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
+	if image := getImage(w, r); image != nil {
+		err := addUserInfo(image)
+		if err != nil {
+			// TODO: Temporary. Handle error better.
+			log.Errorf("Kickstart file injection failed %s", err.Error())
+			err := errors.NewInternalServerError()
+			w.WriteHeader(err.Status)
+			json.NewEncoder(w).Encode(&err)
+			return
+		}
 	}
 }
