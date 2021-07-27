@@ -24,7 +24,7 @@ FROM registry.redhat.io/ubi8-minimal:latest
 COPY --from=builder /go/bin/edge-api /usr/bin
 COPY --from=builder /go/bin/edge-api-migrate /usr/bin
 COPY --from=builder /src/mypackage/myapp/cmd/spec/openapi.json /var/tmp
-
+COPY --from=builder /src/mypackage/myapp/pkg/images/templateKickstart.ks /var/tmp
 USER 1001
 
 CMD ["edge-api"]

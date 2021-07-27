@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"text/template"
@@ -557,12 +556,15 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 // Download the ISO, inject the kickstart with username and ssh key
 // re upload the ISO
 func addUserInfo(image *models.Image) error {
+	// Absolute path for manipulating ISO's
+	destPath := "/var/tmp/"
+
 	downloadUrl := image.Installer.ImageBuildISOURL
-	uploadUrl := "Example upload URL"
-	imageName := image.Name
 	sshKey := image.Installer.SSHKey
 	username := image.Installer.Username
-	kickstart := "finalKickstart-" + username + ".ks"
+	// Files that will be used to modify the ISO and will be cleaned
+	imageName := destPath + image.Name
+	kickstart := destPath + "finalKickstart-" + username + ".ks"
 
 	err := downloadISO(imageName, downloadUrl)
 	if err != nil {
@@ -574,12 +576,12 @@ func addUserInfo(image *models.Image) error {
 		return err
 	}
 
-	err = uploadISO(image, uploadUrl)
+	err = uploadISO(image, imageName)
 	if err != nil {
 		return err
 	}
 
-	err = cleanFiles("KickstartFile", imageName)
+	err = cleanFiles(kickstart, imageName)
 	if err != nil {
 		return err
 	}
@@ -595,11 +597,7 @@ type UnameSsh struct {
 
 // Adds user provided ssh key to the kickstart file.
 func addSSHKeyToKickstart(sshKey string, username string, kickstart string) error {
-	absPath, err := filepath.Abs(".")
-	kickTemplatePath := absPath + "/pkg/images/templateKickstart.ks"
-	if err != nil {
-		return err
-	}
+	kickTemplatePath := "/var/tmp/templateKickstart.ks"
 	td := UnameSsh{sshKey, username}
 	t, err := template.ParseFiles(kickTemplatePath)
 	if err != nil {
@@ -643,7 +641,7 @@ func downloadISO(isoName string, url string) error {
 }
 
 // Upload finished ISO to S3
-func uploadISO(image *models.Image, url string) error {
+func uploadISO(image *models.Image, imageName string) error {
 	cfg := config.Get()
 	var uploader commits.Uploader
 	uploader = &commits.FileUploader{
@@ -654,7 +652,7 @@ func uploadISO(image *models.Image, url string) error {
 	}
 
 	uploadPath := fmt.Sprintf("%s/isos/%s.iso", image.Account, image.Name)
-	url, err := uploader.UploadFile(image.Name, uploadPath)
+	url, err := uploader.UploadFile(imageName, uploadPath)
 
 	if err != nil {
 		image.Installer.ImageBuildISOURL = url
