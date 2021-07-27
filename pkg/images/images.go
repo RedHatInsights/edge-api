@@ -652,14 +652,19 @@ func uploadISO(image *models.Image, url string) error {
 	if cfg.BucketName != "" {
 		uploader = commits.NewS3Uploader()
 	}
+
 	uploadPath := fmt.Sprintf("%s/isos/%s.iso", image.Account, image.Name)
-	image.Installer.ImageBuildISOURL = fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", cfg.BucketName, *cfg.BucketRegion, uploadPath)
-	tx := db.DB.Save(&image.Installer)
-	if tx.Error != nil {
-		return tx.Error
+	url, err := uploader.UploadFile(image.Name, uploadPath)
+
+	if err != nil {
+		image.Installer.ImageBuildISOURL = url
+		tx := db.DB.Save(&image.Installer)
+		if tx.Error != nil {
+			return tx.Error
+		}
 	}
 
-	return uploader.UploadFile(image.Name, uploadPath)
+	return err
 }
 
 // Remove edited kickstart after use.
