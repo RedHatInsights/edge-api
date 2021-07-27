@@ -574,7 +574,7 @@ func addUserInfo(image *models.Image) error {
 		return err
 	}
 
-	err = exeInjectionScript(kickstart, image.Name)
+	err = exeInjectionScript(kickstart, image.Name, image.ID)
 	if err != nil {
 		return err
 	}
@@ -584,7 +584,7 @@ func addUserInfo(image *models.Image) error {
 		return err
 	}
 
-	err = cleanFiles("KickstartFile", imageName)
+	err = cleanFiles("KickstartFile", imageName, image.ID)
 	if err != nil {
 		return err
 	}
@@ -673,7 +673,7 @@ func uploadISO(image *models.Image, url string) error {
 }
 
 // Remove edited kickstart after use.
-func cleanFiles(kickstart string, isoName string) error {
+func cleanFiles(kickstart string, isoName string, imageID uint) error {
 	err := os.Remove(kickstart)
 	if err != nil {
 		return err
@@ -685,6 +685,13 @@ func cleanFiles(kickstart string, isoName string) error {
 		return err
 	}
 	log.Info("ISO file " + isoName + " removed!")
+
+	workDir := fmt.Sprintf("/var/tmp/workdir%d", imageID)
+	err = os.Remove(workDir)
+	if err != nil {
+		return err
+	}
+	log.Info("work dir file " + workDir + " removed!")
 
 	return nil
 }
@@ -718,17 +725,15 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 }
 
 // Inject the custom kickstart into the iso via mkksiso.
-func exeInjectionScript(kickstart string, image string) error {
-	absPath, err := filepath.Abs(".")
+func exeInjectionScript(kickstart string, image string, imageID uint) error {
+	fleetBashScript := "/usr/local/bin/fleetkick.sh"
+	workDir := fmt.Sprintf("/var/tmp/workdir%d", imageID)
+	err := os.Mkdir(workDir, 0755)
 	if err != nil {
 		return err
 	}
 
-	kickstart = absPath + kickstart
-	image = absPath + image
-	fleetBashScript := absPath + "fleetkick.sh"
-
-	cmd := exec.Command(fleetBashScript, kickstart, image, image, ".")
+	cmd := exec.Command(fleetBashScript, kickstart, image, image, workDir)
 	if output, err := cmd.Output(); err != nil {
 		return err
 	} else {
