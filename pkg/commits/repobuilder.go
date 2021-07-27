@@ -159,19 +159,19 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	remoteInfo.RemoteName = update.Repo.Commit.Name
 	remoteInfo.ContentURL = update.Repo.URL
 	remoteInfo.UpdateTransaction = int(update.ID)
-	repoURL, err = playbooks.WriteTemplate(remoteInfo)
+	playbookURL, err := playbooks.WriteTemplate(remoteInfo)
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
-	log.Debugf("playbooks:WriteTemplate: %#v", repoURL)
+	log.Debugf("playbooks:WriteTemplate: %#v", playbookURL)
 	// 3. Loop through all devices in UpdateTransaction
 	dispatchRecords := update.DispatchRecords
 	for _, device := range update.Devices {
 		// Create new &playbooks.DispatcherPayload{}
 		var payloadDispatcher playbooks.DispatcherPayload
 		payloadDispatcher.Recipient = device.UUID
-		payloadDispatcher.PlaybookURL = repoURL
+		payloadDispatcher.PlaybookURL = playbookURL
 		payloadDispatcher.Account = update.Account
 		log.Debugf("Call Execute Dispatcher")
 		//              Call playbooks.ExecuteDispatcher()
