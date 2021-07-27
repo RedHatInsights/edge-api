@@ -597,7 +597,7 @@ type UnameSsh struct {
 
 // Adds user provided ssh key to the kickstart file.
 func addSSHKeyToKickstart(sshKey string, username string, kickstart string) error {
-	kickTemplatePath := "/var/tmp/templateKickstart.ks"
+	kickTemplatePath := "/usr/local/etc/templateKickstart.ks"
 	td := UnameSsh{sshKey, username}
 	t, err := template.ParseFiles(kickTemplatePath)
 	if err != nil {
