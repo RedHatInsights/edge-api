@@ -174,7 +174,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 		payloadDispatcher.Account = update.Account
 		log.Debugf("Call Execute Dispatcher")
 		//              Call playbooks.ExecuteDispatcher()
-		exc, err := playbooks.ExecuteDispatcher(r, payloadDispatcher)
+		exc, err := playbooks.ExecuteDispatcher(payloadDispatcher)
 		if err != nil {
 			log.Error(err)
 			return nil, err
