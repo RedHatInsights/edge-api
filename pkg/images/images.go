@@ -600,19 +600,19 @@ func addSSHKeyToKickstart(sshKey string, username string, kickstart string) erro
 
 	td := UnameSsh{sshKey, username}
 
-	log.Info("Opening file %s", cfg.KickstartPath)
+	log.Infof("Opening file %s", cfg.KickstartPath)
 	t, err := template.ParseFiles(cfg.KickstartPath)
 	if err != nil {
 		return err
 	}
 
-	log.Info("Creating file %s", kickstart)
+	log.Infof("Creating file %s", kickstart)
 	file, err := os.Create(kickstart)
 	if err != nil {
 		return err
 	}
 
-	log.Info("Injecting username %s and key %s into template", username, sshKey)
+	log.Infof("Injecting username %s and key %s into template", username, sshKey)
 	err = t.Execute(file, td)
 	if err != nil {
 		return err
@@ -624,14 +624,14 @@ func addSSHKeyToKickstart(sshKey string, username string, kickstart string) erro
 
 // Download created ISO into the file system.
 func downloadISO(isoName string, url string) error {
-	log.Info("Creating iso %s", isoName)
+	log.Infof("Creating iso %s", isoName)
 	iso, err := os.Create(isoName)
 	if err != nil {
 		return err
 	}
 	defer iso.Close()
 
-	log.Info("Downloading ISO %s", url)
+	log.Infof("Downloading ISO %s", url)
 	res, err := http.Get(url)
 	if err != nil {
 		return err
