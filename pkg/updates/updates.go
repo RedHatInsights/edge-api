@@ -186,7 +186,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		payloadDispatcher.PlaybookURL = repoURL
 		payloadDispatcher.Account = update.Account
 		log.Debugf("Call Execute Dispatcher")
-		exc, err := playbooks.ExecuteDispatcher(r, payloadDispatcher)
+		exc, err := playbooks.ExecuteDispatcher(payloadDispatcher)
 		// - end playbook dispatcher
 
 		dispatchRecord := &models.DispatchRecord{

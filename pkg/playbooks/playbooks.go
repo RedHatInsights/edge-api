@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/commits"
+	"github.com/redhatinsights/edge-api/pkg/files"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -73,12 +73,12 @@ func WriteTemplate(templateInfo TemplateRemoteInfo) (string, error) {
 	template.Execute(f, templateData)
 
 	cfg := config.Get()
-	var uploader commits.Uploader
-	uploader = &commits.FileUploader{
+	var uploader files.Uploader
+	uploader = &files.FileUploader{
 		BaseDir: path,
 	}
 	if cfg.BucketName != "" {
-		uploader = commits.NewS3Uploader()
+		uploader = files.NewS3Uploader()
 	}
 	repoURL, err := uploader.UploadRepo(path, fmt.Sprint(templateInfo.UpdateTransaction))
 	if err != nil {

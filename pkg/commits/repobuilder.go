@@ -14,7 +14,9 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/files"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/playbooks"
 
 	"github.com/cavaliercoder/grab"
 	log "github.com/sirupsen/logrus"
@@ -110,12 +112,12 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 
 	}
 
-	var uploader Uploader
-	uploader = &FileUploader{
+	var uploader files.Uploader
+	uploader = &files.FileUploader{
 		BaseDir: path,
 	}
 	if cfg.BucketName != "" {
-		uploader = NewS3Uploader()
+		uploader = files.NewS3Uploader()
 	}
 	// FIXME: Need to actually do something with the return string for Server
 
@@ -149,6 +151,46 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	update.Repo.URL = repoURL
 	db.DB.Save(&update)
 
+	// FIXME - implement playbook dispatcher scheduling
+	// 1. Create template Playbook
+	// 2. Upload templated playbook
+	var remoteInfo playbooks.TemplateRemoteInfo
+	remoteInfo.RemoteURL = update.Repo.URL
+	remoteInfo.RemoteName = update.Repo.Commit.Name
+	remoteInfo.ContentURL = update.Repo.URL
+	remoteInfo.UpdateTransaction = int(update.ID)
+	playbookURL, err := playbooks.WriteTemplate(remoteInfo)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	log.Debugf("playbooks:WriteTemplate: %#v", playbookURL)
+	// 3. Loop through all devices in UpdateTransaction
+	dispatchRecords := update.DispatchRecords
+	for _, device := range update.Devices {
+		// Create new &playbooks.DispatcherPayload{}
+		var payloadDispatcher playbooks.DispatcherPayload
+		payloadDispatcher.Recipient = device.UUID
+		payloadDispatcher.PlaybookURL = playbookURL
+		payloadDispatcher.Account = update.Account
+		log.Debugf("Call Execute Dispatcher")
+		//              Call playbooks.ExecuteDispatcher()
+		exc, err := playbooks.ExecuteDispatcher(payloadDispatcher)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+		//              Update/Create UpdateRecord.DispatchRecord
+		dispatchRecord := models.DispatchRecord{
+			Device:      &device,
+			PlaybookURL: "", // FIXME - need to populate this
+			Status:      exc,
+		}
+		dispatchRecords = append(dispatchRecords, dispatchRecord)
+		update.DispatchRecords = dispatchRecords
+		//
+	}
+	db.DB.Save(&update)
 	return &update, nil
 }
 
@@ -173,12 +215,12 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		return nil, err
 	}
 
-	var uploader Uploader
-	uploader = &FileUploader{
+	var uploader files.Uploader
+	uploader = &files.FileUploader{
 		BaseDir: path,
 	}
 	if cfg.BucketName != "" {
-		uploader = NewS3Uploader()
+		uploader = files.NewS3Uploader()
 	}
 
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
