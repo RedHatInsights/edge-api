@@ -15,6 +15,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/playbooks"
 
 	"github.com/cavaliercoder/grab"
 	log "github.com/sirupsen/logrus"
@@ -149,6 +150,46 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	update.Repo.URL = repoURL
 	db.DB.Save(&update)
 
+	// FIXME - implement playbook dispatcher scheduling
+	// 1. Create template Playbook
+	// 2. Upload templated playbook
+	var remoteInfo playbooks.TemplateRemoteInfo
+	remoteInfo.RemoteURL = update.Repo.URL
+	remoteInfo.RemoteName = update.Repo.Commit.Name
+	remoteInfo.ContentURL = update.Repo.URL
+	remoteInfo.UpdateTransaction = int(update.ID)
+	repoURL, err = playbooks.WriteTemplate(remoteInfo)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	log.Debugf("playbooks:WriteTemplate: %#v", repoURL)
+	// 3. Loop through all devices in UpdateTransaction
+	dispatchRecords := update.DispatchRecords
+	for _, device := range update.Devices {
+		// Create new &playbooks.DispatcherPayload{}
+		var payloadDispatcher playbooks.DispatcherPayload
+		payloadDispatcher.Recipient = device.UUID
+		payloadDispatcher.PlaybookURL = repoURL
+		payloadDispatcher.Account = update.Account
+		log.Debugf("Call Execute Dispatcher")
+		//              Call playbooks.ExecuteDispatcher()
+		exc, err := playbooks.ExecuteDispatcher(r, payloadDispatcher)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+		//              Update/Create UpdateRecord.DispatchRecord
+		dispatchRecord := models.DispatchRecord{
+			Device:      &device,
+			PlaybookURL: "", // FIXME - need to populate this
+			Status:      exc,
+		}
+		dispatchRecords = append(dispatchRecords, dispatchRecord)
+		update.DispatchRecords = dispatchRecords
+		//
+	}
+	db.DB.Save(&update)
 	return &update, nil
 }
 
