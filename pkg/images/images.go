@@ -373,7 +373,6 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 }
 
 func updateImageStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
-	log.Info("Requesting image status on image builder aa")
 	if image.Commit.Status == models.ImageStatusBuilding {
 		image, err := imagebuilder.Client.GetCommitStatus(image, headers)
 		if err != nil {
@@ -568,22 +567,22 @@ func addUserInfo(image *models.Image) error {
 
 	err := downloadISO(imageName, downloadUrl)
 	if err != nil {
-		return err
+		return fmt.Errorf("error downloading ISO file :: %s", err.Error())
 	}
 
 	err = addSSHKeyToKickstart(sshKey, username, kickstart)
 	if err != nil {
-		return err
+		return fmt.Errorf("error adding ssh key to kickstart file :: %s", err.Error())
 	}
 
 	err = uploadISO(image, imageName)
 	if err != nil {
-		return err
+		return fmt.Errorf("error uploading ISO :: %s", err.Error())
 	}
 
 	err = cleanFiles(kickstart, imageName)
 	if err != nil {
-		return err
+		return fmt.Errorf("error cleaning files :: %s", err.Error())
 	}
 
 	return nil
@@ -600,16 +599,20 @@ func addSSHKeyToKickstart(sshKey string, username string, kickstart string) erro
 	cfg := config.Get()
 
 	td := UnameSsh{sshKey, username}
+
+	log.Info("Opening file %s", cfg.KickstartPath)
 	t, err := template.ParseFiles(cfg.KickstartPath)
 	if err != nil {
 		return err
 	}
 
+	log.Info("Creating file %s", kickstart)
 	file, err := os.Create(kickstart)
 	if err != nil {
 		return err
 	}
 
+	log.Info("Injecting username %s and key %s into template", username, sshKey)
 	err = t.Execute(file, td)
 	if err != nil {
 		return err
@@ -621,12 +624,14 @@ func addSSHKeyToKickstart(sshKey string, username string, kickstart string) erro
 
 // Download created ISO into the file system.
 func downloadISO(isoName string, url string) error {
+	log.Info("Creating iso %s", isoName)
 	iso, err := os.Create(isoName)
 	if err != nil {
 		return err
 	}
 	defer iso.Close()
 
+	log.Info("Downloading ISO %s", url)
 	res, err := http.Get(url)
 	if err != nil {
 		return err
