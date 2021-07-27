@@ -19,14 +19,19 @@ RUN CGO_ENABLED=0 go build -o /go/bin/edge-api-migrate cmd/migrate/migrate.go
 ############################
 # STEP 2 build a small image
 ############################
-FROM registry.redhat.io/ubi8-minimal:latest
+#FROM registry.redhat.io/ubi8-minimal:latest
+FROM quay.io/loadtheaccumulator/ubi8-isotools:latest
 
 COPY --from=builder /go/bin/edge-api /usr/bin
 COPY --from=builder /go/bin/edge-api-migrate /usr/bin
 COPY --from=builder /src/mypackage/myapp/cmd/spec/openapi.json /var/tmp
 
 # kickstart inject requirements
-COPY pkg/images/templateKickstart.ks /usr/local/etc
+COPY --from=builder /src/mypackage/myapp/pkg/images/fleetkick.sh /usr/local/bin
+COPY --from=builder /src/mypackage/myapp/pkg/images/templateKickstart.ks /usr/local/etc
+
+#RUN microdnf install -y pykickstart mtools xorriso genisoimage syslinux isomd5sum file
+ENV MTOOLS_SKIP_CHECK=1
 
 USER 1001
 
