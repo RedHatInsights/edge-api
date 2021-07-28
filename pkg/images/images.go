@@ -34,6 +34,7 @@ func MakeRouter(sub chi.Router) {
 		r.Get("/status", GetStatusByID)
 		r.Post("/installer", CreateInstallerForImage)
 		r.Get("/repo", GetRepoForImage)
+		r.Get("/metadata", GetMetadataForImage)
 	})
 }
 
@@ -182,6 +183,7 @@ func postProcessImage(id uint, headers map[string]string) {
 
 	// TODO: This is also where we need to get the metadata from image builder
 	// in a separate goroutine
+	go imagebuilder.Client.GetMetadata(i, headers)
 
 	// TODO: We need to discuss this whole thing post-July deliverable
 	if i.ImageType == models.ImageTypeInstaller {
@@ -668,4 +670,24 @@ func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 		}
 		json.NewEncoder(w).Encode(repo)
 	}
+}
+
+//GetMetadataForImage gets the metadata from image-builder on /metadata endpoint
+func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
+	headers := common.GetOutgoingHeaders(r)
+	var i *models.Image
+	if image := getImage(w, r); image != nil {
+		meta, err := imagebuilder.Client.GetMetadata(i, headers)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if image.Commit.OSTreeCommit != "" {
+			tx := db.DB.Save(&image.Commit.OSTreeCommit)
+			if tx.Error != nil {
+				panic(tx.Error)
+			}
+		}
+		json.NewEncoder(w).Encode(meta)
+	}
+
 }
