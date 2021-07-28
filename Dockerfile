@@ -28,6 +28,7 @@ COPY --from=builder /src/mypackage/myapp/cmd/spec/openapi.json /var/tmp
 
 # kickstart inject requirements
 COPY --from=builder /src/mypackage/myapp/pkg/images/fleetkick.sh /usr/local/bin
+RUN chmod +x /usr/local/bin/fleetkick.sh
 COPY --from=builder /src/mypackage/myapp/pkg/images/templateKickstart.ks /usr/local/etc
 
 #RUN microdnf install -y pykickstart mtools xorriso genisoimage syslinux isomd5sum file
