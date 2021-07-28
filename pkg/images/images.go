@@ -666,14 +666,15 @@ func uploadISO(image *models.Image, imageName string) error {
 	url, err := uploader.UploadFile(imageName, uploadPath)
 
 	if err != nil {
-		image.Installer.ImageBuildISOURL = url
-		tx := db.DB.Save(&image.Installer)
-		if tx.Error != nil {
-			return tx.Error
-		}
+		return fmt.Errorf("error uploading the ISO :: %s :: %s", uploadPath, err.Error())
 	}
 
-	return err
+	image.Installer.ImageBuildISOURL = url
+	tx := db.DB.Save(&image.Installer)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
 }
 
 // Remove edited kickstart after use.
