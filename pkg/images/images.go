@@ -577,7 +577,7 @@ func addUserInfo(image *models.Image) error {
 		return fmt.Errorf("error adding ssh key to kickstart file :: %s", err.Error())
 	}
 
-	err = exeInjectionScript(kickstart, image.Name, image.ID)
+	err = exeInjectionScript(kickstart, imageName, image.ID)
 	if err != nil {
 		return fmt.Errorf("error execuiting fleetkick script :: %s", err.Error())
 	}
