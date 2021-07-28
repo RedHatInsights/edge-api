@@ -743,7 +743,7 @@ func exeInjectionScript(kickstart string, image string, imageID uint) error {
 	if output, err := cmd.Output(); err != nil {
 		return err
 	} else {
-		log.Info("fleetkick output: %s\n", output)
+		log.Infof("fleetkick output: %s\n", output)
 	}
 	return nil
 }
