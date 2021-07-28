@@ -693,7 +693,7 @@ func cleanFiles(kickstart string, isoName string, imageID uint) error {
 	log.Info("ISO file " + isoName + " removed!")
 
 	workDir := fmt.Sprintf("/var/tmp/workdir%d", imageID)
-	err = os.Remove(workDir)
+	err = os.RemoveAll(workDir)
 	if err != nil {
 		return err
 	}
