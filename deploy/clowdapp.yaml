@@ -58,6 +58,8 @@ objects:
           value: ${IMAGEBUILDER_URL}
         - name: S3PROXYURL
           value: ${S3_PROXY_URL}
+        - name: INVENTORYURL
+          value: ${INVENTORY_URL}  
         resources:
           limits:
             cpu: ${{CPU_LIMIT}}
