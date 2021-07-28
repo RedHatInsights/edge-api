@@ -27,6 +27,7 @@ type EdgeConfig struct {
 	S3ProxyURL               string
 	DefaultOSTreeRef         string
 	PlaybookDispatcherConfig *playbookDispatcherConfig
+	KickstartPath            string `default:"/usr/local/etc/templateKickstart.ks"`
 }
 
 type dbConfig struct {

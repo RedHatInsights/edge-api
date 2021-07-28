@@ -19,7 +19,7 @@ type DispatcherPayload struct {
 	Account     string
 }
 
-func ExecuteDispatcher(r *http.Request, payload DispatcherPayload) (string, error) {
+func ExecuteDispatcher(payload DispatcherPayload) (string, error) {
 	payloadBuf := new(bytes.Buffer)
 	json.NewEncoder(payloadBuf).Encode(payload)
 	cfg := config.Get()
@@ -31,7 +31,7 @@ func ExecuteDispatcher(r *http.Request, payload DispatcherPayload) (string, erro
 
 	req.Header.Add("Content-Type", "application/json")
 
-	headers := common.GetOutgoingHeaders(r)
+	headers := common.GetOutgoingHeaders(req)
 	for key, value := range headers {
 		req.Header.Add(key, value)
 	}

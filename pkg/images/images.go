@@ -21,6 +21,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/imagebuilder"
+
+	"github.com/redhatinsights/edge-api/pkg/files"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
@@ -375,7 +377,6 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 }
 
 func updateImageStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
-	log.Info("Requesting image status on image builder aa")
 	if image.Commit.Status == models.ImageStatusBuilding {
 		image, err := imagebuilder.Client.GetCommitStatus(image, headers)
 		if err != nil {
@@ -557,21 +558,24 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 // Download the ISO, inject the kickstart with username and ssh key
 // re upload the ISO
 func addUserInfo(image *models.Image) error {
+	// Absolute path for manipulating ISO's
+	destPath := "/var/tmp/"
+
 	downloadUrl := image.Installer.ImageBuildISOURL
-	uploadUrl := "Example upload URL"
-	imageName := image.Name
 	sshKey := image.Installer.SSHKey
 	username := image.Installer.Username
-	kickstart := "finalKickstart-" + username + ".ks"
+	// Files that will be used to modify the ISO and will be cleaned
+	imageName := destPath + image.Name
+	kickstart := destPath + "finalKickstart-" + username + ".ks"
 
 	err := downloadISO(imageName, downloadUrl)
 	if err != nil {
-		return err
+		return fmt.Errorf("error downloading ISO file :: %s", err.Error())
 	}
 
 	err = addSSHKeyToKickstart(sshKey, username, kickstart)
 	if err != nil {
-		return err
+		return fmt.Errorf("error adding ssh key to kickstart file :: %s", err.Error())
 	}
 
 	err = exeInjectionScript(kickstart, image.Name, image.ID)
@@ -581,12 +585,12 @@ func addUserInfo(image *models.Image) error {
 
 	err = uploadISO(image, uploadUrl)
 	if err != nil {
-		return err
+		return fmt.Errorf("error uploading ISO :: %s", err.Error())
 	}
 
 	err = cleanFiles("KickstartFile", imageName, image.ID)
 	if err != nil {
-		return err
+		return fmt.Errorf("error cleaning files :: %s", err.Error())
 	}
 
 	return nil
@@ -600,22 +604,23 @@ type UnameSsh struct {
 
 // Adds user provided ssh key to the kickstart file.
 func addSSHKeyToKickstart(sshKey string, username string, kickstart string) error {
-	absPath, err := filepath.Abs(".")
-	kickTemplatePath := absPath + "/pkg/images/templateKickstart.ks"
-	if err != nil {
-		return err
-	}
+	cfg := config.Get()
+
 	td := UnameSsh{sshKey, username}
-	t, err := template.ParseFiles(kickTemplatePath)
+
+	log.Infof("Opening file %s", cfg.KickstartPath)
+	t, err := template.ParseFiles(cfg.KickstartPath)
 	if err != nil {
 		return err
 	}
 
+	log.Infof("Creating file %s", kickstart)
 	file, err := os.Create(kickstart)
 	if err != nil {
 		return err
 	}
 
+	log.Infof("Injecting username %s and key %s into template", username, sshKey)
 	err = t.Execute(file, td)
 	if err != nil {
 		return err
@@ -627,12 +632,14 @@ func addSSHKeyToKickstart(sshKey string, username string, kickstart string) erro
 
 // Download created ISO into the file system.
 func downloadISO(isoName string, url string) error {
+	log.Infof("Creating iso %s", isoName)
 	iso, err := os.Create(isoName)
 	if err != nil {
 		return err
 	}
 	defer iso.Close()
 
+	log.Infof("Downloading ISO %s", url)
 	res, err := http.Get(url)
 	if err != nil {
 		return err
@@ -648,18 +655,18 @@ func downloadISO(isoName string, url string) error {
 }
 
 // Upload finished ISO to S3
-func uploadISO(image *models.Image, url string) error {
+func uploadISO(image *models.Image, imageName string) error {
 	cfg := config.Get()
-	var uploader commits.Uploader
-	uploader = &commits.FileUploader{
+	var uploader files.Uploader
+	uploader = &files.FileUploader{
 		BaseDir: "./",
 	}
 	if cfg.BucketName != "" {
-		uploader = commits.NewS3Uploader()
+		uploader = files.NewS3Uploader()
 	}
 
 	uploadPath := fmt.Sprintf("%s/isos/%s.iso", image.Account, image.Name)
-	url, err := uploader.UploadFile(image.Name, uploadPath)
+	url, err := uploader.UploadFile(imageName, uploadPath)
 
 	if err != nil {
 		image.Installer.ImageBuildISOURL = url
