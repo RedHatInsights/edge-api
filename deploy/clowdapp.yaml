@@ -59,7 +59,7 @@ objects:
         - name: S3PROXYURL
           value: ${S3_PROXY_URL}
         - name: INVENTORYURL
-          value: ${INVENTORY_URL}  
+          value: ${INVENTORYURL}  
         resources:
           limits:
             cpu: ${{CPU_LIMIT}}
@@ -106,3 +106,5 @@ parameters:
   value: "http://image-builder:8080"
 - name: S3_PROXY_URL
   value: "http://s3-edge-api-proxy"
+- name: INVENTORYURL
+  value: "http://host-inventory-service:8080/"  
