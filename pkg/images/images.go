@@ -119,10 +119,8 @@ func createImage(image *models.Image, account string, headers map[string]string)
 	image.Commit.Status = models.ImageStatusBuilding
 	image.Status = models.ImageStatusBuilding
 	if image.ImageType == models.ImageTypeInstaller {
-		image.Installer = &models.Installer{
-			Status:  models.ImageStatusCreated,
-			Account: image.Account,
-		}
+		image.Installer.Status = models.ImageStatusCreated
+		image.Installer.Account = image.Account
 		tx := db.DB.Create(&image.Installer)
 		if tx.Error != nil {
 			return tx.Error
