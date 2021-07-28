@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"text/template"
@@ -526,7 +527,6 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 			}
 			time.Sleep(1 * time.Minute)
 		}
-		// adding user info into ISO via kickstart file
 		if i.Installer.Status == models.ImageStatusSuccess {
 			err = addUserInfo(image)
 			if err != nil {
@@ -577,12 +577,17 @@ func addUserInfo(image *models.Image) error {
 		return fmt.Errorf("error adding ssh key to kickstart file :: %s", err.Error())
 	}
 
+	err = exeInjectionScript(kickstart, image.Name, image.ID)
+	if err != nil {
+		return fmt.Errorf("error execuiting fleetkick script :: %s", err.Error())
+	}
+
 	err = uploadISO(image, imageName)
 	if err != nil {
 		return fmt.Errorf("error uploading ISO :: %s", err.Error())
 	}
 
-	err = cleanFiles(kickstart, imageName)
+	err = cleanFiles(kickstart, imageName, image.ID)
 	if err != nil {
 		return fmt.Errorf("error cleaning files :: %s", err.Error())
 	}
@@ -674,7 +679,7 @@ func uploadISO(image *models.Image, imageName string) error {
 }
 
 // Remove edited kickstart after use.
-func cleanFiles(kickstart string, isoName string) error {
+func cleanFiles(kickstart string, isoName string, imageID uint) error {
 	err := os.Remove(kickstart)
 	if err != nil {
 		return err
@@ -686,6 +691,13 @@ func cleanFiles(kickstart string, isoName string) error {
 		return err
 	}
 	log.Info("ISO file " + isoName + " removed!")
+
+	workDir := fmt.Sprintf("/var/tmp/workdir%d", imageID)
+	err = os.Remove(workDir)
+	if err != nil {
+		return err
+	}
+	log.Info("work dir file " + workDir + " removed!")
 
 	return nil
 }
@@ -716,4 +728,22 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+}
+
+// Inject the custom kickstart into the iso via mkksiso.
+func exeInjectionScript(kickstart string, image string, imageID uint) error {
+	fleetBashScript := "/usr/local/bin/fleetkick.sh"
+	workDir := fmt.Sprintf("/var/tmp/workdir%d", imageID)
+	err := os.Mkdir(workDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	cmd := exec.Command(fleetBashScript, kickstart, image, image, workDir)
+	if output, err := cmd.Output(); err != nil {
+		return err
+	} else {
+		log.Infof("fleetkick output: %s\n", output)
+	}
+	return nil
 }
