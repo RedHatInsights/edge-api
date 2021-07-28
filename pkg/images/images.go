@@ -580,10 +580,10 @@ func addUserInfo(image *models.Image) error {
 
 	err = exeInjectionScript(kickstart, image.Name, image.ID)
 	if err != nil {
-		return err
+		return fmt.Errorf("error execuiting fleetkick script :: %s", err.Error())
 	}
 
-	err = uploadISO(image, uploadUrl)
+	err = uploadISO(image, imageName)
 	if err != nil {
 		return fmt.Errorf("error uploading ISO :: %s", err.Error())
 	}
