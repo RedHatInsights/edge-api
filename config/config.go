@@ -112,7 +112,8 @@ func Init() {
 			PSK:    options.GetString("PlaybookDispatcherPSK"),
 			Status: options.GetString("PlaybookDispatcherStatusURL"),
 		},
-		S3ProxyURL: options.GetString("S3ProxyURL"),
+		S3ProxyURL:    options.GetString("S3ProxyURL"),
+		KickstartPath: options.GetString("KickstartPath"),
 	}
 
 	database := options.GetString("database")
