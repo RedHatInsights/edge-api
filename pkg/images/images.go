@@ -588,7 +588,7 @@ func addUserInfo(image *models.Image) error {
 		return fmt.Errorf("error uploading ISO :: %s", err.Error())
 	}
 
-	err = cleanFiles("KickstartFile", imageName, image.ID)
+	err = cleanFiles(kickstart, imageName, image.ID)
 	if err != nil {
 		return fmt.Errorf("error cleaning files :: %s", err.Error())
 	}
