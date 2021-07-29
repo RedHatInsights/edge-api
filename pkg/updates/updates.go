@@ -91,7 +91,8 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		}
 	}
 	if updateJSON.DeviceUUID != "" {
-		inventory, err = ReturnDevicesByID(w, r)
+		headers := common.GetOutgoingHeaders(r)
+		inventory, err = ReturnDevicesByID(updateJSON.DeviceUUID, headers)
 		if err != nil {
 			err := apierrors.NewInternalServerError()
 			err.Title = fmt.Sprintf("No devices found for UUID %s", updateJSON.DeviceUUID)
@@ -100,14 +101,14 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		}
 	}
 
-	log.Debugf("updateFromHTTP::inventory: %#v", inventory)
+	log.Infof("updateFromHTTP::inventory: %#v", inventory)
 
 	// Create the models.UpdateTransaction
 	update := models.UpdateTransaction{}
 
 	// Get the models.Commit from the Commit ID passed in via JSON
 	update.Commit, err = common.GetCommitByID(updateJSON.CommitID)
-	log.Debugf("updateFromHTTP::update.Commit: %#v", update.Commit)
+	log.Infof("updateFromHTTP::update.Commit: %#v", update.Commit)
 	update.DispatchRecords = []models.DispatchRecord{}
 	if err != nil {
 		err := apierrors.NewInternalServerError()
@@ -145,7 +146,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	remoteInfo.UpdateTransaction = int(update.ID)
 	// FIXME Add repoURL To Dispatcher Record (@Adam)
 	repoURL, err := playbooks.WriteTemplate(remoteInfo)
-	log.Debugf("playbooks:WriteTemplate: %#v", repoURL)
+	log.Infof("playbooks:WriteTemplate: %#v", repoURL)
 	if err != nil {
 		err := apierrors.NewInternalServerError()
 		err.Title = "Error during playbook creation"
@@ -156,7 +157,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	oldCommits := update.OldCommits
 	dispatchRecords := update.DispatchRecords
 	// - populate the update.Devices []Device data
-	fmt.Printf("Devices in this tag %v", inventory.Result)
+	log.Infof("Devices in this tag %v", inventory.Result)
 	for _, device := range inventory.Result {
 		//  Check for the existence of a Repo that already has this commit and don't duplicate
 		var updateDevice *models.Device
@@ -186,7 +187,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		payloadDispatcher.Recipient = updateDevice.UUID
 		payloadDispatcher.PlaybookURL = repoURL
 		payloadDispatcher.Account = update.Account
-		log.Debugf("Call Execute Dispatcher")
+		log.Infof("Call Execute Dispatcher")
 		exc, err := playbooks.ExecuteDispatcher(payloadDispatcher)
 		// - end playbook dispatcher
 
@@ -198,7 +199,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		dispatchRecords = append(dispatchRecords, *dispatchRecord)
 		update.DispatchRecords = dispatchRecords
 
-		log.Debugf("updateFromHTTP::update.DispatchRecords: %#v", devices)
+		log.Infof("updateFromHTTP::update.DispatchRecords: %#v", devices)
 
 		log.Debugf("updateFromHTTP::dispatchRecord: %#v", dispatchRecord)
 		for _, ostreeDeployment := range device.Ostree.RpmOstreeDeployments {
