@@ -95,6 +95,9 @@ func (c *MockImageBuilderClient) GetInstallerStatus(image *models.Image, headers
 	image.Installer.Status = models.ImageStatusError
 	return image, nil
 }
+func (c *MockImageBuilderClient) GetMetadata(image *models.Image, headers map[string]string) (*models.Image, error) {
+	return image, nil
+}
 
 type MockRepositoryBuilder struct{}
 
