@@ -1,4 +1,4 @@
-package commits
+package files
 
 import (
 	"io"

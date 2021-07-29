@@ -1,4 +1,4 @@
-package commits
+package files
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ import (
 //Uploader is an interface for uploading repository
 type Uploader interface {
 	UploadRepo(src string, account string) (string, error)
-	UploadFile(fname string, uploadPath string) error
+	UploadFile(fname string, uploadPath string) (string, error)
 }
 
 //S3Uploader defines the mechanism to upload data to S3
@@ -43,8 +43,8 @@ func (u *FileUploader) UploadRepo(src string, account string) (string, error) {
 
 // UploadFile is Basically a dummy function that returns no error but allows offline
 // development without S3 and satisfies the interface
-func (u *FileUploader) UploadFile(fname string, uploadPath string) error {
-	return nil
+func (u *FileUploader) UploadFile(fname string, uploadPath string) (string, error) {
+	return fname, nil
 }
 
 //NewS3Uploader creates a method to obtain a new S3 uploader
@@ -97,7 +97,7 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 			return nil
 		}
 
-		err = u.UploadFile(path,
+		_, err = u.UploadFile(path,
 			fmt.Sprintf("%s/%s", account, strings.TrimPrefix(path, cfg.RepoTempPath)),
 		)
 		if err != nil {
@@ -114,12 +114,12 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 
 // UploadFIle takes a Filename path as a string and then uploads that to
 // the supplied location in s3
-func (u *S3Uploader) UploadFile(fname string, uploadPath string) error {
+func (u *S3Uploader) UploadFile(fname string, uploadPath string) (string, error) {
 	log.Debugf("S3Uploader::UploadFileToS3::fname: %#v", fname)
 	log.Debugf("S3Uploader::UploadFileToS3::S3path: %#v", uploadPath)
 	f, err := os.Open(fname)
 	if err != nil {
-		return fmt.Errorf("failed to open file %q, %v", fname, err)
+		return "", fmt.Errorf("failed to open file %q, %v", fname, err)
 	}
 	defer f.Close()
 	// Upload the file to S3.
@@ -132,7 +132,9 @@ func (u *S3Uploader) UploadFile(fname string, uploadPath string) error {
 
 	log.Debugf("S3Uploader::UploadRepo::result: %#v", result)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	region := *u.Client.Config.Region
+	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", u.Bucket, region, uploadPath)
+	return s3URL, nil
 }

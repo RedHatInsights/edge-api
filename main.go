@@ -57,6 +57,8 @@ func main() {
 		"BucketName":         cfg.BucketName,
 		"BucketRegion":       cfg.BucketRegion,
 		"ImageBuilderConfig": cfg.ImageBuilderConfig.URL,
+		"InventoryConfig":    cfg.InventoryConfig.URL,
+		"KickstartPath":      cfg.KickstartPath,
 	}).Info("Configuration Values:")
 
 	var server repo.Server
