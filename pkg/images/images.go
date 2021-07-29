@@ -732,6 +732,7 @@ func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 		}
 		json.NewEncoder(w).Encode(meta)
 	}
+}
 
 func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
