@@ -149,6 +149,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 
 	}
 	update.Repo.URL = repoURL
+	update.Repo.Status = models.RepoStatusSuccess
 	db.DB.Save(&update)
 
 	// FIXME - implement playbook dispatcher scheduling
@@ -211,6 +212,11 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 	}
 	err = DownloadExtractVersionRepo(r.Commit, path)
 	if err != nil {
+		r.Status = models.RepoStatusError
+		result := db.DB.Save(&r)
+		if result.Error != nil {
+			log.Error(err)
+		}
 		log.Error(err)
 		return nil, err
 	}
@@ -230,16 +236,14 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		return nil, err
 	}
 
-	var repo models.Repo
-	result := db.DB.First(&repo, r.ID)
+	r.URL = repoURL
+	r.Status = models.RepoStatusSuccess
+	result := db.DB.Save(&r)
 	if result.Error != nil {
-		log.Error(err)
 		return nil, result.Error
 	}
-	repo.URL = repoURL
-	db.DB.Save(&repo)
 
-	return &repo, nil
+	return r, nil
 }
 
 // DownloadExtractVersionRepo Download and Extract the repo tarball to dest dir

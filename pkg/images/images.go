@@ -142,6 +142,7 @@ func createRepoForImage(i *models.Image) *models.Repo {
 	repo := &models.Repo{
 		CommitID: i.Commit.ID,
 		Commit:   i.Commit,
+		Status:   models.RepoStatusBuilding,
 	}
 	tx := db.DB.Create(repo)
 	if tx.Error != nil {

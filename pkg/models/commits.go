@@ -2,6 +2,15 @@ package models
 
 import "gorm.io/gorm"
 
+const (
+	// RepoStatusBuilding is for when a image is on a error state
+	RepoStatusBuilding = "BUILDING"
+	// RepoStatusError is for when a Repo is on a error state
+	RepoStatusError = "ERROR"
+	// RepoStatusSuccess is for when a Repo is available to the user
+	RepoStatusSuccess = "SUCCESS"
+)
+
 // Commit represents an OSTree commit from image builder
 type Commit struct {
 	gorm.Model
