@@ -130,6 +130,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 			log.Infof("Old Repo not found in database for CommitID, creating new one: %d", update.CommitID)
 			repo := &models.Repo{
 				Commit: update.Commit,
+				Status: models.RepoStatusBuilding,
 			}
 			db.DB.Create(&repo)
 			update.Repo = repo
