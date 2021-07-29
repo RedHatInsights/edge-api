@@ -91,7 +91,8 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		}
 	}
 	if updateJSON.DeviceUUID != "" {
-		inventory, err = ReturnDevicesByID(updateJSON.DeviceUUID)
+		headers := common.GetOutgoingHeaders(r)
+		inventory, err = ReturnDevicesByID(updateJSON.DeviceUUID, headers)
 		if err != nil {
 			err := apierrors.NewInternalServerError()
 			err.Title = fmt.Sprintf("No devices found for UUID %s", updateJSON.DeviceUUID)
