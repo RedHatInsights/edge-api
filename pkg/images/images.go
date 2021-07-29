@@ -675,9 +675,8 @@ func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 //GetMetadataForImage gets the metadata from image-builder on /metadata endpoint
 func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 	headers := common.GetOutgoingHeaders(r)
-	var i *models.Image
 	if image := getImage(w, r); image != nil {
-		meta, err := imagebuilder.Client.GetMetadata(i, headers)
+		meta, err := imagebuilder.Client.GetMetadata(image, headers)
 		if err != nil {
 			log.Fatal(err)
 		}
