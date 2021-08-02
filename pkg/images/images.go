@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strconv"
 	"strings"
 	"sync"
@@ -28,22 +29,19 @@ import (
 )
 
 // MakeRouter adds support for operations on images
-func MakeRouter(c chan os.Signal) func(sub chi.Router) {
-	sigint = c
-	return func(sub chi.Router) {
-		sub.With(validateGetAllSearchParams).With(common.Paginate).Get("/", GetAll)
-		sub.Post("/", Create)
-		sub.Route("/{imageId}", func(r chi.Router) {
-			r.Use(ImageCtx)
-			r.Get("/", GetByID)
-			r.Get("/status", GetStatusByID)
-			r.Get("/repo", GetRepoForImage)
-			r.Get("/metadata", GetMetadataForImage)
-			r.Post("/installer", CreateInstallerForImage)
-			r.Post("/repo", CreateRepoForImage)
-			r.Post("/kickstart", CreateKickStartForImage)
-		})
-	}
+func MakeRouter(sub chi.Router) {
+	sub.With(validateGetAllSearchParams).With(common.Paginate).Get("/", GetAll)
+	sub.Post("/", Create)
+	sub.Route("/{imageId}", func(r chi.Router) {
+		r.Use(ImageCtx)
+		r.Get("/", GetByID)
+		r.Get("/status", GetStatusByID)
+		r.Get("/repo", GetRepoForImage)
+		r.Get("/metadata", GetMetadataForImage)
+		r.Post("/installer", CreateInstallerForImage)
+		r.Post("/repo", CreateRepoForImage)
+		r.Post("/kickstart", CreateKickStartForImage)
+	})
 }
 
 // This provides type safety in the context object for our "image" key.  We
@@ -57,7 +55,6 @@ const imageKey key = 1
 
 var validStatuses = []string{models.ImageStatusCreated, models.ImageStatusBuilding, models.ImageStatusError, models.ImageStatusSuccess}
 var WaitGroup sync.WaitGroup
-var sigint chan os.Signal
 
 // ImageCtx is a handler for Image requests
 func ImageCtx(next http.Handler) http.Handler {
@@ -204,7 +201,10 @@ func postProcessImage(id uint, headers map[string]string) {
 	}()
 	var i *models.Image
 	db.DB.Joins("Commit").Joins("Installer").First(&i, id)
+
 	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt)
 		sig := <-sigint
 		log.Infof("Captured %v, marking image as error", sig)
 		setErrorStatusOnImage(nil, i)
