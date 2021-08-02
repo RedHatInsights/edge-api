@@ -59,7 +59,11 @@ objects:
         - name: S3PROXYURL
           value: ${S3_PROXY_URL}
         - name: INVENTORYURL
-          value: ${INVENTORYURL}  
+          value: ${INVENTORYURL}
+        - name: PLAYBOOKDISPATCHERURL
+          value: ${PLAYBOOKDISPATCHERURL} 
+        - name: PLAYBOOKDISPATCHERPSK
+          value: ${PLAYBOOKDISPATCHERPSK}      
         resources:
           limits:
             cpu: ${{CPU_LIMIT}}
@@ -107,4 +111,8 @@ parameters:
 - name: S3_PROXY_URL
   value: "http://s3-edge-api-proxy"
 - name: INVENTORYURL
-  value: "http://host-inventory-service:8080/"  
+  value: "http://host-inventory-service:8080/"
+- name: PLAYBOOKDISPATCHERURL
+  value: "http://host-playbook-dispatcher:8080/"
+- name: PLAYBOOKDISPATCHERPSK
+  value: "xxxxxx"
