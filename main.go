@@ -69,6 +69,9 @@ func main() {
 		server = repo.NewS3Proxy()
 	}
 
+	sigint := make(chan os.Signal, 1)
+	signal.Notify(sigint, os.Interrupt)
+
 	r := chi.NewRouter()
 	r.Use(
 		request_id.ConfiguredRequestID("x-rh-insights-request-id"),
@@ -94,7 +97,7 @@ func main() {
 	ar.Route("/api/edge/v1", func(s chi.Router) {
 		s.Route("/commits", commits.MakeRouter)
 		s.Route("/repos", repo.MakeRouter(server))
-		s.Route("/images", images.MakeRouter)
+		s.Route("/images", images.MakeRouter(sigint))
 		s.Route("/updates", updates.MakeRouter)
 	})
 
@@ -112,22 +115,23 @@ func main() {
 		Handler: mr,
 	}
 
-	idleConnsClosed := make(chan struct{})
+	gracefulStop := make(chan struct{})
 	go func() {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt)
 		<-sigint
+		log.Info("Shutting down gracefully...")
 		if err := srv.Shutdown(context.Background()); err != nil {
 			log.WithFields(log.Fields{"error": err}).Fatal("HTTP Server Shutdown failed")
 		}
+		images.WaitGroup.Wait()
 		if err := msrv.Shutdown(context.Background()); err != nil {
 			log.WithFields(log.Fields{"error": err}).Fatal("HTTP Server Shutdown failed")
 		}
-		close(idleConnsClosed)
+		close(gracefulStop)
 	}()
 
 	go func() {
-
 		if err := msrv.ListenAndServe(); err != http.ErrServerClosed {
 			log.WithFields(log.Fields{"error": err}).Fatal("Metrics Service Stopped")
 		}
@@ -137,6 +141,6 @@ func main() {
 		log.WithFields(log.Fields{"error": err}).Fatal("Service Stopped")
 	}
 
-	<-idleConnsClosed
+	<-gracefulStop
 	log.Info("Everything has shut down, goodbye")
 }
