@@ -124,10 +124,10 @@ func main() {
 		if err := srv.Shutdown(context.Background()); err != nil {
 			log.WithFields(log.Fields{"error": err}).Fatal("HTTP Server Shutdown failed")
 		}
-		images.WaitGroup.Wait()
 		if err := msrv.Shutdown(context.Background()); err != nil {
 			log.WithFields(log.Fields{"error": err}).Fatal("HTTP Server Shutdown failed")
 		}
+		images.WaitGroup.Wait()
 		close(gracefulStop)
 	}()
 
