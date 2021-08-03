@@ -43,7 +43,7 @@ type S3Uploader struct {
 
 // WriteTemplate will parse the values to the template
 func WriteTemplate(templateInfo TemplateRemoteInfo) (string, error) {
-	log.Debugf("::WriteTemplate: BEGIN")
+	log.Infof("::WriteTemplate: BEGIN")
 	filePath := "pkg/playbooks/"
 	templateName := "template_playbook_dispatcher_ostree_upgrade_payload.yml"
 	template, err := template.ParseFiles(filePath + templateName)
@@ -67,7 +67,7 @@ func WriteTemplate(templateInfo TemplateRemoteInfo) (string, error) {
 	path := filePath + fname
 	f, err := os.Create(path)
 	if err != nil {
-		log.Println("create file: ", err)
+		log.Errorf("create file: %#v", err)
 		return "", err
 	}
 	template.Execute(f, templateData)
@@ -82,13 +82,13 @@ func WriteTemplate(templateInfo TemplateRemoteInfo) (string, error) {
 	}
 	repoURL, err := uploader.UploadRepo(path, fmt.Sprint(templateInfo.UpdateTransaction))
 	if err != nil {
-		log.Println("create file: ", err)
+		log.Errorf("create file: %#v ", err)
 		return "", err
 
 	}
-	log.Println("create file: ", repoURL)
+	log.Infof("create file:  %#v", repoURL)
 	os.Remove(path)
-	log.Debugf("::WriteTemplate: ENDs")
+	log.Infof("::WriteTemplate: ENDs")
 	return repoURL, nil
 
 }

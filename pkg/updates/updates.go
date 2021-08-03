@@ -91,7 +91,8 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		}
 	}
 	if updateJSON.DeviceUUID != "" {
-		inventory, err = ReturnDevicesByID(w, r)
+		headers := common.GetOutgoingHeaders(r)
+		inventory, err = ReturnDevicesByID(updateJSON.DeviceUUID, headers)
 		if err != nil {
 			err := apierrors.NewInternalServerError()
 			err.Title = fmt.Sprintf("No devices found for UUID %s", updateJSON.DeviceUUID)
@@ -100,14 +101,14 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		}
 	}
 
-	log.Debugf("updateFromHTTP::inventory: %#v", inventory)
+	log.Infof("updateFromHTTP::inventory: %#v", inventory)
 
 	// Create the models.UpdateTransaction
 	update := models.UpdateTransaction{}
 
 	// Get the models.Commit from the Commit ID passed in via JSON
 	update.Commit, err = common.GetCommitByID(updateJSON.CommitID)
-	log.Debugf("updateFromHTTP::update.Commit: %#v", update.Commit)
+	log.Infof("updateFromHTTP::update.Commit: %#v", update.Commit)
 	update.DispatchRecords = []models.DispatchRecord{}
 	if err != nil {
 		err := apierrors.NewInternalServerError()
@@ -130,6 +131,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 			log.Infof("Old Repo not found in database for CommitID, creating new one: %d", update.CommitID)
 			repo := &models.Repo{
 				Commit: update.Commit,
+				Status: models.RepoStatusBuilding,
 			}
 			db.DB.Create(&repo)
 			update.Repo = repo
@@ -144,10 +146,11 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	remoteInfo.UpdateTransaction = int(update.ID)
 	// FIXME Add repoURL To Dispatcher Record (@Adam)
 	repoURL, err := playbooks.WriteTemplate(remoteInfo)
-	log.Debugf("playbooks:WriteTemplate: %#v", repoURL)
+	log.Infof("playbooks:WriteTemplate: %#v", repoURL)
 	if err != nil {
 		err := apierrors.NewInternalServerError()
 		err.Title = "Error during playbook creation"
+		log.Errorf("Error::laybooks:WriteTemplate: %#v", err)
 		w.WriteHeader(err.Status)
 	}
 
@@ -155,7 +158,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	oldCommits := update.OldCommits
 	dispatchRecords := update.DispatchRecords
 	// - populate the update.Devices []Device data
-	fmt.Printf("Devices in this tag %v", inventory.Result)
+	log.Infof("Devices in this tag %v", inventory.Result)
 	for _, device := range inventory.Result {
 		//  Check for the existence of a Repo that already has this commit and don't duplicate
 		var updateDevice *models.Device
@@ -185,7 +188,8 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		payloadDispatcher.Recipient = updateDevice.UUID
 		payloadDispatcher.PlaybookURL = repoURL
 		payloadDispatcher.Account = update.Account
-		log.Debugf("Call Execute Dispatcher")
+		log.Infof("Call Execute Dispatcher")
+		log.Infof("payload Dispatcher::  %#v", payloadDispatcher)
 		exc, err := playbooks.ExecuteDispatcher(payloadDispatcher)
 		// - end playbook dispatcher
 
@@ -197,15 +201,15 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		dispatchRecords = append(dispatchRecords, *dispatchRecord)
 		update.DispatchRecords = dispatchRecords
 
-		log.Debugf("updateFromHTTP::update.DispatchRecords: %#v", devices)
+		log.Infof("updateFromHTTP::update.DispatchRecords: %#v", devices)
 
-		log.Debugf("updateFromHTTP::dispatchRecord: %#v", dispatchRecord)
+		log.Infof("updateFromHTTP::dispatchRecord: %#v", dispatchRecord)
 		for _, ostreeDeployment := range device.Ostree.RpmOstreeDeployments {
 			if ostreeDeployment.Booted {
-				log.Debugf("updateFromHTTP::ostreeDeployment.Booted: %#v", ostreeDeployment)
+				log.Infof("updateFromHTTP::ostreeDeployment.Booted: %#v", ostreeDeployment)
 				var oldCommit models.Commit
 				result := db.DB.Where("os_tree_commit = ?", ostreeDeployment.Checksum).First(&oldCommit)
-				log.Debugf("updateFromHTTP::result: %#v", result)
+				log.Infof("updateFromHTTP::result: %#v", result)
 				if result.Error != nil {
 					if !(result.Error.Error() == "record not found") {
 						log.Errorf("updateFromHTTP::result.Error: %#v", result.Error)
@@ -223,7 +227,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	}
 	update.OldCommits = oldCommits
 
-	log.Debugf("updateFromHTTP::update: %#v", update)
+	log.Infof("updateFromHTTP::update: %#v", update)
 	return &update, err
 }
 

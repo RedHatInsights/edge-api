@@ -701,7 +701,7 @@ func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 		if image.Commit.OSTreeCommit != "" {
-			tx := db.DB.Save(&image.Commit.OSTreeCommit)
+			tx := db.DB.Save(&image.Commit)
 			if tx.Error != nil {
 				panic(tx.Error)
 			}
