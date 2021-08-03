@@ -31,6 +31,9 @@ COPY --from=builder /src/mypackage/myapp/pkg/images/fleetkick.sh /usr/local/bin
 RUN chmod +x /usr/local/bin/fleetkick.sh
 COPY --from=builder /src/mypackage/myapp/pkg/images/templateKickstart.ks /usr/local/etc
 
+# template to playbook dispatcher
+COPY --from=builder /pkg/playbooks/template_playbook_dispatcher_ostree_upgrade_payload.yml /usr/local/etc
+
 #RUN microdnf install -y pykickstart mtools xorriso genisoimage syslinux isomd5sum file
 ENV MTOOLS_SKIP_CHECK=1
 

@@ -606,8 +606,8 @@ func addSSHKeyToKickstart(sshKey string, username string, kickstart string) erro
 
 	td := UnameSsh{sshKey, username}
 
-	log.Infof("Opening file %s", cfg.KickstartPath)
-	t, err := template.ParseFiles(cfg.KickstartPath)
+	log.Infof("Opening file %s", cfg.TemplatesPath)
+	t, err := template.ParseFiles(cfg.TemplatesPath + "templateKickstart.ks")
 	if err != nil {
 		return err
 	}

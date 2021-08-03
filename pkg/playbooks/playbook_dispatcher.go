@@ -3,7 +3,6 @@ package playbooks
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -23,7 +22,7 @@ func ExecuteDispatcher(payload DispatcherPayload) (string, error) {
 	payloadBuf := new(bytes.Buffer)
 	json.NewEncoder(payloadBuf).Encode(payload)
 	cfg := config.Get()
-	log.Debugf("::executeDispatcher::BEGIN")
+	log.Infof("::executeDispatcher::BEGIN")
 	url := cfg.PlaybookDispatcherConfig.URL
 
 	log.Infof("Requesting url: %s\n", url)
@@ -33,13 +32,14 @@ func ExecuteDispatcher(payload DispatcherPayload) (string, error) {
 
 	headers := common.GetOutgoingHeaders(req)
 	for key, value := range headers {
+		log.Infof("Playbook dispatcher headers: %#v, %#v", key, value)
 		req.Header.Add(key, value)
 	}
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Error(fmt.Printf("Playbook dispatcher: %s", err))
+		log.Errorf("Playbook dispatcher: %#v", err)
 		return models.DispatchRecordStatusError, err
 	}
 
