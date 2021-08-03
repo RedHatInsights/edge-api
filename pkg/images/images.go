@@ -408,21 +408,9 @@ func updateImageStatus(image *models.Image, headers map[string]string) (*models.
 	return image, nil
 }
 
-// GetStatusByID returns the image status. If still building, goes to image builder API.
+// GetStatusByID returns the image status.
 func GetStatusByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		if image.Status == models.ImageStatusBuilding {
-			var err error
-			headers := common.GetOutgoingHeaders(r)
-			image, err = updateImageStatus(image, headers)
-			if err != nil {
-				log.Error(err)
-				err := errors.NewInternalServerError()
-				w.WriteHeader(err.Status)
-				json.NewEncoder(w).Encode(&err)
-				return
-			}
-		}
 		json.NewEncoder(w).Encode(struct {
 			Status string
 			Name   string
@@ -438,18 +426,6 @@ func GetStatusByID(w http.ResponseWriter, r *http.Request) {
 // GetByID obtains a image from the database for an account
 func GetByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		if image.Status == models.ImageStatusBuilding {
-			var err error
-			headers := common.GetOutgoingHeaders(r)
-			image, err = updateImageStatus(image, headers)
-			if err != nil {
-				log.Error(err)
-				err := errors.NewInternalServerError()
-				w.WriteHeader(err.Status)
-				json.NewEncoder(w).Encode(&err)
-				return
-			}
-		}
 		json.NewEncoder(w).Encode(image)
 	}
 }
