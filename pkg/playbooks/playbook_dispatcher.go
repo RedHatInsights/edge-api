@@ -24,9 +24,9 @@ func ExecuteDispatcher(payload DispatcherPayload) (string, error) {
 	cfg := config.Get()
 	log.Infof("::executeDispatcher::BEGIN")
 	url := cfg.PlaybookDispatcherConfig.URL
-
-	log.Infof("Requesting url: %s\n", url)
-	req, _ := http.NewRequest("POST", url, payloadBuf)
+	fullURL := url + "internal/dispatch"
+	log.Infof("Requesting url: %s\n", fullURL)
+	req, _ := http.NewRequest("POST", fullURL, payloadBuf)
 
 	req.Header.Add("Content-Type", "application/json")
 
