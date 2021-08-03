@@ -188,8 +188,8 @@ func postProcessImage(id uint, headers map[string]string) {
 		}
 		time.Sleep(1 * time.Minute)
 	}
-  
- 	go imagebuilder.Client.GetMetadata(i, headers)
+
+	go imagebuilder.Client.GetMetadata(i, headers)
 
 	repo := createRepoForImage(i)
 
@@ -725,7 +725,7 @@ func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 		if image.Commit.OSTreeCommit != "" {
-			tx := db.DB.Save(&image.Commit.OSTreeCommit)
+			tx := db.DB.Save(&image.Commit)
 			if tx.Error != nil {
 				panic(tx.Error)
 			}
