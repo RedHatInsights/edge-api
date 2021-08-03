@@ -28,11 +28,11 @@ insights_password: INSIGHTS_PASSWORD_PLACEHOLDER
 
 3. Execute the playbook with the username provisioned on the device(s).
 ```
-ansible-playbook -i inventory.ini -vv register_stage_edge_device.yml \
+ansible-playbook -i inventory.ini -vv register_edge_device.yml \
 --extra-vars="regfile=vars_register_edge_device.yml" --user <THE USER>
 ```
 e.g.,
 ```
-ansible-playbook -i inventory.ini -vv register_stage_edge_device.yml \
+ansible-playbook -i inventory.ini -vv register_edge_device.yml \
 --extra-vars="regfile=vars_register_edge_device.yml" --user joe_user
 ```
