@@ -148,9 +148,9 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	repoURL, err := playbooks.WriteTemplate(remoteInfo)
 	log.Infof("playbooks:WriteTemplate: %#v", repoURL)
 	if err != nil {
+		log.Errorf("Error::playbooks:WriteTemplate: %#v", err)
 		err := apierrors.NewInternalServerError()
 		err.Title = "Error during playbook creation"
-		log.Errorf("Error::laybooks:WriteTemplate: %#v", err)
 		w.WriteHeader(err.Status)
 	}
 
