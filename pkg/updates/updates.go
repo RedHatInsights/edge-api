@@ -150,6 +150,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	if err != nil {
 		err := apierrors.NewInternalServerError()
 		err.Title = "Error during playbook creation"
+		log.Errorf("Error::laybooks:WriteTemplate: %#v", err)
 		w.WriteHeader(err.Status)
 	}
 
@@ -188,6 +189,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		payloadDispatcher.PlaybookURL = repoURL
 		payloadDispatcher.Account = update.Account
 		log.Infof("Call Execute Dispatcher")
+		log.Infof("payload Dispatcher::  %#v", payloadDispatcher)
 		exc, err := playbooks.ExecuteDispatcher(payloadDispatcher)
 		// - end playbook dispatcher
 
@@ -201,13 +203,13 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 
 		log.Infof("updateFromHTTP::update.DispatchRecords: %#v", devices)
 
-		log.Debugf("updateFromHTTP::dispatchRecord: %#v", dispatchRecord)
+		log.Infof("updateFromHTTP::dispatchRecord: %#v", dispatchRecord)
 		for _, ostreeDeployment := range device.Ostree.RpmOstreeDeployments {
 			if ostreeDeployment.Booted {
-				log.Debugf("updateFromHTTP::ostreeDeployment.Booted: %#v", ostreeDeployment)
+				log.Infof("updateFromHTTP::ostreeDeployment.Booted: %#v", ostreeDeployment)
 				var oldCommit models.Commit
 				result := db.DB.Where("os_tree_commit = ?", ostreeDeployment.Checksum).First(&oldCommit)
-				log.Debugf("updateFromHTTP::result: %#v", result)
+				log.Infof("updateFromHTTP::result: %#v", result)
 				if result.Error != nil {
 					if !(result.Error.Error() == "record not found") {
 						log.Errorf("updateFromHTTP::result.Error: %#v", result.Error)
@@ -225,7 +227,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	}
 	update.OldCommits = oldCommits
 
-	log.Debugf("updateFromHTTP::update: %#v", update)
+	log.Infof("updateFromHTTP::update: %#v", update)
 	return &update, err
 }
 
