@@ -5,6 +5,12 @@ metadata:
   name: edge-api
 objects:
 - apiVersion: cloud.redhat.com/v1alpha1
+  kind: Secret
+  metadata:
+    name: psk-playbook-dispatcher
+  stringData:
+    key: ${PSK_DISPATCHER}  
+- apiVersion: cloud.redhat.com/v1alpha1
   kind: ClowdApp
   metadata:
     name: edge-api
@@ -63,7 +69,10 @@ objects:
         - name: PLAYBOOKDISPATCHERURL
           value: ${PLAYBOOKDISPATCHERURL} 
         - name: PLAYBOOKDISPATCHERPSK
-          value: ${PLAYBOOKDISPATCHERPSK}      
+          valueFrom:
+            secretKeyRef:
+              key: key
+              name: psk-playbook-dispatcher     
         resources:
           limits:
             cpu: ${{CPU_LIMIT}}
@@ -114,5 +123,3 @@ parameters:
   value: "http://host-inventory-service:8080/"
 - name: PLAYBOOKDISPATCHERURL
   value: "http://host-playbook-dispatcher:8080/"
-- name: PLAYBOOKDISPATCHERPSK
-  value: "xxxxxx"

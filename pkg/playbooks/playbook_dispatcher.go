@@ -31,6 +31,7 @@ func ExecuteDispatcher(payload DispatcherPayload) (string, error) {
 	req.Header.Add("Content-Type", "application/json")
 
 	headers := common.GetOutgoingHeaders(req)
+	req.Header.Add("PSK", cfg.PlaybookDispatcherConfig.PSK)
 	for key, value := range headers {
 		log.Infof("Playbook dispatcher headers: %#v, %#v", key, value)
 		req.Header.Add(key, value)
@@ -39,13 +40,14 @@ func ExecuteDispatcher(payload DispatcherPayload) (string, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Errorf("Playbook dispatcher: %#v", err)
+		log.Errorf("Error:: Playbook dispatcher: %#v", err)
+		log.Errorf("Error Code:: Playbook dispatcher: %#v", resp.StatusCode)
 		return models.DispatchRecordStatusError, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(resp.Body)
-		log.Errorf("error requesting inventory, got status code %d and body %s", resp.StatusCode, body)
+		log.Errorf("error calling playbook dispatcher, got status code %d and body %s", resp.StatusCode, body)
 		return models.DispatchRecordStatusError, err
 	}
 	log.Debugf("::executeDispatcher::END")
