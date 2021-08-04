@@ -40,8 +40,8 @@ func ExecuteDispatcher(payload DispatcherPayload) (string, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Errorf("Error:: Playbook dispatcher: %#v", err)
 		log.Errorf("Error Code:: Playbook dispatcher: %#v", resp.StatusCode)
+		log.Errorf("Error:: Playbook dispatcher: %#v", err)
 		return models.DispatchRecordStatusError, err
 	}
 
