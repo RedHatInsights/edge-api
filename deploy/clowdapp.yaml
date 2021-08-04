@@ -5,7 +5,7 @@ metadata:
   name: edge-api
 objects:
 - apiVersion: cloud.redhat.com/v1alpha1
-  kind: Secret
+  kind: ClowdApp
   metadata:
     name: psk-playbook-dispatcher
   stringData:
