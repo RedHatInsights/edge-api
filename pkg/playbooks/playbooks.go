@@ -65,7 +65,7 @@ func WriteTemplate(templateInfo TemplateRemoteInfo) (string, error) {
 		OstreeRemoteTemplate: "{{ ostree_remote_template }}"}
 
 	fname := fmt.Sprintf("playbook_dispatcher_update_%v", templateInfo.UpdateTransaction) + ".yml"
-	path := filePath + fname
+	path := "/tmp/" + fname
 	f, err := os.Create(path)
 	if err != nil {
 		log.Errorf("create file: %#v", err)
