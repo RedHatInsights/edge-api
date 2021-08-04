@@ -44,7 +44,8 @@ type S3Uploader struct {
 // WriteTemplate will parse the values to the template
 func WriteTemplate(templateInfo TemplateRemoteInfo) (string, error) {
 	log.Infof("::WriteTemplate: BEGIN")
-	filePath := "pkg/playbooks/"
+	cfg := config.Get()
+	filePath := cfg.TemplatesPath
 	templateName := "template_playbook_dispatcher_ostree_upgrade_payload.yml"
 	template, err := template.ParseFiles(filePath + templateName)
 	if err != nil {
@@ -64,7 +65,7 @@ func WriteTemplate(templateInfo TemplateRemoteInfo) (string, error) {
 		OstreeRemoteTemplate: "{{ ostree_remote_template }}"}
 
 	fname := fmt.Sprintf("playbook_dispatcher_update_%v", templateInfo.UpdateTransaction) + ".yml"
-	path := filePath + fname
+	path := "/tmp/" + fname
 	f, err := os.Create(path)
 	if err != nil {
 		log.Errorf("create file: %#v", err)
@@ -72,7 +73,6 @@ func WriteTemplate(templateInfo TemplateRemoteInfo) (string, error) {
 	}
 	template.Execute(f, templateData)
 
-	cfg := config.Get()
 	var uploader files.Uploader
 	uploader = &files.FileUploader{
 		BaseDir: path,

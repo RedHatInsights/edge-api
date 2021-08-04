@@ -8,8 +8,10 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -52,6 +54,7 @@ type key int
 const imageKey key = 1
 
 var validStatuses = []string{models.ImageStatusCreated, models.ImageStatusBuilding, models.ImageStatusError, models.ImageStatusSuccess}
+var WaitGroup sync.WaitGroup
 
 // ImageCtx is a handler for Image requests
 func ImageCtx(next http.Handler) http.Handler {
@@ -161,23 +164,52 @@ func createRepoForImage(i *models.Image) *models.Repo {
 }
 
 func setErrorStatusOnImage(err error, i *models.Image) {
-	log.Error(err)
 	i.Status = models.ImageStatusError
 	tx := db.DB.Save(i)
 	if tx.Error != nil {
 		panic(tx.Error)
 	}
-	panic(err)
+	if i.Commit != nil {
+		i.Commit.Status = models.ImageStatusError
+		tx := db.DB.Save(i.Commit)
+		if tx.Error != nil {
+			panic(tx.Error)
+		}
+	}
+	if i.Installer != nil {
+		i.Installer.Status = models.ImageStatusError
+		tx := db.DB.Save(i.Installer)
+		if tx.Error != nil {
+			panic(tx.Error)
+		}
+	}
+	if err != nil {
+		log.Error(err)
+		panic(err)
+	}
 }
 
 func postProcessImage(id uint, headers map[string]string) {
+	WaitGroup.Add(1) // Processing one image
+
 	defer func() {
+		WaitGroup.Done() // Done with one image (sucessfuly or not)
+		fmt.Println("Shutting down go routine")
 		if err := recover(); err != nil {
 			log.Fatalf("%s", err)
 		}
 	}()
 	var i *models.Image
 	db.DB.Joins("Commit").Joins("Installer").First(&i, id)
+
+	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt)
+		sig := <-sigint
+		log.Infof("Captured %v, marking image as error", sig)
+		setErrorStatusOnImage(nil, i)
+		WaitGroup.Done()
+	}()
 	for {
 		i, err := updateImageStatus(i, headers)
 		if err != nil {
@@ -582,8 +614,8 @@ func addSSHKeyToKickstart(sshKey string, username string, kickstart string) erro
 
 	td := UnameSsh{sshKey, username}
 
-	log.Infof("Opening file %s", cfg.KickstartPath)
-	t, err := template.ParseFiles(cfg.KickstartPath)
+	log.Infof("Opening file %s", cfg.TemplatesPath)
+	t, err := template.ParseFiles(cfg.TemplatesPath + "templateKickstart.ks")
 	if err != nil {
 		return err
 	}

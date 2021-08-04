@@ -2,9 +2,8 @@
 # SIMPLE RHSM AND INSIGHTS REGISTER
 #
 # e.g.,
-#   ansible-playbook -i inventory.ini --user fleet -vv \
-#        register_stage_edge_device.yml \
-#        --extra-vars="regfile=vars_register_edge_device.yml"
+# ansible-playbook -i inventory.ini -vv register_edge_device.yml \
+# --extra-vars="regfile=vars_register_edge_device.yml" --user joe_user
 #
 #   regfile : the file containing rhsm account information
 
