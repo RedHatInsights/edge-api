@@ -372,6 +372,7 @@ func validateGetAllSearchParams(next http.Handler) http.Handler {
 
 // GetAll image objects from the database for an account
 func GetAll(w http.ResponseWriter, r *http.Request) {
+	var count int64
 	var images []models.Image
 	result := imageFilters(r, db.DB)
 	pagination := common.GetPagination(r)
@@ -383,6 +384,14 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
+	countResult := imageFilters(r, db.DB.Model(&models.Image{})).Where("images.account = ?", account).Count(&count)
+	if countResult.Error != nil {
+		countErr := errors.NewInternalServerError()
+		log.Error(countErr)
+		w.WriteHeader(countErr.Status)
+		json.NewEncoder(w).Encode(&countErr)
+		return
+	}
 	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("images.account = ?", account).Joins("Commit").Joins("Installer").Find(&images)
 	if result.Error != nil {
 		log.Error(err)
@@ -391,7 +400,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	json.NewEncoder(w).Encode(&images)
+	json.NewEncoder(w).Encode(map[string]interface{}{"data": &images, "count": count})
 }
 
 func getImage(w http.ResponseWriter, r *http.Request) *models.Image {

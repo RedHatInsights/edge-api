@@ -19,8 +19,10 @@ type DispatcherPayload struct {
 }
 
 func ExecuteDispatcher(payload DispatcherPayload) (string, error) {
+	payloadAry := [1]DispatcherPayload{payload}
+
 	payloadBuf := new(bytes.Buffer)
-	json.NewEncoder(payloadBuf).Encode(payload)
+	json.NewEncoder(payloadBuf).Encode(payloadAry)
 	cfg := config.Get()
 	log.Infof("::executeDispatcher::BEGIN")
 	url := cfg.PlaybookDispatcherConfig.URL
@@ -32,7 +34,7 @@ func ExecuteDispatcher(payload DispatcherPayload) (string, error) {
 
 	headers := common.GetOutgoingHeaders(req)
 	log.Infof("ExecuteDispatcher:: cfg.PlaybookDispatcherConfig:: %#v", cfg.PlaybookDispatcherConfig)
-	req.Header.Add("PSK", cfg.PlaybookDispatcherConfig.PSK)
+	req.Header.Add("Authorization", "PSK "+cfg.PlaybookDispatcherConfig.PSK)
 	for key, value := range headers {
 		log.Infof("Playbook dispatcher headers: %#v, %#v", key, value)
 		req.Header.Add(key, value)
@@ -42,8 +44,9 @@ func ExecuteDispatcher(payload DispatcherPayload) (string, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Errorf("Error Code:: Playbook dispatcher: %#v", resp.StatusCode)
+		log.Errorf("Error Code:: Playbook dispatcher: %#v", resp)
 		log.Errorf("Error:: Playbook dispatcher: %#v", err)
+		log.Errorf("Error:: Playbook dispatcher: %#v", err.Error())
 		return models.DispatchRecordStatusError, err
 	}
 
