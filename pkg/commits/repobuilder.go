@@ -22,6 +22,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// RepoBuilderInstance is the instance for a RepoBuilder
 var RepoBuilderInstance RepoBuilderInterface
 
 // InitRepoBuilder initializes the repository builder in this package
@@ -147,7 +148,6 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 				}
 			}
 		}
-
 	}
 	update.Repo.URL = repoURL
 	update.Repo.Status = models.RepoStatusSuccess

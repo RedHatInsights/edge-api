@@ -54,6 +54,8 @@ type key int
 const imageKey key = 1
 
 var validStatuses = []string{models.ImageStatusCreated, models.ImageStatusBuilding, models.ImageStatusError, models.ImageStatusSuccess}
+
+// WaitGroup is the waitg roup for pending image builds
 var WaitGroup sync.WaitGroup
 
 // ImageCtx is a handler for Image requests
@@ -576,14 +578,14 @@ func addUserInfo(image *models.Image) error {
 	// Absolute path for manipulating ISO's
 	destPath := "/var/tmp/"
 
-	downloadUrl := image.Installer.ImageBuildISOURL
+	downloadURL := image.Installer.ImageBuildISOURL
 	sshKey := image.Installer.SSHKey
 	username := image.Installer.Username
 	// Files that will be used to modify the ISO and will be cleaned
 	imageName := destPath + image.Name
 	kickstart := destPath + "finalKickstart-" + username + ".ks"
 
-	err := downloadISO(imageName, downloadUrl)
+	err := downloadISO(imageName, downloadURL)
 	if err != nil {
 		return fmt.Errorf("error downloading ISO file :: %s", err.Error())
 	}
@@ -611,8 +613,8 @@ func addUserInfo(image *models.Image) error {
 	return nil
 }
 
-// template struct for username and ssh key
-type UnameSsh struct {
+// UnameSSH is the template struct for username and ssh key
+type UnameSSH struct {
 	Sshkey   string
 	Username string
 }
@@ -621,7 +623,7 @@ type UnameSsh struct {
 func addSSHKeyToKickstart(sshKey string, username string, kickstart string) error {
 	cfg := config.Get()
 
-	td := UnameSsh{sshKey, username}
+	td := UnameSSH{sshKey, username}
 
 	log.Infof("Opening file %s", cfg.TemplatesPath)
 	t, err := template.ParseFiles(cfg.TemplatesPath + "templateKickstart.ks")
@@ -751,6 +753,7 @@ func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// CreateKickStartForImage creates a kickstart file for an existent image
 func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		err := addUserInfo(image)
@@ -775,10 +778,10 @@ func exeInjectionScript(kickstart string, image string, imageID uint) error {
 	}
 
 	cmd := exec.Command(fleetBashScript, kickstart, image, image, workDir)
-	if output, err := cmd.Output(); err != nil {
+	output, err := cmd.Output()
+	if err != nil {
 		return err
-	} else {
-		log.Infof("fleetkick output: %s\n", output)
 	}
+	log.Infof("fleetkick output: %s\n", output)
 	return nil
 }

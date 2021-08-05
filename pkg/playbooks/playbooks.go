@@ -71,7 +71,11 @@ func WriteTemplate(templateInfo TemplateRemoteInfo, account string) (string, err
 		log.Errorf("create file: %#v", err)
 		return "", err
 	}
-	template.Execute(f, templateData)
+	err = template.Execute(f, templateData)
+	if err != nil {
+		log.Errorf("err: %#v ", err)
+		return "", err
+	}
 
 	var uploader files.Uploader
 	uploader = &files.FileUploader{
@@ -80,7 +84,7 @@ func WriteTemplate(templateInfo TemplateRemoteInfo, account string) (string, err
 	if cfg.BucketName != "" {
 		uploader = files.NewS3Uploader()
 	}
-	uploadPath := fmt.Sprintf("%s/pĺaybooks/%s", account, fname)
+	uploadPath := fmt.Sprintf("%s/playbooks/%s", account, fname)
 	repoURL, err := uploader.UploadFile(tmpfilepath, uploadPath)
 	if err != nil {
 		log.Errorf("create file: %#v ", err)
