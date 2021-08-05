@@ -75,12 +75,14 @@ func WriteTemplate(templateInfo TemplateRemoteInfo) (string, error) {
 
 	var uploader files.Uploader
 	uploader = &files.FileUploader{
-		BaseDir: fname,
+		BaseDir: "./",
 	}
 	if cfg.BucketName != "" {
 		uploader = files.NewS3Uploader()
 	}
-	repoURL, err := uploader.UploadRepo(fname, fmt.Sprint(templateInfo.UpdateTransaction))
+
+	uploadPath := fmt.Sprintf("%s/pĺaybooks/%s", account, fname)
+	repoURL, err := uploader.UploadFile(tmpfilepath, uploadPath)
 	if err != nil {
 		log.Errorf("create file: %#v ", err)
 		return "", err
