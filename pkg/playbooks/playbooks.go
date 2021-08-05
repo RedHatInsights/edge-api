@@ -65,8 +65,8 @@ func WriteTemplate(templateInfo TemplateRemoteInfo) (string, error) {
 		OstreeRemoteTemplate: "{{ ostree_remote_template }}"}
 
 	fname := fmt.Sprintf("playbook_dispatcher_update_%v", templateInfo.UpdateTransaction) + ".yml"
-	path := "/tmp/" + fname
-	f, err := os.Create(path)
+	tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
+	f, err := os.Create(tmpfilepath)
 	if err != nil {
 		log.Errorf("create file: %#v", err)
 		return "", err
@@ -75,19 +75,19 @@ func WriteTemplate(templateInfo TemplateRemoteInfo) (string, error) {
 
 	var uploader files.Uploader
 	uploader = &files.FileUploader{
-		BaseDir: path,
+		BaseDir: fname,
 	}
 	if cfg.BucketName != "" {
 		uploader = files.NewS3Uploader()
 	}
-	repoURL, err := uploader.UploadRepo(path, fmt.Sprint(templateInfo.UpdateTransaction))
+	repoURL, err := uploader.UploadRepo(fname, fmt.Sprint(templateInfo.UpdateTransaction))
 	if err != nil {
 		log.Errorf("create file: %#v ", err)
 		return "", err
 
 	}
 	log.Infof("create file:  %#v", repoURL)
-	os.Remove(path)
+	os.Remove(tmpfilepath)
 	log.Infof("::WriteTemplate: ENDs")
 	return repoURL, nil
 

@@ -13,9 +13,9 @@ import (
 )
 
 type DispatcherPayload struct {
-	Recipient   string
-	PlaybookURL string
-	Account     string
+	Recipient   string `json:"recipient"`
+	PlaybookURL string `json:"url"`
+	Account     string `json:"account"`
 }
 
 func ExecuteDispatcher(payload DispatcherPayload) (string, error) {
