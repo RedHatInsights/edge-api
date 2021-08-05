@@ -148,7 +148,6 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 				}
 			}
 		}
-
 	}
 	update.Repo.URL = repoURL
 	update.Repo.Status = models.RepoStatusSuccess

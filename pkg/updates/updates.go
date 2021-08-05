@@ -184,11 +184,13 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 			update.Repo = repo
 		}
 	}
+	log.Infof("Getting repo info: repo %s, %d", repo.URL, repo.ID)
 
 	var remoteInfo playbooks.TemplateRemoteInfo
 	remoteInfo.RemoteURL = update.Repo.URL
-	remoteInfo.RemoteName = update.Repo.Commit.Name
+	remoteInfo.RemoteName = "main-test" //update.Repo.Commit.Name
 	remoteInfo.ContentURL = update.Repo.URL
+	remoteInfo.GpgVerify = "true"
 	remoteInfo.UpdateTransaction = int(update.ID)
 	// FIXME Add repoURL To Dispatcher Record (@Adam)
 	repoURL, err := playbooks.WriteTemplate(remoteInfo, account)
@@ -257,7 +259,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 				result := db.DB.Where("os_tree_commit = ?", ostreeDeployment.Checksum).First(&oldCommit)
 				log.Infof("updateFromHTTP::result: %#v", result)
 				if result.Error != nil {
-					if !(result.Error.Error() == "record not found") {
+					if result.Error.Error() != "record not found" {
 						log.Errorf("updateFromHTTP::result.Error: %#v", result.Error)
 						http.Error(w, result.Error.Error(), http.StatusBadRequest)
 						return &models.UpdateTransaction{}, err
