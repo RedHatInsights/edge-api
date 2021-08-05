@@ -42,7 +42,7 @@ type S3Uploader struct {
 }
 
 // WriteTemplate will parse the values to the template
-func WriteTemplate(templateInfo TemplateRemoteInfo) (string, error) {
+func WriteTemplate(templateInfo TemplateRemoteInfo, account string) (string, error) {
 	log.Infof("::WriteTemplate: BEGIN")
 	cfg := config.Get()
 	filePath := cfg.TemplatesPath
@@ -80,7 +80,6 @@ func WriteTemplate(templateInfo TemplateRemoteInfo) (string, error) {
 	if cfg.BucketName != "" {
 		uploader = files.NewS3Uploader()
 	}
-
 	uploadPath := fmt.Sprintf("%s/pĺaybooks/%s", account, fname)
 	repoURL, err := uploader.UploadFile(tmpfilepath, uploadPath)
 	if err != nil {

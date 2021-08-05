@@ -161,7 +161,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	remoteInfo.RemoteName = update.Repo.Commit.Name
 	remoteInfo.ContentURL = update.Repo.URL
 	remoteInfo.UpdateTransaction = int(update.ID)
-	playbookURL, err := playbooks.WriteTemplate(remoteInfo)
+	playbookURL, err := playbooks.WriteTemplate(remoteInfo, update.Account)
 	if err != nil {
 		log.Error(err)
 		return nil, err
