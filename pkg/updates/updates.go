@@ -101,6 +101,11 @@ type UpdatePostJSON struct {
 	DeviceUUID string `json:"DeviceUUID"`
 }
 
+type DeltaDiff struct {
+	Added   []string
+	Removed []string
+}
+
 func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTransaction, error) {
 	var updateJSON UpdatePostJSON
 	err := json.NewDecoder(r.Body).Decode(&updateJSON)
@@ -415,7 +420,7 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction
 }
 
 // GetDiffOnUpdate return the list of packages added or removed from commit
-func GetDiffOnUpdate(w http.ResponseWriter, r *http.Request) ([]string, []string) {
+func GetDiffOnUpdate(w http.ResponseWriter, r *http.Request) {
 	update := getUpdate(w, r)
 	initialCommit := *update.OldCommits[len(update.OldCommits)-1].GetPackagesList()
 	updateCommit := *update.Commit.GetPackagesList()
@@ -433,7 +438,11 @@ func GetDiffOnUpdate(w http.ResponseWriter, r *http.Request) ([]string, []string
 			removed = append(removed, pkg)
 		}
 	}
-	return added, removed
+	var results DeltaDiff
+	results.Added = added
+	results.Removed = removed
+	json.NewEncoder(w).Encode(&results)
+
 }
 
 func contains(s []string, searchterm string) bool {
