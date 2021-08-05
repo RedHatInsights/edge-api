@@ -140,8 +140,18 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 
 	log.Infof("updateFromHTTP::inventory: %#v", inventory)
 
+	account, err := common.GetAccount(r)
+	if err != nil {
+		err := apierrors.NewInternalServerError()
+		err.Title = fmt.Sprintf("No account found")
+		w.WriteHeader(err.Status)
+		return nil, err
+	}
+
 	// Create the models.UpdateTransaction
-	update := models.UpdateTransaction{}
+	update := models.UpdateTransaction{
+		Account: account,
+	}
 
 	// Get the models.Commit from the Commit ID passed in via JSON
 	update.Commit, err = common.GetCommitByID(updateJSON.CommitID)
@@ -172,7 +182,6 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 			}
 			db.DB.Create(&repo)
 			update.Repo = repo
-
 		}
 	}
 
@@ -182,7 +191,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	remoteInfo.ContentURL = update.Repo.URL
 	remoteInfo.UpdateTransaction = int(update.ID)
 	// FIXME Add repoURL To Dispatcher Record (@Adam)
-	repoURL, err := playbooks.WriteTemplate(remoteInfo)
+	repoURL, err := playbooks.WriteTemplate(remoteInfo, account)
 	log.Infof("playbooks:WriteTemplate: %#v", repoURL)
 	if err != nil {
 		log.Errorf("Error::playbooks:WriteTemplate: %#v", err)
