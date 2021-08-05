@@ -19,8 +19,10 @@ type DispatcherPayload struct {
 }
 
 func ExecuteDispatcher(payload DispatcherPayload) (string, error) {
+	payloadAry := [1]DispatcherPayload{payload}
+
 	payloadBuf := new(bytes.Buffer)
-	json.NewEncoder(payloadBuf).Encode(payload)
+	json.NewEncoder(payloadBuf).Encode(payloadAry)
 	cfg := config.Get()
 	log.Infof("::executeDispatcher::BEGIN")
 	url := cfg.PlaybookDispatcherConfig.URL
