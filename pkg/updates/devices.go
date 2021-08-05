@@ -19,8 +19,9 @@ type Inventory struct {
 }
 
 type devices struct {
-	ID     string        `json:"id"`
-	Ostree systemProfile `json:"system_profile"`
+	ID                    string        `json:"id"`
+	Ostree                systemProfile `json:"system_profile"`
+	SubscriptionManagerId string        `json:"subscription_manager_id"`
 }
 
 type systemProfile struct {
@@ -74,8 +75,6 @@ func ReturnDevices(w http.ResponseWriter, r *http.Request) (Inventory, error) {
 
 // ReturnDevicesByID will return the list of devices by uuid
 func ReturnDevicesByID(deviceID string, headers map[string]string) (Inventory, error) {
-	// uCtx, _ := r.Context().Value(UpdateContextKey).(UpdateContext) // this is sanitized in updates/updates
-	// deviceID := uCtx.DeviceUUID
 	deviceIDParam := "&hostname_or_id=" + deviceID
 	log.Infof("::deviceIDParam: %s\n", deviceIDParam)
 	url := fmt.Sprintf("%s/api/inventory/v1/hosts", config.Get().InventoryConfig.URL)
@@ -83,7 +82,6 @@ func ReturnDevicesByID(deviceID string, headers map[string]string) (Inventory, e
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	req.Header.Add("Content-Type", "application/json")
-	// headers := common.GetOutgoingHeaders(req)
 	for key, value := range headers {
 		req.Header.Add(key, value)
 	}
