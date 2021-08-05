@@ -12,6 +12,7 @@ import (
 // FilterFunc is a function that takes http request and GORM DB adds a query according to the request
 type FilterFunc func(r *http.Request, tx *gorm.DB) *gorm.DB
 
+// Filter is the struct that defines an API Filter
 type Filter struct {
 	QueryParam string
 	DBField    string

@@ -101,13 +101,13 @@ type S3UploadStatus struct {
 	URL string `json:"url"`
 }
 
-// OsTree struct to get the metadata response : Saurabh
+// OsTree struct to get the metadata response
 type OsTree struct {
 	OstreeCommit string `json:"ostree_commit"`
 	Packages     InstalledPackage
 }
 
-// Packages which is nested form of metadata : Saurabh
+// InstalledPackage contains the metadata of the packages installed on a image
 type InstalledPackage struct {
 	Arch      string `json:"arch"`
 	Name      string `json:"name"`

@@ -22,6 +22,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// RepoBuilderInstance is the instance for a RepoBuilder
 var RepoBuilderInstance RepoBuilderInterface
 
 // InitRepoBuilder initializes the repository builder in this package
