@@ -12,14 +12,16 @@ ostreesetup --nogpg --osname=rhel-edge --remote=rhel-edge --url=file:///ostree/r
 
 %post --log=/var/log/anaconda/post-install.log --erroronfail
 # add user and ssh key
-useradd -m -d /home/{{.Username}} -G wheel {{.Username}}
-mkdir -p /home/{{.Username}}/.ssh
-chmod 755 /home/{{.Username}}/.ssh
-tee /home/{{.Username}}/.ssh/authorized_keys > /dev/null << STOPHERE
+useradd -m -G wheel {{.Username}}
+USER_HOME=$(getent passwd {{.Username}} | awk -F: '{print $6}')
+
+mkdir -p ${USER_HOME}/.ssh
+chmod 755 ${USER_HOME}/.ssh
+tee ${USER_HOME}/.ssh/authorized_keys > /dev/null << STOPHERE
 {{.Sshkey}}
 STOPHERE
-chmod 600 /home/{{.Username}}/.ssh/authorized_keys
-chown {{.Username}}:{{.Username}} /home/{{.Username}}/.ssh/authorized_keys
+chmod 600 ${USER_HOME}/.ssh/authorized_keys
+chown {{.Username}}:{{.Username}} ${USER_HOME}/.ssh/authorized_keys
 # no sudo password for user 
 echo -e '{{.Username}}\tALL=(ALL)\tNOPASSWD: ALL' >> /etc/sudoers
 
