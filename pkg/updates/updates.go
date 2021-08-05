@@ -150,7 +150,9 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 
 	// Create the models.UpdateTransaction
 	update := models.UpdateTransaction{
-		Account: account,
+		Account:  account,
+		CommitID: updateJSON.CommitID,
+		Tag:      updateJSON.Tag,
 	}
 
 	// Get the models.Commit from the Commit ID passed in via JSON
