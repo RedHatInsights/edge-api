@@ -7,9 +7,11 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"path/filepath"
+	"os/exec"
+	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -20,6 +22,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/imagebuilder"
+
+	"github.com/redhatinsights/edge-api/pkg/files"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
@@ -33,6 +37,7 @@ func MakeRouter(sub chi.Router) {
 		r.Get("/", GetByID)
 		r.Get("/status", GetStatusByID)
 		r.Get("/repo", GetRepoForImage)
+		r.Get("/metadata", GetMetadataForImage)
 		r.Post("/installer", CreateInstallerForImage)
 		r.Post("/repo", CreateRepoForImage)
 		r.Post("/kickstart", CreateKickStartForImage)
@@ -49,6 +54,9 @@ type key int
 const imageKey key = 1
 
 var validStatuses = []string{models.ImageStatusCreated, models.ImageStatusBuilding, models.ImageStatusError, models.ImageStatusSuccess}
+
+// WaitGroup is the waitg roup for pending image builds
+var WaitGroup sync.WaitGroup
 
 // ImageCtx is a handler for Image requests
 func ImageCtx(next http.Handler) http.Handler {
@@ -117,10 +125,8 @@ func createImage(image *models.Image, account string, headers map[string]string)
 	image.Commit.Status = models.ImageStatusBuilding
 	image.Status = models.ImageStatusBuilding
 	if image.ImageType == models.ImageTypeInstaller {
-		image.Installer = &models.Installer{
-			Status:  models.ImageStatusCreated,
-			Account: image.Account,
-		}
+		image.Installer.Status = models.ImageStatusCreated
+		image.Installer.Account = image.Account
 		tx := db.DB.Create(&image.Installer)
 		if tx.Error != nil {
 			return tx.Error
@@ -142,6 +148,7 @@ func createRepoForImage(i *models.Image) *models.Repo {
 	repo := &models.Repo{
 		CommitID: i.Commit.ID,
 		Commit:   i.Commit,
+		Status:   models.RepoStatusBuilding,
 	}
 	tx := db.DB.Create(repo)
 	if tx.Error != nil {
@@ -159,23 +166,52 @@ func createRepoForImage(i *models.Image) *models.Repo {
 }
 
 func setErrorStatusOnImage(err error, i *models.Image) {
-	log.Error(err)
 	i.Status = models.ImageStatusError
 	tx := db.DB.Save(i)
 	if tx.Error != nil {
 		panic(tx.Error)
 	}
-	panic(err)
+	if i.Commit != nil {
+		i.Commit.Status = models.ImageStatusError
+		tx := db.DB.Save(i.Commit)
+		if tx.Error != nil {
+			panic(tx.Error)
+		}
+	}
+	if i.Installer != nil {
+		i.Installer.Status = models.ImageStatusError
+		tx := db.DB.Save(i.Installer)
+		if tx.Error != nil {
+			panic(tx.Error)
+		}
+	}
+	if err != nil {
+		log.Error(err)
+		panic(err)
+	}
 }
 
 func postProcessImage(id uint, headers map[string]string) {
+	WaitGroup.Add(1) // Processing one image
+
 	defer func() {
+		WaitGroup.Done() // Done with one image (sucessfuly or not)
+		fmt.Println("Shutting down go routine")
 		if err := recover(); err != nil {
 			log.Fatalf("%s", err)
 		}
 	}()
 	var i *models.Image
 	db.DB.Joins("Commit").Joins("Installer").First(&i, id)
+
+	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt)
+		sig := <-sigint
+		log.Infof("Captured %v, marking image as error", sig)
+		setErrorStatusOnImage(nil, i)
+		WaitGroup.Done()
+	}()
 	for {
 		i, err := updateImageStatus(i, headers)
 		if err != nil {
@@ -187,10 +223,9 @@ func postProcessImage(id uint, headers map[string]string) {
 		time.Sleep(1 * time.Minute)
 	}
 
-	repo := createRepoForImage(i)
+	go imagebuilder.Client.GetMetadata(i, headers)
 
-	// TODO: This is also where we need to get the metadata from image builder
-	// in a separate goroutine
+	repo := createRepoForImage(i)
 
 	// TODO: We need to discuss this whole thing post-July deliverable
 	if i.ImageType == models.ImageTypeInstaller {
@@ -339,6 +374,7 @@ func validateGetAllSearchParams(next http.Handler) http.Handler {
 
 // GetAll image objects from the database for an account
 func GetAll(w http.ResponseWriter, r *http.Request) {
+	var count int64
 	var images []models.Image
 	result := imageFilters(r, db.DB)
 	pagination := common.GetPagination(r)
@@ -350,6 +386,14 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
+	countResult := imageFilters(r, db.DB.Model(&models.Image{})).Where("images.account = ?", account).Count(&count)
+	if countResult.Error != nil {
+		countErr := errors.NewInternalServerError()
+		log.Error(countErr)
+		w.WriteHeader(countErr.Status)
+		json.NewEncoder(w).Encode(&countErr)
+		return
+	}
 	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("images.account = ?", account).Joins("Commit").Joins("Installer").Find(&images)
 	if result.Error != nil {
 		log.Error(err)
@@ -358,7 +402,7 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	json.NewEncoder(w).Encode(&images)
+	json.NewEncoder(w).Encode(map[string]interface{}{"data": &images, "count": count})
 }
 
 func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
@@ -374,7 +418,6 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 }
 
 func updateImageStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
-	log.Info("Requesting image status on image builder aa")
 	if image.Commit.Status == models.ImageStatusBuilding {
 		image, err := imagebuilder.Client.GetCommitStatus(image, headers)
 		if err != nil {
@@ -408,21 +451,9 @@ func updateImageStatus(image *models.Image, headers map[string]string) (*models.
 	return image, nil
 }
 
-// GetStatusByID returns the image status. If still building, goes to image builder API.
+// GetStatusByID returns the image status.
 func GetStatusByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		if image.Status == models.ImageStatusBuilding {
-			var err error
-			headers := common.GetOutgoingHeaders(r)
-			image, err = updateImageStatus(image, headers)
-			if err != nil {
-				log.Error(err)
-				err := errors.NewInternalServerError()
-				w.WriteHeader(err.Status)
-				json.NewEncoder(w).Encode(&err)
-				return
-			}
-		}
 		json.NewEncoder(w).Encode(struct {
 			Status string
 			Name   string
@@ -438,18 +469,6 @@ func GetStatusByID(w http.ResponseWriter, r *http.Request) {
 // GetByID obtains a image from the database for an account
 func GetByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		if image.Status == models.ImageStatusBuilding {
-			var err error
-			headers := common.GetOutgoingHeaders(r)
-			image, err = updateImageStatus(image, headers)
-			if err != nil {
-				log.Error(err)
-				err := errors.NewInternalServerError()
-				w.WriteHeader(err.Status)
-				json.NewEncoder(w).Encode(&err)
-				return
-			}
-		}
 		json.NewEncoder(w).Encode(image)
 	}
 }
@@ -526,7 +545,6 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 			}
 			time.Sleep(1 * time.Minute)
 		}
-		// adding user info into ISO via kickstart file
 		if i.Installer.Status == models.ImageStatusSuccess {
 			err = addUserInfo(image)
 			if err != nil {
@@ -557,60 +575,69 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 // Download the ISO, inject the kickstart with username and ssh key
 // re upload the ISO
 func addUserInfo(image *models.Image) error {
-	downloadUrl := image.Installer.ImageBuildISOURL
-	uploadUrl := "Example upload URL"
-	imageName := image.Name
+	// Absolute path for manipulating ISO's
+	destPath := "/var/tmp/"
+
+	downloadURL := image.Installer.ImageBuildISOURL
 	sshKey := image.Installer.SSHKey
 	username := image.Installer.Username
-	kickstart := "finalKickstart-" + username + ".ks"
+	// Files that will be used to modify the ISO and will be cleaned
+	imageName := destPath + image.Name
+	kickstart := destPath + "finalKickstart-" + username + ".ks"
 
-	err := downloadISO(imageName, downloadUrl)
+	err := downloadISO(imageName, downloadURL)
 	if err != nil {
-		return err
+		return fmt.Errorf("error downloading ISO file :: %s", err.Error())
 	}
 
 	err = addSSHKeyToKickstart(sshKey, username, kickstart)
 	if err != nil {
-		return err
+		return fmt.Errorf("error adding ssh key to kickstart file :: %s", err.Error())
 	}
 
-	err = uploadISO(image, uploadUrl)
+	err = exeInjectionScript(kickstart, imageName, image.ID)
 	if err != nil {
-		return err
+		return fmt.Errorf("error execuiting fleetkick script :: %s", err.Error())
 	}
 
-	err = cleanFiles("KickstartFile", imageName)
+	err = uploadISO(image, imageName)
 	if err != nil {
-		return err
+		return fmt.Errorf("error uploading ISO :: %s", err.Error())
+	}
+
+	err = cleanFiles(kickstart, imageName, image.ID)
+	if err != nil {
+		return fmt.Errorf("error cleaning files :: %s", err.Error())
 	}
 
 	return nil
 }
 
-// template struct for username and ssh key
-type UnameSsh struct {
+// UnameSSH is the template struct for username and ssh key
+type UnameSSH struct {
 	Sshkey   string
 	Username string
 }
 
 // Adds user provided ssh key to the kickstart file.
 func addSSHKeyToKickstart(sshKey string, username string, kickstart string) error {
-	absPath, err := filepath.Abs(".")
-	kickTemplatePath := absPath + "/pkg/images/templateKickstart.ks"
-	if err != nil {
-		return err
-	}
-	td := UnameSsh{sshKey, username}
-	t, err := template.ParseFiles(kickTemplatePath)
+	cfg := config.Get()
+
+	td := UnameSSH{sshKey, username}
+
+	log.Infof("Opening file %s", cfg.TemplatesPath)
+	t, err := template.ParseFiles(cfg.TemplatesPath + "templateKickstart.ks")
 	if err != nil {
 		return err
 	}
 
+	log.Infof("Creating file %s", kickstart)
 	file, err := os.Create(kickstart)
 	if err != nil {
 		return err
 	}
 
+	log.Infof("Injecting username %s and key %s into template", username, sshKey)
 	err = t.Execute(file, td)
 	if err != nil {
 		return err
@@ -622,12 +649,14 @@ func addSSHKeyToKickstart(sshKey string, username string, kickstart string) erro
 
 // Download created ISO into the file system.
 func downloadISO(isoName string, url string) error {
+	log.Infof("Creating iso %s", isoName)
 	iso, err := os.Create(isoName)
 	if err != nil {
 		return err
 	}
 	defer iso.Close()
 
+	log.Infof("Downloading ISO %s", url)
 	res, err := http.Get(url)
 	if err != nil {
 		return err
@@ -643,32 +672,33 @@ func downloadISO(isoName string, url string) error {
 }
 
 // Upload finished ISO to S3
-func uploadISO(image *models.Image, url string) error {
+func uploadISO(image *models.Image, imageName string) error {
 	cfg := config.Get()
-	var uploader commits.Uploader
-	uploader = &commits.FileUploader{
+	var uploader files.Uploader
+	uploader = &files.FileUploader{
 		BaseDir: "./",
 	}
 	if cfg.BucketName != "" {
-		uploader = commits.NewS3Uploader()
+		uploader = files.NewS3Uploader()
 	}
 
 	uploadPath := fmt.Sprintf("%s/isos/%s.iso", image.Account, image.Name)
-	url, err := uploader.UploadFile(image.Name, uploadPath)
+	url, err := uploader.UploadFile(imageName, uploadPath)
 
 	if err != nil {
-		image.Installer.ImageBuildISOURL = url
-		tx := db.DB.Save(&image.Installer)
-		if tx.Error != nil {
-			return tx.Error
-		}
+		return fmt.Errorf("error uploading the ISO :: %s :: %s", uploadPath, err.Error())
 	}
 
-	return err
+	image.Installer.ImageBuildISOURL = url
+	tx := db.DB.Save(&image.Installer)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	return nil
 }
 
 // Remove edited kickstart after use.
-func cleanFiles(kickstart string, isoName string) error {
+func cleanFiles(kickstart string, isoName string, imageID uint) error {
 	err := os.Remove(kickstart)
 	if err != nil {
 		return err
@@ -680,6 +710,13 @@ func cleanFiles(kickstart string, isoName string) error {
 		return err
 	}
 	log.Info("ISO file " + isoName + " removed!")
+
+	workDir := fmt.Sprintf("/var/tmp/workdir%d", imageID)
+	err = os.RemoveAll(workDir)
+	if err != nil {
+		return err
+	}
+	log.Info("work dir file " + workDir + " removed!")
 
 	return nil
 }
@@ -698,6 +735,25 @@ func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//GetMetadataForImage gets the metadata from image-builder on /metadata endpoint
+func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
+	headers := common.GetOutgoingHeaders(r)
+	if image := getImage(w, r); image != nil {
+		meta, err := imagebuilder.Client.GetMetadata(image, headers)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if image.Commit.OSTreeCommit != "" {
+			tx := db.DB.Save(&image.Commit)
+			if tx.Error != nil {
+				panic(tx.Error)
+			}
+		}
+		json.NewEncoder(w).Encode(meta)
+	}
+}
+
+// CreateKickStartForImage creates a kickstart file for an existent image
 func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		err := addUserInfo(image)
@@ -710,4 +766,22 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+}
+
+// Inject the custom kickstart into the iso via mkksiso.
+func exeInjectionScript(kickstart string, image string, imageID uint) error {
+	fleetBashScript := "/usr/local/bin/fleetkick.sh"
+	workDir := fmt.Sprintf("/var/tmp/workdir%d", imageID)
+	err := os.Mkdir(workDir, 0755)
+	if err != nil {
+		return err
+	}
+
+	cmd := exec.Command(fleetBashScript, kickstart, image, image, workDir)
+	output, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+	log.Infof("fleetkick output: %s\n", output)
+	return nil
 }

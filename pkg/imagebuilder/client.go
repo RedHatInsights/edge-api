@@ -101,12 +101,31 @@ type S3UploadStatus struct {
 	URL string `json:"url"`
 }
 
+// OsTree struct to get the metadata response
+type OsTree struct {
+	OstreeCommit string `json:"ostree_commit"`
+	Packages     InstalledPackage
+}
+
+// InstalledPackage contains the metadata of the packages installed on a image
+type InstalledPackage struct {
+	Arch      string `json:"arch"`
+	Name      string `json:"name"`
+	Release   string `json:"release"`
+	Sigmd5    string `json:"sigmd5"`
+	Signature string `json:"signature"`
+	Type      string `json:"type"`
+	Version   string `json:"version"`
+	Epoch     string `json:"epoch,omitempty"`
+}
+
 // ImageBuilderClientInterface is an Interface to make request to ImageBuilder
 type ImageBuilderClientInterface interface {
 	ComposeCommit(image *models.Image, headers map[string]string) (*models.Image, error)
 	ComposeInstaller(repo *models.Repo, image *models.Image, headers map[string]string) (*models.Image, error)
 	GetCommitStatus(image *models.Image, headers map[string]string) (*models.Image, error)
 	GetInstallerStatus(image *models.Image, headers map[string]string) (*models.Image, error)
+	GetMetadata(image *models.Image, headers map[string]string) (*models.Image, error)
 }
 
 // ImageBuilderClient is the implementation of an ImageBuilderClientInterface
@@ -294,5 +313,35 @@ func (c *ImageBuilderClient) GetInstallerStatus(image *models.Image, headers map
 		image.Installer.Status = models.ImageStatusError
 		image.Status = models.ImageStatusError
 	}
+	return image, nil
+}
+
+func (c *ImageBuilderClient) GetMetadata(image *models.Image, headers map[string]string) (*models.Image, error) {
+	// TODO: This is where we need to get the metadata from image builder
+	composeJobId := image.Commit.ComposeJobID
+	cfg := config.Get()
+	url := fmt.Sprintf("%s/api/image-builder/v1/composes/%s/metadata", cfg.ImageBuilderConfig.URL, composeJobId)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
+	req.Header.Add("Content-Type", "application/json")
+	log.Infof("Requesting url: %s", url)
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	var ostree_struct OsTree
+	json.Unmarshal(data, &ostree_struct)
+	image.Commit.OSTreeCommit = ostree_struct.OstreeCommit
+	defer res.Body.Close()
 	return image, nil
 }

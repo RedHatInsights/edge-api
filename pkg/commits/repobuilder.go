@@ -14,12 +14,15 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/files"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/playbooks"
 
 	"github.com/cavaliercoder/grab"
 	log "github.com/sirupsen/logrus"
 )
 
+// RepoBuilderInstance is the instance for a RepoBuilder
 var RepoBuilderInstance RepoBuilderInterface
 
 // InitRepoBuilder initializes the repository builder in this package
@@ -110,12 +113,12 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 
 	}
 
-	var uploader Uploader
-	uploader = &FileUploader{
+	var uploader files.Uploader
+	uploader = &files.FileUploader{
 		BaseDir: path,
 	}
 	if cfg.BucketName != "" {
-		uploader = NewS3Uploader()
+		uploader = files.NewS3Uploader()
 	}
 	// FIXME: Need to actually do something with the return string for Server
 
@@ -140,15 +143,56 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 				log.Errorf("updateFromHTTP::GetRepoByCommitID::repo: %#v, %#v", repo, err)
 			} else {
 				log.Infof("Old Repo not found in database for CommitID, creating new one: %d", update.CommitID)
-				update.Repo = &models.Repo{}
-				update.Repo.Commit = update.Commit
+				update.Repo = &models.Repo{
+					Commit: update.Commit,
+				}
 			}
 		}
-
 	}
 	update.Repo.URL = repoURL
+	update.Repo.Status = models.RepoStatusSuccess
 	db.DB.Save(&update)
 
+	// FIXME - implement playbook dispatcher scheduling
+	// 1. Create template Playbook
+	// 2. Upload templated playbook
+	var remoteInfo playbooks.TemplateRemoteInfo
+	remoteInfo.RemoteURL = update.Repo.URL
+	remoteInfo.RemoteName = update.Repo.Commit.Name
+	remoteInfo.ContentURL = update.Repo.URL
+	remoteInfo.UpdateTransaction = int(update.ID)
+	playbookURL, err := playbooks.WriteTemplate(remoteInfo, update.Account)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	log.Debugf("playbooks:WriteTemplate: %#v", playbookURL)
+	// 3. Loop through all devices in UpdateTransaction
+	dispatchRecords := update.DispatchRecords
+	for _, device := range update.Devices {
+		// Create new &playbooks.DispatcherPayload{}
+		var payloadDispatcher playbooks.DispatcherPayload
+		payloadDispatcher.Recipient = device.UUID
+		payloadDispatcher.PlaybookURL = playbookURL
+		payloadDispatcher.Account = update.Account
+		log.Debugf("Call Execute Dispatcher")
+		//              Call playbooks.ExecuteDispatcher()
+		exc, err := playbooks.ExecuteDispatcher(payloadDispatcher)
+		if err != nil {
+			log.Error(err)
+			return nil, err
+		}
+		//              Update/Create UpdateRecord.DispatchRecord
+		dispatchRecord := models.DispatchRecord{
+			Device:      &device,
+			PlaybookURL: "", // FIXME - need to populate this
+			Status:      exc,
+		}
+		dispatchRecords = append(dispatchRecords, dispatchRecord)
+		update.DispatchRecords = dispatchRecords
+		//
+	}
+	db.DB.Save(&update)
 	return &update, nil
 }
 
@@ -169,16 +213,21 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 	}
 	err = DownloadExtractVersionRepo(r.Commit, path)
 	if err != nil {
+		r.Status = models.RepoStatusError
+		result := db.DB.Save(&r)
+		if result.Error != nil {
+			log.Error(err)
+		}
 		log.Error(err)
 		return nil, err
 	}
 
-	var uploader Uploader
-	uploader = &FileUploader{
+	var uploader files.Uploader
+	uploader = &files.FileUploader{
 		BaseDir: path,
 	}
 	if cfg.BucketName != "" {
-		uploader = NewS3Uploader()
+		uploader = files.NewS3Uploader()
 	}
 
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
@@ -188,16 +237,14 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		return nil, err
 	}
 
-	var repo models.Repo
-	result := db.DB.First(&repo, r.ID)
+	r.URL = repoURL
+	r.Status = models.RepoStatusSuccess
+	result := db.DB.Save(&r)
 	if result.Error != nil {
-		log.Error(err)
 		return nil, result.Error
 	}
-	repo.URL = repoURL
-	db.DB.Save(&repo)
 
-	return &repo, nil
+	return r, nil
 }
 
 // DownloadExtractVersionRepo Download and Extract the repo tarball to dest dir

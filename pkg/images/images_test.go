@@ -18,8 +18,10 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
-var image models.Image
-var repo models.Repo
+var (
+	image models.Image
+	repo  models.Repo
+)
 
 func setUp() {
 	config.Init()
@@ -93,6 +95,9 @@ func (c *MockImageBuilderClient) GetInstallerStatus(image *models.Image, headers
 	image.Installer.Status = models.ImageStatusError
 	return image, nil
 }
+func (c *MockImageBuilderClient) GetMetadata(image *models.Image, headers map[string]string) (*models.Image, error) {
+	return image, nil
+}
 
 type MockRepositoryBuilder struct{}
 
@@ -103,9 +108,20 @@ func (rb *MockRepositoryBuilder) ImportRepo(r *models.Repo) (*models.Repo, error
 	return &repo, nil
 }
 
-func TestCreateWasCalledWithAccountNotSet(t *testing.T) {
+func TestCreateWasCalledWithNameNotSet(t *testing.T) {
 	config.Get().Debug = false
-	var jsonStr = []byte(`{"Distribution": "rhel-8", "ImageType": "rhel-edge-installer", "Commit": {"Arch": "x86_64", "Packages" : [ { "name" : "vim"  } ]}}`)
+	var jsonStr = []byte(`{
+		"Distribution": "rhel-8",
+		"ImageType": "rhel-edge-installer",
+		"Commit": {
+			"Arch": "x86_64",
+			"Packages" : [ { "name" : "vim"  } ]
+		},
+		"Installer": {
+			"Username": "root",
+			"Sshkey": "ssh-rsa d9:f158:00:abcd"
+		}
+	}`)
 	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
 	if err != nil {
 		t.Fatal(err)
@@ -123,7 +139,19 @@ func TestCreateWasCalledWithAccountNotSet(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	var jsonStr = []byte(`{"Name": "image1", "Distribution": "rhel-8", "ImageType": "rhel-edge-installer", "Commit": {"Arch": "x86_64", "Packages" : [ { "name" : "vim"  } ]}}`)
+	var jsonStr = []byte(`{
+		"Name": "image1",
+		"Distribution": "rhel-8",
+		"ImageType": "rhel-edge-installer",
+		"Commit": {
+			"Arch": "x86_64",
+			"Packages" : [ { "name" : "vim"  } ]
+		},
+		"Installer": {
+			"Username": "root",
+			"Sshkey": "ssh-rsa d9:f158:00:abcd"
+		}
+	}`)
 	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
 	if err != nil {
 		t.Fatal(err)

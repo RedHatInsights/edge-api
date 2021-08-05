@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/commits"
+	"github.com/redhatinsights/edge-api/pkg/files"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -42,9 +42,10 @@ type S3Uploader struct {
 }
 
 // WriteTemplate will parse the values to the template
-func WriteTemplate(templateInfo TemplateRemoteInfo) (string, error) {
-	log.Debugf("::WriteTemplate: BEGIN")
-	filePath := "pkg/playbooks/"
+func WriteTemplate(templateInfo TemplateRemoteInfo, account string) (string, error) {
+	log.Infof("::WriteTemplate: BEGIN")
+	cfg := config.Get()
+	filePath := cfg.TemplatesPath
 	templateName := "template_playbook_dispatcher_ostree_upgrade_payload.yml"
 	template, err := template.ParseFiles(filePath + templateName)
 	if err != nil {
@@ -64,31 +65,35 @@ func WriteTemplate(templateInfo TemplateRemoteInfo) (string, error) {
 		OstreeRemoteTemplate: "{{ ostree_remote_template }}"}
 
 	fname := fmt.Sprintf("playbook_dispatcher_update_%v", templateInfo.UpdateTransaction) + ".yml"
-	path := filePath + fname
-	f, err := os.Create(path)
+	tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
+	f, err := os.Create(tmpfilepath)
 	if err != nil {
-		log.Println("create file: ", err)
+		log.Errorf("create file: %#v", err)
 		return "", err
 	}
-	template.Execute(f, templateData)
+	err = template.Execute(f, templateData)
+	if err != nil {
+		log.Errorf("err: %#v ", err)
+		return "", err
+	}
 
-	cfg := config.Get()
-	var uploader commits.Uploader
-	uploader = &commits.FileUploader{
-		BaseDir: path,
+	var uploader files.Uploader
+	uploader = &files.FileUploader{
+		BaseDir: "./",
 	}
 	if cfg.BucketName != "" {
-		uploader = commits.NewS3Uploader()
+		uploader = files.NewS3Uploader()
 	}
-	repoURL, err := uploader.UploadRepo(path, fmt.Sprint(templateInfo.UpdateTransaction))
+	uploadPath := fmt.Sprintf("%s/playbooks/%s", account, fname)
+	repoURL, err := uploader.UploadFile(tmpfilepath, uploadPath)
 	if err != nil {
-		log.Println("create file: ", err)
+		log.Errorf("create file: %#v ", err)
 		return "", err
 
 	}
-	log.Println("create file: ", repoURL)
-	os.Remove(path)
-	log.Debugf("::WriteTemplate: ENDs")
+	log.Infof("create file:  %#v", repoURL)
+	os.Remove(tmpfilepath)
+	log.Infof("::WriteTemplate: ENDs")
 	return repoURL, nil
 
 }

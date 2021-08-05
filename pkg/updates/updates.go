@@ -25,6 +25,7 @@ import (
 // MakeRouter adds support for operations on update
 func MakeRouter(sub chi.Router) {
 	sub.Use(UpdateCtx)
+	sub.Get("/device/{DeviceUUID}", GetDeviceStatus)
 	sub.With(common.Paginate).Get("/", GetUpdates)
 	sub.Post("/", AddUpdate)
 	sub.Route("/{updateID}", func(r chi.Router) {
@@ -32,6 +33,42 @@ func MakeRouter(sub chi.Router) {
 		r.Get("/", GetByID)
 		r.Put("/", UpdatesUpdate)
 	})
+}
+
+// GetDeviceStatus returns the device with the given UUID that is associate to the account.
+// This is being used for the inventory table to determine whether the current device image
+// is the latest or older version.
+func GetDeviceStatus(w http.ResponseWriter, r *http.Request) {
+	// var devices []models.Device
+	var results []models.Device
+	//var results []models.UpdateTransaction
+	account, err := common.GetAccount(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	uuid := chi.URLParam(r, "DeviceUUID")
+	result := db.DB.
+		Select("desired_hash, connection_state, uuid").
+		Table("devices").
+		Joins(
+			`JOIN updatetransaction_devices ON
+			(updatetransaction_devices.device_id = devices.id AND devices.uuid = ?)`,
+			uuid,
+		).
+		Joins(
+			`JOIN update_transactions ON
+			(
+				update_transactions.id = updatetransaction_devices.update_transaction_id AND
+				update_transactions.account = ?
+			)`,
+			account,
+		).Find(&results)
+	if result.Error != nil {
+		http.Error(w, result.Error.Error(), http.StatusBadRequest)
+		return
+	}
+	json.NewEncoder(w).Encode(&results)
 }
 
 func GetUpdates(w http.ResponseWriter, r *http.Request) {
@@ -92,7 +129,8 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		}
 	}
 	if updateJSON.DeviceUUID != "" {
-		inventory, err = ReturnDevicesByID(w, r)
+		headers := common.GetOutgoingHeaders(r)
+		inventory, err = ReturnDevicesByID(updateJSON.DeviceUUID, headers)
 		if err != nil {
 			err := apierrors.NewInternalServerError()
 			err.Title = fmt.Sprintf("No devices found for UUID %s", updateJSON.DeviceUUID)
@@ -101,14 +139,26 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		}
 	}
 
-	log.Debugf("updateFromHTTP::inventory: %#v", inventory)
+	log.Infof("updateFromHTTP::inventory: %#v", inventory)
+
+	account, err := common.GetAccount(r)
+	if err != nil {
+		err := apierrors.NewInternalServerError()
+		err.Title = fmt.Sprintf("No account found")
+		w.WriteHeader(err.Status)
+		return nil, err
+	}
 
 	// Create the models.UpdateTransaction
-	update := models.UpdateTransaction{}
+	update := models.UpdateTransaction{
+		Account:  account,
+		CommitID: updateJSON.CommitID,
+		Tag:      updateJSON.Tag,
+	}
 
 	// Get the models.Commit from the Commit ID passed in via JSON
 	update.Commit, err = common.GetCommitByID(updateJSON.CommitID)
-	log.Debugf("updateFromHTTP::update.Commit: %#v", update.Commit)
+	log.Infof("updateFromHTTP::update.Commit: %#v", update.Commit)
 	update.DispatchRecords = []models.DispatchRecord{}
 	if err != nil {
 		err := apierrors.NewInternalServerError()
@@ -131,22 +181,25 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 			log.Infof("Old Repo not found in database for CommitID, creating new one: %d", update.CommitID)
 			repo := &models.Repo{
 				Commit: update.Commit,
+				Status: models.RepoStatusBuilding,
 			}
 			db.DB.Create(&repo)
 			update.Repo = repo
-
 		}
 	}
+	log.Infof("Getting repo info: repo %s, %d", repo.URL, repo.ID)
 
 	var remoteInfo playbooks.TemplateRemoteInfo
 	remoteInfo.RemoteURL = update.Repo.URL
-	remoteInfo.RemoteName = update.Repo.Commit.Name
+	remoteInfo.RemoteName = "main-test" //update.Repo.Commit.Name
 	remoteInfo.ContentURL = update.Repo.URL
+	remoteInfo.GpgVerify = "true"
 	remoteInfo.UpdateTransaction = int(update.ID)
 	// FIXME Add repoURL To Dispatcher Record (@Adam)
-	repoURL, err := playbooks.WriteTemplate(remoteInfo)
-	log.Debugf("playbooks:WriteTemplate: %#v", repoURL)
+	repoURL, err := playbooks.WriteTemplate(remoteInfo, account)
+	log.Infof("playbooks:WriteTemplate: %#v", repoURL)
 	if err != nil {
+		log.Errorf("Error::playbooks:WriteTemplate: %#v", err)
 		err := apierrors.NewInternalServerError()
 		err.Title = "Error during playbook creation"
 		w.WriteHeader(err.Status)
@@ -156,7 +209,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	oldCommits := update.OldCommits
 	dispatchRecords := update.DispatchRecords
 	// - populate the update.Devices []Device data
-	fmt.Printf("Devices in this tag %v", inventory.Result)
+	log.Infof("Devices in this tag %v", inventory.Result)
 	for _, device := range inventory.Result {
 		//  Check for the existence of a Repo that already has this commit and don't duplicate
 		var updateDevice *models.Device
@@ -186,8 +239,9 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		payloadDispatcher.Recipient = updateDevice.UUID
 		payloadDispatcher.PlaybookURL = repoURL
 		payloadDispatcher.Account = update.Account
-		log.Debugf("Call Execute Dispatcher")
-		exc, err := playbooks.ExecuteDispatcher(r, payloadDispatcher)
+		log.Infof("Call Execute Dispatcher")
+		log.Infof("payload Dispatcher::  %#v", payloadDispatcher)
+		exc, err := playbooks.ExecuteDispatcher(payloadDispatcher)
 		// - end playbook dispatcher
 
 		dispatchRecord := &models.DispatchRecord{
@@ -198,17 +252,17 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		dispatchRecords = append(dispatchRecords, *dispatchRecord)
 		update.DispatchRecords = dispatchRecords
 
-		log.Debugf("updateFromHTTP::update.DispatchRecords: %#v", devices)
+		log.Infof("updateFromHTTP::update.DispatchRecords: %#v", devices)
 
-		log.Debugf("updateFromHTTP::dispatchRecord: %#v", dispatchRecord)
+		log.Infof("updateFromHTTP::dispatchRecord: %#v", dispatchRecord)
 		for _, ostreeDeployment := range device.Ostree.RpmOstreeDeployments {
 			if ostreeDeployment.Booted {
-				log.Debugf("updateFromHTTP::ostreeDeployment.Booted: %#v", ostreeDeployment)
+				log.Infof("updateFromHTTP::ostreeDeployment.Booted: %#v", ostreeDeployment)
 				var oldCommit models.Commit
 				result := db.DB.Where("os_tree_commit = ?", ostreeDeployment.Checksum).First(&oldCommit)
-				log.Debugf("updateFromHTTP::result: %#v", result)
+				log.Infof("updateFromHTTP::result: %#v", result)
 				if result.Error != nil {
-					if !(result.Error.Error() == "record not found") {
+					if result.Error.Error() != "record not found" {
 						log.Errorf("updateFromHTTP::result.Error: %#v", result.Error)
 						http.Error(w, result.Error.Error(), http.StatusBadRequest)
 						return &models.UpdateTransaction{}, err
@@ -224,7 +278,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	}
 	update.OldCommits = oldCommits
 
-	log.Debugf("updateFromHTTP::update: %#v", update)
+	log.Infof("updateFromHTTP::update: %#v", update)
 	return &update, err
 }
 

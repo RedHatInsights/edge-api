@@ -1,0 +1,28 @@
+---
+# SIMPLE RHSM AND INSIGHTS REGISTER
+#
+# e.g.,
+# ansible-playbook -i inventory.ini -vv register_edge_device.yml \
+# --extra-vars="regfile=vars_register_edge_device.yml" --user joe_user
+#
+#   regfile : the file containing rhsm account information
+
+- hosts: all
+  gather_facts: no
+  become: yes
+
+  vars_files:
+    - "{{ regfile }}"
+
+  tasks:
+  - name: rhsm register
+    shell: "subscription-manager register --username {{ rhsm_username }} --password {{ rhsm_password }} --auto-attach --force"
+    tags:
+    - rhsm_register
+    - register
+
+  - name: insights register
+    shell: "insights-client --register"
+    tags:
+    - insights_register
+    - register

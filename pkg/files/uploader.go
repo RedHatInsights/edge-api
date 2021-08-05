@@ -1,4 +1,4 @@
-package commits
+package files
 
 import (
 	"fmt"
@@ -112,7 +112,7 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 	return s3URL, nil
 }
 
-// UploadFIle takes a Filename path as a string and then uploads that to
+// UploadFile takes a Filename path as a string and then uploads that to
 // the supplied location in s3
 func (u *S3Uploader) UploadFile(fname string, uploadPath string) (string, error) {
 	log.Debugf("S3Uploader::UploadFileToS3::fname: %#v", fname)

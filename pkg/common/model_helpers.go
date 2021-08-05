@@ -6,8 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// GetCommitByID
-// Pass in CommitID uint and get a *models.Commit back
+// GetCommitByID receives CommitID uint and get a *models.Commit back
 func GetCommitByID(commitID uint) (*models.Commit, error) {
 	log.Debugf("GetCommitByID::commitID: %#v", commitID)
 	var commit models.Commit
@@ -20,8 +19,7 @@ func GetCommitByID(commitID uint) (*models.Commit, error) {
 	return &commit, nil
 }
 
-// GetCommitByOSTreeCommit
-// Pass in an OSTreeCommit string and get a *models.Commit back
+// GetCommitByOSTreeCommit receives an OSTreeCommit string and get a *models.Commit back
 func GetCommitByOSTreeCommit(ost string) (*models.Commit, error) {
 	log.Debugf("GetCommitByOSTreeCommit::ost: %#v", ost)
 	var commit models.Commit
@@ -34,8 +32,7 @@ func GetCommitByOSTreeCommit(ost string) (*models.Commit, error) {
 	return &commit, nil
 }
 
-// GetRepoByID
-// Pass in RepoID uint and get a *models.Repo back
+// GetRepoByID receives RepoID uint and get a *models.Repo back
 func GetRepoByID(repoID uint) (*models.Repo, error) {
 	log.Debugf("GetRepoByID::repoID: %#v", repoID)
 	var repo models.Repo
@@ -48,8 +45,7 @@ func GetRepoByID(repoID uint) (*models.Repo, error) {
 	return &repo, nil
 }
 
-// GetRepoByCommitID
-// Pass in Repo.CommitID uint and get a *models.Repo back
+// GetRepoByCommitID receives Repo.CommitID uint and get a *models.Repo back
 func GetRepoByCommitID(commitID uint) (*models.Repo, error) {
 	log.Debugf("GetRepoByCommitID::commitID: %#v", commitID)
 	var repo models.Repo
@@ -62,8 +58,7 @@ func GetRepoByCommitID(commitID uint) (*models.Repo, error) {
 	return &repo, nil
 }
 
-// GetDeviceByID
-// Pass in DeviceID uint and get a *models.Device back
+// GetDeviceByID receives DeviceID uint and get a *models.Device back
 func GetDeviceByID(deviceID uint) (*models.Device, error) {
 	log.Debugf("GetDeviceByID::deviceID: %#v", deviceID)
 	var device models.Device
@@ -76,8 +71,7 @@ func GetDeviceByID(deviceID uint) (*models.Device, error) {
 	return &device, nil
 }
 
-// GetDeviceByUUID
-// Pass in UUID string and get a *models.Device back
+// GetDeviceByUUID receives UUID string and get a *models.Device back
 func GetDeviceByUUID(deviceUUID string) (*models.Device, error) {
 	log.Debugf("GetDeviceByUUID::deviceUUID: %#v", deviceUUID)
 	var device models.Device

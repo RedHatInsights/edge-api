@@ -27,6 +27,7 @@ type EdgeConfig struct {
 	S3ProxyURL               string
 	DefaultOSTreeRef         string
 	PlaybookDispatcherConfig *playbookDispatcherConfig
+	TemplatesPath            string
 }
 
 type dbConfig struct {
@@ -79,6 +80,7 @@ func Init() {
 	options.SetDefault("OpenAPIFilePath", "./cmd/spec/openapi.json")
 	options.SetDefault("Database", "sqlite")
 	options.SetDefault("DefaultOSTreeRef", "rhel/8/x86_64/edge")
+	options.SetDefault("TemplatesPath", "/usr/local/etc/")
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
@@ -110,7 +112,8 @@ func Init() {
 			PSK:    options.GetString("PlaybookDispatcherPSK"),
 			Status: options.GetString("PlaybookDispatcherStatusURL"),
 		},
-		S3ProxyURL: options.GetString("S3ProxyURL"),
+		S3ProxyURL:    options.GetString("S3ProxyURL"),
+		TemplatesPath: options.GetString("TemplatesPath"),
 	}
 
 	database := options.GetString("database")
