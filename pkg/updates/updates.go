@@ -31,6 +31,7 @@ func MakeRouter(sub chi.Router) {
 	sub.Route("/{updateID}", func(r chi.Router) {
 		r.Use(UpdateCtx)
 		r.Get("/", GetByID)
+		r.Get("/diff", GetDiffOnUpdate)
 		r.Put("/", UpdatesUpdate)
 	})
 }
@@ -413,10 +414,11 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction
 	return update
 }
 
-func getDiffOnUpdate(ut models.UpdateTransaction) ([]string, []string) {
-
-	initialCommit := *ut.OldCommits[len(ut.OldCommits)-1].GetPackagesList()
-	updateCommit := *ut.Commit.GetPackagesList()
+// GetDiffOnUpdate return the list of packages added or removed from commit
+func GetDiffOnUpdate(w http.ResponseWriter, r *http.Request) ([]string, []string) {
+	update := getUpdate(w, r)
+	initialCommit := *update.OldCommits[len(update.OldCommits)-1].GetPackagesList()
+	updateCommit := *update.Commit.GetPackagesList()
 
 	var added []string
 	for _, pkg := range updateCommit {
