@@ -267,6 +267,13 @@ paths:
   /images/{imageId}/repo:
     get:
       operationId: getImageRepo
+      parameters:
+        - name: imageId
+          in: path
+          required: true
+          description: ImageID
+          schema:
+            type : integer
       responses:
         "200":
           content:
