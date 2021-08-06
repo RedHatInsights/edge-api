@@ -101,7 +101,7 @@ type UpdatePostJSON struct {
 	DeviceUUID string `json:"DeviceUUID"`
 }
 
-type DeltaDiff struct {
+type deltaDiff struct {
 	Added   []string
 	Removed []string
 }
@@ -438,7 +438,7 @@ func GetDiffOnUpdate(w http.ResponseWriter, r *http.Request) {
 			removed = append(removed, pkg)
 		}
 	}
-	var results DeltaDiff
+	var results deltaDiff
 	results.Added = added
 	results.Removed = removed
 	json.NewEncoder(w).Encode(&results)
