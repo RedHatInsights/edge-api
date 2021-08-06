@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 
 	redoc "github.com/go-openapi/runtime/middleware"
 	"github.com/redhatinsights/edge-api/config"
@@ -69,9 +70,6 @@ func main() {
 		server = repo.NewS3Proxy()
 	}
 
-	sigint := make(chan os.Signal, 1)
-	signal.Notify(sigint, os.Interrupt)
-
 	r := chi.NewRouter()
 	r.Use(
 		request_id.ConfiguredRequestID("x-rh-insights-request-id"),
@@ -118,7 +116,7 @@ func main() {
 	gracefulStop := make(chan struct{})
 	go func() {
 		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt)
+		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 		<-sigint
 		log.Info("Shutting down gracefully...")
 		if err := srv.Shutdown(context.Background()); err != nil {
