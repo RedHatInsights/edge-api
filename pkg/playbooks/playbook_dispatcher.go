@@ -8,7 +8,6 @@ import (
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/common"
-	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -18,7 +17,12 @@ type DispatcherPayload struct {
 	Account     string `json:"account"`
 }
 
-func ExecuteDispatcher(payload DispatcherPayload) (string, error) {
+type PlaybookDispatcherResponse struct {
+	StatusCode           int    `json:"code"`
+	PlaybookDispatcherID string `json:"id"`
+}
+
+func ExecuteDispatcher(payload DispatcherPayload) ([]PlaybookDispatcherResponse, error) {
 	payloadAry := [1]DispatcherPayload{payload}
 
 	payloadBuf := new(bytes.Buffer)
@@ -43,18 +47,29 @@ func ExecuteDispatcher(payload DispatcherPayload) (string, error) {
 	log.Infof("ExecuteDispatcher:: req.Header:: %#v", req.Header)
 	client := &http.Client{}
 	resp, err := client.Do(req)
+
 	if err != nil {
 		log.Errorf("Error Code:: Playbook dispatcher: %#v", resp)
 		log.Errorf("Error:: Playbook dispatcher: %#v", err)
 		log.Errorf("Error:: Playbook dispatcher: %#v", err.Error())
-		return models.DispatchRecordStatusError, err
+		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusMultiStatus {
 		body, _ := ioutil.ReadAll(resp.Body)
 		log.Errorf("error calling playbook dispatcher, got status code %d and body %s", resp.StatusCode, body)
-		return models.DispatchRecordStatusError, err
+		return nil, err
 	}
 	log.Infof("::executeDispatcher::END")
-	return models.DispatchRecordStatusCreated, nil
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Errorf("executeDispatcher: %#v", err.Error())
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var playbookResponse []PlaybookDispatcherResponse
+	json.Unmarshal([]byte(body), &playbookResponse)
+	return playbookResponse, nil
 }

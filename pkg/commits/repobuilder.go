@@ -3,6 +3,7 @@ package commits
 import (
 	"errors"
 	"fmt"
+	"net/http"
 
 	"bytes"
 	"os"
@@ -170,6 +171,8 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	// 3. Loop through all devices in UpdateTransaction
 	dispatchRecords := update.DispatchRecords
 	for _, device := range update.Devices {
+		var updateDevice *models.Device
+		updateDevice, err = common.GetDeviceByUUID(device.UUID)
 		// Create new &playbooks.DispatcherPayload{}
 		var payloadDispatcher playbooks.DispatcherPayload
 		payloadDispatcher.Recipient = device.UUID
@@ -178,17 +181,32 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 		log.Debugf("Call Execute Dispatcher")
 		//              Call playbooks.ExecuteDispatcher()
 		exc, err := playbooks.ExecuteDispatcher(payloadDispatcher)
+
 		if err != nil {
-			log.Error(err)
+			log.Errorf("Error on playbook-dispatcher-executuin: %#v ", err)
 			return nil, err
 		}
-		//              Update/Create UpdateRecord.DispatchRecord
-		dispatchRecord := models.DispatchRecord{
-			Device:      &device,
-			PlaybookURL: "", // FIXME - need to populate this
-			Status:      exc,
+		for _, excPlaybook := range exc {
+			if excPlaybook.StatusCode == http.StatusCreated {
+				device.ConnectionState = true
+				dispatchRecord := &models.DispatchRecord{
+					Device:               updateDevice,
+					PlaybookURL:          repoURL,
+					Status:               models.DispatchRecordStatusCreated,
+					PlaybookDispatcherID: excPlaybook.PlaybookDispatcherID,
+				}
+				dispatchRecords = append(dispatchRecords, *dispatchRecord)
+			} else {
+				device.ConnectionState = false
+				dispatchRecord := &models.DispatchRecord{
+					Device:      updateDevice,
+					PlaybookURL: repoURL,
+					Status:      models.DispatchRecordStatusError,
+				}
+				dispatchRecords = append(dispatchRecords, *dispatchRecord)
+			}
+
 		}
-		dispatchRecords = append(dispatchRecords, dispatchRecord)
 		update.DispatchRecords = dispatchRecords
 		//
 	}
