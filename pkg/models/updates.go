@@ -17,10 +17,10 @@ Device
 */
 type Device struct {
 	gorm.Model
-	UUID                  string
-	DesiredHash           string
-	SubscriptionManagerId string
-	ConnectionState       bool `gorm:"default:true"`
+	UUID            string
+	DesiredHash     string
+	RhcClientID     string
+	ConnectionState bool `gorm:"default:true"`
 }
 
 /*

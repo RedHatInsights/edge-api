@@ -19,12 +19,12 @@ type Inventory struct {
 }
 
 type devices struct {
-	ID                    string        `json:"id"`
-	Ostree                systemProfile `json:"system_profile"`
-	SubscriptionManagerId string        `json:"subscription_manager_id"`
+	ID     string        `json:"id"`
+	Ostree systemProfile `json:"system_profile"`
 }
 
 type systemProfile struct {
+	RhcClientID          string   `json:"rhc_client_id"`
 	RpmOstreeDeployments []ostree `json:"rpm_ostree_deployments"`
 }
 
@@ -37,7 +37,7 @@ const (
 	inventoryAPI = "api/inventory/v1/hosts"
 	orderBy      = "updated"
 	orderHow     = "DESC"
-	filterParams = "?filter[system_profile][host_type]=edge&fields[system_profile]=host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments"
+	filterParams = "?filter[system_profile][host_type]=edge&fields[system_profile]=host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments, rhc_client_id,rhc_config_state"
 )
 
 /* FIXME - not sure if we need this or not, but keeping it just in case

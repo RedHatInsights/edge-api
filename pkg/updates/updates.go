@@ -221,8 +221,8 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 			} else {
 				log.Infof("Existing Device not found in database, creating new one: %s", device.ID)
 				updateDevice = &models.Device{
-					UUID:                  device.ID,
-					SubscriptionManagerId: device.SubscriptionManagerId,
+					UUID:        device.ID,
+					RhcClientID: device.Ostree.RhcClientID,
 				}
 				db.DB.Create(&updateDevice)
 			}
@@ -236,7 +236,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 
 		// - Call playbook dispatcher
 		var payloadDispatcher playbooks.DispatcherPayload
-		payloadDispatcher.Recipient = updateDevice.SubscriptionManagerId
+		payloadDispatcher.Recipient = updateDevice.RhcClientID
 		payloadDispatcher.PlaybookURL = repoURL
 		payloadDispatcher.Account = update.Account
 		log.Infof("Call Execute Dispatcher")
