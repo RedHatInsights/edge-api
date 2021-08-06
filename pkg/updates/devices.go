@@ -37,7 +37,7 @@ const (
 	inventoryAPI = "api/inventory/v1/hosts"
 	orderBy      = "updated"
 	orderHow     = "DESC"
-	filterParams = "?filter[system_profile][host_type]=edge&fields[system_profile]=host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments, rhc_client_id,rhc_config_state"
+	filterParams = "?filter[system_profile][host_type]=edge&fields[system_profile]=host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments,rhc_client_id,rhc_config_state"
 )
 
 /* FIXME - not sure if we need this or not, but keeping it just in case
