@@ -32,3 +32,6 @@ config.yaml
 
 # env variables file
 .env
+
+# mac specific
+.DS_Store
