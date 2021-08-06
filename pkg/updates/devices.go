@@ -24,7 +24,7 @@ type devices struct {
 }
 
 type systemProfile struct {
-	RhcClientID          string   `json:"rhc_client_id"`
+	RHCClientID          string   `json:"rhc_client_id"`
 	RpmOstreeDeployments []ostree `json:"rpm_ostree_deployments"`
 }
 
