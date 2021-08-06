@@ -341,23 +341,18 @@ func (c *ImageBuilderClient) GetMetadata(image *models.Image, headers map[string
 	}
 
 	var ostree_struct OsTree
-	installed_package := models.Commit{}
 	json.Unmarshal(data, &ostree_struct)
-	json.Unmarshal(data, &installed_package)
 	for n := range ostree_struct.InstalledPackages {
-		installed_pkgs := []models.InstalledPackage{
+		pkg := models.InstalledPackage{
 
-			{
-				Arch: ostree_struct.InstalledPackages[n].Arch, Name: ostree_struct.InstalledPackages[n].Name,
-				Release: ostree_struct.InstalledPackages[n].Release, Sigmd5: ostree_struct.InstalledPackages[n].Sigmd5,
-				Signature: ostree_struct.InstalledPackages[n].Signature, Type: ostree_struct.InstalledPackages[n].Type,
-				Version: ostree_struct.InstalledPackages[n].Version, Epoch: ostree_struct.InstalledPackages[n].Epoch,
-			},
+			Arch: ostree_struct.InstalledPackages[n].Arch, Name: ostree_struct.InstalledPackages[n].Name,
+			Release: ostree_struct.InstalledPackages[n].Release, Sigmd5: ostree_struct.InstalledPackages[n].Sigmd5,
+			Signature: ostree_struct.InstalledPackages[n].Signature, Type: ostree_struct.InstalledPackages[n].Type,
+			Version: ostree_struct.InstalledPackages[n].Version, Epoch: ostree_struct.InstalledPackages[n].Epoch,
 		}
-		installed_package.InstalledPackage = append(installed_package.InstalledPackage, installed_pkgs...)
+		image.Commit.InstalledPackage = append(image.Commit.InstalledPackage, pkg)
 	}
 	image.Commit.OSTreeCommit = ostree_struct.OstreeCommit
-	image.Commit.InstalledPackage = installed_package.InstalledPackage
 	defer res.Body.Close()
 	return image, nil
 }
