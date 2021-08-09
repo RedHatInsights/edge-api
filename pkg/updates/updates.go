@@ -102,8 +102,8 @@ type UpdatePostJSON struct {
 }
 
 type deltaDiff struct {
-	Added   []string
-	Removed []string
+	Added   []models.Package
+	Removed []models.Package
 }
 
 func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTransaction, error) {
@@ -401,19 +401,25 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction
 // GetDiffOnUpdate return the list of packages added or removed from commit
 func GetDiffOnUpdate(w http.ResponseWriter, r *http.Request) {
 	update := getUpdate(w, r)
-	initialCommit := *update.OldCommits[len(update.OldCommits)-1].GetPackagesList()
-	updateCommit := *update.Commit.GetPackagesList()
-
-	var added []string
+	initialCommit := update.OldCommits[len(update.OldCommits)-1].Packages
+	updateCommit := update.Commit.Packages
+	var initString []string
+	for _, str := range initialCommit {
+		initString = append(initString, str.Name)
+	}
+	var added []models.Package
 	for _, pkg := range updateCommit {
-		if !contains(initialCommit, pkg) {
+		if !contains(initString, pkg.Name) {
 			added = append(added, pkg)
 		}
 	}
-
-	var removed []string
+	var updateString []string
+	for _, str := range updateCommit {
+		updateString = append(updateString, str.Name)
+	}
+	var removed []models.Package
 	for _, pkg := range initialCommit {
-		if !contains(updateCommit, pkg) {
+		if !contains(updateString, pkg.Name) {
 			removed = append(removed, pkg)
 		}
 	}
