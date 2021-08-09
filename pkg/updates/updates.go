@@ -206,7 +206,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 
 	devices := update.Devices
 	oldCommits := update.OldCommits
-	dispatchRecords := update.DispatchRecords
+
 	// - populate the update.Devices []Device data
 	log.Infof("Devices in this tag %v", inventory.Result)
 	for _, device := range inventory.Result {
@@ -233,46 +233,6 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		log.Debugf("updateFromHTTP::devices: %#v", devices)
 		update.Devices = devices
 		log.Debugf("updateFromHTTP::update.Devices: %#v", devices)
-
-		// - Call playbook dispatcher
-		var payloadDispatcher playbooks.DispatcherPayload
-		payloadDispatcher.Recipient = updateDevice.RHCClientID
-		payloadDispatcher.PlaybookURL = playbooksURL
-		payloadDispatcher.Account = update.Account
-
-		log.Infof("Call Execute Dispatcher")
-		log.Infof("payload Dispatcher::  %#v", payloadDispatcher)
-		exc, err := playbooks.ExecuteDispatcher(payloadDispatcher)
-
-		if err != nil {
-			log.Errorf("Error on playbook-dispatcher-executuin: %#v ", err.Error())
-			return nil, err
-		}
-		for _, excPlaybook := range exc {
-			if excPlaybook.StatusCode == http.StatusCreated {
-				updateDevice.ConnectionState = true
-				dispatchRecord := &models.DispatchRecord{
-					Device:               updateDevice,
-					PlaybookURL:          playbooksURL,
-					Status:               models.DispatchRecordStatusCreated,
-					PlaybookDispatcherID: excPlaybook.PlaybookDispatcherID,
-				}
-				dispatchRecords = append(dispatchRecords, *dispatchRecord)
-			} else {
-				updateDevice.ConnectionState = false
-				dispatchRecord := &models.DispatchRecord{
-					Device:      updateDevice,
-					PlaybookURL: playbooksURL,
-					Status:      models.DispatchRecordStatusError,
-				}
-				dispatchRecords = append(dispatchRecords, *dispatchRecord)
-			}
-
-		}
-		update.DispatchRecords = dispatchRecords
-		log.Infof("updateFromHTTP::dispatchRecords: %#v", dispatchRecords)
-		log.Infof("updateFromHTTP::update.devices: %#v", devices)
-		// - end playbook dispatcher
 
 		for _, ostreeDeployment := range device.Ostree.RpmOstreeDeployments {
 			if ostreeDeployment.Booted {
