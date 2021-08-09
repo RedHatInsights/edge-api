@@ -194,9 +194,9 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	remoteInfo.ContentURL = update.Repo.URL
 	remoteInfo.GpgVerify = "true"
 	remoteInfo.UpdateTransaction = int(update.ID)
-	// FIXME Add repoURL To Dispatcher Record (@Adam)
-	repoURL, err := playbooks.WriteTemplate(remoteInfo, account)
-	log.Infof("playbooks:WriteTemplate: %#v", repoURL)
+
+	playbooksURL, err := playbooks.WriteTemplate(remoteInfo, account)
+	log.Infof("playbooks:WriteTemplate: %#v", playbooksURL)
 	if err != nil {
 		log.Errorf("Error::playbooks:WriteTemplate: %#v", err)
 		err := apierrors.NewInternalServerError()
@@ -206,7 +206,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 
 	devices := update.Devices
 	oldCommits := update.OldCommits
-	dispatchRecords := update.DispatchRecords
+
 	// - populate the update.Devices []Device data
 	log.Infof("Devices in this tag %v", inventory.Result)
 	for _, device := range inventory.Result {
@@ -234,27 +234,6 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		update.Devices = devices
 		log.Debugf("updateFromHTTP::update.Devices: %#v", devices)
 
-		// - Call playbook dispatcher
-		var payloadDispatcher playbooks.DispatcherPayload
-		payloadDispatcher.Recipient = updateDevice.RHCClientID
-		payloadDispatcher.PlaybookURL = repoURL
-		payloadDispatcher.Account = update.Account
-		log.Infof("Call Execute Dispatcher")
-		log.Infof("payload Dispatcher::  %#v", payloadDispatcher)
-		exc, err := playbooks.ExecuteDispatcher(payloadDispatcher)
-		// - end playbook dispatcher
-
-		dispatchRecord := &models.DispatchRecord{
-			Device:      updateDevice,
-			PlaybookURL: "", // FIXME - need to populate this
-			Status:      exc,
-		}
-		dispatchRecords = append(dispatchRecords, *dispatchRecord)
-		update.DispatchRecords = dispatchRecords
-
-		log.Infof("updateFromHTTP::update.DispatchRecords: %#v", devices)
-
-		log.Infof("updateFromHTTP::dispatchRecord: %#v", dispatchRecord)
 		for _, ostreeDeployment := range device.Ostree.RpmOstreeDeployments {
 			if ostreeDeployment.Booted {
 				log.Infof("updateFromHTTP::ostreeDeployment.Booted: %#v", ostreeDeployment)

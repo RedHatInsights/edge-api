@@ -101,8 +101,8 @@ type S3UploadStatus struct {
 
 // OsTree struct to get the metadata response
 type OsTree struct {
-	OstreeCommit string `json:"ostree_commit"`
-	Packages     InstalledPackage
+	OstreeCommit      string             `json:"ostree_commit"`
+	InstalledPackages []InstalledPackage `json:"packages"`
 }
 
 // InstalledPackage contains the metadata of the packages installed on a image
@@ -335,8 +335,19 @@ func (c *ImageBuilderClient) GetMetadata(image *models.Image, headers map[string
 	if err != nil {
 		return nil, err
 	}
+
 	var ostree_struct OsTree
 	json.Unmarshal(data, &ostree_struct)
+	for n := range ostree_struct.InstalledPackages {
+		pkg := models.InstalledPackage{
+
+			Arch: ostree_struct.InstalledPackages[n].Arch, Name: ostree_struct.InstalledPackages[n].Name,
+			Release: ostree_struct.InstalledPackages[n].Release, Sigmd5: ostree_struct.InstalledPackages[n].Sigmd5,
+			Signature: ostree_struct.InstalledPackages[n].Signature, Type: ostree_struct.InstalledPackages[n].Type,
+			Version: ostree_struct.InstalledPackages[n].Version, Epoch: ostree_struct.InstalledPackages[n].Epoch,
+		}
+		image.Commit.InstalledPackage = append(image.Commit.InstalledPackage, pkg)
+	}
 	image.Commit.OSTreeCommit = ostree_struct.OstreeCommit
 	defer res.Body.Close()
 	return image, nil

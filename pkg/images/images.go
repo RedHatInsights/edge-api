@@ -32,6 +32,7 @@ import (
 // MakeRouter adds support for operations on images
 func MakeRouter(sub chi.Router) {
 	sub.With(validateGetAllSearchParams).With(common.Paginate).Get("/", GetAll)
+	sub.Get("/reserved-usernames", GetReservedUsernames)
 	sub.Post("/", Create)
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageCtx)
@@ -785,4 +786,18 @@ func exeInjectionScript(kickstart string, image string, imageID uint) error {
 	}
 	log.Infof("fleetkick output: %s\n", output)
 	return nil
+}
+
+func GetReservedUsernames(w http.ResponseWriter, r *http.Request) {
+	cmd := exec.Command("sed", "1d;/^#/d;s/\t.*//", "/usr/share/doc/setup/uidgid")
+	output, err := cmd.Output()
+	if err != nil {
+		log.Errorf(err.Error())
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	usernames := strings.Split(string(output[:]), "\n")
+	json.NewEncoder(w).Encode(usernames)
 }
