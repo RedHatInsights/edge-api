@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 
 	redoc "github.com/go-openapi/runtime/middleware"
 	"github.com/redhatinsights/edge-api/config"
@@ -48,17 +49,21 @@ func main() {
 	initDependencies()
 	cfg := config.Get()
 	log.WithFields(log.Fields{
-		"Hostname":           cfg.Hostname,
-		"Auth":               cfg.Auth,
-		"WebPort":            cfg.WebPort,
-		"MetricsPort":        cfg.MetricsPort,
-		"LogLevel":           cfg.LogLevel,
-		"Debug":              cfg.Debug,
-		"BucketName":         cfg.BucketName,
-		"BucketRegion":       cfg.BucketRegion,
-		"ImageBuilderConfig": cfg.ImageBuilderConfig.URL,
-		"InventoryConfig":    cfg.InventoryConfig.URL,
-		"TemplatesPath":      cfg.TemplatesPath,
+		"Hostname":                 cfg.Hostname,
+		"Auth":                     cfg.Auth,
+		"WebPort":                  cfg.WebPort,
+		"MetricsPort":              cfg.MetricsPort,
+		"LogLevel":                 cfg.LogLevel,
+		"Debug":                    cfg.Debug,
+		"BucketName":               cfg.BucketName,
+		"BucketRegion":             cfg.BucketRegion,
+		"RepoTempPath ":            cfg.RepoTempPath,
+		"OpenAPIFilePath ":         cfg.OpenAPIFilePath,
+		"ImageBuilderURL":          cfg.ImageBuilderConfig.URL,
+		"DefaultOSTreeRef":         cfg.DefaultOSTreeRef,
+		"InventoryURL":             cfg.InventoryConfig.URL,
+		"PlaybookDispatcherConfig": cfg.PlaybookDispatcherConfig.URL,
+		"TemplatesPath":            cfg.TemplatesPath,
 	}).Info("Configuration Values:")
 
 	var server repo.Server
@@ -68,9 +73,6 @@ func main() {
 	if cfg.BucketName != "" {
 		server = repo.NewS3Proxy()
 	}
-
-	sigint := make(chan os.Signal, 1)
-	signal.Notify(sigint, os.Interrupt)
 
 	r := chi.NewRouter()
 	r.Use(
@@ -118,7 +120,7 @@ func main() {
 	gracefulStop := make(chan struct{})
 	go func() {
 		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt)
+		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 		<-sigint
 		log.Info("Shutting down gracefully...")
 		if err := srv.Shutdown(context.Background()); err != nil {

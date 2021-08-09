@@ -62,8 +62,6 @@ objects:
           value: ${OPEN_API_FILEPATH}
         - name: IMAGEBUILDERURL
           value: ${IMAGEBUILDER_URL}
-        - name: S3PROXYURL
-          value: ${S3_PROXY_URL}
         - name: INVENTORYURL
           value: ${INVENTORYURL}
         - name: PLAYBOOKDISPATCHERURL
@@ -117,8 +115,6 @@ parameters:
   value: "true"
 - name: IMAGEBUILDER_URL
   value: "http://image-builder:8080"
-- name: S3_PROXY_URL
-  value: "http://s3-edge-api-proxy"
 - name: INVENTORYURL
   value: "http://host-inventory-service:8080/"
 - name: PLAYBOOKDISPATCHERURL

@@ -24,7 +24,6 @@ type EdgeConfig struct {
 	OpenAPIFilePath          string
 	ImageBuilderConfig       *imageBuilderConfig
 	InventoryConfig          *inventoryConfig
-	S3ProxyURL               string
 	DefaultOSTreeRef         string
 	PlaybookDispatcherConfig *playbookDispatcherConfig
 	TemplatesPath            string
@@ -112,7 +111,6 @@ func Init() {
 			PSK:    options.GetString("PlaybookDispatcherPSK"),
 			Status: options.GetString("PlaybookDispatcherStatusURL"),
 		},
-		S3ProxyURL:    options.GetString("S3ProxyURL"),
 		TemplatesPath: options.GetString("TemplatesPath"),
 	}
 

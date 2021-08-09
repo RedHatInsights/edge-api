@@ -60,10 +60,11 @@ DispatchRecord
 */
 type DispatchRecord struct {
 	gorm.Model
-	PlaybookURL string
-	DeviceID    uint
-	Device      *Device
-	Status      string
+	PlaybookURL          string
+	DeviceID             uint
+	Device               *Device
+	Status               string
+	PlaybookDispatcherID string
 }
 
 const (
