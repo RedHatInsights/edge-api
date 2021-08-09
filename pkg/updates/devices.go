@@ -24,6 +24,7 @@ type devices struct {
 }
 
 type systemProfile struct {
+	RHCClientID          string   `json:"rhc_client_id"`
 	RpmOstreeDeployments []ostree `json:"rpm_ostree_deployments"`
 }
 
@@ -36,7 +37,7 @@ const (
 	inventoryAPI = "api/inventory/v1/hosts"
 	orderBy      = "updated"
 	orderHow     = "DESC"
-	filterParams = "?filter[system_profile][host_type]=edge&fields[system_profile]=host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments"
+	filterParams = "?filter[system_profile][host_type]=edge&fields[system_profile]=host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments,rhc_client_id,rhc_config_state"
 )
 
 /* FIXME - not sure if we need this or not, but keeping it just in case
@@ -74,8 +75,6 @@ func ReturnDevices(w http.ResponseWriter, r *http.Request) (Inventory, error) {
 
 // ReturnDevicesByID will return the list of devices by uuid
 func ReturnDevicesByID(deviceID string, headers map[string]string) (Inventory, error) {
-	// uCtx, _ := r.Context().Value(UpdateContextKey).(UpdateContext) // this is sanitized in updates/updates
-	// deviceID := uCtx.DeviceUUID
 	deviceIDParam := "&hostname_or_id=" + deviceID
 	log.Infof("::deviceIDParam: %s\n", deviceIDParam)
 	url := fmt.Sprintf("%s/api/inventory/v1/hosts", config.Get().InventoryConfig.URL)
@@ -83,7 +82,6 @@ func ReturnDevicesByID(deviceID string, headers map[string]string) (Inventory, e
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	req.Header.Add("Content-Type", "application/json")
-	// headers := common.GetOutgoingHeaders(req)
 	for key, value := range headers {
 		req.Header.Add(key, value)
 	}

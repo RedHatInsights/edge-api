@@ -150,7 +150,9 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 
 	// Create the models.UpdateTransaction
 	update := models.UpdateTransaction{
-		Account: account,
+		Account:  account,
+		CommitID: updateJSON.CommitID,
+		Tag:      updateJSON.Tag,
 	}
 
 	// Get the models.Commit from the Commit ID passed in via JSON
@@ -219,7 +221,8 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 			} else {
 				log.Infof("Existing Device not found in database, creating new one: %s", device.ID)
 				updateDevice = &models.Device{
-					UUID: device.ID,
+					UUID:        device.ID,
+					RHCClientID: device.Ostree.RHCClientID,
 				}
 				db.DB.Create(&updateDevice)
 			}
@@ -233,7 +236,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 
 		// - Call playbook dispatcher
 		var payloadDispatcher playbooks.DispatcherPayload
-		payloadDispatcher.Recipient = updateDevice.UUID
+		payloadDispatcher.Recipient = updateDevice.RHCClientID
 		payloadDispatcher.PlaybookURL = repoURL
 		payloadDispatcher.Account = update.Account
 		log.Infof("Call Execute Dispatcher")

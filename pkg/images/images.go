@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"text/template"
 	"time"
 
@@ -206,7 +207,7 @@ func postProcessImage(id uint, headers map[string]string) {
 
 	go func() {
 		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt)
+		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 		sig := <-sigint
 		log.Infof("Captured %v, marking image as error", sig)
 		setErrorStatusOnImage(nil, i)
