@@ -34,7 +34,7 @@ COPY --from=builder /src/mypackage/myapp/pkg/images/templateKickstart.ks /usr/lo
 # template to playbook dispatcher
 COPY --from=builder /src/mypackage/myapp/pkg/playbooks/template_playbook_dispatcher_ostree_upgrade_payload.yml /usr/local/etc
 
-RUN microdnf install -y pykickstart mtools xorriso genisoimage syslinux isomd5sum file
+RUN microdnf install -y pykickstart mtools xorriso genisoimage syslinux isomd5sum file ostree
 ENV MTOOLS_SKIP_CHECK=1
 
 USER 1001
