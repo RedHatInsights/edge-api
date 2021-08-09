@@ -20,9 +20,7 @@ var Client ImageBuilderClientInterface
 
 // InitClient initializes the client for Image Builder in this package
 func InitClient() {
-	Client = &ImageBuilderClient{
-		RepoURL: config.Get().S3ProxyURL,
-	}
+	Client = &ImageBuilderClient{}
 }
 
 // A lot of this code comes from https://github.com/osbuild/osbuild-composer
@@ -129,9 +127,7 @@ type ImageBuilderClientInterface interface {
 }
 
 // ImageBuilderClient is the implementation of an ImageBuilderClientInterface
-type ImageBuilderClient struct {
-	RepoURL string
-}
+type ImageBuilderClient struct{}
 
 func compose(composeReq *ComposeRequest, headers map[string]string) (*ComposeResult, error) {
 	payloadBuf := new(bytes.Buffer)

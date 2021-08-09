@@ -49,17 +49,21 @@ func main() {
 	initDependencies()
 	cfg := config.Get()
 	log.WithFields(log.Fields{
-		"Hostname":           cfg.Hostname,
-		"Auth":               cfg.Auth,
-		"WebPort":            cfg.WebPort,
-		"MetricsPort":        cfg.MetricsPort,
-		"LogLevel":           cfg.LogLevel,
-		"Debug":              cfg.Debug,
-		"BucketName":         cfg.BucketName,
-		"BucketRegion":       cfg.BucketRegion,
-		"ImageBuilderConfig": cfg.ImageBuilderConfig.URL,
-		"InventoryConfig":    cfg.InventoryConfig.URL,
-		"TemplatesPath":      cfg.TemplatesPath,
+		"Hostname":                 cfg.Hostname,
+		"Auth":                     cfg.Auth,
+		"WebPort":                  cfg.WebPort,
+		"MetricsPort":              cfg.MetricsPort,
+		"LogLevel":                 cfg.LogLevel,
+		"Debug":                    cfg.Debug,
+		"BucketName":               cfg.BucketName,
+		"BucketRegion":             cfg.BucketRegion,
+		"RepoTempPath ":            cfg.RepoTempPath,
+		"OpenAPIFilePath ":         cfg.OpenAPIFilePath,
+		"ImageBuilderURL":          cfg.ImageBuilderConfig.URL,
+		"DefaultOSTreeRef":         cfg.DefaultOSTreeRef,
+		"InventoryURL":             cfg.InventoryConfig.URL,
+		"PlaybookDispatcherConfig": cfg.PlaybookDispatcherConfig.URL,
+		"TemplatesPath":            cfg.TemplatesPath,
 	}).Info("Configuration Values:")
 
 	var server repo.Server
