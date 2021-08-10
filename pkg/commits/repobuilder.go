@@ -55,7 +55,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	cfg := config.Get()
 
 	var update models.UpdateTransaction
-	result := db.DB.First(&update, ut.ID)
+	result := db.DB.Preload("Devices").Preload("DispatchRecords").Preload("OldCommits").First(&update, ut.ID)
 	if result.Error != nil {
 		return nil, result.Error
 	}
