@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"context"
@@ -30,6 +31,7 @@ func MakeRouter(sub chi.Router) {
 	sub.Route("/{updateID}", func(r chi.Router) {
 		r.Use(UpdateCtx)
 		r.Get("/", GetByID)
+		r.Get("/diff", GetDiffOnUpdate)
 		r.Put("/", UpdatesUpdate)
 	})
 }
@@ -97,6 +99,11 @@ type UpdatePostJSON struct {
 	CommitID   uint   `json:"CommitID"`
 	Tag        string `json:"Tag"`
 	DeviceUUID string `json:"DeviceUUID"`
+}
+
+type deltaDiff struct {
+	Added   []models.Package
+	Removed []models.Package
 }
 
 func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTransaction, error) {
@@ -389,4 +396,41 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction
 		return nil
 	}
 	return update
+}
+
+// GetDiffOnUpdate return the list of packages added or removed from commit
+func GetDiffOnUpdate(w http.ResponseWriter, r *http.Request) {
+	update := getUpdate(w, r)
+	initialCommit := update.OldCommits[len(update.OldCommits)-1].Packages
+	updateCommit := update.Commit.Packages
+	var initString []string
+	for _, str := range initialCommit {
+		initString = append(initString, str.Name)
+	}
+	var added []models.Package
+	for _, pkg := range updateCommit {
+		if !contains(initString, pkg.Name) {
+			added = append(added, pkg)
+		}
+	}
+	var updateString []string
+	for _, str := range updateCommit {
+		updateString = append(updateString, str.Name)
+	}
+	var removed []models.Package
+	for _, pkg := range initialCommit {
+		if !contains(updateString, pkg.Name) {
+			removed = append(removed, pkg)
+		}
+	}
+	var results deltaDiff
+	results.Added = added
+	results.Removed = removed
+	json.NewEncoder(w).Encode(&results)
+
+}
+
+func contains(s []string, searchterm string) bool {
+	i := sort.SearchStrings(s, searchterm)
+	return i < len(s) && s[i] == searchterm
 }
