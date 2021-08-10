@@ -49,7 +49,7 @@ func GetDeviceStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	uuid := chi.URLParam(r, "DeviceUUID")
 	result := db.DB.
-		Select("desired_hash, connection_state, uuid").
+		Select("desired_hash, connected, uuid").
 		Table("devices").
 		Joins(
 			`JOIN updatetransaction_devices ON
@@ -315,7 +315,6 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 
 	// FIXME - need to remove duplicate OldCommit values from UpdateTransaction
 
-	json.NewEncoder(w).Encode(&update)
 	result := db.DB.Create(&update)
 	if result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusBadRequest)

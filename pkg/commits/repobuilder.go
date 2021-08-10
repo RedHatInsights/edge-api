@@ -190,7 +190,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 		}
 		for _, excPlaybook := range exc {
 			if excPlaybook.StatusCode == http.StatusCreated {
-				device.ConnectionState = true
+				device.Connected = true
 				dispatchRecord := &models.DispatchRecord{
 					Device:               updateDevice,
 					PlaybookURL:          repoURL,
@@ -199,7 +199,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 				}
 				dispatchRecords = append(dispatchRecords, *dispatchRecord)
 			} else {
-				device.ConnectionState = false
+				device.Connected = false
 				dispatchRecord := &models.DispatchRecord{
 					Device:      updateDevice,
 					PlaybookURL: repoURL,
