@@ -315,7 +315,6 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 
 	// FIXME - need to remove duplicate OldCommit values from UpdateTransaction
 
-	json.NewEncoder(w).Encode(&update)
 	result := db.DB.Create(&update)
 	if result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusBadRequest)

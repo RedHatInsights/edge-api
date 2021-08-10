@@ -12,15 +12,15 @@ Device
 	A record of Edge Devices referenced by their UUID as per the
 	cloud.redhat.com Inventory.
 
-	ConnectionState refers to the devices Cloud Connector state, 0 is unavailable
+	Connected refers to the devices Cloud Connector state, 0 is unavailable
 	and 1 is reachable.
 */
 type Device struct {
 	gorm.Model
-	UUID            string
-	DesiredHash     string
-	RHCClientID     string
-	ConnectionState bool `gorm:"default:true"`
+	UUID        string
+	DesiredHash string
+	RHCClientID string
+	Connected   bool `gorm:"default:true"`
 }
 
 /*
