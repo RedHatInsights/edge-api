@@ -49,7 +49,7 @@ func GetDeviceStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	uuid := chi.URLParam(r, "DeviceUUID")
 	result := db.DB.
-		Select("desired_hash, connection_state, uuid").
+		Select("desired_hash, connected, uuid").
 		Table("devices").
 		Joins(
 			`JOIN updatetransaction_devices ON
