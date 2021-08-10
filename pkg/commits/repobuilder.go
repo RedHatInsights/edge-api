@@ -43,6 +43,7 @@ type RepoBuilder struct{}
 // BuildUpdateRepo build an update repo with the set of commits all merged into a single repo
 // with static deltas generated between them all
 func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.UpdateTransaction, error) {
+	log.Infof("Repobuilder::BuildUpdateRepo:: Begin")
 	if ut == nil {
 		log.Error("nil pointer to models.UpdateTransaction provided")
 		return &models.UpdateTransaction{}, errors.New("Invalid models.UpdateTransaction Provided: nil pointer")
@@ -61,10 +62,10 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	update.Status = models.UpdateStatusCreated
 	db.DB.Save(&update)
 
-	log.Debugf("RepoBuilder::updateCommit: %#v", ut.Commit)
+	log.Infof("RepoBuilder::updateCommit: %#v", ut.Commit)
 
 	path := filepath.Join(cfg.RepoTempPath, strconv.FormatUint(uint64(ut.RepoID), 10))
-	log.Debugf("RepoBuilder::path: %#v", path)
+	log.Infof("RepoBuilder::path: %#v", path)
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
 		return nil, err
@@ -124,10 +125,10 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	// FIXME: Need to actually do something with the return string for Server
 
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
-	log.Debug("::BuildUpdateRepo:uploader.UploadRepo: BEGIN")
+	log.Infof("::BuildUpdateRepo:uploader.UploadRepo: BEGIN")
 	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(ut.RepoID), 10))
-	log.Debug("::BuildUpdateRepo:uploader.UploadRepo: FINISH")
-	log.Debugf("::BuildUpdateRepo:repoURL: %#v", repoURL)
+	log.Infof("::BuildUpdateRepo:uploader.UploadRepo: FINISH")
+	log.Infof("::BuildUpdateRepo:repoURL: %#v", repoURL)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +180,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 		payloadDispatcher.Recipient = device.UUID
 		payloadDispatcher.PlaybookURL = playbookURL
 		payloadDispatcher.Account = update.Account
-		log.Debugf("Call Execute Dispatcher")
+		log.Infof("Call Execute Dispatcher")
 		//              Call playbooks.ExecuteDispatcher()
 		exc, err := playbooks.ExecuteDispatcher(payloadDispatcher)
 
@@ -212,6 +213,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 		//
 	}
 	db.DB.Save(&update)
+	log.Infof("Repobuild::ends: update record %#v ", update)
 	return &update, nil
 }
 
