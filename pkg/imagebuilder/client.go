@@ -346,7 +346,7 @@ func (c *ImageBuilderClient) GetMetadata(image *models.Image, headers map[string
 			Signature: ostree_struct.InstalledPackages[n].Signature, Type: ostree_struct.InstalledPackages[n].Type,
 			Version: ostree_struct.InstalledPackages[n].Version, Epoch: ostree_struct.InstalledPackages[n].Epoch,
 		}
-		image.Commit.InstalledPackage = append(image.Commit.InstalledPackage, pkg)
+		image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
 	}
 	image.Commit.OSTreeCommit = ostree_struct.OstreeCommit
 	defer res.Body.Close()
