@@ -61,7 +61,7 @@ func ExecuteDispatcher(payload DispatcherPayload) ([]PlaybookDispatcherResponse,
 		return nil, err
 	}
 	log.Infof("::executeDispatcher::END")
-
+	log.Infof("::executeDispatcher::response: %#v", resp.Body)
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Errorf("executeDispatcher: %#v", err.Error())
@@ -71,5 +71,6 @@ func ExecuteDispatcher(payload DispatcherPayload) ([]PlaybookDispatcherResponse,
 
 	var playbookResponse []PlaybookDispatcherResponse
 	json.Unmarshal([]byte(body), &playbookResponse)
+	log.Infof("::executeDispatcher::playbookResponse: %#v", playbookResponse)
 	return playbookResponse, nil
 }
