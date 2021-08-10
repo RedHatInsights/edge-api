@@ -159,9 +159,10 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	// 2. Upload templated playbook
 	var remoteInfo playbooks.TemplateRemoteInfo
 	remoteInfo.RemoteURL = update.Repo.URL
-	remoteInfo.RemoteName = update.Repo.Commit.Name
+	remoteInfo.RemoteName = "main-test"
 	remoteInfo.ContentURL = update.Repo.URL
 	remoteInfo.UpdateTransaction = int(update.ID)
+	remoteInfo.GpgVerify = "true"
 	playbookURL, err := playbooks.WriteTemplate(remoteInfo, update.Account)
 	if err != nil {
 		log.Error(err)
