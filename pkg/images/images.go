@@ -210,9 +210,13 @@ func postProcessImage(id uint, headers map[string]string) {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 		sig := <-sigint
-		log.Infof("Captured %v, marking image as error", sig)
-		setErrorStatusOnImage(nil, i)
-		WaitGroup.Done()
+		// Reload image to get updated status
+		db.DB.Joins("Commit").Joins("Installer").First(&i, i.ID)
+		if i.Status == models.ImageStatusBuilding {
+			log.Infof("Captured %v, marking image as error", sig)
+			setErrorStatusOnImage(nil, i)
+			WaitGroup.Done()
+		}
 	}()
 	for {
 		i, err := updateImageStatus(i, headers)
