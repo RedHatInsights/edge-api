@@ -41,7 +41,7 @@ func setUp() {
 		Commit: image.Commit,
 	}
 	db.DB.Create(&repo)
-	imagebuilder.ClientInstanceInstance = &MockClient{}
+	imagebuilder.ClientInstance = &MockClient{}
 	commits.RepoBuilderInstance = &MockRepositoryBuilder{}
 }
 
