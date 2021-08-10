@@ -59,7 +59,7 @@ func TestComposeImage(t *testing.T) {
 		Packages: pkgs,
 	}}
 	headers := make(map[string]string)
-	img, err := Client.ComposeCommit(img, headers)
+	img, err := ClientInstance.ComposeCommit(img, headers)
 	if err != nil {
 		t.Errorf("Shouldnt throw error")
 	}
