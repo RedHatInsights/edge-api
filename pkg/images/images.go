@@ -118,7 +118,7 @@ type CreateImageRequest struct {
 }
 
 func createImage(image *models.Image, account string, headers map[string]string) error {
-	image, err := imagebuilder.Client.ComposeCommit(image, headers)
+	image, err := imagebuilder.ClientInstance.ComposeCommit(image, headers)
 	if err != nil {
 		return err
 	}
@@ -229,13 +229,13 @@ func postProcessImage(id uint, headers map[string]string) {
 		time.Sleep(1 * time.Minute)
 	}
 
-	go imagebuilder.Client.GetMetadata(i, headers)
+	go imagebuilder.ClientInstance.GetMetadata(i, headers)
 
 	repo := createRepoForImage(i)
 
 	// TODO: We need to discuss this whole thing post-July deliverable
 	if i.ImageType == models.ImageTypeInstaller {
-		i, err := imagebuilder.Client.ComposeInstaller(repo, i, headers)
+		i, err := imagebuilder.ClientInstance.ComposeInstaller(repo, i, headers)
 		if err != nil {
 			log.Error(err)
 			setErrorStatusOnImage(err, i)
@@ -425,7 +425,7 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 
 func updateImageStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
 	if image.Commit.Status == models.ImageStatusBuilding {
-		image, err := imagebuilder.Client.GetCommitStatus(image, headers)
+		image, err := imagebuilder.ClientInstance.GetCommitStatus(image, headers)
 		if err != nil {
 			return image, err
 		}
@@ -437,7 +437,7 @@ func updateImageStatus(image *models.Image, headers map[string]string) (*models.
 		}
 	}
 	if image.Installer != nil && image.Installer.Status == models.ImageStatusBuilding {
-		image, err := imagebuilder.Client.GetInstallerStatus(image, headers)
+		image, err := imagebuilder.ClientInstance.GetInstallerStatus(image, headers)
 		if err != nil {
 			return image, err
 		}
@@ -511,7 +511,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	image, err = imagebuilder.Client.ComposeInstaller(repo, image, headers)
+	image, err = imagebuilder.ClientInstance.ComposeInstaller(repo, image, headers)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -745,7 +745,7 @@ func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 	headers := common.GetOutgoingHeaders(r)
 	if image := getImage(w, r); image != nil {
-		meta, err := imagebuilder.Client.GetMetadata(image, headers)
+		meta, err := imagebuilder.ClientInstance.GetMetadata(image, headers)
 		if err != nil {
 			log.Fatal(err)
 		}

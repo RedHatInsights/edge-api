@@ -28,7 +28,7 @@ func TestMain(m *testing.M) {
 }
 func TestInitClient(t *testing.T) {
 	InitClient()
-	if Client == nil {
+	if ClientInstance == nil {
 		t.Errorf("Client shouldnt be nil")
 	}
 }

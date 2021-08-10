@@ -41,7 +41,7 @@ func setUp() {
 		Commit: image.Commit,
 	}
 	db.DB.Create(&repo)
-	imagebuilder.Client = &MockImageBuilderClient{}
+	imagebuilder.ClientInstanceInstance = &MockClient{}
 	commits.RepoBuilderInstance = &MockRepositoryBuilder{}
 }
 
@@ -74,28 +74,28 @@ func TestCreateWasCalledWithWrongBody(t *testing.T) {
 	}
 }
 
-type MockImageBuilderClient struct{}
+type MockClient struct{}
 
-func (c *MockImageBuilderClient) ComposeCommit(image *models.Image, headers map[string]string) (*models.Image, error) {
+func (c *MockClient) ComposeCommit(image *models.Image, headers map[string]string) (*models.Image, error) {
 	return image, nil
 }
 
-func (c *MockImageBuilderClient) ComposeInstaller(repo *models.Repo, image *models.Image, headers map[string]string) (*models.Image, error) {
+func (c *MockClient) ComposeInstaller(repo *models.Repo, image *models.Image, headers map[string]string) (*models.Image, error) {
 	return image, nil
 }
 
-func (c *MockImageBuilderClient) GetCommitStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
+func (c *MockClient) GetCommitStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
 	image.Status = models.ImageStatusError
 	image.Commit.Status = models.ImageStatusError
 	return image, nil
 }
 
-func (c *MockImageBuilderClient) GetInstallerStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
+func (c *MockClient) GetInstallerStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
 	image.Status = models.ImageStatusError
 	image.Installer.Status = models.ImageStatusError
 	return image, nil
 }
-func (c *MockImageBuilderClient) GetMetadata(image *models.Image, headers map[string]string) (*models.Image, error) {
+func (c *MockClient) GetMetadata(image *models.Image, headers map[string]string) (*models.Image, error) {
 	return image, nil
 }
 
