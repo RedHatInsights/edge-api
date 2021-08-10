@@ -27,7 +27,7 @@ type Commit struct {
 	BlueprintToml        string             `json:"BlueprintToml"`
 	Arch                 string             `json:"Arch"`
 	Packages             []Package          `json:"Packages" gorm:"many2many:commit_packages;"`
-	InstalledPackage     []InstalledPackage `json:"packages" gorm:"many2many:commit_installed_packages;"`
+	InstalledPackages    []InstalledPackage `json:"InstalledPackages,omitempty" gorm:"many2many:commit_installed_packages;"`
 	ComposeJobID         string             `json:"ComposeJobID"`
 	Status               string             `json:"Status"`
 }
