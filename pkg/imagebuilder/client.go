@@ -13,14 +13,14 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
-// Client provides a client to make requests to the Image Builder API.
-// All API requests should go through the imagebuilder.Client
+// ClientInstance provides a client to make requests to the Image Builder API.
+// All API requests should go through the imagebuilder.ClientInstance
 // This makes it easy to mock API calls to the Image Builder API
-var Client ImageBuilderClientInterface
+var ClientInstance ClientInterface
 
 // InitClient initializes the client for Image Builder in this package
 func InitClient() {
-	Client = &ImageBuilderClient{}
+	ClientInstance = &Client{}
 }
 
 // A lot of this code comes from https://github.com/osbuild/osbuild-composer
@@ -117,8 +117,8 @@ type InstalledPackage struct {
 	Epoch     string `json:"epoch,omitempty"`
 }
 
-// ImageBuilderClientInterface is an Interface to make request to ImageBuilder
-type ImageBuilderClientInterface interface {
+// ClientInterface is an Interface to make request to ImageBuilder
+type ClientInterface interface {
 	ComposeCommit(image *models.Image, headers map[string]string) (*models.Image, error)
 	ComposeInstaller(repo *models.Repo, image *models.Image, headers map[string]string) (*models.Image, error)
 	GetCommitStatus(image *models.Image, headers map[string]string) (*models.Image, error)
@@ -126,8 +126,8 @@ type ImageBuilderClientInterface interface {
 	GetMetadata(image *models.Image, headers map[string]string) (*models.Image, error)
 }
 
-// ImageBuilderClient is the implementation of an ImageBuilderClientInterface
-type ImageBuilderClient struct{}
+// Client is the implementation of an ClientInterface
+type Client struct{}
 
 func compose(composeReq *ComposeRequest, headers map[string]string) (*ComposeResult, error) {
 	payloadBuf := new(bytes.Buffer)
@@ -166,7 +166,7 @@ func compose(composeReq *ComposeRequest, headers map[string]string) (*ComposeRes
 }
 
 // ComposeCommit composes a Commit on ImageBuilder
-func (c *ImageBuilderClient) ComposeCommit(image *models.Image, headers map[string]string) (*models.Image, error) {
+func (c *Client) ComposeCommit(image *models.Image, headers map[string]string) (*models.Image, error) {
 	req := &ComposeRequest{
 		Customizations: &Customizations{
 			Packages: image.Commit.GetPackagesList(),
@@ -207,7 +207,7 @@ func (c *ImageBuilderClient) ComposeCommit(image *models.Image, headers map[stri
 }
 
 // ComposeInstaller composes a Installer on ImageBuilder
-func (c *ImageBuilderClient) ComposeInstaller(repo *models.Repo, image *models.Image, headers map[string]string) (*models.Image, error) {
+func (c *Client) ComposeInstaller(repo *models.Repo, image *models.Image, headers map[string]string) (*models.Image, error) {
 	pkgs := make([]string, 0)
 	req := &ComposeRequest{
 		Customizations: &Customizations{
@@ -274,7 +274,7 @@ func getComposeStatus(jobID string, headers map[string]string) (*ComposeStatus, 
 }
 
 // GetCommitStatus gets the Commit status on Image Builder
-func (c *ImageBuilderClient) GetCommitStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
+func (c *Client) GetCommitStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
 	cs, err := getComposeStatus(image.Commit.ComposeJobID, headers)
 	if err != nil {
 		return nil, err
@@ -292,7 +292,7 @@ func (c *ImageBuilderClient) GetCommitStatus(image *models.Image, headers map[st
 }
 
 // GetInstallerStatus gets the Installer status on Image Builder
-func (c *ImageBuilderClient) GetInstallerStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
+func (c *Client) GetInstallerStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
 	cs, err := getComposeStatus(image.Installer.ComposeJobID, headers)
 	if err != nil {
 		return nil, err
@@ -308,7 +308,7 @@ func (c *ImageBuilderClient) GetInstallerStatus(image *models.Image, headers map
 	return image, nil
 }
 
-func (c *ImageBuilderClient) GetMetadata(image *models.Image, headers map[string]string) (*models.Image, error) {
+func (c *Client) GetMetadata(image *models.Image, headers map[string]string) (*models.Image, error) {
 	log.Infof("Getting metadata for image ID %d", image.ID)
 	composeJobId := image.Commit.ComposeJobID
 	cfg := config.Get()

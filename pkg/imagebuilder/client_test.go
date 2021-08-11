@@ -28,7 +28,7 @@ func TestMain(m *testing.M) {
 }
 func TestInitClient(t *testing.T) {
 	InitClient()
-	if Client == nil {
+	if ClientInstance == nil {
 		t.Errorf("Client shouldnt be nil")
 	}
 }
@@ -59,7 +59,7 @@ func TestComposeImage(t *testing.T) {
 		Packages: pkgs,
 	}}
 	headers := make(map[string]string)
-	img, err := Client.ComposeCommit(img, headers)
+	img, err := ClientInstance.ComposeCommit(img, headers)
 	if err != nil {
 		t.Errorf("Shouldnt throw error")
 	}
