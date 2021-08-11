@@ -230,8 +230,12 @@ func postProcessImage(id uint, headers map[string]string) {
 	}
 
 	go func() {
-		imagebuilder.Client.GetMetadata(i, headers)
-		db.DB.Save(&i)
+		i, err := imagebuilder.Client.GetMetadata(i, headers)
+		if err != nil {
+			log.Error(err)
+		} else {
+			db.DB.Save(&i)
+		}
 	}()
 
 	repo := createRepoForImage(i)
