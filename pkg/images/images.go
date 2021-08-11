@@ -229,7 +229,14 @@ func postProcessImage(id uint, headers map[string]string) {
 		time.Sleep(1 * time.Minute)
 	}
 
-	go imagebuilder.Client.GetMetadata(i, headers)
+	go func() {
+		i, err := imagebuilder.Client.GetMetadata(i, headers)
+		if err != nil {
+			log.Error(err)
+		} else {
+			db.DB.Save(&i)
+		}
+	}()
 
 	repo := createRepoForImage(i)
 
@@ -267,6 +274,7 @@ func postProcessImage(id uint, headers map[string]string) {
 		}
 	}
 
+	log.Infof("Setting image %d status as success", i.ID)
 	if i.Commit.Status == models.ImageStatusSuccess {
 		if i.Installer != nil || i.Installer.Status == models.ImageStatusSuccess {
 			i.Status = models.ImageStatusSuccess

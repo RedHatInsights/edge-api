@@ -283,9 +283,6 @@ func (c *ImageBuilderClient) GetCommitStatus(image *models.Image, headers map[st
 	if cs.ImageStatus.Status == imageStatusSuccess {
 		image.Commit.Status = models.ImageStatusSuccess
 		image.Commit.ImageBuildTarURL = cs.ImageStatus.UploadStatus.Options.URL
-		if image.Installer == nil {
-			image.Status = models.ImageStatusSuccess
-		}
 	} else if cs.ImageStatus.Status == imageStatusFailure {
 		image.Commit.Status = models.ImageStatusError
 		image.Status = models.ImageStatusError
@@ -302,7 +299,6 @@ func (c *ImageBuilderClient) GetInstallerStatus(image *models.Image, headers map
 	}
 	log.Info(fmt.Sprintf("Got installer status %s", cs.ImageStatus.Status))
 	if cs.ImageStatus.Status == imageStatusSuccess {
-		image.Status = models.ImageStatusSuccess
 		image.Installer.Status = models.ImageStatusSuccess
 		image.Installer.ImageBuildISOURL = cs.ImageStatus.UploadStatus.Options.URL
 	} else if cs.ImageStatus.Status == imageStatusFailure {
@@ -313,7 +309,7 @@ func (c *ImageBuilderClient) GetInstallerStatus(image *models.Image, headers map
 }
 
 func (c *ImageBuilderClient) GetMetadata(image *models.Image, headers map[string]string) (*models.Image, error) {
-	// TODO: This is where we need to get the metadata from image builder
+	log.Infof("Getting metadata for image ID %d", image.ID)
 	composeJobId := image.Commit.ComposeJobID
 	cfg := config.Get()
 	url := fmt.Sprintf("%s/api/image-builder/v1/composes/%s/metadata", cfg.ImageBuilderConfig.URL, composeJobId)
@@ -350,5 +346,6 @@ func (c *ImageBuilderClient) GetMetadata(image *models.Image, headers map[string
 	}
 	image.Commit.OSTreeCommit = ostree_struct.OstreeCommit
 	defer res.Body.Close()
+	log.Infof("Done with metadata for image ID %d", image.ID)
 	return image, nil
 }
