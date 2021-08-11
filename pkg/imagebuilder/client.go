@@ -346,6 +346,6 @@ func (c *ImageBuilderClient) GetMetadata(image *models.Image, headers map[string
 	}
 	image.Commit.OSTreeCommit = ostree_struct.OstreeCommit
 	defer res.Body.Close()
-	log.Infof("Done with metadata for image ID %s", image.ID)
+	log.Infof("Done with metadata for image ID %d", image.ID)
 	return image, nil
 }
