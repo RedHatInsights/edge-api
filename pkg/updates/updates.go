@@ -16,7 +16,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
-	"github.com/redhatinsights/edge-api/pkg/playbooks"
 
 	apierrors "github.com/redhatinsights/edge-api/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -50,7 +49,7 @@ func GetDeviceStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	uuid := chi.URLParam(r, "DeviceUUID")
 	result := db.DB.
-		Select("desired_hash, connection_state, uuid").
+		Select("desired_hash, connected, uuid").
 		Table("devices").
 		Joins(
 			`JOIN updatetransaction_devices ON
@@ -107,9 +106,10 @@ type deltaDiff struct {
 }
 
 func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTransaction, error) {
+	log.Infof("updateFromHTTP:: Begin")
 	var updateJSON UpdatePostJSON
 	err := json.NewDecoder(r.Body).Decode(&updateJSON)
-	log.Debugf("updateFromHTTP::updateJSON: %#v", updateJSON)
+	log.Infof("updateFromHTTP::updateJSON: %#v", updateJSON)
 
 	if updateJSON.CommitID == 0 {
 		err := apierrors.NewInternalServerError()
@@ -195,22 +195,6 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	}
 	log.Infof("Getting repo info: repo %s, %d", repo.URL, repo.ID)
 
-	var remoteInfo playbooks.TemplateRemoteInfo
-	remoteInfo.RemoteURL = update.Repo.URL
-	remoteInfo.RemoteName = "main-test" //update.Repo.Commit.Name
-	remoteInfo.ContentURL = update.Repo.URL
-	remoteInfo.GpgVerify = "true"
-	remoteInfo.UpdateTransaction = int(update.ID)
-
-	playbooksURL, err := playbooks.WriteTemplate(remoteInfo, account)
-	log.Infof("playbooks:WriteTemplate: %#v", playbooksURL)
-	if err != nil {
-		log.Errorf("Error::playbooks:WriteTemplate: %#v", err)
-		err := apierrors.NewInternalServerError()
-		err.Title = "Error during playbook creation"
-		w.WriteHeader(err.Status)
-	}
-
 	devices := update.Devices
 	oldCommits := update.OldCommits
 
@@ -235,11 +219,11 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 			}
 		}
 		updateDevice.DesiredHash = update.Commit.OSTreeCommit
-		log.Debugf("updateFromHTTP::updateDevice: %#v", updateDevice)
+		log.Infof("updateFromHTTP::updateDevice: %#v", updateDevice)
 		devices = append(devices, *updateDevice)
-		log.Debugf("updateFromHTTP::devices: %#v", devices)
+		log.Infof("updateFromHTTP::devices: %#v", devices)
 		update.Devices = devices
-		log.Debugf("updateFromHTTP::update.Devices: %#v", devices)
+		log.Infof("updateFromHTTP::update.Devices: %#v", devices)
 
 		for _, ostreeDeployment := range device.Ostree.RpmOstreeDeployments {
 			if ostreeDeployment.Booted {
@@ -265,7 +249,8 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	update.OldCommits = oldCommits
 
 	log.Infof("updateFromHTTP::update: %#v", update)
-	return &update, err
+	log.Infof("updateFromHTTP:: END")
+	return &update, nil
 }
 
 type key int
@@ -295,13 +280,13 @@ func UpdateCtx(next http.Handler) http.Handler {
 
 // AddUpdate adds an object to the database for an account
 func AddUpdate(w http.ResponseWriter, r *http.Request) {
-
+	log.Infof("AddUpdate::update:: Begin")
 	update, err := updateFromHTTP(w, r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	log.Debugf("AddUpdate::update: %#v", update)
+	log.Infof("AddUpdate::update: %#v", update)
 
 	update.Account, err = common.GetAccount(r)
 	if err != nil {
@@ -330,13 +315,14 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 
 	// FIXME - need to remove duplicate OldCommit values from UpdateTransaction
 
-	json.NewEncoder(w).Encode(&update)
 	result := db.DB.Create(&update)
 	if result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusBadRequest)
 	}
-
+	log.Infof("AddUpdate:: call:: RepoBuilderInstance.BuildUpdateRepo")
 	go commits.RepoBuilderInstance.BuildUpdateRepo(update)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(update)
 
 }
 

@@ -43,6 +43,7 @@ type RepoBuilder struct{}
 // BuildUpdateRepo build an update repo with the set of commits all merged into a single repo
 // with static deltas generated between them all
 func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.UpdateTransaction, error) {
+	log.Infof("Repobuilder::BuildUpdateRepo:: Begin")
 	if ut == nil {
 		log.Error("nil pointer to models.UpdateTransaction provided")
 		return &models.UpdateTransaction{}, errors.New("Invalid models.UpdateTransaction Provided: nil pointer")
@@ -54,17 +55,17 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	cfg := config.Get()
 
 	var update models.UpdateTransaction
-	result := db.DB.First(&update, ut.ID)
+	result := db.DB.Preload("Devices").Preload("DispatchRecords").Preload("OldCommits").First(&update, ut.ID)
 	if result.Error != nil {
 		return nil, result.Error
 	}
 	update.Status = models.UpdateStatusCreated
 	db.DB.Save(&update)
 
-	log.Debugf("RepoBuilder::updateCommit: %#v", ut.Commit)
+	log.Infof("RepoBuilder::updateCommit: %#v", ut.Commit)
 
 	path := filepath.Join(cfg.RepoTempPath, strconv.FormatUint(uint64(ut.RepoID), 10))
-	log.Debugf("RepoBuilder::path: %#v", path)
+	log.Infof("RepoBuilder::path: %#v", path)
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
 		return nil, err
@@ -124,10 +125,10 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	// FIXME: Need to actually do something with the return string for Server
 
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
-	log.Debug("::BuildUpdateRepo:uploader.UploadRepo: BEGIN")
+	log.Infof("::BuildUpdateRepo:uploader.UploadRepo: BEGIN")
 	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(ut.RepoID), 10))
-	log.Debug("::BuildUpdateRepo:uploader.UploadRepo: FINISH")
-	log.Debugf("::BuildUpdateRepo:repoURL: %#v", repoURL)
+	log.Infof("::BuildUpdateRepo:uploader.UploadRepo: FINISH")
+	log.Infof("::BuildUpdateRepo:repoURL: %#v", repoURL)
 	if err != nil {
 		return nil, err
 	}
@@ -159,9 +160,10 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	// 2. Upload templated playbook
 	var remoteInfo playbooks.TemplateRemoteInfo
 	remoteInfo.RemoteURL = update.Repo.URL
-	remoteInfo.RemoteName = update.Repo.Commit.Name
+	remoteInfo.RemoteName = "main-test"
 	remoteInfo.ContentURL = update.Repo.URL
 	remoteInfo.UpdateTransaction = int(update.ID)
+	remoteInfo.GpgVerify = "true"
 	playbookURL, err := playbooks.WriteTemplate(remoteInfo, update.Account)
 	if err != nil {
 		log.Error(err)
@@ -178,7 +180,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 		payloadDispatcher.Recipient = device.UUID
 		payloadDispatcher.PlaybookURL = playbookURL
 		payloadDispatcher.Account = update.Account
-		log.Debugf("Call Execute Dispatcher")
+		log.Infof("Call Execute Dispatcher")
 		//              Call playbooks.ExecuteDispatcher()
 		exc, err := playbooks.ExecuteDispatcher(payloadDispatcher)
 
@@ -188,7 +190,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 		}
 		for _, excPlaybook := range exc {
 			if excPlaybook.StatusCode == http.StatusCreated {
-				device.ConnectionState = true
+				device.Connected = true
 				dispatchRecord := &models.DispatchRecord{
 					Device:               updateDevice,
 					PlaybookURL:          repoURL,
@@ -197,7 +199,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 				}
 				dispatchRecords = append(dispatchRecords, *dispatchRecord)
 			} else {
-				device.ConnectionState = false
+				device.Connected = false
 				dispatchRecord := &models.DispatchRecord{
 					Device:      updateDevice,
 					PlaybookURL: repoURL,
@@ -211,6 +213,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 		//
 	}
 	db.DB.Save(&update)
+	log.Infof("Repobuild::ends: update record %#v ", update)
 	return &update, nil
 }
 
