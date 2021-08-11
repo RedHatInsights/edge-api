@@ -309,7 +309,7 @@ func (c *ImageBuilderClient) GetInstallerStatus(image *models.Image, headers map
 }
 
 func (c *ImageBuilderClient) GetMetadata(image *models.Image, headers map[string]string) (*models.Image, error) {
-	log.Infof("Getting metadata for image ID", image.ID)
+	log.Infof("Getting metadata for image ID %d", image.ID)
 	composeJobId := image.Commit.ComposeJobID
 	cfg := config.Get()
 	url := fmt.Sprintf("%s/api/image-builder/v1/composes/%s/metadata", cfg.ImageBuilderConfig.URL, composeJobId)
@@ -346,6 +346,6 @@ func (c *ImageBuilderClient) GetMetadata(image *models.Image, headers map[string
 	}
 	image.Commit.OSTreeCommit = ostree_struct.OstreeCommit
 	defer res.Body.Close()
-	log.Infof("Done with metadata for image ID", image.ID)
+	log.Infof("Done with metadata for image ID %s", image.ID)
 	return image, nil
 }
