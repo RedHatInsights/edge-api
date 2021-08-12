@@ -117,8 +117,9 @@ type CreateImageRequest struct {
 	Image *models.Image
 }
 
-func createImage(image *models.Image, account string, headers map[string]string) error {
-	image, err := imagebuilder.ClientInstance.ComposeCommit(image, headers)
+func createImage(image *models.Image, account string, ctx context.Context) error {
+	client := imagebuilder.InitClient(ctx)
+	image, err := client.ComposeCommit(image)
 	if err != nil {
 		return err
 	}
@@ -193,7 +194,7 @@ func setErrorStatusOnImage(err error, i *models.Image) {
 	}
 }
 
-func postProcessImage(id uint, headers map[string]string) {
+func postProcessImage(id uint, ctx context.Context) {
 	WaitGroup.Add(1) // Processing one image
 
 	defer func() {
@@ -205,6 +206,8 @@ func postProcessImage(id uint, headers map[string]string) {
 	}()
 	var i *models.Image
 	db.DB.Joins("Commit").Joins("Installer").First(&i, id)
+
+	client := imagebuilder.InitClient(ctx)
 
 	go func() {
 		sigint := make(chan os.Signal, 1)
@@ -219,7 +222,7 @@ func postProcessImage(id uint, headers map[string]string) {
 		}
 	}()
 	for {
-		i, err := updateImageStatus(i, headers)
+		i, err := updateImageStatus(i, ctx)
 		if err != nil {
 			setErrorStatusOnImage(err, i)
 		}
@@ -230,7 +233,7 @@ func postProcessImage(id uint, headers map[string]string) {
 	}
 
 	go func() {
-		i, err := imagebuilder.ClientInstance.GetMetadata(i, headers)
+		i, err := client.GetMetadata(i)
 		if err != nil {
 			log.Error(err)
 		} else {
@@ -242,7 +245,7 @@ func postProcessImage(id uint, headers map[string]string) {
 
 	// TODO: We need to discuss this whole thing post-July deliverable
 	if i.ImageType == models.ImageTypeInstaller {
-		i, err := imagebuilder.ClientInstance.ComposeInstaller(repo, i, headers)
+		i, err := client.ComposeInstaller(repo, i)
 		if err != nil {
 			log.Error(err)
 			setErrorStatusOnImage(err, i)
@@ -255,7 +258,7 @@ func postProcessImage(id uint, headers map[string]string) {
 		}
 
 		for {
-			i, err := updateImageStatus(i, headers)
+			i, err := updateImageStatus(i, ctx)
 			if err != nil {
 				setErrorStatusOnImage(err, i)
 			}
@@ -311,8 +314,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	headers := common.GetOutgoingHeaders(r)
-	err = createImage(image, account, headers)
+	err = createImage(image, account, r.Context())
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -324,7 +326,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&image)
 
-	go postProcessImage(image.ID, headers)
+	go postProcessImage(image.ID, r.Context())
 }
 
 var imageFilters = common.ComposeFilters(
@@ -431,9 +433,10 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 	return image
 }
 
-func updateImageStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
+func updateImageStatus(image *models.Image, ctx context.Context) (*models.Image, error) {
+	client := imagebuilder.InitClient(ctx)
 	if image.Commit.Status == models.ImageStatusBuilding {
-		image, err := imagebuilder.ClientInstance.GetCommitStatus(image, headers)
+		image, err := client.GetCommitStatus(image)
 		if err != nil {
 			return image, err
 		}
@@ -445,7 +448,7 @@ func updateImageStatus(image *models.Image, headers map[string]string) (*models.
 		}
 	}
 	if image.Installer != nil && image.Installer.Status == models.ImageStatusBuilding {
-		image, err := imagebuilder.ClientInstance.GetInstallerStatus(image, headers)
+		image, err := client.GetInstallerStatus(image)
 		if err != nil {
 			return image, err
 		}
@@ -511,7 +514,6 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	headers := common.GetOutgoingHeaders(r)
 	repo, err := common.GetRepoByCommitID(image.CommitID)
 	if err != nil {
 		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
@@ -519,7 +521,8 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	image, err = imagebuilder.ClientInstance.ComposeInstaller(repo, image, headers)
+	client := imagebuilder.InitClient(r.Context())
+	image, err = client.ComposeInstaller(repo, image)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -546,11 +549,11 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	go func(id uint) {
+	go func(id uint, ctx context.Context) {
 		var i *models.Image
 		db.DB.Joins("Commit").Joins("Installer").First(&i, id)
 		for {
-			i, err := updateImageStatus(i, headers)
+			i, err := updateImageStatus(i, ctx)
 			if err != nil {
 				setErrorStatusOnImage(err, i)
 			}
@@ -566,7 +569,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 				log.Errorf("Kickstart file injection failed %s", err.Error())
 			}
 		}
-	}(image.ID)
+	}(image.ID, r.Context())
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&image)
@@ -751,9 +754,9 @@ func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 
 //GetMetadataForImage gets the metadata from image-builder on /metadata endpoint
 func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
-	headers := common.GetOutgoingHeaders(r)
+	client := imagebuilder.InitClient(r.Context())
 	if image := getImage(w, r); image != nil {
-		meta, err := imagebuilder.ClientInstance.GetMetadata(image, headers)
+		meta, err := client.GetMetadata(image)
 		if err != nil {
 			log.Fatal(err)
 		}

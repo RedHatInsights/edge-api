@@ -14,7 +14,6 @@ import (
 	redoc "github.com/go-openapi/runtime/middleware"
 	"github.com/redhatinsights/edge-api/config"
 	l "github.com/redhatinsights/edge-api/logger"
-	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -41,7 +40,6 @@ func initDependencies() {
 	config.Init()
 	l.InitLogger()
 	db.InitDB()
-	imagebuilder.InitClient()
 	commits.InitRepoBuilder()
 }
 
