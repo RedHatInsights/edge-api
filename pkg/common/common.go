@@ -3,8 +3,11 @@ package common
 import (
 	"archive/tar"
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -13,6 +16,7 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/request_id"
 )
 
 type contextKey int
@@ -27,7 +31,7 @@ const (
 // GetAccount from http request header
 func GetAccount(r *http.Request) (string, error) {
 	if config.Get() != nil {
-		if config.Get().Debug {
+		if !config.Get().Auth {
 			return "0000000", nil
 		}
 		if r.Context().Value(identity.Key) != nil {
@@ -43,15 +47,20 @@ func GetAccount(r *http.Request) (string, error) {
 
 // GetOutgoingHeaders returns Red Hat Insights headers from our request to use it
 // in other request that will be used when communicating in Red Hat Insights services
-func GetOutgoingHeaders(r *http.Request) map[string]string {
-	out := make(map[string]string)
-	headers := []string{"x-rh-identity", "x-rh-insights-request-id"}
-	for _, key := range headers {
-		if value := r.Header.Get(key); value != "" {
-			out[key] = value
+func GetOutgoingHeaders(ctx context.Context) map[string]string {
+	requestId := request_id.GetReqID(ctx)
+	headers := map[string]string{"x-rh-identity": requestId}
+	if config.Get().Auth {
+		xhrid := identity.Get(ctx)
+		identityHeaders, err := json.Marshal(xhrid)
+		if err != nil {
+			log.Fatal(err)
+			panic(err)
 		}
+		base64.StdEncoding.Encode(identityHeaders, identityHeaders)
+		headers["x-rh-identity"] = string(identityHeaders)
 	}
-	return out
+	return headers
 }
 
 // StatusOK returns a simple 200 status code
