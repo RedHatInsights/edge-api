@@ -1,6 +1,7 @@
 package imagebuilder
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -27,8 +28,9 @@ func TestMain(m *testing.M) {
 	os.Exit(retCode)
 }
 func TestInitClient(t *testing.T) {
-	InitClient()
-	if ClientInstance == nil {
+	ctx := context.Background()
+	client := InitClient(ctx)
+	if client == nil {
 		t.Errorf("Client shouldnt be nil")
 	}
 }
@@ -36,7 +38,8 @@ func TestInitClient(t *testing.T) {
 func TestComposeImage(t *testing.T) {
 	config.Init()
 
-	InitClient()
+	ctx := context.Background()
+	client := InitClient(ctx)
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -58,8 +61,7 @@ func TestComposeImage(t *testing.T) {
 		Arch:     "x86_64",
 		Packages: pkgs,
 	}}
-	headers := make(map[string]string)
-	img, err := ClientInstance.ComposeCommit(img, headers)
+	img, err := client.ComposeCommit(img)
 	if err != nil {
 		t.Errorf("Shouldnt throw error")
 	}
