@@ -354,13 +354,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.updates'
+                $ref: '#/components/schemas/v1.BadRequest'
           description: The request sent couldn't be processed.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.updates'
+                $ref: '#/components/schemas/v1.BadRequest'
           description: There was an internal server error.
       summary: Update a device.
       description: Fires the update in a device based on commit   
