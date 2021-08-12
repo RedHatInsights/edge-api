@@ -234,7 +234,7 @@ func postProcessImage(id uint, headers map[string]string) {
 		if err != nil {
 			log.Error(err)
 		} else {
-			db.DB.Save(&i)
+			db.DB.Save(&i.Commit)
 		}
 	}()
 
