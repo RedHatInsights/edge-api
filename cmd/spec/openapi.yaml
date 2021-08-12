@@ -32,6 +32,27 @@ components:
               type: string
             ImageBuildTarURL:
               type: string
+            InstalledPackages:
+              items:
+                properties:
+                  arch:
+                    type: string
+                  epoch:
+                    type: string
+                  name:
+                    type: string
+                  release:
+                    type: string
+                  sigmd5:
+                    type: string
+                  signature:
+                    type: string
+                  type:
+                    type: string
+                  version:
+                    type: string
+                type: object
+              type: array
             OSTreeCommit:
               type: string
             OSTreeParentCommit:
@@ -117,6 +138,27 @@ components:
               type: string
             ImageBuildTarURL:
               type: string
+            InstalledPackages:
+              items:
+                properties:
+                  arch:
+                    type: string
+                  epoch:
+                    type: string
+                  name:
+                    type: string
+                  release:
+                    type: string
+                  sigmd5:
+                    type: string
+                  signature:
+                    type: string
+                  type:
+                    type: string
+                  version:
+                    type: string
+                type: object
+              type: array
             OSTreeCommit:
               type: string
             OSTreeParentCommit:
@@ -295,3 +337,30 @@ paths:
           description: There was an internal server error.
       summary: Get Image OSTree repo.
       description: Returns the information of the OSTree Repository of a particular Image.
+  /updates:
+    post:
+      operationId: Update device
+      parameters:
+      - CommitId: Id from commit to update
+        DeviceUUID: Device to be updated
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.updates'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: There was an internal server error.
+      summary: Update a device.
+      description: Fires the update in a device based on commit   

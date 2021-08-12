@@ -154,3 +154,30 @@ paths:
           description: There was an internal server error.
       summary: Get Image OSTree repo.
       description: Returns the information of the OSTree Repository of a particular Image.
+  /updates:
+    post:
+      operationId: UpdateDevice
+      parameters:
+      - CommitId: Id from commit to update
+        DeviceUUID: Device to be updated
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.Updates'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: There was an internal server error.
+      summary: Create new image for update.
+      description: Returns the information of the Image.
