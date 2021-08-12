@@ -250,15 +250,17 @@ Golang also provides a unit test infrastructure `test`. Run unit tests with the 
 make test
 ```
 
-## Generating API docs
+## API docs
 
-[go-swagger](https://github.com/go-swagger) is a tool that, amongst other things, parses comments in the code to generate a file in the [Open API 2.0 spec](https://github.com/OAI/OpenAPI-Specification/blob/main/versions/2.0.md).
+[kin-openapi](https://github.com/getkin/kin-openapi) is a tool that helps us handle docs in the format of [Open API spec](https://github.com/OAI/OpenAPI-Specification). Sadly, it does not generate docs *automagically*. We have a [script](cmd/spec/main.go) that generates the docs and you have to add your model there to be picked by the code generation.
 
-To generate the API docs, you need to [install go-swagger](https://goswagger.io/install.html). Then you can use the following command:
+The [openapi3gen](https://github.com/getkin/kin-openapi/tree/v0.65.0/openapi3gen) package generates the docs for the models in the project and we have to update the routes by hand on the [path.yml](cmd/spec/path.yaml) file. Our generation [script](cmd/spec/main.go) adds the routes that you wrote by hand, creating an openapi.json and a openapi.yaml.
+
+You have to commit and create a pull-request to update the docs as this process is not automated as of now.
+
+To run the comand that generates the docs, you can use:
 ```
 make generate-docs
 ```
-
-The [go-swagger docs](https://goswagger.io/) have several examples on how to annotate the code and [this example](https://github.com/go-swagger/go-swagger/tree/master/fixtures/goparsing/petstore) is useful when it comes to understanding all the possiblities.
 
 The API will serve the docs under a `/docs` endpoint.
