@@ -15,6 +15,16 @@
              },
              "type":"object"
           },
+          "v1.Updates":{
+            "properties":{
+               "CommitId":{ 
+                  "type": "integer"
+                  },
+               "DeviceUUID":{
+                  "type":"string"
+               }
+            }
+          },
           "v1.Image":{
              "properties":{
                 "Account":{
@@ -539,32 +549,23 @@
              "summary":"Get image status."
           }
        },
-       "/image":{
+       "/updates":{
         "post":{
-            "description":"This method returns image creation.",
-            "operationId":"Create",
+            "description":"This method will run the update on device.",
+            "operationId":"Update",
             "parameters":[
                 {
-                    "Name": "Image Name",
-                    "Description": "Image Description",
-                    "Distribution": "rhel-84",
-                    "ImageType": "rhel-edge-commit",
-                    "Commit": {
-                        "Arch": "x86_64",
-                        "Packages": [
-                            {
-                                "name": "vim"
-                            }
-                        ]
-                    }
+                    "CommitId": "Id from commit to update",
+                    "DeviceUUID": "Id from device"
                 }
             ],
+            "required":true,
             "responses":{
                 "200":{
                     "content":{
                        "application/json":{
                           "schema":{
-                             "$ref":"#/components/schemas/v1.Image"
+                             "$ref":"#/components/schemas/v1.Updates"
                           }
                        }
                     },
@@ -591,7 +592,7 @@
                     "description":"There was an internal server error."
                  }
             },
-            "summary":"Create image to Update."
+            "summary":"Update a device."
          }
        }
     }

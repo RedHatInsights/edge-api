@@ -337,40 +337,30 @@ paths:
           description: There was an internal server error.
       summary: Get Image OSTree repo.
       description: Returns the information of the OSTree Repository of a particular Image.
-  /images:
+  /updates:
     post:
-      operationId: Create
+      operationId: Update device
       parameters:
-      - Name: Image name
-        Description: Image Description
-        Distribution: rhel-84,
-        ImageType: rhel-edge-commit,
-        Commit: {
-          Arch: x86_64,
-          Packages: [
-            {
-              name: vim
-            }
-          ]
-        }
+      - CommitId: Id from commit to update
+        DeviceUUID: Device to be updated
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.Image'
+                $ref: '#/components/schemas/v1.updates'
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.Image'
+                $ref: '#/components/schemas/v1.updates'
           description: The request sent couldn't be processed.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.Image'
+                $ref: '#/components/schemas/v1.updates'
           description: There was an internal server error.
-      summary: Create new image for update.
-      description: Returns the information of the  image   
+      summary: Update a device.
+      description: Fires the update in a device based on commit   
