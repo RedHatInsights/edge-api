@@ -22,6 +22,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 
 	"github.com/redhatinsights/edge-api/pkg/files"
@@ -29,11 +30,17 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type ImageRouter struct {
+	dependencies.EdgeAPIRouter
+}
+
 // MakeRouter adds support for operations on images
 func MakeRouter(sub chi.Router) {
+	ir := new(ImageRouter)
+	sub.Use(ir.AddDependencies)
 	sub.With(validateGetAllSearchParams).With(common.Paginate).Get("/", GetAll)
 	sub.Get("/reserved-usernames", GetReservedUsernames)
-	sub.Post("/", Create)
+	sub.Post("/", ir.Create)
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageCtx)
 		r.Get("/", GetByID)
@@ -117,9 +124,8 @@ type CreateImageRequest struct {
 	Image *models.Image
 }
 
-func createImage(image *models.Image, account string, ctx context.Context) error {
-	client := imagebuilder.InitClient(ctx)
-	image, err := client.ComposeCommit(image)
+func (ir *ImageRouter) createImage(image *models.Image, account string) error {
+	image, err := ir.Deps.ImageBuilderClient.ComposeCommit(image)
 	if err != nil {
 		return err
 	}
@@ -289,7 +295,7 @@ func postProcessImage(id uint, ctx context.Context) {
 // Create creates an image on hosted image builder.
 // It always creates a commit on Image Builder.
 // We're creating a update on the background to transfer the commit to our repo.
-func Create(w http.ResponseWriter, r *http.Request) {
+func (ir *ImageRouter) Create(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var image *models.Image
 	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
@@ -314,7 +320,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	err = createImage(image, account, r.Context())
+	err = ir.createImage(image, account)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()

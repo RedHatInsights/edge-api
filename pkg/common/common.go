@@ -49,7 +49,7 @@ func GetAccount(r *http.Request) (string, error) {
 // in other request that will be used when communicating in Red Hat Insights services
 func GetOutgoingHeaders(ctx context.Context) map[string]string {
 	requestId := request_id.GetReqID(ctx)
-	headers := map[string]string{"x-rh-identity": requestId}
+	headers := map[string]string{"x-rh-insights-request-id": requestId}
 	if config.Get().Auth {
 		xhrid := identity.Get(ctx)
 		identityHeaders, err := json.Marshal(xhrid)
