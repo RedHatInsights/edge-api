@@ -29,6 +29,11 @@ func main() {
 	}
 	components.Schemas["v1.Repo"] = repo
 
+	updates, _, err := openapi3gen.NewSchemaRefForValue(&models.UpdateTransaction{})
+	if err != nil {
+		panic(err)
+	}
+	components.Schemas["v1.Updates"] = updates
 	internalServerError, _, err := openapi3gen.NewSchemaRefForValue(&errors.InternalServerError{})
 	if err != nil {
 		panic(err)
