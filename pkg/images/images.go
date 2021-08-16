@@ -146,7 +146,7 @@ func createImage(image *models.Image, account string, ctx context.Context) error
 	return nil
 }
 
-func createRepoForImage(i *models.Image) *models.Repo {
+func createRepoForImage(i *models.Image, ctx context.Context) *models.Repo {
 	log.Infof("Commit %d for Image %d is ready. Creating OSTree repo.", i.Commit.ID, i.ID)
 	repo := &models.Repo{
 		CommitID: i.Commit.ID,
@@ -158,7 +158,8 @@ func createRepoForImage(i *models.Image) *models.Repo {
 		log.Error(tx.Error)
 		panic(tx.Error)
 	}
-	repo, err := commits.RepoBuilderInstance.ImportRepo(repo)
+	rb := commits.InitRepoBuilder(ctx)
+	repo, err := rb.ImportRepo(repo)
 	if err != nil {
 		log.Error(err)
 		panic(err)
@@ -241,7 +242,7 @@ func postProcessImage(id uint, ctx context.Context) {
 		}
 	}()
 
-	repo := createRepoForImage(i)
+	repo := createRepoForImage(i, ctx)
 
 	// TODO: We need to discuss this whole thing post-July deliverable
 	if i.ImageType == models.ImageTypeInstaller {
@@ -583,7 +584,7 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 		var i *models.Image
 		db.DB.Joins("Commit").Joins("Installer").First(&i, id)
 		db.DB.First(&i.Commit, i.CommitID)
-		createRepoForImage(i)
+		createRepoForImage(i, r.Context())
 	}(image.ID)
 
 	w.WriteHeader(http.StatusOK)

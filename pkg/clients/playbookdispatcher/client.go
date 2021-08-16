@@ -1,8 +1,10 @@
-package playbooks
+package playbookdispatcher
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -10,6 +12,24 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/common"
 	log "github.com/sirupsen/logrus"
 )
+
+// ClientInterface is an Interface to make requests to PlaybookDispatcher
+type ClientInterface interface {
+	ExecuteDispatcher(payload DispatcherPayload) ([]PlaybookDispatcherResponse, error)
+}
+
+// Client is the implementation of an ClientInterface
+type Client struct {
+	ctx context.Context
+	url string
+	psk string
+}
+
+// InitClient initializes the client for Image Builder
+func InitClient(ctx context.Context) *Client {
+	cfg := config.Get()
+	return &Client{ctx: ctx, url: cfg.PlaybookDispatcherConfig.URL, psk: cfg.PlaybookDispatcherConfig.PSK}
+}
 
 type DispatcherPayload struct {
 	Recipient   string `json:"recipient"`
@@ -22,23 +42,20 @@ type PlaybookDispatcherResponse struct {
 	PlaybookDispatcherID string `json:"id"`
 }
 
-func ExecuteDispatcher(payload DispatcherPayload) ([]PlaybookDispatcherResponse, error) {
+func (c *Client) ExecuteDispatcher(payload DispatcherPayload) ([]PlaybookDispatcherResponse, error) {
 	payloadAry := [1]DispatcherPayload{payload}
 
 	payloadBuf := new(bytes.Buffer)
 	json.NewEncoder(payloadBuf).Encode(payloadAry)
-	cfg := config.Get()
 	log.Infof("::executeDispatcher::BEGIN")
-	url := cfg.PlaybookDispatcherConfig.URL
-	fullURL := url + "/internal/dispatch"
+	fullURL := c.url + "/internal/dispatch"
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("POST", fullURL, payloadBuf)
 
 	req.Header.Add("Content-Type", "application/json")
 
-	headers := common.GetOutgoingHeaders(req.Context())
-	log.Infof("ExecuteDispatcher:: cfg.PlaybookDispatcherConfig:: %#v", cfg.PlaybookDispatcherConfig)
-	req.Header.Add("Authorization", "PSK "+cfg.PlaybookDispatcherConfig.PSK)
+	headers := common.GetOutgoingHeaders(c.ctx)
+	req.Header.Add("Authorization", fmt.Sprintf("PSK %s", c.psk))
 	for key, value := range headers {
 		log.Infof("Playbook dispatcher headers: %#v, %#v", key, value)
 		req.Header.Add(key, value)

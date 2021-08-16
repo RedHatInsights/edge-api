@@ -40,7 +40,6 @@ func initDependencies() {
 	config.Init()
 	l.InitLogger()
 	db.InitDB()
-	commits.InitRepoBuilder()
 }
 
 func main() {
