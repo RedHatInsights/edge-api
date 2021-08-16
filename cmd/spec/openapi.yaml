@@ -181,6 +181,12 @@ components:
         RepoURL:
           type: string
       type: object
+    v1.Updates: {
+      properties:
+        "CommitId": integer
+        "DeviceUUID": string
+        }  
+    }
 info:
   license:
     name: MIT
@@ -339,16 +345,19 @@ paths:
       description: Returns the information of the OSTree Repository of a particular Image.
   /updates:
     post:
-      operationId: Update device
-      parameters:
-      - CommitId: Id from commit to update
-        DeviceUUID: Device to be updated
+      operationId: UpdateDevice
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/v1.Updates'
+        required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.updates'
+                $ref: '#/components/schemas/v1.Updates'
           description: OK
         "400":
           content:
@@ -362,5 +371,5 @@ paths:
               schema:
                 $ref: '#/components/schemas/v1.BadRequest'
           description: There was an internal server error.
-      summary: Update a device.
-      description: Fires the update in a device based on commit   
+      summary: UpdateDevice.
+      description: Fire the image update on device.
