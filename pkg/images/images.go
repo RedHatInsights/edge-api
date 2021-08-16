@@ -22,7 +22,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 
 	"github.com/redhatinsights/edge-api/pkg/files"
@@ -119,8 +118,8 @@ type CreateImageRequest struct {
 }
 
 func createImage(image *models.Image, account string, ctx context.Context) error {
-	deps := ctx.Value(dependencies.Key).(*dependencies.EdgeAPIDependencies)
-	image, err := deps.ImageBuilderClient.ComposeCommit(image)
+	client := imagebuilder.InitClient(ctx)
+	image, err := client.ComposeCommit(image)
 	if err != nil {
 		return err
 	}

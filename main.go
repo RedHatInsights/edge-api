@@ -17,7 +17,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/images"
 	"github.com/redhatinsights/edge-api/pkg/repo"
 	"github.com/redhatinsights/edge-api/pkg/updates"
@@ -80,7 +79,6 @@ func main() {
 		middleware.Recoverer,
 		middleware.Logger,
 		setupDocsMiddleware,
-		dependencies.Middleware,
 	)
 
 	// Unauthenticated routes
