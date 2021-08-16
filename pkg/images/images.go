@@ -801,15 +801,5 @@ func exeInjectionScript(kickstart string, image string, imageID uint) error {
 }
 
 func GetReservedUsernames(w http.ResponseWriter, r *http.Request) {
-	cmd := exec.Command("sed", "1d;/^#/d;s/\t.*//", "/usr/share/doc/setup/uidgid")
-	output, err := cmd.Output()
-	if err != nil {
-		log.Errorf(err.Error())
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
-	usernames := strings.Split(string(output[:]), "\n")
-	json.NewEncoder(w).Encode(usernames)
+	json.NewEncoder(w).Encode(models.ReservedUsernames)
 }
