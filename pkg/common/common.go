@@ -57,8 +57,7 @@ func GetOutgoingHeaders(ctx context.Context) map[string]string {
 			log.Fatal(err)
 			panic(err)
 		}
-		base64.StdEncoding.Encode(identityHeaders, identityHeaders)
-		headers["x-rh-identity"] = string(identityHeaders)
+		headers["x-rh-identity"] = base64.StdEncoding.EncodeToString(identityHeaders)
 	}
 	return headers
 }
