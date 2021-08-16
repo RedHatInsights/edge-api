@@ -24,14 +24,3 @@ func Middleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
-
-type EdgeAPIRouter struct {
-	Deps *EdgeAPIDependencies
-}
-
-func (router *EdgeAPIRouter) AddDependencies(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		router.Deps = r.Context().Value(Key).(*EdgeAPIDependencies)
-		next.ServeHTTP(w, r)
-	})
-}
