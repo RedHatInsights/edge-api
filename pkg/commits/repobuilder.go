@@ -177,10 +177,10 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 		updateDevice, err = common.GetDeviceByUUID(device.UUID)
 		// Create new &playbooks.DispatcherPayload{}
 		var payloadDispatcher playbooks.DispatcherPayload
-		payloadDispatcher.Recipient = device.UUID
+		payloadDispatcher.Recipient = device.RHCClientID
 		payloadDispatcher.PlaybookURL = playbookURL
 		payloadDispatcher.Account = update.Account
-		log.Infof("Call Execute Dispatcher")
+		log.Infof("Call Execute Dispatcher: : %#v", payloadDispatcher)
 		//              Call playbooks.ExecuteDispatcher()
 		exc, err := playbooks.ExecuteDispatcher(payloadDispatcher)
 
