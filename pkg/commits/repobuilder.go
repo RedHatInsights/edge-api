@@ -175,12 +175,16 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	for _, device := range update.Devices {
 		var updateDevice *models.Device
 		updateDevice, err = common.GetDeviceByUUID(device.UUID)
+		if err != nil {
+			log.Errorf("Error on common.GetDeviceByUUID: %#v ", err.Error())
+			return nil, err
+		}
 		// Create new &playbooks.DispatcherPayload{}
 		var payloadDispatcher playbooks.DispatcherPayload
-		payloadDispatcher.Recipient = device.UUID
+		payloadDispatcher.Recipient = device.RHCClientID
 		payloadDispatcher.PlaybookURL = playbookURL
 		payloadDispatcher.Account = update.Account
-		log.Infof("Call Execute Dispatcher")
+		log.Infof("Call Execute Dispatcher: : %#v", payloadDispatcher)
 		//              Call playbooks.ExecuteDispatcher()
 		exc, err := playbooks.ExecuteDispatcher(payloadDispatcher)
 
