@@ -135,7 +135,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		}
 	}
 	if updateJSON.DeviceUUID != "" {
-		headers := common.GetOutgoingHeaders(r)
+		headers := common.GetOutgoingHeaders(r.Context())
 		inventory, err = ReturnDevicesByID(updateJSON.DeviceUUID, headers)
 		if err != nil {
 			err := apierrors.NewInternalServerError()
