@@ -125,7 +125,7 @@ func ReturnDevicesByTag(w http.ResponseWriter, r *http.Request) (Inventory, erro
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	req.Header.Add("Content-Type", "application/json")
-	headers := common.GetOutgoingHeaders(r)
+	headers := common.GetOutgoingHeaders(r.Context())
 	for key, value := range headers {
 		req.Header.Add(key, value)
 	}

@@ -36,7 +36,7 @@ func ExecuteDispatcher(payload DispatcherPayload) ([]PlaybookDispatcherResponse,
 
 	req.Header.Add("Content-Type", "application/json")
 
-	headers := common.GetOutgoingHeaders(req)
+	headers := common.GetOutgoingHeaders(req.Context())
 	log.Infof("ExecuteDispatcher:: cfg.PlaybookDispatcherConfig:: %#v", cfg.PlaybookDispatcherConfig)
 	req.Header.Add("Authorization", "PSK "+cfg.PlaybookDispatcherConfig.PSK)
 	for key, value := range headers {
