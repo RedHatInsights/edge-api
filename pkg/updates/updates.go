@@ -320,7 +320,8 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, result.Error.Error(), http.StatusBadRequest)
 	}
 	log.Infof("AddUpdate:: call:: RepoBuilderInstance.BuildUpdateRepo")
-	go commits.RepoBuilderInstance.BuildUpdateRepo(update)
+	header := common.GetOutgoingHeaders(r)
+	go commits.RepoBuilderInstance.BuildUpdateRepo(update, header)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(update)
 

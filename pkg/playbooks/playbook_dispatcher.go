@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/common"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -22,7 +21,7 @@ type PlaybookDispatcherResponse struct {
 	PlaybookDispatcherID string `json:"id"`
 }
 
-func ExecuteDispatcher(payload DispatcherPayload) ([]PlaybookDispatcherResponse, error) {
+func ExecuteDispatcher(payload DispatcherPayload, headers map[string]string) ([]PlaybookDispatcherResponse, error) {
 	payloadAry := [1]DispatcherPayload{payload}
 
 	payloadBuf := new(bytes.Buffer)
@@ -35,14 +34,11 @@ func ExecuteDispatcher(payload DispatcherPayload) ([]PlaybookDispatcherResponse,
 	req, _ := http.NewRequest("POST", fullURL, payloadBuf)
 
 	req.Header.Add("Content-Type", "application/json")
-
-	headers := common.GetOutgoingHeaders(req)
 	log.Infof("ExecuteDispatcher:: cfg.PlaybookDispatcherConfig:: %#v", cfg.PlaybookDispatcherConfig)
+
 	req.Header.Add("Authorization", "PSK "+cfg.PlaybookDispatcherConfig.PSK)
-	for key, value := range headers {
-		log.Infof("Playbook dispatcher headers: %#v, %#v", key, value)
-		req.Header.Add(key, value)
-	}
+	req.Header.Add("x-rh-identity", headers["x-rh-identity"])
+	req.Header.Add("x-rh-insights-request-id", headers["x-rh-insights-request-id"])
 
 	log.Infof("ExecuteDispatcher:: req.Header:: %#v", req.Header)
 	client := &http.Client{}

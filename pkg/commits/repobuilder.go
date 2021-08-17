@@ -33,7 +33,7 @@ func InitRepoBuilder() {
 
 // RepoBuilderInterface defines the interface of a repository builder
 type RepoBuilderInterface interface {
-	BuildUpdateRepo(ut *models.UpdateTransaction) (*models.UpdateTransaction, error)
+	BuildUpdateRepo(ut *models.UpdateTransaction, headers map[string]string) (*models.UpdateTransaction, error)
 	ImportRepo(r *models.Repo) (*models.Repo, error)
 }
 
@@ -42,7 +42,7 @@ type RepoBuilder struct{}
 
 // BuildUpdateRepo build an update repo with the set of commits all merged into a single repo
 // with static deltas generated between them all
-func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.UpdateTransaction, error) {
+func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction, headers map[string]string) (*models.UpdateTransaction, error) {
 	log.Infof("Repobuilder::BuildUpdateRepo:: Begin")
 	if ut == nil {
 		log.Error("nil pointer to models.UpdateTransaction provided")
@@ -186,7 +186,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 		payloadDispatcher.Account = update.Account
 		log.Infof("Call Execute Dispatcher: : %#v", payloadDispatcher)
 		//              Call playbooks.ExecuteDispatcher()
-		exc, err := playbooks.ExecuteDispatcher(payloadDispatcher)
+		exc, err := playbooks.ExecuteDispatcher(payloadDispatcher, headers)
 
 		if err != nil {
 			log.Errorf("Error on playbook-dispatcher-executuin: %#v ", err)
