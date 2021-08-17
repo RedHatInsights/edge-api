@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
+	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -109,37 +110,39 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	log.Infof("updateFromHTTP:: Begin")
 	var updateJSON UpdatePostJSON
 	err := json.NewDecoder(r.Body).Decode(&updateJSON)
+	if err != nil {
+		err := apierrors.NewBadRequest("Invalid JSON")
+		w.WriteHeader(err.Status)
+		return nil, err
+	}
 	log.Infof("updateFromHTTP::updateJSON: %#v", updateJSON)
 
 	if updateJSON.CommitID == 0 {
-		err := apierrors.NewInternalServerError()
-		err.Title = fmt.Sprint("Must provide a CommitID")
+		err := apierrors.NewBadRequest("Must provide a CommitID")
 		w.WriteHeader(err.Status)
 		return nil, err
 	}
 	if (updateJSON.Tag == "") && (updateJSON.DeviceUUID == "") {
-		err := apierrors.NewInternalServerError()
-		err.Title = fmt.Sprint("At least one of Tag or DeviceUUID required.")
+		err := apierrors.NewBadRequest("At least one of Tag or DeviceUUID required.")
 		w.WriteHeader(err.Status)
 		return nil, err
 	}
-
-	var inventory Inventory
+	client := inventory.InitClient(r.Context())
+	var inventory inventory.InventoryResponse
 	if updateJSON.Tag != "" {
-		inventory, err = ReturnDevicesByTag(w, r)
+		uCtx, _ := r.Context().Value(UpdateContextKey).(UpdateContext) // this is sanitized in updates/updates
+		tag := uCtx.Tag
+		inventory, err = client.ReturnDevicesByTag(tag)
 		if err != nil {
-			err := apierrors.NewInternalServerError()
-			err.Title = fmt.Sprintf("No devices in this tag %s", updateJSON.Tag)
+			err := apierrors.NewNotFound(fmt.Sprintf("No devices in this tag %s", updateJSON.Tag))
 			w.WriteHeader(err.Status)
 			return &models.UpdateTransaction{}, err
 		}
 	}
 	if updateJSON.DeviceUUID != "" {
-		headers := common.GetOutgoingHeaders(r.Context())
-		inventory, err = ReturnDevicesByID(updateJSON.DeviceUUID, headers)
+		inventory, err = client.ReturnDevicesByID(updateJSON.DeviceUUID)
 		if err != nil {
-			err := apierrors.NewInternalServerError()
-			err.Title = fmt.Sprintf("No devices found for UUID %s", updateJSON.DeviceUUID)
+			err := apierrors.NewNotFound(fmt.Sprintf("No devices found for UUID %s", updateJSON.DeviceUUID))
 			w.WriteHeader(err.Status)
 			return &models.UpdateTransaction{}, err
 		}
@@ -150,7 +153,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	account, err := common.GetAccount(r)
 	if err != nil {
 		err := apierrors.NewInternalServerError()
-		err.Title = fmt.Sprintf("No account found")
+		err.Title = "No account found"
 		w.WriteHeader(err.Status)
 		return nil, err
 	}
