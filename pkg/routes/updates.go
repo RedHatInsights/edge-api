@@ -1,4 +1,4 @@
-package updates
+package routes
 
 import (
 	"encoding/json"
@@ -23,14 +23,14 @@ import (
 )
 
 // MakeRouter adds support for operations on update
-func MakeRouter(sub chi.Router) {
+func MakeUpdatesRouter(sub chi.Router) {
 	sub.Use(UpdateCtx)
 	sub.Get("/device/{DeviceUUID}", GetDeviceStatus)
 	sub.With(common.Paginate).Get("/", GetUpdates)
 	sub.Post("/", AddUpdate)
 	sub.Route("/{updateID}", func(r chi.Router) {
 		r.Use(UpdateCtx)
-		r.Get("/", GetByID)
+		r.Get("/", GetUpdateByID)
 		r.Get("/diff", GetDiffOnUpdate)
 		r.Put("/", UpdatesUpdate)
 	})
@@ -330,8 +330,8 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// GetByID obtains an update from the database for an account
-func GetByID(w http.ResponseWriter, r *http.Request) {
+// GetUpdateByID obtains an update from the database for an account
+func GetUpdateByID(w http.ResponseWriter, r *http.Request) {
 	var update models.UpdateTransaction
 
 	account, err := common.GetAccount(r)

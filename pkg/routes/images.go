@@ -1,9 +1,10 @@
-package images
+package routes
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"net/http"
 	"os"
@@ -13,7 +14,6 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-	"text/template"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -23,20 +23,28 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
-
 	"github.com/redhatinsights/edge-api/pkg/files"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
 
-// MakeRouter adds support for operations on images
-func MakeRouter(sub chi.Router) {
+// This provides type safety in the context object for our "image" key.  We
+// _could_ use a string but we shouldn't just in case someone else decides that
+// "image" would make the perfect key in the context object.  See the
+// documentation: https://golang.org/pkg/context/#WithValue for further
+// rationale.
+type imageTypeKey int
+
+const imageKey imageTypeKey = iota
+
+// MakeImageRouter adds support for operations on images
+func MakeImagesRouter(sub chi.Router) {
 	sub.With(validateGetAllSearchParams).With(common.Paginate).Get("/", GetAll)
 	sub.Get("/reserved-usernames", GetReservedUsernames)
-	sub.Post("/", Create)
+	sub.Post("/", CreateImage)
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageCtx)
-		r.Get("/", GetByID)
+		r.Get("/", GetImageByID)
 		r.Get("/status", GetStatusByID)
 		r.Get("/repo", GetRepoForImage)
 		r.Get("/metadata", GetMetadataForImage)
@@ -45,15 +53,6 @@ func MakeRouter(sub chi.Router) {
 		r.Post("/kickstart", CreateKickStartForImage)
 	})
 }
-
-// This provides type safety in the context object for our "image" key.  We
-// _could_ use a string but we shouldn't just in case someone else decides that
-// "image" would make the perfect key in the context object.  See the
-// documentation: https://golang.org/pkg/context/#WithValue for further
-// rationale.
-type key int
-
-const imageKey key = 1
 
 var validStatuses = []string{models.ImageStatusCreated, models.ImageStatusBuilding, models.ImageStatusError, models.ImageStatusSuccess}
 
@@ -287,10 +286,10 @@ func postProcessImage(id uint, ctx context.Context) {
 	}
 }
 
-// Create creates an image on hosted image builder.
+// CreateImage creates an image on hosted image builder.
 // It always creates a commit on Image Builder.
 // We're creating a update on the background to transfer the commit to our repo.
-func Create(w http.ResponseWriter, r *http.Request) {
+func CreateImage(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var image *models.Image
 	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
@@ -484,8 +483,8 @@ func GetStatusByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetByID obtains a image from the database for an account
-func GetByID(w http.ResponseWriter, r *http.Request) {
+// GetImageByID obtains a image from the database for an account
+func GetImageByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		json.NewEncoder(w).Encode(image)
 	}

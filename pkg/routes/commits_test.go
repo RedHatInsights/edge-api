@@ -1,4 +1,4 @@
-package commits
+package routes
 
 import (
 	"bytes"
@@ -7,36 +7,13 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
 var cmt models.Commit
-
-func TestMain(m *testing.M) {
-	setUp()
-	retCode := m.Run()
-	tearDown()
-	os.Exit(retCode)
-}
-
-func setUp() {
-	config.Init()
-	config.Get().Debug = true
-	db.InitDB()
-	err := db.DB.AutoMigrate(&models.Commit{})
-	if err != nil {
-		panic(err)
-	}
-}
-
-func tearDown() {
-	db.DB.Exec("DELETE FROM commits")
-}
 
 func mockCommit() {
 	cmt.Account = "0000000"
@@ -69,7 +46,7 @@ func TestGetAllEmpty(t *testing.T) {
 		request, _ := http.NewRequest(http.MethodGet, "/", nil)
 		response := httptest.NewRecorder()
 
-		GetAll(response, request)
+		GetAllCommits(response, request)
 		got := []string{}
 		fmt.Printf("Respose: %v\n", response.Body)
 		json.NewDecoder(response.Body).Decode(&got)
@@ -87,7 +64,7 @@ func TestGetAll(t *testing.T) {
 		request, _ := http.NewRequest(http.MethodGet, "/", nil)
 		response := httptest.NewRecorder()
 
-		GetAll(response, request)
+		GetAllCommits(response, request)
 		got := response.Code
 		want := http.StatusOK
 		if got != want {
@@ -97,7 +74,7 @@ func TestGetAll(t *testing.T) {
 
 }
 
-func TestGetById(t *testing.T) {
+func TestGetCommitById(t *testing.T) {
 	mockCommit()
 	t.Run("returns Get commit by id successfully", func(t *testing.T) {
 
@@ -106,7 +83,7 @@ func TestGetById(t *testing.T) {
 		ctx := request.Context()
 		ctx = context.WithValue(ctx, commitKey, &cmt)
 		request = request.WithContext(ctx)
-		GetByID(response, request)
+		GetCommitByID(response, request)
 		var bodyResp *bodyResponse
 		json.NewDecoder(response.Body).Decode(&bodyResp)
 		if bodyResp.Account != "0000000" {
@@ -124,7 +101,7 @@ func TestGetByIdFail(t *testing.T) {
 		request, _ := http.NewRequest(http.MethodGet, "/", nil)
 		response := httptest.NewRecorder()
 
-		GetByID(response, request)
+		GetCommitByID(response, request)
 		got := response.Body.String()
 		want := "must pass id\n"
 		if got != want {
@@ -179,7 +156,7 @@ func TestAdd(t *testing.T) {
 		request, _ := http.NewRequest(http.MethodGet, "/", bytes.NewBuffer(jsonStr))
 		response := httptest.NewRecorder()
 
-		Add(response, request)
+		AddCommit(response, request)
 		got := response.Code
 		want := http.StatusOK
 		if got != want {
@@ -195,7 +172,7 @@ func TestAddError(t *testing.T) {
 		request, _ := http.NewRequest(http.MethodGet, "/", bytes.NewBuffer(jsonStr))
 		response := httptest.NewRecorder()
 
-		Add(response, request)
+		AddCommit(response, request)
 		got := response.Code
 		want := http.StatusBadRequest
 		if got != want {
@@ -214,7 +191,7 @@ func TestUpdate(t *testing.T) {
 		ctx := request.Context()
 		ctx = context.WithValue(ctx, commitKey, &cmt)
 		request = request.WithContext(ctx)
-		Update(response, request)
+		UpdateCommit(response, request)
 		got := response.Code
 		want := http.StatusOK
 		if got != want {
@@ -233,7 +210,7 @@ func TestPatchF(t *testing.T) {
 		ctx := request.Context()
 		ctx = context.WithValue(ctx, commitKey, &cmt)
 		request = request.WithContext(ctx)
-		Patch(response, request)
+		PatchCommit(response, request)
 		got := response.Code
 		want := http.StatusOK
 		if got != want {
@@ -253,7 +230,7 @@ func TestPatchError(t *testing.T) {
 		ctx := request.Context()
 		ctx = context.WithValue(ctx, commitKey, &cmt)
 		request = request.WithContext(ctx)
-		Patch(response, request)
+		PatchCommit(response, request)
 		got := response.Code
 		want := http.StatusBadRequest
 		if got != want {
