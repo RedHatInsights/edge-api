@@ -21,7 +21,7 @@ type PlaybookDispatcherResponse struct {
 	PlaybookDispatcherID string `json:"id"`
 }
 
-func ExecuteDispatcher(payload DispatcherPayload, header map[string]string) ([]PlaybookDispatcherResponse, error) {
+func ExecuteDispatcher(payload DispatcherPayload, headers map[string]string) ([]PlaybookDispatcherResponse, error) {
 	payloadAry := [1]DispatcherPayload{payload}
 
 	payloadBuf := new(bytes.Buffer)
@@ -37,8 +37,8 @@ func ExecuteDispatcher(payload DispatcherPayload, header map[string]string) ([]P
 	log.Infof("ExecuteDispatcher:: cfg.PlaybookDispatcherConfig:: %#v", cfg.PlaybookDispatcherConfig)
 
 	req.Header.Add("Authorization", "PSK "+cfg.PlaybookDispatcherConfig.PSK)
-	req.Header.Add("x-rh-identity", header["x-rh-identity"])
-	req.Header.Add("x-rh-insights-request-id", header["x-rh-insights-request-id"])
+	req.Header.Add("x-rh-identity", headers["x-rh-identity"])
+	req.Header.Add("x-rh-insights-request-id", headers["x-rh-insights-request-id"])
 
 	log.Infof("ExecuteDispatcher:: req.Header:: %#v", req.Header)
 	client := &http.Client{}
