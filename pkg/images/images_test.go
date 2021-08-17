@@ -12,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
@@ -40,7 +39,6 @@ func setUp() {
 		Commit: image.Commit,
 	}
 	db.DB.Create(&repo)
-	commits.RepoBuilderInstance = &MockRepositoryBuilder{}
 }
 
 func tearDown() {

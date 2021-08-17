@@ -1,6 +1,7 @@
 package commits
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/files"
@@ -23,22 +25,21 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// RepoBuilderInstance is the instance for a RepoBuilder
-var RepoBuilderInstance RepoBuilderInterface
-
 // InitRepoBuilder initializes the repository builder in this package
-func InitRepoBuilder() {
-	RepoBuilderInstance = &RepoBuilder{}
+func InitRepoBuilder(ctx context.Context) *RepoBuilder {
+	return &RepoBuilder{ctx: ctx}
 }
 
 // RepoBuilderInterface defines the interface of a repository builder
 type RepoBuilderInterface interface {
-	BuildUpdateRepo(ut *models.UpdateTransaction) (*models.UpdateTransaction, error)
+	BuildUpdateRepo(ut *models.UpdateTransaction, ctx context.Context) (*models.UpdateTransaction, error)
 	ImportRepo(r *models.Repo) (*models.Repo, error)
 }
 
 // RepoBuilder is the implementation of a RepoBuilderInterface
-type RepoBuilder struct{}
+type RepoBuilder struct {
+	ctx context.Context
+}
 
 // BuildUpdateRepo build an update repo with the set of commits all merged into a single repo
 // with static deltas generated between them all
@@ -180,13 +181,14 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 			return nil, err
 		}
 		// Create new &playbooks.DispatcherPayload{}
-		var payloadDispatcher playbooks.DispatcherPayload
-		payloadDispatcher.Recipient = device.RHCClientID
-		payloadDispatcher.PlaybookURL = playbookURL
-		payloadDispatcher.Account = update.Account
+		payloadDispatcher := playbookdispatcher.DispatcherPayload{
+			Recipient:   device.RHCClientID,
+			PlaybookURL: playbookURL,
+			Account:     update.Account,
+		}
 		log.Infof("Call Execute Dispatcher: : %#v", payloadDispatcher)
-		//              Call playbooks.ExecuteDispatcher()
-		exc, err := playbooks.ExecuteDispatcher(payloadDispatcher)
+		client := playbookdispatcher.InitClient(rb.ctx)
+		exc, err := client.ExecuteDispatcher(payloadDispatcher)
 
 		if err != nil {
 			log.Errorf("Error on playbook-dispatcher-executuin: %#v ", err)
@@ -214,7 +216,6 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 
 		}
 		update.DispatchRecords = dispatchRecords
-		//
 	}
 	db.DB.Save(&update)
 	log.Infof("Repobuild::ends: update record %#v ", update)
