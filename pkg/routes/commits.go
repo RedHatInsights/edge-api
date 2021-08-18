@@ -231,7 +231,7 @@ func ServeRepo(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		services.NewFilesService().Untar(resp.Body, path)
+		services.NewExtractor().Extract(resp.Body, path)
 	}
 
 	_r := strings.Index(r.URL.Path, "/repo")

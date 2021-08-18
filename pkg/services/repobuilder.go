@@ -31,13 +31,13 @@ type RepoBuilderInterface interface {
 
 // RepoBuilder is the implementation of a RepoBuilderInterface
 type RepoBuilder struct {
-	ctx          context.Context
-	filesService *FilesService
+	ctx       context.Context
+	extractor Extractor
 }
 
 // InitRepoBuilder initializes the repository builder in this package
 func InitRepoBuilder(ctx context.Context) *RepoBuilder {
-	return &RepoBuilder{ctx: ctx, filesService: NewFilesService()}
+	return &RepoBuilder{ctx: ctx, extractor: NewExtractor()}
 }
 
 // BuildUpdateRepo build an update repo with the set of commits all merged into a single repo

@@ -7,15 +7,21 @@ import (
 	"path/filepath"
 )
 
-// Files defines methods to handle files
-type FilesService struct{}
-
-func NewFilesService() *FilesService {
-	return &FilesService{}
+// Extractor defines methods to extract files to path
+type Extractor interface {
+	Extract(rc io.ReadCloser, dst string) error
 }
 
-// Untar file to destination path
-func (f *FilesService) Untar(rc io.ReadCloser, dst string) error {
+// NewExtractor returns the main extractor used by EdgeAPI
+func NewExtractor() Extractor {
+	return &TARFileExtractor{}
+}
+
+// TARFileExtractor implements a method to extract TAR files into a path
+type TARFileExtractor struct{}
+
+// Extracts file to destination path
+func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
 	defer rc.Close()
 	tarReader := tar.NewReader(rc)
 	for {

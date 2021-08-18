@@ -45,7 +45,7 @@ func TestUntar(t *testing.T) {
 	if errOpenFile != nil {
 		t.Error("Unable to open mock tar file before test")
 	}
-	NewFilesService().Untar(unTarFile, `./`)
+	NewExtractor().Extract(unTarFile, `./`)
 	for name := range files {
 		// check if file exist after untar method calls
 		if _, err := os.Stat(name); os.IsNotExist(err) {
