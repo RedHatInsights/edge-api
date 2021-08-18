@@ -26,16 +26,18 @@ import (
 type RepoBuilderInterface interface {
 	BuildUpdateRepo(ut *models.UpdateTransaction) (*models.UpdateTransaction, error)
 	ImportRepo(r *models.Repo) (*models.Repo, error)
+	DownloadExtractVersionRepo(c *models.Commit, dest string)
 }
 
 // RepoBuilder is the implementation of a RepoBuilderInterface
 type RepoBuilder struct {
-	ctx context.Context
+	ctx          context.Context
+	filesService *FilesService
 }
 
 // InitRepoBuilder initializes the repository builder in this package
 func InitRepoBuilder(ctx context.Context) *RepoBuilder {
-	return &RepoBuilder{ctx: ctx}
+	return &RepoBuilder{ctx: ctx, filesService: NewFilesService()}
 }
 
 // BuildUpdateRepo build an update repo with the set of commits all merged into a single repo
@@ -72,7 +74,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	if err != nil {
 		return nil, err
 	}
-	err = DownloadExtractVersionRepo(ut.Commit, path)
+	err = rb.DownloadExtractVersionRepo(ut.Commit, path)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +95,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 		//
 		// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
 		for _, commit := range ut.OldCommits {
-			DownloadExtractVersionRepo(&commit, filepath.Join(stagePath, commit.OSTreeCommit))
+			rb.DownloadExtractVersionRepo(&commit, filepath.Join(stagePath, commit.OSTreeCommit))
 			if err != nil {
 				return nil, err
 			}
@@ -234,7 +236,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = DownloadExtractVersionRepo(r.Commit, path)
+	err = rb.DownloadExtractVersionRepo(r.Commit, path)
 	if err != nil {
 		r.Status = models.RepoStatusError
 		result := db.DB.Save(&r)
@@ -271,7 +273,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 }
 
 // DownloadExtractVersionRepo Download and Extract the repo tarball to dest dir
-func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
+func (rb *RepoBuilder) DownloadExtractVersionRepo(c *models.Commit, dest string) error {
 	// ensure we weren't passed a nil pointer
 	if c == nil {
 		log.Error("nil pointer to models.Commit provided")
@@ -307,7 +309,7 @@ func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
 		log.Error(err)
 		return err
 	}
-	err = Untar(tarFile, filepath.Join(dest))
+	err = rb.filesService.Untar(tarFile, filepath.Join(dest))
 	if err != nil {
 		log.Errorf("Failed to untar file: %s", filepath.Join(dest, tarFileName))
 		log.Error(err)

@@ -14,8 +14,8 @@ type Downloader interface {
 // HTTPDownloader implements Downloader and downloads from a URL through HTTP
 type HTTPDownloader struct{}
 
-// CommitDownloader download function that puts the source_url into the destination_path on the local filesystem
-func (d *HTTPDownloader) CommitDownloader(sourceURL string, destinationPath string) error {
+// DownloadToPath download function that puts the source_url into the destination_path on the local filesystem
+func (d *HTTPDownloader) DownloadToPath(sourceURL string, destinationPath string) error {
 
 	resp, err := http.Get(sourceURL)
 	if err != nil {

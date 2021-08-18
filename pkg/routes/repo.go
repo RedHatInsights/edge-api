@@ -60,7 +60,7 @@ func CreateRepo(w http.ResponseWriter, r *http.Request) {
 
 	path := filepath.Join("/tmp", cr.Name)
 
-	services.Untar(resp.Body, path)
+	services.NewFilesService().Untar(resp.Body, path)
 
 	res := &createResponse{
 		RepoURL: filepath.Join(
