@@ -55,11 +55,11 @@ func (c *Client) ExecuteDispatcher(payload DispatcherPayload) ([]PlaybookDispatc
 	req.Header.Add("Content-Type", "application/json")
 
 	headers := common.GetOutgoingHeaders(c.ctx)
-	req.Header.Add("Authorization", fmt.Sprintf("PSK %s", c.psk))
 	for key, value := range headers {
 		log.Infof("Playbook dispatcher headers: %#v, %#v", key, value)
 		req.Header.Add(key, value)
 	}
+	req.Header.Add("Authorization", fmt.Sprintf("PSK %s", c.psk))
 
 	log.Infof("ExecuteDispatcher:: req.Header:: %#v", req.Header)
 	client := &http.Client{}

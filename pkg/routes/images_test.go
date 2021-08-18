@@ -59,7 +59,7 @@ func (c *MockClient) GetMetadata(image *models.Image, headers map[string]string)
 
 type MockRepositoryBuilder struct{}
 
-func (rb *MockRepositoryBuilder) BuildUpdateRepo(u *models.UpdateTransaction) (*models.UpdateTransaction, error) {
+func (rb *MockRepositoryBuilder) BuildUpdateRepo(u *models.UpdateTransaction, headers map[string]string) (*models.UpdateTransaction, error) {
 	return nil, nil
 }
 func (rb *MockRepositoryBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
