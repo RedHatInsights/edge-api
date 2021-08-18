@@ -8,18 +8,18 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/common"
-	"github.com/redhatinsights/edge-api/pkg/repo"
+	"github.com/redhatinsights/edge-api/pkg/services"
 )
 
 // MakeReposRouter defines the available actions for Repos
 func MakeReposRouter(sub chi.Router) {
 	cfg := config.Get()
-	var server repo.Server
-	server = &repo.FileServer{
+	var server services.Server
+	server = &services.FileServer{
 		BasePath: "/tmp",
 	}
 	if cfg.BucketName != "" {
-		server = repo.NewS3Proxy()
+		server = services.NewS3Proxy()
 	}
 	sub.Post("/", CreateRepo)
 	sub.Get("/{name}/*", server.ServeRepo)
