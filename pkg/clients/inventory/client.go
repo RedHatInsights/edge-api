@@ -10,7 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/common"
+	"github.com/redhatinsights/edge-api/pkg/clients"
 )
 
 // ClientInterface is an Interface to make request to InventoryAPI
@@ -66,7 +66,7 @@ func (c *Client) ReturnDevices(w http.ResponseWriter, r *http.Request) (Inventor
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	req.Header.Add("Content-Type", "application/json")
-	headers := common.GetOutgoingHeaders(c.ctx)
+	headers := clients.GetOutgoingHeaders(c.ctx)
 	for key, value := range headers {
 		req.Header.Add(key, value)
 	}
@@ -99,7 +99,7 @@ func (c *Client) ReturnDevicesByID(deviceID string) (InventoryResponse, error) {
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	req.Header.Add("Content-Type", "application/json")
-	for key, value := range common.GetOutgoingHeaders(c.ctx) {
+	for key, value := range clients.GetOutgoingHeaders(c.ctx) {
 		req.Header.Add(key, value)
 	}
 	client := &http.Client{}
@@ -138,7 +138,7 @@ func (c *Client) ReturnDevicesByTag(tag string) (InventoryResponse, error) {
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	req.Header.Add("Content-Type", "application/json")
-	headers := common.GetOutgoingHeaders(c.ctx)
+	headers := clients.GetOutgoingHeaders(c.ctx)
 	for key, value := range headers {
 		req.Header.Add(key, value)
 	}

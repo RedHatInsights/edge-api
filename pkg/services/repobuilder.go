@@ -15,7 +15,6 @@ import (
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
-	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 
@@ -136,7 +135,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	if update.Repo == nil {
 		//  Check for the existence of a Repo that already has this commit and don't duplicate
 		var repo *models.Repo
-		repo, err = common.GetRepoByCommitID(update.CommitID)
+		repo, err = GetRepoByCommitID(update.CommitID)
 		if err == nil {
 			update.Repo = repo
 		} else {
@@ -173,9 +172,9 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	dispatchRecords := update.DispatchRecords
 	for _, device := range update.Devices {
 		var updateDevice *models.Device
-		updateDevice, err = common.GetDeviceByUUID(device.UUID)
+		updateDevice, err = GetDeviceByUUID(device.UUID)
 		if err != nil {
-			log.Errorf("Error on common.GetDeviceByUUID: %#v ", err.Error())
+			log.Errorf("Error on GetDeviceByUUID: %#v ", err.Error())
 			return nil, err
 		}
 		// Create new &DispatcherPayload{}
@@ -308,7 +307,7 @@ func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
 		log.Error(err)
 		return err
 	}
-	err = common.Untar(tarFile, filepath.Join(dest))
+	err = Untar(tarFile, filepath.Join(dest))
 	if err != nil {
 		log.Errorf("Failed to untar file: %s", filepath.Join(dest, tarFileName))
 		log.Error(err)

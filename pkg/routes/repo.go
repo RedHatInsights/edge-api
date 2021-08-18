@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 )
 
@@ -61,7 +60,7 @@ func CreateRepo(w http.ResponseWriter, r *http.Request) {
 
 	path := filepath.Join("/tmp", cr.Name)
 
-	common.Untar(resp.Body, path)
+	services.Untar(resp.Body, path)
 
 	res := &createResponse{
 		RepoURL: filepath.Join(

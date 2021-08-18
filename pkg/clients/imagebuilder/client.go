@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/common"
+	"github.com/redhatinsights/edge-api/pkg/clients"
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
@@ -135,7 +135,7 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 	url := fmt.Sprintf("%s/api/image-builder/v1/compose", cfg.ImageBuilderConfig.URL)
 	log.Infof("Requesting url: %s with payloadBuf %s", url, payloadBuf.String())
 	req, _ := http.NewRequest("POST", url, payloadBuf)
-	for key, value := range common.GetOutgoingHeaders(c.ctx) {
+	for key, value := range clients.GetOutgoingHeaders(c.ctx) {
 		req.Header.Add(key, value)
 	}
 	req.Header.Add("Content-Type", "application/json")
@@ -243,7 +243,7 @@ func (c *Client) getComposeStatus(jobID string) (*ComposeStatus, error) {
 	cfg := config.Get()
 	url := fmt.Sprintf("%s/api/image-builder/v1/composes/%s", cfg.ImageBuilderConfig.URL, jobID)
 	req, _ := http.NewRequest("GET", url, nil)
-	for key, value := range common.GetOutgoingHeaders(c.ctx) {
+	for key, value := range clients.GetOutgoingHeaders(c.ctx) {
 		req.Header.Add(key, value)
 	}
 	req.Header.Add("Content-Type", "application/json")
@@ -316,7 +316,7 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	for key, value := range common.GetOutgoingHeaders(c.ctx) {
+	for key, value := range clients.GetOutgoingHeaders(c.ctx) {
 		req.Header.Add(key, value)
 	}
 	req.Header.Add("Content-Type", "application/json")

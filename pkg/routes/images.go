@@ -19,7 +19,6 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
-	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -38,7 +37,7 @@ const imageKey imageTypeKey = iota
 
 // MakeImageRouter adds support for operations on images
 func MakeImagesRouter(sub chi.Router) {
-	sub.With(validateGetAllSearchParams).With(common.Paginate).Get("/", GetAll)
+	sub.With(validateGetAllSearchParams).With(services.Paginate).Get("/", GetAll)
 	sub.Get("/reserved-usernames", GetReservedUsernames)
 	sub.Post("/", CreateImage)
 	sub.Route("/{imageId}", func(r chi.Router) {
@@ -62,7 +61,7 @@ var WaitGroup sync.WaitGroup
 func ImageCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var image models.Image
-		account, err := common.GetAccount(r)
+		account, err := services.GetAccount(r)
 		if err != nil {
 			err := errors.NewBadRequest(err.Error())
 			w.WriteHeader(err.Status)
@@ -305,7 +304,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	account, err := common.GetAccount(r)
+	account, err := services.GetAccount(r)
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
@@ -328,24 +327,24 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	go postProcessImage(image.ID, r.Context())
 }
 
-var imageFilters = common.ComposeFilters(
-	common.OneOfFilterHandler(&common.Filter{
+var imageFilters = services.ComposeFilters(
+	services.OneOfFilterHandler(&services.Filter{
 		QueryParam: "status",
 		DBField:    "images.status",
 	}),
-	common.ContainFilterHandler(&common.Filter{
+	services.ContainFilterHandler(&services.Filter{
 		QueryParam: "name",
 		DBField:    "images.name",
 	}),
-	common.ContainFilterHandler(&common.Filter{
+	services.ContainFilterHandler(&services.Filter{
 		QueryParam: "distribution",
 		DBField:    "images.distribution",
 	}),
-	common.CreatedAtFilterHandler(&common.Filter{
+	services.CreatedAtFilterHandler(&services.Filter{
 		QueryParam: "created_at",
 		DBField:    "images.created_at",
 	}),
-	common.SortFilterHandler("images", "created_at", "DESC"),
+	services.SortFilterHandler("images", "created_at", "DESC"),
 )
 
 type validationError struct {
@@ -364,7 +363,7 @@ func validateGetAllSearchParams(next http.Handler) http.Handler {
 			}
 		}
 		if val := r.URL.Query().Get("created_at"); val != "" {
-			if _, err := time.Parse(common.LayoutISO, val); err != nil {
+			if _, err := time.Parse(services.LayoutISO, val); err != nil {
 				errs = append(errs, validationError{Key: "created_at", Reason: err.Error()})
 			}
 		}
@@ -392,8 +391,8 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	var count int64
 	var images []models.Image
 	result := imageFilters(r, db.DB)
-	pagination := common.GetPagination(r)
-	account, err := common.GetAccount(r)
+	pagination := services.GetPagination(r)
+	account, err := services.GetAccount(r)
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
@@ -513,7 +512,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	repo, err := common.GetRepoByCommitID(image.CommitID)
+	repo, err := services.GetRepoByCommitID(image.CommitID)
 	if err != nil {
 		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
 		w.WriteHeader(err.Status)
@@ -740,7 +739,7 @@ func cleanFiles(kickstart string, isoName string, imageID uint) error {
 //GetRepoForImage gets the repository for a Image
 func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		repo, err := common.GetRepoByCommitID(image.CommitID)
+		repo, err := services.GetRepoByCommitID(image.CommitID)
 		if err != nil {
 			err := errors.NewNotFound(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.Commit.ID))
 			w.WriteHeader(err.Status)

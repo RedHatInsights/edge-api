@@ -1,4 +1,4 @@
-package common
+package services
 
 import (
 	"github.com/redhatinsights/edge-api/pkg/db"
