@@ -37,13 +37,13 @@ const imageKey imageTypeKey = iota
 
 // MakeImageRouter adds support for operations on images
 func MakeImagesRouter(sub chi.Router) {
-	sub.With(validateGetAllSearchParams).With(services.Paginate).Get("/", GetAll)
+	sub.With(validateGetAllImagesSearchParams).With(services.Paginate).Get("/", GetAllImages)
 	sub.Get("/reserved-usernames", GetReservedUsernames)
 	sub.Post("/", CreateImage)
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageCtx)
 		r.Get("/", GetImageByID)
-		r.Get("/status", GetStatusByID)
+		r.Get("/status", GetImageStatusByID)
 		r.Get("/repo", GetRepoForImage)
 		r.Get("/metadata", GetMetadataForImage)
 		r.Post("/installer", CreateInstallerForImage)
@@ -352,7 +352,7 @@ type validationError struct {
 	Reason string
 }
 
-func validateGetAllSearchParams(next http.Handler) http.Handler {
+func validateGetAllImagesSearchParams(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		errs := []validationError{}
 		if statuses, ok := r.URL.Query()["status"]; ok {
@@ -386,8 +386,8 @@ func validateGetAllSearchParams(next http.Handler) http.Handler {
 	})
 }
 
-// GetAll image objects from the database for an account
-func GetAll(w http.ResponseWriter, r *http.Request) {
+// GetAllImages image objects from the database for an account
+func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	var count int64
 	var images []models.Image
 	result := imageFilters(r, db.DB)
@@ -466,8 +466,8 @@ func updateImageStatus(image *models.Image, ctx context.Context) (*models.Image,
 	return image, nil
 }
 
-// GetStatusByID returns the image status.
-func GetStatusByID(w http.ResponseWriter, r *http.Request) {
+// GetImageStatusByID returns the image status.
+func GetImageStatusByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		json.NewEncoder(w).Encode(struct {
 			Status string
