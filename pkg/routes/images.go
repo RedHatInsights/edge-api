@@ -22,6 +22,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	log "github.com/sirupsen/logrus"
 )
@@ -37,7 +38,7 @@ const imageKey imageTypeKey = iota
 
 // MakeImageRouter adds support for operations on images
 func MakeImagesRouter(sub chi.Router) {
-	sub.With(validateGetAllImagesSearchParams).With(services.Paginate).Get("/", GetAllImages)
+	sub.With(validateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetAllImages)
 	sub.Get("/reserved-usernames", GetReservedUsernames)
 	sub.Post("/", CreateImage)
 	sub.Route("/{imageId}", func(r chi.Router) {
@@ -61,7 +62,7 @@ var WaitGroup sync.WaitGroup
 func ImageCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var image models.Image
-		account, err := services.GetAccount(r)
+		account, err := common.GetAccount(r)
 		if err != nil {
 			err := errors.NewBadRequest(err.Error())
 			w.WriteHeader(err.Status)
@@ -304,7 +305,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	account, err := services.GetAccount(r)
+	account, err := common.GetAccount(r)
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
@@ -391,8 +392,8 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	var count int64
 	var images []models.Image
 	result := imageFilters(r, db.DB)
-	pagination := services.GetPagination(r)
-	account, err := services.GetAccount(r)
+	pagination := common.GetPagination(r)
+	account, err := common.GetAccount(r)
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())

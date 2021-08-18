@@ -2,29 +2,18 @@ package services
 
 import (
 	"archive/tar"
-	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi"
-	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/errors"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
 	log "github.com/sirupsen/logrus"
 )
 
-type paginationContextKey int
-
 const (
-	// PaginationKey is used to store pagination data in request context
-	PaginationKey paginationContextKey = 1
-	defaultLimit  int                  = 100
-	defaultOffset int                  = 0
 	// TrailingSlashIndex is the index used to remove trailing slashs from path prefixes
 	TrailingSlashIndex int = 1
 )
@@ -45,23 +34,6 @@ func getPathPrefix(path string, name string) string {
 	pathPrefix := string(path[:_r+TrailingSlashIndex])
 	log.Debugf("getNameAndPrefix::pathPrefix: %#v", pathPrefix)
 	return pathPrefix
-}
-
-// GetAccount from http request header
-func GetAccount(r *http.Request) (string, error) {
-	if config.Get() != nil {
-		if !config.Get().Auth {
-			return "0000000", nil
-		}
-		if r.Context().Value(identity.Key) != nil {
-			ident := identity.Get(r.Context())
-			if ident.Identity.AccountNumber != "" {
-				return ident.Identity.AccountNumber, nil
-			}
-		}
-	}
-	return "", fmt.Errorf("cannot find account number")
-
 }
 
 // Untar file to destination path
@@ -96,51 +68,4 @@ func Untar(rc io.ReadCloser, dst string) error {
 		file.Close()
 	}
 	return nil
-}
-
-// Pagination represents pagination parameters
-type Pagination struct {
-	// Limit represents how many items to return
-	Limit int
-	// Offset represents from what item to start
-	Offset int
-}
-
-// Paginate is a middleware to get pagination params from the request and store it in
-// the request context. If no pagination was set in the request URL search parameters
-// they are set to default (see defaultLimit and defaultOffset).
-// To read pagination parameters from context use PaginationKey.
-func Paginate(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		pagination := Pagination{Limit: defaultLimit, Offset: defaultOffset}
-		if val, ok := r.URL.Query()["limit"]; ok {
-			valInt, err := strconv.Atoi(val[0])
-			if err != nil {
-				errors.NewBadRequest(err.Error())
-				return
-			}
-			pagination.Limit = valInt
-		}
-		if val, ok := r.URL.Query()["offset"]; ok {
-			valInt, err := strconv.Atoi(val[0])
-			if err != nil {
-				errors.NewBadRequest(err.Error())
-				return
-			}
-			pagination.Offset = valInt
-		}
-		ctx := context.WithValue(r.Context(), PaginationKey, pagination)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-// GetPagination is a function helper to get pagination parameters from the request context.
-// In case the router doesn't use Paginate before serving the request we still return
-// the default parameters: defaultOffset, defaultLimit
-func GetPagination(r *http.Request) Pagination {
-	pagination, ok := r.Context().Value(PaginationKey).(Pagination)
-	if !ok {
-		return Pagination{Offset: defaultOffset, Limit: defaultLimit}
-	}
-	return pagination
 }

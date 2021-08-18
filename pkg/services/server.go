@@ -16,6 +16,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/errors"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -91,7 +92,7 @@ func (p *S3Proxy) ServeRepo(w http.ResponseWriter, r *http.Request) {
 
 	account := chi.URLParam(r, "account")
 	if account == "" {
-		account, err = GetAccount(r)
+		account, err = common.GetAccount(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

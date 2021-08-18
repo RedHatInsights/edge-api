@@ -15,6 +15,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 
 	apierrors "github.com/redhatinsights/edge-api/pkg/errors"
@@ -25,7 +26,7 @@ import (
 func MakeUpdatesRouter(sub chi.Router) {
 	sub.Use(UpdateCtx)
 	sub.Get("/device/{DeviceUUID}", GetDeviceStatus)
-	sub.With(services.Paginate).Get("/", GetUpdates)
+	sub.With(common.Paginate).Get("/", GetUpdates)
 	sub.Post("/", AddUpdate)
 	sub.Route("/{updateID}", func(r chi.Router) {
 		r.Use(UpdateCtx)
@@ -42,7 +43,7 @@ func GetDeviceStatus(w http.ResponseWriter, r *http.Request) {
 	// var devices []models.Device
 	var results []models.Device
 	//var results []models.UpdateTransaction
-	account, err := services.GetAccount(r)
+	account, err := common.GetAccount(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -73,7 +74,7 @@ func GetDeviceStatus(w http.ResponseWriter, r *http.Request) {
 
 func GetUpdates(w http.ResponseWriter, r *http.Request) {
 	var updates []models.UpdateTransaction
-	account, err := services.GetAccount(r)
+	account, err := common.GetAccount(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -149,7 +150,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 
 	log.Infof("updateFromHTTP::inventory: %#v", inventory)
 
-	account, err := services.GetAccount(r)
+	account, err := common.GetAccount(r)
 	if err != nil {
 		err := apierrors.NewInternalServerError()
 		err.Title = "No account found"
@@ -290,7 +291,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Infof("AddUpdate::update: %#v", update)
 
-	update.Account, err = services.GetAccount(r)
+	update.Account, err = common.GetAccount(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -333,7 +334,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 func GetUpdateByID(w http.ResponseWriter, r *http.Request) {
 	var update models.UpdateTransaction
 
-	account, err := services.GetAccount(r)
+	account, err := common.GetAccount(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
