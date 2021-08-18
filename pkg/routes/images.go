@@ -19,7 +19,6 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
-	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
@@ -157,7 +156,7 @@ func createRepoForImage(i *models.Image, ctx context.Context) *models.Repo {
 		log.Error(tx.Error)
 		panic(tx.Error)
 	}
-	rb := commits.InitRepoBuilder(ctx)
+	rb := services.InitRepoBuilder(ctx)
 	repo, err := rb.ImportRepo(repo)
 	if err != nil {
 		log.Error(err)

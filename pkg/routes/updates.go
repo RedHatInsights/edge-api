@@ -13,10 +13,10 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
-	"github.com/redhatinsights/edge-api/pkg/commits"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services"
 
 	apierrors "github.com/redhatinsights/edge-api/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -323,7 +323,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, result.Error.Error(), http.StatusBadRequest)
 	}
 	log.Infof("AddUpdate:: call:: RepoBuilderInstance.BuildUpdateRepo")
-	repoBuilder := commits.InitRepoBuilder(r.Context())
+	repoBuilder := services.InitRepoBuilder(r.Context())
 	go repoBuilder.BuildUpdateRepo(update)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(update)
