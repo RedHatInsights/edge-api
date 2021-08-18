@@ -21,7 +21,7 @@ type Uploader interface {
 	UploadFile(fname string, uploadPath string) (string, error)
 }
 
-//S3Uploader defines the mechanism to upload data to S3
+// S3Uploader defines the mechanism to upload data to S3
 type S3Uploader struct {
 	Client            *s3.S3
 	S3ManagerUploader *s3manager.Uploader

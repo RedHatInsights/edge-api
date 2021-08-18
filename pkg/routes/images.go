@@ -328,24 +328,24 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	go postProcessImage(image.ID, r.Context())
 }
 
-var imageFilters = services.ComposeFilters(
-	services.OneOfFilterHandler(&services.Filter{
+var imageFilters = common.ComposeFilters(
+	common.OneOfFilterHandler(&common.Filter{
 		QueryParam: "status",
 		DBField:    "images.status",
 	}),
-	services.ContainFilterHandler(&services.Filter{
+	common.ContainFilterHandler(&common.Filter{
 		QueryParam: "name",
 		DBField:    "images.name",
 	}),
-	services.ContainFilterHandler(&services.Filter{
+	common.ContainFilterHandler(&common.Filter{
 		QueryParam: "distribution",
 		DBField:    "images.distribution",
 	}),
-	services.CreatedAtFilterHandler(&services.Filter{
+	common.CreatedAtFilterHandler(&common.Filter{
 		QueryParam: "created_at",
 		DBField:    "images.created_at",
 	}),
-	services.SortFilterHandler("images", "created_at", "DESC"),
+	common.SortFilterHandler("images", "created_at", "DESC"),
 )
 
 type validationError struct {
@@ -364,7 +364,7 @@ func validateGetAllImagesSearchParams(next http.Handler) http.Handler {
 			}
 		}
 		if val := r.URL.Query().Get("created_at"); val != "" {
-			if _, err := time.Parse(services.LayoutISO, val); err != nil {
+			if _, err := time.Parse(common.LayoutISO, val); err != nil {
 				errs = append(errs, validationError{Key: "created_at", Reason: err.Error()})
 			}
 		}
