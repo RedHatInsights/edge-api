@@ -17,9 +17,9 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/edge-api/pkg/files"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/playbooks"
+	"github.com/redhatinsights/edge-api/pkg/services"
 
 	"github.com/cavaliercoder/grab"
 	log "github.com/sirupsen/logrus"
@@ -116,12 +116,12 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 
 	}
 
-	var uploader files.Uploader
-	uploader = &files.FileUploader{
+	var uploader services.Uploader
+	uploader = &services.FileUploader{
 		BaseDir: path,
 	}
 	if cfg.BucketName != "" {
-		uploader = files.NewS3Uploader()
+		uploader = services.NewS3Uploader()
 	}
 	// FIXME: Need to actually do something with the return string for Server
 
@@ -248,12 +248,12 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		return nil, err
 	}
 
-	var uploader files.Uploader
-	uploader = &files.FileUploader{
+	var uploader services.Uploader
+	uploader = &services.FileUploader{
 		BaseDir: path,
 	}
 	if cfg.BucketName != "" {
-		uploader = files.NewS3Uploader()
+		uploader = services.NewS3Uploader()
 	}
 
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/

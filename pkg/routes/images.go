@@ -23,8 +23,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
-	"github.com/redhatinsights/edge-api/pkg/files"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -691,12 +691,12 @@ func downloadISO(isoName string, url string) error {
 // Upload finished ISO to S3
 func uploadISO(image *models.Image, imageName string) error {
 	cfg := config.Get()
-	var uploader files.Uploader
-	uploader = &files.FileUploader{
+	var uploader services.Uploader
+	uploader = &services.FileUploader{
 		BaseDir: "./",
 	}
 	if cfg.BucketName != "" {
-		uploader = files.NewS3Uploader()
+		uploader = services.NewS3Uploader()
 	}
 
 	uploadPath := fmt.Sprintf("%s/isos/%s.iso", image.Account, image.Name)

@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/files"
+	"github.com/redhatinsights/edge-api/pkg/services"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -77,12 +77,12 @@ func WriteTemplate(templateInfo TemplateRemoteInfo, account string) (string, err
 		return "", err
 	}
 
-	var uploader files.Uploader
-	uploader = &files.FileUploader{
+	var uploader services.Uploader
+	uploader = &services.FileUploader{
 		BaseDir: "./",
 	}
 	if cfg.BucketName != "" {
-		uploader = files.NewS3Uploader()
+		uploader = services.NewS3Uploader()
 	}
 	uploadPath := fmt.Sprintf("%s/playbooks/%s", account, fname)
 	repoURL, err := uploader.UploadFile(tmpfilepath, uploadPath)

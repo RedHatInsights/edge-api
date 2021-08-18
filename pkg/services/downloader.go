@@ -1,4 +1,4 @@
-package files
+package services
 
 import (
 	"io"
@@ -6,8 +6,16 @@ import (
 	"os"
 )
 
+// Downloader is the interface that downloads a source into a path
+type Downloader interface {
+	DownloadToPath(source string, destinationPath string) error
+}
+
+// HTTPDownloader implements Downloader and downloads from a URL through HTTP
+type HTTPDownloader struct{}
+
 // CommitDownloader download function that puts the source_url into the destination_path on the local filesystem
-func CommitDownloader(sourceURL string, destinationPath string) error {
+func (d *HTTPDownloader) CommitDownloader(sourceURL string, destinationPath string) error {
 
 	resp, err := http.Get(sourceURL)
 	if err != nil {
