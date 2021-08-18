@@ -1,32 +1,51 @@
-package common
+package services
 
 import (
 	"archive/tar"
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
+	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
-	"github.com/redhatinsights/platform-go-middlewares/request_id"
+	log "github.com/sirupsen/logrus"
 )
 
-type contextKey int
+type paginationContextKey int
 
 const (
 	// PaginationKey is used to store pagination data in request context
-	PaginationKey contextKey = 1
-	defaultLimit             = 100
-	defaultOffset            = 0
+	PaginationKey paginationContextKey = 1
+	defaultLimit  int                  = 100
+	defaultOffset int                  = 0
+	// TrailingSlashIndex is the index used to remove trailing slashs from path prefixes
+	TrailingSlashIndex int = 1
 )
+
+func getNameAndPrefix(r *http.Request) (string, string, error) {
+	name := chi.URLParam(r, "name")
+	log.Debugf("getNameAndPrefix::name: %#v", name)
+	if name == "" {
+		return "", "", fmt.Errorf("repo name not provided")
+	}
+	pathPrefix := getPathPrefix(r.URL.Path, name)
+	return name, pathPrefix, nil
+}
+
+func getPathPrefix(path string, name string) string {
+	_r := strings.Index(path, "/"+name+"/")
+	log.Debugf("getNameAndPrefix::_r: %#v", _r)
+	pathPrefix := string(path[:_r+TrailingSlashIndex])
+	log.Debugf("getNameAndPrefix::pathPrefix: %#v", pathPrefix)
+	return pathPrefix
+}
 
 // GetAccount from http request header
 func GetAccount(r *http.Request) (string, error) {
@@ -43,23 +62,6 @@ func GetAccount(r *http.Request) (string, error) {
 	}
 	return "", fmt.Errorf("cannot find account number")
 
-}
-
-// GetOutgoingHeaders returns Red Hat Insights headers from our request to use it
-// in other request that will be used when communicating in Red Hat Insights services
-func GetOutgoingHeaders(ctx context.Context) map[string]string {
-	requestId := request_id.GetReqID(ctx)
-	headers := map[string]string{"x-rh-insights-request-id": requestId}
-	if config.Get().Auth {
-		xhrid := identity.Get(ctx)
-		identityHeaders, err := json.Marshal(xhrid)
-		if err != nil {
-			log.Fatal(err)
-			panic(err)
-		}
-		headers["x-rh-identity"] = base64.StdEncoding.EncodeToString(identityHeaders)
-	}
-	return headers
 }
 
 // StatusOK returns a simple 200 status code

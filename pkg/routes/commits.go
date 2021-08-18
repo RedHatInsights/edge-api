@@ -1,4 +1,4 @@
-package commits
+package routes
 
 import (
 	"context"
@@ -13,9 +13,9 @@ import (
 
 	"github.com/go-chi/chi"
 
-	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services"
 )
 
 func commitFromReadCloser(rc io.ReadCloser) (*models.Commit, error) {
@@ -25,16 +25,16 @@ func commitFromReadCloser(rc io.ReadCloser) (*models.Commit, error) {
 	return &commit, err
 }
 
-// MakeRouter adds support for operations on commits
-func MakeRouter(sub chi.Router) {
-	sub.Post("/", Add)
-	sub.With(common.Paginate).Get("/", GetAll)
+// MakeCommitsRouter adds support for operations on commits
+func MakeCommitsRouter(sub chi.Router) {
+	sub.Post("/", AddCommit)
+	sub.With(services.Paginate).Get("/", GetAllCommits)
 	sub.Route("/{commitId}", func(r chi.Router) {
 		r.Use(CommitCtx)
-		r.Get("/", GetByID)
+		r.Get("/", GetCommitByID)
 		r.Get("/repo/*", ServeRepo)
-		r.Put("/", Update)
-		r.Patch("/", Patch)
+		r.Put("/", UpdateCommit)
+		r.Patch("/", PatchCommit)
 	})
 }
 
@@ -43,15 +43,15 @@ func MakeRouter(sub chi.Router) {
 // "commit" would make the perfect key in the context object.  See the
 // documentation: https://golang.org/pkg/context/#WithValue for further
 // rationale.
-type key int
+type commitTypeKey int
 
-const commitKey key = 0
+const commitKey commitTypeKey = iota
 
 // CommitCtx is a handler for Commit requests
 func CommitCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var commit models.Commit
-		account, err := common.GetAccount(r)
+		account, err := services.GetAccount(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -73,8 +73,8 @@ func CommitCtx(next http.Handler) http.Handler {
 	})
 }
 
-// Add a commit object to the database for an account
-func Add(w http.ResponseWriter, r *http.Request) {
+// AddCommit a commit object to the database for an account
+func AddCommit(w http.ResponseWriter, r *http.Request) {
 
 	commit, err := commitFromReadCloser(r.Body)
 	if err != nil {
@@ -82,7 +82,7 @@ func Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	commit.Account, err = common.GetAccount(r)
+	commit.Account, err = services.GetAccount(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -93,11 +93,11 @@ func Add(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetAll commit objects from the database for an account
-func GetAll(w http.ResponseWriter, r *http.Request) {
+// GetAllCommits commit objects from the database for an account
+func GetAllCommits(w http.ResponseWriter, r *http.Request) {
 	var commits []models.Commit
-	account, err := common.GetAccount(r)
-	pagination := common.GetPagination(r)
+	account, err := services.GetAccount(r)
+	pagination := services.GetPagination(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -111,15 +111,15 @@ func GetAll(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&commits)
 }
 
-// GetByID obtains a commit from the database for an account
-func GetByID(w http.ResponseWriter, r *http.Request) {
+// GetCommitByID obtains a commit from the database for an account
+func GetCommitByID(w http.ResponseWriter, r *http.Request) {
 	if commit := getCommit(w, r); commit != nil {
 		json.NewEncoder(w).Encode(commit)
 	}
 }
 
-// Update a commit object in the database for an an account
-func Update(w http.ResponseWriter, r *http.Request) {
+// UpdateCommit a commit object in the database for an an account
+func UpdateCommit(w http.ResponseWriter, r *http.Request) {
 	commit := getCommit(w, r)
 	if commit == nil {
 		return
@@ -191,8 +191,8 @@ func applyPatch(commit *models.Commit, incoming *models.Commit) {
 	commit.UpdatedAt = time.Now()
 }
 
-// Patch a commit object in the database for an account
-func Patch(w http.ResponseWriter, r *http.Request) {
+// PatchCommit a commit object in the database for an account
+func PatchCommit(w http.ResponseWriter, r *http.Request) {
 	commit := getCommit(w, r)
 	if commit == nil {
 		return
@@ -230,7 +230,7 @@ func ServeRepo(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		common.Untar(resp.Body, path)
+		services.Untar(resp.Body, path)
 	}
 
 	_r := strings.Index(r.URL.Path, "/repo")

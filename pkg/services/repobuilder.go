@@ -1,4 +1,4 @@
-package commits
+package services
 
 import (
 	"context"
@@ -15,30 +15,27 @@ import (
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
-	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/edge-api/pkg/files"
 	"github.com/redhatinsights/edge-api/pkg/models"
-	"github.com/redhatinsights/edge-api/pkg/playbooks"
 
 	"github.com/cavaliercoder/grab"
 	log "github.com/sirupsen/logrus"
 )
 
-// InitRepoBuilder initializes the repository builder in this package
-func InitRepoBuilder(ctx context.Context) *RepoBuilder {
-	return &RepoBuilder{ctx: ctx}
-}
-
 // RepoBuilderInterface defines the interface of a repository builder
 type RepoBuilderInterface interface {
-	BuildUpdateRepo(ut *models.UpdateTransaction, ctx context.Context) (*models.UpdateTransaction, error)
+	BuildUpdateRepo(ut *models.UpdateTransaction) (*models.UpdateTransaction, error)
 	ImportRepo(r *models.Repo) (*models.Repo, error)
 }
 
 // RepoBuilder is the implementation of a RepoBuilderInterface
 type RepoBuilder struct {
 	ctx context.Context
+}
+
+// InitRepoBuilder initializes the repository builder in this package
+func InitRepoBuilder(ctx context.Context) *RepoBuilder {
+	return &RepoBuilder{ctx: ctx}
 }
 
 // BuildUpdateRepo build an update repo with the set of commits all merged into a single repo
@@ -116,12 +113,12 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 
 	}
 
-	var uploader files.Uploader
-	uploader = &files.FileUploader{
+	var uploader Uploader
+	uploader = &FileUploader{
 		BaseDir: path,
 	}
 	if cfg.BucketName != "" {
-		uploader = files.NewS3Uploader()
+		uploader = NewS3Uploader()
 	}
 	// FIXME: Need to actually do something with the return string for Server
 
@@ -138,7 +135,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	if update.Repo == nil {
 		//  Check for the existence of a Repo that already has this commit and don't duplicate
 		var repo *models.Repo
-		repo, err = common.GetRepoByCommitID(update.CommitID)
+		repo, err = GetRepoByCommitID(update.CommitID)
 		if err == nil {
 			update.Repo = repo
 		} else {
@@ -159,13 +156,13 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	// FIXME - implement playbook dispatcher scheduling
 	// 1. Create template Playbook
 	// 2. Upload templated playbook
-	var remoteInfo playbooks.TemplateRemoteInfo
+	var remoteInfo TemplateRemoteInfo
 	remoteInfo.RemoteURL = update.Repo.URL
 	remoteInfo.RemoteName = "main-test"
 	remoteInfo.ContentURL = update.Repo.URL
 	remoteInfo.UpdateTransaction = int(update.ID)
 	remoteInfo.GpgVerify = "true"
-	playbookURL, err := playbooks.WriteTemplate(remoteInfo, update.Account)
+	playbookURL, err := WriteTemplate(remoteInfo, update.Account)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -175,12 +172,12 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	dispatchRecords := update.DispatchRecords
 	for _, device := range update.Devices {
 		var updateDevice *models.Device
-		updateDevice, err = common.GetDeviceByUUID(device.UUID)
+		updateDevice, err = GetDeviceByUUID(device.UUID)
 		if err != nil {
-			log.Errorf("Error on common.GetDeviceByUUID: %#v ", err.Error())
+			log.Errorf("Error on GetDeviceByUUID: %#v ", err.Error())
 			return nil, err
 		}
-		// Create new &playbooks.DispatcherPayload{}
+		// Create new &DispatcherPayload{}
 		payloadDispatcher := playbookdispatcher.DispatcherPayload{
 			Recipient:   device.RHCClientID,
 			PlaybookURL: playbookURL,
@@ -248,12 +245,12 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		return nil, err
 	}
 
-	var uploader files.Uploader
-	uploader = &files.FileUploader{
+	var uploader Uploader
+	uploader = &FileUploader{
 		BaseDir: path,
 	}
 	if cfg.BucketName != "" {
-		uploader = files.NewS3Uploader()
+		uploader = NewS3Uploader()
 	}
 
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
@@ -310,7 +307,7 @@ func DownloadExtractVersionRepo(c *models.Commit, dest string) error {
 		log.Error(err)
 		return err
 	}
-	err = common.Untar(tarFile, filepath.Join(dest))
+	err = Untar(tarFile, filepath.Join(dest))
 	if err != nil {
 		log.Errorf("Failed to untar file: %s", filepath.Join(dest, tarFileName))
 		log.Error(err)

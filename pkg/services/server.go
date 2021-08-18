@@ -1,4 +1,4 @@
-package repo
+package services
 
 import (
 	"encoding/json"
@@ -15,7 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	log "github.com/sirupsen/logrus"
 )
@@ -92,7 +91,7 @@ func (p *S3Proxy) ServeRepo(w http.ResponseWriter, r *http.Request) {
 
 	account := chi.URLParam(r, "account")
 	if account == "" {
-		account, err = common.GetAccount(r)
+		account, err = GetAccount(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

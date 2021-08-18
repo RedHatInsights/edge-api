@@ -1,4 +1,4 @@
-package repo
+package routes
 
 import (
 	"encoding/json"
@@ -6,15 +6,22 @@ import (
 	"path/filepath"
 
 	"github.com/go-chi/chi"
-	"github.com/redhatinsights/edge-api/pkg/common"
+	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/services"
 )
 
-//MakeRouter defines the available actions for Repos
-func MakeRouter(server Server) func(sub chi.Router) {
-	return func(sub chi.Router) {
-		sub.Post("/", CreateRepo)
-		sub.Get("/{name}/*", server.ServeRepo)
+// MakeReposRouter defines the available actions for Repos
+func MakeReposRouter(sub chi.Router) {
+	cfg := config.Get()
+	var server services.Server
+	server = &services.FileServer{
+		BasePath: "/tmp",
 	}
+	if cfg.BucketName != "" {
+		server = services.NewS3Proxy()
+	}
+	sub.Post("/", CreateRepo)
+	sub.Get("/{name}/*", server.ServeRepo)
 }
 
 type createRequest struct {
@@ -53,7 +60,7 @@ func CreateRepo(w http.ResponseWriter, r *http.Request) {
 
 	path := filepath.Join("/tmp", cr.Name)
 
-	common.Untar(resp.Body, path)
+	services.Untar(resp.Body, path)
 
 	res := &createResponse{
 		RepoURL: filepath.Join(

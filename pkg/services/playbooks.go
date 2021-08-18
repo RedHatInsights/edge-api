@@ -1,14 +1,11 @@
-package playbooks
+package services
 
 import (
 	"fmt"
 	"os"
 	"text/template"
 
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/files"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -32,13 +29,6 @@ type TemplateRemoteInfo struct {
 	ContentURL        string
 	GpgVerify         string
 	UpdateTransaction int
-}
-
-//S3Uploader defines the mechanism to upload data to S3
-type S3Uploader struct {
-	Client            *s3.S3
-	S3ManagerUploader *s3manager.Uploader
-	Bucket            string
 }
 
 // WriteTemplate will parse the values to the template
@@ -77,12 +67,12 @@ func WriteTemplate(templateInfo TemplateRemoteInfo, account string) (string, err
 		return "", err
 	}
 
-	var uploader files.Uploader
-	uploader = &files.FileUploader{
+	var uploader Uploader
+	uploader = &FileUploader{
 		BaseDir: "./",
 	}
 	if cfg.BucketName != "" {
-		uploader = files.NewS3Uploader()
+		uploader = NewS3Uploader()
 	}
 	uploadPath := fmt.Sprintf("%s/playbooks/%s", account, fname)
 	repoURL, err := uploader.UploadFile(tmpfilepath, uploadPath)

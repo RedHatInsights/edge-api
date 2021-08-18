@@ -1,9 +1,10 @@
-package images
+package routes
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"net/http"
 	"os"
@@ -13,31 +14,36 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-	"text/template"
 	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
-	"github.com/redhatinsights/edge-api/pkg/commits"
-	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
-
-	"github.com/redhatinsights/edge-api/pkg/files"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services"
 	log "github.com/sirupsen/logrus"
 )
 
-// MakeRouter adds support for operations on images
-func MakeRouter(sub chi.Router) {
-	sub.With(validateGetAllSearchParams).With(common.Paginate).Get("/", GetAll)
+// This provides type safety in the context object for our "image" key.  We
+// _could_ use a string but we shouldn't just in case someone else decides that
+// "image" would make the perfect key in the context object.  See the
+// documentation: https://golang.org/pkg/context/#WithValue for further
+// rationale.
+type imageTypeKey int
+
+const imageKey imageTypeKey = iota
+
+// MakeImageRouter adds support for operations on images
+func MakeImagesRouter(sub chi.Router) {
+	sub.With(validateGetAllImagesSearchParams).With(services.Paginate).Get("/", GetAllImages)
 	sub.Get("/reserved-usernames", GetReservedUsernames)
-	sub.Post("/", Create)
+	sub.Post("/", CreateImage)
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageCtx)
-		r.Get("/", GetByID)
-		r.Get("/status", GetStatusByID)
+		r.Get("/", GetImageByID)
+		r.Get("/status", GetImageStatusByID)
 		r.Get("/repo", GetRepoForImage)
 		r.Get("/metadata", GetMetadataForImage)
 		r.Post("/installer", CreateInstallerForImage)
@@ -45,15 +51,6 @@ func MakeRouter(sub chi.Router) {
 		r.Post("/kickstart", CreateKickStartForImage)
 	})
 }
-
-// This provides type safety in the context object for our "image" key.  We
-// _could_ use a string but we shouldn't just in case someone else decides that
-// "image" would make the perfect key in the context object.  See the
-// documentation: https://golang.org/pkg/context/#WithValue for further
-// rationale.
-type key int
-
-const imageKey key = 1
 
 var validStatuses = []string{models.ImageStatusCreated, models.ImageStatusBuilding, models.ImageStatusError, models.ImageStatusSuccess}
 
@@ -64,7 +61,7 @@ var WaitGroup sync.WaitGroup
 func ImageCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var image models.Image
-		account, err := common.GetAccount(r)
+		account, err := services.GetAccount(r)
 		if err != nil {
 			err := errors.NewBadRequest(err.Error())
 			w.WriteHeader(err.Status)
@@ -158,7 +155,7 @@ func createRepoForImage(i *models.Image, ctx context.Context) *models.Repo {
 		log.Error(tx.Error)
 		panic(tx.Error)
 	}
-	rb := commits.InitRepoBuilder(ctx)
+	rb := services.InitRepoBuilder(ctx)
 	repo, err := rb.ImportRepo(repo)
 	if err != nil {
 		log.Error(err)
@@ -287,10 +284,10 @@ func postProcessImage(id uint, ctx context.Context) {
 	}
 }
 
-// Create creates an image on hosted image builder.
+// CreateImage creates an image on hosted image builder.
 // It always creates a commit on Image Builder.
 // We're creating a update on the background to transfer the commit to our repo.
-func Create(w http.ResponseWriter, r *http.Request) {
+func CreateImage(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var image *models.Image
 	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
@@ -307,7 +304,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	account, err := common.GetAccount(r)
+	account, err := services.GetAccount(r)
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
@@ -330,24 +327,24 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	go postProcessImage(image.ID, r.Context())
 }
 
-var imageFilters = common.ComposeFilters(
-	common.OneOfFilterHandler(&common.Filter{
+var imageFilters = services.ComposeFilters(
+	services.OneOfFilterHandler(&services.Filter{
 		QueryParam: "status",
 		DBField:    "images.status",
 	}),
-	common.ContainFilterHandler(&common.Filter{
+	services.ContainFilterHandler(&services.Filter{
 		QueryParam: "name",
 		DBField:    "images.name",
 	}),
-	common.ContainFilterHandler(&common.Filter{
+	services.ContainFilterHandler(&services.Filter{
 		QueryParam: "distribution",
 		DBField:    "images.distribution",
 	}),
-	common.CreatedAtFilterHandler(&common.Filter{
+	services.CreatedAtFilterHandler(&services.Filter{
 		QueryParam: "created_at",
 		DBField:    "images.created_at",
 	}),
-	common.SortFilterHandler("images", "created_at", "DESC"),
+	services.SortFilterHandler("images", "created_at", "DESC"),
 )
 
 type validationError struct {
@@ -355,7 +352,7 @@ type validationError struct {
 	Reason string
 }
 
-func validateGetAllSearchParams(next http.Handler) http.Handler {
+func validateGetAllImagesSearchParams(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		errs := []validationError{}
 		if statuses, ok := r.URL.Query()["status"]; ok {
@@ -366,7 +363,7 @@ func validateGetAllSearchParams(next http.Handler) http.Handler {
 			}
 		}
 		if val := r.URL.Query().Get("created_at"); val != "" {
-			if _, err := time.Parse(common.LayoutISO, val); err != nil {
+			if _, err := time.Parse(services.LayoutISO, val); err != nil {
 				errs = append(errs, validationError{Key: "created_at", Reason: err.Error()})
 			}
 		}
@@ -389,13 +386,13 @@ func validateGetAllSearchParams(next http.Handler) http.Handler {
 	})
 }
 
-// GetAll image objects from the database for an account
-func GetAll(w http.ResponseWriter, r *http.Request) {
+// GetAllImages image objects from the database for an account
+func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	var count int64
 	var images []models.Image
 	result := imageFilters(r, db.DB)
-	pagination := common.GetPagination(r)
-	account, err := common.GetAccount(r)
+	pagination := services.GetPagination(r)
+	account, err := services.GetAccount(r)
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
@@ -469,8 +466,8 @@ func updateImageStatus(image *models.Image, ctx context.Context) (*models.Image,
 	return image, nil
 }
 
-// GetStatusByID returns the image status.
-func GetStatusByID(w http.ResponseWriter, r *http.Request) {
+// GetImageStatusByID returns the image status.
+func GetImageStatusByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		json.NewEncoder(w).Encode(struct {
 			Status string
@@ -484,8 +481,8 @@ func GetStatusByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetByID obtains a image from the database for an account
-func GetByID(w http.ResponseWriter, r *http.Request) {
+// GetImageByID obtains a image from the database for an account
+func GetImageByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		json.NewEncoder(w).Encode(image)
 	}
@@ -515,7 +512,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	repo, err := common.GetRepoByCommitID(image.CommitID)
+	repo, err := services.GetRepoByCommitID(image.CommitID)
 	if err != nil {
 		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
 		w.WriteHeader(err.Status)
@@ -692,12 +689,12 @@ func downloadISO(isoName string, url string) error {
 // Upload finished ISO to S3
 func uploadISO(image *models.Image, imageName string) error {
 	cfg := config.Get()
-	var uploader files.Uploader
-	uploader = &files.FileUploader{
+	var uploader services.Uploader
+	uploader = &services.FileUploader{
 		BaseDir: "./",
 	}
 	if cfg.BucketName != "" {
-		uploader = files.NewS3Uploader()
+		uploader = services.NewS3Uploader()
 	}
 
 	uploadPath := fmt.Sprintf("%s/isos/%s.iso", image.Account, image.Name)
@@ -742,7 +739,7 @@ func cleanFiles(kickstart string, isoName string, imageID uint) error {
 //GetRepoForImage gets the repository for a Image
 func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		repo, err := common.GetRepoByCommitID(image.CommitID)
+		repo, err := services.GetRepoByCommitID(image.CommitID)
 		if err != nil {
 			err := errors.NewNotFound(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.Commit.ID))
 			w.WriteHeader(err.Status)

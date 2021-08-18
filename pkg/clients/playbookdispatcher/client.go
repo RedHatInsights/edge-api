@@ -9,7 +9,7 @@ import (
 	"net/http"
 
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/common"
+	"github.com/redhatinsights/edge-api/pkg/clients"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -54,12 +54,12 @@ func (c *Client) ExecuteDispatcher(payload DispatcherPayload) ([]PlaybookDispatc
 
 	req.Header.Add("Content-Type", "application/json")
 
-	headers := common.GetOutgoingHeaders(c.ctx)
-	req.Header.Add("Authorization", fmt.Sprintf("PSK %s", c.psk))
+	headers := clients.GetOutgoingHeaders(c.ctx)
 	for key, value := range headers {
 		log.Infof("Playbook dispatcher headers: %#v, %#v", key, value)
 		req.Header.Add(key, value)
 	}
+	req.Header.Add("Authorization", fmt.Sprintf("PSK %s", c.psk))
 
 	log.Infof("ExecuteDispatcher:: req.Header:: %#v", req.Header)
 	client := &http.Client{}

@@ -1,4 +1,4 @@
-package updates
+package routes
 
 import (
 	"context"
@@ -6,61 +6,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
 	"github.com/go-chi/chi"
-	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
-
-var (
-	updateDevices = []models.Device{
-		{UUID: "1", DesiredHash: "11"},
-		{UUID: "2", DesiredHash: "11"},
-		{UUID: "3", DesiredHash: "22"},
-		{UUID: "4", DesiredHash: "12"},
-	}
-
-	updateTrans = []models.UpdateTransaction{
-		{
-			Account: "0000000",
-			Devices: []models.Device{updateDevices[0], updateDevices[1]},
-		},
-		{
-			Account: "0000001",
-			Devices: []models.Device{updateDevices[2], updateDevices[3]},
-		},
-	}
-)
-
-func setUp() {
-	config.Init()
-	config.Get().Debug = true
-	db.InitDB()
-	db.DB.AutoMigrate(
-		&models.Commit{},
-		&models.UpdateTransaction{},
-		&models.Device{},
-		&models.DispatchRecord{},
-	)
-	db.DB.Create(&updateTrans)
-}
-
-func tearDown() {
-	db.DB.Unscoped().Delete(&updateTrans)
-	for _, uTran := range updateTrans {
-		db.DB.Unscoped().Delete(&uTran)
-	}
-}
-
-func TestMain(m *testing.M) {
-	setUp()
-	retCode := m.Run()
-	tearDown()
-	os.Exit(retCode)
-}
 
 func TestGetDevicesStatus(t *testing.T) {
 	tt := []struct {
