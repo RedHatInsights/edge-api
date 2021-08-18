@@ -1,4 +1,4 @@
-package services
+package files
 
 import (
 	"io"
@@ -9,6 +9,11 @@ import (
 // Downloader is the interface that downloads a source into a path
 type Downloader interface {
 	DownloadToPath(source string, destinationPath string) error
+}
+
+// NewDownloader returns the main downloader used by Edge API
+func NewDownloader() Downloader {
+	return &HTTPDownloader{}
 }
 
 // HTTPDownloader implements Downloader and downloads from a URL through HTTP

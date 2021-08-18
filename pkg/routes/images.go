@@ -689,17 +689,10 @@ func downloadISO(isoName string, url string) error {
 
 // Upload finished ISO to S3
 func uploadISO(image *models.Image, imageName string) error {
-	cfg := config.Get()
-	var uploader services.Uploader
-	uploader = &services.FileUploader{
-		BaseDir: "./",
-	}
-	if cfg.BucketName != "" {
-		uploader = services.NewS3Uploader()
-	}
 
 	uploadPath := fmt.Sprintf("%s/isos/%s.iso", image.Account, image.Name)
-	url, err := uploader.UploadFile(imageName, uploadPath)
+	filesService := services.NewFilesService()
+	url, err := filesService.Uploader.UploadFile(imageName, uploadPath)
 
 	if err != nil {
 		return fmt.Errorf("error uploading the ISO :: %s :: %s", uploadPath, err.Error())

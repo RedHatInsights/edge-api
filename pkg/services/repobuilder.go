@@ -31,13 +31,13 @@ type RepoBuilderInterface interface {
 
 // RepoBuilder is the implementation of a RepoBuilderInterface
 type RepoBuilder struct {
-	ctx       context.Context
-	extractor Extractor
+	ctx          context.Context
+	filesService *FilesService
 }
 
 // InitRepoBuilder initializes the repository builder in this package
 func InitRepoBuilder(ctx context.Context) *RepoBuilder {
-	return &RepoBuilder{ctx: ctx, extractor: NewExtractor()}
+	return &RepoBuilder{ctx: ctx, filesService: NewFilesService()}
 }
 
 // BuildUpdateRepo build an update repo with the set of commits all merged into a single repo
@@ -46,11 +46,11 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	log.Infof("Repobuilder::BuildUpdateRepo:: Begin")
 	if ut == nil {
 		log.Error("nil pointer to models.UpdateTransaction provided")
-		return &models.UpdateTransaction{}, errors.New("Invalid models.UpdateTransaction Provided: nil pointer")
+		return &models.UpdateTransaction{}, errors.New("invalid models.UpdateTransaction Provided: nil pointer")
 	}
 	if ut.Commit == nil {
 		log.Error("nil pointer to models.UpdateTransaction.Commit provided")
-		return &models.UpdateTransaction{}, errors.New("Invalid models.UpdateTransaction.Commit Provided: nil pointer")
+		return &models.UpdateTransaction{}, errors.New("invalid models.UpdateTransaction.Commit Provided: nil pointer")
 	}
 	cfg := config.Get()
 
@@ -114,19 +114,11 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 		}
 
 	}
-
-	var uploader Uploader
-	uploader = &FileUploader{
-		BaseDir: path,
-	}
-	if cfg.BucketName != "" {
-		uploader = NewS3Uploader()
-	}
 	// FIXME: Need to actually do something with the return string for Server
 
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
 	log.Infof("::BuildUpdateRepo:uploader.UploadRepo: BEGIN")
-	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(ut.RepoID), 10))
+	repoURL, err := rb.filesService.Uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(ut.RepoID), 10))
 	log.Infof("::BuildUpdateRepo:uploader.UploadRepo: FINISH")
 	log.Infof("::BuildUpdateRepo:repoURL: %#v", repoURL)
 	if err != nil {
@@ -246,17 +238,8 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		log.Error(err)
 		return nil, err
 	}
-
-	var uploader Uploader
-	uploader = &FileUploader{
-		BaseDir: path,
-	}
-	if cfg.BucketName != "" {
-		uploader = NewS3Uploader()
-	}
-
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
-	repoURL, err := uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(r.ID), 10))
+	repoURL, err := rb.filesService.Uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(r.ID), 10))
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -309,7 +292,7 @@ func (rb *RepoBuilder) DownloadExtractVersionRepo(c *models.Commit, dest string)
 		log.Error(err)
 		return err
 	}
-	err = rb.filesService.Untar(tarFile, filepath.Join(dest))
+	err = rb.filesService.Extractor.Extract(tarFile, filepath.Join(dest))
 	if err != nil {
 		log.Errorf("Failed to untar file: %s", filepath.Join(dest, tarFileName))
 		log.Error(err)

@@ -1,4 +1,4 @@
-package services
+package files
 
 import (
 	"archive/tar"
