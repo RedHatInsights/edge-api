@@ -166,7 +166,8 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	}
 
 	// Get the models.Commit from the Commit ID passed in via JSON
-	update.Commit, err = services.GetCommitByID(updateJSON.CommitID)
+	commitService := services.NewCommitService()
+	update.Commit, err = commitService.GetCommitByID(updateJSON.CommitID)
 	log.Infof("updateFromHTTP::update.Commit: %#v", update.Commit)
 	update.DispatchRecords = []models.DispatchRecord{}
 	if err != nil {

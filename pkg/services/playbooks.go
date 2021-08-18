@@ -79,5 +79,4 @@ func WriteTemplate(templateInfo TemplateRemoteInfo, account string) (string, err
 	os.Remove(tmpfilepath)
 	log.Infof("::WriteTemplate: ENDs")
 	return repoURL, nil
-
 }
