@@ -64,12 +64,6 @@ func GetAccount(r *http.Request) (string, error) {
 
 }
 
-// StatusOK returns a simple 200 status code
-func StatusOK(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-}
-
 // Untar file to destination path
 func Untar(rc io.ReadCloser, dst string) error {
 	defer rc.Close()
