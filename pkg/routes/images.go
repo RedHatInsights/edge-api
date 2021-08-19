@@ -156,7 +156,7 @@ func createRepoForImage(i *models.Image, ctx context.Context) *models.Repo {
 		log.Error(tx.Error)
 		panic(tx.Error)
 	}
-	rb := services.InitRepoBuilder(ctx)
+	rb := services.NewRepoBuilder(ctx)
 	repo, err := rb.ImportRepo(repo)
 	if err != nil {
 		log.Error(err)

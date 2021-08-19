@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 
 	"bytes"
 	"os"
@@ -14,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 
@@ -26,24 +24,22 @@ import (
 type RepoBuilderInterface interface {
 	BuildUpdateRepo(ut *models.UpdateTransaction) (*models.UpdateTransaction, error)
 	ImportRepo(r *models.Repo) (*models.Repo, error)
-	DownloadExtractVersionRepo(c *models.Commit, dest string)
+	DownloadExtractVersionRepo(c *models.Commit, dest string) error
 }
 
 // RepoBuilder is the implementation of a RepoBuilderInterface
 type RepoBuilder struct {
-	ctx           context.Context
-	filesService  *FilesService
-	repoService   RepoServiceInterface
-	deviceService DeviceServiceInterface
+	ctx          context.Context
+	filesService *FilesService
+	repoService  RepoServiceInterface
 }
 
-// InitRepoBuilder initializes the repository builder in this package
-func InitRepoBuilder(ctx context.Context) *RepoBuilder {
+// NewRepoBuilder initializes the repository builder in this package
+func NewRepoBuilder(ctx context.Context) RepoBuilderInterface {
 	return &RepoBuilder{
-		ctx:           ctx,
-		filesService:  NewFilesService(),
-		repoService:   NewRepoService(),
-		deviceService: NewDeviceService(),
+		ctx:          ctx,
+		filesService: NewFilesService(),
+		repoService:  NewRepoService(),
 	}
 }
 
@@ -154,69 +150,6 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	update.Repo.Status = models.RepoStatusSuccess
 	db.DB.Save(&update)
 
-	// FIXME - implement playbook dispatcher scheduling
-	// 1. Create template Playbook
-	// 2. Upload templated playbook
-	var remoteInfo TemplateRemoteInfo
-	remoteInfo.RemoteURL = update.Repo.URL
-	remoteInfo.RemoteName = "main-test"
-	remoteInfo.ContentURL = update.Repo.URL
-	remoteInfo.UpdateTransaction = int(update.ID)
-	remoteInfo.GpgVerify = "true"
-	playbookURL, err := WriteTemplate(remoteInfo, update.Account)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
-	log.Debugf("playbooks:WriteTemplate: %#v", playbookURL)
-	// 3. Loop through all devices in UpdateTransaction
-	dispatchRecords := update.DispatchRecords
-	for _, device := range update.Devices {
-		var updateDevice *models.Device
-		updateDevice, err = rb.deviceService.GetDeviceByUUID(device.UUID)
-		if err != nil {
-			log.Errorf("Error on GetDeviceByUUID: %#v ", err.Error())
-			return nil, err
-		}
-		// Create new &DispatcherPayload{}
-		payloadDispatcher := playbookdispatcher.DispatcherPayload{
-			Recipient:   device.RHCClientID,
-			PlaybookURL: playbookURL,
-			Account:     update.Account,
-		}
-		log.Infof("Call Execute Dispatcher: : %#v", payloadDispatcher)
-		client := playbookdispatcher.InitClient(rb.ctx)
-		exc, err := client.ExecuteDispatcher(payloadDispatcher)
-
-		if err != nil {
-			log.Errorf("Error on playbook-dispatcher-executuin: %#v ", err)
-			return nil, err
-		}
-		for _, excPlaybook := range exc {
-			if excPlaybook.StatusCode == http.StatusCreated {
-				device.Connected = true
-				dispatchRecord := &models.DispatchRecord{
-					Device:               updateDevice,
-					PlaybookURL:          repoURL,
-					Status:               models.DispatchRecordStatusCreated,
-					PlaybookDispatcherID: excPlaybook.PlaybookDispatcherID,
-				}
-				dispatchRecords = append(dispatchRecords, *dispatchRecord)
-			} else {
-				device.Connected = false
-				dispatchRecord := &models.DispatchRecord{
-					Device:      updateDevice,
-					PlaybookURL: repoURL,
-					Status:      models.DispatchRecordStatusError,
-				}
-				dispatchRecords = append(dispatchRecords, *dispatchRecord)
-			}
-
-		}
-		update.DispatchRecords = dispatchRecords
-	}
-	db.DB.Save(&update)
-	log.Infof("Repobuild::ends: update record %#v ", update)
 	return &update, nil
 }
 

@@ -325,9 +325,9 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	if result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusBadRequest)
 	}
-	log.Infof("AddUpdate:: call:: RepoBuilderInstance.BuildUpdateRepo")
-	repoBuilder := services.InitRepoBuilder(r.Context())
-	go repoBuilder.BuildUpdateRepo(update)
+	repoService := services.NewUpdateService(r.Context())
+	log.Infof("AddUpdate:: call:: RepoService.CreateUpdate")
+	go repoService.CreateUpdate(update)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(update)
 
