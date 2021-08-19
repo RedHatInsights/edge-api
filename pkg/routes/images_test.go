@@ -4,15 +4,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 )
 
 func TestCreateWasCalledWithWrongBody(t *testing.T) {
@@ -30,40 +33,6 @@ func TestCreateWasCalledWithWrongBody(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusInternalServerError)
 	}
-}
-
-type MockClient struct{}
-
-func (c *MockClient) ComposeCommit(image *models.Image, headers map[string]string) (*models.Image, error) {
-	return image, nil
-}
-
-func (c *MockClient) ComposeInstaller(repo *models.Repo, image *models.Image, headers map[string]string) (*models.Image, error) {
-	return image, nil
-}
-
-func (c *MockClient) GetCommitStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
-	image.Status = models.ImageStatusError
-	image.Commit.Status = models.ImageStatusError
-	return image, nil
-}
-
-func (c *MockClient) GetInstallerStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
-	image.Status = models.ImageStatusError
-	image.Installer.Status = models.ImageStatusError
-	return image, nil
-}
-func (c *MockClient) GetMetadata(image *models.Image, headers map[string]string) (*models.Image, error) {
-	return image, nil
-}
-
-type MockRepositoryBuilder struct{}
-
-func (rb *MockRepositoryBuilder) BuildUpdateRepo(u *models.UpdateTransaction, headers map[string]string) (*models.UpdateTransaction, error) {
-	return nil, nil
-}
-func (rb *MockRepositoryBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
-	return &testRepo, nil
 }
 
 func TestCreateWasCalledWithNameNotSet(t *testing.T) {
@@ -114,6 +83,16 @@ func TestCreate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctx := req.Context()
+	ctrl := gomock.NewController(t)
+
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any()).Return(nil)
+	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+	})
+	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(CreateImage)
 
@@ -152,11 +131,6 @@ func TestGetStatus(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-
-	// if ir.Status != models.ImageStatusError { // comes from the mock above
-	// 	t.Errorf("wrong image status: got %v want %v",
-	// 		ir.Status, models.ImageStatusError)
-	// }
 }
 
 func TestGetImageById(t *testing.T) {
@@ -267,7 +241,16 @@ func TestGetRepoForImage(t *testing.T) {
 	}
 	rr := httptest.NewRecorder()
 
-	ctx := context.WithValue(req.Context(), imageKey, &testImage)
+	ctx := req.Context()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRepoService := mock_services.NewMockRepoServiceInterface(ctrl)
+	mockRepoService.EXPECT().GetRepoByCommitID(gomock.Any()).Return(&testRepo, nil)
+	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+		RepoService: mockRepoService,
+	})
+	ctx = context.WithValue(ctx, imageKey, &testImage)
+	req = req.WithContext(ctx)
 	handler := http.HandlerFunc(GetRepoForImage)
 	handler.ServeHTTP(rr, req.WithContext(ctx))
 
@@ -301,16 +284,16 @@ func TestGetRepoForImageWhenNotFound(t *testing.T) {
 	}
 	rr := httptest.NewRecorder()
 
-	newImage := models.Image{
-		Account: "0000000",
-		Status:  models.ImageStatusBuilding,
-		Commit: &models.Commit{
-			Status: models.ImageStatusBuilding,
-		},
-	}
-	db.DB.Create(&newImage.Commit)
-	db.DB.Create(&newImage)
-	ctx := context.WithValue(req.Context(), imageKey, &newImage)
+	ctx := req.Context()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockRepoService := mock_services.NewMockRepoServiceInterface(ctrl)
+	mockRepoService.EXPECT().GetRepoByCommitID(gomock.Any()).Return(nil, errors.New("not found"))
+	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+		RepoService: mockRepoService,
+	})
+	ctx = context.WithValue(ctx, imageKey, &testImage)
+	req = req.WithContext(ctx)
 	handler := http.HandlerFunc(GetRepoForImage)
 	handler.ServeHTTP(rr, req.WithContext(ctx))
 
@@ -319,7 +302,4 @@ func TestGetRepoForImageWhenNotFound(t *testing.T) {
 			status, http.StatusNotFound)
 		return
 	}
-
-	db.DB.Delete(&newImage.Commit)
-	db.DB.Delete(&newImage)
 }

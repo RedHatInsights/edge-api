@@ -3,12 +3,12 @@ module github.com/redhatinsights/edge-api
 require (
 	github.com/aws/aws-sdk-go v1.38.51
 	github.com/cavaliercoder/grab v2.0.0+incompatible
-	github.com/coreos/go-etcd v2.0.0+incompatible // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/getkin/kin-openapi v0.65.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-openapi/runtime v0.19.29
+	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/jackc/pgproto3/v2 v2.0.7 // indirect

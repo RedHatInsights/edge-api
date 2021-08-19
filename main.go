@@ -15,7 +15,9 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/routes"
+	"github.com/redhatinsights/edge-api/pkg/services"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -66,6 +68,7 @@ func main() {
 		middleware.Recoverer,
 		middleware.Logger,
 		setupDocsMiddleware,
+		dependencies.Middleware,
 	)
 
 	// Unauthenticated routes
@@ -114,7 +117,7 @@ func main() {
 		if err := msrv.Shutdown(context.Background()); err != nil {
 			log.WithFields(log.Fields{"error": err}).Fatal("HTTP Server Shutdown failed")
 		}
-		routes.WaitGroup.Wait()
+		services.WaitGroup.Wait()
 		close(gracefulStop)
 	}()
 

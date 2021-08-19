@@ -43,32 +43,32 @@ func setUp() {
 	config.Init()
 	config.Get().Debug = true
 	db.InitDB()
-	err := db.DB.AutoMigrate(
-		&models.Commit{},
-		&models.UpdateTransaction{},
-		&models.Package{},
-		&models.Image{},
-		&models.Repo{},
-		&models.Device{},
-		&models.DispatchRecord{},
-	)
-	if err != nil {
-		panic(err)
-	}
-	testImage = models.Image{
-		Account: "0000000",
-		Status:  models.ImageStatusBuilding,
-		Commit: &models.Commit{
-			Status: models.ImageStatusBuilding,
-		},
-	}
-	db.DB.Create(&testImage.Commit)
-	db.DB.Create(&testImage)
-	testRepo = models.Repo{
-		Commit: testImage.Commit,
-	}
-	db.DB.Create(&testRepo)
-	db.DB.Create(&updateTrans)
+	// err := db.DB.AutoMigrate(
+	// 	&models.Commit{},
+	// 	&models.UpdateTransaction{},
+	// 	&models.Package{},
+	// 	&models.Image{},
+	// 	&models.Repo{},
+	// 	&models.Device{},
+	// 	&models.DispatchRecord{},
+	// )
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// testImage = models.Image{
+	// 	Account: "0000000",
+	// 	Status:  models.ImageStatusBuilding,
+	// 	Commit: &models.Commit{
+	// 		Status: models.ImageStatusBuilding,
+	// 	},
+	// }
+	// db.DB.Create(&testImage.Commit)
+	// db.DB.Create(&testImage)
+	// testRepo = models.Repo{
+	// 	Commit: testImage.Commit,
+	// }
+	// db.DB.Create(&testRepo)
+	// db.DB.Create(&updateTrans)
 
 }
 
