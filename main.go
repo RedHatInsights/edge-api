@@ -16,7 +16,6 @@ import (
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/routes"
-	"github.com/redhatinsights/edge-api/pkg/services"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -70,7 +69,7 @@ func main() {
 	)
 
 	// Unauthenticated routes
-	r.Get("/", services.StatusOK)
+	r.Get("/", routes.StatusOK)
 	r.Get("/api/edge/v1/openapi.json", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, cfg.OpenAPIFilePath)
 	})
@@ -90,7 +89,7 @@ func main() {
 	})
 
 	mr := chi.NewRouter()
-	mr.Get("/", services.StatusOK)
+	mr.Get("/", routes.StatusOK)
 	mr.Handle("/metrics", promhttp.Handler())
 
 	srv := http.Server{

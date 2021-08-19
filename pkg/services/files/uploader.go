@@ -1,4 +1,4 @@
-package services
+package files
 
 import (
 	"fmt"
@@ -21,7 +21,20 @@ type Uploader interface {
 	UploadFile(fname string, uploadPath string) (string, error)
 }
 
-//S3Uploader defines the mechanism to upload data to S3
+// NewUploader returns the uploader used by EdgeAPI based on configurations
+func NewUploader() Uploader {
+	cfg := config.Get()
+	var uploader Uploader
+	uploader = &FileUploader{
+		BaseDir: "./",
+	}
+	if cfg.BucketName != "" {
+		uploader = newS3Uploader()
+	}
+	return uploader
+}
+
+// S3Uploader defines the mechanism to upload data to S3
 type S3Uploader struct {
 	Client            *s3.S3
 	S3ManagerUploader *s3manager.Uploader
@@ -47,8 +60,7 @@ func (u *FileUploader) UploadFile(fname string, uploadPath string) (string, erro
 	return fname, nil
 }
 
-//NewS3Uploader creates a method to obtain a new S3 uploader
-func NewS3Uploader() *S3Uploader {
+func newS3Uploader() *S3Uploader {
 	cfg := config.Get()
 	var sess *session.Session
 	if cfg.Debug {

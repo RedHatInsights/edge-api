@@ -22,6 +22,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	log "github.com/sirupsen/logrus"
 )
@@ -37,7 +38,7 @@ const imageKey imageTypeKey = iota
 
 // MakeImageRouter adds support for operations on images
 func MakeImagesRouter(sub chi.Router) {
-	sub.With(validateGetAllImagesSearchParams).With(services.Paginate).Get("/", GetAllImages)
+	sub.With(validateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetAllImages)
 	sub.Get("/reserved-usernames", GetReservedUsernames)
 	sub.Post("/", CreateImage)
 	sub.Route("/{imageId}", func(r chi.Router) {
@@ -61,7 +62,7 @@ var WaitGroup sync.WaitGroup
 func ImageCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var image models.Image
-		account, err := services.GetAccount(r)
+		account, err := common.GetAccount(r)
 		if err != nil {
 			err := errors.NewBadRequest(err.Error())
 			w.WriteHeader(err.Status)
@@ -155,7 +156,7 @@ func createRepoForImage(i *models.Image, ctx context.Context) *models.Repo {
 		log.Error(tx.Error)
 		panic(tx.Error)
 	}
-	rb := services.InitRepoBuilder(ctx)
+	rb := services.NewRepoBuilder(ctx)
 	repo, err := rb.ImportRepo(repo)
 	if err != nil {
 		log.Error(err)
@@ -304,7 +305,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	account, err := services.GetAccount(r)
+	account, err := common.GetAccount(r)
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
@@ -327,24 +328,24 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	go postProcessImage(image.ID, r.Context())
 }
 
-var imageFilters = services.ComposeFilters(
-	services.OneOfFilterHandler(&services.Filter{
+var imageFilters = common.ComposeFilters(
+	common.OneOfFilterHandler(&common.Filter{
 		QueryParam: "status",
 		DBField:    "images.status",
 	}),
-	services.ContainFilterHandler(&services.Filter{
+	common.ContainFilterHandler(&common.Filter{
 		QueryParam: "name",
 		DBField:    "images.name",
 	}),
-	services.ContainFilterHandler(&services.Filter{
+	common.ContainFilterHandler(&common.Filter{
 		QueryParam: "distribution",
 		DBField:    "images.distribution",
 	}),
-	services.CreatedAtFilterHandler(&services.Filter{
+	common.CreatedAtFilterHandler(&common.Filter{
 		QueryParam: "created_at",
 		DBField:    "images.created_at",
 	}),
-	services.SortFilterHandler("images", "created_at", "DESC"),
+	common.SortFilterHandler("images", "created_at", "DESC"),
 )
 
 type validationError struct {
@@ -363,7 +364,7 @@ func validateGetAllImagesSearchParams(next http.Handler) http.Handler {
 			}
 		}
 		if val := r.URL.Query().Get("created_at"); val != "" {
-			if _, err := time.Parse(services.LayoutISO, val); err != nil {
+			if _, err := time.Parse(common.LayoutISO, val); err != nil {
 				errs = append(errs, validationError{Key: "created_at", Reason: err.Error()})
 			}
 		}
@@ -391,8 +392,8 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	var count int64
 	var images []models.Image
 	result := imageFilters(r, db.DB)
-	pagination := services.GetPagination(r)
-	account, err := services.GetAccount(r)
+	pagination := common.GetPagination(r)
+	account, err := common.GetAccount(r)
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
@@ -512,7 +513,8 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	repo, err := services.GetRepoByCommitID(image.CommitID)
+	repoService := services.NewRepoService()
+	repo, err := repoService.GetRepoByCommitID(image.CommitID)
 	if err != nil {
 		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
 		w.WriteHeader(err.Status)
@@ -688,17 +690,10 @@ func downloadISO(isoName string, url string) error {
 
 // Upload finished ISO to S3
 func uploadISO(image *models.Image, imageName string) error {
-	cfg := config.Get()
-	var uploader services.Uploader
-	uploader = &services.FileUploader{
-		BaseDir: "./",
-	}
-	if cfg.BucketName != "" {
-		uploader = services.NewS3Uploader()
-	}
 
 	uploadPath := fmt.Sprintf("%s/isos/%s.iso", image.Account, image.Name)
-	url, err := uploader.UploadFile(imageName, uploadPath)
+	filesService := services.NewFilesService()
+	url, err := filesService.Uploader.UploadFile(imageName, uploadPath)
 
 	if err != nil {
 		return fmt.Errorf("error uploading the ISO :: %s :: %s", uploadPath, err.Error())
@@ -739,7 +734,8 @@ func cleanFiles(kickstart string, isoName string, imageID uint) error {
 //GetRepoForImage gets the repository for a Image
 func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		repo, err := services.GetRepoByCommitID(image.CommitID)
+		repoService := services.NewRepoService()
+		repo, err := repoService.GetRepoByCommitID(image.CommitID)
 		if err != nil {
 			err := errors.NewNotFound(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.Commit.ID))
 			w.WriteHeader(err.Status)

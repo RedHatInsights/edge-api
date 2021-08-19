@@ -131,7 +131,7 @@ func TestGetStatus(t *testing.T) {
 	}
 	rr := httptest.NewRecorder()
 	ctx := context.WithValue(req.Context(), imageKey, &testImage)
-	handler := http.HandlerFunc(GetStatusByID)
+	handler := http.HandlerFunc(GetImageStatusByID)
 	handler.ServeHTTP(rr, req.WithContext(ctx))
 
 	if status := rr.Code; status != http.StatusOK {
@@ -237,7 +237,7 @@ func TestValidateGetAllSearchParams(t *testing.T) {
 			t.Fatal(err)
 		}
 		w := httptest.NewRecorder()
-		validateGetAllSearchParams(next).ServeHTTP(w, req)
+		validateGetAllImagesSearchParams(next).ServeHTTP(w, req)
 
 		resp := w.Result()
 		jsonBody := []validationError{}

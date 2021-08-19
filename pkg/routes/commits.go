@@ -15,6 +15,7 @@ import (
 
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 )
 
@@ -28,7 +29,7 @@ func commitFromReadCloser(rc io.ReadCloser) (*models.Commit, error) {
 // MakeCommitsRouter adds support for operations on commits
 func MakeCommitsRouter(sub chi.Router) {
 	sub.Post("/", AddCommit)
-	sub.With(services.Paginate).Get("/", GetAllCommits)
+	sub.With(common.Paginate).Get("/", GetAllCommits)
 	sub.Route("/{commitId}", func(r chi.Router) {
 		r.Use(CommitCtx)
 		r.Get("/", GetCommitByID)
@@ -51,7 +52,7 @@ const commitKey commitTypeKey = iota
 func CommitCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var commit models.Commit
-		account, err := services.GetAccount(r)
+		account, err := common.GetAccount(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -82,7 +83,7 @@ func AddCommit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	commit.Account, err = services.GetAccount(r)
+	commit.Account, err = common.GetAccount(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -96,8 +97,8 @@ func AddCommit(w http.ResponseWriter, r *http.Request) {
 // GetAllCommits commit objects from the database for an account
 func GetAllCommits(w http.ResponseWriter, r *http.Request) {
 	var commits []models.Commit
-	account, err := services.GetAccount(r)
-	pagination := services.GetPagination(r)
+	account, err := common.GetAccount(r)
+	pagination := common.GetPagination(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -230,7 +231,8 @@ func ServeRepo(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		services.Untar(resp.Body, path)
+		filesService := services.NewFilesService()
+		filesService.Extractor.Extract(resp.Body, path)
 	}
 
 	_r := strings.Index(r.URL.Path, "/repo")

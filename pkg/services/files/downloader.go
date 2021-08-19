@@ -1,4 +1,4 @@
-package services
+package files
 
 import (
 	"io"
@@ -11,11 +11,16 @@ type Downloader interface {
 	DownloadToPath(source string, destinationPath string) error
 }
 
+// NewDownloader returns the main downloader used by Edge API
+func NewDownloader() Downloader {
+	return &HTTPDownloader{}
+}
+
 // HTTPDownloader implements Downloader and downloads from a URL through HTTP
 type HTTPDownloader struct{}
 
-// CommitDownloader download function that puts the source_url into the destination_path on the local filesystem
-func (d *HTTPDownloader) CommitDownloader(sourceURL string, destinationPath string) error {
+// DownloadToPath download function that puts the source_url into the destination_path on the local filesystem
+func (d *HTTPDownloader) DownloadToPath(sourceURL string, destinationPath string) error {
 
 	resp, err := http.Get(sourceURL)
 	if err != nil {

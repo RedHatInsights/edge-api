@@ -16,6 +16,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/errors"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -47,6 +48,29 @@ func (s *FileServer) ServeRepo(w http.ResponseWriter, r *http.Request) {
 type S3Proxy struct {
 	Client *s3.S3
 	Bucket string
+}
+
+const (
+	// TrailingSlashIndex is the index used to remove trailing slashs from path prefixes
+	TrailingSlashIndex int = 1
+)
+
+func getNameAndPrefix(r *http.Request) (string, string, error) {
+	name := chi.URLParam(r, "name")
+	log.Debugf("getNameAndPrefix::name: %#v", name)
+	if name == "" {
+		return "", "", fmt.Errorf("repo name not provided")
+	}
+	pathPrefix := getPathPrefix(r.URL.Path, name)
+	return name, pathPrefix, nil
+}
+
+func getPathPrefix(path string, name string) string {
+	_r := strings.Index(path, "/"+name+"/")
+	log.Debugf("getNameAndPrefix::_r: %#v", _r)
+	pathPrefix := string(path[:_r+TrailingSlashIndex])
+	log.Debugf("getNameAndPrefix::pathPrefix: %#v", pathPrefix)
+	return pathPrefix
 }
 
 //NewS3Proxy creates a method to obtain a new S3 proxy
@@ -91,7 +115,7 @@ func (p *S3Proxy) ServeRepo(w http.ResponseWriter, r *http.Request) {
 
 	account := chi.URLParam(r, "account")
 	if account == "" {
-		account, err = GetAccount(r)
+		account, err = common.GetAccount(r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
