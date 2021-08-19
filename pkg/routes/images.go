@@ -513,7 +513,8 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	repo, err := services.GetRepoByCommitID(image.CommitID)
+	repoService := services.NewRepoService()
+	repo, err := repoService.GetRepoByCommitID(image.CommitID)
 	if err != nil {
 		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
 		w.WriteHeader(err.Status)
@@ -733,7 +734,8 @@ func cleanFiles(kickstart string, isoName string, imageID uint) error {
 //GetRepoForImage gets the repository for a Image
 func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		repo, err := services.GetRepoByCommitID(image.CommitID)
+		repoService := services.NewRepoService()
+		repo, err := repoService.GetRepoByCommitID(image.CommitID)
 		if err != nil {
 			err := errors.NewNotFound(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.Commit.ID))
 			w.WriteHeader(err.Status)

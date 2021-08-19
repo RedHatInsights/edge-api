@@ -31,13 +31,20 @@ type RepoBuilderInterface interface {
 
 // RepoBuilder is the implementation of a RepoBuilderInterface
 type RepoBuilder struct {
-	ctx          context.Context
-	filesService *FilesService
+	ctx           context.Context
+	filesService  *FilesService
+	repoService   RepoServiceInterface
+	deviceService DeviceServiceInterface
 }
 
 // InitRepoBuilder initializes the repository builder in this package
 func InitRepoBuilder(ctx context.Context) *RepoBuilder {
-	return &RepoBuilder{ctx: ctx, filesService: NewFilesService()}
+	return &RepoBuilder{
+		ctx:           ctx,
+		filesService:  NewFilesService(),
+		repoService:   NewRepoService(),
+		deviceService: NewDeviceService(),
+	}
 }
 
 // BuildUpdateRepo build an update repo with the set of commits all merged into a single repo
@@ -129,7 +136,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	if update.Repo == nil {
 		//  Check for the existence of a Repo that already has this commit and don't duplicate
 		var repo *models.Repo
-		repo, err = GetRepoByCommitID(update.CommitID)
+		repo, err = rb.repoService.GetRepoByCommitID(update.CommitID)
 		if err == nil {
 			update.Repo = repo
 		} else {
@@ -166,7 +173,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	dispatchRecords := update.DispatchRecords
 	for _, device := range update.Devices {
 		var updateDevice *models.Device
-		updateDevice, err = GetDeviceByUUID(device.UUID)
+		updateDevice, err = rb.deviceService.GetDeviceByUUID(device.UUID)
 		if err != nil {
 			log.Errorf("Error on GetDeviceByUUID: %#v ", err.Error())
 			return nil, err

@@ -1,14 +1,14 @@
 package services
 
-type UpdatesServiceInterface interface {
+// UpdateServiceInterface defines the interface that helps
+// handle the business logic of sending updates to a edge device
+type UpdateServiceInterface interface {
 }
 
-type UpdatesService struct {
-	commitService CommitServiceInterface
+// NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
+func NewUpdateService() UpdateServiceInterface {
+	return &UpdateService{}
 }
 
-func NewUpdatesService() UpdatesServiceInterface {
-	return &UpdatesService{
-		commitService: NewCommitService(),
-	}
-}
+// UpdateService is the main implementation of a UpdateServiceInterface
+type UpdateService struct{}
