@@ -10,18 +10,18 @@ import (
 // Image is what generates a OSTree Commit.
 type Image struct {
 	gorm.Model
-	Name          string     `json:"Name"`
-	Account       string     `json:"Account"`
-	Distribution  string     `json:"Distribution"`
-	Description   string     `json:"Description"`
-	Status        string     `json:"Status"`
-	Version       int        `json:"Version" gorm:"default:1"`
-	ImageType     string     `json:"ImageType"`
-	CommitID      uint       `json:"CommitID"`
-	Commit        *Commit    `json:"Commit"`
-	InstallerID   *uint      `json:"InstallerID"`
-	Installer     *Installer `json:"Installer"`
-	ParentImageId int        `json:"ParentImage"`
+	Name         string     `json:"Name"`
+	Account      string     `json:"Account"`
+	Distribution string     `json:"Distribution"`
+	Description  string     `json:"Description"`
+	Status       string     `json:"Status"`
+	Version      int        `json:"Version" gorm:"default:1"`
+	ImageType    string     `json:"ImageType"`
+	CommitID     uint       `json:"CommitID"`
+	Commit       *Commit    `json:"Commit"`
+	InstallerID  *uint      `json:"InstallerID"`
+	Installer    *Installer `json:"Installer"`
+	ParentId     int        `gorm:"foreignKey:Image"`
 }
 
 const (

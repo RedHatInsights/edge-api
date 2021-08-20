@@ -325,7 +325,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 	}
 	if previous_image != nil {
-		image.ParentImageId = int(previous_image.ID)
+		image.ParentId = int(previous_image.ID)
 	}
 	err = createImage(image, account, headers)
 	if err != nil {
@@ -829,10 +829,10 @@ func GetReservedUsernames(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(models.ReservedUsernames)
 }
 
-func getUpdateAvailable(ParentImageId int) []models.Image {
+func getUpdateAvailable(ImageId int) []models.Image {
 	fmt.Printf("#####################################################")
 	var images []models.Image
-	result := db.DB.Where("Parent_Image_Id = ?", ParentImageId).Find(&images)
+	result := db.DB.Where("Parent_Id = ?", ImageId).Find(&images)
 	if result != nil {
 		return images
 	}
