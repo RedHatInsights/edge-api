@@ -43,6 +43,7 @@ func MakeRouter(sub chi.Router) {
 		r.Post("/installer", CreateInstallerForImage)
 		r.Post("/repo", CreateRepoForImage)
 		r.Post("/kickstart", CreateKickStartForImage)
+		r.Post("/update", CreateImageUpdate)
 	})
 }
 
@@ -282,6 +283,9 @@ func postProcessImage(id uint, headers map[string]string) {
 		}
 	}
 }
+func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
+	Create(w, r)
+}
 
 // Create creates an image on hosted image builder.
 // It always creates a commit on Image Builder.
@@ -312,6 +316,17 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	headers := common.GetOutgoingHeaders(r)
+
+	ctx := r.Context()
+	previous_image, ok := ctx.Value(imageKey).(*models.Image)
+	if !ok {
+		err := errors.NewBadRequest("Must pass image id")
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+	}
+	if previous_image != nil {
+		image.ParentImageId = int(previous_image.ID)
+	}
 	err = createImage(image, account, headers)
 	if err != nil {
 		log.Error(err)
@@ -429,6 +444,7 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 		return nil
 	}
 	return image
+
 }
 
 func updateImageStatus(image *models.Image, headers map[string]string) (*models.Image, error) {
@@ -482,9 +498,18 @@ func GetStatusByID(w http.ResponseWriter, r *http.Request) {
 
 // GetByID obtains a image from the database for an account
 func GetByID(w http.ResponseWriter, r *http.Request) {
-	if image := getImage(w, r); image != nil {
-		json.NewEncoder(w).Encode(image)
+	image := getImage(w, r)
+	if image != nil {
+		updatesAvailable := getUpdateAvailable(int(image.ID))
+		json.NewEncoder(w).Encode(struct {
+			Image   *models.Image
+			Updates []models.Image
+		}{
+			image,
+			updatesAvailable,
+		})
 	}
+
 }
 
 // CreateInstallerForImage creates a installer for a Image
@@ -802,4 +827,16 @@ func exeInjectionScript(kickstart string, image string, imageID uint) error {
 
 func GetReservedUsernames(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(models.ReservedUsernames)
+}
+
+func getUpdateAvailable(ParentImageId int) []models.Image {
+	fmt.Printf("#####################################################")
+	var images []models.Image
+	result := db.DB.Where("Parent_Image_Id = ?", ParentImageId).Find(&images)
+	if result != nil {
+		return images
+	}
+	fmt.Printf(":: images :: %v", images)
+	fmt.Printf("#####################################################")
+	return nil
 }
