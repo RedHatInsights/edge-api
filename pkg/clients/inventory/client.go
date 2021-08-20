@@ -60,7 +60,7 @@ const (
 )
 
 // ReturnDevices will return the list of devices without filter by tag or uuid
-func (c *Client) ReturnDevices(w http.ResponseWriter, r *http.Request) (InventoryResponse, error) {
+func (c *Client) ReturnDevices() (InventoryResponse, error) {
 	url := fmt.Sprintf("%s/api/inventory/v1/hosts", config.Get().InventoryConfig.URL)
 	fullURL := url + filterParams
 	log.Infof("Requesting url: %s\n", fullURL)
