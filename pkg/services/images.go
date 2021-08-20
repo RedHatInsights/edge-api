@@ -112,14 +112,14 @@ func (s *ImageService) postProcessImage(id uint) {
 		time.Sleep(1 * time.Minute)
 	}
 
-	go func() {
-		i, err := s.imageBuilder.GetMetadata(i)
+	go func(imageBuilder imagebuilder.ClientInterface) {
+		i, err := imageBuilder.GetMetadata(i)
 		if err != nil {
 			log.Error(err)
 		} else {
 			db.DB.Save(&i.Commit)
 		}
-	}()
+	}(s.imageBuilder)
 
 	repo := s.CreateRepoForImage(i)
 
@@ -358,9 +358,8 @@ func (s *ImageService) cleanFiles(kickstart string, isoName string, imageID uint
 }
 
 func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, error) {
-	client := imagebuilder.InitClient(s.ctx)
 	if image.Commit.Status == models.ImageStatusBuilding {
-		image, err := client.GetCommitStatus(image)
+		image, err := s.imageBuilder.GetCommitStatus(image)
 		if err != nil {
 			return image, err
 		}
@@ -372,7 +371,7 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 		}
 	}
 	if image.Installer != nil && image.Installer.Status == models.ImageStatusBuilding {
-		image, err := client.GetInstallerStatus(image)
+		image, err := s.imageBuilder.GetInstallerStatus(image)
 		if err != nil {
 			return image, err
 		}
