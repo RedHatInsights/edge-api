@@ -181,12 +181,12 @@ components:
         RepoURL:
           type: string
       type: object
-    v1.Updates: {
+    v1.Updates:
       properties:
-        "CommitId": integer
-        "DeviceUUID": string
-        }  
-    }
+        CommitID: 
+          type: integer
+        DeviceUUID:
+           type: string
 info:
   license:
     name: MIT
