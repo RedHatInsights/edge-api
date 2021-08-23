@@ -35,7 +35,7 @@
                         "type":"string"
                      },
                      "BuildNumber":{
-                        
+
                      },
                      "ComposeJobID":{
                         "type":"string"
@@ -108,7 +108,7 @@
                   "type":"object"
                },
                "CommitID":{
-                  
+
                },
                "Description":{
                   "type":"string"
@@ -143,7 +143,7 @@
                   "type":"object"
                },
                "InstallerID":{
-                  
+
                },
                "Name":{
                   "type":"string"
@@ -202,7 +202,7 @@
                         "type":"string"
                      },
                      "BuildNumber":{
-                        
+
                      },
                      "ComposeJobID":{
                         "type":"string"
@@ -275,7 +275,7 @@
                   "type":"object"
                },
                "CommitID":{
-                  
+
                },
                "RepoStatus":{
                   "type":"string"
@@ -290,7 +290,7 @@
             "properties":{
                "CommitID":{
                   "type":"integer"
-               }, 
+               },
                "DeviceUUID":{
                   "type":"string"
                }
@@ -553,7 +553,7 @@
          "post":{
             "description":"Returns the information of the update transaction.",
             "operationId":"UpdateDevice",
-            
+
             "requestBody":{
                "content":{
                   "application/json":{
