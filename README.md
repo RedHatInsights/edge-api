@@ -264,3 +264,17 @@ make generate-docs
 ```
 
 The API will serve the docs under a `/docs` endpoint.
+
+## Testing
+
+The tests in this repository are meant to be unit tests. Because of how Go works, in order to mock objects properly you can't create them inside of your function. You can instead receive objects that are supposed to be mocked through function parameters, context, or variables inside of the same struct.
+
+We are using [gomock](https://github.com/golang/mock) to generate mocks for our unit tests. The mocks are living inside of a package under the real implementation, prefixed by `mock_`. An example is the package `mock_services` under `pkg/services`.
+
+In order to genenerate a mock for a particular file, you can run: 
+
+`mockgen -source=pkg/filename.go -destination=pkg/mock_pkg/mock_filename.go`
+
+For example, to create/update mocks for ImageService, we can run:
+
+`mockgen -source=pkg/services/images.go -destination=pkg/services/mock_services/images.go`

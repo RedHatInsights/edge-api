@@ -14,13 +14,10 @@ import (
 	redoc "github.com/go-openapi/runtime/middleware"
 	"github.com/redhatinsights/edge-api/config"
 	l "github.com/redhatinsights/edge-api/logger"
-	"github.com/redhatinsights/edge-api/pkg/commits"
-	"github.com/redhatinsights/edge-api/pkg/common"
 	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/edge-api/pkg/imagebuilder"
-	"github.com/redhatinsights/edge-api/pkg/images"
-	"github.com/redhatinsights/edge-api/pkg/repo"
-	"github.com/redhatinsights/edge-api/pkg/updates"
+	"github.com/redhatinsights/edge-api/pkg/dependencies"
+	"github.com/redhatinsights/edge-api/pkg/routes"
+	"github.com/redhatinsights/edge-api/pkg/services"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -41,8 +38,6 @@ func initDependencies() {
 	config.Init()
 	l.InitLogger()
 	db.InitDB()
-	imagebuilder.InitClient()
-	commits.InitRepoBuilder()
 }
 
 func main() {
@@ -66,14 +61,6 @@ func main() {
 		"TemplatesPath":            cfg.TemplatesPath,
 	}).Info("Configuration Values:")
 
-	var server repo.Server
-	server = &repo.FileServer{
-		BasePath: "/tmp",
-	}
-	if cfg.BucketName != "" {
-		server = repo.NewS3Proxy()
-	}
-
 	r := chi.NewRouter()
 	r.Use(
 		request_id.ConfiguredRequestID("x-rh-insights-request-id"),
@@ -81,14 +68,15 @@ func main() {
 		middleware.Recoverer,
 		middleware.Logger,
 		setupDocsMiddleware,
+		dependencies.Middleware,
 	)
 
 	// Unauthenticated routes
-	r.Get("/", common.StatusOK)
+	r.Get("/", routes.StatusOK)
 	r.Get("/api/edge/v1/openapi.json", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, cfg.OpenAPIFilePath)
 	})
-	r.Route("/api/edge/v1/account/{account}/repos", repo.MakeRouter(server))
+	r.Route("/api/edge/v1/account/{account}/repos", routes.MakeReposRouter)
 
 	// Authenticated routes
 	ar := r.Group(nil)
@@ -97,14 +85,14 @@ func main() {
 	}
 
 	ar.Route("/api/edge/v1", func(s chi.Router) {
-		s.Route("/commits", commits.MakeRouter)
-		s.Route("/repos", repo.MakeRouter(server))
-		s.Route("/images", images.MakeRouter)
-		s.Route("/updates", updates.MakeRouter)
+		s.Route("/commits", routes.MakeCommitsRouter)
+		s.Route("/repos", routes.MakeReposRouter)
+		s.Route("/images", routes.MakeImagesRouter)
+		s.Route("/updates", routes.MakeUpdatesRouter)
 	})
 
 	mr := chi.NewRouter()
-	mr.Get("/", common.StatusOK)
+	mr.Get("/", routes.StatusOK)
 	mr.Handle("/metrics", promhttp.Handler())
 
 	srv := http.Server{
@@ -129,7 +117,7 @@ func main() {
 		if err := msrv.Shutdown(context.Background()); err != nil {
 			log.WithFields(log.Fields{"error": err}).Fatal("HTTP Server Shutdown failed")
 		}
-		images.WaitGroup.Wait()
+		services.WaitGroup.Wait()
 		close(gracefulStop)
 	}()
 
