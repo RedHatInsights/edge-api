@@ -27,12 +27,12 @@ COPY --from=builder /go/bin/edge-api-migrate /usr/bin
 COPY --from=builder /src/mypackage/myapp/cmd/spec/openapi.json /var/tmp
 
 # kickstart inject requirements
-COPY --from=builder /src/mypackage/myapp/pkg/images/fleetkick.sh /usr/local/bin
+COPY --from=builder /src/mypackage/myapp/pkg/services/fleetkick.sh /usr/local/bin
 RUN chmod +x /usr/local/bin/fleetkick.sh
-COPY --from=builder /src/mypackage/myapp/pkg/images/templateKickstart.ks /usr/local/etc
+COPY --from=builder /src/mypackage/myapp/pkg/services/templateKickstart.ks /usr/local/etc
 
 # template to playbook dispatcher
-COPY --from=builder /src/mypackage/myapp/pkg/playbooks/template_playbook_dispatcher_ostree_upgrade_payload.yml /usr/local/etc
+COPY --from=builder /src/mypackage/myapp/pkg/services/template_playbook_dispatcher_ostree_upgrade_payload.yml /usr/local/etc
 
 RUN microdnf install -y pykickstart mtools xorriso genisoimage syslinux isomd5sum file ostree
 ENV MTOOLS_SKIP_CHECK=1
