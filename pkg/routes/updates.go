@@ -26,6 +26,7 @@ import (
 func MakeUpdatesRouter(sub chi.Router) {
 	sub.Use(UpdateCtx)
 	sub.Get("/device/{DeviceUUID}", GetDeviceStatus)
+	sub.Get("/device/{DeviceUUID}/updates", GetUpdateAvailableForDevice)
 	sub.With(common.Paginate).Get("/", GetUpdates)
 	sub.Post("/", AddUpdate)
 	sub.Route("/{updateID}", func(r chi.Router) {
@@ -70,6 +71,28 @@ func GetDeviceStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(&results)
+}
+
+// GetUpdateAvailableForDevice returns if exists update for the current image at the device.
+func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
+	uuid := chi.URLParam(r, "DeviceUUID")
+
+	client := inventory.InitClient(r.Context())
+	var device inventory.InventoryResponse
+	device, err := client.ReturnDevicesByID(uuid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+
+	}
+	var image models.Image
+	currentImage := db.DB.Where("OSTreeCommit = ?", device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments[len(device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments)-1].Checksum).First(&image)
+	if currentImage != nil {
+		updates := db.DB.Where("Parent_Id = ?", image.ID)
+		if updates != nil {
+			json.NewEncoder(w).Encode(http.StatusOK)
+		}
+	}
+	json.NewEncoder(w).Encode(http.StatusNotFound)
 }
 
 func GetUpdates(w http.ResponseWriter, r *http.Request) {
