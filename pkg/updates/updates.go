@@ -25,6 +25,7 @@ import (
 func MakeRouter(sub chi.Router) {
 	sub.Use(UpdateCtx)
 	sub.Get("/device/{DeviceUUID}", GetDeviceStatus)
+	sub.Get("/device/{DeviceUUID}/updates", GetUpdateAvailableForDevice)
 	sub.With(common.Paginate).Get("/", GetUpdates)
 	sub.Post("/", AddUpdate)
 	sub.Route("/{updateID}", func(r chi.Router) {
@@ -33,6 +34,26 @@ func MakeRouter(sub chi.Router) {
 		r.Get("/diff", GetDiffOnUpdate)
 		r.Put("/", UpdatesUpdate)
 	})
+}
+
+func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
+	uuid := chi.URLParam(r, "DeviceUUID")
+	var device Inventory
+	headers := common.GetOutgoingHeaders(r)
+	device, err := ReturnDevicesByID(uuid, headers)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+
+	}
+	var image models.Image
+	currentImage := db.DB.Where("OSTreeCommit = ?", device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments[len(device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments)-1].Checksum).First(&image)
+	if currentImage != nil {
+		updates := db.DB.Where("Parent_Id = ?", image.ID)
+		if updates != nil {
+			json.NewEncoder(w).Encode(http.StatusOK)
+		}
+	}
+	json.NewEncoder(w).Encode(http.StatusNotFound)
 }
 
 // GetDeviceStatus returns the device with the given UUID that is associate to the account.
@@ -387,7 +408,24 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction
 
 // GetDiffOnUpdate return the list of packages added or removed from commit
 func GetDiffOnUpdate(w http.ResponseWriter, r *http.Request) {
-	update := getUpdate(w, r)
+	var update models.UpdateTransaction
+	account, err := common.GetAccount(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+	if updateID := chi.URLParam(r, "updateID"); updateID != "" {
+		id, err := strconv.Atoi(updateID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		result := db.DB.Preload("DispatchRecords").Preload("Devices").Where("update_transactions.account = ?", account).Joins("Commit").Joins("Repo").Find(&update, id)
+		if result.Error != nil {
+			http.Error(w, result.Error.Error(), http.StatusNotFound)
+			return
+		}
+	}
+	fmt.Printf(": Update: ")
 	initialCommit := update.OldCommits[len(update.OldCommits)-1].Packages
 	updateCommit := update.Commit.Packages
 	var initString []string

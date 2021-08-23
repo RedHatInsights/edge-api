@@ -284,29 +284,8 @@ func postProcessImage(id uint, headers map[string]string) {
 	}
 }
 func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
-	Create(w, r)
-}
-
-// Create creates an image on hosted image builder.
-// It always creates a commit on Image Builder.
-// We're creating a update on the background to transfer the commit to our repo.
-func Create(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	var image *models.Image
-	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
-	if err := image.ValidateRequest(); err != nil {
-		log.Info(err)
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
+	image := initImageCreateRequest(w, r)
 	account, err := common.GetAccount(r)
 	if err != nil {
 		log.Info(err)
@@ -316,7 +295,6 @@ func Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	headers := common.GetOutgoingHeaders(r)
-
 	ctx := r.Context()
 	previous_image, ok := ctx.Value(imageKey).(*models.Image)
 	if !ok {
@@ -340,6 +318,56 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&image)
 
 	go postProcessImage(image.ID, headers)
+}
+
+// Create creates an image on hosted image builder.
+// It always creates a commit on Image Builder.
+// We're creating a update on the background to transfer the commit to our repo.
+func Create(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	image := initImageCreateRequest(w, r)
+	account, err := common.GetAccount(r)
+	if err != nil {
+		log.Info(err)
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	headers := common.GetOutgoingHeaders(r)
+
+	err = createImage(image, account, headers)
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		err.Title = "Failed creating image"
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(&image)
+
+	go postProcessImage(image.ID, headers)
+}
+
+func initImageCreateRequest(w http.ResponseWriter, r *http.Request) *models.Image {
+	var image *models.Image
+	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return nil
+	}
+	if err := image.ValidateRequest(); err != nil {
+		log.Info(err)
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return nil
+	}
+	return image
 }
 
 var imageFilters = common.ComposeFilters(
@@ -498,16 +526,8 @@ func GetStatusByID(w http.ResponseWriter, r *http.Request) {
 
 // GetByID obtains a image from the database for an account
 func GetByID(w http.ResponseWriter, r *http.Request) {
-	image := getImage(w, r)
-	if image != nil {
-		updatesAvailable := getUpdateAvailable(int(image.ID))
-		json.NewEncoder(w).Encode(struct {
-			Image   *models.Image
-			Updates []models.Image
-		}{
-			image,
-			updatesAvailable,
-		})
+	if image := getImage(w, r); image != nil {
+		json.NewEncoder(w).Encode(image)
 	}
 
 }
