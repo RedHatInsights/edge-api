@@ -288,8 +288,12 @@
          },
          "v1.Updates":{
             "properties":{
-               "CommitID": "integer", 
-               "DeviceUUID": "string"
+               "CommitID":{
+                  "type":"integer"
+               }, 
+               "DeviceUUID":{
+                  "type":"string"
+               }
             }
          }
       }
