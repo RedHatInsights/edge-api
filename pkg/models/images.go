@@ -21,7 +21,7 @@ type Image struct {
 	Commit       *Commit    `json:"Commit"`
 	InstallerID  *uint      `json:"InstallerID"`
 	Installer    *Installer `json:"Installer"`
-	ParentId     int        `gorm:"foreignKey:Image"`
+	ParentId     *uint      `gorm:"foreignKey:Image"`
 }
 
 const (

@@ -112,7 +112,14 @@ type CreateImageRequest struct {
 func CreateImage(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	defer r.Body.Close()
-	image := initImageCreateRequest(w, r)
+	image, err := initImageCreateRequest(w, r)
+	if err != nil {
+		log.Info(err)
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
 	account, err := common.GetAccount(r)
 	if err != nil {
 		log.Info(err)
@@ -139,7 +146,14 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	defer r.Body.Close()
-	image := initImageCreateRequest(w, r)
+	image, err := initImageCreateRequest(w, r)
+	if err != nil {
+		log.Info(err)
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
 	account, err := common.GetAccount(r)
 	if err != nil {
 		log.Info(err)
@@ -157,7 +171,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 	}
 	if previous_image != nil {
-		image.ParentId = int(previous_image.ID)
+		image.ParentId = &previous_image.ID
 	}
 	err = services.ImageService.CreateImage(image, account)
 	if err != nil {
@@ -174,23 +188,23 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 // initImageCreateRequest validates request to create/update an image.
-func initImageCreateRequest(w http.ResponseWriter, r *http.Request) *models.Image {
+func initImageCreateRequest(w http.ResponseWriter, r *http.Request) (*models.Image, error) {
 	var image *models.Image
 	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
-		return nil
+		return nil, err
 	}
 	if err := image.ValidateRequest(); err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
-		return nil
+		return nil, err
 	}
-	return image
+	return image, nil
 }
 
 var imageFilters = common.ComposeFilters(
