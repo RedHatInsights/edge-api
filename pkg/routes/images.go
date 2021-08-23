@@ -43,6 +43,7 @@ func MakeImagesRouter(sub chi.Router) {
 		r.Post("/installer", CreateInstallerForImage)
 		r.Post("/repo", CreateRepoForImage)
 		r.Post("/kickstart", CreateKickStartForImage)
+		r.Post("/update", CreateImageUpdate)
 	})
 }
 
@@ -111,22 +112,7 @@ type CreateImageRequest struct {
 func CreateImage(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	defer r.Body.Close()
-
-	var image *models.Image
-	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
-	if err := image.ValidateRequest(); err != nil {
-		log.Info(err)
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
+	image := initImageCreateRequest(w, r)
 	account, err := common.GetAccount(r)
 	if err != nil {
 		log.Info(err)
@@ -147,6 +133,64 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&image)
 
+}
+
+// CreateImageUpdate creates an update for an exitent image on hosted image builder.
+func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
+	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	defer r.Body.Close()
+	image := initImageCreateRequest(w, r)
+	account, err := common.GetAccount(r)
+	if err != nil {
+		log.Info(err)
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+
+	ctx := r.Context()
+	previous_image, ok := ctx.Value(imageKey).(*models.Image)
+	if !ok {
+		err := errors.NewBadRequest("Must pass image id")
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+	}
+	if previous_image != nil {
+		image.ParentId = int(previous_image.ID)
+	}
+	err = services.ImageService.CreateImage(image, account)
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		err.Title = "Failed creating image"
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(&image)
+
+}
+
+// initImageCreateRequest validates request to create/update an image.
+func initImageCreateRequest(w http.ResponseWriter, r *http.Request) *models.Image {
+	var image *models.Image
+	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return nil
+	}
+	if err := image.ValidateRequest(); err != nil {
+		log.Info(err)
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return nil
+	}
+	return image
 }
 
 var imageFilters = common.ComposeFilters(
