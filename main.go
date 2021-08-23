@@ -81,7 +81,10 @@ func main() {
 	// Authenticated routes
 	ar := r.Group(nil)
 	if cfg.Auth {
-		ar.Use(identity.EnforceIdentity)
+		ar.Use(
+			identity.EnforceIdentity,
+			dependencies.Middleware,
+		)
 	}
 
 	ar.Route("/api/edge/v1", func(s chi.Router) {
