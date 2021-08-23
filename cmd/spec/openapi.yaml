@@ -187,7 +187,6 @@ components:
           type: integer
         DeviceUUID:
            type: string
-    }
 info:
   license:
     name: MIT
