@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -39,7 +40,7 @@ func TestCreateWasCalledWithNameNotSet(t *testing.T) {
 	config.Get().Debug = false
 	var jsonStr = []byte(`{
 		"Distribution": "rhel-8",
-		"ImageType": "rhel-edge-installer",
+		"OutputTypes": ["rhel-edge-installer"],
 		"Commit": {
 			"Arch": "x86_64",
 			"Packages" : [ { "name" : "vim"  } ]
@@ -69,7 +70,7 @@ func TestCreate(t *testing.T) {
 	var jsonStr = []byte(`{
 		"Name": "image1",
 		"Distribution": "rhel-8",
-		"ImageType": "rhel-edge-installer",
+		"OutputTypes": ["rhel-edge-installer"],
 		"Commit": {
 			"Arch": "x86_64",
 			"Packages" : [ { "name" : "vim"  } ]
@@ -99,8 +100,12 @@ func TestCreate(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
+		t.Errorf("handler returned wrong status code: got %v, want %v",
 			status, http.StatusOK)
+		b, _ := io.ReadAll(rr.Body)
+		t.Errorf("body %s",
+			b)
+
 	}
 }
 func TestGetStatus(t *testing.T) {
