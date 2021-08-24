@@ -94,7 +94,7 @@ func (c *Client) ReturnDevices() (InventoryResponse, error) {
 func (c *Client) ReturnDevicesByID(deviceID string) (InventoryResponse, error) {
 	deviceIDParam := "&hostname_or_id=" + deviceID
 	log.Infof("::deviceIDParam: %s\n", deviceIDParam)
-	url := fmt.Sprintf("%s/api/InventoryResponse/v1/hosts", config.Get().InventoryConfig.URL)
+	url := fmt.Sprintf("%s/api/inventory/v1/hosts", config.Get().InventoryConfig.URL)
 	fullURL := url + filterParams + deviceIDParam
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
