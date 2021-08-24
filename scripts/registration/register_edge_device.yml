@@ -14,7 +14,37 @@
   vars_files:
     - "{{ regfile }}"
 
-  tasks:
+  tasks:                                                                                                                                                                                                                          
+  - name: point RHSM to stage                                                                                                                                                                                                                                                           
+    ansible.builtin.lineinfile:                                                                                                                                                                                                                                                         
+      state: present                                                                                                                                                                                                                                                                    
+      path: /etc/rhsm/rhsm.conf                                                                                                                                                                                                                                                         
+      regexp: 'hostname = subscription.rhsm.redhat.com'                                                                                                                                                                                                                                 
+      line: 'hostname = subscription.rhsm.stage.redhat.com'  
+
+  - name: update RHC config for stage
+    ansible.builtin.copy:
+      backup: yes
+      content: "{{ rhc_stage_config }}"
+      dest: /etc/rhc/config.toml
+    tags:
+      rhc_config
+
+  - name: update insights config for stage
+    ansible.builtin.blockinfile:
+      state: present
+      path: /etc/insights-client/insights-client.conf
+      block: |
+        auto_config=False
+        username={{ insights_username }}
+        password={{ insights_password }}
+        legacy_upload=False
+        base_url=cert.cloud.stage.redhat.com/api
+        cert_verify=True
+        proxy=http://squid.corp.redhat.com:3128
+    tags:
+      - insights_config
+
   - name: rhsm register
     shell: "subscription-manager register --username {{ rhsm_username }} --password {{ rhsm_password }} --auto-attach --force"
     tags:
@@ -23,6 +53,12 @@
 
   - name: insights register
     shell: "insights-client --register"
+    tags:
+    - insights_register
+    - register
+
+  - name: rhc conn
+    shell: "rhc connect --username insights-qa --password redhat-qa --server https://subscription.rhsm.stage.redhat.com"
     tags:
     - insights_register
     - register

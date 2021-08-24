@@ -1,7 +1,16 @@
 ---
 # VARS FOR RHSM REGISTER EXAMPLE
 
-rhsm_username: MY_RHSM_USERNAME
-rhsm_password: MY_RHSM_PASSWORD
-insights_username: MY_INSIGHTS_USERNAME
-insights_password: MY_INSIGHTS_PASSWORD
+rhsm_username: insights-qa
+rhsm_password: redhatqa
+insights_username: insights-qa
+insights_password: redhatqa
+rhc_stage_config: |
+  # yggdrasil global configuration settings
+  broker = ["wss://connect.cloud.stage.redhat.com:443"]
+  cert-file = "/etc/pki/consumer/cert.pem"
+  key-file = "/etc/pki/consumer/key.pem"
+  log-level = "error"
+  data-host = "cert.cloud.stage.redhat.com"
+  topic-prefix = "redhat/insights"
+
