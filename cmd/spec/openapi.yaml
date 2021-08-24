@@ -1,5 +1,13 @@
 components:
   schemas:
+    v1.AddUpdate:
+      properties:
+        CommitID: {}
+        DeviceUUID:
+          type: string
+        Tag:
+          type: string
+      type: object
     v1.BadRequest:
       properties:
         Code:
@@ -94,6 +102,10 @@ components:
         InstallerID: {}
         Name:
           type: string
+        OutputTypes:
+          items:
+            type: string
+          type: array
         Status:
           type: string
         Version:
@@ -181,12 +193,201 @@ components:
         RepoURL:
           type: string
       type: object
-    v1.Updates:
+    v1.UpdateTransaction:
       properties:
-        CommitID: 
-          type: integer
-        DeviceUUID:
-           type: string
+        Account:
+          type: string
+        Commit:
+          properties:
+            Account:
+              type: string
+            Arch:
+              type: string
+            BlueprintToml:
+              type: string
+            BuildDate:
+              type: string
+            BuildNumber: {}
+            ComposeJobID:
+              type: string
+            ImageBuildHash:
+              type: string
+            ImageBuildParentHash:
+              type: string
+            ImageBuildTarURL:
+              type: string
+            InstalledPackages:
+              items:
+                properties:
+                  arch:
+                    type: string
+                  epoch:
+                    type: string
+                  name:
+                    type: string
+                  release:
+                    type: string
+                  sigmd5:
+                    type: string
+                  signature:
+                    type: string
+                  type:
+                    type: string
+                  version:
+                    type: string
+                type: object
+              type: array
+            OSTreeCommit:
+              type: string
+            OSTreeParentCommit:
+              type: string
+            OSTreeRef:
+              type: string
+            Packages:
+              items:
+                properties:
+                  Name:
+                    type: string
+                type: object
+              type: array
+            Status:
+              type: string
+          type: object
+        CommitID: {}
+        Devices:
+          items: {}
+          type: array
+        DispatchRecords:
+          items: {}
+          type: array
+        OldCommits:
+          items:
+            properties:
+              Account:
+                type: string
+              Arch:
+                type: string
+              BlueprintToml:
+                type: string
+              BuildDate:
+                type: string
+              BuildNumber: {}
+              ComposeJobID:
+                type: string
+              ImageBuildHash:
+                type: string
+              ImageBuildParentHash:
+                type: string
+              ImageBuildTarURL:
+                type: string
+              InstalledPackages:
+                items:
+                  properties:
+                    arch:
+                      type: string
+                    epoch:
+                      type: string
+                    name:
+                      type: string
+                    release:
+                      type: string
+                    sigmd5:
+                      type: string
+                    signature:
+                      type: string
+                    type:
+                      type: string
+                    version:
+                      type: string
+                  type: object
+                type: array
+              OSTreeCommit:
+                type: string
+              OSTreeParentCommit:
+                type: string
+              OSTreeRef:
+                type: string
+              Packages:
+                items:
+                  properties:
+                    Name:
+                      type: string
+                  type: object
+                type: array
+              Status:
+                type: string
+            type: object
+          type: array
+        Repo:
+          properties:
+            Commit:
+              properties:
+                Account:
+                  type: string
+                Arch:
+                  type: string
+                BlueprintToml:
+                  type: string
+                BuildDate:
+                  type: string
+                BuildNumber: {}
+                ComposeJobID:
+                  type: string
+                ImageBuildHash:
+                  type: string
+                ImageBuildParentHash:
+                  type: string
+                ImageBuildTarURL:
+                  type: string
+                InstalledPackages:
+                  items:
+                    properties:
+                      arch:
+                        type: string
+                      epoch:
+                        type: string
+                      name:
+                        type: string
+                      release:
+                        type: string
+                      sigmd5:
+                        type: string
+                      signature:
+                        type: string
+                      type:
+                        type: string
+                      version:
+                        type: string
+                    type: object
+                  type: array
+                OSTreeCommit:
+                  type: string
+                OSTreeParentCommit:
+                  type: string
+                OSTreeRef:
+                  type: string
+                Packages:
+                  items:
+                    properties:
+                      Name:
+                        type: string
+                    type: object
+                  type: array
+                Status:
+                  type: string
+              type: object
+            CommitID: {}
+            RepoStatus:
+              type: string
+            RepoURL:
+              type: string
+          type: object
+        RepoID: {}
+        Status:
+          type: string
+        Tag:
+          type: string
+      type: object
 info:
   license:
     name: MIT
@@ -350,14 +551,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/v1.Updates'
+              $ref: '#/components/schemas/v1.AddUpdate'
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.Updates'
+                $ref: '#/components/schemas/v1.UpdateTransaction'
           description: OK
         "400":
           content:
@@ -371,5 +572,37 @@ paths:
               schema:
                 $ref: '#/components/schemas/v1.BadRequest'
           description: There was an internal server error.
-      summary: UpdateDevice.
-      description: Fire the image update on device.
+      summary: Create new image for update.
+      description: Returns the information of the Image.
+  /updates/device/{DeviceUUID}/update:
+    get:
+      operationId: GetUpdateAvailableForDevice
+      parameters:
+        - DeviceUUID: DeviceUUID
+          in: path
+          required: true
+          description: DeviceUUID
+          schema:
+            type : string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.Image'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Return list of available updates for a device.
+      description: Return list of available updates for a device.
+      

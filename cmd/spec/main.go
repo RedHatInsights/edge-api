@@ -10,6 +10,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes"
 )
 
 // Used to generate openapi yaml file for components.
@@ -29,11 +30,17 @@ func main() {
 	}
 	components.Schemas["v1.Repo"] = repo
 
-	updates, _, err := openapi3gen.NewSchemaRefForValue(&models.UpdateTransaction{})
+	updates, _, err := openapi3gen.NewSchemaRefForValue(&routes.UpdatePostJSON{})
 	if err != nil {
 		panic(err)
 	}
-	components.Schemas["v1.Updates"] = updates
+	components.Schemas["v1.AddUpdate"] = updates
+
+	updateTransaction, _, err := openapi3gen.NewSchemaRefForValue(&models.UpdateTransaction{})
+	if err != nil {
+		panic(err)
+	}
+	components.Schemas["v1.UpdateTransaction"] = updateTransaction
 	internalServerError, _, err := openapi3gen.NewSchemaRefForValue(&errors.InternalServerError{})
 	if err != nil {
 		panic(err)

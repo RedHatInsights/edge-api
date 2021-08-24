@@ -161,14 +161,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/v1.Updates'
+              $ref: '#/components/schemas/v1.AddUpdate'
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.Updates'
+                $ref: '#/components/schemas/v1.UpdateTransaction'
           description: OK
         "400":
           content:
@@ -184,3 +184,35 @@ paths:
           description: There was an internal server error.
       summary: Create new image for update.
       description: Returns the information of the Image.
+  /updates/device/{DeviceUUID}/update:
+    get:
+      operationId: GetUpdateAvailableForDevice
+      parameters:
+        - DeviceUUID: DeviceUUID
+          in: path
+          required: true
+          description: DeviceUUID
+          schema:
+            type : string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.Image'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Return list of available updates for a device.
+      description: Return list of available updates for a device.
+      
