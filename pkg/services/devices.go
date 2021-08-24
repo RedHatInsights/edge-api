@@ -1,6 +1,8 @@
 package services
 
 import (
+	"fmt"
+
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
@@ -10,6 +12,7 @@ import (
 type DeviceServiceInterface interface {
 	GetDeviceByID(deviceID uint) (*models.Device, error)
 	GetDeviceByUUID(deviceUUID string) (*models.Device, error)
+	GetUpdateAvailableForDevice(currentCheckSum string) ([]models.Image, error)
 }
 
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
@@ -44,4 +47,22 @@ func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, erro
 		return nil, result.Error
 	}
 	return &device, nil
+}
+
+// GetUpdateAvailableForDevice returns if exists update for the current image at the device.
+func (s *DeviceService) GetUpdateAvailableForDevice(currentCheckSum string) ([]models.Image, error) {
+	var images []models.Image
+	var currentImage models.Image
+	result := db.DB.Joins("Commit").Where("OS_Tree_Commit = ?", currentCheckSum).First(&currentImage)
+	log.Infof("currentImage :: %v \n", currentImage)
+	if result.Error == nil {
+		updates := db.DB.Where("Parent_Id = ?", currentImage.ID).Find(&images)
+		fmt.Printf("\n Available Update:: %v \n", images)
+		if updates.Error == nil {
+			return images, nil
+		} else {
+			return nil, updates.Error
+		}
+	}
+	return nil, result.Error
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -83,20 +84,13 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Device:: %v", device)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-
 	}
-	var images []models.Image
-	var currentImage models.Image
-	result := db.DB.Joins("Commit").Where("OS_Tree_Commit = ?", device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments[len(device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments)-1].Checksum).First(&currentImage)
-	fmt.Printf("currentImage :: %v \n", currentImage)
-	if result.Error == nil {
-		updates := db.DB.Where("Parent_Id = ?", currentImage.ID).Find(&images)
-		fmt.Printf("\n Available Update:: %v \n", images)
-		if updates.Error == nil {
-			json.NewEncoder(w).Encode(images)
-		} else {
-			json.NewEncoder(w).Encode(http.StatusNotFound)
-		}
+
+	currentCheckSum := device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments[len(device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments)-1].Checksum
+	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	result, err := services.DeviceService.GetUpdateAvailableForDevice(currentCheckSum)
+	if err == nil {
+		json.NewEncoder(w).Encode(result)
 		return
 	}
 	json.NewEncoder(w).Encode(http.StatusNotFound)
