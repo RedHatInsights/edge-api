@@ -1,9 +1,10 @@
 package services
 
 import (
-	"fmt"
+	"sort"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
@@ -12,7 +13,7 @@ import (
 type DeviceServiceInterface interface {
 	GetDeviceByID(deviceID uint) (*models.Device, error)
 	GetDeviceByUUID(deviceUUID string) (*models.Device, error)
-	GetUpdateAvailableForDevice(currentCheckSum string) ([]models.Image, error)
+	GetUpdateAvailableForDevice(currentCheckSum string) ([]ImageUpdateAvailable, error)
 }
 
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
@@ -49,20 +50,78 @@ func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, erro
 	return &device, nil
 }
 
+type ImageUpdateAvailable struct {
+	Image       models.Image
+	PackageDiff DeltaDiff
+}
+type DeltaDiff struct {
+	Added   []models.Package
+	Removed []models.Package
+}
+
 // GetUpdateAvailableForDevice returns if exists update for the current image at the device.
-func (s *DeviceService) GetUpdateAvailableForDevice(currentCheckSum string) ([]models.Image, error) {
+func (s *DeviceService) GetUpdateAvailableForDevice(currentCheckSum string) ([]ImageUpdateAvailable, error) {
 	var images []models.Image
 	var currentImage models.Image
+
 	result := db.DB.Joins("Commit").Where("OS_Tree_Commit = ?", currentCheckSum).First(&currentImage)
-	log.Infof("currentImage :: %v \n", currentImage)
+	err := db.DB.Model(&currentImage.Commit).Association("Packages").Find(&currentImage.Commit.Packages)
+	if err != nil {
+		return nil, errors.NewInternalServerError()
+	}
+
 	if result.Error == nil {
-		updates := db.DB.Where("Parent_Id = ?", currentImage.ID).Find(&images)
-		fmt.Printf("\n Available Update:: %v \n", images)
+		updates := db.DB.Where("Parent_Id = ?", currentImage.ID).Joins("Commit").Find(&images)
 		if updates.Error == nil {
-			return images, nil
+			var imageDiff []ImageUpdateAvailable
+			for _, upd := range images {
+				db.DB.First(&upd.Commit, upd.CommitID)
+				db.DB.Model(&upd.Commit).Association("Packages").Find(&upd.Commit.Packages)
+				var delta ImageUpdateAvailable
+				diff := GetDiffOnUpdate(currentImage, upd)
+				delta.Image = upd
+				delta.PackageDiff = diff
+				imageDiff = append(imageDiff, delta)
+			}
+
+			return imageDiff, nil
 		} else {
 			return nil, updates.Error
 		}
 	}
 	return nil, result.Error
+}
+
+func GetDiffOnUpdate(currentImage models.Image, updatedImage models.Image) DeltaDiff {
+	initialCommit := currentImage.Commit.Packages
+	updateCommit := updatedImage.Commit.Packages
+	var initString []string
+	for _, str := range initialCommit {
+		initString = append(initString, str.Name)
+	}
+	var added []models.Package
+	for _, pkg := range updateCommit {
+		if !contains(initString, pkg.Name) {
+			added = append(added, pkg)
+		}
+	}
+	var updateString []string
+	for _, str := range updateCommit {
+		updateString = append(updateString, str.Name)
+	}
+	var removed []models.Package
+	for _, pkg := range initialCommit {
+		if !contains(updateString, pkg.Name) {
+			removed = append(removed, pkg)
+		}
+	}
+	var results DeltaDiff
+	results.Added = added
+	results.Removed = removed
+	return results
+}
+
+func contains(s []string, searchterm string) bool {
+	i := sort.SearchStrings(s, searchterm)
+	return i < len(s) && s[i] == searchterm
 }
