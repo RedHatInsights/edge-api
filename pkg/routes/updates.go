@@ -80,17 +80,23 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	client := inventory.InitClient(r.Context())
 	var device inventory.InventoryResponse
 	device, err := client.ReturnDevicesByID(uuid)
+	fmt.Printf("Device:: %v", device)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 
 	}
-	var image models.Image
-	currentImage := db.DB.Where("OSTreeCommit = ?", device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments[len(device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments)-1].Checksum).First(&image)
-	if currentImage != nil {
-		updates := db.DB.Where("Parent_Id = ?", image.ID)
-		if updates != nil {
-			json.NewEncoder(w).Encode(http.StatusOK)
+	var image []models.Image
+	currentImage := db.DB.Joins("Commit").Where("OS_Tree_Commit = ?", device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments[len(device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments)-1].Checksum).First(&image)
+	fmt.Printf("currentImage :: %v \n", currentImage)
+	if currentImage.Error == nil {
+		updates := db.DB.Where("Parent_Id = ?", 1).Find(&image)
+		fmt.Printf("\n Available Update:: %v \n", image)
+		if updates.Error == nil {
+			json.NewEncoder(w).Encode(image)
+		} else {
+			json.NewEncoder(w).Encode(http.StatusNotFound)
 		}
+		return
 	}
 	json.NewEncoder(w).Encode(http.StatusNotFound)
 }
