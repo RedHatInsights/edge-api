@@ -86,13 +86,14 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 
 	}
 	var images []models.Image
-	currentImage := db.DB.Joins("Commit").Where("OS_Tree_Commit = ?", device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments[len(device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments)-1].Checksum)
+	var currentImage models.Image
+	result := db.DB.Joins("Commit").Where("OS_Tree_Commit = ?", device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments[len(device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments)-1].Checksum).First(&currentImage)
 	fmt.Printf("currentImage :: %v \n", currentImage)
-	if currentImage.Error == nil {
-		updates := db.DB.Where("Parent_Id = ?", currentImage.Id).Find(&images)
+	if result.Error == nil {
+		updates := db.DB.Where("Parent_Id = ?", currentImage.ID).Find(&images)
 		fmt.Printf("\n Available Update:: %v \n", images)
 		if updates.Error == nil {
-			json.NewEncoder(w).Encode(image)
+			json.NewEncoder(w).Encode(images)
 		} else {
 			json.NewEncoder(w).Encode(http.StatusNotFound)
 		}
