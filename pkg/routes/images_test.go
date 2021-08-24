@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -102,9 +101,6 @@ func TestCreate(t *testing.T) {
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v, want %v",
 			status, http.StatusOK)
-		b, _ := io.ReadAll(rr.Body)
-		t.Errorf("body %s",
-			b)
 
 	}
 }
