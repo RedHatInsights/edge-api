@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"sort"
 	"strconv"
 
 	"context"
@@ -14,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -26,12 +26,12 @@ import (
 func MakeUpdatesRouter(sub chi.Router) {
 	sub.Use(UpdateCtx)
 	sub.Get("/device/{DeviceUUID}", GetDeviceStatus)
+	sub.Get("/device/{DeviceUUID}/updates", GetUpdateAvailableForDevice)
 	sub.With(common.Paginate).Get("/", GetUpdates)
 	sub.Post("/", AddUpdate)
 	sub.Route("/{updateID}", func(r chi.Router) {
 		r.Use(UpdateCtx)
 		r.Get("/", GetUpdateByID)
-		r.Get("/diff", GetDiffOnUpdate)
 		r.Put("/", UpdatesUpdate)
 	})
 }
@@ -72,6 +72,28 @@ func GetDeviceStatus(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&results)
 }
 
+// GetUpdateAvailableForDevice returns if exists update for the current image at the device.
+func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
+	uuid := chi.URLParam(r, "DeviceUUID")
+
+	client := inventory.InitClient(r.Context())
+	var device inventory.InventoryResponse
+	device, err := client.ReturnDevicesByID(uuid)
+	fmt.Printf("Device:: %v", device)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
+	currentCheckSum := device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments[len(device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments)-1].Checksum
+	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	result, err := services.DeviceService.GetUpdateAvailableForDevice(currentCheckSum)
+	if err == nil {
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+	json.NewEncoder(w).Encode(http.StatusNotFound)
+}
+
 func GetUpdates(w http.ResponseWriter, r *http.Request) {
 	var updates []models.UpdateTransaction
 	account, err := common.GetAccount(r)
@@ -99,11 +121,6 @@ type UpdatePostJSON struct {
 	CommitID   uint   `json:"CommitID"`
 	Tag        string `json:"Tag"`
 	DeviceUUID string `json:"DeviceUUID"`
-}
-
-type deltaDiff struct {
-	Added   []models.Package
-	Removed []models.Package
 }
 
 func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTransaction, error) {
@@ -389,41 +406,4 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction
 		return nil
 	}
 	return update
-}
-
-// GetDiffOnUpdate return the list of packages added or removed from commit
-func GetDiffOnUpdate(w http.ResponseWriter, r *http.Request) {
-	update := getUpdate(w, r)
-	initialCommit := update.OldCommits[len(update.OldCommits)-1].Packages
-	updateCommit := update.Commit.Packages
-	var initString []string
-	for _, str := range initialCommit {
-		initString = append(initString, str.Name)
-	}
-	var added []models.Package
-	for _, pkg := range updateCommit {
-		if !contains(initString, pkg.Name) {
-			added = append(added, pkg)
-		}
-	}
-	var updateString []string
-	for _, str := range updateCommit {
-		updateString = append(updateString, str.Name)
-	}
-	var removed []models.Package
-	for _, pkg := range initialCommit {
-		if !contains(updateString, pkg.Name) {
-			removed = append(removed, pkg)
-		}
-	}
-	var results deltaDiff
-	results.Added = added
-	results.Removed = removed
-	json.NewEncoder(w).Encode(&results)
-
-}
-
-func contains(s []string, searchterm string) bool {
-	i := sort.SearchStrings(s, searchterm)
-	return i < len(s) && s[i] == searchterm
 }
