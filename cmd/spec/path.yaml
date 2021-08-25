@@ -184,7 +184,7 @@ paths:
           description: There was an internal server error.
       summary: Create new image for update.
       description: Returns the information of the Image.
-  /updates/device/{DeviceUUID}/update:
+  /updates/device/{DeviceUUID}/updates:
     get:
       operationId: GetUpdateAvailableForDevice
       parameters:
