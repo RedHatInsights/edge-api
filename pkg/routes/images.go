@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
@@ -173,6 +174,30 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	if previous_image != nil {
 		image.ParentId = &previous_image.ID
 	}
+	if image.Commit.OSTreeParentCommit == "" {
+		if previous_image.Commit.OSTreeParentCommit != "" {
+			image.Commit.OSTreeParentCommit = previous_image.Commit.OSTreeParentCommit
+		} else {
+			repoService := services.RepoService
+			repoURL, err := repoService.GetRepoByCommitID(previous_image.CommitID)
+			if err != nil {
+				err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
+				w.WriteHeader(err.Status)
+				json.NewEncoder(w).Encode(&err)
+				return
+			}
+			image.Commit.OSTreeParentCommit = repoURL.URL
+		}
+	}
+	if image.Commit.OSTreeRef == "" {
+		if previous_image.Commit.OSTreeRef != "" {
+			image.Commit.OSTreeRef = previous_image.Commit.OSTreeRef
+
+		}
+		image.Commit.OSTreeRef = config.Get().DefaultOSTreeRef
+
+	}
+
 	err = services.ImageService.CreateImage(image, account)
 	if err != nil {
 		log.Error(err)
