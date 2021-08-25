@@ -258,7 +258,17 @@ components:
           items: {}
           type: array
         DispatchRecords:
-          items: {}
+          items:
+            properties:
+              Device: {}
+              DeviceID: {}
+              PlaybookDispatcherID:
+                type: string
+              PlaybookURL:
+                type: string
+              Status:
+                type: string
+            type: object
           type: array
         OldCommits:
           items:
