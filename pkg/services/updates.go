@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"text/template"
@@ -18,6 +19,7 @@ import (
 // handle the business logic of sending updates to a edge device
 type UpdateServiceInterface interface {
 	CreateUpdate(update *models.UpdateTransaction) (*models.UpdateTransaction, error)
+	GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error)
 }
 
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
@@ -25,6 +27,7 @@ func NewUpdateService(ctx context.Context) UpdateServiceInterface {
 	return &UpdateService{
 		ctx:           ctx,
 		deviceService: NewDeviceService(),
+		filesService:  NewFilesService(),
 		repoBuilder:   NewRepoBuilder(ctx)}
 }
 
@@ -33,6 +36,7 @@ type UpdateService struct {
 	ctx           context.Context
 	repoBuilder   RepoBuilderInterface
 	deviceService DeviceServiceInterface
+	filesService  FilesService
 }
 
 type playbooks struct {
@@ -106,7 +110,7 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 				device.Connected = true
 				dispatchRecord := &models.DispatchRecord{
 					Device:               updateDevice,
-					PlaybookURL:          update.Repo.URL,
+					PlaybookURL:          playbookURL,
 					Status:               models.DispatchRecordStatusCreated,
 					PlaybookDispatcherID: excPlaybook.PlaybookDispatcherID,
 				}
@@ -115,7 +119,7 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 				device.Connected = false
 				dispatchRecord := &models.DispatchRecord{
 					Device:      updateDevice,
-					PlaybookURL: update.Repo.URL,
+					PlaybookURL: playbookURL,
 					Status:      models.DispatchRecordStatusError,
 				}
 				dispatchRecords = append(dispatchRecords, *dispatchRecord)
@@ -127,6 +131,12 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 	db.DB.Save(update)
 	log.Infof("Repobuild::ends: update record %#v ", update)
 	return update, nil
+}
+
+func (s *UpdateService) GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error) {
+	fname := fmt.Sprintf("playbook_dispatcher_update_%d.yml", update.ID)
+	path := fmt.Sprintf("%s/playbooks/%s", update.Account, fname)
+	return s.filesService.GetFile(path)
 }
 
 // WriteTemplate will parse the values to the template
@@ -167,7 +177,7 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 
 	uploadPath := fmt.Sprintf("%s/playbooks/%s", account, fname)
 	filesService := NewFilesService()
-	repoURL, err := filesService.Uploader.UploadFile(tmpfilepath, uploadPath)
+	repoURL, err := filesService.GetUploader().UploadFile(tmpfilepath, uploadPath)
 	if err != nil {
 		log.Errorf("create file: %#v ", err)
 		return "", err

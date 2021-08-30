@@ -3,6 +3,7 @@ package routes
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
+	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -32,8 +34,49 @@ func MakeUpdatesRouter(sub chi.Router) {
 	sub.Route("/{updateID}", func(r chi.Router) {
 		r.Use(UpdateCtx)
 		r.Get("/", GetUpdateByID)
+		r.Get("/update-playbook.yml", GetUpdatePlaybook)
 		r.Put("/", UpdatesUpdate)
 	})
+}
+
+// GetUpdatePlaybook returns the playbook for a update transaction
+func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
+	update := getUpdate(w, r)
+	if update == nil {
+		err := errors.NewBadRequest("UpdateTransactionID can't be empty")
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	account, err := common.GetAccount(r)
+	if err != nil {
+		err := errors.NewBadRequest("Account can't be empty")
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	if update.Account != account {
+		err := errors.NewBadRequest("Update not found for this account")
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	playbook, err := services.UpdateService.GetUpdatePlaybook(update)
+	if err != nil {
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	defer playbook.Close()
+	_, err = io.Copy(w, playbook)
+	if err != nil {
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
 }
 
 // GetDeviceStatus returns the device with the given UUID that is associate to the account.
