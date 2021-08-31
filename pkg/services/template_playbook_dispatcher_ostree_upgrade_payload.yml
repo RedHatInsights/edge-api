@@ -1,6 +1,7 @@
 ---
 # This playbook is meant to be an all-in-one
 - name: Run the ostree update in a single play without external deps
+  become: true
   hosts: localhost
   vars:
     ostree_remote_name: "{{ .GoTemplateRemoteName }}"
@@ -17,7 +18,7 @@
     - name: apply templated ostree remote config
       ansible.builtin.copy:
         content: "{{.OstreeRemoteTemplate}}"
-        dest: /etc/ostree/remotes.d/rhel-for-edge.conf
+        dest: /etc/ostree/remotes.d/rhel-edge.conf
     - name: run rpmostree update
       ansible.builtin.shell: rpm-ostree upgrade
       register: rpmostree_upgrade_out
