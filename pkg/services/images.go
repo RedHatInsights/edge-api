@@ -31,6 +31,7 @@ type ImageServiceInterface interface {
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
 	CreateRepoForImage(i *models.Image) *models.Repo
+	ImageSets(image *models.Image, account string) error
 }
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
@@ -413,5 +414,12 @@ func (s *ImageService) exeInjectionScript(kickstart string, image string, imageI
 		return err
 	}
 	log.Infof("fleetkick output: %s\n", output)
+	return nil
+}
+
+//ImageSets to org group of images into one
+
+func (s *ImageService) ImageSets(image *models.Image, account string) error {
+
 	return nil
 }

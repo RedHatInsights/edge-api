@@ -92,6 +92,7 @@ func main() {
 		s.Route("/repos", routes.MakeReposRouter)
 		s.Route("/images", routes.MakeImagesRouter)
 		s.Route("/updates", routes.MakeUpdatesRouter)
+		s.Route("/image-sets", routes.MakeImageSetsRouter)
 	})
 
 	mr := chi.NewRouter()
