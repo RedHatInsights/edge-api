@@ -54,11 +54,11 @@ type playbooks struct {
 
 // TemplateRemoteInfo the values to playbook
 type TemplateRemoteInfo struct {
-	RemoteName        string
-	RemoteURL         string
-	ContentURL        string
-	GpgVerify         string
-	UpdateTransaction int
+	RemoteName          string
+	RemoteURL           string
+	ContentURL          string
+	GpgVerify           string
+	UpdateTransactionID uint
 }
 
 func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.UpdateTransaction, error) {
@@ -74,7 +74,7 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 	remoteInfo.RemoteURL = update.Repo.URL
 	remoteInfo.RemoteName = "main-test"
 	remoteInfo.ContentURL = update.Repo.URL
-	remoteInfo.UpdateTransaction = int(update.ID)
+	remoteInfo.UpdateTransactionID = update.ID
 	remoteInfo.GpgVerify = "true"
 	playbookURL, err := s.writeTemplate(remoteInfo, update.Account)
 	if err != nil {
@@ -139,15 +139,20 @@ func (s *UpdateService) GetUpdatePlaybook(update *models.UpdateTransaction) (io.
 	return s.filesService.GetFile(path)
 }
 
-// WriteTemplate will parse the values to the template
+func (s *UpdateService) getPlaybookURL(updateID uint) string {
+	cfg := config.Get()
+	url := fmt.Sprintf("%s/api/edge/v1/updates/%d/update-playbook.yml",
+		cfg.EdgeAPIBaseURL, updateID)
+	return url
+}
+
 func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account string) (string, error) {
-	log.Infof("::WriteTemplate: BEGIN")
 	cfg := config.Get()
 	filePath := cfg.TemplatesPath
 	templateName := "template_playbook_dispatcher_ostree_upgrade_payload.yml"
 	template, err := template.ParseFiles(filePath + templateName)
 	if err != nil {
-		fmt.Println(err)
+		log.Errorf("Error parsing playbook template  :: ", err.Error())
 		return "", err
 	}
 	templateData := playbooks{
@@ -162,29 +167,33 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 		OstreeGpgKeypath:     "/etc/pki/rpm-gpg/",
 		OstreeRemoteTemplate: "{{ ostree_remote_template }}"}
 
-	fname := fmt.Sprintf("playbook_dispatcher_update_%v", templateInfo.UpdateTransaction) + ".yml"
+	fname := fmt.Sprintf("playbook_dispatcher_update_%d.yml", templateInfo.UpdateTransactionID)
 	tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
 	f, err := os.Create(tmpfilepath)
 	if err != nil {
-		log.Errorf("create file: %#v", err)
+		log.Errorf("Error creating file: %#s", err.Error())
 		return "", err
 	}
 	err = template.Execute(f, templateData)
 	if err != nil {
-		log.Errorf("err: %#v ", err)
+		log.Errorf("Error executing template: %#s ", err.Error())
 		return "", err
 	}
 
 	uploadPath := fmt.Sprintf("%s/playbooks/%s", account, fname)
-	filesService := NewFilesService()
-	repoURL, err := filesService.GetUploader().UploadFile(tmpfilepath, uploadPath)
+	playbookURL, err := s.filesService.GetUploader().UploadFile(tmpfilepath, uploadPath)
 	if err != nil {
-		log.Errorf("create file: %#v ", err)
+		log.Errorf("Error uploading file to S3: %s ", err.Error())
 		return "", err
-
 	}
-	log.Infof("create file:  %#v", repoURL)
-	os.Remove(tmpfilepath)
+	log.Infof("Template file uploaded to S3, URL: %s", playbookURL)
+	err = os.Remove(tmpfilepath)
+	if err != nil {
+		// TODO: Fail silently, find a way to create alerts based on this log
+		// The container will end up out of space if we don't fix it in the long run.
+		log.Errorf("Error deleting temp file: %s ", err.Error())
+	}
 	log.Infof("::WriteTemplate: ENDs")
-	return repoURL, nil
+	playbookURL = s.getPlaybookURL(templateInfo.UpdateTransactionID)
+	return playbookURL, nil
 }

@@ -41,13 +41,6 @@ func MakeUpdatesRouter(sub chi.Router) {
 
 // GetUpdatePlaybook returns the playbook for a update transaction
 func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
-	update := getUpdate(w, r)
-	if update == nil {
-		err := errors.NewBadRequest("UpdateTransactionID can't be empty")
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
 	account, err := common.GetAccount(r)
 	if err != nil {
 		err := errors.NewBadRequest("Account can't be empty")
@@ -55,11 +48,16 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	if update.Account != account {
-		err := errors.NewBadRequest("Update not found for this account")
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return
+	var update *models.UpdateTransaction
+	if updateID := chi.URLParam(r, "updateID"); updateID != "" {
+		id, err := strconv.Atoi(updateID)
+		if err != nil {
+			err := errors.NewBadRequest("UpdateTransactionID can't be empty")
+			w.WriteHeader(err.Status)
+			json.NewEncoder(w).Encode(&err)
+			return
+		}
+		db.DB.Where("update_transactions.account = ?", account).Find(&update, id)
 	}
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	playbook, err := services.UpdateService.GetUpdatePlaybook(update)
@@ -327,6 +325,7 @@ const UpdateContextKey key = 0
 type UpdateContext struct {
 	DeviceUUID string
 	Tag        string
+	UpdateID   string
 }
 
 // UpdateCtx is a handler for Update requests
@@ -334,8 +333,8 @@ func UpdateCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var uCtx UpdateContext
 		uCtx.DeviceUUID = chi.URLParam(r, "DeviceUUID")
-
 		uCtx.Tag = chi.URLParam(r, "Tag")
+		uCtx.UpdateID = chi.URLParam(r, "updateID")
 		log.Debugf("UpdateCtx::uCtx: %#v", uCtx)
 		ctx := context.WithValue(r.Context(), UpdateContextKey, &uCtx)
 		log.Debugf("UpdateCtx::ctx: %#v", ctx)
@@ -445,7 +444,6 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction
 	ctx := r.Context()
 	update, ok := ctx.Value(UpdateContextKey).(*models.UpdateTransaction)
 	if !ok {
-		http.Error(w, "must pass id", http.StatusBadRequest)
 		return nil
 	}
 	return update
