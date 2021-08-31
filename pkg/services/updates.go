@@ -152,7 +152,7 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 	templateName := "template_playbook_dispatcher_ostree_upgrade_payload.yml"
 	template, err := template.ParseFiles(filePath + templateName)
 	if err != nil {
-		log.Errorf("Error parsing playbook template  :: ", err.Error())
+		log.Errorf("Error parsing playbook template  :: %s", err.Error())
 		return "", err
 	}
 	templateData := playbooks{
@@ -171,12 +171,12 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 	tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
 	f, err := os.Create(tmpfilepath)
 	if err != nil {
-		log.Errorf("Error creating file: %#s", err.Error())
+		log.Errorf("Error creating file: %s", err.Error())
 		return "", err
 	}
 	err = template.Execute(f, templateData)
 	if err != nil {
-		log.Errorf("Error executing template: %#s ", err.Error())
+		log.Errorf("Error executing template: %s ", err.Error())
 		return "", err
 	}
 
