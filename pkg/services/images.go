@@ -326,7 +326,7 @@ func (s *ImageService) uploadISO(image *models.Image, imageName string) error {
 
 	uploadPath := fmt.Sprintf("%s/isos/%s.iso", image.Account, image.Name)
 	filesService := NewFilesService()
-	url, err := filesService.Uploader.UploadFile(imageName, uploadPath)
+	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
 
 	if err != nil {
 		return fmt.Errorf("error uploading the ISO :: %s :: %s", uploadPath, err.Error())
