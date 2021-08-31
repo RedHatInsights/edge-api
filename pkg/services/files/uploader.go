@@ -126,6 +126,7 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 	}
 
 	filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		workWg.Add(1)
 		if err != nil {
 			log.Warnf("incoming error!: %#v", err)
 		}
@@ -157,7 +158,6 @@ func (u *S3Uploader) UploadFile(fname string, uploadPath string) (string, error)
 	if err != nil {
 		return "", fmt.Errorf("failed to open file %q, %v", fname, err)
 	}
-	defer f.Close()
 	// Upload the file to S3.
 	result, err := u.Client.PutObject(&s3.PutObjectInput{
 		Bucket: aws.String(u.Bucket),
@@ -170,6 +170,7 @@ func (u *S3Uploader) UploadFile(fname string, uploadPath string) (string, error)
 	if err != nil {
 		return "", err
 	}
+	f.Close()
 	region := *u.Client.Config.Region
 	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", u.Bucket, region, uploadPath)
 	return s3URL, nil
