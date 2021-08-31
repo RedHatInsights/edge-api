@@ -61,6 +61,13 @@ paths:
   /images/{imageId}/update:
     post:
       operationId: CreateImageUpdate
+      parameters:
+        - name: imageId
+          in: path
+          required: true
+          description: ImageID
+          schema:
+            type : integer
       requestBody:
         content:
           application/json:
@@ -217,7 +224,7 @@ paths:
     get:
       operationId: GetUpdateAvailableForDevice
       parameters:
-        - DeviceUUID: DeviceUUID
+        - name: DeviceUUID
           in: path
           required: true
           description: DeviceUUID
