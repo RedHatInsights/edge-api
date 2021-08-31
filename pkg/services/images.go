@@ -418,7 +418,6 @@ func (s *ImageService) exeInjectionScript(kickstart string, image string, imageI
 }
 
 //ImageSets to org group of images into one
-
 func (s *ImageService) ImageSets(image *models.Image, account string) error {
 
 	return nil
