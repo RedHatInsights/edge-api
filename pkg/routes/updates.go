@@ -166,8 +166,17 @@ type UpdatePostJSON struct {
 
 func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTransaction, error) {
 	log.Infof("updateFromHTTP:: Begin")
+
+	account, err := common.GetAccount(r)
+	if err != nil {
+		err := apierrors.NewInternalServerError()
+		err.Title = "No account found"
+		w.WriteHeader(err.Status)
+		return nil, err
+	}
+
 	var updateJSON UpdatePostJSON
-	err := json.NewDecoder(r.Body).Decode(&updateJSON)
+	err = json.NewDecoder(r.Body).Decode(&updateJSON)
 	if err != nil {
 		err := apierrors.NewBadRequest("Invalid JSON")
 		w.WriteHeader(err.Status)
@@ -199,7 +208,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	}
 	if updateJSON.DeviceUUID != "" {
 		inventory, err = client.ReturnDevicesByID(updateJSON.DeviceUUID)
-		if err != nil {
+		if err != nil || inventory.Count == 0 {
 			err := apierrors.NewNotFound(fmt.Sprintf("No devices found for UUID %s", updateJSON.DeviceUUID))
 			w.WriteHeader(err.Status)
 			return &models.UpdateTransaction{}, err
@@ -207,14 +216,6 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	}
 
 	log.Infof("updateFromHTTP::inventory: %#v", inventory)
-
-	account, err := common.GetAccount(r)
-	if err != nil {
-		err := apierrors.NewInternalServerError()
-		err.Title = "No account found"
-		w.WriteHeader(err.Status)
-		return nil, err
-	}
 
 	// Create the models.UpdateTransaction
 	update := models.UpdateTransaction{
@@ -385,7 +386,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, result.Error.Error(), http.StatusBadRequest)
 	}
 	repoService := services.NewUpdateService(r.Context())
-	log.Infof("AddUpdate:: call:: RepoService.CreateUpdate")
+	log.Infof("AddUpdate:: call:: RepoService.CreateUpdate :: %d", update.ID)
 	go repoService.CreateUpdate(update)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(update)

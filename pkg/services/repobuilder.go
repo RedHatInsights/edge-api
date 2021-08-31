@@ -65,7 +65,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	update.Status = models.UpdateStatusCreated
 	db.DB.Save(&update)
 
-	log.Infof("RepoBuilder::updateCommit: %#v", ut.Commit)
+	log.Infof("RepoBuilder::updateCommitID %d and UpdateTransactionID %d", ut.Commit.ID, ut.ID)
 
 	path := filepath.Join(cfg.RepoTempPath, strconv.FormatUint(uint64(ut.RepoID), 10))
 	log.Infof("RepoBuilder::path: %#v", path)

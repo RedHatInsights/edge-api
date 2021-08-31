@@ -81,7 +81,6 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 		log.Error(err)
 		return nil, err
 	}
-	log.Debugf("playbooks:WriteTemplate: %#v", playbookURL)
 	// 3. Loop through all devices in UpdateTransaction
 	dispatchRecords := update.DispatchRecords
 	for _, device := range update.Devices {
@@ -193,7 +192,8 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 		// The container will end up out of space if we don't fix it in the long run.
 		log.Errorf("Error deleting temp file: %s ", err.Error())
 	}
-	log.Infof("::WriteTemplate: ENDs")
 	playbookURL = s.getPlaybookURL(templateInfo.UpdateTransactionID)
+	log.Infof("Proxied playbook URL: %s", playbookURL)
+	log.Infof("::WriteTemplate: ENDs")
 	return playbookURL, nil
 }
