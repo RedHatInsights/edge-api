@@ -20,7 +20,7 @@
         content: "{{.OstreeRemoteTemplate}}"
         dest: /etc/ostree/remotes.d/rhel-edge.conf
     - name: run rpmostree update
-      ansible.builtin.shell: rpm-ostree upgrade
+      ansible.builtin.shell: rpm-ostree upgrade --allow-downgrade
       register: rpmostree_upgrade_out
       changed_when: '"No upgrade available" not in rpmostree_upgrade_out.stdout'
       failed_when: 'rpmostree_upgrade_out.rc != 0'
