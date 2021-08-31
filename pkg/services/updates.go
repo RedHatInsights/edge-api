@@ -72,10 +72,10 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 	// 2. Upload templated playbook
 	var remoteInfo TemplateRemoteInfo
 	remoteInfo.RemoteURL = update.Repo.URL
-	remoteInfo.RemoteName = "main-test"
+	remoteInfo.RemoteName = "rhel-edge"
 	remoteInfo.ContentURL = update.Repo.URL
 	remoteInfo.UpdateTransactionID = update.ID
-	remoteInfo.GpgVerify = "true"
+	remoteInfo.GpgVerify = "false"
 	playbookURL, err := s.writeTemplate(remoteInfo, update.Account)
 	if err != nil {
 		log.Error(err)
@@ -162,7 +162,7 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 		OstreeRemoteName:     "{{ ostree_remote_name }}",
 		OstreeRemoteURL:      "{{ ostree_remote_url }}",
 		OstreeContentURL:     "{{ ostree_content_url }}",
-		OstreeGpgVerify:      "true",
+		OstreeGpgVerify:      "false",
 		OstreeGpgKeypath:     "/etc/pki/rpm-gpg/",
 		OstreeRemoteTemplate: "{{ ostree_remote_template }}"}
 
