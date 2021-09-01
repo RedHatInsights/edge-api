@@ -131,10 +131,10 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 	log.Debugf("S3Uploader::UploadRepo::account: %#v", account)
 
 	createWorkers()
-	var workWg sync.WaitGroup
+	var repoWaitGroup sync.WaitGroup
 
 	filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
-		workWg.Add(1)
+		repoWaitGroup.Add(1)
 		if err != nil {
 			log.Warnf("incoming error!: %#v", err)
 		}
@@ -143,13 +143,12 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 			return nil
 		}
 
-		res := &uploadDetails{path, fmt.Sprintf("%s/%s", account, strings.TrimPrefix(path, cfg.RepoTempPath)), u, &workWg}
+		res := &uploadDetails{path, fmt.Sprintf("%s/%s", account, strings.TrimPrefix(path, cfg.RepoTempPath)), u, &repoWaitGroup}
 		uploadQueue <- *res
 		return nil
 	})
 
-	workWg.Wait()
-	//close(q)
+	repoWaitGroup.Wait()
 	region := *u.Client.Config.Region
 	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s/%s", u.Bucket, region, account, strings.TrimPrefix(src, cfg.RepoTempPath))
 	return s3URL, nil
