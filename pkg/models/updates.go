@@ -37,16 +37,16 @@ UpdateTransaction
 */
 type UpdateTransaction struct {
 	gorm.Model
-	Commit          *Commit
-	CommitID        uint
-	Account         string
-	OldCommits      []Commit `gorm:"many2many:updatetransaction_commits;"`
-	Devices         []Device `gorm:"many2many:updatetransaction_devices;"`
-	Tag             string
-	Status          string
-	RepoID          uint
-	Repo            *Repo
-	DispatchRecords []DispatchRecord `gorm:"many2many:updatetransaction_dispatchrecords;"`
+	Commit          *Commit          `json:"Commit"`
+	CommitID        uint             `json:"CommitID"`
+	Account         string           `json:"Account"`
+	OldCommits      []Commit         `gorm:"many2many:updatetransaction_commits;" json:"OldCommits"`
+	Devices         []Device         `gorm:"many2many:updatetransaction_devices;" json:"Devices"`
+	Tag             string           `json:"Tag"`
+	Status          string           `json:"Status"`
+	RepoID          uint             `json:"RepoID"`
+	Repo            *Repo            `json:"Repo"`
+	DispatchRecords []DispatchRecord `gorm:"many2many:updatetransaction_dispatchrecords;" json:"DispatchRecords"`
 }
 
 /*
@@ -60,11 +60,11 @@ DispatchRecord
 */
 type DispatchRecord struct {
 	gorm.Model
-	PlaybookURL          string
-	DeviceID             uint
-	Device               *Device
-	Status               string
-	PlaybookDispatcherID string
+	PlaybookURL          string  `json:"PlaybookURL"`
+	DeviceID             uint    `json:"DeviceID"`
+	Device               *Device `json:"Device"`
+	Status               string  `json:"Status"`
+	PlaybookDispatcherID string  `json:"PlaybookDispatcherID"`
 }
 
 const (

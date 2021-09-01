@@ -54,7 +54,14 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 	image.Commit.Account = account
 	image.Commit.Status = models.ImageStatusBuilding
 	image.Status = models.ImageStatusBuilding
-	if image.ImageType == models.ImageTypeInstaller {
+	// TODO: Remove code when frontend is not using ImageType on the table
+	if image.HasOutputType(models.ImageTypeInstaller) {
+		image.ImageType = models.ImageTypeInstaller
+	} else {
+		image.ImageType = models.ImageTypeCommit
+	}
+	// TODO: End of remove block
+	if image.HasOutputType(models.ImageTypeInstaller) {
 		image.Installer.Status = models.ImageStatusCreated
 		image.Installer.Account = image.Account
 		tx := db.DB.Create(&image.Installer)
@@ -124,7 +131,7 @@ func (s *ImageService) postProcessImage(id uint) {
 	repo := s.CreateRepoForImage(i)
 
 	// TODO: We need to discuss this whole thing post-July deliverable
-	if i.ImageType == models.ImageTypeInstaller {
+	if i.HasOutputType(models.ImageTypeInstaller) {
 		i, err := s.imageBuilder.ComposeInstaller(repo, i)
 		if err != nil {
 			log.Error(err)
@@ -319,7 +326,7 @@ func (s *ImageService) uploadISO(image *models.Image, imageName string) error {
 
 	uploadPath := fmt.Sprintf("%s/isos/%s.iso", image.Account, image.Name)
 	filesService := NewFilesService()
-	url, err := filesService.Uploader.UploadFile(imageName, uploadPath)
+	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
 
 	if err != nil {
 		return fmt.Errorf("error uploading the ISO :: %s :: %s", uploadPath, err.Error())

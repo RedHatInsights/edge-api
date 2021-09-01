@@ -30,7 +30,7 @@ type RepoBuilderInterface interface {
 // RepoBuilder is the implementation of a RepoBuilderInterface
 type RepoBuilder struct {
 	ctx          context.Context
-	filesService *FilesService
+	filesService FilesService
 	repoService  RepoServiceInterface
 }
 
@@ -65,7 +65,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	update.Status = models.UpdateStatusCreated
 	db.DB.Save(&update)
 
-	log.Infof("RepoBuilder::updateCommit: %#v", ut.Commit)
+	log.Infof("RepoBuilder::updateCommitID %d and UpdateTransactionID %d", ut.Commit.ID, ut.ID)
 
 	path := filepath.Join(cfg.RepoTempPath, strconv.FormatUint(uint64(ut.RepoID), 10))
 	log.Infof("RepoBuilder::path: %#v", path)
@@ -121,7 +121,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
 	log.Infof("::BuildUpdateRepo:uploader.UploadRepo: BEGIN")
-	repoURL, err := rb.filesService.Uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(ut.RepoID), 10))
+	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(ut.RepoID), 10))
 	log.Infof("::BuildUpdateRepo:uploader.UploadRepo: FINISH")
 	log.Infof("::BuildUpdateRepo:repoURL: %#v", repoURL)
 	if err != nil {
@@ -179,7 +179,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		return nil, err
 	}
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
-	repoURL, err := rb.filesService.Uploader.UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(r.ID), 10))
+	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(r.ID), 10))
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -232,7 +232,7 @@ func (rb *RepoBuilder) DownloadExtractVersionRepo(c *models.Commit, dest string)
 		log.Error(err)
 		return err
 	}
-	err = rb.filesService.Extractor.Extract(tarFile, filepath.Join(dest))
+	err = rb.filesService.GetExtractor().Extract(tarFile, filepath.Join(dest))
 	if err != nil {
 		log.Errorf("Failed to untar file: %s", filepath.Join(dest, tarFileName))
 		log.Error(err)

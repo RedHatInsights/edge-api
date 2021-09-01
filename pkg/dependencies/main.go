@@ -12,6 +12,7 @@ type EdgeAPIServices struct {
 	DeviceService services.DeviceServiceInterface
 	ImageService  services.ImageServiceInterface
 	RepoService   services.RepoServiceInterface
+	UpdateService services.UpdateServiceInterface
 }
 
 func Init(ctx context.Context) *EdgeAPIServices {
@@ -20,6 +21,7 @@ func Init(ctx context.Context) *EdgeAPIServices {
 		DeviceService: services.NewDeviceService(),
 		ImageService:  services.NewImageService(ctx),
 		RepoService:   services.NewRepoService(),
+		UpdateService: services.NewUpdateService(ctx),
 	}
 }
 

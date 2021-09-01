@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
@@ -43,6 +44,7 @@ func MakeImagesRouter(sub chi.Router) {
 		r.Post("/installer", CreateInstallerForImage)
 		r.Post("/repo", CreateRepoForImage)
 		r.Post("/kickstart", CreateKickStartForImage)
+		r.Post("/update", CreateImageUpdate)
 	})
 }
 
@@ -111,16 +113,8 @@ type CreateImageRequest struct {
 func CreateImage(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	defer r.Body.Close()
-
-	var image *models.Image
-	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
-	if err := image.ValidateRequest(); err != nil {
+	image, err := initImageCreateRequest(w, r)
+	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.Status)
@@ -147,6 +141,95 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&image)
 
+}
+
+// CreateImageUpdate creates an update for an exitent image on hosted image builder.
+func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
+	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	defer r.Body.Close()
+	image, err := initImageCreateRequest(w, r)
+	if err != nil {
+		log.Info(err)
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	account, err := common.GetAccount(r)
+	if err != nil {
+		log.Info(err)
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+
+	ctx := r.Context()
+	previous_image, ok := ctx.Value(imageKey).(*models.Image)
+	if !ok {
+		err := errors.NewBadRequest("Must pass image id")
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+	}
+	if previous_image != nil {
+		image.ParentId = &previous_image.ID
+	}
+	if image.Commit.OSTreeParentCommit == "" {
+		if previous_image.Commit.OSTreeParentCommit != "" {
+			image.Commit.OSTreeParentCommit = previous_image.Commit.OSTreeParentCommit
+		} else {
+			repoService := services.RepoService
+			repoURL, err := repoService.GetRepoByCommitID(previous_image.CommitID)
+			if err != nil {
+				err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
+				w.WriteHeader(err.Status)
+				json.NewEncoder(w).Encode(&err)
+				return
+			}
+			image.Commit.OSTreeParentCommit = repoURL.URL
+		}
+	}
+	if image.Commit.OSTreeRef == "" {
+		if previous_image.Commit.OSTreeRef != "" {
+			image.Commit.OSTreeRef = previous_image.Commit.OSTreeRef
+
+		}
+		image.Commit.OSTreeRef = config.Get().DefaultOSTreeRef
+
+	}
+
+	err = services.ImageService.CreateImage(image, account)
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		err.Title = "Failed creating image"
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(&image)
+
+}
+
+// initImageCreateRequest validates request to create/update an image.
+func initImageCreateRequest(w http.ResponseWriter, r *http.Request) (*models.Image, error) {
+	var image *models.Image
+	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return nil, err
+	}
+	if err := image.ValidateRequest(); err != nil {
+		log.Info(err)
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return nil, err
+	}
+	return image, nil
 }
 
 var imageFilters = common.ComposeFilters(

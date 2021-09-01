@@ -53,21 +53,21 @@ func TestValidateRequest(t *testing.T) {
 			expected: errors.New(ArchitectureCantBeEmptyMessage),
 		},
 		{
-			name: "no image type",
+			name: "no output type",
 			image: &Image{
 				Distribution: "rhel-8",
 				Name:         "image_name",
 				Commit:       &Commit{Arch: "x86_64"},
 			},
-			expected: errors.New(ImageTypeNotAccepted),
+			expected: errors.New(NoOutputTypes),
 		},
 		{
-			name: "invalid image type",
+			name: "invalid output type",
 			image: &Image{
 				Distribution: "rhel-8",
 				Name:         "image_name",
 				Commit:       &Commit{Arch: "x86_64"},
-				ImageType:    "zip-image-type",
+				OutputTypes:  []string{"zip-image-type"},
 			},
 			expected: errors.New(ImageTypeNotAccepted),
 		},
@@ -77,9 +77,9 @@ func TestValidateRequest(t *testing.T) {
 				Distribution: "rhel-8",
 				Name:         "image_name",
 				Commit:       &Commit{Arch: "x86_64"},
-				ImageType:    ImageTypeInstaller,
+				OutputTypes:  []string{ImageTypeInstaller},
 			},
-			expected: errors.New(MissingUsernameError),
+			expected: errors.New(MissingInstaller),
 		},
 		{
 			name: "empty username when image type is installer",
@@ -87,7 +87,7 @@ func TestValidateRequest(t *testing.T) {
 				Distribution: "rhel-8",
 				Name:         "image_name",
 				Commit:       &Commit{Arch: "x86_64"},
-				ImageType:    ImageTypeInstaller,
+				OutputTypes:  []string{ImageTypeInstaller},
 				Installer: &Installer{
 					Username: "",
 				},
@@ -100,7 +100,7 @@ func TestValidateRequest(t *testing.T) {
 				Distribution: "rhel-8",
 				Name:         "image_name",
 				Commit:       &Commit{Arch: "x86_64"},
-				ImageType:    ImageTypeInstaller,
+				OutputTypes:  []string{ImageTypeInstaller},
 				Installer: &Installer{
 					Username: "root",
 				},
@@ -113,7 +113,7 @@ func TestValidateRequest(t *testing.T) {
 				Distribution: "rhel-8",
 				Name:         "image_name",
 				Commit:       &Commit{Arch: "x86_64"},
-				ImageType:    ImageTypeInstaller,
+				OutputTypes:  []string{ImageTypeInstaller},
 				Installer: &Installer{
 					Username: "root",
 					SSHKey:   "dd:00:eeff:10",
@@ -127,7 +127,7 @@ func TestValidateRequest(t *testing.T) {
 				Distribution: "rhel-8",
 				Name:         "image_name",
 				Commit:       &Commit{Arch: "x86_64"},
-				ImageType:    ImageTypeInstaller,
+				OutputTypes:  []string{ImageTypeInstaller},
 				Installer: &Installer{
 					Username: "root",
 					SSHKey:   "ssh-rsa dd:00:eeff:10",
@@ -141,7 +141,7 @@ func TestValidateRequest(t *testing.T) {
 				Distribution: "rhel-8",
 				Name:         "image_name",
 				Commit:       &Commit{Arch: "x86_64"},
-				ImageType:    ImageTypeCommit,
+				OutputTypes:  []string{ImageTypeCommit},
 			},
 			expected: nil,
 		},
