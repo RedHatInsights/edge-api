@@ -324,7 +324,6 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	go repoService.CreateUpdate(update)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(update)
-
 }
 
 // GetUpdateByID obtains an update from the database for an account
