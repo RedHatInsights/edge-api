@@ -136,10 +136,10 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	imageSet.Version = image.Version
 	set := db.DB.Create(&imageSet)
 	if set.Error == nil {
-		image.ImageSetID = &imageSet.ID
+		image.ImageSetID = imageSet.ID
 	}
 
-	err = services.ImageService.CreateImage(image, account)
+	err = services.ImageService.CreateImage(image, account, nil)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -181,20 +181,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
 	}
-	if previous_image != nil {
-		var currentImageSet models.ImageSet
-		result := db.DB.Where("Id = ?", previous_image.ImageSetID).First(&currentImageSet)
-		if result.Error != nil {
-			return
-		}
-		currentImageSet.Version = currentImageSet.Version + 1
-		image.ParentId = &previous_image.ID
-		image.ImageSetID = previous_image.ImageSetID
-		if err := db.DB.Save(currentImageSet).Error; err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-	}
+
 	if image.Commit.OSTreeParentCommit == "" {
 		if previous_image.Commit.OSTreeParentCommit != "" {
 			image.Commit.OSTreeParentCommit = previous_image.Commit.OSTreeParentCommit
@@ -219,7 +206,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	err = services.ImageService.CreateImage(image, account)
+	err = services.ImageService.CreateImage(image, account, previous_image)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()

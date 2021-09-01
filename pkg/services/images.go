@@ -26,7 +26,7 @@ var WaitGroup sync.WaitGroup
 // ImageServiceInterface defines the interface that helps handle
 // the business logic of creating RHEL For Edge Images
 type ImageServiceInterface interface {
-	CreateImage(image *models.Image, account string) error
+	CreateImage(image *models.Image, account string, previous_image *models.Image) error
 	AddUserInfo(image *models.Image) error
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
@@ -45,7 +45,20 @@ type ImageService struct {
 }
 
 // CreateImage creates an Image for an Account on Image Builder and on our database
-func (s *ImageService) CreateImage(image *models.Image, account string) error {
+func (s *ImageService) CreateImage(image *models.Image, account string, previous_image *models.Image) error {
+	if previous_image != nil {
+		var currentImageSet models.ImageSet
+		result := db.DB.Where("Id = ?", previous_image.ImageSetID).First(&currentImageSet)
+		if result.Error != nil {
+			return result.Error
+		}
+		currentImageSet.Version = currentImageSet.Version + 1
+		image.ParentId = &previous_image.ID
+		image.ImageSetID = previous_image.ImageSetID
+		if err := db.DB.Save(currentImageSet).Error; err != nil {
+			return result.Error
+		}
+	}
 	image, err := s.imageBuilder.ComposeCommit(image)
 	if err != nil {
 		return err
