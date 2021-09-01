@@ -32,7 +32,7 @@ type Image struct {
 	InstallerID  *uint          `json:"InstallerID"`
 	Installer    *Installer     `json:"Installer"`
 	ParentId     *uint          `gorm:"foreignKey:Image"`
-	ImageSetID   *uint          `json:"ImageSet"`
+	ImageSetID   *uint          `json:"ImageSet" gorm:"foreignKey:ImageSet"`
 }
 
 const (
