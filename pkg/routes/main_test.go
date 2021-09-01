@@ -10,8 +10,9 @@ import (
 )
 
 var (
-	testImage models.Image
-	testRepo  models.Repo
+	testImage  models.Image
+	testRepo   models.Repo
+	testUpdate models.UpdateTransaction
 
 	updateDevices = []models.Device{
 		{UUID: "1", DesiredHash: "11"},
