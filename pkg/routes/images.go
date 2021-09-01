@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
@@ -139,7 +138,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		image.ImageSetID = imageSet.ID
 	}
 
-	err = services.ImageService.CreateImage(image, account, nil)
+	err = services.ImageService.CreateImage(image, account)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -182,31 +181,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 	}
 
-	if image.Commit.OSTreeParentCommit == "" {
-		if previous_image.Commit.OSTreeParentCommit != "" {
-			image.Commit.OSTreeParentCommit = previous_image.Commit.OSTreeParentCommit
-		} else {
-			repoService := services.RepoService
-			repoURL, err := repoService.GetRepoByCommitID(previous_image.CommitID)
-			if err != nil {
-				err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
-				w.WriteHeader(err.Status)
-				json.NewEncoder(w).Encode(&err)
-				return
-			}
-			image.Commit.OSTreeParentCommit = repoURL.URL
-		}
-	}
-	if image.Commit.OSTreeRef == "" {
-		if previous_image.Commit.OSTreeRef != "" {
-			image.Commit.OSTreeRef = previous_image.Commit.OSTreeRef
-
-		}
-		image.Commit.OSTreeRef = config.Get().DefaultOSTreeRef
-
-	}
-
-	err = services.ImageService.CreateImage(image, account, previous_image)
+	err = services.ImageService.UpdateImage(image, account, previous_image)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
