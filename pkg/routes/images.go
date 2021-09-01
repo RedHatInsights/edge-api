@@ -121,6 +121,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
+
 	account, err := common.GetAccount(r)
 	if err != nil {
 		log.Info(err)
@@ -129,6 +130,15 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
+	var imageSet models.ImageSet
+	imageSet.Account = account
+	imageSet.Name = image.Name
+	imageSet.Version = image.Version
+	set := db.DB.Create(&imageSet)
+	if set.Error == nil {
+		image.ImageSetID = &imageSet.ID
+	}
+
 	err = services.ImageService.CreateImage(image, account)
 	if err != nil {
 		log.Error(err)
@@ -173,6 +183,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	if previous_image != nil {
 		image.ParentId = &previous_image.ID
+		image.ImageSetID = previous_image.ImageSetID
 	}
 	if image.Commit.OSTreeParentCommit == "" {
 		if previous_image.Commit.OSTreeParentCommit != "" {
