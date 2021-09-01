@@ -14,13 +14,12 @@ import (
 
 // MakeImageSetsRouter adds support for operations on image-sets
 func MakeImageSetsRouter(sub chi.Router) {
-	sub.With(validateGetAllImagesSearchParams).With(common.Paginate).Get("/", ImageSets)
+	sub.With(validateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetAllImageSets)
 	sub.Get("/reserved-usernames", GetReservedUsernames)
-
 }
 
-// ImageSets image objects from the database for ParentID
-func ImageSets(w http.ResponseWriter, r *http.Request) {
+// GetAllImageSets image objects from the database for ParentID
+func GetAllImageSets(w http.ResponseWriter, r *http.Request) {
 	var count int64
 	var images []models.Image
 	var image models.Image
@@ -37,7 +36,6 @@ func ImageSets(w http.ResponseWriter, r *http.Request) {
 	}
 	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("images.parent_id is ?", image.ParentId).Find(&images)
 	if result.Error != nil {
-		// log.Error(err)
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
