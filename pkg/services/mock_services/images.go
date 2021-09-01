@@ -102,9 +102,3 @@ func (mr *MockImageServiceInterfaceMockRecorder) UpdateImageStatus(image interfa
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateImageStatus", reflect.TypeOf((*MockImageServiceInterface)(nil).UpdateImageStatus), image)
 }
-
-// ImageSets mocks base method.
-func (m *MockImageServiceInterface) ImageSets(image *models.Image, account string) error {
-
-	return nil
-}
