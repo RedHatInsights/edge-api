@@ -16,6 +16,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var workersCreated = false
+
+//queue of upload jobs
+var uploadQueue = make(chan uploadDetails)
+
 //Uploader is an interface for uploading repository
 type Uploader interface {
 	UploadRepo(src string, account string) (string, error)
@@ -90,21 +95,30 @@ func newS3Uploader() *S3Uploader {
 	}
 }
 
-type filePathVar struct {
+type uploadDetails struct {
 	fileName   string
 	uploadPath string
+	uploader   *S3Uploader
+	wg         *sync.WaitGroup
 }
 
-func worker(wg *sync.WaitGroup, queue <-chan filePathVar, u *S3Uploader) {
-	defer wg.Done()
-
-	for p := range queue {
-		fname := p.fileName
-		uploadDest := p.uploadPath
-		_, err := u.UploadFile(fname, uploadDest)
+func worker() {
+	for p := range uploadQueue {
+		_, err := p.uploader.UploadFile(p.fileName, p.uploadPath)
 		if err != nil {
 			log.Warnf("error: %v", err)
 		}
+		p.wg.Done()
+	}
+}
+
+func createWorkers() {
+	if !workersCreated {
+		numberOfWorkers := 100
+		for i := 0; i < numberOfWorkers; i++ {
+			go worker()
+		}
+		workersCreated = true
 	}
 }
 
@@ -116,14 +130,8 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 	log.Debugf("S3Uploader::UploadRepo::src: %#v", src)
 	log.Debugf("S3Uploader::UploadRepo::account: %#v", account)
 
-	//queue of jobs
-	q := make(chan filePathVar)
-
-	numberOfWorkers := 100
+	createWorkers()
 	var workWg sync.WaitGroup
-	for i := 0; i < numberOfWorkers; i++ {
-		go worker(&workWg, q, u)
-	}
 
 	filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		workWg.Add(1)
@@ -135,15 +143,13 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 			return nil
 		}
 
-		res := new(filePathVar)
-		res.fileName = path
-		res.uploadPath = fmt.Sprintf("%s/%s", account, strings.TrimPrefix(path, cfg.RepoTempPath))
-		q <- *res
+		res := &uploadDetails{path, fmt.Sprintf("%s/%s", account, strings.TrimPrefix(path, cfg.RepoTempPath)), u, &workWg}
+		uploadQueue <- *res
 		return nil
 	})
 
 	workWg.Wait()
-	close(q)
+	//close(q)
 	region := *u.Client.Config.Region
 	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s/%s", u.Bucket, region, account, strings.TrimPrefix(src, cfg.RepoTempPath))
 	return s3URL, nil
