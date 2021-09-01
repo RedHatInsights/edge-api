@@ -182,8 +182,18 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 	}
 	if previous_image != nil {
+		var currentImageSet models.ImageSet
+		result := db.DB.Where("Id = ?", previous_image.ImageSetID).First(&currentImageSet)
+		if result.Error != nil {
+			return
+		}
+		currentImageSet.Version = currentImageSet.Version + 1
 		image.ParentId = &previous_image.ID
 		image.ImageSetID = previous_image.ImageSetID
+		if err := db.DB.Save(currentImageSet).Error; err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 	if image.Commit.OSTreeParentCommit == "" {
 		if previous_image.Commit.OSTreeParentCommit != "" {
