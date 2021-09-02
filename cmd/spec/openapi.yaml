@@ -5,8 +5,6 @@ components:
         CommitID: {}
         DeviceUUID:
           type: string
-        Tag:
-          type: string
       type: object
     v1.BadRequest:
       properties:
@@ -620,6 +618,35 @@ paths:
           description: There was an internal server error.
       summary: Executes a device update.
       description: Executes a device update.
+  /updates/{updateID}/update-playbook.yml:
+    get:
+      operationId: GetUpdatePlaybook
+      parameters:
+        - name: updateID
+          in: path
+          required: true
+          description: An unique ID to identify the update that you want to retrieve your playbook for
+          schema:
+            type: integer
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ansible playbook for an update
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500": 
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
   /updates/device/{DeviceUUID}/updates:
     get:
       operationId: GetUpdateAvailableForDevice
