@@ -65,31 +65,32 @@ func (s *DeviceService) GetUpdateAvailableForDevice(currentCheckSum string) ([]I
 	var currentImage models.Image
 
 	result := db.DB.Joins("Commit").Where("OS_Tree_Commit = ?", currentCheckSum).First(&currentImage)
+	if result.Error != nil {
+		return nil, errors.NewInternalServerError()
+	}
 	err := db.DB.Model(&currentImage.Commit).Association("Packages").Find(&currentImage.Commit.Packages)
 	if err != nil {
 		return nil, errors.NewInternalServerError()
 	}
 
-	if result.Error == nil {
-		updates := db.DB.Where("Parent_Id = ?", currentImage.ID).Joins("Commit").Find(&images)
-		if updates.Error == nil {
-			var imageDiff []ImageUpdateAvailable
-			for _, upd := range images {
-				db.DB.First(&upd.Commit, upd.CommitID)
-				db.DB.Model(&upd.Commit).Association("Packages").Find(&upd.Commit.Packages)
-				var delta ImageUpdateAvailable
-				diff := GetDiffOnUpdate(currentImage, upd)
-				delta.Image = upd
-				delta.PackageDiff = diff
-				imageDiff = append(imageDiff, delta)
-			}
-
-			return imageDiff, nil
-		} else {
-			return nil, updates.Error
+	updates := db.DB.Where("Parent_Id = ?", currentImage.ID).Joins("Commit").Find(&images)
+	if updates.Error == nil {
+		var imageDiff []ImageUpdateAvailable
+		for _, upd := range images {
+			db.DB.First(&upd.Commit, upd.CommitID)
+			db.DB.Model(&upd.Commit).Association("Packages").Find(&upd.Commit.Packages)
+			var delta ImageUpdateAvailable
+			diff := GetDiffOnUpdate(currentImage, upd)
+			delta.Image = upd
+			delta.PackageDiff = diff
+			imageDiff = append(imageDiff, delta)
 		}
+
+		return imageDiff, nil
+	} else {
+		return nil, updates.Error
 	}
-	return nil, result.Error
+
 }
 
 func GetDiffOnUpdate(currentImage models.Image, updatedImage models.Image) DeltaDiff {
