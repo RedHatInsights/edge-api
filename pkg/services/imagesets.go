@@ -12,7 +12,7 @@ type ImageSetsServiceInterface interface {
 	ListAllImageSets(image *models.Image, account string) error
 }
 
-// // NewImageSetsService gives a instance of the main implementation of a ImageSetsServiceInterface
+// NewImageSetsService gives a instance of the main implementation of a ImageSetsServiceInterface
 func NewImageSetsService(ctx context.Context) ImageSetsServiceInterface {
 	return &ImageSetsService{}
 }
@@ -22,7 +22,7 @@ type ImageSetsService struct {
 	ctx context.Context
 }
 
-// GetAllImageSets to org group of images into one
+// ListAllImageSets to org group of images into one
 func (s *ImageSetsService) ListAllImageSets(image *models.Image, account string) error {
 
 	return nil
