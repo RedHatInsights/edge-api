@@ -129,14 +129,6 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	var imageSet models.ImageSet
-	imageSet.Account = account
-	imageSet.Name = image.Name
-	imageSet.Version = image.Version
-	set := db.DB.Create(&imageSet)
-	if set.Error == nil {
-		image.ImageSetID = imageSet.ID
-	}
 
 	err = services.ImageService.CreateImage(image, account)
 	if err != nil {
