@@ -16,9 +16,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+//Bool used to control if uploading workers need to be created
 var workersCreated = false
 
-//queue of upload jobs
+//Queue of upload jobs
 var uploadQueue = make(chan uploadDetails)
 
 //Uploader is an interface for uploading repository
@@ -95,6 +96,7 @@ func newS3Uploader() *S3Uploader {
 	}
 }
 
+//Struct that contains all details required to upload a file to a destination
 type uploadDetails struct {
 	fileName   string
 	uploadPath string
@@ -112,6 +114,8 @@ func worker() {
 	}
 }
 
+//Simple singleton to create and control the number of workers
+//If the error "Too many open files" appears, lower the number of workers
 func createWorkers() {
 	if !workersCreated {
 		numberOfWorkers := 100
@@ -131,6 +135,8 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 	log.Debugf("S3Uploader::UploadRepo::account: %#v", account)
 
 	createWorkers()
+	//Wait group is created per request
+	//this allows multiple repo's to be independently uploaded simultaneously
 	var repoWaitGroup sync.WaitGroup
 
 	filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
@@ -143,7 +149,11 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 			return nil
 		}
 
-		res := &uploadDetails{path, fmt.Sprintf("%s/%s", account, strings.TrimPrefix(path, cfg.RepoTempPath)), u, &repoWaitGroup}
+		res := new(uploadDetails)
+		res.fileName = path
+		res.uploadPath = fmt.Sprintf("%s/%s", account, strings.TrimPrefix(path, cfg.RepoTempPath))
+		res.uploader = u
+		res.wg = &repoWaitGroup
 		uploadQueue <- *res
 		return nil
 	})
