@@ -28,7 +28,7 @@ var WaitGroup sync.WaitGroup
 // the business logic of creating RHEL For Edge Images
 type ImageServiceInterface interface {
 	CreateImage(image *models.Image, account string) error
-	UpdateImage(image *models.Image, account string, previous_image *models.Image) error
+	UpdateImage(image *models.Image, account string, previousImage *models.Image) error
 	AddUserInfo(image *models.Image) error
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
@@ -85,27 +85,27 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 	return nil
 }
 
-func (s *ImageService) UpdateImage(image *models.Image, account string, previous_image *models.Image) error {
-	if previous_image != nil {
+func (s *ImageService) UpdateImage(image *models.Image, account string, previousImage *models.Image) error {
+	if previousImage != nil {
 		var currentImageSet models.ImageSet
-		result := db.DB.Where("Id = ?", previous_image.ImageSetID).First(&currentImageSet)
+		result := db.DB.Where("Id = ?", previousImage.ImageSetID).First(&currentImageSet)
 		if result.Error != nil {
 			return result.Error
 		}
 		currentImageSet.Version = currentImageSet.Version + 1
-		image.ParentId = &previous_image.ID
-		image.ImageSetID = previous_image.ImageSetID
+		image.ParentId = &previousImage.ID
+		image.ImageSetID = previousImage.ImageSetID
 		if err := db.DB.Save(currentImageSet).Error; err != nil {
 			return result.Error
 		}
 	}
 	if image.Commit.OSTreeParentCommit == "" {
-		if previous_image.Commit.OSTreeParentCommit != "" {
-			image.Commit.OSTreeParentCommit = previous_image.Commit.OSTreeParentCommit
+		if previousImage.Commit.OSTreeParentCommit != "" {
+			image.Commit.OSTreeParentCommit = previousImage.Commit.OSTreeParentCommit
 		} else {
 			var repo *RepoService
 
-			repoURL, err := repo.GetRepoByCommitID(previous_image.CommitID)
+			repoURL, err := repo.GetRepoByCommitID(previousImage.CommitID)
 			if err != nil {
 				err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
 				return err
@@ -114,8 +114,8 @@ func (s *ImageService) UpdateImage(image *models.Image, account string, previous
 		}
 	}
 	if image.Commit.OSTreeRef == "" {
-		if previous_image.Commit.OSTreeRef != "" {
-			image.Commit.OSTreeRef = previous_image.Commit.OSTreeRef
+		if previousImage.Commit.OSTreeRef != "" {
+			image.Commit.OSTreeRef = previousImage.Commit.OSTreeRef
 
 		}
 		image.Commit.OSTreeRef = config.Get().DefaultOSTreeRef

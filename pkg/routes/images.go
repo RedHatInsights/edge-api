@@ -174,14 +174,14 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	previous_image, ok := ctx.Value(imageKey).(*models.Image)
+	previousImage, ok := ctx.Value(imageKey).(*models.Image)
 	if !ok {
 		err := errors.NewBadRequest("Must pass image id")
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
 	}
 
-	err = services.ImageService.UpdateImage(image, account, previous_image)
+	err = services.ImageService.UpdateImage(image, account, previousImage)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
