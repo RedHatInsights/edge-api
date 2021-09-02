@@ -48,6 +48,14 @@ type ImageService struct {
 
 // CreateImage creates an Image for an Account on Image Builder and on our database
 func (s *ImageService) CreateImage(image *models.Image, account string) error {
+	var imageSet models.ImageSet
+	imageSet.Account = account
+	imageSet.Name = image.Name
+	imageSet.Version = image.Version
+	set := db.DB.Create(&imageSet)
+	if set.Error == nil {
+		image.ImageSetID = imageSet.ID
+	}
 	image, err := s.imageBuilder.ComposeCommit(image)
 	if err != nil {
 		return err
