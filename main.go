@@ -76,8 +76,6 @@ func main() {
 	r.Get("/api/edge/v1/openapi.json", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, cfg.OpenAPIFilePath)
 	})
-	r.Route("/api/edge/v1/account/{account}/repos", routes.MakeReposRouter)
-
 	// Authenticated routes
 	ar := r.Group(nil)
 	if cfg.Auth {
@@ -89,7 +87,6 @@ func main() {
 
 	ar.Route("/api/edge/v1", func(s chi.Router) {
 		s.Route("/commits", routes.MakeCommitsRouter)
-		s.Route("/repos", routes.MakeReposRouter)
 		s.Route("/images", routes.MakeImagesRouter)
 		s.Route("/updates", routes.MakeUpdatesRouter)
 	})

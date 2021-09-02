@@ -3,6 +3,7 @@ package routes
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
+	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -32,8 +34,47 @@ func MakeUpdatesRouter(sub chi.Router) {
 	sub.Route("/{updateID}", func(r chi.Router) {
 		r.Use(UpdateCtx)
 		r.Get("/", GetUpdateByID)
+		r.Get("/update-playbook.yml", GetUpdatePlaybook)
 		r.Put("/", UpdatesUpdate)
 	})
+}
+
+// GetUpdatePlaybook returns the playbook for a update transaction
+func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
+	account, err := common.GetAccount(r)
+	if err != nil {
+		err := errors.NewBadRequest("Account can't be empty")
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	var update *models.UpdateTransaction
+	if updateID := chi.URLParam(r, "updateID"); updateID != "" {
+		id, err := strconv.Atoi(updateID)
+		if err != nil {
+			err := errors.NewBadRequest("UpdateTransactionID can't be empty")
+			w.WriteHeader(err.Status)
+			json.NewEncoder(w).Encode(&err)
+			return
+		}
+		db.DB.Where("update_transactions.account = ?", account).Find(&update, id)
+	}
+	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	playbook, err := services.UpdateService.GetUpdatePlaybook(update)
+	if err != nil {
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	defer playbook.Close()
+	_, err = io.Copy(w, playbook)
+	if err != nil {
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
 }
 
 // GetDeviceStatus returns the device with the given UUID that is associate to the account.
@@ -125,8 +166,17 @@ type UpdatePostJSON struct {
 
 func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTransaction, error) {
 	log.Infof("updateFromHTTP:: Begin")
+
+	account, err := common.GetAccount(r)
+	if err != nil {
+		err := apierrors.NewInternalServerError()
+		err.Title = "No account found"
+		w.WriteHeader(err.Status)
+		return nil, err
+	}
+
 	var updateJSON UpdatePostJSON
-	err := json.NewDecoder(r.Body).Decode(&updateJSON)
+	err = json.NewDecoder(r.Body).Decode(&updateJSON)
 	if err != nil {
 		err := apierrors.NewBadRequest("Invalid JSON")
 		w.WriteHeader(err.Status)
@@ -158,7 +208,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	}
 	if updateJSON.DeviceUUID != "" {
 		inventory, err = client.ReturnDevicesByID(updateJSON.DeviceUUID)
-		if err != nil {
+		if err != nil || inventory.Count == 0 {
 			err := apierrors.NewNotFound(fmt.Sprintf("No devices found for UUID %s", updateJSON.DeviceUUID))
 			w.WriteHeader(err.Status)
 			return &models.UpdateTransaction{}, err
@@ -166,14 +216,6 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	}
 
 	log.Infof("updateFromHTTP::inventory: %#v", inventory)
-
-	account, err := common.GetAccount(r)
-	if err != nil {
-		err := apierrors.NewInternalServerError()
-		err.Title = "No account found"
-		w.WriteHeader(err.Status)
-		return nil, err
-	}
 
 	// Create the models.UpdateTransaction
 	update := models.UpdateTransaction{
@@ -284,6 +326,7 @@ const UpdateContextKey key = 0
 type UpdateContext struct {
 	DeviceUUID string
 	Tag        string
+	UpdateID   string
 }
 
 // UpdateCtx is a handler for Update requests
@@ -291,8 +334,8 @@ func UpdateCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var uCtx UpdateContext
 		uCtx.DeviceUUID = chi.URLParam(r, "DeviceUUID")
-
 		uCtx.Tag = chi.URLParam(r, "Tag")
+		uCtx.UpdateID = chi.URLParam(r, "updateID")
 		log.Debugf("UpdateCtx::uCtx: %#v", uCtx)
 		ctx := context.WithValue(r.Context(), UpdateContextKey, &uCtx)
 		log.Debugf("UpdateCtx::ctx: %#v", ctx)
@@ -343,7 +386,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, result.Error.Error(), http.StatusBadRequest)
 	}
 	repoService := services.NewUpdateService(r.Context())
-	log.Infof("AddUpdate:: call:: RepoService.CreateUpdate")
+	log.Infof("AddUpdate:: call:: RepoService.CreateUpdate :: %d", update.ID)
 	go repoService.CreateUpdate(update)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(update)
@@ -402,7 +445,6 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction
 	ctx := r.Context()
 	update, ok := ctx.Value(UpdateContextKey).(*models.UpdateTransaction)
 	if !ok {
-		http.Error(w, "must pass id", http.StatusBadRequest)
 		return nil
 	}
 	return update
