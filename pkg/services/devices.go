@@ -73,7 +73,7 @@ func (s *DeviceService) GetUpdateAvailableForDevice(currentCheckSum string) ([]I
 		return nil, errors.NewInternalServerError()
 	}
 
-	updates := db.DB.Where("Parent_Id = ? and Status = ?", currentImage.ID, models.ImageStatusSuccess).Joins("Commit").Find(&images)
+	updates := db.DB.Where("Parent_Id = ? and Images.Status = ?", currentImage.ID, models.ImageStatusSuccess).Joins("Commit").Find(&images)
 	if updates.Error == nil {
 		var imageDiff []ImageUpdateAvailable
 		for _, upd := range images {
