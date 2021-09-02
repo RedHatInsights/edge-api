@@ -108,7 +108,7 @@ func worker() {
 	for p := range uploadQueue {
 		_, err := p.uploader.UploadFile(p.fileName, p.uploadPath)
 		if err != nil {
-			log.Warnf("error: %v", err)
+			log.Errorf("error: %v", err)
 		}
 		p.wg.Done()
 	}
