@@ -14,6 +14,7 @@ type DeviceServiceInterface interface {
 	GetDeviceByID(deviceID uint) (*models.Device, error)
 	GetDeviceByUUID(deviceUUID string) (*models.Device, error)
 	GetUpdateAvailableForDevice(currentCheckSum string) ([]ImageUpdateAvailable, error)
+	GetDeviceImageInfo(currentCheckSum string) (models.Image, error)
 }
 
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
@@ -125,4 +126,13 @@ func GetDiffOnUpdate(currentImage models.Image, updatedImage models.Image) Delta
 func contains(s []string, searchterm string) bool {
 	i := sort.SearchStrings(s, searchterm)
 	return i < len(s) && s[i] == searchterm
+}
+
+func (s *DeviceService) GetDeviceImageInfo(currentCheckSum string) (models.Image, error) {
+	var currentImage models.Image
+	result := db.DB.Joins("Commit").Where("OS_Tree_Commit = ?", currentCheckSum).First(&currentImage)
+	if result.Error != nil {
+		return currentImage, errors.NewInternalServerError()
+	}
+	return currentImage, nil
 }

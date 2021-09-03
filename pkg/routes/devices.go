@@ -20,6 +20,7 @@ func MakeDevicesRouter(sub chi.Router) {
 		r.Use(DeviceCtx)
 		sub.Get("/{DeviceUUID}", GetDeviceStatus)
 		sub.Get("/{DeviceUUID}/updates", GetUpdateAvailableForDevice)
+		sub.Get("/{DeviceUUID}/image", GetDeviceImageInfo)
 	})
 }
 
@@ -97,6 +98,27 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	currentCheckSum := device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments[len(device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments)-1].Checksum
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	result, err := services.DeviceService.GetUpdateAvailableForDevice(currentCheckSum)
+	if err == nil {
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+	json.NewEncoder(w).Encode(http.StatusNotFound)
+}
+
+// GetDeviceImageInfo returns the current image at the device.
+func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
+	uuid := chi.URLParam(r, "DeviceUUID")
+
+	client := inventory.InitClient(r.Context())
+	var device inventory.InventoryResponse
+	device, err := client.ReturnDevicesByID(uuid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
+
+	currentCheckSum := device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments[len(device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments)-1].Checksum
+	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	result, err := services.DeviceService.GetDeviceImageInfo(currentCheckSum)
 	if err == nil {
 		json.NewEncoder(w).Encode(result)
 		return
