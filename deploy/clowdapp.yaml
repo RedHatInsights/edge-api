@@ -126,4 +126,4 @@ parameters:
 - name: EDGEAPIBASEURL
   value: "https://cloud.stage.redhat.com"
 - name: UPLOADWORKERS
-  value: 100
+  value: "100"
