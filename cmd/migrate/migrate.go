@@ -24,7 +24,7 @@ func main() {
 		"ImageBuilderConfig": cfg.ImageBuilderConfig.URL,
 	}).Info("Configuration Values:")
 	db.InitDB()
-	err := db.DB.AutoMigrate(&models.Commit{}, &models.UpdateTransaction{}, &models.Package{}, &models.Image{}, &models.Repo{}, &models.DispatchRecord{})
+	err := db.DB.AutoMigrate(&models.Commit{}, &models.UpdateTransaction{}, &models.Package{}, &models.Image{}, &models.Repo{}, &models.DispatchRecord{}, &models.ImageSet{})
 	if err != nil {
 		panic(err)
 	}
