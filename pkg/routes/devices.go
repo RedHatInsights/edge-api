@@ -3,7 +3,6 @@ package routes
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -31,7 +30,8 @@ const DeviceContextKey deviceContextKey = iota
 // DeviceContext implements context interfaces so we can shuttle around multiple values
 type DeviceContext struct {
 	DeviceUUID string
-	Tag        string
+	// TODO: Implement devices by tag
+	// Tag string
 }
 
 //  DeviceCtx is a handler for Device requests
@@ -39,7 +39,8 @@ func DeviceCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var uCtx DeviceContext
 		uCtx.DeviceUUID = chi.URLParam(r, "DeviceUUID")
-		uCtx.Tag = chi.URLParam(r, "Tag")
+		// TODO: Implement devices by tag
+		// uCtx.Tag = chi.URLParam(r, "Tag")
 		log.Debugf("UpdateCtx::uCtx: %#v", uCtx)
 		ctx := context.WithValue(r.Context(), DeviceContextKey, &uCtx)
 		log.Debugf("UpdateCtx::ctx: %#v", ctx)
@@ -52,9 +53,7 @@ func DeviceCtx(next http.Handler) http.Handler {
 // This is being used for the inventory table to determine whether the current device image
 // is the latest or older version.
 func GetDeviceStatus(w http.ResponseWriter, r *http.Request) {
-	// var devices []models.Device
 	var results []models.Device
-	//var results []models.UpdateTransaction
 	account, err := common.GetAccount(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -91,7 +90,6 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	client := inventory.InitClient(r.Context())
 	var device inventory.InventoryResponse
 	device, err := client.ReturnDevicesByID(uuid)
-	fmt.Printf("Device:: %v", device)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}

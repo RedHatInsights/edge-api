@@ -56,6 +56,14 @@ func (m *MockImageServiceInterface) CreateImage(image *models.Image, account str
 	return ret0
 }
 
+// UpdateImage mocks base method.
+func (m *MockImageServiceInterface) UpdateImage(image *models.Image, account string, previous_image *models.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UdpateImage", image, account, previous_image)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
 // CreateImage indicates an expected call of CreateImage.
 func (mr *MockImageServiceInterfaceMockRecorder) CreateImage(image, account interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
