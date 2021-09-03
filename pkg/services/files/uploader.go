@@ -15,9 +15,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-//Bool used to control if uploading workers need to be created
-var workersCreated = false
-
 //Uploader is an interface for uploading repository
 type Uploader interface {
 	UploadRepo(src string, account string) (string, error)
@@ -113,18 +110,6 @@ func worker(uploadQueue chan *uploadDetails) {
 	}
 }
 
-//Simple singleton to create and control the number of workers
-//If the error "Too many open files" appears, lower the number of workers
-func createWorkers(uploadQueue chan *uploadDetails) {
-	if !workersCreated {
-		numberOfWorkers := 100
-		for i := 0; i < numberOfWorkers; i++ {
-			go worker(uploadQueue)
-		}
-		workersCreated = true
-	}
-}
-
 // UploadRepo uploads the repo to a backing object storage bucket
 // the repository is uploaded to bucket/$account/$name/
 func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
@@ -134,7 +119,11 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 	log.Debugf("S3Uploader::UploadRepo::account: %#v", account)
 
 	uploadQueue := make(chan *uploadDetails)
-	createWorkers(uploadQueue)
+
+	numberOfWorkers := cfg.UploadWorkers
+	for i := 0; i < numberOfWorkers; i++ {
+		go worker(uploadQueue)
+	}
 
 	//Wait group is created per request
 	//this allows multiple repo's to be independently uploaded simultaneously
