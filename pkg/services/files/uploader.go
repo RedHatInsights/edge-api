@@ -155,6 +155,7 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 	for i, u := range uploadDetailsList {
 		<-u.done
 		log.Debugf("%d file is done", i)
+		close(u.done)
 	}
 	log.Infof("Files are done uploading...")
 	close(uploadQueue)
