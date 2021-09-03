@@ -80,6 +80,7 @@ components:
           type: string
         Distribution:
           type: string
+        ID: {}
         ImageSetID: {}
         ImageType:
           type: string
@@ -440,9 +441,14 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items: 
-                  $ref: '#/components/schemas/v1.Image'
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/v1.Image'
           description: OK
         "400":
           content:
@@ -466,7 +472,7 @@ paths:
           required: true
           description: ImageID
           schema:
-            type : integer
+            type: integer
       requestBody:
         content:
           application/json:
@@ -502,7 +508,7 @@ paths:
           required: true
           description: ImageID
           schema:
-            type : integer
+            type: integer
       responses:
         "200":
           content:
@@ -532,7 +538,7 @@ paths:
           required: true
           description: ImageID
           schema:
-            type : integer
+            type: integer
       responses:
         "200":
           content:
@@ -567,7 +573,7 @@ paths:
           required: true
           description: ImageID
           schema:
-            type : integer
+            type: integer
       responses:
         "200":
           content:
@@ -657,7 +663,7 @@ paths:
           required: true
           description: DeviceUUID
           schema:
-            type : string
+            type: string
       responses:
         "200":
           content:

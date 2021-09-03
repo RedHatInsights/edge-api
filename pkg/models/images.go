@@ -19,6 +19,7 @@ type ImageSet struct {
 // Image is what generates a OSTree Commit.
 type Image struct {
 	gorm.Model
+	ID           uint           `json:"ID" gorm:"primary_key"` // Shadow ID from gorm.Model to add json tag
 	Name         string         `json:"Name"`
 	Account      string         `json:"Account"`
 	Distribution string         `json:"Distribution"`
