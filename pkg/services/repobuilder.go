@@ -79,18 +79,18 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	}
 	err = rb.DownloadExtractVersionRepo(ut.Commit, path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error downloading repo :: %s", err.Error())
 	}
 
 	if len(ut.OldCommits) > 0 {
 		stagePath := filepath.Join(path, "staging")
 		err = os.MkdirAll(stagePath, os.FileMode(int(0755)))
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error mkdir :: %s", err.Error())
 		}
 		err = os.Chdir(stagePath)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error chdir :: %s", err.Error())
 		}
 
 		// If there are any old commits, we need to download them all to be merged
@@ -176,20 +176,20 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 			log.Error(err)
 		}
 		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("error downloading repo and extracting repo :: %s", err.Error())
 	}
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
 	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(r.ID), 10))
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return nil, fmt.Errorf("error uploading repo :: %s", err.Error())
 	}
 
 	r.URL = repoURL
 	r.Status = models.RepoStatusSuccess
 	result := db.DB.Save(&r)
 	if result.Error != nil {
-		return nil, result.Error
+		return nil, fmt.Errorf("error saving status :: %s", result.Error.Error())
 	}
 
 	return r, nil

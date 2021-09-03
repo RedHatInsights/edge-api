@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -15,12 +14,6 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 	log "github.com/sirupsen/logrus"
 )
-
-//Bool used to control if uploading workers need to be created
-var workersCreated = false
-
-//Queue of upload jobs
-var uploadQueue = make(chan uploadDetails)
 
 //Uploader is an interface for uploading repository
 type Uploader interface {
@@ -101,28 +94,19 @@ type uploadDetails struct {
 	fileName   string
 	uploadPath string
 	uploader   *S3Uploader
-	wg         *sync.WaitGroup
+	done       chan bool
+	count      int
 }
 
-func worker() {
+func worker(uploadQueue chan *uploadDetails) {
 	for p := range uploadQueue {
-		_, err := p.uploader.UploadFile(p.fileName, p.uploadPath)
+		fname, err := p.uploader.UploadFile(p.fileName, p.uploadPath)
+		log.Debugf("Filename: %s with counter %d was uploaded sucessfully", fname, p.count)
 		if err != nil {
 			log.Errorf("error: %v", err)
 		}
-		p.wg.Done()
-	}
-}
-
-//Simple singleton to create and control the number of workers
-//If the error "Too many open files" appears, lower the number of workers
-func createWorkers() {
-	if !workersCreated {
-		numberOfWorkers := 100
-		for i := 0; i < numberOfWorkers; i++ {
-			go worker()
-		}
-		workersCreated = true
+		p.done <- true
+		log.Debugf("Filename: %s with counter %d was done uploading", fname, p.count)
 	}
 }
 
@@ -134,13 +118,20 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 	log.Debugf("S3Uploader::UploadRepo::src: %#v", src)
 	log.Debugf("S3Uploader::UploadRepo::account: %#v", account)
 
-	createWorkers()
+	uploadQueue := make(chan *uploadDetails)
+
+	numberOfWorkers := cfg.UploadWorkers
+	for i := 0; i < numberOfWorkers; i++ {
+		go worker(uploadQueue)
+	}
+
 	//Wait group is created per request
 	//this allows multiple repo's to be independently uploaded simultaneously
-	var repoWaitGroup sync.WaitGroup
+	count := 0
+
+	var uploadDetailsList []*uploadDetails
 
 	filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
-		repoWaitGroup.Add(1)
 		if err != nil {
 			log.Warnf("incoming error!: %#v", err)
 		}
@@ -153,12 +144,22 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 		res.fileName = path
 		res.uploadPath = fmt.Sprintf("%s/%s", account, strings.TrimPrefix(path, cfg.RepoTempPath))
 		res.uploader = u
-		res.wg = &repoWaitGroup
-		uploadQueue <- *res
+		res.count = count
+		res.done = make(chan bool)
+		uploadQueue <- res
+		uploadDetailsList = append(uploadDetailsList, res)
+		count++
 		return nil
 	})
-
-	repoWaitGroup.Wait()
+	log.Infof("Files are being uploaded.... %d files to upload", len(uploadDetailsList))
+	for i, u := range uploadDetailsList {
+		<-u.done
+		log.Debugf("%d file is done", i)
+		close(u.done)
+	}
+	log.Infof("Files are done uploading...")
+	close(uploadQueue)
+	log.Infof("Channel is closed...")
 	region := *u.Client.Config.Region
 	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s/%s", u.Bucket, region, account, strings.TrimPrefix(src, cfg.RepoTempPath))
 	return s3URL, nil
