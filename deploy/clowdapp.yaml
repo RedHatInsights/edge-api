@@ -73,6 +73,8 @@ objects:
               name: psk-playbook-dispatcher
         - name: EDGEAPIBASEURL
           value: ${EDGEAPIBASEURL}
+        - name: UPLOADWORKERS
+          value: ${UPLOADWORKERS}
         resources:
           limits:
             cpu: ${{CPU_LIMIT}}
@@ -123,3 +125,5 @@ parameters:
   value: "http://host-playbook-dispatcher:8080/"
 - name: EDGEAPIBASEURL
   value: "https://cloud.stage.redhat.com"
+- name: UPLOADWORKERS
+  value: 100
