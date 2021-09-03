@@ -80,6 +80,7 @@ components:
           type: string
         Distribution:
           type: string
+        ImageSetID: {}
         ImageType:
           type: string
         Installer:
@@ -625,7 +626,7 @@ paths:
         - name: updateID
           in: path
           required: true
-          description: An unique ID to identify the update that you want to retrieve your playbook for
+          description: An unique ID to identify the update the playbook belongs to
           schema:
             type: integer
       responses:
