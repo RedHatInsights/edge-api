@@ -118,13 +118,6 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 	log.Debugf("S3Uploader::UploadRepo::src: %#v", src)
 	log.Debugf("S3Uploader::UploadRepo::account: %#v", account)
 
-	uploadQueue := make(chan *uploadDetails)
-
-	numberOfWorkers := cfg.UploadWorkers
-	for i := 0; i < numberOfWorkers; i++ {
-		go worker(uploadQueue)
-	}
-
 	//Wait group is created per request
 	//this allows multiple repo's to be independently uploaded simultaneously
 	count := 0
@@ -146,12 +139,22 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 		res.uploader = u
 		res.count = count
 		res.done = make(chan bool)
-		uploadQueue <- res
 		uploadDetailsList = append(uploadDetailsList, res)
 		count++
 		return nil
 	})
 	log.Infof("Files are being uploaded.... %d files to upload", len(uploadDetailsList))
+
+	uploadQueue := make(chan *uploadDetails, len(uploadDetailsList))
+	for _, u := range uploadDetailsList {
+		uploadQueue <- u
+	}
+
+	numberOfWorkers := cfg.UploadWorkers
+	for i := 0; i < numberOfWorkers; i++ {
+		go worker(uploadQueue)
+	}
+
 	for i, u := range uploadDetailsList {
 		<-u.done
 		log.Debugf("%d file is done", i)
