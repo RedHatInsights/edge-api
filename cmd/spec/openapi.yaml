@@ -644,6 +644,7 @@ paths:
               schema:
                 type: string
                 example: ansible playbook for an update
+          description: OK
         "400":
           content:
             application/json:
