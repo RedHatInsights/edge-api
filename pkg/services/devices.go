@@ -74,7 +74,7 @@ type DeviceNotFoundError struct {
 func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]ImageUpdateAvailable, error) {
 
 	device, err := s.inventory.ReturnDevicesByID(deviceUUID)
-	if err != nil {
+	if err != nil || device.Total != 1 {
 		return nil, new(DeviceNotFoundError)
 	}
 
