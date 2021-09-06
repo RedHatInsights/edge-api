@@ -16,6 +16,7 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
@@ -27,6 +28,7 @@ var WaitGroup sync.WaitGroup
 // the business logic of creating RHEL For Edge Images
 type ImageServiceInterface interface {
 	CreateImage(image *models.Image, account string) error
+	UpdateImage(image *models.Image, account string, previousImage *models.Image) error
 	AddUserInfo(image *models.Image) error
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
@@ -46,6 +48,88 @@ type ImageService struct {
 
 // CreateImage creates an Image for an Account on Image Builder and on our database
 func (s *ImageService) CreateImage(image *models.Image, account string) error {
+	var imageSet models.ImageSet
+	imageSet.Account = account
+	imageSet.Name = image.Name
+	imageSet.Version = image.Version
+	set := db.DB.Create(&imageSet)
+	if set.Error == nil {
+		image.ImageSetID = imageSet.ID
+	}
+	image, err := s.imageBuilder.ComposeCommit(image)
+	if err != nil {
+		return err
+	}
+	image.Account = account
+	image.Commit.Account = account
+	image.Commit.Status = models.ImageStatusBuilding
+	image.Status = models.ImageStatusBuilding
+	// TODO: Remove code when frontend is not using ImageType on the table
+	if image.HasOutputType(models.ImageTypeInstaller) {
+		image.ImageType = models.ImageTypeInstaller
+	} else {
+		image.ImageType = models.ImageTypeCommit
+	}
+	// TODO: End of remove block
+	if image.HasOutputType(models.ImageTypeInstaller) {
+		image.Installer.Status = models.ImageStatusCreated
+		image.Installer.Account = image.Account
+		tx := db.DB.Create(&image.Installer)
+		if tx.Error != nil {
+			return tx.Error
+		}
+	}
+	tx := db.DB.Create(&image.Commit)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	tx = db.DB.Create(&image)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	go s.postProcessImage(image.ID)
+
+	return nil
+}
+
+func (s *ImageService) UpdateImage(image *models.Image, account string, previousImage *models.Image) error {
+	if previousImage != nil {
+		var currentImageSet models.ImageSet
+		result := db.DB.Where("Id = ?", previousImage.ImageSetID).First(&currentImageSet)
+		if result.Error != nil {
+			return result.Error
+		}
+		currentImageSet.Version = currentImageSet.Version + 1
+		image.ParentId = &previousImage.ID
+		image.ImageSetID = previousImage.ImageSetID
+		if err := db.DB.Save(currentImageSet).Error; err != nil {
+			return result.Error
+		}
+	}
+	if image.Commit.OSTreeParentCommit == "" {
+		if previousImage.Commit.OSTreeParentCommit != "" {
+			image.Commit.OSTreeParentCommit = previousImage.Commit.OSTreeParentCommit
+		} else {
+			var repo *RepoService
+
+			repoURL, err := repo.GetRepoByCommitID(previousImage.CommitID)
+			if err != nil {
+				err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
+				return err
+			}
+			image.Commit.OSTreeParentCommit = repoURL.URL
+		}
+	}
+	if image.Commit.OSTreeRef == "" {
+		if previousImage.Commit.OSTreeRef != "" {
+			image.Commit.OSTreeRef = previousImage.Commit.OSTreeRef
+
+		}
+		image.Commit.OSTreeRef = config.Get().DefaultOSTreeRef
+
+	}
+
 	image, err := s.imageBuilder.ComposeCommit(image)
 	if err != nil {
 		return err
@@ -326,7 +410,7 @@ func (s *ImageService) uploadISO(image *models.Image, imageName string) error {
 
 	uploadPath := fmt.Sprintf("%s/isos/%s.iso", image.Account, image.Name)
 	filesService := NewFilesService()
-	url, err := filesService.Uploader.UploadFile(imageName, uploadPath)
+	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
 
 	if err != nil {
 		return fmt.Errorf("error uploading the ISO :: %s :: %s", uploadPath, err.Error())

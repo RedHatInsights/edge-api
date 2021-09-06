@@ -8,6 +8,14 @@ import (
 	"gorm.io/gorm"
 )
 
+type ImageSet struct {
+	gorm.Model
+	Name    string  `json:"Name"`
+	Version int     `json:"Version" gorm:"default:1"`
+	Account string  `json:"Account"`
+	Images  []Image `json:"Images"`
+}
+
 // Image is what generates a OSTree Commit.
 type Image struct {
 	gorm.Model
@@ -24,6 +32,7 @@ type Image struct {
 	InstallerID  *uint          `json:"InstallerID"`
 	Installer    *Installer     `json:"Installer"`
 	ParentId     *uint          `gorm:"foreignKey:Image"`
+	ImageSetID   uint           `json:"ImageSetID"`
 }
 
 const (

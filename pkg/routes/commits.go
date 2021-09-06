@@ -232,7 +232,7 @@ func ServeRepo(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		filesService := services.NewFilesService()
-		filesService.Extractor.Extract(resp.Body, path)
+		filesService.GetExtractor().Extract(resp.Body, path)
 	}
 
 	_r := strings.Index(r.URL.Path, "/repo")
