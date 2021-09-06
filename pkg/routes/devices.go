@@ -94,14 +94,17 @@ func GetDeviceStatus(w http.ResponseWriter, r *http.Request) {
 // GetUpdateAvailableForDevice returns if exists update for the current image at the device.
 func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	dc := r.Context().Value(DeviceContextKey).(DeviceContext)
+	if dc.DeviceUUID == "" {
+		return // Error set by DeviceCtx method
+	}
 	contextServices, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	result, err := contextServices.DeviceService.GetUpdateAvailableForDeviceByUUID(dc.DeviceUUID)
 	if err == nil {
 		json.NewEncoder(w).Encode(result)
 		return
 	}
-	if _, ok := err.(services.DeviceNotFoundError); ok {
-		err := errors.NewBadRequest("Could not find device")
+	if _, ok := err.(*services.DeviceNotFoundError); ok {
+		err := errors.NewNotFound("Could not find device")
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
 		return
