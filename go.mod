@@ -2,6 +2,7 @@ module github.com/redhatinsights/edge-api
 
 require (
 	github.com/aws/aws-sdk-go v1.38.51
+	github.com/bxcodec/faker/v3 v3.6.0 // indirect
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/getkin/kin-openapi v0.65.0
