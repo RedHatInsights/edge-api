@@ -3,6 +3,7 @@ package routes
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -119,7 +120,11 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
-
+	fmt.Printf(":: result :: %v", device.Result)
+	if len(device.Result) == 0 {
+		json.NewEncoder(w).Encode(http.StatusNotFound)
+		return
+	}
 	currentCheckSum := device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments[len(device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments)-1].Checksum
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	result, err := services.DeviceService.GetDeviceImageInfo(currentCheckSum)

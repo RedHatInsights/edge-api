@@ -59,6 +59,11 @@ type DeltaDiff struct {
 	Added   []models.Package
 	Removed []models.Package
 }
+type ImageInfo struct {
+	Image           models.Image
+	UpdateAvailable []ImageUpdateAvailable
+	rollback        models.Image
+}
 
 // GetUpdateAvailableForDevice returns if exists update for the current image at the device.
 func (s *DeviceService) GetUpdateAvailableForDevice(currentCheckSum string) ([]ImageUpdateAvailable, error) {
@@ -133,10 +138,32 @@ func contains(s []string, searchterm string) bool {
 }
 
 func (s *DeviceService) GetDeviceImageInfo(currentCheckSum string) (models.Image, error) {
+	var ImageInfo ImageInfo
+	var updateAvailable []ImageUpdateAvailable
 	var currentImage models.Image
-	result := db.DB.Joins("Commit").Where("OS_Tree_Commit = ?", currentCheckSum).First(&currentImage)
+	var rollback models.Image
+	var err error
+
+	result := db.DB.Joins("Commit").Where("OS_Tree_Commit = ?", currentCheckSum)
 	if result.Error != nil {
 		return currentImage, errors.NewInternalServerError()
 	}
+	if result.RowsAffected == 0 {
+		return currentImage, errors.NewNotFound("Record not found")
+	} else {
+		result.First(&currentImage)
+		if currentImage.ParentId != nil {
+			db.DB.Joins("Commit").Where("Images.ID = ?", currentImage.ParentId).First(&rollback)
+		}
+
+	}
+	DeviceService := NewDeviceService()
+	updateAvailable, err = DeviceServiceInterface.GetUpdateAvailableForDevice(DeviceService, currentCheckSum)
+	if err == nil {
+		return currentImage, err
+	}
+	ImageInfo.rollback = rollback
+	ImageInfo.Image = currentImage
+	ImageInfo.UpdateAvailable = updateAvailable
 	return currentImage, nil
 }
