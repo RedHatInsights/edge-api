@@ -94,10 +94,14 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
-
+	if len(device.Result) == 0 {
+		json.NewEncoder(w).Encode(http.StatusNotFound)
+		return
+	}
 	currentCheckSum := device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments[len(device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments)-1].Checksum
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	result, err := services.DeviceService.GetUpdateAvailableForDevice(currentCheckSum)
+
 	if err == nil {
 		json.NewEncoder(w).Encode(result)
 		return
