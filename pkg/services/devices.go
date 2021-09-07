@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -14,7 +15,7 @@ type DeviceServiceInterface interface {
 	GetDeviceByID(deviceID uint) (*models.Device, error)
 	GetDeviceByUUID(deviceUUID string) (*models.Device, error)
 	GetUpdateAvailableForDevice(currentCheckSum string) ([]ImageUpdateAvailable, error)
-	GetDeviceImageInfo(currentCheckSum string) (models.Image, error)
+	GetDeviceImageInfo(currentCheckSum string) (ImageInfo, error)
 }
 
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
@@ -62,7 +63,7 @@ type DeltaDiff struct {
 type ImageInfo struct {
 	Image           models.Image
 	UpdateAvailable []ImageUpdateAvailable
-	rollback        models.Image
+	Rollback        models.Image
 }
 
 // GetUpdateAvailableForDevice returns if exists update for the current image at the device.
@@ -73,7 +74,7 @@ func (s *DeviceService) GetUpdateAvailableForDevice(currentCheckSum string) ([]I
 	if result.Error != nil {
 		return nil, errors.NewInternalServerError()
 	}
-	if result.RowsAffected == 0 {
+	if result == nil {
 		return nil, errors.NewNotFound("Record not found")
 	} else {
 		result.First(&currentImage)
@@ -137,33 +138,34 @@ func contains(s []string, searchterm string) bool {
 	return i < len(s) && s[i] == searchterm
 }
 
-func (s *DeviceService) GetDeviceImageInfo(currentCheckSum string) (models.Image, error) {
+func (s *DeviceService) GetDeviceImageInfo(currentCheckSum string) (ImageInfo, error) {
+	fmt.Printf(":: GetDeviceImageInfo :: \n")
 	var ImageInfo ImageInfo
 	var updateAvailable []ImageUpdateAvailable
 	var currentImage models.Image
 	var rollback models.Image
 	var err error
 
-	result := db.DB.Joins("Commit").Where("OS_Tree_Commit = ?", currentCheckSum)
+	result := db.DB.Joins("Commit").Where("images.id=2")
+	// result := db.DB.Joins("Commit").Where("OS_Tree_Commit = ?", currentCheckSum)
 	if result.Error != nil {
-		return currentImage, errors.NewInternalServerError()
+		return ImageInfo, errors.NewInternalServerError()
 	}
-	if result.RowsAffected == 0 {
-		return currentImage, errors.NewNotFound("Record not found")
+	if result == nil {
+		return ImageInfo, errors.NewNotFound("Record not found")
 	} else {
 		result.First(&currentImage)
 		if currentImage.ParentId != nil {
 			db.DB.Joins("Commit").Where("Images.ID = ?", currentImage.ParentId).First(&rollback)
 		}
-
 	}
 	DeviceService := NewDeviceService()
 	updateAvailable, err = DeviceServiceInterface.GetUpdateAvailableForDevice(DeviceService, currentCheckSum)
-	if err == nil {
-		return currentImage, err
+	if err != nil {
+		return ImageInfo, err
 	}
-	ImageInfo.rollback = rollback
+	ImageInfo.Rollback = rollback
 	ImageInfo.Image = currentImage
 	ImageInfo.UpdateAvailable = updateAvailable
-	return currentImage, nil
+	return ImageInfo, nil
 }

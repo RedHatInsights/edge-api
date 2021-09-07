@@ -120,7 +120,7 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
-	fmt.Printf(":: result :: %v", device.Result)
+	fmt.Printf(":: result :: %v \n", device.Result)
 	if len(device.Result) == 0 {
 		json.NewEncoder(w).Encode(http.StatusNotFound)
 		return
