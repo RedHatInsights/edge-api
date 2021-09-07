@@ -63,10 +63,14 @@ type DeltaDiff struct {
 func (s *DeviceService) GetUpdateAvailableForDevice(currentCheckSum string) ([]ImageUpdateAvailable, error) {
 	var images []models.Image
 	var currentImage models.Image
-
-	result := db.DB.Joins("Commit").Where("OS_Tree_Commit = ?", currentCheckSum).First(&currentImage)
+	result := db.DB.Joins("Commit").Where("OS_Tree_Commit = ?", currentCheckSum)
 	if result.Error != nil {
 		return nil, errors.NewInternalServerError()
+	}
+	if result.RowsAffected == 0 {
+		return nil, errors.NewNotFound("Record not found")
+	} else {
+		result.First(&currentImage)
 	}
 	err := db.DB.Model(&currentImage.Commit).Association("Packages").Find(&currentImage.Commit.Packages)
 	if err != nil {
