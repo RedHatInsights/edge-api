@@ -54,7 +54,7 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 	imageSet.Version = image.Version
 	set := db.DB.Create(&imageSet)
 	if set.Error == nil {
-		image.ImageSetID = imageSet.ID
+		image.ImageSetID = &imageSet.ID
 	}
 	image, err := s.imageBuilder.ComposeCommit(image)
 	if err != nil {
