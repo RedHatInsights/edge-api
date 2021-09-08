@@ -10,7 +10,6 @@ require (
 	github.com/go-openapi/runtime v0.19.29
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/uuid v1.1.1
 	github.com/jackc/pgproto3/v2 v2.0.7 // indirect
 	github.com/lib/pq v1.3.0
 	github.com/magiconair/properties v1.8.5 // indirect
@@ -19,7 +18,7 @@ require (
 	github.com/pelletier/go-toml v1.9.1 // indirect
 	github.com/prometheus/client_golang v1.10.0
 	github.com/prometheus/common v0.25.0 // indirect
-	github.com/redhatinsights/app-common-go v1.5.0
+	github.com/redhatinsights/app-common-go v1.5.2
 	github.com/redhatinsights/platform-go-middlewares v0.8.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/afero v1.6.0 // indirect
