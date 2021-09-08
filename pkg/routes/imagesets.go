@@ -2,14 +2,15 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
-	"github.com/go-chi/chi"
-	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/edge-api/pkg/errors"
+	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
+
+	"github.com/go-chi/chi"
+	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
-	log "github.com/sirupsen/logrus"
 )
 
 // MakeImageSetsRouter adds support for operations on image-sets
@@ -19,26 +20,14 @@ func MakeImageSetsRouter(sub chi.Router) {
 
 // ListAllImageSets image objects from the database for ParentID
 func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
-	var count int64
-	var images []models.Image
-	var image models.Image
-	result := imageFilters(r, db.DB)
-	pagination := common.GetPagination(r)
-
-	countResult := imageFilters(r, db.DB.Model(&models.Image{})).Where("images.parent_id is ?", image.ParentId).Count(&count)
-	if countResult.Error != nil {
-		countErr := errors.NewInternalServerError()
-		log.Error(countErr)
-		w.WriteHeader(countErr.Status)
-		json.NewEncoder(w).Encode(&countErr)
-		return
-	}
-	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("images.parent_id is ?", image.ParentId).Find(&images)
-	if result.Error != nil {
-		err := errors.NewInternalServerError()
+	var image *models.Image
+	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	err := services.ImageSetService.ListAllImageSets(w, r)
+	if err != nil {
+		err := errors.NewNotFound(fmt.Sprintf("Image is not found for: #%v Parent ID", image.ParentId))
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	json.NewEncoder(w).Encode(map[string]interface{}{"data": &images, "count": count})
+	json.NewEncoder(w).Encode(err)
 }

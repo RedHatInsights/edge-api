@@ -8,18 +8,20 @@ import (
 )
 
 type EdgeAPIServices struct {
-	CommitService services.CommitServiceInterface
-	DeviceService services.DeviceServiceInterface
-	ImageService  services.ImageServiceInterface
-	RepoService   services.RepoServiceInterface
+	CommitService   services.CommitServiceInterface
+	DeviceService   services.DeviceServiceInterface
+	ImageService    services.ImageServiceInterface
+	RepoService     services.RepoServiceInterface
+	ImageSetService services.ImageSetsServiceInterface
 }
 
 func Init(ctx context.Context) *EdgeAPIServices {
 	return &EdgeAPIServices{
-		CommitService: services.NewCommitService(),
-		DeviceService: services.NewDeviceService(),
-		ImageService:  services.NewImageService(ctx),
-		RepoService:   services.NewRepoService(),
+		CommitService:   services.NewCommitService(),
+		DeviceService:   services.NewDeviceService(),
+		ImageService:    services.NewImageService(ctx),
+		RepoService:     services.NewRepoService(),
+		ImageSetService: services.NewImageSetsService(ctx),
 	}
 }
 
