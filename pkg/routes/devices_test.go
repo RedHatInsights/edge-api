@@ -77,3 +77,40 @@ func TestGetDevicesStatus(t *testing.T) {
 		}
 	}
 }
+func TestGetImageInfo(t *testing.T) {
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	
+	ctx := context.WithValue(req.Context(), chi.RouteCtxKey, &chi.Context{
+		URLParams: chi.RouteParams{
+			Keys:   []string{"DeviceUUID"},
+		},
+	})
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(GetDeviceImageInfo)
+	handler.ServeHTTP(rr, req.WithContext(ctx))
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+		return
+	}
+
+	var ir models.Image
+	respBody, err := ioutil.ReadAll(rr.Body)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	err = json.Unmarshal(respBody, &ir)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if ir.ID != testImage.ID {
+		t.Errorf("wrong image status: got %v want %v",
+			ir.ID, testImage.ID)
+	}
+}
