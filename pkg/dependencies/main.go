@@ -13,6 +13,7 @@ type EdgeAPIServices struct {
 	ImageService    services.ImageServiceInterface
 	RepoService     services.RepoServiceInterface
 	ImageSetService services.ImageSetsServiceInterface
+	UpdateService   services.UpdateServiceInterface
 }
 
 func Init(ctx context.Context) *EdgeAPIServices {
@@ -22,6 +23,7 @@ func Init(ctx context.Context) *EdgeAPIServices {
 		ImageService:    services.NewImageService(ctx),
 		RepoService:     services.NewRepoService(),
 		ImageSetService: services.NewImageSetsService(ctx),
+		UpdateService:   services.NewUpdateService(ctx),
 	}
 }
 

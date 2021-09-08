@@ -27,6 +27,8 @@ type EdgeConfig struct {
 	DefaultOSTreeRef         string
 	PlaybookDispatcherConfig *playbookDispatcherConfig
 	TemplatesPath            string
+	EdgeAPIBaseURL           string
+	UploadWorkers            int
 }
 
 type dbConfig struct {
@@ -66,7 +68,7 @@ func Init() {
 	options := viper.New()
 	options.SetDefault("WebPort", 3000)
 	options.SetDefault("MetricsPort", 8080)
-	options.SetDefault("LogLevel", "INFO")
+	options.SetDefault("LogLevel", "DEBUG")
 	options.SetDefault("Auth", false)
 	options.SetDefault("Debug", false)
 	options.SetDefault("EdgeTarballsBucket", "rh-edge-tarballs")
@@ -80,6 +82,8 @@ func Init() {
 	options.SetDefault("Database", "sqlite")
 	options.SetDefault("DefaultOSTreeRef", "rhel/8/x86_64/edge")
 	options.SetDefault("TemplatesPath", "/usr/local/etc/")
+	options.SetDefault("EdgeAPIBaseURL", "http://localhost:3000")
+	options.SetDefault("UploadWorkers", 100)
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
@@ -111,7 +115,9 @@ func Init() {
 			PSK:    options.GetString("PlaybookDispatcherPSK"),
 			Status: options.GetString("PlaybookDispatcherStatusURL"),
 		},
-		TemplatesPath: options.GetString("TemplatesPath"),
+		TemplatesPath:  options.GetString("TemplatesPath"),
+		EdgeAPIBaseURL: options.GetString("EdgeAPIBaseURL"),
+		UploadWorkers:  options.GetInt("UploadWorkers"),
 	}
 
 	database := options.GetString("database")

@@ -70,7 +70,11 @@ objects:
           valueFrom:
             secretKeyRef:
               key: key
-              name: psk-playbook-dispatcher     
+              name: psk-playbook-dispatcher
+        - name: EDGEAPIBASEURL
+          value: ${EDGEAPIBASEURL}
+        - name: UPLOADWORKERS
+          value: ${UPLOADWORKERS}
         resources:
           limits:
             cpu: ${{CPU_LIMIT}}
@@ -119,3 +123,7 @@ parameters:
   value: "http://host-inventory-service:8080/"
 - name: PLAYBOOKDISPATCHERURL
   value: "http://host-playbook-dispatcher:8080/"
+- name: EDGEAPIBASEURL
+  value: "https://cloud.stage.redhat.com"
+- name: UPLOADWORKERS
+  value: "100"
