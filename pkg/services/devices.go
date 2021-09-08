@@ -78,17 +78,22 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 		return nil, new(DeviceNotFoundError)
 	}
 
-	currentCheckSum := device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments[len(device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments)-1].Checksum
+	lastDevice := device.Result[len(device.Result)-1]
+	lastDeploymentIdx := len(lastDevice.Ostree.RpmOstreeDeployments) - 1
+	lastDeployment := lastDevice.Ostree.RpmOstreeDeployments[lastDeploymentIdx]
 
 	var images []models.Image
 	var currentImage models.Image
-	result := db.DB.Joins("Commit").Where("OS_Tree_Commit = ?", currentCheckSum)
+
+	result := db.DB.Joins("Commit").Where("OS_Tree_Commit = ?", lastDeployment.Checksum).First(&currentImage)
 	if result.Error != nil {
-		return nil, result.Error
+		log.Error(result.Error)
+		return nil, new(DeviceNotFoundError)
 	}
 	err = db.DB.Model(&currentImage.Commit).Association("Packages").Find(&currentImage.Commit.Packages)
 	if err != nil {
-		return nil, err
+		log.Error(result.Error)
+		return nil, new(DeviceNotFoundError)
 	}
 
 	updates := db.DB.Where("Parent_Id = ? and Images.Status = ?", currentImage.ID, models.ImageStatusSuccess).Joins("Commit").Find(&images)
@@ -101,7 +106,7 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 		db.DB.First(&upd.Commit, upd.CommitID)
 		db.DB.Model(&upd.Commit).Association("Packages").Find(&upd.Commit.Packages)
 		var delta ImageUpdateAvailable
-		diff := GetDiffOnUpdate(currentImage, upd)
+		diff := getDiffOnUpdate(currentImage, upd)
 		delta.Image = upd
 		delta.PackageDiff = diff
 		imageDiff = append(imageDiff, delta)
@@ -109,7 +114,7 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 	return imageDiff, nil
 }
 
-func GetDiffOnUpdate(currentImage models.Image, updatedImage models.Image) DeltaDiff {
+func getDiffOnUpdate(currentImage models.Image, updatedImage models.Image) DeltaDiff {
 	initialCommit := currentImage.Commit.Packages
 	updateCommit := updatedImage.Commit.Packages
 	var initString []string
