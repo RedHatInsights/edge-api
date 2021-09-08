@@ -85,11 +85,17 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 	var images []models.Image
 	var currentImage models.Image
 
-	result := db.DB.Joins("Commit").Where("OS_Tree_Commit = ?", lastDeployment.Checksum).First(&currentImage)
-	if result.Error != nil {
+	result := db.DB.Where("OS_Tree_Commit = ?", lastDeployment.Checksum).First(&currentImage.Commit)
+	if result.Error != nil || result.RowsAffected == 0 {
 		log.Error(result.Error)
 		return nil, new(DeviceNotFoundError)
 	}
+	result = db.DB.Where("commit_id = ?", currentImage.Commit.ID).First(&currentImage)
+	if result.Error != nil || result.RowsAffected == 0 {
+		log.Error(result.Error)
+		return nil, new(DeviceNotFoundError)
+	}
+
 	err = db.DB.Model(&currentImage.Commit).Association("Packages").Find(&currentImage.Commit.Packages)
 	if err != nil {
 		log.Error(result.Error)
@@ -97,8 +103,8 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 	}
 
 	updates := db.DB.Where("Parent_Id = ? and Images.Status = ?", currentImage.ID, models.ImageStatusSuccess).Joins("Commit").Find(&images)
-	if updates.Error != nil {
-		return nil, updates.Error
+	if updates.Error != nil || result.RowsAffected == 0 {
+		return nil, new(DeviceNotFoundError)
 	}
 
 	var imageDiff []ImageUpdateAvailable

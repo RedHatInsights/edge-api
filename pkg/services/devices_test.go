@@ -90,6 +90,7 @@ func TestGetUpdateAvailableForDeviceByUUID(t *testing.T) {
 		},
 		Status: models.ImageStatusSuccess,
 	}
+	db.DB.Create(oldImage.Commit)
 	db.DB.Create(oldImage)
 	newImage := &models.Image{
 		Commit: &models.Commit{
@@ -98,6 +99,7 @@ func TestGetUpdateAvailableForDeviceByUUID(t *testing.T) {
 		Status:   models.ImageStatusSuccess,
 		ParentId: &oldImage.CommitID,
 	}
+	db.DB.Create(newImage.Commit)
 	db.DB.Create(newImage)
 	updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
 	if err != nil {
@@ -110,6 +112,78 @@ func TestGetUpdateAvailableForDeviceByUUID(t *testing.T) {
 	if newUpdate.Image.ID != newImage.ID {
 		t.Errorf("Expected new image to be %d, got %d", newImage.ID, newUpdate.Image.ID)
 
+	}
+}
+
+func TestGetUpdateAvailableForDeviceByUUIDWhenNoUpdateIsAvailable(t *testing.T) {
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uuid := faker.UUIDHyphenated()
+	checksum := "fake-checksum-2"
+	resp := inventory.InventoryResponse{Total: 1, Count: 1, Result: []inventory.Devices{
+		{ID: uuid, Ostree: inventory.SystemProfile{
+			RHCClientID: faker.UUIDHyphenated(),
+			RpmOstreeDeployments: []inventory.OSTree{
+				{Checksum: checksum, Booted: true},
+			},
+		}},
+	}}
+	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
+	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
+
+	deviceService := DeviceService{
+		ctx:       context.Background(),
+		inventory: mockInventoryClient,
+	}
+
+	oldImage := &models.Image{
+		Commit: &models.Commit{
+			OSTreeCommit: checksum,
+		},
+		Status: models.ImageStatusSuccess,
+	}
+	db.DB.Create(oldImage)
+
+	updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
+	if err != nil {
+		t.Errorf("Expected nil err, got %#v", err)
+	}
+	if len(updatesAvailable) != 0 {
+		t.Errorf("Expected zero updates available, got %d", len(updatesAvailable))
+	}
+}
+
+func TestGetUpdateAvailableForDeviceByUUIDWhenNoChecksumIsFound(t *testing.T) {
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uuid := faker.UUIDHyphenated()
+	checksum := "fake-checksum-3"
+	resp := inventory.InventoryResponse{Total: 1, Count: 1, Result: []inventory.Devices{
+		{ID: uuid, Ostree: inventory.SystemProfile{
+			RHCClientID: faker.UUIDHyphenated(),
+			RpmOstreeDeployments: []inventory.OSTree{
+				{Checksum: checksum, Booted: true},
+			},
+		}},
+	}}
+	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
+	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
+
+	deviceService := DeviceService{
+		ctx:       context.Background(),
+		inventory: mockInventoryClient,
+	}
+	updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
+	if updatesAvailable != nil {
+		t.Errorf("Expected nil updates available, got %#v", updatesAvailable)
+	}
+
+	if _, ok := err.(*DeviceNotFoundError); !ok {
+		t.Errorf("Expected DeviceNotFoundError, got %#v", err)
 	}
 }
 
