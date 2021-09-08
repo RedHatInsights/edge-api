@@ -90,8 +90,10 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	uuid := chi.URLParam(r, "DeviceUUID")
 
 	client := inventory.InitClient(r.Context())
+	
 	var device inventory.InventoryResponse
 	device, err := client.ReturnDevicesByID(uuid)
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
@@ -112,9 +114,11 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 
 // GetDeviceImageInfo returns the current image at the device.
 func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("TESTE 1 \n")
 	uuid := chi.URLParam(r, "DeviceUUID")
-
+	fmt.Printf("TESTE 2 \n")
 	client := inventory.InitClient(r.Context())
+	fmt.Printf("TESTE 3\n")
 	var device inventory.InventoryResponse
 	device, err := client.ReturnDevicesByID(uuid)
 	if err != nil {
