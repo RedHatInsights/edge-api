@@ -67,7 +67,7 @@ func (s *DeviceService) GetUpdateAvailableForDevice(currentCheckSum string) ([]I
 	if result.Error != nil {
 		return nil, errors.NewInternalServerError()
 	}
-	if result.RowsAffected == 0 {
+	if result == nil {
 		return nil, errors.NewNotFound("Record not found")
 	} else {
 		result.First(&currentImage)
