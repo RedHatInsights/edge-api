@@ -70,21 +70,31 @@ type ImageInfo struct {
 func (s *DeviceService) GetUpdateAvailableForDevice(currentCheckSum string) ([]ImageUpdateAvailable, error) {
 	var images []models.Image
 	var currentImage models.Image
-	result := db.DB.Joins("Commit").Where("OS_Tree_Commit = ?", currentCheckSum)
-	if result.Error != nil {
-		return nil, errors.NewInternalServerError()
-	}
-	if result == nil {
+
+	result := db.DB.Where("OS_Tree_Commit = ?", currentCheckSum).First(&currentImage.Commit)
+	if result.Error != nil || result == nil {
+		log.Error(result.Error)
 		return nil, errors.NewNotFound("Record not found")
-	} else {
-		result.First(&currentImage)
 	}
+
+	result = db.DB.Where("commit_id = ?", currentImage.Commit.ID).First(&currentImage)
+
+	if result.Error != nil || result == nil {
+		log.Error(result.Error)
+		return nil, errors.NewNotFound("Record not found")
+	}
+
 	err := db.DB.Model(&currentImage.Commit).Association("Packages").Find(&currentImage.Commit.Packages)
 	if err != nil {
-		return nil, errors.NewInternalServerError()
+		log.Error(result.Error)
+		return nil, errors.NewNotFound("Record not found")
 	}
 
 	updates := db.DB.Where("Parent_Id = ? and Images.Status = ?", currentImage.ID, models.ImageStatusSuccess).Joins("Commit").Find(&images)
+	if updates.Error != nil || updates == nil {
+		return nil, errors.NewNotFound("Record not found")
+	}
+
 	if updates.Error == nil {
 		var imageDiff []ImageUpdateAvailable
 		for _, upd := range images {
@@ -96,7 +106,6 @@ func (s *DeviceService) GetUpdateAvailableForDevice(currentCheckSum string) ([]I
 			delta.PackageDiff = diff
 			imageDiff = append(imageDiff, delta)
 		}
-
 		return imageDiff, nil
 	} else {
 		return nil, updates.Error
