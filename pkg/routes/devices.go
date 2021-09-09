@@ -109,6 +109,12 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
+	if _, ok := err.(*services.UpdateNotFoundError); ok {
+		err := errors.NewNotFound("Could not find update")
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
 	log.WithFields(log.Fields{
 		"requestId": request_id.GetReqID(r.Context()),
 	}).Error(err)

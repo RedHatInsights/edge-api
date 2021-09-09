@@ -70,6 +70,10 @@ type DeviceNotFoundError struct {
 	error
 }
 
+type UpdateNotFoundError struct {
+	error
+}
+
 // GetUpdateAvailableForDeviceByUUID returns if exists update for the current image at the device.
 func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]ImageUpdateAvailable, error) {
 
@@ -80,18 +84,14 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 
 	lastDevice := device.Result[len(device.Result)-1]
 	lastDeploymentIdx := len(lastDevice.Ostree.RpmOstreeDeployments) - 1
+	// TODO: Only consider applied update (check if booted = true)
 	lastDeployment := lastDevice.Ostree.RpmOstreeDeployments[lastDeploymentIdx]
 
 	var images []models.Image
 	var currentImage models.Image
 
-	result := db.DB.Where("OS_Tree_Commit = ?", lastDeployment.Checksum).First(&currentImage.Commit)
-	if result == nil || result.Error != nil || result.RowsAffected == 0 {
-		log.Error(result.Error)
-		return nil, new(DeviceNotFoundError)
-	}
-	result = db.DB.Where("commit_id = ?", currentImage.Commit.ID).First(&currentImage)
-	if result == nil || result.Error != nil || result.RowsAffected == 0 {
+	result := db.DB.Model(&models.Image{}).Joins("Commit").Where("OS_Tree_Commit = ?", lastDeployment.Checksum).First(&currentImage)
+	if result.Error != nil || result.RowsAffected == 0 {
 		log.Error(result.Error)
 		return nil, new(DeviceNotFoundError)
 	}
@@ -103,8 +103,8 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 	}
 
 	updates := db.DB.Where("Parent_Id = ? and Images.Status = ?", currentImage.ID, models.ImageStatusSuccess).Joins("Commit").Find(&images)
-	if updates == nil || updates.Error != nil || updates.RowsAffected == 0 {
-		return nil, new(DeviceNotFoundError)
+	if updates.Error != nil || updates.RowsAffected == 0 {
+		return nil, new(UpdateNotFoundError)
 	}
 
 	var imageDiff []ImageUpdateAvailable

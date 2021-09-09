@@ -92,15 +92,17 @@ func TestGetUpdateAvailableForDeviceByUUID(t *testing.T) {
 	}
 	db.DB.Create(oldImage.Commit)
 	db.DB.Create(oldImage)
+	fmt.Printf("Old image was created with id %d\n", oldImage.ID)
 	newImage := &models.Image{
 		Commit: &models.Commit{
 			OSTreeCommit: fmt.Sprintf("a-new-%s", checksum),
 		},
 		Status:   models.ImageStatusSuccess,
-		ParentId: &oldImage.CommitID,
+		ParentId: &oldImage.ID,
 	}
 	db.DB.Create(newImage.Commit)
 	db.DB.Create(newImage)
+	fmt.Printf("New image was created with id %d\n", newImage.ID)
 	updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
 	if err != nil {
 		t.Errorf("Expected nil err, got %#v", err)
@@ -122,14 +124,23 @@ func TestGetUpdateAvailableForDeviceByUUIDWhenNoUpdateIsAvailable(t *testing.T) 
 
 	uuid := faker.UUIDHyphenated()
 	checksum := "fake-checksum-2"
-	resp := inventory.InventoryResponse{Total: 1, Count: 1, Result: []inventory.Devices{
-		{ID: uuid, Ostree: inventory.SystemProfile{
-			RHCClientID: faker.UUIDHyphenated(),
-			RpmOstreeDeployments: []inventory.OSTree{
-				{Checksum: checksum, Booted: true},
-			},
-		}},
-	}}
+	resp := inventory.InventoryResponse{
+		Total: 1,
+		Count: 1,
+		Result: []inventory.Devices{
+			{
+				ID: uuid,
+				Ostree: inventory.SystemProfile{
+					RHCClientID: faker.UUIDHyphenated(),
+					RpmOstreeDeployments: []inventory.OSTree{
+						{
+							Checksum: checksum,
+							Booted:   true,
+						},
+					},
+				}},
+		},
+	}
 	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
 	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
@@ -147,11 +158,12 @@ func TestGetUpdateAvailableForDeviceByUUIDWhenNoUpdateIsAvailable(t *testing.T) 
 	db.DB.Create(oldImage)
 
 	updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
-	if err != nil {
-		t.Errorf("Expected nil err, got %#v", err)
+	if updatesAvailable != nil {
+		t.Errorf("Expected nil updates available, got %#v", updatesAvailable)
 	}
-	if len(updatesAvailable) != 0 {
-		t.Errorf("Expected zero updates available, got %d", len(updatesAvailable))
+
+	if _, ok := err.(*UpdateNotFoundError); !ok {
+		t.Errorf("Expected DeviceNotFoundError, got %#v", err)
 	}
 }
 
