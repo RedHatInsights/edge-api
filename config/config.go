@@ -152,6 +152,7 @@ func Init() {
 			Hostname: cfg.Database.Hostname,
 			Port:     uint(cfg.Database.Port),
 			Name:     cfg.Database.Name,
+			Type:     "pgsql",
 		}
 
 		bucket := clowder.ObjectBuckets[config.BucketName]
