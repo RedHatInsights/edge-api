@@ -3,5 +3,5 @@
 
 rhsm_username: MY_RHSM_USERNAME
 rhsm_password: MY_RHSM_PASSWORD
-insights_username: MY_INSIGHTS_USERNAME
-insights_password: MY_INSIGHTS_PASSWORD
+rhc_username: MY_RHC_USERNAME
+rhc_password: MY_RHC_PASSWORD
