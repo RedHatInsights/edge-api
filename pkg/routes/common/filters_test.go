@@ -13,9 +13,14 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
+var dbName string
+
 func setUp() {
 	config.Init()
 	config.Get().Debug = true
+	time := time.Now().UnixNano()
+	dbName = fmt.Sprintf("%d-routes-common.db", time)
+	config.Get().Database.Name = dbName
 	db.InitDB()
 	db.DB.AutoMigrate(&models.Image{})
 	images := []models.Image{
@@ -51,6 +56,7 @@ func TestMain(m *testing.M) {
 	setUp()
 	retCode := m.Run()
 	db.DB.Exec("DELETE FROM images")
+	os.Remove(dbName)
 	os.Exit(retCode)
 }
 

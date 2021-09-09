@@ -18,7 +18,7 @@ func InitDB() {
 	var dia gorm.Dialector
 	cfg := config.Get()
 
-	if cfg.Database != nil {
+	if cfg.Database.Type == "pgsql" {
 		dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d",
 			cfg.Database.Hostname,
 			cfg.Database.User,
@@ -28,7 +28,7 @@ func InitDB() {
 		)
 		dia = postgres.Open(dsn)
 	} else {
-		dia = sqlite.Open("test.db")
+		dia = sqlite.Open(cfg.Database.Name)
 	}
 
 	DB, err = gorm.Open(dia, &gorm.Config{})

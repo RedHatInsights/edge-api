@@ -1,8 +1,10 @@
 package routes
 
 import (
+	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -39,9 +41,14 @@ func TestMain(m *testing.M) {
 	os.Exit(retCode)
 }
 
+var dbName string
+
 func setUp() {
 	config.Init()
 	config.Get().Debug = true
+	time := time.Now().UnixNano()
+	dbName = fmt.Sprintf("%d-routes.db", time)
+	config.Get().Database.Name = dbName
 	db.InitDB()
 	err := db.DB.AutoMigrate(
 		&models.Commit{},
@@ -77,4 +84,5 @@ func tearDown() {
 	db.DB.Exec("DELETE FROM repos")
 	db.DB.Exec("DELETE FROM images")
 	db.DB.Exec("DELETE FROM update_transactions")
+	os.Remove(dbName)
 }

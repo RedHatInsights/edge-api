@@ -59,6 +59,8 @@ func main() {
 		"InventoryURL":             cfg.InventoryConfig.URL,
 		"PlaybookDispatcherConfig": cfg.PlaybookDispatcherConfig.URL,
 		"TemplatesPath":            cfg.TemplatesPath,
+		"DatabaseType":             cfg.Database.Type,
+		"DatabaseName":             cfg.Database.Name,
 	}).Info("Configuration Values:")
 
 	r := chi.NewRouter()
