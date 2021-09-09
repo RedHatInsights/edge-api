@@ -3,18 +3,20 @@ package routes
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/go-chi/chi"
-	"github.com/redhatinsights/edge-api/pkg/models"
 	faker "github.com/bxcodec/faker/v3"
+	"github.com/go-chi/chi"
 	"github.com/golang/mock/gomock"
+	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/models"
 
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
-	
+
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 )
@@ -84,8 +86,10 @@ func TestGetDevicesStatus(t *testing.T) {
 		}
 	}
 }
-func TestGetImageInfo(t *testing.T) {	
+func TestGetImageInfo(t *testing.T) {
 	// Given
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -94,14 +98,36 @@ func TestGetImageInfo(t *testing.T) {
 		DeviceUUID: faker.UUIDHyphenated(),
 	}
 	ctx := context.WithValue(req.Context(), DeviceContextKey, dc)
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
 
-	expected := []services.ImageUpdateAvailable{
-		{Image: testImage, PackageDiff: services.DeltaDiff{}},
+	checksum := "fake-checksum"
+	originalImage := &models.Image{
+		Commit: &models.Commit{
+			OSTreeCommit: checksum,
+		},
+		Status: models.ImageStatusSuccess,
 	}
+	db.DB.Create(originalImage.Commit)
+	db.DB.Create(originalImage)
+	updatedImage := &models.Image{
+		Commit: &models.Commit{
+			OSTreeCommit: fmt.Sprintf("a-new-%s", checksum),
+		},
+		Status:   models.ImageStatusSuccess,
+		ParentId: &originalImage.CommitID,
+	}
+	db.DB.Create(updatedImage.Commit)
+	db.DB.Create(updatedImage)
+
+	var updateAvailable services.ImageUpdateAvailable
+	updateAvailable.PackageDiff = services.DeltaDiff{}
+
+	// expected := []services.ImageInfo{
+	// 	{Image: testImage, UpdateAvailable: nil, Rollback: testImage},
+	// }
+	expected := []services.ImageInfo{}
+	fmt.Printf("expected:: %v\n", expected)
 	mockDeviceService := mock_services.NewMockDeviceServiceInterface(ctrl)
-	mockDeviceService.EXPECT().GetDeviceImageInfo(gomock.Eq(dc.DeviceUUID)).Return(expected, nil)
+	mockDeviceService.EXPECT().GetDeviceImageInfo(checksum).Return(expected, gomock.Nil())
 	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
 		DeviceService: mockDeviceService,
 	})

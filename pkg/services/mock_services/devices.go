@@ -5,6 +5,7 @@
 package mock_services
 
 import (
+	"fmt"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -77,6 +78,7 @@ func (m *MockDeviceServiceInterface) GetDeviceImageInfo(currentCheckSum string) 
 // GetDeviceImageInfo indicates an expected call of GetDeviceImageInfo.
 func (mr *MockDeviceServiceInterfaceMockRecorder) GetDeviceImageInfo(currentCheckSum interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
+	fmt.Print("************************\n")
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceImageInfo", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetDeviceImageInfo), currentCheckSum)
 }
 
