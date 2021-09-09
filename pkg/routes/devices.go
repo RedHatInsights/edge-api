@@ -18,10 +18,10 @@ import (
 
 // MakeDevicesRouter adds support for operations on update
 func MakeDevicesRouter(sub chi.Router) {
-	sub.Route("/device/", func(r chi.Router) {
+	sub.Route("/{DeviceUUID}", func(r chi.Router) {
 		r.Use(DeviceCtx)
-		r.Get("/{DeviceUUID}", GetDeviceStatus)
-		r.Get("/{DeviceUUID}/updates", GetUpdateAvailableForDevice)
+		r.Get("/", GetDeviceStatus)
+		r.Get("/updates", GetUpdateAvailableForDevice)
 	})
 }
 
@@ -50,7 +50,7 @@ func DeviceCtx(next http.Handler) http.Handler {
 		// TODO: Implement devices by tag
 		// uCtx.Tag = chi.URLParam(r, "Tag")
 		log.Debugf("UpdateCtx::uCtx: %#v", uCtx)
-		ctx := context.WithValue(r.Context(), DeviceContextKey, &uCtx)
+		ctx := context.WithValue(r.Context(), DeviceContextKey, uCtx)
 		log.Debugf("UpdateCtx::ctx: %#v", ctx)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
