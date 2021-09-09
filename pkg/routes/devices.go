@@ -20,8 +20,8 @@ import (
 func MakeDevicesRouter(sub chi.Router) {
 	sub.Route("/device/", func(r chi.Router) {
 		r.Use(DeviceCtx)
-		sub.Get("/{DeviceUUID}", GetDeviceStatus)
-		sub.Get("/{DeviceUUID}/updates", GetUpdateAvailableForDevice)
+		r.Get("/{DeviceUUID}", GetDeviceStatus)
+		r.Get("/{DeviceUUID}/updates", GetUpdateAvailableForDevice)
 	})
 }
 
