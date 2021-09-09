@@ -167,6 +167,7 @@ func Init() {
 			Region:          cfg.Logging.Cloudwatch.Region,
 		}
 	}
+
 }
 
 // Get returns an initialized EdgeConfig

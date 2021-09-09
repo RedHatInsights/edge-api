@@ -13,15 +13,23 @@ func main() {
 	l.InitLogger()
 	cfg := config.Get()
 	log.WithFields(log.Fields{
-		"Hostname":           cfg.Hostname,
-		"Auth":               cfg.Auth,
-		"WebPort":            cfg.WebPort,
-		"MetricsPort":        cfg.MetricsPort,
-		"LogLevel":           cfg.LogLevel,
-		"Debug":              cfg.Debug,
-		"BucketName":         cfg.BucketName,
-		"BucketRegion":       cfg.BucketRegion,
-		"ImageBuilderConfig": cfg.ImageBuilderConfig.URL,
+		"Hostname":                 cfg.Hostname,
+		"Auth":                     cfg.Auth,
+		"WebPort":                  cfg.WebPort,
+		"MetricsPort":              cfg.MetricsPort,
+		"LogLevel":                 cfg.LogLevel,
+		"Debug":                    cfg.Debug,
+		"BucketName":               cfg.BucketName,
+		"BucketRegion":             cfg.BucketRegion,
+		"RepoTempPath ":            cfg.RepoTempPath,
+		"OpenAPIFilePath ":         cfg.OpenAPIFilePath,
+		"ImageBuilderURL":          cfg.ImageBuilderConfig.URL,
+		"DefaultOSTreeRef":         cfg.DefaultOSTreeRef,
+		"InventoryURL":             cfg.InventoryConfig.URL,
+		"PlaybookDispatcherConfig": cfg.PlaybookDispatcherConfig.URL,
+		"TemplatesPath":            cfg.TemplatesPath,
+		"DatabaseType":             cfg.Database.Type,
+		"DatabaseName":             cfg.Database.Name,
 	}).Info("Configuration Values:")
 	db.InitDB()
 	err := db.DB.AutoMigrate(&models.ImageSet{}, &models.Commit{}, &models.UpdateTransaction{}, &models.Package{}, &models.Image{}, &models.Repo{}, &models.DispatchRecord{})
