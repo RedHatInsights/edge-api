@@ -88,6 +88,8 @@ components:
           properties:
             Account:
               type: string
+            Checksum:
+              type: string
             ComposeJobID:
               type: string
             ImageBuildISOURL:
