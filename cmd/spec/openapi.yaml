@@ -889,6 +889,17 @@ components:
           type: array
       type: object
     v1.Device: {}
+    v1.Device:
+      properties:
+        Connected:
+          type: boolean
+        DesiredHash:
+          type: string
+        RHCClientID:
+          type: string
+        UUID:
+          type: string
+      type: object
     v1.Image:
       properties:
         Account:
