@@ -281,14 +281,40 @@ func TestGetImageForDeviceByUUID(t *testing.T) {
 	if err != nil {
 		t.Errorf("Expected nil err, got %#v", err)
 	}
-	// if imageInfo.Image== gomock.Nil() {
-	// 	t.Errorf("Expected one update available, got %d", len(imageInfo))
-	// }
-	newUpdate := imageInfo
 	fmt.Printf("imageInfo:: %v \n", imageInfo.Image.ID)
-	fmt.Printf("imageInfo:: %v \n", imageInfo.Rollback.ID)
-	if newUpdate.Image.ID != imageInfo.Image.ID {
-		t.Errorf("Expected image info to be %d, got %d", imageInfo.Image.ID, newUpdate.Image.ID)
+	fmt.Printf("imageInfo:: %v \n", oldImage.ID)
+	if oldImage.Commit.OSTreeCommit != imageInfo.Image.Commit.OSTreeCommit {
+		t.Errorf("Expected image info to be %d, got %d", imageInfo.Image.ID, oldImage.ID)
 
 	}
+}
+
+func TestGetNoImageForDeviceByUUID(t *testing.T) {
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uuid := faker.UUIDHyphenated()
+	checksum := "123"
+	resp := inventory.InventoryResponse{Total: 1, Count: 1, Result: []inventory.Devices{
+		{ID: uuid, Ostree: inventory.SystemProfile{
+			RHCClientID: faker.UUIDHyphenated(),
+			RpmOstreeDeployments: []inventory.OSTree{
+				{Checksum: checksum, Booted: true},
+			},
+		}},
+	}}
+	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
+	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
+
+	deviceService := DeviceService{
+		ctx:       context.Background(),
+		inventory: mockInventoryClient,
+	}
+
+	_, err := deviceService.GetDeviceImageInfo(uuid)
+	if err == nil {
+		t.Errorf("Expected ImageNotFoundError, got Nil")
+	}
+
 }
