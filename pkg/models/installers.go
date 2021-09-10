@@ -11,4 +11,5 @@ type Installer struct {
 	Status           string `json:"Status"`
 	Username         string `json:"Username"`
 	SSHKey           string `json:"SshKey"`
+	Checksum         string `json:"Checksum"`
 }

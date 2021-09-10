@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -334,6 +336,11 @@ func (s *ImageService) AddUserInfo(image *models.Image) error {
 		return fmt.Errorf("error execuiting fleetkick script :: %s", err.Error())
 	}
 
+	err = s.calculateChecksum(imageName, image)
+	if err != nil {
+		return fmt.Errorf("error calculating checksum for ISO :: %s", err.Error())
+	}
+
 	err = s.uploadISO(image, imageName)
 	if err != nil {
 		return fmt.Errorf("error uploading ISO :: %s", err.Error())
@@ -482,7 +489,7 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 	return image, nil
 }
 
-// Inject the custom kickstart into the iso via mkksiso.
+// Inject the custom kickstart into the iso via script.
 func (s *ImageService) exeInjectionScript(kickstart string, image string, imageID uint) error {
 	fleetBashScript := "/usr/local/bin/fleetkick.sh"
 	workDir := fmt.Sprintf("/var/tmp/workdir%d", imageID)
@@ -497,5 +504,31 @@ func (s *ImageService) exeInjectionScript(kickstart string, image string, imageI
 		return err
 	}
 	log.Infof("fleetkick output: %s\n", output)
+	return nil
+}
+
+// Calculate the checksum of the final ISO.
+func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) error {
+	log.Infof("Calculating sha256 checksum for ISO %s", isoPath)
+
+	fh, err := os.Open(isoPath)
+	if err != nil {
+		return err
+	}
+	defer fh.Close()
+
+	sumCalculator := sha256.New()
+	_, err = io.Copy(sumCalculator, fh)
+	if err != nil {
+		return err
+	}
+
+	image.Installer.Checksum = hex.EncodeToString(sumCalculator.Sum(nil))
+	log.Infof("Checksum (sha256): %s", image.Installer.Checksum)
+	tx := db.DB.Save(&image.Installer)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
 	return nil
 }
