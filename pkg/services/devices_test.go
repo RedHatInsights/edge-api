@@ -250,7 +250,7 @@ func TestGetImageForDeviceByUUID(t *testing.T) {
 		}},
 	}}
 	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
-	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
+	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(2)
 
 	deviceService := DeviceService{
 		ctx:       context.Background(),

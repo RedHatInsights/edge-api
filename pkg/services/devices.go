@@ -101,7 +101,6 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 
 	var images []models.Image
 	var currentImage models.Image
-
 	result := db.DB.Model(&models.Image{}).Joins("Commit").Where("OS_Tree_Commit = ?", lastDeployment.Checksum).First(&currentImage)
 	if result.Error != nil || result.RowsAffected == 0 {
 		log.Error(result.Error)
@@ -169,10 +168,8 @@ func contains(s []string, searchterm string) bool {
 func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (ImageInfo, error) {
 	fmt.Printf(":: GetDeviceImageInfo :: \n")
 	var ImageInfo ImageInfo
-	// var updateAvailable []ImageUpdateAvailable
 	var currentImage models.Image
 	var rollback models.Image
-	// var err error
 
 	device, err := s.inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || device.Total != 1 {
@@ -192,13 +189,14 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (ImageInfo, error)
 			db.DB.Where("ID = ?", currentImage.ParentId).First(&rollback)
 		}
 	}
-	//MUST FIX DeviceServiceInterface.GetUpdateAvailableForDeviceByUUID
-	// updateAvailable, err := DeviceServiceInterface.GetUpdateAvailableForDeviceByUUID(deviceUUID)
-	// if err != nil {
-	// 	return ImageInfo, err
-	// }
+	updateAvailable, err := s.GetUpdateAvailableForDeviceByUUID(deviceUUID)
+	if err != nil {
+		fmt.Printf("err:: %v \n", err)
+	} else {
+		ImageInfo.UpdateAvailable = updateAvailable
+	}
 	ImageInfo.Rollback = rollback
 	ImageInfo.Image = currentImage
-	// ImageInfo.UpdateAvailable = updateAvailable
+
 	return ImageInfo, nil
 }
