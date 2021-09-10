@@ -1,6 +1,7 @@
 module github.com/redhatinsights/edge-api
 
 require (
+	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/aws/aws-sdk-go v1.38.51
 	github.com/bxcodec/faker/v3 v3.6.0 // indirect
 	github.com/cavaliercoder/grab v2.0.0+incompatible
@@ -9,7 +10,7 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-openapi/runtime v0.19.29
-	github.com/golang/mock v1.3.1
+	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/jackc/pgproto3/v2 v2.0.7 // indirect

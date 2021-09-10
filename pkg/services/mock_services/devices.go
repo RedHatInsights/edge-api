@@ -65,6 +65,21 @@ func (mr *MockDeviceServiceInterfaceMockRecorder) GetDeviceByUUID(deviceUUID int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceByUUID", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetDeviceByUUID), deviceUUID)
 }
 
+// GetDeviceImageInfo mocks base method.
+func (m *MockDeviceServiceInterface) GetDeviceImageInfo(deviceUUID string) (services.ImageInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDeviceImageInfo", deviceUUID)
+	ret0, _ := ret[0].(services.ImageInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDeviceImageInfo indicates an expected call of GetDeviceImageInfo.
+func (mr *MockDeviceServiceInterfaceMockRecorder) GetDeviceImageInfo(deviceUUID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceImageInfo", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetDeviceImageInfo), deviceUUID)
+}
+
 // GetUpdateAvailableForDeviceByUUID mocks base method.
 func (m *MockDeviceServiceInterface) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]services.ImageUpdateAvailable, error) {
 	m.ctrl.T.Helper()
