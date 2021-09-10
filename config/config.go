@@ -32,6 +32,7 @@ type EdgeConfig struct {
 }
 
 type dbConfig struct {
+	Type     string
 	User     string
 	Password string
 	Hostname string
@@ -80,6 +81,7 @@ func Init() {
 	options.SetDefault("RepoTempPath", "/tmp/repos/")
 	options.SetDefault("OpenAPIFilePath", "./cmd/spec/openapi.json")
 	options.SetDefault("Database", "sqlite")
+	options.SetDefault("DatabaseFile", "test.db")
 	options.SetDefault("DefaultOSTreeRef", "rhel/8/x86_64/edge")
 	options.SetDefault("TemplatesPath", "/usr/local/etc/")
 	options.SetDefault("EdgeAPIBaseURL", "http://localhost:3000")
@@ -129,6 +131,12 @@ func Init() {
 			Hostname: options.GetString("PGSQL_HOSTNAME"),
 			Port:     options.GetUint("PGSQL_PORT"),
 			Name:     options.GetString("PGSQL_DATABASE"),
+			Type:     "pgsql",
+		}
+	} else {
+		config.Database = &dbConfig{
+			Name: options.GetString("DatabaseFile"),
+			Type: "sqlite",
 		}
 	}
 
@@ -144,6 +152,7 @@ func Init() {
 			Hostname: cfg.Database.Hostname,
 			Port:     uint(cfg.Database.Port),
 			Name:     cfg.Database.Name,
+			Type:     "pgsql",
 		}
 
 		bucket := clowder.ObjectBuckets[config.BucketName]
@@ -159,6 +168,7 @@ func Init() {
 			Region:          cfg.Logging.Cloudwatch.Region,
 		}
 	}
+
 }
 
 // Get returns an initialized EdgeConfig

@@ -59,6 +59,8 @@ func main() {
 		"InventoryURL":             cfg.InventoryConfig.URL,
 		"PlaybookDispatcherConfig": cfg.PlaybookDispatcherConfig.URL,
 		"TemplatesPath":            cfg.TemplatesPath,
+		"DatabaseType":             cfg.Database.Type,
+		"DatabaseName":             cfg.Database.Name,
 	}).Info("Configuration Values:")
 
 	r := chi.NewRouter()
@@ -89,6 +91,7 @@ func main() {
 		s.Route("/commits", routes.MakeCommitsRouter)
 		s.Route("/images", routes.MakeImagesRouter)
 		s.Route("/updates", routes.MakeUpdatesRouter)
+		s.Route("/image-sets", routes.MakeImageSetsRouter)
 		s.Route("/devices", routes.MakeDevicesRouter)
 	})
 

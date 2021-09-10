@@ -41,9 +41,15 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items: 
-                  $ref: '#/components/schemas/v1.Image'
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 100
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/v1.Image'
           description: OK
         "400":
           content:
@@ -237,6 +243,7 @@ paths:
               schema:
                 type: string
                 example: ansible playbook for an update
+          description: OK
         "400":
           content:
             application/json:

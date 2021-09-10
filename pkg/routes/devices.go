@@ -6,20 +6,22 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi"
-	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
+	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	"github.com/redhatinsights/edge-api/pkg/services"
+	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	log "github.com/sirupsen/logrus"
 )
 
 // MakeDevicesRouter adds support for operations on update
 func MakeDevicesRouter(sub chi.Router) {
-	sub.Route("/device/", func(r chi.Router) {
+	sub.Route("/{DeviceUUID}", func(r chi.Router) {
 		r.Use(DeviceCtx)
-		sub.Get("/{DeviceUUID}", GetDeviceStatus)
-		sub.Get("/{DeviceUUID}/updates", GetUpdateAvailableForDevice)
+		r.Get("/", GetDeviceStatus)
+		r.Get("/updates", GetUpdateAvailableForDevice)
 	})
 }
 
@@ -39,10 +41,16 @@ func DeviceCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var uCtx DeviceContext
 		uCtx.DeviceUUID = chi.URLParam(r, "DeviceUUID")
+		if uCtx.DeviceUUID == "" {
+			err := errors.NewBadRequest("DeviceUUID must be sent")
+			w.WriteHeader(err.Status)
+			json.NewEncoder(w).Encode(&err)
+			return
+		}
 		// TODO: Implement devices by tag
 		// uCtx.Tag = chi.URLParam(r, "Tag")
 		log.Debugf("UpdateCtx::uCtx: %#v", uCtx)
-		ctx := context.WithValue(r.Context(), DeviceContextKey, &uCtx)
+		ctx := context.WithValue(r.Context(), DeviceContextKey, uCtx)
 		log.Debugf("UpdateCtx::ctx: %#v", ctx)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -85,21 +93,36 @@ func GetDeviceStatus(w http.ResponseWriter, r *http.Request) {
 
 // GetUpdateAvailableForDevice returns if exists update for the current image at the device.
 func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
-	uuid := chi.URLParam(r, "DeviceUUID")
-
-	client := inventory.InitClient(r.Context())
-	var device inventory.InventoryResponse
-	device, err := client.ReturnDevicesByID(uuid)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	dc := r.Context().Value(DeviceContextKey).(DeviceContext)
+	if dc.DeviceUUID == "" {
+		return // Error set by DeviceCtx method
 	}
-
-	currentCheckSum := device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments[len(device.Result[len(device.Result)-1].Ostree.RpmOstreeDeployments)-1].Checksum
-	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
-	result, err := services.DeviceService.GetUpdateAvailableForDevice(currentCheckSum)
+	contextServices, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	result, err := contextServices.DeviceService.GetUpdateAvailableForDeviceByUUID(dc.DeviceUUID)
 	if err == nil {
 		json.NewEncoder(w).Encode(result)
 		return
 	}
-	json.NewEncoder(w).Encode(http.StatusNotFound)
+	if _, ok := err.(*services.DeviceNotFoundError); ok {
+		err := errors.NewNotFound("Could not find device")
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	if _, ok := err.(*services.UpdateNotFoundError); ok {
+		err := errors.NewNotFound("Could not find update")
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	log.WithFields(log.Fields{
+		"requestId": request_id.GetReqID(r.Context()),
+	}).Error(err)
+	apierr := errors.NewInternalServerError()
+	w.WriteHeader(apierr.Status)
+	log.WithFields(log.Fields{
+		"requestId":  request_id.GetReqID(r.Context()),
+		"statusCode": apierr.Status,
+	}).Error(apierr)
+	json.NewEncoder(w).Encode(&err)
 }

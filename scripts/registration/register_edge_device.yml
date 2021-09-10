@@ -26,3 +26,17 @@
     tags:
     - insights_register
     - register
+
+  - name: rhc connect
+    shell: "rhc connect -u {{ rhc_username }} -p {{ rhc_password }}"
+    tags:
+      - rhc_connect
+      - register
+
+  - name: rhcd service enable and start
+    service:
+      name: rhcd
+      state: started
+      enabled: true
+    tags:
+      - rhc_service

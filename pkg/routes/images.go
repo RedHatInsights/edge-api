@@ -32,7 +32,6 @@ const imageKey imageTypeKey = iota
 // MakeImageRouter adds support for operations on images
 func MakeImagesRouter(sub chi.Router) {
 	sub.With(validateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetAllImages)
-	sub.Get("/reserved-usernames", GetReservedUsernames)
 	sub.Post("/", CreateImage)
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageCtx)
@@ -483,7 +482,4 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-}
-func GetReservedUsernames(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(models.ReservedUsernames)
 }
