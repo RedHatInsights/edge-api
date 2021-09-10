@@ -135,7 +135,7 @@ func Init() {
 		}
 	} else {
 		config.Database = &dbConfig{
-			Name: options.GetString("DATABASE_FILE"),
+			Name: options.GetString("DatabaseFile"),
 			Type: "sqlite",
 		}
 	}
