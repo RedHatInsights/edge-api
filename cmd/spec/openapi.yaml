@@ -888,6 +888,7 @@ components:
             type: object
           type: array
       type: object
+    v1.Device: {}
     v1.Image:
       properties:
         Account:
@@ -1705,6 +1706,65 @@ paths:
           description: There was an internal server error.
       summary: Executes a device update.
       description: Executes a device update.
+    get:
+      operationId: ListUpdates
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/v1.UpdateTransaction'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: There was an internal server error.
+      summary: Gets all device updates.
+      description: Gets all device updates.
+  /updates/{updateID}:
+    get:
+      operationId: GetUpdate
+      parameters:
+        - name: updateID
+          in: path
+          required: true
+          description: An unique ID to identify the update
+          schema:
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.UpdateTransaction'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500": 
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Gets a single requested update.
+      description: Gets a single requested update.
   /updates/{updateID}/update-playbook.yml:
     get:
       operationId: GetUpdatePlaybook
@@ -1735,6 +1795,31 @@ paths:
               schema:
                 $ref: '#/components/schemas/v1.InternalServerError'
           description: There was an internal server error.
+  /updates/device/{DeviceUUID}:
+    get:
+      operationId: GetUpdateStatusForDevice
+      parameters:
+        - name: DeviceUUID
+          in: path
+          required: true
+          description: DeviceUUID
+          schema:
+            type : string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.Device'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+      summary: Return list of available updates for a device.
+      description: Return list of available updates for a device.
   /updates/device/{DeviceUUID}/updates:
     get:
       operationId: GetUpdateAvailableForDevice

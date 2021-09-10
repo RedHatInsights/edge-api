@@ -48,6 +48,11 @@ func main() {
 		panic(err)
 	}
 	components.Schemas["v1.DeviceDetails"] = deviceDetails
+	device, _, err := openapi3gen.NewSchemaRefForValue(&models.Device{})
+	if err != nil {
+		panic(err)
+	}
+	components.Schemas["v1.Device"] = device
 
 	internalServerError, _, err := openapi3gen.NewSchemaRefForValue(&errors.InternalServerError{})
 	if err != nil {
@@ -82,6 +87,7 @@ func main() {
 	checkErr(err)
 
 	paths, err := ioutil.ReadFile("./cmd/spec/path.yaml")
+	checkErr(err)
 
 	b = &bytes.Buffer{}
 	b.Write(schema)
