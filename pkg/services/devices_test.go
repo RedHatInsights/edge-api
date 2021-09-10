@@ -233,3 +233,62 @@ func TestGetDiffOnUpdate(t *testing.T) {
 		t.Errorf("Expected one update available, got %d", len(deltaDiff.Removed))
 	}
 }
+
+func TestGetImageForDeviceByUUID(t *testing.T) {
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	uuid := faker.UUIDHyphenated()
+	checksum := "fake-checksum"
+	resp := inventory.InventoryResponse{Total: 1, Count: 1, Result: []inventory.Devices{
+		{ID: uuid, Ostree: inventory.SystemProfile{
+			RHCClientID: faker.UUIDHyphenated(),
+			RpmOstreeDeployments: []inventory.OSTree{
+				{Checksum: checksum, Booted: true},
+			},
+		}},
+	}}
+	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
+	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
+
+	deviceService := DeviceService{
+		ctx:       context.Background(),
+		inventory: mockInventoryClient,
+	}
+
+	oldImage := &models.Image{
+		Commit: &models.Commit{
+			OSTreeCommit: checksum,
+		},
+		Status: models.ImageStatusSuccess,
+	}
+	db.DB.Create(oldImage.Commit)
+	db.DB.Create(oldImage)
+	fmt.Printf("Old image was created with id %d\n", oldImage.ID)
+	newImage := &models.Image{
+		Commit: &models.Commit{
+			OSTreeCommit: fmt.Sprintf("a-new-%s", checksum),
+		},
+		Status:   models.ImageStatusSuccess,
+		ParentId: &oldImage.ID,
+	}
+	db.DB.Create(newImage.Commit)
+	db.DB.Create(newImage)
+	fmt.Printf("New image was created with id %d\n", newImage.ID)
+	fmt.Printf("New image was created with id %d\n", newImage.ParentId)
+	imageInfo, err := deviceService.GetDeviceImageInfo(uuid)
+	if err != nil {
+		t.Errorf("Expected nil err, got %#v", err)
+	}
+	// if imageInfo.Image== gomock.Nil() {
+	// 	t.Errorf("Expected one update available, got %d", len(imageInfo))
+	// }
+	newUpdate := imageInfo
+	fmt.Printf("imageInfo:: %v \n", imageInfo.Image.ID)
+	fmt.Printf("imageInfo:: %v \n", imageInfo.Rollback.ID)
+	if newUpdate.Image.ID != imageInfo.Image.ID {
+		t.Errorf("Expected image info to be %d, got %d", imageInfo.Image.ID, newUpdate.Image.ID)
+
+	}
+}

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"sort"
 
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
@@ -15,6 +16,7 @@ type DeviceServiceInterface interface {
 	GetDeviceByID(deviceID uint) (*models.Device, error)
 	GetDeviceByUUID(deviceUUID string) (*models.Device, error)
 	GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]ImageUpdateAvailable, error)
+	GetDeviceImageInfo(deviceUUID string) (ImageInfo, error)
 }
 
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
@@ -66,11 +68,21 @@ type DeltaDiff struct {
 	Removed []models.Package
 }
 
+type ImageInfo struct {
+	Image           models.Image
+	UpdateAvailable []ImageUpdateAvailable
+	Rollback        models.Image
+}
+
 type DeviceNotFoundError struct {
 	error
 }
 
 type UpdateNotFoundError struct {
+	error
+}
+
+type ImageNotFoundError struct {
 	error
 }
 
@@ -152,4 +164,41 @@ func getDiffOnUpdate(currentImage models.Image, updatedImage models.Image) Delta
 func contains(s []string, searchterm string) bool {
 	i := sort.SearchStrings(s, searchterm)
 	return i < len(s) && s[i] == searchterm
+}
+
+func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (ImageInfo, error) {
+	fmt.Printf(":: GetDeviceImageInfo :: \n")
+	var ImageInfo ImageInfo
+	// var updateAvailable []ImageUpdateAvailable
+	var currentImage models.Image
+	var rollback models.Image
+	// var err error
+
+	device, err := s.inventory.ReturnDevicesByID(deviceUUID)
+	if err != nil || device.Total != 1 {
+		return ImageInfo, new(DeviceNotFoundError)
+	}
+
+	lastDevice := device.Result[len(device.Result)-1]
+	lastDeployment := lastDevice.Ostree.RpmOstreeDeployments[len(lastDevice.Ostree.RpmOstreeDeployments)-1]
+
+	result := db.DB.Model(&models.Image{}).Joins("Commit").Where("OS_Tree_Commit = ?", lastDeployment.Checksum).First(&currentImage)
+
+	if result.Error != nil || result == nil {
+		log.Error(result.Error)
+		return ImageInfo, new(ImageNotFoundError)
+	} else {
+		if currentImage.ParentId != nil {
+			db.DB.Where("ID = ?", currentImage.ParentId).First(&rollback)
+		}
+	}
+	//MUST FIX DeviceServiceInterface.GetUpdateAvailableForDeviceByUUID
+	// updateAvailable, err := DeviceServiceInterface.GetUpdateAvailableForDeviceByUUID(deviceUUID)
+	// if err != nil {
+	// 	return ImageInfo, err
+	// }
+	ImageInfo.Rollback = rollback
+	ImageInfo.Image = currentImage
+	// ImageInfo.UpdateAvailable = updateAvailable
+	return ImageInfo, nil
 }
