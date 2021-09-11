@@ -72,7 +72,7 @@ func setUp() {
 	db.DB.Create(&testImage.Commit)
 	db.DB.Create(&testImage)
 	testRepo = models.Repo{
-		Commit: testImage.Commit,
+		CommitID: testImage.Commit.ID,
 	}
 	db.DB.Create(&testRepo)
 	db.DB.Create(&testUpdates)

@@ -263,8 +263,8 @@ func (s *ImageService) CreateRepoForImage(i *models.Image) *models.Repo {
 	log.Infof("Commit %d for Image %d is ready. Creating OSTree repo.", i.Commit.ID, i.ID)
 	repo := &models.Repo{
 		CommitID: i.Commit.ID,
-		Commit:   i.Commit,
-		Status:   models.RepoStatusBuilding,
+		// Commit: i.Commit,
+		Status: models.RepoStatusBuilding,
 	}
 	tx := db.DB.Create(repo)
 	if tx.Error != nil {

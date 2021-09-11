@@ -30,15 +30,16 @@ type Commit struct {
 	InstalledPackages    []InstalledPackage `json:"InstalledPackages,omitempty" gorm:"many2many:commit_installed_packages;"`
 	ComposeJobID         string             `json:"ComposeJobID"`
 	Status               string             `json:"Status"`
+	Repos                []Repo
 }
 
 // Repo is the delivery mechanism of a Commit over HTTP
 type Repo struct {
 	gorm.Model
-	URL      string  `json:"RepoURL"`
-	Status   string  `json:"RepoStatus"`
-	CommitID uint    `json:"CommitID"`
-	Commit   *Commit `json:"Commit"`
+	URL      string `json:"RepoURL"`
+	Status   string `json:"RepoStatus"`
+	CommitID uint   `json:"CommitID"`
+	Commit   Commit `json:"Commit"`
 }
 
 // Package represents the packages a Commit can have

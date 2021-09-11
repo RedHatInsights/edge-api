@@ -198,25 +198,25 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 
 	//  Check for the existence of a Repo that already has this commit and don't duplicate
 	var repo *models.Repo
-	repoService := services.NewRepoService()
-	repo, err = repoService.GetRepoByCommitID(update.CommitID)
-	if err == nil {
-		update.Repo = repo
-	} else {
-		if !(err.Error() == "record not found") {
-			log.Errorf("updateFromHTTP::GetRepoByCommitID::repo: %#v, %#v", repo, err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return &models.UpdateTransaction{}, err
-		} else {
-			log.Infof("Old Repo not found in database for CommitID, creating new one: %d", update.CommitID)
-			repo := &models.Repo{
-				Commit: update.Commit,
-				Status: models.RepoStatusBuilding,
-			}
-			db.DB.Create(&repo)
-			update.Repo = repo
-		}
+	// repoService := services.NewRepoService()
+	// repo, err = repoService.GetRepoByCommitID(update.CommitID)
+	// if err == nil {
+	// 	update.Repo = repo
+	// } else {
+	// 	if !(err.Error() == "record not found") {
+	// 		log.Errorf("updateFromHTTP::GetRepoByCommitID::repo: %#v, %#v", repo, err)
+	// 		http.Error(w, err.Error(), http.StatusBadRequest)
+	// 		return &models.UpdateTransaction{}, err
+	// 	} else {
+	log.Infof("Old Repo not found in database for CommitID, creating new one: %d", update.CommitID)
+	repo = &models.Repo{
+		CommitID: update.CommitID,
+		Status:   models.RepoStatusBuilding,
 	}
+	db.DB.Create(&repo)
+	update.Repo = repo
+	// }
+	// }
 	log.Infof("Getting repo info: repo %s, %d", repo.URL, repo.ID)
 
 	devices := update.Devices

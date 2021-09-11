@@ -141,7 +141,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 			} else {
 				log.Infof("Old Repo not found in database for CommitID, creating new one: %d", update.CommitID)
 				update.Repo = &models.Repo{
-					Commit: update.Commit,
+					CommitID: update.Commit.ID,
 				}
 			}
 		}
@@ -168,7 +168,9 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = rb.DownloadExtractVersionRepo(r.Commit, path)
+	var commit models.Commit
+	db.DB.Where("ID = ?", r.CommitID).First(&commit)
+	err = rb.DownloadExtractVersionRepo(&commit, path)
 	if err != nil {
 		r.Status = models.RepoStatusError
 		result := db.DB.Save(&r)
