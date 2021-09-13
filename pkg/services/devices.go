@@ -23,21 +23,23 @@ type DeviceServiceInterface interface {
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
 func NewDeviceService(ctx context.Context) DeviceServiceInterface {
 	return &DeviceService{
-		ctx:       ctx,
-		inventory: inventory.InitClient(ctx),
+		ctx:           ctx,
+		updateService: NewUpdateService(ctx),
+		inventory:     inventory.InitClient(ctx),
 	}
 }
 
 // DeviceService is the main implementation of a DeviceServiceInterface
 type DeviceService struct {
-	ctx       context.Context
-	inventory inventory.ClientInterface
+	ctx           context.Context
+	updateService UpdateServiceInterface
+	inventory     inventory.ClientInterface
 }
 
 type DeviceDetails struct {
-	models.Device
-	ImageInfo
-	updates []UpdateTransaction `json:"Updates"`
+	Device  *models.Device
+	Image   *ImageInfo
+	Updates *[]models.UpdateTransaction `json:"Updates"`
 }
 
 // GetDeviceByID receives DeviceID uint and get a *models.Device back
@@ -76,13 +78,21 @@ func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*DeviceDetails, err
 		log.Debugf("Could not find device on the devices table yet - %s", deviceUUID)
 		device = &models.Device{
 			UUID: deviceUUID,
-		} 
+		}
+	}
+	// In order to have an update transaction for a device it must be a least created
+	var updates *[]models.UpdateTransaction
+	if device.ID != 0 {
+		updates, err = s.updateService.GetUpdateTransactionsForDevice(device)
+		if err != nil {
+			return nil, err
+		}
 	}
 	details := &DeviceDetails{
-		imageInfo,
-		device,
+		Device:  device,
+		Image:   imageInfo,
+		Updates: updates,
 	}
-	
 	return details, nil
 }
 
@@ -200,7 +210,7 @@ func getDiffOnUpdate(oldImg models.Image, newImg models.Image) DeltaDiff {
 	return results
 }
 
-func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) ((ImageInfo, error) {
+func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error) {
 	var ImageInfo ImageInfo
 	var currentImage models.Image
 	var rollback models.Image
@@ -232,5 +242,5 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) ((ImageInfo, error
 	ImageInfo.Rollback = rollback
 	ImageInfo.Image = currentImage
 
-	return ImageInfo, nil
+	return &ImageInfo, nil
 }
