@@ -210,7 +210,16 @@ func TestGetDiffOnUpdate(t *testing.T) {
 				{
 					Name: "ansible",
 				},
-			}},
+			},
+			InstalledPackages: []models.InstalledPackage{
+				{
+					Name: "vim",
+				},
+				{
+					Name: "ansible",
+				},
+			},
+		},
 	}
 	newImage := models.Image{
 		Commit: &models.Commit{
@@ -222,15 +231,20 @@ func TestGetDiffOnUpdate(t *testing.T) {
 					Name: "yum",
 				},
 			},
+			InstalledPackages: []models.InstalledPackage{
+				{
+					Name: "zsh",
+				},
+			},
 		},
 	}
 	deltaDiff := getDiffOnUpdate(oldImage, newImage)
 
-	if len(deltaDiff.Added) != 2 {
-		t.Errorf("Expected one update available, got %d", len(deltaDiff.Added))
+	if len(deltaDiff.Added) != 1 {
+		t.Errorf("Expected one packages on the diff, got %d", len(deltaDiff.Added))
 	}
 	if len(deltaDiff.Removed) != 2 {
-		t.Errorf("Expected one update available, got %d", len(deltaDiff.Removed))
+		t.Errorf("Expected two packages on the diff, got %d", len(deltaDiff.Removed))
 	}
 }
 

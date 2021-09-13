@@ -64,8 +64,9 @@ type ImageUpdateAvailable struct {
 	PackageDiff DeltaDiff
 }
 type DeltaDiff struct {
-	Added   []models.Package
-	Removed []models.Package
+	Added    []models.InstalledPackage
+	Removed  []models.InstalledPackage
+	Upgraded []models.InstalledPackage
 }
 
 type ImageInfo struct {
@@ -131,32 +132,25 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 	return imageDiff, nil
 }
 
-func getDiffOnUpdate(currentImage models.Image, updatedImage models.Image) DeltaDiff {
-	initialCommit := currentImage.Commit.Packages
-	updateCommit := updatedImage.Commit.Packages
-	var initString []string
-	for _, str := range initialCommit {
-		initString = append(initString, str.Name)
+func getPackageDiff(a, b []models.InstalledPackage) []models.InstalledPackage {
+	var pkgNames []string
+	var diff []models.InstalledPackage
+	for _, str := range a {
+		pkgNames = append(pkgNames, str.Name)
 	}
-	var added []models.Package
-	for _, pkg := range updateCommit {
-		if !contains(initString, pkg.Name) {
-			added = append(added, pkg)
+	for _, pkg := range b {
+		if !contains(pkgNames, pkg.Name) {
+			diff = append(diff, pkg)
 		}
 	}
-	var updateString []string
-	for _, str := range updateCommit {
-		updateString = append(updateString, str.Name)
+	return diff
+
+}
+func getDiffOnUpdate(oldImg models.Image, newImg models.Image) DeltaDiff {
+	results := DeltaDiff{
+		Added:   getPackageDiff(oldImg.Commit.InstalledPackages, newImg.Commit.InstalledPackages),
+		Removed: getPackageDiff(newImg.Commit.InstalledPackages, oldImg.Commit.InstalledPackages),
 	}
-	var removed []models.Package
-	for _, pkg := range initialCommit {
-		if !contains(updateString, pkg.Name) {
-			removed = append(removed, pkg)
-		}
-	}
-	var results DeltaDiff
-	results.Added = added
-	results.Removed = removed
 	return results
 }
 
