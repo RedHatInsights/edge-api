@@ -3,8 +3,8 @@ package services
 import (
 	"context"
 	"fmt"
-	"sort"
 
+	version "github.com/knqyf263/go-rpm-version"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -133,30 +133,44 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 }
 
 func getPackageDiff(a, b []models.InstalledPackage) []models.InstalledPackage {
-	var pkgNames []string
 	var diff []models.InstalledPackage
-	for _, str := range a {
-		pkgNames = append(pkgNames, str.Name)
-	}
+	pkgs := make(map[string]models.InstalledPackage)
 	for _, pkg := range b {
-		if !contains(pkgNames, pkg.Name) {
+		pkgs[pkg.Name] = pkg
+	}
+	for _, pkg := range a {
+		if _, ok := pkgs[pkg.Name]; !ok {
 			diff = append(diff, pkg)
 		}
 	}
 	return diff
-
 }
+
+func getVersionDiff(new, old []models.InstalledPackage) []models.InstalledPackage {
+	var diff []models.InstalledPackage
+	oldPkgs := make(map[string]models.InstalledPackage)
+	for _, pkg := range old {
+		oldPkgs[pkg.Name] = pkg
+	}
+	for _, pkg := range new {
+		if oldPkg, ok := oldPkgs[pkg.Name]; ok {
+			v1 := version.NewVersion(oldPkg.Version)
+			v2 := version.NewVersion(pkg.Version)
+			if v2.GreaterThan(v1) {
+				diff = append(diff, pkg)
+			}
+		}
+	}
+	return diff
+}
+
 func getDiffOnUpdate(oldImg models.Image, newImg models.Image) DeltaDiff {
 	results := DeltaDiff{
-		Added:   getPackageDiff(oldImg.Commit.InstalledPackages, newImg.Commit.InstalledPackages),
-		Removed: getPackageDiff(newImg.Commit.InstalledPackages, oldImg.Commit.InstalledPackages),
+		Added:    getPackageDiff(newImg.Commit.InstalledPackages, oldImg.Commit.InstalledPackages),
+		Removed:  getPackageDiff(oldImg.Commit.InstalledPackages, newImg.Commit.InstalledPackages),
+		Upgraded: getVersionDiff(newImg.Commit.InstalledPackages, oldImg.Commit.InstalledPackages),
 	}
 	return results
-}
-
-func contains(s []string, searchterm string) bool {
-	i := sort.SearchStrings(s, searchterm)
-	return i < len(s) && s[i] == searchterm
 }
 
 func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (ImageInfo, error) {
