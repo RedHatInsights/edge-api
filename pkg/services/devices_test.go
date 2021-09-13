@@ -203,34 +203,54 @@ func TestGetDiffOnUpdate(t *testing.T) {
 
 	oldImage := models.Image{
 		Commit: &models.Commit{
-			Packages: []models.Package{
+			InstalledPackages: []models.InstalledPackage{
 				{
-					Name: "vim",
+					Name:    "vim",
+					Version: "2.2",
 				},
 				{
-					Name: "ansible",
+					Name:    "ansible",
+					Version: "1",
 				},
-			}},
+				{
+					Name:    "yum",
+					Version: "2:6.0-1",
+				},
+				{
+					Name:    "dnf",
+					Version: "2:6.0-1",
+				},
+			},
+		},
 	}
 	newImage := models.Image{
 		Commit: &models.Commit{
-			Packages: []models.Package{
+			InstalledPackages: []models.InstalledPackage{
 				{
-					Name: "zsh",
+					Name:    "zsh",
+					Version: "1",
 				},
 				{
-					Name: "yum",
+					Name:    "yum",
+					Version: "2:6.0-2.el6",
+				},
+				{
+					Name:    "dnf",
+					Version: "2:6.0-1",
 				},
 			},
 		},
 	}
 	deltaDiff := getDiffOnUpdate(oldImage, newImage)
 
-	if len(deltaDiff.Added) != 2 {
-		t.Errorf("Expected one update available, got %d", len(deltaDiff.Added))
+	if len(deltaDiff.Added) != 1 {
+		t.Errorf("Expected one package on the diff added,, got %d", len(deltaDiff.Added))
 	}
 	if len(deltaDiff.Removed) != 2 {
-		t.Errorf("Expected one update available, got %d", len(deltaDiff.Removed))
+		t.Errorf("Expected two packages on the diff removed, got %d", len(deltaDiff.Removed))
+	}
+	if len(deltaDiff.Upgraded) != 1 {
+		t.Errorf("Expected one package upgraded, got %d", len(deltaDiff.Removed))
 	}
 }
 

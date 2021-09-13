@@ -3,8 +3,8 @@ package services
 import (
 	"context"
 	"fmt"
-	"sort"
 
+	version "github.com/knqyf263/go-rpm-version"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -64,8 +64,9 @@ type ImageUpdateAvailable struct {
 	PackageDiff DeltaDiff
 }
 type DeltaDiff struct {
-	Added   []models.Package
-	Removed []models.Package
+	Added    []models.InstalledPackage
+	Removed  []models.InstalledPackage
+	Upgraded []models.InstalledPackage
 }
 
 type ImageInfo struct {
@@ -131,38 +132,45 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 	return imageDiff, nil
 }
 
-func getDiffOnUpdate(currentImage models.Image, updatedImage models.Image) DeltaDiff {
-	initialCommit := currentImage.Commit.Packages
-	updateCommit := updatedImage.Commit.Packages
-	var initString []string
-	for _, str := range initialCommit {
-		initString = append(initString, str.Name)
+func getPackageDiff(a, b []models.InstalledPackage) []models.InstalledPackage {
+	var diff []models.InstalledPackage
+	pkgs := make(map[string]models.InstalledPackage)
+	for _, pkg := range b {
+		pkgs[pkg.Name] = pkg
 	}
-	var added []models.Package
-	for _, pkg := range updateCommit {
-		if !contains(initString, pkg.Name) {
-			added = append(added, pkg)
+	for _, pkg := range a {
+		if _, ok := pkgs[pkg.Name]; !ok {
+			diff = append(diff, pkg)
 		}
 	}
-	var updateString []string
-	for _, str := range updateCommit {
-		updateString = append(updateString, str.Name)
-	}
-	var removed []models.Package
-	for _, pkg := range initialCommit {
-		if !contains(updateString, pkg.Name) {
-			removed = append(removed, pkg)
-		}
-	}
-	var results DeltaDiff
-	results.Added = added
-	results.Removed = removed
-	return results
+	return diff
 }
 
-func contains(s []string, searchterm string) bool {
-	i := sort.SearchStrings(s, searchterm)
-	return i < len(s) && s[i] == searchterm
+func getVersionDiff(new, old []models.InstalledPackage) []models.InstalledPackage {
+	var diff []models.InstalledPackage
+	oldPkgs := make(map[string]models.InstalledPackage)
+	for _, pkg := range old {
+		oldPkgs[pkg.Name] = pkg
+	}
+	for _, pkg := range new {
+		if oldPkg, ok := oldPkgs[pkg.Name]; ok {
+			oldPkgVersion := version.NewVersion(oldPkg.Version)
+			newPkgVersion := version.NewVersion(pkg.Version)
+			if newPkgVersion.GreaterThan(oldPkgVersion) {
+				diff = append(diff, pkg)
+			}
+		}
+	}
+	return diff
+}
+
+func getDiffOnUpdate(oldImg models.Image, newImg models.Image) DeltaDiff {
+	results := DeltaDiff{
+		Added:    getPackageDiff(newImg.Commit.InstalledPackages, oldImg.Commit.InstalledPackages),
+		Removed:  getPackageDiff(oldImg.Commit.InstalledPackages, newImg.Commit.InstalledPackages),
+		Upgraded: getVersionDiff(newImg.Commit.InstalledPackages, oldImg.Commit.InstalledPackages),
+	}
+	return results
 }
 
 func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (ImageInfo, error) {
