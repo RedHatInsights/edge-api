@@ -128,7 +128,6 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 		return nil, err
 	}
 
-	update.Status = models.UpdateStatusSuccess
 	if update.Repo == nil {
 		//  Check for the existence of a Repo that already has this commit and don't duplicate
 		var repo *models.Repo

@@ -128,6 +128,8 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 		}
 		update.DispatchRecords = dispatchRecords
 	}
+	// TODO: This has to change to be after the reboot if new ostree commit == desired commit
+	update.Status = models.UpdateStatusSuccess
 	db.DB.Save(update)
 	log.Infof("Repobuild::ends: update record %#v ", update)
 	return update, nil
