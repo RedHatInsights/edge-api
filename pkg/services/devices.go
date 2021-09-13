@@ -154,9 +154,9 @@ func getVersionDiff(new, old []models.InstalledPackage) []models.InstalledPackag
 	}
 	for _, pkg := range new {
 		if oldPkg, ok := oldPkgs[pkg.Name]; ok {
-			v1 := version.NewVersion(oldPkg.Version)
-			v2 := version.NewVersion(pkg.Version)
-			if v2.GreaterThan(v1) {
+			oldPkgVersion := version.NewVersion(oldPkg.Version)
+			newPkgVersion := version.NewVersion(pkg.Version)
+			if newPkgVersion.GreaterThan(oldPkgVersion) {
 				diff = append(diff, pkg)
 			}
 		}
