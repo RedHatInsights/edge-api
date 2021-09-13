@@ -36,12 +36,11 @@ func (s *RepoService) GetRepoByID(repoID uint) (*models.Repo, error) {
 // GetRepoByCommitID receives Repo.CommitID uint and get a *models.Repo back
 func (s *RepoService) GetRepoByCommitID(commitID uint) (*models.Repo, error) {
 	log.Debugf("GetRepoByCommitID::commitID: %#v", commitID)
-	var repo models.Repo
-	result := db.DB.Where("commit_id = ?", commitID).First(&repo)
-	log.Debugf("GetRepoByCommitID::result: %#v", result)
-	log.Debugf("GetRepoByCommitID::repo: %#v", repo)
+
+	var commit models.Commit
+	result := db.DB.First(&commit, commitID)
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	return &repo, nil
+	return &commit.Repo, nil
 }

@@ -16,7 +16,8 @@ type DeviceServiceInterface interface {
 	GetDeviceByID(deviceID uint) (*models.Device, error)
 	GetDeviceByUUID(deviceUUID string) (*models.Device, error)
 	GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]ImageUpdateAvailable, error)
-	GetDeviceImageInfo(deviceUUID string) (ImageInfo, error)
+	GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error)
+	GetDeviceDetails(deviceUUID string) (*DeviceDetails, error)
 }
 
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
@@ -31,6 +32,12 @@ func NewDeviceService(ctx context.Context) DeviceServiceInterface {
 type DeviceService struct {
 	ctx       context.Context
 	inventory inventory.ClientInterface
+}
+
+type DeviceDetails struct {
+	models.Device
+	ImageInfo
+	updates []UpdateTransaction `json:"Updates"`
 }
 
 // GetDeviceByID receives DeviceID uint and get a *models.Device back
@@ -57,6 +64,26 @@ func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, erro
 		return nil, result.Error
 	}
 	return &device, nil
+}
+
+func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*DeviceDetails, error) {
+	imageInfo, err := s.GetDeviceImageInfo(deviceUUID)
+	if err != nil {
+		return nil, err
+	}
+	device, err := s.GetDeviceByUUID(deviceUUID)
+	if err != nil {
+		log.Debugf("Could not find device on the devices table yet - %s", deviceUUID)
+		device = &models.Device{
+			UUID: deviceUUID,
+		} 
+	}
+	details := &DeviceDetails{
+		imageInfo,
+		device,
+	}
+	
+	return details, nil
 }
 
 type ImageUpdateAvailable struct {
@@ -173,15 +200,14 @@ func getDiffOnUpdate(oldImg models.Image, newImg models.Image) DeltaDiff {
 	return results
 }
 
-func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (ImageInfo, error) {
-	fmt.Printf(":: GetDeviceImageInfo :: \n")
+func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) ((ImageInfo, error) {
 	var ImageInfo ImageInfo
 	var currentImage models.Image
 	var rollback models.Image
 
 	device, err := s.inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || device.Total != 1 {
-		return ImageInfo, new(DeviceNotFoundError)
+		return nil, new(DeviceNotFoundError)
 	}
 
 	lastDevice := device.Result[len(device.Result)-1]
@@ -191,7 +217,7 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (ImageInfo, error)
 
 	if result.Error != nil || result == nil {
 		log.Error(result.Error)
-		return ImageInfo, new(ImageNotFoundError)
+		return nil, new(ImageNotFoundError)
 	} else {
 		if currentImage.ParentId != nil {
 			db.DB.Where("ID = ?", currentImage.ParentId).First(&rollback)
