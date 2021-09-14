@@ -36,8 +36,8 @@
       path: /etc/insights-client/insights-client.conf
       block: |
         auto_config=False
-        username={{ insights_username }}
-        password={{ insights_password }}
+        username={{ rhc_username }}
+        password={{ rhc_password }}
         legacy_upload=False
         base_url=cert.cloud.stage.redhat.com/api
         cert_verify=True
