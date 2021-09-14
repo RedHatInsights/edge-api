@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,6 +18,7 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
@@ -27,6 +30,7 @@ var WaitGroup sync.WaitGroup
 // the business logic of creating RHEL For Edge Images
 type ImageServiceInterface interface {
 	CreateImage(image *models.Image, account string) error
+	UpdateImage(image *models.Image, account string, previousImage *models.Image) error
 	AddUserInfo(image *models.Image) error
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
@@ -46,6 +50,88 @@ type ImageService struct {
 
 // CreateImage creates an Image for an Account on Image Builder and on our database
 func (s *ImageService) CreateImage(image *models.Image, account string) error {
+	var imageSet models.ImageSet
+	imageSet.Account = account
+	imageSet.Name = image.Name
+	imageSet.Version = image.Version
+	set := db.DB.Create(&imageSet)
+	if set.Error == nil {
+		image.ImageSetID = &imageSet.ID
+	}
+	image, err := s.imageBuilder.ComposeCommit(image)
+	if err != nil {
+		return err
+	}
+	image.Account = account
+	image.Commit.Account = account
+	image.Commit.Status = models.ImageStatusBuilding
+	image.Status = models.ImageStatusBuilding
+	// TODO: Remove code when frontend is not using ImageType on the table
+	if image.HasOutputType(models.ImageTypeInstaller) {
+		image.ImageType = models.ImageTypeInstaller
+	} else {
+		image.ImageType = models.ImageTypeCommit
+	}
+	// TODO: End of remove block
+	if image.HasOutputType(models.ImageTypeInstaller) {
+		image.Installer.Status = models.ImageStatusCreated
+		image.Installer.Account = image.Account
+		tx := db.DB.Create(&image.Installer)
+		if tx.Error != nil {
+			return tx.Error
+		}
+	}
+	tx := db.DB.Create(&image.Commit)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	tx = db.DB.Create(&image)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	go s.postProcessImage(image.ID)
+
+	return nil
+}
+
+func (s *ImageService) UpdateImage(image *models.Image, account string, previousImage *models.Image) error {
+	if previousImage != nil {
+		var currentImageSet models.ImageSet
+		result := db.DB.Where("Id = ?", previousImage.ImageSetID).First(&currentImageSet)
+		if result.Error != nil {
+			return result.Error
+		}
+		currentImageSet.Version = currentImageSet.Version + 1
+		image.ParentId = &previousImage.ID
+		image.ImageSetID = previousImage.ImageSetID
+		if err := db.DB.Save(currentImageSet).Error; err != nil {
+			return result.Error
+		}
+	}
+	if image.Commit.OSTreeParentCommit == "" {
+		if previousImage.Commit.OSTreeParentCommit != "" {
+			image.Commit.OSTreeParentCommit = previousImage.Commit.OSTreeParentCommit
+		} else {
+			var repo *RepoService
+
+			repoURL, err := repo.GetRepoByCommitID(previousImage.CommitID)
+			if err != nil {
+				err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
+				return err
+			}
+			image.Commit.OSTreeParentCommit = repoURL.URL
+		}
+	}
+	if image.Commit.OSTreeRef == "" {
+		if previousImage.Commit.OSTreeRef != "" {
+			image.Commit.OSTreeRef = previousImage.Commit.OSTreeRef
+
+		}
+		image.Commit.OSTreeRef = config.Get().DefaultOSTreeRef
+
+	}
+
 	image, err := s.imageBuilder.ComposeCommit(image)
 	if err != nil {
 		return err
@@ -176,7 +262,7 @@ func (s *ImageService) postProcessImage(id uint) {
 func (s *ImageService) CreateRepoForImage(i *models.Image) *models.Repo {
 	log.Infof("Commit %d for Image %d is ready. Creating OSTree repo.", i.Commit.ID, i.ID)
 	repo := &models.Repo{
-		CommitID: i.Commit.ID,
+		CommitID: &i.Commit.ID,
 		Commit:   i.Commit,
 		Status:   models.RepoStatusBuilding,
 	}
@@ -248,6 +334,11 @@ func (s *ImageService) AddUserInfo(image *models.Image) error {
 	err = s.exeInjectionScript(kickstart, imageName, image.ID)
 	if err != nil {
 		return fmt.Errorf("error execuiting fleetkick script :: %s", err.Error())
+	}
+
+	err = s.calculateChecksum(imageName, image)
+	if err != nil {
+		return fmt.Errorf("error calculating checksum for ISO :: %s", err.Error())
 	}
 
 	err = s.uploadISO(image, imageName)
@@ -398,7 +489,7 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 	return image, nil
 }
 
-// Inject the custom kickstart into the iso via mkksiso.
+// Inject the custom kickstart into the iso via script.
 func (s *ImageService) exeInjectionScript(kickstart string, image string, imageID uint) error {
 	fleetBashScript := "/usr/local/bin/fleetkick.sh"
 	workDir := fmt.Sprintf("/var/tmp/workdir%d", imageID)
@@ -413,5 +504,31 @@ func (s *ImageService) exeInjectionScript(kickstart string, image string, imageI
 		return err
 	}
 	log.Infof("fleetkick output: %s\n", output)
+	return nil
+}
+
+// Calculate the checksum of the final ISO.
+func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) error {
+	log.Infof("Calculating sha256 checksum for ISO %s", isoPath)
+
+	fh, err := os.Open(isoPath)
+	if err != nil {
+		return err
+	}
+	defer fh.Close()
+
+	sumCalculator := sha256.New()
+	_, err = io.Copy(sumCalculator, fh)
+	if err != nil {
+		return err
+	}
+
+	image.Installer.Checksum = hex.EncodeToString(sumCalculator.Sum(nil))
+	log.Infof("Checksum (sha256): %s", image.Installer.Checksum)
+	tx := db.DB.Save(&image.Installer)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
 	return nil
 }

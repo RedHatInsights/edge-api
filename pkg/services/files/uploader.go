@@ -89,6 +89,27 @@ func newS3Uploader() *S3Uploader {
 	}
 }
 
+//Struct that contains all details required to upload a file to a destination
+type uploadDetails struct {
+	fileName   string
+	uploadPath string
+	uploader   *S3Uploader
+	done       chan bool
+	count      int
+}
+
+func worker(uploadQueue chan *uploadDetails) {
+	for p := range uploadQueue {
+		fname, err := p.uploader.UploadFile(p.fileName, p.uploadPath)
+		log.Debugf("Filename: %s with counter %d was uploaded sucessfully", fname, p.count)
+		if err != nil {
+			log.Errorf("error: %v", err)
+		}
+		p.done <- true
+		log.Debugf("Filename: %s with counter %d was done uploading", fname, p.count)
+	}
+}
+
 // UploadRepo uploads the repo to a backing object storage bucket
 // the repository is uploaded to bucket/$account/$name/
 func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
@@ -97,9 +118,12 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 	log.Debugf("S3Uploader::UploadRepo::src: %#v", src)
 	log.Debugf("S3Uploader::UploadRepo::account: %#v", account)
 
-	// FIXME: might experiment with doing this concurrently but I've read that
-	//		  that can get you rate limited by S3 pretty quickly so we'll mess
-	//		  with that later.
+	//Wait group is created per request
+	//this allows multiple repo's to be independently uploaded simultaneously
+	count := 0
+
+	var uploadDetailsList []*uploadDetails
+
 	filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			log.Warnf("incoming error!: %#v", err)
@@ -109,16 +133,36 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 			return nil
 		}
 
-		_, err = u.UploadFile(path,
-			fmt.Sprintf("%s/%s", account, strings.TrimPrefix(path, cfg.RepoTempPath)),
-		)
-		if err != nil {
-			log.Warnf("error: %v", err)
-			return err
-		}
+		res := new(uploadDetails)
+		res.fileName = path
+		res.uploadPath = fmt.Sprintf("%s/%s", account, strings.TrimPrefix(path, cfg.RepoTempPath))
+		res.uploader = u
+		res.count = count
+		res.done = make(chan bool)
+		uploadDetailsList = append(uploadDetailsList, res)
+		count++
 		return nil
 	})
+	log.Infof("Files are being uploaded.... %d files to upload", len(uploadDetailsList))
 
+	uploadQueue := make(chan *uploadDetails, len(uploadDetailsList))
+	for _, u := range uploadDetailsList {
+		uploadQueue <- u
+	}
+
+	numberOfWorkers := cfg.UploadWorkers
+	for i := 0; i < numberOfWorkers; i++ {
+		go worker(uploadQueue)
+	}
+
+	for i, u := range uploadDetailsList {
+		<-u.done
+		log.Debugf("%d file is done", i)
+		close(u.done)
+	}
+	log.Infof("Files are done uploading...")
+	close(uploadQueue)
+	log.Infof("Channel is closed...")
 	region := *u.Client.Config.Region
 	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s/%s", u.Bucket, region, account, strings.TrimPrefix(src, cfg.RepoTempPath))
 	return s3URL, nil
@@ -133,7 +177,6 @@ func (u *S3Uploader) UploadFile(fname string, uploadPath string) (string, error)
 	if err != nil {
 		return "", fmt.Errorf("failed to open file %q, %v", fname, err)
 	}
-	defer f.Close()
 	// Upload the file to S3.
 	result, err := u.Client.PutObject(&s3.PutObjectInput{
 		Bucket: aws.String(u.Bucket),
@@ -146,6 +189,7 @@ func (u *S3Uploader) UploadFile(fname string, uploadPath string) (string, error)
 	if err != nil {
 		return "", err
 	}
+	f.Close()
 	region := *u.Client.Config.Region
 	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", u.Bucket, region, uploadPath)
 	return s3URL, nil

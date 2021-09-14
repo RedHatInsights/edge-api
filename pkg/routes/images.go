@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
@@ -33,7 +32,6 @@ const imageKey imageTypeKey = iota
 // MakeImageRouter adds support for operations on images
 func MakeImagesRouter(sub chi.Router) {
 	sub.With(validateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetAllImages)
-	sub.Get("/reserved-usernames", GetReservedUsernames)
 	sub.Post("/", CreateImage)
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageCtx)
@@ -121,6 +119,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
+
 	account, err := common.GetAccount(r)
 	if err != nil {
 		log.Info(err)
@@ -129,6 +128,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
+
 	err = services.ImageService.CreateImage(image, account)
 	if err != nil {
 		log.Error(err)
@@ -165,40 +165,14 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	previous_image, ok := ctx.Value(imageKey).(*models.Image)
+	previousImage, ok := ctx.Value(imageKey).(*models.Image)
 	if !ok {
 		err := errors.NewBadRequest("Must pass image id")
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
 	}
-	if previous_image != nil {
-		image.ParentId = &previous_image.ID
-	}
-	if image.Commit.OSTreeParentCommit == "" {
-		if previous_image.Commit.OSTreeParentCommit != "" {
-			image.Commit.OSTreeParentCommit = previous_image.Commit.OSTreeParentCommit
-		} else {
-			repoService := services.RepoService
-			repoURL, err := repoService.GetRepoByCommitID(previous_image.CommitID)
-			if err != nil {
-				err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
-				w.WriteHeader(err.Status)
-				json.NewEncoder(w).Encode(&err)
-				return
-			}
-			image.Commit.OSTreeParentCommit = repoURL.URL
-		}
-	}
-	if image.Commit.OSTreeRef == "" {
-		if previous_image.Commit.OSTreeRef != "" {
-			image.Commit.OSTreeRef = previous_image.Commit.OSTreeRef
 
-		}
-		image.Commit.OSTreeRef = config.Get().DefaultOSTreeRef
-
-	}
-
-	err = services.ImageService.CreateImage(image, account)
+	err = services.ImageService.UpdateImage(image, account, previousImage)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -508,7 +482,4 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-}
-func GetReservedUsernames(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(models.ReservedUsernames)
 }

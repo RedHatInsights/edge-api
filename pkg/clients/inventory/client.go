@@ -34,20 +34,20 @@ func InitClient(ctx context.Context) *Client {
 type InventoryResponse struct {
 	Total  int       `json:"total"`
 	Count  int       `json:"count"`
-	Result []devices `json:"results"`
+	Result []Devices `json:"results"`
 }
 
-type devices struct {
+type Devices struct {
 	ID     string        `json:"id"`
-	Ostree systemProfile `json:"system_profile"`
+	Ostree SystemProfile `json:"system_profile"`
 }
 
-type systemProfile struct {
+type SystemProfile struct {
 	RHCClientID          string   `json:"rhc_client_id"`
-	RpmOstreeDeployments []ostree `json:"rpm_ostree_deployments"`
+	RpmOstreeDeployments []OSTree `json:"rpm_ostree_deployments"`
 }
 
-type ostree struct {
+type OSTree struct {
 	Checksum string `json:"checksum"`
 	Booted   bool   `json:"booted"`
 }

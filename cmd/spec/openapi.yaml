@@ -5,8 +5,6 @@ components:
         CommitID: {}
         DeviceUUID:
           type: string
-        Tag:
-          type: string
       type: object
     v1.BadRequest:
       properties:
@@ -82,11 +80,15 @@ components:
           type: string
         Distribution:
           type: string
+        ID: {}
+        ImageSetID: {}
         ImageType:
           type: string
         Installer:
           properties:
             Account:
+              type: string
+            Checksum:
               type: string
             ComposeJobID:
               type: string
@@ -106,6 +108,7 @@ components:
           items:
             type: string
           type: array
+        ParentId: {}
         Status:
           type: string
         Version:
@@ -441,9 +444,15 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items: 
-                  $ref: '#/components/schemas/v1.Image'
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 100
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/v1.Image'
           description: OK
         "400":
           content:
@@ -620,6 +629,36 @@ paths:
           description: There was an internal server error.
       summary: Executes a device update.
       description: Executes a device update.
+  /updates/{updateID}/update-playbook.yml:
+    get:
+      operationId: GetUpdatePlaybook
+      parameters:
+        - name: updateID
+          in: path
+          required: true
+          description: An unique ID to identify the update the playbook belongs to
+          schema:
+            type: integer
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ansible playbook for an update
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500": 
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
   /updates/device/{DeviceUUID}/updates:
     get:
       operationId: GetUpdateAvailableForDevice
@@ -651,4 +690,35 @@ paths:
           description: There was an internal server error.
       summary: Return list of available updates for a device.
       description: Return list of available updates for a device.
+  /updates/device/{DeviceUUID}/image:
+    get:
+      operationId: GetImageInfo
+      parameters:
+        - name: DeviceUUID
+          in: path
+          required: true
+          description: DeviceUUID
+          schema:
+            type : string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.Image'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Return image running on device.
+      description: Return image running on device.   
       

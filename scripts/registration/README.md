@@ -20,10 +20,10 @@ e.g.,
 ---
 # VARS FOR RHSM REGISTER EXAMPLE
 
-rhsm_username: RHSM_USERNAME_PLACEHOLDER
-rhsm_password: RHSM_PASSWORD_PLACEHOLDER
-insights_username: INSIGHTS_USERNAME_PLACEHOLDER
-insights_password: INSIGHTS_PASSWORD_PLACEHOLDER
+rhsm_username: MY_RHSM_USERNAME
+rhsm_password: MY_RHSM_PASSWORD
+rhc_username: MY_RHC_USERNAME
+rhc_password: MY_RHC_PASSWORD
 ```
 
 3. Execute the playbook with the username provisioned on the device(s).

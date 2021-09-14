@@ -26,7 +26,7 @@ type UpdateServiceInterface interface {
 func NewUpdateService(ctx context.Context) UpdateServiceInterface {
 	return &UpdateService{
 		ctx:           ctx,
-		deviceService: NewDeviceService(),
+		deviceService: NewDeviceService(ctx),
 		filesService:  NewFilesService(),
 		repoBuilder:   NewRepoBuilder(ctx)}
 }

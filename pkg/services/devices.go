@@ -1,10 +1,12 @@
 package services
 
 import (
-	"sort"
+	"context"
+	"fmt"
 
+	version "github.com/knqyf263/go-rpm-version"
+	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
@@ -13,16 +15,23 @@ import (
 type DeviceServiceInterface interface {
 	GetDeviceByID(deviceID uint) (*models.Device, error)
 	GetDeviceByUUID(deviceUUID string) (*models.Device, error)
-	GetUpdateAvailableForDevice(currentCheckSum string) ([]ImageUpdateAvailable, error)
+	GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]ImageUpdateAvailable, error)
+	GetDeviceImageInfo(deviceUUID string) (ImageInfo, error)
 }
 
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
-func NewDeviceService() DeviceServiceInterface {
-	return &DeviceService{}
+func NewDeviceService(ctx context.Context) DeviceServiceInterface {
+	return &DeviceService{
+		ctx:       ctx,
+		inventory: inventory.InitClient(ctx),
+	}
 }
 
 // DeviceService is the main implementation of a DeviceServiceInterface
-type DeviceService struct{}
+type DeviceService struct {
+	ctx       context.Context
+	inventory inventory.ClientInterface
+}
 
 // GetDeviceByID receives DeviceID uint and get a *models.Device back
 func (s *DeviceService) GetDeviceByID(deviceID uint) (*models.Device, error) {
@@ -55,73 +64,147 @@ type ImageUpdateAvailable struct {
 	PackageDiff DeltaDiff
 }
 type DeltaDiff struct {
-	Added   []models.Package
-	Removed []models.Package
+	Added    []models.InstalledPackage
+	Removed  []models.InstalledPackage
+	Upgraded []models.InstalledPackage
 }
 
-// GetUpdateAvailableForDevice returns if exists update for the current image at the device.
-func (s *DeviceService) GetUpdateAvailableForDevice(currentCheckSum string) ([]ImageUpdateAvailable, error) {
+type ImageInfo struct {
+	Image           models.Image
+	UpdateAvailable []ImageUpdateAvailable
+	Rollback        models.Image
+}
+
+type DeviceNotFoundError struct {
+	error
+}
+
+type UpdateNotFoundError struct {
+	error
+}
+
+type ImageNotFoundError struct {
+	error
+}
+
+// GetUpdateAvailableForDeviceByUUID returns if exists update for the current image at the device.
+func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]ImageUpdateAvailable, error) {
+
+	device, err := s.inventory.ReturnDevicesByID(deviceUUID)
+	if err != nil || device.Total != 1 {
+		return nil, new(DeviceNotFoundError)
+	}
+
+	lastDevice := device.Result[len(device.Result)-1]
+	lastDeploymentIdx := len(lastDevice.Ostree.RpmOstreeDeployments) - 1
+	// TODO: Only consider applied update (check if booted = true)
+	lastDeployment := lastDevice.Ostree.RpmOstreeDeployments[lastDeploymentIdx]
+
 	var images []models.Image
 	var currentImage models.Image
+	result := db.DB.Model(&models.Image{}).Joins("Commit").Where("OS_Tree_Commit = ?", lastDeployment.Checksum).First(&currentImage)
+	if result.Error != nil || result.RowsAffected == 0 {
+		log.Error(result.Error)
+		return nil, new(DeviceNotFoundError)
+	}
 
-	result := db.DB.Joins("Commit").Where("OS_Tree_Commit = ?", currentCheckSum).First(&currentImage)
-	err := db.DB.Model(&currentImage.Commit).Association("Packages").Find(&currentImage.Commit.Packages)
+	err = db.DB.Model(&currentImage.Commit).Association("Packages").Find(&currentImage.Commit.Packages)
 	if err != nil {
-		return nil, errors.NewInternalServerError()
+		log.Error(result.Error)
+		return nil, new(DeviceNotFoundError)
 	}
 
-	if result.Error == nil {
-		updates := db.DB.Where("Parent_Id = ?", currentImage.ID).Joins("Commit").Find(&images)
-		if updates.Error == nil {
-			var imageDiff []ImageUpdateAvailable
-			for _, upd := range images {
-				db.DB.First(&upd.Commit, upd.CommitID)
-				db.DB.Model(&upd.Commit).Association("Packages").Find(&upd.Commit.Packages)
-				var delta ImageUpdateAvailable
-				diff := GetDiffOnUpdate(currentImage, upd)
-				delta.Image = upd
-				delta.PackageDiff = diff
-				imageDiff = append(imageDiff, delta)
-			}
-
-			return imageDiff, nil
-		} else {
-			return nil, updates.Error
-		}
+	updates := db.DB.Where("Parent_Id = ? and Images.Status = ?", currentImage.ID, models.ImageStatusSuccess).Joins("Commit").Find(&images)
+	if updates.Error != nil || updates.RowsAffected == 0 {
+		return nil, new(UpdateNotFoundError)
 	}
-	return nil, result.Error
+
+	var imageDiff []ImageUpdateAvailable
+	for _, upd := range images {
+		db.DB.First(&upd.Commit, upd.CommitID)
+		db.DB.Model(&upd.Commit).Association("Packages").Find(&upd.Commit.Packages)
+		var delta ImageUpdateAvailable
+		diff := getDiffOnUpdate(currentImage, upd)
+		delta.Image = upd
+		delta.PackageDiff = diff
+		imageDiff = append(imageDiff, delta)
+	}
+	return imageDiff, nil
 }
 
-func GetDiffOnUpdate(currentImage models.Image, updatedImage models.Image) DeltaDiff {
-	initialCommit := currentImage.Commit.Packages
-	updateCommit := updatedImage.Commit.Packages
-	var initString []string
-	for _, str := range initialCommit {
-		initString = append(initString, str.Name)
+func getPackageDiff(a, b []models.InstalledPackage) []models.InstalledPackage {
+	var diff []models.InstalledPackage
+	pkgs := make(map[string]models.InstalledPackage)
+	for _, pkg := range b {
+		pkgs[pkg.Name] = pkg
 	}
-	var added []models.Package
-	for _, pkg := range updateCommit {
-		if !contains(initString, pkg.Name) {
-			added = append(added, pkg)
+	for _, pkg := range a {
+		if _, ok := pkgs[pkg.Name]; !ok {
+			diff = append(diff, pkg)
 		}
 	}
-	var updateString []string
-	for _, str := range updateCommit {
-		updateString = append(updateString, str.Name)
+	return diff
+}
+
+func getVersionDiff(new, old []models.InstalledPackage) []models.InstalledPackage {
+	var diff []models.InstalledPackage
+	oldPkgs := make(map[string]models.InstalledPackage)
+	for _, pkg := range old {
+		oldPkgs[pkg.Name] = pkg
 	}
-	var removed []models.Package
-	for _, pkg := range initialCommit {
-		if !contains(updateString, pkg.Name) {
-			removed = append(removed, pkg)
+	for _, pkg := range new {
+		if oldPkg, ok := oldPkgs[pkg.Name]; ok {
+			oldPkgVersion := version.NewVersion(oldPkg.Version)
+			newPkgVersion := version.NewVersion(pkg.Version)
+			if newPkgVersion.GreaterThan(oldPkgVersion) {
+				diff = append(diff, pkg)
+			}
 		}
 	}
-	var results DeltaDiff
-	results.Added = added
-	results.Removed = removed
+	return diff
+}
+
+func getDiffOnUpdate(oldImg models.Image, newImg models.Image) DeltaDiff {
+	results := DeltaDiff{
+		Added:    getPackageDiff(newImg.Commit.InstalledPackages, oldImg.Commit.InstalledPackages),
+		Removed:  getPackageDiff(oldImg.Commit.InstalledPackages, newImg.Commit.InstalledPackages),
+		Upgraded: getVersionDiff(newImg.Commit.InstalledPackages, oldImg.Commit.InstalledPackages),
+	}
 	return results
 }
 
-func contains(s []string, searchterm string) bool {
-	i := sort.SearchStrings(s, searchterm)
-	return i < len(s) && s[i] == searchterm
+func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (ImageInfo, error) {
+	fmt.Printf(":: GetDeviceImageInfo :: \n")
+	var ImageInfo ImageInfo
+	var currentImage models.Image
+	var rollback models.Image
+
+	device, err := s.inventory.ReturnDevicesByID(deviceUUID)
+	if err != nil || device.Total != 1 {
+		return ImageInfo, new(DeviceNotFoundError)
+	}
+
+	lastDevice := device.Result[len(device.Result)-1]
+	lastDeployment := lastDevice.Ostree.RpmOstreeDeployments[len(lastDevice.Ostree.RpmOstreeDeployments)-1]
+
+	result := db.DB.Model(&models.Image{}).Joins("Commit").Where("OS_Tree_Commit = ?", lastDeployment.Checksum).First(&currentImage)
+
+	if result.Error != nil || result == nil {
+		log.Error(result.Error)
+		return ImageInfo, new(ImageNotFoundError)
+	} else {
+		if currentImage.ParentId != nil {
+			db.DB.Where("ID = ?", currentImage.ParentId).First(&rollback)
+		}
+	}
+	updateAvailable, err := s.GetUpdateAvailableForDeviceByUUID(deviceUUID)
+	if err != nil {
+		fmt.Printf("err:: %v \n", err)
+	} else {
+		ImageInfo.UpdateAvailable = updateAvailable
+	}
+	ImageInfo.Rollback = rollback
+	ImageInfo.Image = currentImage
+
+	return ImageInfo, nil
 }
