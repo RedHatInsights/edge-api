@@ -314,9 +314,9 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 func GetImageStatusByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		json.NewEncoder(w).Encode(struct {
-			Status string
-			Name   string
-			ID     uint
+			Status string `json:"status"`
+			Name   string `json:"name"`
+			ID     uint   `json:"id"`
 		}{
 			image.Status,
 			image.Name,

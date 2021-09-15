@@ -17,10 +17,10 @@ Device
 */
 type Device struct {
 	gorm.Model
-	UUID        string
-	DesiredHash string
-	RHCClientID string
-	Connected   bool `gorm:"default:true"`
+	UUID        string `json:"uuid"`
+	DesiredHash string `json:"desired_hash"`
+	RHCClientID string `json:"rhc_client_id"`
+	Connected   bool   `json:"connected" gorm:"default:true"`
 }
 
 /*
@@ -37,16 +37,16 @@ UpdateTransaction
 */
 type UpdateTransaction struct {
 	gorm.Model
-	Commit          *Commit          `json:"Commit"`
-	CommitID        uint             `json:"CommitID"`
-	Account         string           `json:"Account"`
-	OldCommits      []Commit         `gorm:"many2many:updatetransaction_commits;" json:"OldCommits"`
-	Devices         []Device         `gorm:"many2many:updatetransaction_devices;" json:"Devices"`
-	Tag             string           `json:"Tag"`
-	Status          string           `json:"Status"`
-	RepoID          uint             `json:"RepoID"`
-	Repo            *Repo            `json:"Repo"`
-	DispatchRecords []DispatchRecord `gorm:"many2many:updatetransaction_dispatchrecords;" json:"DispatchRecords"`
+	Commit          *Commit          `json:"commit"`
+	CommitID        uint             `json:"commit_id"`
+	Account         string           `json:"account"`
+	OldCommits      []Commit         `gorm:"many2many:updatetransaction_commits;" json:"old_commits"`
+	Devices         []Device         `gorm:"many2many:updatetransaction_devices;" json:"devices"`
+	Tag             string           `json:"tag"`
+	Status          string           `json:"status"`
+	RepoID          uint             `json:"repo_id"`
+	Repo            *Repo            `json:"repo"`
+	DispatchRecords []DispatchRecord `gorm:"many2many:updatetransaction_dispatchrecords;" json:"dispatch_records"`
 }
 
 /*
@@ -60,11 +60,11 @@ DispatchRecord
 */
 type DispatchRecord struct {
 	gorm.Model
-	PlaybookURL          string  `json:"PlaybookURL"`
-	DeviceID             uint    `json:"DeviceID"`
-	Device               *Device `json:"Device"`
-	Status               string  `json:"Status"`
-	PlaybookDispatcherID string  `json:"PlaybookDispatcherID"`
+	PlaybookURL          string  `json:"playbook_url"`
+	DeviceID             uint    `json:"device_id"`
+	Device               *Device `json:"device"`
+	Status               string  `json:"status"`
+	PlaybookDispatcherID string  `json:"playbook_dispatcher_id"`
 }
 
 const (

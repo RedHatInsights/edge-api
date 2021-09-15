@@ -14,37 +14,37 @@ const (
 // Commit represents an OSTree commit from image builder
 type Commit struct {
 	gorm.Model
-	Name                 string
-	Account              string             `json:"Account"`
-	ImageBuildHash       string             `json:"ImageBuildHash"`
-	ImageBuildParentHash string             `json:"ImageBuildParentHash"`
-	ImageBuildTarURL     string             `json:"ImageBuildTarURL"`
-	OSTreeCommit         string             `json:"OSTreeCommit"`
-	OSTreeParentCommit   string             `json:"OSTreeParentCommit"`
-	OSTreeRef            string             `json:"OSTreeRef"`
-	BuildDate            string             `json:"BuildDate"`
-	BuildNumber          uint               `json:"BuildNumber"`
-	BlueprintToml        string             `json:"BlueprintToml"`
-	Arch                 string             `json:"Arch"`
-	Packages             []Package          `json:"Packages" gorm:"many2many:commit_packages;"`
-	InstalledPackages    []InstalledPackage `json:"InstalledPackages,omitempty" gorm:"many2many:commit_installed_packages;"`
-	ComposeJobID         string             `json:"ComposeJobID"`
-	Status               string             `json:"Status"`
+	Name                 string             `json:"name"`
+	Account              string             `json:"account"`
+	ImageBuildHash       string             `json:"image_build_hash"`
+	ImageBuildParentHash string             `json:"image_build_parent_hash"`
+	ImageBuildTarURL     string             `json:"image_build_tar_url"`
+	OSTreeCommit         string             `json:"ostree_commit"`
+	OSTreeParentCommit   string             `json:"ostree_parent_commit"`
+	OSTreeRef            string             `json:"ostree_ref"`
+	BuildDate            string             `json:"build_date"`
+	BuildNumber          uint               `json:"build_number"`
+	BlueprintToml        string             `json:"blueprint_toml"`
+	Arch                 string             `json:"arch"`
+	Packages             []Package          `json:"packages" gorm:"many2many:commit_packages;"`
+	InstalledPackages    []InstalledPackage `json:"installed_packages,omitempty" gorm:"many2many:commit_installed_packages;"`
+	ComposeJobID         string             `json:"compose_job_id"`
+	Status               string             `json:"status"`
 }
 
 // Repo is the delivery mechanism of a Commit over HTTP
 type Repo struct {
 	gorm.Model
-	URL      string  `json:"RepoURL"`
-	Status   string  `json:"RepoStatus"`
-	CommitID *uint   `json:"CommitID"`
-	Commit   *Commit `json:"Commit"`
+	URL      string  `json:"repo_url"`
+	Status   string  `json:"repo_status"`
+	CommitID *uint   `json:"commit_id"`
+	Commit   *Commit `json:"commit"`
 }
 
 // Package represents the packages a Commit can have
 type Package struct {
 	gorm.Model
-	Name string `json:"Name"`
+	Name string `json:"name"`
 }
 
 // InstalledPackage represents installed packages a image has
