@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 
 	version "github.com/knqyf263/go-rpm-version"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
@@ -37,9 +36,9 @@ type DeviceService struct {
 }
 
 type DeviceDetails struct {
-	Device             *models.Device              `json:"Device"`
+	Device             *models.Device              `json:"Device,omitempty"`
 	Image              *ImageInfo                  `json:"ImageInfo"`
-	UpdateTransactions *[]models.UpdateTransaction `json:"UpdateTransactions"`
+	UpdateTransactions *[]models.UpdateTransaction `json:"UpdateTransactions,omitempty"`
 }
 
 // GetDeviceByID receives DeviceID uint and get a *models.Device back
@@ -107,9 +106,9 @@ type DeltaDiff struct {
 }
 
 type ImageInfo struct {
-	Image            models.Image           `json:"Image"`
-	UpdatesAvailable []ImageUpdateAvailable `json:"UpdatesAvailable"`
-	Rollback         models.Image           `json:"RollbackImage"`
+	Image            models.Image            `json:"Image"`
+	UpdatesAvailable *[]ImageUpdateAvailable `json:"UpdatesAvailable,omitempty"`
+	Rollback         *models.Image           `json:"RollbackImage,omitempty"`
 }
 
 type DeviceNotFoundError struct {
@@ -155,13 +154,14 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 	if updates.Error != nil || updates.RowsAffected == 0 {
 		return nil, new(UpdateNotFoundError)
 	}
-
 	var imageDiff []ImageUpdateAvailable
 	for _, upd := range images {
 		db.DB.First(&upd.Commit, upd.CommitID)
 		db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages)
+		db.DB.Model(&upd.Commit).Association("Packages").Find(&upd.Commit.Packages)
 		var delta ImageUpdateAvailable
 		diff := getDiffOnUpdate(currentImage, upd)
+		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
 		delta.Image = upd
 		delta.PackageDiff = diff
 		imageDiff = append(imageDiff, delta)
@@ -213,7 +213,7 @@ func getDiffOnUpdate(oldImg models.Image, newImg models.Image) DeltaDiff {
 func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error) {
 	var ImageInfo ImageInfo
 	var currentImage models.Image
-	var rollback models.Image
+	var rollback *models.Image
 
 	device, err := s.inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || device.Total != 1 {
@@ -230,14 +230,15 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error
 		return nil, new(ImageNotFoundError)
 	} else {
 		if currentImage.ParentId != nil {
-			db.DB.Where("ID = ?", currentImage.ParentId).First(&rollback)
+			db.DB.Where("ID = ?", currentImage.ParentId).First(rollback)
 		}
 	}
 	updateAvailable, err := s.GetUpdateAvailableForDeviceByUUID(deviceUUID)
 	if err != nil {
-		fmt.Printf("err:: %v \n", err)
-	} else {
-		ImageInfo.UpdatesAvailable = updateAvailable
+		log.Error(err.Error())
+		return nil, err
+	} else if updateAvailable != nil {
+		ImageInfo.UpdatesAvailable = &updateAvailable
 	}
 	ImageInfo.Rollback = rollback
 	ImageInfo.Image = currentImage
