@@ -37,7 +37,7 @@ type Repo struct {
 	gorm.Model
 	URL      string  `json:"RepoURL"`
 	Status   string  `json:"RepoStatus"`
-	CommitID uint    `json:"CommitID"`
+	CommitID *uint   `json:"CommitID"`
 	Commit   *Commit `json:"Commit"`
 }
 

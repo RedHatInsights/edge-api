@@ -145,7 +145,7 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 		return nil, new(DeviceNotFoundError)
 	}
 
-	err = db.DB.Model(&currentImage.Commit).Association("Packages").Find(&currentImage.Commit.Packages)
+	err = db.DB.Model(&currentImage.Commit).Association("InstalledPackages").Find(&currentImage.Commit.InstalledPackages)
 	if err != nil {
 		log.Error(result.Error)
 		return nil, new(DeviceNotFoundError)
@@ -159,7 +159,7 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 	var imageDiff []ImageUpdateAvailable
 	for _, upd := range images {
 		db.DB.First(&upd.Commit, upd.CommitID)
-		db.DB.Model(&upd.Commit).Association("Packages").Find(&upd.Commit.Packages)
+		db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages)
 		var delta ImageUpdateAvailable
 		diff := getDiffOnUpdate(currentImage, upd)
 		delta.Image = upd
