@@ -64,3 +64,15 @@ func (mr *MockUpdateServiceInterfaceMockRecorder) GetUpdatePlaybook(update inter
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUpdatePlaybook", reflect.TypeOf((*MockUpdateServiceInterface)(nil).GetUpdatePlaybook), update)
 }
+
+// RebootDevice mocks base method.
+func (m *MockUpdateServiceInterface) RebootDevice(update *models.UpdateTransaction) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "RebootDevice", update)
+}
+
+// RebootDevice indicates an expected call of RebootDevice.
+func (mr *MockUpdateServiceInterfaceMockRecorder) RebootDevice(update interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RebootDevice", reflect.TypeOf((*MockUpdateServiceInterface)(nil).RebootDevice), update)
+}

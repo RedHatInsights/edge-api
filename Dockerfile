@@ -33,6 +33,7 @@ COPY --from=builder /src/mypackage/myapp/pkg/services/templateKickstart.ks /usr/
 
 # template to playbook dispatcher
 COPY --from=builder /src/mypackage/myapp/pkg/services/template_playbook_dispatcher_ostree_upgrade_payload.yml /usr/local/etc
+COPY --from=builder /src/mypackage/myapp/pkg/services/template_playbook_dispatcher_reboot_device.yml /usr/local/etc
 
 RUN microdnf install -y pykickstart mtools xorriso genisoimage syslinux isomd5sum file ostree
 ENV MTOOLS_SKIP_CHECK=1

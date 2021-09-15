@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
@@ -311,6 +312,12 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	go repoService.CreateUpdate(update)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(update)
+
+	timer := time.AfterFunc(time.Minute*10, func() {
+		services.NewUpdateService(r.Context()).RebootDevice(update)
+	})
+	defer timer.Stop()
+
 }
 
 // GetUpdateByID obtains an update from the database for an account
