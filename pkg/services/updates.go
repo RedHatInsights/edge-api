@@ -26,18 +26,16 @@ type UpdateServiceInterface interface {
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
 func NewUpdateService(ctx context.Context) UpdateServiceInterface {
 	return &UpdateService{
-		ctx:           ctx,
-		deviceService: NewDeviceService(ctx),
-		filesService:  NewFilesService(),
-		repoBuilder:   NewRepoBuilder(ctx)}
+		ctx:          ctx,
+		filesService: NewFilesService(),
+		repoBuilder:  NewRepoBuilder(ctx)}
 }
 
 // UpdateService is the main implementation of a UpdateServiceInterface
 type UpdateService struct {
-	ctx           context.Context
-	repoBuilder   RepoBuilderInterface
-	deviceService DeviceServiceInterface
-	filesService  FilesService
+	ctx          context.Context
+	repoBuilder  RepoBuilderInterface
+	filesService FilesService
 }
 
 type playbooks struct {
@@ -86,10 +84,10 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 	dispatchRecords := update.DispatchRecords
 	for _, device := range update.Devices {
 		var updateDevice *models.Device
-		updateDevice, err = s.deviceService.GetDeviceByUUID(device.UUID)
+		result := db.DB.Where("uuid = ?", device.UUID).First(&updateDevice)
 		if err != nil {
-			log.Errorf("Error on GetDeviceByUUID: %#v ", err.Error())
-			return nil, err
+			log.Errorf("Error on GetDeviceByUUID: %#v ", result.Error.Error())
+			return nil, result.Error
 		}
 		// Create new &DispatcherPayload{}
 		payloadDispatcher := playbookdispatcher.DispatcherPayload{

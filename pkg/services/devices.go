@@ -37,9 +37,9 @@ type DeviceService struct {
 }
 
 type DeviceDetails struct {
-	Device             *models.Device              `json:"device"`
-	Image              *ImageInfo                  `json:"image_info"`
-	UpdateTransactions *[]models.UpdateTransaction `json:"update_transactions"`
+	Device             *models.Device              `json:"Device"`
+	Image              *ImageInfo                  `json:"ImageInfo"`
+	UpdateTransactions *[]models.UpdateTransaction `json:"UpdateTransactions"`
 }
 
 // GetDeviceByID receives DeviceID uint and get a *models.Device back
@@ -97,19 +97,19 @@ func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*DeviceDetails, err
 }
 
 type ImageUpdateAvailable struct {
-	Image       models.Image
-	PackageDiff DeltaDiff
+	Image       models.Image `json:"Image"`
+	PackageDiff DeltaDiff    `json:"PackageDiff"`
 }
 type DeltaDiff struct {
-	Added    []models.InstalledPackage
-	Removed  []models.InstalledPackage
-	Upgraded []models.InstalledPackage
+	Added    []models.InstalledPackage `json:"Added"`
+	Removed  []models.InstalledPackage `json:"Removed"`
+	Upgraded []models.InstalledPackage `json:"Upgraded"`
 }
 
 type ImageInfo struct {
-	Image            models.Image           `json:"image"`
-	UpdatesAvailable []ImageUpdateAvailable `json:"updates_available"`
-	Rollback         models.Image           `json:"rollback_image"`
+	Image            models.Image           `json:"Image"`
+	UpdatesAvailable []ImageUpdateAvailable `json:"UpdatesAvailable"`
+	Rollback         models.Image           `json:"RollbackImage"`
 }
 
 type DeviceNotFoundError struct {

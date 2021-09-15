@@ -327,4 +327,40 @@ paths:
           description: There was an internal server error.
       summary: Return image running on device.
       description: Return image running on device.   
-      
+  /devices/{DeviceUUID}:  
+    get:
+      operationId: getDevice
+      parameters:
+        - name: DeviceUUID
+          in: path
+          required: true
+          description: DeviceUUID
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.DeviceDetails'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.NotFound'
+          description: The device was not found.
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Get a device by UUID.
+  
