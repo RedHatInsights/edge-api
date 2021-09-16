@@ -15,6 +15,618 @@ components:
         Title:
           type: string
       type: object
+    v1.DeviceDetails:
+      properties:
+        Device:
+          properties:
+            Connected:
+              type: boolean
+            DesiredHash:
+              type: string
+            RHCClientID:
+              type: string
+            UUID:
+              type: string
+          type: object
+        ImageInfo:
+          properties:
+            Image:
+              properties:
+                Account:
+                  type: string
+                Commit:
+                  properties:
+                    Account:
+                      type: string
+                    Arch:
+                      type: string
+                    BlueprintToml:
+                      type: string
+                    BuildDate:
+                      type: string
+                    BuildNumber: {}
+                    ComposeJobID:
+                      type: string
+                    ImageBuildHash:
+                      type: string
+                    ImageBuildParentHash:
+                      type: string
+                    ImageBuildTarURL:
+                      type: string
+                    InstalledPackages:
+                      items:
+                        properties:
+                          arch:
+                            type: string
+                          epoch:
+                            type: string
+                          name:
+                            type: string
+                          release:
+                            type: string
+                          sigmd5:
+                            type: string
+                          signature:
+                            type: string
+                          type:
+                            type: string
+                          version:
+                            type: string
+                        type: object
+                      type: array
+                    OSTreeCommit:
+                      type: string
+                    OSTreeParentCommit:
+                      type: string
+                    OSTreeRef:
+                      type: string
+                    Packages:
+                      items:
+                        properties:
+                          Name:
+                            type: string
+                        type: object
+                      type: array
+                    Status:
+                      type: string
+                  type: object
+                CommitID: {}
+                Description:
+                  type: string
+                Distribution:
+                  type: string
+                ID: {}
+                ImageSetID: {}
+                ImageType:
+                  type: string
+                Installer:
+                  properties:
+                    Account:
+                      type: string
+                    Checksum:
+                      type: string
+                    ComposeJobID:
+                      type: string
+                    ImageBuildISOURL:
+                      type: string
+                    SshKey:
+                      type: string
+                    Status:
+                      type: string
+                    Username:
+                      type: string
+                  type: object
+                InstallerID: {}
+                Name:
+                  type: string
+                OutputTypes:
+                  items:
+                    type: string
+                  type: array
+                ParentId: {}
+                Status:
+                  type: string
+                Version:
+                  type: integer
+              type: object
+            RollbackImage:
+              properties:
+                Account:
+                  type: string
+                Commit:
+                  properties:
+                    Account:
+                      type: string
+                    Arch:
+                      type: string
+                    BlueprintToml:
+                      type: string
+                    BuildDate:
+                      type: string
+                    BuildNumber: {}
+                    ComposeJobID:
+                      type: string
+                    ImageBuildHash:
+                      type: string
+                    ImageBuildParentHash:
+                      type: string
+                    ImageBuildTarURL:
+                      type: string
+                    InstalledPackages:
+                      items:
+                        properties:
+                          arch:
+                            type: string
+                          epoch:
+                            type: string
+                          name:
+                            type: string
+                          release:
+                            type: string
+                          sigmd5:
+                            type: string
+                          signature:
+                            type: string
+                          type:
+                            type: string
+                          version:
+                            type: string
+                        type: object
+                      type: array
+                    OSTreeCommit:
+                      type: string
+                    OSTreeParentCommit:
+                      type: string
+                    OSTreeRef:
+                      type: string
+                    Packages:
+                      items:
+                        properties:
+                          Name:
+                            type: string
+                        type: object
+                      type: array
+                    Status:
+                      type: string
+                  type: object
+                CommitID: {}
+                Description:
+                  type: string
+                Distribution:
+                  type: string
+                ID: {}
+                ImageSetID: {}
+                ImageType:
+                  type: string
+                Installer:
+                  properties:
+                    Account:
+                      type: string
+                    Checksum:
+                      type: string
+                    ComposeJobID:
+                      type: string
+                    ImageBuildISOURL:
+                      type: string
+                    SshKey:
+                      type: string
+                    Status:
+                      type: string
+                    Username:
+                      type: string
+                  type: object
+                InstallerID: {}
+                Name:
+                  type: string
+                OutputTypes:
+                  items:
+                    type: string
+                  type: array
+                ParentId: {}
+                Status:
+                  type: string
+                Version:
+                  type: integer
+              type: object
+            UpdatesAvailable:
+              items:
+                properties:
+                  Image:
+                    properties:
+                      Account:
+                        type: string
+                      Commit:
+                        properties:
+                          Account:
+                            type: string
+                          Arch:
+                            type: string
+                          BlueprintToml:
+                            type: string
+                          BuildDate:
+                            type: string
+                          BuildNumber: {}
+                          ComposeJobID:
+                            type: string
+                          ImageBuildHash:
+                            type: string
+                          ImageBuildParentHash:
+                            type: string
+                          ImageBuildTarURL:
+                            type: string
+                          InstalledPackages:
+                            items:
+                              properties:
+                                arch:
+                                  type: string
+                                epoch:
+                                  type: string
+                                name:
+                                  type: string
+                                release:
+                                  type: string
+                                sigmd5:
+                                  type: string
+                                signature:
+                                  type: string
+                                type:
+                                  type: string
+                                version:
+                                  type: string
+                              type: object
+                            type: array
+                          OSTreeCommit:
+                            type: string
+                          OSTreeParentCommit:
+                            type: string
+                          OSTreeRef:
+                            type: string
+                          Packages:
+                            items:
+                              properties:
+                                Name:
+                                  type: string
+                              type: object
+                            type: array
+                          Status:
+                            type: string
+                        type: object
+                      CommitID: {}
+                      Description:
+                        type: string
+                      Distribution:
+                        type: string
+                      ID: {}
+                      ImageSetID: {}
+                      ImageType:
+                        type: string
+                      Installer:
+                        properties:
+                          Account:
+                            type: string
+                          Checksum:
+                            type: string
+                          ComposeJobID:
+                            type: string
+                          ImageBuildISOURL:
+                            type: string
+                          SshKey:
+                            type: string
+                          Status:
+                            type: string
+                          Username:
+                            type: string
+                        type: object
+                      InstallerID: {}
+                      Name:
+                        type: string
+                      OutputTypes:
+                        items:
+                          type: string
+                        type: array
+                      ParentId: {}
+                      Status:
+                        type: string
+                      Version:
+                        type: integer
+                    type: object
+                  PackageDiff:
+                    properties:
+                      Added:
+                        items:
+                          properties:
+                            arch:
+                              type: string
+                            epoch:
+                              type: string
+                            name:
+                              type: string
+                            release:
+                              type: string
+                            sigmd5:
+                              type: string
+                            signature:
+                              type: string
+                            type:
+                              type: string
+                            version:
+                              type: string
+                          type: object
+                        type: array
+                      Removed:
+                        items:
+                          properties:
+                            arch:
+                              type: string
+                            epoch:
+                              type: string
+                            name:
+                              type: string
+                            release:
+                              type: string
+                            sigmd5:
+                              type: string
+                            signature:
+                              type: string
+                            type:
+                              type: string
+                            version:
+                              type: string
+                          type: object
+                        type: array
+                      Upgraded:
+                        items:
+                          properties:
+                            arch:
+                              type: string
+                            epoch:
+                              type: string
+                            name:
+                              type: string
+                            release:
+                              type: string
+                            sigmd5:
+                              type: string
+                            signature:
+                              type: string
+                            type:
+                              type: string
+                            version:
+                              type: string
+                          type: object
+                        type: array
+                    type: object
+                type: object
+              type: array
+          type: object
+        UpdateTransactions:
+          items:
+            properties:
+              Account:
+                type: string
+              Commit:
+                properties:
+                  Account:
+                    type: string
+                  Arch:
+                    type: string
+                  BlueprintToml:
+                    type: string
+                  BuildDate:
+                    type: string
+                  BuildNumber: {}
+                  ComposeJobID:
+                    type: string
+                  ImageBuildHash:
+                    type: string
+                  ImageBuildParentHash:
+                    type: string
+                  ImageBuildTarURL:
+                    type: string
+                  InstalledPackages:
+                    items:
+                      properties:
+                        arch:
+                          type: string
+                        epoch:
+                          type: string
+                        name:
+                          type: string
+                        release:
+                          type: string
+                        sigmd5:
+                          type: string
+                        signature:
+                          type: string
+                        type:
+                          type: string
+                        version:
+                          type: string
+                      type: object
+                    type: array
+                  OSTreeCommit:
+                    type: string
+                  OSTreeParentCommit:
+                    type: string
+                  OSTreeRef:
+                    type: string
+                  Packages:
+                    items:
+                      properties:
+                        Name:
+                          type: string
+                      type: object
+                    type: array
+                  Status:
+                    type: string
+                type: object
+              CommitID: {}
+              Devices:
+                items:
+                  properties:
+                    Connected:
+                      type: boolean
+                    DesiredHash:
+                      type: string
+                    RHCClientID:
+                      type: string
+                    UUID:
+                      type: string
+                  type: object
+                type: array
+              DispatchRecords:
+                items:
+                  properties:
+                    Device:
+                      properties:
+                        Connected:
+                          type: boolean
+                        DesiredHash:
+                          type: string
+                        RHCClientID:
+                          type: string
+                        UUID:
+                          type: string
+                      type: object
+                    DeviceID: {}
+                    PlaybookDispatcherID:
+                      type: string
+                    PlaybookURL:
+                      type: string
+                    Status:
+                      type: string
+                  type: object
+                type: array
+              OldCommits:
+                items:
+                  properties:
+                    Account:
+                      type: string
+                    Arch:
+                      type: string
+                    BlueprintToml:
+                      type: string
+                    BuildDate:
+                      type: string
+                    BuildNumber: {}
+                    ComposeJobID:
+                      type: string
+                    ImageBuildHash:
+                      type: string
+                    ImageBuildParentHash:
+                      type: string
+                    ImageBuildTarURL:
+                      type: string
+                    InstalledPackages:
+                      items:
+                        properties:
+                          arch:
+                            type: string
+                          epoch:
+                            type: string
+                          name:
+                            type: string
+                          release:
+                            type: string
+                          sigmd5:
+                            type: string
+                          signature:
+                            type: string
+                          type:
+                            type: string
+                          version:
+                            type: string
+                        type: object
+                      type: array
+                    OSTreeCommit:
+                      type: string
+                    OSTreeParentCommit:
+                      type: string
+                    OSTreeRef:
+                      type: string
+                    Packages:
+                      items:
+                        properties:
+                          Name:
+                            type: string
+                        type: object
+                      type: array
+                    Status:
+                      type: string
+                  type: object
+                type: array
+              Repo:
+                properties:
+                  Commit:
+                    properties:
+                      Account:
+                        type: string
+                      Arch:
+                        type: string
+                      BlueprintToml:
+                        type: string
+                      BuildDate:
+                        type: string
+                      BuildNumber: {}
+                      ComposeJobID:
+                        type: string
+                      ImageBuildHash:
+                        type: string
+                      ImageBuildParentHash:
+                        type: string
+                      ImageBuildTarURL:
+                        type: string
+                      InstalledPackages:
+                        items:
+                          properties:
+                            arch:
+                              type: string
+                            epoch:
+                              type: string
+                            name:
+                              type: string
+                            release:
+                              type: string
+                            sigmd5:
+                              type: string
+                            signature:
+                              type: string
+                            type:
+                              type: string
+                            version:
+                              type: string
+                          type: object
+                        type: array
+                      OSTreeCommit:
+                        type: string
+                      OSTreeParentCommit:
+                        type: string
+                      OSTreeRef:
+                        type: string
+                      Packages:
+                        items:
+                          properties:
+                            Name:
+                              type: string
+                          type: object
+                        type: array
+                      Status:
+                        type: string
+                    type: object
+                  CommitID: {}
+                  RepoStatus:
+                    type: string
+                  RepoURL:
+                    type: string
+                type: object
+              RepoID: {}
+              Status:
+                type: string
+              Tag:
+                type: string
+            type: object
+          type: array
+      type: object
     v1.Image:
       properties:
         Account:
@@ -258,12 +870,32 @@ components:
           type: object
         CommitID: {}
         Devices:
-          items: {}
+          items:
+            properties:
+              Connected:
+                type: boolean
+              DesiredHash:
+                type: string
+              RHCClientID:
+                type: string
+              UUID:
+                type: string
+            type: object
           type: array
         DispatchRecords:
           items:
             properties:
-              Device: {}
+              Device:
+                properties:
+                  Connected:
+                    type: boolean
+                  DesiredHash:
+                    type: string
+                  RHCClientID:
+                    type: string
+                  UUID:
+                    type: string
+                type: object
               DeviceID: {}
               PlaybookDispatcherID:
                 type: string
@@ -730,4 +1362,40 @@ paths:
           description: There was an internal server error.
       summary: Return image running on device.
       description: Return image running on device.   
-      
+  /devices/{DeviceUUID}:  
+    get:
+      operationId: getDevice
+      parameters:
+        - name: DeviceUUID
+          in: path
+          required: true
+          description: DeviceUUID
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.DeviceDetails'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.NotFound'
+          description: The device was not found.
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Get a device by UUID.
+  
