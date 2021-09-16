@@ -8,43 +8,53 @@ components:
       type: object
     v1.BadRequest:
       properties:
-        Code:
+        code:
           type: string
-        Status:
+        status:
           type: integer
-        Title:
+        title:
           type: string
       type: object
     v1.Image:
       properties:
-        Account:
+        account:
           type: string
-        Commit:
+        commit:
           properties:
-            Account:
+            account:
               type: string
-            Arch:
+            arch:
               type: string
-            BlueprintToml:
+            blueprint_toml:
               type: string
-            BuildDate:
+            build_date:
               type: string
-            BuildNumber: {}
-            ComposeJobID:
+            build_number: {}
+            compose_job_id:
               type: string
-            ImageBuildHash:
+            created_at:
+              format: date-time
               type: string
-            ImageBuildParentHash:
+            deleted_at: {}
+            id: {}
+            image_build_hash:
               type: string
-            ImageBuildTarURL:
+            image_build_parent_hash:
               type: string
-            InstalledPackages:
+            image_build_tar_url:
+              type: string
+            installed_packages:
               items:
                 properties:
                   arch:
                     type: string
+                  created_at:
+                    format: date-time
+                    type: string
+                  deleted_at: {}
                   epoch:
                     type: string
+                  id: {}
                   name:
                     type: string
                   release:
@@ -55,111 +65,152 @@ components:
                     type: string
                   type:
                     type: string
+                  updated_at:
+                    format: date-time
+                    type: string
                   version:
                     type: string
                 type: object
               type: array
-            OSTreeCommit:
+            name:
               type: string
-            OSTreeParentCommit:
+            os_tree_commit:
               type: string
-            OSTreeRef:
+            os_tree_parent_commit:
               type: string
-            Packages:
+            os_tree_ref:
+              type: string
+            packages:
               items:
                 properties:
-                  Name:
+                  created_at:
+                    format: date-time
+                    type: string
+                  deleted_at: {}
+                  id: {}
+                  name:
+                    type: string
+                  updated_at:
+                    format: date-time
                     type: string
                 type: object
               type: array
-            Status:
+            status:
+              type: string
+            updated_at:
+              format: date-time
               type: string
           type: object
-        CommitID: {}
-        Description:
+        commit_id: {}
+        created_at:
+          format: date-time
           type: string
-        Distribution:
+        deleted_at: {}
+        description:
           type: string
-        ID: {}
-        ImageSetID: {}
-        ImageType:
+        distribution:
           type: string
-        Installer:
+        id: {}
+        image_set_id: {}
+        image_type:
+          type: string
+        installer:
           properties:
-            Account:
+            account:
               type: string
-            Checksum:
+            checksum:
               type: string
-            ComposeJobID:
+            compose_job_id:
               type: string
-            ImageBuildISOURL:
+            created_at:
+              format: date-time
               type: string
-            SshKey:
+            deleted_at: {}
+            id: {}
+            image_build_iso_url:
               type: string
-            Status:
+            sshkey:
               type: string
-            Username:
+            status:
+              type: string
+            updated_at:
+              format: date-time
+              type: string
+            username:
               type: string
           type: object
-        InstallerID: {}
-        Name:
+        installer_id: {}
+        name:
           type: string
-        OutputTypes:
+        output_types:
           items:
             type: string
           type: array
-        ParentId: {}
-        Status:
+        parent_id: {}
+        status:
           type: string
-        Version:
+        updated_at:
+          format: date-time
+          type: string
+        version:
           type: integer
       type: object
     v1.InternalServerError:
       properties:
-        Code:
+        code:
           type: string
-        Status:
+        status:
           type: integer
-        Title:
+        title:
           type: string
       type: object
     v1.NotFound:
       properties:
-        Code:
+        code:
           type: string
-        Status:
+        status:
           type: integer
-        Title:
+        title:
           type: string
       type: object
     v1.Repo:
       properties:
-        Commit:
+        commit:
           properties:
-            Account:
+            account:
               type: string
-            Arch:
+            arch:
               type: string
-            BlueprintToml:
+            blueprint_toml:
               type: string
-            BuildDate:
+            build_date:
               type: string
-            BuildNumber: {}
-            ComposeJobID:
+            build_number: {}
+            compose_job_id:
               type: string
-            ImageBuildHash:
+            created_at:
+              format: date-time
               type: string
-            ImageBuildParentHash:
+            deleted_at: {}
+            id: {}
+            image_build_hash:
               type: string
-            ImageBuildTarURL:
+            image_build_parent_hash:
               type: string
-            InstalledPackages:
+            image_build_tar_url:
+              type: string
+            installed_packages:
               items:
                 properties:
                   arch:
                     type: string
+                  created_at:
+                    format: date-time
+                    type: string
+                  deleted_at: {}
                   epoch:
                     type: string
+                  id: {}
                   name:
                     type: string
                   release:
@@ -170,62 +221,96 @@ components:
                     type: string
                   type:
                     type: string
+                  updated_at:
+                    format: date-time
+                    type: string
                   version:
                     type: string
                 type: object
               type: array
-            OSTreeCommit:
+            name:
               type: string
-            OSTreeParentCommit:
+            os_tree_commit:
               type: string
-            OSTreeRef:
+            os_tree_parent_commit:
               type: string
-            Packages:
+            os_tree_ref:
+              type: string
+            packages:
               items:
                 properties:
-                  Name:
+                  created_at:
+                    format: date-time
+                    type: string
+                  deleted_at: {}
+                  id: {}
+                  name:
+                    type: string
+                  updated_at:
+                    format: date-time
                     type: string
                 type: object
               type: array
-            Status:
+            status:
+              type: string
+            updated_at:
+              format: date-time
               type: string
           type: object
-        CommitID: {}
-        RepoStatus:
+        commit_id: {}
+        created_at:
+          format: date-time
           type: string
-        RepoURL:
+        deleted_at: {}
+        id: {}
+        repo_status:
+          type: string
+        repo_url:
+          type: string
+        updated_at:
+          format: date-time
           type: string
       type: object
     v1.UpdateTransaction:
       properties:
-        Account:
+        account:
           type: string
-        Commit:
+        commit:
           properties:
-            Account:
+            account:
               type: string
-            Arch:
+            arch:
               type: string
-            BlueprintToml:
+            blueprint_toml:
               type: string
-            BuildDate:
+            build_date:
               type: string
-            BuildNumber: {}
-            ComposeJobID:
+            build_number: {}
+            compose_job_id:
               type: string
-            ImageBuildHash:
+            created_at:
+              format: date-time
               type: string
-            ImageBuildParentHash:
+            deleted_at: {}
+            id: {}
+            image_build_hash:
               type: string
-            ImageBuildTarURL:
+            image_build_parent_hash:
               type: string
-            InstalledPackages:
+            image_build_tar_url:
+              type: string
+            installed_packages:
               items:
                 properties:
                   arch:
                     type: string
+                  created_at:
+                    format: date-time
+                    type: string
+                  deleted_at: {}
                   epoch:
                     type: string
+                  id: {}
                   name:
                     type: string
                   release:
@@ -236,70 +321,145 @@ components:
                     type: string
                   type:
                     type: string
+                  updated_at:
+                    format: date-time
+                    type: string
                   version:
                     type: string
                 type: object
               type: array
-            OSTreeCommit:
+            name:
               type: string
-            OSTreeParentCommit:
+            os_tree_commit:
               type: string
-            OSTreeRef:
+            os_tree_parent_commit:
               type: string
-            Packages:
+            os_tree_ref:
+              type: string
+            packages:
               items:
                 properties:
-                  Name:
+                  created_at:
+                    format: date-time
+                    type: string
+                  deleted_at: {}
+                  id: {}
+                  name:
+                    type: string
+                  updated_at:
+                    format: date-time
                     type: string
                 type: object
               type: array
-            Status:
+            status:
+              type: string
+            updated_at:
+              format: date-time
               type: string
           type: object
-        CommitID: {}
-        Devices:
-          items: {}
-          type: array
-        DispatchRecords:
+        commit_id: {}
+        created_at:
+          format: date-time
+          type: string
+        deleted_at: {}
+        devices:
           items:
             properties:
-              Device: {}
-              DeviceID: {}
-              PlaybookDispatcherID:
+              connected:
+                type: boolean
+              created_at:
+                format: date-time
                 type: string
-              PlaybookURL:
+              deleted_at: {}
+              desired_hash:
                 type: string
-              Status:
+              id: {}
+              rhc_client_id:
+                type: string
+              updated_at:
+                format: date-time
+                type: string
+              uuid:
                 type: string
             type: object
           type: array
-        OldCommits:
+        dispatch_records:
           items:
             properties:
-              Account:
+              created_at:
+                format: date-time
                 type: string
-              Arch:
+              deleted_at: {}
+              device:
+                properties:
+                  connected:
+                    type: boolean
+                  created_at:
+                    format: date-time
+                    type: string
+                  deleted_at: {}
+                  desired_hash:
+                    type: string
+                  id: {}
+                  rhc_client_id:
+                    type: string
+                  updated_at:
+                    format: date-time
+                    type: string
+                  uuid:
+                    type: string
+                type: object
+              device_id: {}
+              id: {}
+              playbook_dispatcher_id:
                 type: string
-              BlueprintToml:
+              playbook_url:
                 type: string
-              BuildDate:
+              status:
                 type: string
-              BuildNumber: {}
-              ComposeJobID:
+              updated_at:
+                format: date-time
                 type: string
-              ImageBuildHash:
+            type: object
+          type: array
+        id: {}
+        old_commits:
+          items:
+            properties:
+              account:
                 type: string
-              ImageBuildParentHash:
+              arch:
                 type: string
-              ImageBuildTarURL:
+              blueprint_toml:
                 type: string
-              InstalledPackages:
+              build_date:
+                type: string
+              build_number: {}
+              compose_job_id:
+                type: string
+              created_at:
+                format: date-time
+                type: string
+              deleted_at: {}
+              id: {}
+              image_build_hash:
+                type: string
+              image_build_parent_hash:
+                type: string
+              image_build_tar_url:
+                type: string
+              installed_packages:
                 items:
                   properties:
                     arch:
                       type: string
+                    created_at:
+                      format: date-time
+                      type: string
+                    deleted_at: {}
                     epoch:
                       type: string
+                    id: {}
                     name:
                       type: string
                     release:
@@ -310,55 +470,81 @@ components:
                       type: string
                     type:
                       type: string
+                    updated_at:
+                      format: date-time
+                      type: string
                     version:
                       type: string
                   type: object
                 type: array
-              OSTreeCommit:
+              name:
                 type: string
-              OSTreeParentCommit:
+              os_tree_commit:
                 type: string
-              OSTreeRef:
+              os_tree_parent_commit:
                 type: string
-              Packages:
+              os_tree_ref:
+                type: string
+              packages:
                 items:
                   properties:
-                    Name:
+                    created_at:
+                      format: date-time
+                      type: string
+                    deleted_at: {}
+                    id: {}
+                    name:
+                      type: string
+                    updated_at:
+                      format: date-time
                       type: string
                   type: object
                 type: array
-              Status:
+              status:
+                type: string
+              updated_at:
+                format: date-time
                 type: string
             type: object
           type: array
-        Repo:
+        repo:
           properties:
-            Commit:
+            commit:
               properties:
-                Account:
+                account:
                   type: string
-                Arch:
+                arch:
                   type: string
-                BlueprintToml:
+                blueprint_toml:
                   type: string
-                BuildDate:
+                build_date:
                   type: string
-                BuildNumber: {}
-                ComposeJobID:
+                build_number: {}
+                compose_job_id:
                   type: string
-                ImageBuildHash:
+                created_at:
+                  format: date-time
                   type: string
-                ImageBuildParentHash:
+                deleted_at: {}
+                id: {}
+                image_build_hash:
                   type: string
-                ImageBuildTarURL:
+                image_build_parent_hash:
                   type: string
-                InstalledPackages:
+                image_build_tar_url:
+                  type: string
+                installed_packages:
                   items:
                     properties:
                       arch:
                         type: string
+                      created_at:
+                        format: date-time
+                        type: string
+                      deleted_at: {}
                       epoch:
                         type: string
+                      id: {}
                       name:
                         type: string
                       release:
@@ -369,36 +555,63 @@ components:
                         type: string
                       type:
                         type: string
+                      updated_at:
+                        format: date-time
+                        type: string
                       version:
                         type: string
                     type: object
                   type: array
-                OSTreeCommit:
+                name:
                   type: string
-                OSTreeParentCommit:
+                os_tree_commit:
                   type: string
-                OSTreeRef:
+                os_tree_parent_commit:
                   type: string
-                Packages:
+                os_tree_ref:
+                  type: string
+                packages:
                   items:
                     properties:
-                      Name:
+                      created_at:
+                        format: date-time
+                        type: string
+                      deleted_at: {}
+                      id: {}
+                      name:
+                        type: string
+                      updated_at:
+                        format: date-time
                         type: string
                     type: object
                   type: array
-                Status:
+                status:
+                  type: string
+                updated_at:
+                  format: date-time
                   type: string
               type: object
-            CommitID: {}
-            RepoStatus:
+            commit_id: {}
+            created_at:
+              format: date-time
               type: string
-            RepoURL:
+            deleted_at: {}
+            id: {}
+            repo_status:
+              type: string
+            repo_url:
+              type: string
+            updated_at:
+              format: date-time
               type: string
           type: object
-        RepoID: {}
-        Status:
+        repo_id: {}
+        status:
           type: string
-        Tag:
+        tag:
+          type: string
+        updated_at:
+          format: date-time
           type: string
       type: object
 info:
