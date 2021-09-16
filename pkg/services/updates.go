@@ -200,18 +200,17 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 }
 
 func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error) {
-	var updates *[]models.UpdateTransaction
-
+	var updates []models.UpdateTransaction
 	result := db.DB.
 		Select("desired_hash, connected, uuid").
 		Table("devices").
 		Joins(
 			`JOIN updatetransaction_devices ON updatetransaction_devices.device_id = ?`,
 			device.ID,
-		).Find(updates)
+		).Find(&updates)
 
 	if result.Error != nil {
 		return nil, result.Error
 	}
-	return updates, nil
+	return &updates, nil
 }
