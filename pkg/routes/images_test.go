@@ -39,7 +39,7 @@ func TestCreateWasCalledWithNameNotSet(t *testing.T) {
 	config.Get().Debug = false
 	var jsonStr = []byte(`{
 		"Distribution": "rhel-8",
-		"OutputTypes": ["rhel-edge-installer"],
+		"output_types": ["rhel-edge-installer"],
 		"Commit": {
 			"Arch": "x86_64",
 			"Packages" : [ { "name" : "vim"  } ]
@@ -69,7 +69,7 @@ func TestCreate(t *testing.T) {
 	var jsonStr = []byte(`{
 		"Name": "image1",
 		"Distribution": "rhel-8",
-		"OutputTypes": ["rhel-edge-installer"],
+		"output_types": ["rhel-edge-installer"],
 		"Commit": {
 			"Arch": "x86_64",
 			"Packages" : [ { "name" : "vim"  } ]
