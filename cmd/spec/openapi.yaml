@@ -887,7 +887,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.Image'
+                type: array
+                items:
+                  type: object
+                  properties:
+                    Image:
+                      $ref: '#/components/schemas/v1.Image'
           description: OK
         "400":
           content:
@@ -918,7 +923,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.Image'
+                type: object
+                properties:
+                  Image:
+                    $ref: '#/components/schemas/v1.Image'
+                  
           description: OK
         "400":
           content:
