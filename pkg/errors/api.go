@@ -6,9 +6,9 @@ import (
 
 // APIError defines a type for all errors returned by edge api
 type APIError struct {
-	Code   string `json:"Code"`
-	Status int    `json:"Status"`
-	Title  string `json:"Title"`
+	Code   string `json:"code"`
+	Status int    `json:"status"`
+	Title  string `json:"title"`
 }
 
 // Error gets a error string from an APIError

@@ -22,7 +22,7 @@ func mockCommit() {
 }
 
 type bodyResponse struct {
-	Account string `json:"Account"`
+	Account string `json:"account"`
 }
 
 func TestPatch(t *testing.T) {

@@ -19,9 +19,9 @@ type Commit struct {
 	ImageBuildHash       string             `json:"image_build_hash"`
 	ImageBuildParentHash string             `json:"image_build_parent_hash"`
 	ImageBuildTarURL     string             `json:"image_build_tar_url"`
-	OSTreeCommit         string             `json:"ostree_commit"`
-	OSTreeParentCommit   string             `json:"ostree_parent_commit"`
-	OSTreeRef            string             `json:"ostree_ref"`
+	OSTreeCommit         string             `json:"os_tree_commit"`
+	OSTreeParentCommit   string             `json:"os_tree_parent_commit"`
+	OSTreeRef            string             `json:"os_tree_ref"`
 	BuildDate            string             `json:"build_date"`
 	BuildNumber          uint               `json:"build_number"`
 	BlueprintToml        string             `json:"blueprint_toml"`
