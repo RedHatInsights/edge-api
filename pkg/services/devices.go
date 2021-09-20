@@ -147,7 +147,7 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 		return nil, new(DeviceNotFoundError)
 	}
 
-	updates := db.DB.Where("Parent_Id = ? and Images.Status = ?", currentImage.ID, models.ImageStatusSuccess).Joins("Commit").Find(&images)
+	updates := db.DB.Where("Image_set_id = ? and Images.Status = ? and Images.Id != ?", currentImage.ImageSetID, models.ImageStatusSuccess, currentImage.ID).Joins("Commit").Find(&images)
 	if updates.Error != nil || updates.RowsAffected == 0 {
 		return nil, new(UpdateNotFoundError)
 	}

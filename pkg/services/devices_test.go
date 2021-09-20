@@ -84,6 +84,11 @@ func TestGetUpdateAvailableForDeviceByUUID(t *testing.T) {
 		inventory: mockInventoryClient,
 	}
 
+	imageSet := &models.ImageSet{
+		Name:    "test",
+		Version: 1,
+	}
+	db.DB.Create(imageSet)
 	oldImage := &models.Image{
 		Commit: &models.Commit{
 			OSTreeCommit: checksum,
@@ -98,7 +103,8 @@ func TestGetUpdateAvailableForDeviceByUUID(t *testing.T) {
 				},
 			},
 		},
-		Status: models.ImageStatusSuccess,
+		Status:     models.ImageStatusSuccess,
+		ImageSetID: &imageSet.ID,
 	}
 	db.DB.Create(oldImage.Commit)
 	db.DB.Create(oldImage)
@@ -116,8 +122,9 @@ func TestGetUpdateAvailableForDeviceByUUID(t *testing.T) {
 				},
 			},
 		},
-		Status:   models.ImageStatusSuccess,
-		ParentId: &oldImage.ID,
+		Status:     models.ImageStatusSuccess,
+		ParentId:   &oldImage.ID,
+		ImageSetID: &imageSet.ID,
 	}
 	db.DB.Create(newImage.Commit)
 	db.DB.Create(newImage)

@@ -56,14 +56,14 @@ func (s *ImageSetsService) ListAllImageSets(w http.ResponseWriter, r *http.Reque
 	result := imageFilters(r, db.DB)
 	pagination := common.GetPagination(r)
 
-	countResult := imageFilters(r, db.DB.Model(&models.Image{})).Where("images.parent_id is ?", image.ParentId).Count(&count)
+	countResult := imageFilters(r, db.DB.Model(&models.Image{})).Where("images.Image_set_id  is ?", image.ImageSetID).Count(&count)
 	if countResult.Error != nil {
 		countErr := errors.NewInternalServerError()
 		log.Error(countErr)
 		w.WriteHeader(countErr.Status)
 		json.NewEncoder(w).Encode(&countErr)
 	}
-	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("images.parent_id is ?", image.ParentId).Find(&images)
+	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("images.Image_set_id  is ?", image.ImageSetID).Find(&images)
 	if result.Error != nil {
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.Status)
