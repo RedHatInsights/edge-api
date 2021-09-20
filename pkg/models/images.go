@@ -5,11 +5,10 @@ import (
 	"regexp"
 
 	"github.com/lib/pq"
-	"gorm.io/gorm"
 )
 
 type ImageSet struct {
-	gorm.Model
+	Model
 	Name    string  `json:"Name"`
 	Version int     `json:"Version" gorm:"default:1"`
 	Account string  `json:"Account"`
@@ -18,7 +17,7 @@ type ImageSet struct {
 
 // Image is what generates a OSTree Commit.
 type Image struct {
-	gorm.Model
+	Model
 	Name         string         `json:"Name"`
 	Account      string         `json:"Account"`
 	Distribution string         `json:"Distribution"`

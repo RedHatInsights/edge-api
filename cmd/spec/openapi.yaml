@@ -21,11 +21,19 @@ components:
           properties:
             Connected:
               type: boolean
+            CreatedAt:
+              format: date-time
+              type: string
+            DeletedAt: {}
             DesiredHash:
               type: string
+            ID: {}
             RHCClientID:
               type: string
             UUID:
+              type: string
+            UpdatedAt:
+              format: date-time
               type: string
           type: object
         ImageInfo:
@@ -47,6 +55,11 @@ components:
                     BuildNumber: {}
                     ComposeJobID:
                       type: string
+                    CreatedAt:
+                      format: date-time
+                      type: string
+                    DeletedAt: {}
+                    ID: {}
                     ImageBuildHash:
                       type: string
                     ImageBuildParentHash:
@@ -56,6 +69,14 @@ components:
                     InstalledPackages:
                       items:
                         properties:
+                          CreatedAt:
+                            format: date-time
+                            type: string
+                          DeletedAt: {}
+                          ID: {}
+                          UpdatedAt:
+                            format: date-time
+                            type: string
                           arch:
                             type: string
                           epoch:
@@ -83,14 +104,29 @@ components:
                     Packages:
                       items:
                         properties:
+                          CreatedAt:
+                            format: date-time
+                            type: string
+                          DeletedAt: {}
+                          ID: {}
                           Name:
+                            type: string
+                          UpdatedAt:
+                            format: date-time
                             type: string
                         type: object
                       type: array
                     Status:
                       type: string
+                    UpdatedAt:
+                      format: date-time
+                      type: string
                   type: object
                 CommitID: {}
+                CreatedAt:
+                  format: date-time
+                  type: string
+                DeletedAt: {}
                 Description:
                   type: string
                 Distribution:
@@ -107,11 +143,19 @@ components:
                       type: string
                     ComposeJobID:
                       type: string
+                    CreatedAt:
+                      format: date-time
+                      type: string
+                    DeletedAt: {}
+                    ID: {}
                     ImageBuildISOURL:
                       type: string
                     SshKey:
                       type: string
                     Status:
+                      type: string
+                    UpdatedAt:
+                      format: date-time
                       type: string
                     Username:
                       type: string
@@ -125,6 +169,9 @@ components:
                   type: array
                 ParentId: {}
                 Status:
+                  type: string
+                UpdatedAt:
+                  format: date-time
                   type: string
                 Version:
                   type: integer
@@ -146,6 +193,11 @@ components:
                     BuildNumber: {}
                     ComposeJobID:
                       type: string
+                    CreatedAt:
+                      format: date-time
+                      type: string
+                    DeletedAt: {}
+                    ID: {}
                     ImageBuildHash:
                       type: string
                     ImageBuildParentHash:
@@ -155,6 +207,14 @@ components:
                     InstalledPackages:
                       items:
                         properties:
+                          CreatedAt:
+                            format: date-time
+                            type: string
+                          DeletedAt: {}
+                          ID: {}
+                          UpdatedAt:
+                            format: date-time
+                            type: string
                           arch:
                             type: string
                           epoch:
@@ -182,14 +242,29 @@ components:
                     Packages:
                       items:
                         properties:
+                          CreatedAt:
+                            format: date-time
+                            type: string
+                          DeletedAt: {}
+                          ID: {}
                           Name:
+                            type: string
+                          UpdatedAt:
+                            format: date-time
                             type: string
                         type: object
                       type: array
                     Status:
                       type: string
+                    UpdatedAt:
+                      format: date-time
+                      type: string
                   type: object
                 CommitID: {}
+                CreatedAt:
+                  format: date-time
+                  type: string
+                DeletedAt: {}
                 Description:
                   type: string
                 Distribution:
@@ -206,11 +281,19 @@ components:
                       type: string
                     ComposeJobID:
                       type: string
+                    CreatedAt:
+                      format: date-time
+                      type: string
+                    DeletedAt: {}
+                    ID: {}
                     ImageBuildISOURL:
                       type: string
                     SshKey:
                       type: string
                     Status:
+                      type: string
+                    UpdatedAt:
+                      format: date-time
                       type: string
                     Username:
                       type: string
@@ -224,6 +307,9 @@ components:
                   type: array
                 ParentId: {}
                 Status:
+                  type: string
+                UpdatedAt:
+                  format: date-time
                   type: string
                 Version:
                   type: integer
@@ -248,6 +334,11 @@ components:
                           BuildNumber: {}
                           ComposeJobID:
                             type: string
+                          CreatedAt:
+                            format: date-time
+                            type: string
+                          DeletedAt: {}
+                          ID: {}
                           ImageBuildHash:
                             type: string
                           ImageBuildParentHash:
@@ -257,6 +348,14 @@ components:
                           InstalledPackages:
                             items:
                               properties:
+                                CreatedAt:
+                                  format: date-time
+                                  type: string
+                                DeletedAt: {}
+                                ID: {}
+                                UpdatedAt:
+                                  format: date-time
+                                  type: string
                                 arch:
                                   type: string
                                 epoch:
@@ -284,14 +383,29 @@ components:
                           Packages:
                             items:
                               properties:
+                                CreatedAt:
+                                  format: date-time
+                                  type: string
+                                DeletedAt: {}
+                                ID: {}
                                 Name:
+                                  type: string
+                                UpdatedAt:
+                                  format: date-time
                                   type: string
                               type: object
                             type: array
                           Status:
                             type: string
+                          UpdatedAt:
+                            format: date-time
+                            type: string
                         type: object
                       CommitID: {}
+                      CreatedAt:
+                        format: date-time
+                        type: string
+                      DeletedAt: {}
                       Description:
                         type: string
                       Distribution:
@@ -308,11 +422,19 @@ components:
                             type: string
                           ComposeJobID:
                             type: string
+                          CreatedAt:
+                            format: date-time
+                            type: string
+                          DeletedAt: {}
+                          ID: {}
                           ImageBuildISOURL:
                             type: string
                           SshKey:
                             type: string
                           Status:
+                            type: string
+                          UpdatedAt:
+                            format: date-time
                             type: string
                           Username:
                             type: string
@@ -327,6 +449,9 @@ components:
                       ParentId: {}
                       Status:
                         type: string
+                      UpdatedAt:
+                        format: date-time
+                        type: string
                       Version:
                         type: integer
                     type: object
@@ -335,6 +460,14 @@ components:
                       Added:
                         items:
                           properties:
+                            CreatedAt:
+                              format: date-time
+                              type: string
+                            DeletedAt: {}
+                            ID: {}
+                            UpdatedAt:
+                              format: date-time
+                              type: string
                             arch:
                               type: string
                             epoch:
@@ -356,6 +489,14 @@ components:
                       Removed:
                         items:
                           properties:
+                            CreatedAt:
+                              format: date-time
+                              type: string
+                            DeletedAt: {}
+                            ID: {}
+                            UpdatedAt:
+                              format: date-time
+                              type: string
                             arch:
                               type: string
                             epoch:
@@ -377,6 +518,14 @@ components:
                       Upgraded:
                         items:
                           properties:
+                            CreatedAt:
+                              format: date-time
+                              type: string
+                            DeletedAt: {}
+                            ID: {}
+                            UpdatedAt:
+                              format: date-time
+                              type: string
                             arch:
                               type: string
                             epoch:
@@ -417,6 +566,11 @@ components:
                   BuildNumber: {}
                   ComposeJobID:
                     type: string
+                  CreatedAt:
+                    format: date-time
+                    type: string
+                  DeletedAt: {}
+                  ID: {}
                   ImageBuildHash:
                     type: string
                   ImageBuildParentHash:
@@ -426,6 +580,14 @@ components:
                   InstalledPackages:
                     items:
                       properties:
+                        CreatedAt:
+                          format: date-time
+                          type: string
+                        DeletedAt: {}
+                        ID: {}
+                        UpdatedAt:
+                          format: date-time
+                          type: string
                         arch:
                           type: string
                         epoch:
@@ -453,50 +615,90 @@ components:
                   Packages:
                     items:
                       properties:
+                        CreatedAt:
+                          format: date-time
+                          type: string
+                        DeletedAt: {}
+                        ID: {}
                         Name:
+                          type: string
+                        UpdatedAt:
+                          format: date-time
                           type: string
                       type: object
                     type: array
                   Status:
                     type: string
+                  UpdatedAt:
+                    format: date-time
+                    type: string
                 type: object
               CommitID: {}
+              CreatedAt:
+                format: date-time
+                type: string
+              DeletedAt: {}
               Devices:
                 items:
                   properties:
                     Connected:
                       type: boolean
+                    CreatedAt:
+                      format: date-time
+                      type: string
+                    DeletedAt: {}
                     DesiredHash:
                       type: string
+                    ID: {}
                     RHCClientID:
                       type: string
                     UUID:
+                      type: string
+                    UpdatedAt:
+                      format: date-time
                       type: string
                   type: object
                 type: array
               DispatchRecords:
                 items:
                   properties:
+                    CreatedAt:
+                      format: date-time
+                      type: string
+                    DeletedAt: {}
                     Device:
                       properties:
                         Connected:
                           type: boolean
+                        CreatedAt:
+                          format: date-time
+                          type: string
+                        DeletedAt: {}
                         DesiredHash:
                           type: string
+                        ID: {}
                         RHCClientID:
                           type: string
                         UUID:
                           type: string
+                        UpdatedAt:
+                          format: date-time
+                          type: string
                       type: object
                     DeviceID: {}
+                    ID: {}
                     PlaybookDispatcherID:
                       type: string
                     PlaybookURL:
                       type: string
                     Status:
                       type: string
+                    UpdatedAt:
+                      format: date-time
+                      type: string
                   type: object
                 type: array
+              ID: {}
               OldCommits:
                 items:
                   properties:
@@ -511,6 +713,11 @@ components:
                     BuildNumber: {}
                     ComposeJobID:
                       type: string
+                    CreatedAt:
+                      format: date-time
+                      type: string
+                    DeletedAt: {}
+                    ID: {}
                     ImageBuildHash:
                       type: string
                     ImageBuildParentHash:
@@ -520,6 +727,14 @@ components:
                     InstalledPackages:
                       items:
                         properties:
+                          CreatedAt:
+                            format: date-time
+                            type: string
+                          DeletedAt: {}
+                          ID: {}
+                          UpdatedAt:
+                            format: date-time
+                            type: string
                           arch:
                             type: string
                           epoch:
@@ -547,11 +762,22 @@ components:
                     Packages:
                       items:
                         properties:
+                          CreatedAt:
+                            format: date-time
+                            type: string
+                          DeletedAt: {}
+                          ID: {}
                           Name:
+                            type: string
+                          UpdatedAt:
+                            format: date-time
                             type: string
                         type: object
                       type: array
                     Status:
+                      type: string
+                    UpdatedAt:
+                      format: date-time
                       type: string
                   type: object
                 type: array
@@ -570,6 +796,11 @@ components:
                       BuildNumber: {}
                       ComposeJobID:
                         type: string
+                      CreatedAt:
+                        format: date-time
+                        type: string
+                      DeletedAt: {}
+                      ID: {}
                       ImageBuildHash:
                         type: string
                       ImageBuildParentHash:
@@ -579,6 +810,14 @@ components:
                       InstalledPackages:
                         items:
                           properties:
+                            CreatedAt:
+                              format: date-time
+                              type: string
+                            DeletedAt: {}
+                            ID: {}
+                            UpdatedAt:
+                              format: date-time
+                              type: string
                             arch:
                               type: string
                             epoch:
@@ -606,23 +845,45 @@ components:
                       Packages:
                         items:
                           properties:
+                            CreatedAt:
+                              format: date-time
+                              type: string
+                            DeletedAt: {}
+                            ID: {}
                             Name:
+                              type: string
+                            UpdatedAt:
+                              format: date-time
                               type: string
                           type: object
                         type: array
                       Status:
                         type: string
+                      UpdatedAt:
+                        format: date-time
+                        type: string
                     type: object
                   CommitID: {}
+                  CreatedAt:
+                    format: date-time
+                    type: string
+                  DeletedAt: {}
+                  ID: {}
                   RepoStatus:
                     type: string
                   RepoURL:
+                    type: string
+                  UpdatedAt:
+                    format: date-time
                     type: string
                 type: object
               RepoID: {}
               Status:
                 type: string
               Tag:
+                type: string
+              UpdatedAt:
+                format: date-time
                 type: string
             type: object
           type: array
@@ -644,6 +905,11 @@ components:
             BuildNumber: {}
             ComposeJobID:
               type: string
+            CreatedAt:
+              format: date-time
+              type: string
+            DeletedAt: {}
+            ID: {}
             ImageBuildHash:
               type: string
             ImageBuildParentHash:
@@ -653,6 +919,14 @@ components:
             InstalledPackages:
               items:
                 properties:
+                  CreatedAt:
+                    format: date-time
+                    type: string
+                  DeletedAt: {}
+                  ID: {}
+                  UpdatedAt:
+                    format: date-time
+                    type: string
                   arch:
                     type: string
                   epoch:
@@ -680,14 +954,29 @@ components:
             Packages:
               items:
                 properties:
+                  CreatedAt:
+                    format: date-time
+                    type: string
+                  DeletedAt: {}
+                  ID: {}
                   Name:
+                    type: string
+                  UpdatedAt:
+                    format: date-time
                     type: string
                 type: object
               type: array
             Status:
               type: string
+            UpdatedAt:
+              format: date-time
+              type: string
           type: object
         CommitID: {}
+        CreatedAt:
+          format: date-time
+          type: string
+        DeletedAt: {}
         Description:
           type: string
         Distribution:
@@ -704,11 +993,19 @@ components:
               type: string
             ComposeJobID:
               type: string
+            CreatedAt:
+              format: date-time
+              type: string
+            DeletedAt: {}
+            ID: {}
             ImageBuildISOURL:
               type: string
             SshKey:
               type: string
             Status:
+              type: string
+            UpdatedAt:
+              format: date-time
               type: string
             Username:
               type: string
@@ -722,6 +1019,9 @@ components:
           type: array
         ParentId: {}
         Status:
+          type: string
+        UpdatedAt:
+          format: date-time
           type: string
         Version:
           type: integer
@@ -759,6 +1059,11 @@ components:
             BuildNumber: {}
             ComposeJobID:
               type: string
+            CreatedAt:
+              format: date-time
+              type: string
+            DeletedAt: {}
+            ID: {}
             ImageBuildHash:
               type: string
             ImageBuildParentHash:
@@ -768,6 +1073,14 @@ components:
             InstalledPackages:
               items:
                 properties:
+                  CreatedAt:
+                    format: date-time
+                    type: string
+                  DeletedAt: {}
+                  ID: {}
+                  UpdatedAt:
+                    format: date-time
+                    type: string
                   arch:
                     type: string
                   epoch:
@@ -795,17 +1108,36 @@ components:
             Packages:
               items:
                 properties:
+                  CreatedAt:
+                    format: date-time
+                    type: string
+                  DeletedAt: {}
+                  ID: {}
                   Name:
+                    type: string
+                  UpdatedAt:
+                    format: date-time
                     type: string
                 type: object
               type: array
             Status:
               type: string
+            UpdatedAt:
+              format: date-time
+              type: string
           type: object
         CommitID: {}
+        CreatedAt:
+          format: date-time
+          type: string
+        DeletedAt: {}
+        ID: {}
         RepoStatus:
           type: string
         RepoURL:
+          type: string
+        UpdatedAt:
+          format: date-time
           type: string
       type: object
     v1.UpdateTransaction:
@@ -825,6 +1157,11 @@ components:
             BuildNumber: {}
             ComposeJobID:
               type: string
+            CreatedAt:
+              format: date-time
+              type: string
+            DeletedAt: {}
+            ID: {}
             ImageBuildHash:
               type: string
             ImageBuildParentHash:
@@ -834,6 +1171,14 @@ components:
             InstalledPackages:
               items:
                 properties:
+                  CreatedAt:
+                    format: date-time
+                    type: string
+                  DeletedAt: {}
+                  ID: {}
+                  UpdatedAt:
+                    format: date-time
+                    type: string
                   arch:
                     type: string
                   epoch:
@@ -861,50 +1206,90 @@ components:
             Packages:
               items:
                 properties:
+                  CreatedAt:
+                    format: date-time
+                    type: string
+                  DeletedAt: {}
+                  ID: {}
                   Name:
+                    type: string
+                  UpdatedAt:
+                    format: date-time
                     type: string
                 type: object
               type: array
             Status:
               type: string
+            UpdatedAt:
+              format: date-time
+              type: string
           type: object
         CommitID: {}
+        CreatedAt:
+          format: date-time
+          type: string
+        DeletedAt: {}
         Devices:
           items:
             properties:
               Connected:
                 type: boolean
+              CreatedAt:
+                format: date-time
+                type: string
+              DeletedAt: {}
               DesiredHash:
                 type: string
+              ID: {}
               RHCClientID:
                 type: string
               UUID:
+                type: string
+              UpdatedAt:
+                format: date-time
                 type: string
             type: object
           type: array
         DispatchRecords:
           items:
             properties:
+              CreatedAt:
+                format: date-time
+                type: string
+              DeletedAt: {}
               Device:
                 properties:
                   Connected:
                     type: boolean
+                  CreatedAt:
+                    format: date-time
+                    type: string
+                  DeletedAt: {}
                   DesiredHash:
                     type: string
+                  ID: {}
                   RHCClientID:
                     type: string
                   UUID:
                     type: string
+                  UpdatedAt:
+                    format: date-time
+                    type: string
                 type: object
               DeviceID: {}
+              ID: {}
               PlaybookDispatcherID:
                 type: string
               PlaybookURL:
                 type: string
               Status:
                 type: string
+              UpdatedAt:
+                format: date-time
+                type: string
             type: object
           type: array
+        ID: {}
         OldCommits:
           items:
             properties:
@@ -919,6 +1304,11 @@ components:
               BuildNumber: {}
               ComposeJobID:
                 type: string
+              CreatedAt:
+                format: date-time
+                type: string
+              DeletedAt: {}
+              ID: {}
               ImageBuildHash:
                 type: string
               ImageBuildParentHash:
@@ -928,6 +1318,14 @@ components:
               InstalledPackages:
                 items:
                   properties:
+                    CreatedAt:
+                      format: date-time
+                      type: string
+                    DeletedAt: {}
+                    ID: {}
+                    UpdatedAt:
+                      format: date-time
+                      type: string
                     arch:
                       type: string
                     epoch:
@@ -955,11 +1353,22 @@ components:
               Packages:
                 items:
                   properties:
+                    CreatedAt:
+                      format: date-time
+                      type: string
+                    DeletedAt: {}
+                    ID: {}
                     Name:
+                      type: string
+                    UpdatedAt:
+                      format: date-time
                       type: string
                   type: object
                 type: array
               Status:
+                type: string
+              UpdatedAt:
+                format: date-time
                 type: string
             type: object
           type: array
@@ -978,6 +1387,11 @@ components:
                 BuildNumber: {}
                 ComposeJobID:
                   type: string
+                CreatedAt:
+                  format: date-time
+                  type: string
+                DeletedAt: {}
+                ID: {}
                 ImageBuildHash:
                   type: string
                 ImageBuildParentHash:
@@ -987,6 +1401,14 @@ components:
                 InstalledPackages:
                   items:
                     properties:
+                      CreatedAt:
+                        format: date-time
+                        type: string
+                      DeletedAt: {}
+                      ID: {}
+                      UpdatedAt:
+                        format: date-time
+                        type: string
                       arch:
                         type: string
                       epoch:
@@ -1014,23 +1436,45 @@ components:
                 Packages:
                   items:
                     properties:
+                      CreatedAt:
+                        format: date-time
+                        type: string
+                      DeletedAt: {}
+                      ID: {}
                       Name:
+                        type: string
+                      UpdatedAt:
+                        format: date-time
                         type: string
                     type: object
                   type: array
                 Status:
                   type: string
+                UpdatedAt:
+                  format: date-time
+                  type: string
               type: object
             CommitID: {}
+            CreatedAt:
+              format: date-time
+              type: string
+            DeletedAt: {}
+            ID: {}
             RepoStatus:
               type: string
             RepoURL:
+              type: string
+            UpdatedAt:
+              format: date-time
               type: string
           type: object
         RepoID: {}
         Status:
           type: string
         Tag:
+          type: string
+        UpdatedAt:
+          format: date-time
           type: string
       type: object
 info:
