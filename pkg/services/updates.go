@@ -21,24 +21,23 @@ type UpdateServiceInterface interface {
 	CreateUpdate(update *models.UpdateTransaction) (*models.UpdateTransaction, error)
 	GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error)
 	RebootDevice(update *models.UpdateTransaction)
+	GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error)
 }
 
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
 func NewUpdateService(ctx context.Context) UpdateServiceInterface {
 	return &UpdateService{
-		ctx:           ctx,
-		deviceService: NewDeviceService(ctx),
-		filesService:  NewFilesService(),
-		repoBuilder:   NewRepoBuilder(ctx),
+		ctx:          ctx,
+		filesService: NewFilesService(),
+		repoBuilder:  NewRepoBuilder(ctx),
 	}
 }
 
 // UpdateService is the main implementation of a UpdateServiceInterface
 type UpdateService struct {
-	ctx           context.Context
-	repoBuilder   RepoBuilderInterface
-	deviceService DeviceServiceInterface
-	filesService  FilesService
+	ctx          context.Context
+	repoBuilder  RepoBuilderInterface
+	filesService FilesService
 }
 
 type playbooks struct {
@@ -87,10 +86,10 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 	dispatchRecords := update.DispatchRecords
 	for _, device := range update.Devices {
 		var updateDevice *models.Device
-		updateDevice, err = s.deviceService.GetDeviceByUUID(device.UUID)
+		result := db.DB.Where("uuid = ?", device.UUID).First(&updateDevice)
 		if err != nil {
-			log.Errorf("Error on GetDeviceByUUID: %#v ", err.Error())
-			return nil, err
+			log.Errorf("Error on GetDeviceByUUID: %#v ", result.Error.Error())
+			return nil, result.Error
 		}
 		// Create new &DispatcherPayload{}
 		payloadDispatcher := playbookdispatcher.DispatcherPayload{
@@ -129,6 +128,8 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 		}
 		update.DispatchRecords = dispatchRecords
 	}
+	// TODO: This has to change to be after the reboot if new ostree commit == desired commit
+	update.Status = models.UpdateStatusSuccess
 	db.DB.Save(update)
 	log.Infof("Repobuild::ends: update record %#v ", update)
 	return update, nil
@@ -260,5 +261,20 @@ func (s *UpdateService) RebootDevice(update *models.UpdateTransaction) {
 		update.DispatchRecords = dispatchRecords
 	}
 	db.DB.Save(update)
+}
 
+func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error) {
+	var updates []models.UpdateTransaction
+	result := db.DB.
+		Select("desired_hash, connected, uuid").
+		Table("devices").
+		Joins(
+			`JOIN updatetransaction_devices ON updatetransaction_devices.device_id = ?`,
+			device.ID,
+		).Find(&updates)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &updates, nil
 }

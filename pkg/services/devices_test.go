@@ -87,22 +87,40 @@ func TestGetUpdateAvailableForDeviceByUUID(t *testing.T) {
 	oldImage := &models.Image{
 		Commit: &models.Commit{
 			OSTreeCommit: checksum,
+			InstalledPackages: []models.InstalledPackage{
+				{
+					Name:    "ansible",
+					Version: "1.0.0",
+				},
+				{
+					Name:    "yum",
+					Version: "2:6.0-1",
+				},
+			},
 		},
 		Status: models.ImageStatusSuccess,
 	}
 	db.DB.Create(oldImage.Commit)
 	db.DB.Create(oldImage)
-	fmt.Printf("Old image was created with id %d\n", oldImage.ID)
 	newImage := &models.Image{
 		Commit: &models.Commit{
 			OSTreeCommit: fmt.Sprintf("a-new-%s", checksum),
+			InstalledPackages: []models.InstalledPackage{
+				{
+					Name:    "yum",
+					Version: "3:6.0-1",
+				},
+				{
+					Name:    "vim",
+					Version: "2.0.0",
+				},
+			},
 		},
 		Status:   models.ImageStatusSuccess,
 		ParentId: &oldImage.ID,
 	}
 	db.DB.Create(newImage.Commit)
 	db.DB.Create(newImage)
-	fmt.Printf("New image was created with id %d\n", newImage.ID)
 	updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
 	if err != nil {
 		t.Errorf("Expected nil err, got %#v", err)
@@ -113,10 +131,18 @@ func TestGetUpdateAvailableForDeviceByUUID(t *testing.T) {
 	newUpdate := updatesAvailable[0]
 	if newUpdate.Image.ID != newImage.ID {
 		t.Errorf("Expected new image to be %d, got %d", newImage.ID, newUpdate.Image.ID)
-
 	}
-}
+	if len(newUpdate.PackageDiff.Upgraded) != 1 {
+		t.Errorf("Expected package diff upgraded len to be 1, got %d", len(newUpdate.PackageDiff.Upgraded))
+	}
+	if len(newUpdate.PackageDiff.Added) != 1 {
+		t.Errorf("Expected package diff added len to be 1, got %d", len(newUpdate.PackageDiff.Added))
+	}
+	if len(newUpdate.PackageDiff.Removed) != 1 {
+		t.Errorf("Expected package diff removed len to be 1, got %d", len(newUpdate.PackageDiff.Removed))
+	}
 
+}
 func TestGetUpdateAvailableForDeviceByUUIDWhenNoUpdateIsAvailable(t *testing.T) {
 
 	ctrl := gomock.NewController(t)

@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 
 	version "github.com/knqyf263/go-rpm-version"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
@@ -16,21 +15,30 @@ type DeviceServiceInterface interface {
 	GetDeviceByID(deviceID uint) (*models.Device, error)
 	GetDeviceByUUID(deviceUUID string) (*models.Device, error)
 	GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]ImageUpdateAvailable, error)
-	GetDeviceImageInfo(deviceUUID string) (ImageInfo, error)
+	GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error)
+	GetDeviceDetails(deviceUUID string) (*DeviceDetails, error)
 }
 
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
 func NewDeviceService(ctx context.Context) DeviceServiceInterface {
 	return &DeviceService{
-		ctx:       ctx,
-		inventory: inventory.InitClient(ctx),
+		ctx:           ctx,
+		updateService: NewUpdateService(ctx),
+		inventory:     inventory.InitClient(ctx),
 	}
 }
 
 // DeviceService is the main implementation of a DeviceServiceInterface
 type DeviceService struct {
-	ctx       context.Context
-	inventory inventory.ClientInterface
+	ctx           context.Context
+	updateService UpdateServiceInterface
+	inventory     inventory.ClientInterface
+}
+
+type DeviceDetails struct {
+	Device             *models.Device              `json:"Device,omitempty"`
+	Image              *ImageInfo                  `json:"ImageInfo"`
+	UpdateTransactions *[]models.UpdateTransaction `json:"UpdateTransactions,omitempty"`
 }
 
 // GetDeviceByID receives DeviceID uint and get a *models.Device back
@@ -59,20 +67,48 @@ func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, erro
 	return &device, nil
 }
 
+func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*DeviceDetails, error) {
+	imageInfo, err := s.GetDeviceImageInfo(deviceUUID)
+	if err != nil {
+		return nil, err
+	}
+	device, err := s.GetDeviceByUUID(deviceUUID)
+	if err != nil {
+		log.Debugf("Could not find device on the devices table yet - %s", deviceUUID)
+		device = &models.Device{
+			UUID: deviceUUID,
+		}
+	}
+	// In order to have an update transaction for a device it must be a least created
+	var updates *[]models.UpdateTransaction
+	if device.ID != 0 {
+		updates, err = s.updateService.GetUpdateTransactionsForDevice(device)
+		if err != nil {
+			return nil, err
+		}
+	}
+	details := &DeviceDetails{
+		Device:             device,
+		Image:              imageInfo,
+		UpdateTransactions: updates,
+	}
+	return details, nil
+}
+
 type ImageUpdateAvailable struct {
-	Image       models.Image
-	PackageDiff DeltaDiff
+	Image       models.Image `json:"Image"`
+	PackageDiff DeltaDiff    `json:"PackageDiff"`
 }
 type DeltaDiff struct {
-	Added    []models.InstalledPackage
-	Removed  []models.InstalledPackage
-	Upgraded []models.InstalledPackage
+	Added    []models.InstalledPackage `json:"Added"`
+	Removed  []models.InstalledPackage `json:"Removed"`
+	Upgraded []models.InstalledPackage `json:"Upgraded"`
 }
 
 type ImageInfo struct {
-	Image           models.Image
-	UpdateAvailable []ImageUpdateAvailable
-	Rollback        models.Image
+	Image            models.Image            `json:"Image"`
+	UpdatesAvailable *[]ImageUpdateAvailable `json:"UpdatesAvailable,omitempty"`
+	Rollback         *models.Image           `json:"RollbackImage,omitempty"`
 }
 
 type DeviceNotFoundError struct {
@@ -108,7 +144,7 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 		return nil, new(DeviceNotFoundError)
 	}
 
-	err = db.DB.Model(&currentImage.Commit).Association("Packages").Find(&currentImage.Commit.Packages)
+	err = db.DB.Model(&currentImage.Commit).Association("InstalledPackages").Find(&currentImage.Commit.InstalledPackages)
 	if err != nil {
 		log.Error(result.Error)
 		return nil, new(DeviceNotFoundError)
@@ -118,13 +154,14 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 	if updates.Error != nil || updates.RowsAffected == 0 {
 		return nil, new(UpdateNotFoundError)
 	}
-
 	var imageDiff []ImageUpdateAvailable
 	for _, upd := range images {
 		db.DB.First(&upd.Commit, upd.CommitID)
+		db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages)
 		db.DB.Model(&upd.Commit).Association("Packages").Find(&upd.Commit.Packages)
 		var delta ImageUpdateAvailable
 		diff := getDiffOnUpdate(currentImage, upd)
+		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
 		delta.Image = upd
 		delta.PackageDiff = diff
 		imageDiff = append(imageDiff, delta)
@@ -173,15 +210,14 @@ func getDiffOnUpdate(oldImg models.Image, newImg models.Image) DeltaDiff {
 	return results
 }
 
-func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (ImageInfo, error) {
-	fmt.Printf(":: GetDeviceImageInfo :: \n")
+func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error) {
 	var ImageInfo ImageInfo
 	var currentImage models.Image
-	var rollback models.Image
+	var rollback *models.Image
 
 	device, err := s.inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || device.Total != 1 {
-		return ImageInfo, new(DeviceNotFoundError)
+		return nil, new(DeviceNotFoundError)
 	}
 
 	lastDevice := device.Result[len(device.Result)-1]
@@ -191,20 +227,21 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (ImageInfo, error)
 
 	if result.Error != nil || result == nil {
 		log.Error(result.Error)
-		return ImageInfo, new(ImageNotFoundError)
+		return nil, new(ImageNotFoundError)
 	} else {
 		if currentImage.ParentId != nil {
-			db.DB.Where("ID = ?", currentImage.ParentId).First(&rollback)
+			db.DB.Where("ID = ?", currentImage.ParentId).First(rollback)
 		}
 	}
 	updateAvailable, err := s.GetUpdateAvailableForDeviceByUUID(deviceUUID)
 	if err != nil {
-		fmt.Printf("err:: %v \n", err)
-	} else {
-		ImageInfo.UpdateAvailable = updateAvailable
+		log.Error(err.Error())
+		return nil, err
+	} else if updateAvailable != nil {
+		ImageInfo.UpdatesAvailable = &updateAvailable
 	}
 	ImageInfo.Rollback = rollback
 	ImageInfo.Image = currentImage
 
-	return ImageInfo, nil
+	return &ImageInfo, nil
 }
