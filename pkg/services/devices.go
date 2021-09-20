@@ -75,13 +75,10 @@ func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*DeviceDetails, err
 	device, err := s.GetDeviceByUUID(deviceUUID)
 	if err != nil {
 		log.Debugf("Could not find device on the devices table yet - %s", deviceUUID)
-		device = &models.Device{
-			UUID: deviceUUID,
-		}
 	}
 	// In order to have an update transaction for a device it must be a least created
 	var updates *[]models.UpdateTransaction
-	if device.ID != 0 {
+	if device != nil {
 		updates, err = s.updateService.GetUpdateTransactionsForDevice(device)
 		if err != nil {
 			return nil, err
