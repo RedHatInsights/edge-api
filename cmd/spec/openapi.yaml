@@ -15,6 +15,879 @@ components:
         title:
           type: string
       type: object
+    v1.DeviceDetails:
+      properties:
+        Device:
+          properties:
+            Connected:
+              type: boolean
+            CreatedAt:
+              format: date-time
+              type: string
+            DeletedAt: {}
+            DesiredHash:
+              type: string
+            ID: {}
+            RHCClientID:
+              type: string
+            UUID:
+              type: string
+            UpdatedAt:
+              format: date-time
+              type: string
+          type: object
+        ImageInfo:
+          properties:
+            Image:
+              properties:
+                Account:
+                  type: string
+                Commit:
+                  properties:
+                    Account:
+                      type: string
+                    Arch:
+                      type: string
+                    BlueprintToml:
+                      type: string
+                    BuildDate:
+                      type: string
+                    BuildNumber: {}
+                    ComposeJobID:
+                      type: string
+                    CreatedAt:
+                      format: date-time
+                      type: string
+                    DeletedAt: {}
+                    ID: {}
+                    ImageBuildHash:
+                      type: string
+                    ImageBuildParentHash:
+                      type: string
+                    ImageBuildTarURL:
+                      type: string
+                    InstalledPackages:
+                      items:
+                        properties:
+                          CreatedAt:
+                            format: date-time
+                            type: string
+                          DeletedAt: {}
+                          ID: {}
+                          UpdatedAt:
+                            format: date-time
+                            type: string
+                          arch:
+                            type: string
+                          epoch:
+                            type: string
+                          name:
+                            type: string
+                          release:
+                            type: string
+                          sigmd5:
+                            type: string
+                          signature:
+                            type: string
+                          type:
+                            type: string
+                          version:
+                            type: string
+                        type: object
+                      type: array
+                    OSTreeCommit:
+                      type: string
+                    OSTreeParentCommit:
+                      type: string
+                    OSTreeRef:
+                      type: string
+                    Packages:
+                      items:
+                        properties:
+                          CreatedAt:
+                            format: date-time
+                            type: string
+                          DeletedAt: {}
+                          ID: {}
+                          Name:
+                            type: string
+                          UpdatedAt:
+                            format: date-time
+                            type: string
+                        type: object
+                      type: array
+                    Status:
+                      type: string
+                    UpdatedAt:
+                      format: date-time
+                      type: string
+                  type: object
+                CommitID: {}
+                CreatedAt:
+                  format: date-time
+                  type: string
+                DeletedAt: {}
+                Description:
+                  type: string
+                Distribution:
+                  type: string
+                ID: {}
+                ImageSetID: {}
+                ImageType:
+                  type: string
+                Installer:
+                  properties:
+                    Account:
+                      type: string
+                    Checksum:
+                      type: string
+                    ComposeJobID:
+                      type: string
+                    CreatedAt:
+                      format: date-time
+                      type: string
+                    DeletedAt: {}
+                    ID: {}
+                    ImageBuildISOURL:
+                      type: string
+                    SshKey:
+                      type: string
+                    Status:
+                      type: string
+                    UpdatedAt:
+                      format: date-time
+                      type: string
+                    Username:
+                      type: string
+                  type: object
+                InstallerID: {}
+                Name:
+                  type: string
+                OutputTypes:
+                  items:
+                    type: string
+                  type: array
+                ParentId: {}
+                Status:
+                  type: string
+                UpdatedAt:
+                  format: date-time
+                  type: string
+                Version:
+                  type: integer
+              type: object
+            RollbackImage:
+              properties:
+                Account:
+                  type: string
+                Commit:
+                  properties:
+                    Account:
+                      type: string
+                    Arch:
+                      type: string
+                    BlueprintToml:
+                      type: string
+                    BuildDate:
+                      type: string
+                    BuildNumber: {}
+                    ComposeJobID:
+                      type: string
+                    CreatedAt:
+                      format: date-time
+                      type: string
+                    DeletedAt: {}
+                    ID: {}
+                    ImageBuildHash:
+                      type: string
+                    ImageBuildParentHash:
+                      type: string
+                    ImageBuildTarURL:
+                      type: string
+                    InstalledPackages:
+                      items:
+                        properties:
+                          CreatedAt:
+                            format: date-time
+                            type: string
+                          DeletedAt: {}
+                          ID: {}
+                          UpdatedAt:
+                            format: date-time
+                            type: string
+                          arch:
+                            type: string
+                          epoch:
+                            type: string
+                          name:
+                            type: string
+                          release:
+                            type: string
+                          sigmd5:
+                            type: string
+                          signature:
+                            type: string
+                          type:
+                            type: string
+                          version:
+                            type: string
+                        type: object
+                      type: array
+                    OSTreeCommit:
+                      type: string
+                    OSTreeParentCommit:
+                      type: string
+                    OSTreeRef:
+                      type: string
+                    Packages:
+                      items:
+                        properties:
+                          CreatedAt:
+                            format: date-time
+                            type: string
+                          DeletedAt: {}
+                          ID: {}
+                          Name:
+                            type: string
+                          UpdatedAt:
+                            format: date-time
+                            type: string
+                        type: object
+                      type: array
+                    Status:
+                      type: string
+                    UpdatedAt:
+                      format: date-time
+                      type: string
+                  type: object
+                CommitID: {}
+                CreatedAt:
+                  format: date-time
+                  type: string
+                DeletedAt: {}
+                Description:
+                  type: string
+                Distribution:
+                  type: string
+                ID: {}
+                ImageSetID: {}
+                ImageType:
+                  type: string
+                Installer:
+                  properties:
+                    Account:
+                      type: string
+                    Checksum:
+                      type: string
+                    ComposeJobID:
+                      type: string
+                    CreatedAt:
+                      format: date-time
+                      type: string
+                    DeletedAt: {}
+                    ID: {}
+                    ImageBuildISOURL:
+                      type: string
+                    SshKey:
+                      type: string
+                    Status:
+                      type: string
+                    UpdatedAt:
+                      format: date-time
+                      type: string
+                    Username:
+                      type: string
+                  type: object
+                InstallerID: {}
+                Name:
+                  type: string
+                OutputTypes:
+                  items:
+                    type: string
+                  type: array
+                ParentId: {}
+                Status:
+                  type: string
+                UpdatedAt:
+                  format: date-time
+                  type: string
+                Version:
+                  type: integer
+              type: object
+            UpdatesAvailable:
+              items:
+                properties:
+                  Image:
+                    properties:
+                      Account:
+                        type: string
+                      Commit:
+                        properties:
+                          Account:
+                            type: string
+                          Arch:
+                            type: string
+                          BlueprintToml:
+                            type: string
+                          BuildDate:
+                            type: string
+                          BuildNumber: {}
+                          ComposeJobID:
+                            type: string
+                          CreatedAt:
+                            format: date-time
+                            type: string
+                          DeletedAt: {}
+                          ID: {}
+                          ImageBuildHash:
+                            type: string
+                          ImageBuildParentHash:
+                            type: string
+                          ImageBuildTarURL:
+                            type: string
+                          InstalledPackages:
+                            items:
+                              properties:
+                                CreatedAt:
+                                  format: date-time
+                                  type: string
+                                DeletedAt: {}
+                                ID: {}
+                                UpdatedAt:
+                                  format: date-time
+                                  type: string
+                                arch:
+                                  type: string
+                                epoch:
+                                  type: string
+                                name:
+                                  type: string
+                                release:
+                                  type: string
+                                sigmd5:
+                                  type: string
+                                signature:
+                                  type: string
+                                type:
+                                  type: string
+                                version:
+                                  type: string
+                              type: object
+                            type: array
+                          OSTreeCommit:
+                            type: string
+                          OSTreeParentCommit:
+                            type: string
+                          OSTreeRef:
+                            type: string
+                          Packages:
+                            items:
+                              properties:
+                                CreatedAt:
+                                  format: date-time
+                                  type: string
+                                DeletedAt: {}
+                                ID: {}
+                                Name:
+                                  type: string
+                                UpdatedAt:
+                                  format: date-time
+                                  type: string
+                              type: object
+                            type: array
+                          Status:
+                            type: string
+                          UpdatedAt:
+                            format: date-time
+                            type: string
+                        type: object
+                      CommitID: {}
+                      CreatedAt:
+                        format: date-time
+                        type: string
+                      DeletedAt: {}
+                      Description:
+                        type: string
+                      Distribution:
+                        type: string
+                      ID: {}
+                      ImageSetID: {}
+                      ImageType:
+                        type: string
+                      Installer:
+                        properties:
+                          Account:
+                            type: string
+                          Checksum:
+                            type: string
+                          ComposeJobID:
+                            type: string
+                          CreatedAt:
+                            format: date-time
+                            type: string
+                          DeletedAt: {}
+                          ID: {}
+                          ImageBuildISOURL:
+                            type: string
+                          SshKey:
+                            type: string
+                          Status:
+                            type: string
+                          UpdatedAt:
+                            format: date-time
+                            type: string
+                          Username:
+                            type: string
+                        type: object
+                      InstallerID: {}
+                      Name:
+                        type: string
+                      OutputTypes:
+                        items:
+                          type: string
+                        type: array
+                      ParentId: {}
+                      Status:
+                        type: string
+                      UpdatedAt:
+                        format: date-time
+                        type: string
+                      Version:
+                        type: integer
+                    type: object
+                  PackageDiff:
+                    properties:
+                      Added:
+                        items:
+                          properties:
+                            CreatedAt:
+                              format: date-time
+                              type: string
+                            DeletedAt: {}
+                            ID: {}
+                            UpdatedAt:
+                              format: date-time
+                              type: string
+                            arch:
+                              type: string
+                            epoch:
+                              type: string
+                            name:
+                              type: string
+                            release:
+                              type: string
+                            sigmd5:
+                              type: string
+                            signature:
+                              type: string
+                            type:
+                              type: string
+                            version:
+                              type: string
+                          type: object
+                        type: array
+                      Removed:
+                        items:
+                          properties:
+                            CreatedAt:
+                              format: date-time
+                              type: string
+                            DeletedAt: {}
+                            ID: {}
+                            UpdatedAt:
+                              format: date-time
+                              type: string
+                            arch:
+                              type: string
+                            epoch:
+                              type: string
+                            name:
+                              type: string
+                            release:
+                              type: string
+                            sigmd5:
+                              type: string
+                            signature:
+                              type: string
+                            type:
+                              type: string
+                            version:
+                              type: string
+                          type: object
+                        type: array
+                      Upgraded:
+                        items:
+                          properties:
+                            CreatedAt:
+                              format: date-time
+                              type: string
+                            DeletedAt: {}
+                            ID: {}
+                            UpdatedAt:
+                              format: date-time
+                              type: string
+                            arch:
+                              type: string
+                            epoch:
+                              type: string
+                            name:
+                              type: string
+                            release:
+                              type: string
+                            sigmd5:
+                              type: string
+                            signature:
+                              type: string
+                            type:
+                              type: string
+                            version:
+                              type: string
+                          type: object
+                        type: array
+                    type: object
+                type: object
+              type: array
+          type: object
+        UpdateTransactions:
+          items:
+            properties:
+              Account:
+                type: string
+              Commit:
+                properties:
+                  Account:
+                    type: string
+                  Arch:
+                    type: string
+                  BlueprintToml:
+                    type: string
+                  BuildDate:
+                    type: string
+                  BuildNumber: {}
+                  ComposeJobID:
+                    type: string
+                  CreatedAt:
+                    format: date-time
+                    type: string
+                  DeletedAt: {}
+                  ID: {}
+                  ImageBuildHash:
+                    type: string
+                  ImageBuildParentHash:
+                    type: string
+                  ImageBuildTarURL:
+                    type: string
+                  InstalledPackages:
+                    items:
+                      properties:
+                        CreatedAt:
+                          format: date-time
+                          type: string
+                        DeletedAt: {}
+                        ID: {}
+                        UpdatedAt:
+                          format: date-time
+                          type: string
+                        arch:
+                          type: string
+                        epoch:
+                          type: string
+                        name:
+                          type: string
+                        release:
+                          type: string
+                        sigmd5:
+                          type: string
+                        signature:
+                          type: string
+                        type:
+                          type: string
+                        version:
+                          type: string
+                      type: object
+                    type: array
+                  OSTreeCommit:
+                    type: string
+                  OSTreeParentCommit:
+                    type: string
+                  OSTreeRef:
+                    type: string
+                  Packages:
+                    items:
+                      properties:
+                        CreatedAt:
+                          format: date-time
+                          type: string
+                        DeletedAt: {}
+                        ID: {}
+                        Name:
+                          type: string
+                        UpdatedAt:
+                          format: date-time
+                          type: string
+                      type: object
+                    type: array
+                  Status:
+                    type: string
+                  UpdatedAt:
+                    format: date-time
+                    type: string
+                type: object
+              CommitID: {}
+              CreatedAt:
+                format: date-time
+                type: string
+              DeletedAt: {}
+              Devices:
+                items:
+                  properties:
+                    Connected:
+                      type: boolean
+                    CreatedAt:
+                      format: date-time
+                      type: string
+                    DeletedAt: {}
+                    DesiredHash:
+                      type: string
+                    ID: {}
+                    RHCClientID:
+                      type: string
+                    UUID:
+                      type: string
+                    UpdatedAt:
+                      format: date-time
+                      type: string
+                  type: object
+                type: array
+              DispatchRecords:
+                items:
+                  properties:
+                    CreatedAt:
+                      format: date-time
+                      type: string
+                    DeletedAt: {}
+                    Device:
+                      properties:
+                        Connected:
+                          type: boolean
+                        CreatedAt:
+                          format: date-time
+                          type: string
+                        DeletedAt: {}
+                        DesiredHash:
+                          type: string
+                        ID: {}
+                        RHCClientID:
+                          type: string
+                        UUID:
+                          type: string
+                        UpdatedAt:
+                          format: date-time
+                          type: string
+                      type: object
+                    DeviceID: {}
+                    ID: {}
+                    PlaybookDispatcherID:
+                      type: string
+                    PlaybookURL:
+                      type: string
+                    Status:
+                      type: string
+                    UpdatedAt:
+                      format: date-time
+                      type: string
+                  type: object
+                type: array
+              ID: {}
+              OldCommits:
+                items:
+                  properties:
+                    Account:
+                      type: string
+                    Arch:
+                      type: string
+                    BlueprintToml:
+                      type: string
+                    BuildDate:
+                      type: string
+                    BuildNumber: {}
+                    ComposeJobID:
+                      type: string
+                    CreatedAt:
+                      format: date-time
+                      type: string
+                    DeletedAt: {}
+                    ID: {}
+                    ImageBuildHash:
+                      type: string
+                    ImageBuildParentHash:
+                      type: string
+                    ImageBuildTarURL:
+                      type: string
+                    InstalledPackages:
+                      items:
+                        properties:
+                          CreatedAt:
+                            format: date-time
+                            type: string
+                          DeletedAt: {}
+                          ID: {}
+                          UpdatedAt:
+                            format: date-time
+                            type: string
+                          arch:
+                            type: string
+                          epoch:
+                            type: string
+                          name:
+                            type: string
+                          release:
+                            type: string
+                          sigmd5:
+                            type: string
+                          signature:
+                            type: string
+                          type:
+                            type: string
+                          version:
+                            type: string
+                        type: object
+                      type: array
+                    OSTreeCommit:
+                      type: string
+                    OSTreeParentCommit:
+                      type: string
+                    OSTreeRef:
+                      type: string
+                    Packages:
+                      items:
+                        properties:
+                          CreatedAt:
+                            format: date-time
+                            type: string
+                          DeletedAt: {}
+                          ID: {}
+                          Name:
+                            type: string
+                          UpdatedAt:
+                            format: date-time
+                            type: string
+                        type: object
+                      type: array
+                    Status:
+                      type: string
+                    UpdatedAt:
+                      format: date-time
+                      type: string
+                  type: object
+                type: array
+              Repo:
+                properties:
+                  Commit:
+                    properties:
+                      Account:
+                        type: string
+                      Arch:
+                        type: string
+                      BlueprintToml:
+                        type: string
+                      BuildDate:
+                        type: string
+                      BuildNumber: {}
+                      ComposeJobID:
+                        type: string
+                      CreatedAt:
+                        format: date-time
+                        type: string
+                      DeletedAt: {}
+                      ID: {}
+                      ImageBuildHash:
+                        type: string
+                      ImageBuildParentHash:
+                        type: string
+                      ImageBuildTarURL:
+                        type: string
+                      InstalledPackages:
+                        items:
+                          properties:
+                            CreatedAt:
+                              format: date-time
+                              type: string
+                            DeletedAt: {}
+                            ID: {}
+                            UpdatedAt:
+                              format: date-time
+                              type: string
+                            arch:
+                              type: string
+                            epoch:
+                              type: string
+                            name:
+                              type: string
+                            release:
+                              type: string
+                            sigmd5:
+                              type: string
+                            signature:
+                              type: string
+                            type:
+                              type: string
+                            version:
+                              type: string
+                          type: object
+                        type: array
+                      OSTreeCommit:
+                        type: string
+                      OSTreeParentCommit:
+                        type: string
+                      OSTreeRef:
+                        type: string
+                      Packages:
+                        items:
+                          properties:
+                            CreatedAt:
+                              format: date-time
+                              type: string
+                            DeletedAt: {}
+                            ID: {}
+                            Name:
+                              type: string
+                            UpdatedAt:
+                              format: date-time
+                              type: string
+                          type: object
+                        type: array
+                      Status:
+                        type: string
+                      UpdatedAt:
+                        format: date-time
+                        type: string
+                    type: object
+                  CommitID: {}
+                  CreatedAt:
+                    format: date-time
+                    type: string
+                  DeletedAt: {}
+                  ID: {}
+                  RepoStatus:
+                    type: string
+                  RepoURL:
+                    type: string
+                  UpdatedAt:
+                    format: date-time
+                    type: string
+                type: object
+              RepoID: {}
+              Status:
+                type: string
+              Tag:
+                type: string
+              UpdatedAt:
+                format: date-time
+                type: string
+            type: object
+          type: array
+      type: object
     v1.Image:
       properties:
         account:
@@ -46,6 +919,14 @@ components:
             installed_packages:
               items:
                 properties:
+                  CreatedAt:
+                    format: date-time
+                    type: string
+                  DeletedAt: {}
+                  ID: {}
+                  UpdatedAt:
+                    format: date-time
+                    type: string
                   arch:
                     type: string
                   created_at:
@@ -93,11 +974,17 @@ components:
                   updated_at:
                     format: date-time
                     type: string
+                  UpdatedAt:
+                    format: date-time
+                    type: string
                 type: object
               type: array
             status:
               type: string
             updated_at:
+              format: date-time
+              type: string
+            UpdatedAt:
               format: date-time
               type: string
           type: object
@@ -202,6 +1089,14 @@ components:
             installed_packages:
               items:
                 properties:
+                  CreatedAt:
+                    format: date-time
+                    type: string
+                  DeletedAt: {}
+                  ID: {}
+                  UpdatedAt:
+                    format: date-time
+                    type: string
                   arch:
                     type: string
                   created_at:
@@ -249,11 +1144,17 @@ components:
                   updated_at:
                     format: date-time
                     type: string
+                  UpdatedAt:
+                    format: date-time
+                    type: string
                 type: object
               type: array
             status:
               type: string
             updated_at:
+              format: date-time
+              type: string
+            UpdatedAt:
               format: date-time
               type: string
           type: object
@@ -268,6 +1169,9 @@ components:
         repo_url:
           type: string
         updated_at:
+          format: date-time
+          type: string
+        UpdatedAt:
           format: date-time
           type: string
       type: object
@@ -302,6 +1206,14 @@ components:
             installed_packages:
               items:
                 properties:
+                  CreatedAt:
+                    format: date-time
+                    type: string
+                  DeletedAt: {}
+                  ID: {}
+                  UpdatedAt:
+                    format: date-time
+                    type: string
                   arch:
                     type: string
                   created_at:
@@ -349,11 +1261,17 @@ components:
                   updated_at:
                     format: date-time
                     type: string
+                  UpdatedAt:
+                    format: date-time
+                    type: string
                 type: object
               type: array
             status:
               type: string
             updated_at:
+              format: date-time
+              type: string
+            UpdatedAt:
               format: date-time
               type: string
           type: object
@@ -420,6 +1338,9 @@ components:
               updated_at:
                 format: date-time
                 type: string
+              UpdatedAt:
+                format: date-time
+                type: string
             type: object
           type: array
         id: {}
@@ -451,6 +1372,14 @@ components:
               installed_packages:
                 items:
                   properties:
+                    CreatedAt:
+                      format: date-time
+                      type: string
+                    DeletedAt: {}
+                    ID: {}
+                    UpdatedAt:
+                      format: date-time
+                      type: string
                     arch:
                       type: string
                     created_at:
@@ -498,11 +1427,17 @@ components:
                     updated_at:
                       format: date-time
                       type: string
+                    UpdatedAt:
+                      format: date-time
+                      type: string
                   type: object
                 type: array
               status:
                 type: string
               updated_at:
+                format: date-time
+                type: string
+              UpdatedAt:
                 format: date-time
                 type: string
             type: object
@@ -536,6 +1471,14 @@ components:
                 installed_packages:
                   items:
                     properties:
+                      CreatedAt:
+                        format: date-time
+                        type: string
+                      DeletedAt: {}
+                      ID: {}
+                      UpdatedAt:
+                        format: date-time
+                        type: string
                       arch:
                         type: string
                       created_at:
@@ -583,11 +1526,17 @@ components:
                       updated_at:
                         format: date-time
                         type: string
+                      UpdatedAt:
+                        format: date-time
+                        type: string
                     type: object
                   type: array
                 status:
                   type: string
                 updated_at:
+                  format: date-time
+                  type: string
+                UpdatedAt:
                   format: date-time
                   type: string
               type: object
@@ -604,6 +1553,9 @@ components:
             updated_at:
               format: date-time
               type: string
+            UpdatedAt:
+              format: date-time
+              type: string
           type: object
         repo_id: {}
         status:
@@ -611,6 +1563,9 @@ components:
         tag:
           type: string
         updated_at:
+          format: date-time
+          type: string
+        UpdatedAt:
           format: date-time
           type: string
       type: object
@@ -943,4 +1898,40 @@ paths:
           description: There was an internal server error.
       summary: Return image running on device.
       description: Return image running on device.   
-      
+  /devices/{DeviceUUID}:  
+    get:
+      operationId: getDevice
+      parameters:
+        - name: DeviceUUID
+          in: path
+          required: true
+          description: DeviceUUID
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.DeviceDetails'
+          description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.NotFound'
+          description: The device was not found.
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Get a device by UUID.
+  
