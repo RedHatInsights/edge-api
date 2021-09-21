@@ -67,7 +67,7 @@ func TestCreateWasCalledWithNameNotSet(t *testing.T) {
 
 func TestCreate(t *testing.T) {
 	var jsonStr = []byte(`{
-		"Name": "image2",
+		"Name": "image1",
 		"Distribution": "rhel-8",
 		"OutputTypes": ["rhel-edge-installer"],
 		"Commit": {
