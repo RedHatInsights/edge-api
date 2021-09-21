@@ -206,7 +206,7 @@ func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*
 		Joins(
 			`JOIN updatetransaction_devices ON updatetransaction_devices.device_id = ?`,
 			device.ID,
-		).Find(&updates)
+		).Group("id").Find(&updates)
 
 	if result.Error != nil {
 		return nil, result.Error
