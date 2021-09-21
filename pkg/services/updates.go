@@ -63,6 +63,8 @@ type TemplateRemoteInfo struct {
 }
 
 func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.UpdateTransaction, error) {
+	update.Status = models.UpdateStatusBuilding
+	db.DB.Save(&update)
 	update, err := s.repoBuilder.BuildUpdateRepo(update)
 	if err != nil {
 		// This is a goroutine and if this happens, the whole update failed

@@ -182,6 +182,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	update := models.UpdateTransaction{
 		Account:  account,
 		CommitID: updateJSON.CommitID,
+		Status:   models.UpdateStatusCreated,
 		// TODO: Implement update by tag
 		// Tag:      updateJSON.Tag,
 	}
@@ -282,35 +283,13 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	// Check to make sure we're not duplicating the job
-	// FIXME - this didn't work and I don't have time to debug right now
-	// FIXME - handle UpdateTransaction Commit vs UpdateCommitID
-	/*
-		var dupeRecord models.UpdateTransaction
-		queryDuplicate := map[string]interface{}{
-			"Account":        update.Account,
-			"Devices": update.Devices,
-			"OldCommitIDs":   update.OldCommitIDs,
-		}
-		result := db.DB.Where(queryDuplicate).Find(&dupeRecord)
-		if result.Error == nil {
-			if dupeRecord.UpdateCommitID != 0 {
-				http.Error(w, "Can not submit duplicate update job", http.StatusInternalServerError)
-				return
-			}
-		}
-	*/
-
-	// FIXME - need to remove duplicate OldCommit values from UpdateTransaction
-
 	result := db.DB.Create(&update)
 	if result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusBadRequest)
 	}
-	repoService := services.NewUpdateService(r.Context())
-	log.Infof("AddUpdate:: call:: RepoService.CreateUpdate :: %d", update.ID)
-	go repoService.CreateUpdate(update)
+	service := services.NewUpdateService(r.Context())
+	log.Infof("AddUpdate:: call::	service.CreateUpdate :: %d", update.ID)
+	go service.CreateUpdate(update)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(update)
 
