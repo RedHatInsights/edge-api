@@ -5,7 +5,6 @@ import (
 	"regexp"
 
 	"github.com/lib/pq"
-	"github.com/redhatinsights/edge-api/pkg/db"
 )
 
 type ImageSet struct {
@@ -45,8 +44,6 @@ const (
 	NameCantBeInvalidMessage = "name must start with alphanumeric characters and can contain underscore and hyphen characters"
 	// ImageTypeNotAccepted is the error message when an image type is not accepted
 	ImageTypeNotAccepted = "this image type is not accepted"
-	// ImageNameAlreadyExists is the error message when an image name alredy exists
-	ImageNameAlreadyExists = "this image name is already in use"
 	// NoOutputTypes is the error message when the output types list is empty
 	NoOutputTypes = "an output type is required"
 
@@ -99,10 +96,6 @@ func (i *Image) ValidateRequest() error {
 			return errors.New(ImageTypeNotAccepted)
 		}
 	}
-	if checkIfImageExist(i.Name) {
-		return errors.New(ImageNameAlreadyExists)
-	}
-
 	// Installer checks
 	if i.HasOutputType(ImageTypeInstaller) {
 		if i.Installer == nil {
@@ -130,14 +123,4 @@ func (i *Image) HasOutputType(imageType string) bool {
 		}
 	}
 	return false
-}
-
-//checkIfImageExist checks if name to image is already in use
-func checkIfImageExist(imageName string) bool {
-	var imageFindByName *Image
-	result := db.DB.Where("Name = ?", imageName).First(&imageFindByName)
-	if result.Error != nil {
-		return false
-	}
-	return imageFindByName != nil
 }
