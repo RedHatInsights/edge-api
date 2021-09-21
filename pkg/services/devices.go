@@ -226,8 +226,8 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error
 		log.Error(result.Error)
 		return nil, new(ImageNotFoundError)
 	} else {
-		if currentImage.ParentId != nil {
-			db.DB.Where("ID = ?", currentImage.ParentId).First(rollback)
+		if currentImage.ImageSetID != nil {
+			db.DB.Where("Image_Set_Id = ?", currentImage.ImageSetID).First(rollback)
 		}
 	}
 	updateAvailable, err := s.GetUpdateAvailableForDeviceByUUID(deviceUUID)
