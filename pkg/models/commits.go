@@ -1,7 +1,5 @@
 package models
 
-import "gorm.io/gorm"
-
 const (
 	// RepoStatusBuilding is for when a image is on a error state
 	RepoStatusBuilding = "BUILDING"
@@ -13,7 +11,7 @@ const (
 
 // Commit represents an OSTree commit from image builder
 type Commit struct {
-	gorm.Model
+	Model
 	Name                 string             `json:"name"`
 	Account              string             `json:"account"`
 	ImageBuildHash       string             `json:"image_build_hash"`
@@ -34,7 +32,7 @@ type Commit struct {
 
 // Repo is the delivery mechanism of a Commit over HTTP
 type Repo struct {
-	gorm.Model
+	Model
 	URL      string  `json:"repo_url"`
 	Status   string  `json:"repo_status"`
 	CommitID *uint   `json:"commit_id"`
@@ -43,13 +41,13 @@ type Repo struct {
 
 // Package represents the packages a Commit can have
 type Package struct {
-	gorm.Model
+	Model
 	Name string `json:"name"`
 }
 
 // InstalledPackage represents installed packages a image has
 type InstalledPackage struct {
-	gorm.Model
+	Model
 	Name      string `json:"name"`
 	Arch      string `json:"arch"`
 	Release   string `json:"release"`

@@ -2,8 +2,6 @@ package models
 
 import (
 	"errors"
-
-	"gorm.io/gorm"
 )
 
 /*
@@ -16,7 +14,7 @@ Device
 	and 1 is reachable.
 */
 type Device struct {
-	gorm.Model
+	Model
 	UUID        string `json:"uuid"`
 	DesiredHash string `json:"desired_hash"`
 	RHCClientID string `json:"rhc_client_id"`
@@ -36,7 +34,7 @@ UpdateTransaction
 	Server (pkg/repo/server.go).
 */
 type UpdateTransaction struct {
-	gorm.Model
+	Model
 	Commit          *Commit          `json:"commit"`
 	CommitID        uint             `json:"commit_id"`
 	Account         string           `json:"account"`
@@ -59,7 +57,7 @@ DispatchRecord
 
 */
 type DispatchRecord struct {
-	gorm.Model
+	Model
 	PlaybookURL          string  `json:"playbook_url"`
 	DeviceID             uint    `json:"device_id"`
 	Device               *Device `json:"device"`
