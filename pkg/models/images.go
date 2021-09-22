@@ -31,7 +31,6 @@ type Image struct {
 	Commit       *Commit        `json:"Commit"`
 	InstallerID  *uint          `json:"InstallerID"`
 	Installer    *Installer     `json:"Installer"`
-	ParentId     *uint          `gorm:"foreignKey:Image" json:"ParentId"`
 	ImageSetID   *uint          `json:"ImageSetID"` // TODO: Wipe staging database and set to not nullable
 	ID           uint           `gorm:"primarykey" json:"ID"`
 }
