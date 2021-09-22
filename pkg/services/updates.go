@@ -20,23 +20,24 @@ import (
 type UpdateServiceInterface interface {
 	CreateUpdate(update *models.UpdateTransaction) (*models.UpdateTransaction, error)
 	GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error)
+	RebootDevice(update *models.UpdateTransaction)
+	GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error)
 }
 
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
 func NewUpdateService(ctx context.Context) UpdateServiceInterface {
 	return &UpdateService{
-		ctx:           ctx,
-		deviceService: NewDeviceService(ctx),
-		filesService:  NewFilesService(),
-		repoBuilder:   NewRepoBuilder(ctx)}
+		ctx:          ctx,
+		filesService: NewFilesService(),
+		repoBuilder:  NewRepoBuilder(ctx),
+	}
 }
 
 // UpdateService is the main implementation of a UpdateServiceInterface
 type UpdateService struct {
-	ctx           context.Context
-	repoBuilder   RepoBuilderInterface
-	deviceService DeviceServiceInterface
-	filesService  FilesService
+	ctx          context.Context
+	repoBuilder  RepoBuilderInterface
+	filesService FilesService
 }
 
 type playbooks struct {
@@ -62,6 +63,8 @@ type TemplateRemoteInfo struct {
 }
 
 func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.UpdateTransaction, error) {
+	update.Status = models.UpdateStatusBuilding
+	db.DB.Save(&update)
 	update, err := s.repoBuilder.BuildUpdateRepo(update)
 	if err != nil {
 		// This is a goroutine and if this happens, the whole update failed
@@ -85,10 +88,10 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 	dispatchRecords := update.DispatchRecords
 	for _, device := range update.Devices {
 		var updateDevice *models.Device
-		updateDevice, err = s.deviceService.GetDeviceByUUID(device.UUID)
+		result := db.DB.Where("uuid = ?", device.UUID).First(&updateDevice)
 		if err != nil {
-			log.Errorf("Error on GetDeviceByUUID: %#v ", err.Error())
-			return nil, err
+			log.Errorf("Error on GetDeviceByUUID: %#v ", result.Error.Error())
+			return nil, result.Error
 		}
 		// Create new &DispatcherPayload{}
 		payloadDispatcher := playbookdispatcher.DispatcherPayload{
@@ -127,6 +130,8 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 		}
 		update.DispatchRecords = dispatchRecords
 	}
+	// TODO: This has to change to be after the reboot if new ostree commit == desired commit
+	update.Status = models.UpdateStatusSuccess
 	db.DB.Save(update)
 	log.Infof("Repobuild::ends: update record %#v ", update)
 	return update, nil
@@ -196,4 +201,81 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 	log.Infof("Proxied playbook URL: %s", playbookURL)
 	log.Infof("::WriteTemplate: ENDs")
 	return playbookURL, nil
+}
+func (s *UpdateService) RebootDevice(update *models.UpdateTransaction) {
+	dispatchRecords := update.DispatchRecords
+	log.Infof("Execute Reboot Device::")
+	cfg := config.Get()
+	filePath := cfg.TemplatesPath
+	templateName := "template_playbook_dispatcher_reboot_device.yml"
+	template, err := template.ParseFiles(filePath + templateName)
+	fmt.Printf("template: %v", template)
+	if err != nil {
+		log.Errorf("Error parsing playbook template  :: %s", err.Error())
+	}
+	fname := fmt.Sprintf("playbook_dispatcher_reboot_%d.yml", update.ID)
+	tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
+	if err != nil {
+		log.Errorf("Error creating file: %s", err.Error())
+
+	}
+
+	uploadPath := fmt.Sprintf("%s/playbooks/%s", update.Account, fname)
+
+	playbookURL, err := s.filesService.GetUploader().UploadFile(tmpfilepath, uploadPath)
+	if err != nil {
+		log.Errorf("Error uploading thet  file: %s", err.Error())
+
+	}
+	// Create new &DispatcherPayload{}
+	payloadDispatcher := playbookdispatcher.DispatcherPayload{
+		Recipient:   update.Devices[len(update.Devices)-1].RHCClientID,
+		PlaybookURL: playbookURL,
+		Account:     update.Account,
+	}
+
+	log.Infof("Call Execute Dispatcher Reboot: : %#v", payloadDispatcher)
+	client := playbookdispatcher.InitClient(s.ctx)
+	exc, err := client.ExecuteDispatcher(payloadDispatcher)
+	if err != nil {
+		log.Errorf("Error on playbook-dispatcher-executuin: %#v ", err)
+
+	}
+	for _, excPlaybook := range exc {
+		if excPlaybook.StatusCode == http.StatusCreated {
+			update.Devices[len(update.Devices)-1].Connected = true
+			dispatchRecord := &models.DispatchRecord{
+				Device:               &update.Devices[len(update.Devices)-1],
+				PlaybookURL:          playbookURL,
+				Status:               models.DispatchRecordStatusCreated,
+				PlaybookDispatcherID: excPlaybook.PlaybookDispatcherID,
+			}
+			dispatchRecords = append(dispatchRecords, *dispatchRecord)
+		} else {
+			update.Devices[len(update.Devices)-1].Connected = false
+			dispatchRecord := &models.DispatchRecord{
+				Device:      &update.Devices[len(update.Devices)-1],
+				PlaybookURL: playbookURL,
+				Status:      models.DispatchRecordStatusError,
+			}
+			dispatchRecords = append(dispatchRecords, *dispatchRecord)
+		}
+		update.DispatchRecords = dispatchRecords
+	}
+	db.DB.Save(update)
+}
+
+func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error) {
+	var updates []models.UpdateTransaction
+	result := db.DB.
+		Table("update_transactions").
+		Joins(
+			`JOIN updatetransaction_devices ON updatetransaction_devices.device_id = ?`,
+			device.ID,
+		).Group("id").Find(&updates)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &updates, nil
 }

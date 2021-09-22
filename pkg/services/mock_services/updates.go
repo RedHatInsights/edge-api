@@ -64,3 +64,30 @@ func (mr *MockUpdateServiceInterfaceMockRecorder) GetUpdatePlaybook(update inter
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUpdatePlaybook", reflect.TypeOf((*MockUpdateServiceInterface)(nil).GetUpdatePlaybook), update)
 }
+
+// GetUpdateTransactionsForDevice mocks base method.
+func (m *MockUpdateServiceInterface) GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUpdateTransactionsForDevice", device)
+	ret0, _ := ret[0].(*[]models.UpdateTransaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUpdateTransactionsForDevice indicates an expected call of GetUpdateTransactionsForDevice.
+func (mr *MockUpdateServiceInterfaceMockRecorder) GetUpdateTransactionsForDevice(device interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUpdateTransactionsForDevice", reflect.TypeOf((*MockUpdateServiceInterface)(nil).GetUpdateTransactionsForDevice), device)
+}
+
+// RebootDevice mocks base method.
+func (m *MockUpdateServiceInterface) RebootDevice(update *models.UpdateTransaction) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "RebootDevice", update)
+}
+
+// RebootDevice indicates an expected call of RebootDevice.
+func (mr *MockUpdateServiceInterfaceMockRecorder) RebootDevice(update interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RebootDevice", reflect.TypeOf((*MockUpdateServiceInterface)(nil).RebootDevice), update)
+}
