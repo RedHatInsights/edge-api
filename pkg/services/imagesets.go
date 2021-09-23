@@ -3,8 +3,11 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strconv"
 
+	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -16,6 +19,7 @@ import (
 // the business logic of ImageSets
 type ImageSetsServiceInterface interface {
 	ListAllImageSets(w http.ResponseWriter, r *http.Request) error
+	GetImageSetsByID(w http.ResponseWriter, r *http.Request) error
 }
 
 // NewImageSetsService gives a instance of the main implementation of a ImageSetsServiceInterface
@@ -70,5 +74,34 @@ func (s *ImageSetsService) ListAllImageSets(w http.ResponseWriter, r *http.Reque
 		json.NewEncoder(w).Encode(&err)
 	}
 	json.NewEncoder(w).Encode(map[string]interface{}{"data": &images, "count": count})
+	return nil
+}
+
+func (s *ImageSetsService) GetImageSetsByID(w http.ResponseWriter, r *http.Request) error {
+	// var images []models.Image
+	var imageSet models.ImageSet
+	fmt.Printf(":::  chi.URLParam: %v \n", chi.URLParam(r, "imageSetId"))
+
+	if imageSetID := chi.URLParam(r, "imageSetId"); imageSetID != "" {
+
+		id, err := strconv.Atoi(imageSetID)
+		fmt.Printf(":::  chi.URLParam: %v \n", r)
+
+		if err != nil {
+			err := errors.NewBadRequest(err.Error())
+			w.WriteHeader(err.Status)
+			json.NewEncoder(w).Encode(&err)
+		}
+
+		result := db.DB.Where("id = ?", id).Find(&imageSet)
+		if result.Error != nil {
+			err := errors.NewInternalServerError()
+			w.WriteHeader(err.Status)
+			json.NewEncoder(w).Encode(&err)
+		}
+		fmt.Printf(":::  result: %v \n", result)
+
+		json.NewEncoder(w).Encode(result)
+	}
 	return nil
 }
