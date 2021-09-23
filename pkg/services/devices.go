@@ -147,7 +147,7 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 		return nil, new(DeviceNotFoundError)
 	}
 
-	updates := db.DB.Where("Parent_Id = ? and Images.Status = ?", currentImage.ID, models.ImageStatusSuccess).Joins("Commit").Find(&images)
+	updates := db.DB.Where("Image_set_id = ? and Images.Status = ? and Images.Id > ?", currentImage.ImageSetID, models.ImageStatusSuccess, currentImage.ID).Joins("Commit").Find(&images)
 	if updates.Error != nil || updates.RowsAffected == 0 {
 		return nil, new(UpdateNotFoundError)
 	}
@@ -226,8 +226,8 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error
 		log.Error(result.Error)
 		return nil, new(ImageNotFoundError)
 	} else {
-		if currentImage.ParentId != nil {
-			db.DB.Where("ID = ?", currentImage.ParentId).First(rollback)
+		if currentImage.ImageSetID != nil {
+			db.DB.Where("Image_Set_Id = ? and id < ?", currentImage.ImageSetID, currentImage.ID).Last(rollback)
 		}
 	}
 	updateAvailable, err := s.GetUpdateAvailableForDeviceByUUID(deviceUUID)

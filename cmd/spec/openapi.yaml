@@ -977,11 +977,17 @@ components:
                   UpdatedAt:
                     format: date-time
                     type: string
+                  UpdatedAt:
+                    format: date-time
+                    type: string
                 type: object
               type: array
             status:
               type: string
             updated_at:
+              format: date-time
+              type: string
+            UpdatedAt:
               format: date-time
               type: string
             UpdatedAt:
@@ -1147,11 +1153,17 @@ components:
                   UpdatedAt:
                     format: date-time
                     type: string
+                  UpdatedAt:
+                    format: date-time
+                    type: string
                 type: object
               type: array
             status:
               type: string
             updated_at:
+              format: date-time
+              type: string
+            UpdatedAt:
               format: date-time
               type: string
             UpdatedAt:
@@ -1169,6 +1181,9 @@ components:
         repo_url:
           type: string
         updated_at:
+          format: date-time
+          type: string
+        UpdatedAt:
           format: date-time
           type: string
         UpdatedAt:
@@ -1264,11 +1279,17 @@ components:
                   UpdatedAt:
                     format: date-time
                     type: string
+                  UpdatedAt:
+                    format: date-time
+                    type: string
                 type: object
               type: array
             status:
               type: string
             updated_at:
+              format: date-time
+              type: string
+            UpdatedAt:
               format: date-time
               type: string
             UpdatedAt:
@@ -1336,6 +1357,9 @@ components:
               status:
                 type: string
               updated_at:
+                format: date-time
+                type: string
+              UpdatedAt:
                 format: date-time
                 type: string
               UpdatedAt:
@@ -1430,11 +1454,17 @@ components:
                     UpdatedAt:
                       format: date-time
                       type: string
+                    UpdatedAt:
+                      format: date-time
+                      type: string
                   type: object
                 type: array
               status:
                 type: string
               updated_at:
+                format: date-time
+                type: string
+              UpdatedAt:
                 format: date-time
                 type: string
               UpdatedAt:
@@ -1529,11 +1559,17 @@ components:
                       UpdatedAt:
                         format: date-time
                         type: string
+                      UpdatedAt:
+                        format: date-time
+                        type: string
                     type: object
                   type: array
                 status:
                   type: string
                 updated_at:
+                  format: date-time
+                  type: string
+                UpdatedAt:
                   format: date-time
                   type: string
                 UpdatedAt:
@@ -1556,6 +1592,9 @@ components:
             UpdatedAt:
               format: date-time
               type: string
+            UpdatedAt:
+              format: date-time
+              type: string
           type: object
         repo_id: {}
         status:
@@ -1563,6 +1602,9 @@ components:
         tag:
           type: string
         updated_at:
+          format: date-time
+          type: string
+        UpdatedAt:
           format: date-time
           type: string
         UpdatedAt:

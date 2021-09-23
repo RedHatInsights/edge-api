@@ -84,6 +84,11 @@ func TestGetUpdateAvailableForDeviceByUUID(t *testing.T) {
 		inventory: mockInventoryClient,
 	}
 
+	imageSet := &models.ImageSet{
+		Name:    "test",
+		Version: 1,
+	}
+	db.DB.Create(imageSet)
 	oldImage := &models.Image{
 		Commit: &models.Commit{
 			OSTreeCommit: checksum,
@@ -98,7 +103,8 @@ func TestGetUpdateAvailableForDeviceByUUID(t *testing.T) {
 				},
 			},
 		},
-		Status: models.ImageStatusSuccess,
+		Status:     models.ImageStatusSuccess,
+		ImageSetID: &imageSet.ID,
 	}
 	db.DB.Create(oldImage.Commit)
 	db.DB.Create(oldImage)
@@ -116,8 +122,8 @@ func TestGetUpdateAvailableForDeviceByUUID(t *testing.T) {
 				},
 			},
 		},
-		Status:   models.ImageStatusSuccess,
-		ParentId: &oldImage.ID,
+		Status:     models.ImageStatusSuccess,
+		ImageSetID: &imageSet.ID,
 	}
 	db.DB.Create(newImage.Commit)
 	db.DB.Create(newImage)
@@ -302,12 +308,17 @@ func TestGetImageForDeviceByUUID(t *testing.T) {
 		ctx:       context.Background(),
 		inventory: mockInventoryClient,
 	}
-
+	imageSet := &models.ImageSet{
+		Name:    "test",
+		Version: 1,
+	}
+	db.DB.Create(imageSet)
 	oldImage := &models.Image{
 		Commit: &models.Commit{
 			OSTreeCommit: checksum,
 		},
-		Status: models.ImageStatusSuccess,
+		Status:     models.ImageStatusSuccess,
+		ImageSetID: &imageSet.ID,
 	}
 	db.DB.Create(oldImage.Commit)
 	db.DB.Create(oldImage)
@@ -316,13 +327,13 @@ func TestGetImageForDeviceByUUID(t *testing.T) {
 		Commit: &models.Commit{
 			OSTreeCommit: fmt.Sprintf("a-new-%s", checksum),
 		},
-		Status:   models.ImageStatusSuccess,
-		ParentId: &oldImage.ID,
+		Status:     models.ImageStatusSuccess,
+		ImageSetID: &imageSet.ID,
 	}
 	db.DB.Create(newImage.Commit)
 	db.DB.Create(newImage)
 	fmt.Printf("New image was created with id %d\n", newImage.ID)
-	fmt.Printf("New image was created with id %d\n", newImage.ParentId)
+	fmt.Printf("New image was created with id %d\n", *newImage.ImageSetID)
 	imageInfo, err := deviceService.GetDeviceImageInfo(uuid)
 	if err != nil {
 		t.Errorf("Expected nil err, got %#v", err)
