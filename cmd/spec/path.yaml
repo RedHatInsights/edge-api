@@ -147,7 +147,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  Status:
+                  status:
                     type: string
                     example: BUILDING
           description: OK

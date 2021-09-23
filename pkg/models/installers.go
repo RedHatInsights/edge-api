@@ -8,6 +8,6 @@ type Installer struct {
 	ComposeJobID     string `json:"compose_job_id"`
 	Status           string `json:"status"`
 	Username         string `json:"username"`
-	SSHKey           string `json:"ssh_key"`
+	SSHKey           string `json:"sshkey"`
 	Checksum         string `json:"checksum"`
 }
