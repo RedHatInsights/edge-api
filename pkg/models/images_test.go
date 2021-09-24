@@ -122,6 +122,17 @@ func TestValidateRequest(t *testing.T) {
 			expected: errors.New(InvalidSSHKeyError),
 		},
 		{
+			name: "check if image name is already in use",
+			image: &Image{
+				Distribution: "rhel-8",
+				Name:         "image_name_pre_exist",
+				Commit:       &Commit{Arch: "x86_64"},
+				OutputTypes:  []string{ImageTypeCommit},
+				Version:      1,
+			},
+			expected: errors.New(ImageNameAlreadyExists),
+		},
+		{
 			name: "valid image request",
 			image: &Image{
 				Distribution: "rhel-8",
@@ -142,6 +153,17 @@ func TestValidateRequest(t *testing.T) {
 				Name:         "image_name",
 				Commit:       &Commit{Arch: "x86_64"},
 				OutputTypes:  []string{ImageTypeCommit},
+			},
+			expected: nil,
+		},
+		{
+			name: "Update Image with name already in use",
+			image: &Image{
+				Distribution: "rhel-8",
+				Name:         "image_name_pre_exist",
+				Commit:       &Commit{Arch: "x86_64"},
+				OutputTypes:  []string{ImageTypeCommit},
+				Version:      2,
 			},
 			expected: nil,
 		},

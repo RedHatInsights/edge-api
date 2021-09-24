@@ -103,7 +103,6 @@ func (s *ImageService) UpdateImage(image *models.Image, account string, previous
 			return result.Error
 		}
 		currentImageSet.Version = currentImageSet.Version + 1
-		image.ParentId = &previousImage.ID
 		image.ImageSetID = previousImage.ImageSetID
 		if err := db.DB.Save(currentImageSet).Error; err != nil {
 			return result.Error

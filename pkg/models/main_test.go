@@ -36,6 +36,15 @@ func setUp() {
 		Device{},
 		DispatchRecord{},
 	)
+	var testImage = Image{
+		Account:      "0000000",
+		Status:       ImageStatusBuilding,
+		Distribution: "rhel-8",
+		Name:         "image_name_pre_exist",
+		Commit:       &Commit{Arch: "x86_64"},
+		OutputTypes:  []string{ImageTypeCommit},
+	}
+	db.DB.Create(&testImage)
 	if err != nil {
 		panic(err)
 	}

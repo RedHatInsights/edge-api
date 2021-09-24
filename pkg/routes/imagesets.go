@@ -24,7 +24,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	err := services.ImageSetService.ListAllImageSets(w, r)
 	if err != nil {
-		err := errors.NewNotFound(fmt.Sprintf("Image is not found for: #%v Parent ID", image.ParentId))
+		err := errors.NewNotFound(fmt.Sprintf("Image is not found for: #%v Image Set ID", image.ImageSetID))
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
 		return
