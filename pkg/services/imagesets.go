@@ -78,14 +78,13 @@ func (s *ImageSetsService) ListAllImageSets(w http.ResponseWriter, r *http.Reque
 }
 
 func (s *ImageSetsService) GetImageSetsByID(w http.ResponseWriter, r *http.Request) error {
-	// var images []models.Image
 	var imageSet models.ImageSet
+	// var images []models.Image
 	fmt.Printf(":::  chi.URLParam: %v \n", chi.URLParam(r, "imageSetId"))
 
 	if imageSetID := chi.URLParam(r, "imageSetId"); imageSetID != "" {
 
 		id, err := strconv.Atoi(imageSetID)
-		fmt.Printf(":::  chi.URLParam: %v \n", r)
 
 		if err != nil {
 			err := errors.NewBadRequest(err.Error())
@@ -93,15 +92,15 @@ func (s *ImageSetsService) GetImageSetsByID(w http.ResponseWriter, r *http.Reque
 			json.NewEncoder(w).Encode(&err)
 		}
 
-		result := db.DB.Where("id = ?", id).Find(&imageSet)
+		result := db.DB.Where("Image_sets.id = ?", id).Find(&imageSet)
+		db.DB.Where("image_set_id = ?", id).Find(&imageSet.Images)
 		if result.Error != nil {
 			err := errors.NewInternalServerError()
 			w.WriteHeader(err.Status)
 			json.NewEncoder(w).Encode(&err)
 		}
-		fmt.Printf(":::  result: %v \n", result)
 
-		json.NewEncoder(w).Encode(result)
+		json.NewEncoder(w).Encode(map[string]interface{}{"data": &imageSet})
 	}
 	return nil
 }
