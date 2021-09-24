@@ -38,3 +38,31 @@ func TestListAllImageSets(t *testing.T) {
 
 	}
 }
+
+func TestGetImageSetBYID(t *testing.T) {
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := req.Context()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockImagesetService := mock_services.NewMockImageSetsServiceInterface(ctrl)
+	mockImagesetService.EXPECT().GetImageSetsByID(gomock.Any(), gomock.Any()).Return(nil)
+	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+		ImageSetService: mockImagesetService,
+	})
+
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(GetImageSetByID)
+
+	handler.ServeHTTP(rr, req.WithContext(ctx))
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v, want %v",
+			status, http.StatusOK)
+
+	}
+}
