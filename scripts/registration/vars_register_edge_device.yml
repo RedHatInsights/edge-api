@@ -9,7 +9,7 @@ rhc_stage_config: |
   data-host = "cert.cloud.stage.redhat.com"
   topic-prefix = "redhat/insights"
 
-rhsm_username: insights-qa
+rhsm_username: edge_bia
 rhsm_password: redhatqa
-rhc_username: insights-qa
+rhc_username: edge_bia
 rhc_password: redhatqa
