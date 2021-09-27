@@ -5,9 +5,11 @@
 package mock_services
 
 import (
-	gomock "github.com/golang/mock/gomock"
 	http "net/http"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
+	models "github.com/redhatinsights/edge-api/pkg/models"
 )
 
 // MockImageSetsServiceInterface is a mock of ImageSetsServiceInterface interface
@@ -48,15 +50,16 @@ func (mr *MockImageSetsServiceInterfaceMockRecorder) ListAllImageSets(w, r inter
 }
 
 // GetImageSetsByID mocks base method
-func (m *MockImageSetsServiceInterface) GetImageSetsByID(w http.ResponseWriter, r *http.Request) error {
+func (m *MockImageSetsServiceInterface) GetImageSetsByID(imageSetId int) (*models.ImageSet, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetImageSetsByID", w, r)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "GetImageSetsByID", imageSetId)
+	ret0, _ := ret[0].(*models.ImageSet)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetImageSetsByID indicates an expected call of GetImageSetsByID
-func (mr *MockImageSetsServiceInterfaceMockRecorder) GetImageSetsByID(w, r interface{}) *gomock.Call {
+func (mr *MockImageSetsServiceInterfaceMockRecorder) GetImageSetsByID(imageSetId interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageSetsByID", reflect.TypeOf((*MockImageSetsServiceInterface)(nil).GetImageSetsByID), w, r)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageSetsByID", reflect.TypeOf((*MockImageSetsServiceInterface)(nil).GetImageSetsByID), imageSetId)
 }

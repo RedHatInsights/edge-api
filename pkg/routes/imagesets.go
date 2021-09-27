@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -13,11 +14,15 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 )
 
+type imageSetTypeKey int
+
+const imageSetId imageSetTypeKey = iota
+
 // MakeImageSetsRouter adds support for operations on image-sets
 func MakeImageSetsRouter(sub chi.Router) {
 	sub.With(common.Paginate).Get("/", ListAllImageSets)
 	sub.Route("/{imageSetId}", func(r chi.Router) {
-		r.Get("/", GetImageSetByID)
+		r.Get("/", GetImageSetsByID)
 	})
 }
 
@@ -35,16 +40,29 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(err)
 }
 
-func GetImageSetByID(w http.ResponseWriter, r *http.Request) {
+func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
+	fmt.Print("Im here \n")
 	var imageSet *models.ImageSet
+	imageSetID := chi.URLParam(r, "imageSetId")
+	fmt.Printf("::imagesetid: %v\n", imageSetID)
+	id, err := strconv.Atoi(imageSetID)
+	fmt.Printf(":: id:: %v\n", id)
+	if err != nil {
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
-	err := services.ImageSetService.GetImageSetsByID(w, r)
+	imageSet, err = services.ImageSetService.GetImageSetsByID(id)
+	fmt.Printf("imageSet %v\n", imageSet)
+	fmt.Printf("Err: %v\n", err)
 	if err != nil {
 		err := errors.NewNotFound(fmt.Sprintf("Image is not found for: #%v Image Set ID", imageSet.ID))
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	json.NewEncoder(w).Encode(err)
+	json.NewEncoder(w).Encode(&imageSet)
 
 }
