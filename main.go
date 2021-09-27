@@ -93,6 +93,7 @@ func main() {
 		s.Route("/updates", routes.MakeUpdatesRouter)
 		s.Route("/image-sets", routes.MakeImageSetsRouter)
 		s.Route("/devices", routes.MakeDevicesRouter)
+		s.Route("/settings", routes.MakeSettingsRouter)
 	})
 
 	mr := chi.NewRouter()
