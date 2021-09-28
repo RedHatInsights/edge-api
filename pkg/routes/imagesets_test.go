@@ -41,13 +41,14 @@ func TestListAllImageSets(t *testing.T) {
 }
 
 func TestGetImageSetByID(t *testing.T) {
-	// var id int = 0
+	var imageSetID int = 1
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ctx := req.Context()
+	// ctx := req.Context()
+	ctx := context.WithValue(req.Context(), imageSetKey, &imageSetID)
 	ctrl := gomock.NewController(t)
 
 	defer ctrl.Finish()
@@ -61,7 +62,7 @@ func TestGetImageSetByID(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(GetImageSetsByID)
 
-	handler.ServeHTTP(rr, req)
+	handler.ServeHTTP(rr, req.WithContext(ctx))
 	fmt.Printf(":: RRR ::: %v\n", rr)
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v, want %v",

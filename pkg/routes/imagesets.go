@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -16,13 +17,32 @@ import (
 
 type imageSetTypeKey int
 
-const imageSetId imageSetTypeKey = iota
+const imageSetKey imageSetTypeKey = iota
 
 // MakeImageSetsRouter adds support for operations on image-sets
 func MakeImageSetsRouter(sub chi.Router) {
 	sub.With(common.Paginate).Get("/", ListAllImageSets)
 	sub.Route("/{imageSetId}", func(r chi.Router) {
+		r.Use(ImageSetCtx)
 		r.Get("/", GetImageSetsByID)
+	})
+}
+
+func ImageSetCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		if imageSetID := chi.URLParam(r, "imageSetId"); imageSetID != "" {
+			_, err := strconv.Atoi(imageSetID)
+			if err != nil {
+				err := errors.NewBadRequest(err.Error())
+				w.WriteHeader(err.Status)
+				json.NewEncoder(w).Encode(&err)
+				return
+			}
+			fmt.Printf("&imageSetID: %v\n", imageSetID)
+			ctx := context.WithValue(r.Context(), imageSetKey, imageSetID)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		}
 	})
 }
 
@@ -41,17 +61,21 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
-	fmt.Print("Im here \n")
+
+	ctx := r.Context()
 	var imageSet *models.ImageSet
-	imageSetID := chi.URLParam(r, "imageSetId")
-	fmt.Printf("::imagesetid: %v\n", imageSetID)
-	id, err := strconv.Atoi(imageSetID)
-	fmt.Printf(":: id:: %v\n", id)
-	if err != nil {
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return
+	var err error
+	imgSetId := ctx.Value(imageSetKey)
+
+	id := 0
+	if str, ok := imgSetId.(string); ok {
+		id, err = strconv.Atoi(str)
+		if err != nil {
+			err := errors.NewNotFound(err.Error())
+			w.WriteHeader(err.Status)
+			json.NewEncoder(w).Encode(&err)
+			return
+		}
 	}
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	imageSet, err = services.ImageSetService.GetImageSetsByID(id)
