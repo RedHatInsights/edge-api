@@ -1041,6 +1041,162 @@ components:
         Version:
           type: integer
       type: object
+    v1.ImageSetDetails:
+      properties:
+        Account:
+          type: string
+        CreatedAt:
+          format: date-time
+          type: string
+        DeletedAt: {}
+        ID: {}
+        Images:
+          items:
+            properties:
+              Account:
+                type: string
+              Commit:
+                properties:
+                  Account:
+                    type: string
+                  Arch:
+                    type: string
+                  BlueprintToml:
+                    type: string
+                  BuildDate:
+                    type: string
+                  BuildNumber: {}
+                  ComposeJobID:
+                    type: string
+                  CreatedAt:
+                    format: date-time
+                    type: string
+                  DeletedAt: {}
+                  ID: {}
+                  ImageBuildHash:
+                    type: string
+                  ImageBuildParentHash:
+                    type: string
+                  ImageBuildTarURL:
+                    type: string
+                  InstalledPackages:
+                    items:
+                      properties:
+                        CreatedAt:
+                          format: date-time
+                          type: string
+                        DeletedAt: {}
+                        ID: {}
+                        UpdatedAt:
+                          format: date-time
+                          type: string
+                        arch:
+                          type: string
+                        epoch:
+                          type: string
+                        name:
+                          type: string
+                        release:
+                          type: string
+                        sigmd5:
+                          type: string
+                        signature:
+                          type: string
+                        type:
+                          type: string
+                        version:
+                          type: string
+                      type: object
+                    type: array
+                  OSTreeCommit:
+                    type: string
+                  OSTreeParentCommit:
+                    type: string
+                  OSTreeRef:
+                    type: string
+                  Packages:
+                    items:
+                      properties:
+                        CreatedAt:
+                          format: date-time
+                          type: string
+                        DeletedAt: {}
+                        ID: {}
+                        Name:
+                          type: string
+                        UpdatedAt:
+                          format: date-time
+                          type: string
+                      type: object
+                    type: array
+                  Status:
+                    type: string
+                  UpdatedAt:
+                    format: date-time
+                    type: string
+                type: object
+              CommitID: {}
+              CreatedAt:
+                format: date-time
+                type: string
+              DeletedAt: {}
+              Description:
+                type: string
+              Distribution:
+                type: string
+              ID: {}
+              ImageSetID: {}
+              ImageType:
+                type: string
+              Installer:
+                properties:
+                  Account:
+                    type: string
+                  Checksum:
+                    type: string
+                  ComposeJobID:
+                    type: string
+                  CreatedAt:
+                    format: date-time
+                    type: string
+                  DeletedAt: {}
+                  ID: {}
+                  ImageBuildISOURL:
+                    type: string
+                  SshKey:
+                    type: string
+                  Status:
+                    type: string
+                  UpdatedAt:
+                    format: date-time
+                    type: string
+                  Username:
+                    type: string
+                type: object
+              InstallerID: {}
+              Name:
+                type: string
+              OutputTypes:
+                items:
+                  type: string
+                type: array
+              Status:
+                type: string
+              UpdatedAt:
+                format: date-time
+                type: string
+              Version:
+                type: integer
+            type: object
+          type: array
+        Name:
+          type: string
+        UpdatedAt:
+          format: date-time
+          type: string
+        Version:
+          type: integer
+      type: object
     v1.InternalServerError:
       properties:
         Code:
@@ -1941,4 +2097,21 @@ paths:
                 $ref: '#/components/schemas/v1.InternalServerError'
           description: There was an internal server error.
       summary: Get a device by UUID.
+  /image-sets/{ImageSetId}:
+    get:
+      operationId: GetImageSetsByID
+      parameters:
+        - name: ImageSetId
+          in: path
+          required: true
+          description: ImageSetId
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.ImageSetDetails'
+          description: OK   
   
