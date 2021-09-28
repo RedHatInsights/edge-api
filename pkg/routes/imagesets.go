@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 
@@ -29,6 +30,7 @@ func MakeImageSetsRouter(sub chi.Router) {
 }
 
 func ImageSetCtx(next http.Handler) http.Handler {
+	var imageSet models.ImageSet
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		if imageSetID := chi.URLParam(r, "imageSetId"); imageSetID != "" {
@@ -39,8 +41,15 @@ func ImageSetCtx(next http.Handler) http.Handler {
 				json.NewEncoder(w).Encode(&err)
 				return
 			}
-
-			ctx := context.WithValue(r.Context(), imageSetKey, imageSetID)
+			result := db.DB.Where("Image_sets.id = ?", imageSetID).Find(&imageSet)
+			if result.Error != nil {
+				err := errors.NewNotFound(result.Error.Error())
+				w.WriteHeader(err.Status)
+				json.NewEncoder(w).Encode(&err)
+				return
+			}
+			db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
+			ctx := context.WithValue(r.Context(), imageSetKey, &imageSet)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
 	})
@@ -63,24 +72,11 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
-	var imageSet *models.ImageSet
-	var err error
-	imgSetId, err := strconv.Atoi(ctx.Value(imageSetKey).(string))
-
-	if err != nil {
-		err := errors.NewNotFound(err.Error())
+	imageSet, ok := ctx.Value(imageSetKey).(*models.ImageSet)
+	if !ok {
+		err := errors.NewBadRequest("Must pass image set id")
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
-		return
-	}
-	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
-	imageSet, err = services.ImageSetService.GetImageSetsByID(imgSetId)
-
-	if err != nil {
-		err := errors.NewNotFound(fmt.Sprintf("Image is not found for: #%v Image Set ID", imageSet.ID))
-		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
-		return
 	}
 	json.NewEncoder(w).Encode(&imageSet)
 

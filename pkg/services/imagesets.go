@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -79,7 +78,6 @@ func (s *ImageSetsService) GetImageSetsByID(imageSetID int) (*models.ImageSet, e
 	var imageSet models.ImageSet
 	result := db.DB.Where("Image_sets.id = ?", imageSetID).Find(&imageSet)
 	db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
-	fmt.Printf("::image_set_id:: %v", result.Error)
 	if result.Error != nil {
 		err := errors.NewInternalServerError()
 		return nil, err

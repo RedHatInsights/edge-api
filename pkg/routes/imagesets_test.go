@@ -9,6 +9,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
+	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 )
 
@@ -41,7 +42,7 @@ func TestListAllImageSets(t *testing.T) {
 }
 
 func TestGetImageSetByID(t *testing.T) {
-	imageSetID := "1"
+	imageSetID := &models.ImageSet{}
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -52,11 +53,6 @@ func TestGetImageSetByID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	defer ctrl.Finish()
-	mockImagesetService := mock_services.NewMockImageSetsServiceInterface(ctrl)
-	mockImagesetService.EXPECT().GetImageSetsByID(gomock.Any()).Return(nil, nil)
-	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
-		ImageSetService: mockImagesetService,
-	})
 
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
