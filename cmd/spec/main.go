@@ -49,6 +49,12 @@ func main() {
 	}
 	components.Schemas["v1.DeviceDetails"] = deviceDetails
 
+	imageSetDetails, _, err := openapi3gen.NewSchemaRefForValue(&models.ImageSet{})
+	if err != nil {
+		panic(err)
+	}
+	components.Schemas["v1.ImageSetDetails"] = imageSetDetails
+
 	internalServerError, _, err := openapi3gen.NewSchemaRefForValue(&errors.InternalServerError{})
 	if err != nil {
 		panic(err)

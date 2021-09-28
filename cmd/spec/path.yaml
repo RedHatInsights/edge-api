@@ -363,4 +363,21 @@ paths:
                 $ref: '#/components/schemas/v1.InternalServerError'
           description: There was an internal server error.
       summary: Get a device by UUID.
+  /image-sets/{ImageSetId}:
+    get:
+      operationId: GetImageSetsByID
+      parameters:
+        - name: ImageSetId
+          in: path
+          required: true
+          description: ImageSetId
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.ImageSetDetails'
+          description: OK   
   
