@@ -39,7 +39,7 @@ func ImageSetCtx(next http.Handler) http.Handler {
 				json.NewEncoder(w).Encode(&err)
 				return
 			}
-			fmt.Printf("&imageSetID: %v\n", imageSetID)
+
 			ctx := context.WithValue(r.Context(), imageSetKey, imageSetID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
@@ -65,22 +65,17 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	var imageSet *models.ImageSet
 	var err error
-	imgSetId := ctx.Value(imageSetKey)
+	imgSetId, err := strconv.Atoi(ctx.Value(imageSetKey).(string))
 
-	id := 0
-	if str, ok := imgSetId.(string); ok {
-		id, err = strconv.Atoi(str)
-		if err != nil {
-			err := errors.NewNotFound(err.Error())
-			w.WriteHeader(err.Status)
-			json.NewEncoder(w).Encode(&err)
-			return
-		}
+	if err != nil {
+		err := errors.NewNotFound(err.Error())
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
 	}
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
-	imageSet, err = services.ImageSetService.GetImageSetsByID(id)
-	fmt.Printf("imageSet %v\n", imageSet)
-	fmt.Printf("Err: %v\n", err)
+	imageSet, err = services.ImageSetService.GetImageSetsByID(imgSetId)
+
 	if err != nil {
 		err := errors.NewNotFound(fmt.Sprintf("Image is not found for: #%v Image Set ID", imageSet.ID))
 		w.WriteHeader(err.Status)

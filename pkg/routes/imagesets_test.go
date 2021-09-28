@@ -41,14 +41,14 @@ func TestListAllImageSets(t *testing.T) {
 }
 
 func TestGetImageSetByID(t *testing.T) {
-	var imageSetID int = 1
+	imageSetID := "1"
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// ctx := req.Context()
-	ctx := context.WithValue(req.Context(), imageSetKey, &imageSetID)
+	ctx := context.WithValue(req.Context(), imageSetKey, imageSetID)
 	ctrl := gomock.NewController(t)
 
 	defer ctrl.Finish()
