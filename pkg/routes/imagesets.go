@@ -10,6 +10,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/errors"
@@ -32,7 +33,14 @@ func MakeImageSetsRouter(sub chi.Router) {
 func ImageSetCtx(next http.Handler) http.Handler {
 	var imageSet models.ImageSet
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
+		account, err := common.GetAccount(r)
+		if err != nil {
+			log.Info(err)
+			err := errors.NewBadRequest(err.Error())
+			w.WriteHeader(err.Status)
+			json.NewEncoder(w).Encode(&err)
+			return
+		}
 		if imageSetID := chi.URLParam(r, "imageSetId"); imageSetID != "" {
 			_, err := strconv.Atoi(imageSetID)
 			if err != nil {
@@ -41,7 +49,7 @@ func ImageSetCtx(next http.Handler) http.Handler {
 				json.NewEncoder(w).Encode(&err)
 				return
 			}
-			result := db.DB.Where("Image_sets.id = ?", imageSetID).Find(&imageSet)
+			result := db.DB.Where("account = ? and Image_sets.id = ?", account, imageSetID).Find(&imageSet)
 			if result.Error != nil {
 				err := errors.NewNotFound(result.Error.Error())
 				w.WriteHeader(err.Status)
