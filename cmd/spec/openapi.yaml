@@ -1883,12 +1883,9 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/v1.UpdateTransaction'
+                type: array
+                items:
+                  $ref: '#/components/schemas/v1.UpdateTransaction'
           description: OK
         "400":
           content:
