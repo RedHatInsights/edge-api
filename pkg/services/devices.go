@@ -122,16 +122,19 @@ type ImageNotFoundError struct {
 
 // GetUpdateAvailableForDeviceByUUID returns if exists update for the current image at the device.
 func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]ImageUpdateAvailable, error) {
-
+	var lastDeployment inventory.OSTree
 	device, err := s.inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || device.Total != 1 {
 		return nil, new(DeviceNotFoundError)
 	}
 
 	lastDevice := device.Result[len(device.Result)-1]
-	lastDeploymentIdx := len(lastDevice.Ostree.RpmOstreeDeployments) - 1
-	// TODO: Only consider applied update (check if booted = true)
-	lastDeployment := lastDevice.Ostree.RpmOstreeDeployments[lastDeploymentIdx]
+	for _, rpm_ostree := range lastDevice.Ostree.RpmOstreeDeployments {
+		if rpm_ostree.Booted {
+			lastDeployment = rpm_ostree
+			break
+		}
+	}
 
 	var images []models.Image
 	var currentImage models.Image
