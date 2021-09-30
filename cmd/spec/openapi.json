@@ -2881,7 +2881,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v1.Device"
+                  "$ref": "#/components/schemas/v1.DeviceDetails"
                 }
               }
             },
