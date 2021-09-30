@@ -33,6 +33,12 @@
       - rhc_connect
       - register
 
+  - name: configure rhc worker-playbook for non-production
+    lineinfile:
+      path: "/etc/rhc/workers/rhc-worker-playbook.toml"
+      regexp: '^verify_playbook = true'
+      line: 'verify_playbook = false'
+
   - name: rhcd service enable and start
     service:
       name: rhcd
