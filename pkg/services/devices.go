@@ -222,6 +222,7 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error
 	for _, rpm_ostree := range lastDevice.Ostree.RpmOstreeDeployments {
 		if rpm_ostree.Booted {
 			lastDeployment = rpm_ostree
+			break
 		}
 	}
 
