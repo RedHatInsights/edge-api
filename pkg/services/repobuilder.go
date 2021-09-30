@@ -128,6 +128,12 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 		return nil, err
 	}
 
+	if update.Repo == nil {
+		log.Errorf("updateFromHTTP::Update:Repo is unavailable %#v", update.ID)
+
+		return nil, errors.New("Repo Unavailable")
+	}
+
 	// if update.Repo == nil {
 	// 	//  Check for the existence of a Repo that already has this commit and don't duplicate
 	// 	var repo *models.Repo
@@ -147,7 +153,9 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	// }
 	update.Repo.URL = repoURL
 	update.Repo.Status = models.RepoStatusSuccess
-	db.DB.Save(&update)
+	if err := db.DB.Save(&update).Error; err != nil {
+		return nil, err
+	}
 
 	return &update, nil
 }

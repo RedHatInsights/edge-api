@@ -262,7 +262,10 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		}
 	}
 	update.OldCommits = oldCommits
-	db.DB.Save(&update)
+	if err := db.DB.Save(&update).Error; err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return nil, err
+	}
 	log.Infof("updateFromHTTP::update: %#v", update)
 	log.Infof("updateFromHTTP:: END")
 	return &update, nil
