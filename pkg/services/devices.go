@@ -211,14 +211,20 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error
 	var ImageInfo ImageInfo
 	var currentImage models.Image
 	var rollback *models.Image
-
+	var lastDeployment inventory.OSTree
 	device, err := s.inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || device.Total != 1 {
 		return nil, new(DeviceNotFoundError)
 	}
 
 	lastDevice := device.Result[len(device.Result)-1]
-	lastDeployment := lastDevice.Ostree.RpmOstreeDeployments[len(lastDevice.Ostree.RpmOstreeDeployments)-1]
+
+	for _, rpm_ostree := range lastDevice.Ostree.RpmOstreeDeployments {
+		if rpm_ostree.Booted {
+			lastDeployment = rpm_ostree
+			break
+		}
+	}
 
 	result := db.DB.Model(&models.Image{}).Joins("Commit").Where("OS_Tree_Commit = ?", lastDeployment.Checksum).First(&currentImage)
 
