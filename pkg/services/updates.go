@@ -67,6 +67,8 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 	db.DB.Save(&update)
 	update, err := s.repoBuilder.BuildUpdateRepo(update)
 	if err != nil {
+		update.Status = models.UpdateStatusError
+		db.DB.Save(update)
 		// This is a goroutine and if this happens, the whole update failed
 		log.Fatal(err)
 	}
@@ -81,6 +83,8 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 	remoteInfo.GpgVerify = "false"
 	playbookURL, err := s.writeTemplate(remoteInfo, update.Account)
 	if err != nil {
+		update.Status = models.UpdateStatusError
+		db.DB.Save(update)
 		log.Error(err)
 		return nil, err
 	}
