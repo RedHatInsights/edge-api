@@ -26,13 +26,19 @@ import (
 // documentation: https://golang.org/pkg/context/#WithValue for further
 // rationale.
 type imageTypeKey int
+type imageOstreeKey string
 
 const imageKey imageTypeKey = iota
+const imageOstree imageOstreeKey = ""
 
 // MakeImageRouter adds support for operations on images
 func MakeImagesRouter(sub chi.Router) {
 	sub.With(validateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetAllImages)
 	sub.Post("/", CreateImage)
+	sub.Route("/{imageOstreeHash}/ostree", func(r chi.Router) {
+		r.Use(ImageOStreeCtx)
+		r.Get("/", GetImageByOstree)
+	})
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageCtx)
 		r.Get("/", GetImageByID)
@@ -47,6 +53,38 @@ func MakeImagesRouter(sub chi.Router) {
 }
 
 var validStatuses = []string{models.ImageStatusCreated, models.ImageStatusBuilding, models.ImageStatusError, models.ImageStatusSuccess}
+
+func ImageOStreeCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var image models.Image
+		account, err := common.GetAccount(r)
+		if err != nil {
+			err := errors.NewBadRequest(err.Error())
+			w.WriteHeader(err.Status)
+			json.NewEncoder(w).Encode(&err)
+			return
+		}
+		if imageOstreeID := chi.URLParam(r, "imageOstreeHash"); imageOstreeID != "" {
+			if err != nil {
+				err := errors.NewBadRequest(err.Error())
+				w.WriteHeader(err.Status)
+				json.NewEncoder(w).Encode(&err)
+				return
+			}
+			result := db.DB.Where("images.account = ? and os_tree_commit = ?", account, imageOstreeID).Joins("Commit").First(&image)
+
+			if result.Error != nil {
+				err := errors.NewNotFound(result.Error.Error())
+				w.WriteHeader(err.Status)
+				json.NewEncoder(w).Encode(&err)
+				return
+			}
+			ctx := context.WithValue(r.Context(), imageOstree, &image)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		}
+	})
+
+}
 
 // ImageCtx is a handler for Image requests
 func ImageCtx(next http.Handler) http.Handler {
@@ -329,6 +367,22 @@ func GetImageStatusByID(w http.ResponseWriter, r *http.Request) {
 func GetImageByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		json.NewEncoder(w).Encode(image)
+	}
+}
+
+// GetImageByOstree obtains a image from the database for an account based on Commit Ostree
+func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	fmt.Printf("ctx.Value(imageOstree):: %v", ctx)
+	image, ok := ctx.Value(imageOstree).(*models.Image)
+
+	if !ok {
+		err := errors.NewBadRequest("Must pass commit ostree")
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+	}
+	if image != nil {
+		json.NewEncoder(w).Encode(&image)
 	}
 }
 
