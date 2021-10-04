@@ -88,6 +88,13 @@ objects:
       name: edge
     testing:
       iqePlugin: edge
+    kafkaTopics:
+    - replicas: 3
+      partitions: 3
+      topicName: platform.edge.fleetmgmt.image-build
+    - replicas: 3
+      partitions: 3
+      topicName: platform.edge.fleetmgmt.device-update
 
 parameters:
 - description: Cpu limit of service
