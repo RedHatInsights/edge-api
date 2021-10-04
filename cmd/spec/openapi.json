@@ -2830,15 +2830,10 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "properties": {
-                    "data": {
-                      "items": {
-                        "$ref": "#/components/schemas/v1.UpdateTransaction"
-                      },
-                      "type": "array"
-                    }
+                  "items": {
+                    "$ref": "#/components/schemas/v1.UpdateTransaction"
                   },
-                  "type": "object"
+                  "type": "array"
                 }
               }
             },
@@ -2935,7 +2930,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v1.Device"
+                  "$ref": "#/components/schemas/v1.DeviceDetails"
                 }
               }
             },
