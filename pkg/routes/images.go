@@ -26,10 +26,10 @@ import (
 // documentation: https://golang.org/pkg/context/#WithValue for further
 // rationale.
 type imageTypeKey int
-type imageOstreeCommitHashKey string
+type ostreeCommitHashKey string
 
 const imageKey imageTypeKey = iota
-const imageOstreeCommitHash imageOstreeCommitHashKey = ""
+const ostreeCommitHash ostreeCommitHashKey = ""
 
 // MakeImageRouter adds support for operations on images
 func MakeImagesRouter(sub chi.Router) {
@@ -79,7 +79,7 @@ func ImageOStreeCtx(next http.Handler) http.Handler {
 				json.NewEncoder(w).Encode(&err)
 				return
 			}
-			ctx := context.WithValue(r.Context(), imageOstreeCommitHash, &image)
+			ctx := context.WithValue(r.Context(), ostreeCommitHash, &image)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
 	})
@@ -373,7 +373,7 @@ func GetImageByID(w http.ResponseWriter, r *http.Request) {
 // GetImageByOstree obtains a image from the database for an account based on Commit Ostree
 func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	image, ok := ctx.Value(imageOstreeCommitHash).(*models.Image)
+	image, ok := ctx.Value(ostreeCommitHash).(*models.Image)
 
 	if !ok {
 		err := errors.NewBadRequest("Must pass commit ostree")

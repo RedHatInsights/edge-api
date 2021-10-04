@@ -2772,12 +2772,12 @@
         "summary": "Composes an Update for a image"
       }
     },
-    "/images/{imageOstreeCommitHash}/info": {
+    "/images/{ostreeCommitHash}/info": {
       "get": {
         "operationId": "GetImageByOstree",
         "parameters": [
           {
-            "description": "OstreeCommitId",
+            "description": "ostreeCommitHash",
             "in": "path",
             "name": "ostreeCommitHash",
             "required": true,

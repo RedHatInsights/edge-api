@@ -130,14 +130,14 @@ paths:
                 $ref: '#/components/schemas/v1.InternalServerError'
           description: There was an internal server error.
       summary: Get an image by id.
-  /images/{imageOstreeCommitHash}/info:
+  /images/{ostreeCommitHash}/info:
     get:
       operationId: GetImageByOstree
       parameters:
         - name: ostreeCommitHash
           in: path
           required: true
-          description: OstreeCommitId
+          description: ostreeCommitHash
           schema:
             type : String
       responses:
