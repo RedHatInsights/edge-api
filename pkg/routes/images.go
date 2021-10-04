@@ -26,16 +26,16 @@ import (
 // documentation: https://golang.org/pkg/context/#WithValue for further
 // rationale.
 type imageTypeKey int
-type imageOstreeKey string
+type imageOstreeCommitHashKey string
 
 const imageKey imageTypeKey = iota
-const imageOstree imageOstreeKey = ""
+const imageOstreeCommitHash imageOstreeCommitHashKey = ""
 
 // MakeImageRouter adds support for operations on images
 func MakeImagesRouter(sub chi.Router) {
 	sub.With(validateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetAllImages)
 	sub.Post("/", CreateImage)
-	sub.Route("/{imageOstreeHash}/info", func(r chi.Router) {
+	sub.Route("/{ostreeCommitHash}/info", func(r chi.Router) {
 		r.Use(ImageOStreeCtx)
 		r.Get("/", GetImageByOstree)
 	})
@@ -79,7 +79,7 @@ func ImageOStreeCtx(next http.Handler) http.Handler {
 				json.NewEncoder(w).Encode(&err)
 				return
 			}
-			ctx := context.WithValue(r.Context(), imageOstree, &image)
+			ctx := context.WithValue(r.Context(), imageOstreeCommitHash, &image)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
 	})
@@ -373,7 +373,7 @@ func GetImageByID(w http.ResponseWriter, r *http.Request) {
 // GetImageByOstree obtains a image from the database for an account based on Commit Ostree
 func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	image, ok := ctx.Value(imageOstree).(*models.Image)
+	image, ok := ctx.Value(imageOstreeCommitHash).(*models.Image)
 
 	if !ok {
 		err := errors.NewBadRequest("Must pass commit ostree")

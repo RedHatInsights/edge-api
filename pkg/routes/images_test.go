@@ -312,7 +312,7 @@ func TestGetImageByOstree(t *testing.T) {
 	}
 	rr := httptest.NewRecorder()
 
-	ctx := context.WithValue(req.Context(), imageOstree, &testImage)
+	ctx := context.WithValue(req.Context(), imageOstreeCommitHash, &testImage)
 	handler := http.HandlerFunc(GetImageByOstree)
 	handler.ServeHTTP(rr, req.WithContext(ctx))
 
