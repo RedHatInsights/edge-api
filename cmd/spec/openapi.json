@@ -2772,6 +2772,55 @@
         "summary": "Composes an Update for a image"
       }
     },
+    "/images/{ostreeCommitHash}/info": {
+      "get": {
+        "operationId": "GetImageByOstree",
+        "parameters": [
+          {
+            "description": "ostreeCommitHash",
+            "in": "path",
+            "name": "ostreeCommitHash",
+            "required": true,
+            "schema": {
+              "type": "String"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.Image"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Get an image by ostree hash."
+      }
+    },
     "/updates": {
       "get": {
         "description": "Gets all device updates.",
