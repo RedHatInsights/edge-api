@@ -1,0 +1,26 @@
+[
+  {
+    "fields": [
+      {
+        "component": "checkbox",
+        "label": "Sample checkbox",
+        "name": "checkbox",
+        "isRequired": true,
+        "validate": [
+          {
+            "type": "required-validator"
+          }
+        ]
+      },
+      {
+        "name": "conditionalTextField",
+        "label": "When checkbox is checked!",
+        "component": "text-field",
+        "condition": {
+          "when": "checkbox",
+          "is": true
+        }
+      }
+    ]
+  }
+]
