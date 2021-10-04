@@ -123,6 +123,7 @@ type ImageNotFoundError struct {
 // GetUpdateAvailableForDeviceByUUID returns if exists update for the current image at the device.
 func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]ImageUpdateAvailable, error) {
 	var lastDeployment inventory.OSTree
+	var imageDiff []ImageUpdateAvailable
 	device, err := s.inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || device.Total != 1 {
 		return nil, new(DeviceNotFoundError)
@@ -155,9 +156,9 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 		return nil, new(UpdateNotFoundError)
 	}
 	if updates.RowsAffected == 0 {
-		return nil, nil
+		return imageDiff, nil
 	}
-	var imageDiff []ImageUpdateAvailable
+
 	for _, upd := range images {
 		db.DB.First(&upd.Commit, upd.CommitID)
 		db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages)
