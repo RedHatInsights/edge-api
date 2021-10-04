@@ -130,6 +130,36 @@ paths:
                 $ref: '#/components/schemas/v1.InternalServerError'
           description: There was an internal server error.
       summary: Get an image by id.
+  /images/{imageOstree}/info:
+    get:
+      operationId: GetImageByOstree
+      parameters:
+        - name: ostree
+          in: path
+          required: true
+          description: OstreeCommitId
+          schema:
+            type : String
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.Image'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Get an image by ostree hash.    
   /images/{imageId}/status:
     get:
       operationId: getImageStatus

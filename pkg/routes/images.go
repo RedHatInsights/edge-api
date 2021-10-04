@@ -35,7 +35,7 @@ const imageOstree imageOstreeKey = ""
 func MakeImagesRouter(sub chi.Router) {
 	sub.With(validateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetAllImages)
 	sub.Post("/", CreateImage)
-	sub.Route("/{imageOstreeHash}/ostree", func(r chi.Router) {
+	sub.Route("/{imageOstreeHash}/info", func(r chi.Router) {
 		r.Use(ImageOStreeCtx)
 		r.Get("/", GetImageByOstree)
 	})
@@ -373,7 +373,6 @@ func GetImageByID(w http.ResponseWriter, r *http.Request) {
 // GetImageByOstree obtains a image from the database for an account based on Commit Ostree
 func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	fmt.Printf("ctx.Value(imageOstree):: %v", ctx)
 	image, ok := ctx.Value(imageOstree).(*models.Image)
 
 	if !ok {
