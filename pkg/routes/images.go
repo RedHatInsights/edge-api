@@ -64,7 +64,7 @@ func ImageOStreeCtx(next http.Handler) http.Handler {
 			json.NewEncoder(w).Encode(&err)
 			return
 		}
-		if imageOstreeID := chi.URLParam(r, "imageOstreeHash"); imageOstreeID != "" {
+		if imageOstreeID := chi.URLParam(r, "ostreeCommitHash"); imageOstreeID != "" {
 			if err != nil {
 				err := errors.NewBadRequest(err.Error())
 				w.WriteHeader(err.Status)
@@ -374,7 +374,6 @@ func GetImageByID(w http.ResponseWriter, r *http.Request) {
 func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	image, ok := ctx.Value(ostreeCommitHash).(*models.Image)
-
 	if !ok {
 		err := errors.NewBadRequest("Must pass commit ostree")
 		w.WriteHeader(err.Status)
