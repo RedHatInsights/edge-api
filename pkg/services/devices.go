@@ -151,8 +151,11 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 	}
 
 	updates := db.DB.Where("Image_set_id = ? and Images.Status = ? and Images.Id > ?", currentImage.ImageSetID, models.ImageStatusSuccess, currentImage.ID).Joins("Commit").Find(&images)
-	if updates.Error != nil || updates.RowsAffected == 0 {
+	if updates.Error != nil {
 		return nil, new(UpdateNotFoundError)
+	}
+	if updates.RowsAffected == 0 {
+		return nil, nil
 	}
 	var imageDiff []ImageUpdateAvailable
 	for _, upd := range images {
