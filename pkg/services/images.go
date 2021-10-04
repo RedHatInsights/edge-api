@@ -35,6 +35,7 @@ type ImageServiceInterface interface {
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
 	CreateRepoForImage(i *models.Image) *models.Repo
+	CheckImageName(name, account string) (bool, error)
 }
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
@@ -486,6 +487,15 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 		}
 	}
 	return image, nil
+}
+
+func (s *ImageService) CheckImageName(name, account string) (bool, error) {
+	var imageFindByName *models.Image
+	result := db.DB.Where("name = ? AND account = ?", name, account).First(&imageFindByName)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return imageFindByName != nil, nil
 }
 
 // Inject the custom kickstart into the iso via script.

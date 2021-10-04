@@ -60,6 +60,13 @@ func main() {
 	}
 	components.Schemas["v1.ImageSetDetails"] = imageSetDetails
 
+	var checkNameBool bool
+	boolSchema, _, err := openapi3gen.NewSchemaRefForValue(checkNameBool)
+	if err != nil {
+		panic(err)
+	}
+	components.Schemas["v1.bool"] = boolSchema
+
 	internalServerError, _, err := openapi3gen.NewSchemaRefForValue(&errors.InternalServerError{})
 	if err != nil {
 		panic(err)
