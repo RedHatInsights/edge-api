@@ -67,8 +67,11 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 	db.DB.Save(&update)
 	update, err := s.repoBuilder.BuildUpdateRepo(update)
 	if err != nil {
+		update.Status = models.UpdateStatusError
+		db.DB.Save(update)
 		// This is a goroutine and if this happens, the whole update failed
 		log.Fatal(err)
+		return nil, err
 	}
 	// FIXME - implement playbook dispatcher scheduling
 	// 1. Create template Playbook
@@ -81,6 +84,8 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 	remoteInfo.GpgVerify = "false"
 	playbookURL, err := s.writeTemplate(remoteInfo, update.Account)
 	if err != nil {
+		update.Status = models.UpdateStatusError
+		db.DB.Save(update)
 		log.Error(err)
 		return nil, err
 	}
@@ -270,10 +275,10 @@ func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*
 	result := db.DB.
 		Table("update_transactions").
 		Joins(
-			`JOIN updatetransaction_devices ON updatetransaction_devices.device_id = ?`,
+			`JOIN updatetransaction_devices ON update_transactions.id = updatetransaction_devices.update_transaction_id`).
+		Where(`updatetransaction_devices.device_id = ?`,
 			device.ID,
 		).Group("id").Find(&updates)
-
 	if result.Error != nil {
 		return nil, result.Error
 	}

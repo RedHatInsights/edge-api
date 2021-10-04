@@ -54,6 +54,12 @@ func main() {
 	}
 	components.Schemas["v1.Device"] = device
 
+	imageSetDetails, _, err := openapi3gen.NewSchemaRefForValue(&models.ImageSet{})
+	if err != nil {
+		panic(err)
+	}
+	components.Schemas["v1.ImageSetDetails"] = imageSetDetails
+
 	internalServerError, _, err := openapi3gen.NewSchemaRefForValue(&errors.InternalServerError{})
 	if err != nil {
 		panic(err)
@@ -96,7 +102,7 @@ func main() {
 	doc, err := openapi3.NewLoader().LoadFromData(b.Bytes())
 	checkErr(err)
 
-	jsonB, err := doc.MarshalJSON()
+	jsonB, err := json.MarshalIndent(doc, "", "  ")
 	checkErr(err)
 	err = ioutil.WriteFile("./cmd/spec/openapi.json", jsonB, 0666)
 	checkErr(err)

@@ -194,8 +194,8 @@ func TestGetUpdateAvailableForDeviceByUUIDWhenNoUpdateIsAvailable(t *testing.T) 
 		t.Errorf("Expected nil updates available, got %#v", updatesAvailable)
 	}
 
-	if _, ok := err.(*UpdateNotFoundError); !ok {
-		t.Errorf("Expected DeviceNotFoundError, got %#v", err)
+	if err != nil {
+		t.Errorf("Expected nil err, got %#v", err)
 	}
 }
 

@@ -45,29 +45,25 @@ func NewRepoBuilder(ctx context.Context) RepoBuilderInterface {
 
 // BuildUpdateRepo build an update repo with the set of commits all merged into a single repo
 // with static deltas generated between them all
-func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.UpdateTransaction, error) {
+func (rb *RepoBuilder) BuildUpdateRepo(update *models.UpdateTransaction) (*models.UpdateTransaction, error) {
 	log.Infof("Repobuilder::BuildUpdateRepo:: Begin")
-	if ut == nil {
+	if update == nil {
 		log.Error("nil pointer to models.UpdateTransaction provided")
-		return &models.UpdateTransaction{}, errors.New("invalid models.UpdateTransaction Provided: nil pointer")
+		return nil, errors.New("invalid models.UpdateTransaction Provided: nil pointer")
 	}
-	if ut.Commit == nil {
+	if update.Commit == nil {
 		log.Error("nil pointer to models.UpdateTransaction.Commit provided")
-		return &models.UpdateTransaction{}, errors.New("invalid models.UpdateTransaction.Commit Provided: nil pointer")
+		return nil, errors.New("invalid models.UpdateTransaction.Commit Provided: nil pointer")
+	}
+	if update.Repo == nil {
+		log.Errorf("updateFromHTTP::Update:Repo is unavailable %#v", update.ID)
+		return nil, errors.New("repo unavailable")
 	}
 	cfg := config.Get()
 
-	var update models.UpdateTransaction
-	result := db.DB.Preload("Devices").Preload("DispatchRecords").Preload("OldCommits").First(&update, ut.ID)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	update.Status = models.UpdateStatusCreated
-	db.DB.Save(&update)
+	log.Infof("RepoBuilder::updateCommitID %d and UpdateTransactionID %d", update.Commit.ID, update.ID)
 
-	log.Infof("RepoBuilder::updateCommitID %d and UpdateTransactionID %d", ut.Commit.ID, ut.ID)
-
-	path := filepath.Join(cfg.RepoTempPath, "upd/", strconv.FormatUint(uint64(ut.RepoID), 10))
+	path := filepath.Join(cfg.RepoTempPath, "upd/", strconv.FormatUint(uint64(update.RepoID), 10))
 	log.Infof("RepoBuilder::path: %#v", path)
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
@@ -77,12 +73,12 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 	if err != nil {
 		return nil, err
 	}
-	err = rb.DownloadExtractVersionRepo(ut.Commit, path)
+	err = rb.DownloadExtractVersionRepo(update.Commit, path)
 	if err != nil {
 		return nil, fmt.Errorf("error downloading repo :: %s", err.Error())
 	}
 
-	if len(ut.OldCommits) > 0 {
+	if len(update.OldCommits) > 0 {
 		stagePath := filepath.Join(path, "staging")
 		err = os.MkdirAll(stagePath, os.FileMode(int(0755)))
 		if err != nil {
@@ -97,12 +93,12 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 		// into the update commit repo
 		//
 		// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
-		for _, commit := range ut.OldCommits {
+		for _, commit := range update.OldCommits {
 			rb.DownloadExtractVersionRepo(&commit, filepath.Join(stagePath, commit.OSTreeCommit))
 			if err != nil {
 				return nil, err
 			}
-			RepoPullLocalStaticDeltas(ut.Commit, &commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
+			RepoPullLocalStaticDeltas(update.Commit, &commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
 			if err != nil {
 				return nil, err
 			}
@@ -121,35 +117,20 @@ func (rb *RepoBuilder) BuildUpdateRepo(ut *models.UpdateTransaction) (*models.Up
 
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
 	log.Infof("::BuildUpdateRepo:uploader.UploadRepo: BEGIN")
-	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(ut.RepoID), 10))
+	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(update.RepoID), 10))
 	log.Infof("::BuildUpdateRepo:uploader.UploadRepo: FINISH")
 	log.Infof("::BuildUpdateRepo:repoURL: %#v", repoURL)
 	if err != nil {
 		return nil, err
 	}
 
-	if update.Repo == nil {
-		//  Check for the existence of a Repo that already has this commit and don't duplicate
-		var repo *models.Repo
-		repo, err = rb.repoService.GetRepoByCommitID(update.CommitID)
-		if err == nil {
-			update.Repo = repo
-		} else {
-			if err.Error() != "record not found" {
-				log.Errorf("updateFromHTTP::GetRepoByCommitID::repo: %#v, %#v", repo, err)
-			} else {
-				log.Infof("Old Repo not found in database for CommitID, creating new one: %d", update.CommitID)
-				update.Repo = &models.Repo{
-					Commit: update.Commit,
-				}
-			}
-		}
-	}
 	update.Repo.URL = repoURL
 	update.Repo.Status = models.RepoStatusSuccess
-	db.DB.Save(&update)
+	if err := db.DB.Save(&update).Error; err != nil {
+		return nil, err
+	}
 
-	return &update, nil
+	return update, nil
 }
 
 // ImportRepo (unpack and upload) a single repo

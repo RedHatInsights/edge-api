@@ -122,16 +122,20 @@ type ImageNotFoundError struct {
 
 // GetUpdateAvailableForDeviceByUUID returns if exists update for the current image at the device.
 func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]ImageUpdateAvailable, error) {
-
+	var lastDeployment inventory.OSTree
+	var imageDiff []ImageUpdateAvailable
 	device, err := s.inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || device.Total != 1 {
 		return nil, new(DeviceNotFoundError)
 	}
 
 	lastDevice := device.Result[len(device.Result)-1]
-	lastDeploymentIdx := len(lastDevice.Ostree.RpmOstreeDeployments) - 1
-	// TODO: Only consider applied update (check if booted = true)
-	lastDeployment := lastDevice.Ostree.RpmOstreeDeployments[lastDeploymentIdx]
+	for _, rpm_ostree := range lastDevice.Ostree.RpmOstreeDeployments {
+		if rpm_ostree.Booted {
+			lastDeployment = rpm_ostree
+			break
+		}
+	}
 
 	var images []models.Image
 	var currentImage models.Image
@@ -148,10 +152,13 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 	}
 
 	updates := db.DB.Where("Image_set_id = ? and Images.Status = ? and Images.Id > ?", currentImage.ImageSetID, models.ImageStatusSuccess, currentImage.ID).Joins("Commit").Find(&images)
-	if updates.Error != nil || updates.RowsAffected == 0 {
+	if updates.Error != nil {
 		return nil, new(UpdateNotFoundError)
 	}
-	var imageDiff []ImageUpdateAvailable
+	if updates.RowsAffected == 0 {
+		return imageDiff, nil
+	}
+
 	for _, upd := range images {
 		db.DB.First(&upd.Commit, upd.CommitID)
 		db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages)
@@ -211,14 +218,20 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error
 	var ImageInfo ImageInfo
 	var currentImage models.Image
 	var rollback *models.Image
-
+	var lastDeployment inventory.OSTree
 	device, err := s.inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || device.Total != 1 {
 		return nil, new(DeviceNotFoundError)
 	}
 
 	lastDevice := device.Result[len(device.Result)-1]
-	lastDeployment := lastDevice.Ostree.RpmOstreeDeployments[len(lastDevice.Ostree.RpmOstreeDeployments)-1]
+
+	for _, rpm_ostree := range lastDevice.Ostree.RpmOstreeDeployments {
+		if rpm_ostree.Booted {
+			lastDeployment = rpm_ostree
+			break
+		}
+	}
 
 	result := db.DB.Model(&models.Image{}).Joins("Commit").Where("OS_Tree_Commit = ?", lastDeployment.Checksum).First(&currentImage)
 
@@ -227,7 +240,7 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error
 		return nil, new(ImageNotFoundError)
 	} else {
 		if currentImage.ImageSetID != nil {
-			db.DB.Where("Image_Set_Id = ? and id < ?", currentImage.ImageSetID, currentImage.ID).Last(rollback)
+			db.DB.Where("Image_Set_Id = ? and id < ?", currentImage.ImageSetID, currentImage.ID).Last(&rollback)
 		}
 	}
 	updateAvailable, err := s.GetUpdateAvailableForDeviceByUUID(deviceUUID)
