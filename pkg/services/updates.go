@@ -71,6 +71,7 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 		db.DB.Save(update)
 		// This is a goroutine and if this happens, the whole update failed
 		log.Fatal(err)
+		return nil, err
 	}
 	// FIXME - implement playbook dispatcher scheduling
 	// 1. Create template Playbook
