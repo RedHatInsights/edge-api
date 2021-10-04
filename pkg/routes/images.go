@@ -115,12 +115,14 @@ func ImageCtx(next http.Handler) http.Handler {
 					return
 				}
 			}
-			err = db.DB.Model(&image.Commit).Association("Packages").Find(&image.Commit.Packages)
-			if err != nil {
-				err := errors.NewInternalServerError()
-				w.WriteHeader(err.Status)
-				json.NewEncoder(w).Encode(&err)
-				return
+			if image.Commit != nil {
+				err = db.DB.Model(image.Commit).Association("Packages").Find(&image.Commit.Packages)
+				if err != nil {
+					err := errors.NewInternalServerError()
+					w.WriteHeader(err.Status)
+					json.NewEncoder(w).Encode(&err)
+					return
+				}
 			}
 			if result.Error != nil {
 				err := errors.NewNotFound(result.Error.Error())
@@ -326,6 +328,17 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("images.account = ?", account).Joins("Commit").Joins("Installer").Find(&images)
+
+	for _, img := range images {
+		if img.Commit != nil {
+			db.DB.Model(img.Commit).Association("Packages").Find(&img.Commit.Packages)
+			if err != nil {
+				log.Error(":: Error ::", err.Error())
+			}
+		}
+	}
+
+	fmt.Printf(":: Result :: %v\n", result)
 	if result.Error != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
