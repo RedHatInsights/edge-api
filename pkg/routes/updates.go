@@ -234,9 +234,9 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		}
 		updateDevice.RHCClientID = device.Ostree.RHCClientID
 		updateDevice.DesiredHash = update.Commit.OSTreeCommit
-		err := db.DB.Save(&updateDevice)
-		if err != nil {
-			return nil, err.Error
+		result := db.DB.Save(&updateDevice)
+		if result.Error != nil {
+			return nil, result.Error
 		}
 
 		log.Infof("updateFromHTTP::updateDevice: %#v", updateDevice)
