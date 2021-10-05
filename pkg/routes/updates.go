@@ -227,13 +227,18 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 			} else {
 				log.Infof("Existing Device not found in database, creating new one: %s", device.ID)
 				updateDevice = &models.Device{
-					UUID:        device.ID,
-					RHCClientID: device.Ostree.RHCClientID,
+					UUID: device.ID,
 				}
 				db.DB.Create(&updateDevice)
 			}
 		}
+		updateDevice.RHCClientID = device.Ostree.RHCClientID
 		updateDevice.DesiredHash = update.Commit.OSTreeCommit
+		err := db.DB.Save(&updateDevice)
+		if err != nil {
+			return nil, err.Error
+		}
+
 		log.Infof("updateFromHTTP::updateDevice: %#v", updateDevice)
 		devices = append(devices, *updateDevice)
 		log.Infof("updateFromHTTP::devices: %#v", devices)
@@ -262,10 +267,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		}
 	}
 	update.OldCommits = oldCommits
-	if err := db.DB.Save(&update).Error; err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return nil, err
-	}
+
 	log.Infof("updateFromHTTP::update: %#v", update)
 	log.Infof("updateFromHTTP:: END")
 	return &update, nil
@@ -286,7 +288,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	result := db.DB.Save(&update)
+	result := db.DB.Create(&update)
 	if result.Error != nil {
 		http.Error(w, result.Error.Error(), http.StatusBadRequest)
 	}
