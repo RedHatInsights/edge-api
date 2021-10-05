@@ -13,13 +13,9 @@ import (
 
 func TestListAllImageSets(t *testing.T) {
 	req, err := http.NewRequest("GET", "/", nil)
-
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(ListAllImageSets)
 	handler.ServeHTTP(rr, req)

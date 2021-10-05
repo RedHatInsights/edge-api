@@ -3,7 +3,6 @@ package routes
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -79,7 +78,6 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Where("account = ? ", account).Find(&imageSet)
 
 	if result.Error != nil {
-		fmt.Printf(":: Err:: %v\n", result.Error)
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
