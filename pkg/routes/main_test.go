@@ -55,6 +55,7 @@ func setUp() {
 		&models.UpdateTransaction{},
 		&models.Package{},
 		&models.Image{},
+		&models.ImageSet{},
 		&models.Repo{},
 		&models.Device{},
 		&models.DispatchRecord{},

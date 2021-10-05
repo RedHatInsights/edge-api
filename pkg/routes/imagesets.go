@@ -3,12 +3,10 @@ package routes
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 
@@ -63,18 +61,30 @@ func ImageSetCtx(next http.Handler) http.Handler {
 	})
 }
 
-// ListAllImageSets image objects from the database for ParentID
+// ListAllImageSets return the list of image sets and images
 func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
-	var image *models.Image
-	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
-	err := services.ImageSetService.ListAllImageSets(w, r)
+	var imageSet *[]models.ImageSet
+	pagination := common.GetPagination(r)
+	account, err := common.GetAccount(r)
+
 	if err != nil {
-		err := errors.NewNotFound(fmt.Sprintf("Image is not found for: #%v Image Set ID", image.ImageSetID))
+		log.Info(err)
+		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.Status)
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	json.NewEncoder(w).Encode(err)
+
+	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Where("account = ? ", account).Find(&imageSet)
+
+	if result.Error != nil {
+		err := errors.NewBadRequest("Not Found")
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+	}
+
+	json.NewEncoder(w).Encode(&imageSet)
+
 }
 
 func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
