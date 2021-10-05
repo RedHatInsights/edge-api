@@ -227,13 +227,18 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 			} else {
 				log.Infof("Existing Device not found in database, creating new one: %s", device.ID)
 				updateDevice = &models.Device{
-					UUID:        device.ID,
-					RHCClientID: device.Ostree.RHCClientID,
+					UUID: device.ID,
 				}
 				db.DB.Create(&updateDevice)
 			}
 		}
+		updateDevice.RHCClientID = device.Ostree.RHCClientID
 		updateDevice.DesiredHash = update.Commit.OSTreeCommit
+		result := db.DB.Save(&updateDevice)
+		if result.Error != nil {
+			return nil, result.Error
+		}
+
 		log.Infof("updateFromHTTP::updateDevice: %#v", updateDevice)
 		devices = append(devices, *updateDevice)
 		log.Infof("updateFromHTTP::devices: %#v", devices)
