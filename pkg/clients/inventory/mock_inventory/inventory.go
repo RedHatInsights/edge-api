@@ -35,10 +35,10 @@ func (m *MockClientInterface) EXPECT() *MockClientInterfaceMockRecorder {
 }
 
 // ReturnDevices mocks base method.
-func (m *MockClientInterface) ReturnDevices() (inventory.InventoryResponse, error) {
+func (m *MockClientInterface) ReturnDevices() (inventory.Response, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReturnDevices")
-	ret0, _ := ret[0].(inventory.InventoryResponse)
+	ret0, _ := ret[0].(inventory.Response)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -50,10 +50,10 @@ func (mr *MockClientInterfaceMockRecorder) ReturnDevices() *gomock.Call {
 }
 
 // ReturnDevicesByID mocks base method.
-func (m *MockClientInterface) ReturnDevicesByID(deviceID string) (inventory.InventoryResponse, error) {
+func (m *MockClientInterface) ReturnDevicesByID(deviceID string) (inventory.Response, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReturnDevicesByID", deviceID)
-	ret0, _ := ret[0].(inventory.InventoryResponse)
+	ret0, _ := ret[0].(inventory.Response)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -65,10 +65,10 @@ func (mr *MockClientInterfaceMockRecorder) ReturnDevicesByID(deviceID interface{
 }
 
 // ReturnDevicesByTag mocks base method.
-func (m *MockClientInterface) ReturnDevicesByTag(tag string) (inventory.InventoryResponse, error) {
+func (m *MockClientInterface) ReturnDevicesByTag(tag string) (inventory.Response, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReturnDevicesByTag", tag)
-	ret0, _ := ret[0].(inventory.InventoryResponse)
+	ret0, _ := ret[0].(inventory.Response)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

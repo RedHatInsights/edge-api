@@ -15,9 +15,9 @@ import (
 
 // ClientInterface is an Interface to make request to InventoryAPI
 type ClientInterface interface {
-	ReturnDevices() (InventoryResponse, error)
-	ReturnDevicesByID(deviceID string) (InventoryResponse, error)
-	ReturnDevicesByTag(tag string) (InventoryResponse, error)
+	ReturnDevices() (Response, error)
+	ReturnDevicesByID(deviceID string) (Response, error)
+	ReturnDevicesByTag(tag string) (Response, error)
 }
 
 // Client is the implementation of an ClientInterface
@@ -30,23 +30,26 @@ func InitClient(ctx context.Context) *Client {
 	return &Client{ctx: ctx}
 }
 
-// InventoryResponse lists devices returned by InventoryAPI
-type InventoryResponse struct {
+// Response lists devices returned by InventoryAPI
+type Response struct {
 	Total  int       `json:"total"`
 	Count  int       `json:"count"`
 	Result []Devices `json:"results"`
 }
 
+// Devices represents the struct of a Device on Inventory API
 type Devices struct {
 	ID     string        `json:"id"`
 	Ostree SystemProfile `json:"system_profile"`
 }
 
+// SystemProfile represents the struct of a SystemProfile on Inventory API
 type SystemProfile struct {
 	RHCClientID          string   `json:"rhc_client_id"`
 	RpmOstreeDeployments []OSTree `json:"rpm_ostree_deployments"`
 }
 
+// OSTree represents the struct of a SystemProfile on Inventory API
 type OSTree struct {
 	Checksum string `json:"checksum"`
 	Booted   bool   `json:"booted"`
@@ -60,7 +63,7 @@ const (
 )
 
 // ReturnDevices will return the list of devices without filter by tag or uuid
-func (c *Client) ReturnDevices() (InventoryResponse, error) {
+func (c *Client) ReturnDevices() (Response, error) {
 	url := fmt.Sprintf("%s/api/inventory/v1/hosts", config.Get().InventoryConfig.URL)
 	fullURL := url + filterParams
 	log.Infof("Requesting url: %s\n", fullURL)
@@ -75,15 +78,15 @@ func (c *Client) ReturnDevices() (InventoryResponse, error) {
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Error(fmt.Printf("ReturnDevices: %s", err))
-		return InventoryResponse{}, err
+		return Response{}, err
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Error(fmt.Printf("ReturnDevices: %s", err))
-		return InventoryResponse{}, err
+		return Response{}, err
 	}
 	defer resp.Body.Close()
-	var bodyResp InventoryResponse
+	var bodyResp Response
 	json.Unmarshal([]byte(body), &bodyResp)
 	log.Infof("struct: %v\n", bodyResp)
 	return bodyResp, nil
@@ -91,7 +94,7 @@ func (c *Client) ReturnDevices() (InventoryResponse, error) {
 }
 
 // ReturnDevicesByID will return the list of devices by uuid
-func (c *Client) ReturnDevicesByID(deviceID string) (InventoryResponse, error) {
+func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
 	deviceIDParam := "&hostname_or_id=" + deviceID
 	log.Infof("::deviceIDParam: %s\n", deviceIDParam)
 	url := fmt.Sprintf("%s/api/inventory/v1/hosts", config.Get().InventoryConfig.URL)
@@ -107,22 +110,22 @@ func (c *Client) ReturnDevicesByID(deviceID string) (InventoryResponse, error) {
 
 	if err != nil {
 		log.Error(fmt.Printf("ReturnDevicesByID: %s", err))
-		return InventoryResponse{}, err
+		return Response{}, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(resp.Body)
 		log.Errorf("error requesting InventoryResponse, got status code %d and body %s", resp.StatusCode, body)
-		return InventoryResponse{}, fmt.Errorf("error requesting InventoryResponse, got status code %d and body %s", resp.StatusCode, body)
+		return Response{}, fmt.Errorf("error requesting InventoryResponse, got status code %d and body %s", resp.StatusCode, body)
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Error(fmt.Printf("ReturnDevicesByID: %s", err))
-		return InventoryResponse{}, err
+		return Response{}, err
 	}
 	defer resp.Body.Close()
-	var inventory InventoryResponse
+	var inventory Response
 	json.Unmarshal([]byte(body), &inventory)
 	log.Infof("::Updates::ReturnDevicesByID::inventory: %v\n", inventory)
 
@@ -131,7 +134,7 @@ func (c *Client) ReturnDevicesByID(deviceID string) (InventoryResponse, error) {
 }
 
 // ReturnDevicesByTag will return the list of devices by tag
-func (c *Client) ReturnDevicesByTag(tag string) (InventoryResponse, error) {
+func (c *Client) ReturnDevicesByTag(tag string) (Response, error) {
 	tagsParam := "?tags=" + tag
 	url := fmt.Sprintf("%s/api/inventory/v1/hosts", config.Get().InventoryConfig.URL)
 	fullURL := url + filterParams + tagsParam
@@ -147,19 +150,19 @@ func (c *Client) ReturnDevicesByTag(tag string) (InventoryResponse, error) {
 
 	if err != nil {
 		log.Error(fmt.Printf("ReturnDevicesByTag: %s", err))
-		return InventoryResponse{}, err
+		return Response{}, err
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(resp.Body)
 		log.Errorf("error requesting inventory, got status code %d and body %s", resp.StatusCode, body)
-		return InventoryResponse{}, fmt.Errorf("error requesting inventory, got status code %d and body %s", resp.StatusCode, body)
+		return Response{}, fmt.Errorf("error requesting inventory, got status code %d and body %s", resp.StatusCode, body)
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Error(fmt.Printf("ReturnDevicesByTag: %s", err))
-		return InventoryResponse{}, err
+		return Response{}, err
 	}
-	var inventory InventoryResponse
+	var inventory Response
 	json.Unmarshal([]byte(body), &inventory)
 	log.Infof("struct: %v\n", inventory)
 	return inventory, nil

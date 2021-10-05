@@ -21,7 +21,7 @@ func TestGetUpdateAvailableForDeviceByUUIDWhenErrorOnInventoryAPI(t *testing.T) 
 
 	uuid := faker.UUIDHyphenated()
 	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
-	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(inventory.InventoryResponse{}, errors.New("error on inventory api"))
+	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(inventory.Response{}, errors.New("error on inventory api"))
 
 	deviceService := DeviceService{
 		ctx:       context.Background(),
@@ -43,7 +43,7 @@ func TestGetUpdateAvailableForDeviceByUUIDWhenDeviceIsNotFoundOnInventoryAPI(t *
 	defer ctrl.Finish()
 
 	uuid := faker.UUIDHyphenated()
-	resp := inventory.InventoryResponse{}
+	resp := inventory.Response{}
 	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
 	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
@@ -68,7 +68,7 @@ func TestGetUpdateAvailableForDeviceByUUID(t *testing.T) {
 
 	uuid := faker.UUIDHyphenated()
 	checksum := "fake-checksum"
-	resp := inventory.InventoryResponse{Total: 1, Count: 1, Result: []inventory.Devices{
+	resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Devices{
 		{ID: uuid, Ostree: inventory.SystemProfile{
 			RHCClientID: faker.UUIDHyphenated(),
 			RpmOstreeDeployments: []inventory.OSTree{
@@ -156,7 +156,7 @@ func TestGetUpdateAvailableForDeviceByUUIDWhenNoUpdateIsAvailable(t *testing.T) 
 
 	uuid := faker.UUIDHyphenated()
 	checksum := "fake-checksum-2"
-	resp := inventory.InventoryResponse{
+	resp := inventory.Response{
 		Total: 1,
 		Count: 1,
 		Result: []inventory.Devices{
@@ -206,7 +206,7 @@ func TestGetUpdateAvailableForDeviceByUUIDWhenNoChecksumIsFound(t *testing.T) {
 
 	uuid := faker.UUIDHyphenated()
 	checksum := "fake-checksum-3"
-	resp := inventory.InventoryResponse{Total: 1, Count: 1, Result: []inventory.Devices{
+	resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Devices{
 		{ID: uuid, Ostree: inventory.SystemProfile{
 			RHCClientID: faker.UUIDHyphenated(),
 			RpmOstreeDeployments: []inventory.OSTree{
@@ -293,7 +293,7 @@ func TestGetImageForDeviceByUUID(t *testing.T) {
 
 	uuid := faker.UUIDHyphenated()
 	checksum := "fake-checksum"
-	resp := inventory.InventoryResponse{Total: 1, Count: 1, Result: []inventory.Devices{
+	resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Devices{
 		{ID: uuid, Ostree: inventory.SystemProfile{
 			RHCClientID: faker.UUIDHyphenated(),
 			RpmOstreeDeployments: []inventory.OSTree{
@@ -353,7 +353,7 @@ func TestGetNoImageForDeviceByUUID(t *testing.T) {
 
 	uuid := faker.UUIDHyphenated()
 	checksum := "123"
-	resp := inventory.InventoryResponse{Total: 1, Count: 1, Result: []inventory.Devices{
+	resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Devices{
 		{ID: uuid, Ostree: inventory.SystemProfile{
 			RHCClientID: faker.UUIDHyphenated(),
 			RpmOstreeDeployments: []inventory.OSTree{
