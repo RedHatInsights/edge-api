@@ -31,12 +31,14 @@ func InitClient(ctx context.Context) *Client {
 	return &Client{ctx: ctx, url: cfg.PlaybookDispatcherConfig.URL, psk: cfg.PlaybookDispatcherConfig.PSK}
 }
 
+// DispatcherPayload represents the payload sent to playbook dispatcher
 type DispatcherPayload struct {
 	Recipient   string `json:"recipient"`
 	PlaybookURL string `json:"url"`
 	Account     string `json:"account"`
 }
 
+// PlaybookDispatcherResponse represents the response retrieved by playbook dispatcher
 type PlaybookDispatcherResponse struct {
 	StatusCode           int    `json:"code"`
 	PlaybookDispatcherID string `json:"id"`
