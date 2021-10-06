@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sync"
 	"text/template"
 	"time"
 
@@ -15,6 +16,9 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
+
+// WaitGroup is the waitg roup for reboot devices
+var WaitGroupReboot sync.WaitGroup
 
 // UpdateServiceInterface defines the interface that helps
 // handle the business logic of sending updates to a edge device
@@ -141,10 +145,7 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 	db.DB.Save(update)
 	log.Infof("Repobuild::ends: update record %#v ", update)
 
-	timer := time.AfterFunc(time.Minute*5, func() {
-		s.RebootDevice(update)
-	})
-	defer timer.Stop()
+	s.RebootDevice(update)
 	return update, nil
 }
 
@@ -214,6 +215,20 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 	return playbookURL, nil
 }
 func (s *UpdateService) RebootDevice(update *models.UpdateTransaction) {
+	WaitGroupReboot.Add(1) // Processing the reboot
+	timer := time.AfterFunc(time.Minute*5, func() {
+		s.RebootDevice(update)
+	})
+
+	defer func() {
+		<-timer.C
+		WaitGroupReboot.Done() // Done with reboot (sucessfuly or not)
+		if err := recover(); err != nil {
+			log.Fatalf("%s", err)
+		}
+		defer timer.Stop()
+	}()
+
 	dispatchRecords := update.DispatchRecords
 	log.Infof("Execute Reboot Device::")
 	cfg := config.Get()

@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
@@ -300,11 +299,6 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	go service.CreateUpdate(update)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(update)
-
-	timer := time.AfterFunc(time.Minute*DelayTimeToReboot, func() {
-		services.NewUpdateService(r.Context()).RebootDevice(update)
-	})
-	defer timer.Stop()
 
 }
 
