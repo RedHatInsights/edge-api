@@ -338,3 +338,93 @@ func TestGetImageByOstree(t *testing.T) {
 			ir.ID, testImage.ID)
 	}
 }
+
+func TestPostcheckImageNameAlreadyExist(t *testing.T) {
+
+	var jsonStr = []byte(`{
+		"Name": "Image Name in DB",
+		"Distribution": "rhel-8",
+		"OutputTypes": ["rhel-edge-installer"],
+		"Commit": {
+			"Arch": "x86_64",
+			"Packages" : [ { "name" : "vim"  } ]
+		},
+		"Installer": {
+			"Username": "root",
+			"Sshkey": "ssh-rsa d9:f158:00:abcd"
+		}
+	}`)
+	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := req.Context()
+	ctrl := gomock.NewController(t)
+
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any()).Return(true, nil)
+	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+	})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	handler := http.HandlerFunc(CheckImageName)
+
+	handler.ServeHTTP(rr, req)
+	t.Log(rr.Body)
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusInternalServerError)
+	}
+
+}
+
+func TestPostcheckImageNameNotExist(t *testing.T) {
+
+	var jsonStr = []byte(`{
+		"Name": "Image Name not in DB",
+		"Distribution": "rhel-8",
+		"OutputTypes": ["rhel-edge-installer"],
+		"Commit": {
+			"Arch": "x86_64",
+			"Packages" : [ { "name" : "vim"  } ]
+		},
+		"Installer": {
+			"Username": "root",
+			"Sshkey": "ssh-rsa d9:f158:00:abcd"
+		}
+	}`)
+	req, err := http.NewRequest("POST", "/checkImageName", bytes.NewBuffer(jsonStr))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := req.Context()
+	ctrl := gomock.NewController(t)
+
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any()).Return(false, nil)
+	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+	})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(CheckImageName)
+
+	handler.ServeHTTP(rr, req)
+	respBody, err := ioutil.ReadAll(rr.Body)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	var ir bool
+	json.Unmarshal(respBody, &ir)
+	if ir != false {
+		t.Errorf("fail to validate name should exists")
+	}
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v, want %v",
+			status, http.StatusOK)
+	}
+}
