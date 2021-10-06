@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"text/template"
+	"time"
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
@@ -139,6 +140,11 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 	update.Status = models.UpdateStatusSuccess
 	db.DB.Save(update)
 	log.Infof("Repobuild::ends: update record %#v ", update)
+
+	timer := time.AfterFunc(time.Minute*5, func() {
+		s.RebootDevice(update)
+	})
+	defer timer.Stop()
 	return update, nil
 }
 
