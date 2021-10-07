@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"text/template"
+	"time"
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
@@ -32,6 +33,8 @@ func NewUpdateService(ctx context.Context) UpdateServiceInterface {
 		repoBuilder:  NewRepoBuilder(ctx),
 	}
 }
+
+const DelayTimeToReboot = 5
 
 // UpdateService is the main implementation of a UpdateServiceInterface
 type UpdateService struct {
@@ -139,6 +142,10 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 	update.Status = models.UpdateStatusSuccess
 	db.DB.Save(update)
 	log.Infof("Repobuild::ends: update record %#v ", update)
+
+	s.RebootDevice(update)
+
+	log.Infof("Update was finished for :: %d", update.ID)
 	return update, nil
 }
 
@@ -207,67 +214,75 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 	log.Infof("::WriteTemplate: ENDs")
 	return playbookURL, nil
 }
+
 func (s *UpdateService) RebootDevice(update *models.UpdateTransaction) {
-	dispatchRecords := update.DispatchRecords
-	log.Infof("Execute Reboot Device::")
-	cfg := config.Get()
-	filePath := cfg.TemplatesPath
-	templateName := "template_playbook_dispatcher_reboot_device.yml"
-	template, err := template.ParseFiles(filePath + templateName)
-	fmt.Printf("template: %v", template)
-	if err != nil {
-		log.Errorf("Error parsing playbook template  :: %s", err.Error())
-	}
-	fname := fmt.Sprintf("playbook_dispatcher_reboot_%d.yml", update.ID)
-	tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
-	if err != nil {
-		log.Errorf("Error creating file: %s", err.Error())
+	log.Infof("Execute Reboot Device for update ID :: %d", update.ID)
+	timer := time.AfterFunc(time.Minute*DelayTimeToReboot, func() {
+		log.Infof("Waiting time over to apply update :: %d", update.ID)
+		dispatchRecords := update.DispatchRecords
 
-	}
-
-	uploadPath := fmt.Sprintf("%s/playbooks/%s", update.Account, fname)
-
-	playbookURL, err := s.filesService.GetUploader().UploadFile(tmpfilepath, uploadPath)
-	if err != nil {
-		log.Errorf("Error uploading thet  file: %s", err.Error())
-
-	}
-	// Create new &DispatcherPayload{}
-	payloadDispatcher := playbookdispatcher.DispatcherPayload{
-		Recipient:   update.Devices[len(update.Devices)-1].RHCClientID,
-		PlaybookURL: playbookURL,
-		Account:     update.Account,
-	}
-
-	log.Infof("Call Execute Dispatcher Reboot: : %#v", payloadDispatcher)
-	client := playbookdispatcher.InitClient(s.ctx)
-	exc, err := client.ExecuteDispatcher(payloadDispatcher)
-	if err != nil {
-		log.Errorf("Error on playbook-dispatcher-executuin: %#v ", err)
-
-	}
-	for _, excPlaybook := range exc {
-		if excPlaybook.StatusCode == http.StatusCreated {
-			update.Devices[len(update.Devices)-1].Connected = true
-			dispatchRecord := &models.DispatchRecord{
-				Device:               &update.Devices[len(update.Devices)-1],
-				PlaybookURL:          playbookURL,
-				Status:               models.DispatchRecordStatusCreated,
-				PlaybookDispatcherID: excPlaybook.PlaybookDispatcherID,
-			}
-			dispatchRecords = append(dispatchRecords, *dispatchRecord)
-		} else {
-			update.Devices[len(update.Devices)-1].Connected = false
-			dispatchRecord := &models.DispatchRecord{
-				Device:      &update.Devices[len(update.Devices)-1],
-				PlaybookURL: playbookURL,
-				Status:      models.DispatchRecordStatusError,
-			}
-			dispatchRecords = append(dispatchRecords, *dispatchRecord)
+		cfg := config.Get()
+		filePath := cfg.TemplatesPath
+		templateName := "template_playbook_dispatcher_reboot_device.yml"
+		template, err := template.ParseFiles(filePath + templateName)
+		fmt.Printf("template: %v", template)
+		if err != nil {
+			log.Errorf("Error parsing playbook template  :: %s", err.Error())
 		}
-		update.DispatchRecords = dispatchRecords
-	}
-	db.DB.Save(update)
+		fname := fmt.Sprintf("playbook_dispatcher_reboot_%d.yml", update.ID)
+		tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
+		if err != nil {
+			log.Errorf("Error creating file: %s", err.Error())
+
+		}
+
+		uploadPath := fmt.Sprintf("%s/playbooks/%s", update.Account, fname)
+
+		playbookURL, err := s.filesService.GetUploader().UploadFile(tmpfilepath, uploadPath)
+		if err != nil {
+			log.Errorf("Error uploading thet  file: %s", err.Error())
+
+		}
+		// Create new &DispatcherPayload{}
+		payloadDispatcher := playbookdispatcher.DispatcherPayload{
+			Recipient:   update.Devices[len(update.Devices)-1].RHCClientID,
+			PlaybookURL: playbookURL,
+			Account:     update.Account,
+		}
+
+		log.Infof("Call Execute Dispatcher Reboot: : %#v", payloadDispatcher)
+		client := playbookdispatcher.InitClient(s.ctx)
+		exc, err := client.ExecuteDispatcher(payloadDispatcher)
+		if err != nil {
+			log.Errorf("Error on playbook-dispatcher-executuin: %#v ", err)
+
+		}
+		for _, excPlaybook := range exc {
+			if excPlaybook.StatusCode == http.StatusCreated {
+				update.Devices[len(update.Devices)-1].Connected = true
+				dispatchRecord := &models.DispatchRecord{
+					Device:               &update.Devices[len(update.Devices)-1],
+					PlaybookURL:          playbookURL,
+					Status:               models.DispatchRecordStatusCreated,
+					PlaybookDispatcherID: excPlaybook.PlaybookDispatcherID,
+				}
+				dispatchRecords = append(dispatchRecords, *dispatchRecord)
+			} else {
+				update.Devices[len(update.Devices)-1].Connected = false
+				dispatchRecord := &models.DispatchRecord{
+					Device:      &update.Devices[len(update.Devices)-1],
+					PlaybookURL: playbookURL,
+					Status:      models.DispatchRecordStatusError,
+				}
+				dispatchRecords = append(dispatchRecords, *dispatchRecord)
+			}
+			update.DispatchRecords = dispatchRecords
+		}
+		db.DB.Save(update)
+		log.Infof("Reboot playbook applied :: %d", update.ID)
+	})
+
+	<-timer.C
 }
 
 func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error) {
