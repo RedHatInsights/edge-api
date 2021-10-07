@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"sync"
 	"text/template"
 	"time"
 
@@ -16,9 +15,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
-
-// WaitGroup is the waitg roup for reboot devices
-var WaitGroupReboot sync.WaitGroup
 
 // UpdateServiceInterface defines the interface that helps
 // handle the business logic of sending updates to a edge device
@@ -37,6 +33,8 @@ func NewUpdateService(ctx context.Context) UpdateServiceInterface {
 		repoBuilder:  NewRepoBuilder(ctx),
 	}
 }
+
+const DelayTimeToReboot = 5
 
 // UpdateService is the main implementation of a UpdateServiceInterface
 type UpdateService struct {
@@ -146,6 +144,8 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 	log.Infof("Repobuild::ends: update record %#v ", update)
 
 	s.RebootDevice(update)
+
+	log.Infof("Update was finished for :: %d", update.ID)
 	return update, nil
 }
 
@@ -214,12 +214,13 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 	log.Infof("::WriteTemplate: ENDs")
 	return playbookURL, nil
 }
-func (s *UpdateService) RebootDevice(update *models.UpdateTransaction) {
-	WaitGroupReboot.Add(1) // Processing the reboot
-	timer := time.AfterFunc(time.Minute*5, func() {
 
+func (s *UpdateService) RebootDevice(update *models.UpdateTransaction) {
+	log.Infof("Execute Reboot Device for update ID :: %d", update.ID)
+	timer := time.AfterFunc(time.Minute*DelayTimeToReboot, func() {
+		log.Infof("Waiting time over to apply update :: %d", update.ID)
 		dispatchRecords := update.DispatchRecords
-		log.Infof("Execute Reboot Device::")
+
 		cfg := config.Get()
 		filePath := cfg.TemplatesPath
 		templateName := "template_playbook_dispatcher_reboot_device.yml"
@@ -278,17 +279,10 @@ func (s *UpdateService) RebootDevice(update *models.UpdateTransaction) {
 			update.DispatchRecords = dispatchRecords
 		}
 		db.DB.Save(update)
-
+		log.Infof("Reboot playbook applied :: %d", update.ID)
 	})
 
-	defer func() {
-		<-timer.C
-		WaitGroupReboot.Done() // Done with reboot (sucessfuly or not)
-		if err := recover(); err != nil {
-			log.Fatalf("%s", err)
-		}
-		defer timer.Stop()
-	}()
+	<-timer.C
 }
 
 func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error) {
