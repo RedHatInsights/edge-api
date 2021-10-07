@@ -215,7 +215,9 @@ func (s *ImageService) postProcessImage(id uint) {
 	}(s.imageBuilder)
 
 	repo := s.CreateRepoForImage(i)
-
+	i.Commit.Repo = repo
+	i.CommitID = repo.ID
+	db.DB.Save(&i)
 	// TODO: We need to discuss this whole thing post-July deliverable
 	if i.HasOutputType(models.ImageTypeInstaller) {
 		i, err := s.imageBuilder.ComposeInstaller(repo, i)
@@ -262,9 +264,7 @@ func (s *ImageService) postProcessImage(id uint) {
 func (s *ImageService) CreateRepoForImage(i *models.Image) *models.Repo {
 	log.Infof("Commit %d for Image %d is ready. Creating OSTree repo.", i.Commit.ID, i.ID)
 	repo := &models.Repo{
-		CommitID: &i.Commit.ID,
-		Commit:   i.Commit,
-		Status:   models.RepoStatusBuilding,
+		Status: models.RepoStatusBuilding,
 	}
 	tx := db.DB.Create(repo)
 	if tx.Error != nil {

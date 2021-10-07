@@ -135,6 +135,9 @@ func (rb *RepoBuilder) BuildUpdateRepo(update *models.UpdateTransaction) (*model
 
 // ImportRepo (unpack and upload) a single repo
 func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
+
+	var cmt models.Commit
+	db.DB.Where("commit_id = ?", r.ID).Find(&cmt)
 	cfg := config.Get()
 
 	path := filepath.Join(cfg.RepoTempPath, strconv.FormatUint(uint64(r.ID), 10))
@@ -148,7 +151,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = rb.DownloadExtractVersionRepo(r.Commit, path)
+	err = rb.DownloadExtractVersionRepo(&cmt, path)
 	if err != nil {
 		r.Status = models.RepoStatusError
 		result := db.DB.Save(&r)
