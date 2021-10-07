@@ -56,14 +56,6 @@ func (m *MockImageServiceInterface) CreateImage(image *models.Image, account str
 	return ret0
 }
 
-// UpdateImage mocks base method.
-func (m *MockImageServiceInterface) UpdateImage(image *models.Image, account string, previous_image *models.Image) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UdpateImage", image, account, previous_image)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
 // CreateImage indicates an expected call of CreateImage.
 func (mr *MockImageServiceInterfaceMockRecorder) CreateImage(image, account interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
@@ -84,6 +76,36 @@ func (mr *MockImageServiceInterfaceMockRecorder) CreateRepoForImage(i interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRepoForImage", reflect.TypeOf((*MockImageServiceInterface)(nil).CreateRepoForImage), i)
 }
 
+// GetImageByID mocks base method.
+func (m *MockImageServiceInterface) GetImageByID(id string) (*models.Image, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImageByID", id)
+	ret0, _ := ret[0].(*models.Image)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetImageByID indicates an expected call of GetImageByID.
+func (mr *MockImageServiceInterfaceMockRecorder) GetImageByID(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageByID", reflect.TypeOf((*MockImageServiceInterface)(nil).GetImageByID), id)
+}
+
+// GetImageByOSTreeCommitHash mocks base method.
+func (m *MockImageServiceInterface) GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImageByOSTreeCommitHash", commitHash)
+	ret0, _ := ret[0].(*models.Image)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetImageByOSTreeCommitHash indicates an expected call of GetImageByOSTreeCommitHash.
+func (mr *MockImageServiceInterfaceMockRecorder) GetImageByOSTreeCommitHash(commitHash interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageByOSTreeCommitHash", reflect.TypeOf((*MockImageServiceInterface)(nil).GetImageByOSTreeCommitHash), commitHash)
+}
+
 // SetErrorStatusOnImage mocks base method.
 func (m *MockImageServiceInterface) SetErrorStatusOnImage(err error, i *models.Image) {
 	m.ctrl.T.Helper()
@@ -94,6 +116,20 @@ func (m *MockImageServiceInterface) SetErrorStatusOnImage(err error, i *models.I
 func (mr *MockImageServiceInterfaceMockRecorder) SetErrorStatusOnImage(err, i interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetErrorStatusOnImage", reflect.TypeOf((*MockImageServiceInterface)(nil).SetErrorStatusOnImage), err, i)
+}
+
+// UpdateImage mocks base method.
+func (m *MockImageServiceInterface) UpdateImage(image *models.Image, account string, previousImage *models.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateImage", image, account, previousImage)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateImage indicates an expected call of UpdateImage.
+func (mr *MockImageServiceInterfaceMockRecorder) UpdateImage(image, account, previousImage interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).UpdateImage), image, account, previousImage)
 }
 
 // UpdateImageStatus mocks base method.
