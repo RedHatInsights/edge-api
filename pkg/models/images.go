@@ -32,7 +32,7 @@ type Image struct {
 	InstallerID  *uint          `json:"InstallerID"`
 	Installer    *Installer     `json:"Installer"`
 	ImageSetID   *uint          `json:"ImageSetID"` // TODO: Wipe staging database and set to not nullable
-	ID           uint           `gorm:"primarykey" json:"ID"`
+	Packages     []Package      `json:"Packages" gorm:"many2many:images_packages;"`
 }
 
 const (
@@ -72,6 +72,16 @@ const (
 	// InvalidSSHKeyError is the error message for not supported or invalid ssh key format
 	InvalidSSHKeyError = "SSH Key supports RSA or DSS or ED25519 or ECDSA-SHA2 algorithms"
 )
+
+// Required Packages to send to image builder that will go into the base image
+var requiredPackages = [6]string{
+	"ansible",
+	"rhc",
+	"rhc-worker-playbook",
+	"subscription-manager",
+	"subscription-manager-plugin-ostree",
+	"insights-client",
+}
 
 var (
 	validSSHPrefix     = regexp.MustCompile(`^(ssh-(rsa|dss|ed25519)|ecdsa-sha2-nistp(256|384|521)) \S+`)
@@ -129,6 +139,19 @@ func (i *Image) HasOutputType(imageType string) bool {
 		}
 	}
 	return false
+}
+
+// GetPackagesList returns the packages in a user-friendly list containing their names
+func (i *Image) GetPackagesList() *[]string {
+	l := len(requiredPackages)
+	pkgs := make([]string, len(i.Packages)+l)
+	for i, p := range requiredPackages {
+		pkgs[i] = p
+	}
+	for i, p := range i.Packages {
+		pkgs[i+l] = p.Name
+	}
+	return &pkgs
 }
 
 //checkIfImageExist checks if name to image is already in use
