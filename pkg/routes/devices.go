@@ -41,7 +41,7 @@ func DeviceCtx(next http.Handler) http.Handler {
 		uCtx.DeviceUUID = chi.URLParam(r, "DeviceUUID")
 		if uCtx.DeviceUUID == "" {
 			err := errors.NewBadRequest("DeviceUUID must be sent")
-			w.WriteHeader(err.Status)
+			w.WriteHeader(err.GetStatus())
 			json.NewEncoder(w).Encode(&err)
 			return
 		}
@@ -69,13 +69,13 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	}
 	if _, ok := err.(*services.DeviceNotFoundError); ok {
 		err := errors.NewNotFound("Could not find device")
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
 	if _, ok := err.(*services.UpdateNotFoundError); ok {
 		err := errors.NewNotFound("Could not find update")
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -83,10 +83,10 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 		"requestId": request_id.GetReqID(r.Context()),
 	}).Error(err)
 	apierr := errors.NewInternalServerError()
-	w.WriteHeader(apierr.Status)
+	w.WriteHeader(apierr.GetStatus())
 	log.WithFields(log.Fields{
 		"requestId":  request_id.GetReqID(r.Context()),
-		"statusCode": apierr.Status,
+		"statusCode": apierr.GetStatus(),
 	}).Error(apierr)
 	json.NewEncoder(w).Encode(&err)
 }
@@ -105,7 +105,7 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	if _, ok := err.(*services.DeviceNotFoundError); ok {
 		err := errors.NewNotFound("Could not find device")
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -113,10 +113,10 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 		"requestId": request_id.GetReqID(r.Context()),
 	}).Error(err)
 	apierr := errors.NewInternalServerError()
-	w.WriteHeader(apierr.Status)
+	w.WriteHeader(apierr.GetStatus())
 	log.WithFields(log.Fields{
 		"requestId":  request_id.GetReqID(r.Context()),
-		"statusCode": apierr.Status,
+		"statusCode": apierr.GetStatus(),
 	}).Error(apierr)
 	json.NewEncoder(w).Encode(&err)
 }
@@ -139,7 +139,7 @@ func GetDevice(w http.ResponseWriter, r *http.Request) {
 	}
 	if _, ok := err.(*services.DeviceNotFoundError); ok {
 		err := errors.NewNotFound("Could not find device")
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -147,10 +147,10 @@ func GetDevice(w http.ResponseWriter, r *http.Request) {
 		"requestId": request_id.GetReqID(r.Context()),
 	}).Error(err)
 	apierr := errors.NewInternalServerError()
-	w.WriteHeader(apierr.Status)
+	w.WriteHeader(apierr.GetStatus())
 	log.WithFields(log.Fields{
 		"requestId":  request_id.GetReqID(r.Context()),
-		"statusCode": apierr.Status,
+		"statusCode": apierr.GetStatus(),
 	}).Error(apierr)
 	json.NewEncoder(w).Encode(&err)
 }

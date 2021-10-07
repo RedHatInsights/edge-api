@@ -47,28 +47,28 @@ func UpdateCtx(next http.Handler) http.Handler {
 		account, err := common.GetAccount(r)
 		if err != nil {
 			err := errors.NewBadRequest(err.Error())
-			w.WriteHeader(err.Status)
+			w.WriteHeader(err.GetStatus())
 			json.NewEncoder(w).Encode(&err)
 			return
 		}
 		updateID := chi.URLParam(r, "updateID")
 		if updateID == "" {
 			err := errors.NewBadRequest("UpdateTransactionID can't be empty")
-			w.WriteHeader(err.Status)
+			w.WriteHeader(err.GetStatus())
 			json.NewEncoder(w).Encode(&err)
 			return
 		}
 		id, err := strconv.Atoi(updateID)
 		if err != nil {
 			err := errors.NewBadRequest(err.Error())
-			w.WriteHeader(err.Status)
+			w.WriteHeader(err.GetStatus())
 			json.NewEncoder(w).Encode(&err)
 			return
 		}
 		result := db.DB.Preload("DispatchRecords").Preload("Devices").Where("update_transactions.account = ?", account).Joins("Commit").Joins("Repo").Find(&update, id)
 		if result.Error != nil {
 			err := errors.NewInternalServerError()
-			w.WriteHeader(err.Status)
+			w.WriteHeader(err.GetStatus())
 			json.NewEncoder(w).Encode(&err)
 			return
 		}
@@ -87,7 +87,7 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 	playbook, err := services.UpdateService.GetUpdatePlaybook(update)
 	if err != nil {
 		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -95,7 +95,7 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 	_, err = io.Copy(w, playbook)
 	if err != nil {
 		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -131,8 +131,8 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	account, err := common.GetAccount(r)
 	if err != nil {
 		err := errors.NewInternalServerError()
-		err.Title = "No account found"
-		w.WriteHeader(err.Status)
+		err.SetTitle("No account found")
+		w.WriteHeader(err.GetStatus())
 		return nil, err
 	}
 
@@ -140,20 +140,20 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	err = json.NewDecoder(r.Body).Decode(&updateJSON)
 	if err != nil {
 		err := errors.NewBadRequest("Invalid JSON")
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		return nil, err
 	}
 	log.Infof("updateFromHTTP::updateJSON: %#v", updateJSON)
 
 	if updateJSON.CommitID == 0 {
 		err := errors.NewBadRequest("Must provide a CommitID")
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		return nil, err
 	}
 	// TODO: Implement update by tag - Add validation per tag
 	if updateJSON.DeviceUUID == "" {
 		err := errors.NewBadRequest("DeviceUUID required.")
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		return nil, err
 	}
 	client := inventory.InitClient(r.Context())
@@ -163,7 +163,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	// 	inventory, err = client.ReturnDevicesByTag(updateJSON.Tag)
 	// 	if err != nil || inventory.Count == 0 {
 	// 		err := errors.NewNotFound(fmt.Sprintf("No devices found for Tag %s", updateJSON.Tag))
-	// 		w.WriteHeader(err.Status)
+	// 		w.WriteHeader(err.GetStatus())
 	// 		return nil, err
 	// 	}
 	// }
@@ -171,7 +171,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		inventory, err = client.ReturnDevicesByID(updateJSON.DeviceUUID)
 		if err != nil || inventory.Count == 0 {
 			err := errors.NewNotFound(fmt.Sprintf("No devices found for UUID %s", updateJSON.DeviceUUID))
-			w.WriteHeader(err.Status)
+			w.WriteHeader(err.GetStatus())
 			return nil, err
 		}
 	}
@@ -194,8 +194,8 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	update.DispatchRecords = []models.DispatchRecord{}
 	if err != nil {
 		err := errors.NewInternalServerError()
-		err.Title = fmt.Sprintf("No commit found for CommitID %d", updateJSON.CommitID)
-		w.WriteHeader(err.Status)
+		err.SetTitle(fmt.Sprintf("No commit found for CommitID %d", updateJSON.CommitID))
+		w.WriteHeader(err.GetStatus())
 		return &models.UpdateTransaction{}, err
 	}
 

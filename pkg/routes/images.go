@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -36,11 +35,11 @@ func MakeImagesRouter(sub chi.Router) {
 	sub.With(validateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetAllImages)
 	sub.Post("/", CreateImage)
 	sub.Route("/{ostreeCommitHash}/info", func(r chi.Router) {
-		r.Use(ImageOStreeCtx)
+		r.Use(ImageByOSTreeHashCtx)
 		r.Get("/", GetImageByOstree)
 	})
 	sub.Route("/{imageId}", func(r chi.Router) {
-		r.Use(ImageCtx)
+		r.Use(ImageByIDCtx)
 		r.Get("/", GetImageByID)
 		r.Get("/status", GetImageStatusByID)
 		r.Get("/repo", GetRepoForImage)
@@ -54,84 +53,66 @@ func MakeImagesRouter(sub chi.Router) {
 
 var validStatuses = []string{models.ImageStatusCreated, models.ImageStatusBuilding, models.ImageStatusError, models.ImageStatusSuccess}
 
-func ImageOStreeCtx(next http.Handler) http.Handler {
+func ImageByOSTreeHashCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var image models.Image
-		account, err := common.GetAccount(r)
-		if err != nil {
-			err := errors.NewBadRequest(err.Error())
-			w.WriteHeader(err.Status)
-			json.NewEncoder(w).Encode(&err)
-			return
-		}
-		if imageOstreeID := chi.URLParam(r, "ostreeCommitHash"); imageOstreeID != "" {
+		s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+		if commitHash := chi.URLParam(r, "ostreeCommitHash"); commitHash != "" {
+			image, err := s.ImageService.GetImageByOSTreeCommitHash(commitHash)
 			if err != nil {
-				err := errors.NewBadRequest(err.Error())
-				w.WriteHeader(err.Status)
-				json.NewEncoder(w).Encode(&err)
-				return
-			}
-			result := db.DB.Where("images.account = ? and os_tree_commit = ?", account, imageOstreeID).Joins("Commit").First(&image)
-
-			if result.Error != nil {
-				err := errors.NewNotFound(result.Error.Error())
-				w.WriteHeader(err.Status)
-				json.NewEncoder(w).Encode(&err)
+				var responseErr errors.APIError
+				switch err.(type) {
+				case services.ImageNotFoundError:
+					responseErr = errors.NewNotFound(err.Error())
+				case services.AccountNotSet:
+					responseErr = errors.NewBadRequest(err.Error())
+				default:
+					responseErr = errors.NewInternalServerError()
+				}
+				w.WriteHeader(responseErr.GetStatus())
+				json.NewEncoder(w).Encode(&responseErr)
 				return
 			}
 			ctx := context.WithValue(r.Context(), ostreeCommitHash, &image)
 			next.ServeHTTP(w, r.WithContext(ctx))
+		} else {
+			err := errors.NewBadRequest("OSTreeCommitHash required")
+			w.WriteHeader(err.GetStatus())
+			json.NewEncoder(w).Encode(&err)
+			return
 		}
 	})
 
 }
 
-// ImageCtx is a handler for Image requests
-func ImageCtx(next http.Handler) http.Handler {
+// ImageByIDCtx is a handler for Image requests
+func ImageByIDCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var image models.Image
-		account, err := common.GetAccount(r)
-		if err != nil {
-			err := errors.NewBadRequest(err.Error())
-			w.WriteHeader(err.Status)
-			json.NewEncoder(w).Encode(&err)
-			return
-		}
+		s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 		if imageID := chi.URLParam(r, "imageId"); imageID != "" {
-			id, err := strconv.Atoi(imageID)
+			image, err := s.ImageService.GetImageByID(imageID)
 			if err != nil {
-				err := errors.NewBadRequest(err.Error())
-				w.WriteHeader(err.Status)
-				json.NewEncoder(w).Encode(&err)
-				return
-			}
-			result := db.DB.Where("images.account = ?", account).Joins("Commit").First(&image, id)
-			if image.InstallerID != nil {
-				result := db.DB.First(&image.Installer, image.InstallerID)
-				if result.Error != nil {
-					err := errors.NewInternalServerError()
-					w.WriteHeader(err.Status)
-					json.NewEncoder(w).Encode(&err)
-					return
+				var responseErr errors.APIError
+				switch err.(type) {
+				case services.ImageNotFoundError:
+					responseErr = errors.NewNotFound(err.Error())
+				case services.AccountNotSet:
+					responseErr = errors.NewBadRequest(err.Error())
+				case services.IDMustBeInteger:
+					responseErr = errors.NewBadRequest(err.Error())
+				default:
+					responseErr = errors.NewInternalServerError()
 				}
-			}
-			if image.Commit != nil {
-				err = db.DB.Model(image.Commit).Association("Packages").Find(&image.Commit.Packages)
-				if err != nil {
-					err := errors.NewInternalServerError()
-					w.WriteHeader(err.Status)
-					json.NewEncoder(w).Encode(&err)
-					return
-				}
-			}
-			if result.Error != nil {
-				err := errors.NewNotFound(result.Error.Error())
-				w.WriteHeader(err.Status)
-				json.NewEncoder(w).Encode(&err)
+				w.WriteHeader(responseErr.GetStatus())
+				json.NewEncoder(w).Encode(&responseErr)
 				return
 			}
 			ctx := context.WithValue(r.Context(), imageKey, &image)
 			next.ServeHTTP(w, r.WithContext(ctx))
+		} else {
+			err := errors.NewBadRequest("Image ID required")
+			w.WriteHeader(err.GetStatus())
+			json.NewEncoder(w).Encode(&err)
+			return
 		}
 	})
 }
@@ -155,7 +136,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -164,7 +145,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -173,8 +154,8 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
-		err.Title = "Failed creating image"
-		w.WriteHeader(err.Status)
+		err.SetTitle("Failed creating image")
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -191,7 +172,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -199,7 +180,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -208,7 +189,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	previousImage, ok := ctx.Value(imageKey).(*models.Image)
 	if !ok {
 		err := errors.NewBadRequest("Must pass image id")
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
 
@@ -216,8 +197,8 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
-		err.Title = "Failed creating image"
-		w.WriteHeader(err.Status)
+		err.SetTitle("Failed creating image")
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -232,14 +213,14 @@ func initImageCreateRequest(w http.ResponseWriter, r *http.Request) (*models.Ima
 	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return nil, err
 	}
 	if err := image.ValidateRequest(); err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return nil, err
 	}
@@ -315,7 +296,7 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -323,7 +304,7 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	if countResult.Error != nil {
 		countErr := errors.NewInternalServerError()
 		log.Error(countErr)
-		w.WriteHeader(countErr.Status)
+		w.WriteHeader(countErr.GetStatus())
 		json.NewEncoder(w).Encode(&countErr)
 		return
 	}
@@ -331,7 +312,7 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 
 	for _, img := range images {
 		if img.Commit != nil {
-			db.DB.Model(img.Commit).Association("Packages").Find(&img.Commit.Packages)
+			db.DB.Model(img).Association("Packages").Find(&img.Packages)
 			if err != nil {
 				log.Error(":: Error ::", err.Error())
 			}
@@ -342,7 +323,7 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	if result.Error != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -354,7 +335,7 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 	image, ok := ctx.Value(imageKey).(*models.Image)
 	if !ok {
 		err := errors.NewBadRequest("Must pass image id")
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return nil
 	}
@@ -389,7 +370,7 @@ func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 	image, ok := ctx.Value(ostreeCommitHash).(*models.Image)
 	if !ok {
 		err := errors.NewBadRequest("Must pass commit ostree")
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
 	if image != nil {
@@ -405,7 +386,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&imageInstaller); err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -416,8 +397,8 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	if tx.Error != nil {
 		log.Error(tx.Error)
 		err := errors.NewInternalServerError()
-		err.Title = "Failed saving image status"
-		w.WriteHeader(err.Status)
+		err.SetTitle("Failed saving image status")
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -425,7 +406,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	repo, err := repoService.GetRepoByCommitID(image.CommitID)
 	if err != nil {
 		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -434,7 +415,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -444,7 +425,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	if tx.Error != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -452,7 +433,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	if tx.Error != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -507,7 +488,7 @@ func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 		repo, err := services.RepoService.GetRepoByCommitID(image.CommitID)
 		if err != nil {
 			err := errors.NewNotFound(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.CommitID))
-			w.WriteHeader(err.Status)
+			w.WriteHeader(err.GetStatus())
 			json.NewEncoder(w).Encode(&err)
 			return
 		}
@@ -542,7 +523,7 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 			// TODO: Temporary. Handle error better.
 			log.Errorf("Kickstart file injection failed %s", err.Error())
 			err := errors.NewInternalServerError()
-			w.WriteHeader(err.Status)
+			w.WriteHeader(err.GetStatus())
 			json.NewEncoder(w).Encode(&err)
 			return
 		}

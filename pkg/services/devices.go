@@ -108,18 +108,6 @@ type ImageInfo struct {
 	Rollback         *models.Image           `json:"RollbackImage,omitempty"`
 }
 
-type DeviceNotFoundError struct {
-	error
-}
-
-type UpdateNotFoundError struct {
-	error
-}
-
-type ImageNotFoundError struct {
-	error
-}
-
 // GetUpdateAvailableForDeviceByUUID returns if exists update for the current image at the device.
 func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]ImageUpdateAvailable, error) {
 	var lastDeployment inventory.OSTree
@@ -162,7 +150,7 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 	for _, upd := range images {
 		db.DB.First(&upd.Commit, upd.CommitID)
 		db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages)
-		db.DB.Model(&upd.Commit).Association("Packages").Find(&upd.Commit.Packages)
+		db.DB.Model(&upd).Association("Packages").Find(&upd.Packages)
 		var delta ImageUpdateAvailable
 		diff := getDiffOnUpdate(currentImage, upd)
 		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
