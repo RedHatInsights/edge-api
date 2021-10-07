@@ -1791,7 +1791,7 @@ paths:
           required: true
           description: ostreeCommitHash
           schema:
-            type : String
+            type : string
       responses:
         "200":
           content:

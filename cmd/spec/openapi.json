@@ -2833,7 +2833,7 @@
             "name": "ostreeCommitHash",
             "required": true,
             "schema": {
-              "type": "String"
+              "type": "string"
             }
           }
         ],
