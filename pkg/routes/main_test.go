@@ -74,7 +74,7 @@ func setUp() {
 	db.DB.Create(&testImage.Commit)
 	db.DB.Create(&testImage)
 	testRepo = models.Repo{
-		Commit: testImage.Commit,
+		URL: "www.test.com",
 	}
 	db.DB.Create(&testRepo)
 	db.DB.Create(&testUpdates)
