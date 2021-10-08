@@ -546,6 +546,20 @@ func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) er
 	return nil
 }
 
+func addImageExtraData(image *models.Image) (*models.Image, error) {
+	if image.InstallerID != nil {
+		result := db.DB.First(&image.Installer, image.InstallerID)
+		if result.Error != nil {
+			return nil, result.Error
+		}
+	}
+	err := db.DB.Model(image).Association("Packages").Find(&image.Packages)
+	if err != nil {
+		return nil, err
+	}
+	return image, nil
+}
+
 func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 	var image models.Image
 	account, err := common.GetAccountFromContext(s.ctx)
@@ -560,17 +574,7 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 	if result.Error != nil {
 		return nil, new(ImageNotFoundError)
 	}
-	if image.InstallerID != nil {
-		result := db.DB.First(&image.Installer, image.InstallerID)
-		if result.Error != nil {
-			return nil, result.Error
-		}
-	}
-	err = db.DB.Model(image).Association("Packages").Find(&image.Packages)
-	if err != nil {
-		return nil, err
-	}
-	return &image, nil
+	return addImageExtraData(&image)
 }
 
 func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error) {
@@ -583,5 +587,5 @@ func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Im
 	if result.Error != nil {
 		return nil, new(ImageNotFoundError)
 	}
-	return &image, nil
+	return addImageExtraData(&image)
 }

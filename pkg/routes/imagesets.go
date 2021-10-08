@@ -79,7 +79,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 
 	if result.Error != nil {
 		err := errors.NewBadRequest("Not Found")
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
 

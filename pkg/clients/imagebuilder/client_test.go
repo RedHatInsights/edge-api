@@ -57,10 +57,11 @@ func TestComposeImage(t *testing.T) {
 			Name: "ansible",
 		},
 	}
-	img := &models.Image{Distribution: "rhel-8", Commit: &models.Commit{
-		Arch:     "x86_64",
+	img := &models.Image{Distribution: "rhel-8",
 		Packages: pkgs,
-	}}
+		Commit: &models.Commit{
+			Arch: "x86_64",
+		}}
 	img, err := client.ComposeCommit(img)
 	if err != nil {
 		t.Errorf("Shouldnt throw error")

@@ -62,9 +62,9 @@ func ImageByOSTreeHashCtx(next http.Handler) http.Handler {
 			if err != nil {
 				var responseErr errors.APIError
 				switch err.(type) {
-				case services.ImageNotFoundError:
+				case *services.ImageNotFoundError:
 					responseErr = errors.NewNotFound(err.Error())
-				case services.AccountNotSet:
+				case *services.AccountNotSet:
 					responseErr = errors.NewBadRequest(err.Error())
 				default:
 					responseErr = errors.NewInternalServerError()
@@ -94,11 +94,11 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 			if err != nil {
 				var responseErr errors.APIError
 				switch err.(type) {
-				case services.ImageNotFoundError:
+				case *services.ImageNotFoundError:
 					responseErr = errors.NewNotFound(err.Error())
-				case services.AccountNotSet:
+				case *services.AccountNotSet:
 					responseErr = errors.NewBadRequest(err.Error())
-				case services.IDMustBeInteger:
+				case *services.IDMustBeInteger:
 					responseErr = errors.NewBadRequest(err.Error())
 				default:
 					responseErr = errors.NewInternalServerError()
@@ -536,13 +536,13 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
 	account, err := common.GetAccount(r)
 	if err != nil {
 		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -553,7 +553,7 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 		imageInUse, err := services.ImageService.CheckImageName(image.Name, account)
 		if err != nil {
 			err := errors.NewInternalServerError()
-			w.WriteHeader(err.Status)
+			w.WriteHeader(err.GetStatus())
 			json.NewEncoder(w).Encode(&err)
 			return
 		}
@@ -562,6 +562,6 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var errImageNotFilled = errors.NewInternalServerError()
-	w.WriteHeader(errImageNotFilled.Status)
+	w.WriteHeader(errImageNotFilled.GetStatus())
 	json.NewEncoder(w).Encode(&errImageNotFilled)
 }
