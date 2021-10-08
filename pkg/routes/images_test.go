@@ -312,7 +312,7 @@ func TestGetImageByOstree(t *testing.T) {
 	}
 	rr := httptest.NewRecorder()
 
-	ctx := context.WithValue(req.Context(), ostreeCommitHash, &testImage)
+	ctx := context.WithValue(req.Context(), imageKey, &testImage)
 	handler := http.HandlerFunc(GetImageByOstree)
 	handler.ServeHTTP(rr, req.WithContext(ctx))
 
@@ -426,5 +426,18 @@ func TestPostcheckImageNameNotExist(t *testing.T) {
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v, want %v",
 			status, http.StatusOK)
+	}
+}
+
+func TestGetImage(t *testing.T) {
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.WithValue(req.Context(), imageKey, &testImage)
+	w := new(http.ResponseWriter)
+
+	if image := getImage(*w, req.WithContext(ctx)); image == nil {
+		t.Errorf("image should not be nil")
 	}
 }
