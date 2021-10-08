@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
@@ -157,7 +156,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		return nil, err
 	}
 	client := inventory.InitClient(r.Context())
-	var inventory inventory.InventoryResponse
+	var inventory inventory.Response
 	// TODO: Implement update by tag
 	// if updateJSON.Tag != "" {
 	// 	inventory, err = client.ReturnDevicesByTag(updateJSON.Tag)
@@ -227,13 +226,18 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 			} else {
 				log.Infof("Existing Device not found in database, creating new one: %s", device.ID)
 				updateDevice = &models.Device{
-					UUID:        device.ID,
-					RHCClientID: device.Ostree.RHCClientID,
+					UUID: device.ID,
 				}
 				db.DB.Create(&updateDevice)
 			}
 		}
+		updateDevice.RHCClientID = device.Ostree.RHCClientID
 		updateDevice.DesiredHash = update.Commit.OSTreeCommit
+		result := db.DB.Save(&updateDevice)
+		if result.Error != nil {
+			return nil, result.Error
+		}
+
 		log.Infof("updateFromHTTP::updateDevice: %#v", updateDevice)
 		devices = append(devices, *updateDevice)
 		log.Infof("updateFromHTTP::devices: %#v", devices)
@@ -295,11 +299,6 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	go service.CreateUpdate(update)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(update)
-
-	timer := time.AfterFunc(time.Minute*DelayTimeToReboot, func() {
-		services.NewUpdateService(r.Context()).RebootDevice(update)
-	})
-	defer timer.Stop()
 
 }
 

@@ -110,8 +110,8 @@ type S3UploadStatus struct {
 	URL string `json:"url"`
 }
 
-// OsTree struct to get the metadata response
-type OsTree struct {
+// Metadata struct to get the metadata response
+type Metadata struct {
 	OstreeCommit      string             `json:"ostree_commit"`
 	InstalledPackages []InstalledPackage `json:"packages"`
 }
@@ -309,9 +309,9 @@ func (c *Client) GetInstallerStatus(image *models.Image) (*models.Image, error) 
 
 func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	log.Infof("Getting metadata for image ID %d", image.ID)
-	composeJobId := image.Commit.ComposeJobID
+	composeJobID := image.Commit.ComposeJobID
 	cfg := config.Get()
-	url := fmt.Sprintf("%s/api/image-builder/v1/composes/%s/metadata", cfg.ImageBuilderConfig.URL, composeJobId)
+	url := fmt.Sprintf("%s/api/image-builder/v1/composes/%s/metadata", cfg.ImageBuilderConfig.URL, composeJobID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -331,19 +331,19 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 		return nil, err
 	}
 
-	var ostree_struct OsTree
-	json.Unmarshal(data, &ostree_struct)
-	for n := range ostree_struct.InstalledPackages {
+	var metadata Metadata
+	json.Unmarshal(data, &metadata)
+	for n := range metadata.InstalledPackages {
 		pkg := models.InstalledPackage{
 
-			Arch: ostree_struct.InstalledPackages[n].Arch, Name: ostree_struct.InstalledPackages[n].Name,
-			Release: ostree_struct.InstalledPackages[n].Release, Sigmd5: ostree_struct.InstalledPackages[n].Sigmd5,
-			Signature: ostree_struct.InstalledPackages[n].Signature, Type: ostree_struct.InstalledPackages[n].Type,
-			Version: ostree_struct.InstalledPackages[n].Version, Epoch: ostree_struct.InstalledPackages[n].Epoch,
+			Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,
+			Release: metadata.InstalledPackages[n].Release, Sigmd5: metadata.InstalledPackages[n].Sigmd5,
+			Signature: metadata.InstalledPackages[n].Signature, Type: metadata.InstalledPackages[n].Type,
+			Version: metadata.InstalledPackages[n].Version, Epoch: metadata.InstalledPackages[n].Epoch,
 		}
 		image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
 	}
-	image.Commit.OSTreeCommit = ostree_struct.OstreeCommit
+	image.Commit.OSTreeCommit = metadata.OstreeCommit
 	defer res.Body.Close()
 	log.Infof("Done with metadata for image ID %d", image.ID)
 	return image, nil

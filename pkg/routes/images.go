@@ -38,6 +38,7 @@ func MakeImagesRouter(sub chi.Router) {
 		r.Use(ImageByOSTreeHashCtx)
 		r.Get("/", GetImageByOstree)
 	})
+	sub.Post("/checkImageName", CheckImageName)
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageByIDCtx)
 		r.Get("/", GetImageByID)
@@ -528,4 +529,39 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+}
+
+func CheckImageName(w http.ResponseWriter, r *http.Request) {
+	var image *models.Image
+	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+	}
+	account, err := common.GetAccount(r)
+	if err != nil {
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+
+	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	if image != nil {
+
+		imageInUse, err := services.ImageService.CheckImageName(image.Name, account)
+		if err != nil {
+			err := errors.NewInternalServerError()
+			w.WriteHeader(err.Status)
+			json.NewEncoder(w).Encode(&err)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(imageInUse)
+		return
+	}
+	var errImageNotFilled = errors.NewInternalServerError()
+	w.WriteHeader(errImageNotFilled.Status)
+	json.NewEncoder(w).Encode(&errImageNotFilled)
 }

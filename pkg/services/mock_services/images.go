@@ -48,6 +48,21 @@ func (mr *MockImageServiceInterfaceMockRecorder) AddUserInfo(image interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUserInfo", reflect.TypeOf((*MockImageServiceInterface)(nil).AddUserInfo), image)
 }
 
+// CheckImageName mocks base method.
+func (m *MockImageServiceInterface) CheckImageName(name, account string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckImageName", name, account)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckImageName indicates an expected call of CheckImageName.
+func (mr *MockImageServiceInterfaceMockRecorder) CheckImageName(name, account interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckImageName", reflect.TypeOf((*MockImageServiceInterface)(nil).CheckImageName), name, account)
+}
+
 // CreateImage mocks base method.
 func (m *MockImageServiceInterface) CreateImage(image *models.Image, account string) error {
 	m.ctrl.T.Helper()

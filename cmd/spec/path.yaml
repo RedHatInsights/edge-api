@@ -139,7 +139,7 @@ paths:
           required: true
           description: ostreeCommitHash
           schema:
-            type : String
+            type : string
       responses:
         "200":
           content:
@@ -491,4 +491,32 @@ paths:
               schema:
                 $ref: '#/components/schemas/v1.ImageSetDetails'
           description: OK   
-  
+  /checkImageName:
+    post:
+      operationId: checkImageName
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/v1.Image'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.bool'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Check if image name is in use for current account 

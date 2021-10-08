@@ -55,6 +55,7 @@ func setUp() {
 		&models.UpdateTransaction{},
 		&models.Package{},
 		&models.Image{},
+		&models.ImageSet{},
 		&models.Repo{},
 		&models.Device{},
 		&models.DispatchRecord{},
@@ -68,6 +69,7 @@ func setUp() {
 		Commit: &models.Commit{
 			Status: models.ImageStatusBuilding,
 		},
+		Name: "Image Name in DB",
 	}
 	db.DB.Create(&testImage.Commit)
 	db.DB.Create(&testImage)
