@@ -97,7 +97,7 @@ objects:
       topicName: platform.edge.fleetmgmt.device-update
     optionalDependencies:
       - "host-inventory"
-      - "notifications"
+      # - "notifications"
       - "playbook-dispatcher"
 
 parameters:
