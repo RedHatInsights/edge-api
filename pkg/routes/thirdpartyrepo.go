@@ -1,0 +1,110 @@
+package routes
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/go-chi/chi"
+	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/dependencies"
+	"github.com/redhatinsights/edge-api/pkg/errors"
+	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	log "github.com/sirupsen/logrus"
+)
+
+// MakeTPRepoRouter adds suport for operation on ThirdyPartyRepo
+func MakeTPRepoRouter(sub chi.Router) {
+	// sub.With(common.Paginate).Get("/", ListAllThirdyPartyRepo)
+	sub.Post("/", CreateThirdyPartyRepo)
+	// sub.Route("/{repoId}", func(r chi.Router) {
+	// 	r.Get("/", GetTPRepoByID)
+	// })
+}
+
+// A CreateTPRepoRequest model.
+type CreateTPRepoRequest struct {
+	Repo *models.ThirdyPartyRepo
+}
+
+func CreateThirdyPartyRepo(w http.ResponseWriter, r *http.Request) {
+	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	defer r.Body.Close()
+	tprepo, err := initTPRepoCreateRequest(w, r)
+	if err != nil {
+		log.Info(err)
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+
+	log.Infof("ThirdPartyRepo::create: %#v", tprepo)
+
+	account, err := common.GetAccount(r)
+	if err != nil {
+		log.Info(err)
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+
+	err = services.TPRepoService.CreateThirdyPartyRepo(tprepo, account)
+
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		err.Title = "Failed creating Third Party Repository"
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(&tprepo)
+
+}
+
+// initTPRepoCreateRequest validates request to create/update an image.
+func initTPRepoCreateRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdyPartyRepo, error) {
+	var tprepo *models.ThirdyPartyRepo
+	if err := json.NewDecoder(r.Body).Decode(&tprepo); err != nil {
+		log.Error(err)
+		err := errors.NewBadRequest("Invalid JSON request")
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return nil, err
+	}
+	log.Infof("ThirdyPartyRepo::requestJSON: %#v", tprepo)
+
+	if err := tprepo.ValidateRequest(); err != nil {
+		log.Info(err)
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+		return nil, err
+	}
+
+	if tprepo.URL == "" {
+		err := errors.NewBadRequest("URL is requird")
+		w.WriteHeader(err.Status)
+		return nil, err
+	}
+	if tprepo.Name == "" {
+		err := errors.NewBadRequest("Name is required")
+		w.WriteHeader(err.Status)
+		return nil, err
+	}
+	if tprepo.URL != "" && tprepo.Name != "" {
+		tprepo := models.ThirdyPartyRepo{
+			Name:        tprepo.Name,
+			URL:         tprepo.URL,
+			Description: tprepo.Description,
+		}
+		db.DB.Create(&tprepo)
+
+		log.Infof("Getting ThirdyPartyRepo info: repo %s, %s", tprepo.URL, tprepo.Name)
+
+	}
+	return tprepo, nil
+}

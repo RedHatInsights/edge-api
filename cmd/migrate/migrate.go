@@ -32,7 +32,7 @@ func main() {
 		"DatabaseName":             cfg.Database.Name,
 	}).Info("Configuration Values:")
 	db.InitDB()
-	err := db.DB.AutoMigrate(&models.ImageSet{}, &models.Commit{}, &models.UpdateTransaction{}, &models.Package{}, &models.Image{}, &models.Repo{}, &models.DispatchRecord{})
+	err := db.DB.AutoMigrate(&models.ImageSet{}, &models.Commit{}, &models.UpdateTransaction{}, &models.Package{}, &models.Image{}, &models.Repo{}, &models.DispatchRecord{}, &models.ThirdyPartyRepo{})
 	if err != nil {
 		panic(err)
 	}
