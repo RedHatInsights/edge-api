@@ -98,7 +98,7 @@ objects:
     optionalDependencies:
       - "host-inventory"
       # - "notifications"
-      - "playbook-dispatcher"
+      # - "playbook-dispatcher"
 
 parameters:
 - description: Cpu limit of service
