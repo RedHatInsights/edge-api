@@ -4,137 +4,137 @@ kind: Template
 metadata:
   name: edge-api
 objects:
-  - apiVersion: v1
-    kind: Secret
-    metadata:
-      name: psk-playbook-dispatcher
-    stringData:
-      key: ${PSK_DISPATCHER}
-  - apiVersion: cloud.redhat.com/v1alpha1
-    kind: ClowdApp
-    metadata:
-      name: edge-api
-    spec:
-      envName: ${ENV_NAME}
-      deployments:
-        - name: service
-          minReplicas: ${{MIN_REPLICAS}}
-          web: true
-          podSpec:
-            image: ${IMAGE}:${IMAGE_TAG}
-            initContainers:
-              - name: run-migrations
-                command:
-                  - bash
-                  - -c
-                  - edge-api-migrate
-                inheritEnv: true
-            livenessProbe:
-              failureThreshold: 3
-              httpGet:
-                path: /
-                port: 9000
-                scheme: HTTP
-              initialDelaySeconds: 35
-              periodSeconds: 5
-              successThreshold: 1
-              timeoutSeconds: 120
-            readinessProbe:
-              failureThreshold: 3
-              httpGet:
-                path: /
-                port: 9000
-                scheme: HTTP
-              initialDelaySeconds: 35
-              periodSeconds: 5
-              successThreshold: 1
-              timeoutSeconds: 120
-            env:
-              - name: CLOWDER_ENABLED
-                value: ${CLOWDER_ENABLED}
-              - name: ENABLE_CLOUDWATCH_LOGGING
-                value: ${ENABLE_CLOUDWATCH_LOGGING}
-              - name: AUTH
-                value: ${ENABLE_RH_IDENITY_PROCESSING}
-              - name: EDGETARBALLSBUCKET
-                value: ${EDGE_TARBALLS_BUCKET}
-              - name: OPENAPIFILEPATH
-                value: ${OPEN_API_FILEPATH}
-              - name: IMAGEBUILDERURL
-                value: ${IMAGEBUILDER_URL}
-              - name: INVENTORYURL
-                value: ${INVENTORYURL}
-              - name: PLAYBOOKDISPATCHERURL
-                value: ${PLAYBOOKDISPATCHERURL}
-              - name: PLAYBOOKDISPATCHERPSK
-                valueFrom:
-                  secretKeyRef:
-                    key: key
-                    name: psk-playbook-dispatcher
-              - name: EDGEAPIBASEURL
-                value: ${EDGEAPIBASEURL}
-              - name: UPLOADWORKERS
-                value: ${UPLOADWORKERS}
-            resources:
-              limits:
-                cpu: ${{CPU_LIMIT}}
-                memory: ${MEMORY_LIMIT}
-              requests:
-                cpu: 500m
-                memory: 512Mi
-      objectStore:
-        - ${EDGE_TARBALLS_BUCKET}
-      database:
-        name: edge
-      testing:
-        iqePlugin: edge
-      kafkaTopics:
-        - replicas: 3
-          partitions: 3
-          topicName: platform.edge.fleetmgmt.image-build
-        - replicas: 3
-          partitions: 3
-          topicName: platform.edge.fleetmgmt.device-update
-      optionalDependencies:
-        - "host-inventory"
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: psk-playbook-dispatcher
+  stringData:
+    key: ${PSK_DISPATCHER}
+- apiVersion: cloud.redhat.com/v1alpha1
+  kind: ClowdApp
+  metadata:
+    name: edge-api
+  spec:
+    envName: ${ENV_NAME}
+    deployments:
+    - name: service
+      minReplicas: ${{MIN_REPLICAS}}
+      web: true
+      podSpec:
+        image: ${IMAGE}:${IMAGE_TAG}
+        initContainers:
+        - name: run-migrations
+          command:
+          - bash
+          - -c
+          - edge-api-migrate
+          inheritEnv: true
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 9000
+            scheme: HTTP
+          initialDelaySeconds: 35
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 120
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 9000
+            scheme: HTTP
+          initialDelaySeconds: 35
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 120
+        env:
+        - name: CLOWDER_ENABLED
+          value: ${CLOWDER_ENABLED}
+        - name: ENABLE_CLOUDWATCH_LOGGING
+          value: ${ENABLE_CLOUDWATCH_LOGGING}
+        - name: AUTH
+          value: ${ENABLE_RH_IDENITY_PROCESSING}
+        - name: EDGETARBALLSBUCKET
+          value: ${EDGE_TARBALLS_BUCKET}
+        - name: OPENAPIFILEPATH
+          value: ${OPEN_API_FILEPATH}
+        - name: IMAGEBUILDERURL
+          value: ${IMAGEBUILDER_URL}
+        - name: INVENTORYURL
+          value: ${INVENTORYURL}
+        - name: PLAYBOOKDISPATCHERURL
+          value: ${PLAYBOOKDISPATCHERURL}
+        - name: PLAYBOOKDISPATCHERPSK
+          valueFrom:
+            secretKeyRef:
+              key: key
+              name: psk-playbook-dispatcher
+        - name: EDGEAPIBASEURL
+          value: ${EDGEAPIBASEURL}
+        - name: UPLOADWORKERS
+          value: ${UPLOADWORKERS}
+        resources:
+          limits:
+            cpu: ${{CPU_LIMIT}}
+            memory: ${MEMORY_LIMIT}
+          requests:
+            cpu: 500m
+            memory: 512Mi
+    objectStore:
+    - ${EDGE_TARBALLS_BUCKET}
+    database:
+      name: edge
+    testing:
+      iqePlugin: edge
+    kafkaTopics:
+    - replicas: 3
+      partitions: 3
+      topicName: platform.edge.fleetmgmt.image-build
+    - replicas: 3
+      partitions: 3
+      topicName: platform.edge.fleetmgmt.device-update
+    optionalDependencies:
+    - "host-inventory"
 
 parameters:
-  - description: Cpu limit of service
-    name: CPU_LIMIT
-    value: "1"
-  - description: memory limit of service
-    name: MEMORY_LIMIT
-    value: 1Gi
-  - name: MIN_REPLICAS
-    value: "1"
-  - description: Image tag
-    name: IMAGE_TAG
-    required: true
-  - description: Image name
-    name: IMAGE
-    value: quay.io/cloudservices/edge-api
-  - description: Determines Clowder deployment
-    name: CLOWDER_ENABLED
-    value: "true"
-  - description: ClowdEnv Name
-    name: ENV_NAME
-    requred: false
-  - description: Determines if Cloud Watch logging is enabled
-    name: ENABLE_CLOUDWATCH_LOGGING
-    value: "true"
-  - name: EDGE_TARBALLS_BUCKET
-    value: rh-edge-tarballs
-  - name: OPEN_API_FILEPATH
-    value: /var/tmp/openapi.json
-  - name: ENABLE_RH_IDENITY_PROCESSING
-    value: "true"
-  - name: IMAGEBUILDER_URL
-    value: "http://image-builder:8080"
-  - name: INVENTORYURL
-    value: "http://host-inventory-service:8080/"
-  - name: PLAYBOOKDISPATCHERURL
-    value: "http://host-playbook-dispatcher:8080/"
-  - name: EDGEAPIBASEURL
-    value: "https://cloud.stage.redhat.com"
-  - name: UPLOADWORKERS
-    value: "100"
+- description: Cpu limit of service
+  name: CPU_LIMIT
+  value: "1"
+- description: memory limit of service
+  name: MEMORY_LIMIT
+  value: 1Gi
+- name: MIN_REPLICAS
+  value: "1"
+- description: Image tag
+  name: IMAGE_TAG
+  required: true
+- description: Image name
+  name: IMAGE
+  value: quay.io/cloudservices/edge-api
+- description: Determines Clowder deployment
+  name: CLOWDER_ENABLED
+  value: "true"
+- description: ClowdEnv Name
+  name: ENV_NAME
+  requred: false
+- description: Determines if Cloud Watch logging is enabled
+  name: ENABLE_CLOUDWATCH_LOGGING
+  value: "true"
+- name: EDGE_TARBALLS_BUCKET
+  value: rh-edge-tarballs
+- name: OPEN_API_FILEPATH
+  value: /var/tmp/openapi.json
+- name: ENABLE_RH_IDENITY_PROCESSING
+  value: "true"
+- name: IMAGEBUILDER_URL
+  value: "http://image-builder:8080"
+- name: INVENTORYURL
+  value: "http://host-inventory-service:8080/"
+- name: PLAYBOOKDISPATCHERURL
+  value: "http://host-playbook-dispatcher:8080/"
+- name: EDGEAPIBASEURL
+  value: "https://cloud.stage.redhat.com"
+- name: UPLOADWORKERS
+  value: "100"
