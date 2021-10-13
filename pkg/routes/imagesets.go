@@ -35,7 +35,7 @@ func ImageSetCtx(next http.Handler) http.Handler {
 		if err != nil {
 			log.Info(err)
 			err := errors.NewBadRequest(err.Error())
-			w.WriteHeader(err.Status)
+			w.WriteHeader(err.GetStatus())
 			json.NewEncoder(w).Encode(&err)
 			return
 		}
@@ -43,14 +43,14 @@ func ImageSetCtx(next http.Handler) http.Handler {
 			_, err := strconv.Atoi(imageSetID)
 			if err != nil {
 				err := errors.NewBadRequest(err.Error())
-				w.WriteHeader(err.Status)
+				w.WriteHeader(err.GetStatus())
 				json.NewEncoder(w).Encode(&err)
 				return
 			}
 			result := db.DB.Where("account = ? and Image_sets.id = ?", account, imageSetID).Find(&imageSet)
 			if result.Error != nil {
 				err := errors.NewNotFound(result.Error.Error())
-				w.WriteHeader(err.Status)
+				w.WriteHeader(err.GetStatus())
 				json.NewEncoder(w).Encode(&err)
 				return
 			}
@@ -70,7 +70,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -79,7 +79,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 
 	if result.Error != nil {
 		err := errors.NewBadRequest("Not Found")
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
 
@@ -93,7 +93,7 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	imageSet, ok := ctx.Value(imageSetKey).(*models.ImageSet)
 	if !ok {
 		err := errors.NewBadRequest("Must pass image set id")
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
 	json.NewEncoder(w).Encode(&imageSet)

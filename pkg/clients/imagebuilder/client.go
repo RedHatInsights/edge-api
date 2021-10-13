@@ -168,7 +168,7 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 	req := &ComposeRequest{
 		Customizations: &Customizations{
-			Packages: image.Commit.GetPackagesList(),
+			Packages: image.GetPackagesList(),
 		},
 
 		Distribution: image.Distribution,

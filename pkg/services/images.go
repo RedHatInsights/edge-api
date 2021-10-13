@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"text/template"
@@ -20,6 +21,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	log "github.com/sirupsen/logrus"
 
 	"gorm.io/gorm"
@@ -37,6 +39,8 @@ type ImageServiceInterface interface {
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
 	CreateRepoForImage(i *models.Image) *models.Repo
+	GetImageByID(id string) (*models.Image, error)
+	GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error)
 	CheckImageName(name, account string) (bool, error)
 }
 
@@ -545,4 +549,48 @@ func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) er
 	}
 
 	return nil
+}
+
+func addImageExtraData(image *models.Image) (*models.Image, error) {
+	if image.InstallerID != nil {
+		result := db.DB.First(&image.Installer, image.InstallerID)
+		if result.Error != nil {
+			return nil, result.Error
+		}
+	}
+	err := db.DB.Model(image).Association("Packages").Find(&image.Packages)
+	if err != nil {
+		return nil, err
+	}
+	return image, nil
+}
+
+func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
+	var image models.Image
+	account, err := common.GetAccountFromContext(s.ctx)
+	if err != nil {
+		return nil, new(AccountNotSet)
+	}
+	id, err := strconv.Atoi(imageID)
+	if err != nil {
+		return nil, new(IDMustBeInteger)
+	}
+	result := db.DB.Where("images.account = ?", account).Joins("Commit").First(&image, id)
+	if result.Error != nil {
+		return nil, new(ImageNotFoundError)
+	}
+	return addImageExtraData(&image)
+}
+
+func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error) {
+	var image models.Image
+	account, err := common.GetAccountFromContext(s.ctx)
+	if err != nil {
+		return nil, new(AccountNotSet)
+	}
+	result := db.DB.Where("images.account = ? and os_tree_commit = ?", account, commitHash).Joins("Commit").First(&image)
+	if result.Error != nil {
+		return nil, new(ImageNotFoundError)
+	}
+	return addImageExtraData(&image)
 }

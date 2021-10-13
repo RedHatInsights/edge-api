@@ -171,27 +171,6 @@
                       "OSTreeRef": {
                         "type": "string"
                       },
-                      "Packages": {
-                        "items": {
-                          "properties": {
-                            "CreatedAt": {
-                              "format": "date-time",
-                              "type": "string"
-                            },
-                            "DeletedAt": {},
-                            "ID": {},
-                            "Name": {
-                              "type": "string"
-                            },
-                            "UpdatedAt": {
-                              "format": "date-time",
-                              "type": "string"
-                            }
-                          },
-                          "type": "object"
-                        },
-                        "type": "array"
-                      },
                       "Status": {
                         "type": "string"
                       },
@@ -262,6 +241,27 @@
                   "OutputTypes": {
                     "items": {
                       "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "Packages": {
+                    "items": {
+                      "properties": {
+                        "CreatedAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "DeletedAt": {},
+                        "ID": {},
+                        "Name": {
+                          "type": "string"
+                        },
+                        "UpdatedAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
                     },
                     "type": "array"
                   },
@@ -367,27 +367,6 @@
                       "OSTreeRef": {
                         "type": "string"
                       },
-                      "Packages": {
-                        "items": {
-                          "properties": {
-                            "CreatedAt": {
-                              "format": "date-time",
-                              "type": "string"
-                            },
-                            "DeletedAt": {},
-                            "ID": {},
-                            "Name": {
-                              "type": "string"
-                            },
-                            "UpdatedAt": {
-                              "format": "date-time",
-                              "type": "string"
-                            }
-                          },
-                          "type": "object"
-                        },
-                        "type": "array"
-                      },
                       "Status": {
                         "type": "string"
                       },
@@ -458,6 +437,27 @@
                   "OutputTypes": {
                     "items": {
                       "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "Packages": {
+                    "items": {
+                      "properties": {
+                        "CreatedAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "DeletedAt": {},
+                        "ID": {},
+                        "Name": {
+                          "type": "string"
+                        },
+                        "UpdatedAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
                     },
                     "type": "array"
                   },
@@ -566,27 +566,6 @@
                             "OSTreeRef": {
                               "type": "string"
                             },
-                            "Packages": {
-                              "items": {
-                                "properties": {
-                                  "CreatedAt": {
-                                    "format": "date-time",
-                                    "type": "string"
-                                  },
-                                  "DeletedAt": {},
-                                  "ID": {},
-                                  "Name": {
-                                    "type": "string"
-                                  },
-                                  "UpdatedAt": {
-                                    "format": "date-time",
-                                    "type": "string"
-                                  }
-                                },
-                                "type": "object"
-                              },
-                              "type": "array"
-                            },
                             "Status": {
                               "type": "string"
                             },
@@ -657,6 +636,27 @@
                         "OutputTypes": {
                           "items": {
                             "type": "string"
+                          },
+                          "type": "array"
+                        },
+                        "Packages": {
+                          "items": {
+                            "properties": {
+                              "CreatedAt": {
+                                "format": "date-time",
+                                "type": "string"
+                              },
+                              "DeletedAt": {},
+                              "ID": {},
+                              "Name": {
+                                "type": "string"
+                              },
+                              "UpdatedAt": {
+                                "format": "date-time",
+                                "type": "string"
+                              }
+                            },
+                            "type": "object"
                           },
                           "type": "array"
                         },
@@ -902,27 +902,6 @@
                     "OSTreeRef": {
                       "type": "string"
                     },
-                    "Packages": {
-                      "items": {
-                        "properties": {
-                          "CreatedAt": {
-                            "format": "date-time",
-                            "type": "string"
-                          },
-                          "DeletedAt": {},
-                          "ID": {},
-                          "Name": {
-                            "type": "string"
-                          },
-                          "UpdatedAt": {
-                            "format": "date-time",
-                            "type": "string"
-                          }
-                        },
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
                     "Status": {
                       "type": "string"
                     },
@@ -1110,27 +1089,6 @@
                       "OSTreeRef": {
                         "type": "string"
                       },
-                      "Packages": {
-                        "items": {
-                          "properties": {
-                            "CreatedAt": {
-                              "format": "date-time",
-                              "type": "string"
-                            },
-                            "DeletedAt": {},
-                            "ID": {},
-                            "Name": {
-                              "type": "string"
-                            },
-                            "UpdatedAt": {
-                              "format": "date-time",
-                              "type": "string"
-                            }
-                          },
-                          "type": "object"
-                        },
-                        "type": "array"
-                      },
                       "Status": {
                         "type": "string"
                       },
@@ -1228,27 +1186,6 @@
                         },
                         "OSTreeRef": {
                           "type": "string"
-                        },
-                        "Packages": {
-                          "items": {
-                            "properties": {
-                              "CreatedAt": {
-                                "format": "date-time",
-                                "type": "string"
-                              },
-                              "DeletedAt": {},
-                              "ID": {},
-                              "Name": {
-                                "type": "string"
-                              },
-                              "UpdatedAt": {
-                                "format": "date-time",
-                                "type": "string"
-                              }
-                            },
-                            "type": "object"
-                          },
-                          "type": "array"
                         },
                         "Status": {
                           "type": "string"
@@ -1388,27 +1325,6 @@
               "OSTreeRef": {
                 "type": "string"
               },
-              "Packages": {
-                "items": {
-                  "properties": {
-                    "CreatedAt": {
-                      "format": "date-time",
-                      "type": "string"
-                    },
-                    "DeletedAt": {},
-                    "ID": {},
-                    "Name": {
-                      "type": "string"
-                    },
-                    "UpdatedAt": {
-                      "format": "date-time",
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                },
-                "type": "array"
-              },
               "Status": {
                 "type": "string"
               },
@@ -1479,6 +1395,27 @@
           "OutputTypes": {
             "items": {
               "type": "string"
+            },
+            "type": "array"
+          },
+          "Packages": {
+            "items": {
+              "properties": {
+                "CreatedAt": {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                "DeletedAt": {},
+                "ID": {},
+                "Name": {
+                  "type": "string"
+                },
+                "UpdatedAt": {
+                  "format": "date-time",
+                  "type": "string"
+                }
+              },
+              "type": "object"
             },
             "type": "array"
           },
@@ -1596,27 +1533,6 @@
                     "OSTreeRef": {
                       "type": "string"
                     },
-                    "Packages": {
-                      "items": {
-                        "properties": {
-                          "CreatedAt": {
-                            "format": "date-time",
-                            "type": "string"
-                          },
-                          "DeletedAt": {},
-                          "ID": {},
-                          "Name": {
-                            "type": "string"
-                          },
-                          "UpdatedAt": {
-                            "format": "date-time",
-                            "type": "string"
-                          }
-                        },
-                        "type": "object"
-                      },
-                      "type": "array"
-                    },
                     "Status": {
                       "type": "string"
                     },
@@ -1687,6 +1603,27 @@
                 "OutputTypes": {
                   "items": {
                     "type": "string"
+                  },
+                  "type": "array"
+                },
+                "Packages": {
+                  "items": {
+                    "properties": {
+                      "CreatedAt": {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      "DeletedAt": {},
+                      "ID": {},
+                      "Name": {
+                        "type": "string"
+                      },
+                      "UpdatedAt": {
+                        "format": "date-time",
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
                   },
                   "type": "array"
                 },
@@ -1832,27 +1769,6 @@
               "OSTreeRef": {
                 "type": "string"
               },
-              "Packages": {
-                "items": {
-                  "properties": {
-                    "CreatedAt": {
-                      "format": "date-time",
-                      "type": "string"
-                    },
-                    "DeletedAt": {},
-                    "ID": {},
-                    "Name": {
-                      "type": "string"
-                    },
-                    "UpdatedAt": {
-                      "format": "date-time",
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                },
-                "type": "array"
-              },
               "Status": {
                 "type": "string"
               },
@@ -1971,27 +1887,6 @@
               },
               "OSTreeRef": {
                 "type": "string"
-              },
-              "Packages": {
-                "items": {
-                  "properties": {
-                    "CreatedAt": {
-                      "format": "date-time",
-                      "type": "string"
-                    },
-                    "DeletedAt": {},
-                    "ID": {},
-                    "Name": {
-                      "type": "string"
-                    },
-                    "UpdatedAt": {
-                      "format": "date-time",
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                },
-                "type": "array"
               },
               "Status": {
                 "type": "string"
@@ -2180,27 +2075,6 @@
                 "OSTreeRef": {
                   "type": "string"
                 },
-                "Packages": {
-                  "items": {
-                    "properties": {
-                      "CreatedAt": {
-                        "format": "date-time",
-                        "type": "string"
-                      },
-                      "DeletedAt": {},
-                      "ID": {},
-                      "Name": {
-                        "type": "string"
-                      },
-                      "UpdatedAt": {
-                        "format": "date-time",
-                        "type": "string"
-                      }
-                    },
-                    "type": "object"
-                  },
-                  "type": "array"
-                },
                 "Status": {
                   "type": "string"
                 },
@@ -2298,27 +2172,6 @@
                   },
                   "OSTreeRef": {
                     "type": "string"
-                  },
-                  "Packages": {
-                    "items": {
-                      "properties": {
-                        "CreatedAt": {
-                          "format": "date-time",
-                          "type": "string"
-                        },
-                        "DeletedAt": {},
-                        "ID": {},
-                        "Name": {
-                          "type": "string"
-                        },
-                        "UpdatedAt": {
-                          "format": "date-time",
-                          "type": "string"
-                        }
-                      },
-                      "type": "object"
-                    },
-                    "type": "array"
                   },
                   "Status": {
                     "type": "string"

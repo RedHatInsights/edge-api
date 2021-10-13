@@ -5,22 +5,31 @@ import (
 )
 
 // APIError defines a type for all errors returned by edge api
-type APIError struct {
+type APIError interface {
+	Error() string
+	GetStatus() int
+	SetTitle(string)
+}
+
+// Error gets a error string from an APIError
+func (e *apiError) Error() string { return e.Title }
+
+func (e *apiError) GetStatus() int    { return e.Status }
+func (e *apiError) SetTitle(t string) { e.Title = t }
+
+type apiError struct {
 	Code   string `json:"Code"`
 	Status int    `json:"Status"`
 	Title  string `json:"Title"`
 }
 
-// Error gets a error string from an APIError
-func (e *APIError) Error() string { return e.Title }
-
 // InternalServerError defines a generic error for Edge API
 type InternalServerError struct {
-	APIError
+	apiError
 }
 
 // NewInternalServerError creates a new InternalServerError
-func NewInternalServerError() *InternalServerError {
+func NewInternalServerError() APIError {
 	err := new(InternalServerError)
 	err.Code = "ERROR"
 	err.Title = "Something went wrong."
@@ -30,11 +39,11 @@ func NewInternalServerError() *InternalServerError {
 
 // BadRequest defines a error when the client's input generates an error
 type BadRequest struct {
-	APIError
+	apiError
 }
 
 // NewBadRequest creates a new BadRequest
-func NewBadRequest(message string) *BadRequest {
+func NewBadRequest(message string) APIError {
 	err := new(BadRequest)
 	err.Code = "BAD_REQUEST"
 	err.Title = message
@@ -44,11 +53,11 @@ func NewBadRequest(message string) *BadRequest {
 
 // NotFound defines a error for whenever an entity is not found in the database
 type NotFound struct {
-	APIError
+	apiError
 }
 
 // NewNotFound creates a new NotFound
-func NewNotFound(message string) *NotFound {
+func NewNotFound(message string) APIError {
 	err := new(NotFound)
 	err.Code = "NOT_FOUND"
 	err.Title = message

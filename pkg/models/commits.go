@@ -24,7 +24,6 @@ type Commit struct {
 	BuildNumber          uint               `json:"BuildNumber"`
 	BlueprintToml        string             `json:"BlueprintToml"`
 	Arch                 string             `json:"Arch"`
-	Packages             []Package          `json:"Packages" gorm:"many2many:commit_packages;"`
 	InstalledPackages    []InstalledPackage `json:"InstalledPackages,omitempty" gorm:"many2many:commit_installed_packages;"`
 	ComposeJobID         string             `json:"ComposeJobID"`
 	Status               string             `json:"Status"`
@@ -56,26 +55,4 @@ type InstalledPackage struct {
 	Type      string `json:"type"`
 	Version   string `json:"version"`
 	Epoch     string `json:"epoch,omitempty"`
-}
-
-var requiredPackages = [6]string{
-	"ansible",
-	"rhc",
-	"rhc-worker-playbook",
-	"subscription-manager",
-	"subscription-manager-plugin-ostree",
-	"insights-client",
-}
-
-// GetPackagesList returns the packages in a user-friendly list containing their names
-func (c *Commit) GetPackagesList() *[]string {
-	l := len(requiredPackages)
-	pkgs := make([]string, len(c.Packages)+l)
-	for i, p := range requiredPackages {
-		pkgs[i] = p
-	}
-	for i, p := range c.Packages {
-		pkgs[i+l] = p.Name
-	}
-	return &pkgs
 }
