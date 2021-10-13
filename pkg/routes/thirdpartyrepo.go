@@ -79,7 +79,6 @@ func initTPRepoCreateRequest(w http.ResponseWriter, r *http.Request) (*models.Th
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.Status)
-		// json.NewEncoder(w).Encode(&err)
 		return nil, err
 	}
 	if tprepo.URL == "" {
@@ -100,14 +99,6 @@ func initTPRepoCreateRequest(w http.ResponseWriter, r *http.Request) (*models.Th
 func ListAllThirdyPartyRepo(w http.ResponseWriter, r *http.Request) {
 	var tprepo *[]models.ThirdyPartyRepo
 	pagination := common.GetPagination(r)
-	// // account, err := common.GetAccount(r)
-	// if err != nil {
-	// 	log.Info(err)
-	// 	err := errors.NewBadRequest(err.Error())
-	// 	w.WriteHeader(err.Status)
-	// 	json.NewEncoder(w).Encode(&err)
-	// 	return
-	// }
 
 	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Find(&tprepo)
 	if result.Error != nil {

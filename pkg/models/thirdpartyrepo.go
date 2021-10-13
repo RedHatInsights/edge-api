@@ -10,6 +10,7 @@ type ThirdyPartyRepo struct {
 	Name        string `json:"Name"`
 	URL         string `json:"URL"`
 	Description string `json:"Description,omitempty"`
+	Account     string `json:"Account"`
 }
 
 const (

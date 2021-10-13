@@ -25,14 +25,12 @@ type TPRepoService struct {
 
 // CreateThirdyPartyRepo creates the ThirdyPartyRepo for an Account on our database
 func (s *TPRepoService) CreateThirdyPartyRepo(tprepo *models.ThirdyPartyRepo, account string) error {
-	var image models.Image
-	image.Account = account
-
 	if tprepo.URL != "" && tprepo.Name != "" {
 		tprepo = &models.ThirdyPartyRepo{
 			Name:        tprepo.Name,
 			URL:         tprepo.URL,
 			Description: tprepo.Description,
+			Account:     account,
 		}
 		result := db.DB.Create(&tprepo)
 		if result.Error != nil {
