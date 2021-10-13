@@ -137,9 +137,10 @@ func (rb *RepoBuilder) BuildUpdateRepo(update *models.UpdateTransaction) (*model
 func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 
 	var cmt models.Commit
-	db.DB.Where("commit_id = ?", r.ID).Find(&cmt)
+	db.DB.Where("repo_id = ?", r.ID).Find(&cmt)
 	cfg := config.Get()
-
+	fmt.Printf(":: Current commit:: %v\n", &cmt)
+	fmt.Printf(":: Current commit:: %d\n", &cmt.ID)
 	path := filepath.Join(cfg.RepoTempPath, strconv.FormatUint(uint64(r.ID), 10))
 	log.Debugf("RepoBuilder::path: %#v", path)
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
@@ -151,6 +152,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	err = rb.DownloadExtractVersionRepo(&cmt, path)
 	if err != nil {
 		r.Status = models.RepoStatusError
@@ -180,6 +182,8 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 
 // DownloadExtractVersionRepo Download and Extract the repo tarball to dest dir
 func (rb *RepoBuilder) DownloadExtractVersionRepo(c *models.Commit, dest string) error {
+	fmt.Printf(":: Current commit:: %d\n", c.ID)
+	fmt.Printf(":: Current commit:: %v\n", c.ImageBuildTarURL)
 	// ensure we weren't passed a nil pointer
 	if c == nil {
 		log.Error("nil pointer to models.Commit provided")

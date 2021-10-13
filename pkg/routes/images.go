@@ -505,7 +505,7 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
-		repo, err := services.RepoService.GetRepoByCommitID(image.CommitID)
+		repo, err := services.RepoService.GetRepoByID(image.Commit.RepoID)
 		if err != nil {
 			err := errors.NewNotFound(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.CommitID))
 			w.WriteHeader(err.Status)
