@@ -15,7 +15,7 @@ import (
 
 // MakeTPRepoRouter adds suport for operation on ThirdyPartyRepo
 func MakeTPRepoRouter(sub chi.Router) {
-	// sub.With(common.Paginate).Get("/", ListAllThirdyPartyRepo)
+	sub.With(common.Paginate).Get("/", ListAllThirdyPartyRepo)
 	sub.Post("/", CreateThirdyPartyRepo)
 	// sub.Route("/{repoId}", func(r chi.Router) {
 	// 	r.Get("/", GetTPRepoByID)
@@ -38,7 +38,6 @@ func CreateThirdyPartyRepo(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-
 	log.Infof("ThirdPartyRepo::create: %#v", tprepo)
 
 	account, err := common.GetAccount(r)
@@ -75,16 +74,14 @@ func initTPRepoCreateRequest(w http.ResponseWriter, r *http.Request) (*models.Th
 		json.NewEncoder(w).Encode(&err)
 		return nil, err
 	}
-	log.Infof("ThirdyPartyRepo::requestJSON: %#v", tprepo)
 
 	if err := tprepo.ValidateRequest(); err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.Status)
-		json.NewEncoder(w).Encode(&err)
+		// json.NewEncoder(w).Encode(&err)
 		return nil, err
 	}
-
 	if tprepo.URL == "" {
 		err := errors.NewBadRequest("URL is requird")
 		w.WriteHeader(err.Status)
@@ -95,16 +92,30 @@ func initTPRepoCreateRequest(w http.ResponseWriter, r *http.Request) (*models.Th
 		w.WriteHeader(err.Status)
 		return nil, err
 	}
-	if tprepo.URL != "" && tprepo.Name != "" {
-		tprepo := models.ThirdyPartyRepo{
-			Name:        tprepo.Name,
-			URL:         tprepo.URL,
-			Description: tprepo.Description,
-		}
-		db.DB.Create(&tprepo)
 
-		log.Infof("Getting ThirdyPartyRepo info: repo %s, %s", tprepo.URL, tprepo.Name)
-
-	}
 	return tprepo, nil
+}
+
+// ListAllThirdyPartyRepo return all the ThirdyPartyRepo
+func ListAllThirdyPartyRepo(w http.ResponseWriter, r *http.Request) {
+	var tprepo *[]models.ThirdyPartyRepo
+	pagination := common.GetPagination(r)
+	// // account, err := common.GetAccount(r)
+	// if err != nil {
+	// 	log.Info(err)
+	// 	err := errors.NewBadRequest(err.Error())
+	// 	w.WriteHeader(err.Status)
+	// 	json.NewEncoder(w).Encode(&err)
+	// 	return
+	// }
+
+	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Find(&tprepo)
+	if result.Error != nil {
+		err := errors.NewBadRequest("Not Found")
+		w.WriteHeader(err.Status)
+		json.NewEncoder(w).Encode(&err)
+	}
+
+	json.NewEncoder(w).Encode(&tprepo)
+
 }

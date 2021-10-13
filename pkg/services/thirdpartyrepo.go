@@ -5,6 +5,7 @@ import (
 
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	log "github.com/sirupsen/logrus"
 )
 
 // TPRepoServiceInterface defines
@@ -25,10 +26,20 @@ type TPRepoService struct {
 // CreateThirdyPartyRepo creates the ThirdyPartyRepo for an Account on our database
 func (s *TPRepoService) CreateThirdyPartyRepo(tprepo *models.ThirdyPartyRepo, account string) error {
 	var image models.Image
-	image.Commit.Account = account
-	tx := db.DB.Create(&tprepo)
-	if tx.Error != nil {
-		return tx.Error
+	image.Account = account
+
+	if tprepo.URL != "" && tprepo.Name != "" {
+		tprepo = &models.ThirdyPartyRepo{
+			Name:        tprepo.Name,
+			URL:         tprepo.URL,
+			Description: tprepo.Description,
+		}
+		result := db.DB.Create(&tprepo)
+		if result.Error != nil {
+			return result.Error
+		}
+		log.Infof("Getting ThirdyPartyRepo info: repo %s, %s", tprepo.URL, tprepo.Name)
+
 	}
 	return nil
 }

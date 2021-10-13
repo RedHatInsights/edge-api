@@ -15,6 +15,8 @@ type ThirdyPartyRepo struct {
 const (
 	// RepoNameCantBeInvalidMessage is the error message when the name is invalid
 	RepoNameCantBeInvalidMessage = "name must start with alphanumeric characters and can contain underscore and hyphen characters"
+	RepoURLCantBeNilMessage      = "repository URL can't be empty "
+	RepoNameCantBeNilMessage     = "repository name can't be empty "
 )
 
 var (
@@ -23,8 +25,8 @@ var (
 
 // ValidateRequest validates the Repo Request
 func (t *ThirdyPartyRepo) ValidateRequest() error {
-	if !validRepoName.MatchString(t.Name) {
-		return errors.New(RepoNameCantBeInvalidMessage)
+	if t.Name == "" {
+		return errors.New(RepoNameCantBeNilMessage)
 	}
 	return nil
 }
