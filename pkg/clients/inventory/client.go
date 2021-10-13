@@ -64,7 +64,7 @@ const (
 
 // ReturnDevices will return the list of devices without filter by tag or uuid
 func (c *Client) ReturnDevices() (Response, error) {
-	url := fmt.Sprintf("%s/api/inventory/v1/hosts", config.Get().InventoryConfig.URL)
+	url := fmt.Sprintf("%s/%s", config.Get().InventoryConfig.URL, inventoryAPI)
 	fullURL := url + filterParams
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
@@ -97,7 +97,7 @@ func (c *Client) ReturnDevices() (Response, error) {
 func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
 	deviceIDParam := "&hostname_or_id=" + deviceID
 	log.Infof("::deviceIDParam: %s\n", deviceIDParam)
-	url := fmt.Sprintf("%s/api/inventory/v1/hosts", config.Get().InventoryConfig.URL)
+	url := fmt.Sprintf("%s/%s", config.Get().InventoryConfig.URL, inventoryAPI)
 	fullURL := url + filterParams + deviceIDParam
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
@@ -136,7 +136,7 @@ func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
 // ReturnDevicesByTag will return the list of devices by tag
 func (c *Client) ReturnDevicesByTag(tag string) (Response, error) {
 	tagsParam := "?tags=" + tag
-	url := fmt.Sprintf("%s/api/inventory/v1/hosts", config.Get().InventoryConfig.URL)
+	url := fmt.Sprintf("%s/%s", config.Get().InventoryConfig.URL, inventoryAPI)
 	fullURL := url + filterParams + tagsParam
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
