@@ -21,6 +21,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
+
+	"gorm.io/gorm"
 )
 
 // WaitGroup is the waitg roup for pending image builds
@@ -493,6 +495,9 @@ func (s *ImageService) CheckImageName(name, account string) (bool, error) {
 	var imageFindByName *models.Image
 	result := db.DB.Where("name = ? AND account = ?", name, account).First(&imageFindByName)
 	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return false, nil
+		}
 		return false, result.Error
 	}
 	return imageFindByName != nil, nil
