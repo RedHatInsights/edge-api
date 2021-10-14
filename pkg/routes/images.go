@@ -394,7 +394,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	repoService := services.NewRepoService()
+	repoService := services.NewRepoService(r.Context())
 	repo, err := repoService.GetRepoByCommitID(image.CommitID)
 	if err != nil {
 		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
