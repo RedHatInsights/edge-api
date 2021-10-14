@@ -570,7 +570,6 @@ func addImageExtraData(image *models.Image) (*models.Image, error) {
 
 func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 	var image models.Image
-	fmt.Println(s.ctx)
 	account, err := common.GetAccountFromContext(s.ctx)
 	if err != nil {
 		return nil, new(AccountNotSet)
