@@ -32,7 +32,7 @@ func CreateThirdyPartyRepo(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -42,7 +42,7 @@ func CreateThirdyPartyRepo(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -52,8 +52,8 @@ func CreateThirdyPartyRepo(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
-		err.Title = "Failed creating Third Party Repository"
-		w.WriteHeader(err.Status)
+		err.SetTitle("failed creating third party repository")
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
@@ -67,8 +67,8 @@ func initTPRepoCreateRequest(w http.ResponseWriter, r *http.Request) (*models.Th
 	var tprepo *models.ThirdyPartyRepo
 	if err := json.NewDecoder(r.Body).Decode(&tprepo); err != nil {
 		log.Error(err)
-		err := errors.NewBadRequest("Invalid JSON request")
-		w.WriteHeader(err.Status)
+		err := errors.NewBadRequest("invalid JSON request")
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return nil, err
 	}
@@ -76,17 +76,17 @@ func initTPRepoCreateRequest(w http.ResponseWriter, r *http.Request) (*models.Th
 	if err := tprepo.ValidateRequest(); err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		return nil, err
 	}
 	if tprepo.URL == "" {
 		err := errors.NewBadRequest("URL is requird")
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		return nil, err
 	}
 	if tprepo.Name == "" {
 		err := errors.NewBadRequest("Name is required")
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		return nil, err
 	}
 
@@ -101,7 +101,7 @@ func ListAllThirdyPartyRepo(w http.ResponseWriter, r *http.Request) {
 	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Find(&tprepo)
 	if result.Error != nil {
 		err := errors.NewBadRequest("Not Found")
-		w.WriteHeader(err.Status)
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
 
