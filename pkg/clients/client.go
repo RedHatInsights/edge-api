@@ -14,8 +14,8 @@ import (
 // GetOutgoingHeaders returns Red Hat Insights headers from our request to use it
 // in other request that will be used when communicating in Red Hat Insights services
 func GetOutgoingHeaders(ctx context.Context) map[string]string {
-	requestId := request_id.GetReqID(ctx)
-	headers := map[string]string{"x-rh-insights-request-id": requestId}
+	requestID := request_id.GetReqID(ctx)
+	headers := map[string]string{"x-rh-insights-request-id": requestID}
 	if config.Get().Auth {
 		xhrid := identity.Get(ctx)
 		identityHeaders, err := json.Marshal(xhrid)

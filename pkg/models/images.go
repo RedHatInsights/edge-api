@@ -8,6 +8,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 )
 
+// ImageSet represents a collection of images
 type ImageSet struct {
 	Model
 	Name    string  `json:"Name"`
