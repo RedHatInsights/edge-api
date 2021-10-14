@@ -39,7 +39,7 @@ func NewRepoBuilder(ctx context.Context) RepoBuilderInterface {
 	return &RepoBuilder{
 		ctx:          ctx,
 		filesService: NewFilesService(),
-		repoService:  NewRepoService(),
+		repoService:  NewRepoService(ctx),
 	}
 }
 

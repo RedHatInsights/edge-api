@@ -21,7 +21,9 @@ type ImageSetsServiceInterface interface {
 
 // NewImageSetsService gives a instance of the main implementation of a ImageSetsServiceInterface
 func NewImageSetsService(ctx context.Context) ImageSetsServiceInterface {
-	return &ImageSetsService{}
+	return &ImageSetsService{
+		ctx: ctx,
+	}
 }
 
 // ImageSetsService is the main implementation of a ImageSetsServiceInterface

@@ -1,6 +1,8 @@
 package services
 
 import (
+	"context"
+
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
@@ -13,12 +15,16 @@ type CommitServiceInterface interface {
 }
 
 // NewCommitService gives a instance of the main implementation of CommitServiceInterface
-func NewCommitService() CommitServiceInterface {
-	return &CommitService{}
+func NewCommitService(ctx context.Context) CommitServiceInterface {
+	return &CommitService{
+		ctx: ctx,
+	}
 }
 
 // CommitService is the main implementation of a CommitServiceInterface
-type CommitService struct{}
+type CommitService struct {
+	ctx context.Context
+}
 
 // GetCommitByID receives CommitID uint and get a *models.Commit back
 func (s *CommitService) GetCommitByID(commitID uint) (*models.Commit, error) {
