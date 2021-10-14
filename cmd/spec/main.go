@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -115,6 +116,7 @@ func main() {
 	checkErr(err)
 	err = ioutil.WriteFile("./cmd/spec/openapi.yaml", b.Bytes(), 0666)
 	checkErr(err)
+	fmt.Println("Spec was generated sucessfully")
 }
 
 func checkErr(err error) {
