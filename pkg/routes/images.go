@@ -522,6 +522,10 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type CheckImageNameResponse struct {
+	ImageExists bool `json:"ImageExists"`
+}
+
 func CheckImageName(w http.ResponseWriter, r *http.Request) {
 	var image *models.Image
 	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
@@ -541,7 +545,7 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	if image != nil {
 
-		imageInUse, err := services.ImageService.CheckImageName(image.Name, account)
+		imageExists, err := services.ImageService.CheckImageName(image.Name, account)
 		if err != nil {
 			err := errors.NewInternalServerError()
 			w.WriteHeader(err.GetStatus())
@@ -549,7 +553,9 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(imageInUse)
+		json.NewEncoder(w).Encode(CheckImageNameResponse{
+			ImageExists: imageExists,
+		})
 		return
 	}
 	var errImageNotFilled = errors.NewInternalServerError()

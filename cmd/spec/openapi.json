@@ -24,6 +24,14 @@
         },
         "type": "object"
       },
+      "v1.CheckImageResponse": {
+        "properties": {
+          "ImageExists": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
       "v1.Device": {
         "properties": {
           "Connected": {
@@ -2249,7 +2257,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v1.bool"
+                  "$ref": "#/components/schemas/v1.CheckImageResponse"
                 }
               }
             },

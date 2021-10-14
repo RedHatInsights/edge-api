@@ -15,6 +15,11 @@ components:
         Title:
           type: string
       type: object
+    v1.CheckImageResponse:
+      properties:
+        ImageExists:
+          type: boolean
+      type: object
     v1.Device:
       properties:
         Connected:
@@ -1559,26 +1564,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/v1.Image'
+              $ref: "#/components/schemas/v1.Image"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.Image'
+                $ref: "#/components/schemas/v1.Image"
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.BadRequest'
+                $ref: "#/components/schemas/v1.BadRequest"
           description: The request sent couldn't be processed.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.InternalServerError'
+                $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
       summary: Composes an image on Image Builder
     get:
@@ -1596,19 +1601,19 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/v1.Image'
+                      $ref: "#/components/schemas/v1.Image"
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.BadRequest'
+                $ref: "#/components/schemas/v1.BadRequest"
           description: The request sent couldn't be processed.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.InternalServerError'
+                $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
       summary: Lists all images for an account.
   /images/{imageId}/update:
@@ -1620,31 +1625,31 @@ paths:
           required: true
           description: ImageID
           schema:
-            type : integer
+            type: integer
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/v1.Image'
+              $ref: "#/components/schemas/v1.Image"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.Image'
+                $ref: "#/components/schemas/v1.Image"
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.BadRequest'
+                $ref: "#/components/schemas/v1.BadRequest"
           description: The request sent couldn't be processed.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.InternalServerError'
+                $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
       summary: Composes an Update for a image
   /images/{imageId}:
@@ -1656,25 +1661,25 @@ paths:
           required: true
           description: ImageID
           schema:
-            type : integer
+            type: integer
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.Image'
+                $ref: "#/components/schemas/v1.Image"
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.BadRequest'
+                $ref: "#/components/schemas/v1.BadRequest"
           description: The request sent couldn't be processed.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.InternalServerError'
+                $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
       summary: Get an image by id.
   /images/{ostreeCommitHash}/info:
@@ -1686,27 +1691,27 @@ paths:
           required: true
           description: ostreeCommitHash
           schema:
-            type : string
+            type: string
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.Image'
+                $ref: "#/components/schemas/v1.Image"
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.BadRequest'
+                $ref: "#/components/schemas/v1.BadRequest"
           description: The request sent couldn't be processed.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.InternalServerError'
+                $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
-      summary: Get an image by ostree hash.    
+      summary: Get an image by ostree hash.
   /images/{imageId}/status:
     get:
       operationId: getImageStatus
@@ -1716,7 +1721,7 @@ paths:
           required: true
           description: ImageID
           schema:
-            type : integer
+            type: integer
       responses:
         "200":
           content:
@@ -1732,13 +1737,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.BadRequest'
+                $ref: "#/components/schemas/v1.BadRequest"
           description: The request sent couldn't be processed.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.InternalServerError'
+                $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
       summary: Get image status.
       description: This method goes to image builder if the image is still building and updates the status if needed.
@@ -1751,25 +1756,25 @@ paths:
           required: true
           description: ImageID
           schema:
-            type : integer
+            type: integer
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.Repo'
+                $ref: "#/components/schemas/v1.Repo"
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.BadRequest'
+                $ref: "#/components/schemas/v1.BadRequest"
           description: The request sent couldn't be processed.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.InternalServerError'
+                $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
       summary: Get Image OSTree repo.
       description: Returns the information of the OSTree Repository of a particular Image.
@@ -1780,26 +1785,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/v1.AddUpdate'
+              $ref: "#/components/schemas/v1.AddUpdate"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.UpdateTransaction'
+                $ref: "#/components/schemas/v1.UpdateTransaction"
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.BadRequest'
+                $ref: "#/components/schemas/v1.BadRequest"
           description: The request sent couldn't be processed.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.BadRequest'
+                $ref: "#/components/schemas/v1.BadRequest"
           description: There was an internal server error.
       summary: Executes a device update.
       description: Executes a device update.
@@ -1812,19 +1817,19 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/v1.UpdateTransaction'
+                  $ref: "#/components/schemas/v1.UpdateTransaction"
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.BadRequest'
+                $ref: "#/components/schemas/v1.BadRequest"
           description: The request sent couldn't be processed.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.BadRequest'
+                $ref: "#/components/schemas/v1.BadRequest"
           description: There was an internal server error.
       summary: Gets all device updates.
       description: Gets all device updates.
@@ -1843,19 +1848,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.UpdateTransaction'
+                $ref: "#/components/schemas/v1.UpdateTransaction"
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.BadRequest'
+                $ref: "#/components/schemas/v1.BadRequest"
           description: The request sent couldn't be processed.
-        "500": 
+        "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.InternalServerError'
+                $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
       summary: Gets a single requested update.
       description: Gets a single requested update.
@@ -1881,13 +1886,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.BadRequest'
+                $ref: "#/components/schemas/v1.BadRequest"
           description: The request sent couldn't be processed.
-        "500": 
+        "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.InternalServerError'
+                $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
   /updates/device/{DeviceUUID}:
     get:
@@ -1898,19 +1903,19 @@ paths:
           required: true
           description: DeviceUUID
           schema:
-            type : string
+            type: string
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.DeviceDetails'
+                $ref: "#/components/schemas/v1.DeviceDetails"
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.BadRequest'
+                $ref: "#/components/schemas/v1.BadRequest"
           description: The request sent couldn't be processed.
       summary: Return list of available updates for a device.
       description: Return list of available updates for a device.
@@ -1923,7 +1928,7 @@ paths:
           required: true
           description: DeviceUUID
           schema:
-            type : string
+            type: string
       responses:
         "200":
           content:
@@ -1934,19 +1939,19 @@ paths:
                   type: object
                   properties:
                     Image:
-                      $ref: '#/components/schemas/v1.Image'
+                      $ref: "#/components/schemas/v1.Image"
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.BadRequest'
+                $ref: "#/components/schemas/v1.BadRequest"
           description: The request sent couldn't be processed.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.InternalServerError'
+                $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
       summary: Return list of available updates for a device.
       description: Return list of available updates for a device.
@@ -1959,7 +1964,7 @@ paths:
           required: true
           description: DeviceUUID
           schema:
-            type : string
+            type: string
       responses:
         "200":
           content:
@@ -1968,24 +1973,24 @@ paths:
                 type: object
                 properties:
                   Image:
-                    $ref: '#/components/schemas/v1.Image'
-                  
+                    $ref: "#/components/schemas/v1.Image"
+
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.BadRequest'
+                $ref: "#/components/schemas/v1.BadRequest"
           description: The request sent couldn't be processed.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.InternalServerError'
+                $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
       summary: Return image running on device.
-      description: Return image running on device.   
-  /devices/{DeviceUUID}:  
+      description: Return image running on device.
+  /devices/{DeviceUUID}:
     get:
       operationId: getDevice
       parameters:
@@ -2000,25 +2005,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.DeviceDetails'
+                $ref: "#/components/schemas/v1.DeviceDetails"
           description: OK
         "404":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.NotFound'
+                $ref: "#/components/schemas/v1.NotFound"
           description: The device was not found.
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.BadRequest'
+                $ref: "#/components/schemas/v1.BadRequest"
           description: The request sent couldn't be processed.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.InternalServerError'
+                $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
       summary: Get a device by UUID.
   /image-sets/{ImageSetId}:
@@ -2036,8 +2041,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.ImageSetDetails'
-          description: OK   
+                $ref: "#/components/schemas/v1.ImageSetDetails"
+          description: OK
   /checkImageName:
     post:
       operationId: checkImageName
@@ -2045,25 +2050,25 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/v1.Image'
+              $ref: "#/components/schemas/v1.Image"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.bool'
+                $ref: "#/components/schemas/v1.CheckImageResponse"
           description: OK
         "400":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.BadRequest'
+                $ref: "#/components/schemas/v1.BadRequest"
           description: The request sent couldn't be processed.
         "500":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.InternalServerError'
+                $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
-      summary: Check if image name is in use for current account 
+      summary: Check if image name is in use for current account
