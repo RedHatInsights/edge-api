@@ -216,8 +216,8 @@ func (s *ImageService) postProcessImage(id uint) {
 
 	repo := s.CreateRepoForImage(i)
 	i.Commit.Repo = repo
-	i.CommitID = repo.ID
-	db.DB.Save(&i)
+	i.Commit.RepoID = repo.ID
+	db.DB.Save(&i.Commit)
 	// TODO: We need to discuss this whole thing post-July deliverable
 	if i.HasOutputType(models.ImageTypeInstaller) {
 		i, err := s.imageBuilder.ComposeInstaller(repo, i)
@@ -254,7 +254,7 @@ func (s *ImageService) postProcessImage(id uint) {
 
 	log.Infof("Setting image %d status as success", i.ID)
 	if i.Commit.Status == models.ImageStatusSuccess {
-		if i.Installer != nil || i.Installer.Status == models.ImageStatusSuccess {
+		if i.Installer != nil && i.Installer.Status == models.ImageStatusSuccess {
 			i.Status = models.ImageStatusSuccess
 			db.DB.Save(&i)
 		}
