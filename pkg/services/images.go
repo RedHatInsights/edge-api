@@ -46,7 +46,10 @@ type ImageServiceInterface interface {
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
 func NewImageService(ctx context.Context) ImageServiceInterface {
-	return &ImageService{imageBuilder: imagebuilder.InitClient(ctx)}
+	return &ImageService{
+		ctx:          ctx,
+		imageBuilder: imagebuilder.InitClient(ctx),
+	}
 }
 
 // ImageService is the main implementation of a ImageServiceInterface
@@ -567,6 +570,7 @@ func addImageExtraData(image *models.Image) (*models.Image, error) {
 
 func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 	var image models.Image
+	fmt.Println(s.ctx)
 	account, err := common.GetAccountFromContext(s.ctx)
 	if err != nil {
 		return nil, new(AccountNotSet)
