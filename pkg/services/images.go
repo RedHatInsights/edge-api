@@ -498,6 +498,7 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 	return image, nil
 }
 
+// CheckImageName returns false if the image doesnt exist and true if the image exists
 func (s *ImageService) CheckImageName(name, account string) (bool, error) {
 	var imageFindByName *models.Image
 	result := db.DB.Where("name = ? AND account = ?", name, account).First(&imageFindByName)
