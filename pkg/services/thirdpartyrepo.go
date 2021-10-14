@@ -8,7 +8,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// TPRepoServiceInterface defines
+// TPRepoServiceInterface defines the interface that helps handles
+// the business logic of creating Third Party Repository
 type TPRepoServiceInterface interface {
 	CreateThirdyPartyRepo(tprepo *models.ThirdyPartyRepo, account string) error
 }

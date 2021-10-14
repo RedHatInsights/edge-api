@@ -24,7 +24,7 @@ var (
 	validRepoName = regexp.MustCompile(`^[A-Za-z0-9]+[A-Za-z0-9\s_-]*$`)
 )
 
-// ValidateRequest validates the Repo Request
+// ValidateRequest validates the Repository Request
 func (t *ThirdyPartyRepo) ValidateRequest() error {
 	if t.Name == "" {
 		return errors.New(RepoNameCantBeNilMessage)

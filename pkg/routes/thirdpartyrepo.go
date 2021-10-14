@@ -17,9 +17,6 @@ import (
 func MakeTPRepoRouter(sub chi.Router) {
 	sub.With(common.Paginate).Get("/", ListAllThirdyPartyRepo)
 	sub.Post("/", CreateThirdyPartyRepo)
-	// sub.Route("/{repoId}", func(r chi.Router) {
-	// 	r.Get("/", GetTPRepoByID)
-	// })
 }
 
 // A CreateTPRepoRequest model.
@@ -27,6 +24,7 @@ type CreateTPRepoRequest struct {
 	Repo *models.ThirdyPartyRepo
 }
 
+// CreateThirdyPartyRepo creates Third Party Repository
 func CreateThirdyPartyRepo(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	defer r.Body.Close()
@@ -64,7 +62,7 @@ func CreateThirdyPartyRepo(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// initTPRepoCreateRequest validates request to create/update an image.
+// initTPRepoCreateRequest validates request to create thirdypartyrepo.
 func initTPRepoCreateRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdyPartyRepo, error) {
 	var tprepo *models.ThirdyPartyRepo
 	if err := json.NewDecoder(r.Body).Decode(&tprepo); err != nil {
