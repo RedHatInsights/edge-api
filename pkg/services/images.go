@@ -259,11 +259,14 @@ func (s *ImageService) postProcessImage(id uint) {
 				log.Errorf("Kickstart file injection failed %s", err.Error())
 			}
 		}
+	} else {
+		// Cleaning up possible non nil installers if doesnt have output type installer
+		i.Installer = nil
 	}
 
 	log.Infof("Setting image %d status as success", i.ID)
 	if i.Commit.Status == models.ImageStatusSuccess {
-		if i.Installer != nil && i.Installer.Status == models.ImageStatusSuccess {
+		if i.Installer == nil || i.Installer.Status == models.ImageStatusSuccess {
 			i.Status = models.ImageStatusSuccess
 			db.DB.Save(&i)
 		}
