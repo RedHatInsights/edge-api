@@ -259,6 +259,9 @@ func (s *ImageService) postProcessImage(id uint) {
 				log.Errorf("Kickstart file injection failed %s", err.Error())
 			}
 		}
+	} else {
+		// Cleaning up possible non nil installers if doesnt have output type installer
+		i.Installer = nil
 	}
 
 	log.Infof("Setting image %d status as success", i.ID)
