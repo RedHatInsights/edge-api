@@ -42,6 +42,7 @@ type ImageServiceInterface interface {
 	GetImageByID(id string) (*models.Image, error)
 	GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error)
 	CheckImageName(name, account string) (bool, error)
+	RetryCreateImage(image *models.Image) error
 }
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
@@ -597,4 +598,10 @@ func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Im
 		return nil, new(ImageNotFoundError)
 	}
 	return addImageExtraData(&image)
+}
+
+func (s *ImageService) RetryCreateImage(image *models.Image) error {
+	go s.postProcessImage(image.ID)
+
+	return nil
 }

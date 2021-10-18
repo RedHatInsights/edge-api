@@ -121,6 +121,20 @@ func (mr *MockImageServiceInterfaceMockRecorder) GetImageByOSTreeCommitHash(comm
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageByOSTreeCommitHash", reflect.TypeOf((*MockImageServiceInterface)(nil).GetImageByOSTreeCommitHash), commitHash)
 }
 
+// RetryCreateImage mocks base method.
+func (m *MockImageServiceInterface) RetryCreateImage(image *models.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RetryCreateImage", image)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RetryCreateImage indicates an expected call of RetryCreateImage.
+func (mr *MockImageServiceInterfaceMockRecorder) RetryCreateImage(image interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RetryCreateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).RetryCreateImage), image)
+}
+
 // SetErrorStatusOnImage mocks base method.
 func (m *MockImageServiceInterface) SetErrorStatusOnImage(err error, i *models.Image) {
 	m.ctrl.T.Helper()
