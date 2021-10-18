@@ -307,18 +307,8 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&countErr)
 		return
 	}
-	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("images.account = ?", account).Joins("Commit").Joins("Installer").Find(&images)
+	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Where("images.account = ?", account).Joins("Commit").Joins("Installer").Find(&images)
 
-	for _, img := range images {
-		if img.Commit != nil {
-			db.DB.Model(img).Association("Packages").Find(&img.Packages)
-			if err != nil {
-				log.Error(":: Error ::", err.Error())
-			}
-		}
-	}
-
-	fmt.Printf(":: Result :: %v\n", result)
 	if result.Error != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
