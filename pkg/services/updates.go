@@ -143,8 +143,6 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 	db.DB.Save(update)
 	log.Infof("Repobuild::ends: update record %#v ", update)
 
-	s.RebootDevice(update)
-
 	log.Infof("Update was finished for :: %d", update.ID)
 	return update, nil
 }
