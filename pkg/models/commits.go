@@ -27,7 +27,7 @@ type Commit struct {
 	InstalledPackages    []InstalledPackage `json:"InstalledPackages,omitempty" gorm:"many2many:commit_installed_packages;"`
 	ComposeJobID         string             `json:"ComposeJobID"`
 	Status               string             `json:"Status"`
-	RepoID               uint               `json:"RepoID"`
+	RepoID               *uint              `json:"RepoID"`
 	Repo                 *Repo              `json:"Repo"`
 }
 

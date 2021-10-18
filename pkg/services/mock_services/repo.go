@@ -50,7 +50,7 @@ func (mr *MockRepoServiceInterfaceMockRecorder) GetRepoByCommitID(commitID inter
 }
 
 // GetRepoByID mocks base method.
-func (m *MockRepoServiceInterface) GetRepoByID(repoID uint) (*models.Repo, error) {
+func (m *MockRepoServiceInterface) GetRepoByID(repoID *uint) (*models.Repo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRepoByID", repoID)
 	ret0, _ := ret[0].(*models.Repo)
