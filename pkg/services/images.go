@@ -225,7 +225,7 @@ func (s *ImageService) postProcessImage(id uint) {
 
 	repo := s.CreateRepoForImage(i)
 	i.Commit.Repo = repo
-	i.Commit.RepoID = repo.ID
+	i.Commit.RepoID = &repo.ID
 	db.DB.Save(&i.Commit)
 	// TODO: We need to discuss this whole thing post-July deliverable
 	if i.HasOutputType(models.ImageTypeInstaller) {
@@ -280,7 +280,7 @@ func (s *ImageService) CreateRepoForImage(i *models.Image) *models.Repo {
 	fmt.Printf("Repo:: %d\n", repo.ID)
 	fmt.Printf("i.commit:: %d\n", i.Commit.ID)
 	i.Commit.Repo = repo
-	i.Commit.RepoID = repo.ID
+	i.Commit.RepoID = &repo.ID
 
 	tx2 := db.DB.Save(i.Commit)
 	if tx2.Error != nil {
