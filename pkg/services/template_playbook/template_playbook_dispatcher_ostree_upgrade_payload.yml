@@ -26,4 +26,4 @@
       failed_when: 'rpmostree_upgrade_out.rc != 0'
     - name: schedule reboot when rpmostree upgraded
       ansible.builtin.shell: systemd-run --on-active=120 /usr/bin/systemctl reboot
-      when: '"Upgraded:" in rpmostree_upgrade_out.stdout'
+      when: '"Staging deployment...done" in rpmostree_upgrade_out.stdout'
