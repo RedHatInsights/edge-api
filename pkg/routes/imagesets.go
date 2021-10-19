@@ -29,8 +29,9 @@ func MakeImageSetsRouter(sub chi.Router) {
 }
 
 func ImageSetCtx(next http.Handler) http.Handler {
-	var imageSet models.ImageSet
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var imageSet models.ImageSet
 		account, err := common.GetAccount(r)
 		if err != nil {
 			log.Info(err)
