@@ -307,6 +307,7 @@ func (c *Client) GetInstallerStatus(image *models.Image) (*models.Image, error) 
 	return image, nil
 }
 
+// GetMetadata returns the metadata on image builder for a particular image based on the ComposeJobID
 func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	log.Infof("Getting metadata for image ID %d", image.ID)
 	composeJobID := image.Commit.ComposeJobID

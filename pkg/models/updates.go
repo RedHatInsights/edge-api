@@ -4,15 +4,11 @@ import (
 	"errors"
 )
 
-/*
-Device
-
-	A record of Edge Devices referenced by their UUID as per the
-	cloud.redhat.com Inventory.
-
-	Connected refers to the devices Cloud Connector state, 0 is unavailable
-	and 1 is reachable.
-*/
+// Device is a record of Edge Devices referenced by their UUID as per the
+// cloud.redhat.com Inventory.
+//
+//	Connected refers to the devices Cloud Connector state, 0 is unavailable
+//	and 1 is reachable.
 type Device struct {
 	Model
 	UUID        string `json:"UUID"`
@@ -21,18 +17,14 @@ type Device struct {
 	Connected   bool   `gorm:"default:true" json:"Connected"`
 }
 
-/*
-UpdateTransaction
+//  UpdateTransaction rpresents the combination of an OSTree commit and a set of Inventory
+//	hosts that need to have the commit deployed to them
 
-	Represents the combination of an OSTree commit and a set of Inventory
-	hosts that need to have the commit deployed to them
-
-	This will ultimately kick off a transaction where the old version(s) of
-	OSTree commit that are currently deployed onto those devices are combined
-	with the new commit into a new OSTree repo, static deltas are computed, and
-	then the result is stored in a way that can be served(proxied) by a
-	Server (pkg/repo/server.go).
-*/
+//	This will ultimately kick off a transaction where the old version(s) of
+//	OSTree commit that are currently deployed onto those devices are combined
+//	with the new commit into a new OSTree repo, static deltas are computed, and
+//	then the result is stored in a way that can be served(proxied) by a
+//	Server (pkg/repo/server.go).
 type UpdateTransaction struct {
 	Model
 	Commit          *Commit          `json:"Commit"`
@@ -47,15 +39,9 @@ type UpdateTransaction struct {
 	DispatchRecords []DispatchRecord `gorm:"many2many:updatetransaction_dispatchrecords;" json:"DispatchRecords"`
 }
 
-/*
-DispatchRecord
-
-	Represents the combination of a Playbook Dispatcher (https://github.com/RedHatInsights/playbook-dispatcher)
-	PlaybookURL, a pointer to a Device, and the status.
-
-	This is used within UpdateTransaction for accounting purposes.
-
-*/
+// DispatchRecord represents the combination of a Playbook Dispatcher (https://github.com/RedHatInsights/playbook-dispatcher),
+// of a PlaybookURL, a pointer to a Device, and the status.
+// This is used within UpdateTransaction for accounting purposes.
 type DispatchRecord struct {
 	Model
 	PlaybookURL          string  `json:"PlaybookURL"`

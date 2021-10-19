@@ -246,7 +246,7 @@ func TestGetRepoForImage(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockRepoService := mock_services.NewMockRepoServiceInterface(ctrl)
-	mockRepoService.EXPECT().GetRepoByCommitID(gomock.Any()).Return(&testRepo, nil)
+	mockRepoService.EXPECT().GetRepoByID(gomock.Any()).Return(&testRepo, nil)
 	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
 		RepoService: mockRepoService,
 	})
@@ -289,7 +289,7 @@ func TestGetRepoForImageWhenNotFound(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockRepoService := mock_services.NewMockRepoServiceInterface(ctrl)
-	mockRepoService.EXPECT().GetRepoByCommitID(gomock.Any()).Return(nil, errors.New("not found"))
+	mockRepoService.EXPECT().GetRepoByID(gomock.Any()).Return(nil, errors.New("not found"))
 	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
 		RepoService: mockRepoService,
 	})

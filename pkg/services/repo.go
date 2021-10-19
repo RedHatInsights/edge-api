@@ -10,7 +10,7 @@ import (
 
 // RepoServiceInterface defines the interface to handle the business logic of RHEL for Edge Devices
 type RepoServiceInterface interface {
-	GetRepoByID(repoID uint) (*models.Repo, error)
+	GetRepoByID(repoID *uint) (*models.Repo, error)
 	GetRepoByCommitID(commitID uint) (*models.Repo, error)
 }
 
@@ -27,7 +27,7 @@ type RepoService struct {
 }
 
 // GetRepoByID receives RepoID uint and get a *models.Repo back
-func (s *RepoService) GetRepoByID(repoID uint) (*models.Repo, error) {
+func (s *RepoService) GetRepoByID(repoID *uint) (*models.Repo, error) {
 	log.Debugf("GetRepoByID::repoID: %#v", repoID)
 	var repo models.Repo
 	result := db.DB.First(&repo, repoID)

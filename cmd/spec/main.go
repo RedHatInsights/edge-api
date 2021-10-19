@@ -61,6 +61,12 @@ func main() {
 	}
 	components.Schemas["v1.ImageSetDetails"] = imageSetDetails
 
+	checkImageResponse, _, err := openapi3gen.NewSchemaRefForValue(&routes.CheckImageNameResponse{})
+	if err != nil {
+		panic(err)
+	}
+	components.Schemas["v1.CheckImageResponse"] = checkImageResponse
+
 	var checkNameBool bool
 	boolSchema, _, err := openapi3gen.NewSchemaRefForValue(checkNameBool)
 	if err != nil {
