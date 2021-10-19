@@ -15,7 +15,7 @@ import (
 
 // ClientInterface is an Interface to make requests to PlaybookDispatcher
 type ClientInterface interface {
-	ExecuteDispatcher(payload DispatcherPayload) ([]PlaybookDispatcherResponse, error)
+	ExecuteDispatcher(payload DispatcherPayload) ([]Response, error)
 }
 
 // Client is the implementation of an ClientInterface
@@ -38,13 +38,14 @@ type DispatcherPayload struct {
 	Account     string `json:"account"`
 }
 
-// PlaybookDispatcherResponse represents the response retrieved by playbook dispatcher
-type PlaybookDispatcherResponse struct {
+// Response represents the response retrieved by playbook dispatcher
+type Response struct {
 	StatusCode           int    `json:"code"`
 	PlaybookDispatcherID string `json:"id"`
 }
 
-func (c *Client) ExecuteDispatcher(payload DispatcherPayload) ([]PlaybookDispatcherResponse, error) {
+// ExecuteDispatcher executes a DispatcherPayload, sending it to playbook dispatcher
+func (c *Client) ExecuteDispatcher(payload DispatcherPayload) ([]Response, error) {
 	payloadAry := [1]DispatcherPayload{payload}
 
 	payloadBuf := new(bytes.Buffer)
@@ -88,7 +89,7 @@ func (c *Client) ExecuteDispatcher(payload DispatcherPayload) ([]PlaybookDispatc
 	}
 	defer resp.Body.Close()
 
-	var playbookResponse []PlaybookDispatcherResponse
+	var playbookResponse []Response
 	json.Unmarshal([]byte(body), &playbookResponse)
 	log.Infof("::executeDispatcher::playbookResponse: %#v", playbookResponse)
 	return playbookResponse, nil

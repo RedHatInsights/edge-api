@@ -307,18 +307,8 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&countErr)
 		return
 	}
-	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("images.account = ?", account).Joins("Commit").Joins("Installer").Find(&images)
+	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Where("images.account = ?", account).Joins("Commit").Joins("Installer").Find(&images)
 
-	for _, img := range images {
-		if img.Commit != nil {
-			db.DB.Model(img).Association("Packages").Find(&img.Packages)
-			if err != nil {
-				log.Error(":: Error ::", err.Error())
-			}
-		}
-	}
-
-	fmt.Printf(":: Result :: %v\n", result)
 	if result.Error != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -394,7 +384,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	repoService := services.NewRepoService()
+	repoService := services.NewRepoService(r.Context())
 	repo, err := repoService.GetRepoByCommitID(image.CommitID)
 	if err != nil {
 		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
@@ -477,7 +467,7 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
-		repo, err := services.RepoService.GetRepoByCommitID(image.CommitID)
+		repo, err := services.RepoService.GetRepoByID(image.Commit.RepoID)
 		if err != nil {
 			err := errors.NewNotFound(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.CommitID))
 			w.WriteHeader(err.GetStatus())
@@ -522,6 +512,10 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type CheckImageNameResponse struct {
+	ImageExists bool `json:"ImageExists"`
+}
+
 func CheckImageName(w http.ResponseWriter, r *http.Request) {
 	var image *models.Image
 	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
@@ -541,7 +535,7 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	if image != nil {
 
-		imageInUse, err := services.ImageService.CheckImageName(image.Name, account)
+		imageExists, err := services.ImageService.CheckImageName(image.Name, account)
 		if err != nil {
 			err := errors.NewInternalServerError()
 			w.WriteHeader(err.GetStatus())
@@ -549,7 +543,9 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(imageInUse)
+		json.NewEncoder(w).Encode(CheckImageNameResponse{
+			ImageExists: imageExists,
+		})
 		return
 	}
 	var errImageNotFilled = errors.NewInternalServerError()

@@ -47,6 +47,10 @@
           "UpdatedAt": {
             "format": "date-time",
             "type": "string"
+      "v1.CheckImageResponse": {
+        "properties": {
+          "ImageExists": {
+            "type": "boolean"
           }
         },
         "type": "object"
@@ -2276,7 +2280,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v1.bool"
+                  "$ref": "#/components/schemas/v1.CheckImageResponse"
                 }
               }
             },

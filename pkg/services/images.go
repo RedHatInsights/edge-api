@@ -46,7 +46,10 @@ type ImageServiceInterface interface {
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
 func NewImageService(ctx context.Context) ImageServiceInterface {
-	return &ImageService{imageBuilder: imagebuilder.InitClient(ctx)}
+	return &ImageService{
+		ctx:          ctx,
+		imageBuilder: imagebuilder.InitClient(ctx),
+	}
 }
 
 // ImageService is the main implementation of a ImageServiceInterface
@@ -121,7 +124,7 @@ func (s *ImageService) UpdateImage(image *models.Image, account string, previous
 		} else {
 			var repo *RepoService
 
-			repoURL, err := repo.GetRepoByCommitID(previousImage.CommitID)
+			repoURL, err := repo.GetRepoByID(previousImage.Commit.RepoID)
 			if err != nil {
 				err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
 				return err
@@ -221,7 +224,9 @@ func (s *ImageService) postProcessImage(id uint) {
 	}(s.imageBuilder)
 
 	repo := s.CreateRepoForImage(i)
-
+	i.Commit.Repo = repo
+	i.Commit.RepoID = &repo.ID
+	db.DB.Save(&i.Commit)
 	// TODO: We need to discuss this whole thing post-July deliverable
 	if i.HasOutputType(models.ImageTypeInstaller) {
 		i, err := s.imageBuilder.ComposeInstaller(repo, i)
@@ -254,11 +259,14 @@ func (s *ImageService) postProcessImage(id uint) {
 				log.Errorf("Kickstart file injection failed %s", err.Error())
 			}
 		}
+	} else {
+		// Cleaning up possible non nil installers if doesnt have output type installer
+		i.Installer = nil
 	}
 
 	log.Infof("Setting image %d status as success", i.ID)
 	if i.Commit.Status == models.ImageStatusSuccess {
-		if i.Installer != nil || i.Installer.Status == models.ImageStatusSuccess {
+		if i.Installer == nil || i.Installer.Status == models.ImageStatusSuccess {
 			i.Status = models.ImageStatusSuccess
 			db.DB.Save(&i)
 		}
@@ -268,11 +276,22 @@ func (s *ImageService) postProcessImage(id uint) {
 func (s *ImageService) CreateRepoForImage(i *models.Image) *models.Repo {
 	log.Infof("Commit %d for Image %d is ready. Creating OSTree repo.", i.Commit.ID, i.ID)
 	repo := &models.Repo{
-		CommitID: &i.Commit.ID,
-		Commit:   i.Commit,
-		Status:   models.RepoStatusBuilding,
+		Status: models.RepoStatusBuilding,
 	}
 	tx := db.DB.Create(repo)
+	db.DB.Save(&repo)
+	fmt.Printf("Repo:: %d\n", repo.ID)
+	fmt.Printf("i.commit:: %d\n", i.Commit.ID)
+	i.Commit.Repo = repo
+	i.Commit.RepoID = &repo.ID
+
+	tx2 := db.DB.Save(i.Commit)
+	if tx2.Error != nil {
+		fmt.Printf("::TX2:: %v\n", tx2.Error)
+		panic(tx2.Error)
+	}
+	fmt.Printf("i.commit:: %d\n", i.Commit.RepoID)
+
 	if tx.Error != nil {
 		log.Error(tx.Error)
 		panic(tx.Error)
@@ -495,6 +514,7 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 	return image, nil
 }
 
+// CheckImageName returns false if the image doesnt exist and true if the image exists
 func (s *ImageService) CheckImageName(name, account string) (bool, error) {
 	var imageFindByName *models.Image
 	result := db.DB.Where("name = ? AND account = ?", name, account).First(&imageFindByName)
