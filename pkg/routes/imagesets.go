@@ -3,6 +3,7 @@ package routes
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -29,8 +30,9 @@ func MakeImageSetsRouter(sub chi.Router) {
 }
 
 func ImageSetCtx(next http.Handler) http.Handler {
-	var imageSet models.ImageSet
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var imageSet models.ImageSet
 		account, err := common.GetAccount(r)
 		if err != nil {
 			log.Info(err)
@@ -54,6 +56,8 @@ func ImageSetCtx(next http.Handler) http.Handler {
 				json.NewEncoder(w).Encode(&err)
 				return
 			}
+			fmt.Printf("imageSetID:: %v\n", imageSetID)
+			fmt.Printf("imageSetKey:: %v\n", imageSetKey)
 			db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
 			ctx := context.WithValue(r.Context(), imageSetKey, &imageSet)
 			next.ServeHTTP(w, r.WithContext(ctx))
