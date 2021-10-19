@@ -8,23 +8,25 @@ import (
 )
 
 type EdgeAPIServices struct {
-	CommitService   services.CommitServiceInterface
-	DeviceService   services.DeviceServiceInterface
-	ImageService    services.ImageServiceInterface
-	RepoService     services.RepoServiceInterface
-	ImageSetService services.ImageSetsServiceInterface
-	UpdateService   services.UpdateServiceInterface
+	CommitService         services.CommitServiceInterface
+	DeviceService         services.DeviceServiceInterface
+	ImageService          services.ImageServiceInterface
+	RepoService           services.RepoServiceInterface
+	ImageSetService       services.ImageSetsServiceInterface
+	UpdateService         services.UpdateServiceInterface
+	ThirdPartyRepoService services.ThirdPartyRepoServiceInterface
 }
 
 // Init creates all services that Edge API depends on in order to have dependency injection on context
 func Init(ctx context.Context) *EdgeAPIServices {
 	return &EdgeAPIServices{
-		CommitService:   services.NewCommitService(ctx),
-		ImageService:    services.NewImageService(ctx),
-		RepoService:     services.NewRepoService(ctx),
-		ImageSetService: services.NewImageSetsService(ctx),
-		UpdateService:   services.NewUpdateService(ctx),
-		DeviceService:   services.NewDeviceService(ctx),
+		CommitService:         services.NewCommitService(ctx),
+		ImageService:          services.NewImageService(ctx),
+		RepoService:           services.NewRepoService(ctx),
+		ImageSetService:       services.NewImageSetsService(ctx),
+		UpdateService:         services.NewUpdateService(ctx),
+		DeviceService:         services.NewDeviceService(ctx),
+		ThirdPartyRepoService: services.NewThirdPartyRepoService(ctx),
 	}
 }
 

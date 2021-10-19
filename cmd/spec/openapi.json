@@ -24,6 +24,29 @@
         },
         "type": "object"
       },
+      "v1.CreateThirdPartyRepo": {
+        "properties": {
+          "Account": {
+            "type": "string"
+          },
+          "CreatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "DeletedAt": {},
+          "Description": {
+            "type": "string"
+          },
+          "ID": {},
+          "Name": {
+            "type": "string"
+          },
+          "URL": {
+            "type": "string"
+          },
+          "UpdatedAt": {
+            "format": "date-time",
+            "type": "string"
       "v1.CheckImageResponse": {
         "properties": {
           "ImageExists": {
@@ -2731,6 +2754,98 @@
           }
         },
         "summary": "Get an image by ostree hash."
+      }
+    },
+    "/thirdpartyrepo": {
+      "get": {
+        "operationId": "GetAllThirdPartyRepo",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "$ref": "#/components/schemas/v1.CreateThirdPartyRepo"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Lists all Third Party Repository for an account."
+      },
+      "post": {
+        "operationId": "CreateThirdPartyRepo",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/v1.CreateThirdPartyRepo"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.CreateThirdPartyRepo"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Create Third Party Repository for an account."
       }
     },
     "/updates": {

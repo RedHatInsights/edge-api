@@ -519,4 +519,60 @@ paths:
               schema:
                 $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
-      summary: Check if image name is in use for current account
+      summary: Check if image name is in use for current account 
+  /thirdpartyrepo:
+    post:
+      operationId: CreateThirdPartyRepo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/v1.CreateThirdPartyRepo'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.CreateThirdPartyRepo'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Create Third Party Repository for an account.
+    get:
+      operationId: GetAllThirdPartyRepo
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/v1.CreateThirdPartyRepo'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Lists all Third Party Repository for an account.

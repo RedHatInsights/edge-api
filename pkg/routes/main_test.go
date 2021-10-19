@@ -59,6 +59,7 @@ func setUp() {
 		&models.Repo{},
 		&models.Device{},
 		&models.DispatchRecord{},
+		&models.ThirdPartyRepo{},
 	)
 	if err != nil {
 		panic(err)
