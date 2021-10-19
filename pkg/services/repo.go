@@ -1,6 +1,8 @@
 package services
 
 import (
+	"context"
+
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
@@ -13,12 +15,16 @@ type RepoServiceInterface interface {
 }
 
 // NewRepoService gives a instance of the main implementation of RepoServiceInterface
-func NewRepoService() RepoServiceInterface {
-	return &RepoService{}
+func NewRepoService(ctx context.Context) RepoServiceInterface {
+	return &RepoService{
+		ctx: ctx,
+	}
 }
 
 // RepoService is the main implementation of a RepoServiceInterface
-type RepoService struct{}
+type RepoService struct {
+	ctx context.Context
+}
 
 // GetRepoByID receives RepoID uint and get a *models.Repo back
 func (s *RepoService) GetRepoByID(repoID uint) (*models.Repo, error) {

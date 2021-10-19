@@ -19,9 +19,9 @@ type EdgeAPIServices struct {
 
 func Init(ctx context.Context) *EdgeAPIServices {
 	return &EdgeAPIServices{
-		CommitService:         services.NewCommitService(),
+		CommitService:         services.NewCommitService(ctx),
 		ImageService:          services.NewImageService(ctx),
-		RepoService:           services.NewRepoService(),
+		RepoService:           services.NewRepoService(ctx),
 		ImageSetService:       services.NewImageSetsService(ctx),
 		UpdateService:         services.NewUpdateService(ctx),
 		DeviceService:         services.NewDeviceService(ctx),
