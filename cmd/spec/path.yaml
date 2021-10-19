@@ -520,21 +520,21 @@ paths:
                 $ref: '#/components/schemas/v1.InternalServerError'
           description: There was an internal server error.
       summary: Check if image name is in use for current account 
-  /thirdypartyrepo:
+  /thirdpartyrepo:
     post:
       operationId: CreateThirdPartyRepo
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/v1.CreateThirdyPartyRepo'
+              $ref: '#/components/schemas/v1.CreateThirdPartyRepo'
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.CreateThirdyPartyRepo'
+                $ref: '#/components/schemas/v1.CreateThirdPartyRepo'
           description: OK
         "400":
           content:
@@ -550,7 +550,7 @@ paths:
           description: There was an internal server error.
       summary: Create Third Party Repository for an account.
     get:
-      operationId: ListAllThirdyPartyRepo
+      operationId: GetAllThirdPartyRepo
       responses:
         "200":
           content:
@@ -561,7 +561,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/v1.CreateThirdyPartyRepo'
+                      $ref: '#/components/schemas/v1.CreateThirdPartyRepo'
           description: OK
         "400":
           content:

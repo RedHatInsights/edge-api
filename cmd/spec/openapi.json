@@ -24,7 +24,7 @@
         },
         "type": "object"
       },
-      "v1.CreateThirdyPartyRepo": {
+      "v1.CreateThirdPartyRepo": {
         "properties": {
           "Account": {
             "type": "string"
@@ -2752,9 +2752,9 @@
         "summary": "Get an image by ostree hash."
       }
     },
-    "/thirdypartyrepo": {
+    "/thirdpartyrepo": {
       "get": {
-        "operationId": "ListAllThirdyPartyRepo",
+        "operationId": "GetAllThirdPartyRepo",
         "responses": {
           "200": {
             "content": {
@@ -2763,7 +2763,7 @@
                   "properties": {
                     "data": {
                       "items": {
-                        "$ref": "#/components/schemas/v1.CreateThirdyPartyRepo"
+                        "$ref": "#/components/schemas/v1.CreateThirdPartyRepo"
                       },
                       "type": "array"
                     }
@@ -2803,7 +2803,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/v1.CreateThirdyPartyRepo"
+                "$ref": "#/components/schemas/v1.CreateThirdPartyRepo"
               }
             }
           },
@@ -2814,7 +2814,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v1.CreateThirdyPartyRepo"
+                  "$ref": "#/components/schemas/v1.CreateThirdPartyRepo"
                 }
               }
             },

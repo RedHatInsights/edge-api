@@ -93,7 +93,7 @@ func main() {
 		s.Route("/updates", routes.MakeUpdatesRouter)
 		s.Route("/image-sets", routes.MakeImageSetsRouter)
 		s.Route("/devices", routes.MakeDevicesRouter)
-		s.Route("/thirdypartyrepo", routes.MakeTPRepoRouter)
+		s.Route("/thirdpartyrepo", routes.MakeTPRepoRouter)
 	})
 
 	mr := chi.NewRouter()

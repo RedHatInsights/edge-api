@@ -8,26 +8,26 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// TPRepoServiceInterface defines the interface that helps handles
+// ThirdPartyRepoServiceInterface defines the interface that helps handles
 // the business logic of creating Third Party Repository
-type TPRepoServiceInterface interface {
-	CreateThirdyPartyRepo(tprepo *models.ThirdyPartyRepo, account string) error
+type ThirdPartyRepoServiceInterface interface {
+	CreateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string) error
 }
 
-// NewTPRepoService gives a instance of the main implementation of a TPRepoServiceInterface
-func NewTPRepoService(ctx context.Context) TPRepoServiceInterface {
-	return &TPRepoService{}
+// NewThirdPartyRepoService gives a instance of the main implementation of a ThirdPartyRepoServiceInterface
+func NewThirdPartyRepoService(ctx context.Context) ThirdPartyRepoServiceInterface {
+	return &ThirdPartyRepoService{}
 }
 
-// TPRepoService is the main implementation of a TPRepoServiceInterface
-type TPRepoService struct {
+// ThirdPartyRepoService is the main implementation of a ThirdPartyRepoServiceInterface
+type ThirdPartyRepoService struct {
 	ctx context.Context
 }
 
-// CreateThirdyPartyRepo creates the ThirdyPartyRepo for an Account on our database
-func (s *TPRepoService) CreateThirdyPartyRepo(tprepo *models.ThirdyPartyRepo, account string) error {
+// CreateThirdPartyRepo creates the ThirdPartyRepo for an Account on our database
+func (s *ThirdPartyRepoService) CreateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string) error {
 	if tprepo.URL != "" && tprepo.Name != "" {
-		tprepo = &models.ThirdyPartyRepo{
+		tprepo = &models.ThirdPartyRepo{
 			Name:        tprepo.Name,
 			URL:         tprepo.URL,
 			Description: tprepo.Description,
@@ -37,7 +37,7 @@ func (s *TPRepoService) CreateThirdyPartyRepo(tprepo *models.ThirdyPartyRepo, ac
 		if result.Error != nil {
 			return result.Error
 		}
-		log.Infof("Getting ThirdyPartyRepo info: repo %s, %s", tprepo.URL, tprepo.Name)
+		log.Infof("Getting ThirdPartyRepo info: repo %s, %s", tprepo.URL, tprepo.Name)
 
 	}
 	return nil

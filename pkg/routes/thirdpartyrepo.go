@@ -13,22 +13,22 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// MakeTPRepoRouter adds suport for operation on ThirdyPartyRepo
+// MakeTPRepoRouter adds suport for operation on ThirdPartyRepo
 func MakeTPRepoRouter(sub chi.Router) {
-	sub.With(common.Paginate).Get("/", ListAllThirdyPartyRepo)
-	sub.Post("/", CreateThirdyPartyRepo)
+	sub.With(common.Paginate).Get("/", GetAllThirdPartyRepo)
+	sub.Post("/", CreateThirdPartyRepo)
 }
 
 // A CreateTPRepoRequest model.
 type CreateTPRepoRequest struct {
-	Repo *models.ThirdyPartyRepo
+	Repo *models.ThirdPartyRepo
 }
 
-// CreateThirdyPartyRepo creates Third Party Repository
-func CreateThirdyPartyRepo(w http.ResponseWriter, r *http.Request) {
+// CreateThirdPartyRepo creates Third Party Repository
+func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	defer r.Body.Close()
-	tprepo, err := initTPRepoCreateRequest(w, r)
+	tprepo, err := createRequest(w, r)
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
@@ -47,7 +47,7 @@ func CreateThirdyPartyRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = services.TPRepoService.CreateThirdyPartyRepo(tprepo, account)
+	err = services.ThirdPartyRepoService.CreateThirdPartyRepo(tprepo, account)
 
 	if err != nil {
 		log.Error(err)
@@ -62,9 +62,9 @@ func CreateThirdyPartyRepo(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// initTPRepoCreateRequest validates request to create thirdypartyrepo.
-func initTPRepoCreateRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdyPartyRepo, error) {
-	var tprepo *models.ThirdyPartyRepo
+// createRequest validates request to create ThirdPartyRepo.
+func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRepo, error) {
+	var tprepo *models.ThirdPartyRepo
 	if err := json.NewDecoder(r.Body).Decode(&tprepo); err != nil {
 		log.Error(err)
 		err := errors.NewBadRequest("invalid JSON request")
@@ -79,25 +79,23 @@ func initTPRepoCreateRequest(w http.ResponseWriter, r *http.Request) (*models.Th
 		w.WriteHeader(err.GetStatus())
 		return nil, err
 	}
-	if tprepo.URL == "" {
-		err := errors.NewBadRequest("URL is requird")
-		w.WriteHeader(err.GetStatus())
-		return nil, err
-	}
-	if tprepo.Name == "" {
-		err := errors.NewBadRequest("Name is required")
-		w.WriteHeader(err.GetStatus())
-		return nil, err
-	}
 
 	return tprepo, nil
 }
 
-// ListAllThirdyPartyRepo return all the ThirdyPartyRepo
-func ListAllThirdyPartyRepo(w http.ResponseWriter, r *http.Request) {
-	var tprepo *[]models.ThirdyPartyRepo
+// GetAllThirdPartyRepo return all the ThirdPartyRepo
+func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
+	var tprepo *[]models.ThirdPartyRepo
+	var count int64
 	pagination := common.GetPagination(r)
-
+	countResult := imageFilters(r, db.DB.Model(&models.ThirdPartyRepo{})).Count(&count)
+	if countResult.Error != nil {
+		countErr := errors.NewInternalServerError()
+		log.Error(countErr)
+		w.WriteHeader(countErr.GetStatus())
+		json.NewEncoder(w).Encode(&countErr)
+		return
+	}
 	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Find(&tprepo)
 	if result.Error != nil {
 		err := errors.NewBadRequest("Not Found")
@@ -105,6 +103,6 @@ func ListAllThirdyPartyRepo(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 	}
 
-	json.NewEncoder(w).Encode(&tprepo)
+	json.NewEncoder(w).Encode(map[string]interface{}{"data": &tprepo, "count": count})
 
 }

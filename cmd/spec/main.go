@@ -86,11 +86,11 @@ func main() {
 	}
 	components.Schemas["v1.NotFound"] = notFound
 
-	thirdypartyrepo, _, err := openapi3gen.NewSchemaRefForValue(&models.ThirdyPartyRepo{})
+	thirdpartyrepo, _, err := openapi3gen.NewSchemaRefForValue(&models.ThirdPartyRepo{})
 	if err != nil {
 		panic(err)
 	}
-	components.Schemas["v1.CreateThirdyPartyRepo"] = thirdypartyrepo
+	components.Schemas["v1.CreateThirdPartyRepo"] = thirdpartyrepo
 
 	type Swagger struct {
 		Components openapi3.Components `json:"components,omitempty" yaml:"components,omitempty"`
