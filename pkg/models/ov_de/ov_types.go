@@ -1,6 +1,6 @@
-package ov_de
+package ovde
 
-// Ownershipvoucher CBOR representation
+// OwnershipVoucher CBOR representation
 type OwnershipVoucher struct {
 	_                      struct{} `cbor:",toarray"`
 	Header                 []byte
@@ -9,13 +9,13 @@ type OwnershipVoucher struct {
 	Entries                [][]byte
 }
 
-// Ownershipvoucher header CBOR representation
+// OwnershipVoucherHeader CBOR representation
 // OwnershipVoucher.Header is from type []byte and not OwnershipVoucherHeader
 // OwnershipVoucherHeader also needs deserialization.
 type OwnershipVoucherHeader struct {
 	_                          struct{}                   `cbor:",toarray"`
 	ProtocolVersion            uint16                     `json:"protocol_version"`
-	Guid                       []byte                     `json:"guid"`
+	GUID                       []byte                     `json:"guid"`
 	RendezvousInfo             [][]RendezvousInfo         `json:"rendezvous_info"`
 	DeviceInfo                 string                     `json:"device_info"`
 	PublicKey                  PublicKey                  `json:"public_key"`

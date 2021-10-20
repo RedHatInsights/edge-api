@@ -1,4 +1,4 @@
-package ov_de
+package ovde
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-// Resolve PublicKey.Encoding to a readable string
+// ResolvePublicKeyEncoding resolves PublicKey.Encoding to a readable string
 func ResolvePublicKeyEncoding(PublicKeyEncoding int) string {
 	s := fmt.Sprintln("Could't resolve PublicKeyEncoding: ", PublicKeyEncoding)
 	switch PublicKeyEncoding {
@@ -24,7 +24,7 @@ func ResolvePublicKeyEncoding(PublicKeyEncoding int) string {
 	return s
 }
 
-// Resolve RendezvousVariable to a readable string
+// ResolveRendezvousVariableCode resolves RendezvousVariable to a readable string
 // RendezvousVariable is the left side arg of RendezvousInfo pair
 func ResolveRendezvousVariableCode(RendezvousVariable int) string {
 	s := fmt.Sprintln("Could't resolve RendezvousVariableCode: ", RendezvousVariable)
@@ -67,20 +67,20 @@ func ResolveRendezvousVariableCode(RendezvousVariable int) string {
 	return s
 }
 
-// Custom serialization of FDO uuid to json
+// MarshalJSON - custom serialization of FDO uuid to json
 // Panic if can not be serialized into a valid uuid
 func (ovh *OwnershipVoucherHeader) MarshalJSON() ([]byte, error) {
 	type Alias OwnershipVoucherHeader
 	return json.Marshal(&struct {
-		Guid string `json:"guid"`
+		GUID string `json:"guid"`
 		*Alias
 	}{
-		Guid:  guidAsString(ovh),
+		GUID:  guidAsString(ovh),
 		Alias: (*Alias)(ovh),
 	})
 }
 
-// Custom serialization of RendezvousInfo to json
+// MarshalJSON - custom serialization of RendezvousInfo to json
 func (ri *RendezvousInfo) MarshalJSON() ([]byte, error) {
 	type Alias RendezvousInfo
 	return json.Marshal(&struct {
@@ -92,7 +92,7 @@ func (ri *RendezvousInfo) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// Custom serialization of PublicKey to json
+// MarshalJSON - custom serialization of PublicKey to json
 func (pk *PublicKey) MarshalJSON() ([]byte, error) {
 	type Alias PublicKey
 	return json.Marshal(&struct {

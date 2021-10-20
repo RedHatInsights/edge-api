@@ -1,6 +1,6 @@
-// Ownershipvoucher deserialization package from CBOR
+// Package ovde implements Ownershipvoucher deserialization from CBOR
 // As for our needs we'll deserialize its header only
-package ov_de
+package ovde
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 // Extract FDO uuid from the OV's header to a valid uuid string
 // Panic if can't
 func guidAsString(ovh *OwnershipVoucherHeader) string {
-	return fmt.Sprint(uuid.Must(uuid.FromBytes(ovh.Guid)))
+	return fmt.Sprint(uuid.Must(uuid.FromBytes(ovh.GUID)))
 }
 
 // Extract device name from the OV's header

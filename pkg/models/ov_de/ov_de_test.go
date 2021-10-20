@@ -1,4 +1,4 @@
-package ov_de
+package ovde
 
 import (
 	"fmt"
