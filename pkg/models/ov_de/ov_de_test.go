@@ -40,9 +40,12 @@ func TestOwnershipVoucherDe(t *testing.T) {
 func TestMinimumParse(t *testing.T) {
 	mParse := minimumParse(ovb)
 	if mParse["device_name"] != edgeDeviceName {
-		panic(fmt.Sprint("Device name should be equal to ", edgeDeviceName))
+		panic(fmt.Sprintf("Device name should be equal to %s, got %s", edgeDeviceName, mParse["device_name"]))
 	}
 	if mParse["fdo_uuid"] != edgeDeviceUUID {
-		panic(fmt.Sprint("Device FDO uuid should be equal to ", edgeDeviceUUID))
+		panic(fmt.Sprintf("Device FDO uuid should be equal to %s, got %s", edgeDeviceUUID, mParse["fdo_uuid"]))
+	}
+	if mParse["protocol_version"] != uint16(100) {
+		panic(fmt.Sprintf("Device protocol version should be equal to %d, got %d", 100, mParse["protocol_version"]))
 	}
 }

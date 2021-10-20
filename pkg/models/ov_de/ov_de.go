@@ -19,6 +19,11 @@ func deviceName(ovh *OwnershipVoucherHeader) string {
 	return ovh.DeviceInfo
 }
 
+// Extract device protocol version from the OV's header
+func deviceProtocolVersion(ovh *OwnershipVoucherHeader) uint16 {
+	return ovh.ProtocolVersion
+}
+
 // CBOR unmarshal of OV, receives []byte from loading the OV file (either reading/receiving)
 // returns OV header as []byte & err
 func unmarshalOwnershipVoucher(ovb []byte) ([]byte, error) {
@@ -59,7 +64,11 @@ func parseBytes(ovb []byte) *OwnershipVoucherHeader {
 }
 
 // Get minimum data required from parseBytes without marshal the whole OV header to JSON (though possible)
-func minimumParse(ovb []byte) map[string]string {
+func minimumParse(ovb []byte) map[string]interface{} {
 	ovh := parseBytes(ovb)
-	return map[string]string{"device_name": deviceName(ovh), "fdo_uuid": guidAsString(ovh)}
+	return map[string]interface{}{
+		"device_name":      deviceName(ovh),
+		"fdo_uuid":         guidAsString(ovh),
+		"protocol_version": deviceProtocolVersion(ovh),
+	}
 }
