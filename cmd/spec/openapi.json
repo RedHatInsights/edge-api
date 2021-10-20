@@ -24,6 +24,14 @@
         },
         "type": "object"
       },
+      "v1.CheckImageResponse": {
+        "properties": {
+          "ImageExists": {
+            "type": "boolean"
+          }
+        },
+        "type": "object"
+      },
       "v1.CreateThirdPartyRepo": {
         "properties": {
           "Account": {
@@ -47,10 +55,6 @@
           "UpdatedAt": {
             "format": "date-time",
             "type": "string"
-      "v1.CheckImageResponse": {
-        "properties": {
-          "ImageExists": {
-            "type": "boolean"
           }
         },
         "type": "object"
@@ -202,6 +206,28 @@
                       "OSTreeRef": {
                         "type": "string"
                       },
+                      "Repo": {
+                        "properties": {
+                          "CreatedAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "DeletedAt": {},
+                          "ID": {},
+                          "RepoStatus": {
+                            "type": "string"
+                          },
+                          "RepoURL": {
+                            "type": "string"
+                          },
+                          "UpdatedAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "RepoID": {},
                       "Status": {
                         "type": "string"
                       },
@@ -398,6 +424,28 @@
                       "OSTreeRef": {
                         "type": "string"
                       },
+                      "Repo": {
+                        "properties": {
+                          "CreatedAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "DeletedAt": {},
+                          "ID": {},
+                          "RepoStatus": {
+                            "type": "string"
+                          },
+                          "RepoURL": {
+                            "type": "string"
+                          },
+                          "UpdatedAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "RepoID": {},
                       "Status": {
                         "type": "string"
                       },
@@ -597,6 +645,28 @@
                             "OSTreeRef": {
                               "type": "string"
                             },
+                            "Repo": {
+                              "properties": {
+                                "CreatedAt": {
+                                  "format": "date-time",
+                                  "type": "string"
+                                },
+                                "DeletedAt": {},
+                                "ID": {},
+                                "RepoStatus": {
+                                  "type": "string"
+                                },
+                                "RepoURL": {
+                                  "type": "string"
+                                },
+                                "UpdatedAt": {
+                                  "format": "date-time",
+                                  "type": "string"
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "RepoID": {},
                             "Status": {
                               "type": "string"
                             },
@@ -933,6 +1003,28 @@
                     "OSTreeRef": {
                       "type": "string"
                     },
+                    "Repo": {
+                      "properties": {
+                        "CreatedAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "DeletedAt": {},
+                        "ID": {},
+                        "RepoStatus": {
+                          "type": "string"
+                        },
+                        "RepoURL": {
+                          "type": "string"
+                        },
+                        "UpdatedAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "RepoID": {},
                     "Status": {
                       "type": "string"
                     },
@@ -1120,6 +1212,28 @@
                       "OSTreeRef": {
                         "type": "string"
                       },
+                      "Repo": {
+                        "properties": {
+                          "CreatedAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "DeletedAt": {},
+                          "ID": {},
+                          "RepoStatus": {
+                            "type": "string"
+                          },
+                          "RepoURL": {
+                            "type": "string"
+                          },
+                          "UpdatedAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          }
+                        },
+                        "type": "object"
+                      },
+                      "RepoID": {},
                       "Status": {
                         "type": "string"
                       },
@@ -1134,101 +1248,6 @@
                 },
                 "Repo": {
                   "properties": {
-                    "Commit": {
-                      "properties": {
-                        "Account": {
-                          "type": "string"
-                        },
-                        "Arch": {
-                          "type": "string"
-                        },
-                        "BlueprintToml": {
-                          "type": "string"
-                        },
-                        "BuildDate": {
-                          "type": "string"
-                        },
-                        "BuildNumber": {},
-                        "ComposeJobID": {
-                          "type": "string"
-                        },
-                        "CreatedAt": {
-                          "format": "date-time",
-                          "type": "string"
-                        },
-                        "DeletedAt": {},
-                        "ID": {},
-                        "ImageBuildHash": {
-                          "type": "string"
-                        },
-                        "ImageBuildParentHash": {
-                          "type": "string"
-                        },
-                        "ImageBuildTarURL": {
-                          "type": "string"
-                        },
-                        "InstalledPackages": {
-                          "items": {
-                            "properties": {
-                              "CreatedAt": {
-                                "format": "date-time",
-                                "type": "string"
-                              },
-                              "DeletedAt": {},
-                              "ID": {},
-                              "UpdatedAt": {
-                                "format": "date-time",
-                                "type": "string"
-                              },
-                              "arch": {
-                                "type": "string"
-                              },
-                              "epoch": {
-                                "type": "string"
-                              },
-                              "name": {
-                                "type": "string"
-                              },
-                              "release": {
-                                "type": "string"
-                              },
-                              "sigmd5": {
-                                "type": "string"
-                              },
-                              "signature": {
-                                "type": "string"
-                              },
-                              "type": {
-                                "type": "string"
-                              },
-                              "version": {
-                                "type": "string"
-                              }
-                            },
-                            "type": "object"
-                          },
-                          "type": "array"
-                        },
-                        "OSTreeCommit": {
-                          "type": "string"
-                        },
-                        "OSTreeParentCommit": {
-                          "type": "string"
-                        },
-                        "OSTreeRef": {
-                          "type": "string"
-                        },
-                        "Status": {
-                          "type": "string"
-                        },
-                        "UpdatedAt": {
-                          "format": "date-time",
-                          "type": "string"
-                        }
-                      },
-                      "type": "object"
-                    },
-                    "CommitID": {},
                     "CreatedAt": {
                       "format": "date-time",
                       "type": "string"
@@ -1356,6 +1375,28 @@
               "OSTreeRef": {
                 "type": "string"
               },
+              "Repo": {
+                "properties": {
+                  "CreatedAt": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "DeletedAt": {},
+                  "ID": {},
+                  "RepoStatus": {
+                    "type": "string"
+                  },
+                  "RepoURL": {
+                    "type": "string"
+                  },
+                  "UpdatedAt": {
+                    "format": "date-time",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "RepoID": {},
               "Status": {
                 "type": "string"
               },
@@ -1564,6 +1605,28 @@
                     "OSTreeRef": {
                       "type": "string"
                     },
+                    "Repo": {
+                      "properties": {
+                        "CreatedAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "DeletedAt": {},
+                        "ID": {},
+                        "RepoStatus": {
+                          "type": "string"
+                        },
+                        "RepoURL": {
+                          "type": "string"
+                        },
+                        "UpdatedAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "RepoID": {},
                     "Status": {
                       "type": "string"
                     },
@@ -1716,101 +1779,6 @@
       },
       "v1.Repo": {
         "properties": {
-          "Commit": {
-            "properties": {
-              "Account": {
-                "type": "string"
-              },
-              "Arch": {
-                "type": "string"
-              },
-              "BlueprintToml": {
-                "type": "string"
-              },
-              "BuildDate": {
-                "type": "string"
-              },
-              "BuildNumber": {},
-              "ComposeJobID": {
-                "type": "string"
-              },
-              "CreatedAt": {
-                "format": "date-time",
-                "type": "string"
-              },
-              "DeletedAt": {},
-              "ID": {},
-              "ImageBuildHash": {
-                "type": "string"
-              },
-              "ImageBuildParentHash": {
-                "type": "string"
-              },
-              "ImageBuildTarURL": {
-                "type": "string"
-              },
-              "InstalledPackages": {
-                "items": {
-                  "properties": {
-                    "CreatedAt": {
-                      "format": "date-time",
-                      "type": "string"
-                    },
-                    "DeletedAt": {},
-                    "ID": {},
-                    "UpdatedAt": {
-                      "format": "date-time",
-                      "type": "string"
-                    },
-                    "arch": {
-                      "type": "string"
-                    },
-                    "epoch": {
-                      "type": "string"
-                    },
-                    "name": {
-                      "type": "string"
-                    },
-                    "release": {
-                      "type": "string"
-                    },
-                    "sigmd5": {
-                      "type": "string"
-                    },
-                    "signature": {
-                      "type": "string"
-                    },
-                    "type": {
-                      "type": "string"
-                    },
-                    "version": {
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                },
-                "type": "array"
-              },
-              "OSTreeCommit": {
-                "type": "string"
-              },
-              "OSTreeParentCommit": {
-                "type": "string"
-              },
-              "OSTreeRef": {
-                "type": "string"
-              },
-              "Status": {
-                "type": "string"
-              },
-              "UpdatedAt": {
-                "format": "date-time",
-                "type": "string"
-              }
-            },
-            "type": "object"
-          },
-          "CommitID": {},
           "CreatedAt": {
             "format": "date-time",
             "type": "string"
@@ -1919,6 +1887,28 @@
               "OSTreeRef": {
                 "type": "string"
               },
+              "Repo": {
+                "properties": {
+                  "CreatedAt": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "DeletedAt": {},
+                  "ID": {},
+                  "RepoStatus": {
+                    "type": "string"
+                  },
+                  "RepoURL": {
+                    "type": "string"
+                  },
+                  "UpdatedAt": {
+                    "format": "date-time",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "RepoID": {},
               "Status": {
                 "type": "string"
               },
@@ -2106,6 +2096,28 @@
                 "OSTreeRef": {
                   "type": "string"
                 },
+                "Repo": {
+                  "properties": {
+                    "CreatedAt": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "DeletedAt": {},
+                    "ID": {},
+                    "RepoStatus": {
+                      "type": "string"
+                    },
+                    "RepoURL": {
+                      "type": "string"
+                    },
+                    "UpdatedAt": {
+                      "format": "date-time",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "RepoID": {},
                 "Status": {
                   "type": "string"
                 },
@@ -2120,101 +2132,6 @@
           },
           "Repo": {
             "properties": {
-              "Commit": {
-                "properties": {
-                  "Account": {
-                    "type": "string"
-                  },
-                  "Arch": {
-                    "type": "string"
-                  },
-                  "BlueprintToml": {
-                    "type": "string"
-                  },
-                  "BuildDate": {
-                    "type": "string"
-                  },
-                  "BuildNumber": {},
-                  "ComposeJobID": {
-                    "type": "string"
-                  },
-                  "CreatedAt": {
-                    "format": "date-time",
-                    "type": "string"
-                  },
-                  "DeletedAt": {},
-                  "ID": {},
-                  "ImageBuildHash": {
-                    "type": "string"
-                  },
-                  "ImageBuildParentHash": {
-                    "type": "string"
-                  },
-                  "ImageBuildTarURL": {
-                    "type": "string"
-                  },
-                  "InstalledPackages": {
-                    "items": {
-                      "properties": {
-                        "CreatedAt": {
-                          "format": "date-time",
-                          "type": "string"
-                        },
-                        "DeletedAt": {},
-                        "ID": {},
-                        "UpdatedAt": {
-                          "format": "date-time",
-                          "type": "string"
-                        },
-                        "arch": {
-                          "type": "string"
-                        },
-                        "epoch": {
-                          "type": "string"
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "release": {
-                          "type": "string"
-                        },
-                        "sigmd5": {
-                          "type": "string"
-                        },
-                        "signature": {
-                          "type": "string"
-                        },
-                        "type": {
-                          "type": "string"
-                        },
-                        "version": {
-                          "type": "string"
-                        }
-                      },
-                      "type": "object"
-                    },
-                    "type": "array"
-                  },
-                  "OSTreeCommit": {
-                    "type": "string"
-                  },
-                  "OSTreeParentCommit": {
-                    "type": "string"
-                  },
-                  "OSTreeRef": {
-                    "type": "string"
-                  },
-                  "Status": {
-                    "type": "string"
-                  },
-                  "UpdatedAt": {
-                    "format": "date-time",
-                    "type": "string"
-                  }
-                },
-                "type": "object"
-              },
-              "CommitID": {},
               "CreatedAt": {
                 "format": "date-time",
                 "type": "string"
