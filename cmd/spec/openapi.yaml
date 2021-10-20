@@ -22,8 +22,6 @@ components:
       type: object
     v1.CreateThirdPartyRepo:
       properties:
-        Account:
-          type: string
         CreatedAt:
           format: date-time
           type: string
