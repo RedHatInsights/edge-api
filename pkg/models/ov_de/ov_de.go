@@ -3,9 +3,11 @@
 package ovde
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/fxamacker/cbor/v2"
 	"github.com/google/uuid"
+	"io"
 )
 
 // Extract FDO uuid from the OV's header to a valid uuid string
@@ -22,14 +24,6 @@ func deviceName(ovh *OwnershipVoucherHeader) string {
 // Extract device protocol version from the OV's header
 func deviceProtocolVersion(ovh *OwnershipVoucherHeader) uint16 {
 	return ovh.ProtocolVersion
-}
-
-// CBOR unmarshal of OV, receives []byte from loading the OV file (either reading/receiving)
-// returns OV header as []byte & err
-func unmarshalOwnershipVoucher(ovb []byte) ([]byte, error) {
-	var ov OwnershipVoucher
-	err := cbor.Unmarshal(ovb, &ov)
-	return ov.Header, err
 }
 
 // CBOR unmarshal of OV header, receives []byte from unmarshalOwnershipVoucher
@@ -50,25 +44,34 @@ func unmarshalCheck(e error, ovORovh string) {
 
 // CBOR unmarshal of OV, receives []byte from loading the OV file (either reading/receiving)
 // do some validation checks and returns OV header as pointer to OwnershipVoucherHeader struct
-func parseBytes(ovb []byte) *OwnershipVoucherHeader {
-	var (
-		err  error
-		ovh  *OwnershipVoucherHeader
-		ovhb []byte
-	)
-	ovhb, err = unmarshalOwnershipVoucher(ovb)
-	unmarshalCheck(err, "Ownershipvoucher")
-	ovh, err = unmarshalOwnershipVoucherHeader(ovhb)
-	unmarshalCheck(err, "Ownershipvoucher header")
+func parseBytes(ovb []byte) []OwnershipVoucherHeader {
+	var ovh []OwnershipVoucherHeader
+
+	dec := cbor.NewDecoder(bytes.NewReader(ovb))
+	for {
+		var ov OwnershipVoucher
+		if err := dec.Decode(&ov); err == io.EOF {
+			break
+		} else if err != nil {
+			unmarshalCheck(err, "ov")
+		}
+		singleOvh, err := unmarshalOwnershipVoucherHeader(ov.Header)
+		unmarshalCheck(err, "Ownershipvoucher header")
+		ovh = append(ovh, *singleOvh)
+	}
 	return ovh
 }
 
 // Get minimum data required from parseBytes without marshal the whole OV header to JSON (though possible)
-func minimumParse(ovb []byte) map[string]interface{} {
+func minimumParse(ovb []byte) []map[string]interface{} {
 	ovh := parseBytes(ovb)
-	return map[string]interface{}{
-		"device_name":      deviceName(ovh),
-		"fdo_uuid":         guidAsString(ovh),
-		"protocol_version": deviceProtocolVersion(ovh),
+	var minimumDataReq []map[string]interface{}
+	for _, header := range ovh {
+		minimumDataReq = append(minimumDataReq, map[string]interface{}{
+			"device_name":      deviceName(&header),
+			"fdo_uuid":         guidAsString(&header),
+			"protocol_version": deviceProtocolVersion(&header),
+		})
 	}
+	return minimumDataReq
 }
