@@ -50,7 +50,7 @@ func unmarshalCheck(e error, ovORovh string, ovNum int) {
 			"what":   ovORovh,
 			"ov_num": ovNum,
 		}).Error(e)
-		panic("")
+		panic(e)
 	}
 }
 
@@ -63,26 +63,32 @@ func parseBytes(ovb []byte) []OwnershipVoucherHeader {
 		counter   int        = 0
 		logFields log.Fields = map[string]interface{}{"method": "ovde.parseBytes"}
 	)
-	if err := cbor.Valid(ovb); err == nil {
+	defer func() { // in a panic case, stop the parsing but keep alive
+		if err := recover(); err != nil {
+			logFields["ovs_parsed"] = counter
+			log.WithFields(logFields).Error("panic occurred")
+		}
+	}()
+	if err := cbor.Valid(ovb); err == nil { // checking whether the CBOR data is complete and well-formed
 		dec := cbor.NewDecoder(bytes.NewReader(ovb))
-		for {
-			if err := dec.Decode(&ov); err == io.EOF {
+		for { // stream OVs
+			if decErr := dec.Decode(&ov); decErr == io.EOF {
 				break
-			} else if err != nil {
-				unmarshalCheck(err, "ownershipvoucher", counter)
+			} else if decErr != nil { // couldn't decode into ownershipvoucher
+				unmarshalCheck(decErr, "ownershipvoucher", counter)
 			}
 			singleOvh, err := unmarshalOwnershipVoucherHeader(ov.Header)
 			unmarshalCheck(err, "ownershipvoucher header", counter)
 			ovh = append(ovh, *singleOvh)
 			counter++
 		}
+		if counter > 0 && dec.NumBytesRead() == len(ovb) {
+			logFields["ovs_parsed"] = counter
+			log.WithFields(logFields).Info("All ownershipvoucher bytes parsed successfully")
+		}
 	} else {
 		logFields["ovs_parsed"] = counter
 		log.WithFields(logFields).Error("Invalid ownershipvoucher bytes")
-	}
-	if counter > 0 {
-		logFields["ovs_parsed"] = counter
-		log.WithFields(logFields).Info("All ownershipvoucher bytes parsed successfully")
 	}
 	return ovh
 }
