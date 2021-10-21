@@ -65,6 +65,7 @@ func ImageSetCtx(next http.Handler) http.Handler {
 // ListAllImageSets return the list of image sets and images
 func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	var imageSet *[]models.ImageSet
+	var count int64
 	pagination := common.GetPagination(r)
 	account, err := common.GetAccount(r)
 
@@ -76,15 +77,24 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	countResult := db.DB.Model(&models.ImageSet{}).Where("account = ?", account).Count(&count)
+	if countResult.Error != nil {
+		countErr := errors.NewInternalServerError()
+		log.Error(countErr)
+		w.WriteHeader(countErr.GetStatus())
+		json.NewEncoder(w).Encode(&countErr)
+		return
+	}
 	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Where("account = ? ", account).Find(&imageSet)
-
 	if result.Error != nil {
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
-
-	json.NewEncoder(w).Encode(&imageSet)
+	var response common.EdgeAPIPaginatedResponse
+	response.Data = &imageSet
+	response.Count = count
+	json.NewEncoder(w).Encode(response)
 
 }
 

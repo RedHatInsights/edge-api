@@ -2,13 +2,16 @@ package routes
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 )
 
 func TestListAllImageSets(t *testing.T) {
@@ -24,6 +27,14 @@ func TestListAllImageSets(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v, want %v",
 			status, http.StatusOK)
 
+	}
+	respBody, err := ioutil.ReadAll(rr.Body)
+	var result common.EdgeAPIPaginatedResponse
+	err = json.Unmarshal(respBody, &result)
+
+	if result.Count != 0 && result.Data != "{}" {
+		t.Errorf("handler returned wrong body: got %v, want %v",
+			result.Count, 0)
 	}
 }
 
