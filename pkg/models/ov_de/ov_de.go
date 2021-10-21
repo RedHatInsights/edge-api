@@ -58,27 +58,31 @@ func unmarshalCheck(e error, ovORovh string, ovNum int) {
 // do some validation checks and returns OV header as pointer to OwnershipVoucherHeader struct
 func parseBytes(ovb []byte) []OwnershipVoucherHeader {
 	var (
-		ov      OwnershipVoucher
-		ovh     []OwnershipVoucherHeader
-		counter int = 0
+		ov        OwnershipVoucher
+		ovh       []OwnershipVoucherHeader
+		counter   int        = 0
+		logFields log.Fields = map[string]interface{}{"method": "ovde.parseBytes"}
 	)
-	dec := cbor.NewDecoder(bytes.NewReader(ovb))
-	for {
-		if err := dec.Decode(&ov); err == io.EOF {
-			break
-		} else if err != nil {
-			unmarshalCheck(err, "ownershipvoucher", counter)
+	if err := cbor.Valid(ovb); err == nil {
+		dec := cbor.NewDecoder(bytes.NewReader(ovb))
+		for {
+			if err := dec.Decode(&ov); err == io.EOF {
+				break
+			} else if err != nil {
+				unmarshalCheck(err, "ownershipvoucher", counter)
+			}
+			singleOvh, err := unmarshalOwnershipVoucherHeader(ov.Header)
+			unmarshalCheck(err, "ownershipvoucher header", counter)
+			ovh = append(ovh, *singleOvh)
+			counter++
 		}
-		singleOvh, err := unmarshalOwnershipVoucherHeader(ov.Header)
-		unmarshalCheck(err, "ownershipvoucher header", counter)
-		ovh = append(ovh, *singleOvh)
-		counter++
+	} else {
+		logFields["ovs_parsed"] = counter
+		log.WithFields(logFields).Error("Invalid ownershipvoucher bytes")
 	}
 	if counter > 0 {
-		log.WithFields(log.Fields{
-			"method":     "ovde.parseBytes",
-			"ovs_parsed": counter,
-		}).Info("All ownershipvoucher bytes parsed successfully")
+		logFields["ovs_parsed"] = counter
+		log.WithFields(logFields).Info("All ownershipvoucher bytes parsed successfully")
 	}
 	return ovh
 }
@@ -88,11 +92,14 @@ func minimumParse(ovb []byte) []map[string]interface{} {
 	ovh := parseBytes(ovb)
 	var minimumDataReq []map[string]interface{}
 	for _, header := range ovh {
-		minimumDataReq = append(minimumDataReq, map[string]interface{}{
+		data := map[string]interface{}{
 			"device_name":      deviceName(&header),
 			"fdo_uuid":         guidAsString(&header),
 			"protocol_version": deviceProtocolVersion(&header),
-		})
+		}
+		minimumDataReq = append(minimumDataReq, data)
+		data["method"] = "ovde.minimumParse"
+		log.WithFields(data).Debug("New device added")
 	}
 	return minimumDataReq
 }
