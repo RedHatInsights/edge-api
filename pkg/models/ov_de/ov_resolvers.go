@@ -3,8 +3,14 @@ package ovde
 import (
 	"encoding/json"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"os"
 )
+
+func init() {
+	log.SetFormatter(&log.JSONFormatter{})
+	log.SetOutput(os.Stdout)
+}
 
 // ResolvePublicKeyEncoding resolves PublicKey.Encoding to a readable string
 func ResolvePublicKeyEncoding(PublicKeyEncoding int) string {
@@ -19,7 +25,10 @@ func ResolvePublicKeyEncoding(PublicKeyEncoding int) string {
 	case 3:
 		s = "Cosekey"
 	default:
-		fmt.Fprintln(os.Stderr, s)
+		log.WithFields(log.Fields{
+			"method":              "ovde.ResolvePublicKeyEncoding",
+			"public_key_encoding": PublicKeyEncoding,
+		}).Error(s)
 	}
 	return s
 }
@@ -62,7 +71,10 @@ func ResolveRendezvousVariableCode(RendezvousVariable int) string {
 	case 15:
 		s = "Extended"
 	default:
-		fmt.Fprintln(os.Stderr, s)
+		log.WithFields(log.Fields{
+			"method":              "ovde.ResolveRendezvousVariableCode",
+			"rendezvous_variable": RendezvousVariable,
+		}).Error(s)
 	}
 	return s
 }

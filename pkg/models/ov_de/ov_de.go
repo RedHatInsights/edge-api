@@ -7,8 +7,15 @@ import (
 	"fmt"
 	"github.com/fxamacker/cbor/v2"
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 	"io"
+	"os"
 )
+
+func init() {
+	log.SetFormatter(&log.JSONFormatter{})
+	log.SetOutput(os.Stdout)
+}
 
 // Extract FDO uuid from the OV's header to a valid uuid string
 // Panic if can't
@@ -36,28 +43,42 @@ func unmarshalOwnershipVoucherHeader(ovhb []byte) (*OwnershipVoucherHeader, erro
 
 // If CBOR unmarshal fails => panic
 // Something might be wrong with OV
-func unmarshalCheck(e error, ovORovh string) {
+func unmarshalCheck(e error, ovORovh string, ovNum int) {
 	if e != nil {
-		panic(fmt.Sprintf("Can't unmarshal %s from bytes", ovORovh))
+		log.WithFields(log.Fields{
+			"method": "ovde.unmarshalCheck",
+			"what":   ovORovh,
+			"ov_num": ovNum,
+		}).Error(e)
+		panic("")
 	}
 }
 
 // CBOR unmarshal of OV, receives []byte from loading the OV file (either reading/receiving)
 // do some validation checks and returns OV header as pointer to OwnershipVoucherHeader struct
 func parseBytes(ovb []byte) []OwnershipVoucherHeader {
-	var ovh []OwnershipVoucherHeader
-
+	var (
+		ov      OwnershipVoucher
+		ovh     []OwnershipVoucherHeader
+		counter int = 0
+	)
 	dec := cbor.NewDecoder(bytes.NewReader(ovb))
 	for {
-		var ov OwnershipVoucher
 		if err := dec.Decode(&ov); err == io.EOF {
 			break
 		} else if err != nil {
-			unmarshalCheck(err, "ov")
+			unmarshalCheck(err, "ownershipvoucher", counter)
 		}
 		singleOvh, err := unmarshalOwnershipVoucherHeader(ov.Header)
-		unmarshalCheck(err, "Ownershipvoucher header")
+		unmarshalCheck(err, "ownershipvoucher header", counter)
 		ovh = append(ovh, *singleOvh)
+		counter++
+	}
+	if counter > 0 {
+		log.WithFields(log.Fields{
+			"method":     "ovde.parseBytes",
+			"ovs_parsed": counter,
+		}).Info("All ownershipvoucher bytes parsed successfully")
 	}
 	return ovh
 }

@@ -30,7 +30,7 @@ func TestOwnershipVoucherDe(t *testing.T) {
 	}
 
 	ovhFromOVHeaderBytes, err = unmarshalOwnershipVoucherHeader(ovhb)
-	unmarshalCheck(err, "Ownershipvoucher header")
+	unmarshalCheck(err, "Ownershipvoucher header", 0)
 
 	if !reflect.DeepEqual(ovhFromOVBytes, []OwnershipVoucherHeader{*ovhFromOVHeaderBytes}) {
 		t.Error("Ownershipvoucher header from OV bytes should be equal to Ownershipvoucher header from bytes")
