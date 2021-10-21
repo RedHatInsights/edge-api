@@ -67,3 +67,96 @@ func TestMultiOVs(t *testing.T) {
 		}
 	}
 }
+
+func TestEmptyOV(t *testing.T) {
+	var ov = []byte{1}
+	data := minimumParse(ov)
+	if len(data) != 0 {
+		t.Error("Should be 0")
+	}
+}
+
+func TestInvalidOV(t *testing.T) {
+	var ov = ovb[:1]
+	data := minimumParse(ov)
+	if len(data) != 0 {
+		t.Error("Should be 0")
+	}
+}
+
+func TestResolvePublicKeyEncoding(t *testing.T) {
+	verify := func(i int, shouldBe int) {
+		if i != shouldBe {
+			t.Errorf("%d should be equal to %d", i, shouldBe)
+		}
+	}
+	for i := range [5]int{} {
+		switch ResolvePublicKeyEncoding(i) {
+		case "Crypto":
+			verify(i, 0)
+		case "X509":
+			verify(i, 1)
+		case "COSEX509":
+			verify(i, 2)
+		case "Cosekey":
+			verify(i, 3)
+		case "Could't resolve PublicKeyEncoding: 4":
+			verify(i, 4)
+		}
+	}
+}
+
+func TestResolveRendezvousVariableCode(t *testing.T) {
+	verify := func(i int, shouldBe int) {
+		if i != shouldBe {
+			t.Errorf("%d should be equal to %d", i, shouldBe)
+		}
+	}
+	for i := range [17]int{} {
+		switch ResolveRendezvousVariableCode(i) {
+		case "DeviceOnly":
+			verify(i, 0)
+		case "OwnerOnly":
+			verify(i, 1)
+		case "IPAddress":
+			verify(i, 2)
+		case "DevicePort":
+			verify(i, 3)
+		case "OwnerPort":
+			verify(i, 4)
+		case "Dns":
+			verify(i, 5)
+		case "ServerCertHash":
+			verify(i, 6)
+		case "CaCertHash":
+			verify(i, 7)
+		case "UserInput":
+			verify(i, 8)
+		case "WifiSsid":
+			verify(i, 9)
+		case "WifiPw":
+			verify(i, 10)
+		case "Medium":
+			verify(i, 11)
+		case "Protocol":
+			verify(i, 12)
+		case "Delaysec":
+			verify(i, 13)
+		case "Bypass":
+			verify(i, 14)
+		case "Extended":
+			verify(i, 15)
+		case "Could't resolve ResolveRendezvousVariableCode: 16":
+			verify(i, 16)
+		}
+	}
+}
+
+func TestMarshalJSON(t *testing.T) {
+	ovhFromOVBytes = parseBytes(ovb)
+	ovh := ovhFromOVBytes[0]
+	_, err := ovh.MarshalJSON()
+	if err != nil {
+		t.Error(err)
+	}
+}
