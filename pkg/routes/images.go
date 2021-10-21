@@ -47,6 +47,7 @@ func MakeImagesRouter(sub chi.Router) {
 		r.Post("/repo", CreateRepoForImage)
 		r.Post("/kickstart", CreateKickStartForImage)
 		r.Post("/update", CreateImageUpdate)
+		r.Post("/retry", RetryCreateImage)
 	})
 }
 
@@ -551,4 +552,22 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 	var errImageNotFilled = errors.NewInternalServerError()
 	w.WriteHeader(errImageNotFilled.GetStatus())
 	json.NewEncoder(w).Encode(&errImageNotFilled)
+}
+
+// RetryCreateImage retries the image creation
+func RetryCreateImage(w http.ResponseWriter, r *http.Request) {
+	if image := getImage(w, r); image != nil {
+		services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+		err := services.ImageService.RetryCreateImage(image)
+		if err != nil {
+			log.Error(err)
+			err := errors.NewInternalServerError()
+			err.SetTitle("Failed creating image")
+			w.WriteHeader(err.GetStatus())
+			json.NewEncoder(w).Encode(&err)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(&image)
+	}
 }
