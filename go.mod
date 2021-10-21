@@ -19,6 +19,8 @@ require (
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-sqlite3 v1.14.7 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
+	github.com/onsi/ginkgo v1.16.5 // indirect
+	github.com/onsi/gomega v1.16.0 // indirect
 	github.com/pelletier/go-toml v1.9.1 // indirect
 	github.com/prometheus/client_golang v1.10.0
 	github.com/prometheus/common v0.25.0 // indirect

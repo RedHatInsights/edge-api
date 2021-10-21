@@ -4,12 +4,14 @@ package ovde
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"io"
+	"os"
+
 	"github.com/fxamacker/cbor/v2"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
-	"io"
-	"os"
 )
 
 func init() {
@@ -54,19 +56,19 @@ func unmarshalCheck(e error, ovORovh string, ovNum int) {
 	}
 }
 
-// CBOR unmarshal of OV, receives []byte from loading the OV file (either reading/receiving)
+// ParseBytes is CBOR unmarshal of OV, receives []byte from loading the OV file (either reading/receiving)
 // do some validation checks and returns OV header as pointer to OwnershipVoucherHeader struct
-func parseBytes(ovb []byte) []OwnershipVoucherHeader {
+func ParseBytes(ovb []byte) (ovha []OwnershipVoucherHeader, err error) {
 	var (
 		ov        OwnershipVoucher
-		ovh       []OwnershipVoucherHeader
 		counter   int        = 0
 		logFields log.Fields = map[string]interface{}{"method": "ovde.parseBytes"}
 	)
 	defer func() { // in a panic case, stop the parsing but keep alive
-		if err := recover(); err != nil {
+		if recErr := recover(); recErr != nil {
 			logFields["ovs_parsed"] = counter
 			log.WithFields(logFields).Error("panic occurred")
+			err = errors.New(fmt.Sprint("panic occurred: ", recErr))
 		}
 	}()
 	if err := cbor.Valid(ovb); err == nil { // checking whether the CBOR data is complete and well-formed
@@ -76,10 +78,11 @@ func parseBytes(ovb []byte) []OwnershipVoucherHeader {
 				break
 			} else if decErr != nil { // couldn't decode into ownershipvoucher
 				unmarshalCheck(decErr, "ownershipvoucher", counter)
+				return nil, decErr
 			}
 			singleOvh, err := unmarshalOwnershipVoucherHeader(ov.Header)
 			unmarshalCheck(err, "ownershipvoucher header", counter)
-			ovh = append(ovh, *singleOvh)
+			ovha = append(ovha, *singleOvh)
 			counter++
 		}
 		if counter > 0 && dec.NumBytesRead() == len(ovb) {
@@ -89,13 +92,15 @@ func parseBytes(ovb []byte) []OwnershipVoucherHeader {
 	} else {
 		logFields["ovs_parsed"] = counter
 		log.WithFields(logFields).Error("Invalid ownershipvoucher bytes")
+		return nil, errors.New("invalid ownershipvoucher bytes")
 	}
-	return ovh
+	return ovha, nil
 }
 
-// Get minimum data required from parseBytes without marshal the whole OV header to JSON (though possible)
-func minimumParse(ovb []byte) []map[string]interface{} {
-	ovh := parseBytes(ovb)
+// MinimumParse give the minimum data required from parseBytes without marshal the whole
+// OV header to JSON (though possible)
+func MinimumParse(ovb []byte) ([]map[string]interface{}, error) {
+	ovh, err := ParseBytes(ovb)
 	var minimumDataReq []map[string]interface{}
 	for _, header := range ovh {
 		data := map[string]interface{}{
@@ -107,5 +112,5 @@ func minimumParse(ovb []byte) []map[string]interface{} {
 		data["method"] = "ovde.minimumParse"
 		log.WithFields(data).Debug("New device added")
 	}
-	return minimumDataReq
+	return minimumDataReq, err
 }
