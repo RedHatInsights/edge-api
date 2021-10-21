@@ -25,6 +25,11 @@ type Pagination struct {
 	Offset int
 }
 
+type EdgeAPIPaginatedResponse struct {
+	Data  interface{}
+	Count int64
+}
+
 // Paginate is a middleware to get pagination params from the request and store it in
 // the request context. If no pagination was set in the request URL search parameters
 // they are set to default (see defaultLimit and defaultOffset).

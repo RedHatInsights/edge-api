@@ -91,8 +91,10 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
-	json.NewEncoder(w).Encode(map[string]interface{}{"count": count, "data": &imageSet})
-	// json.NewEncoder(w).Encode(&imageSet)
+	var response common.EdgeAPIPaginatedResponse
+	response.Data = &imageSet
+	response.Count = count
+	json.NewEncoder(w).Encode(response)
 
 }
 
