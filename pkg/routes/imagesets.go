@@ -3,6 +3,7 @@ package routes
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -27,6 +28,18 @@ func MakeImageSetsRouter(sub chi.Router) {
 		r.Get("/", GetImageSetsByID)
 	})
 }
+
+var imageSetFilters = common.ComposeFilters(
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "status",
+		DBField:    "images.status",
+	}),
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "name",
+		DBField:    "image_sets.name",
+	}),
+	common.SortFilterHandler("image_sets", "created_at", "DESC"),
+)
 
 func ImageSetCtx(next http.Handler) http.Handler {
 
@@ -66,6 +79,7 @@ func ImageSetCtx(next http.Handler) http.Handler {
 func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	var imageSet *[]models.ImageSet
 	var count int64
+	result := imageSetFilters(r, db.DB)
 	pagination := common.GetPagination(r)
 	account, err := common.GetAccount(r)
 
@@ -77,7 +91,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	countResult := db.DB.Model(&models.ImageSet{}).Where("account = ?", account).Count(&count)
+	countResult := imageSetFilters(r, db.DB.Model(&models.ImageSet{})).Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Where(`Image_Sets.account = ? `, account).Count(&count)
 	if countResult.Error != nil {
 		countErr := errors.NewInternalServerError()
 		log.Error(countErr)
@@ -85,15 +99,20 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&countErr)
 		return
 	}
-	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Where("account = ? ", account).Find(&imageSet)
+
+	result = imageSetFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Where(`Image_Sets.account = ? `, account).Find(&imageSet)
+
+	// result = imageSetFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Where("account = ?", account).Find(&imageSet)
+
+	fmt.Printf("result size: %v", result)
 	if result.Error != nil {
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
 	var response common.EdgeAPIPaginatedResponse
-	response.Data = &imageSet
 	response.Count = count
+	response.Data = &imageSet
 	json.NewEncoder(w).Encode(response)
 
 }

@@ -14,13 +14,15 @@ type FilterFunc func(r *http.Request, tx *gorm.DB) *gorm.DB
 
 // Filter is the struct that defines an API Filter
 type Filter struct {
-	QueryParam string
-	DBField    string
+	QueryParam  string
+	DBField     string
+	Association string
 }
 
 // ContainFilterHandler handles sub string values
 func ContainFilterHandler(filter *Filter) FilterFunc {
 	sqlQuery := fmt.Sprintf("%s LIKE ?", filter.DBField)
+	fmt.Printf("ContainFilterHandler \n")
 	return FilterFunc(func(r *http.Request, tx *gorm.DB) *gorm.DB {
 		if val := r.URL.Query().Get(filter.QueryParam); val != "" {
 			tx = tx.Where(sqlQuery, "%"+val+"%")
