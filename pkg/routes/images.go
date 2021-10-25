@@ -128,37 +128,39 @@ type CreateImageRequest struct {
 
 // CreateImage creates an image on hosted image builder.
 // It always creates a commit on Image Builder.
-// We're creating a update on the background to transfer the commit to our repo.
+// Then we create our repo with the ostree commit and if needed, create the installer.
 func CreateImage(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	defer r.Body.Close()
 	image, err := initImageCreateRequest(w, r)
 	if err != nil {
-		log.Info(err)
+		log.Debug(err)
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-
 	account, err := common.GetAccount(r)
 	if err != nil {
-		log.Info(err)
+		log.Debug(err)
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-
+	services.Log.Debug("Creating image")
 	err = services.ImageService.CreateImage(image, account)
 	if err != nil {
-		log.Error(err)
+		services.Log.Error(err)
 		err := errors.NewInternalServerError()
 		err.SetTitle("Failed creating image")
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
+	services.Log.WithFields(log.Fields{
+		"imageId": image.ID,
+	}).Info("Image created")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&image)
 
@@ -364,6 +366,7 @@ func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 // CreateInstallerForImage creates a installer for a Image
 // It requires a created image and an update for the commit
 func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
+	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	image := getImage(w, r)
 	var imageInstaller *models.Installer
 	if err := json.NewDecoder(r.Body).Decode(&imageInstaller); err != nil {
@@ -385,15 +388,14 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	repoService := services.NewRepoService(r.Context())
-	repo, err := repoService.GetRepoByCommitID(image.CommitID)
+	repo, err := services.RepoService.GetRepoByCommitID(image.CommitID)
 	if err != nil {
 		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	client := imagebuilder.InitClient(r.Context())
+	client := imagebuilder.InitClient(r.Context(), services.Log)
 	image, err = client.ComposeInstaller(repo, image)
 	if err != nil {
 		log.Error(err)
@@ -481,7 +483,8 @@ func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 
 //GetMetadataForImage gets the metadata from image-builder on /metadata endpoint
 func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
-	client := imagebuilder.InitClient(r.Context())
+	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	client := imagebuilder.InitClient(r.Context(), services.Log)
 	if image := getImage(w, r); image != nil {
 		meta, err := client.GetMetadata(image)
 		if err != nil {

@@ -27,11 +27,12 @@ type ClientInterface interface {
 // Client is the implementation of an ClientInterface
 type Client struct {
 	ctx context.Context
+	log *log.Entry
 }
 
 // InitClient initializes the client for Image Builder
-func InitClient(ctx context.Context) *Client {
-	return &Client{ctx: ctx}
+func InitClient(ctx context.Context, log *log.Entry) *Client {
+	return &Client{ctx: ctx, log: log}
 }
 
 // A lot of this code comes from https://github.com/osbuild/osbuild-composer
@@ -133,7 +134,10 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 	json.NewEncoder(payloadBuf).Encode(composeReq)
 	cfg := config.Get()
 	url := fmt.Sprintf("%s/api/image-builder/v1/compose", cfg.ImageBuilderConfig.URL)
-	log.Infof("Requesting url: %s with payloadBuf %s", url, payloadBuf.String())
+	c.log.WithFields(log.Fields{
+		"url":     url,
+		"payload": payloadBuf.String(),
+	}).Debug("Requesting img builder")
 	req, _ := http.NewRequest("POST", url, payloadBuf)
 	for key, value := range clients.GetOutgoingHeaders(c.ctx) {
 		req.Header.Add(key, value)
@@ -143,6 +147,7 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
+		c.log.Error(err)
 		return nil, err
 	}
 
@@ -152,11 +157,13 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 	}
 	respBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
+		c.log.Error(err)
 		return nil, err
 	}
 	cr := &ComposeResult{}
 	err = json.Unmarshal(respBody, &cr)
 	if err != nil {
+		c.log.Error(err)
 		return nil, err
 	}
 
