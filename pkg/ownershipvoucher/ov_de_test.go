@@ -6,8 +6,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	// "encoding/json"
-
 	"github.com/redhatinsights/edge-api/pkg/models"
 	ovde "github.com/redhatinsights/edge-api/pkg/ownershipvoucher"
 )
