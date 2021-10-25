@@ -1,4 +1,4 @@
-package ovde_test
+package ownershipvoucher_test
 
 import (
 	"testing"

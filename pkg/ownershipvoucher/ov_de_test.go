@@ -1,10 +1,11 @@
-package ovde_test
+package ownershipvoucher_test
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/redhatinsights/edge-api/pkg/models/ov_de"
+	"github.com/redhatinsights/edge-api/pkg/models"
+	ovde "github.com/redhatinsights/edge-api/pkg/ownershipvoucher"
 )
 
 var (
@@ -59,7 +60,7 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 						Expect(e).To(HaveOccurred())
 					})
 					By("in panic", func() {
-						Expect(e.Error()).To(ContainSubstring("panic occurred"))
+						Expect(e.Error()).To(ContainSubstring("panic_occurred"))
 					})
 				})
 			})
@@ -81,15 +82,15 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 					})
 				})
 			})
-			multiOVs = multiOVs[1:]
+			multiOVs1 := multiOVs[1:]
 			Context("parse OVs should fail", func() {
-				data, e := ovde.MinimumParse(multiOVs)
+				data, e := ovde.MinimumParse(multiOVs1)
 				It("error", func() {
 					By("error occurred", func() {
 						Expect(e).To(HaveOccurred())
 					})
 					By("in panic", func() {
-						Expect(e.Error()).To(ContainSubstring("panic occurred"))
+						Expect(e.Error()).To(ContainSubstring("panic_occurred"))
 					})
 				})
 				It("data is invalid", func() {
@@ -98,6 +99,26 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 					})
 					By("len is 0", func() {
 						Expect(len(data)).To(Equal(0))
+					})
+				})
+			})
+			multiOVs[8500] = 123 // change the second OV is the chain
+			Context("parse OVs should fail but collect previous data", func() {
+				data, e := ovde.MinimumParse(multiOVs)
+				It("error", func() {
+					By("error occurred", func() {
+						Expect(e).To(HaveOccurred())
+					})
+					By("in panic", func() {
+						Expect(e.Error()).To(ContainSubstring("panic_occurred"))
+					})
+				})
+				It("data is partial", func() {
+					By("not empty", func() {
+						Expect(data).ToNot(BeEmpty())
+					})
+					By("len is 1", func() {
+						Expect(len(data)).To(Equal(1))
 					})
 				})
 			})
@@ -128,7 +149,7 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 			Context("ResolvePublicKeyEncoding testing", func() {
 				It("should succeed", func() {
 					for i := range [5]int{} {
-						switch ovde.ResolvePublicKeyEncoding(i) {
+						switch models.ResolvePublicKeyEncoding(i) {
 						case "Crypto":
 							Expect(i).To(Equal(0))
 						case "X509":
@@ -146,7 +167,7 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 			Context("ResolveRendezvousVariableCode testing", func() {
 				It("should succeed", func() {
 					for i := range [17]int{} {
-						switch ovde.ResolveRendezvousVariableCode(i) {
+						switch models.ResolveRendezvousVariableCode(i) {
 						case "DeviceOnly":
 							Expect(i).To(Equal(0))
 						case "OwnerOnly":
