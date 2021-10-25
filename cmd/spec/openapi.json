@@ -2288,17 +2288,17 @@
         "operationId": "ListAllImageSets",
         "parameters": [
           {
-            "description": "Define sort fields",
+            "description": "Define sort fields: Created_at, Name, Status",
             "in": "path",
-            "name": "sort_by [Created_at, Name, Status]",
+            "name": "sort_by",
             "schema": {
               "type": "string"
             }
           },
           {
-            "description": "filter by field",
+            "description": "filter by field: status =? or name=?",
             "in": "path",
-            "name": "field name [status =?, name=?]",
+            "name": "field",
             "schema": {
               "type": "string"
             }
