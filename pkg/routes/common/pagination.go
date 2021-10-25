@@ -30,6 +30,11 @@ type EdgeAPIPaginatedResponse struct {
 	Data  interface{}
 }
 
+type ValidationError struct {
+	Key    string
+	Reason string
+}
+
 // Paginate is a middleware to get pagination params from the request and store it in
 // the request context. If no pagination was set in the request URL search parameters
 // they are set to default (see defaultLimit and defaultOffset).

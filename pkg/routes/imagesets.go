@@ -3,8 +3,10 @@ package routes
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -19,9 +21,12 @@ type imageSetTypeKey int
 
 const imageSetKey imageSetTypeKey = iota
 
+var sort_option = []string{"created_at", "updated_at", "name"}
+var status_option = []string{models.ImageStatusCreated, models.ImageStatusBuilding, models.ImageStatusError, models.ImageStatusSuccess}
+
 // MakeImageSetsRouter adds support for operations on image-sets
 func MakeImageSetsRouter(sub chi.Router) {
-	sub.With(common.Paginate).Get("/", ListAllImageSets)
+	sub.With(validateFilterParams).With(common.Paginate).Get("/", ListAllImageSets)
 	sub.Route("/{imageSetId}", func(r chi.Router) {
 		r.Use(ImageSetCtx)
 		r.Get("/", GetImageSetsByID)
@@ -124,4 +129,43 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(&imageSet)
 
+}
+
+func validateFilterParams(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		errs := []common.ValidationError{}
+		if statuses, ok := r.URL.Query()["status"]; ok {
+			for _, status := range statuses {
+				if !contains(status_option, strings.ToUpper(status)) {
+					errs = append(errs, common.ValidationError{Key: "status", Reason: fmt.Sprintf("%s is not a valid status. Status must be %s", status, strings.Join(validStatuses, " or "))})
+				}
+			}
+		}
+		if val := r.URL.Query().Get("sort_by"); val != "" {
+			name := val
+			if string(val[0]) == "-" {
+				name = val[1:]
+			}
+			if !contains(sort_option, name) {
+				errs = append(errs, common.ValidationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must %v", name, strings.Join(sort_option, " or "))})
+			}
+		}
+
+		if len(errs) == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(&errs)
+	})
+}
+
+func contains(s []string, searchterm string) bool {
+	for _, a := range s {
+		if a == searchterm {
+			return true
+		}
+	}
+	return false
 }
