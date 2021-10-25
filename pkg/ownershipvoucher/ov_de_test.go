@@ -149,7 +149,7 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 			Context("ResolvePublicKeyEncoding testing", func() {
 				It("should succeed", func() {
 					for i := range [5]int{} {
-						switch models.ResolvePublicKeyEncoding(i) {
+						switch enc, _ := models.ResolvePublicKeyEncoding(i); enc {
 						case "Crypto":
 							Expect(i).To(Equal(0))
 						case "X509":
@@ -167,7 +167,7 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 			Context("ResolveRendezvousVariableCode testing", func() {
 				It("should succeed", func() {
 					for i := range [17]int{} {
-						switch models.ResolveRendezvousVariableCode(i) {
+						switch code, _ := models.ResolveRendezvousVariableCode(i); code {
 						case "DeviceOnly":
 							Expect(i).To(Equal(0))
 						case "OwnerOnly":

@@ -2,16 +2,11 @@ package models
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
-	"os"
-)
 
-func init() {
-	log.SetFormatter(&log.JSONFormatter{})
-	log.SetOutput(os.Stdout)
-}
+	"github.com/google/uuid"
+)
 
 // OwnershipVoucher CBOR representation
 type OwnershipVoucher struct {
@@ -78,11 +73,12 @@ func (ovh *OwnershipVoucherHeader) MarshalJSON() ([]byte, error) {
 // MarshalJSON - custom serialization of RendezvousInfo to json
 func (ri *RendezvousInfo) MarshalJSON() ([]byte, error) {
 	type Alias RendezvousInfo
+	code, _ := ResolveRendezvousVariableCode(ri.RendezvousVariable)
 	return json.Marshal(&struct {
 		RendezvousVariable string `json:"rendezvous_variable"`
 		*Alias
 	}{
-		RendezvousVariable: ResolveRendezvousVariableCode(ri.RendezvousVariable),
+		RendezvousVariable: code,
 		Alias:              (*Alias)(ri),
 	})
 }
@@ -90,17 +86,18 @@ func (ri *RendezvousInfo) MarshalJSON() ([]byte, error) {
 // MarshalJSON - custom serialization of PublicKey to json
 func (pk *PublicKey) MarshalJSON() ([]byte, error) {
 	type Alias PublicKey
+	enc, _ := ResolvePublicKeyEncoding(int(pk.Encoding))
 	return json.Marshal(&struct {
 		Encoding string `json:"encoding"`
 		*Alias
 	}{
-		Encoding: ResolvePublicKeyEncoding(int(pk.Encoding)),
+		Encoding: enc,
 		Alias:    (*Alias)(pk),
 	})
 }
 
 // ResolvePublicKeyEncoding resolves PublicKey.Encoding to a readable string
-func ResolvePublicKeyEncoding(PublicKeyEncoding int) string {
+func ResolvePublicKeyEncoding(PublicKeyEncoding int) (string, error) {
 	s := fmt.Sprintln("Could't resolve PublicKeyEncoding: ", PublicKeyEncoding)
 	switch PublicKeyEncoding {
 	case 0:
@@ -112,17 +109,14 @@ func ResolvePublicKeyEncoding(PublicKeyEncoding int) string {
 	case 3:
 		s = "Cosekey"
 	default:
-		log.WithFields(log.Fields{
-			"method":              "models.ResolvePublicKeyEncoding",
-			"public_key_encoding": PublicKeyEncoding,
-		}).Error(s)
+		return "", errors.New(s)
 	}
-	return s
+	return s, nil
 }
 
 // ResolveRendezvousVariableCode resolves RendezvousVariable to a readable string
 // RendezvousVariable is the left side arg of RendezvousInfo pair
-func ResolveRendezvousVariableCode(RendezvousVariable int) string {
+func ResolveRendezvousVariableCode(RendezvousVariable int) (string, error) {
 	s := fmt.Sprintln("Could't resolve RendezvousVariableCode: ", RendezvousVariable)
 	switch RendezvousVariable {
 	case 0:
@@ -158,12 +152,9 @@ func ResolveRendezvousVariableCode(RendezvousVariable int) string {
 	case 15:
 		s = "Extended"
 	default:
-		log.WithFields(log.Fields{
-			"method":              "models.ResolveRendezvousVariableCode",
-			"rendezvous_variable": RendezvousVariable,
-		}).Error(s)
+		return "", errors.New(s)
 	}
-	return s
+	return s, nil
 }
 
 // Extract FDO uuid from the OV's header to a valid uuid string
@@ -171,10 +162,6 @@ func ResolveRendezvousVariableCode(RendezvousVariable int) string {
 func guidAsString(ovh *OwnershipVoucherHeader) (guid string) {
 	defer func() { // in a panic case, keep alive
 		if recErr := recover(); recErr != nil {
-			log.WithFields(log.Fields{
-				"method": "ownershipvoucher.guidAsString",
-				"what":   "panic occurred",
-			}).Error(recErr)
 			guid = "null"
 		}
 	}()
