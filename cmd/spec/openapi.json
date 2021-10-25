@@ -2286,6 +2286,24 @@
     "/image-sets": {
       "get": {
         "operationId": "ListAllImageSets",
+        "parameters": [
+          {
+            "description": "Define sort fields",
+            "in": "path",
+            "name": "sort_by [Created_at, Name, Status]",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "filter by field",
+            "in": "path",
+            "name": "field name [status =?, name=?]",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -2308,8 +2326,39 @@
               }
             },
             "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.NotFound"
+                }
+              }
+            },
+            "description": "The Image Set was not found."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
           }
-        }
+        },
+        "summary": "Return the list of image sets."
       }
     },
     "/image-sets/{ImageSetId}": {

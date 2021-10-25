@@ -477,6 +477,17 @@ paths:
   /image-sets:
     get:
       operationId: ListAllImageSets
+      parameters:
+        - name: sort_by [Created_at, Name, Status]
+          in: path
+          description: Define sort fields
+          schema:
+            type: string
+        - name: field name [status =?, name=?] 
+          in: path
+          description: filter by field
+          schema:
+            type: string
       responses:
         "200":
           content:
@@ -492,6 +503,25 @@ paths:
                     items:
                       $ref: "#/components/schemas/v1.ImageSetDetails"
           description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.NotFound"
+          description: The Image Set was not found.
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.BadRequest"
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.InternalServerError"
+          description: There was an internal server error. 
+      summary: Return the list of image sets.     
   /image-sets/{ImageSetId}:
     get:
       operationId: GetImageSetsByID
