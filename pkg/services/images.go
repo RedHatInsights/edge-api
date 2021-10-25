@@ -202,7 +202,7 @@ func (s *ImageService) postProcessImage(id uint) {
 		// Reload image to get updated status
 		db.DB.Joins("Commit").Joins("Installer").First(&i, i.ID)
 		if i.Status == models.ImageStatusBuilding {
-			s.log.WithField("signal", sig).Infof("Captured signal marking image as error", sig)
+			s.log.WithField("signal", sig).Info("Captured signal marking image as error", sig)
 			s.SetErrorStatusOnImage(nil, i)
 			WaitGroup.Done()
 		}

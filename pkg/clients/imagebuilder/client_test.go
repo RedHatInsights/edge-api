@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
@@ -29,7 +31,7 @@ func TestMain(m *testing.M) {
 }
 func TestInitClient(t *testing.T) {
 	ctx := context.Background()
-	client := InitClient(ctx)
+	client := InitClient(ctx, &log.Entry{})
 	if client == nil {
 		t.Errorf("Client shouldnt be nil")
 	}
@@ -39,7 +41,7 @@ func TestComposeImage(t *testing.T) {
 	config.Init()
 
 	ctx := context.Background()
-	client := InitClient(ctx)
+	client := InitClient(ctx, log.NewEntry(log.StandardLogger()))
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
