@@ -21,7 +21,7 @@ type imageSetTypeKey int
 
 const imageSetKey imageSetTypeKey = iota
 
-var sort_option = []string{"created_at", "updated_at", "name"}
+var sort_option = []string{"created_at", "updated_at", "name", "status"}
 var status_option = []string{models.ImageStatusCreated, models.ImageStatusBuilding, models.ImageStatusError, models.ImageStatusSuccess}
 
 // MakeImageSetsRouter adds support for operations on image-sets
@@ -43,6 +43,18 @@ var imageSetFilters = common.ComposeFilters(
 		DBField:    "image_sets.name",
 	}),
 	common.SortFilterHandler("image_sets", "created_at", "DESC"),
+)
+
+var imageStatusFilters = common.ComposeFilters(
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "status",
+		DBField:    "images.status",
+	}),
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "name",
+		DBField:    "image_sets.name",
+	}),
+	common.SortFilterHandler("images", "created_at", "DESC"),
 )
 
 func ImageSetCtx(next http.Handler) http.Handler {
@@ -103,8 +115,14 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&countErr)
 		return
 	}
+	fmt.Printf("r.URL.Query() %v \n", r.URL.Query().Get("sort_by"))
+	if r.URL.Query().Get("sort_by") != "status" && r.URL.Query().Get("sort_by") != "-status" {
+		result = imageSetFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Where(`Image_Sets.account = ? `, account).Find(&imageSet)
 
-	result = imageSetFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Where(`Image_Sets.account = ? `, account).Find(&imageSet)
+	} else {
+		result = imageStatusFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Where(`Image_Sets.account = ? `, account).Find(&imageSet)
+
+	}
 
 	if result.Error != nil {
 		err := errors.NewBadRequest("Not Found")
