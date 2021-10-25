@@ -2288,7 +2288,7 @@
         "operationId": "ListAllImageSets",
         "parameters": [
           {
-            "description": "Define sort fields: Created_at, Name, Status",
+            "description": "Define sort fields: Created_at, Name, Status. To sort DESC use -",
             "in": "path",
             "name": "sort_by",
             "schema": {
@@ -2296,9 +2296,9 @@
             }
           },
           {
-            "description": "filter by field: status =? or name=?",
+            "description": "field: status =? or name=?",
             "in": "path",
-            "name": "field",
+            "name": "filter",
             "schema": {
               "type": "string"
             }

@@ -1995,12 +1995,12 @@ paths:
       parameters:
         - name: sort_by
           in: path
-          description: "Define sort fields: Created_at, Name, Status"
+          description: "Define sort fields: Created_at, Name, Status. To sort DESC use -"
           schema:
             type: string
-        - name: field 
+        - name: filter 
           in: path
-          description: "filter by field: status =? or name=?"
+          description: "field: status =? or name=?"
           schema:
             type: string
       responses:
