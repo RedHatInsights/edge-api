@@ -2679,6 +2679,10 @@
               "application/json": {
                 "schema": {
                   "properties": {
+                    "count": {
+                      "example": 100,
+                      "type": "integer"
+                    },
                     "data": {
                       "items": {
                         "$ref": "#/components/schemas/v1.CreateThirdPartyRepo"
