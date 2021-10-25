@@ -2283,6 +2283,35 @@
         "summary": "Get a device by UUID."
       }
     },
+    "/image-sets": {
+      "get": {
+        "operationId": "ListAllImageSets",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "count": {
+                      "example": 100,
+                      "type": "integer"
+                    },
+                    "data": {
+                      "items": {
+                        "$ref": "#/components/schemas/v1.ImageSetDetails"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/image-sets/{ImageSetId}": {
       "get": {
         "operationId": "GetImageSetsByID",
