@@ -1,13 +1,18 @@
 package logger
 
 import (
+	"fmt"
 	"os"
+	"path"
+	"runtime"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/redhatinsights/edge-api/config"
 	lc "github.com/redhatinsights/platform-go-middlewares/logging/cloudwatch"
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -27,6 +32,7 @@ func InitLogger() {
 	default:
 		logLevel = log.InfoLevel
 	}
+	logrus.SetReportCaller(true)
 
 	if cfg.Logging != nil && cfg.Logging.Region != "" {
 		cred := credentials.NewStaticCredentials(cfg.Logging.AccessKeyID, cfg.Logging.SecretAccessKey, "")
@@ -40,6 +46,11 @@ func InitLogger() {
 			TimestampFormat: time.Now().Format("2006-01-02T15:04:05.999Z"),
 			FieldMap: log.FieldMap{
 				log.FieldKeyTime: "@timestamp",
+			},
+			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+				s := strings.Split(f.Function, ".")
+				funcName := s[len(s)-1]
+				return funcName, fmt.Sprintf("%s:%d", path.Base(f.File), f.Line)
 			},
 		})
 	}
