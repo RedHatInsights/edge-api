@@ -4,8 +4,8 @@ package ownershipvoucher
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 
@@ -29,14 +29,13 @@ func unmarshalOwnershipVoucherHeader(ovhb []byte) (*models.OwnershipVoucherHeade
 
 // If CBOR unmarshal fails => panic
 // Something might be wrong with OV
-func unmarshalCheck(e error, ovORovh string, ovNum int) {
+func unmarshalCheck(e error, ovORovh string) {
 	if e != nil {
-		log.WithFields(log.Fields{
-			"method":    "ownershipvoucher.unmarshalCheck",
-			"what":      ovORovh,
-			"ov_parsed": ovNum,
-		}).Error(e)
-		panic(e)
+		panic(map[string]interface{}{
+			"method":        "ownershipvoucher.unmarshalCheck",
+			"what":          ovORovh,
+			"error_details": e.Error(),
+		})
 	}
 }
 
@@ -51,9 +50,11 @@ func ParseBytes(ovb []byte) (ovha []models.OwnershipVoucherHeader, err error) {
 	defer func() { // in a panic case, stop the parsing but keep alive
 		if recErr := recover(); recErr != nil {
 			logFields["ovs_parsed"] = counter
+			logFields["error_code"] = "parse_error"
+			logFields["error_details"] = recErr
 			log.WithFields(logFields).Error("panic occurred")
-			logFields["panic_occurred"] = true
-			err = errors.New(fmt.Sprint(logFields))
+			ejson, _ := json.Marshal(logFields)
+			err = errors.New(string(ejson))
 		}
 	}()
 	if err := cbor.Valid(ovb); err == nil { // checking whether the CBOR data is complete and well-formed
@@ -62,18 +63,21 @@ func ParseBytes(ovb []byte) (ovha []models.OwnershipVoucherHeader, err error) {
 			if decErr := dec.Decode(&ov); decErr == io.EOF {
 				break
 			} else if decErr != nil { // couldn't decode into ownershipvoucher
-				unmarshalCheck(decErr, "ownershipvoucher", counter)
+				unmarshalCheck(decErr, "ownershipvoucher")
 				return ovha, decErr
 			}
 			singleOvh, err := unmarshalOwnershipVoucherHeader(ov.Header)
-			unmarshalCheck(err, "ownershipvoucher header", counter)
+			unmarshalCheck(err, "ownershipvoucher header")
 			ovha = append(ovha, *singleOvh)
 			counter++
 		}
 	} else {
 		logFields["ovs_parsed"] = counter
+		logFields["error_code"] = "non_ended_voucher"
+		logFields["error_details"] = "invalid ownershipvoucher bytes"
 		log.WithFields(logFields).Error("Invalid ownershipvoucher bytes")
-		return nil, errors.New("invalid ownershipvoucher bytes")
+		ejson, _ := json.Marshal(logFields)
+		return nil, errors.New(string(ejson))
 	}
 	logFields["ovs_parsed"] = counter
 	log.WithFields(logFields).Infof("%d ownershipvouchers parsed successfully", counter)

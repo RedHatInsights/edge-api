@@ -1,8 +1,12 @@
 package ownershipvoucher_test
 
 import (
+	"encoding/json"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	// "encoding/json"
 
 	"github.com/redhatinsights/edge-api/pkg/models"
 	ovde "github.com/redhatinsights/edge-api/pkg/ownershipvoucher"
@@ -42,7 +46,10 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 						Expect(e).To(HaveOccurred())
 					})
 					By("is invalid ownershipvoucher", func() {
-						Expect(e.Error()).To(Equal("invalid ownershipvoucher bytes"))
+						ejson := map[string]interface{}{}
+						json.Unmarshal([]byte(e.Error()), &ejson)
+						Expect(ejson["error_details"]).To(Equal("invalid ownershipvoucher bytes"))
+						Expect(ejson["error_code"]).To(Equal("non_ended_voucher"))
 					})
 				})
 			})
@@ -60,7 +67,10 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 						Expect(e).To(HaveOccurred())
 					})
 					By("in panic", func() {
-						Expect(e.Error()).To(ContainSubstring("panic_occurred"))
+						ejson := map[string]interface{}{}
+						json.Unmarshal([]byte(e.Error()), &ejson)
+						Expect(ejson["error_code"]).To(Equal("parse_error"))
+						Expect(ejson["error_details"].(map[string]interface{})["error_details"]).To(ContainSubstring("cannot unmarshal array into Go value of type models.OwnershipVoucher"))
 					})
 				})
 			})
@@ -85,12 +95,15 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 			multiOVs1 := multiOVs[1:]
 			Context("parse OVs should fail", func() {
 				data, e := ovde.MinimumParse(multiOVs1)
+				ejson := map[string]interface{}{}
+				json.Unmarshal([]byte(e.Error()), &ejson)
 				It("error", func() {
 					By("error occurred", func() {
 						Expect(e).To(HaveOccurred())
 					})
 					By("in panic", func() {
-						Expect(e.Error()).To(ContainSubstring("panic_occurred"))
+						Expect(ejson["error_code"]).To(Equal("parse_error"))
+						Expect(ejson["error_details"].(map[string]interface{})["error_details"]).To(ContainSubstring("cannot unmarshal array into Go value of type models.OwnershipVoucher"))
 					})
 				})
 				It("data is invalid", func() {
@@ -99,18 +112,22 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 					})
 					By("len is 0", func() {
 						Expect(len(data)).To(Equal(0))
+						Expect(ejson["ovs_parsed"]).To(Equal(float64(0)))
 					})
 				})
 			})
 			multiOVs[8500] = 123 // change the second OV is the chain
 			Context("parse OVs should fail but collect previous data", func() {
 				data, e := ovde.MinimumParse(multiOVs)
+				ejson := map[string]interface{}{}
+				json.Unmarshal([]byte(e.Error()), &ejson)
 				It("error", func() {
 					By("error occurred", func() {
 						Expect(e).To(HaveOccurred())
 					})
 					By("in panic", func() {
-						Expect(e.Error()).To(ContainSubstring("panic_occurred"))
+						Expect(ejson["error_code"]).To(Equal("parse_error"))
+						Expect(ejson["error_details"].(map[string]interface{})["error_details"]).To(Equal("unexpected EOF"))
 					})
 				})
 				It("data is partial", func() {
@@ -119,6 +136,7 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 					})
 					By("len is 1", func() {
 						Expect(len(data)).To(Equal(1))
+						Expect(ejson["ovs_parsed"]).To(Equal(float64(1)))
 					})
 				})
 			})
