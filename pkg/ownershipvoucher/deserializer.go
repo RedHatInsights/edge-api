@@ -38,11 +38,14 @@ func unmarshalCheck(e error, ovORovh string) {
 	}
 }
 
-// Add error code & details as a method to avoid duplicated lines
-func addErrLogFields(fields log.Fields, counter int, err string, details interface{}) {
+// Add error code & details as a method to avoid duplicated lines, return JSON bytes
+func addErrLogFields(fields log.Fields, counter int, err string, details interface{}, logMsg string) []byte {
 	fields["ovs_parsed"] = counter
 	fields["error_code"] = err
 	fields["error_details"] = details
+	log.WithFields(fields).Error(logMsg)
+	ejson, _ := json.Marshal(fields)
+	return ejson
 }
 
 // ParseBytes is CBOR unmarshal of OV, receives []byte from loading the OV file (either reading/receiving)
@@ -55,9 +58,7 @@ func ParseBytes(ovb []byte) (ovha []models.OwnershipVoucherHeader, err error) {
 	)
 	defer func() { // in a panic case, stop the parsing but keep alive
 		if recErr := recover(); recErr != nil {
-			addErrLogFields(logFields, counter, "parse_error", recErr)
-			log.WithFields(logFields).Error("panic occurred")
-			ejson, _ := json.Marshal(logFields)
+			ejson := addErrLogFields(logFields, counter, "parse_error", recErr, "panic occurred")
 			err = errors.New(string(ejson))
 		}
 	}()
@@ -68,7 +69,6 @@ func ParseBytes(ovb []byte) (ovha []models.OwnershipVoucherHeader, err error) {
 				break
 			} else if decErr != nil { // couldn't decode into ownershipvoucher
 				unmarshalCheck(decErr, "ownershipvoucher")
-				return ovha, decErr
 			} else {
 				singleOvh, err := unmarshalOwnershipVoucherHeader(ov.Header)
 				unmarshalCheck(err, "ownershipvoucher header")
@@ -77,9 +77,7 @@ func ParseBytes(ovb []byte) (ovha []models.OwnershipVoucherHeader, err error) {
 			}
 		}
 	} else {
-		addErrLogFields(logFields, counter, "non_ended_voucher", "invalid ownershipvoucher bytes")
-		log.WithFields(logFields).Error("Invalid ownershipvoucher bytes")
-		ejson, _ := json.Marshal(logFields)
+		ejson := addErrLogFields(logFields, counter, "non_ended_voucher", "invalid ownershipvoucher bytes", "Invalid ownershipvoucher bytes")
 		return nil, errors.New(string(ejson))
 	}
 	logFields["ovs_parsed"] = counter
