@@ -30,112 +30,112 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 				Expect(ovh["protocol_version"]).To(Equal(uint16(100)))
 			})
 		})
+	})
 
-		Describe("testing emtpy OV", func() {
-			var ov = []byte{}
-			Context("parse minimum required data", func() {
-				data, e := ovde.MinimumParse(ov)
-				It("empty", func() {
-					Expect(data).To(BeEmpty())
+	Describe("testing emtpy OV", func() {
+		var ov = []byte{}
+		Context("parse minimum required data", func() {
+			data, e := ovde.MinimumParse(ov)
+			It("empty", func() {
+				Expect(data).To(BeEmpty())
+			})
+			It("error", func() {
+				By("error occurred", func() {
+					Expect(e).To(HaveOccurred())
 				})
-				It("error", func() {
-					By("error occurred", func() {
-						Expect(e).To(HaveOccurred())
-					})
-					By("is invalid ownershipvoucher", func() {
-						ejson := map[string]interface{}{}
-						json.Unmarshal([]byte(e.Error()), &ejson)
-						Expect(ejson["error_details"]).To(Equal("invalid ownershipvoucher bytes"))
-						Expect(ejson["error_code"]).To(Equal("non_ended_voucher"))
-					})
+				By("is invalid ownershipvoucher", func() {
+					ejson := map[string]interface{}{}
+					json.Unmarshal([]byte(e.Error()), &ejson)
+					Expect(ejson["error_details"]).To(Equal("invalid ownershipvoucher bytes"))
+					Expect(ejson["error_code"]).To(Equal("non_ended_voucher"))
 				})
 			})
 		})
+	})
 
-		Describe("testing invalid OV", func() {
-			ov := ovb1[1:]
-			Context("parse minimum required data", func() {
-				data, e := ovde.MinimumParse(ov)
-				It("empty", func() {
-					Expect(data).To(BeEmpty())
+	Describe("testing invalid OV", func() {
+		ov := ovb1[1:]
+		Context("parse minimum required data", func() {
+			data, e := ovde.MinimumParse(ov)
+			It("empty", func() {
+				Expect(data).To(BeEmpty())
+			})
+			It("error", func() {
+				By("error occurred", func() {
+					Expect(e).To(HaveOccurred())
 				})
-				It("error", func() {
-					By("error occurred", func() {
-						Expect(e).To(HaveOccurred())
-					})
-					By("in panic", func() {
-						ejson := map[string]interface{}{}
-						json.Unmarshal([]byte(e.Error()), &ejson)
-						Expect(ejson["error_code"]).To(Equal("parse_error"))
-						Expect(ejson["error_details"].(map[string]interface{})["details"]).To(ContainSubstring("cannot unmarshal array into Go value of type models.OwnershipVoucher"))
-					})
+				By("in panic", func() {
+					ejson := map[string]interface{}{}
+					json.Unmarshal([]byte(e.Error()), &ejson)
+					Expect(ejson["error_code"]).To(Equal("parse_error"))
+					Expect(ejson["error_details"].(map[string]interface{})["details"]).To(ContainSubstring("cannot unmarshal array into Go value of type models.OwnershipVoucher"))
 				})
 			})
 		})
+	})
 
-		Describe("multi stream OVs", func() {
-			multiOVs := append(ovb1, ovb2...)
-			multiOVs = append(multiOVs, ovb2...)
-			Context("parse OVs should be success", func() {
-				data, e := ovde.MinimumParse(multiOVs)
-				It("no error", func() {
-					Expect(e).ToNot(HaveOccurred())
+	Describe("multi stream OVs", func() {
+		multiOVs := append(ovb1, ovb2...)
+		multiOVs = append(multiOVs, ovb2...)
+		Context("parse OVs should be success", func() {
+			data, e := ovde.MinimumParse(multiOVs)
+			It("no error", func() {
+				Expect(e).ToNot(HaveOccurred())
+			})
+			It("data is valid", func() {
+				By("not empty", func() {
+					Expect(data).ToNot(BeEmpty())
 				})
-				It("data is valid", func() {
-					By("not empty", func() {
-						Expect(data).ToNot(BeEmpty())
-					})
-					By("len is 3", func() {
-						Expect(len(data)).To(Equal(3))
-					})
+				By("len is 3", func() {
+					Expect(len(data)).To(Equal(3))
 				})
 			})
-			multiOVs1 := multiOVs[1:]
-			Context("parse OVs should fail", func() {
-				data, e := ovde.MinimumParse(multiOVs1)
-				ejson := map[string]interface{}{}
-				json.Unmarshal([]byte(e.Error()), &ejson)
-				It("error", func() {
-					By("error occurred", func() {
-						Expect(e).To(HaveOccurred())
-					})
-					By("in panic", func() {
-						Expect(ejson["error_code"]).To(Equal("parse_error"))
-						Expect(ejson["error_details"].(map[string]interface{})["details"]).To(ContainSubstring("cannot unmarshal array into Go value of type models.OwnershipVoucher"))
-					})
+		})
+		multiOVs1 := multiOVs[1:]
+		Context("parse OVs should fail", func() {
+			data, e := ovde.MinimumParse(multiOVs1)
+			ejson := map[string]interface{}{}
+			json.Unmarshal([]byte(e.Error()), &ejson)
+			It("error", func() {
+				By("error occurred", func() {
+					Expect(e).To(HaveOccurred())
 				})
-				It("data is invalid", func() {
-					By("empty", func() {
-						Expect(data).To(BeEmpty())
-					})
-					By("len is 0", func() {
-						Expect(len(data)).To(Equal(0))
-						Expect(ejson["ovs_parsed"]).To(Equal(float64(0)))
-					})
+				By("in panic", func() {
+					Expect(ejson["error_code"]).To(Equal("parse_error"))
+					Expect(ejson["error_details"].(map[string]interface{})["details"]).To(ContainSubstring("cannot unmarshal array into Go value of type models.OwnershipVoucher"))
 				})
 			})
-			multiOVs[len(multiOVs)-2] = 255 // break the third OV in the chain
-			Context("parse OVs should fail but collect previous data", func() {
-				data, e := ovde.MinimumParse(multiOVs)
-				ejson := map[string]interface{}{}
-				json.Unmarshal([]byte(e.Error()), &ejson)
-				It("error", func() {
-					By("error occurred", func() {
-						Expect(e).To(HaveOccurred())
-					})
-					By("in panic", func() {
-						Expect(ejson["error_code"]).To(Equal("parse_error"))
-						Expect(ejson["error_details"].(map[string]interface{})["details"]).To(ContainSubstring("unexpected \"break\" code"))
-					})
+			It("data is invalid", func() {
+				By("empty", func() {
+					Expect(data).To(BeEmpty())
 				})
-				It("data is partial", func() {
-					By("not empty", func() {
-						Expect(data).ToNot(BeEmpty())
-					})
-					By("len is 2", func() {
-						Expect(len(data)).To(Equal(2))
-						Expect(ejson["ovs_parsed"]).To(Equal(float64(2)))
-					})
+				By("len is 0", func() {
+					Expect(len(data)).To(Equal(0))
+					Expect(ejson["ovs_parsed"]).To(Equal(float64(0)))
+				})
+			})
+		})
+		multiOVs[len(multiOVs)-2] = 255 // break the third OV in the chain
+		Context("parse OVs should fail but collect previous data", func() {
+			data, e := ovde.MinimumParse(multiOVs)
+			ejson := map[string]interface{}{}
+			json.Unmarshal([]byte(e.Error()), &ejson)
+			It("error", func() {
+				By("error occurred", func() {
+					Expect(e).To(HaveOccurred())
+				})
+				By("in panic", func() {
+					Expect(ejson["error_code"]).To(Equal("parse_error"))
+					Expect(ejson["error_details"].(map[string]interface{})["details"]).To(ContainSubstring("unexpected \"break\" code"))
+				})
+			})
+			It("data is partial", func() {
+				By("not empty", func() {
+					Expect(data).ToNot(BeEmpty())
+				})
+				By("len is 2", func() {
+					Expect(len(data)).To(Equal(2))
+					Expect(ejson["ovs_parsed"]).To(Equal(float64(2)))
 				})
 			})
 		})
