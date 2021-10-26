@@ -31,7 +31,7 @@ func unmarshalOwnershipVoucherHeader(ovhb []byte) (ovh *models.OwnershipVoucherH
 func unmarshalCheck(e error, ovORovh string) {
 	if e != nil {
 		panic(map[string]interface{}{
-			"method":  "ownershipvoucher.unmarshalCheck",
+			"method":  "deserializer.unmarshalCheck",
 			"what":    ovORovh,
 			"details": e.Error(),
 		})
@@ -54,7 +54,7 @@ func ParseBytes(ovb []byte) (ovha []models.OwnershipVoucherHeader, err error) {
 	var (
 		ov        models.OwnershipVoucher
 		counter   int        = 0
-		logFields log.Fields = map[string]interface{}{"method": "ownershipvoucher.ParseBytes"}
+		logFields log.Fields = map[string]interface{}{"method": "deserializer.ParseBytes"}
 	)
 	defer func() { // in a panic case, stop the parsing but keep alive
 		if recErr := recover(); recErr != nil {
@@ -94,7 +94,7 @@ func MinimumParse(ovb []byte) ([]map[string]interface{}, error) {
 	for _, header := range ovh {
 		data := models.ExtractMinimumData(&header)
 		minimumDataReq = append(minimumDataReq, data)
-		data["method"] = "ownershipvoucher.MinimumParse"
+		data["method"] = "deserializer.MinimumParse"
 		log.WithFields(data).Debug("New device added")
 	}
 	return minimumDataReq, err
