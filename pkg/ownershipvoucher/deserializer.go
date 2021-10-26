@@ -21,10 +21,9 @@ func init() {
 
 // CBOR unmarshal of OV header, receives []byte from unmarshalOwnershipVoucher
 // returns OV header as pointer to OwnershipVoucherHeader struct & err
-func unmarshalOwnershipVoucherHeader(ovhb []byte) (*models.OwnershipVoucherHeader, error) {
-	var ovh models.OwnershipVoucherHeader
-	err := cbor.Unmarshal(ovhb, &ovh)
-	return &ovh, err
+func unmarshalOwnershipVoucherHeader(ovhb []byte) (ovh *models.OwnershipVoucherHeader, err error) {
+	err = cbor.Unmarshal(ovhb, &ovh)
+	return ovh, err
 }
 
 // If CBOR unmarshal fails => panic
