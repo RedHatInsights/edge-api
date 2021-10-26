@@ -44,7 +44,6 @@ func MakeImagesRouter(sub chi.Router) {
 		r.Get("/repo", GetRepoForImage)
 		r.Get("/metadata", GetMetadataForImage)
 		r.Post("/installer", CreateInstallerForImage)
-		r.Post("/repo", CreateRepoForImage)
 		r.Post("/kickstart", CreateKickStartForImage)
 		r.Post("/update", CreateImageUpdate)
 		r.Post("/retry", RetryCreateImage)
