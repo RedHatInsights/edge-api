@@ -68,7 +68,7 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 						ejson := map[string]interface{}{}
 						json.Unmarshal([]byte(e.Error()), &ejson)
 						Expect(ejson["error_code"]).To(Equal("parse_error"))
-						Expect(ejson["error_details"].(map[string]interface{})["error_details"]).To(ContainSubstring("cannot unmarshal array into Go value of type models.OwnershipVoucher"))
+						Expect(ejson["error_details"].(map[string]interface{})["details"]).To(ContainSubstring("cannot unmarshal array into Go value of type models.OwnershipVoucher"))
 					})
 				})
 			})
@@ -101,7 +101,7 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 					})
 					By("in panic", func() {
 						Expect(ejson["error_code"]).To(Equal("parse_error"))
-						Expect(ejson["error_details"].(map[string]interface{})["error_details"]).To(ContainSubstring("cannot unmarshal array into Go value of type models.OwnershipVoucher"))
+						Expect(ejson["error_details"].(map[string]interface{})["details"]).To(ContainSubstring("cannot unmarshal array into Go value of type models.OwnershipVoucher"))
 					})
 				})
 				It("data is invalid", func() {
@@ -125,7 +125,7 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 					})
 					By("in panic", func() {
 						Expect(ejson["error_code"]).To(Equal("parse_error"))
-						Expect(ejson["error_details"].(map[string]interface{})["error_details"]).To(Equal("unexpected EOF"))
+						Expect(ejson["error_details"].(map[string]interface{})["details"]).To(Equal("unexpected EOF"))
 					})
 				})
 				It("data is partial", func() {

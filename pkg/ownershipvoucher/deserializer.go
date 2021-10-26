@@ -31,9 +31,9 @@ func unmarshalOwnershipVoucherHeader(ovhb []byte) (ovh *models.OwnershipVoucherH
 func unmarshalCheck(e error, ovORovh string) {
 	if e != nil {
 		panic(map[string]interface{}{
-			"method":        "ownershipvoucher.unmarshalCheck",
-			"what":          ovORovh,
-			"error_details": e.Error(),
+			"method":  "ownershipvoucher.unmarshalCheck",
+			"what":    ovORovh,
+			"details": e.Error(),
 		})
 	}
 }
