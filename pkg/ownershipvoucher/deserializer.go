@@ -39,6 +39,13 @@ func unmarshalCheck(e error, ovORovh string) {
 	}
 }
 
+// Add error code & details as a method to avoid duplicated lines
+func addErrLogFields(fields log.Fields, counter int, err string, details interface{}) {
+	fields["ovs_parsed"] = counter
+	fields["error_code"] = err
+	fields["error_details"] = details
+}
+
 // ParseBytes is CBOR unmarshal of OV, receives []byte from loading the OV file (either reading/receiving)
 // do some validation checks and returns OV header as pointer to OwnershipVoucherHeader struct
 func ParseBytes(ovb []byte) (ovha []models.OwnershipVoucherHeader, err error) {
@@ -49,9 +56,7 @@ func ParseBytes(ovb []byte) (ovha []models.OwnershipVoucherHeader, err error) {
 	)
 	defer func() { // in a panic case, stop the parsing but keep alive
 		if recErr := recover(); recErr != nil {
-			logFields["ovs_parsed"] = counter
-			logFields["error_code"] = "parse_error"
-			logFields["error_details"] = recErr
+			addErrLogFields(logFields, counter, "parse_error", recErr)
 			log.WithFields(logFields).Error("panic occurred")
 			ejson, _ := json.Marshal(logFields)
 			err = errors.New(string(ejson))
@@ -72,9 +77,7 @@ func ParseBytes(ovb []byte) (ovha []models.OwnershipVoucherHeader, err error) {
 			counter++
 		}
 	} else {
-		logFields["ovs_parsed"] = counter
-		logFields["error_code"] = "non_ended_voucher"
-		logFields["error_details"] = "invalid ownershipvoucher bytes"
+		addErrLogFields(logFields, counter, "non_ended_voucher", "invalid ownershipvoucher bytes")
 		log.WithFields(logFields).Error("Invalid ownershipvoucher bytes")
 		ejson, _ := json.Marshal(logFields)
 		return nil, errors.New(string(ejson))
