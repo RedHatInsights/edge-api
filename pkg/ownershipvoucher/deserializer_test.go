@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/redhatinsights/edge-api/pkg/models"
 	ovde "github.com/redhatinsights/edge-api/pkg/ownershipvoucher"
 )
 
@@ -137,90 +136,6 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 						Expect(len(data)).To(Equal(2))
 						Expect(ejson["ovs_parsed"]).To(Equal(float64(2)))
 					})
-				})
-			})
-		})
-
-		Describe("ownershipvoucher header marshal JSON", func() {
-			Context("parse the bytes only", func() {
-				mParse, e := ovde.ParseBytes(ovb1)
-				When("parsing", func() {
-					It("no error", func() {
-						Expect(e).ToNot(HaveOccurred())
-					})
-				})
-				ovh := mParse[0]
-				b, e := ovh.MarshalJSON()
-				When("marshal JSON", func() {
-					It("no error", func() {
-						Expect(e).ToNot(HaveOccurred())
-					})
-					It("not empty", func() {
-						Expect(b).ToNot(BeEmpty())
-					})
-				})
-			})
-		})
-
-		Describe("check resolvers", func() {
-			Context("ResolvePublicKeyEncoding testing", func() {
-				It("should succeed", func() {
-					for i := range [5]int{} {
-						switch models.ResolvePublicKeyEncoding(i) {
-						case "Crypto":
-							Expect(i).To(Equal(0))
-						case "X509":
-							Expect(i).To(Equal(1))
-						case "COSEX509":
-							Expect(i).To(Equal(2))
-						case "Cosekey":
-							Expect(i).To(Equal(3))
-						case "Could't resolve PublicKeyEncoding: 4":
-							Expect(i).To(Equal(4))
-						}
-					}
-				})
-			})
-			Context("ResolveRendezvousVariableCode testing", func() {
-				It("should succeed", func() {
-					for i := range [17]int{} {
-						switch models.ResolveRendezvousVariableCode(i) {
-						case "DeviceOnly":
-							Expect(i).To(Equal(0))
-						case "OwnerOnly":
-							Expect(i).To(Equal(1))
-						case "IPAddress":
-							Expect(i).To(Equal(2))
-						case "DevicePort":
-							Expect(i).To(Equal(3))
-						case "OwnerPort":
-							Expect(i).To(Equal(4))
-						case "Dns":
-							Expect(i).To(Equal(5))
-						case "ServerCertHash":
-							Expect(i).To(Equal(6))
-						case "CaCertHash":
-							Expect(i).To(Equal(7))
-						case "UserInput":
-							Expect(i).To(Equal(8))
-						case "WifiSsid":
-							Expect(i).To(Equal(9))
-						case "WifiPw":
-							Expect(i).To(Equal(10))
-						case "Medium":
-							Expect(i).To(Equal(11))
-						case "Protocol":
-							Expect(i).To(Equal(12))
-						case "Delaysec":
-							Expect(i).To(Equal(13))
-						case "Bypass":
-							Expect(i).To(Equal(14))
-						case "Extended":
-							Expect(i).To(Equal(15))
-						case "Could't resolve ResolveRendezvousVariableCode: 16":
-							Expect(i).To(Equal(16))
-						}
-					}
 				})
 			})
 		})

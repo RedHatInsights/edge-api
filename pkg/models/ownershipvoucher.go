@@ -172,7 +172,7 @@ func guidAsString(ovh *OwnershipVoucherHeader) (guid string) {
 	defer func() { // in a panic case, keep alive
 		if recErr := recover(); recErr != nil {
 			log.WithFields(log.Fields{
-				"method": "ownershipvoucher.guidAsString",
+				"method": "models.guidAsString",
 				"what":   "panic occurred",
 			}).Error(recErr)
 			guid = "null"
