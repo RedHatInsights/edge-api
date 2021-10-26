@@ -76,6 +76,7 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 
 		Describe("multi stream OVs", func() {
 			multiOVs := append(ovb1, ovb2...)
+			multiOVs = append(multiOVs, ovb2...)
 			Context("parse OVs should be success", func() {
 				data, e := ovde.MinimumParse(multiOVs)
 				It("no error", func() {
@@ -85,8 +86,8 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 					By("not empty", func() {
 						Expect(data).ToNot(BeEmpty())
 					})
-					By("len is 2", func() {
-						Expect(len(data)).To(Equal(2))
+					By("len is 3", func() {
+						Expect(len(data)).To(Equal(3))
 					})
 				})
 			})
@@ -114,7 +115,7 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 					})
 				})
 			})
-			multiOVs[8500] = 123 // change the second OV is the chain
+			multiOVs[len(multiOVs)-2] = 255 // break the third OV in the chain
 			Context("parse OVs should fail but collect previous data", func() {
 				data, e := ovde.MinimumParse(multiOVs)
 				ejson := map[string]interface{}{}
@@ -125,16 +126,16 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 					})
 					By("in panic", func() {
 						Expect(ejson["error_code"]).To(Equal("parse_error"))
-						Expect(ejson["error_details"].(map[string]interface{})["details"]).To(Equal("unexpected EOF"))
+						Expect(ejson["error_details"].(map[string]interface{})["details"]).To(ContainSubstring("unexpected \"break\" code"))
 					})
 				})
 				It("data is partial", func() {
 					By("not empty", func() {
 						Expect(data).ToNot(BeEmpty())
 					})
-					By("len is 1", func() {
-						Expect(len(data)).To(Equal(1))
-						Expect(ejson["ovs_parsed"]).To(Equal(float64(1)))
+					By("len is 2", func() {
+						Expect(len(data)).To(Equal(2))
+						Expect(ejson["ovs_parsed"]).To(Equal(float64(2)))
 					})
 				})
 			})
