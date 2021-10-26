@@ -70,11 +70,12 @@ func ParseBytes(ovb []byte) (ovha []models.OwnershipVoucherHeader, err error) {
 			} else if decErr != nil { // couldn't decode into ownershipvoucher
 				unmarshalCheck(decErr, "ownershipvoucher")
 				return ovha, decErr
+			} else {
+				singleOvh, err := unmarshalOwnershipVoucherHeader(ov.Header)
+				unmarshalCheck(err, "ownershipvoucher header")
+				ovha = append(ovha, *singleOvh)
+				counter++
 			}
-			singleOvh, err := unmarshalOwnershipVoucherHeader(ov.Header)
-			unmarshalCheck(err, "ownershipvoucher header")
-			ovha = append(ovha, *singleOvh)
-			counter++
 		}
 	} else {
 		addErrLogFields(logFields, counter, "non_ended_voucher", "invalid ownershipvoucher bytes")
