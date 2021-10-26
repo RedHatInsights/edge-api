@@ -1,4 +1,5 @@
-
+[![Go](https://github.com/RedHatInsights/edge-api/actions/workflows/go.yml/badge.svg)](https://github.com/RedHatInsights/edge-api/actions/workflows/go.yml)
+[![codecov](https://codecov.io/gh/RedHatInsights/edge-api/branch/main/graph/badge.svg?token=1CEO1MRGUB)](https://codecov.io/gh/RedHatInsights/edge-api) 
 # Overview
 - [Getting started](#intro)
 - [Development](#development)
