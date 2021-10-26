@@ -2,9 +2,11 @@ package ownershipvoucher_test
 
 import (
 	"encoding/json"
+	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gmeasure"
 
 	ovde "github.com/redhatinsights/edge-api/pkg/ownershipvoucher"
 )
@@ -138,6 +140,24 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 					Expect(ejson["ovs_parsed"]).To(Equal(float64(2)))
 				})
 			})
+		})
+	})
+	Describe("benchmark parsing", func() {
+		It("should parse minimum required data for 100 OVs efficiently", func() {
+			e := gmeasure.NewExperiment("Parse Experiment")
+			multiOVS := ovb1
+			for i := 0; i < 99; i++ {
+				multiOVS = append(multiOVS, ovb1...)
+			}
+			e.SampleDuration("runtime", func(_ int) {
+				ovde.MinimumParse(multiOVS)
+			}, gmeasure.SamplingConfig{N: 10}, gmeasure.Annotation("MinimumParse 100 OVs"))
+			measurement := e.Get("runtime")
+			for i := range measurement.Durations {
+				// github actions uses low resources, should be less than 0.02s
+				Ω(measurement.Durations[i].Seconds()).Should(BeNumerically("<", 1), "MinimumParse shouldn't take too long.")
+			}
+			fmt.Println(measurement)
 		})
 	})
 })
