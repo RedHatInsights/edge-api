@@ -21,10 +21,9 @@ func init() {
 
 // CBOR unmarshal of OV header, receives []byte from unmarshalOwnershipVoucher
 // returns OV header as pointer to OwnershipVoucherHeader struct & err
-func unmarshalOwnershipVoucherHeader(ovhb []byte) (*models.OwnershipVoucherHeader, error) {
-	var ovh models.OwnershipVoucherHeader
-	err := cbor.Unmarshal(ovhb, &ovh)
-	return &ovh, err
+func unmarshalOwnershipVoucherHeader(ovhb []byte) (ovh *models.OwnershipVoucherHeader, err error) {
+	err = cbor.Unmarshal(ovhb, &ovh)
+	return ovh, err
 }
 
 // If CBOR unmarshal fails => panic
@@ -32,11 +31,21 @@ func unmarshalOwnershipVoucherHeader(ovhb []byte) (*models.OwnershipVoucherHeade
 func unmarshalCheck(e error, ovORovh string) {
 	if e != nil {
 		panic(map[string]interface{}{
-			"method":        "ownershipvoucher.unmarshalCheck",
-			"what":          ovORovh,
-			"error_details": e.Error(),
+			"method":  "deserializer.unmarshalCheck",
+			"what":    ovORovh,
+			"details": e.Error(),
 		})
 	}
+}
+
+// Add error code & details as a method to avoid duplicated lines, return JSON bytes
+func addErrLogFields(fields log.Fields, counter int, err string, details interface{}, logMsg string) []byte {
+	fields["ovs_parsed"] = counter
+	fields["error_code"] = err
+	fields["error_details"] = details
+	log.WithFields(fields).Error(logMsg)
+	ejson, _ := json.Marshal(fields)
+	return ejson
 }
 
 // ParseBytes is CBOR unmarshal of OV, receives []byte from loading the OV file (either reading/receiving)
@@ -45,15 +54,11 @@ func ParseBytes(ovb []byte) (ovha []models.OwnershipVoucherHeader, err error) {
 	var (
 		ov        models.OwnershipVoucher
 		counter   int        = 0
-		logFields log.Fields = map[string]interface{}{"method": "ownershipvoucher.ParseBytes"}
+		logFields log.Fields = map[string]interface{}{"method": "deserializer.ParseBytes"}
 	)
 	defer func() { // in a panic case, stop the parsing but keep alive
 		if recErr := recover(); recErr != nil {
-			logFields["ovs_parsed"] = counter
-			logFields["error_code"] = "parse_error"
-			logFields["error_details"] = recErr
-			log.WithFields(logFields).Error("panic occurred")
-			ejson, _ := json.Marshal(logFields)
+			ejson := addErrLogFields(logFields, counter, "parse_error", recErr, "panic occurred")
 			err = errors.New(string(ejson))
 		}
 	}()
@@ -64,19 +69,15 @@ func ParseBytes(ovb []byte) (ovha []models.OwnershipVoucherHeader, err error) {
 				break
 			} else if decErr != nil { // couldn't decode into ownershipvoucher
 				unmarshalCheck(decErr, "ownershipvoucher")
-				return ovha, decErr
+			} else {
+				singleOvh, err := unmarshalOwnershipVoucherHeader(ov.Header)
+				unmarshalCheck(err, "ownershipvoucher header")
+				ovha = append(ovha, *singleOvh)
+				counter++
 			}
-			singleOvh, err := unmarshalOwnershipVoucherHeader(ov.Header)
-			unmarshalCheck(err, "ownershipvoucher header")
-			ovha = append(ovha, *singleOvh)
-			counter++
 		}
 	} else {
-		logFields["ovs_parsed"] = counter
-		logFields["error_code"] = "non_ended_voucher"
-		logFields["error_details"] = "invalid ownershipvoucher bytes"
-		log.WithFields(logFields).Error("Invalid ownershipvoucher bytes")
-		ejson, _ := json.Marshal(logFields)
+		ejson := addErrLogFields(logFields, counter, "non_ended_voucher", "invalid ownershipvoucher bytes", "Invalid ownershipvoucher bytes")
 		return nil, errors.New(string(ejson))
 	}
 	logFields["ovs_parsed"] = counter
@@ -91,9 +92,9 @@ func MinimumParse(ovb []byte) ([]map[string]interface{}, error) {
 	ovh, err := ParseBytes(ovb)
 	var minimumDataReq []map[string]interface{}
 	for _, header := range ovh {
-		data := models.ExtractMinimumData(&header)
+		data, _ := models.ExtractMinimumData(&header)
 		minimumDataReq = append(minimumDataReq, data)
-		data["method"] = "ownershipvoucher.MinimumParse"
+		data["method"] = "deserializer.MinimumParse"
 		log.WithFields(data).Debug("New device added")
 	}
 	return minimumDataReq, err

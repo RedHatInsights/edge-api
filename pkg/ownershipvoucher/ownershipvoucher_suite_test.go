@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestOwnershipVoucherDe(t *testing.T) {
+func TestOwnershipvoucher(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "OwnershipVoucherDe Suite")
 }

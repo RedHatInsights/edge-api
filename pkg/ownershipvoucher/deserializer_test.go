@@ -2,11 +2,12 @@ package ownershipvoucher_test
 
 import (
 	"encoding/json"
+	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gmeasure"
 
-	"github.com/redhatinsights/edge-api/pkg/models"
 	ovde "github.com/redhatinsights/edge-api/pkg/ownershipvoucher"
 )
 
@@ -31,197 +32,132 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 				Expect(ovh["protocol_version"]).To(Equal(uint16(100)))
 			})
 		})
+	})
 
-		Describe("testing emtpy OV", func() {
-			var ov = []byte{}
-			Context("parse minimum required data", func() {
-				data, e := ovde.MinimumParse(ov)
-				It("empty", func() {
+	Describe("testing emtpy OV", func() {
+		var ov = []byte{}
+		Context("parse minimum required data", func() {
+			data, e := ovde.MinimumParse(ov)
+			It("empty", func() {
+				Expect(data).To(BeEmpty())
+			})
+			It("error", func() {
+				By("error occurred", func() {
+					Expect(e).To(HaveOccurred())
+				})
+				By("is invalid ownershipvoucher", func() {
+					ejson := map[string]interface{}{}
+					json.Unmarshal([]byte(e.Error()), &ejson)
+					Expect(ejson["error_details"]).To(Equal("invalid ownershipvoucher bytes"))
+					Expect(ejson["error_code"]).To(Equal("non_ended_voucher"))
+				})
+			})
+		})
+	})
+
+	Describe("testing invalid OV", func() {
+		ov := ovb1[1:]
+		Context("parse minimum required data", func() {
+			data, e := ovde.MinimumParse(ov)
+			It("empty", func() {
+				Expect(data).To(BeEmpty())
+			})
+			It("error", func() {
+				By("error occurred", func() {
+					Expect(e).To(HaveOccurred())
+				})
+				By("in panic", func() {
+					ejson := map[string]interface{}{}
+					json.Unmarshal([]byte(e.Error()), &ejson)
+					Expect(ejson["error_code"]).To(Equal("parse_error"))
+					Expect(ejson["error_details"].(map[string]interface{})["details"]).To(ContainSubstring("cannot unmarshal array into Go value of type models.OwnershipVoucher"))
+				})
+			})
+		})
+	})
+
+	Describe("multi stream OVs", func() {
+		multiOVs := append(ovb1, ovb2...)
+		multiOVs = append(multiOVs, ovb2...)
+		Context("parse OVs should be success", func() {
+			data, e := ovde.MinimumParse(multiOVs)
+			It("no error", func() {
+				Expect(e).ToNot(HaveOccurred())
+			})
+			It("data is valid", func() {
+				By("not empty", func() {
+					Expect(data).ToNot(BeEmpty())
+				})
+				By("len is 3", func() {
+					Expect(len(data)).To(Equal(3))
+				})
+			})
+		})
+		multiOVs1 := multiOVs[1:]
+		Context("parse OVs should fail", func() {
+			data, e := ovde.MinimumParse(multiOVs1)
+			ejson := map[string]interface{}{}
+			json.Unmarshal([]byte(e.Error()), &ejson)
+			It("error", func() {
+				By("error occurred", func() {
+					Expect(e).To(HaveOccurred())
+				})
+				By("in panic", func() {
+					Expect(ejson["error_code"]).To(Equal("parse_error"))
+					Expect(ejson["error_details"].(map[string]interface{})["details"]).To(ContainSubstring("cannot unmarshal array into Go value of type models.OwnershipVoucher"))
+				})
+			})
+			It("data is invalid", func() {
+				By("empty", func() {
 					Expect(data).To(BeEmpty())
 				})
-				It("error", func() {
-					By("error occurred", func() {
-						Expect(e).To(HaveOccurred())
-					})
-					By("is invalid ownershipvoucher", func() {
-						ejson := map[string]interface{}{}
-						json.Unmarshal([]byte(e.Error()), &ejson)
-						Expect(ejson["error_details"]).To(Equal("invalid ownershipvoucher bytes"))
-						Expect(ejson["error_code"]).To(Equal("non_ended_voucher"))
-					})
+				By("len is 0", func() {
+					Expect(len(data)).To(Equal(0))
+					Expect(ejson["ovs_parsed"]).To(Equal(float64(0)))
 				})
 			})
 		})
-
-		Describe("testing invalid OV", func() {
-			ov := ovb1[1:]
-			Context("parse minimum required data", func() {
-				data, e := ovde.MinimumParse(ov)
-				It("empty", func() {
-					Expect(data).To(BeEmpty())
+		multiOVs[len(multiOVs)-2] = 255 // break the third OV in the chain
+		Context("parse OVs should fail but collect previous data", func() {
+			data, e := ovde.MinimumParse(multiOVs)
+			ejson := map[string]interface{}{}
+			json.Unmarshal([]byte(e.Error()), &ejson)
+			It("error", func() {
+				By("error occurred", func() {
+					Expect(e).To(HaveOccurred())
 				})
-				It("error", func() {
-					By("error occurred", func() {
-						Expect(e).To(HaveOccurred())
-					})
-					By("in panic", func() {
-						ejson := map[string]interface{}{}
-						json.Unmarshal([]byte(e.Error()), &ejson)
-						Expect(ejson["error_code"]).To(Equal("parse_error"))
-						Expect(ejson["error_details"].(map[string]interface{})["error_details"]).To(ContainSubstring("cannot unmarshal array into Go value of type models.OwnershipVoucher"))
-					})
+				By("in panic", func() {
+					Expect(ejson["error_code"]).To(Equal("parse_error"))
+					Expect(ejson["error_details"].(map[string]interface{})["details"]).To(ContainSubstring("unexpected \"break\" code"))
+				})
+			})
+			It("data is partial", func() {
+				By("not empty", func() {
+					Expect(data).ToNot(BeEmpty())
+				})
+				By("len is 2", func() {
+					Expect(len(data)).To(Equal(2))
+					Expect(ejson["ovs_parsed"]).To(Equal(float64(2)))
 				})
 			})
 		})
-
-		Describe("multi stream OVs", func() {
-			multiOVs := append(ovb1, ovb2...)
-			Context("parse OVs should be success", func() {
-				data, e := ovde.MinimumParse(multiOVs)
-				It("no error", func() {
-					Expect(e).ToNot(HaveOccurred())
-				})
-				It("data is valid", func() {
-					By("not empty", func() {
-						Expect(data).ToNot(BeEmpty())
-					})
-					By("len is 2", func() {
-						Expect(len(data)).To(Equal(2))
-					})
-				})
-			})
-			multiOVs1 := multiOVs[1:]
-			Context("parse OVs should fail", func() {
-				data, e := ovde.MinimumParse(multiOVs1)
-				ejson := map[string]interface{}{}
-				json.Unmarshal([]byte(e.Error()), &ejson)
-				It("error", func() {
-					By("error occurred", func() {
-						Expect(e).To(HaveOccurred())
-					})
-					By("in panic", func() {
-						Expect(ejson["error_code"]).To(Equal("parse_error"))
-						Expect(ejson["error_details"].(map[string]interface{})["error_details"]).To(ContainSubstring("cannot unmarshal array into Go value of type models.OwnershipVoucher"))
-					})
-				})
-				It("data is invalid", func() {
-					By("empty", func() {
-						Expect(data).To(BeEmpty())
-					})
-					By("len is 0", func() {
-						Expect(len(data)).To(Equal(0))
-						Expect(ejson["ovs_parsed"]).To(Equal(float64(0)))
-					})
-				})
-			})
-			multiOVs[8500] = 123 // change the second OV is the chain
-			Context("parse OVs should fail but collect previous data", func() {
-				data, e := ovde.MinimumParse(multiOVs)
-				ejson := map[string]interface{}{}
-				json.Unmarshal([]byte(e.Error()), &ejson)
-				It("error", func() {
-					By("error occurred", func() {
-						Expect(e).To(HaveOccurred())
-					})
-					By("in panic", func() {
-						Expect(ejson["error_code"]).To(Equal("parse_error"))
-						Expect(ejson["error_details"].(map[string]interface{})["error_details"]).To(Equal("unexpected EOF"))
-					})
-				})
-				It("data is partial", func() {
-					By("not empty", func() {
-						Expect(data).ToNot(BeEmpty())
-					})
-					By("len is 1", func() {
-						Expect(len(data)).To(Equal(1))
-						Expect(ejson["ovs_parsed"]).To(Equal(float64(1)))
-					})
-				})
-			})
-		})
-
-		Describe("ownershipvoucher header marshal JSON", func() {
-			Context("parse the bytes only", func() {
-				mParse, e := ovde.ParseBytes(ovb1)
-				When("parsing", func() {
-					It("no error", func() {
-						Expect(e).ToNot(HaveOccurred())
-					})
-				})
-				ovh := mParse[0]
-				b, e := ovh.MarshalJSON()
-				When("marshal JSON", func() {
-					It("no error", func() {
-						Expect(e).ToNot(HaveOccurred())
-					})
-					It("not empty", func() {
-						Expect(b).ToNot(BeEmpty())
-					})
-				})
-			})
-		})
-
-		Describe("check resolvers", func() {
-			Context("ResolvePublicKeyEncoding testing", func() {
-				It("should succeed", func() {
-					for i := range [5]int{} {
-						switch models.ResolvePublicKeyEncoding(i) {
-						case "Crypto":
-							Expect(i).To(Equal(0))
-						case "X509":
-							Expect(i).To(Equal(1))
-						case "COSEX509":
-							Expect(i).To(Equal(2))
-						case "Cosekey":
-							Expect(i).To(Equal(3))
-						case "Could't resolve PublicKeyEncoding: 4":
-							Expect(i).To(Equal(4))
-						}
-					}
-				})
-			})
-			Context("ResolveRendezvousVariableCode testing", func() {
-				It("should succeed", func() {
-					for i := range [17]int{} {
-						switch models.ResolveRendezvousVariableCode(i) {
-						case "DeviceOnly":
-							Expect(i).To(Equal(0))
-						case "OwnerOnly":
-							Expect(i).To(Equal(1))
-						case "IPAddress":
-							Expect(i).To(Equal(2))
-						case "DevicePort":
-							Expect(i).To(Equal(3))
-						case "OwnerPort":
-							Expect(i).To(Equal(4))
-						case "Dns":
-							Expect(i).To(Equal(5))
-						case "ServerCertHash":
-							Expect(i).To(Equal(6))
-						case "CaCertHash":
-							Expect(i).To(Equal(7))
-						case "UserInput":
-							Expect(i).To(Equal(8))
-						case "WifiSsid":
-							Expect(i).To(Equal(9))
-						case "WifiPw":
-							Expect(i).To(Equal(10))
-						case "Medium":
-							Expect(i).To(Equal(11))
-						case "Protocol":
-							Expect(i).To(Equal(12))
-						case "Delaysec":
-							Expect(i).To(Equal(13))
-						case "Bypass":
-							Expect(i).To(Equal(14))
-						case "Extended":
-							Expect(i).To(Equal(15))
-						case "Could't resolve ResolveRendezvousVariableCode: 16":
-							Expect(i).To(Equal(16))
-						}
-					}
-				})
-			})
+	})
+	Describe("benchmark parsing", func() {
+		It("should parse minimum required data for 100 OVs efficiently", func() {
+			e := gmeasure.NewExperiment("Parse Experiment")
+			multiOVS := ovb1
+			for i := 0; i < 99; i++ {
+				multiOVS = append(multiOVS, ovb1...)
+			}
+			e.SampleDuration("runtime", func(_ int) {
+				ovde.MinimumParse(multiOVS)
+			}, gmeasure.SamplingConfig{N: 10}, gmeasure.Annotation("MinimumParse 100 OVs"))
+			measurement := e.Get("runtime")
+			for i := range measurement.Durations {
+				// github actions uses low resources, should be less than 0.02s
+				Ω(measurement.Durations[i].Seconds()).Should(BeNumerically("<", 1), "MinimumParse shouldn't take too long.")
+			}
+			fmt.Println(measurement)
 		})
 	})
 })
