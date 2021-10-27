@@ -1,8 +1,10 @@
 package routes
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -13,10 +15,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type tprepoTypeKey int
+
+const tprepoKey tprepoTypeKey = iota
+
 // MakeTPRepoRouter adds suport for operation on ThirdPartyRepo
 func MakeTPRepoRouter(sub chi.Router) {
 	sub.With(common.Paginate).Get("/", GetAllThirdPartyRepo)
 	sub.Post("/", CreateThirdPartyRepo)
+	sub.Route("/{tprepoId}", func(r chi.Router) {
+		r.Use(ThirdPartyRepoCtx)
+		r.Get("/", GetThirdPartyRepoByID)
+	})
 }
 
 // A CreateTPRepoRequest model.
@@ -105,4 +115,49 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(map[string]interface{}{"data": &tprepo, "count": count})
 
+}
+
+// ThirdPartyRepoCtx is a handler to Third Party Repository requests
+func ThirdPartyRepoCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var tprepo models.ThirdPartyRepo
+		account, err := common.GetAccount(r)
+		if err != nil {
+			err := errors.NewBadRequest(err.Error())
+			w.WriteHeader(err.GetStatus())
+			json.NewEncoder(w).Encode(&err)
+			return
+		}
+		if tprepoId := chi.URLParam(r, "tprepoId"); tprepoId != "" {
+			_, err := strconv.Atoi(tprepoId)
+			if err != nil {
+				err := errors.NewBadRequest(err.Error())
+				w.WriteHeader(err.GetStatus())
+				json.NewEncoder(w).Encode(&err)
+				return
+			}
+			result := db.DB.Where("account = ? and id = ?", account, tprepoId).Find(&tprepo)
+			if result.Error != nil {
+				err := errors.NewNotFound(result.Error.Error())
+				w.WriteHeader(err.GetStatus())
+				json.NewEncoder(w).Encode(&err)
+				return
+			}
+			ctx := context.WithValue(r.Context(), tprepoKey, &tprepo)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		}
+	})
+}
+
+// GetThirdPartyRepoByID gets the Third Party repository by ID from the database
+func GetThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+	tprepo, ok := ctx.Value(tprepoKey).(*models.ThirdPartyRepo)
+	if !ok {
+		err := errors.NewBadRequest("Must pass third party repository id")
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(&err)
+	}
+	json.NewEncoder(w).Encode(&tprepo)
 }

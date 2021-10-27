@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
@@ -12,6 +13,7 @@ import (
 // the business logic of creating Third Party Repository
 type ThirdPartyRepoServiceInterface interface {
 	CreateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string) error
+	GetThirdPartyRepoByID(tprepoId int) (*models.ThirdPartyRepo, error)
 }
 
 // NewThirdPartyRepoService gives a instance of the main implementation of a ThirdPartyRepoServiceInterface
@@ -41,4 +43,15 @@ func (s *ThirdPartyRepoService) CreateThirdPartyRepo(tprepo *models.ThirdPartyRe
 
 	}
 	return nil
+}
+
+// GetThirdPartyRepoByID gets the Third Party Repository by ID from the database
+func (s *ThirdPartyRepoService) GetThirdPartyRepoByID(tprepoId int) (*models.ThirdPartyRepo, error) {
+	var tprepo models.ThirdPartyRepo
+	result := db.DB.Where("id = ?", tprepoId).Find(&tprepo)
+	if result.Error != nil {
+		err := errors.NewInternalServerError()
+		return nil, err
+	}
+	return &tprepo, nil
 }
