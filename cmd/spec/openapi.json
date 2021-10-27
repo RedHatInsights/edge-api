@@ -2283,6 +2283,84 @@
         "summary": "Get a device by UUID."
       }
     },
+    "/image-sets": {
+      "get": {
+        "operationId": "ListAllImageSets",
+        "parameters": [
+          {
+            "description": "Define sort fields: Created_at, Name, Status. To sort DESC use -",
+            "in": "path",
+            "name": "sort_by",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "field: status =? or name=?",
+            "in": "path",
+            "name": "filter",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "count": {
+                      "example": 100,
+                      "type": "integer"
+                    },
+                    "data": {
+                      "items": {
+                        "$ref": "#/components/schemas/v1.ImageSetDetails"
+                      },
+                      "type": "array"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.NotFound"
+                }
+              }
+            },
+            "description": "The Image Set was not found."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Return the list of image sets."
+      }
+    },
     "/image-sets/{ImageSetId}": {
       "get": {
         "operationId": "GetImageSetsByID",

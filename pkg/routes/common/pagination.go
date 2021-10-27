@@ -26,8 +26,13 @@ type Pagination struct {
 }
 
 type EdgeAPIPaginatedResponse struct {
-	Data  interface{}
 	Count int64
+	Data  interface{}
+}
+
+type ValidationError struct {
+	Key    string
+	Reason string
 }
 
 // Paginate is a middleware to get pagination params from the request and store it in
