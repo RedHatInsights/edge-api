@@ -36,15 +36,15 @@ var _ = Describe("Ownershipvoucher", func() {
 		Context("parse the bytes only", func() {
 			mParse, e := ovde.ParseBytes(ovb)
 			When("parsing", func() {
-				It("no error", func() {
-					Expect(e).ToNot(HaveOccurred())
+				It("error", func() {
+					Expect(e).To(HaveOccurred())
 				})
 			})
 			ovh := mParse[0]
 			ovh.GUID = []byte{0}
 			b, e := ovh.MarshalJSON()
-			It("no error", func() {
-				Expect(e).ToNot(HaveOccurred())
+			It("error", func() {
+				Expect(e).To(HaveOccurred())
 			})
 			It("contains invalid data", func ()  {
 				j := map[string]interface{}{}
@@ -99,7 +99,7 @@ var _ = Describe("Ownershipvoucher", func() {
 		Context("ResolvePublicKeyEncoding testing", func() {
 			It("should succeed", func() {
 				for i := range [5]int{} {
-					switch models.ResolvePublicKeyEncoding(i) {
+					switch enc, e := models.ResolvePublicKeyEncoding(i); enc {
 					case "Crypto":
 						Expect(i).To(Equal(0))
 					case "X509":
@@ -108,8 +108,8 @@ var _ = Describe("Ownershipvoucher", func() {
 						Expect(i).To(Equal(2))
 					case "Cosekey":
 						Expect(i).To(Equal(3))
-					case "Could't resolve PublicKeyEncoding: 4":
-						Expect(i).To(Equal(4))
+					case "":
+						Expect(e).To(HaveOccurred())
 					}
 				}
 			})
@@ -117,7 +117,7 @@ var _ = Describe("Ownershipvoucher", func() {
 		Context("ResolveRendezvousVariableCode testing", func() {
 			It("should succeed", func() {
 				for i := range [17]int{} {
-					switch models.ResolveRendezvousVariableCode(i) {
+					switch v, e:= models.ResolveRendezvousVariableCode(i);v {
 					case "DeviceOnly":
 						Expect(i).To(Equal(0))
 					case "OwnerOnly":
@@ -150,8 +150,8 @@ var _ = Describe("Ownershipvoucher", func() {
 						Expect(i).To(Equal(14))
 					case "Extended":
 						Expect(i).To(Equal(15))
-					case "Could't resolve ResolveRendezvousVariableCode: 16":
-						Expect(i).To(Equal(16))
+					case "":
+						Expect(e).To(HaveOccurred())
 					}
 				}
 			})

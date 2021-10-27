@@ -2,16 +2,11 @@ package models
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
-	"os"
-)
 
-func init() {
-	log.SetFormatter(&log.JSONFormatter{})
-	log.SetOutput(os.Stdout)
-}
+	"github.com/google/uuid"
+)
 
 // OwnershipVoucher CBOR representation
 type OwnershipVoucher struct {
@@ -66,120 +61,125 @@ type DeviceCertificateChainHash struct {
 // Panic if can not be serialized into a valid uuid
 func (ovh *OwnershipVoucherHeader) MarshalJSON() ([]byte, error) {
 	type Alias OwnershipVoucherHeader
-	return json.Marshal(&struct {
+	guid, err := guidAsString(ovh)
+	b, _ := json.Marshal(&struct {
 		GUID string `json:"guid"`
 		*Alias
 	}{
-		GUID:  guidAsString(ovh),
+		GUID:  guid,
 		Alias: (*Alias)(ovh),
 	})
+	return b, err
 }
 
 // MarshalJSON - custom serialization of RendezvousInfo to json
 func (ri *RendezvousInfo) MarshalJSON() ([]byte, error) {
 	type Alias RendezvousInfo
-	return json.Marshal(&struct {
+	variable, err := ResolveRendezvousVariableCode(ri.RendezvousVariable)
+	b, _ := json.Marshal(&struct {
 		RendezvousVariable string `json:"rendezvous_variable"`
 		*Alias
 	}{
-		RendezvousVariable: ResolveRendezvousVariableCode(ri.RendezvousVariable),
+		RendezvousVariable: variable,
 		Alias:              (*Alias)(ri),
 	})
+	return b, err
 }
 
 // MarshalJSON - custom serialization of PublicKey to json
 func (pk *PublicKey) MarshalJSON() ([]byte, error) {
 	type Alias PublicKey
-	return json.Marshal(&struct {
+	enc, err := ResolvePublicKeyEncoding(int(pk.Encoding))
+	b, _ := json.Marshal(&struct {
 		Encoding string `json:"encoding"`
 		*Alias
 	}{
-		Encoding: ResolvePublicKeyEncoding(int(pk.Encoding)),
+		Encoding: enc,
 		Alias:    (*Alias)(pk),
 	})
+	return b, err
 }
 
 // ResolvePublicKeyEncoding resolves PublicKey.Encoding to a readable string
-func ResolvePublicKeyEncoding(PublicKeyEncoding int) string {
-	s := fmt.Sprintln("Could't resolve PublicKeyEncoding: ", PublicKeyEncoding)
+func ResolvePublicKeyEncoding(PublicKeyEncoding int) (enc string, err error) {
 	switch PublicKeyEncoding {
 	case 0:
-		s = "Crypto"
+		enc = "Crypto"
 	case 1:
-		s = "X509"
+		enc = "X509"
 	case 2:
-		s = "COSEX509"
+		enc = "COSEX509"
 	case 3:
-		s = "Cosekey"
+		enc = "Cosekey"
 	default:
-		log.WithFields(log.Fields{
+		ejson, _ := json.Marshal(map[string]interface{}{
 			"method":              "models.ResolvePublicKeyEncoding",
 			"public_key_encoding": PublicKeyEncoding,
-		}).Error(s)
+			"msg":                 fmt.Sprintln("Could't resolve PublicKeyEncoding: ", PublicKeyEncoding),
+		})
+		err = errors.New(string(ejson))
 	}
-	return s
+	return enc, err
 }
 
 // ResolveRendezvousVariableCode resolves RendezvousVariable to a readable string
 // RendezvousVariable is the left side arg of RendezvousInfo pair
-func ResolveRendezvousVariableCode(RendezvousVariable int) string {
-	s := fmt.Sprintln("Could't resolve RendezvousVariableCode: ", RendezvousVariable)
+func ResolveRendezvousVariableCode(RendezvousVariable int) (variable string, err error) {
 	switch RendezvousVariable {
 	case 0:
-		s = "DeviceOnly"
+		variable = "DeviceOnly"
 	case 1:
-		s = "OwnerOnly"
+		variable = "OwnerOnly"
 	case 2:
-		s = "IPAddress"
+		variable = "IPAddress"
 	case 3:
-		s = "DevicePort"
+		variable = "DevicePort"
 	case 4:
-		s = "OwnerPort"
+		variable = "OwnerPort"
 	case 5:
-		s = "Dns"
+		variable = "Dns"
 	case 6:
-		s = "ServerCertHash"
+		variable = "ServerCertHash"
 	case 7:
-		s = "CaCertHash"
+		variable = "CaCertHash"
 	case 8:
-		s = "UserInput"
+		variable = "UserInput"
 	case 9:
-		s = "WifiSsid"
+		variable = "WifiSsid"
 	case 10:
-		s = "WifiPw"
+		variable = "WifiPw"
 	case 11:
-		s = "Medium"
+		variable = "Medium"
 	case 12:
-		s = "Protocol"
+		variable = "Protocol"
 	case 13:
-		s = "Delaysec"
+		variable = "Delaysec"
 	case 14:
-		s = "Bypass"
+		variable = "Bypass"
 	case 15:
-		s = "Extended"
+		variable = "Extended"
 	default:
-		log.WithFields(log.Fields{
+		ejson, _ := json.Marshal(map[string]interface{}{
 			"method":              "models.ResolveRendezvousVariableCode",
 			"rendezvous_variable": RendezvousVariable,
-		}).Error(s)
+			"msg":                 fmt.Sprintln("Could't resolve RendezvousVariableCode: ", RendezvousVariable),
+		})
+		err = errors.New(string(ejson))
 	}
-	return s
+	return variable, err
 }
 
 // Extract FDO uuid from the OV's header to a valid uuid string
 // Panic if can't
-func guidAsString(ovh *OwnershipVoucherHeader) (guid string) {
+func guidAsString(ovh *OwnershipVoucherHeader) (guid string, err error) {
 	defer func() { // in a panic case, keep alive
 		if recErr := recover(); recErr != nil {
-			log.WithFields(log.Fields{
-				"method": "models.guidAsString",
-				"what":   "panic occurred",
-			}).Error(recErr)
 			guid = "null"
+			err = recErr.(error)
 		}
 	}()
 	guid = fmt.Sprint(uuid.Must(uuid.FromBytes(ovh.GUID)))
-	return guid
+	return guid, err
 }
 
 // Extract device name from the OV's header
@@ -193,10 +193,11 @@ func deviceProtocolVersion(ovh *OwnershipVoucherHeader) uint16 {
 }
 
 // ExtractMinimumData extracts minimum data required from an OV header
-func ExtractMinimumData(ovh *OwnershipVoucherHeader) map[string]interface{} {
+func ExtractMinimumData(ovh *OwnershipVoucherHeader) (map[string]interface{}, error) {
+	guid, err := guidAsString(ovh)
 	return map[string]interface{}{
 		"device_name":      deviceName(ovh),
-		"fdo_uuid":         guidAsString(ovh),
+		"fdo_uuid":         guid,
 		"protocol_version": deviceProtocolVersion(ovh),
-	}
+	}, err
 }

@@ -92,7 +92,7 @@ func MinimumParse(ovb []byte) ([]map[string]interface{}, error) {
 	ovh, err := ParseBytes(ovb)
 	var minimumDataReq []map[string]interface{}
 	for _, header := range ovh {
-		data := models.ExtractMinimumData(&header)
+		data, _ := models.ExtractMinimumData(&header)
 		minimumDataReq = append(minimumDataReq, data)
 		data["method"] = "deserializer.MinimumParse"
 		log.WithFields(data).Debug("New device added")
