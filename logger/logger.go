@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/redhatinsights/edge-api/config"
 	lc "github.com/redhatinsights/platform-go-middlewares/logging/cloudwatch"
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -32,7 +31,7 @@ func InitLogger() {
 	default:
 		logLevel = log.InfoLevel
 	}
-	logrus.SetReportCaller(true)
+	log.SetReportCaller(true)
 
 	if cfg.Logging != nil && cfg.Logging.Region != "" {
 		cred := credentials.NewStaticCredentials(cfg.Logging.AccessKeyID, cfg.Logging.SecretAccessKey, "")
