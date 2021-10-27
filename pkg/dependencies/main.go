@@ -4,7 +4,10 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	"github.com/redhatinsights/platform-go-middlewares/request_id"
+	log "github.com/sirupsen/logrus"
 )
 
 type EdgeAPIServices struct {
@@ -15,18 +18,25 @@ type EdgeAPIServices struct {
 	ImageSetService       services.ImageSetsServiceInterface
 	UpdateService         services.UpdateServiceInterface
 	ThirdPartyRepoService services.ThirdPartyRepoServiceInterface
+	Log                   *log.Entry
 }
 
 // Init creates all services that Edge API depends on in order to have dependency injection on context
 func Init(ctx context.Context) *EdgeAPIServices {
+	account, _ := common.GetAccountFromContext(ctx)
+	log := log.WithFields(log.Fields{
+		"requestId": request_id.GetReqID(ctx),
+		"accountId": account,
+	})
 	return &EdgeAPIServices{
 		CommitService:         services.NewCommitService(ctx),
-		ImageService:          services.NewImageService(ctx),
+		ImageService:          services.NewImageService(ctx, log),
 		RepoService:           services.NewRepoService(ctx),
 		ImageSetService:       services.NewImageSetsService(ctx),
 		UpdateService:         services.NewUpdateService(ctx),
 		DeviceService:         services.NewDeviceService(ctx),
 		ThirdPartyRepoService: services.NewThirdPartyRepoService(ctx),
+		Log:                   log,
 	}
 }
 

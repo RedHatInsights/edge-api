@@ -1,7 +1,11 @@
 package logger
 
 import (
+	"fmt"
 	"os"
+	"path"
+	"runtime"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -27,6 +31,7 @@ func InitLogger() {
 	default:
 		logLevel = log.InfoLevel
 	}
+	log.SetReportCaller(true)
 
 	if cfg.Logging != nil && cfg.Logging.Region != "" {
 		cred := credentials.NewStaticCredentials(cfg.Logging.AccessKeyID, cfg.Logging.SecretAccessKey, "")
@@ -40,6 +45,11 @@ func InitLogger() {
 			TimestampFormat: time.Now().Format("2006-01-02T15:04:05.999Z"),
 			FieldMap: log.FieldMap{
 				log.FieldKeyTime: "@timestamp",
+			},
+			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+				s := strings.Split(f.Function, ".")
+				funcName := s[len(s)-1]
+				return funcName, fmt.Sprintf("%s:%d", path.Base(f.File), f.Line)
 			},
 		})
 	}

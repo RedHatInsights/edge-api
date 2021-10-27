@@ -12,6 +12,8 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -91,6 +93,7 @@ func TestCreate(t *testing.T) {
 	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any()).Return(nil)
 	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
 	})
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
