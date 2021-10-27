@@ -93,8 +93,9 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 				})
 			})
 		})
-		multiOVs1 := multiOVs[1:]
+
 		Context("parse OVs should fail", func() {
+			multiOVs1 := multiOVs[1:]
 			data, e := ovde.MinimumParse(multiOVs1)
 			ejson := map[string]interface{}{}
 			json.Unmarshal([]byte(e.Error()), &ejson)
@@ -117,8 +118,8 @@ var _ = Describe("OwnershipVoucher deserialization", func() {
 				})
 			})
 		})
-		multiOVs[len(multiOVs)-2] = 255 // break the third OV in the chain
 		Context("parse OVs should fail but collect previous data", func() {
+			multiOVs[len(multiOVs)-2] = 255 // "break" the third OV in the chain
 			data, e := ovde.MinimumParse(multiOVs)
 			ejson := map[string]interface{}{}
 			json.Unmarshal([]byte(e.Error()), &ejson)
