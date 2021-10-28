@@ -2289,7 +2289,7 @@
         "parameters": [
           {
             "description": "Define sort fields: Created_at, Name, Status. To sort DESC use -",
-            "in": "path",
+            "in": "query",
             "name": "sort_by",
             "schema": {
               "type": "string"
@@ -2297,7 +2297,7 @@
           },
           {
             "description": "field: status =? or name=?",
-            "in": "path",
+            "in": "query",
             "name": "filter",
             "schema": {
               "type": "string"

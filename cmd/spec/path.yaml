@@ -479,12 +479,12 @@ paths:
       operationId: ListAllImageSets
       parameters:
         - name: sort_by
-          in: path
+          in: query
           description: "Define sort fields: Created_at, Name, Status. To sort DESC use -"
           schema:
             type: string
         - name: filter 
-          in: path
+          in: query
           description: "field: status =? or name=?"
           schema:
             type: string
