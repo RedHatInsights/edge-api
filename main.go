@@ -16,6 +16,8 @@ import (
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
+	"github.com/redhatinsights/edge-api/pkg/listeners"
+	"github.com/redhatinsights/edge-api/pkg/producers"
 	"github.com/redhatinsights/edge-api/pkg/routes"
 	"github.com/redhatinsights/edge-api/pkg/services"
 
@@ -130,6 +132,10 @@ func main() {
 		if err := msrv.ListenAndServe(); err != http.ErrServerClosed {
 			log.WithFields(log.Fields{"error": err}).Fatal("Metrics Service Stopped")
 		}
+	}()
+	go func() {
+		producers.Start()
+		listeners.Start()
 	}()
 
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
