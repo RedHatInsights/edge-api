@@ -36,14 +36,11 @@ func ListenToPlaybookDispatcherRunsTopic() {
 
 	// to consume messages
 	topic := "platform.playbook-dispatcher.runs"
-	partition := 0
-	// make a new reader that consumes from topic-A, partition 0, at offset 42
+	// make a new reader that consumes from topic from this consumer group
 	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:   []string{"localhost:9092"},
-		Topic:     topic,
-		Partition: partition,
-		MinBytes:  10e3, // 10KB
-		MaxBytes:  10e6, // 10MB
+		Brokers: []string{"localhost:9092"},
+		Topic:   topic,
+		GroupID: "edge-fleet-management",
 	})
 
 	for {
