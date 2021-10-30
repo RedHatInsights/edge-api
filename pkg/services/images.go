@@ -272,6 +272,10 @@ func (s *ImageService) postProcessImage(id uint) {
 			s.log.Info("Setting image status as success")
 			i.Status = models.ImageStatusSuccess
 			db.DB.Save(&i)
+		} else if i.ImageType == models.ImageTypeCommit {
+			s.log.Info("Setting image status as success")
+			i.Status = models.ImageStatusSuccess
+			db.DB.Save(&i)
 		} else {
 			s.log.Info("Not setting image status as anything - installer exists and is not sucessful")
 		}
