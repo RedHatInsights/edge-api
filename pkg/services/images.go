@@ -287,7 +287,7 @@ func (s *ImageService) CreateRepoForImage(i *models.Image) *models.Repo {
 	}
 	tx := db.DB.Create(repo)
 	db.DB.Save(&repo)
-	log.Infof("Repo:: %d\n", repo.ID)
+	log.Debugf("Repo:: %d\n", repo.ID)
 	log.Infof("i.commit:: %d\n", i.Commit.ID)
 	i.Commit.Repo = repo
 	i.Commit.RepoID = &repo.ID
