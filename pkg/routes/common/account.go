@@ -14,7 +14,7 @@ func GetAccount(r *http.Request) (string, error) {
 	return GetAccountFromContext(r.Context())
 }
 
-// GetAccount from context
+// GetAccountFromContext determines account number from supplied context
 func GetAccountFromContext(ctx context.Context) (string, error) {
 	if config.Get() != nil {
 		if !config.Get().Auth {
