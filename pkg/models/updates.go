@@ -17,9 +17,9 @@ type Device struct {
 	Connected   bool   `gorm:"default:true" json:"Connected"`
 }
 
-//  UpdateTransaction rpresents the combination of an OSTree commit and a set of Inventory
+// UpdateTransaction represents the combination of an OSTree commit and a set of Inventory
 //	hosts that need to have the commit deployed to them
-
+//
 //	This will ultimately kick off a transaction where the old version(s) of
 //	OSTree commit that are currently deployed onto those devices are combined
 //	with the new commit into a new OSTree repo, static deltas are computed, and
@@ -68,14 +68,14 @@ const (
 const (
 	// DispatchRecordStatusCreated is for when a the DispatchRecord is created
 	DispatchRecordStatusCreated = "CREATED"
-	// DispatchRecordStatusBuilding is for when a UpdateTransaction has started
+	// DispatchRecordStatusPending is for when a UpdateTransaction has started
 	//		scheduling PlaybookDispatcher jobs but this one hasn't started yet
 	DispatchRecordStatusPending = "PENDING"
 	// DispatchRecordStatusRunning is for when a the DispatchRecord is running
 	DispatchRecordStatusRunning = "RUNNING"
 	// DispatchRecordStatusError is for when a playbook dispatcher job is in a error state
 	DispatchRecordStatusError = "ERROR"
-	// DispatchRecordStatusSuccess is for when a playbook dispatcher job is complete
+	// DispatchRecordStatusComplete is for when a playbook dispatcher job is complete
 	DispatchRecordStatusComplete = "COMPLETE"
 )
 

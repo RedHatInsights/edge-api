@@ -291,17 +291,17 @@ func (s *ImageService) CreateRepoForImage(i *models.Image) *models.Repo {
 	}
 	tx := db.DB.Create(repo)
 	db.DB.Save(&repo)
-	fmt.Printf("Repo:: %d\n", repo.ID)
-	fmt.Printf("i.commit:: %d\n", i.Commit.ID)
+	log.Debugf("Repo:: %d\n", repo.ID)
+	log.Debugf("i.commit:: %d\n", i.Commit.ID)
 	i.Commit.Repo = repo
 	i.Commit.RepoID = &repo.ID
 
 	tx2 := db.DB.Save(i.Commit)
 	if tx2.Error != nil {
-		fmt.Printf("::TX2:: %v\n", tx2.Error)
+		log.Errorf("::TX2:: %v\n", tx2.Error)
 		panic(tx2.Error)
 	}
-	fmt.Printf("i.commit:: %d\n", i.Commit.RepoID)
+	log.Debugf("i.commit:: %d\n", i.Commit.RepoID)
 
 	if tx.Error != nil {
 		log.Error(tx.Error)

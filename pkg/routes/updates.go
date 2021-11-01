@@ -36,7 +36,10 @@ func MakeUpdatesRouter(sub chi.Router) {
 
 type updateContextKey int
 
+// UpdateContextKey is the key to Update Context handler
 const UpdateContextKey updateContextKey = iota
+
+// DelayTimeToReboot is the number of seconds to wait before rebooting
 const DelayTimeToReboot = 10
 
 // UpdateCtx is a handler for Update requests
@@ -100,6 +103,7 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetUpdates returns the updates for the device
 func GetUpdates(w http.ResponseWriter, r *http.Request) {
 	var updates []models.UpdateTransaction
 	account, err := common.GetAccount(r)
@@ -117,6 +121,7 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&updates)
 }
 
+// UpdatePostJSON contains the update structure for the device
 type UpdatePostJSON struct {
 	CommitID   uint   `json:"CommitID"`
 	DeviceUUID string `json:"DeviceUUID"`

@@ -25,6 +25,7 @@ func MakeDevicesRouter(sub chi.Router) {
 
 type deviceContextKey int
 
+// DeviceContextKey is the key to DeviceContext (for Device requests)
 const DeviceContextKey deviceContextKey = iota
 
 // DeviceContext implements context interfaces so we can shuttle around multiple values
@@ -34,7 +35,7 @@ type DeviceContext struct {
 	// Tag string
 }
 
-//  DeviceCtx is a handler for Device requests
+// DeviceCtx is a handler for Device requests
 func DeviceCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var uCtx DeviceContext
