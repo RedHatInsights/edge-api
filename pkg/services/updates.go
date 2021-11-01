@@ -223,7 +223,7 @@ func (s *UpdateService) RebootDevice(update *models.UpdateTransaction) {
 		filePath := cfg.TemplatesPath
 		templateName := "template_playbook_dispatcher_reboot_device.yml"
 		template, err := template.ParseFiles(filePath + templateName)
-		log.Infof("template: %v", template)
+		log.Debugf("template: %v", template)
 		if err != nil {
 			log.Errorf("Error parsing playbook template  :: %s", err.Error())
 		}
