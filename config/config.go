@@ -168,6 +168,8 @@ func Init() {
 			LogGroup:        cfg.Logging.Cloudwatch.LogGroup,
 			Region:          cfg.Logging.Cloudwatch.Region,
 		}
+
+		config.KafkaConfig = cfg.Kafka
 	}
 
 }

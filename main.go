@@ -131,10 +131,12 @@ func main() {
 			log.WithFields(log.Fields{"error": err}).Fatal("Metrics Service Stopped")
 		}
 	}()
-	go func() {
-		consumerService := services.NewConsumerService(cfg.KafkaConfig)
-		consumerService.Start()
-	}()
+	if cfg.KafkaConfig != nil {
+		go func() {
+			consumerService := services.NewConsumerService(cfg.KafkaConfig)
+			consumerService.Start()
+		}()
+	}
 
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 		log.WithFields(log.Fields{"error": err}).Fatal("Service Stopped")
