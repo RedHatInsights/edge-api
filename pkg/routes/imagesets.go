@@ -115,7 +115,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&countErr)
 		return
 	}
-	fmt.Printf("r.URL.Query() %v \n", r.URL.Query().Get("sort_by"))
+	log.Errorf("r.URL.Query() %v \n", r.URL.Query().Get("sort_by"))
 	if r.URL.Query().Get("sort_by") != "status" && r.URL.Query().Get("sort_by") != "-status" {
 		result = imageSetFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Where(`Image_Sets.account = ? `, account).Find(&imageSet)
 
