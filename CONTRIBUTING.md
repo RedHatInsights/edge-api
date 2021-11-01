@@ -46,6 +46,8 @@ The `scripts` folder has scripts used by Edge API or end users, like the ansible
 --- services/
 ```
 
+![Code Architecture Diagram](code-arch-diagram.png)
+
 The four main components of this structure are `routes`, `services`, `models` and `clients`.
 
 Ideally, you write your code around a **domain**. The two main domains on Edge API are Images and Devices. Everything happens around them. Important domains are UpdateTransactions, Commits, Installers, ImageSets and (soon) DeviceSets.
