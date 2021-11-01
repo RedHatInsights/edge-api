@@ -28,7 +28,7 @@ type imageTypeKey int
 
 const imageKey imageTypeKey = iota
 
-// MakeImageRouter adds support for operations on images
+// MakeImagesRouter adds support for operations on images
 func MakeImagesRouter(sub chi.Router) {
 	sub.With(validateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetAllImages)
 	sub.Post("/", CreateImage)
@@ -52,6 +52,7 @@ func MakeImagesRouter(sub chi.Router) {
 
 var validStatuses = []string{models.ImageStatusCreated, models.ImageStatusBuilding, models.ImageStatusError, models.ImageStatusSuccess}
 
+// ImageByOSTreeHashCtx is a handler for Images but adds finding images by Ostree Hash
 func ImageByOSTreeHashCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
@@ -515,6 +516,7 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// CheckImageNameResponse indicates whether or not the image exists
 type CheckImageNameResponse struct {
 	ImageExists bool `json:"ImageExists"`
 }
