@@ -21,8 +21,8 @@ type imageSetTypeKey int
 
 const imageSetKey imageSetTypeKey = iota
 
-var sort_option = []string{"created_at", "updated_at", "name", "status"}
-var status_option = []string{models.ImageStatusCreated, models.ImageStatusBuilding, models.ImageStatusError, models.ImageStatusSuccess}
+var sortOption = []string{"created_at", "updated_at", "name", "status"}
+var statusOption = []string{models.ImageStatusCreated, models.ImageStatusBuilding, models.ImageStatusError, models.ImageStatusSuccess}
 
 // MakeImageSetsRouter adds support for operations on image-sets
 func MakeImageSetsRouter(sub chi.Router) {
@@ -57,6 +57,7 @@ var imageStatusFilters = common.ComposeFilters(
 	common.SortFilterHandler("images", "created_at", "DESC"),
 )
 
+// ImageSetCtx provides the handler for Image Sets
 func ImageSetCtx(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -136,6 +137,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// GetImageSetsByID returns the list of Image Sets by a given Image Set ID
 func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
@@ -155,7 +157,7 @@ func validateFilterParams(next http.Handler) http.Handler {
 		errs := []common.ValidationError{}
 		if statuses, ok := r.URL.Query()["status"]; ok {
 			for _, status := range statuses {
-				if !contains(status_option, strings.ToUpper(status)) {
+				if !contains(statusOption, strings.ToUpper(status)) {
 					errs = append(errs, common.ValidationError{Key: "status", Reason: fmt.Sprintf("%s is not a valid status. Status must be %s", status, strings.Join(validStatuses, " or "))})
 				}
 			}
@@ -165,8 +167,8 @@ func validateFilterParams(next http.Handler) http.Handler {
 			if string(val[0]) == "-" {
 				name = val[1:]
 			}
-			if !contains(sort_option, name) {
-				errs = append(errs, common.ValidationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must %v", name, strings.Join(sort_option, " or "))})
+			if !contains(sortOption, name) {
+				errs = append(errs, common.ValidationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must %v", name, strings.Join(sortOption, " or "))})
 			}
 		}
 

@@ -521,6 +521,7 @@ type CheckImageNameResponse struct {
 	ImageExists bool `json:"ImageExists"`
 }
 
+// CheckImageName verifies that ImageName exists
 func CheckImageName(w http.ResponseWriter, r *http.Request) {
 	var image *models.Image
 	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
