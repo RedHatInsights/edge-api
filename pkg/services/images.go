@@ -294,7 +294,7 @@ func (s *ImageService) CreateRepoForImage(i *models.Image) *models.Repo {
 
 	tx2 := db.DB.Save(i.Commit)
 	if tx2.Error != nil {
-		log.Infof("::TX2:: %v\n", tx2.Error)
+		log.Errorf("::TX2:: %v\n", tx2.Error)
 		panic(tx2.Error)
 	}
 	log.Debugf("i.commit:: %d\n", i.Commit.RepoID)
