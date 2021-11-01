@@ -29,6 +29,7 @@ type EdgeConfig struct {
 	TemplatesPath            string
 	EdgeAPIBaseURL           string
 	UploadWorkers            int
+	KafkaConfig              *clowder.KafkaConfig
 }
 
 type dbConfig struct {

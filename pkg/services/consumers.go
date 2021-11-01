@@ -1,4 +1,4 @@
-package listeners
+package services
 
 import (
 	"context"
@@ -7,11 +7,26 @@ import (
 	"os/signal"
 	"syscall"
 
+	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
+
 	"github.com/segmentio/kafka-go"
 	log "github.com/sirupsen/logrus"
 )
 
-func ListenToPlaybookDispatcherRunsTopic() {
+type ConsumerServiceInterface interface {
+	Start()
+}
+
+type ConsumerService struct {
+	config *clowder.KafkaConfig
+}
+
+// NewConsumerService gives a instance of the main implementation of ConsumerServiceInterface
+func NewConsumerService(config *clowder.KafkaConfig) ConsumerServiceInterface {
+	return &ConsumerService{config: config}
+}
+
+func consumePlaybookDispatcherRuns() {
 	conn, err := kafka.Dial("tcp", "localhost:9092")
 	if err != nil {
 		panic(err.Error())
@@ -60,10 +75,10 @@ func ListenToPlaybookDispatcherRunsTopic() {
 
 }
 
-func Start() {
-	log.Info("Starting listeners...")
+func (s *ConsumerService) Start() {
+	log.Info("Starting consumers...")
 
-	go ListenToPlaybookDispatcherRunsTopic()
+	go consumePlaybookDispatcherRuns()
 
-	log.Info("Listeners started...")
+	log.Info("Consumers started...")
 }

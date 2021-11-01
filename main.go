@@ -16,8 +16,6 @@ import (
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
-	"github.com/redhatinsights/edge-api/pkg/listeners"
-	"github.com/redhatinsights/edge-api/pkg/producers"
 	"github.com/redhatinsights/edge-api/pkg/routes"
 	"github.com/redhatinsights/edge-api/pkg/services"
 
@@ -134,8 +132,8 @@ func main() {
 		}
 	}()
 	go func() {
-		producers.Start()
-		listeners.Start()
+		consumerService := services.NewConsumerService(cfg.KafkaConfig)
+		consumerService.Start()
 	}()
 
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
