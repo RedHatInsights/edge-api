@@ -26,34 +26,18 @@ func NewConsumerService(config *clowder.KafkaConfig) ConsumerServiceInterface {
 	return &ConsumerService{config: config}
 }
 
-func consumePlaybookDispatcherRuns() {
-	conn, err := kafka.Dial("tcp", "localhost:9092")
-	if err != nil {
-		panic(err.Error())
-	}
-	defer conn.Close()
-
-	partitions, err := conn.ReadPartitions()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	m := map[string]struct{}{}
-
-	for _, p := range partitions {
-		m[p.Topic] = struct{}{}
-	}
-	for k := range m {
-		fmt.Println(k)
-	}
-
+func (s *ConsumerService) consumePlaybookDispatcherRuns() {
 	log.Info("Starting listeners...")
 
 	// to consume messages
 	topic := "platform.playbook-dispatcher.runs"
+	brokers := make([]string, len(s.config.Brokers))
+	for i, b := range s.config.Brokers {
+		brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, b.Port)
+	}
 	// make a new reader that consumes from topic from this consumer group
 	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers: []string{"localhost:9092"},
+		Brokers: brokers,
 		Topic:   topic,
 		GroupID: "edge-fleet-management",
 	})
@@ -63,7 +47,12 @@ func consumePlaybookDispatcherRuns() {
 		if err != nil {
 			break
 		}
-		fmt.Printf("message at offset %d: %s = %s\n", m.Offset, string(m.Key), string(m.Value))
+		log.WithFields(log.Fields{
+			"topic":  topic,
+			"offset": m.Offset,
+			"key":    string(m.Key),
+			"value":  string(m.Value),
+		}).Debug("Read message from Kafka topic")
 	}
 
 	go func() {
@@ -78,7 +67,7 @@ func consumePlaybookDispatcherRuns() {
 func (s *ConsumerService) Start() {
 	log.Info("Starting consumers...")
 
-	go consumePlaybookDispatcherRuns()
+	go s.consumePlaybookDispatcherRuns()
 
 	log.Info("Consumers started...")
 }
