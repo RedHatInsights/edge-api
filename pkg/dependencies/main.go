@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// EdgeAPIServices is the list of Edge API services
 type EdgeAPIServices struct {
 	CommitService         services.CommitServiceInterface
 	DeviceService         services.DeviceServiceInterface
