@@ -13,12 +13,15 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services/files"
 )
 
+// FilesService is the interface for Files-related service information
 type FilesService interface {
 	GetFile(path string) (io.ReadCloser, error)
 	GetExtractor() files.Extractor
 	GetUploader() files.Uploader
 	GetDownloader() files.Downloader
 }
+
+// S3FilesService contains S3 files-related information
 type S3FilesService struct {
 	Client     *s3.S3
 	Bucket     string
