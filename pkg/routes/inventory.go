@@ -9,6 +9,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
+	"github.com/redhatinsights/edge-api/pkg/services"
 )
 
 // MakeDevicesRouter adds support for operations on invetory
@@ -25,10 +26,10 @@ type InventoryData struct {
 }
 
 type InventoryResponse struct {
-	ID              string
-	DeviceName      string
-	LastSeen        string
-	UpdateAvailable bool
+	ID         string
+	DeviceName string
+	LastSeen   string
+	ImageInfo  *services.ImageInfo
 }
 
 func GetInventory(w http.ResponseWriter, r *http.Request) {
@@ -60,16 +61,16 @@ func getUpdateAvailableInfo(r *http.Request, inventory inventory.Response) (IvtR
 
 	for _, device := range inventory.Result {
 		var i InventoryResponse
-		updateAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(device.ID)
+		imageInfo, err := deviceService.GetDeviceImageInfo(device.ID)
 		i.ID = device.ID
 		i.DeviceName = device.DisplayName
 		i.LastSeen = device.LastSeen
 
 		if err != nil {
-			i.UpdateAvailable = false
+			i.ImageInfo = nil
 
-		} else if updateAvailable != nil {
-			i.UpdateAvailable = true
+		} else if imageInfo != nil {
+			i.ImageInfo = imageInfo
 		}
 		ivt = append(ivt, i)
 	}
