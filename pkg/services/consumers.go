@@ -13,20 +13,22 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type ConsumerServiceInterface interface {
+// ConsumerService is the interface that takes care of our consumer implementation
+type ConsumerService interface {
 	Start()
 }
 
-type ConsumerService struct {
+// KafkaConsumerService is the implementation of a consumer service based on Kafka topics
+type KafkaConsumerService struct {
 	config *clowder.KafkaConfig
 }
 
-// NewConsumerService gives a instance of the main implementation of ConsumerServiceInterface
-func NewConsumerService(config *clowder.KafkaConfig) ConsumerServiceInterface {
-	return &ConsumerService{config: config}
+// NewKafkaConsumerService gives a instance of the Kafka implementation of ConsumerService
+func NewKafkaConsumerService(config *clowder.KafkaConfig) ConsumerService {
+	return &KafkaConsumerService{config: config}
 }
 
-func (s *ConsumerService) consumePlaybookDispatcherRuns() {
+func (s *KafkaConsumerService) consumePlaybookDispatcherRuns() {
 	log.Info("Starting listeners...")
 
 	// to consume messages
@@ -64,7 +66,8 @@ func (s *ConsumerService) consumePlaybookDispatcherRuns() {
 
 }
 
-func (s *ConsumerService) Start() {
+// Start consumers for this application
+func (s *KafkaConsumerService) Start() {
 	log.Info("Starting consumers...")
 
 	go s.consumePlaybookDispatcherRuns()

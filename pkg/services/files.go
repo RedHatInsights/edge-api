@@ -30,6 +30,7 @@ type S3FilesService struct {
 	downloader files.Downloader
 }
 
+// NewFilesService creates a new service to handle files
 func NewFilesService() FilesService {
 	cfg := config.Get()
 	var sess *session.Session
@@ -57,17 +58,23 @@ func NewFilesService() FilesService {
 		downloader: files.NewDownloader(),
 	}
 }
+
+// GetExtractor retuns a new extractor for files
 func (s *S3FilesService) GetExtractor() files.Extractor {
 	return s.extractor
 }
+
+// GetUploader retuns a new uploader for files
 func (s *S3FilesService) GetUploader() files.Uploader {
 	return s.uploader
 }
 
+// GetDownloader retuns a new downloads for files
 func (s *S3FilesService) GetDownloader() files.Downloader {
 	return s.downloader
 }
 
+// GetFIle retuns the file given a path
 func (s *S3FilesService) GetFile(path string) (io.ReadCloser, error) {
 	o, err := s.Client.GetObject(&s3.GetObjectInput{
 		Bucket: aws.String(s.Bucket),

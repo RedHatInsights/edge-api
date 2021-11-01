@@ -17,7 +17,7 @@ var _ = Describe("ConsumerService basic functions", func() {
 	Describe("creation of the service", func() {
 		Context("returns a correct instance", func() {
 			config := &v1.KafkaConfig{}
-			s := NewConsumerService(config)
+			s := NewKafkaConsumerService(config)
 			It("not to be nil", func() {
 				Expect(s).ToNot(BeNil())
 			})

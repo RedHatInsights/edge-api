@@ -133,7 +133,7 @@ func main() {
 	}()
 	if cfg.KafkaConfig != nil {
 		go func() {
-			consumerService := services.NewConsumerService(cfg.KafkaConfig)
+			consumerService := services.NewKafkaConsumerService(cfg.KafkaConfig)
 			consumerService.Start()
 		}()
 	}

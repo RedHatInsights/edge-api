@@ -208,6 +208,7 @@ func getDiffOnUpdate(oldImg models.Image, newImg models.Image) DeltaDiff {
 	return results
 }
 
+// GetDeviceImageInfo returns the information of a running image for a device
 func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error) {
 	var ImageInfo ImageInfo
 	var currentImage models.Image
@@ -232,10 +233,9 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error
 	if result.Error != nil || result == nil {
 		log.Error(result.Error)
 		return nil, new(ImageNotFoundError)
-	} else {
-		if currentImage.ImageSetID != nil {
-			db.DB.Where("Image_Set_Id = ? and id < ?", currentImage.ImageSetID, currentImage.ID).Last(&rollback)
-		}
+	}
+	if currentImage.ImageSetID != nil {
+		db.DB.Where("Image_Set_Id = ? and id < ?", currentImage.ImageSetID, currentImage.ID).Last(&rollback)
 	}
 	updateAvailable, err := s.GetUpdateAvailableForDeviceByUUID(deviceUUID)
 	if err != nil {
