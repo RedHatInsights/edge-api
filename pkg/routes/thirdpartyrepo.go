@@ -3,7 +3,6 @@ package routes
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 
@@ -175,8 +174,6 @@ func CreateThirdPartyRepoUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	requestBody, _ := ioutil.ReadAll(r.Body)
-	json.Unmarshal(requestBody, &tprepo)
 	ID := chi.URLParam(r, "ID")
 	err = services.ThirdPartyRepoService.UpdateThirdPartyRepo(tprepo, account, ID)
 	if err != nil {
