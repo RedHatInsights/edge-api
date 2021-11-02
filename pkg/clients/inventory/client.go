@@ -62,13 +62,13 @@ const (
 	inventoryAPI = "api/inventory/v1/hosts"
 	orderBy      = "updated"
 	orderHow     = "DESC"
-	filterParams = "?staleness=fresh&filter[system_profile][host_type]=edge&fields[system_profile]=host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments,rhc_client_id,rhc_config_state"
+	FilterParams = "?staleness=fresh&filter[system_profile][host_type]=edge&fields[system_profile]=host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments,rhc_client_id,rhc_config_state"
 )
 
 // ReturnDevices will return the list of devices without filter by tag or uuid
 func (c *Client) ReturnDevices() (Response, error) {
 	url := fmt.Sprintf("%s/%s", config.Get().InventoryConfig.URL, inventoryAPI)
-	fullURL := url + filterParams
+	fullURL := url + FilterParams
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	req.Header.Add("Content-Type", "application/json")
@@ -101,7 +101,7 @@ func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
 	deviceIDParam := "&hostname_or_id=" + deviceID
 	log.Infof("::deviceIDParam: %s\n", deviceIDParam)
 	url := fmt.Sprintf("%s/%s", config.Get().InventoryConfig.URL, inventoryAPI)
-	fullURL := url + filterParams + deviceIDParam
+	fullURL := url + FilterParams + deviceIDParam
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	req.Header.Add("Content-Type", "application/json")
@@ -140,7 +140,7 @@ func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
 func (c *Client) ReturnDevicesByTag(tag string) (Response, error) {
 	tagsParam := "?tags=" + tag
 	url := fmt.Sprintf("%s/%s", config.Get().InventoryConfig.URL, inventoryAPI)
-	fullURL := url + filterParams + tagsParam
+	fullURL := url + FilterParams + tagsParam
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	req.Header.Add("Content-Type", "application/json")
