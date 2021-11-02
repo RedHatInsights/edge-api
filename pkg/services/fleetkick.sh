@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 : <<'_usage_'
 
 KS_FQPATH: Fully qualified path to kickstart file
@@ -18,14 +18,14 @@ ISO_IN=$2
 ISO_OUT=$3
 WORKDIR=$4
 
-[[ -e $KS_FQPATH ]] || (echo "ERROR: no kickstart file" && exit 1)
-[[ -e $ISO_IN ]] || (echo "ERROR: no source ISO file" && exit 1)
+[[ -e "$KS_FQPATH" ]] || (echo "ERROR: no kickstart file" && exit 1)
+[[ -e "$ISO_IN" ]] || (echo "ERROR: no source ISO file" && exit 1)
 
 ISOCFG="${WORKDIR}/isolinux/isolinux.cfg"
 EFICFG="${WORKDIR}/EFI/BOOT/grub.cfg"
 EFI_DIR="${WORKDIR}/EFI/BOOT"
 EFI_IMAGEPATH="${WORKDIR}/images/efiboot.img"
-KSFILE=`basename $KS_FQPATH`
+KSFILE=`basename "$KS_FQPATH"`
 
 
 validate_kickstart() {
@@ -33,14 +33,14 @@ validate_kickstart() {
 
     echo "Validating kickstart $KS"
 
-    [[ -e $KS ]] && ksvalidator -v RHEL8 $KS || (echo "ERROR: no kickstart file" && exit 1)
+    [[ -e "$KS" ]] && ksvalidator -v RHEL8 "$KS" || (echo "ERROR: no kickstart file" && exit 1)
 }
 
 
 get_iso_volid() {
     ISO=$1
 
-    [[ -e $ISO ]] && volid=`isoinfo -d -i $ISO | grep "Volume id:" | awk -F': ' '{print $2}'` \
+    [[ -e "$ISO" ]] && volid=`isoinfo -d -i "$ISO" | grep "Volume id:" | awk -F': ' '{print $2}'` \
         || (echo "ERROR: no $ISO file"; exit 1)
     echo $volid
 }
@@ -51,7 +51,7 @@ explode_iso() {
     DIR=$2
 
     # can also be accomplished with 7z x $ISO -o${DIR}
-    [[ -e $ISO ]] && xorriso -osirrox on -indev $ISO -extract / $DIR
+    [[ -e "$ISO" ]] && xorriso -osirrox on -indev "$ISO" -extract / $DIR
 }
 
 
@@ -59,6 +59,7 @@ insert_kickstart() {
     KS=$1
     DIR=$2
 
+    echo "Copying ks file $KS to $DIR"
     [[ -e $KS ]] && [[ -e $DIR ]] && cp $KS $DIR || (echo "ERROR: no kickstart file" && exit 1)
 }
 
@@ -111,7 +112,7 @@ make_the_iso() {
 
     cd $MKISODIR
 
-    genisoimage -o $ISOPATH -R -J \
+    genisoimage -o "$ISOPATH" -R -J \
 -V "${VOLUME_ID}" \
 -A "${VOLUME_ID}" \
 -volset "${VOLUME_ID}" \
@@ -129,13 +130,13 @@ make_the_iso() {
 hybridify() {
     ISOPATH=$1
 
-    [[ -e $ISOPATH ]] && isohybrid --uefi $ISOPATH || (echo "${ISOPATH} does not exist"; exit 1)
+    [[ -e "$ISOPATH" ]] && isohybrid --uefi "$ISOPATH" || (echo "${ISOPATH} does not exist"; exit 1)
 }
 
 implant_md5() {
     ISOPATH=$1
 
-    [[ -e $ISOPATH ]] && implantisomd5 $ISOPATH || (echo "${ISOPATH} does not exist"; exit 1)
+    [[ -e "$ISOPATH" ]] && implantisomd5 "$ISOPATH" || (echo "${ISOPATH} does not exist"; exit 1)
 }
 
 
@@ -148,18 +149,18 @@ echo "ISOCFG: ${ISOCFG}"
 echo "EFICFG: ${EFICFG}"
 echo "KSFILE: ${KSFILE}"
 
-validate_kickstart $KS_FQPATH
-VOLID=$(get_iso_volid $ISO_IN)
+validate_kickstart "$KS_FQPATH"
+VOLID=$(get_iso_volid "$ISO_IN")
 echo "VOLID: $VOLID"
-explode_iso $ISO_IN $WORKDIR
-insert_kickstart $KS_FQPATH $WORKDIR
-edit_isolinux $ISOCFG $VOLID $KSFILE
-edit_efiboot $EFICFG $VOLID $KSFILE
+explode_iso "$ISO_IN" $WORKDIR
+insert_kickstart "$KS_FQPATH" $WORKDIR
+edit_isolinux $ISOCFG $VOLID "$KSFILE"
+edit_efiboot $EFICFG $VOLID "$KSFILE"
 modify_efiboot_image $EFICFG $EFI_IMAGEPATH
 #regen_efi_image $EFI_DIR $EFI_IMAGEPATH
-make_the_iso $WORKDIR $ISO_OUT $VOLID
-hybridify $ISO_OUT
-implant_md5 $ISO_OUT
+make_the_iso $WORKDIR "$ISO_OUT" $VOLID
+hybridify "$ISO_OUT"
+implant_md5 "$ISO_OUT"
 
 echo
 echo "New ISO: $ISO_OUT"
