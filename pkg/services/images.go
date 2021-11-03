@@ -359,7 +359,7 @@ func (s *ImageService) AddUserInfo(image *models.Image) error {
 	username := image.Installer.Username
 	// Files that will be used to modify the ISO and will be cleaned
 	imageName := destPath + image.Name
-	kickstart := destPath + "finalKickstart-" + username + ".ks"
+	kickstart := fmt.Sprintf("%sfinalKickstart-%s_%d.ks", destPath, image.Account, image.ID)
 
 	err := s.downloadISO(imageName, downloadURL)
 	if err != nil {
