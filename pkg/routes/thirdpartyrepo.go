@@ -87,8 +87,16 @@ func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRe
 func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	var tprepo *[]models.ThirdPartyRepo
 	var count int64
+	account, err := common.GetAccount(r)
+	if err != nil {
+		log.Info(err)
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
 	pagination := common.GetPagination(r)
-	countResult := imageFilters(r, db.DB.Model(&models.ThirdPartyRepo{})).Count(&count)
+	countResult := imageFilters(r, db.DB.Model(&models.ThirdPartyRepo{})).Where("account = ?", account).Count(&count)
 	if countResult.Error != nil {
 		countErr := errors.NewInternalServerError()
 		log.Error(countErr)
@@ -96,7 +104,7 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&countErr)
 		return
 	}
-	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Find(&tprepo)
+	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&tprepo)
 	if result.Error != nil {
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
