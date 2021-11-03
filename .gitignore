@@ -36,3 +36,6 @@ config.yaml
 
 # mac specific
 .DS_Store
+
+#sonarqube
+sonarqube/

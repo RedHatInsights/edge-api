@@ -26,6 +26,7 @@ help:
 	@echo "vet                      runs go vet on the project"
 	@echo "test                     runs go test on the project"
 	@echo "build                    builds the container image"
+	@echo "scan_project             run security scan"
 	@echo "bonfire-config-local     create bonfire config for deploying from your local repository"
 	@echo "bonfire-config-github    create bonfire config for deploying from the github repository"
 	@echo "create-ns                creates a namespace in kubernetes"
@@ -57,6 +58,9 @@ lint:
 
 build:
 	$(CONTAINERER) build . -t $(CONTAINER_TAG)
+
+scan_project:
+	./sonarqube.sh
 
 bonfire-config-local:
 	@cp default_config.yaml.local.example config.yaml
