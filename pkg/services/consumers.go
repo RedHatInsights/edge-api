@@ -41,7 +41,7 @@ func (s *KafkaConsumerService) consumePlaybookDispatcherRuns() {
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: brokers,
 		Topic:   topic,
-		GroupID: "edge-fleet-management",
+		GroupID: "edge-fleet-management-update-playbook",
 	})
 
 	for {
