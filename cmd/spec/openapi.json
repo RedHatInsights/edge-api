@@ -2310,11 +2310,11 @@
               "application/json": {
                 "schema": {
                   "properties": {
-                    "count": {
+                    "Count": {
                       "example": 100,
                       "type": "integer"
                     },
-                    "data": {
+                    "Data": {
                       "items": {
                         "$ref": "#/components/schemas/v1.ImageSetDetails"
                       },

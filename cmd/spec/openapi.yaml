@@ -2010,10 +2010,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  Count:
                     type: integer
                     example: 100
-                  data:
+                  Data:
                     type: array
                     items:
                       $ref: "#/components/schemas/v1.ImageSetDetails"
