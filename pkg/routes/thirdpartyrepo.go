@@ -163,6 +163,7 @@ func GetThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&tprepo)
 }
 
+// CreateThirdPartyRepoUpdate updates the existing third party repository
 func CreateThirdPartyRepoUpdate(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	defer r.Body.Close()
@@ -198,6 +199,7 @@ func CreateThirdPartyRepoUpdate(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// DeleteThirdPartyRepoByID deletes the third party repository using ID
 func DeleteThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 	s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	ID := chi.URLParam(r, "ID")

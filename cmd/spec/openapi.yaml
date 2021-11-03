@@ -2142,3 +2142,90 @@ paths:
                 $ref: '#/components/schemas/v1.InternalServerError'
           description: There was an internal server error.
       summary: Lists all Third Party Repository for an account.
+  /thirdpartyrepo/{ID}:
+    get:
+      operationId: GetThirdPartyRepoByID
+      parameters:
+        - name: ID
+          in: path
+          required: true
+          description: An unique existing third party repository id.
+          schema:
+            type:
+              integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.CreateThirdPartyRepo'
+          description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Get third party repository by id.
+  /thirdpartyrepo/{ID}/update:
+    put:
+      operationId: CreateThirdPartyRepoUpdate
+      parameters:
+        - name: ID
+          in: path
+          required: true
+          description: An unique existing third party repository id.
+          schema:
+            type:
+              integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1.CreateThirdPartyRepo"
+        required: true  
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.CreateThirdPartyRepo"
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.BadRequest"
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.InternalServerError"
+          description: There was an internal server error.
+      summary: Creates an Update for third party repository  
+  /thirdpartyrepo/{ID}/delete:
+    delete:
+      operationId: DeleteThirdPartyRepoByID
+      parameters:
+        - name: ID
+          in: path
+          required: true
+          description: An unique existing third party repository id.
+          schema:
+            type:
+              integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.CreateThirdPartyRepo'
+          description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Delete third party repository using id.
