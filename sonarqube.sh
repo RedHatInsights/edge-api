@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -x
 
 mkdir $PWD/sonarqube/
 mkdir $PWD/sonarqube/download/
