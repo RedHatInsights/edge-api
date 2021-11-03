@@ -16,6 +16,7 @@ type ThirdPartyRepoServiceInterface interface {
 	CreateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string) error
 	GetThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error)
 	UpdateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string, ID string) error
+	DeleteThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error)
 }
 
 // NewThirdPartyRepoService gives a instance of the main implementation of a ThirdPartyRepoServiceInterface
@@ -86,4 +87,26 @@ func (s *ThirdPartyRepoService) UpdateThirdPartyRepo(tprepo *models.ThirdPartyRe
 	}
 
 	return nil
+}
+
+func (s *ThirdPartyRepoService) DeleteThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error) {
+	var tprepo models.ThirdPartyRepo
+	account, err := common.GetAccountFromContext(s.ctx)
+	if err != nil {
+		return nil, new(AccountNotSet)
+	}
+	repoDetails, err := s.GetThirdPartyRepoByID(ID)
+	if err != nil {
+		log.Info(err)
+	}
+	if repoDetails.Name == "" {
+		return nil, errors.NewInternalServerError()
+	}
+
+	delForm := db.DB.Exec("DELETE FROM third_party_repos WHERE id=? and account=?", ID, account)
+	if delForm.Error != nil {
+		err := errors.NewInternalServerError()
+		return nil, err
+	}
+	return &tprepo, nil
 }

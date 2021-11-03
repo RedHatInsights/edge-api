@@ -27,6 +27,7 @@ func MakeThirdPartyRepoRouter(sub chi.Router) {
 		r.Use(ThirdPartyRepoCtx)
 		r.Get("/", GetThirdPartyRepoByID)
 		r.Put("/update", CreateThirdPartyRepoUpdate)
+		r.Delete("/delete", DeleteThirdPartyRepoByID)
 	})
 }
 
@@ -146,7 +147,7 @@ func GetThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
-		err.SetTitle("failed creating third party repository")
+		err.SetTitle("failed getting third party repository")
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
@@ -187,4 +188,20 @@ func CreateThirdPartyRepoUpdate(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&tprepo)
 
+}
+
+func DeleteThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
+	s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	ID := chi.URLParam(r, "ID")
+
+	tprepo, err := s.ThirdPartyRepoService.DeleteThirdPartyRepoByID(ID)
+	if err != nil {
+		log.Error(err)
+		err := errors.NewInternalServerError()
+		err.SetTitle("failed deleting third party repository")
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	json.NewEncoder(w).Encode(&tprepo)
 }
