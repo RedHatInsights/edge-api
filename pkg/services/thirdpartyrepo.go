@@ -4,7 +4,9 @@ import (
 	"context"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -12,6 +14,9 @@ import (
 // the business logic of creating Third Party Repository
 type ThirdPartyRepoServiceInterface interface {
 	CreateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string) error
+	GetThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error)
+	UpdateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string, ID string) error
+	DeleteThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error)
 }
 
 // NewThirdPartyRepoService gives a instance of the main implementation of a ThirdPartyRepoServiceInterface
@@ -41,4 +46,67 @@ func (s *ThirdPartyRepoService) CreateThirdPartyRepo(tprepo *models.ThirdPartyRe
 
 	}
 	return nil
+}
+
+// GetThirdPartyRepoByID gets the Third Party Repository by ID from the database
+func (s *ThirdPartyRepoService) GetThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error) {
+	var tprepo models.ThirdPartyRepo
+	account, err := common.GetAccountFromContext(s.ctx)
+	if err != nil {
+		return nil, new(AccountNotSet)
+	}
+	result := db.DB.Where("account = ? and id = ?", account, ID).Find(&tprepo)
+	if result.Error != nil {
+		err := errors.NewInternalServerError()
+		return nil, err
+	}
+	return &tprepo, nil
+}
+
+func (s *ThirdPartyRepoService) UpdateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string, ID string) error {
+
+	tprepo.Account = account
+	repoDetails, err := s.GetThirdPartyRepoByID(ID)
+	if err != nil {
+		log.Info(err)
+	}
+	if tprepo.Name != "" {
+		repoDetails.Name = tprepo.Name
+	}
+
+	if tprepo.URL != "" {
+		repoDetails.URL = tprepo.URL
+	}
+
+	if tprepo.Description != "" {
+		repoDetails.Description = tprepo.Description
+	}
+	result := db.DB.Save(&repoDetails)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
+func (s *ThirdPartyRepoService) DeleteThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error) {
+	var tprepo models.ThirdPartyRepo
+	account, err := common.GetAccountFromContext(s.ctx)
+	if err != nil {
+		return nil, new(AccountNotSet)
+	}
+	repoDetails, err := s.GetThirdPartyRepoByID(ID)
+	if err != nil {
+		log.Info(err)
+	}
+	if repoDetails.Name == "" {
+		return nil, errors.NewInternalServerError()
+	}
+
+	delForm := db.DB.Exec("DELETE FROM third_party_repos WHERE id=? and account=?", ID, account)
+	if delForm.Error != nil {
+		err := errors.NewInternalServerError()
+		return nil, err
+	}
+	return &tprepo, nil
 }
