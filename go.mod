@@ -26,6 +26,7 @@ require (
 	github.com/prometheus/common v0.25.0 // indirect
 	github.com/redhatinsights/app-common-go v1.5.2
 	github.com/redhatinsights/platform-go-middlewares v0.8.1
+	github.com/segmentio/kafka-go v0.4.22
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
