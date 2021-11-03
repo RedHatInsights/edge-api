@@ -108,6 +108,7 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 	return nil
 }
 
+// UpdateImage updates an image, adding a new version of this image to an imageset
 func (s *ImageService) UpdateImage(image *models.Image, account string, previousImage *models.Image) error {
 	if previousImage != nil {
 		var currentImageSet models.ImageSet
@@ -284,6 +285,7 @@ func (s *ImageService) postProcessImage(id uint) {
 	}
 }
 
+// CreateRepoForImage creates the OSTree repo to host that image
 func (s *ImageService) CreateRepoForImage(i *models.Image) *models.Repo {
 	log.Infof("Commit %d for Image %d is ready. Creating OSTree repo.", i.Commit.ID, i.ID)
 	repo := &models.Repo{
@@ -318,6 +320,7 @@ func (s *ImageService) CreateRepoForImage(i *models.Image) *models.Repo {
 	return repo
 }
 
+// SetErrorStatusOnImage is a helper functions that sets the error status on images
 func (s *ImageService) SetErrorStatusOnImage(err error, i *models.Image) {
 	i.Status = models.ImageStatusError
 	tx := db.DB.Save(i)
@@ -348,8 +351,9 @@ func (s *ImageService) SetErrorStatusOnImage(err error, i *models.Image) {
 	}
 }
 
-// Download the ISO, inject the kickstart with username and ssh key
-// re upload the ISO
+// AddUserInfo downloads the ISO
+// injects the kickstart with username and ssh key
+// and then re-uploads the ISO into our bucket
 func (s *ImageService) AddUserInfo(image *models.Image) error {
 	// Absolute path for manipulating ISO's
 	destPath := "/var/tmp/"
@@ -495,6 +499,7 @@ func (s *ImageService) cleanFiles(kickstart string, isoName string, imageID uint
 	return nil
 }
 
+// UpdateImageStatus updates the status of an commit and/or installer based on Image Builder's status
 func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, error) {
 	if image.Commit.Status == models.ImageStatusBuilding {
 		image, err := s.imageBuilder.GetCommitStatus(image)
@@ -600,6 +605,7 @@ func addImageExtraData(image *models.Image) (*models.Image, error) {
 	return image, nil
 }
 
+// GetImageByID retrieves an image by its identifier
 func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 	var image models.Image
 	account, err := common.GetAccountFromContext(s.ctx)
@@ -617,6 +623,7 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 	return addImageExtraData(&image)
 }
 
+// GetImageByOSTreeCommitHash retrieves an image by its ostree commit hash
 func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error) {
 	var image models.Image
 	account, err := common.GetAccountFromContext(s.ctx)
@@ -630,6 +637,7 @@ func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Im
 	return addImageExtraData(&image)
 }
 
+// RetryCreateImage retries the whole post process of the image creation
 func (s *ImageService) RetryCreateImage(image *models.Image) error {
 	go s.postProcessImage(image.ID)
 

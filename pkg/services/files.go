@@ -74,7 +74,7 @@ func (s *S3FilesService) GetDownloader() files.Downloader {
 	return s.downloader
 }
 
-// GetFIle retuns the file given a path
+// GetFile retuns the file given a path
 func (s *S3FilesService) GetFile(path string) (io.ReadCloser, error) {
 	o, err := s.Client.GetObject(&s3.GetObjectInput{
 		Bucket: aws.String(s.Bucket),
@@ -85,15 +85,14 @@ func (s *S3FilesService) GetFile(path string) (io.ReadCloser, error) {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case s3.ErrCodeNoSuchKey:
-				return nil, fmt.Errorf("S3 Object %s not found.", path)
+				return nil, fmt.Errorf("the object %s was not found on the S3 bucket", path)
 			case s3.ErrCodeInvalidObjectState:
-				return nil, fmt.Errorf("S3 Object %s not found.", path)
+				return nil, fmt.Errorf("the object %s was not found on the S3 bucket because of an invalid state", path)
 			default:
-				return nil, fmt.Errorf("Something wrong happened.")
+				return nil, fmt.Errorf("something wrong happened while reading from the S3 bucket")
 			}
-		} else {
-			return nil, err
 		}
+		return nil, err
 	}
 	return o.Body, nil
 }
