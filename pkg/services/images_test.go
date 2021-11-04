@@ -3,36 +3,55 @@ package services
 import (
 	"context"
 	"fmt"
-	"testing"
 
 	"github.com/bxcodec/faker/v3"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
-func TestGetImageByWhenImageIsNotFound(t *testing.T) {
-	s := ImageService{
-		ctx: context.Background(),
-	}
-	id, _ := faker.RandomInt(10)
-	image, err := s.GetImageByID(fmt.Sprint(id[0]))
+var _ = Describe("Image Service Test", func() {
+	var service ImageService
+	var hash string
+	BeforeEach(func() {
+		service = ImageService{
+			ctx: context.Background(),
+		}
+	})
+	Describe("get image", func() {
+		Context("by id when image is not found", func() {
+			var image *models.Image
+			var err error
+			BeforeEach(func() {
+				id, _ := faker.RandomInt(1)
+				image, err = service.GetImageByID(fmt.Sprint(id[0]))
+			})
 
-	switch err.(type) {
-	case *ImageNotFoundError:
-		fmt.Println("All good")
-	default:
-		t.Errorf("Expected error, got %#v", image)
-	}
-}
-func TestGetImageByOstreeCommitHashWhenImageIsNotFound(t *testing.T) {
-	s := ImageService{
-		ctx: context.Background(),
-	}
-	hash := faker.Word()
-	image, err := s.GetImageByOSTreeCommitHash(hash)
+			It("should have an error", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(new(ImageNotFoundError)))
+			})
+			It("should have a empty image", func() {
+				Expect(image).To(BeNil())
+			})
+		})
 
-	switch err.(type) {
-	case *ImageNotFoundError:
-		fmt.Println("All good")
-	default:
-		t.Errorf("Expected error, got %#v", image)
-	}
-}
+		Context("by hash when image is not found", func() {
+			var image *models.Image
+			var err error
+			BeforeEach(func() {
+				hash = faker.Word()
+				image, err = service.GetImageByOSTreeCommitHash(hash)
+			})
+
+			It("should have an error", func() {
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(new(ImageNotFoundError)))
+			})
+			It("should have a empty image", func() {
+				Expect(image).To(BeNil())
+			})
+		})
+
+	})
+})
