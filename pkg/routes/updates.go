@@ -300,7 +300,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	service := services.NewUpdateService(r.Context())
 	log.Infof("AddUpdate:: call::	service.CreateUpdate :: %d", update.ID)
-	go service.CreateUpdate(update)
+	go service.CreateUpdate(update.ID)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(update)
 

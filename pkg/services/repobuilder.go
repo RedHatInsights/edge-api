@@ -22,7 +22,7 @@ import (
 
 // RepoBuilderInterface defines the interface of a repository builder
 type RepoBuilderInterface interface {
-	BuildUpdateRepo(ut *models.UpdateTransaction) (*models.UpdateTransaction, error)
+	BuildUpdateRepo(id uint) (*models.UpdateTransaction, error)
 	ImportRepo(r *models.Repo) (*models.Repo, error)
 	DownloadExtractVersionRepo(c *models.Commit, dest string) error
 }
@@ -45,7 +45,10 @@ func NewRepoBuilder(ctx context.Context) RepoBuilderInterface {
 
 // BuildUpdateRepo build an update repo with the set of commits all merged into a single repo
 // with static deltas generated between them all
-func (rb *RepoBuilder) BuildUpdateRepo(update *models.UpdateTransaction) (*models.UpdateTransaction, error) {
+func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, error) {
+	var update *models.UpdateTransaction
+	db.DB.First(&update, id)
+
 	log.Infof("Repobuilder::BuildUpdateRepo:: Begin")
 	if update == nil {
 		log.Error("nil pointer to models.UpdateTransaction provided")
