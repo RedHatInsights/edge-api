@@ -28,9 +28,9 @@ type UpdateServiceInterface interface {
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
 func NewUpdateService(ctx context.Context) UpdateServiceInterface {
 	return &UpdateService{
-		ctx:          ctx,
-		filesService: NewFilesService(),
-		repoBuilder:  NewRepoBuilder(ctx),
+		Context:      ctx,
+		FilesService: NewFilesService(),
+		RepoBuilder:  NewRepoBuilder(ctx),
 	}
 }
 
@@ -38,9 +38,9 @@ const DelayTimeToReboot = 5
 
 // UpdateService is the main implementation of a UpdateServiceInterface
 type UpdateService struct {
-	ctx          context.Context
-	repoBuilder  RepoBuilderInterface
-	filesService FilesService
+	Context      context.Context
+	RepoBuilder  RepoBuilderInterface
+	FilesService FilesService
 }
 
 type playbooks struct {
@@ -95,11 +95,12 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		}
 	}(update)
 
-	update, err := s.repoBuilder.BuildUpdateRepo(id)
+	update, err := s.RepoBuilder.BuildUpdateRepo(id)
 	if err != nil {
+		db.DB.First(&update, id)
 		update.Status = models.UpdateStatusError
 		db.DB.Save(update)
-		log.Fatal(err)
+		log.Error(err)
 		return nil, err
 	}
 	// FIXME - implement playbook dispatcher scheduling
@@ -134,7 +135,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			Account:     update.Account,
 		}
 		log.Infof("Call Execute Dispatcher: : %#v", payloadDispatcher)
-		client := playbookdispatcher.InitClient(s.ctx)
+		client := playbookdispatcher.InitClient(s.Context)
 		exc, err := client.ExecuteDispatcher(payloadDispatcher)
 
 		if err != nil {
@@ -176,7 +177,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 func (s *UpdateService) GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error) {
 	fname := fmt.Sprintf("playbook_dispatcher_update_%d.yml", update.ID)
 	path := fmt.Sprintf("%s/playbooks/%s", update.Account, fname)
-	return s.filesService.GetFile(path)
+	return s.FilesService.GetFile(path)
 }
 
 func (s *UpdateService) getPlaybookURL(updateID uint) string {
@@ -221,7 +222,7 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 	}
 
 	uploadPath := fmt.Sprintf("%s/playbooks/%s", account, fname)
-	playbookURL, err := s.filesService.GetUploader().UploadFile(tmpfilepath, uploadPath)
+	playbookURL, err := s.FilesService.GetUploader().UploadFile(tmpfilepath, uploadPath)
 	if err != nil {
 		log.Errorf("Error uploading file to S3: %s ", err.Error())
 		return "", err
