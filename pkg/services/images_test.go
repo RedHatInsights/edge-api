@@ -26,7 +26,6 @@ var _ = Describe("Image Service Test", func() {
 				id, _ := faker.RandomInt(1)
 				image, err = service.GetImageByID(fmt.Sprint(id[0]))
 			})
-
 			It("should have an error", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(new(ImageNotFoundError)))

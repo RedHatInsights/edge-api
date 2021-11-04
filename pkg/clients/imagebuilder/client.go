@@ -18,7 +18,7 @@ import (
 // ClientInterface is an Interface to make request to ImageBuilder
 type ClientInterface interface {
 	ComposeCommit(image *models.Image) (*models.Image, error)
-	ComposeInstaller(repo *models.Repo, image *models.Image) (*models.Image, error)
+	ComposeInstaller(image *models.Image) (*models.Image, error)
 	GetCommitStatus(image *models.Image) (*models.Image, error)
 	GetInstallerStatus(image *models.Image) (*models.Image, error)
 	GetMetadata(image *models.Image) (*models.Image, error)
@@ -213,7 +213,7 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 }
 
 // ComposeInstaller composes a Installer on ImageBuilder
-func (c *Client) ComposeInstaller(repo *models.Repo, image *models.Image) (*models.Image, error) {
+func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 	pkgs := make([]string, 0)
 	req := &ComposeRequest{
 		Customizations: &Customizations{
@@ -227,7 +227,7 @@ func (c *Client) ComposeInstaller(repo *models.Repo, image *models.Image) (*mode
 				ImageType:    models.ImageTypeInstaller,
 				Ostree: &OSTree{
 					Ref: "rhel/8/x86_64/edge", //image.Commit.OSTreeRef,
-					URL: repo.URL,
+					URL: image.Commit.Repo.URL,
 				},
 				UploadRequest: &UploadRequest{
 					Options: make(map[string]string),
