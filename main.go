@@ -61,6 +61,7 @@ func main() {
 		"TemplatesPath":            cfg.TemplatesPath,
 		"DatabaseType":             cfg.Database.Type,
 		"DatabaseName":             cfg.Database.Name,
+		"IsKafkaEnabled":           cfg.KafkaConfig != nil,
 	}).Info("Configuration Values:")
 
 	r := chi.NewRouter()
@@ -132,6 +133,7 @@ func main() {
 		}
 	}()
 	if cfg.KafkaConfig != nil {
+		log.Info("Starting Kafka Consumers")
 		go func() {
 			consumerService := services.NewKafkaConsumerService(cfg.KafkaConfig)
 			consumerService.Start()
