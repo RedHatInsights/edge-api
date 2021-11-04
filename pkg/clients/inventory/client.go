@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 
 	log "github.com/sirupsen/logrus"
 
@@ -15,9 +16,10 @@ import (
 
 // ClientInterface is an Interface to make request to InventoryAPI
 type ClientInterface interface {
-	ReturnDevices() (Response, error)
+	ReturnDevices(parameters *InventoryParams) (Response, error)
 	ReturnDevicesByID(deviceID string) (Response, error)
 	ReturnDevicesByTag(tag string) (Response, error)
+	BuildURL(parameters *InventoryParams) string
 }
 
 // Client is the implementation of an ClientInterface
@@ -62,13 +64,42 @@ const (
 	inventoryAPI = "api/inventory/v1/hosts"
 	orderBy      = "updated"
 	orderHow     = "DESC"
-	FilterParams = "?staleness=fresh&filter[system_profile][host_type]=edge&fields[system_profile]=host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments,rhc_client_id,rhc_config_state"
+	FilterParams = "?staleness=fresh& filter[system_profile][host_type]=edge&fields[system_profile]=host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments,rhc_client_id,rhc_config_state"
 )
 
+type InventoryParams struct {
+	PerPage      string
+	Page         string
+	OrderBy      string
+	OrderHow     string
+	HostnameOrId string
+}
+
+func (c *Client) BuildURL(parameters InventoryParams) string {
+	Url, err := url.Parse(config.Get().InventoryConfig.URL)
+	if err != nil {
+		log.Println("Couldn't parse inventory host")
+		return ""
+	}
+	Url.Path += inventoryAPI
+	params := url.Values{}
+	params.Add("filter[system_profile][host_type]", "edge")
+	params.Add("fields[system_profile]", "fields[system_profile]=host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments,rhc_client_id,rhc_config_state")
+	params.Add("per_page", parameters.PerPage)
+	params.Add("page", parameters.Page)
+	params.Add("order_by", parameters.OrderBy)
+	params.Add("OrderHow", parameters.OrderHow)
+	params.Add("page", parameters.HostnameOrId)
+	Url.RawQuery = params.Encode()
+
+	return Url.String()
+}
+
 // ReturnDevices will return the list of devices without filter by tag or uuid
-func (c *Client) ReturnDevices() (Response, error) {
-	url := fmt.Sprintf("%s/%s", config.Get().InventoryConfig.URL, inventoryAPI)
-	fullURL := url + FilterParams
+func (c *Client) ReturnDevices(parameters InventoryParams) (Response, error) {
+
+	// url := fmt.Sprintf("%s/%s", config.Get().InventoryConfig.URL, inventoryAPI)
+	fullURL := c.BuildURL(parameters)
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	req.Header.Add("Content-Type", "application/json")
