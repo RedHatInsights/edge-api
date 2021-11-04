@@ -37,6 +37,10 @@ func (s *KafkaConsumerService) consumePlaybookDispatcherRuns() {
 	for i, b := range s.config.Brokers {
 		brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, b.Port)
 	}
+
+	log.WithFields(log.Fields{
+		"brokers": brokers, "topic": topic,
+	}).Debug("Connecting with Kafka broker")
 	// make a new reader that consumes from topic from this consumer group
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: brokers,
