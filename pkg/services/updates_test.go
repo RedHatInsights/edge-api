@@ -1,66 +1,78 @@
-package services
+package services_test
 
 import (
 	"context"
-	"testing"
 
 	"github.com/bxcodec/faker/v3"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services"
 )
 
-func TestGetUpdateTransactionsForDevice(t *testing.T) {
+var _ = Describe("UpdateService Basic functions", func() {
+	Describe("creation of the service", func() {
+		Context("returns a correct instance", func() {
+			ctx := context.Background()
+			s := services.NewUpdateService(ctx)
+			It("not to be nil", func() {
+				Expect(s).ToNot(BeNil())
+			})
+		})
+	})
+	Describe("update", func() {
+		var updateService services.UpdateServiceInterface
+		BeforeEach(func() {
+			updateService = services.NewUpdateService(context.Background())
+		})
+		Context("retrieve an update", func() {
+			uuid := faker.UUIDHyphenated()
+			uuid2 := faker.UUIDHyphenated()
+			device := models.Device{
+				UUID: uuid,
+			}
+			db.DB.Create(&device)
+			device2 := models.Device{
+				UUID: uuid2,
+			}
+			db.DB.Create(&device2)
+			updates := []models.UpdateTransaction{
+				{
+					Devices: []models.Device{
+						device,
+					},
+				},
+				{
+					Devices: []models.Device{
+						device,
+					},
+				},
+				{
+					Devices: []models.Device{
+						device2,
+					},
+				},
+			}
+			db.DB.Create(&updates[0])
+			db.DB.Create(&updates[1])
+			db.DB.Create(&updates[2])
 
-	uuid := faker.UUIDHyphenated()
-	uu2d := faker.UUIDHyphenated()
-	updateService := UpdateService{
-		ctx: context.Background(),
-	}
+			It("to return two updates for first device", func() {
+				actual, err := updateService.GetUpdateTransactionsForDevice(&device)
 
-	device := models.Device{
-		UUID: uuid,
-	}
-	db.DB.Create(&device)
-	device2 := models.Device{
-		UUID: uu2d,
-	}
-	db.DB.Create(&device2)
-	updates := []models.UpdateTransaction{
-		{
-			Devices: []models.Device{
-				device,
-			},
-		},
-		{
-			Devices: []models.Device{
-				device,
-			},
-		},
-		{
-			Devices: []models.Device{
-				device2,
-			},
-		},
-	}
-	db.DB.Create(&updates[0])
-	db.DB.Create(&updates[1])
-	db.DB.Create(&updates[2])
-	actual, err := updateService.GetUpdateTransactionsForDevice(&device)
-	if actual == nil {
-		t.Errorf("Expected not nil updates")
-	} else if len(*actual) != 2 {
-		t.Errorf("Expected two update transactions, got %d", len(*actual))
-	}
-	if err != nil {
-		t.Errorf("Error not expected, got %s", err.Error())
-	}
-	updDevice2, err := updateService.GetUpdateTransactionsForDevice(&device2)
-	if updDevice2 == nil {
-		t.Errorf("Expected not nil updates")
-	} else if len(*updDevice2) != 1 {
-		t.Errorf("Expected one update transactions, got %d", len(*updDevice2))
-	}
-	if err != nil {
-		t.Errorf("Error not expected, got %s", err.Error())
-	}
-}
+				Expect(actual).ToNot(BeNil())
+				Expect(*actual).To(HaveLen(2))
+				Expect(err).ToNot(HaveOccurred())
+			})
+			It("to return one update for second device", func() {
+				actual, err := updateService.GetUpdateTransactionsForDevice(&device2)
+
+				Expect(actual).ToNot(BeNil())
+				Expect(*actual).To(HaveLen(1))
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+	})
+})
