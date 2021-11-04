@@ -38,7 +38,7 @@ type ImageServiceInterface interface {
 	AddUserInfo(image *models.Image) error
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
-	CreateRepoForImage(i *models.Image) *models.Repo
+	CreateRepoForImage(i *models.Image) (*models.Repo, error)
 	GetImageByID(id string) (*models.Image, error)
 	GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error)
 	CheckImageName(name, account string) (bool, error)
@@ -51,14 +51,17 @@ func NewImageService(ctx context.Context, log *log.Entry) ImageServiceInterface 
 		ctx:          ctx,
 		imageBuilder: imagebuilder.InitClient(ctx, log),
 		log:          log,
+		repoBuilder:  NewRepoBuilder(ctx, log),
 	}
 }
 
 // ImageService is the main implementation of a ImageServiceInterface
 type ImageService struct {
-	ctx          context.Context
+	ctx context.Context
+	log *log.Entry
+
 	imageBuilder imagebuilder.ClientInterface
-	log          *log.Entry
+	repoBuilder  RepoBuilderInterface
 }
 
 // CreateImage creates an Image for an Account on Image Builder and on our database
@@ -177,12 +180,13 @@ func (s *ImageService) UpdateImage(image *models.Image, account string, previous
 		return tx.Error
 	}
 
-	s.log = s.log.WithField("imageId", image.ID)
+	s.log = s.log.WithFields(log.Fields{"imageID": image.ID, "commitID": image.Commit.ID})
 	go s.postProcessImage(image.ID)
 
 	return nil
 }
 
+// Every log message in this method already has commit id and image id injected
 func (s *ImageService) postProcessImage(id uint) {
 	WaitGroup.Add(1) // Processing one image
 
@@ -228,10 +232,10 @@ func (s *ImageService) postProcessImage(id uint) {
 		}
 	}(s.imageBuilder)
 
-	repo := s.CreateRepoForImage(i)
-	i.Commit.Repo = repo
-	i.Commit.RepoID = &repo.ID
-	db.DB.Save(&i.Commit)
+	repo, err := s.CreateRepoForImage(i)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Fatal("Failed creating repo for image")
+	}
 	// TODO: We need to discuss this whole thing post-July deliverable
 	if i.HasOutputType(models.ImageTypeInstaller) {
 		i, err := s.imageBuilder.ComposeInstaller(repo, i)
@@ -245,7 +249,6 @@ func (s *ImageService) postProcessImage(id uint) {
 			s.log.Error(err)
 			s.SetErrorStatusOnImage(err, i)
 		}
-
 		for {
 			i, err := s.UpdateImageStatus(i)
 			if err != nil {
@@ -286,38 +289,34 @@ func (s *ImageService) postProcessImage(id uint) {
 }
 
 // CreateRepoForImage creates the OSTree repo to host that image
-func (s *ImageService) CreateRepoForImage(i *models.Image) *models.Repo {
-	log.Infof("Commit %d for Image %d is ready. Creating OSTree repo.", i.Commit.ID, i.ID)
+func (s *ImageService) CreateRepoForImage(i *models.Image) (*models.Repo, error) {
+	s.log.Infof("Creating OSTree repo.")
 	repo := &models.Repo{
 		Status: models.RepoStatusBuilding,
 	}
 	tx := db.DB.Create(repo)
-	db.DB.Save(&repo)
-	log.Debugf("Repo:: %d\n", repo.ID)
-	log.Debugf("i.commit:: %d\n", i.Commit.ID)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	s.log = s.log.WithField("repoID", repo.ID)
+	s.log.Debug("OSTree repo is created on the database")
+
 	i.Commit.Repo = repo
 	i.Commit.RepoID = &repo.ID
 
-	tx2 := db.DB.Save(i.Commit)
-	if tx2.Error != nil {
-		log.Errorf("::TX2:: %v\n", tx2.Error)
-		panic(tx2.Error)
-	}
-	log.Debugf("i.commit:: %d\n", i.Commit.RepoID)
-
+	tx = db.DB.Save(i.Commit)
 	if tx.Error != nil {
-		log.Error(tx.Error)
-		panic(tx.Error)
+		return nil, tx.Error
 	}
-	rb := NewRepoBuilder(s.ctx)
-	repo, err := rb.ImportRepo(repo)
-	if err != nil {
-		log.Error(err)
-		panic(err)
-	}
-	log.Infof("OSTree repo %d for commit %d and Image %d is ready. ", repo.ID, i.Commit.ID, i.ID)
+	log.Debug("OSTree repo was saved to commit")
 
-	return repo
+	repo, err := s.repoBuilder.ImportRepo(repo)
+	if err != nil {
+		return nil, err
+	}
+	log.Infof("OSTree repo is ready")
+
+	return repo, nil
 }
 
 // SetErrorStatusOnImage is a helper functions that sets the error status on images

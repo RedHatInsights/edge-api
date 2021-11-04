@@ -28,7 +28,7 @@ func NewUpdateService(ctx context.Context) UpdateServiceInterface {
 	return &UpdateService{
 		ctx:          ctx,
 		filesService: NewFilesService(),
-		repoBuilder:  NewRepoBuilder(ctx),
+		repoBuilder:  NewRepoBuilder(ctx, log.NewEntry(log.StandardLogger())),
 	}
 }
 
