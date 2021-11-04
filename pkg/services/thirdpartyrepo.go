@@ -63,6 +63,7 @@ func (s *ThirdPartyRepoService) GetThirdPartyRepoByID(ID string) (*models.ThirdP
 	return &tprepo, nil
 }
 
+// UpdateThirdPartyRepo updates the existing third party repository
 func (s *ThirdPartyRepoService) UpdateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string, ID string) error {
 
 	tprepo.Account = account
@@ -89,6 +90,7 @@ func (s *ThirdPartyRepoService) UpdateThirdPartyRepo(tprepo *models.ThirdPartyRe
 	return nil
 }
 
+// DeleteThirdPartyRepoByID deletes the third party repository using ID
 func (s *ThirdPartyRepoService) DeleteThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error) {
 	var tprepo models.ThirdPartyRepo
 	account, err := common.GetAccountFromContext(s.ctx)
