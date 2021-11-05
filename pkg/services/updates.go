@@ -276,13 +276,19 @@ func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*
 	return &updates, nil
 }
 
+// Status defined by https://github.com/RedHatInsights/playbook-dispatcher/blob/master/schema/run.event.yaml
 const (
+	// PlaybookStatusRunning is the status when a playbook is still running
 	PlaybookStatusRunning = "running"
+	// PlaybookStatusSuccess is the status when a playbook has run sucessfully
 	PlaybookStatusSuccess = "success"
+	// PlaybookStatusFailure is the status when a playbook execution fails
 	PlaybookStatusFailure = "failure"
+	// PlaybookStatusFailure is the status when a playbook execution times out
 	PlaybookStatusTimeout = "timeout"
 )
 
+// ProcessPlaybookDispatcherRunEvent is the method that processes messages from playbook dispatcher to set update statuses
 func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error {
 	var e *PlaybookDispatcherEvent
 	err := json.Unmarshal(message, &e)
@@ -321,6 +327,7 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 	return s.SetUpdateStatusBasedOnDispatchRecord(dispatchRecord)
 }
 
+// SetUpdateStatusBasedOnDispatchRecord is the function that, given a dispatch record, finds the update transaction related to and update its status if necessary
 func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord models.DispatchRecord) error {
 	var update models.UpdateTransaction
 	result := db.DB.
@@ -336,11 +343,12 @@ func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord mode
 
 	allSuccess := true
 	for _, d := range update.DispatchRecords {
+		if d.Status != models.DispatchRecordStatusComplete {
+			allSuccess = false
+		}
 		if d.Status == models.DispatchRecordStatusError {
 			update.Status = models.UpdateStatusError
 			break
-		} else if d.Status != models.DispatchRecordStatusComplete {
-			allSuccess = false
 		}
 	}
 	if allSuccess {

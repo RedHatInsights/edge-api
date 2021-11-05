@@ -44,6 +44,7 @@ func NewKafkaConsumerService(config *clowder.KafkaConfig) ConsumerService {
 	return &KafkaConsumerService{Reader: r, UpdateService: NewUpdateService(context.Background())}
 }
 
+// ConsumePlaybookDispatcherRuns is the method that consumes from the topic that gives us the execution of playbook from playbook dispatcher service
 func (s *KafkaConsumerService) ConsumePlaybookDispatcherRuns() {
 	log.Info("Starting to consume playbook dispatcher's runs")
 
@@ -81,6 +82,7 @@ func (s *KafkaConsumerService) ConsumePlaybookDispatcherRuns() {
 	}
 }
 
+// RegisterShutdown listens to os signals to wrap up reader work
 func (s *KafkaConsumerService) RegisterShutdown() {
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
