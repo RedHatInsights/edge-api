@@ -45,7 +45,7 @@ func NewKafkaConsumerService(config *clowder.KafkaConfig) ConsumerService {
 }
 
 func (s *KafkaConsumerService) ConsumePlaybookDispatcherRuns() {
-	log.Info("Starting listeners...")
+	log.Info("Starting to consume playbook dispatcher's runs")
 
 	for {
 		m, err := s.Reader.ReadMessage(context.Background())
@@ -85,6 +85,7 @@ func (s *KafkaConsumerService) RegisterShutdown() {
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 	<-sigint
+	log.Info("Closing Kafka readers...")
 	s.Reader.Close()
 }
 
