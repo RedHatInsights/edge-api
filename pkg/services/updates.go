@@ -34,8 +34,6 @@ func NewUpdateService(ctx context.Context) UpdateServiceInterface {
 	}
 }
 
-const DelayTimeToReboot = 5
-
 // UpdateService is the main implementation of a UpdateServiceInterface
 type UpdateService struct {
 	Context      context.Context
@@ -65,6 +63,7 @@ type TemplateRemoteInfo struct {
 	UpdateTransactionID uint
 }
 
+// CreateUpdate is the function that creates an update transaction
 func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error) {
 	var update *models.UpdateTransaction
 	db.DB.First(&update, id)
@@ -174,6 +173,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	return update, nil
 }
 
+// GetUpdatePlaybook is the function that returns the path to an update playbook
 func (s *UpdateService) GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error) {
 	fname := fmt.Sprintf("playbook_dispatcher_update_%d.yml", update.ID)
 	path := fmt.Sprintf("%s/playbooks/%s", update.Account, fname)
@@ -240,6 +240,7 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 	return playbookURL, nil
 }
 
+// GetUpdateTransactionsForDevice returns all update transactions for a given device
 func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error) {
 	var updates []models.UpdateTransaction
 	result := db.DB.
