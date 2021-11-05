@@ -35,7 +35,7 @@ func (s *KafkaConsumerService) consumePlaybookDispatcherRuns() {
 	topic := "platform.playbook-dispatcher.runs"
 	brokers := make([]string, len(s.config.Brokers))
 	for i, b := range s.config.Brokers {
-		brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, b.Port)
+		brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
 	}
 
 	log.WithFields(log.Fields{
@@ -51,6 +51,9 @@ func (s *KafkaConsumerService) consumePlaybookDispatcherRuns() {
 	for {
 		m, err := r.ReadMessage(context.Background())
 		if err != nil {
+			log.WithFields(log.Fields{
+				"error": err.Error(),
+			}).Error("Error reading message from Kafka topic")
 			break
 		}
 		log.WithFields(log.Fields{
