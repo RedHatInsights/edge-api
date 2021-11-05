@@ -39,9 +39,6 @@ type updateContextKey int
 // UpdateContextKey is the key to Update Context handler
 const UpdateContextKey updateContextKey = iota
 
-// DelayTimeToReboot is the number of seconds to wait before rebooting
-const DelayTimeToReboot = 10
-
 // UpdateCtx is a handler for Update requests
 func UpdateCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -300,7 +297,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	service := services.NewUpdateService(r.Context())
 	log.Infof("AddUpdate:: call::	service.CreateUpdate :: %d", update.ID)
-	go service.CreateUpdate(update)
+	go service.CreateUpdate(update.ID)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(update)
 

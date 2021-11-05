@@ -62,7 +62,7 @@ func main() {
 		"DatabaseType":             cfg.Database.Type,
 		"DatabaseName":             cfg.Database.Name,
 		"IsKafkaEnabled":           cfg.KafkaConfig != nil,
-	}).Info("Configuration Values:")
+	}).Info("Configuration Values")
 
 	r := chi.NewRouter()
 	r.Use(
