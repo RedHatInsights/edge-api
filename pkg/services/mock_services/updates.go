@@ -36,18 +36,18 @@ func (m *MockUpdateServiceInterface) EXPECT() *MockUpdateServiceInterfaceMockRec
 }
 
 // CreateUpdate mocks base method.
-func (m *MockUpdateServiceInterface) CreateUpdate(update *models.UpdateTransaction) (*models.UpdateTransaction, error) {
+func (m *MockUpdateServiceInterface) CreateUpdate(id uint) (*models.UpdateTransaction, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateUpdate", update)
+	ret := m.ctrl.Call(m, "CreateUpdate", id)
 	ret0, _ := ret[0].(*models.UpdateTransaction)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateUpdate indicates an expected call of CreateUpdate.
-func (mr *MockUpdateServiceInterfaceMockRecorder) CreateUpdate(update interface{}) *gomock.Call {
+func (mr *MockUpdateServiceInterfaceMockRecorder) CreateUpdate(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUpdate", reflect.TypeOf((*MockUpdateServiceInterface)(nil).CreateUpdate), update)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUpdate", reflect.TypeOf((*MockUpdateServiceInterface)(nil).CreateUpdate), id)
 }
 
 // GetUpdatePlaybook mocks base method.
@@ -80,14 +80,16 @@ func (mr *MockUpdateServiceInterfaceMockRecorder) GetUpdateTransactionsForDevice
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUpdateTransactionsForDevice", reflect.TypeOf((*MockUpdateServiceInterface)(nil).GetUpdateTransactionsForDevice), device)
 }
 
-// RebootDevice mocks base method.
-func (m *MockUpdateServiceInterface) RebootDevice(update *models.UpdateTransaction) {
+// ProcessPlaybookDispatcherRunEvent mocks base method.
+func (m *MockUpdateServiceInterface) ProcessPlaybookDispatcherRunEvent(message []byte) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "RebootDevice", update)
+	ret := m.ctrl.Call(m, "ProcessPlaybookDispatcherRunEvent", message)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
-// RebootDevice indicates an expected call of RebootDevice.
-func (mr *MockUpdateServiceInterfaceMockRecorder) RebootDevice(update interface{}) *gomock.Call {
+// ProcessPlaybookDispatcherRunEvent indicates an expected call of ProcessPlaybookDispatcherRunEvent.
+func (mr *MockUpdateServiceInterfaceMockRecorder) ProcessPlaybookDispatcherRunEvent(message interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RebootDevice", reflect.TypeOf((*MockUpdateServiceInterface)(nil).RebootDevice), update)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessPlaybookDispatcherRunEvent", reflect.TypeOf((*MockUpdateServiceInterface)(nil).ProcessPlaybookDispatcherRunEvent), message)
 }

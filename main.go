@@ -61,7 +61,8 @@ func main() {
 		"TemplatesPath":            cfg.TemplatesPath,
 		"DatabaseType":             cfg.Database.Type,
 		"DatabaseName":             cfg.Database.Name,
-	}).Info("Configuration Values:")
+		"IsKafkaEnabled":           cfg.KafkaConfig != nil,
+	}).Info("Configuration Values")
 
 	r := chi.NewRouter()
 	r.Use(
@@ -94,7 +95,7 @@ func main() {
 		s.Route("/image-sets", routes.MakeImageSetsRouter)
 		s.Route("/devices", routes.MakeDevicesRouter)
 		s.Route("/inventory", routes.MakeInventoryRouter)
-		s.Route("/thirdpartyrepo", routes.MakeTPRepoRouter)
+		s.Route("/thirdpartyrepo", routes.MakeThirdPartyRepoRouter)
 	})
 
 	mr := chi.NewRouter()
@@ -132,6 +133,13 @@ func main() {
 			log.WithFields(log.Fields{"error": err}).Fatal("Metrics Service Stopped")
 		}
 	}()
+	if cfg.KafkaConfig != nil {
+		log.Info("Starting Kafka Consumers")
+		go func() {
+			consumerService := services.NewKafkaConsumerService(cfg.KafkaConfig)
+			consumerService.Start()
+		}()
+	}
 
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 		log.WithFields(log.Fields{"error": err}).Fatal("Service Stopped")

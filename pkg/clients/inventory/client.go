@@ -128,12 +128,12 @@ func (c *Client) ReturnDevices(parameters *InventoryParams) (Response, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Error(fmt.Printf("ReturnDevices: %s", err))
+		log.Errorf("ReturnDevices: %s", err)
 		return Response{}, err
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Error(fmt.Printf("ReturnDevices: %s", err))
+		log.Errorf("ReturnDevices: %s", err)
 		return Response{}, err
 	}
 	defer resp.Body.Close()
@@ -160,7 +160,7 @@ func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
 	resp, err := client.Do(req)
 
 	if err != nil {
-		log.Error(fmt.Printf("ReturnDevicesByID: %s", err))
+		log.Errorf("ReturnDevicesByID: %s", err)
 		return Response{}, err
 	}
 
@@ -172,7 +172,7 @@ func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Error(fmt.Printf("ReturnDevicesByID: %s", err))
+		log.Errorf("ReturnDevicesByID: %s", err)
 		return Response{}, err
 	}
 	defer resp.Body.Close()
@@ -200,7 +200,7 @@ func (c *Client) ReturnDevicesByTag(tag string) (Response, error) {
 	resp, err := client.Do(req)
 
 	if err != nil {
-		log.Error(fmt.Printf("ReturnDevicesByTag: %s", err))
+		log.Errorf("ReturnDevicesByTag: %s", err)
 		return Response{}, err
 	}
 	if resp.StatusCode != http.StatusOK {
@@ -210,7 +210,7 @@ func (c *Client) ReturnDevicesByTag(tag string) (Response, error) {
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Error(fmt.Printf("ReturnDevicesByTag: %s", err))
+		log.Errorf("ReturnDevicesByTag: %s", err)
 		return Response{}, err
 	}
 	var inventory Response

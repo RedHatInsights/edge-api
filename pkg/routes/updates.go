@@ -36,8 +36,8 @@ func MakeUpdatesRouter(sub chi.Router) {
 
 type updateContextKey int
 
+// UpdateContextKey is the key to Update Context handler
 const UpdateContextKey updateContextKey = iota
-const DelayTimeToReboot = 10
 
 // UpdateCtx is a handler for Update requests
 func UpdateCtx(next http.Handler) http.Handler {
@@ -100,6 +100,7 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetUpdates returns the updates for the device
 func GetUpdates(w http.ResponseWriter, r *http.Request) {
 	var updates []models.UpdateTransaction
 	account, err := common.GetAccount(r)
@@ -117,6 +118,7 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&updates)
 }
 
+// UpdatePostJSON contains the update structure for the device
 type UpdatePostJSON struct {
 	CommitID   uint   `json:"CommitID"`
 	DeviceUUID string `json:"DeviceUUID"`
@@ -223,13 +225,12 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 				log.Errorf("updateFromHTTP::GetDeviceByUUID::updateDevice: %#v, %#v", repo, err)
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return &models.UpdateTransaction{}, err
-			} else {
-				log.Infof("Existing Device not found in database, creating new one: %s", device.ID)
-				updateDevice = &models.Device{
-					UUID: device.ID,
-				}
-				db.DB.Create(&updateDevice)
 			}
+			log.Infof("Existing Device not found in database, creating new one: %s", device.ID)
+			updateDevice = &models.Device{
+				UUID: device.ID,
+			}
+			db.DB.Create(&updateDevice)
 		}
 		updateDevice.RHCClientID = device.Ostree.RHCClientID
 		updateDevice.DesiredHash = update.Commit.OSTreeCommit
@@ -296,7 +297,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	service := services.NewUpdateService(r.Context())
 	log.Infof("AddUpdate:: call::	service.CreateUpdate :: %d", update.ID)
-	go service.CreateUpdate(update)
+	go service.CreateUpdate(update.ID)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(update)
 

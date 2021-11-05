@@ -29,6 +29,7 @@ type EdgeConfig struct {
 	TemplatesPath            string
 	EdgeAPIBaseURL           string
 	UploadWorkers            int
+	KafkaConfig              *clowder.KafkaConfig
 }
 
 type dbConfig struct {
@@ -167,6 +168,8 @@ func Init() {
 			LogGroup:        cfg.Logging.Cloudwatch.LogGroup,
 			Region:          cfg.Logging.Cloudwatch.Region,
 		}
+
+		config.KafkaConfig = cfg.Kafka
 	}
 
 }

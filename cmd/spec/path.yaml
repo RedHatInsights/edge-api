@@ -479,12 +479,12 @@ paths:
       operationId: ListAllImageSets
       parameters:
         - name: sort_by
-          in: path
+          in: query
           description: "Define sort fields: Created_at, Name, Status. To sort DESC use -"
           schema:
             type: string
         - name: filter 
-          in: path
+          in: query
           description: "field: status =? or name=?"
           schema:
             type: string
@@ -495,10 +495,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  count:
+                  Count:
                     type: integer
                     example: 100
-                  data:
+                  Data:
                     type: array
                     items:
                       $ref: "#/components/schemas/v1.ImageSetDetails"
@@ -627,3 +627,88 @@ paths:
                 $ref: '#/components/schemas/v1.InternalServerError'
           description: There was an internal server error.
       summary: Lists all Third Party Repository for an account.
+  /thirdpartyrepo/{ID}:
+    get:
+      operationId: GetThirdPartyRepoByID
+      parameters:
+        - name: ID
+          in: path
+          required: true
+          description: An unique existing third party repository id.
+          schema:
+            type:
+              integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.CreateThirdPartyRepo'
+          description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Get third party repository by id.
+    put:
+      operationId: CreateThirdPartyRepoUpdate
+      parameters:
+        - name: ID
+          in: path
+          required: true
+          description: An unique existing third party repository id.
+          schema:
+            type:
+              integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1.CreateThirdPartyRepo"
+        required: true  
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.CreateThirdPartyRepo"
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.BadRequest"
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.InternalServerError"
+          description: There was an internal server error.
+      summary: Creates an Update for third party repository  
+    delete:
+      operationId: DeleteThirdPartyRepoByID
+      parameters:
+        - name: ID
+          in: path
+          required: true
+          description: An unique existing third party repository id.
+          schema:
+            type:
+              integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.CreateThirdPartyRepo'
+          description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Delete third party repository using id.

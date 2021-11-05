@@ -6,9 +6,7 @@ import (
 )
 
 /*
-ThirdPartyRepo
-
-	It is a record of Third Party Repository or we can call it as Custom Repository provided by customers per account.
+ThirdPartyRepo is a record of Third Party Repository or we can call it as Custom Repository provided by customers per account.
 
 	Here, URL refers to the url of the third party repository, Account refers to the account attached to the third party
 	repository.

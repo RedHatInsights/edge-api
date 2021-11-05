@@ -39,11 +39,11 @@ func unmarshalCheck(e error, ovORovh string) {
 }
 
 // Add error code & details as a method to avoid duplicated lines, return JSON bytes
-func addErrLogFields(fields log.Fields, counter int, err string, details interface{}, logMsg string) []byte {
+func addErrLogFields(fields log.Fields, counter int, err string, details interface{}) []byte {
 	fields["ovs_parsed"] = counter
 	fields["error_code"] = err
 	fields["error_details"] = details
-	log.WithFields(fields).Error(logMsg)
+	log.WithFields(fields).Error()
 	ejson, _ := json.Marshal(fields)
 	return ejson
 }
@@ -58,7 +58,7 @@ func ParseBytes(ovb []byte) (ovha []models.OwnershipVoucherHeader, err error) {
 	)
 	defer func() { // in a panic case, stop the parsing but keep alive
 		if recErr := recover(); recErr != nil {
-			ejson := addErrLogFields(logFields, counter, "parse_error", recErr, "panic occurred")
+			ejson := addErrLogFields(logFields, counter, "parse_error", recErr)
 			err = errors.New(string(ejson))
 		}
 	}()
@@ -77,7 +77,7 @@ func ParseBytes(ovb []byte) (ovha []models.OwnershipVoucherHeader, err error) {
 			}
 		}
 	} else {
-		ejson := addErrLogFields(logFields, counter, "non_ended_voucher", "invalid ownershipvoucher bytes", "Invalid ownershipvoucher bytes")
+		ejson := addErrLogFields(logFields, counter, "non_ended_voucher", "invalid ownershipvoucher bytes")
 		return nil, errors.New(string(ejson))
 	}
 	logFields["ovs_parsed"] = counter

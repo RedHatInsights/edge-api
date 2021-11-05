@@ -25,11 +25,13 @@ type Pagination struct {
 	Offset int
 }
 
+// EdgeAPIPaginatedResponse represents pagination response
 type EdgeAPIPaginatedResponse struct {
 	Count int64
 	Data  interface{}
 }
 
+// ValidationError represents validation error
 type ValidationError struct {
 	Key    string
 	Reason string

@@ -35,6 +35,7 @@ type DeviceService struct {
 	inventory     inventory.ClientInterface
 }
 
+// DeviceDetails is a Device with Image and Update transactions
 type DeviceDetails struct {
 	Device             *models.Device              `json:"Device,omitempty"`
 	Image              *ImageInfo                  `json:"ImageInfo"`
@@ -67,6 +68,7 @@ func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, erro
 	return &device, nil
 }
 
+// GetDeviceDetails provides details for a given Device UUID
 func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*DeviceDetails, error) {
 	imageInfo, err := s.GetDeviceImageInfo(deviceUUID)
 	if err != nil {
@@ -92,16 +94,20 @@ func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*DeviceDetails, err
 	return details, nil
 }
 
+// ImageUpdateAvailable contains image and differences between current and available commits
 type ImageUpdateAvailable struct {
 	Image       models.Image `json:"Image"`
 	PackageDiff DeltaDiff    `json:"PackageDiff"`
 }
+
+// DeltaDiff provides package difference details between current and available commits
 type DeltaDiff struct {
 	Added    []models.InstalledPackage `json:"Added"`
 	Removed  []models.InstalledPackage `json:"Removed"`
 	Upgraded []models.InstalledPackage `json:"Upgraded"`
 }
 
+// ImageInfo contains Image with updates available and rollback image
 type ImageInfo struct {
 	Image            models.Image            `json:"Image"`
 	UpdatesAvailable *[]ImageUpdateAvailable `json:"UpdatesAvailable,omitempty"`
@@ -118,9 +124,9 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 	}
 
 	lastDevice := device.Result[len(device.Result)-1]
-	for _, rpm_ostree := range lastDevice.Ostree.RpmOstreeDeployments {
-		if rpm_ostree.Booted {
-			lastDeployment = rpm_ostree
+	for _, rpmOstree := range lastDevice.Ostree.RpmOstreeDeployments {
+		if rpmOstree.Booted {
+			lastDeployment = rpmOstree
 			break
 		}
 	}
@@ -202,6 +208,7 @@ func getDiffOnUpdate(oldImg models.Image, newImg models.Image) DeltaDiff {
 	return results
 }
 
+// GetDeviceImageInfo returns the information of a running image for a device
 func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error) {
 	var ImageInfo ImageInfo
 	var currentImage models.Image
@@ -214,9 +221,9 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error
 
 	lastDevice := device.Result[len(device.Result)-1]
 
-	for _, rpm_ostree := range lastDevice.Ostree.RpmOstreeDeployments {
-		if rpm_ostree.Booted {
-			lastDeployment = rpm_ostree
+	for _, rpmOstree := range lastDevice.Ostree.RpmOstreeDeployments {
+		if rpmOstree.Booted {
+			lastDeployment = rpmOstree
 			break
 		}
 	}
@@ -226,10 +233,9 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error
 	if result.Error != nil || result == nil {
 		log.Error(result.Error)
 		return nil, new(ImageNotFoundError)
-	} else {
-		if currentImage.ImageSetID != nil {
-			db.DB.Where("Image_Set_Id = ? and id < ?", currentImage.ImageSetID, currentImage.ID).Last(&rollback)
-		}
+	}
+	if currentImage.ImageSetID != nil {
+		db.DB.Where("Image_Set_Id = ? and id < ?", currentImage.ImageSetID, currentImage.ID).Last(&rollback)
 	}
 	updateAvailable, err := s.GetUpdateAvailableForDeviceByUUID(deviceUUID)
 	if err != nil {
