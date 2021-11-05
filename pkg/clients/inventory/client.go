@@ -64,7 +64,8 @@ const (
 	inventoryAPI = "api/inventory/v1/hosts"
 	orderBy      = "updated"
 	orderHow     = "DESC"
-	FilterParams = "?staleness=fresh& filter[system_profile][host_type]=edge&fields[system_profile]=host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments,rhc_client_id,rhc_config_state"
+	Fields       = "host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments,rhc_client_id,rhc_config_state"
+	FilterParams = "?staleness=fresh&filter[system_profile][host_type]=edge&fields[system_profile]=host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments,rhc_client_id,rhc_config_state"
 )
 
 type InventoryParams struct {
@@ -75,31 +76,36 @@ type InventoryParams struct {
 	HostnameOrId string
 }
 
-func (c *Client) BuildURL(parameters InventoryParams) string {
+func (c *Client) BuildURL(parameters *InventoryParams) string {
 	Url, err := url.Parse(config.Get().InventoryConfig.URL)
 	if err != nil {
 		log.Println("Couldn't parse inventory host")
 		return ""
 	}
+	fmt.Printf("Url:: %v\n", Url)
 	Url.Path += inventoryAPI
+	fmt.Printf("UrlPath:: %v\n", Url.Path)
 	params := url.Values{}
 	params.Add("filter[system_profile][host_type]", "edge")
-	params.Add("fields[system_profile]", "fields[system_profile]=host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments,rhc_client_id,rhc_config_state")
+	params.Add("fields[system_profile]", fmt.Sprintf("%s=%s", "fields[system_profile]", Fields))
 	params.Add("per_page", parameters.PerPage)
 	params.Add("page", parameters.Page)
 	params.Add("order_by", parameters.OrderBy)
-	params.Add("OrderHow", parameters.OrderHow)
-	params.Add("page", parameters.HostnameOrId)
+	params.Add("order_how", parameters.OrderHow)
+	// params.Add("page", parameters.HostnameOrId)
 	Url.RawQuery = params.Encode()
 
 	return Url.String()
 }
 
 // ReturnDevices will return the list of devices without filter by tag or uuid
-func (c *Client) ReturnDevices(parameters InventoryParams) (Response, error) {
+func (c *Client) ReturnDevices(parameters *InventoryParams) (Response, error) {
+
+	fullURL := c.BuildURL(parameters)
 
 	// url := fmt.Sprintf("%s/%s", config.Get().InventoryConfig.URL, inventoryAPI)
-	fullURL := c.BuildURL(parameters)
+	// fullURL := url + FilterParams
+	fmt.Printf("fullURL:: %v\n", fullURL)
 	log.Infof("Requesting url: %s\n", fullURL)
 	req, _ := http.NewRequest("GET", fullURL, nil)
 	req.Header.Add("Content-Type", "application/json")

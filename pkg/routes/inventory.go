@@ -84,14 +84,17 @@ func InventoyCtx(next http.Handler) http.Handler {
 	})
 }
 func GetInventory(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("entrei na rota/n")
+	fmt.Printf("entrei na rota\n")
 	ctx := r.Context()
+	fmt.Printf("ctx:: %v\n", ctx.Value(inventoryKey))
+	param := ctx.Value(inventoryKey).(*inventory.InventoryParams)
+	fmt.Printf("param:: %v\n", param)
 	client := inventory.InitClient(ctx)
 	var InventoryData InventoryData
 	var results []InventoryResponse
 	//IF PARAMS FROM CONTEXT COMES WITH VALUE, SET AS PARAM
 	//client.FilterParams
-	inventory, err := client.ReturnDevices(&parameters)
+	inventory, err := client.ReturnDevices(param)
 	if err != nil || inventory.Count == 0 {
 		err := errors.NewNotFound(fmt.Sprintf("No devices found "))
 		w.WriteHeader(err.GetStatus())
