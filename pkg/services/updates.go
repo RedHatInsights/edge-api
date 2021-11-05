@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"text/template"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -18,7 +20,7 @@ import (
 // UpdateServiceInterface defines the interface that helps
 // handle the business logic of sending updates to a edge device
 type UpdateServiceInterface interface {
-	CreateUpdate(update *models.UpdateTransaction) (*models.UpdateTransaction, error)
+	CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error)
 	GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error)
 }
@@ -26,19 +28,17 @@ type UpdateServiceInterface interface {
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
 func NewUpdateService(ctx context.Context) UpdateServiceInterface {
 	return &UpdateService{
-		ctx:          ctx,
-		filesService: NewFilesService(),
-		repoBuilder:  NewRepoBuilder(ctx),
+		Context:      ctx,
+		FilesService: NewFilesService(),
+		RepoBuilder:  NewRepoBuilder(ctx),
 	}
 }
 
-const DelayTimeToReboot = 5
-
 // UpdateService is the main implementation of a UpdateServiceInterface
 type UpdateService struct {
-	ctx          context.Context
-	repoBuilder  RepoBuilderInterface
-	filesService FilesService
+	Context      context.Context
+	RepoBuilder  RepoBuilderInterface
+	FilesService FilesService
 }
 
 type playbooks struct {
@@ -63,15 +63,43 @@ type TemplateRemoteInfo struct {
 	UpdateTransactionID uint
 }
 
-func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.UpdateTransaction, error) {
+// CreateUpdate is the function that creates an update transaction
+func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error) {
+	var update *models.UpdateTransaction
+	db.DB.First(&update, id)
 	update.Status = models.UpdateStatusBuilding
 	db.DB.Save(&update)
-	update, err := s.repoBuilder.BuildUpdateRepo(update)
+
+	WaitGroup.Add(1) // Processing one update
+	defer func() {
+		WaitGroup.Done() // Done with one update (sucessfuly or not)
+		log.Debug("Done with one update - sucessfuly or not")
+		if err := recover(); err != nil {
+			log.Fatalf("%s", err)
+		}
+	}()
+	go func(update *models.UpdateTransaction) {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
+		sig := <-sigint
+		// Reload update to get updated status
+		db.DB.First(&update, update.ID)
+		if update.Status == models.UpdateStatusBuilding {
+			log.WithFields(log.Fields{
+				"signal":   sig,
+				"updateID": update.ID,
+			}).Info("Captured signal marking update as error")
+			update.Status = models.UpdateStatusError
+			WaitGroup.Done()
+		}
+	}(update)
+
+	update, err := s.RepoBuilder.BuildUpdateRepo(id)
 	if err != nil {
+		db.DB.First(&update, id)
 		update.Status = models.UpdateStatusError
 		db.DB.Save(update)
-		// This is a goroutine and if this happens, the whole update failed
-		log.Fatal(err)
+		log.Error(err)
 		return nil, err
 	}
 	// FIXME - implement playbook dispatcher scheduling
@@ -106,7 +134,7 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 			Account:     update.Account,
 		}
 		log.Infof("Call Execute Dispatcher: : %#v", payloadDispatcher)
-		client := playbookdispatcher.InitClient(s.ctx)
+		client := playbookdispatcher.InitClient(s.Context)
 		exc, err := client.ExecuteDispatcher(payloadDispatcher)
 
 		if err != nil {
@@ -145,10 +173,11 @@ func (s *UpdateService) CreateUpdate(update *models.UpdateTransaction) (*models.
 	return update, nil
 }
 
+// GetUpdatePlaybook is the function that returns the path to an update playbook
 func (s *UpdateService) GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error) {
 	fname := fmt.Sprintf("playbook_dispatcher_update_%d.yml", update.ID)
 	path := fmt.Sprintf("%s/playbooks/%s", update.Account, fname)
-	return s.filesService.GetFile(path)
+	return s.FilesService.GetFile(path)
 }
 
 func (s *UpdateService) getPlaybookURL(updateID uint) string {
@@ -193,7 +222,7 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 	}
 
 	uploadPath := fmt.Sprintf("%s/playbooks/%s", account, fname)
-	playbookURL, err := s.filesService.GetUploader().UploadFile(tmpfilepath, uploadPath)
+	playbookURL, err := s.FilesService.GetUploader().UploadFile(tmpfilepath, uploadPath)
 	if err != nil {
 		log.Errorf("Error uploading file to S3: %s ", err.Error())
 		return "", err
@@ -211,6 +240,7 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 	return playbookURL, nil
 }
 
+// GetUpdateTransactionsForDevice returns all update transactions for a given device
 func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error) {
 	var updates []models.UpdateTransaction
 	result := db.DB.
