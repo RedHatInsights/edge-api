@@ -652,7 +652,6 @@ paths:
                 $ref: '#/components/schemas/v1.InternalServerError'
           description: There was an internal server error.
       summary: Get third party repository by id.
-  /thirdpartyrepo/{ID}/update:
     put:
       operationId: CreateThirdPartyRepoUpdate
       parameters:
@@ -689,7 +688,6 @@ paths:
                 $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
       summary: Creates an Update for third party repository  
-  /thirdpartyrepo/{ID}/delete:
     delete:
       operationId: DeleteThirdPartyRepoByID
       parameters:
