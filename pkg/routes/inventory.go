@@ -40,26 +40,6 @@ const inventoryKey inventoryTypeKey = iota
 func InventoyCtx(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// var per_page string
-		// var page string
-		// if per_page = r.URL.Query().Get("per_page"); per_page != "" {
-		// 	_, err := strconv.Atoi(per_page)
-		// 	if err != nil {
-		// 		err := errors.NewBadRequest(err.Error())
-		// 		w.WriteHeader(err.GetStatus())
-		// 		json.NewEncoder(w).Encode(&err)
-		// 		return
-		// 	}
-		// }
-		// if page = r.URL.Query().Get("page"); page != "" {
-		// 	_, err := strconv.Atoi(page)
-		// 	if err != nil {
-		// 		err := errors.NewBadRequest(err.Error())
-		// 		w.WriteHeader(err.GetStatus())
-		// 		json.NewEncoder(w).Encode(&err)
-		// 		return
-		// 	}
-		// }
 
 		var parameters inventory.InventoryParams
 
@@ -69,15 +49,7 @@ func InventoyCtx(next http.Handler) http.Handler {
 		parameters.OrderBy = r.URL.Query().Get("order_by")
 		parameters.OrderHow = r.URL.Query().Get("order_how")
 		parameters.HostnameOrId = r.URL.Query().Get("hostname_or_id")
-
-		// parameters.PerPage = per_page
-		// parameters.Page = page
-		// parameters.OrderBy = order_by
-		// parameters.OrderHow = order_how
-		fmt.Printf("**************************************\n")
-		fmt.Printf("parameters %v\n", parameters)
-		fmt.Printf("**************************************\n")
-
+		parameters.DeviceStatus = r.URL.Query().Get("device_status")
 		ctx := context.WithValue(r.Context(), inventoryKey, &parameters)
 		next.ServeHTTP(w, r.WithContext(ctx))
 
@@ -92,8 +64,6 @@ func GetInventory(w http.ResponseWriter, r *http.Request) {
 	client := inventory.InitClient(ctx)
 	var InventoryData InventoryData
 	var results []InventoryResponse
-	//IF PARAMS FROM CONTEXT COMES WITH VALUE, SET AS PARAM
-	//client.FilterParams
 	inventory, err := client.ReturnDevices(param)
 	if err != nil || inventory.Count == 0 {
 		err := errors.NewNotFound(fmt.Sprintf("No devices found "))
@@ -101,7 +71,7 @@ func GetInventory(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	results = getUpdateAvailableInfo(r, inventory)
+	results = GetUpdateAvailableInfo(r, inventory)
 
 	InventoryData.Count = inventory.Count
 	InventoryData.Total = inventory.Total
@@ -110,12 +80,13 @@ func GetInventory(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(InventoryData)
 }
 
-func getUpdateAvailableInfo(r *http.Request, inventory inventory.Response) (IvtResponse []InventoryResponse) {
+func GetUpdateAvailableInfo(r *http.Request, inventoryResp inventory.Response) (IvtResponse []InventoryResponse) {
 	var ivt []InventoryResponse
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	deviceService := services.DeviceService
-
-	for _, device := range inventory.Result {
+	ctx := r.Context()
+	param := ctx.Value(inventoryKey).(*inventory.InventoryParams)
+	for _, device := range inventoryResp.Result {
 		var i InventoryResponse
 		imageInfo, err := deviceService.GetDeviceImageInfo(device.ID)
 		i.ID = device.ID
@@ -128,7 +99,13 @@ func getUpdateAvailableInfo(r *http.Request, inventory inventory.Response) (IvtR
 		} else if imageInfo != nil {
 			i.ImageInfo = imageInfo
 		}
-		ivt = append(ivt, i)
+		if param.DeviceStatus == "update_availabe" && imageInfo.UpdatesAvailable != nil {
+			ivt = append(ivt, i)
+		} else if param.DeviceStatus == "running" && imageInfo.UpdatesAvailable == nil {
+			ivt = append(ivt, i)
+		} else if param.DeviceStatus == "" {
+			ivt = append(ivt, i)
+		}
 	}
 	return ivt
 }

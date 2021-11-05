@@ -74,6 +74,7 @@ type InventoryParams struct {
 	OrderBy      string
 	OrderHow     string
 	HostnameOrId string
+	DeviceStatus string
 }
 
 func (c *Client) BuildURL(parameters *InventoryParams) string {
@@ -88,11 +89,21 @@ func (c *Client) BuildURL(parameters *InventoryParams) string {
 	params := url.Values{}
 	params.Add("filter[system_profile][host_type]", "edge")
 	params.Add("fields[system_profile]", fmt.Sprintf("%s=%s", "fields[system_profile]", Fields))
-	params.Add("per_page", parameters.PerPage)
-	params.Add("page", parameters.Page)
-	params.Add("order_by", parameters.OrderBy)
-	params.Add("order_how", parameters.OrderHow)
-	// params.Add("page", parameters.HostnameOrId)
+	if parameters.PerPage != "" {
+		params.Add("per_page", parameters.PerPage)
+	}
+	if parameters.Page != "" {
+		params.Add("page", parameters.Page)
+	}
+	if parameters.OrderBy != "" {
+		params.Add("order_by", parameters.OrderBy)
+	}
+	if parameters.OrderHow != "" {
+		params.Add("order_how", parameters.OrderHow)
+	}
+	if parameters.HostnameOrId != "" {
+		params.Add("hostname_or_id", parameters.HostnameOrId)
+	}
 	Url.RawQuery = params.Encode()
 
 	return Url.String()
