@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gmeasure"
 
-	ovde "github.com/redhatinsights/edge-api/pkg/ownershipvoucher"
+	ovde "github.com/redhatinsights/edge-api/pkg/services/ownershipvoucher"
 )
 
 var (
