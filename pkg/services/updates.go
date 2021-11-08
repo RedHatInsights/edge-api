@@ -31,17 +31,19 @@ type UpdateServiceInterface interface {
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
 func NewUpdateService(ctx context.Context) UpdateServiceInterface {
 	return &UpdateService{
-		Context:      ctx,
-		FilesService: NewFilesService(),
-		RepoBuilder:  NewRepoBuilder(ctx),
+		Context:       ctx,
+		FilesService:  NewFilesService(),
+		RepoBuilder:   NewRepoBuilder(ctx),
+		WaitForReboot: time.Minute * 5,
 	}
 }
 
 // UpdateService is the main implementation of a UpdateServiceInterface
 type UpdateService struct {
-	Context      context.Context
-	RepoBuilder  RepoBuilderInterface
-	FilesService FilesService
+	Context       context.Context
+	RepoBuilder   RepoBuilderInterface
+	FilesService  FilesService
+	WaitForReboot time.Duration
 }
 
 type playbooks struct {
@@ -312,7 +314,7 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 		return nil
 	} else if e.Payload.Status == PlaybookStatusSuccess {
 		log.Debug("The playbook was applied sucessfully. Waiting two minutes for reboot before setting status to success.")
-		time.Sleep(time.Minute * 2)
+		time.Sleep(s.WaitForReboot)
 	}
 
 	var dispatchRecord models.DispatchRecord

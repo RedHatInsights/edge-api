@@ -88,8 +88,9 @@ var _ = Describe("UpdateService Basic functions", func() {
 			defer ctrl.Finish()
 			mockRepoBuilder = mock_services.NewMockRepoBuilderInterface(ctrl)
 			updateService = &services.UpdateService{
-				Context:     context.Background(),
-				RepoBuilder: mockRepoBuilder,
+				Context:       context.Background(),
+				RepoBuilder:   mockRepoBuilder,
+				WaitForReboot: 0,
 			}
 		})
 		Context("from the beginning", func() {
