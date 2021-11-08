@@ -15,6 +15,7 @@ import (
 
 // MakeDevicesRouter adds support for operations on update
 func MakeDevicesRouter(sub chi.Router) {
+	sub.With(InventoyCtx).Get("/inventory", GetInventory)
 	sub.Route("/{DeviceUUID}", func(r chi.Router) {
 		r.Use(DeviceCtx)
 		r.Get("/", GetDevice)

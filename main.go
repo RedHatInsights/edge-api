@@ -94,7 +94,6 @@ func main() {
 		s.Route("/updates", routes.MakeUpdatesRouter)
 		s.Route("/image-sets", routes.MakeImageSetsRouter)
 		s.Route("/devices", routes.MakeDevicesRouter)
-		s.Route("/inventory", routes.MakeInventoryRouter)
 		s.Route("/thirdpartyrepo", routes.MakeThirdPartyRepoRouter)
 	})
 
