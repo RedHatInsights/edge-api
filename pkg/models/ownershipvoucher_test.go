@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 
 	"github.com/redhatinsights/edge-api/pkg/models"
-	ovde "github.com/redhatinsights/edge-api/pkg/ownershipvoucher"
+	ovde "github.com/redhatinsights/edge-api/pkg/services/ownershipvoucher"
 )
 
 var (
