@@ -117,6 +117,10 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 				"updateID": update.ID,
 			}).Info("Captured signal marking update as error")
 			update.Status = models.UpdateStatusError
+			tx := db.DB.Save(update)
+			if tx.Error != nil {
+				log.Fatal("Error saving update: %s ", tx.Error.Error())
+			}
 			WaitGroup.Done()
 		}
 	}(update)
