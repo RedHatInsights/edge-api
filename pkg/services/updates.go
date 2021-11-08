@@ -90,7 +90,7 @@ type PlaybookDispatcherEvent struct {
 // CreateUpdate is the function that creates an update transaction
 func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error) {
 	var update *models.UpdateTransaction
-	db.DB.First(&update, id)
+	db.DB.Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").Find(&update, id)
 	update.Status = models.UpdateStatusBuilding
 	db.DB.Save(&update)
 
