@@ -66,7 +66,8 @@ type TemplateRemoteInfo struct {
 	UpdateTransactionID uint
 }
 
-type PlaybookDispatcherPayload struct {
+// PlaybookDispatcherEventPayload belongs to PlaybookDispatcherEvent
+type PlaybookDispatcherEventPayload struct {
 	ID            string `json:"id"`
 	Account       string `json:"account"`
 	Recipient     string `json:"recipient"`
@@ -82,15 +83,17 @@ type PlaybookDispatcherPayload struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+// PlaybookDispatcherEvent is the event that gets sent to the Kafka broker when a update finishes
 type PlaybookDispatcherEvent struct {
-	EventType string                    `json:"event_type"`
-	Payload   PlaybookDispatcherPayload `json:"payload"`
+	EventType string                         `json:"event_type"`
+	Payload   PlaybookDispatcherEventPayload `json:"payload"`
 }
 
 // CreateUpdate is the function that creates an update transaction
 func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error) {
 	var update *models.UpdateTransaction
-	db.DB.First(&update, id)
+	db.DB.Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").Find(&update, id)
 	update.Status = models.UpdateStatusBuilding
 	db.DB.Save(&update)
 

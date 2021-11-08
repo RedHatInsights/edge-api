@@ -135,7 +135,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			db.DB.Create(u)
 
 			event := &services.PlaybookDispatcherEvent{
-				Payload: services.PlaybookDispatcherPayload{
+				Payload: services.PlaybookDispatcherEventPayload{
 					ID:     d.PlaybookDispatcherID,
 					Status: services.PlaybookStatusSuccess,
 				},
@@ -172,7 +172,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		It("should give error when record is not found", func() {
 			event := &services.PlaybookDispatcherEvent{
-				Payload: services.PlaybookDispatcherPayload{
+				Payload: services.PlaybookDispatcherEventPayload{
 					ID:     faker.UUIDHyphenated(),
 					Status: services.PlaybookStatusSuccess,
 				},
@@ -188,7 +188,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			}
 			db.DB.Create(d)
 			event := &services.PlaybookDispatcherEvent{
-				Payload: services.PlaybookDispatcherPayload{
+				Payload: services.PlaybookDispatcherEventPayload{
 					ID:     d.PlaybookDispatcherID,
 					Status: services.PlaybookStatusSuccess,
 				},
