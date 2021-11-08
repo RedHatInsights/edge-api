@@ -119,7 +119,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			update.Status = models.UpdateStatusError
 			tx := db.DB.Save(update)
 			if tx.Error != nil {
-				log.Fatal("Error saving update: %s ", tx.Error.Error())
+				log.Fatalf("Error saving update: %s", tx.Error.Error())
 			}
 			WaitGroup.Done()
 		}
