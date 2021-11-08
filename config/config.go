@@ -30,6 +30,9 @@ type EdgeConfig struct {
 	EdgeAPIBaseURL           string
 	UploadWorkers            int
 	KafkaConfig              *clowder.KafkaConfig
+	FDOHostURL               string
+	FDOApiVersion            string
+	FDOAuthorizationSecret   string
 }
 
 type dbConfig struct {
@@ -87,6 +90,9 @@ func Init() {
 	options.SetDefault("TemplatesPath", "/usr/local/etc/")
 	options.SetDefault("EdgeAPIBaseURL", "http://localhost:3000")
 	options.SetDefault("UploadWorkers", 100)
+	options.SetDefault("FDOHostURL", "fdo.redhat.com")
+	options.SetDefault("FDOApiVersion", "v1")
+	options.SetDefault("FDOAuthorizationSecret", "lorum ipsum")
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
@@ -118,9 +124,12 @@ func Init() {
 			PSK:    options.GetString("PlaybookDispatcherPSK"),
 			Status: options.GetString("PlaybookDispatcherStatusURL"),
 		},
-		TemplatesPath:  options.GetString("TemplatesPath"),
-		EdgeAPIBaseURL: options.GetString("EdgeAPIBaseURL"),
-		UploadWorkers:  options.GetInt("UploadWorkers"),
+		TemplatesPath:          options.GetString("TemplatesPath"),
+		EdgeAPIBaseURL:         options.GetString("EdgeAPIBaseURL"),
+		UploadWorkers:          options.GetInt("UploadWorkers"),
+		FDOHostURL:             options.GetString("FDOHostURL"),
+		FDOApiVersion:          options.GetString("FDOApiVersion"),
+		FDOAuthorizationSecret: options.GetString("FDOAuthorizationSecret"),
 	}
 
 	database := options.GetString("database")
