@@ -31,17 +31,19 @@ type UpdateServiceInterface interface {
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
 func NewUpdateService(ctx context.Context) UpdateServiceInterface {
 	return &UpdateService{
-		Context:      ctx,
-		FilesService: NewFilesService(),
-		RepoBuilder:  NewRepoBuilder(ctx),
+		Context:       ctx,
+		FilesService:  NewFilesService(),
+		RepoBuilder:   NewRepoBuilder(ctx),
+		WaitForReboot: time.Minute * 5,
 	}
 }
 
 // UpdateService is the main implementation of a UpdateServiceInterface
 type UpdateService struct {
-	Context      context.Context
-	RepoBuilder  RepoBuilderInterface
-	FilesService FilesService
+	Context       context.Context
+	RepoBuilder   RepoBuilderInterface
+	FilesService  FilesService
+	WaitForReboot time.Duration
 }
 
 type playbooks struct {
@@ -152,12 +154,6 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	// 3. Loop through all devices in UpdateTransaction
 	dispatchRecords := update.DispatchRecords
 	for _, device := range update.Devices {
-		var updateDevice *models.Device
-		result := db.DB.Where("uuid = ?", device.UUID).First(&updateDevice)
-		if err != nil {
-			log.Errorf("Error on GetDeviceByUUID: %#v ", result.Error.Error())
-			return nil, result.Error
-		}
 		// Create new &DispatcherPayload{}
 		payloadDispatcher := playbookdispatcher.DispatcherPayload{
 			Recipient:   device.RHCClientID,
@@ -170,13 +166,15 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 
 		if err != nil {
 			log.Errorf("Error on playbook-dispatcher execution: %#v ", err)
+			update.Status = models.UpdateStatusError
+			db.DB.Save(update)
 			return nil, err
 		}
 		for _, excPlaybook := range exc {
 			if excPlaybook.StatusCode == http.StatusCreated {
 				device.Connected = true
 				dispatchRecord := &models.DispatchRecord{
-					Device:               updateDevice,
+					Device:               &device,
 					PlaybookURL:          playbookURL,
 					Status:               models.DispatchRecordStatusCreated,
 					PlaybookDispatcherID: excPlaybook.PlaybookDispatcherID,
@@ -185,13 +183,13 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			} else {
 				device.Connected = false
 				dispatchRecord := &models.DispatchRecord{
-					Device:      updateDevice,
+					Device:      &device,
 					PlaybookURL: playbookURL,
 					Status:      models.DispatchRecordStatusError,
 				}
 				dispatchRecords = append(dispatchRecords, *dispatchRecord)
 			}
-
+			db.DB.Save(&device)
 		}
 		update.DispatchRecords = dispatchRecords
 		tx := db.DB.Save(&update)
@@ -312,8 +310,11 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 		"Status":               e.Payload.Status,
 	})
 	if e.Payload.Status == PlaybookStatusRunning {
-		log.Debug("Playbook is running")
+		log.Debug("Playbook is running - waiting for next messages")
 		return nil
+	} else if e.Payload.Status == PlaybookStatusSuccess {
+		log.Debug("The playbook was applied sucessfully. Waiting two minutes for reboot before setting status to success.")
+		time.Sleep(s.WaitForReboot)
 	}
 
 	var dispatchRecord models.DispatchRecord
@@ -325,6 +326,7 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 	if e.Payload.Status == PlaybookStatusFailure || e.Payload.Status == PlaybookStatusTimeout {
 		dispatchRecord.Status = models.DispatchRecordStatusError
 	} else if e.Payload.Status == PlaybookStatusSuccess {
+		// TODO: We might wanna check if it's really success by checking the running hash on the device here
 		dispatchRecord.Status = models.DispatchRecordStatusComplete
 	} else if e.Payload.Status == PlaybookStatusRunning {
 		dispatchRecord.Status = models.DispatchRecordStatusRunning
