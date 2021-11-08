@@ -117,6 +117,10 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 				"updateID": update.ID,
 			}).Info("Captured signal marking update as error")
 			update.Status = models.UpdateStatusError
+			tx := db.DB.Save(update)
+			if tx.Error != nil {
+				log.Fatalf("Error saving update: %s", tx.Error.Error())
+			}
 			WaitGroup.Done()
 		}
 	}(update)
@@ -165,7 +169,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		exc, err := client.ExecuteDispatcher(payloadDispatcher)
 
 		if err != nil {
-			log.Errorf("Error on playbook-dispatcher-executuin: %#v ", err)
+			log.Errorf("Error on playbook-dispatcher execution: %#v ", err)
 			return nil, err
 		}
 		for _, excPlaybook := range exc {
@@ -190,6 +194,11 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 
 		}
 		update.DispatchRecords = dispatchRecords
+		tx := db.DB.Save(&update)
+		if tx.Error != nil {
+			log.Errorf("Error saving update: %s ", tx.Error.Error())
+			return nil, err
+		}
 	}
 
 	log.Infof("Update was finished for :: %d", update.ID)
