@@ -79,6 +79,7 @@ func ImageSetCtx(next http.Handler) http.Handler {
 				return
 			}
 			result := db.DB.Where("account = ? and Image_sets.id = ?", account, imageSetID).Find(&imageSet)
+
 			if result.Error != nil {
 				err := errors.NewNotFound(result.Error.Error())
 				w.WriteHeader(err.GetStatus())
@@ -86,6 +87,7 @@ func ImageSetCtx(next http.Handler) http.Handler {
 				return
 			}
 			db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
+			db.DB.Where("id = ?", &imageSet.Images[len(imageSet.Images)-1].InstallerID).Find(&imageSet.Images[len(imageSet.Images)-1].Installer)
 			ctx := context.WithValue(r.Context(), imageSetKey, &imageSet)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
