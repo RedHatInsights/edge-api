@@ -10,6 +10,12 @@ objects:
     name: psk-playbook-dispatcher
   stringData:
     key: ${PSK_DISPATCHER}
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: fdo-authorization-secret
+  stringData:
+    password: ${FDO_AUTH_SECRET}
 - apiVersion: cloud.redhat.com/v1alpha1
   kind: ClowdApp
   metadata:
@@ -66,6 +72,15 @@ objects:
           value: ${INVENTORYURL}
         - name: PLAYBOOKDISPATCHERURL
           value: ${PLAYBOOKDISPATCHERURL}
+        - name: FDO_HOST_URL
+          value: ${FDO_HOST_URL}
+        - name: FDO_API_VERSION
+          value: ${FDO_API_VERSION}
+        - name: FDO_AUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: password
+              name: fdo-authorization-secret
         - name: PLAYBOOKDISPATCHERPSK
           valueFrom:
             secretKeyRef:
@@ -138,3 +153,7 @@ parameters:
   value: "https://cloud.stage.redhat.com"
 - name: UPLOADWORKERS
   value: "100"
+- name: FDO_HOST_URL
+  value: "https://fdo.redhat.com"
+- name: FDO_API_VERSION
+  value: "v1"

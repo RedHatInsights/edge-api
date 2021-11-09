@@ -90,7 +90,7 @@ func Init() {
 	options.SetDefault("TemplatesPath", "/usr/local/etc/")
 	options.SetDefault("EdgeAPIBaseURL", "http://localhost:3000")
 	options.SetDefault("UploadWorkers", 100)
-	options.SetDefault("FDOHostURL", "fdo.redhat.com")
+	options.SetDefault("FDOHostURL", "https://fdo.redhat.com")
 	options.SetDefault("FDOApiVersion", "v1")
 	options.SetDefault("FDOAuthorizationSecret", "lorum ipsum")
 	options.AutomaticEnv()
