@@ -1,6 +1,5 @@
 package ownershipvoucher
 
-// libfdo_data will be shipped with RHEL
 // #cgo LDFLAGS: -lfdo_data
 // #include "fdo_data.h"
 import "C"
