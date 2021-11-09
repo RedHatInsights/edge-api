@@ -12,6 +12,7 @@ import (
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients"
+	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
@@ -237,11 +238,29 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 	}
 	cr, err := c.compose(req)
 	if err != nil {
+		image.Installer.Status = models.ImageStatusError
+		image.Status = models.ImageStatusError
+		tx := db.DB.Save(&image)
+		if tx.Error != nil {
+			log.Error(tx.Error)
+		}
+		tx = db.DB.Save(&image.Installer)
+		if tx.Error != nil {
+			log.Error(tx.Error)
+		}
 		return nil, err
 	}
 	image.Installer.ComposeJobID = cr.ID
 	image.Installer.Status = models.ImageStatusBuilding
 	image.Status = models.ImageStatusBuilding
+	tx := db.DB.Save(&image)
+	if tx.Error != nil {
+		log.Error(tx.Error)
+	}
+	tx = db.DB.Save(&image.Installer)
+	if tx.Error != nil {
+		log.Error(tx.Error)
+	}
 	return image, nil
 }
 

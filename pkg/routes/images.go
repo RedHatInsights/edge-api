@@ -381,41 +381,16 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 
 	tx := db.DB.Save(&image)
 	if tx.Error != nil {
-		log.Error(tx.Error)
+		log.Fatal(tx.Error)
 		err := errors.NewInternalServerError()
 		err.SetTitle("Failed saving image status")
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	repo, err := services.RepoService.GetRepoByCommitID(image.CommitID)
-	if err != nil {
-		err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
-		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
 	client := imagebuilder.InitClient(r.Context(), services.Log)
-	image, err = client.ComposeInstaller(repo, image)
+	image, err := client.ComposeInstaller(image)
 	if err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
-	image.Installer.Status = models.ImageStatusBuilding
-	image.Status = models.ImageStatusBuilding
-	tx = db.DB.Save(&image)
-	if tx.Error != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
-	tx = db.DB.Save(&image.Installer)
-	if tx.Error != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())

@@ -369,32 +369,34 @@ func (s *ImageService) CreateRepoForImage(i *models.Image) (*models.Repo, error)
 
 // SetErrorStatusOnImage is a helper functions that sets the error status on images
 func (s *ImageService) SetErrorStatusOnImage(err error, i *models.Image) {
-	i.Status = models.ImageStatusError
-	tx := db.DB.Save(i)
-	s.log.Debug("Image saved with error status")
-	if tx.Error != nil {
-		s.log.Error(tx.Error)
-		panic(tx.Error)
-	}
-	if i.Commit != nil {
-		i.Commit.Status = models.ImageStatusError
-		tx := db.DB.Save(i.Commit)
+	if i.Status != models.ImageStatusError {
+		i.Status = models.ImageStatusError
+		tx := db.DB.Save(i)
+		s.log.Debug("Image saved with error status")
 		if tx.Error != nil {
 			s.log.Error(tx.Error)
 			panic(tx.Error)
 		}
-	}
-	if i.Installer != nil {
-		i.Installer.Status = models.ImageStatusError
-		tx := db.DB.Save(i.Installer)
-		if tx.Error != nil {
-			s.log.Error(tx.Error)
-			panic(tx.Error)
+		if i.Commit != nil {
+			i.Commit.Status = models.ImageStatusError
+			tx := db.DB.Save(i.Commit)
+			if tx.Error != nil {
+				s.log.Error(tx.Error)
+				panic(tx.Error)
+			}
 		}
-	}
-	if err != nil {
-		s.log.Error(err)
-		panic(err)
+		if i.Installer != nil {
+			i.Installer.Status = models.ImageStatusError
+			tx := db.DB.Save(i.Installer)
+			if tx.Error != nil {
+				s.log.Error(tx.Error)
+				panic(tx.Error)
+			}
+		}
+		if err != nil {
+			s.log.Error(err)
+			panic(err)
+		}
 	}
 }
 
