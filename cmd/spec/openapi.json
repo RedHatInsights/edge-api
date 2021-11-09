@@ -2845,45 +2845,6 @@
       }
     },
     "/thirdpartyrepo/{ID}": {
-      "get": {
-        "operationId": "GetThirdPartyRepoByID",
-        "parameters": [
-          {
-            "description": "An unique existing third party repository id.",
-            "in": "path",
-            "name": "ID",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.CreateThirdPartyRepo"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.InternalServerError"
-                }
-              }
-            },
-            "description": "There was an internal server error."
-          }
-        },
-        "summary": "Get third party repository by id."
-      }
-    },
-    "/thirdpartyrepo/{ID}/delete": {
       "delete": {
         "operationId": "DeleteThirdPartyRepoByID",
         "parameters": [
@@ -2920,9 +2881,44 @@
           }
         },
         "summary": "Delete third party repository using id."
-      }
-    },
-    "/thirdpartyrepo/{ID}/update": {
+      },
+      "get": {
+        "operationId": "GetThirdPartyRepoByID",
+        "parameters": [
+          {
+            "description": "An unique existing third party repository id.",
+            "in": "path",
+            "name": "ID",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.CreateThirdPartyRepo"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Get third party repository by id."
+      },
       "put": {
         "operationId": "CreateThirdPartyRepoUpdate",
         "parameters": [

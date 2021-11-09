@@ -21,7 +21,9 @@ type ThirdPartyRepoServiceInterface interface {
 
 // NewThirdPartyRepoService gives a instance of the main implementation of a ThirdPartyRepoServiceInterface
 func NewThirdPartyRepoService(ctx context.Context) ThirdPartyRepoServiceInterface {
-	return &ThirdPartyRepoService{}
+	return &ThirdPartyRepoService{
+		ctx:	ctx,
+	}
 }
 
 // ThirdPartyRepoService is the main implementation of a ThirdPartyRepoServiceInterface

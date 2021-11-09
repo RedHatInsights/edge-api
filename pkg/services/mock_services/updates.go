@@ -79,3 +79,17 @@ func (mr *MockUpdateServiceInterfaceMockRecorder) GetUpdateTransactionsForDevice
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUpdateTransactionsForDevice", reflect.TypeOf((*MockUpdateServiceInterface)(nil).GetUpdateTransactionsForDevice), device)
 }
+
+// ProcessPlaybookDispatcherRunEvent mocks base method.
+func (m *MockUpdateServiceInterface) ProcessPlaybookDispatcherRunEvent(message []byte) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProcessPlaybookDispatcherRunEvent", message)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ProcessPlaybookDispatcherRunEvent indicates an expected call of ProcessPlaybookDispatcherRunEvent.
+func (mr *MockUpdateServiceInterfaceMockRecorder) ProcessPlaybookDispatcherRunEvent(message interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessPlaybookDispatcherRunEvent", reflect.TypeOf((*MockUpdateServiceInterface)(nil).ProcessPlaybookDispatcherRunEvent), message)
+}

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 	"os/signal"
 	"syscall"
 	"text/template"
+	"time"
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
@@ -23,22 +25,25 @@ type UpdateServiceInterface interface {
 	CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error)
 	GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error)
+	ProcessPlaybookDispatcherRunEvent(message []byte) error
 }
 
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
 func NewUpdateService(ctx context.Context) UpdateServiceInterface {
 	return &UpdateService{
-		Context:      ctx,
-		FilesService: NewFilesService(),
-		RepoBuilder:  NewRepoBuilder(ctx, log.NewEntry(log.StandardLogger())),
+		Context:       ctx,
+		FilesService:  NewFilesService(),
+		RepoBuilder:   NewRepoBuilder(ctx, log.NewEntry(log.StandardLogger())),
+		WaitForReboot: time.Minute * 5,
 	}
 }
 
 // UpdateService is the main implementation of a UpdateServiceInterface
 type UpdateService struct {
-	Context      context.Context
-	RepoBuilder  RepoBuilderInterface
-	FilesService FilesService
+	Context       context.Context
+	RepoBuilder   RepoBuilderInterface
+	FilesService  FilesService
+	WaitForReboot time.Duration
 }
 
 type playbooks struct {
@@ -63,10 +68,34 @@ type TemplateRemoteInfo struct {
 	UpdateTransactionID uint
 }
 
+// PlaybookDispatcherEventPayload belongs to PlaybookDispatcherEvent
+type PlaybookDispatcherEventPayload struct {
+	ID            string `json:"id"`
+	Account       string `json:"account"`
+	Recipient     string `json:"recipient"`
+	CorrelationID string `json:"correlation_id"`
+	Service       string `json:"service"`
+	URL           string `json:"url"`
+	Labels        struct {
+		ID      string `json:"id"`
+		StateID string `json:"state_id"`
+	} `json:"labels"`
+	Status    string    `json:"status"`
+	Timeout   int       `json:"timeout"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// PlaybookDispatcherEvent is the event that gets sent to the Kafka broker when a update finishes
+type PlaybookDispatcherEvent struct {
+	EventType string                         `json:"event_type"`
+	Payload   PlaybookDispatcherEventPayload `json:"payload"`
+}
+
 // CreateUpdate is the function that creates an update transaction
 func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error) {
 	var update *models.UpdateTransaction
-	db.DB.First(&update, id)
+	db.DB.Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").Find(&update, id)
 	update.Status = models.UpdateStatusBuilding
 	db.DB.Save(&update)
 
@@ -90,6 +119,10 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 				"updateID": update.ID,
 			}).Info("Captured signal marking update as error")
 			update.Status = models.UpdateStatusError
+			tx := db.DB.Save(update)
+			if tx.Error != nil {
+				log.Fatalf("Error saving update: %s", tx.Error.Error())
+			}
 			WaitGroup.Done()
 		}
 	}(update)
@@ -121,12 +154,6 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	// 3. Loop through all devices in UpdateTransaction
 	dispatchRecords := update.DispatchRecords
 	for _, device := range update.Devices {
-		var updateDevice *models.Device
-		result := db.DB.Where("uuid = ?", device.UUID).First(&updateDevice)
-		if err != nil {
-			log.Errorf("Error on GetDeviceByUUID: %#v ", result.Error.Error())
-			return nil, result.Error
-		}
 		// Create new &DispatcherPayload{}
 		payloadDispatcher := playbookdispatcher.DispatcherPayload{
 			Recipient:   device.RHCClientID,
@@ -138,14 +165,16 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		exc, err := client.ExecuteDispatcher(payloadDispatcher)
 
 		if err != nil {
-			log.Errorf("Error on playbook-dispatcher-executuin: %#v ", err)
+			log.Errorf("Error on playbook-dispatcher execution: %#v ", err)
+			update.Status = models.UpdateStatusError
+			db.DB.Save(update)
 			return nil, err
 		}
 		for _, excPlaybook := range exc {
 			if excPlaybook.StatusCode == http.StatusCreated {
 				device.Connected = true
 				dispatchRecord := &models.DispatchRecord{
-					Device:               updateDevice,
+					Device:               &device,
 					PlaybookURL:          playbookURL,
 					Status:               models.DispatchRecordStatusCreated,
 					PlaybookDispatcherID: excPlaybook.PlaybookDispatcherID,
@@ -154,20 +183,21 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			} else {
 				device.Connected = false
 				dispatchRecord := &models.DispatchRecord{
-					Device:      updateDevice,
+					Device:      &device,
 					PlaybookURL: playbookURL,
 					Status:      models.DispatchRecordStatusError,
 				}
 				dispatchRecords = append(dispatchRecords, *dispatchRecord)
 			}
-
+			db.DB.Save(&device)
 		}
 		update.DispatchRecords = dispatchRecords
+		tx := db.DB.Save(&update)
+		if tx.Error != nil {
+			log.Errorf("Error saving update: %s ", tx.Error.Error())
+			return nil, err
+		}
 	}
-	// TODO: This has to change to be after the reboot if new ostree commit == desired commit
-	update.Status = models.UpdateStatusSuccess
-	db.DB.Save(update)
-	log.Infof("Repobuild::ends: update record %#v ", update)
 
 	log.Infof("Update was finished for :: %d", update.ID)
 	return update, nil
@@ -254,4 +284,90 @@ func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*
 		return nil, result.Error
 	}
 	return &updates, nil
+}
+
+// Status defined by https://github.com/RedHatInsights/playbook-dispatcher/blob/master/schema/run.event.yaml
+const (
+	// PlaybookStatusRunning is the status when a playbook is still running
+	PlaybookStatusRunning = "running"
+	// PlaybookStatusSuccess is the status when a playbook has run sucessfully
+	PlaybookStatusSuccess = "success"
+	// PlaybookStatusFailure is the status when a playbook execution fails
+	PlaybookStatusFailure = "failure"
+	// PlaybookStatusFailure is the status when a playbook execution times out
+	PlaybookStatusTimeout = "timeout"
+)
+
+// ProcessPlaybookDispatcherRunEvent is the method that processes messages from playbook dispatcher to set update statuses
+func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error {
+	var e *PlaybookDispatcherEvent
+	err := json.Unmarshal(message, &e)
+	if err != nil {
+		return err
+	}
+	log := log.WithFields(log.Fields{
+		"PlaybookDispatcherID": e.Payload.ID,
+		"Status":               e.Payload.Status,
+	})
+	if e.Payload.Status == PlaybookStatusRunning {
+		log.Debug("Playbook is running - waiting for next messages")
+		return nil
+	} else if e.Payload.Status == PlaybookStatusSuccess {
+		log.Debug("The playbook was applied sucessfully. Waiting two minutes for reboot before setting status to success.")
+		time.Sleep(s.WaitForReboot)
+	}
+
+	var dispatchRecord models.DispatchRecord
+	result := db.DB.Where(&models.DispatchRecord{PlaybookDispatcherID: e.Payload.ID}).First(&dispatchRecord)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if e.Payload.Status == PlaybookStatusFailure || e.Payload.Status == PlaybookStatusTimeout {
+		dispatchRecord.Status = models.DispatchRecordStatusError
+	} else if e.Payload.Status == PlaybookStatusSuccess {
+		// TODO: We might wanna check if it's really success by checking the running hash on the device here
+		dispatchRecord.Status = models.DispatchRecordStatusComplete
+	} else if e.Payload.Status == PlaybookStatusRunning {
+		dispatchRecord.Status = models.DispatchRecordStatusRunning
+	} else {
+		log.Fatal("Playbook status is not on the json schema for this event")
+	}
+	result = db.DB.Save(&dispatchRecord)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return s.SetUpdateStatusBasedOnDispatchRecord(dispatchRecord)
+}
+
+// SetUpdateStatusBasedOnDispatchRecord is the function that, given a dispatch record, finds the update transaction related to and update its status if necessary
+func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord models.DispatchRecord) error {
+	var update models.UpdateTransaction
+	result := db.DB.
+		Table("update_transactions").
+		Joins(
+			`JOIN updatetransaction_dispatchrecords ON update_transactions.id = updatetransaction_dispatchrecords.update_transaction_id`).
+		Where(`updatetransaction_dispatchrecords.dispatch_record_id = ?`,
+			dispatchRecord.ID,
+		).First(&update)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	allSuccess := true
+	for _, d := range update.DispatchRecords {
+		if d.Status != models.DispatchRecordStatusComplete {
+			allSuccess = false
+		}
+		if d.Status == models.DispatchRecordStatusError {
+			update.Status = models.UpdateStatusError
+			break
+		}
+	}
+	if allSuccess {
+		update.Status = models.UpdateStatusSuccess
+	}
+	result = db.DB.Save(&update)
+	return result.Error
 }

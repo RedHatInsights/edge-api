@@ -26,8 +26,8 @@ func MakeThirdPartyRepoRouter(sub chi.Router) {
 	sub.Route("/{ID}", func(r chi.Router) {
 		r.Use(ThirdPartyRepoCtx)
 		r.Get("/", GetThirdPartyRepoByID)
-		r.Put("/update", CreateThirdPartyRepoUpdate)
-		r.Delete("/delete", DeleteThirdPartyRepoByID)
+		r.Put("/", CreateThirdPartyRepoUpdate)
+		r.Delete("/", DeleteThirdPartyRepoByID)
 	})
 }
 

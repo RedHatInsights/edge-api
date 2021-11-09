@@ -49,7 +49,7 @@ func NewRepoBuilder(ctx context.Context, log *log.Entry) RepoBuilderInterface {
 // with static deltas generated between them all
 func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, error) {
 	var update *models.UpdateTransaction
-	db.DB.First(&update, id)
+	db.DB.Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").Find(&update, id)
 
 	log.Infof("Repobuilder::BuildUpdateRepo:: Begin")
 	if update == nil {

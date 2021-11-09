@@ -2,8 +2,8 @@ package services_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"fmt"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
@@ -88,8 +88,9 @@ var _ = Describe("UpdateService Basic functions", func() {
 			defer ctrl.Finish()
 			mockRepoBuilder = mock_services.NewMockRepoBuilderInterface(ctrl)
 			updateService = &services.UpdateService{
-				Context:     context.Background(),
-				RepoBuilder: mockRepoBuilder,
+				Context:       context.Background(),
+				RepoBuilder:   mockRepoBuilder,
+				WaitForReboot: 0,
 			}
 		})
 		Context("from the beginning", func() {
@@ -104,8 +105,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				},
 				Status: models.UpdateStatusBuilding,
 			}
-			tx := db.DB.Create(&update)
-			fmt.Println(tx.Error)
+			db.DB.Create(&update)
 			It("should return error when can't build repo", func() {
 				mockRepoBuilder.EXPECT().BuildUpdateRepo(update.ID).Return(nil, errors.New("error building repo"))
 				actual, err := updateService.CreateUpdate(update.ID)
@@ -113,6 +113,90 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Expect(actual).To(BeNil())
 				Expect(err).To(HaveOccurred())
 			})
+		})
+	})
+	Describe("playbook dispatcher event handling", func() {
+		var updateService services.UpdateServiceInterface
+
+		BeforeEach(func() {
+			updateService = &services.UpdateService{
+				Context: context.Background(),
+			}
+
+		})
+		Context("when record is found and status is success", func() {
+			d := &models.DispatchRecord{
+				PlaybookDispatcherID: faker.UUIDHyphenated(),
+				Status:               models.UpdateStatusBuilding,
+			}
+			db.DB.Create(d)
+			u := &models.UpdateTransaction{
+				DispatchRecords: []models.DispatchRecord{*d},
+			}
+			db.DB.Create(u)
+
+			event := &services.PlaybookDispatcherEvent{
+				Payload: services.PlaybookDispatcherEventPayload{
+					ID:     d.PlaybookDispatcherID,
+					Status: services.PlaybookStatusSuccess,
+				},
+			}
+			message, _ := json.Marshal(event)
+
+			It("should update status when record is found", func() {
+				updateService.ProcessPlaybookDispatcherRunEvent(message)
+				db.DB.First(&d, d.ID)
+				Expect(d.Status).To(Equal(models.DispatchRecordStatusComplete))
+			})
+			It("should update status of the dispatch record", func() {
+				updateService.ProcessPlaybookDispatcherRunEvent(message)
+				db.DB.First(&u, u.ID)
+				Expect(u.Status).To(Equal(models.UpdateStatusSuccess))
+			})
+			It("should set status with an error when failure is received", func() {
+				event.Payload.Status = services.PlaybookStatusFailure
+				message, _ := json.Marshal(event)
+				err := updateService.ProcessPlaybookDispatcherRunEvent(message)
+				Expect(err).To(BeNil())
+				db.DB.First(&d, d.ID)
+				Expect(d.Status).To(Equal(models.DispatchRecordStatusError))
+			})
+			It("should set status with an error when timeout is received", func() {
+				event.Payload.Status = services.PlaybookStatusTimeout
+				message, _ := json.Marshal(event)
+				err := updateService.ProcessPlaybookDispatcherRunEvent(message)
+				Expect(err).To(BeNil())
+				db.DB.First(&d, d.ID)
+				Expect(d.Status).To(Equal(models.DispatchRecordStatusError))
+			})
+		})
+
+		It("should give error when record is not found", func() {
+			event := &services.PlaybookDispatcherEvent{
+				Payload: services.PlaybookDispatcherEventPayload{
+					ID:     faker.UUIDHyphenated(),
+					Status: services.PlaybookStatusSuccess,
+				},
+			}
+			message, _ := json.Marshal(event)
+			err := updateService.ProcessPlaybookDispatcherRunEvent(message)
+			Expect(err).To(HaveOccurred())
+		})
+		It("should give error when dispatch record is not found", func() {
+			d := &models.DispatchRecord{
+				PlaybookDispatcherID: faker.UUIDHyphenated(),
+				Status:               models.UpdateStatusBuilding,
+			}
+			db.DB.Create(d)
+			event := &services.PlaybookDispatcherEvent{
+				Payload: services.PlaybookDispatcherEventPayload{
+					ID:     d.PlaybookDispatcherID,
+					Status: services.PlaybookStatusSuccess,
+				},
+			}
+			message, _ := json.Marshal(event)
+			err := updateService.ProcessPlaybookDispatcherRunEvent(message)
+			Expect(err).To(HaveOccurred())
 		})
 	})
 })
