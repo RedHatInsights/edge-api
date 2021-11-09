@@ -3,14 +3,14 @@ package ownershipvoucher_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"os"
+	"io/ioutil"
 
 	ov "github.com/redhatinsights/edge-api/pkg/services/ownershipvoucher"
 )
 
 var _ = Describe("Ownershipvoucher", func() {
 	Context("parse ov", func() {
-		ovb, err := os.ReadFile("./testdevice1.ov")
+		ovb, err := ioutil.ReadFile("./testdevice1.ov")
 		It("should read ov", func() {
 			Expect(err).To(BeNil())
 			Expect(ovb).ToNot(BeNil())
