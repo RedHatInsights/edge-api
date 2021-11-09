@@ -13,7 +13,7 @@ type Data struct {
 }
 
 // ParseVoucher parses a voucher from a byte array, returning the data and error if any
-func ParseVoucher(voucherBytes []byte) (*Data, error) {
+func ParseVoucher(voucherBytes []byte) (Data, error) {
 	voucherBytesLen := C.size_t(len(voucherBytes))
 	voucherCBytes := C.CBytes(voucherBytes)
 
@@ -31,7 +31,7 @@ func ParseVoucher(voucherBytes []byte) (*Data, error) {
 	defer C.fdo_free_string(devinfoC)
 	devinfo := C.GoString(devinfoC)
 
-	return &Data{
+	return Data{
 		ProtocolVersion: uint(C.fdo_ownershipvoucher_header_get_protocol_version(voucher)),
 		GUID:            guid,
 		DeviceName:      devinfo,
