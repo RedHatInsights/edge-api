@@ -41,10 +41,10 @@ type Response struct {
 
 // Devices represents the struct of a Device on Inventory API
 type Devices struct {
-	ID              string `json:"id"`
-	DisplayName     string `json:"display_name"`
-	LastSeen        string `json:"updated"`
-	UpdateAvailable bool
+	ID              string        `json:"id"`
+	DisplayName     string        `json:"display_name"`
+	LastSeen        string        `json:"updated"`
+	UpdateAvailable bool          `json:"update_available"`
 	Ostree          SystemProfile `json:"system_profile"`
 }
 
