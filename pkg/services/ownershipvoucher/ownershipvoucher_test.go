@@ -9,18 +9,31 @@ import (
 )
 
 var _ = Describe("Ownershipvoucher", func() {
-	Context("parse ov", func() {
-		ovb, err := ioutil.ReadFile("./testdevice1.ov")
-		It("should read ov", func() {
+	ovb, err := ioutil.ReadFile("./testdevice1.ov")
+	Context("read ov", func() {
+		It("should succeed", func() {
 			Expect(err).To(BeNil())
 			Expect(ovb).ToNot(BeNil())
 		})
+	})
+	Context("parse ov", func() {
 		data, err := ov.ParseVoucher(ovb)
 		It("should parse without error", func() {
 			Expect(err).To(BeNil())
 			Expect(data.ProtocolVersion).To(Equal(uint(100)))
 			Expect(data.DeviceName).To(Equal("testdevice1"))
 			Expect(data.GUID).To(Equal("214d64be-3227-92da-0333-b1e1fe832f24"))
+		})
+	})
+	Context("parse multiple ovs", func() {
+		multiOVs := ovb
+		for i := 0; i < 10; i++ {
+			multiOVs = append(multiOVs, ovb...)
+		}
+		data, err := ov.ParseVoucher(multiOVs)
+		It("should parse without error", func() {
+			Expect(err).To(BeNil())
+			Expect(data).ToNot(BeNil())
 		})
 	})
 })
