@@ -193,8 +193,6 @@ func (rb *RepoBuilder) DownloadExtractVersionRepo(c *models.Commit, dest string)
 	}
 	log.Debugf("DownloadExtractVersionRepo::CommitID: %d", c.ID)
 	log.Debugf("DownloadExtractVersionRepo::RepoID: %d", *c.RepoID)
-	// log.Debugf("DownloadExtractVersionRepo::ImageBuildTarURL: %#v", c.ImageBuildTarURL)
-	// log.Debugf("DownloadExtractVersionRepo::Repo.URL: %#v", c.Repo.URL)
 
 	// ensure the destination directory exists and then chdir there
 	log.Debugf("DownloadExtractVersionRepo::dest: %#v", dest)
@@ -214,6 +212,7 @@ func (rb *RepoBuilder) DownloadExtractVersionRepo(c *models.Commit, dest string)
 		log.Debugf("\n:::: Should not be here: %#v::::\n", c.Repo)
 		_, err = grab.Get(filepath.Join(dest, tarFileName), c.ImageBuildTarURL)
 	} else {
+		tarFileName = "repo.tar"
 		var existingRepo *models.Repo
 		db.DB.Where("id = ?", c.RepoID).Find(&existingRepo)
 		log.Debugf("\n:::: Extracting from existing repo::c.Repo.URL: %#v::::\n", filepath.Join(dest, tarFileName))

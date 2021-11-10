@@ -167,7 +167,7 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 	close(uploadQueue)
 	log.Infof("Channel is closed...")
 	tarFile(src)
-	_, error := u.UploadFile("repo.tar", src)
+	_, error := u.UploadFile(filepath.Join(src, "repo.tar"), fmt.Sprintf("%s/%s", account, strings.TrimPrefix(src, cfg.RepoTempPath)))
 	if error != nil {
 		log.Error("Error on tar upload...")
 	}
