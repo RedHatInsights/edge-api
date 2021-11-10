@@ -15,8 +15,8 @@ COPY --from=base /fido-device-onboard-rs/target/release/libfdo_data.so /usr/loca
 COPY --from=base /fido-device-onboard-rs/libfdo-data/fdo_data.h /usr/local/include/
 COPY --from=base /fido-device-onboard-rs/libfdo-data/test_assets/testdevice1.ov ./testdevice1.ov
 
-RUN microdnf install git go -y
-RUN echo -e 'if [[ ! -d "edge-api" ]];then git clone https://github.com/RedHatInsights/edge-api.git; fi\n \ 
+RUN microdnf install go -y
+RUN echo -e 'if [[ ! -d "edge-api" ]];then microdnf install git -y && git clone https://github.com/RedHatInsights/edge-api.git; fi\n \ 
     cd edge-api\n \
     cp ../testdevice1.ov pkg/services/ownershipvoucher/\n \
     go test ./pkg/services/ownershipvoucher/... -race -coverprofile=coverage.txt -covermode=atomic' > test_ov.sh
