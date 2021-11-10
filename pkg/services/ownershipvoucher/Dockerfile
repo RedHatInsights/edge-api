@@ -16,9 +16,8 @@ COPY --from=base /fido-device-onboard-rs/libfdo-data/fdo_data.h /usr/local/inclu
 COPY --from=base /fido-device-onboard-rs/libfdo-data/test_assets/testdevice1.ov ./testdevice1.ov
 
 RUN microdnf install git go -y
-RUN echo 'git clone https://github.com/Avielyo10/edge-api.git && \ 
+RUN echo 'git clone https://github.com/RedHatInsights/edge-api.git && \ 
     cd edge-api && \
-    git checkout fdo-client && \
     cp ../testdevice1.ov pkg/services/ownershipvoucher/ && \
     go test ./pkg/services/ownershipvoucher/...' > test_ov.sh
 RUN chmod +x ./test_ov.sh
