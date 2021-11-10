@@ -36,5 +36,12 @@ jobs:
       - name: Test
         run: make coverage
 
+      - name: Test ownershipvoucher parser
+        uses: addnab/docker-run-action@v3
+        with:
+          registry: quay.io
+          image: ayosef/libfdo-data:v1
+          options: -v ${{ github.workspace }}:/edge-api
+
       - name: Upload coverage to Codecov
         run: bash <(curl -s https://codecov.io/bash)
