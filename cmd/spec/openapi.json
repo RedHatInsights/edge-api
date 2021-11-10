@@ -2859,15 +2859,18 @@
           }
         ],
         "responses": {
-          "200": {
+          "204": {
+            "description": "Successfully deleted third party repository with ID {ID}"
+          },
+          "404": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v1.CreateThirdPartyRepo"
+                  "$ref": "#/components/schemas/v1.NotFound"
                 }
               }
             },
-            "description": "OK"
+            "description": "Third Party Repository is not found."
           },
           "500": {
             "content": {
@@ -2905,6 +2908,16 @@
               }
             },
             "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.NotFound"
+                }
+              }
+            },
+            "description": "Third Party Repository is not found."
           },
           "500": {
             "content": {
