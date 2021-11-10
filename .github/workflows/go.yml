@@ -40,7 +40,7 @@ jobs:
         uses: addnab/docker-run-action@v3
         with:
           image: quay.io/ayosef/libfdo-data:v1
-          options: -ti -v ${{ github.workspace }}:/edge-api
+          options: -v ${{ github.workspace }}:/edge-api
 
       - name: Upload coverage to Codecov
         run: bash <(curl -s https://codecov.io/bash)
