@@ -78,11 +78,12 @@ func (mr *MockImageServiceInterfaceMockRecorder) CreateImage(image, account inte
 }
 
 // CreateRepoForImage mocks base method.
-func (m *MockImageServiceInterface) CreateRepoForImage(i *models.Image) *models.Repo {
+func (m *MockImageServiceInterface) CreateRepoForImage(i *models.Image) (*models.Repo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateRepoForImage", i)
 	ret0, _ := ret[0].(*models.Repo)
-	return ret0
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // CreateRepoForImage indicates an expected call of CreateRepoForImage.

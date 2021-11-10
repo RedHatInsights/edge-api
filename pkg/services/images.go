@@ -38,7 +38,7 @@ type ImageServiceInterface interface {
 	AddUserInfo(image *models.Image) error
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
-	CreateRepoForImage(i *models.Image) *models.Repo
+	CreateRepoForImage(i *models.Image) (*models.Repo, error)
 	GetImageByID(id string) (*models.Image, error)
 	GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error)
 	CheckImageName(name, account string) (bool, error)
@@ -51,14 +51,17 @@ func NewImageService(ctx context.Context, log *log.Entry) ImageServiceInterface 
 		ctx:          ctx,
 		imageBuilder: imagebuilder.InitClient(ctx, log),
 		log:          log,
+		repoBuilder:  NewRepoBuilder(ctx, log),
 	}
 }
 
 // ImageService is the main implementation of a ImageServiceInterface
 type ImageService struct {
-	ctx          context.Context
+	ctx context.Context
+	log *log.Entry
+
 	imageBuilder imagebuilder.ClientInterface
-	log          *log.Entry
+	repoBuilder  RepoBuilderInterface
 }
 
 // CreateImage creates an Image for an Account on Image Builder and on our database
@@ -177,15 +180,118 @@ func (s *ImageService) UpdateImage(image *models.Image, account string, previous
 		return tx.Error
 	}
 
-	s.log = s.log.WithField("imageId", image.ID)
+	s.log = s.log.WithFields(log.Fields{"imageID": image.ID, "commitID": image.Commit.ID})
 	go s.postProcessImage(image.ID)
 
 	return nil
 }
 
-func (s *ImageService) postProcessImage(id uint) {
-	WaitGroup.Add(1) // Processing one image
+func (s *ImageService) postProcessInstaller(i *models.Image) error {
+	i, err := s.imageBuilder.ComposeInstaller(i)
+	if err != nil {
+		return err
+	}
+	i.Installer.Status = models.ImageStatusBuilding
+	tx := db.DB.Save(&i.Installer)
+	if tx.Error != nil {
+		s.log.WithField("error", err.Error()).Error("Error setting installer building status")
+		return err
+	}
+	for {
+		i, err := s.UpdateImageStatus(i)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Update image status error")
+			return err
+		}
+		if i.Installer.Status != models.ImageStatusBuilding {
+			break
+		}
+		time.Sleep(1 * time.Minute)
+	}
 
+	if i.Installer.Status == models.ImageStatusSuccess {
+		err = s.AddUserInfo(i)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Kickstart file injection failed")
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *ImageService) postProcessCommit(i *models.Image) error {
+	for {
+		i, err := s.UpdateImageStatus(i)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Update image status error")
+			return err
+		}
+		if i.Commit.Status != models.ImageStatusBuilding {
+			break
+		}
+		time.Sleep(1 * time.Minute)
+	}
+
+	go func(imageBuilder imagebuilder.ClientInterface, i *models.Image) {
+		i, err := imageBuilder.GetMetadata(i)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Failed getting metatada from image builder")
+		} else {
+			db.DB.Save(&i.Commit)
+		}
+	}(s.imageBuilder, i)
+
+	_, err := s.CreateRepoForImage(i)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Failed creating repo for image")
+		return err
+	}
+	return nil
+}
+
+func (s *ImageService) setFinalImageStatus(i *models.Image) error {
+	// image status can be success if all output types are successful
+	// if any status are not final (success/error) then sets to error
+	// image status is error if any output status is error
+	success := true
+	for _, out := range i.OutputTypes {
+		if out == models.ImageTypeCommit {
+			if i.Commit == nil || i.Commit.Status != models.ImageStatusSuccess {
+				success = false
+			}
+			if i.Commit.Status == models.ImageStatusBuilding {
+				i.Commit.Status = models.ImageStatusError
+				db.DB.Save(i.Commit)
+			}
+		}
+
+		if out == models.ImageTypeInstaller {
+			if i.Installer == nil || i.Installer.Status != models.ImageStatusSuccess {
+				success = false
+			}
+			if i.Installer.Status == models.ImageStatusBuilding {
+				i.Installer.Status = models.ImageStatusError
+				db.DB.Save(i.Commit)
+			}
+		}
+	}
+
+	if success {
+		i.Status = models.ImageStatusSuccess
+	} else {
+		i.Status = models.ImageStatusError
+	}
+
+	tx := db.DB.Save(i.Commit)
+	return tx.Error
+}
+
+// Every log message in this method already has commit id and image id injected
+func (s *ImageService) postProcessImage(id uint) {
+	var i *models.Image
+	db.DB.Joins("Commit").Joins("Installer").First(&i, id)
+
+	WaitGroup.Add(1) // Processing one image
 	defer func() {
 		WaitGroup.Done() // Done with one image (sucessfuly or not)
 		s.log.Debug("Done with one image - sucessfuly or not")
@@ -193,10 +299,7 @@ func (s *ImageService) postProcessImage(id uint) {
 			s.log.Fatalf("%s", err)
 		}
 	}()
-	var i *models.Image
-	db.DB.Joins("Commit").Joins("Installer").First(&i, id)
-
-	go func() {
+	go func(i *models.Image) {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 		sig := <-sigint
@@ -207,147 +310,93 @@ func (s *ImageService) postProcessImage(id uint) {
 			s.SetErrorStatusOnImage(nil, i)
 			WaitGroup.Done()
 		}
-	}()
-	for {
-		i, err := s.UpdateImageStatus(i)
-		if err != nil {
-			s.SetErrorStatusOnImage(err, i)
-		}
-		if i.Commit.Status != models.ImageStatusBuilding {
-			break
-		}
-		time.Sleep(1 * time.Minute)
+	}(i)
+
+	err := s.postProcessCommit(i)
+	if err != nil {
+		s.SetErrorStatusOnImage(err, i)
+		s.log.WithField("error", err.Error()).Fatal("Failed creating commit for image")
 	}
 
-	go func(imageBuilder imagebuilder.ClientInterface) {
-		i, err := imageBuilder.GetMetadata(i)
-		if err != nil {
-			s.log.WithField("error", err.Error()).Error("Failed getting metatada from image builder")
-		} else {
-			db.DB.Save(&i.Commit)
-		}
-	}(s.imageBuilder)
-
-	repo := s.CreateRepoForImage(i)
-	i.Commit.Repo = repo
-	i.Commit.RepoID = &repo.ID
-	db.DB.Save(&i.Commit)
 	// TODO: We need to discuss this whole thing post-July deliverable
 	if i.HasOutputType(models.ImageTypeInstaller) {
-		i, err := s.imageBuilder.ComposeInstaller(repo, i)
+		err = s.postProcessInstaller(i)
 		if err != nil {
-			s.log.Error(err)
 			s.SetErrorStatusOnImage(err, i)
-		}
-		i.Installer.Status = models.ImageStatusBuilding
-		tx := db.DB.Save(&i.Installer)
-		if tx.Error != nil {
-			s.log.Error(err)
-			s.SetErrorStatusOnImage(err, i)
-		}
-
-		for {
-			i, err := s.UpdateImageStatus(i)
-			if err != nil {
-				s.SetErrorStatusOnImage(err, i)
-			}
-			if i.Installer.Status != models.ImageStatusBuilding {
-				break
-			}
-			time.Sleep(1 * time.Minute)
-		}
-
-		if i.Installer.Status == models.ImageStatusSuccess {
-			err = s.AddUserInfo(i)
-			if err != nil {
-				// TODO: Temporary. Handle error better.
-				s.log.WithField("error", err.Error()).Error("Kickstart file injection failed")
-			}
+			s.log.WithField("error", err.Error()).Fatal("Failed creating installer for image")
 		}
 	} else {
 		// Cleaning up possible non nil installers if doesnt have output type installer
 		i.Installer = nil
 	}
-	if i.Commit.Status == models.ImageStatusSuccess {
-		if i.Installer != nil && i.Installer.Status == models.ImageStatusSuccess {
-			s.log.Info("Setting image status as success")
-			i.Status = models.ImageStatusSuccess
-			db.DB.Save(&i)
-		} else if i.ImageType == models.ImageTypeCommit {
-			s.log.Info("Setting image status as success")
-			i.Status = models.ImageStatusSuccess
-			db.DB.Save(&i)
-		} else {
-			s.log.Info("Not setting image status as anything - installer exists and is not sucessful")
-		}
-	} else {
-		s.log.Info("Not setting image status as anything - commit is not sucessful")
+
+	err = s.setFinalImageStatus(i)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Fatal("Couldn't set final image status")
 	}
 }
 
 // CreateRepoForImage creates the OSTree repo to host that image
-func (s *ImageService) CreateRepoForImage(i *models.Image) *models.Repo {
-	log.Infof("Commit %d for Image %d is ready. Creating OSTree repo.", i.Commit.ID, i.ID)
+func (s *ImageService) CreateRepoForImage(i *models.Image) (*models.Repo, error) {
+	s.log.Infof("Creating OSTree repo.")
 	repo := &models.Repo{
 		Status: models.RepoStatusBuilding,
 	}
 	tx := db.DB.Create(repo)
-	db.DB.Save(&repo)
-	log.Debugf("Repo:: %d\n", repo.ID)
-	log.Debugf("i.commit:: %d\n", i.Commit.ID)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	s.log = s.log.WithField("repoID", repo.ID)
+	s.log.Debug("OSTree repo is created on the database")
+
 	i.Commit.Repo = repo
 	i.Commit.RepoID = &repo.ID
 
-	tx2 := db.DB.Save(i.Commit)
-	if tx2.Error != nil {
-		log.Errorf("::TX2:: %v\n", tx2.Error)
-		panic(tx2.Error)
-	}
-	log.Debugf("i.commit:: %d\n", i.Commit.RepoID)
-
+	tx = db.DB.Save(i.Commit)
 	if tx.Error != nil {
-		log.Error(tx.Error)
-		panic(tx.Error)
+		return nil, tx.Error
 	}
-	rb := NewRepoBuilder(s.ctx)
-	repo, err := rb.ImportRepo(repo)
-	if err != nil {
-		log.Error(err)
-		panic(err)
-	}
-	log.Infof("OSTree repo %d for commit %d and Image %d is ready. ", repo.ID, i.Commit.ID, i.ID)
+	log.Debug("OSTree repo was saved to commit")
 
-	return repo
+	repo, err := s.repoBuilder.ImportRepo(repo)
+	if err != nil {
+		return nil, err
+	}
+	log.Infof("OSTree repo is ready")
+
+	return repo, nil
 }
 
 // SetErrorStatusOnImage is a helper functions that sets the error status on images
 func (s *ImageService) SetErrorStatusOnImage(err error, i *models.Image) {
-	i.Status = models.ImageStatusError
-	tx := db.DB.Save(i)
-	s.log.Debug("Image saved with error status")
-	if tx.Error != nil {
-		s.log.Error(tx.Error)
-		panic(tx.Error)
-	}
-	if i.Commit != nil {
-		i.Commit.Status = models.ImageStatusError
-		tx := db.DB.Save(i.Commit)
+	if i.Status != models.ImageStatusError {
+		i.Status = models.ImageStatusError
+		tx := db.DB.Save(i)
+		s.log.Debug("Image saved with error status")
 		if tx.Error != nil {
 			s.log.Error(tx.Error)
 			panic(tx.Error)
 		}
-	}
-	if i.Installer != nil {
-		i.Installer.Status = models.ImageStatusError
-		tx := db.DB.Save(i.Installer)
-		if tx.Error != nil {
-			s.log.Error(tx.Error)
-			panic(tx.Error)
+		if i.Commit != nil {
+			i.Commit.Status = models.ImageStatusError
+			tx := db.DB.Save(i.Commit)
+			if tx.Error != nil {
+				s.log.Error(tx.Error)
+				panic(tx.Error)
+			}
 		}
-	}
-	if err != nil {
-		s.log.Error(err)
-		panic(err)
+		if i.Installer != nil {
+			i.Installer.Status = models.ImageStatusError
+			tx := db.DB.Save(i.Installer)
+			if tx.Error != nil {
+				s.log.Error(tx.Error)
+				panic(tx.Error)
+			}
+		}
+		if err != nil {
+			s.log.Error(err)
+			panic(err)
+		}
 	}
 }
 

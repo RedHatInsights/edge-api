@@ -33,7 +33,7 @@ func NewUpdateService(ctx context.Context) UpdateServiceInterface {
 	return &UpdateService{
 		Context:       ctx,
 		FilesService:  NewFilesService(),
-		RepoBuilder:   NewRepoBuilder(ctx),
+		RepoBuilder:   NewRepoBuilder(ctx, log.NewEntry(log.StandardLogger())),
 		WaitForReboot: time.Minute * 5,
 	}
 }
