@@ -25,15 +25,4 @@ var _ = Describe("Ownershipvoucher", func() {
 			Expect(data.GUID).To(Equal("214d64be-3227-92da-0333-b1e1fe832f24"))
 		})
 	})
-	Context("parse multiple ovs", func() {
-		multiOVs := ovb
-		for i := 0; i < 10; i++ {
-			multiOVs = append(multiOVs, ovb...)
-		}
-		data, err := ov.ParseVoucher(multiOVs)
-		It("should parse without error", func() {
-			Expect(err).To(BeNil())
-			Expect(data).ToNot(BeNil())
-		})
-	})
 })
