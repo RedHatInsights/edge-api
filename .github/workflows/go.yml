@@ -34,14 +34,11 @@ jobs:
         run: make vet
 
       - name: Test
-        run: make coverage
-
-      - name: Test ownershipvoucher parser
         uses: addnab/docker-run-action@v3
         with:
           image: quay.io/ayosef/libfdo-data:v1
           options: -v ${{ github.workspace }}:/edge-api
-          run: sh ./test_ov.sh
+          run: sh ./test.sh
 
       - name: Upload coverage to Codecov
         run: bash <(curl -s https://codecov.io/bash)

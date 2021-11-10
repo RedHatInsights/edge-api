@@ -19,7 +19,6 @@ RUN microdnf install go -y
 RUN echo -e 'if [[ ! -d "edge-api" ]];then microdnf install git -y && git clone https://github.com/RedHatInsights/edge-api.git; fi\n \ 
     cd edge-api\n \
     cp ../testdevice1.ov pkg/services/ownershipvoucher/\n \
-    go test ./pkg/services/ownershipvoucher/... -race -coverprofile=ov.txt -covermode=atomic\n \
-    cat ov.txt >> coverage.txt' > test_ov.sh
-RUN chmod +x ./test_ov.sh
-CMD [ "sh", "./test_ov.sh" ]
+    make coverage' > test.sh
+RUN chmod +x ./test.sh
+CMD [ "sh", "./test.sh" ]
