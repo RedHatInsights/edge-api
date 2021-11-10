@@ -191,8 +191,10 @@ func (rb *RepoBuilder) DownloadExtractVersionRepo(c *models.Commit, dest string)
 		log.Error("nil pointer to models.Commit provided")
 		return errors.New("invalid Commit Provided: nil pointer")
 	}
-	log.Debugf("DownloadExtractVersionRepo::CommitD: %d", c.ID)
-	log.Debugf("DownloadExtractVersionRepo::ImageBuildTarURL: %#v", c.ImageBuildTarURL)
+	log.Debugf("DownloadExtractVersionRepo::CommitID: %d", c.ID)
+	log.Debugf("DownloadExtractVersionRepo::RepoID: %d", *c.RepoID)
+	// log.Debugf("DownloadExtractVersionRepo::ImageBuildTarURL: %#v", c.ImageBuildTarURL)
+	// log.Debugf("DownloadExtractVersionRepo::Repo.URL: %#v", c.Repo.URL)
 
 	// ensure the destination directory exists and then chdir there
 	log.Debugf("DownloadExtractVersionRepo::dest: %#v", dest)
@@ -208,7 +210,20 @@ func (rb *RepoBuilder) DownloadExtractVersionRepo(c *models.Commit, dest string)
 	// Save the tarball to the OSBuild Hash ID and then extract it
 	tarFileName := strings.Join([]string{c.ImageBuildHash, "tar"}, ".")
 	log.Debugf("DownloadExtractVersionRepo::tarFileName: %#v", tarFileName)
-	_, err = grab.Get(filepath.Join(dest, tarFileName), c.ImageBuildTarURL)
+	if c.RepoID == nil {
+		log.Debugf("\n:::: Should not be here: %#v::::\n", c.Repo)
+		_, err = grab.Get(filepath.Join(dest, tarFileName), c.ImageBuildTarURL)
+	} else {
+		var existingRepo *models.Repo
+		db.DB.Where("id = ?", c.RepoID).Find(&existingRepo)
+		log.Debugf("\n:::: Extracting from existing repo::c.Repo.URL: %#v::::\n", filepath.Join(dest, tarFileName))
+		log.Debugf("\n:::: existingRepo.URL::: %v\n", existingRepo.URL)
+		log.Debugf("\n:::: DEST::: %v\n", dest)
+		// _, err = grab.Get(filepath.Join(dest, tarFileName), existingRepo.URL)
+		_, err = grab.Get(filepath.Join(dest, tarFileName), c.ImageBuildTarURL)
+
+	}
+
 	if err != nil {
 		log.Error(err)
 		return err
