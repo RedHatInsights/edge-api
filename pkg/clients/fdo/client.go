@@ -43,7 +43,7 @@ func decodeResBody(body *io.ReadCloser) (interface{}, error) {
 // BatchUpload used to batch upload ownershipvouchers, CBOR is self-describing, so it is possible
 // to determine the end of the ownership voucher from its content
 func (c *Client) BatchUpload(ovs []byte, numOfOVs uint) (interface{}, error) {
-	if len(ovs) == 0 {
+	if len(ovs) == 0 || numOfOVs == 0 {
 		c.log.Error("No ownership vouchers provided")
 		return nil, errors.New("no ownership vouchers provided")
 	}
