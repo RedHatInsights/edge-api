@@ -32,14 +32,16 @@ type RepoBuilder struct {
 	ctx          context.Context
 	filesService FilesService
 	repoService  RepoServiceInterface
+	log          *log.Entry
 }
 
 // NewRepoBuilder initializes the repository builder in this package
-func NewRepoBuilder(ctx context.Context) RepoBuilderInterface {
+func NewRepoBuilder(ctx context.Context, log *log.Entry) RepoBuilderInterface {
 	return &RepoBuilder{
 		ctx:          ctx,
 		filesService: NewFilesService(),
 		repoService:  NewRepoService(ctx),
+		log:          log,
 	}
 }
 
