@@ -19,7 +19,6 @@ import (
 
 var _ = Describe("Client", func() {
 	config.Init()
-	config.Get().Debug = true
 	var ctx context.Context= context.Background()
 
 	Describe("New client", func() {
