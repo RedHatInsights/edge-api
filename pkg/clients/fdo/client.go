@@ -31,12 +31,7 @@ func InitClient(ctx context.Context, log *log.Entry) *Client {
 	return &Client{ctx: ctx, log: log}
 }
 
-var (
-	httpClient          = &http.Client{}
-	host                = config.Get().FDO.URL
-	version             = config.Get().FDO.APIVersion
-	authorizationBearer = fmt.Sprint("Bearer ", config.Get().FDO.AuthorizationBearer)
-)
+var httpClient = &http.Client{}
 
 // Decode response body into json
 func decodeResBody(body *io.ReadCloser) (interface{}, error) {
@@ -52,6 +47,11 @@ func (c *Client) BatchUpload(ovs []byte, numOfOVs uint) (interface{}, error) {
 		c.log.Error("No ownership vouchers provided")
 		return nil, errors.New("no ownership vouchers provided")
 	}
+	var (
+		host                = config.Get().FDO.URL
+		version             = config.Get().FDO.APIVersion
+		authorizationBearer = fmt.Sprint("Bearer ", config.Get().FDO.AuthorizationBearer)
+	)
 	c.log.Info("FDO batch upload")
 	// build request
 	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/management/%s/ownership_voucher", host, version), bytes.NewReader(ovs))
@@ -90,6 +90,11 @@ func (c *Client) BatchDelete(fdoUUIDList []string) (interface{}, error) {
 		c.log.Error("No FDO UUIDs provided")
 		return nil, errors.New("no FDO UUIDs provided")
 	}
+	var (
+		host                = config.Get().FDO.URL
+		version             = config.Get().FDO.APIVersion
+		authorizationBearer = fmt.Sprint("Bearer ", config.Get().FDO.AuthorizationBearer)
+	)
 	c.log.Info("FDO batch delete")
 	fdoUUIDListAsBytes, err := json.Marshal(fdoUUIDList)
 	if err != nil {

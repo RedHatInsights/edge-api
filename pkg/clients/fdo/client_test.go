@@ -18,12 +18,10 @@ import (
 )
 
 var _ = Describe("Client", func() {
-	var ctx context.Context
-	BeforeEach(func() {
-		config.Init()
-		config.Get().Debug = true
-		ctx = context.Background()
-	})
+	config.Init()
+	config.Get().Debug = true
+	var ctx context.Context= context.Background()
+	
 	Describe("New client", func() {
 		It("should return a new client", func() {
 			client := fdo.InitClient(ctx, &log.Entry{})
