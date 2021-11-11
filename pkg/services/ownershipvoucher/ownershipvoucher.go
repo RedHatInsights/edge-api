@@ -1,7 +1,7 @@
 package ownershipvoucher
 
-// #cgo LDFLAGS: -lfdo_data
-// #include "fdo_data.h"
+// #include <stdlib.h>
+// #include <fdo_data.h>
 import "C"
 import "errors"
 
@@ -16,6 +16,7 @@ type Data struct {
 func ParseVoucher(voucherBytes []byte) (Data, error) {
 	voucherBytesLen := C.size_t(len(voucherBytes))
 	voucherCBytes := C.CBytes(voucherBytes)
+	defer C.free(voucherCBytes)
 
 	voucher := C.fdo_ownershipvoucher_from_data(voucherCBytes, voucherBytesLen)
 	defer C.fdo_ownershipvoucher_free(voucher)
