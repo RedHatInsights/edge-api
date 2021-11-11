@@ -1,5 +1,6 @@
 package ownershipvoucher
 
+// #cgo LDFLAGS: -lfdo_data
 // #include <stdlib.h>
 // #include <fdo_data.h>
 import "C"
