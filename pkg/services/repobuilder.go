@@ -97,7 +97,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		//
 		// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
 		for _, commit := range update.OldCommits {
-			rb.DownloadExtractVersionRepo(&commit, filepath.Join(stagePath, commit.OSTreeCommit))
+			rb.DownloadExtractVersionRepo(update.Commit, filepath.Join(stagePath, commit.OSTreeCommit))
 			if err != nil {
 				return nil, err
 			}
@@ -192,7 +192,6 @@ func (rb *RepoBuilder) DownloadExtractVersionRepo(c *models.Commit, dest string)
 		return errors.New("invalid Commit Provided: nil pointer")
 	}
 	log.Debugf("DownloadExtractVersionRepo::CommitID: %d", c.ID)
-	log.Debugf("DownloadExtractVersionRepo::RepoID: %d", *c.RepoID)
 
 	// ensure the destination directory exists and then chdir there
 	log.Debugf("DownloadExtractVersionRepo::dest: %#v", dest)
@@ -206,30 +205,38 @@ func (rb *RepoBuilder) DownloadExtractVersionRepo(c *models.Commit, dest string)
 	}
 
 	// Save the tarball to the OSBuild Hash ID and then extract it
-	tarFileName := strings.Join([]string{c.ImageBuildHash, "tar"}, ".")
+	tarFileName := "repo.tar"
+	if c.ImageBuildHash != "" {
+		tarFileName = strings.Join([]string{c.ImageBuildHash, "tar"}, ".")
+	}
 	log.Debugf("DownloadExtractVersionRepo::tarFileName: %#v", tarFileName)
-	if c.RepoID == nil {
-		log.Debugf("\n:::: Should not be here: %#v::::\n", c.Repo)
+	if c.TarRepoURL == "" {
 		_, err = grab.Get(filepath.Join(dest, tarFileName), c.ImageBuildTarURL)
 	} else {
-		tarFileName = "repo.tar"
-		var existingRepo *models.Repo
-		db.DB.Where("id = ?", c.RepoID).Find(&existingRepo)
-		log.Debugf("\n:::: Extracting from existing repo::c.Repo.URL: %#v::::\n", filepath.Join(dest, tarFileName))
-		log.Debugf("\n:::: existingRepo.URL::: %v\n", existingRepo.URL)
-		log.Debugf("\n:::: DEST::: %v\n", dest)
-		// _, err = grab.Get(filepath.Join(dest, tarFileName), existingRepo.URL)
-		_, err = grab.Get(filepath.Join(dest, tarFileName), c.ImageBuildTarURL)
-
+		_, err = grab.Get(filepath.Join(dest, tarFileName), c.TarRepoURL)
 	}
-
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 	log.Debugf("Download finished::tarFileName: %#v", tarFileName)
 
+	//Upload ImageBuildTar to repo
+	repoTarUrl, errorUpl := uploadTarRepo(tarFileName, int(*c.RepoID))
+	c.TarRepoURL = repoTarUrl
+	if errorUpl != nil {
+		log.Errorf("Failed to open file: %s", filepath.Join(dest, tarFileName))
+		log.Error(err)
+		return err
+	}
+	result := db.DB.Save(c)
+	if result.Error != nil {
+		return err
+	}
+	//
+
 	tarFile, err := os.Open(filepath.Join(dest, tarFileName))
+
 	if err != nil {
 		log.Errorf("Failed to open file: %s", filepath.Join(dest, tarFileName))
 		log.Error(err)

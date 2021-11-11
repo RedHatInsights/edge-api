@@ -311,6 +311,7 @@ func (s *ImageService) CreateRepoForImage(i *models.Image) *models.Repo {
 	}
 	rb := NewRepoBuilder(s.ctx)
 	repo, err := rb.ImportRepo(repo)
+	// uploadTarRepo(repo, "repo")
 	if err != nil {
 		log.Error(err)
 		panic(err)
@@ -642,4 +643,18 @@ func (s *ImageService) RetryCreateImage(image *models.Image) error {
 	go s.postProcessImage(image.ID)
 
 	return nil
+}
+
+func uploadTarRepo(imageName string, repoId int) (string, error) {
+	fmt.Printf("::uploadTarRepo::\n")
+	uploadPath := fmt.Sprintf("/tar/%v/%s", repoId, imageName)
+	fmt.Printf("::uploadPath:: %v\n", uploadPath)
+	filesService := NewFilesService()
+	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
+	fmt.Printf("::TAR REPO URL:: %v\n", url)
+	if err != nil {
+		return "error", fmt.Errorf("error uploading the Tar :: %s :: %s", uploadPath, err.Error())
+	}
+
+	return uploadPath, nil
 }

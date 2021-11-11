@@ -166,11 +166,11 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 	log.Infof("Files are done uploading...")
 	close(uploadQueue)
 	log.Infof("Channel is closed...")
-	tarFile(src)
-	_, error := u.UploadFile(filepath.Join(src, "repo.tar"), fmt.Sprintf("%s/%s", account, strings.TrimPrefix(src, cfg.RepoTempPath)))
-	if error != nil {
-		log.Error("Error on tar upload...")
-	}
+	// tarFile(src)
+	// _, error := u.UploadFile(filepath.Join(src, "repo.tar"), fmt.Sprintf("%s/%s", account, strings.TrimPrefix(src, cfg.RepoTempPath)))
+	// if error != nil {
+	// 	log.Error("Error on tar upload...")
+	// }
 	region := *u.Client.Config.Region
 	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s/%s", u.Bucket, region, account, strings.TrimPrefix(src, cfg.RepoTempPath))
 	return s3URL, nil
