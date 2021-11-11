@@ -99,7 +99,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		//
 		// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
 		for _, commit := range update.OldCommits {
-			rb.DownloadExtractVersionRepo(update.Commit, filepath.Join(stagePath, commit.OSTreeCommit))
+			rb.DownloadExtractVersionRepo(&commit, filepath.Join(stagePath, commit.OSTreeCommit))
 			if err != nil {
 				return nil, err
 			}
