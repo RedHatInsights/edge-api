@@ -35,9 +35,9 @@ func (e *IDMustBeInteger) Error() string {
 	return "ID needs to be an integer"
 }
 
-// ThirdPartyRepositoryNotFound indicates the Third Party Repository is not found
+// ThirdPartyRepositoryNotFound indicates the Third Party Repository was not found
 type ThirdPartyRepositoryNotFound struct{}
 
 func (e *ThirdPartyRepositoryNotFound) Error() string {
-	return "Third Party Repository is not found"
+	return "third party repository was not found"
 }

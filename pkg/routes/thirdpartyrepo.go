@@ -3,7 +3,6 @@ package routes
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -230,6 +229,5 @@ func DeleteThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = tprepo
-	msg := fmt.Sprintf("Successfully deleted third party repository with ID %v", ID)
-	json.NewEncoder(w).Encode(msg)
+	json.NewEncoder(w).Encode(&tprepo)
 }

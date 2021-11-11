@@ -2165,7 +2165,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.NotFound"
-          description: Third Party Repository is not found.
+          description: third party repository was not found.
         "500":
           content:
             application/json:
@@ -2220,14 +2220,18 @@ paths:
             type:
               integer
       responses:
-        '204':
-          description: Successfully deleted third party repository with ID {ID}
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.CreateThirdPartyRepo"
+          description: OK
         "404":
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.NotFound"
-          description: Third Party Repository is not found.
+          description: third party repository was not found.
         "500":
           content:
             application/json:

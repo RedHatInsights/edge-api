@@ -110,7 +110,7 @@ func (s *ThirdPartyRepoService) DeleteThirdPartyRepoByID(ID string) (*models.Thi
 			return nil, errors.NewInternalServerError()
 		}
 
-		delForm := db.DB.Exec("DELETE FROM third_party_repos WHERE id=? and account=?", ID, account)
+		delForm := db.DB.Where("account = ? and id = ?", account, ID).Delete(&tprepo)
 		if delForm.Error != nil {
 			err := errors.NewInternalServerError()
 			return nil, err
