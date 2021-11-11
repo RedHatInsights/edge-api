@@ -19,11 +19,12 @@ import (
 
 var _ = Describe("Client", func() {
 	config.Init()
+	config.Get().Debug = true
 	var ctx context.Context= context.Background()
 
 	Describe("New client", func() {
 		It("should return a new client", func() {
-			client := fdo.InitClient(ctx, &log.Entry{})
+			client := fdo.InitClient(ctx, log.NewEntry(log.StandardLogger()))
 			Expect(client).ToNot(BeNil())
 		})
 	})
