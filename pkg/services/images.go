@@ -656,5 +656,5 @@ func uploadTarRepo(imageName string, repoId int) (string, error) {
 		return "error", fmt.Errorf("error uploading the Tar :: %s :: %s", uploadPath, err.Error())
 	}
 
-	return uploadPath, nil
+	return url, nil
 }
