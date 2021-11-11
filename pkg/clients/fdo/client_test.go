@@ -21,7 +21,7 @@ var _ = Describe("Client", func() {
 	config.Init()
 	config.Get().Debug = true
 	var ctx context.Context= context.Background()
-	
+
 	Describe("New client", func() {
 		It("should return a new client", func() {
 			client := fdo.InitClient(ctx, &log.Entry{})
@@ -74,7 +74,7 @@ var _ = Describe("Client", func() {
 			j, err := client.BatchUpload([]byte{}, 0)
 			It("should fail upload ov", func() {
 				Expect(err).ToNot(BeNil())
-				Expect(err.Error()).To(ContainSubstring("No ownership vouchers provided"))
+				Expect(err.Error()).To(ContainSubstring("no ownership vouchers provided"))
 				Expect(j).To(BeNil())
 			})
 		})
