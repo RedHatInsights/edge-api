@@ -260,18 +260,19 @@ func (s *ImageService) setFinalImageStatus(i *models.Image) error {
 				success = false
 			}
 			if i.Commit.Status == models.ImageStatusBuilding {
+				success = false
 				i.Commit.Status = models.ImageStatusError
 				db.DB.Save(i.Commit)
 			}
 		}
-
 		if out == models.ImageTypeInstaller {
 			if i.Installer == nil || i.Installer.Status != models.ImageStatusSuccess {
 				success = false
 			}
 			if i.Installer.Status == models.ImageStatusBuilding {
+				success = false
 				i.Installer.Status = models.ImageStatusError
-				db.DB.Save(i.Commit)
+				db.DB.Save(i.Installer)
 			}
 		}
 	}
@@ -282,7 +283,7 @@ func (s *ImageService) setFinalImageStatus(i *models.Image) error {
 		i.Status = models.ImageStatusError
 	}
 
-	tx := db.DB.Save(i.Commit)
+	tx := db.DB.Save(i)
 	return tx.Error
 }
 
