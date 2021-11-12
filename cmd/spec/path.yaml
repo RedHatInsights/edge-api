@@ -539,7 +539,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/v1.ImageSetDetails"
           description: OK
-  /checkImageName:
+  /images/checkImageName:
     post:
       operationId: checkImageName
       requestBody:
