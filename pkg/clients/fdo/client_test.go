@@ -22,7 +22,7 @@ var _ = Describe("Client", func() {
 	testLogger := log.New()
 	testLogger.SetLevel(log.DebugLevel)
 	testLogger.SetFormatter(&log.JSONFormatter{})
-	var ctx context.Context= context.Background()
+	var ctx context.Context = context.Background()
 
 	Describe("New client", func() {
 		It("should return a new client", func() {
@@ -123,7 +123,7 @@ var _ = Describe("Client", func() {
 			It("should unmarshal fdoUUIDList", func() {
 				Expect(err).To(BeNil())
 			})
-			It("body should be equal", func ()  {
+			It("body should be equal", func() {
 				Expect(fdoUUIDList).To(Equal([]string{"a9bcd683-a7e4-46ed-80b2-6e55e8610d04", "1ea69fcb-b784-4d0f-ab4d-94589c6cc7ad"}))
 			})
 			json.NewEncoder(w).Encode(map[string]string{"op": "delete", "status": "OK"})
