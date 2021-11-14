@@ -24,14 +24,13 @@ type ClientInterface interface {
 type Client struct {
 	ctx context.Context
 	log *log.Entry
+	httpClient *http.Client
 }
 
 // InitClient initializes the client for FDO
 func InitClient(ctx context.Context, log *log.Entry) *Client {
-	return &Client{ctx: ctx, log: log}
+	return &Client{ctx: ctx, log: log, httpClient: &http.Client{}}
 }
-
-var httpClient = &http.Client{}
 
 // Decode response body into json
 func decodeResBody(body *io.ReadCloser) (interface{}, error) {
@@ -64,7 +63,7 @@ func (c *Client) BatchUpload(ovs []byte, numOfOVs uint) (interface{}, error) {
 		req.Header.Add(key, value)
 	}
 
-	res, err := httpClient.Do(req)
+	res, err := c.httpClient.Do(req)
 	// handle response
 	if err != nil {
 		c.log.Error("Failed to perform api call to upload vouchers ", err)
@@ -111,7 +110,7 @@ func (c *Client) BatchDelete(fdoUUIDList []string) (interface{}, error) {
 		req.Header.Add(key, value)
 	}
 
-	res, err := httpClient.Do(req)
+	res, err := c.httpClient.Do(req)
 	// handle response
 	if err != nil {
 		c.log.Error("Failed to perform api call to remove vouchers ", err)
