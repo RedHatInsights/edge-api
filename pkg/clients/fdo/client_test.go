@@ -126,7 +126,7 @@ var _ = Describe("Client", func() {
 			It("body should be equal", func ()  {
 				Expect(fdoUUIDList).To(Equal([]string{"a9bcd683-a7e4-46ed-80b2-6e55e8610d04", "1ea69fcb-b784-4d0f-ab4d-94589c6cc7ad"}))
 			})
-			json.NewEncoder(w).Encode(`{"op": "delete", "status": "OK"}`)
+			json.NewEncoder(w).Encode(map[string]string{"op": "delete", "status": "OK"})
 		}))
 		defer ts.Close()
 		config.Get().FDO.URL = ts.URL
