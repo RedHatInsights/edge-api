@@ -149,8 +149,8 @@ var _ = Describe("Client", func() {
 			It("should successfully delete ov", func() {
 				Expect(err).To(BeNil())
 				Expect(j).ToNot(BeNil())
-				Expect(j.(map[string]string)["op"]).To(Equal("delete"))
-				Expect(j.(map[string]string)["status"]).To(Equal("OK"))
+				Expect(j.(map[string]interface{})["op"]).To(Equal("delete"))
+				Expect(j.(map[string]interface{})["status"]).To(Equal("OK"))
 			})
 		})
 	})
