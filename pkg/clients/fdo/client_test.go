@@ -67,10 +67,10 @@ var _ = Describe("Client", func() {
 		defer ts.Close()
 		config.Get().FDO.URL = ts.URL
 		client := fdo.InitClient(ctx, log.NewEntry(testLogger))
-		ov, err := ioutil.ReadFile("../../services/ownershipvoucher/testdevice1.ov")
+		testDeviceOV, err := ioutil.ReadFile("../../services/ownershipvoucher/testdevice1.ov")
 		It("should successfully read ov", func() {
 			Expect(err).To(BeNil())
-			Expect(ov).ToNot(BeNil())
+			Expect(testDeviceOV).ToNot(BeNil())
 		})
 		Context("upload zero ov", func() {
 			j, err := client.BatchUpload([]byte{}, 0)
@@ -81,24 +81,44 @@ var _ = Describe("Client", func() {
 			})
 		})
 		Context("upload single ov", func() {
-			j, err := client.BatchUpload(ov, 1)
+			j, err := client.BatchUpload(testDeviceOV, 1)
 			It("should successfully upload ov", func() {
 				Expect(err).To(BeNil())
 				Expect(j).ToNot(BeNil())
 			})
+			ovsData := [1]ov.Data{}
+			resJson, _ := json.Marshal(j)
+			err = json.Unmarshal(resJson, &ovsData)
+			It("should successfully unmarshal json", func() {
+				Expect(err).To(BeNil())
+				Expect(ovsData).ToNot(BeNil())
+				Expect(ovsData[0].ProtocolVersion).To(Equal(uint(100)))
+				Expect(ovsData[0].GUID).To(Equal("214d64be-3227-92da-0333-b1e1fe832f24"))
+				Expect(ovsData[0].DeviceName).To(Equal("testdevice1"))
+			})
 		})
 		Context("upload multiple ov", func() {
-			multipleOVs := ov
+			multipleOVs := testDeviceOV
 			for i := 0; i < 9; i++ {
-				multipleOVs = append(multipleOVs, ov...)
+				multipleOVs = append(multipleOVs, testDeviceOV...)
 			}
 			It("multipleOVs is 10 times bigger than ov", func() {
-				Expect(len(multipleOVs)).To(Equal(len(ov) * 10))
+				Expect(len(multipleOVs)).To(Equal(len(testDeviceOV) * 10))
 			})
 			j, err := client.BatchUpload(multipleOVs, 10)
 			It("should successfully upload ov", func() {
 				Expect(err).To(BeNil())
 				Expect(j).ToNot(BeNil())
+			})
+			ovsData := [10]ov.Data{}
+			resJson, _ := json.Marshal(j)
+			err = json.Unmarshal(resJson, &ovsData)
+			It("should successfully unmarshal json", func() {
+				Expect(err).To(BeNil())
+				Expect(ovsData).ToNot(BeNil())
+				Expect(ovsData[0].ProtocolVersion).To(Equal(uint(100)))
+				Expect(ovsData[0].GUID).To(Equal("12345678-1234-1234-1234-123456789012"))
+				Expect(ovsData[0].DeviceName).To(Equal("test-device"))
 			})
 		})
 	})
