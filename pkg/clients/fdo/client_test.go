@@ -19,11 +19,14 @@ import (
 
 var _ = Describe("Client", func() {
 	config.Init()
+	testLogger := log.New()
+	testLogger.SetLevel(log.DebugLevel)
+	testLogger.SetFormatter(&log.JSONFormatter{})
 	var ctx context.Context= context.Background()
 
 	Describe("New client", func() {
 		It("should return a new client", func() {
-			client := fdo.InitClient(ctx, log.NewEntry(log.StandardLogger()))
+			client := fdo.InitClient(ctx, log.NewEntry(testLogger))
 			Expect(client).ToNot(BeNil())
 		})
 	})
@@ -63,7 +66,7 @@ var _ = Describe("Client", func() {
 		}))
 		defer ts.Close()
 		config.Get().FDO.URL = ts.URL
-		client := fdo.InitClient(ctx, &log.Entry{})
+		client := fdo.InitClient(ctx, log.NewEntry(testLogger))
 		ov, err := ioutil.ReadFile("../../services/ownershipvoucher/testdevice1.ov")
 		It("should successfully read ov", func() {
 			Expect(err).To(BeNil())
