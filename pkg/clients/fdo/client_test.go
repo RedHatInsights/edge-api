@@ -102,4 +102,56 @@ var _ = Describe("Client", func() {
 			})
 		})
 	})
+
+	Describe("BatchDelete", func() {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			It("request headers are valid", func() {
+				Expect(r.Header.Get("Content-Type")).To(Equal("application/json"))
+				Expect(r.Header.Get("Authorization")).To(Equal("Bearer " + config.Get().FDO.AuthorizationBearer))
+				Expect(r.Header.Get("Accept")).To(Equal("application/json"))
+			})
+
+			body, err := ioutil.ReadAll(r.Body)
+			defer r.Body.Close()
+			It("reading request body without error", func() {
+				Expect(err).To(BeNil())
+			})
+			w.WriteHeader(http.StatusOK)
+			fdoUUIDList := []string{}
+			err = json.Unmarshal(body, &fdoUUIDList)
+			It("should unmarshal fdoUUIDList", func() {
+				Expect(err).To(BeNil())
+			})
+			It("body should be equal", func ()  {
+				Expect(fdoUUIDList).To(Equal([]string{"a9bcd683-a7e4-46ed-80b2-6e55e8610d04", "1ea69fcb-b784-4d0f-ab4d-94589c6cc7ad"}))
+			})
+			json.NewEncoder(w).Encode(`{"op": "delete", "status": "OK"}`)
+		}))
+		defer ts.Close()
+		config.Get().FDO.URL = ts.URL
+		client := fdo.InitClient(ctx, log.NewEntry(testLogger))
+		ov, err := ioutil.ReadFile("../../services/ownershipvoucher/testdevice1.ov")
+		It("should successfully read ov", func() {
+			Expect(err).To(BeNil())
+			Expect(ov).ToNot(BeNil())
+		})
+		Context("delete zero ov", func() {
+			j, err := client.BatchDelete([]string{})
+			It("should fail delete ov", func() {
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(ContainSubstring("no FDO UUIDs provided"))
+				Expect(j).To(BeNil())
+			})
+		})
+		Context("delete multiple ov", func() {
+			j, err := client.BatchDelete([]string{"a9bcd683-a7e4-46ed-80b2-6e55e8610d04", "1ea69fcb-b784-4d0f-ab4d-94589c6cc7ad"})
+			It("should successfully delete ov", func() {
+				Expect(err).To(BeNil())
+				Expect(j).ToNot(BeNil())
+				Expect(j.(map[string]string)["op"]).To(Equal("delete"))
+				Expect(j.(map[string]string)["status"]).To(Equal("OK"))
+			})
+		})
+	})
 })
