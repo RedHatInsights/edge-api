@@ -32,13 +32,6 @@ func InitClient(ctx context.Context, log *log.Entry) *Client {
 	return &Client{ctx: ctx, log: log, httpClient: &http.Client{}}
 }
 
-// Decode response body into json
-func decodeResBody(body *io.ReadCloser) (interface{}, error) {
-	var j interface{}
-	err := json.NewDecoder(*body).Decode(&j)
-	return j, err
-}
-
 // BatchUpload used to batch upload ownershipvouchers, CBOR is self-describing, so it is possible
 // to determine the end of the ownership voucher from its content
 func (c *Client) BatchUpload(ovs []byte, numOfOVs uint) (interface{}, error) {
@@ -46,39 +39,14 @@ func (c *Client) BatchUpload(ovs []byte, numOfOVs uint) (interface{}, error) {
 		c.log.WithField("method", "fdo.BatchUpload").Error("No ownership vouchers provided")
 		return nil, errors.New("no ownership vouchers provided")
 	}
-	var (
-		host                = config.Get().FDO.URL
-		version             = config.Get().FDO.APIVersion
-		authorizationBearer = fmt.Sprint("Bearer ", config.Get().FDO.AuthorizationBearer)
-	)
-	// build request
-	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/management/%s/ownership_voucher", host, version), bytes.NewReader(ovs))
-	req.Header.Add("Content-Type", "application/cbor")
-	req.Header.Add("Authorization", authorizationBearer)
-	req.Header.Add("X-Number-Of-Vouchers", strconv.FormatUint(uint64(numOfOVs), 10))
-	req.Header.Add("Accept", "application/json")
-	headers := clients.GetOutgoingHeaders(c.ctx)
-	for key, value := range headers {
-		req.Header.Add(key, value)
-	}
-
+	req, _ := reqUploadBuilder(c, ovs, numOfOVs) // build request
 	res, err := c.httpClient.Do(req)
 	// handle response
 	if err != nil {
 		c.log.WithField("method", "fdo.BatchUpload").Error("Failed to perform api call to upload vouchers ", err)
 		return nil, err
 	}
-	defer res.Body.Close()
-
-	switch res.StatusCode {
-	case http.StatusCreated:
-		c.log.WithField("method", "fdo.BatchUpload").Info("Ownershipvouchers got created successfully")
-	case http.StatusBadRequest:
-		c.log.WithField("method", "fdo.BatchUpload").Error("Ownershipvouchers couldn't be created, bad request")
-	default:
-		c.log.WithField("method", "fdo.BatchUpload").Error("Ownershipvouchers couldn't be created, unknown error with status code: ", res.StatusCode)
-	}
-	return decodeResBody(&res.Body)
+	return resUploadHandler(c, res)
 }
 
 // BatchDelete used to batch delete ownershipvouchers, received as an array of
@@ -88,18 +56,69 @@ func (c *Client) BatchDelete(fdoUUIDList []string) (interface{}, error) {
 		c.log.WithField("method", "fdo.BatchDelete").Error("No FDO UUIDs provided")
 		return nil, errors.New("no FDO UUIDs provided")
 	}
-	var (
-		host                = config.Get().FDO.URL
-		version             = config.Get().FDO.APIVersion
-		authorizationBearer = fmt.Sprint("Bearer ", config.Get().FDO.AuthorizationBearer)
-	)
-	fdoUUIDListAsBytes, err := json.Marshal(fdoUUIDList)
+	req, _ := reqDeleteBuilder(c, fdoUUIDList) // build request
+	res, err := c.httpClient.Do(req)
+	// handle response
 	if err != nil {
-		c.log.WithField("method", "fdo.BatchDelete").Error("Couldn't marshal FDO GUIDs into json")
+		c.log.WithField("method", "fdo.BatchDelete").Error("Failed to perform api call to remove vouchers ", err)
 		return nil, err
 	}
-	// build request
-	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/management/%s/ownership_voucher/delete", host, version), bytes.NewReader(fdoUUIDListAsBytes))
+	return resDeleteHandler(c, res)
+}
+
+// Decode response body into json
+func decodeResBody(body *io.ReadCloser) (interface{}, error) {
+	var j interface{}
+	err := json.NewDecoder(*body).Decode(&j)
+	return j, err
+}
+
+// basic config for FDO
+func basicConfig() (string, string, string) {
+	host := config.Get().FDO.URL
+	version := config.Get().FDO.APIVersion
+	authorizationBearer := fmt.Sprint("Bearer ", config.Get().FDO.AuthorizationBearer)
+	return host, version, authorizationBearer
+}
+
+// build request for uploading ownershipvouchers
+func reqUploadBuilder(c *Client, ovs []byte, numOfOVs uint) (*http.Request, error) {
+	host, version, authorizationBearer := basicConfig()
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/management/%s/ownership_voucher", host, version), bytes.NewReader(ovs))
+	req.Header.Add("Content-Type", "application/cbor")
+	req.Header.Add("Authorization", authorizationBearer)
+	req.Header.Add("X-Number-Of-Vouchers", strconv.FormatUint(uint64(numOfOVs), 10))
+	req.Header.Add("Accept", "application/json")
+	headers := clients.GetOutgoingHeaders(c.ctx)
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
+	return req, err
+}
+
+// handle response for uploading ownershipvouchers
+func resUploadHandler(c *Client, res *http.Response) (interface{}, error) {
+	defer res.Body.Close()
+	switch res.StatusCode {
+	case http.StatusCreated:
+		c.log.WithField("method", "fdo.resUploadHandler").Info("Ownershipvouchers got created successfully")
+	case http.StatusBadRequest:
+		c.log.WithField("method", "fdo.resUploadHandler").Error("Ownershipvouchers couldn't be created, bad request")
+	default:
+		c.log.WithField("method", "fdo.resUploadHandler").Error("Ownershipvouchers couldn't be created, unknown error with status code: ", res.StatusCode)
+	}
+	return decodeResBody(&res.Body)
+}
+
+// build request for deleting ownershipvouchers
+func reqDeleteBuilder(c *Client, fdoUUIDList []string) (*http.Request, error) {
+	fdoUUIDListAsBytes, err := json.Marshal(fdoUUIDList)
+	if err != nil {
+		c.log.WithField("method", "fdo.reqDeleteBuilder").Error("Couldn't marshal FDO GUIDs into json")
+		return nil, err
+	}
+	host, version, authorizationBearer := basicConfig()
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/management/%s/ownership_voucher/delete", host, version), bytes.NewReader(fdoUUIDListAsBytes))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", authorizationBearer)
 	req.Header.Add("Accept", "application/json")
@@ -107,22 +126,19 @@ func (c *Client) BatchDelete(fdoUUIDList []string) (interface{}, error) {
 	for key, value := range headers {
 		req.Header.Add(key, value)
 	}
+	return req, err
+}
 
-	res, err := c.httpClient.Do(req)
-	// handle response
-	if err != nil {
-		c.log.WithField("method", "fdo.BatchDelete").Error("Failed to perform api call to remove vouchers ", err)
-		return nil, err
-	}
+// handle response for deleting ownershipvouchers
+func resDeleteHandler(c *Client, res *http.Response) (interface{}, error) {
 	defer res.Body.Close()
-
 	switch res.StatusCode {
 	case http.StatusOK:
-		c.log.WithField("method", "fdo.BatchDelete").Info("Ownershipvouchers got removed successfully")
+		c.log.WithField("method", "fdo.resDeleteHandler").Info("Ownershipvouchers got removed successfully")
 	case http.StatusBadRequest:
-		c.log.WithField("method", "fdo.BatchDelete").Error("Ownershipvouchers couldn't be removed, bad request")
+		c.log.WithField("method", "fdo.resDeleteHandler").Error("Ownershipvouchers couldn't be removed, bad request")
 	default:
-		c.log.WithField("method", "fdo.BatchDelete").Error("Ownershipvouchers couldn't be removed, unknown error with status code: ", res.StatusCode)
+		c.log.WithField("method", "fdo.resDeleteHandler").Error("Ownershipvouchers couldn't be removed, unknown error with status code: ", res.StatusCode)
 	}
 	return decodeResBody(&res.Body)
 }
