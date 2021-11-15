@@ -124,10 +124,13 @@ func (s *ImageService) UpdateImage(image *models.Image, account string, previous
 		if err := db.DB.Save(currentImageSet).Error; err != nil {
 			return result.Error
 		}
+		image.Commit.TarRepoURL = previousImage.Commit.TarRepoURL
 	}
+
 	if image.Commit.OSTreeParentCommit == "" {
 		if previousImage.Commit.OSTreeParentCommit != "" {
 			image.Commit.OSTreeParentCommit = previousImage.Commit.OSTreeParentCommit
+
 		} else {
 			var repo *RepoService
 
