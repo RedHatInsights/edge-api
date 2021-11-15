@@ -10,12 +10,6 @@ objects:
     name: psk-playbook-dispatcher
   stringData:
     key: ${PSK_DISPATCHER}
-- apiVersion: v1
-  kind: Secret
-  metadata:
-    name: fdo-authorization-secret
-  stringData:
-    password: ${FDO_AUTH_SECRET}
 - apiVersion: cloud.redhat.com/v1alpha1
   kind: ClowdApp
   metadata:
@@ -76,11 +70,6 @@ objects:
           value: ${FDO_HOST_URL}
         - name: FDO_API_VERSION
           value: ${FDO_API_VERSION}
-        - name: FDO_AUTH_SECRET
-          valueFrom:
-            secretKeyRef:
-              key: password
-              name: fdo-authorization-secret
         - name: PLAYBOOKDISPATCHERPSK
           valueFrom:
             secretKeyRef:
