@@ -96,7 +96,7 @@ func Init() {
 	options.SetDefault("UploadWorkers", 100)
 	options.SetDefault("FDOHostURL", "https://fdo.redhat.com")
 	options.SetDefault("FDOApiVersion", "v1")
-	options.SetDefault("FDOAuthorizationBearer", "lorum ipsum")
+	options.SetDefault("FDOAuthorizationBearer", "lorum-ipsum")
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
