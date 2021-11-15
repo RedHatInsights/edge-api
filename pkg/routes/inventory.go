@@ -48,7 +48,7 @@ func InventoyCtx(next http.Handler) http.Handler {
 		parameters.Page = r.URL.Query().Get("page")
 		parameters.OrderBy = r.URL.Query().Get("order_by")
 		parameters.OrderHow = r.URL.Query().Get("order_how")
-		parameters.HostnameOrId = r.URL.Query().Get("hostname_or_id")
+		parameters.HostnameOrID = r.URL.Query().Get("hostname_or_id")
 		parameters.DeviceStatus = r.URL.Query().Get("device_status")
 		ctx := context.WithValue(r.Context(), inventoryKey, &parameters)
 		next.ServeHTTP(w, r.WithContext(ctx))

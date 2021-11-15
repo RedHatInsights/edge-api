@@ -64,28 +64,32 @@ const (
 	inventoryAPI = "api/inventory/v1/hosts"
 	orderBy      = "updated"
 	orderHow     = "DESC"
-	Fields       = "host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments,rhc_client_id,rhc_config_state"
+	// Fields represents field we get from inventory
+	Fields = "host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments,rhc_client_id,rhc_config_state"
+	// FilterParams represents params to retrieve data from inventory
 	FilterParams = "?staleness=fresh&filter[system_profile][host_type]=edge&fields[system_profile]=host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments,rhc_client_id,rhc_config_state"
 )
 
+// InventoryParams represents the struct of params to be sent
 type InventoryParams struct {
 	PerPage      string
 	Page         string
 	OrderBy      string
 	OrderHow     string
-	HostnameOrId string
+	HostnameOrID string
 	DeviceStatus string
 }
 
+// BuildURL call the inventoryApi endpoint
 func (c *Client) BuildURL(parameters *InventoryParams) string {
-	Url, err := url.Parse(config.Get().InventoryConfig.URL)
+	URL, err := url.Parse(config.Get().InventoryConfig.URL)
 	if err != nil {
 		log.Println("Couldn't parse inventory host")
 		return ""
 	}
-	fmt.Printf("Url:: %v\n", Url)
-	Url.Path += inventoryAPI
-	fmt.Printf("UrlPath:: %v\n", Url.Path)
+	fmt.Printf("Url:: %v\n", URL)
+	URL.Path += inventoryAPI
+	fmt.Printf("UrlPath:: %v\n", URL.Path)
 	params := url.Values{}
 	params.Add("filter[system_profile][host_type]", "edge")
 	params.Add("fields[system_profile]", fmt.Sprintf("%s=%s", "fields[system_profile]", Fields))
@@ -101,12 +105,12 @@ func (c *Client) BuildURL(parameters *InventoryParams) string {
 	if parameters.OrderHow != "" {
 		params.Add("order_how", parameters.OrderHow)
 	}
-	if parameters.HostnameOrId != "" {
-		params.Add("hostname_or_id", parameters.HostnameOrId)
+	if parameters.HostnameOrID != "" {
+		params.Add("hostname_or_id", parameters.HostnameOrID)
 	}
-	Url.RawQuery = params.Encode()
+	URL.RawQuery = params.Encode()
 
-	return Url.String()
+	return URL.String()
 }
 
 // ReturnDevices will return the list of devices without filter by tag or uuid
