@@ -25,6 +25,9 @@ type RepoBuilderInterface interface {
 	BuildUpdateRepo(id uint) (*models.UpdateTransaction, error)
 	ImportRepo(r *models.Repo) (*models.Repo, error)
 	DownloadExtractVersionRepo(c *models.Commit, dest string) error
+	DownloadVersionRepo(c *models.Commit, dest string) (string, error)
+	ExtractVersionRepo(c *models.Commit, tarFileName string, dest string) error
+	UploadVersionRepo(c *models.Commit, tarFileName string, dest string) error
 }
 
 // RepoBuilder is the implementation of a RepoBuilderInterface
@@ -159,7 +162,18 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		return nil, err
 	}
 
-	err = rb.DownloadExtractVersionRepo(&cmt, path)
+	tarFileName, err := rb.DownloadVersionRepo(&cmt, path)
+	errUpload := rb.UploadVersionRepo(&cmt, tarFileName, path)
+	if errUpload != nil {
+		r.Status = models.RepoStatusError
+		result := db.DB.Save(&r)
+		if result.Error != nil {
+			log.Error(err)
+		}
+		log.Error(err)
+		return nil, fmt.Errorf("error Upload repo repo :: %s", errUpload.Error())
+	}
+	err = rb.ExtractVersionRepo(&cmt, tarFileName, path)
 	if err != nil {
 		r.Status = models.RepoStatusError
 		result := db.DB.Save(&r)
@@ -167,7 +181,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 			log.Error(err)
 		}
 		log.Error(err)
-		return nil, fmt.Errorf("error downloading repo and extracting repo :: %s", err.Error())
+		return nil, fmt.Errorf("error extracting repo :: %s", err.Error())
 	}
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
 	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(r.ID), 10))
@@ -184,6 +198,119 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 	}
 
 	return r, nil
+}
+
+// DownloadVersionRepo Download and Extract the repo tarball to dest dir
+func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string) (string, error) {
+	// ensure we weren't passed a nil pointer
+	if c == nil {
+		log.Error("nil pointer to models.Commit provided")
+		return "", errors.New("invalid Commit Provided: nil pointer")
+	}
+	log.Debugf("DownloadExtractVersionRepo::CommitID: %d", c.ID)
+
+	// ensure the destination directory exists and then chdir there
+	log.Debugf("DownloadExtractVersionRepo::dest: %#v", dest)
+	err := os.MkdirAll(dest, os.FileMode(int(0755)))
+	if err != nil {
+		return "", err
+	}
+	err = os.Chdir(dest)
+	if err != nil {
+		return "", err
+	}
+
+	// Save the tarball to the OSBuild Hash ID and then extract it
+	tarFileName := "repo.tar"
+	if c.ImageBuildHash != "" {
+		tarFileName = strings.Join([]string{c.ImageBuildHash, "tar"}, ".")
+	}
+	log.Debugf("DownloadExtractVersionRepo::tarFileName: %#v", tarFileName)
+	if c.TarRepoURL == "" {
+		_, err = grab.Get(filepath.Join(dest, tarFileName), c.ImageBuildTarURL)
+	} else {
+		_, err = grab.Get(filepath.Join(dest, tarFileName), c.TarRepoURL)
+	}
+	if err != nil {
+		log.Error(err)
+		return "", err
+	}
+	log.Debugf("Download finished::tarFileName: %#v", tarFileName)
+
+	// //Upload ImageBuildTar to repo
+	// repoTarUrl, errorUpl := uploadTarRepo(tarFileName, int(*c.RepoID))
+	// c.TarRepoURL = repoTarUrl
+
+	// if errorUpl != nil {
+	// 	log.Errorf("Failed to open file: %s", filepath.Join(dest, tarFileName))
+	// 	log.Error(err)
+	// 	return "", err
+	// }
+	// result := db.DB.Save(c)
+	// if result.Error != nil {
+	// 	return "", err
+	// }
+	return tarFileName, nil
+}
+
+// ExtractVersionRepo Download and Extract the repo tarball to dest dir
+func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string, dest string) error {
+	//Upload ImageBuildTar to repo
+	repoTarUrl, errorUpl := uploadTarRepo(tarFileName, int(*c.RepoID))
+	c.TarRepoURL = repoTarUrl
+
+	if errorUpl != nil {
+		log.Errorf("Failed to open file: %s", filepath.Join(dest, tarFileName))
+		log.Error(errorUpl)
+		return errorUpl
+	}
+	result := db.DB.Save(c)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+// ExtractVersionRepo Download and Extract the repo tarball to dest dir
+func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, dest string) error {
+
+	tarFile, err := os.Open(filepath.Join(dest, tarFileName))
+
+	if err != nil {
+		log.Errorf("Failed to open file: %s", filepath.Join(dest, tarFileName))
+		log.Error(err)
+		return err
+	}
+	err = rb.filesService.GetExtractor().Extract(tarFile, filepath.Join(dest))
+	if err != nil {
+		log.Errorf("Failed to untar file: %s", filepath.Join(dest, tarFileName))
+		log.Error(err)
+		return err
+	}
+	tarFile.Close()
+	log.Debugf("Unpacking tarball finished::tarFileName: %#v", tarFileName)
+
+	err = os.Remove(filepath.Join(dest, tarFileName))
+	if err != nil {
+		log.Errorf("Failed to remove file: %s", filepath.Join(dest, tarFileName))
+		log.Error(err)
+		return err
+	}
+
+	var cmd *exec.Cmd
+	if c.OSTreeRef == "" {
+		cfg := config.Get()
+		cmd = exec.Command("ostree", "--repo", "./repo", "commit", cfg.DefaultOSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber))
+	} else {
+		cmd = exec.Command("ostree", "--repo", "./repo", "commit", c.OSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber))
+	}
+	err = cmd.Run()
+	if err != nil {
+		log.Error("'ostree --repo ./ commit --add-metadata-string' command failed", err)
+		log.Errorf("Failed Command: %s %s %s %s %s %s %s", "ostree", "--repo", "./repo", "commit", c.OSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber))
+	}
+
+	return nil
 }
 
 // DownloadExtractVersionRepo Download and Extract the repo tarball to dest dir
