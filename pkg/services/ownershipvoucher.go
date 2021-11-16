@@ -1,4 +1,4 @@
-package ownershipvoucher
+package services
 
 // #cgo LDFLAGS: -l:libfdo_data.so.0
 // #include <stdlib.h>
@@ -12,28 +12,28 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Service for ownership voucher management
-type Service struct {
+// OwnershipVoucherService for ownership voucher management
+type OwnershipVoucherService struct {
 	ctx context.Context
 	log *log.Entry
 }
 
-// ServiceInterface is the interface for the ownership voucher service
-type ServiceInterface interface {
+// OwnershipVoucherServiceInterface is the interface for the ownership voucher service
+type OwnershipVoucherServiceInterface interface {
 	ParseVouchers(voucherBytes []byte) ([]models.OwnershipVoucherData, error)
 	CreateFDOClient() *fdo.Client
 }
 
-// NewService creates a new ownership voucher service
-func NewService(ctx context.Context, log *log.Entry) ServiceInterface {
-	return &Service{
+// NewOwnershipVoucherService creates a new ownership voucher service
+func NewOwnershipVoucherService(ctx context.Context, log *log.Entry) OwnershipVoucherServiceInterface {
+	return &OwnershipVoucherService{
 		ctx: ctx,
 		log: log.WithField("service", "ownershipvoucher"),
 	}
 }
 
 // ParseVouchers parses vouchers from a byte array, returning the data and error if any
-func (ovs *Service) ParseVouchers(voucherBytes []byte) ([]models.OwnershipVoucherData, error) {
+func (ovs *OwnershipVoucherService) ParseVouchers(voucherBytes []byte) ([]models.OwnershipVoucherData, error) {
 	voucherBytesLen := C.size_t(len(voucherBytes))
 	voucherCBytes := C.CBytes(voucherBytes)
 	defer C.free(voucherCBytes)
@@ -63,6 +63,6 @@ func (ovs *Service) ParseVouchers(voucherBytes []byte) ([]models.OwnershipVouche
 }
 
 // CreateFDOClient creates a new FDO client
-func (ovs *Service) CreateFDOClient() *fdo.Client {
+func (ovs *OwnershipVoucherService) CreateFDOClient() *fdo.Client {
 	return fdo.InitClient(ovs.ctx, ovs.log)
 }

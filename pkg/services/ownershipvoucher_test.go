@@ -1,4 +1,4 @@
-package ownershipvoucher_test
+package services_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	ov "github.com/redhatinsights/edge-api/pkg/services/ownershipvoucher"
+	"github.com/redhatinsights/edge-api/pkg/services"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -21,7 +21,8 @@ var _ = Describe("Ownershipvoucher", func() {
 	})
 	Context("parse ov", func() {
 		It("should parse without error", func() {
-			ovs := ov.NewService(context.Background(), log.NewEntry(log.New()))
+
+			ovs := services.NewOwnershipVoucherService(context.Background(), log.NewEntry(log.New()))
 			data, err := ovs.ParseVouchers(ovb)
 			Expect(err).To(BeNil())
 			Expect(data[0].ProtocolVersion).To(Equal(uint(100)))
@@ -30,7 +31,7 @@ var _ = Describe("Ownershipvoucher", func() {
 		})
 		It("should parse with error", func() {
 			badOV := ovb[1:]
-			ovs := ov.NewService(context.Background(), log.NewEntry(log.New()))
+			ovs := services.NewOwnershipVoucherService(context.Background(), log.NewEntry(log.New()))
 			data, err := ovs.ParseVouchers(badOV)
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(Equal("failed to parse voucher"))

@@ -6,7 +6,6 @@ import (
 
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
-	"github.com/redhatinsights/edge-api/pkg/services/ownershipvoucher"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	log "github.com/sirupsen/logrus"
 )
@@ -20,7 +19,7 @@ type EdgeAPIServices struct {
 	ImageSetService         services.ImageSetsServiceInterface
 	UpdateService           services.UpdateServiceInterface
 	ThirdPartyRepoService   services.ThirdPartyRepoServiceInterface
-	OwnershipVoucherService ownershipvoucher.ServiceInterface
+	OwnershipVoucherService services.OwnershipVoucherServiceInterface
 	Log                     *log.Entry
 }
 
@@ -39,7 +38,7 @@ func Init(ctx context.Context) *EdgeAPIServices {
 		UpdateService:           services.NewUpdateService(ctx),
 		DeviceService:           services.NewDeviceService(ctx),
 		ThirdPartyRepoService:   services.NewThirdPartyRepoService(ctx),
-		OwnershipVoucherService: ownershipvoucher.NewService(ctx, log),
+		OwnershipVoucherService: services.NewOwnershipVoucherService(ctx, log),
 		Log:                     log,
 	}
 }
