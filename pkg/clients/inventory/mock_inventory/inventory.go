@@ -5,51 +5,50 @@
 package mock_inventory
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	inventory "github.com/redhatinsights/edge-api/pkg/clients/inventory"
+	reflect "reflect"
 )
 
-// MockClientInterface is a mock of ClientInterface interface.
+// MockClientInterface is a mock of ClientInterface interface
 type MockClientInterface struct {
 	ctrl     *gomock.Controller
 	recorder *MockClientInterfaceMockRecorder
 }
 
-// MockClientInterfaceMockRecorder is the mock recorder for MockClientInterface.
+// MockClientInterfaceMockRecorder is the mock recorder for MockClientInterface
 type MockClientInterfaceMockRecorder struct {
 	mock *MockClientInterface
 }
 
-// NewMockClientInterface creates a new mock instance.
+// NewMockClientInterface creates a new mock instance
 func NewMockClientInterface(ctrl *gomock.Controller) *MockClientInterface {
 	mock := &MockClientInterface{ctrl: ctrl}
 	mock.recorder = &MockClientInterfaceMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use.
+// EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockClientInterface) EXPECT() *MockClientInterfaceMockRecorder {
 	return m.recorder
 }
 
-// ReturnDevices mocks base method.
-func (m *MockClientInterface) ReturnDevices() (inventory.Response, error) {
+// ReturnDevices mocks base method
+func (m *MockClientInterface) ReturnDevices(parameters *inventory.InventoryParams) (inventory.Response, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReturnDevices")
+	ret := m.ctrl.Call(m, "ReturnDevices", parameters)
 	ret0, _ := ret[0].(inventory.Response)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ReturnDevices indicates an expected call of ReturnDevices.
-func (mr *MockClientInterfaceMockRecorder) ReturnDevices() *gomock.Call {
+// ReturnDevices indicates an expected call of ReturnDevices
+func (mr *MockClientInterfaceMockRecorder) ReturnDevices(parameters interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReturnDevices", reflect.TypeOf((*MockClientInterface)(nil).ReturnDevices))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReturnDevices", reflect.TypeOf((*MockClientInterface)(nil).ReturnDevices), parameters)
 }
 
-// ReturnDevicesByID mocks base method.
+// ReturnDevicesByID mocks base method
 func (m *MockClientInterface) ReturnDevicesByID(deviceID string) (inventory.Response, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReturnDevicesByID", deviceID)
@@ -58,13 +57,13 @@ func (m *MockClientInterface) ReturnDevicesByID(deviceID string) (inventory.Resp
 	return ret0, ret1
 }
 
-// ReturnDevicesByID indicates an expected call of ReturnDevicesByID.
+// ReturnDevicesByID indicates an expected call of ReturnDevicesByID
 func (mr *MockClientInterfaceMockRecorder) ReturnDevicesByID(deviceID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReturnDevicesByID", reflect.TypeOf((*MockClientInterface)(nil).ReturnDevicesByID), deviceID)
 }
 
-// ReturnDevicesByTag mocks base method.
+// ReturnDevicesByTag mocks base method
 func (m *MockClientInterface) ReturnDevicesByTag(tag string) (inventory.Response, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReturnDevicesByTag", tag)
@@ -73,8 +72,22 @@ func (m *MockClientInterface) ReturnDevicesByTag(tag string) (inventory.Response
 	return ret0, ret1
 }
 
-// ReturnDevicesByTag indicates an expected call of ReturnDevicesByTag.
+// ReturnDevicesByTag indicates an expected call of ReturnDevicesByTag
 func (mr *MockClientInterfaceMockRecorder) ReturnDevicesByTag(tag interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReturnDevicesByTag", reflect.TypeOf((*MockClientInterface)(nil).ReturnDevicesByTag), tag)
+}
+
+// BuildURL mocks base method
+func (m *MockClientInterface) BuildURL(parameters *inventory.InventoryParams) string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BuildURL", parameters)
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// BuildURL indicates an expected call of BuildURL
+func (mr *MockClientInterfaceMockRecorder) BuildURL(parameters interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BuildURL", reflect.TypeOf((*MockClientInterface)(nil).BuildURL), parameters)
 }
