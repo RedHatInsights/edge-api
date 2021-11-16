@@ -124,7 +124,6 @@ func (s *ImageService) UpdateImage(image *models.Image, account string, previous
 		if err := db.DB.Save(currentImageSet).Error; err != nil {
 			return result.Error
 		}
-		image.Commit.TarRepoURL = previousImage.Commit.TarRepoURL
 	}
 
 	if image.Commit.OSTreeParentCommit == "" {
@@ -697,15 +696,15 @@ func (s *ImageService) RetryCreateImage(image *models.Image) error {
 }
 
 func uploadTarRepo(imageName string, repoId int) (string, error) {
-	fmt.Printf("::uploadTarRepo::\n")
+	log.Infof(":: uploadTarRepo Started ::\n")
 	uploadPath := fmt.Sprintf("/tar/%v/%s", repoId, imageName)
-	fmt.Printf("::uploadPath:: %v\n", uploadPath)
 	filesService := NewFilesService()
 	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
-	fmt.Printf("::TAR REPO URL:: %v\n", url)
+
 	if err != nil {
 		return "error", fmt.Errorf("error uploading the Tar :: %s :: %s", uploadPath, err.Error())
 	}
+	log.Infof(":: uploadTarRepo Finish ::\n")
 
 	return url, nil
 }

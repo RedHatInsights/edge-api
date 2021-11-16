@@ -242,30 +242,14 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string) (strin
 		tarFileName = strings.Join([]string{c.ImageBuildHash, "tar"}, ".")
 	}
 	log.Debugf("DownloadExtractVersionRepo::tarFileName: %#v", tarFileName)
-	if c.TarRepoURL == "" {
-		_, err = grab.Get(filepath.Join(dest, tarFileName), c.ImageBuildTarURL)
-	} else {
-		_, err = grab.Get(filepath.Join(dest, tarFileName), c.TarRepoURL)
-	}
+	_, err = grab.Get(filepath.Join(dest, tarFileName), c.ImageBuildTarURL)
+
 	if err != nil {
 		log.Error(err)
 		return "", err
 	}
 	log.Debugf("Download finished::tarFileName: %#v", tarFileName)
 
-	// //Upload ImageBuildTar to repo
-	// repoTarUrl, errorUpl := uploadTarRepo(tarFileName, int(*c.RepoID))
-	// c.TarRepoURL = repoTarUrl
-
-	// if errorUpl != nil {
-	// 	log.Errorf("Failed to open file: %s", filepath.Join(dest, tarFileName))
-	// 	log.Error(err)
-	// 	return "", err
-	// }
-	// result := db.DB.Save(c)
-	// if result.Error != nil {
-	// 	return "", err
-	// }
 	return tarFileName, nil
 }
 
@@ -274,7 +258,7 @@ func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string, d
 	//Upload ImageBuildTar to repo
 	log.Debugf("UploadVersionRepo::CommitID: %d", c.ID)
 	repoTarUrl, errorUpl := uploadTarRepo(tarFileName, int(*c.RepoID))
-	c.TarRepoURL = repoTarUrl
+	c.ImageBuildTarURL = repoTarUrl
 	log.Debugf("Finish UploadVersionRepo::CommitID: %d", c.ID)
 	if errorUpl != nil {
 		log.Errorf("Failed to open file: %s", filepath.Join(dest, tarFileName))

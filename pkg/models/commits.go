@@ -17,7 +17,6 @@ type Commit struct {
 	ImageBuildHash       string             `json:"ImageBuildHash"`
 	ImageBuildParentHash string             `json:"ImageBuildParentHash"`
 	ImageBuildTarURL     string             `json:"ImageBuildTarURL"`
-	TarRepoURL           string             `json:"TarRepoURL"`
 	OSTreeCommit         string             `json:"OSTreeCommit"`
 	OSTreeParentCommit   string             `json:"OSTreeParentCommit"`
 	OSTreeRef            string             `json:"OSTreeRef"`
