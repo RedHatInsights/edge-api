@@ -2869,6 +2869,16 @@
             },
             "description": "OK"
           },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.NotFound"
+                }
+              }
+            },
+            "description": "third party repository was not found."
+          },
           "500": {
             "content": {
               "application/json": {
@@ -2905,6 +2915,16 @@
               }
             },
             "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.NotFound"
+                }
+              }
+            },
+            "description": "third party repository was not found."
           },
           "500": {
             "content": {

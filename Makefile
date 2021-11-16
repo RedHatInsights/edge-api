@@ -45,13 +45,13 @@ help:
 
 
 test:
-	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS)
+	go test $$(go list ./... | grep -Ev '(/test/|/ownershipvoucher|/fdo)') $(TEST_OPTIONS)
 
 coverage: 
 	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
 
 vet:
-	go vet $$(go list ./... | grep -v /vendor/)
+	go vet $$(go list ./... | grep -Ev '(/vendor/|/ownershipvoucher|/fdo)')
 
 lint:
 	golint $$(go list ./... | grep -v /vendor/)

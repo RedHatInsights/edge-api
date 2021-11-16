@@ -7,71 +7,110 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
-func setUp() {
-	config.Init()
-	config.Get().Debug = true
+func TestModels(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Image Builder Client Suite")
 }
 
-func tearDown() {
+var _ = Describe("Image Builder Client Test", func() {
+	var client *Client
+	var dbName string
+	BeforeEach(func() {
+		config.Init()
+		config.Get().Debug = true
+		dbName = fmt.Sprintf("%d-client.db", time.Now().UnixNano())
+		config.Get().Database.Name = dbName
+		db.InitDB()
 
-}
+		err := db.DB.AutoMigrate(
+			&models.ImageSet{},
+			&models.Commit{},
+			&models.UpdateTransaction{},
+			&models.Package{},
+			&models.Image{},
+			&models.Repo{},
+			&models.Device{},
+			&models.DispatchRecord{},
+		)
+		if err != nil {
+			panic(err)
+		}
+		client = InitClient(context.Background(), log.NewEntry(log.StandardLogger()))
+	})
+	AfterEach(func() {
+		os.Remove(dbName)
+	})
+	It("should init client", func() {
+		Expect(client).ToNot(BeNil())
+	})
+	It("test compose image", func() {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprintln(w, `{"id": "compose-job-id-returned-from-image-builder"}`)
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
 
-func TestMain(m *testing.M) {
-	setUp()
-	retCode := m.Run()
-	tearDown()
-	os.Exit(retCode)
-}
-func TestInitClient(t *testing.T) {
-	ctx := context.Background()
-	client := InitClient(ctx, &log.Entry{})
-	if client == nil {
-		t.Errorf("Client shouldnt be nil")
-	}
-}
+		pkgs := []models.Package{
+			{
+				Name: "vim",
+			},
+			{
+				Name: "ansible",
+			},
+		}
+		img := &models.Image{Distribution: "rhel-8",
+			Packages: pkgs,
+			Commit: &models.Commit{
+				Arch: "x86_64",
+				Repo: &models.Repo{},
+			}}
+		img, err := client.ComposeCommit(img)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(img).ToNot(BeNil())
+		Expect(img.Commit.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
+	})
+	It("test compose installer", func() {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprintln(w, `{"id": "compose-job-id-returned-from-image-builder"}`)
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
 
-func TestComposeImage(t *testing.T) {
-	config.Init()
-
-	ctx := context.Background()
-	client := InitClient(ctx, log.NewEntry(log.StandardLogger()))
-
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		fmt.Fprintln(w, `{"id": "compose-job-id-returned-from-image-builder"}`)
-	}))
-	defer ts.Close()
-	config.Get().ImageBuilderConfig.URL = ts.URL
-
-	pkgs := []models.Package{
-		{
-			Name: "vim",
-		},
-		{
-			Name: "ansible",
-		},
-	}
-	img := &models.Image{Distribution: "rhel-8",
-		Packages: pkgs,
-		Commit: &models.Commit{
-			Arch: "x86_64",
-		}}
-	img, err := client.ComposeCommit(img)
-	if err != nil {
-		t.Errorf("Shouldnt throw error")
-	}
-	if img == nil {
-		t.Errorf("Image shouldnt be nil")
-	}
-	if img != nil && img.Commit.ComposeJobID != "compose-job-id-returned-from-image-builder" {
-		t.Error("Compose job is not correct")
-	}
-}
+		pkgs := []models.Package{
+			{
+				Name: "vim",
+			},
+			{
+				Name: "ansible",
+			},
+		}
+		img := &models.Image{Distribution: "rhel-8",
+			Packages: pkgs,
+			Commit: &models.Commit{
+				Arch: "x86_64",
+				Repo: &models.Repo{},
+			},
+			Installer: &models.Installer{},
+		}
+		img, err := client.ComposeInstaller(img)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(img).ToNot(BeNil())
+		Expect(img.Installer.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
+	})
+})

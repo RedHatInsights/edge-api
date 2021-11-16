@@ -1,4 +1,3 @@
----
 # This playbook is meant to be an all-in-one
 - name: Run the ostree update in a single play without external deps
   become: true
@@ -14,6 +13,28 @@
       gpg-verify={{.OstreeGpgVerify}}
       gpgkeypath={{.OstreeGpgKeypath}}
       contenturl={{.OstreeContentURL}}
+    insights_signature_exclude: /vars/insights_signature
+    insights_signature: !!binary |
+      TFMwdExTMUNSVWRKVGlCUVIxQWdVMGxIVGtGVVZWSkZMUzB0TFMwS1ZtVnljMmx2YmpvZ1IyNTFV
+      RWNnZGpFS0NtbFJTVlpCZDFWQldWbDROR3RqZG5jMU9FUXJhalZ3VGtGUloyUlNVUzh2VmxjM1Zs
+      aG5OM0Y0Y25FMlNXSlRLMHBxUjFKVWJXWjZUM0p5UlRsVFRtSUtlSFJqU25WTk0zRjViSGd4VVd0
+      T1NtRnhlR2xoSzFWdGQzaHBZV0ZJVjBGR1Z6SkJRakJXYW5NNFNVUnlkVVpvUVVWcVRWcG1ibE5G
+      YlRnMlFVNHZPUXB1WlVrelJqSmFSbTk2T0RkMldUTmlVM1l3Y1ZkWWVtTnFTVWxqV1hZd1JtcFJi
+      bFZTZEhOSGIybE1ORzFXYTFGdE4yMW1WazFpV1hoSmJVMVlVREpGQ2taYVZFaHpOMDgwYkdKU2Nu
+      UnpURmw2TUVOd1pXbERVMjAyVGsxVlRHeDVTamRsVVd4SllqQkxPVUZKY2xKYU1qRXJORWxYUmt4
+      QmNFSlhPVGR6U1c4S2VtNXVSbUo1UzJnM1VtTXhka3RCYWxRcmIzRmlPVGxHV2lzMFNub3pkSGxK
+      ZG1ObmRFRTFjbmh5U2tRMlNVUkdVVTFUVVZSTlJqSnJOWEpWWWxSdldBb3dOVzl3VFZadFZuQnJN
+      bHBRWml0NE1WUkZibWRxTmpsTVJGbDVMMDR6YjBZNVpEWlZkRk12T1dkQ1VIRTVURGx4VVhwTWFV
+      SXdWM0YyT0ZoTlIwSk9Dblp0VUhOT1VsSmtXRWw0YjI1T1dXSlFUbE00ZDFkVFlXcEVObkZsZDFK
+      WGJFRXhUM0UxTDJzek1ITnFhbVJzTUVkWWFVSTNMemhvYkVKRVVVcE5abVFLWW5JMU1UbHdhRnBJ
+      YzNaSWFEUTBjV0ZPWW1aM1kyTjZXVk42SzJ0aU9FRkZlRmg0V1c1aFJpODJOVFJMUkdKeU9EaFZl
+      VnBvZURkRmRXbElSVUZ4THdveFpUbGhTVFJwUjBGcVlXcElWVGxyVEZGeFJrazFOVWRzVXpSaGNF
+      UllRVlEzUVVwTk9XRmxWSGRaZUhwaFFXTm9SR3BvTldWRFltbFdlbHBMYVV4MUNqRnZNVEl6ZFVs
+      VmVteEdla05LUVVwb2VqZEhaMjVEVTA1R04waHlVR1V5Y1N0TmRUUXpjMms0Y0hGTFp6Y3hlWFZO
+      TlZndlZHWkRjVkkzVkdKc1Uxa0tZVVZaVDNWMWVuaFhjV1ZFYm01Qk5FMVFabGxCUTFrNWEweDVj
+      akZIU0dzMFoxSkZWSEJMV21zNVFWTjFhekpwWmsxamRtWlNaMDVJY0VnMWNXbENVd3BwYkVKSmFX
+      dzVWVVJzY3owS1BUQnZjbmtLTFMwdExTMUZUa1FnVUVkUUlGTkpSMDVCVkZWU1JTMHRMUzB0Q2c9
+      PQ==
   tasks:
     - name: apply templated ostree remote config
       ansible.builtin.copy:

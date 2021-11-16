@@ -645,6 +645,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/v1.CreateThirdPartyRepo'
           description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.NotFound"
+          description: third party repository was not found.
         "500":
           content:
             application/json:
@@ -703,8 +709,14 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.CreateThirdPartyRepo'
+                $ref: "#/components/schemas/v1.CreateThirdPartyRepo"
           description: OK
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.NotFound"
+          description: third party repository was not found.
         "500":
           content:
             application/json:

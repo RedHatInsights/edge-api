@@ -12,6 +12,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	"github.com/redhatinsights/edge-api/pkg/services"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -60,7 +61,6 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = services.ThirdPartyRepoService.CreateThirdPartyRepo(tprepo, account)
-
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -153,11 +153,17 @@ func GetThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 	ID := chi.URLParam(r, "ID")
 	tprepo, err := s.ThirdPartyRepoService.GetThirdPartyRepoByID(ID)
 	if err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		err.SetTitle("failed getting third party repository")
-		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		var responseErr errors.APIError
+		switch err.(type) {
+		case *services.ThirdPartyRepositoryNotFound:
+			responseErr = errors.NewNotFound(err.Error())
+		default:
+			responseErr = errors.NewInternalServerError()
+			responseErr.SetTitle("failed getting third party repository")
+		}
+		log.Error(responseErr)
+		w.WriteHeader(responseErr.GetStatus())
+		json.NewEncoder(w).Encode(&responseErr)
 		return
 	}
 	json.NewEncoder(w).Encode(&tprepo)
@@ -195,8 +201,11 @@ func CreateThirdPartyRepoUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(&tprepo)
-
+	repoDetails, err := services.ThirdPartyRepoService.GetThirdPartyRepoByID(ID)
+	if err != nil {
+		log.Info(err)
+	}
+	json.NewEncoder(w).Encode(repoDetails)
 }
 
 // DeleteThirdPartyRepoByID deletes the third party repository using ID
@@ -206,12 +215,19 @@ func DeleteThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 
 	tprepo, err := s.ThirdPartyRepoService.DeleteThirdPartyRepoByID(ID)
 	if err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
-		err.SetTitle("failed deleting third party repository")
-		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		var responseErr errors.APIError
+		switch err.(type) {
+		case *services.ThirdPartyRepositoryNotFound:
+			responseErr = errors.NewNotFound(err.Error())
+		default:
+			responseErr = errors.NewInternalServerError()
+			responseErr.SetTitle("failed deleting third party repository")
+		}
+		log.Error(responseErr)
+		w.WriteHeader(responseErr.GetStatus())
+		json.NewEncoder(w).Encode(&responseErr)
 		return
 	}
+	_ = tprepo
 	json.NewEncoder(w).Encode(&tprepo)
 }

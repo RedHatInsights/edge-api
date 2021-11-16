@@ -66,6 +66,10 @@ objects:
           value: ${INVENTORYURL}
         - name: PLAYBOOKDISPATCHERURL
           value: ${PLAYBOOKDISPATCHERURL}
+        - name: FDO_HOST_URL
+          value: ${FDO_HOST_URL}
+        - name: FDO_API_VERSION
+          value: ${FDO_API_VERSION}
         - name: PLAYBOOKDISPATCHERPSK
           valueFrom:
             secretKeyRef:
@@ -138,3 +142,7 @@ parameters:
   value: "https://cloud.stage.redhat.com"
 - name: UPLOADWORKERS
   value: "100"
+- name: FDO_HOST_URL
+  value: "https://fdo.redhat.com"
+- name: FDO_API_VERSION
+  value: "v1"

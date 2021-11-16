@@ -9,5 +9,5 @@ import (
 
 func TestOwnershipvoucher(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "OwnershipVoucherDe Suite")
+	RunSpecs(t, "Ownershipvoucher Suite")
 }
