@@ -15,7 +15,7 @@ type Device struct {
 	DesiredHash string                `json:"DesiredHash"`
 	RHCClientID string                `json:"RHCClientID"`
 	Connected   bool                  `gorm:"default:true" json:"Connected"`
-	FDO         *OwnershipVoucherData `json:"fdo"`
+	FDO         *OwnershipVoucherData `gorm:"foreignKey:fdo" json:"fdo"`
 }
 
 // UpdateTransaction represents the combination of an OSTree commit and a set of Inventory
