@@ -3,8 +3,10 @@ package routes
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -22,7 +24,7 @@ const tprepoKey tprepoTypeKey = iota
 
 // MakeThirdPartyRepoRouter adds suport for operation on ThirdPartyRepo
 func MakeThirdPartyRepoRouter(sub chi.Router) {
-	sub.With(common.Paginate).Get("/", GetAllThirdPartyRepo)
+	sub.With(validateGetAllThirdPartyRepoFilterParams).With(common.Paginate).Get("/", GetAllThirdPartyRepo)
 	sub.Post("/", CreateThirdPartyRepo)
 	sub.Route("/{ID}", func(r chi.Router) {
 		r.Use(ThirdPartyRepoCtx)
@@ -31,6 +33,18 @@ func MakeThirdPartyRepoRouter(sub chi.Router) {
 		r.Delete("/", DeleteThirdPartyRepoByID)
 	})
 }
+
+var thirdPartyRepoFilters = common.ComposeFilters(
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "name",
+		DBField:    "third_party_repos.name",
+	}),
+	common.CreatedAtFilterHandler(&common.Filter{
+		QueryParam: "created_at",
+		DBField:    "third_party_repos.created_at",
+	}),
+	common.SortFilterHandler("third_party_repos", "created_at", "DESC"),
+)
 
 // A CreateTPRepoRequest model.
 type CreateTPRepoRequest struct {
@@ -99,6 +113,7 @@ func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRe
 func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	var tprepo *[]models.ThirdPartyRepo
 	var count int64
+	result := thirdPartyRepoFilters(r, db.DB)
 	account, err := common.GetAccount(r)
 	if err != nil {
 		log.Info(err)
@@ -108,7 +123,7 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	pagination := common.GetPagination(r)
-	countResult := imageFilters(r, db.DB.Model(&models.ThirdPartyRepo{})).Where("account = ?", account).Count(&count)
+	countResult := thirdPartyRepoFilters(r, db.DB.Model(&models.ThirdPartyRepo{})).Where("account = ?", account).Count(&count)
 	if countResult.Error != nil {
 		countErr := errors.NewInternalServerError()
 		log.Error(countErr)
@@ -116,7 +131,13 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&countErr)
 		return
 	}
-	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&tprepo)
+	log.Debugf("r.URL.Query() %v \n", r.URL.Query().Get("sort_by"))
+	if r.URL.Query().Get("sort_by") != "name" && r.URL.Query().Get("sort_by") != "-name" {
+		result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&tprepo)
+
+	} else {
+		result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&tprepo)
+	}
 	if result.Error != nil {
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
@@ -230,4 +251,31 @@ func DeleteThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = tprepo
 	json.NewEncoder(w).Encode(&tprepo)
+}
+
+func validateGetAllThirdPartyRepoFilterParams(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		errs := []validationError{}
+		if val := r.URL.Query().Get("created_at"); val != "" {
+			if _, err := time.Parse(common.LayoutISO, val); err != nil {
+				errs = append(errs, validationError{Key: "created_at", Reason: err.Error()})
+			}
+		}
+		if val := r.URL.Query().Get("sort_by"); val != "" {
+			name := val
+			if string(val[0]) == "-" {
+				name = val[1:]
+			}
+			if name != "name" && name != "created_at" {
+				errs = append(errs, validationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must be name or created_at", name)})
+			}
+		}
+
+		if len(errs) == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(&errs)
+	})
 }
