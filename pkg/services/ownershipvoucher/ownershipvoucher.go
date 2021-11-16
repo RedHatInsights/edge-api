@@ -25,9 +25,7 @@ type OwnershipVoucherServiceInterface interface {
 func NewOwnershipVoucherService(ctx context.Context, log *log.Entry) OwnershipVoucherServiceInterface {
 	return &OwnershipVoucherService{
 		ctx: ctx,
-		log: log.WithFields(log.Fields{
-			"service": "ownershipvoucher",
-		}),
+		log: log.WithField("service", "ownershipvoucher"),
 	}
 }
 
