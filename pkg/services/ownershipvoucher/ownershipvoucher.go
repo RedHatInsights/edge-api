@@ -7,6 +7,7 @@ import "C"
 import (
 	"context"
 	"errors"
+	"github.com/redhatinsights/edge-api/pkg/clients/fdo"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
@@ -18,6 +19,7 @@ type OwnershipVoucherService struct {
 
 type OwnershipVoucherServiceInterface interface {
 	ParseVouchers(voucherBytes []byte) ([]models.OwnershipVoucherData, error)
+	CreateFDOClient() *fdo.Client
 }
 
 func NewOwnershipVoucherService(ctx context.Context, log *log.Entry) OwnershipVoucherServiceInterface {
@@ -57,4 +59,8 @@ func (ovs *OwnershipVoucherService) ParseVouchers(voucherBytes []byte) ([]models
 			DeviceName:      devinfo,
 		},
 	}, nil
+}
+
+func (ovs *OwnershipVoucherService) CreateFDOClient() *fdo.Client {
+	return fdo.InitClient(ovs.ctx, ovs.log)
 }
