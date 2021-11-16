@@ -3,7 +3,6 @@ package routes
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -42,7 +41,6 @@ func DeviceCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var uCtx DeviceContext
 		uCtx.DeviceUUID = chi.URLParam(r, "DeviceUUID")
-		fmt.Printf(":::: Device CTX %v\n ::::", uCtx)
 		if uCtx.DeviceUUID == "" {
 			err := errors.NewBadRequest("DeviceUUID must be sent")
 			w.WriteHeader(err.GetStatus())

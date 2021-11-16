@@ -12,11 +12,12 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services"
 )
 
-// MakeDevicesRouter adds support for operations on invetory
+// MakeInventoryRouter adds support for operations on invetory
 func MakeInventoryRouter(sub chi.Router) {
 	sub.Get("/", GetInventory)
 }
 
+// InventoryData represents the structure of inventory response
 type InventoryData struct {
 	Total    int
 	Count    int
@@ -25,6 +26,7 @@ type InventoryData struct {
 	Results  []InventoryResponse
 }
 
+// InventoryResponse represents the structure of inventory data on response
 type InventoryResponse struct {
 	ID         string
 	DeviceName string
@@ -32,6 +34,7 @@ type InventoryResponse struct {
 	ImageInfo  *services.ImageInfo
 }
 
+// GetInventory make the call to inventory api and inject edge info
 func GetInventory(w http.ResponseWriter, r *http.Request) {
 	var param *inventory.InventoryParams
 	param = new(inventory.InventoryParams)
@@ -65,12 +68,12 @@ func GetInventory(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(InventoryData)
 }
 
+// GetUpdateAvailableInfo returns the image information
 func GetUpdateAvailableInfo(param *inventory.InventoryParams, r *http.Request, inventoryResp inventory.Response) (IvtResponse []InventoryResponse) {
 	var ivt []InventoryResponse
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	deviceService := services.DeviceService
-	// ctx := r.Context()
-	// param := ctx.Value(inventoryKey).(*inventory.InventoryParams)
+
 	for _, device := range inventoryResp.Result {
 		var i InventoryResponse
 		imageInfo, err := deviceService.GetDeviceImageInfo(device.ID)
