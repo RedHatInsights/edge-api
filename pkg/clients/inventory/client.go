@@ -93,19 +93,19 @@ func (c *Client) BuildURL(parameters *InventoryParams) string {
 	params := url.Values{}
 	params.Add("filter[system_profile][host_type]", "edge")
 	params.Add("fields[system_profile]", fmt.Sprintf("%s=%s", "fields[system_profile]", Fields))
-	if parameters.PerPage != "" {
+	if parameters != nil && parameters.PerPage != "" {
 		params.Add("per_page", parameters.PerPage)
 	}
-	if parameters.Page != "" {
+	if parameters != nil && parameters.Page != "" {
 		params.Add("page", parameters.Page)
 	}
-	if parameters.OrderBy != "" {
+	if parameters != nil && parameters.OrderBy != "" {
 		params.Add("order_by", parameters.OrderBy)
 	}
-	if parameters.OrderHow != "" {
+	if parameters != nil && parameters.OrderHow != "" {
 		params.Add("order_how", parameters.OrderHow)
 	}
-	if parameters.HostnameOrID != "" {
+	if parameters != nil && parameters.HostnameOrID != "" {
 		params.Add("hostname_or_id", parameters.HostnameOrID)
 	}
 	URL.RawQuery = params.Encode()
