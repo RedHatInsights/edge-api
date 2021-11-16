@@ -17,8 +17,6 @@ COPY --from=base /fido-device-onboard-rs/libfdo-data/test_assets/testdevice1.ov 
 
 RUN microdnf install make go -y
 RUN echo -e 'if [[ ! -d "edge-api" ]];then microdnf install git -y && git clone https://github.com/RedHatInsights/edge-api.git; fi\n \ 
-    cd edge-api\n \
-    cp ../testdevice1.ov pkg/services/ownershipvoucher/\n \
-    make coverage' > test.sh
+    make -C edge-api coverage' > test.sh
 RUN chmod +x ./test.sh
 CMD [ "sh", "./test.sh" ]
