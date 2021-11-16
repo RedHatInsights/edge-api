@@ -9,7 +9,9 @@ import (
 	"strings"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/go-chi/chi"
@@ -61,6 +63,7 @@ var imageStatusFilters = common.ComposeFilters(
 func ImageSetCtx(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 		var imageSet models.ImageSet
 		account, err := common.GetAccount(r)
 		if err != nil {
@@ -88,6 +91,35 @@ func ImageSetCtx(next http.Handler) http.Handler {
 			}
 			db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
 			db.DB.Where("id = ?", &imageSet.Images[len(imageSet.Images)-1].InstallerID).Find(&imageSet.Images[len(imageSet.Images)-1].Installer)
+
+			var Imgs []models.Image
+			for _, image := range imageSet.Images {
+				id := strconv.FormatUint(uint64(image.ID), 10)
+				if err != nil {
+					//do something
+				}
+				img, err := s.ImageService.GetImageByID(id)
+				if err != nil {
+					var responseErr errors.APIError
+					switch err.(type) {
+					case *services.ImageNotFoundError:
+						responseErr = errors.NewNotFound(err.Error())
+					case *services.AccountNotSet:
+						responseErr = errors.NewBadRequest(err.Error())
+					case *services.IDMustBeInteger:
+						responseErr = errors.NewBadRequest(err.Error())
+					default:
+						responseErr = errors.NewInternalServerError()
+					}
+					w.WriteHeader(responseErr.GetStatus())
+					json.NewEncoder(w).Encode(&responseErr)
+					return
+				}
+				Imgs = append(Imgs, *img)
+
+			}
+			imageSet.Images = Imgs
+
 			ctx := context.WithValue(r.Context(), imageSetKey, &imageSet)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
