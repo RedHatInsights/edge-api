@@ -11,10 +11,10 @@ import (
 //	and 1 is reachable.
 type Device struct {
 	Model
-	UUID        string               `json:"UUID"`
-	DesiredHash string               `json:"DesiredHash"`
-	RHCClientID string               `json:"RHCClientID"`
-	Connected   bool                 `gorm:"default:true" json:"Connected"`
+	UUID        string                `json:"UUID"`
+	DesiredHash string                `json:"DesiredHash"`
+	RHCClientID string                `json:"RHCClientID"`
+	Connected   bool                  `gorm:"default:true" json:"Connected"`
 	FDO         *OwnershipVoucherData `json:"fdo"`
 }
 
