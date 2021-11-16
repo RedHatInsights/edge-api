@@ -125,9 +125,11 @@ func (s *ImageService) UpdateImage(image *models.Image, account string, previous
 			return result.Error
 		}
 	}
+
 	if image.Commit.OSTreeParentCommit == "" {
 		if previousImage.Commit.OSTreeParentCommit != "" {
 			image.Commit.OSTreeParentCommit = previousImage.Commit.OSTreeParentCommit
+
 		} else {
 			var repo *RepoService
 
@@ -692,4 +694,18 @@ func (s *ImageService) RetryCreateImage(image *models.Image) error {
 	go s.postProcessImage(image.ID)
 
 	return nil
+}
+
+func uploadTarRepo(imageName string, repoId int) (string, error) {
+	log.Infof(":: uploadTarRepo Started ::\n")
+	uploadPath := fmt.Sprintf("/tar/%v/%s", repoId, imageName)
+	filesService := NewFilesService()
+	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
+
+	if err != nil {
+		return "error", fmt.Errorf("error uploading the Tar :: %s :: %s", uploadPath, err.Error())
+	}
+	log.Infof(":: uploadTarRepo Finish ::\n")
+
+	return url, nil
 }

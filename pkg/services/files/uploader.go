@@ -143,6 +143,7 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 		count++
 		return nil
 	})
+
 	log.Infof("Files are being uploaded.... %d files to upload", len(uploadDetailsList))
 
 	uploadQueue := make(chan *uploadDetails, len(uploadDetailsList))
