@@ -34,6 +34,11 @@ COPY --from=builder /src/mypackage/myapp/pkg/services/templateKickstart.ks /usr/
 # template to playbook dispatcher
 COPY --from=builder /src/mypackage/myapp/pkg/services/template_playbook/template_playbook_dispatcher_ostree_upgrade_payload.yml /usr/local/etc
 
+# interim FDO requirements
+ENV LD_LIBRARY_PATH /usr/local/lib
+COPY --from=quay.io/ayosef/libfdo-data:v1 /usr/local/lib/libfdo_data.so /usr/local/lib/libfdo_data.so
+COPY --from=quay.io/ayosef/libfdo-data:v1 /usr/local/include/fdo_data.h /usr/local/include/fdo_data.h
+
 RUN microdnf install -y pykickstart mtools xorriso genisoimage syslinux isomd5sum file ostree
 ENV MTOOLS_SKIP_CHECK=1
 
