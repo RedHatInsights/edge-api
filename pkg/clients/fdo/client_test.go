@@ -14,7 +14,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 
 	"github.com/redhatinsights/edge-api/pkg/clients/fdo"
-	ov "github.com/redhatinsights/edge-api/pkg/services/ownershipvoucher"
+	"github.com/redhatinsights/edge-api/pkg/services"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -49,7 +49,7 @@ var _ = Describe("Client", func() {
 				Expect(err).To(BeNil())
 			})
 			if numOfOVsInt == 1 {
-				ovs := ov.NewService(context.Background(), log.NewEntry(log.New()))
+				ovs := services.NewOwnershipVoucherService(context.Background(), log.NewEntry(log.New()))
 				ovData, _ := ovs.ParseVouchers(body)
 				w.WriteHeader(http.StatusCreated)
 				json.NewEncoder(w).Encode(ovData)
