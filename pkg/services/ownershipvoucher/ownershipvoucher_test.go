@@ -1,11 +1,14 @@
 package ownershipvoucher_test
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"context"
 	"io/ioutil"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	ov "github.com/redhatinsights/edge-api/pkg/services/ownershipvoucher"
+	log "github.com/sirupsen/logrus"
 )
 
 var _ = Describe("Ownershipvoucher", func() {
@@ -18,7 +21,8 @@ var _ = Describe("Ownershipvoucher", func() {
 	})
 	Context("parse ov", func() {
 		It("should parse without error", func() {
-			data, err := ov.ParseVouchers(ovb)
+			ovs := ov.NewOwnershipVoucherService(context.Background(), log.NewEntry(log.New()))
+			data, err := ovs.ParseVouchers(ovb)
 			Expect(err).To(BeNil())
 			Expect(data[0].ProtocolVersion).To(Equal(uint(100)))
 			Expect(data[0].DeviceName).To(Equal("testdevice1"))
@@ -26,9 +30,10 @@ var _ = Describe("Ownershipvoucher", func() {
 		})
 		It("should parse with error", func() {
 			badOV := ovb[1:]
-			data, err := ov.ParseVouchers(badOV)
+			ovs := ov.NewOwnershipVoucherService(context.Background(), log.NewEntry(log.New()))
+			data, err := ovs.ParseVouchers(badOV)
 			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("Failed to parse voucher"))
+			Expect(err.Error()).To(Equal("failed to parse voucher"))
 			Expect(data[0].ProtocolVersion).To(Equal(uint(0)))
 			Expect(data[0].DeviceName).To(Equal(""))
 			Expect(data[0].GUID).To(Equal(""))

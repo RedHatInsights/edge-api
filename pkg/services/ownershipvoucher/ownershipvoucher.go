@@ -5,12 +5,32 @@ package ownershipvoucher
 // #include <fdo_data.h>
 import "C"
 import (
+	"context"
 	"errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	log "github.com/sirupsen/logrus"
 )
 
+type OwnershipVoucherService struct {
+	ctx context.Context
+	log *log.Entry
+}
+
+type OwnershipVoucherServiceInterface interface {
+	ParseVouchers(voucherBytes []byte) ([]models.OwnershipVoucherData, error)
+}
+
+func NewOwnershipVoucherService(ctx context.Context, log *log.Entry) OwnershipVoucherServiceInterface {
+	return &OwnershipVoucherService{
+		ctx: ctx,
+		log: log.WithFields(log.Fields{
+			"service": "ownershipvoucher",
+		}),
+	}
+}
+
 // ParseVouchers parses vouchers from a byte array, returning the data and error if any
-func ParseVouchers(voucherBytes []byte) ([]models.OwnershipVoucherData, error) {
+func (ovs *OwnershipVoucherService) ParseVouchers(voucherBytes []byte) ([]models.OwnershipVoucherData, error) {
 	voucherBytesLen := C.size_t(len(voucherBytes))
 	voucherCBytes := C.CBytes(voucherBytes)
 	defer C.free(voucherCBytes)
@@ -18,7 +38,8 @@ func ParseVouchers(voucherBytes []byte) ([]models.OwnershipVoucherData, error) {
 	voucher := C.fdo_ownershipvoucher_from_data(voucherCBytes, voucherBytesLen)
 	defer C.fdo_ownershipvoucher_free(voucher)
 	if voucher == nil {
-		return []models.OwnershipVoucherData{}, errors.New("Failed to parse voucher")
+		ovs.log.Error("Failed to parse ownership voucher")
+		return []models.OwnershipVoucherData{}, errors.New("failed to parse ownership voucher")
 	}
 
 	guidC := C.fdo_ownershipvoucher_header_get_guid(voucher)
