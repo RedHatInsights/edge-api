@@ -12,25 +12,28 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type OwnershipVoucherService struct {
+// Service for ownership voucher management
+type Service struct {
 	ctx context.Context
 	log *log.Entry
 }
 
-type OwnershipVoucherServiceInterface interface {
+// ServiceInterface is the interface for the ownership voucher service
+type ServiceInterface interface {
 	ParseVouchers(voucherBytes []byte) ([]models.OwnershipVoucherData, error)
 	CreateFDOClient() *fdo.Client
 }
 
-func NewOwnershipVoucherService(ctx context.Context, log *log.Entry) OwnershipVoucherServiceInterface {
-	return &OwnershipVoucherService{
+// NewService creates a new ownership voucher service
+func NewService(ctx context.Context, log *log.Entry) ServiceInterface {
+	return &Service{
 		ctx: ctx,
 		log: log.WithField("service", "ownershipvoucher"),
 	}
 }
 
 // ParseVouchers parses vouchers from a byte array, returning the data and error if any
-func (ovs *OwnershipVoucherService) ParseVouchers(voucherBytes []byte) ([]models.OwnershipVoucherData, error) {
+func (ovs *Service) ParseVouchers(voucherBytes []byte) ([]models.OwnershipVoucherData, error) {
 	voucherBytesLen := C.size_t(len(voucherBytes))
 	voucherCBytes := C.CBytes(voucherBytes)
 	defer C.free(voucherCBytes)
@@ -59,6 +62,7 @@ func (ovs *OwnershipVoucherService) ParseVouchers(voucherBytes []byte) ([]models
 	}, nil
 }
 
-func (ovs *OwnershipVoucherService) CreateFDOClient() *fdo.Client {
+// CreateFDOClient creates a new FDO client
+func (ovs *Service) CreateFDOClient() *fdo.Client {
 	return fdo.InitClient(ovs.ctx, ovs.log)
 }

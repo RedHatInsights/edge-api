@@ -49,7 +49,7 @@ var _ = Describe("Client", func() {
 				Expect(err).To(BeNil())
 			})
 			if numOfOVsInt == 1 {
-				ovs := ov.NewOwnershipVoucherService(context.Background(), log.NewEntry(log.New()))
+				ovs := ov.NewService(context.Background(), log.NewEntry(log.New()))
 				ovData, _ := ovs.ParseVouchers(body)
 				w.WriteHeader(http.StatusCreated)
 				json.NewEncoder(w).Encode(ovData)

@@ -1,6 +1,6 @@
 package models
 
-// ownership voucher data
+// OwnershipVoucherData represents the data of an ownership voucher
 type OwnershipVoucherData struct {
 	ProtocolVersion uint   `json:"protocol_version"`
 	GUID            string `json:"guid"`

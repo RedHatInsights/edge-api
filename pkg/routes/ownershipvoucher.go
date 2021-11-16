@@ -14,11 +14,13 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
+// MakeFDORouter creates a router for the FDO API
 func MakeFDORouter(sub chi.Router) {
 	sub.Post("/ownership_voucher", CreateEmptyDevices)
 	sub.Post("/ownership_voucher/delete", DeleteDevices)
 }
 
+// CreateEmptyDevices creates empty devices for the given ownership vouchers
 func CreateEmptyDevices(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	bodyAsBytes, err := cbor.Marshal(r.Body)
@@ -58,6 +60,7 @@ func CreateEmptyDevices(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// DeleteDevices deletes devices for the given ownership vouchers GUIDs
 func DeleteDevices(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	bodyAsBytes, err := json.Marshal(r.Body)
