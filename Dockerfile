@@ -20,7 +20,7 @@ COPY --from=quay.io/ayosef/libfdo-data:v1 /usr/local/include/fdo_data.h /usr/loc
 RUN go build -o /go/bin/edge-api
 
 # Build the migration binary.
-RUN CGO_ENABLED=0 go build -o /go/bin/edge-api-migrate cmd/migrate/migrate.go
+RUN go build -o /go/bin/edge-api-migrate cmd/migrate/migrate.go
 
 ############################
 # STEP 2 build a small image
