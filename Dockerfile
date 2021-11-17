@@ -10,8 +10,14 @@ ENV GO111MODULE=on
 # Using go get requires root.
 USER root
 RUN go get -d -v
+
+# interim FDO requirements
+ENV LD_LIBRARY_PATH /usr/local/lib
+COPY --from=quay.io/ayosef/libfdo-data:v1 ${LD_LIBRARY_PATH}/libfdo_data.so.0 ${LD_LIBRARY_PATH}/libfdo_data.so.0
+COPY --from=quay.io/ayosef/libfdo-data:v1 /usr/local/include/fdo_data.h /usr/local/include/fdo_data.h
+
 # Build the binary.
-RUN CGO_ENABLED=0 go build -o /go/bin/edge-api
+RUN go build -o /go/bin/edge-api
 
 # Build the migration binary.
 RUN CGO_ENABLED=0 go build -o /go/bin/edge-api-migrate cmd/migrate/migrate.go
