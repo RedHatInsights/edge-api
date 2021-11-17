@@ -148,6 +148,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 
 // GetImageSetsByID returns the list of Image Sets by a given Image Set ID
 func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
+	var response common.EdgeAPIPaginatedResponse
 
 	ctx := r.Context()
 	imageSet, ok := ctx.Value(imageSetKey).(*models.ImageSet)
@@ -156,7 +157,9 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
-	json.NewEncoder(w).Encode(&imageSet)
+	response.Count = int64(len(imageSet.Images))
+	response.Data = &imageSet
+	json.NewEncoder(w).Encode(response)
 
 }
 
