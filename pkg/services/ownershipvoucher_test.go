@@ -33,11 +33,9 @@ var _ = Describe("Ownershipvoucher", func() {
 			badOV := ovb[1:]
 			ovs := services.NewOwnershipVoucherService(context.Background(), log.NewEntry(log.New()))
 			data, err := ovs.ParseVouchers(badOV)
-			Expect(err).ToNot(BeNil())
+			Expect(err).ToNot(BeNil()) 
 			Expect(err.Error()).To(Equal("failed to parse ownership voucher"))
-			Expect(data[0].ProtocolVersion).To(Equal(uint(0)))
-			Expect(data[0].DeviceName).To(Equal(""))
-			Expect(data[0].GUID).To(Equal(""))
+			Expect(data).To(BeEmpty())
 		})
 	})
 })
