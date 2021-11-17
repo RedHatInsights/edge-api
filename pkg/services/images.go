@@ -696,9 +696,9 @@ func (s *ImageService) RetryCreateImage(image *models.Image) error {
 	return nil
 }
 
-func uploadTarRepo(imageName string, repoId int) (string, error) {
+func uploadTarRepo(account, imageName string, repoId int) (string, error) {
 	log.Infof(":: uploadTarRepo Started ::\n")
-	uploadPath := fmt.Sprintf("/tar/%v/%s", repoId, imageName)
+	uploadPath := fmt.Sprintf("%s/tar/%v/%s", account, repoId, imageName)
 	filesService := NewFilesService()
 	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
 
