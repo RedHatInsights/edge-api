@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -42,6 +43,10 @@ var thirdPartyRepoFilters = common.ComposeFilters(
 	common.CreatedAtFilterHandler(&common.Filter{
 		QueryParam: "created_at",
 		DBField:    "third_party_repos.created_at",
+	}),
+	common.CreatedAtFilterHandler(&common.Filter{
+		QueryParam: "updated_at",
+		DBField:    "third_party_repos.updated_at",
 	}),
 	common.SortFilterHandler("third_party_repos", "created_at", "DESC"),
 )
@@ -134,7 +139,20 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("r.URL.Query() %v \n", r.URL.Query().Get("sort_by"))
 	if r.URL.Query().Get("sort_by") != "name" && r.URL.Query().Get("sort_by") != "-name" {
 		result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&tprepo)
-
+	}
+	filter := r.URL.Query().Get("filter")
+	filterMap := map[string]string{}
+	if filter != "" {
+		filterMap, err = validateFilterMap(filter)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+	if err := result.Where(filterMap).Limit(pagination.Limit).Offset(pagination.Offset).Find(&tprepo).Error; err != nil {
+		fmt.Println(err)
+		http.Error(w, "this is not a valid filter. filter must be in name.parameter", http.StatusInternalServerError)
+		return
 	} else {
 		result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&tprepo)
 	}
@@ -266,8 +284,8 @@ func validateGetAllThirdPartyRepoFilterParams(next http.Handler) http.Handler {
 			if string(val[0]) == "-" {
 				name = val[1:]
 			}
-			if name != "name" && name != "created_at" {
-				errs = append(errs, validationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must be name or created_at", name)})
+			if name != "name" && name != "created_at" && name != "updated_at" {
+				errs = append(errs, validationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must be name or created_at or updated_at", name)})
 			}
 		}
 
@@ -278,4 +296,14 @@ func validateGetAllThirdPartyRepoFilterParams(next http.Handler) http.Handler {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(&errs)
 	})
+}
+
+func validateFilterMap(filter string) (map[string]string, error) {
+	splits := strings.Split(filter, ".")
+	if len(splits) != 2 {
+		return nil, errors.NewBadRequest("this is not a valid filter. filter must be name")
+	}
+	field, value := splits[0], splits[1]
+	return map[string]string{field: value}, nil
+
 }

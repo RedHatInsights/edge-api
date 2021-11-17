@@ -102,7 +102,7 @@ func TestGetAllThirdPartyRepoFilterParams(t *testing.T) {
 			name:   "bad sort_by",
 			params: "sort_by=test",
 			expectedError: []validationError{
-				{Key: "sort_by", Reason: "test is not a valid sort_by. Sort-by must be name or created_at"},
+				{Key: "sort_by", Reason: "test is not a valid sort_by. Sort-by must be name or created_at or updated_at"},
 			},
 		},
 	}
