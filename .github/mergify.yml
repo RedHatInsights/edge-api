@@ -1,0 +1,18 @@
+queue_rules:
+- name: edge-api
+  conditions:
+    - base=main
+    - "#approved-reviews-by>=2"
+
+pull_request_rules:
+  - name: Automatic merge on approval
+    conditions:
+    - base=main
+    - "#approved-reviews-by>=2"
+    - check-success=Build,ci.ext.devshift.net PR build,ci.int.devshift.net PR build
+    - label!=work-in-progress
+    actions:
+      queue:
+        name: edge-api
+        method: merge
+        rebase_fallback: none
