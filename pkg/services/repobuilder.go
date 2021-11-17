@@ -257,7 +257,7 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string) (strin
 func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string, dest string) error {
 	//Upload ImageBuildTar to repo
 	log.Debugf("UploadVersionRepo::CommitID: %d", c.ID)
-	repoTarUrl, errorUpl := uploadTarRepo(tarFileName, int(*c.RepoID))
+	repoTarUrl, errorUpl := uploadTarRepo(c.Account, tarFileName, int(*c.RepoID))
 	c.ImageBuildTarURL = repoTarUrl
 	log.Debugf("Finish UploadVersionRepo::CommitID: %d", c.ID)
 	if errorUpl != nil {
