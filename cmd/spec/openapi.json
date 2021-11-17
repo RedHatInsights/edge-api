@@ -2176,7 +2176,7 @@
   },
   "openapi": "3.0.0",
   "paths": {
-    "/checkImageName": {
+    "/images/checkImageName": {
       "post": {
         "operationId": "checkImageName",
         "requestBody": {

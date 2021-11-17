@@ -67,7 +67,7 @@ var _ = Describe("Client", func() {
 		defer ts.Close()
 		config.Get().FDO.URL = ts.URL
 		client := fdo.InitClient(ctx, log.NewEntry(testLogger))
-		testDeviceOV, err := ioutil.ReadFile("../../services/ownershipvoucher/testdevice1.ov")
+		testDeviceOV, err := ioutil.ReadFile("/testdevice1.ov")
 		It("should successfully read ov", func() {
 			Expect(err).To(BeNil())
 			Expect(testDeviceOV).ToNot(BeNil())
@@ -151,7 +151,7 @@ var _ = Describe("Client", func() {
 		defer ts.Close()
 		config.Get().FDO.URL = ts.URL
 		client := fdo.InitClient(ctx, log.NewEntry(testLogger))
-		ov, err := ioutil.ReadFile("../../services/ownershipvoucher/testdevice1.ov")
+		ov, err := ioutil.ReadFile("/testdevice1.ov")
 		It("should successfully read ov", func() {
 			Expect(err).To(BeNil())
 			Expect(ov).ToNot(BeNil())

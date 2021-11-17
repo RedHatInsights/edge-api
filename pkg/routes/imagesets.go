@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 
@@ -61,6 +62,8 @@ var imageStatusFilters = common.ComposeFilters(
 func ImageSetCtx(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+
 		var imageSet models.ImageSet
 		account, err := common.GetAccount(r)
 		if err != nil {
@@ -79,6 +82,7 @@ func ImageSetCtx(next http.Handler) http.Handler {
 				return
 			}
 			result := db.DB.Where("account = ? and Image_sets.id = ?", account, imageSetID).Find(&imageSet)
+
 			if result.Error != nil {
 				err := errors.NewNotFound(result.Error.Error())
 				w.WriteHeader(err.GetStatus())
@@ -86,6 +90,11 @@ func ImageSetCtx(next http.Handler) http.Handler {
 				return
 			}
 			db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
+			db.DB.Where("id = ?", &imageSet.Images[len(imageSet.Images)-1].InstallerID).Find(&imageSet.Images[len(imageSet.Images)-1].Installer)
+
+			Imgs := returnImageDetails(imageSet, s)
+			imageSet.Images = Imgs
+
 			ctx := context.WithValue(r.Context(), imageSetKey, &imageSet)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
@@ -139,6 +148,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 
 // GetImageSetsByID returns the list of Image Sets by a given Image Set ID
 func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
+	var response common.EdgeAPIPaginatedResponse
 
 	ctx := r.Context()
 	imageSet, ok := ctx.Value(imageSetKey).(*models.ImageSet)
@@ -147,7 +157,9 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
-	json.NewEncoder(w).Encode(&imageSet)
+	response.Count = int64(len(imageSet.Images))
+	response.Data = &imageSet
+	json.NewEncoder(w).Encode(response)
 
 }
 
@@ -188,4 +200,17 @@ func contains(s []string, searchterm string) bool {
 		}
 	}
 	return false
+}
+
+func returnImageDetails(imageSet models.ImageSet, s *dependencies.EdgeAPIServices) []models.Image {
+	var Imgs []models.Image
+	for _, image := range imageSet.Images {
+		id := strconv.FormatUint(uint64(image.ID), 10)
+		img, err := s.ImageService.GetImageByID(id)
+		if err != nil {
+			log.Error("Image detail not found \n")
+		}
+		Imgs = append(Imgs, *img)
+	}
+	return Imgs
 }

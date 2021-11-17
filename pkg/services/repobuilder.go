@@ -24,7 +24,10 @@ import (
 type RepoBuilderInterface interface {
 	BuildUpdateRepo(id uint) (*models.UpdateTransaction, error)
 	ImportRepo(r *models.Repo) (*models.Repo, error)
-	DownloadExtractVersionRepo(c *models.Commit, dest string) error
+	// DownloadExtractVersionRepo(c *models.Commit, dest string) error
+	DownloadVersionRepo(c *models.Commit, dest string) (string, error)
+	ExtractVersionRepo(c *models.Commit, tarFileName string, dest string) error
+	UploadVersionRepo(c *models.Commit, tarFileName string, dest string) error
 }
 
 // RepoBuilder is the implementation of a RepoBuilderInterface
@@ -78,9 +81,19 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	if err != nil {
 		return nil, err
 	}
-	err = rb.DownloadExtractVersionRepo(update.Commit, path)
+	// err = rb.DownloadExtractVersionRepo(update.Commit, path)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("error downloading repo :: %s", err.Error())
+	// }
+	tarFileName, err := rb.DownloadVersionRepo(update.Commit, path)
 	if err != nil {
-		return nil, fmt.Errorf("error downloading repo :: %s", err.Error())
+
+		return nil, fmt.Errorf("error Upload repo repo :: %s", err.Error())
+	}
+	err = rb.ExtractVersionRepo(update.Commit, tarFileName, path)
+	if err != nil {
+		log.Error(err)
+		return nil, fmt.Errorf("error extracting repo :: %s", err.Error())
 	}
 
 	if len(update.OldCommits) > 0 {
@@ -99,10 +112,16 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		//
 		// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
 		for _, commit := range update.OldCommits {
-			rb.DownloadExtractVersionRepo(&commit, filepath.Join(stagePath, commit.OSTreeCommit))
+			// rb.DownloadExtractVersionRepo(&commit, filepath.Join(stagePath, commit.OSTreeCommit))
+			// if err != nil {
+			// 	return nil, err
+			// }
+			tarFileName, err := rb.DownloadVersionRepo(&commit, filepath.Join(stagePath, commit.OSTreeCommit))
 			if err != nil {
-				return nil, err
+
+				return nil, fmt.Errorf("error Upload repo repo :: %s", err.Error())
 			}
+			err = rb.ExtractVersionRepo(update.Commit, tarFileName, path)
 			RepoPullLocalStaticDeltas(update.Commit, &commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
 			if err != nil {
 				return nil, err
@@ -159,7 +178,18 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		return nil, err
 	}
 
-	err = rb.DownloadExtractVersionRepo(&cmt, path)
+	tarFileName, err := rb.DownloadVersionRepo(&cmt, path)
+	errUpload := rb.UploadVersionRepo(&cmt, tarFileName, path)
+	if errUpload != nil {
+		r.Status = models.RepoStatusError
+		result := db.DB.Save(&r)
+		if result.Error != nil {
+			log.Error(err)
+		}
+		log.Error(err)
+		return nil, fmt.Errorf("error Upload repo repo :: %s", errUpload.Error())
+	}
+	err = rb.ExtractVersionRepo(&cmt, tarFileName, path)
 	if err != nil {
 		r.Status = models.RepoStatusError
 		result := db.DB.Save(&r)
@@ -167,7 +197,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 			log.Error(err)
 		}
 		log.Error(err)
-		return nil, fmt.Errorf("error downloading repo and extracting repo :: %s", err.Error())
+		return nil, fmt.Errorf("error extracting repo :: %s", err.Error())
 	}
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
 	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(r.ID), 10))
@@ -186,38 +216,68 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 	return r, nil
 }
 
-// DownloadExtractVersionRepo Download and Extract the repo tarball to dest dir
-func (rb *RepoBuilder) DownloadExtractVersionRepo(c *models.Commit, dest string) error {
+// DownloadVersionRepo Download and Extract the repo tarball to dest dir
+func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string) (string, error) {
 	// ensure we weren't passed a nil pointer
 	if c == nil {
 		log.Error("nil pointer to models.Commit provided")
-		return errors.New("invalid Commit Provided: nil pointer")
+		return "", errors.New("invalid Commit Provided: nil pointer")
 	}
-	log.Debugf("DownloadExtractVersionRepo::CommitD: %d", c.ID)
-	log.Debugf("DownloadExtractVersionRepo::ImageBuildTarURL: %#v", c.ImageBuildTarURL)
+	log.Debugf("DownloadExtractVersionRepo::CommitID: %d", c.ID)
 
 	// ensure the destination directory exists and then chdir there
 	log.Debugf("DownloadExtractVersionRepo::dest: %#v", dest)
 	err := os.MkdirAll(dest, os.FileMode(int(0755)))
 	if err != nil {
-		return err
+		return "", err
 	}
 	err = os.Chdir(dest)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Save the tarball to the OSBuild Hash ID and then extract it
-	tarFileName := strings.Join([]string{c.ImageBuildHash, "tar"}, ".")
+	tarFileName := "repo.tar"
+	if c.ImageBuildHash != "" {
+		tarFileName = strings.Join([]string{c.ImageBuildHash, "tar"}, ".")
+	}
 	log.Debugf("DownloadExtractVersionRepo::tarFileName: %#v", tarFileName)
 	_, err = grab.Get(filepath.Join(dest, tarFileName), c.ImageBuildTarURL)
+
 	if err != nil {
 		log.Error(err)
-		return err
+		return "", err
 	}
 	log.Debugf("Download finished::tarFileName: %#v", tarFileName)
 
+	return tarFileName, nil
+}
+
+// ExtractVersionRepo Download and Extract the repo tarball to dest dir
+func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string, dest string) error {
+	//Upload ImageBuildTar to repo
+	log.Debugf("UploadVersionRepo::CommitID: %d", c.ID)
+	repoTarUrl, errorUpl := uploadTarRepo(tarFileName, int(*c.RepoID))
+	c.ImageBuildTarURL = repoTarUrl
+	log.Debugf("Finish UploadVersionRepo::CommitID: %d", c.ID)
+	if errorUpl != nil {
+		log.Errorf("Failed to open file: %s", filepath.Join(dest, tarFileName))
+		log.Error(errorUpl)
+		return errorUpl
+	}
+	result := db.DB.Save(c)
+	log.Debugf("Save tarRepo to ::CommitID: %d", c.ID)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
+// ExtractVersionRepo Download and Extract the repo tarball to dest dir
+func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, dest string) error {
+
 	tarFile, err := os.Open(filepath.Join(dest, tarFileName))
+
 	if err != nil {
 		log.Errorf("Failed to open file: %s", filepath.Join(dest, tarFileName))
 		log.Error(err)
@@ -239,10 +299,6 @@ func (rb *RepoBuilder) DownloadExtractVersionRepo(c *models.Commit, dest string)
 		return err
 	}
 
-	// FIXME: The repo path is hard coded because this is how it comes from
-	//		  osbuild composer but we might want to revisit this later
-	//
-	// commit the version metadata to the current ref
 	var cmd *exec.Cmd
 	if c.OSTreeRef == "" {
 		cfg := config.Get()

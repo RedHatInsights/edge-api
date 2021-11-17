@@ -9,7 +9,7 @@ import (
 )
 
 var _ = Describe("Ownershipvoucher", func() {
-	ovb, err := ioutil.ReadFile("./testdevice1.ov")
+	ovb, err := ioutil.ReadFile("/testdevice1.ov")
 	Context("read ov", func() {
 		It("should succeed", func() {
 			Expect(err).To(BeNil())
