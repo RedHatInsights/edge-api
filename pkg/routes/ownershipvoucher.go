@@ -50,11 +50,11 @@ func CreateEmptyDevices(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(resp)
-	for _, voucher := range data {
+	for _, voucherData := range data {
 		var device *models.Device
-		device.UUID = voucher.GUID // make it searchable
+		device.UUID = voucherData.GUID // make it searchable
 		device.Connected = false
-		device.FDO = &voucher
+		device.OwnershipVoucherData = &voucherData
 		db.DB.Save(&device)
 	}
 	return
