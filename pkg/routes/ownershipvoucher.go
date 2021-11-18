@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -8,97 +9,71 @@ import (
 	"github.com/fxamacker/cbor/v2"
 
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
+	"github.com/redhatinsights/edge-api/pkg/errors"
 
 	"github.com/go-chi/chi"
-	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
 // MakeFDORouter creates a router for the FDO API
 func MakeFDORouter(sub chi.Router) {
 	sub.Route("/ownership_voucher", func(r chi.Router) {
-		r.Post("/", CreateEmptyDevices)
-		r.Post("/delete", DeleteDevices)
+		r.Post("/", CreateOwnershipVouchers)
+		r.Post("/delete", DeleteOwnershipVouchers)
 	})
 }
 
-// CreateEmptyDevices creates empty devices for the given ownership vouchers
-func CreateEmptyDevices(w http.ResponseWriter, r *http.Request) {
+// CreateOwnershipVouchers creates empty devices for the given ownership vouchers
+func CreateOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
-	bodyAsBytes, err := cbor.Marshal(r.Body)
 	defer r.Body.Close()
+
+	decoder := cbor.NewDecoder(r.Body)
+	data := []byte{}
+	err := decoder.Decode(&data)
+
 	if err != nil { // bad CBOR body
 		services.Log.Error("Couldn't marshal body into CBOR ", err)
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(err)
-		return
-	}
-	data, err := services.OwnershipVoucherService.ParseVouchers(bodyAsBytes)
-	if err != nil { // couldn't parse vouchers
-		services.Log.Error("Couldn't parse ownership vouchers ", err)
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
 		json.NewEncoder(w).Encode(err)
 		return
 	}
 	numOfOVs := r.Header.Get("X-Number-Of-Vouchers")
 	numOfOVsInt, _ := strconv.Atoi(numOfOVs)
-	fdoClient := services.OwnershipVoucherService.CreateFDOClient()
-	resp, err := fdoClient.BatchUpload(bodyAsBytes, uint(numOfOVsInt))
-	if err != nil { // couldn't upload to FDO onboarding server
+
+	resp, err := services.OwnershipVoucherService.BatchCreateOwnershipVouchers(data, uint(numOfOVsInt))
+	if err != nil {
 		services.Log.Error("Couldn't upload ownership vouchers ", err)
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(resp)
-	for _, voucherData := range data {
-		var device *models.Device
-		device.UUID = voucherData.GUID // make it searchable
-		device.Connected = false
-		device.OwnershipVoucherData = &voucherData
-		db.DB.Save(&device)
-	}
-	return
 }
 
-// DeleteDevices deletes devices for the given ownership vouchers GUIDs
-func DeleteDevices(w http.ResponseWriter, r *http.Request) {
+// DeleteOwnershipVouchers deletes devices for the given ownership vouchers GUIDs
+func DeleteOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
-	bodyAsBytes, err := json.Marshal(r.Body)
 	defer r.Body.Close()
-	if err != nil { // bad JSON body
-		services.Log.Error("Couldn't marshal body into JSON ", err)
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(err)
-		return
-	}
-	fdoClient := services.OwnershipVoucherService.CreateFDOClient()
+
+	decoder := json.NewDecoder(r.Body)
 	data := []string{}
-	err = json.Unmarshal(bodyAsBytes, &data)
+	err := decoder.Decode(&data)
+
 	if err != nil {
 		services.Log.Error("Couldn't parse JSON body ", err)
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
 		json.NewEncoder(w).Encode(err)
 		return
 	}
-	resp, err := fdoClient.BatchDelete(data)
-	if err != nil { // couldn't upload to FDO onboarding server
+	resp, err := services.OwnershipVoucherService.BatchDeleteOwnershipVouchers(data)
+	if err != nil {
 		services.Log.Error("Couldn't delete ownership vouchers ", err)
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
-	for _, guid := range data {
-		device, err := services.DeviceService.GetDeviceByUUID(guid)
-		if err != nil {
-			services.Log.Error("Couldn't find device ", guid, err)
-			break
-		}
-		device.Connected = true
-		db.DB.Save(&device)
-	}
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(resp)
-	return
 }
