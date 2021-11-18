@@ -35,7 +35,7 @@ var _ = Describe("Ownershipvoucher", func() {
 			data, err := ovs.ReadOwnershipVouchers(badOV)
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(Equal("failed to parse ownership voucher"))
-			Expect(data).To(BeEmpty())
+			Expect(data).To(BeNil())
 		})
 	})
 })
