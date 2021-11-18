@@ -2114,6 +2114,17 @@ paths:
       summary: Create Third Party Repository for an account.
     get:
       operationId: GetAllThirdPartyRepo
+      parameters:
+        - name: sort_by
+          in: query
+          description: "fields: created_at, name, updated_at. To sort DESC use - before the fields."
+          schema:
+            type: string
+        - name: filter 
+          in: query
+          description: "field: name.value"
+          schema:
+            type: string
       responses:
         "200":
           content:

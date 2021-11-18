@@ -2176,54 +2176,6 @@
   },
   "openapi": "3.0.0",
   "paths": {
-    "/images/checkImageName": {
-      "post": {
-        "operationId": "checkImageName",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/v1.Image"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.CheckImageResponse"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.BadRequest"
-                }
-              }
-            },
-            "description": "The request sent couldn't be processed."
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.InternalServerError"
-                }
-              }
-            },
-            "description": "There was an internal server error."
-          }
-        },
-        "summary": "Check if image name is in use for current account"
-      }
-    },
     "/devices/{DeviceUUID}": {
       "get": {
         "operationId": "getDevice",
@@ -2483,6 +2435,54 @@
           }
         },
         "summary": "Composes an image on Image Builder"
+      }
+    },
+    "/images/checkImageName": {
+      "post": {
+        "operationId": "checkImageName",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/v1.Image"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.CheckImageResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Check if image name is in use for current account"
       }
     },
     "/images/{imageId}": {
@@ -2751,6 +2751,24 @@
     "/thirdpartyrepo": {
       "get": {
         "operationId": "GetAllThirdPartyRepo",
+        "parameters": [
+          {
+            "description": "fields: created_at, name, updated_at. To sort DESC use - before the fields.",
+            "in": "query",
+            "name": "sort_by",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "field: name.value",
+            "in": "query",
+            "name": "filter",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
