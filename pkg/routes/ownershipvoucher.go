@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"bytes"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -12,7 +11,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/errors"
 
 	"github.com/go-chi/chi"
-	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
 // MakeFDORouter creates a router for the FDO API
