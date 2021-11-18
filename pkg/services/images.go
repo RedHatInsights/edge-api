@@ -237,9 +237,12 @@ func (s *ImageService) postProcessCommit(i *models.Image) error {
 	go func(imageBuilder imagebuilder.ClientInterface, i *models.Image) {
 		i, err := imageBuilder.GetMetadata(i)
 		if err != nil {
-			s.log.WithField("error", err.Error()).Error("Failed getting metatada from image builder")
+			s.log.WithField("error", err.Error()).Error("Failed getting metadata from image builder")
 		} else {
-			db.DB.Save(&i.Commit)
+			tx := db.DB.Save(&i.Commit)
+			if tx.Error != nil {
+				s.log.WithField("error", err.Error()).Error("Failed saving metadata from image builder")
+			}
 		}
 	}(s.imageBuilder, i)
 
