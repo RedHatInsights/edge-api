@@ -145,13 +145,16 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	if filter != "" {
 		filterMap, err = validateFilterMap(filter)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			err := errors.NewBadRequest(err.Error())
+			w.WriteHeader(err.GetStatus())
+			json.NewEncoder(w).Encode(&err)
 			return
 		}
 	}
 	if err := result.Where(filterMap).Limit(pagination.Limit).Offset(pagination.Offset).Find(&tprepo).Error; err != nil {
-		fmt.Println(err)
-		http.Error(w, "this is not a valid filter. filter must be in name.parameter", http.StatusInternalServerError)
+		err := errors.NewBadRequest("this is not a valid filter. filter must be in name.value")
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(&err)
 		return
 	} else {
 		result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&tprepo)
