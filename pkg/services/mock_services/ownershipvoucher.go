@@ -35,19 +35,19 @@ func (m *MockOwnershipVoucherServiceInterface) EXPECT() *MockOwnershipVoucherSer
 	return m.recorder
 }
 
-// BatchCreateOwnershipVouchers mocks base method.
-func (m *MockOwnershipVoucherServiceInterface) BatchCreateOwnershipVouchers(voucherBytes []byte, numOfOVs uint) (interface{}, error) {
+// BatchUploadOwnershipVouchers mocks base method.
+func (m *MockOwnershipVoucherServiceInterface) BatchUploadOwnershipVouchers(voucherBytes []byte, numOfOVs uint) (interface{}, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BatchCreateOwnershipVouchers", voucherBytes, numOfOVs)
+	ret := m.ctrl.Call(m, "BatchUploadOwnershipVouchers", voucherBytes, numOfOVs)
 	ret0, _ := ret[0].(interface{})
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// BatchCreateOwnershipVouchers indicates an expected call of BatchCreateOwnershipVouchers.
-func (mr *MockOwnershipVoucherServiceInterfaceMockRecorder) BatchCreateOwnershipVouchers(voucherBytes, numOfOVs interface{}) *gomock.Call {
+// BatchUploadOwnershipVouchers indicates an expected call of BatchUploadOwnershipVouchers.
+func (mr *MockOwnershipVoucherServiceInterfaceMockRecorder) BatchUploadOwnershipVouchers(voucherBytes, numOfOVs interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchCreateOwnershipVouchers", reflect.TypeOf((*MockOwnershipVoucherServiceInterface)(nil).BatchCreateOwnershipVouchers), voucherBytes, numOfOVs)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchUploadOwnershipVouchers", reflect.TypeOf((*MockOwnershipVoucherServiceInterface)(nil).BatchUploadOwnershipVouchers), voucherBytes, numOfOVs)
 }
 
 // BatchDeleteOwnershipVouchers mocks base method.

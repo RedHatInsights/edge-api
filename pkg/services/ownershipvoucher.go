@@ -23,7 +23,7 @@ type OwnershipVoucherService struct {
 
 // OwnershipVoucherServiceInterface is the interface for the ownership voucher service
 type OwnershipVoucherServiceInterface interface {
-	BatchCreateOwnershipVouchers(voucherBytes []byte, numOfOVs uint) (interface{}, error)
+	BatchUploadOwnershipVouchers(voucherBytes []byte, numOfOVs uint) (interface{}, error)
 	BatchDeleteOwnershipVouchers(fdoUUIDList []string) (interface{}, error)
 	ConnectDevices(fdoUUIDList []string) (interface{}, error)
 	ReadOwnershipVouchers(voucherBytes []byte) (interface{}, error)
@@ -40,9 +40,9 @@ func NewOwnershipVoucherService(ctx context.Context, log *log.Entry) OwnershipVo
 	}
 }
 
-// BatchCreateOwnershipVouchers creates empty devices with ownership vouchers data
-func (ovs *OwnershipVoucherService) BatchCreateOwnershipVouchers(voucherBytes []byte, numOfOVs uint) (interface{}, error) {
-	logFields := log.Fields{"method": "services.BatchCreateOwnershipVouchers"}
+// BatchUploadOwnershipVouchers creates empty devices with ownership vouchers data
+func (ovs *OwnershipVoucherService) BatchUploadOwnershipVouchers(voucherBytes []byte, numOfOVs uint) (interface{}, error) {
+	logFields := log.Fields{"method": "services.BatchUploadOwnershipVouchers"}
 	ovs.log.WithFields(logFields).Debug("Creating ownership vouchers")
 	data, err := ovs.parseVouchers(voucherBytes)
 	if err != nil {

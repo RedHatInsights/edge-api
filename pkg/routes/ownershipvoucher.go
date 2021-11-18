@@ -39,7 +39,7 @@ func CreateOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 	numOfOVs := r.Header.Get("X-Number-Of-Vouchers")
 	numOfOVsInt, _ := strconv.Atoi(numOfOVs)
 
-	resp, err := services.OwnershipVoucherService.BatchCreateOwnershipVouchers(data, uint(numOfOVsInt))
+	resp, err := services.OwnershipVoucherService.BatchUploadOwnershipVouchers(data, uint(numOfOVsInt))
 	if err != nil {
 		services.Log.Error("Couldn't upload ownership vouchers ", err)
 		w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
