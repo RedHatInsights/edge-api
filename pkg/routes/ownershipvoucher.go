@@ -16,8 +16,10 @@ import (
 
 // MakeFDORouter creates a router for the FDO API
 func MakeFDORouter(sub chi.Router) {
-	sub.Post("/ownership_voucher", CreateEmptyDevices)
-	sub.Post("/ownership_voucher/delete", DeleteDevices)
+	sub.Route("/ownership_voucher", func(r chi.Router) {
+		r.Post("/", CreateEmptyDevices)
+		r.Post("/delete", DeleteDevices)
+	})
 }
 
 // CreateEmptyDevices creates empty devices for the given ownership vouchers
