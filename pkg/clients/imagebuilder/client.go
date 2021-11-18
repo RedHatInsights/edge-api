@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -358,20 +359,23 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 		return nil, err
 	}
 
-	var metadata Metadata
-	json.Unmarshal(data, &metadata)
-	for n := range metadata.InstalledPackages {
-		pkg := models.InstalledPackage{
+	if res.StatusCode == http.StatusOK {
 
-			Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,
-			Release: metadata.InstalledPackages[n].Release, Sigmd5: metadata.InstalledPackages[n].Sigmd5,
-			Signature: metadata.InstalledPackages[n].Signature, Type: metadata.InstalledPackages[n].Type,
-			Version: metadata.InstalledPackages[n].Version, Epoch: metadata.InstalledPackages[n].Epoch,
+		var metadata Metadata
+		json.Unmarshal(data, &metadata)
+		for n := range metadata.InstalledPackages {
+			pkg := models.InstalledPackage{
+				Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,
+				Release: metadata.InstalledPackages[n].Release, Sigmd5: metadata.InstalledPackages[n].Sigmd5,
+				Signature: metadata.InstalledPackages[n].Signature, Type: metadata.InstalledPackages[n].Type,
+				Version: metadata.InstalledPackages[n].Version, Epoch: metadata.InstalledPackages[n].Epoch,
+			}
+			image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
 		}
-		image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
+		image.Commit.OSTreeCommit = metadata.OstreeCommit
+		defer res.Body.Close()
+		log.Infof("Done with metadata for image ID %d", image.ID)
+		return image, nil
 	}
-	image.Commit.OSTreeCommit = metadata.OstreeCommit
-	defer res.Body.Close()
-	log.Infof("Done with metadata for image ID %d", image.ID)
-	return image, nil
+	return nil, errors.New("image metadata not found")
 }
