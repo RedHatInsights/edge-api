@@ -2,6 +2,7 @@ package routes_test
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -16,7 +17,10 @@ var _ = Describe("Ownershipvoucher", func() {
 	ovb, err := ioutil.ReadFile("/testdevice1.ov")
 	m := chi.NewRouter()
 	routes.MakeFDORouter(m)
-	
+	It("routes", func ()  {
+		fmt.Print(m.Routes())
+	})
+
 	Context("read ov", func() {
 		It("should succeed", func() {
 			Expect(err).To(BeNil())
