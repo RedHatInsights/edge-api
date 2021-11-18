@@ -35,31 +35,103 @@ func (m *MockOwnershipVoucherServiceInterface) EXPECT() *MockOwnershipVoucherSer
 	return m.recorder
 }
 
-// CreateFDOClient mocks base method.
-func (m *MockOwnershipVoucherServiceInterface) CreateFDOClient() *fdo.Client {
+// BatchCreateOwnershipVouchers mocks base method.
+func (m *MockOwnershipVoucherServiceInterface) BatchCreateOwnershipVouchers(voucherBytes []byte, numOfOVs uint) (interface{}, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateFDOClient")
+	ret := m.ctrl.Call(m, "BatchCreateOwnershipVouchers", voucherBytes, numOfOVs)
+	ret0, _ := ret[0].(interface{})
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BatchCreateOwnershipVouchers indicates an expected call of BatchCreateOwnershipVouchers.
+func (mr *MockOwnershipVoucherServiceInterfaceMockRecorder) BatchCreateOwnershipVouchers(voucherBytes, numOfOVs interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchCreateOwnershipVouchers", reflect.TypeOf((*MockOwnershipVoucherServiceInterface)(nil).BatchCreateOwnershipVouchers), voucherBytes, numOfOVs)
+}
+
+// BatchDeleteOwnershipVouchers mocks base method.
+func (m *MockOwnershipVoucherServiceInterface) BatchDeleteOwnershipVouchers(fdoUUIDList []string) (interface{}, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BatchDeleteOwnershipVouchers", fdoUUIDList)
+	ret0, _ := ret[0].(interface{})
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BatchDeleteOwnershipVouchers indicates an expected call of BatchDeleteOwnershipVouchers.
+func (mr *MockOwnershipVoucherServiceInterfaceMockRecorder) BatchDeleteOwnershipVouchers(fdoUUIDList interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BatchDeleteOwnershipVouchers", reflect.TypeOf((*MockOwnershipVoucherServiceInterface)(nil).BatchDeleteOwnershipVouchers), fdoUUIDList)
+}
+
+// ConnectDevices mocks base method.
+func (m *MockOwnershipVoucherServiceInterface) ConnectDevices(fdoUUIDList []string) (interface{}, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ConnectDevices", fdoUUIDList)
+	ret0, _ := ret[0].(interface{})
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ConnectDevices indicates an expected call of ConnectDevices.
+func (mr *MockOwnershipVoucherServiceInterfaceMockRecorder) ConnectDevices(fdoUUIDList interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConnectDevices", reflect.TypeOf((*MockOwnershipVoucherServiceInterface)(nil).ConnectDevices), fdoUUIDList)
+}
+
+// ReadOwnershipVouchers mocks base method.
+func (m *MockOwnershipVoucherServiceInterface) ReadOwnershipVouchers(voucherBytes []byte) (interface{}, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReadOwnershipVouchers", voucherBytes)
+	ret0, _ := ret[0].(interface{})
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReadOwnershipVouchers indicates an expected call of ReadOwnershipVouchers.
+func (mr *MockOwnershipVoucherServiceInterfaceMockRecorder) ReadOwnershipVouchers(voucherBytes interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadOwnershipVouchers", reflect.TypeOf((*MockOwnershipVoucherServiceInterface)(nil).ReadOwnershipVouchers), voucherBytes)
+}
+
+// createFDOClient mocks base method.
+func (m *MockOwnershipVoucherServiceInterface) createFDOClient() *fdo.Client {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "createFDOClient")
 	ret0, _ := ret[0].(*fdo.Client)
 	return ret0
 }
 
-// CreateFDOClient indicates an expected call of CreateFDOClient.
-func (mr *MockOwnershipVoucherServiceInterfaceMockRecorder) CreateFDOClient() *gomock.Call {
+// createFDOClient indicates an expected call of createFDOClient.
+func (mr *MockOwnershipVoucherServiceInterfaceMockRecorder) createFDOClient() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateFDOClient", reflect.TypeOf((*MockOwnershipVoucherServiceInterface)(nil).CreateFDOClient))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "createFDOClient", reflect.TypeOf((*MockOwnershipVoucherServiceInterface)(nil).createFDOClient))
 }
 
-// ParseVouchers mocks base method.
-func (m *MockOwnershipVoucherServiceInterface) ParseVouchers(voucherBytes []byte) ([]models.OwnershipVoucherData, error) {
+// parseVouchers mocks base method.
+func (m *MockOwnershipVoucherServiceInterface) parseVouchers(voucherBytes []byte) ([]models.OwnershipVoucherData, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ParseVouchers", voucherBytes)
+	ret := m.ctrl.Call(m, "parseVouchers", voucherBytes)
 	ret0, _ := ret[0].([]models.OwnershipVoucherData)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ParseVouchers indicates an expected call of ParseVouchers.
-func (mr *MockOwnershipVoucherServiceInterfaceMockRecorder) ParseVouchers(voucherBytes interface{}) *gomock.Call {
+// parseVouchers indicates an expected call of parseVouchers.
+func (mr *MockOwnershipVoucherServiceInterfaceMockRecorder) parseVouchers(voucherBytes interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseVouchers", reflect.TypeOf((*MockOwnershipVoucherServiceInterface)(nil).ParseVouchers), voucherBytes)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "parseVouchers", reflect.TypeOf((*MockOwnershipVoucherServiceInterface)(nil).parseVouchers), voucherBytes)
+}
+
+// storeOwnershipVouchers mocks base method.
+func (m *MockOwnershipVoucherServiceInterface) storeOwnershipVouchers(data []models.OwnershipVoucherData) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "storeOwnershipVouchers", data)
+}
+
+// storeOwnershipVouchers indicates an expected call of storeOwnershipVouchers.
+func (mr *MockOwnershipVoucherServiceInterfaceMockRecorder) storeOwnershipVouchers(data interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "storeOwnershipVouchers", reflect.TypeOf((*MockOwnershipVoucherServiceInterface)(nil).storeOwnershipVouchers), data)
 }
