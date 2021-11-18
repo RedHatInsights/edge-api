@@ -21,7 +21,6 @@ var _ = Describe("Ownershipvoucher", func() {
 	})
 	Context("parse ov", func() {
 		It("should parse without error", func() {
-
 			ovs := services.NewOwnershipVoucherService(context.Background(), log.NewEntry(log.New()))
 			data, err := ovs.ParseVouchers(ovb)
 			Expect(err).To(BeNil())
@@ -36,6 +35,13 @@ var _ = Describe("Ownershipvoucher", func() {
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(Equal("failed to parse ownership voucher"))
 			Expect(data).To(BeEmpty())
+		})
+	})
+	Context("create new FDO client from service", func() {
+		It("should create new FDO client", func() {
+			ovs := services.NewOwnershipVoucherService(context.Background(), log.NewEntry(log.New()))
+			fdoClient := ovs.CreateFDOClient()
+			Expect(fdoClient).ToNot(BeNil())
 		})
 	})
 })
