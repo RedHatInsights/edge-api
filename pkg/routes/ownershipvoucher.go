@@ -9,7 +9,6 @@ import (
 
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
-	"github.com/redhatinsights/edge-api/pkg/services"
 
 	"github.com/go-chi/chi"
 )
