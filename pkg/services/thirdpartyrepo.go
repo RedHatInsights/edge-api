@@ -40,6 +40,10 @@ func (s *ThirdPartyRepoService) CreateThirdPartyRepo(tprepo *models.ThirdPartyRe
 			Description: tprepo.Description,
 			Account:     account,
 		}
+		repoDetails := db.DB.Where("name = ? and account = ?", tprepo.Name, account).First(&tprepo)
+		if tprepo.Name == repoDetails.Name() {
+			return errors.NewBadRequest("third party repository with already exists with same")
+		}
 		result := db.DB.Create(&tprepo)
 		if result.Error != nil {
 			return result.Error

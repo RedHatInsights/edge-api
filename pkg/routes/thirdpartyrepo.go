@@ -69,6 +69,10 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
+	result := db.DB.Where("name = ? and account = ?", tprepo.Name, account).First(&tprepo)
+	if result.Error != nil {
+		errors.NewInternalServerError()
+	}
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&tprepo)
 
