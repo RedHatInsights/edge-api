@@ -15,20 +15,12 @@ import (
 var _ = Describe("Ownershipvoucher", func() {
 	ovb, err := ioutil.ReadFile("/testdevice1.ov")
 	m := chi.NewRouter()
-	m.Route("/", func(s chi.Router) {
-		routes.MakeFDORouter(s)
-	})
-
+	routes.MakeFDORouter(m)
+	
 	Context("read ov", func() {
 		It("should succeed", func() {
 			Expect(err).To(BeNil())
 			Expect(ovb).ToNot(BeNil())
-		})
-	})
-
-	Context("router validation", func() {
-		It("has two routes", func() {
-			Expect(m.Routes()).To(HaveLen(2))
 		})
 	})
 
