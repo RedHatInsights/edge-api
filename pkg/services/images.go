@@ -234,19 +234,14 @@ func (s *ImageService) postProcessCommit(i *models.Image) error {
 		time.Sleep(1 * time.Minute)
 	}
 
-	go func(imageBuilder imagebuilder.ClientInterface, i *models.Image) {
-		i, err := imageBuilder.GetMetadata(i)
-		if err != nil {
-			s.log.WithField("error", err.Error()).Error("Failed getting metadata from image builder")
-		} else {
-			tx := db.DB.Save(&i.Commit)
-			if tx.Error != nil {
-				s.log.WithField("error", err.Error()).Error("Failed saving metadata from image builder")
-			}
-		}
-	}(s.imageBuilder, i)
+	i, err := s.imageBuilder.GetMetadata(i)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Failed getting metadata from image builder")
+		s.SetErrorStatusOnImage(err, i)
+		return err
+	}
 
-	_, err := s.CreateRepoForImage(i)
+	_, err = s.CreateRepoForImage(i)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Failed creating repo for image")
 		return err

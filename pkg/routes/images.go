@@ -463,13 +463,10 @@ func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		meta, err := client.GetMetadata(image)
 		if err != nil {
-			log.Fatal(err)
-		}
-		if image.Commit.OSTreeCommit != "" {
-			tx := db.DB.Save(&image.Commit)
-			if tx.Error != nil {
-				panic(tx.Error)
-			}
+			err := errors.NewInternalServerError()
+			w.WriteHeader(err.GetStatus())
+			json.NewEncoder(w).Encode(&err)
+			return
 		}
 		json.NewEncoder(w).Encode(meta)
 	}
