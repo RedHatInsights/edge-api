@@ -279,7 +279,7 @@ func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*
 			`JOIN updatetransaction_devices ON update_transactions.id = updatetransaction_devices.update_transaction_id`).
 		Where(`updatetransaction_devices.device_id = ?`,
 			device.ID,
-		).Group("id").Find(&updates)
+		).Group("id").Order("id").Find(&updates)
 	if result.Error != nil {
 		return nil, result.Error
 	}
