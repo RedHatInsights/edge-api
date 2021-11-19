@@ -139,7 +139,7 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 	c.log.WithFields(log.Fields{
 		"url":     url,
 		"payload": payloadBuf.String(),
-	}).Debug("Requesting img builder")
+	}).Info("Image Builder Compose Request Started")
 	req, _ := http.NewRequest("POST", url, payloadBuf)
 	for key, value := range clients.GetOutgoingHeaders(c.ctx) {
 		req.Header.Add(key, value)
@@ -149,15 +149,23 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		c.log.Error(err)
+		c.log.WithFields(log.Fields{
+			"statusCode": res.StatusCode,
+			"error":      err,
+		}).Error("Image Builder Compose Request Error")
 		return nil, err
 	}
+	respBody, err := ioutil.ReadAll(res.Body)
+	c.log.WithFields(log.Fields{
+		"statusCode":   res.StatusCode,
+		"responseBody": string(respBody),
+		"error":        err,
+	}).Info("Image Builder Compose Response")
 
 	if res.StatusCode != http.StatusCreated {
-		body, _ := ioutil.ReadAll(res.Body)
-		return nil, fmt.Errorf("error requesting image builder, got status code %d and body %s", res.StatusCode, body)
+		return nil, fmt.Errorf("image is not being created by image builder")
 	}
-	respBody, err := ioutil.ReadAll(res.Body)
+
 	if err != nil {
 		c.log.Error(err)
 		return nil, err
@@ -170,12 +178,6 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 	}
 
 	defer res.Body.Close()
-
-	c.log.WithFields(log.Fields{
-		"StatsCode": res.StatusCode,
-		"respBody":  respBody,
-	}).Debug("Image builder response")
-
 	return cr, nil
 }
 
@@ -275,25 +277,34 @@ func (c *Client) getComposeStatus(jobID string) (*ComposeStatus, error) {
 	cs := &ComposeStatus{}
 	cfg := config.Get()
 	url := fmt.Sprintf("%s/api/image-builder/v1/composes/%s", cfg.ImageBuilderConfig.URL, jobID)
+	c.log.WithFields(log.Fields{
+		"url": url,
+	}).Info("Image Builder ComposeStatus Request Started")
 	req, _ := http.NewRequest("GET", url, nil)
 	for key, value := range clients.GetOutgoingHeaders(c.ctx) {
 		req.Header.Add(key, value)
 	}
 	req.Header.Add("Content-Type", "application/json")
-	log.Infof("Requesting url: %s", url)
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
+		c.log.WithFields(log.Fields{
+			"statusCode": res.StatusCode,
+			"error":      err,
+		}).Error("Image Builder ComposeStatus Request Error")
 		return nil, err
-	}
-
-	if res.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(res.Body)
-		return nil, fmt.Errorf("error requesting image builder, got status code %d and body %s", res.StatusCode, body)
 	}
 	respBody, err := ioutil.ReadAll(res.Body)
+	c.log.WithFields(log.Fields{
+		"statusCode":   res.StatusCode,
+		"responseBody": string(respBody),
+		"error":        err,
+	}).Info("Image Builder ComposeStatus Response")
 	if err != nil {
 		return nil, err
+	}
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("request for status was not sucessful")
 	}
 
 	err = json.Unmarshal(respBody, &cs)
@@ -311,15 +322,15 @@ func (c *Client) GetCommitStatus(image *models.Image) (*models.Image, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Info(fmt.Sprintf("Got UpdateCommitID status %s", cs.ImageStatus.Status))
 	if cs.ImageStatus.Status == imageStatusSuccess {
+		c.log.Info("Set image status with success")
 		image.Commit.Status = models.ImageStatusSuccess
 		image.Commit.ImageBuildTarURL = cs.ImageStatus.UploadStatus.Options.URL
 	} else if cs.ImageStatus.Status == imageStatusFailure {
+		c.log.Info("Set image status with error")
 		image.Commit.Status = models.ImageStatusError
 		image.Status = models.ImageStatusError
 	}
-	log.Info(fmt.Sprintf("Set image status %s", image.Status))
 	return image, nil
 }
 
@@ -329,7 +340,7 @@ func (c *Client) GetInstallerStatus(image *models.Image) (*models.Image, error) 
 	if err != nil {
 		return nil, err
 	}
-	log.Info(fmt.Sprintf("Got installer status %s", cs.ImageStatus.Status))
+	c.log.Info(fmt.Sprintf("Got installer status %s", cs.ImageStatus.Status))
 	if cs.ImageStatus.Status == imageStatusSuccess {
 		image.Installer.Status = models.ImageStatusSuccess
 		image.Installer.ImageBuildISOURL = cs.ImageStatus.UploadStatus.Options.URL
@@ -342,10 +353,13 @@ func (c *Client) GetInstallerStatus(image *models.Image) (*models.Image, error) 
 
 // GetMetadata returns the metadata on image builder for a particular image based on the ComposeJobID
 func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
-	log.Infof("Getting metadata for image ID %d", image.ID)
+	c.log.Infof("Getting metadata for image")
 	composeJobID := image.Commit.ComposeJobID
 	cfg := config.Get()
 	url := fmt.Sprintf("%s/api/image-builder/v1/composes/%s/metadata", cfg.ImageBuilderConfig.URL, composeJobID)
+	c.log.WithFields(log.Fields{
+		"url": url,
+	}).Info("Image Builder GetMetadata Request Started")
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -354,34 +368,41 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 		req.Header.Add(key, value)
 	}
 	req.Header.Add("Content-Type", "application/json")
-	log.Infof("Requesting url: %s", url)
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
+		c.log.WithFields(log.Fields{
+			"statusCode": res.StatusCode,
+			"error":      err,
+		}).Error("Image Builder GetMetadata Request Error")
 		return nil, err
 	}
-	data, err := ioutil.ReadAll(res.Body)
+	respBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
-
-	if res.StatusCode == http.StatusOK {
-
-		var metadata Metadata
-		json.Unmarshal(data, &metadata)
-		for n := range metadata.InstalledPackages {
-			pkg := models.InstalledPackage{
-				Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,
-				Release: metadata.InstalledPackages[n].Release, Sigmd5: metadata.InstalledPackages[n].Sigmd5,
-				Signature: metadata.InstalledPackages[n].Signature, Type: metadata.InstalledPackages[n].Type,
-				Version: metadata.InstalledPackages[n].Version, Epoch: metadata.InstalledPackages[n].Epoch,
-			}
-			image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
-		}
-		image.Commit.OSTreeCommit = metadata.OstreeCommit
-		defer res.Body.Close()
-		log.Infof("Done with metadata for image ID %d", image.ID)
-		return image, nil
+	defer res.Body.Close()
+	c.log.WithFields(log.Fields{
+		"statusCode":   res.StatusCode,
+		"responseBody": string(respBody),
+		"error":        err,
+	}).Info("Image Builder GetMetadata Response")
+	if res.StatusCode != http.StatusOK {
+		return nil, errors.New("image metadata not found")
 	}
-	return nil, errors.New("image metadata not found")
+
+	var metadata Metadata
+	json.Unmarshal(respBody, &metadata)
+	for n := range metadata.InstalledPackages {
+		pkg := models.InstalledPackage{
+			Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,
+			Release: metadata.InstalledPackages[n].Release, Sigmd5: metadata.InstalledPackages[n].Sigmd5,
+			Signature: metadata.InstalledPackages[n].Signature, Type: metadata.InstalledPackages[n].Type,
+			Version: metadata.InstalledPackages[n].Version, Epoch: metadata.InstalledPackages[n].Epoch,
+		}
+		image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
+	}
+	image.Commit.OSTreeCommit = metadata.OstreeCommit
+	c.log.Infof("Done with metadata for image")
+	return image, nil
 }
