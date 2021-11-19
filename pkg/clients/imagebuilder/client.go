@@ -168,6 +168,12 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 	}
 
 	defer res.Body.Close()
+
+	c.log.WithFields(log.Fields{
+		"StatsCode": res.StatusCode,
+		"respBody":  respBody,
+	}).Debug("Image builder response")
+
 	return cr, nil
 }
 
