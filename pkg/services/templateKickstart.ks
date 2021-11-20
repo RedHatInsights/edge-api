@@ -89,7 +89,7 @@ then
 		chmod 755 ${USER_HOME}/.ssh
 		chown ${ADMIN_USER}:${ADMIN_USER} ${USER_HOME}/.ssh
 
-		cat /root/fleet_authkeys.txt >> $USER_HOME/.ssh/authorized_keys
+		cat /root/fleet_authkeys.txt >> ${USER_HOME}/.ssh/authorized_keys
 		chmod 600 ${USER_HOME}/.ssh/authorized_keys
 		chown ${ADMIN_USER}:${ADMIN_USER} ${USER_HOME}/.ssh/authorized_keys
 
@@ -173,7 +173,7 @@ then
 			if [ $displayname == "localhost.localdomain" ]
 			then
 				displayname=$(subscription-manager identity | grep "system identity" | awk -F": " '{print $2}')
-				insights-client --display-name "${DISPLAY_NAME_PREFIX}_$displayname"
+				insights-client --display-name "${DISPLAY_NAME_PREFIX}${displayname}"
 			fi
 		else
 			insights-client --display-name "$INSIGHTS_DISPLAY_NAME"
