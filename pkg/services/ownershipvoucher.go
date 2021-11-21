@@ -103,7 +103,7 @@ func (ovs *OwnershipVoucherService) storeOwnershipVouchers(data []models.Ownersh
 	logFields := log.Fields{"method": "services.storeOwnershipVouchers"}
 	ovs.log.WithFields(logFields).Debug("Store empty devices, with FDO info")
 	for _, voucherData := range data {
-		var device *models.Device
+		var device models.Device
 		device.UUID = voucherData.GUID // make it searchable
 		device.Connected = false       // disconnected until FDO will say otherwise
 		device.OwnershipVoucherData = &voucherData
