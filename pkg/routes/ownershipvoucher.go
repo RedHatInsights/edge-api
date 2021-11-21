@@ -2,10 +2,9 @@ package routes
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"strconv"
-
-	"github.com/fxamacker/cbor/v2"
 
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
@@ -16,6 +15,7 @@ import (
 // MakeFDORouter creates a router for the FDO API
 func MakeFDORouter(sub chi.Router) {
 	sub.Route("/ownership_voucher", func(r chi.Router) {
+		r.Use(validateMiddleware)
 		r.Post("/", CreateOwnershipVouchers)
 		r.Post("/delete", DeleteOwnershipVouchers)
 	})
@@ -34,22 +34,14 @@ func CreateOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	decoder := cbor.NewDecoder(r.Body)
-	data := []byte{}
-	err := decoder.Decode(&data)
+	data, _ := ioutil.ReadAll(r.Body)
 
-	if err != nil { // bad CBOR body
-		services.Log.Error("Couldn't marshal body into CBOR ", err)
-		w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
-		json.NewEncoder(w).Encode(err)
-		return
-	}
 	numOfOVs := r.Header.Get("X-Number-Of-Vouchers")
-	numOfOVsInt, _ := strconv.Atoi(numOfOVs)
+	numOfOVsInt, _ := strconv.Atoi(numOfOVs) // checking for the error is done in the validation function
 
 	resp, err := services.OwnershipVoucherService.BatchUploadOwnershipVouchers(data, uint(numOfOVsInt))
 	if err != nil {
-		services.Log.Error("Couldn't upload ownership vouchers ", err)
+		services.Log.Error("Couldn't upload ownership vouchers ", err.Error())
 		w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
 		json.NewEncoder(w).Encode(resp)
 		return
@@ -71,19 +63,18 @@ func DeleteOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	decoder := json.NewDecoder(r.Body)
+	dataBytes, _ := ioutil.ReadAll(r.Body)
 	data := []string{}
-	err := decoder.Decode(&data)
-
-	if err != nil {
-		services.Log.Error("Couldn't parse JSON body ", err)
+	err := json.Unmarshal(dataBytes, &data)
+	if err != nil { // can't unmarshal json
 		w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
 		json.NewEncoder(w).Encode(err)
 		return
 	}
+
 	resp, err := services.OwnershipVoucherService.BatchDeleteOwnershipVouchers(data)
 	if err != nil {
-		services.Log.Error("Couldn't delete ownership vouchers ", err)
+		services.Log.Error("Couldn't delete ownership vouchers ", err.Error())
 		w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
 		json.NewEncoder(w).Encode(resp)
 		return
@@ -97,9 +88,6 @@ func validateUploadRequestHeaders(r *http.Request) errors.APIError {
 	if r.Header.Get("Content-Type") != "application/cbor" {
 		return errors.NewBadRequest("Content-Type header must be application/cbor")
 	}
-	if r.Header.Get("Accept") != "application/json" {
-		return errors.NewBadRequest("Accept header must be set")
-	}
 	if vNum, err := strconv.Atoi(r.Header.Get("X-Number-Of-Vouchers")); vNum < 0 && err != nil {
 		return errors.NewBadRequest("X-Number-Of-Vouchers header must be set & greater than zero")
 	}
@@ -111,8 +99,27 @@ func validateDeleteRequestHeaders(r *http.Request) errors.APIError {
 	if r.Header.Get("Content-Type") != "application/json" {
 		return errors.NewBadRequest("Content-Type header must be application/json")
 	}
-	if r.Header.Get("Accept") != "application/json" {
-		return errors.NewBadRequest("Accept header must be set")
-	}
 	return nil
+}
+
+func validateMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Body == nil {
+			w.WriteHeader(errors.NewBadRequest("Body is empty").GetStatus())
+			json.NewEncoder(w).Encode(errors.NewBadRequest("Body is empty"))
+			return
+		}
+		if r.Header.Get("Accept") != "application/json" {
+			w.WriteHeader(errors.NewBadRequest("Accept header must be set").GetStatus())
+			json.NewEncoder(w).Encode(errors.NewBadRequest("Accept header must be set"))
+			return
+		}
+		_, ok := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+		if !ok {
+			w.WriteHeader(errors.NewInternalServerError().GetStatus())
+			json.NewEncoder(w).Encode(interface{}("Internal server error"))
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
