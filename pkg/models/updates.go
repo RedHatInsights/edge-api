@@ -11,10 +11,12 @@ import (
 //	and 1 is reachable.
 type Device struct {
 	Model
-	UUID        string `json:"UUID"`
-	DesiredHash string `json:"DesiredHash"`
-	RHCClientID string `json:"RHCClientID"`
-	Connected   bool   `gorm:"default:true" json:"Connected"`
+	UUID                   string                `json:"UUID"`
+	DesiredHash            string                `json:"DesiredHash"`
+	RHCClientID            string                `json:"RHCClientID"`
+	Connected              bool                  `gorm:"default:true" json:"Connected"`
+	OwnershipVoucherDataID int                   `json:"-"`
+	OwnershipVoucherData   *OwnershipVoucherData `json:"fdo,omitempty"`
 }
 
 // UpdateTransaction represents the combination of an OSTree commit and a set of Inventory
