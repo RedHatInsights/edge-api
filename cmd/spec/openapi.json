@@ -2332,7 +2332,16 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v1.ImageSetDetails"
+                  "properties": {
+                    "Count": {
+                      "example": 100,
+                      "type": "integer"
+                    },
+                    "Data": {
+                      "$ref": "#/components/schemas/v1.ImageSetDetails"
+                    }
+                  },
+                  "type": "object"
                 }
               }
             },

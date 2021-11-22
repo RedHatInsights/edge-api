@@ -537,7 +537,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v1.ImageSetDetails"
+                type: object
+                properties:
+                  Count:
+                    type: integer
+                    example: 100
+                  Data:
+                    $ref: "#/components/schemas/v1.ImageSetDetails"
           description: OK
   /images/checkImageName:
     post:
