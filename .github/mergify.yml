@@ -1,18 +1,118 @@
 queue_rules:
-- name: edge-api
-  conditions:
-    - base=main
-    - "#approved-reviews-by>=2"
-
+  - name: edge-api
+    conditions:
+      - base=main
+      - "#approved-reviews-by>=2"
 pull_request_rules:
   - name: Automatic merge on approval
     conditions:
-    - base=main
-    - "#approved-reviews-by>=2"
-    - check-success=Build,ci.ext.devshift.net PR build,ci.int.devshift.net PR build
-    - label!=work-in-progress
+      - base=main
+      - "#approved-reviews-by>=2"
+      - check-success=Build
+      - check-success=ci.ext.devshift.net PR build
+      - check-success=ci.int.devshift.net PR build
+      - label!=work in progress
+      - label!=do not merge
     actions:
       queue:
         name: edge-api
         method: merge
         rebase_fallback: none
+  - name: warn on conflicts
+    conditions:
+      - conflict
+    actions:
+      comment:
+        message: "This pull request is now in conflicts. Could you fix it @{{author}}? \U0001F64F"
+      label:
+        add:
+          - conflict
+  - name: remove conflict label if not needed
+    conditions:
+      - -conflict
+    actions:
+      label:
+        remove:
+          - conflict
+  - name: waiting for review
+    conditions:
+      - "#approved-reviews-by<2"
+    actions:
+      label:
+        add:
+          - waiting for review
+  - name: remove waiting for review label if not needed
+    conditions:
+      - "#approved-reviews-by>=2"
+    actions:
+      label:
+        remove:
+          - waiting for review
+  - name: add bug fix label
+    conditions:
+      - body~=(?m)^\[X\] Bug fix (non-breaking change which fixes an issue)
+    actions:
+      label:
+        add:
+          - bug fix
+  - name: add new feature label
+    conditions:
+      - body~=(?m)^\[X\] New feature (non-breaking change which adds functionality)
+    actions:
+      label:
+        add:
+          - new feature
+  - name: add documentation label
+    conditions:
+      - body~=(?m)^\[X\] Documentation update
+    actions:
+      label:
+        add:
+          - documentation
+  - name: add test update label
+    conditions:
+      - body~=(?m)^\[X\] Tests update
+    actions:
+      label:
+        add:
+          - test update
+  - name: remove bug fix label
+    conditions:
+      - body~=(?m)^\[ \] Bug fix (non-breaking change which fixes an issue)
+    actions:
+      label:
+        remove:
+          - bug fix
+  - name: remove new feature label
+    conditions:
+      - body~=(?m)^\[ \] New feature (non-breaking change which adds functionality)
+    actions:
+      label:
+        remove:
+          - new feature
+  - name: remove documentation label
+    conditions:
+      - body~=(?m)^\[ \] Documentation update
+    actions:
+      label:
+        remove:
+          - documentation
+  - name: remove test update label
+    conditions:
+      - body~=(?m)^\[ \] Tests update
+    actions:
+      label:
+        remove:
+          - test update
+  - name: add ready label
+    conditions:
+      - body~=(?m)^\[X\] I have commented my code, particularly in hard-to-understand areas
+      - body~=(?m)^\[X\] I have made corresponding changes to the documentation
+      - body~=(?m)^\[X\] I have added tests that prove my fix is effective or that my feature works
+      - body~=(?m)^\[X\] New and existing unit tests pass locally with my changes
+      - body~=(?m)^\[X\] I run `go fmt ./...` to check that my code is properly formatted
+      - body~=(?m)^\[X\] I run `go vet ./...` to check that my code is free of common Go style mistakes
+    actions:
+      label:
+        add:
+          - ready
