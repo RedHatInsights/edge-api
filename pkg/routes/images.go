@@ -134,10 +134,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	image, err := initImageCreateRequest(w, r)
 	if err != nil {
-		log.Debug(err)
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		// initImageCreateRequest() already writes the response
 		return
 	}
 	account, err := common.GetAccount(r)
