@@ -47,7 +47,7 @@ pull_request_rules:
   - name: waiting for review
     conditions:
       - "#approved-reviews-by<2"
-      - created-at>1 days ago
+      - created-at<1 days ago
     actions:
       label:
         add:
