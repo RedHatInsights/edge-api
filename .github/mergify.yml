@@ -34,9 +34,19 @@ pull_request_rules:
       label:
         remove:
           - conflict
+  - name: close stale pull request
+    conditions:
+      - base=main
+      - -closed
+      - updated-at<14 days ago
+    actions:
+      close:
+        message: |
+          This pull request looks stale. Feel free to reopen it if you think it's a mistake.
   - name: waiting for review
     conditions:
       - "#approved-reviews-by<2"
+      - created-at>1 days ago
     actions:
       label:
         add:
