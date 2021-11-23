@@ -34,7 +34,7 @@ var WaitGroup sync.WaitGroup
 // the business logic of creating RHEL For Edge Images
 type ImageServiceInterface interface {
 	CreateImage(image *models.Image, account string) error
-	UpdateImage(image *models.Image, account string, previousImage *models.Image) error
+	UpdateImage(image *models.Image, previousImage *models.Image) error
 	AddUserInfo(image *models.Image) error
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
@@ -112,9 +112,9 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 }
 
 // UpdateImage updates an image, adding a new version of this image to an imageset
-func (s *ImageService) UpdateImage(image *models.Image, account string, previousImage *models.Image) error {
+func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Image) error {
 	if previousImage == nil {
-		return fmt.Errorf("cannot update without an existing reference image")
+		return new(ImageNotFoundError)
 	}
 	if previousImage.Status == models.ImageStatusSuccess {
 		// Previous image was built sucessfully
@@ -156,8 +156,8 @@ func (s *ImageService) UpdateImage(image *models.Image, account string, previous
 	if err != nil {
 		return err
 	}
-	image.Account = account
-	image.Commit.Account = account
+	image.Account = previousImage.Account
+	image.Commit.Account = previousImage.Account
 	image.Commit.Status = models.ImageStatusBuilding
 	image.Status = models.ImageStatusBuilding
 	// TODO: Remove code when frontend is not using ImageType on the table
