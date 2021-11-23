@@ -12,10 +12,44 @@ pull_request_rules:
     - check-success=Build
     - check-success=ci.ext.devshift.net PR build
     - check-success=ci.int.devshift.net PR build
-    - label!=work-in-progress
-    - label!=Do not merge
+    - label!=work in progress
+    - label!=do not merge
     actions:
       queue:
         name: edge-api
         method: merge
         rebase_fallback: none
+
+  - name: warn on conflicts
+    conditions:
+      - conflict
+    actions:
+      comment:
+        message: "This pull request is now in conflicts. Could you fix it @{{author}}? 🙏"
+      label:
+        add:
+          - conflict
+
+  - name: remove conflict label if not needed
+    conditions:
+      - -conflict
+    actions:
+      label:
+        remove:
+          - conflict
+  
+  - name: waiting for review
+    conditions:
+      - "#approved-reviews-by<2"
+    actions:
+      label:
+        add:
+          - waiting for review
+  
+  - name: remove waiting for review label if not needed
+    conditions:
+      - "#approved-reviews-by>=2"
+    actions:
+      label:
+        remove:
+          - waiting for review
