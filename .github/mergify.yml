@@ -9,8 +9,11 @@ pull_request_rules:
     conditions:
     - base=main
     - "#approved-reviews-by>=2"
-    - check-success=Build,ci.ext.devshift.net PR build,ci.int.devshift.net PR build
+    - check-success=Build
+    - check-success=ci.ext.devshift.net PR build
+    - check-success=ci.int.devshift.net PR build
     - label!=work-in-progress
+    - label!=Do not merge
     actions:
       queue:
         name: edge-api
