@@ -13,7 +13,7 @@ pull_request_rules:
       - check-success=ci.int.devshift.net PR build
       - label!=work in progress
       - label!=do not merge
-      - label=ready to merge
+      - label=ready
     actions:
       queue:
         name: edge-api
@@ -105,7 +105,7 @@ pull_request_rules:
       label:
         remove:
           - test update
-  - name: add ready to merge label
+  - name: add ready label
     conditions:
       - body~=(?m)^\[X\] I have commented my code, particularly in hard-to-understand areas
       - body~=(?m)^\[X\] I have made corresponding changes to the documentation
