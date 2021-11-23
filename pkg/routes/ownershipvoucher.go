@@ -29,8 +29,7 @@ func CreateOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 	validationErr := validateUploadRequestHeaders(r)
 	if validationErr != nil {
 		services.Log.Error("Couldn't validate ownership voucher upload request headers ", validationErr.Error())
-		w.WriteHeader(validationErr.GetStatus())
-		json.NewEncoder(w).Encode(validationErr)
+		badRequestResponseBuilder(w, validationErr, "invalid_header")
 		return
 	}
 
@@ -41,10 +40,18 @@ func CreateOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := services.OwnershipVoucherService.BatchUploadOwnershipVouchers(data, uint(numOfOVsInt))
 	if err != nil {
-		services.Log.Error("Couldn't upload ownership vouchers ", err.Error())
-		w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
-		json.NewEncoder(w).Encode(resp)
-		return
+		switch resp {
+		case nil:
+			services.Log.Error("Couldn't parse ownership vouchers ", err.Error())
+			badRequestResponseBuilder(w, errors.NewBadRequest(err.Error()), "validation_parse_error")
+			return
+		default:
+			// case that err != nil && resp != nil, we should recieve the error from the FDO server as a response
+			services.Log.Error("Couldn't upload ownership vouchers ", err.Error())
+			w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
+			json.NewEncoder(w).Encode(resp)
+			return
+		}
 	}
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(resp)
@@ -58,8 +65,7 @@ func DeleteOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 	validationErr := validateDeleteRequestHeaders(r)
 	if validationErr != nil {
 		services.Log.Error("Couldn't validate ownership voucher delete request headers ", validationErr.Error())
-		w.WriteHeader(validationErr.GetStatus())
-		json.NewEncoder(w).Encode(validationErr)
+		badRequestResponseBuilder(w, validationErr, "invalid_header")
 		return
 	}
 
@@ -67,8 +73,7 @@ func DeleteOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 	data := []string{}
 	err := json.Unmarshal(dataBytes, &data)
 	if err != nil { // can't unmarshal json
-		w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
-		json.NewEncoder(w).Encode(err)
+		badRequestResponseBuilder(w, errors.NewBadRequest(err.Error()), "incomplete_body")
 		return
 	}
 
@@ -105,13 +110,11 @@ func validateDeleteRequestHeaders(r *http.Request) errors.APIError {
 func validateMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Body == nil {
-			w.WriteHeader(errors.NewBadRequest("Body is empty").GetStatus())
-			json.NewEncoder(w).Encode(errors.NewBadRequest("Body is empty"))
+			badRequestResponseBuilder(w, errors.NewBadRequest("Body is nil"), "incomplete_body")
 			return
 		}
 		if r.Header.Get("Accept") != "application/json" {
-			w.WriteHeader(errors.NewBadRequest("Accept header must be set").GetStatus())
-			json.NewEncoder(w).Encode(errors.NewBadRequest("Accept header must be set"))
+			badRequestResponseBuilder(w, errors.NewBadRequest("Accept header must be application/json"), "invalid_header")
 			return
 		}
 		_, ok := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
@@ -122,4 +125,12 @@ func validateMiddleware(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// badRequestResponseBuilder builds a response for a bad request
+func badRequestResponseBuilder(w http.ResponseWriter, e errors.APIError, errorCode string) {
+	w.WriteHeader(e.GetStatus())
+	resp := map[string]interface{}{"error_code": errorCode}
+	resp["error_details"] = map[string]string{"error_message": e.Error()}
+	json.NewEncoder(w).Encode(resp)
 }
