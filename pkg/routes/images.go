@@ -310,7 +310,7 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&countErr)
 		return
 	}
-	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Where("images.account = ?", account).Joins("Commit").Joins("Installer").Find(&images)
+	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Preload("Commit.Repo").Where("images.account = ?", account).Joins("Commit").Joins("Installer").Find(&images)
 
 	if result.Error != nil {
 		log.Error(err)

@@ -666,7 +666,7 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 	if err != nil {
 		return nil, new(IDMustBeInteger)
 	}
-	result := db.DB.Where("images.account = ?", account).Joins("Commit").First(&image, id)
+	result := db.DB.Preload("Commit.Repo").Where("images.account = ?", account).Joins("Commit").First(&image, id)
 	if result.Error != nil {
 		return nil, new(ImageNotFoundError)
 	}

@@ -42,7 +42,7 @@ func InitLogger() {
 		}
 		log.AddHook(hook)
 		log.SetFormatter(&log.JSONFormatter{
-			TimestampFormat: time.Now().Format("2006-01-02T15:04:05.999Z"),
+			TimestampFormat: time.RFC3339Nano,
 			FieldMap: log.FieldMap{
 				log.FieldKeyTime: "@timestamp",
 			},
