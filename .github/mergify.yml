@@ -8,6 +8,7 @@ pull_request_rules:
     conditions:
       - base=main
       - "#approved-reviews-by>=2"
+      - "#changes-requested-reviews-by=0"
       - check-success=Build
       - check-success=ci.ext.devshift.net PR build
       - check-success=ci.int.devshift.net PR build
@@ -23,7 +24,7 @@ pull_request_rules:
       - conflict
     actions:
       comment:
-        message: "This pull request is now in conflicts. Could you fix it @{{author}}? \U0001F64F"
+        message: "This pull request is now in conflicts. Could you fix it @{{author}}? 🙏"
       label:
         add:
           - conflict
