@@ -13,7 +13,6 @@ pull_request_rules:
       - check-success=ci.int.devshift.net PR build
       - label!=work in progress
       - label!=do not merge
-      - label=ready
     actions:
       queue:
         name: edge-api
@@ -116,4 +115,4 @@ pull_request_rules:
     actions:
       label:
         add:
-          - ready to merge
+          - ready
