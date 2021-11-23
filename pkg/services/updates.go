@@ -101,8 +101,8 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 
 	WaitGroup.Add(1) // Processing one update
 	defer func() {
-		WaitGroup.Done() // Done with one update (sucessfuly or not)
-		log.Debug("Done with one update - sucessfuly or not")
+		WaitGroup.Done() // Done with one update (successfuly or not)
+		log.Debug("Done with one update - successfuly or not")
 		if err := recover(); err != nil {
 			log.Fatalf("%s", err)
 		}
@@ -290,7 +290,7 @@ func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*
 const (
 	// PlaybookStatusRunning is the status when a playbook is still running
 	PlaybookStatusRunning = "running"
-	// PlaybookStatusSuccess is the status when a playbook has run sucessfully
+	// PlaybookStatusSuccess is the status when a playbook has run successfully
 	PlaybookStatusSuccess = "success"
 	// PlaybookStatusFailure is the status when a playbook execution fails
 	PlaybookStatusFailure = "failure"
@@ -313,7 +313,7 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 		log.Debug("Playbook is running - waiting for next messages")
 		return nil
 	} else if e.Payload.Status == PlaybookStatusSuccess {
-		log.Debug("The playbook was applied sucessfully. Waiting two minutes for reboot before setting status to success.")
+		log.Debug("The playbook was applied successfully. Waiting two minutes for reboot before setting status to success.")
 		time.Sleep(s.WaitForReboot)
 	}
 

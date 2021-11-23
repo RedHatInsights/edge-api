@@ -294,8 +294,8 @@ func (s *ImageService) postProcessImage(id uint) {
 
 	WaitGroup.Add(1) // Processing one image
 	defer func() {
-		WaitGroup.Done() // Done with one image (sucessfuly or not)
-		s.log.Debug("Done with one image - sucessfuly or not")
+		WaitGroup.Done() // Done with one image (successfuly or not)
+		s.log.Debug("Done with one image - successfuly or not")
 		if err := recover(); err != nil {
 			s.log.Fatalf("%s", err)
 		}

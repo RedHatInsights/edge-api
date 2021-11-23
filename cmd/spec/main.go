@@ -128,7 +128,7 @@ func main() {
 	checkErr(err)
 	err = ioutil.WriteFile("./cmd/spec/openapi.yaml", b.Bytes(), 0666)
 	checkErr(err)
-	fmt.Println("Spec was generated sucessfully")
+	fmt.Println("Spec was generated successfully")
 }
 
 func checkErr(err error) {
