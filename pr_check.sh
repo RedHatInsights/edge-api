@@ -24,10 +24,3 @@ curl -s $CICD_URL/bootstrap.sh > .cicd_bootstrap.sh && source .cicd_bootstrap.sh
 source $CICD_ROOT/build.sh
 source $CICD_ROOT/deploy_ephemeral_env.sh
 source $CICD_ROOT/smoke_test.sh
-
-
-# Build libfdo_data container, push if successful
-podman build -f ./test-container -t "${IMAGE}:libfdo-data" .
-exit_code=0
-podman run -it --rm "${IMAGE}:libfdo-data" || exit_code=$?
-if [[ ${exit_code} -eq 0 ]]; then podman push "${IMAGE}:libfdo-data"; fi
