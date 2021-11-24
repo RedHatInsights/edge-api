@@ -3,7 +3,10 @@
     "schemas": {
       "v1.AddUpdate": {
         "properties": {
-          "CommitID": {},
+          "CommitID": {
+            "minimum": 0,
+            "type": "integer"
+          },
           "DeviceUUID": {
             "type": "string"
           }
@@ -42,7 +45,10 @@
           "Description": {
             "type": "string"
           },
-          "ID": {},
+          "ID": {
+            "minimum": 0,
+            "type": "integer"
+          },
           "Name": {
             "type": "string"
           },
@@ -69,7 +75,10 @@
           "DesiredHash": {
             "type": "string"
           },
-          "ID": {},
+          "ID": {
+            "minimum": 0,
+            "type": "integer"
+          },
           "RHCClientID": {
             "type": "string"
           },
@@ -98,7 +107,10 @@
               "DesiredHash": {
                 "type": "string"
               },
-              "ID": {},
+              "ID": {
+                "minimum": 0,
+                "type": "integer"
+              },
               "RHCClientID": {
                 "type": "string"
               },
@@ -133,7 +145,10 @@
                       "BuildDate": {
                         "type": "string"
                       },
-                      "BuildNumber": {},
+                      "BuildNumber": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
                       "ComposeJobID": {
                         "type": "string"
                       },
@@ -142,7 +157,10 @@
                         "type": "string"
                       },
                       "DeletedAt": {},
-                      "ID": {},
+                      "ID": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
                       "ImageBuildHash": {
                         "type": "string"
                       },
@@ -160,7 +178,10 @@
                               "type": "string"
                             },
                             "DeletedAt": {},
-                            "ID": {},
+                            "ID": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
                             "UpdatedAt": {
                               "format": "date-time",
                               "type": "string"
@@ -210,7 +231,10 @@
                             "type": "string"
                           },
                           "DeletedAt": {},
-                          "ID": {},
+                          "ID": {
+                            "minimum": 0,
+                            "type": "integer"
+                          },
                           "RepoStatus": {
                             "type": "string"
                           },
@@ -224,7 +248,10 @@
                         },
                         "type": "object"
                       },
-                      "RepoID": {},
+                      "RepoID": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
                       "Status": {
                         "type": "string"
                       },
@@ -235,7 +262,10 @@
                     },
                     "type": "object"
                   },
-                  "CommitID": {},
+                  "CommitID": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
                   "CreatedAt": {
                     "format": "date-time",
                     "type": "string"
@@ -247,8 +277,14 @@
                   "Distribution": {
                     "type": "string"
                   },
-                  "ID": {},
-                  "ImageSetID": {},
+                  "ID": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "ImageSetID": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
                   "ImageType": {
                     "type": "string"
                   },
@@ -268,7 +304,10 @@
                         "type": "string"
                       },
                       "DeletedAt": {},
-                      "ID": {},
+                      "ID": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
                       "ImageBuildISOURL": {
                         "type": "string"
                       },
@@ -288,7 +327,10 @@
                     },
                     "type": "object"
                   },
-                  "InstallerID": {},
+                  "InstallerID": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
                   "Name": {
                     "type": "string"
                   },
@@ -306,7 +348,10 @@
                           "type": "string"
                         },
                         "DeletedAt": {},
-                        "ID": {},
+                        "ID": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
                         "Name": {
                           "type": "string"
                         },
@@ -351,7 +396,10 @@
                       "BuildDate": {
                         "type": "string"
                       },
-                      "BuildNumber": {},
+                      "BuildNumber": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
                       "ComposeJobID": {
                         "type": "string"
                       },
@@ -360,7 +408,10 @@
                         "type": "string"
                       },
                       "DeletedAt": {},
-                      "ID": {},
+                      "ID": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
                       "ImageBuildHash": {
                         "type": "string"
                       },
@@ -378,7 +429,10 @@
                               "type": "string"
                             },
                             "DeletedAt": {},
-                            "ID": {},
+                            "ID": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
                             "UpdatedAt": {
                               "format": "date-time",
                               "type": "string"
@@ -428,7 +482,10 @@
                             "type": "string"
                           },
                           "DeletedAt": {},
-                          "ID": {},
+                          "ID": {
+                            "minimum": 0,
+                            "type": "integer"
+                          },
                           "RepoStatus": {
                             "type": "string"
                           },
@@ -442,7 +499,10 @@
                         },
                         "type": "object"
                       },
-                      "RepoID": {},
+                      "RepoID": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
                       "Status": {
                         "type": "string"
                       },
@@ -453,7 +513,10 @@
                     },
                     "type": "object"
                   },
-                  "CommitID": {},
+                  "CommitID": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
                   "CreatedAt": {
                     "format": "date-time",
                     "type": "string"
@@ -465,8 +528,14 @@
                   "Distribution": {
                     "type": "string"
                   },
-                  "ID": {},
-                  "ImageSetID": {},
+                  "ID": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "ImageSetID": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
                   "ImageType": {
                     "type": "string"
                   },
@@ -486,7 +555,10 @@
                         "type": "string"
                       },
                       "DeletedAt": {},
-                      "ID": {},
+                      "ID": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
                       "ImageBuildISOURL": {
                         "type": "string"
                       },
@@ -506,7 +578,10 @@
                     },
                     "type": "object"
                   },
-                  "InstallerID": {},
+                  "InstallerID": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
                   "Name": {
                     "type": "string"
                   },
@@ -524,7 +599,10 @@
                           "type": "string"
                         },
                         "DeletedAt": {},
-                        "ID": {},
+                        "ID": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
                         "Name": {
                           "type": "string"
                         },
@@ -572,7 +650,10 @@
                             "BuildDate": {
                               "type": "string"
                             },
-                            "BuildNumber": {},
+                            "BuildNumber": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
                             "ComposeJobID": {
                               "type": "string"
                             },
@@ -581,7 +662,10 @@
                               "type": "string"
                             },
                             "DeletedAt": {},
-                            "ID": {},
+                            "ID": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
                             "ImageBuildHash": {
                               "type": "string"
                             },
@@ -599,7 +683,10 @@
                                     "type": "string"
                                   },
                                   "DeletedAt": {},
-                                  "ID": {},
+                                  "ID": {
+                                    "minimum": 0,
+                                    "type": "integer"
+                                  },
                                   "UpdatedAt": {
                                     "format": "date-time",
                                     "type": "string"
@@ -649,7 +736,10 @@
                                   "type": "string"
                                 },
                                 "DeletedAt": {},
-                                "ID": {},
+                                "ID": {
+                                  "minimum": 0,
+                                  "type": "integer"
+                                },
                                 "RepoStatus": {
                                   "type": "string"
                                 },
@@ -663,7 +753,10 @@
                               },
                               "type": "object"
                             },
-                            "RepoID": {},
+                            "RepoID": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
                             "Status": {
                               "type": "string"
                             },
@@ -674,7 +767,10 @@
                           },
                           "type": "object"
                         },
-                        "CommitID": {},
+                        "CommitID": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
                         "CreatedAt": {
                           "format": "date-time",
                           "type": "string"
@@ -686,8 +782,14 @@
                         "Distribution": {
                           "type": "string"
                         },
-                        "ID": {},
-                        "ImageSetID": {},
+                        "ID": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "ImageSetID": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
                         "ImageType": {
                           "type": "string"
                         },
@@ -707,7 +809,10 @@
                               "type": "string"
                             },
                             "DeletedAt": {},
-                            "ID": {},
+                            "ID": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
                             "ImageBuildISOURL": {
                               "type": "string"
                             },
@@ -727,7 +832,10 @@
                           },
                           "type": "object"
                         },
-                        "InstallerID": {},
+                        "InstallerID": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
                         "Name": {
                           "type": "string"
                         },
@@ -745,7 +853,10 @@
                                 "type": "string"
                               },
                               "DeletedAt": {},
-                              "ID": {},
+                              "ID": {
+                                "minimum": 0,
+                                "type": "integer"
+                              },
                               "Name": {
                                 "type": "string"
                               },
@@ -781,7 +892,10 @@
                                 "type": "string"
                               },
                               "DeletedAt": {},
-                              "ID": {},
+                              "ID": {
+                                "minimum": 0,
+                                "type": "integer"
+                              },
                               "UpdatedAt": {
                                 "format": "date-time",
                                 "type": "string"
@@ -823,7 +937,10 @@
                                 "type": "string"
                               },
                               "DeletedAt": {},
-                              "ID": {},
+                              "ID": {
+                                "minimum": 0,
+                                "type": "integer"
+                              },
                               "UpdatedAt": {
                                 "format": "date-time",
                                 "type": "string"
@@ -865,7 +982,10 @@
                                 "type": "string"
                               },
                               "DeletedAt": {},
-                              "ID": {},
+                              "ID": {
+                                "minimum": 0,
+                                "type": "integer"
+                              },
                               "UpdatedAt": {
                                 "format": "date-time",
                                 "type": "string"
@@ -930,7 +1050,10 @@
                     "BuildDate": {
                       "type": "string"
                     },
-                    "BuildNumber": {},
+                    "BuildNumber": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
                     "ComposeJobID": {
                       "type": "string"
                     },
@@ -939,7 +1062,10 @@
                       "type": "string"
                     },
                     "DeletedAt": {},
-                    "ID": {},
+                    "ID": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
                     "ImageBuildHash": {
                       "type": "string"
                     },
@@ -957,7 +1083,10 @@
                             "type": "string"
                           },
                           "DeletedAt": {},
-                          "ID": {},
+                          "ID": {
+                            "minimum": 0,
+                            "type": "integer"
+                          },
                           "UpdatedAt": {
                             "format": "date-time",
                             "type": "string"
@@ -1007,7 +1136,10 @@
                           "type": "string"
                         },
                         "DeletedAt": {},
-                        "ID": {},
+                        "ID": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
                         "RepoStatus": {
                           "type": "string"
                         },
@@ -1021,7 +1153,10 @@
                       },
                       "type": "object"
                     },
-                    "RepoID": {},
+                    "RepoID": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
                     "Status": {
                       "type": "string"
                     },
@@ -1032,7 +1167,10 @@
                   },
                   "type": "object"
                 },
-                "CommitID": {},
+                "CommitID": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
                 "CreatedAt": {
                   "format": "date-time",
                   "type": "string"
@@ -1052,7 +1190,10 @@
                       "DesiredHash": {
                         "type": "string"
                       },
-                      "ID": {},
+                      "ID": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
                       "RHCClientID": {
                         "type": "string"
                       },
@@ -1089,7 +1230,10 @@
                           "DesiredHash": {
                             "type": "string"
                           },
-                          "ID": {},
+                          "ID": {
+                            "minimum": 0,
+                            "type": "integer"
+                          },
                           "RHCClientID": {
                             "type": "string"
                           },
@@ -1103,8 +1247,14 @@
                         },
                         "type": "object"
                       },
-                      "DeviceID": {},
-                      "ID": {},
+                      "DeviceID": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "ID": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
                       "PlaybookDispatcherID": {
                         "type": "string"
                       },
@@ -1123,7 +1273,10 @@
                   },
                   "type": "array"
                 },
-                "ID": {},
+                "ID": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
                 "OldCommits": {
                   "items": {
                     "properties": {
@@ -1139,7 +1292,10 @@
                       "BuildDate": {
                         "type": "string"
                       },
-                      "BuildNumber": {},
+                      "BuildNumber": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
                       "ComposeJobID": {
                         "type": "string"
                       },
@@ -1148,7 +1304,10 @@
                         "type": "string"
                       },
                       "DeletedAt": {},
-                      "ID": {},
+                      "ID": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
                       "ImageBuildHash": {
                         "type": "string"
                       },
@@ -1166,7 +1325,10 @@
                               "type": "string"
                             },
                             "DeletedAt": {},
-                            "ID": {},
+                            "ID": {
+                              "minimum": 0,
+                              "type": "integer"
+                            },
                             "UpdatedAt": {
                               "format": "date-time",
                               "type": "string"
@@ -1216,7 +1378,10 @@
                             "type": "string"
                           },
                           "DeletedAt": {},
-                          "ID": {},
+                          "ID": {
+                            "minimum": 0,
+                            "type": "integer"
+                          },
                           "RepoStatus": {
                             "type": "string"
                           },
@@ -1230,7 +1395,10 @@
                         },
                         "type": "object"
                       },
-                      "RepoID": {},
+                      "RepoID": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
                       "Status": {
                         "type": "string"
                       },
@@ -1250,7 +1418,10 @@
                       "type": "string"
                     },
                     "DeletedAt": {},
-                    "ID": {},
+                    "ID": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
                     "RepoStatus": {
                       "type": "string"
                     },
@@ -1264,7 +1435,10 @@
                   },
                   "type": "object"
                 },
-                "RepoID": {},
+                "RepoID": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
                 "Status": {
                   "type": "string"
                 },
@@ -1302,7 +1476,10 @@
               "BuildDate": {
                 "type": "string"
               },
-              "BuildNumber": {},
+              "BuildNumber": {
+                "minimum": 0,
+                "type": "integer"
+              },
               "ComposeJobID": {
                 "type": "string"
               },
@@ -1311,7 +1488,10 @@
                 "type": "string"
               },
               "DeletedAt": {},
-              "ID": {},
+              "ID": {
+                "minimum": 0,
+                "type": "integer"
+              },
               "ImageBuildHash": {
                 "type": "string"
               },
@@ -1329,7 +1509,10 @@
                       "type": "string"
                     },
                     "DeletedAt": {},
-                    "ID": {},
+                    "ID": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
                     "UpdatedAt": {
                       "format": "date-time",
                       "type": "string"
@@ -1379,7 +1562,10 @@
                     "type": "string"
                   },
                   "DeletedAt": {},
-                  "ID": {},
+                  "ID": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
                   "RepoStatus": {
                     "type": "string"
                   },
@@ -1393,7 +1579,10 @@
                 },
                 "type": "object"
               },
-              "RepoID": {},
+              "RepoID": {
+                "minimum": 0,
+                "type": "integer"
+              },
               "Status": {
                 "type": "string"
               },
@@ -1404,7 +1593,10 @@
             },
             "type": "object"
           },
-          "CommitID": {},
+          "CommitID": {
+            "minimum": 0,
+            "type": "integer"
+          },
           "CreatedAt": {
             "format": "date-time",
             "type": "string"
@@ -1416,8 +1608,14 @@
           "Distribution": {
             "type": "string"
           },
-          "ID": {},
-          "ImageSetID": {},
+          "ID": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "ImageSetID": {
+            "minimum": 0,
+            "type": "integer"
+          },
           "ImageType": {
             "type": "string"
           },
@@ -1437,7 +1635,10 @@
                 "type": "string"
               },
               "DeletedAt": {},
-              "ID": {},
+              "ID": {
+                "minimum": 0,
+                "type": "integer"
+              },
               "ImageBuildISOURL": {
                 "type": "string"
               },
@@ -1457,7 +1658,10 @@
             },
             "type": "object"
           },
-          "InstallerID": {},
+          "InstallerID": {
+            "minimum": 0,
+            "type": "integer"
+          },
           "Name": {
             "type": "string"
           },
@@ -1475,7 +1679,10 @@
                   "type": "string"
                 },
                 "DeletedAt": {},
-                "ID": {},
+                "ID": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
                 "Name": {
                   "type": "string"
                 },
@@ -1511,7 +1718,10 @@
             "type": "string"
           },
           "DeletedAt": {},
-          "ID": {},
+          "ID": {
+            "minimum": 0,
+            "type": "integer"
+          },
           "Images": {
             "items": {
               "properties": {
@@ -1532,7 +1742,10 @@
                     "BuildDate": {
                       "type": "string"
                     },
-                    "BuildNumber": {},
+                    "BuildNumber": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
                     "ComposeJobID": {
                       "type": "string"
                     },
@@ -1541,7 +1754,10 @@
                       "type": "string"
                     },
                     "DeletedAt": {},
-                    "ID": {},
+                    "ID": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
                     "ImageBuildHash": {
                       "type": "string"
                     },
@@ -1559,7 +1775,10 @@
                             "type": "string"
                           },
                           "DeletedAt": {},
-                          "ID": {},
+                          "ID": {
+                            "minimum": 0,
+                            "type": "integer"
+                          },
                           "UpdatedAt": {
                             "format": "date-time",
                             "type": "string"
@@ -1609,7 +1828,10 @@
                           "type": "string"
                         },
                         "DeletedAt": {},
-                        "ID": {},
+                        "ID": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
                         "RepoStatus": {
                           "type": "string"
                         },
@@ -1623,7 +1845,10 @@
                       },
                       "type": "object"
                     },
-                    "RepoID": {},
+                    "RepoID": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
                     "Status": {
                       "type": "string"
                     },
@@ -1634,7 +1859,10 @@
                   },
                   "type": "object"
                 },
-                "CommitID": {},
+                "CommitID": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
                 "CreatedAt": {
                   "format": "date-time",
                   "type": "string"
@@ -1646,8 +1874,14 @@
                 "Distribution": {
                   "type": "string"
                 },
-                "ID": {},
-                "ImageSetID": {},
+                "ID": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "ImageSetID": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
                 "ImageType": {
                   "type": "string"
                 },
@@ -1667,7 +1901,10 @@
                       "type": "string"
                     },
                     "DeletedAt": {},
-                    "ID": {},
+                    "ID": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
                     "ImageBuildISOURL": {
                       "type": "string"
                     },
@@ -1687,7 +1924,10 @@
                   },
                   "type": "object"
                 },
-                "InstallerID": {},
+                "InstallerID": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
                 "Name": {
                   "type": "string"
                 },
@@ -1705,7 +1945,10 @@
                         "type": "string"
                       },
                       "DeletedAt": {},
-                      "ID": {},
+                      "ID": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
                       "Name": {
                         "type": "string"
                       },
@@ -1781,7 +2024,10 @@
             "type": "string"
           },
           "DeletedAt": {},
-          "ID": {},
+          "ID": {
+            "minimum": 0,
+            "type": "integer"
+          },
           "RepoStatus": {
             "type": "string"
           },
@@ -1814,7 +2060,10 @@
               "BuildDate": {
                 "type": "string"
               },
-              "BuildNumber": {},
+              "BuildNumber": {
+                "minimum": 0,
+                "type": "integer"
+              },
               "ComposeJobID": {
                 "type": "string"
               },
@@ -1823,7 +2072,10 @@
                 "type": "string"
               },
               "DeletedAt": {},
-              "ID": {},
+              "ID": {
+                "minimum": 0,
+                "type": "integer"
+              },
               "ImageBuildHash": {
                 "type": "string"
               },
@@ -1841,7 +2093,10 @@
                       "type": "string"
                     },
                     "DeletedAt": {},
-                    "ID": {},
+                    "ID": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
                     "UpdatedAt": {
                       "format": "date-time",
                       "type": "string"
@@ -1891,7 +2146,10 @@
                     "type": "string"
                   },
                   "DeletedAt": {},
-                  "ID": {},
+                  "ID": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
                   "RepoStatus": {
                     "type": "string"
                   },
@@ -1905,7 +2163,10 @@
                 },
                 "type": "object"
               },
-              "RepoID": {},
+              "RepoID": {
+                "minimum": 0,
+                "type": "integer"
+              },
               "Status": {
                 "type": "string"
               },
@@ -1916,7 +2177,10 @@
             },
             "type": "object"
           },
-          "CommitID": {},
+          "CommitID": {
+            "minimum": 0,
+            "type": "integer"
+          },
           "CreatedAt": {
             "format": "date-time",
             "type": "string"
@@ -1936,7 +2200,10 @@
                 "DesiredHash": {
                   "type": "string"
                 },
-                "ID": {},
+                "ID": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
                 "RHCClientID": {
                   "type": "string"
                 },
@@ -1973,7 +2240,10 @@
                     "DesiredHash": {
                       "type": "string"
                     },
-                    "ID": {},
+                    "ID": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
                     "RHCClientID": {
                       "type": "string"
                     },
@@ -1987,8 +2257,14 @@
                   },
                   "type": "object"
                 },
-                "DeviceID": {},
-                "ID": {},
+                "DeviceID": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "ID": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
                 "PlaybookDispatcherID": {
                   "type": "string"
                 },
@@ -2007,7 +2283,10 @@
             },
             "type": "array"
           },
-          "ID": {},
+          "ID": {
+            "minimum": 0,
+            "type": "integer"
+          },
           "OldCommits": {
             "items": {
               "properties": {
@@ -2023,7 +2302,10 @@
                 "BuildDate": {
                   "type": "string"
                 },
-                "BuildNumber": {},
+                "BuildNumber": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
                 "ComposeJobID": {
                   "type": "string"
                 },
@@ -2032,7 +2314,10 @@
                   "type": "string"
                 },
                 "DeletedAt": {},
-                "ID": {},
+                "ID": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
                 "ImageBuildHash": {
                   "type": "string"
                 },
@@ -2050,7 +2335,10 @@
                         "type": "string"
                       },
                       "DeletedAt": {},
-                      "ID": {},
+                      "ID": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
                       "UpdatedAt": {
                         "format": "date-time",
                         "type": "string"
@@ -2100,7 +2388,10 @@
                       "type": "string"
                     },
                     "DeletedAt": {},
-                    "ID": {},
+                    "ID": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
                     "RepoStatus": {
                       "type": "string"
                     },
@@ -2114,7 +2405,10 @@
                   },
                   "type": "object"
                 },
-                "RepoID": {},
+                "RepoID": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
                 "Status": {
                   "type": "string"
                 },
@@ -2134,7 +2428,10 @@
                 "type": "string"
               },
               "DeletedAt": {},
-              "ID": {},
+              "ID": {
+                "minimum": 0,
+                "type": "integer"
+              },
               "RepoStatus": {
                 "type": "string"
               },
@@ -2148,7 +2445,10 @@
             },
             "type": "object"
           },
-          "RepoID": {},
+          "RepoID": {
+            "minimum": 0,
+            "type": "integer"
+          },
           "Status": {
             "type": "string"
           },
