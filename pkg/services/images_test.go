@@ -218,5 +218,26 @@ var _ = Describe("Image Service Test", func() {
 				Expect(image.Status).To(Equal(models.ImageStatusError))
 			})
 		})
+
+		Context("when setting the status to retry an image build", func() {
+			It("should set status to building", func() {
+				image := &models.Image{
+					Installer: &models.Installer{
+						Status: models.ImageStatusError,
+					},
+					Commit: &models.Commit{
+						Status: models.ImageStatusError,
+					},
+					Status:      models.ImageStatusError,
+					OutputTypes: []string{models.ImageTypeInstaller, models.ImageTypeCommit},
+				}
+				err := service.setBuildingStatusOnImageToRetryBuild(image)
+
+				Expect(err).ToNot(HaveOccurred())
+				Expect(image.Status).To(Equal(models.ImageStatusBuilding))
+				Expect(image.Commit.Status).To(Equal(models.ImageStatusBuilding))
+				Expect(image.Installer.Status).To(Equal(models.ImageStatusCreated))
+			})
+		})
 	})
 })
