@@ -14,7 +14,7 @@ ThirdPartyRepo is a record of Third Party Repository or we can call it as Custom
 */
 type ThirdPartyRepo struct {
 	Model
-	Name        string `json:"Name"`
+	Name        string `json:"Name" gorm:"uniqueIndex"`
 	URL         string `json:"URL"`
 	Description string `json:"Description,omitempty"`
 	Account     string

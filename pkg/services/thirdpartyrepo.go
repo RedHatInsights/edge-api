@@ -13,7 +13,7 @@ import (
 // ThirdPartyRepoServiceInterface defines the interface that helps handles
 // the business logic of creating Third Party Repository
 type ThirdPartyRepoServiceInterface interface {
-	CreateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string) error
+	CreateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string) (*models.ThirdPartyRepo, error)
 	GetThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error)
 	UpdateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string, ID string) error
 	DeleteThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error)
@@ -32,7 +32,7 @@ type ThirdPartyRepoService struct {
 }
 
 // CreateThirdPartyRepo creates the ThirdPartyRepo for an Account on our database
-func (s *ThirdPartyRepoService) CreateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string) error {
+func (s *ThirdPartyRepoService) CreateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string) (*models.ThirdPartyRepo, error) {
 	if tprepo.URL != "" && tprepo.Name != "" {
 		tprepo = &models.ThirdPartyRepo{
 			Name:        tprepo.Name,
@@ -40,18 +40,14 @@ func (s *ThirdPartyRepoService) CreateThirdPartyRepo(tprepo *models.ThirdPartyRe
 			Description: tprepo.Description,
 			Account:     account,
 		}
-		repoDetails := db.DB.Where("name = ? and account = ?", tprepo.Name, account).First(&tprepo)
-		if tprepo.Name == repoDetails.Name() {
-			return errors.NewBadRequest("third party repository with already exists with same")
-		}
 		result := db.DB.Create(&tprepo)
 		if result.Error != nil {
-			return result.Error
+			return nil, result.Error
 		}
 		log.Infof("Getting ThirdPartyRepo info: repo %s, %s", tprepo.URL, tprepo.Name)
 
 	}
-	return nil
+	return tprepo, nil
 }
 
 // GetThirdPartyRepoByID gets the Third Party Repository by ID from the database

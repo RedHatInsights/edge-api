@@ -39,7 +39,7 @@ type CreateTPRepoRequest struct {
 
 // CreateThirdPartyRepo creates Third Party Repository
 func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
-	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	defer r.Body.Close()
 	tprepo, err := createRequest(w, r)
 	if err != nil {
@@ -60,19 +60,11 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = services.ThirdPartyRepoService.CreateThirdPartyRepo(tprepo, account)
+	tprepo, err = s.ThirdPartyRepoService.CreateThirdPartyRepo(tprepo, account)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
 		err.SetTitle("failed creating third party repository")
-		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
-	result := db.DB.Where("name = ? and account = ?", tprepo.Name, account).First(&tprepo)
-	if result.Error != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return

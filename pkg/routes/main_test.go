@@ -14,6 +14,7 @@ import (
 var (
 	testImage models.Image
 	testRepo  models.Repo
+	tprepo    models.ThirdPartyRepo
 
 	testDevices = []models.Device{
 		{UUID: "1", DesiredHash: "11"},
