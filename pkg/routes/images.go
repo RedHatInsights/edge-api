@@ -134,10 +134,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	image, err := initImageCreateRequest(w, r)
 	if err != nil {
-		log.Debug(err)
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		// initImageCreateRequest() already writes the response
 		return
 	}
 	account, err := common.GetAccount(r)
@@ -172,21 +169,15 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	image, err := initImageCreateRequest(w, r)
 	if err != nil {
-		log.Info(err)
+		log.WithFields(log.Fields{
+			"error":   err.Error(),
+			"imageID": image.ID,
+		}).Debug("Error parsing json")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	account, err := common.GetAccount(r)
-	if err != nil {
-		log.Info(err)
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
-
 	ctx := r.Context()
 	previousImage, ok := ctx.Value(imageKey).(*models.Image)
 	if !ok {
@@ -194,8 +185,20 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
+	account, err := common.GetAccount(r)
+	if err != nil || previousImage.Account != account {
+		log.WithFields(log.Fields{
+			"error":   err.Error(),
+			"account": account,
+			"imageID": image.ID,
+		}).Error("Error retrieving account")
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
 
-	err = services.ImageService.UpdateImage(image, account, previousImage)
+	err = services.ImageService.UpdateImage(image, previousImage)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()

@@ -34,7 +34,7 @@ var WaitGroup sync.WaitGroup
 // the business logic of creating RHEL For Edge Images
 type ImageServiceInterface interface {
 	CreateImage(image *models.Image, account string) error
-	UpdateImage(image *models.Image, account string, previousImage *models.Image) error
+	UpdateImage(image *models.Image, previousImage *models.Image) error
 	AddUserInfo(image *models.Image) error
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
@@ -112,8 +112,12 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 }
 
 // UpdateImage updates an image, adding a new version of this image to an imageset
-func (s *ImageService) UpdateImage(image *models.Image, account string, previousImage *models.Image) error {
-	if previousImage != nil {
+func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Image) error {
+	if previousImage == nil {
+		return new(ImageNotFoundError)
+	}
+	if previousImage.Status == models.ImageStatusSuccess {
+		// Previous image was built sucessfully
 		var currentImageSet models.ImageSet
 		result := db.DB.Where("Id = ?", previousImage.ImageSetID).First(&currentImageSet)
 		if result.Error != nil {
@@ -124,38 +128,36 @@ func (s *ImageService) UpdateImage(image *models.Image, account string, previous
 		if err := db.DB.Save(currentImageSet).Error; err != nil {
 			return result.Error
 		}
-	}
-
-	if image.Commit.OSTreeParentCommit == "" {
-		if previousImage.Commit.OSTreeParentCommit != "" {
-			image.Commit.OSTreeParentCommit = previousImage.Commit.OSTreeParentCommit
-
-		} else {
-			var repo *RepoService
-
-			repoURL, err := repo.GetRepoByID(previousImage.Commit.RepoID)
-			if err != nil {
-				err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
-				return err
+		if image.Commit.OSTreeParentCommit == "" {
+			if previousImage.Commit.OSTreeParentCommit != "" {
+				image.Commit.OSTreeParentCommit = previousImage.Commit.OSTreeParentCommit
+			} else {
+				var repo *RepoService
+				repoURL, err := repo.GetRepoByID(previousImage.Commit.RepoID)
+				if err != nil {
+					err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
+					return err
+				}
+				image.Commit.OSTreeParentCommit = repoURL.URL
 			}
-			image.Commit.OSTreeParentCommit = repoURL.URL
 		}
-	}
-	if image.Commit.OSTreeRef == "" {
-		if previousImage.Commit.OSTreeRef != "" {
-			image.Commit.OSTreeRef = previousImage.Commit.OSTreeRef
+		if image.Commit.OSTreeRef == "" {
+			if previousImage.Commit.OSTreeRef != "" {
+				image.Commit.OSTreeRef = previousImage.Commit.OSTreeRef
 
+			}
+			image.Commit.OSTreeRef = config.Get().DefaultOSTreeRef
 		}
-		image.Commit.OSTreeRef = config.Get().DefaultOSTreeRef
-
+	} else {
+		// Previous image was not built sucessfully
+		s.log.WithField("previousImageID", previousImage.ID).Info("Creating an update based on a image with a status that is not success")
 	}
-
 	image, err := s.imageBuilder.ComposeCommit(image)
 	if err != nil {
 		return err
 	}
-	image.Account = account
-	image.Commit.Account = account
+	image.Account = previousImage.Account
+	image.Commit.Account = previousImage.Account
 	image.Commit.Status = models.ImageStatusBuilding
 	image.Status = models.ImageStatusBuilding
 	// TODO: Remove code when frontend is not using ImageType on the table
@@ -234,17 +236,19 @@ func (s *ImageService) postProcessCommit(i *models.Image) error {
 		time.Sleep(1 * time.Minute)
 	}
 
-	i, err := s.imageBuilder.GetMetadata(i)
-	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Failed getting metadata from image builder")
-		s.SetErrorStatusOnImage(err, i)
-		return err
-	}
+	if i.Commit.Status == models.ImageStatusSuccess {
+		i, err := s.imageBuilder.GetMetadata(i)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Failed getting metadata from image builder")
+			s.SetErrorStatusOnImage(err, i)
+			return err
+		}
 
-	_, err = s.CreateRepoForImage(i)
-	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Failed creating repo for image")
-		return err
+		_, err = s.CreateRepoForImage(i)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Failed creating repo for image")
+			return err
+		}
 	}
 	return nil
 }
@@ -319,18 +323,19 @@ func (s *ImageService) postProcessImage(id uint) {
 		s.log.WithField("error", err.Error()).Fatal("Failed creating commit for image")
 	}
 
-	// TODO: We need to discuss this whole thing post-July deliverable
-	if i.HasOutputType(models.ImageTypeInstaller) {
-		err = s.postProcessInstaller(i)
-		if err != nil {
-			s.SetErrorStatusOnImage(err, i)
-			s.log.WithField("error", err.Error()).Fatal("Failed creating installer for image")
+	if i.Commit.Status == models.ImageStatusSuccess {
+		// TODO: We need to discuss this whole thing post-July deliverable
+		if i.HasOutputType(models.ImageTypeInstaller) {
+			err = s.postProcessInstaller(i)
+			if err != nil {
+				s.SetErrorStatusOnImage(err, i)
+				s.log.WithField("error", err.Error()).Fatal("Failed creating installer for image")
+			}
+		} else {
+			// Cleaning up possible non nil installers if doesnt have output type installer
+			i.Installer = nil
 		}
-	} else {
-		// Cleaning up possible non nil installers if doesnt have output type installer
-		i.Installer = nil
 	}
-
 	err = s.setFinalImageStatus(i)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Fatal("Couldn't set final image status")

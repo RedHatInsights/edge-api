@@ -149,17 +149,17 @@ func (mr *MockImageServiceInterfaceMockRecorder) SetErrorStatusOnImage(err, i in
 }
 
 // UpdateImage mocks base method.
-func (m *MockImageServiceInterface) UpdateImage(image *models.Image, account string, previousImage *models.Image) error {
+func (m *MockImageServiceInterface) UpdateImage(image, previousImage *models.Image) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateImage", image, account, previousImage)
+	ret := m.ctrl.Call(m, "UpdateImage", image, previousImage)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateImage indicates an expected call of UpdateImage.
-func (mr *MockImageServiceInterfaceMockRecorder) UpdateImage(image, account, previousImage interface{}) *gomock.Call {
+func (mr *MockImageServiceInterfaceMockRecorder) UpdateImage(image, previousImage interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).UpdateImage), image, account, previousImage)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).UpdateImage), image, previousImage)
 }
 
 // UpdateImageStatus mocks base method.
