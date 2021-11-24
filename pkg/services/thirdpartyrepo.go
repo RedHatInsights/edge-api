@@ -32,22 +32,22 @@ type ThirdPartyRepoService struct {
 }
 
 // CreateThirdPartyRepo creates the ThirdPartyRepo for an Account on our database
-func (s *ThirdPartyRepoService) CreateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string) (*models.ThirdPartyRepo, error) {
-	if tprepo.URL != "" && tprepo.Name != "" {
-		tprepo = &models.ThirdPartyRepo{
-			Name:        tprepo.Name,
-			URL:         tprepo.URL,
-			Description: tprepo.Description,
+func (s *ThirdPartyRepoService) CreateThirdPartyRepo(thirdPartyRepo *models.ThirdPartyRepo, account string) (*models.ThirdPartyRepo, error) {
+	if thirdPartyRepo.URL != "" && thirdPartyRepo.Name != "" {
+		thirdPartyRepo = &models.ThirdPartyRepo{
+			Name:        thirdPartyRepo.Name,
+			URL:         thirdPartyRepo.URL,
+			Description: thirdPartyRepo.Description,
 			Account:     account,
 		}
-		result := db.DB.Create(&tprepo)
+		result := db.DB.Create(&thirdPartyRepo)
 		if result.Error != nil {
 			return nil, result.Error
 		}
-		log.Infof("Getting ThirdPartyRepo info: repo %s, %s", tprepo.URL, tprepo.Name)
+		log.Infof("Getting ThirdPartyRepo info: repo %s, %s", thirdPartyRepo.URL, thirdPartyRepo.Name)
 
 	}
-	return tprepo, nil
+	return thirdPartyRepo, nil
 }
 
 // GetThirdPartyRepoByID gets the Third Party Repository by ID from the database
