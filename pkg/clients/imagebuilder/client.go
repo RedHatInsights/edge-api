@@ -304,7 +304,7 @@ func (c *Client) getComposeStatus(jobID string) (*ComposeStatus, error) {
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request for status was not sucessful")
+		return nil, fmt.Errorf("request for status was not successful")
 	}
 
 	err = json.Unmarshal(respBody, &cs)
