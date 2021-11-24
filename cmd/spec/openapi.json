@@ -3,7 +3,9 @@
     "schemas": {
       "v1.AddUpdate": {
         "properties": {
-          "CommitID": {},
+          "CommitID": {
+            "type": "integer"
+          },
           "DeviceUUID": {
             "type": "string"
           }

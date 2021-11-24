@@ -70,7 +70,12 @@ edit_isolinux() {
     KICKFILE=$3
 
     [[ -e $CONFIG ]] && file $CONFIG || (echo "ERROR: no $CONFIG file" && exit 1)
-    sed -i "/rescue/n;/LABEL=${VOLID}/ s/$/ inst.ks=hd:LABEL=${VOLID}:\/${KICKFILE} None/" $CONFIG
+    # Remove an existing inst.ks instruction
+    sed -i "/rescue/n;/LABEL=${VOLID}/ s/\<inst.ks[^ ]*//g" $CONFIG
+    # Replace an existing inst.ks instruction
+    sed -i "/rescue/n;/LABEL=${VOLID}/ s/\<inst.ks[^ ]*/inst.ks=hd:LABEL=${VOLID}:\/${KICKFILE} None/g" $CONFIG
+    # Inject an inst.ks instruction
+    sed -i "/inst.ks=/n;/rescue/n;/LABEL=${VOLID}/ s/$/ inst.ks=hd:LABEL=${VOLID}:\/${KICKFILE} None/g" $CONFIG
     grep $VOLID $CONFIG
 }
 
@@ -81,7 +86,12 @@ edit_efiboot() {
     KICKFILE=$3
 
     [[ -e $CONFIG ]] && file $CONFIG || (echo "ERROR: no $CONFIG file" && exit 1)
-    sed -i "/rescue/n;/LABEL=${VOLID}/ s/$/ inst.ks=hd:LABEL=${VOLID}:\/${KICKFILE} None/" $CONFIG
+    # Remove an existing inst.ks instruction
+    sed -i "/rescue/n;/LABEL=${VOLID}/ s/\<inst.ks[^ ]*//g" $CONFIG
+    # Replace an existing inst.ks instruction
+    sed -i "/rescue/n;/LABEL=${VOLID}/ s/\<inst.ks[^ ]*/inst.ks=hd:LABEL=${VOLID}:\/${KICKFILE} None/g" $CONFIG
+    # Inject an inst.ks instruction
+    sed -i "/inst.ks=/n;/rescue/n;/LABEL=${VOLID}/ s/$/ inst.ks=hd:LABEL=${VOLID}:\/${KICKFILE} None/g" $CONFIG
     grep $VOLID $CONFIG
 }
 
