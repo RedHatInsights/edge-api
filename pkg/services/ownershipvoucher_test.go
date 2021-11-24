@@ -3,6 +3,7 @@ package services_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -62,15 +63,15 @@ var _ = Describe("Ownershipvoucher", func() {
 
 	Context("parse ov", func() {
 		It("should parse without error", func() {
-			data, err := ovs.ReadOwnershipVouchers(ovb)
+			data, err := ovs.ParseOwnershipVouchers(ovb)
 			Expect(err).To(BeNil())
-			Expect(data.([]models.OwnershipVoucherData)[0].ProtocolVersion).To(Equal(uint(100)))
-			Expect(data.([]models.OwnershipVoucherData)[0].DeviceName).To(Equal("testdevice1"))
-			Expect(data.([]models.OwnershipVoucherData)[0].GUID).To(Equal("214d64be-3227-92da-0333-b1e1fe832f24"))
+			Expect(data[0].ProtocolVersion).To(Equal(uint(100)))
+			Expect(data[0].DeviceName).To(Equal("testdevice1"))
+			Expect(data[0].GUID).To(Equal("214d64be-3227-92da-0333-b1e1fe832f24"))
 		})
 		It("should parse with error", func() {
 			badOV := ovb[1:]
-			data, err := ovs.ReadOwnershipVouchers(badOV)
+			data, err := ovs.ParseOwnershipVouchers(badOV)
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(Equal("failed to parse ownership voucher"))
 			Expect(data).To(BeNil())
@@ -113,8 +114,17 @@ var _ = Describe("Ownershipvoucher", func() {
 
 	Context("connect devices", func() {
 		It("should succeed", func() {
-			resp, err := ovs.ConnectDevices(fdoUUIDList)
+			resp, err := ovs.ConnectDevices([]string{})
 			Expect(err).To(BeNil())
+			Expect(resp).To(BeNil())
+		})
+		It("should not connect", func() {
+			resp, err := ovs.ConnectDevices(fdoUUIDList)
+			var errList []error
+			for _, uuid := range fdoUUIDList {
+				errList = append(errList, errors.New(uuid))
+			}
+			Expect(err).To(Equal(errList))
 			Expect(resp).To(BeNil())
 		})
 	})

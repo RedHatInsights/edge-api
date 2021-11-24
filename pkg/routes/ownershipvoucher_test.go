@@ -65,7 +65,7 @@ var _ = Describe("Ownershipvoucher", func() {
 			for _, route := range router.Routes() {
 				for _, subRoute := range route.SubRoutes.Routes() {
 					Expect(subRoute.Pattern).ToNot(BeEmpty())
-					Expect(subRoute.Pattern).To(Or(Equal("/delete"), Equal("/")))
+					Expect(subRoute.Pattern).To(Or(Equal("/"), Equal("/connect"), Equal("/delete"), Equal("/parse")))
 				}
 			}
 		})
@@ -195,6 +195,85 @@ var _ = Describe("Ownershipvoucher", func() {
 			resRec := httptest.NewRecorder()
 			req.Header.Add("Content-Type", "application/xml")
 			req.Header.Add("Accept", "application/json")
+			router.ServeHTTP(resRec, req)
+			Expect(resRec.Code).To(Equal(http.StatusBadRequest))
+		})
+	})
+	Context("parse ownership vouchers", func() {
+		It("should succeed", func() {
+			req, _ := http.NewRequest(http.MethodPost, "/ownership_voucher/parse", bytes.NewBuffer(ovb))
+			resRec := httptest.NewRecorder()
+			req.Header.Add("Content-Type", "application/cbor")
+			req.Header.Add("Accept", "application/json")
+			router.ServeHTTP(resRec, req)
+			Expect(resRec.Code).To(Equal(http.StatusOK))
+		})
+		It("parse request without body", func() {
+			req, _ := http.NewRequest(http.MethodPost, "/ownership_voucher/parse", nil)
+			resRec := httptest.NewRecorder()
+			req.Header.Add("Content-Type", "application/cbor")
+			req.Header.Add("Accept", "application/json")
+			router.ServeHTTP(resRec, req)
+			Expect(resRec.Code).To(Equal(http.StatusBadRequest))
+		})
+		It("parse request with wrong Content-Type header", func() {
+			req, _ := http.NewRequest(http.MethodPost, "/ownership_voucher/parse", bytes.NewBuffer(ovb))
+			resRec := httptest.NewRecorder()
+			req.Header.Add("Content-Type", "application/xml")
+			req.Header.Add("Accept", "application/json")
+			router.ServeHTTP(resRec, req)
+			Expect(resRec.Code).To(Equal(http.StatusBadRequest))
+		})
+		It("parse request with invalid Accept header", func() {
+			req, _ := http.NewRequest(http.MethodPost, "/ownership_voucher/parse", bytes.NewBuffer(ovb))
+			resRec := httptest.NewRecorder()
+			req.Header.Add("Content-Type", "application/cbor")
+			req.Header.Add("Accept", "application/xml")
+			router.ServeHTTP(resRec, req)
+			Expect(resRec.Code).To(Equal(http.StatusBadRequest))
+		})
+	})
+
+	Context("connect devices", func() {
+		It("should not succeed", func() {
+			req, _ := http.NewRequest(http.MethodPost, "/ownership_voucher/connect", bytes.NewBuffer(fdoUUIDListAsBytes))
+			resRec := httptest.NewRecorder()
+			req.Header.Add("Content-Type", "application/json")
+			req.Header.Add("Accept", "application/json")
+			router.ServeHTTP(resRec, req)
+			Expect(resRec.Code).To(Equal(http.StatusBadRequest))
+		})
+		It("connect request with empty body", func() {
+			var s []string
+			b, _ := json.Marshal(s)
+			req, _ := http.NewRequest(http.MethodPost, "/ownership_voucher/connect", bytes.NewBuffer(b))
+			resRec := httptest.NewRecorder()
+			req.Header.Add("Content-Type", "application/json")
+			req.Header.Add("Accept", "application/json")
+			router.ServeHTTP(resRec, req)
+			Expect(resRec.Code).To(Equal(http.StatusOK))
+		})
+		It("connect request without body", func() {
+			req, _ := http.NewRequest(http.MethodPost, "/ownership_voucher/connect", nil)
+			resRec := httptest.NewRecorder()
+			req.Header.Add("Content-Type", "application/json")
+			req.Header.Add("Accept", "application/json")
+			router.ServeHTTP(resRec, req)
+			Expect(resRec.Code).To(Equal(http.StatusBadRequest))
+		})
+		It("connect request with wrong Content-Type header", func() {
+			req, _ := http.NewRequest(http.MethodPost, "/ownership_voucher/connect", bytes.NewBuffer(fdoUUIDListAsBytes))
+			resRec := httptest.NewRecorder()
+			req.Header.Add("Content-Type", "application/xml")
+			req.Header.Add("Accept", "application/json")
+			router.ServeHTTP(resRec, req)
+			Expect(resRec.Code).To(Equal(http.StatusBadRequest))
+		})
+		It("connect request with invalid Accept header", func() {
+			req, _ := http.NewRequest(http.MethodPost, "/ownership_voucher/connect", bytes.NewBuffer(fdoUUIDListAsBytes))
+			resRec := httptest.NewRecorder()
+			req.Header.Add("Content-Type", "application/json")
+			req.Header.Add("Accept", "application/xml")
 			router.ServeHTTP(resRec, req)
 			Expect(resRec.Code).To(Equal(http.StatusBadRequest))
 		})

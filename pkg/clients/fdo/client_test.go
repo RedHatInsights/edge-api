@@ -50,7 +50,7 @@ var _ = Describe("Client", func() {
 			})
 			if numOfOVsInt == 1 {
 				ovs := services.NewOwnershipVoucherService(context.Background(), log.NewEntry(log.New()))
-				ovData, _ := ovs.ReadOwnershipVouchers(body)
+				ovData, _ := ovs.ParseOwnershipVouchers(body)
 				w.WriteHeader(http.StatusCreated)
 				json.NewEncoder(w).Encode(ovData)
 			} else if numOfOVsInt == 10 {

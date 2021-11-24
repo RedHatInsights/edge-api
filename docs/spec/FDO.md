@@ -1,6 +1,4 @@
-# Ownership Voucher Management API
-
-This protocol will be called the "Ownership Voucher Management API", or in the scope of this document, the "Management API".
+# Ownership Voucher API
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
 NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED",  "MAY", and
@@ -29,7 +27,7 @@ HTTP Request context: `POST $base/ownership_voucher`.
 
 This endpoint can be used to upload a batch of new ownership vouchers.
 A header is sent with the number of vouchers to be uploaded, so the Ownershipvoucher Service can verify that it did in fact receive (and process) every ownership voucher.
-This endpoint will accept raw ownership vouchers using CBOR encoding `Content-Type application/cbor`.
+This endpoint will accept raw ownership vouchers using CBOR encoding - `Content-Type application/cbor`.
 The vouchers should just be appended to each other as a byte stream.
 
 The request MUST contain a header `X-Number-Of-Vouchers`, containing the number of Ownership Vouchers being uploaded.
@@ -98,14 +96,14 @@ Content-Type: application/json
 
 HTTP Request context: `POST $base/ownership_voucher/delete`.
 
-This endpoint can be used to request the Owner Onboarding Server to delete a set of Ownership Vouchers, and to stop taking ownerhsip of the devices.
+This endpoint can be used to request edge-api server to delete a set of Ownership Vouchers, and to stop taking ownerhsip of the devices.
 The request body consists of a JSON list of GUIDs for which the Ownership Vouchers should get deleted.
 
 A succesful response contains an empty body.
 
 ### Error codes
 
-- `unknown_device`: at least one of the GUIDs that were submitted were unknown to this Owner Onboarding Service. `error_details` contains the key `unknown`, which contains a JSON list of GUIDs that were unknown to this server.
+- `unknown_device`: at least one of the GUIDs that were submitted were unknown to this service. `error_details` contains the key `unknown`, which contains a JSON list of GUIDs that were unknown to this server.
 - `invalid_header`: when the request did not contain valid headers. `error_details` contains the key `error_message`, which contains a string describing the error.
 - `incomplete_body`: when the request did not contain a complete body or it is broken. `error_details` contains the key `error_message`, which contains a string describing the error.
 
@@ -121,7 +119,7 @@ Host: edge-api.example.com
 Content-Type: application/json
 Accept: application/json
 
-[“a9bcd683-a7e4-46ed-80b2-6e55e8610d04”, “1ea69fcb-b784-4d0f-ab4d-94589c6cc7ad”]
+["a9bcd683-a7e4-46ed-80b2-6e55e8610d04", "1ea69fcb-b784-4d0f-ab4d-94589c6cc7ad"]
 ```
 
 #### Successful response
@@ -137,5 +135,108 @@ Content-Type: application/json
 HTTP/1.1 400 Bad Request
 Content-Type: application/json
 
-{"error_code": "unknown_device", "error_details": {"unknown": [“1ea69fcb-b784-4d0f-ab4d-94589c6cc7ad”"]}}
+{"error_code": "unknown_device", "error_details": {"unknown": ["1ea69fcb-b784-4d0f-ab4d-94589c6cc7ad""]}}
+```
+
+## Ownership Voucher parse
+
+HTTP Request context: `POST $base/ownership_voucher/parse`.
+
+This endpoint can be used to parse a batch of new ownership vouchers.
+This endpoint will accept raw ownership vouchers using CBOR encoding - `Content-Type application/cbor`.
+The vouchers should just be appended to each other as a byte stream.
+
+A successful response will contain a JSON list containing objects, which each have at least the following keys:
+
+- `guid`: the FDO GUID of the Ownership Voucher
+- `protocol_version`: the protocol version of the Ownership Voucher
+- `device_name`: the name of the device that the Ownership Voucher is for
+
+### Error codes
+
+- `invalid_header`: when the request did not contain valid headers. `error_details` contains the key `error_message`, which contains a string describing the error.
+- `incomplete_body`: when the request did not contain a complete body or it is broken. `error_details` contains the key `error_message`, which contains a string describing the error.
+- `validation_parse_error`: when an Ownership Voucher was failed to parse during the verification process. `error_details` contains the key `error_message`, which contains a string describing the error.
+
+### Example
+
+This assumes a URI base of `/fdo`.
+
+#### Request
+
+``` HTTP
+POST /fdo/ownership_voucher HTTP/1.1
+Host: edge-api.example.com
+Content-Type: application/cbor
+Accept: application/json
+
+<voucher-1-bytes><voucher-2-bytes><voucher-3-bytes>
+```
+
+#### Successful response
+
+``` HTTP
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+[{"guid": "4e945116-fef1-41ab-9e75-e523476bbe14", "protocol_version": 100, "device_name": "Toughjoyfax"}, {"guid": "8bff3a64-f494-4a68-8c9f-cf8d0771d9b1", "protocol_version": 100, "device_name": "Sub-Ex"}, {"guid": "f2e52413-5843-402c-96bf-9bdbc2c17bed", "protocol_version": 100, "device_name": "Rank"}]
+```
+
+#### Failed response: validation_parse_error
+
+``` HTTP
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{"error_code": "validation_parse_error", "error_details": {"error_message": "Couldn't parse ownership vouchers"}}
+```
+
+## Connect devices
+
+HTTP Request context: `POST $base/ownership_voucher/connect`.
+
+This endpoint can be used to request the edge-api server to connect a set of devices by their FDO GUID.
+The request body consists of a JSON list of GUIDs for which the device should get commected.
+
+A successful response will contain a JSON list containing objects, which each have at least the following keys:
+
+- `guid`: the FDO GUID of the Ownership Voucher that got connected
+
+### Error codes
+
+- `unknown_device`: at least one of the GUIDs that were submitted were unknown to this service. `error_details` contains the key `unknown`, which contains a JSON list of GUIDs that were unknown to this server.
+- `invalid_header`: when the request did not contain valid headers. `error_details` contains the key `error_message`, which contains a string describing the error.
+- `incomplete_body`: when the request did not contain a complete body or it is broken. `error_details` contains the key `error_message`, which contains a string describing the error.
+
+### Example
+
+This assumes a URI base of `/fdo`.
+
+#### Request
+
+``` HTTP
+POST /fdo/ownership_voucher/connect HTTP/1.1
+Host: edge-api.example.com
+Content-Type: application/json
+Accept: application/json
+
+["a9bcd683-a7e4-46ed-80b2-6e55e8610d04", "1ea69fcb-b784-4d0f-ab4d-94589c6cc7ad"]
+```
+
+#### Successful response
+
+``` HTTP
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+[{"guid": "a9bcd683-a7e4-46ed-80b2-6e55e8610d04"}, {"guid": "1ea69fcb-b784-4d0f-ab4d-94589c6cc7ad"}]
+```
+
+#### Failed response: unknown_device
+
+``` HTTP
+HTTP/1.1 400 Bad Request
+Content-Type: application/json
+
+{"error_code": "unknown_device", "error_details": {"unknown": ["1ea69fcb-b784-4d0f-ab4d-94589c6cc7ad"]}}
 ```

@@ -25,8 +25,8 @@ type OwnershipVoucherService struct {
 type OwnershipVoucherServiceInterface interface {
 	BatchUploadOwnershipVouchers(voucherBytes []byte, numOfOVs uint) (interface{}, error)
 	BatchDeleteOwnershipVouchers(fdoUUIDList []string) (interface{}, error)
-	ConnectDevices(fdoUUIDList []string) (interface{}, error)
-	ReadOwnershipVouchers(voucherBytes []byte) (interface{}, error)
+	ConnectDevices(fdoUUIDList []string) ([]interface{}, []error)
+	ParseOwnershipVouchers(voucherBytes []byte) ([]models.OwnershipVoucherData, error)
 	storeOwnershipVouchers(data []models.OwnershipVoucherData)
 	parseVouchers(voucherBytes []byte) ([]models.OwnershipVoucherData, error)
 	createFDOClient() *fdo.Client
@@ -44,7 +44,7 @@ func NewOwnershipVoucherService(ctx context.Context, log *log.Entry) OwnershipVo
 func (ovs *OwnershipVoucherService) BatchUploadOwnershipVouchers(voucherBytes []byte, numOfOVs uint) (interface{}, error) {
 	logFields := log.Fields{"method": "services.BatchUploadOwnershipVouchers"}
 	ovs.log.WithFields(logFields).Debug("Creating ownership vouchers")
-	data, err := ovs.parseVouchers(voucherBytes)
+	data, err := ovs.ParseOwnershipVouchers(voucherBytes)
 	if err != nil {
 		ovs.log.WithFields(logFields).Error("Failed to parse ownership vouchers")
 		return nil, err
@@ -70,26 +70,28 @@ func (ovs *OwnershipVoucherService) BatchDeleteOwnershipVouchers(fdoUUIDList []s
 }
 
 // ConnectDevices API point for the FDO server to connect devices
-func (ovs *OwnershipVoucherService) ConnectDevices(fdoUUIDList []string) (resp interface{}, err error) {
+func (ovs *OwnershipVoucherService) ConnectDevices(fdoUUIDList []string) (resp []interface{}, errList []error) {
 	logFields := log.Fields{"method": "services.ConnectDevices"}
 	ovs.log.WithFields(logFields).Debug("Connecting devices")
 	deviceService := NewDeviceService(ovs.ctx)
 	for _, guid := range fdoUUIDList {
 		device, err := deviceService.GetDeviceByUUID(guid) // get device by UUID which was set to be FDO GUID
 		if err != nil {
-			ovs.log.WithFields(logFields).Error("Couldn't find device ", guid, err)
-			break
+			ovs.log.WithFields(logFields).Warn("Couldn't find device ", guid, err)
+			errList = append(errList, errors.New(guid))
+		} else {
+			device.Connected = true
+			resp = append(resp, map[string]string{"guid": guid})
+			db.DB.Save(&device)
 		}
-		device.Connected = true
-		db.DB.Save(&device)
 	}
 	return
 }
 
-// ReadOwnershipVouchers reads ownership vouchers from bytes
-func (ovs *OwnershipVoucherService) ReadOwnershipVouchers(voucherBytes []byte) (interface{}, error) {
-	logFields := log.Fields{"method": "services.ReadOwnershipVouchers"}
-	ovs.log.WithFields(logFields).Debug("Reading ownership vouchers")
+// ParseOwnershipVouchers reads ownership vouchers from bytes
+func (ovs *OwnershipVoucherService) ParseOwnershipVouchers(voucherBytes []byte) ([]models.OwnershipVoucherData, error) {
+	logFields := log.Fields{"method": "services.ParseOwnershipVouchers"}
+	ovs.log.WithFields(logFields).Debug("Parsing ownership vouchers")
 	data, err := ovs.parseVouchers(voucherBytes)
 	if err != nil {
 		ovs.log.WithFields(logFields).Error("Failed to parse ownership vouchers")

@@ -18,6 +18,8 @@ func MakeFDORouter(sub chi.Router) {
 		r.Use(validateMiddleware)
 		r.Post("/", CreateOwnershipVouchers)
 		r.Post("/delete", DeleteOwnershipVouchers)
+		r.Post("/parse", ParseOwnershipVouchers)
+		r.Post("/connect", ConnectDevices)
 	})
 }
 
@@ -46,7 +48,8 @@ func CreateOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 			badRequestResponseBuilder(w, errors.NewBadRequest(err.Error()), "validation_parse_error")
 			return
 		default:
-			// case that err != nil && resp != nil, we should recieve the error from the FDO server as a response
+			// case that err != nil && resp != nil
+			// we should recieve the error from the FDO server as a response
 			services.Log.Error("Couldn't upload ownership vouchers ", err.Error())
 			w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
 			json.NewEncoder(w).Encode(resp)
@@ -62,7 +65,7 @@ func DeleteOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	defer r.Body.Close()
 
-	validationErr := validateDeleteRequestHeaders(r)
+	validationErr := validateContentTypeJSONHeader(r)
 	if validationErr != nil {
 		services.Log.Error("Couldn't validate ownership voucher delete request headers ", validationErr.Error())
 		badRequestResponseBuilder(w, validationErr, "invalid_header")
@@ -88,6 +91,64 @@ func DeleteOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
+// ParseOwnershipVouchers parses ownership vouchers from the given cbor binary data
+func ParseOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
+	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	defer r.Body.Close()
+
+	if r.Header.Get("Content-Type") != "application/cbor" {
+		badRequestResponseBuilder(w, errors.NewBadRequest("Content-Type header must be application/cbor"), "invalid_header")
+		return
+	}
+	data, _ := ioutil.ReadAll(r.Body)
+
+	resp, err := services.OwnershipVoucherService.ParseOwnershipVouchers(data)
+	if err != nil {
+		services.Log.Error("Couldn't parse ownership vouchers ", err.Error())
+		badRequestResponseBuilder(w, errors.NewBadRequest(err.Error()), "validation_parse_error")
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resp)
+}
+
+// ConnectDevices connects devices to the given ownership vouchers
+func ConnectDevices(w http.ResponseWriter, r *http.Request) {
+	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	defer r.Body.Close()
+
+	validationErr := validateContentTypeJSONHeader(r)
+	if validationErr != nil {
+		services.Log.Error("Couldn't validate connect request headers ", validationErr.Error())
+		badRequestResponseBuilder(w, validationErr, "invalid_header")
+		return
+	}
+
+	dataBytes, _ := ioutil.ReadAll(r.Body)
+	data := []string{}
+	err := json.Unmarshal(dataBytes, &data)
+	if err != nil { // can't unmarshal json
+		badRequestResponseBuilder(w, errors.NewBadRequest(err.Error()), "incomplete_body")
+		return
+	}
+
+	resp, errList := services.OwnershipVoucherService.ConnectDevices(data)
+	if errList != nil {
+		services.Log.Error("An error occured while trying to connect devices")
+		var unknownDevices []string
+		for _, err := range errList {
+			unknownDevices = append(unknownDevices, err.Error())
+		}
+		w.WriteHeader(errors.NewBadRequest("unknown_device").GetStatus())
+		resp := map[string]interface{}{"error_code": "unknown_device"}
+		resp["error_details"] = map[string]interface{}{"unknown": unknownDevices}
+		json.NewEncoder(w).Encode(resp)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resp)
+}
+
 // validate upload request headers
 func validateUploadRequestHeaders(r *http.Request) errors.APIError {
 	if r.Header.Get("Content-Type") != "application/cbor" {
@@ -99,8 +160,8 @@ func validateUploadRequestHeaders(r *http.Request) errors.APIError {
 	return nil
 }
 
-// validate delete request headers
-func validateDeleteRequestHeaders(r *http.Request) errors.APIError {
+// validate Content-Type application/json header
+func validateContentTypeJSONHeader(r *http.Request) errors.APIError {
 	if r.Header.Get("Content-Type") != "application/json" {
 		return errors.NewBadRequest("Content-Type header must be application/json")
 	}
