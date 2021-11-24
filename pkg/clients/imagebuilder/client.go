@@ -149,8 +149,12 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
+		var code int
+		if res != nil {
+			code = res.StatusCode
+		}
 		c.log.WithFields(log.Fields{
-			"statusCode": res.StatusCode,
+			"statusCode": code,
 			"error":      err,
 		}).Error("Image Builder Compose Request Error")
 		return nil, err

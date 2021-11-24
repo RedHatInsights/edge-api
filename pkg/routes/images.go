@@ -547,7 +547,7 @@ func RetryCreateImage(w http.ResponseWriter, r *http.Request) {
 			json.NewEncoder(w).Encode(&err)
 			return
 		}
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(&image)
 	}
 }

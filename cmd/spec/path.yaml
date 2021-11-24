@@ -226,6 +226,23 @@ paths:
           description: There was an internal server error.
       summary: Get Image OSTree repo.
       description: Returns the information of the OSTree Repository of a particular Image.
+  /images/{imageId}/retry:
+     post:
+      operationId: retryImage
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.Image"
+          description: Retry is being processed
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.InternalServerError"
+          description: There was an internal server error.
+      summary: Retries an building image from stratch
   /updates:
     post:
       operationId: UpdateDevice
