@@ -39,9 +39,9 @@ type CreateTPRepoRequest struct {
 
 // CreateThirdPartyRepo creates Third Party Repository
 func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
-	s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	defer r.Body.Close()
-	tprepo, err := createRequest(w, r)
+	thirdPartyRepo, err := createRequest(w, r)
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
@@ -49,7 +49,7 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	log.Infof("ThirdPartyRepo::create: %#v", tprepo)
+	log.Infof("ThirdPartyRepo::create: %#v", thirdPartyRepo)
 
 	account, err := common.GetAccount(r)
 	if err != nil {
@@ -60,7 +60,7 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tprepo, err = s.ThirdPartyRepoService.CreateThirdPartyRepo(tprepo, account)
+	thirdPartyRepo, err = services.ThirdPartyRepoService.CreateThirdPartyRepo(thirdPartyRepo, account)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -70,7 +70,7 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(&tprepo)
+	json.NewEncoder(w).Encode(&thirdPartyRepo)
 
 }
 
