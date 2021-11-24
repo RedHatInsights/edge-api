@@ -46,6 +46,19 @@ var imageSetFilters = common.ComposeFilters(
 	common.SortFilterHandler("image_sets", "created_at", "DESC"),
 )
 
+var imageDetailFilters = common.ComposeFilters(
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "status",
+		DBField:    "images.status",
+	}),
+
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "name",
+		DBField:    "images.name",
+	}),
+	common.SortFilterHandler("images", "updated_at", "DESC"),
+)
+
 var imageStatusFilters = common.ComposeFilters(
 	common.ContainFilterHandler(&common.Filter{
 		QueryParam: "status",
@@ -149,9 +162,23 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 // GetImageSetsByID returns the list of Image Sets by a given Image Set ID
 func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	var response common.EdgeAPIPaginatedResponse
+	pagination := common.GetPagination(r)
+	account, err := common.GetAccount(r)
+	result := imageDetailFilters(r, db.DB)
+	fmt.Printf("%v", result)
+	if err != nil {
+		log.Info(err)
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
 
 	ctx := r.Context()
 	imageSet, ok := ctx.Value(imageSetKey).(*models.ImageSet)
+
+	result = imageDetailFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Where(`Image_Sets.account = ? `, account).Find(&imageSet)
+	fmt.Printf(":: Result :: %v", result)
 	if !ok {
 		err := errors.NewBadRequest("Must pass image set id")
 		w.WriteHeader(err.GetStatus())
@@ -204,6 +231,7 @@ func contains(s []string, searchterm string) bool {
 
 func returnImageDetails(imageSet models.ImageSet, s *dependencies.EdgeAPIServices) []models.Image {
 	var Imgs []models.Image
+
 	for _, image := range imageSet.Images {
 		id := strconv.FormatUint(uint64(image.ID), 10)
 		img, err := s.ImageService.GetImageByID(id)
