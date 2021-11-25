@@ -4,8 +4,6 @@ require (
 	github.com/aws/aws-sdk-go v1.38.51
 	github.com/bxcodec/faker/v3 v3.6.0
 	github.com/cavaliercoder/grab v2.0.0+incompatible
-	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/fxamacker/cbor/v2 v2.3.0
 	github.com/getkin/kin-openapi v0.83.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi v4.1.2+incompatible
