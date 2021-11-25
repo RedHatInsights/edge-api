@@ -194,6 +194,7 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	}
 	response.Count = int64(len(*image))
 	response.Data = &image
+
 	json.NewEncoder(w).Encode(response)
 
 }
