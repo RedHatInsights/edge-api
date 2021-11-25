@@ -701,8 +701,15 @@ func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Im
 // RetryCreateImage retries the whole post process of the image creation
 func (s *ImageService) RetryCreateImage(image *models.Image) error {
 	s.log = s.log.WithFields(log.Fields{"imageID": image.ID, "commitID": image.Commit.ID})
-	err := s.setBuildingStatusOnImageToRetryBuild(image)
+	// recompose commit
+	image, err := s.imageBuilder.ComposeCommit(image)
 	if err != nil {
+		s.log.Error("Failed recomposing commit")
+		return err
+	}
+	err = s.setBuildingStatusOnImageToRetryBuild(image)
+	if err != nil {
+		s.log.Error("Failed setting image status")
 		return nil
 	}
 	go s.postProcessImage(image.ID)
