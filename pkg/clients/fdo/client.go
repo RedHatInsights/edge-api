@@ -108,7 +108,7 @@ func resUploadHandler(c *Client, res *http.Response) (interface{}, error) {
 		err = errors.New("bad request")
 		c.log.WithField("method", "fdo.resUploadHandler").Error("Ownershipvouchers couldn't be created, bad request")
 	default:
-		err = errors.New("unknown error")
+		err = errors.New(fmt.Sprint("unknown error with status code: ", res.StatusCode))
 		c.log.WithField("method", "fdo.resUploadHandler").Error("Ownershipvouchers couldn't be created, unknown error with status code: ", res.StatusCode)
 	}
 	return decodeResBody(&res.Body), err
@@ -145,7 +145,7 @@ func resDeleteHandler(c *Client, res *http.Response) (interface{}, error) {
 		err = errors.New("bad request")
 		c.log.WithField("method", "fdo.resDeleteHandler").Error("Ownershipvouchers couldn't be removed, bad request")
 	default:
-		err = errors.New("unknown error")
+		err = errors.New(fmt.Sprint("unknown error with status code: ", res.StatusCode))
 		c.log.WithField("method", "fdo.resDeleteHandler").Error("Ownershipvouchers couldn't be removed, unknown error with status code: ", res.StatusCode)
 	}
 	return decodeResBody(&res.Body), err

@@ -47,6 +47,7 @@ A successful response will contain a JSON list containing objects, which each ha
 - `invalid_header`: when the request did not contain valid headers. `error_details` contains the key `error_message`, which contains a string describing the error.
 - `incomplete_body`: when the request did not contain a complete body or it is broken. `error_details` contains the key `error_message`, which contains a string describing the error.
 - `validation_parse_error`: when an Ownership Voucher was failed to parse during the verification process. `error_details` contains the key `error_message`, which contains a string describing the error.
+- `fdo_client`: when the FDO client is not able to connect to the FDO server. `error_details` contains the key `error_message`, which contains a string describing the error.
 
 
 ### Example
@@ -106,6 +107,7 @@ A succesful response contains an empty body.
 - `unknown_device`: at least one of the GUIDs that were submitted were unknown to this service. `error_details` contains the key `unknown`, which contains a JSON list of GUIDs that were unknown to this server.
 - `invalid_header`: when the request did not contain valid headers. `error_details` contains the key `error_message`, which contains a string describing the error.
 - `incomplete_body`: when the request did not contain a complete body or it is broken. `error_details` contains the key `error_message`, which contains a string describing the error.
+- `fdo_client`: when the FDO client is not able to connect to the FDO server. `error_details` contains the key `error_message`, which contains a string describing the error.
 
 ### Example
 
