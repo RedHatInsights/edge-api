@@ -42,17 +42,15 @@ func CreateOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := services.OwnershipVoucherService.BatchUploadOwnershipVouchers(data, uint(numOfOVsInt))
 	if err != nil {
-		switch resp {
-		case nil:
-			services.Log.Error("Couldn't parse ownership vouchers ", err.Error())
-			badRequestResponseBuilder(w, errors.NewBadRequest(err.Error()), "validation_parse_error")
-			return
-		default:
-			// case that err != nil && resp != nil
-			// we should recieve the error from the FDO server as a response
+		switch err.Error() {
+		case "bad request":
 			services.Log.Error("Couldn't upload ownership vouchers ", err.Error())
 			w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
 			json.NewEncoder(w).Encode(resp)
+			return
+		default:
+			services.Log.Error(err.Error())
+			badRequestResponseBuilder(w, errors.NewBadRequest(err.Error()), "fdo_client")
 			return
 		}
 	}
@@ -82,10 +80,17 @@ func DeleteOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := services.OwnershipVoucherService.BatchDeleteOwnershipVouchers(data)
 	if err != nil {
-		services.Log.Error("Couldn't delete ownership vouchers ", err.Error())
-		w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
-		json.NewEncoder(w).Encode(resp)
-		return
+		switch err.Error() {
+		case "bad request":
+			services.Log.Error("Couldn't delete ownership vouchers ", err.Error())
+			w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
+			json.NewEncoder(w).Encode(resp)
+			return
+		default:
+			services.Log.Error(err.Error())
+			badRequestResponseBuilder(w, errors.NewBadRequest(err.Error()), "fdo_client")
+			return
+		}
 	}
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(resp)
