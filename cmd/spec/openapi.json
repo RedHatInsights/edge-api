@@ -88,6 +88,34 @@
           "UpdatedAt": {
             "format": "date-time",
             "type": "string"
+          },
+          "fdo": {
+            "properties": {
+              "CreatedAt": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "DeletedAt": {},
+              "ID": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "UpdatedAt": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "device_name": {
+                "type": "string"
+              },
+              "guid": {
+                "type": "string"
+              },
+              "protocol_version": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "type": "object"
           }
         },
         "type": "object"
@@ -120,6 +148,34 @@
               "UpdatedAt": {
                 "format": "date-time",
                 "type": "string"
+              },
+              "fdo": {
+                "properties": {
+                  "CreatedAt": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "DeletedAt": {},
+                  "ID": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "UpdatedAt": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "device_name": {
+                    "type": "string"
+                  },
+                  "guid": {
+                    "type": "string"
+                  },
+                  "protocol_version": {
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                },
+                "type": "object"
               }
             },
             "type": "object"
@@ -1203,6 +1259,34 @@
                       "UpdatedAt": {
                         "format": "date-time",
                         "type": "string"
+                      },
+                      "fdo": {
+                        "properties": {
+                          "CreatedAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "DeletedAt": {},
+                          "ID": {
+                            "minimum": 0,
+                            "type": "integer"
+                          },
+                          "UpdatedAt": {
+                            "format": "date-time",
+                            "type": "string"
+                          },
+                          "device_name": {
+                            "type": "string"
+                          },
+                          "guid": {
+                            "type": "string"
+                          },
+                          "protocol_version": {
+                            "minimum": 0,
+                            "type": "integer"
+                          }
+                        },
+                        "type": "object"
                       }
                     },
                     "type": "object"
@@ -1243,6 +1327,34 @@
                           "UpdatedAt": {
                             "format": "date-time",
                             "type": "string"
+                          },
+                          "fdo": {
+                            "properties": {
+                              "CreatedAt": {
+                                "format": "date-time",
+                                "type": "string"
+                              },
+                              "DeletedAt": {},
+                              "ID": {
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "UpdatedAt": {
+                                "format": "date-time",
+                                "type": "string"
+                              },
+                              "device_name": {
+                                "type": "string"
+                              },
+                              "guid": {
+                                "type": "string"
+                              },
+                              "protocol_version": {
+                                "minimum": 0,
+                                "type": "integer"
+                              }
+                            },
+                            "type": "object"
                           }
                         },
                         "type": "object"
@@ -2017,6 +2129,37 @@
         },
         "type": "object"
       },
+      "v1.OwnershipVoucherData": {
+        "items": {
+          "properties": {
+            "CreatedAt": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "DeletedAt": {},
+            "ID": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "UpdatedAt": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "device_name": {
+              "type": "string"
+            },
+            "guid": {
+              "type": "string"
+            },
+            "protocol_version": {
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
+        "type": "array"
+      },
       "v1.Repo": {
         "properties": {
           "CreatedAt": {
@@ -2213,6 +2356,34 @@
                 "UpdatedAt": {
                   "format": "date-time",
                   "type": "string"
+                },
+                "fdo": {
+                  "properties": {
+                    "CreatedAt": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "DeletedAt": {},
+                    "ID": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "UpdatedAt": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "device_name": {
+                      "type": "string"
+                    },
+                    "guid": {
+                      "type": "string"
+                    },
+                    "protocol_version": {
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "type": "object"
                 }
               },
               "type": "object"
@@ -2253,6 +2424,34 @@
                     "UpdatedAt": {
                       "format": "date-time",
                       "type": "string"
+                    },
+                    "fdo": {
+                      "properties": {
+                        "CreatedAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "DeletedAt": {},
+                        "ID": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "UpdatedAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "device_name": {
+                          "type": "string"
+                        },
+                        "guid": {
+                          "type": "string"
+                        },
+                        "protocol_version": {
+                          "minimum": 0,
+                          "type": "integer"
+                        }
+                      },
+                      "type": "object"
                     }
                   },
                   "type": "object"
@@ -2533,6 +2732,208 @@
           }
         },
         "summary": "Get a device by UUID."
+      }
+    },
+    "/fdo/ownership_voucher": {
+      "post": {
+        "operationId": "CreateOwnershipVouchers",
+        "requestBody": {
+          "content": {
+            "application/cbor": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "description": "CBOR encoding of the ownership vouchers.",
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "guid": {
+                      "description": "FDO GUID for the device.",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Created"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Upload ownership vouchers."
+      }
+    },
+    "/fdo/ownership_voucher/connect": {
+      "post": {
+        "operationId": "ConnectDevices",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array"
+              }
+            }
+          },
+          "description": "list of GUIDs for which the Ownership Vouchers should get deleted.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Connect devices by their GUIDs."
+      }
+    },
+    "/fdo/ownership_voucher/delete": {
+      "post": {
+        "operationId": "DeleteOwnershipVouchers",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array"
+              }
+            }
+          },
+          "description": "list of GUIDs for which the Ownership Vouchers should get deleted.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Delete ownership vouchers."
+      }
+    },
+    "/fdo/ownership_voucher/parse": {
+      "post": {
+        "operationId": "ParseOwnershipVouchers",
+        "requestBody": {
+          "content": {
+            "application/cbor": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          },
+          "description": "CBOR encoding of the ownership vouchers.",
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.OwnershipVoucherData"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Parse ownership vouchers."
       }
     },
     "/image-sets": {
