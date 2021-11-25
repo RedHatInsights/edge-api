@@ -57,6 +57,10 @@ var imageDetailFilters = common.ComposeFilters(
 		QueryParam: "name",
 		DBField:    "images.name",
 	}),
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "version",
+		DBField:    "images.version",
+	}),
 	common.SortFilterHandler("images", "updated_at", "DESC"),
 )
 
@@ -169,9 +173,6 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	var response common.EdgeAPIPaginatedResponse
 	pagination := common.GetPagination(r)
 	account, err := common.GetAccount(r)
-	result := imageDetailFilters(r, db.DB)
-	fmt.Printf("\n::: 1 - result %v\n", result)
-	fmt.Printf("%v", result)
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
@@ -179,21 +180,20 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-
 	ctx := r.Context()
 	imageSet, ok := ctx.Value(imageSetKey).(*models.ImageSet)
-	fmt.Printf("\n :: key :: %v\n", chi.URLParam(r, "imageSetId"))
-	fmt.Printf("\n:::2 - imageSet %v\n", r.Context().Value(imageSetKey))
-	result = imageDetailFilters(r, db.DB.Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
+	// result := imageDetailFilters(r, db.DB)
+
+	imageDetailFilters(r, db.DB.Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
 		Joins(`JOIN Image_Sets ON Image_Sets.id = Images.image_set_id`).
 		Where(`Image_Sets.account = ? and  Image_sets.id = ?`, account, &imageSet.ID).Find(&tt)
-	fmt.Printf("\n:::Result :: %v", tt)
+
 	if !ok {
 		err := errors.NewBadRequest("Must pass image set id")
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
-	response.Count = 1 //int64(len(tt))
+	response.Count = int64(len(*tt))
 	response.Data = &tt
 	json.NewEncoder(w).Encode(response)
 
