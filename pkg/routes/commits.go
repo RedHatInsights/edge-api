@@ -34,8 +34,7 @@ func MakeCommitsRouter(sub chi.Router) {
 		r.Use(CommitCtx)
 		r.Get("/", GetCommitByID)
 		r.Get("/repo/*", ServeRepo)
-		r.Put("/", UpdateCommit)
-		r.Patch("/", PatchCommit)
+
 	})
 }
 
