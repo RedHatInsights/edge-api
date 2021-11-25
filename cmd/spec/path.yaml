@@ -227,8 +227,15 @@ paths:
       summary: Get Image OSTree repo.
       description: Returns the information of the OSTree Repository of a particular Image.
   /images/{imageId}/retry:
-     post:
+    post:
       operationId: retryImage
+      parameters:
+        - name: imageId
+          in: path
+          required: true
+          description: ImageID
+          schema:
+            type: integer
       responses:
         "201":
           content:
@@ -439,7 +446,6 @@ paths:
                 properties:
                   Image:
                     $ref: "#/components/schemas/v1.Image"
-
           description: OK
         "400":
           content:
@@ -500,12 +506,12 @@ paths:
           description: "Define sort fields: Created_at, Name, Status. To sort DESC use -"
           schema:
             type: string
-        - name: name 
+        - name: name
           in: query
           description: "field: filter by name"
           schema:
             type: string
-        - name: status 
+        - name: status
           in: query
           description: "field: filter by status"
           schema:
@@ -542,8 +548,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.InternalServerError"
-          description: There was an internal server error. 
-      summary: Return the list of image sets.     
+          description: There was an internal server error.
+      summary: Return the list of image sets.
   /image-sets/{ImageSetId}:
     get:
       operationId: GetImageSetsByID
@@ -595,7 +601,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
-      summary: Check if image name is in use for current account 
+      summary: Check if image name is in use for current account
   /thirdpartyrepo:
     post:
       operationId: CreateThirdPartyRepo
@@ -633,7 +639,7 @@ paths:
           description: "fields: created_at, name, updated_at. To sort DESC use - before the fields."
           schema:
             type: string
-        - name: name 
+        - name: name
           in: query
           description: "field: filter by name"
           schema:
@@ -675,8 +681,7 @@ paths:
           required: true
           description: An unique existing third party repository id.
           schema:
-            type:
-              integer
+            type: integer
       responses:
         "200":
           content:
@@ -705,14 +710,13 @@ paths:
           required: true
           description: An unique existing third party repository id.
           schema:
-            type:
-              integer
+            type: integer
       requestBody:
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/v1.CreateThirdPartyRepo"
-        required: true  
+        required: true
       responses:
         "200":
           content:
@@ -732,7 +736,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
-      summary: Creates an Update for third party repository  
+      summary: Creates an Update for third party repository
     delete:
       operationId: DeleteThirdPartyRepoByID
       parameters:
@@ -741,8 +745,7 @@ paths:
           required: true
           description: An unique existing third party repository id.
           schema:
-            type:
-              integer
+            type: integer
       responses:
         "200":
           content:
@@ -763,3 +766,128 @@ paths:
                 $ref: '#/components/schemas/v1.InternalServerError'
           description: There was an internal server error.
       summary: Delete third party repository using id.
+  /fdo/ownership_voucher:
+    post:
+      operationId: CreateOwnershipVouchers
+      requestBody:
+        description: CBOR encoding of the ownership vouchers.
+        required: true
+        content:
+          application/cbor:
+            schema:
+              type: object
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  guid:
+                    type: string
+                    description: FDO GUID for the device.
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Upload ownership vouchers.
+  /fdo/ownership_voucher/delete:
+    post:
+      operationId: DeleteOwnershipVouchers
+      requestBody:
+        description: list of GUIDs for which the Ownership Vouchers should get deleted.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Delete ownership vouchers.
+  /fdo/ownership_voucher/parse:
+    post:
+      operationId: ParseOwnershipVouchers
+      requestBody:
+        description: CBOR encoding of the ownership vouchers.
+        required: true
+        content:
+          application/cbor:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.OwnershipVoucherData'
+                type: array
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Parse ownership vouchers.
+  /fdo/ownership_voucher/connect:
+    post:
+      operationId: ConnectDevices
+      requestBody:
+        description: list of GUIDs for which the Ownership Vouchers should get deleted.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Connect devices by their GUIDs.

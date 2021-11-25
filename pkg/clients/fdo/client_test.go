@@ -11,9 +11,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/models"
 
 	"github.com/redhatinsights/edge-api/pkg/clients/fdo"
-	ov "github.com/redhatinsights/edge-api/pkg/services/ownershipvoucher"
+	"github.com/redhatinsights/edge-api/pkg/services"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -48,20 +49,21 @@ var _ = Describe("Client", func() {
 				Expect(err).To(BeNil())
 			})
 			if numOfOVsInt == 1 {
-				ovData, _ := ov.ParseVoucher(body)
+				ovs := services.NewOwnershipVoucherService(context.Background(), log.NewEntry(log.New()))
+				ovData, _ := ovs.ParseOwnershipVouchers(body)
 				w.WriteHeader(http.StatusCreated)
-				json.NewEncoder(w).Encode([1]ov.Data{ovData})
+				json.NewEncoder(w).Encode(ovData)
 			} else if numOfOVsInt == 10 {
 				w.WriteHeader(http.StatusCreated)
-				ovData := ov.Data{
+				ovData := models.OwnershipVoucherData{
 					ProtocolVersion: 100,
 					GUID:            "12345678-1234-1234-1234-123456789012",
 					DeviceName:      "test-device",
 				}
-				json.NewEncoder(w).Encode([10]ov.Data{ovData})
+				json.NewEncoder(w).Encode([10]models.OwnershipVoucherData{ovData})
 			} else {
 				w.WriteHeader(http.StatusBadRequest)
-				json.NewEncoder(w).Encode([0]ov.Data{})
+				json.NewEncoder(w).Encode([0]models.OwnershipVoucherData{})
 			}
 		}))
 		defer ts.Close()
@@ -86,7 +88,7 @@ var _ = Describe("Client", func() {
 				Expect(err).To(BeNil())
 				Expect(j).ToNot(BeNil())
 			})
-			ovsData := [1]ov.Data{}
+			ovsData := [1]models.OwnershipVoucherData{}
 			resJson, _ := json.Marshal(j)
 			err = json.Unmarshal(resJson, &ovsData)
 			It("should successfully unmarshal json", func() {
@@ -110,7 +112,7 @@ var _ = Describe("Client", func() {
 				Expect(err).To(BeNil())
 				Expect(j).ToNot(BeNil())
 			})
-			ovsData := [10]ov.Data{}
+			ovsData := [10]models.OwnershipVoucherData{}
 			resJson, _ := json.Marshal(j)
 			err = json.Unmarshal(resJson, &ovsData)
 			It("should successfully unmarshal json", func() {

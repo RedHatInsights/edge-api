@@ -95,6 +95,7 @@ func main() {
 		s.Route("/image-sets", routes.MakeImageSetsRouter)
 		s.Route("/devices", routes.MakeDevicesRouter)
 		s.Route("/thirdpartyrepo", routes.MakeThirdPartyRepoRouter)
+		s.Route("/fdo", routes.MakeFDORouter)
 	})
 
 	mr := chi.NewRouter()
