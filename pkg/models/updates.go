@@ -15,7 +15,7 @@ type Device struct {
 	DesiredHash            string                `json:"DesiredHash"`
 	RHCClientID            string                `json:"RHCClientID"`
 	Connected              bool                  `gorm:"default:true" json:"Connected"`
-	OwnershipVoucherDataID int                   `json:"-"`
+	OwnershipVoucherDataID *uint                 `json:",omitempty"`
 	OwnershipVoucherData   *OwnershipVoucherData `json:"fdo,omitempty"`
 }
 
