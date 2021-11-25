@@ -1944,6 +1944,13 @@ paths:
   /images/{imageId}/retry:
      post:
       operationId: retryImage
+      parameters:
+        - name: imageId
+          in: path
+          required: true
+          description: ImageID
+          schema:
+            type: integer
       responses:
         "201":
           content:

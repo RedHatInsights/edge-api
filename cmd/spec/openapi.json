@@ -2904,6 +2904,17 @@
     "/images/{imageId}/retry": {
       "post": {
         "operationId": "retryImage",
+        "parameters": [
+          {
+            "description": "ImageID",
+            "in": "path",
+            "name": "imageId",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "201": {
             "content": {
