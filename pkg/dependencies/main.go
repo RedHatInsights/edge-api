@@ -12,14 +12,15 @@ import (
 
 // EdgeAPIServices is the list of Edge API services
 type EdgeAPIServices struct {
-	CommitService         services.CommitServiceInterface
-	DeviceService         services.DeviceServiceInterface
-	ImageService          services.ImageServiceInterface
-	RepoService           services.RepoServiceInterface
-	ImageSetService       services.ImageSetsServiceInterface
-	UpdateService         services.UpdateServiceInterface
-	ThirdPartyRepoService services.ThirdPartyRepoServiceInterface
-	Log                   *log.Entry
+	CommitService           services.CommitServiceInterface
+	DeviceService           services.DeviceServiceInterface
+	ImageService            services.ImageServiceInterface
+	RepoService             services.RepoServiceInterface
+	ImageSetService         services.ImageSetsServiceInterface
+	UpdateService           services.UpdateServiceInterface
+	ThirdPartyRepoService   services.ThirdPartyRepoServiceInterface
+	OwnershipVoucherService services.OwnershipVoucherServiceInterface
+	Log                     *log.Entry
 }
 
 // Init creates all services that Edge API depends on in order to have dependency injection on context
@@ -30,14 +31,15 @@ func Init(ctx context.Context) *EdgeAPIServices {
 		"accountId": account,
 	})
 	return &EdgeAPIServices{
-		CommitService:         services.NewCommitService(ctx),
-		ImageService:          services.NewImageService(ctx, log),
-		RepoService:           services.NewRepoService(ctx),
-		ImageSetService:       services.NewImageSetsService(ctx),
-		UpdateService:         services.NewUpdateService(ctx),
-		DeviceService:         services.NewDeviceService(ctx),
-		ThirdPartyRepoService: services.NewThirdPartyRepoService(ctx),
-		Log:                   log,
+		CommitService:           services.NewCommitService(ctx),
+		ImageService:            services.NewImageService(ctx, log),
+		RepoService:             services.NewRepoService(ctx),
+		ImageSetService:         services.NewImageSetsService(ctx),
+		UpdateService:           services.NewUpdateService(ctx),
+		DeviceService:           services.NewDeviceService(ctx),
+		ThirdPartyRepoService:   services.NewThirdPartyRepoService(ctx),
+		OwnershipVoucherService: services.NewOwnershipVoucherService(ctx, log),
+		Log:                     log,
 	}
 }
 

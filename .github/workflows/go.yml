@@ -31,9 +31,13 @@ jobs:
         run: make lint
 
       - name: Vet
-        run: make vet
+        uses: addnab/docker-run-action@v3
+        with:
+          image: quay.io/ayosef/libfdo-data:v1
+          options: -v ${{ github.workspace }}:/edge-api
+          run: make -C edge-api vet
 
-      - name: Test
+      - name: Coverage test
         uses: addnab/docker-run-action@v3
         with:
           image: quay.io/ayosef/libfdo-data:v1
