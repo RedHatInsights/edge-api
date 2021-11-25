@@ -30,7 +30,7 @@ func MakeImageSetsRouter(sub chi.Router) {
 	sub.With(validateFilterParams).With(common.Paginate).Get("/", ListAllImageSets)
 	sub.Route("/{imageSetId}", func(r chi.Router) {
 		r.Use(ImageSetCtx)
-		r.Get("/", GetImageSetsByID)
+		r.With(validateFilterParams).With(common.Paginate).Get("/", GetImageSetsByID)
 	})
 }
 
