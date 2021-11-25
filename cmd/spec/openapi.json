@@ -3030,7 +3030,20 @@
             "description": "ImageSetId",
             "in": "path",
             "name": "ImageSetId",
-            "required": true,
+            "required": true
+          },
+          {
+            "description": "Define sort fields: Created_at, Name, Status. To sort DESC use -",
+            "in": "query",
+            "name": "sort_by",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "field: status =? or name=? or version=?",
+            "in": "query",
+            "name": "filter",
             "schema": {
               "type": "string"
             }

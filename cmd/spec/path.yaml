@@ -558,6 +558,14 @@ paths:
           in: path
           required: true
           description: ImageSetId
+        - name: sort_by
+          in: query
+          description: "Define sort fields: Created_at, Name, Status. To sort DESC use -"
+          schema:
+            type: string
+        - name: filter 
+          in: query
+          description: "field: status =? or name=? or version=?"
           schema:
             type: string
       responses:
