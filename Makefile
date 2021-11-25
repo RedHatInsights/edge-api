@@ -50,6 +50,9 @@ test:
 coverage: 
 	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
 
+coverage-html:
+	 go tool cover -html=coverage.txt -o coverage.html
+
 vet:
 	go vet $$(go list ./... | grep -Ev '(/vendor/|/ownershipvoucher|/fdo)')
 

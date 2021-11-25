@@ -101,12 +101,12 @@ type uploadDetails struct {
 func worker(uploadQueue chan *uploadDetails) {
 	for p := range uploadQueue {
 		fname, err := p.uploader.UploadFile(p.fileName, p.uploadPath)
-		log.Debugf("Filename: %s with counter %d was uploaded sucessfully", fname, p.count)
+		log.Tracef("Filename: %s with counter %d was uploaded successfully", fname, p.count)
 		if err != nil {
 			log.Errorf("error: %v", err)
 		}
 		p.done <- true
-		log.Debugf("Filename: %s with counter %d was done uploading", fname, p.count)
+		log.Tracef("Filename: %s with counter %d was done uploading", fname, p.count)
 	}
 }
 
@@ -158,7 +158,7 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 
 	for i, u := range uploadDetailsList {
 		<-u.done
-		log.Debugf("%d file is done", i)
+		log.Tracef("%d file is done", i)
 		close(u.done)
 	}
 	log.Infof("Files are done uploading...")
@@ -172,8 +172,8 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 // UploadFile takes a Filename path as a string and then uploads that to
 // the supplied location in s3
 func (u *S3Uploader) UploadFile(fname string, uploadPath string) (string, error) {
-	log.Debugf("S3Uploader::UploadFileToS3::fname: %#v", fname)
-	log.Debugf("S3Uploader::UploadFileToS3::S3path: %#v", uploadPath)
+	log.Tracef("S3Uploader::UploadFileToS3::fname: %#v", fname)
+	log.Tracef("S3Uploader::UploadFileToS3::S3path: %#v", uploadPath)
 	f, err := os.Open(fname)
 	if err != nil {
 		return "", fmt.Errorf("failed to open file %q, %v", fname, err)
@@ -186,7 +186,7 @@ func (u *S3Uploader) UploadFile(fname string, uploadPath string) (string, error)
 		ACL:    aws.String("public-read"),
 	})
 
-	log.Debugf("S3Uploader::UploadRepo::result: %#v", result)
+	log.Tracef("S3Uploader::UploadRepo::result: %#v", result)
 	if err != nil {
 		return "", err
 	}

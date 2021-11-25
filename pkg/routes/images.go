@@ -134,10 +134,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	image, err := initImageCreateRequest(w, r)
 	if err != nil {
-		log.Debug(err)
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		// initImageCreateRequest() already writes the response
 		return
 	}
 	account, err := common.GetAccount(r)
@@ -172,21 +169,15 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	image, err := initImageCreateRequest(w, r)
 	if err != nil {
-		log.Info(err)
+		log.WithFields(log.Fields{
+			"error":   err.Error(),
+			"imageID": image.ID,
+		}).Debug("Error parsing json")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	account, err := common.GetAccount(r)
-	if err != nil {
-		log.Info(err)
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
-
 	ctx := r.Context()
 	previousImage, ok := ctx.Value(imageKey).(*models.Image)
 	if !ok {
@@ -194,8 +185,20 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
+	account, err := common.GetAccount(r)
+	if err != nil || previousImage.Account != account {
+		log.WithFields(log.Fields{
+			"error":   err.Error(),
+			"account": account,
+			"imageID": image.ID,
+		}).Error("Error retrieving account")
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
 
-	err = services.ImageService.UpdateImage(image, account, previousImage)
+	err = services.ImageService.UpdateImage(image, previousImage)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -310,7 +313,7 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&countErr)
 		return
 	}
-	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Where("images.account = ?", account).Joins("Commit").Joins("Installer").Find(&images)
+	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Preload("Commit.Repo").Where("images.account = ?", account).Joins("Commit").Joins("Installer").Find(&images)
 
 	if result.Error != nil {
 		log.Error(err)
@@ -463,13 +466,10 @@ func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		meta, err := client.GetMetadata(image)
 		if err != nil {
-			log.Fatal(err)
-		}
-		if image.Commit.OSTreeCommit != "" {
-			tx := db.DB.Save(&image.Commit)
-			if tx.Error != nil {
-				panic(tx.Error)
-			}
+			err := errors.NewInternalServerError()
+			w.WriteHeader(err.GetStatus())
+			json.NewEncoder(w).Encode(&err)
+			return
 		}
 		json.NewEncoder(w).Encode(meta)
 	}
@@ -547,7 +547,7 @@ func RetryCreateImage(w http.ResponseWriter, r *http.Request) {
 			json.NewEncoder(w).Encode(&err)
 			return
 		}
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(&image)
 	}
 }

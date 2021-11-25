@@ -12,7 +12,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services"
 )
 
-// MakeInventoryRouter adds support for operations on invetory
+// MakeInventoryRouter adds support for operations on inventory
 func MakeInventoryRouter(sub chi.Router) {
 	sub.Get("/", GetInventory)
 }
@@ -87,7 +87,7 @@ func GetUpdateAvailableInfo(param *inventory.InventoryParams, r *http.Request, i
 		} else if imageInfo != nil {
 			i.ImageInfo = imageInfo
 		}
-		if param != nil && param.DeviceStatus == "update_availabe" && imageInfo.UpdatesAvailable != nil {
+		if param != nil && param.DeviceStatus == "update_available" && imageInfo.UpdatesAvailable != nil {
 			ivt = append(ivt, i)
 		} else if param != nil && param.DeviceStatus == "running" && imageInfo.UpdatesAvailable == nil {
 			ivt = append(ivt, i)
