@@ -21,7 +21,6 @@ type Filter struct {
 // ContainFilterHandler handles sub string values
 func ContainFilterHandler(filter *Filter) FilterFunc {
 	sqlQuery := fmt.Sprintf("%s LIKE ?", filter.DBField)
-	fmt.Printf("\n :: sqlQuery %v :: \n", sqlQuery)
 	return FilterFunc(func(r *http.Request, tx *gorm.DB) *gorm.DB {
 		if val := r.URL.Query().Get(filter.QueryParam); val != "" {
 			tx = tx.Where(sqlQuery, "%"+val+"%")
@@ -79,7 +78,6 @@ func SortFilterHandler(sortTable, defaultSortKey, defaultOrder string) FilterFun
 
 // ComposeFilters composes all the filters into one function
 func ComposeFilters(fs ...FilterFunc) FilterFunc {
-	fmt.Printf("\n:: ComposeFilters :: \n")
 	return func(r *http.Request, tx *gorm.DB) *gorm.DB {
 		for _, f := range fs {
 			tx = f(r, tx)
