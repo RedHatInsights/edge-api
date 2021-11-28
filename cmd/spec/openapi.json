@@ -2796,7 +2796,10 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "array"
+                "type": "array",
+                "items":{
+                  "type":"string"
+                }
               }
             }
           },
@@ -2845,7 +2848,10 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "array"
+                "type": "array",
+                "items":{
+                  "type": "string"
+                }
               }
             }
           },
@@ -3030,7 +3036,10 @@
             "description": "ImageSetId",
             "in": "path",
             "name": "ImageSetId",
-            "required": true
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
           },
           {
             "description": "Define sort fields: Created_at, Name, Status. To sort DESC use -",

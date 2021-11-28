@@ -558,6 +558,8 @@ paths:
           in: path
           required: true
           description: ImageSetId
+          schema:
+            type: integer
         - name: sort_by
           in: query
           description: "Define sort fields: Created_at, Name, Status. To sort DESC use -"
@@ -818,6 +820,8 @@ paths:
           application/json:
             schema:
               type: array
+              items:
+                type: string
       responses:
         "200":
           content:
@@ -854,7 +858,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/v1.OwnershipVoucherData'
-                type: array
           description: OK
         "400":
           content:
@@ -879,6 +882,8 @@ paths:
           application/json:
             schema:
               type: array
+              items:
+                type: string
       responses:
         "200":
           content:
