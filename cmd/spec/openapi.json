@@ -3050,9 +3050,17 @@
             }
           },
           {
-            "description": "field: status =? or name=? or version=?",
+            "description": "field: filter by name",
             "in": "query",
-            "name": "filter",
+            "name": "name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "field: filter by status",
+            "in": "query",
+            "name": "status",
             "schema": {
               "type": "string"
             }
