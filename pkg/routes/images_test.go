@@ -369,6 +369,7 @@ func TestPostcheckImageNameAlreadyExist(t *testing.T) {
 	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any()).Return(true, nil)
 	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
 	})
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
