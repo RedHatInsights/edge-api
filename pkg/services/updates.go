@@ -135,9 +135,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		log.Error(err)
 		return nil, err
 	}
-	// FIXME - implement playbook dispatcher scheduling
-	// 1. Create template Playbook
-	// 2. Upload templated playbook
+
 	var remoteInfo TemplateRemoteInfo
 	remoteInfo.RemoteURL = update.Repo.URL
 	remoteInfo.RemoteName = "rhel-edge"
@@ -205,7 +203,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 
 // GetUpdatePlaybook is the function that returns the path to an update playbook
 func (s *UpdateService) GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error) {
-	fname := fmt.Sprintf("playbook_dispatcher_update_%d.yml", update.ID)
+	fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", update.Account, update.ID)
 	path := fmt.Sprintf("%s/playbooks/%s", update.Account, fname)
 	return s.FilesService.GetFile(path)
 }
@@ -221,7 +219,7 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 	cfg := config.Get()
 	filePath := cfg.TemplatesPath
 	templateName := "template_playbook_dispatcher_ostree_upgrade_payload.yml"
-	template, err := template.ParseFiles(filePath + templateName)
+	templateContents, err := template.New("").Delims("@@", "@@").ParseFiles(filePath + templateName)
 	if err != nil {
 		log.Errorf("Error parsing playbook template  :: %s", err.Error())
 		return "", err
@@ -230,22 +228,18 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 		GoTemplateRemoteName: templateInfo.RemoteName,
 		GoTemplateRemoteURL:  templateInfo.RemoteURL,
 		GoTemplateContentURL: templateInfo.ContentURL,
-		GoTemplateGpgVerify:  templateInfo.GpgVerify,
-		OstreeRemoteName:     "{{ ostree_remote_name }}",
-		OstreeRemoteURL:      "{{ ostree_remote_url }}",
-		OstreeContentURL:     "{{ ostree_content_url }}",
 		OstreeGpgVerify:      "false",
 		OstreeGpgKeypath:     "/etc/pki/rpm-gpg/",
-		OstreeRemoteTemplate: "{{ ostree_remote_template }}"}
+	}
 
-	fname := fmt.Sprintf("playbook_dispatcher_update_%d.yml", templateInfo.UpdateTransactionID)
+	fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", account, templateInfo.UpdateTransactionID)
 	tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
 	f, err := os.Create(tmpfilepath)
 	if err != nil {
 		log.Errorf("Error creating file: %s", err.Error())
 		return "", err
 	}
-	err = template.Execute(f, templateData)
+	err = templateContents.Execute(f, templateData)
 	if err != nil {
 		log.Errorf("Error executing template: %s ", err.Error())
 		return "", err
