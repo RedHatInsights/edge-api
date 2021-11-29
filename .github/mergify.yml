@@ -2,12 +2,12 @@ queue_rules:
   - name: edge-api
     conditions:
       - base=main
-      - "#approved-reviews-by>=2"
+      - "#approved-reviews-by>=1"
 pull_request_rules:
   - name: Automatic merge on approval
     conditions:
       - base=main
-      - "#approved-reviews-by>=2"
+      - "#approved-reviews-by>=1"
       - "#changes-requested-reviews-by=0"
       - check-success=Build
       - check-success=ci.ext.devshift.net PR build
