@@ -6,4 +6,6 @@ type OwnershipVoucherData struct {
 	ProtocolVersion uint   `json:"protocol_version"`
 	GUID            string `json:"guid"`
 	DeviceName      string `json:"device_name"`
+	DeviceConnected bool   `json:"device_connected" gorm:"default:false"`
+	DeviceUUID      string `json:"device_uuid"`
 }
