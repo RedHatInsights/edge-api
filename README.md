@@ -221,6 +221,45 @@ curl -v http://localhost:8000/
 
 You should get a 200 response back.
 
+## Setup Podman to run FDO
+1. Install Podman
+2. Sign in on quay.io and create your secrect file
+```
+Upper right, click on username
+Account Settings
+Create Encrypted password
+username
+LHS Docker Configuration
+copy contents into ~/.config/containers/auth.json
+```
+3. Pull podman image 
+```podman pull quay.io/cloudservices/edge-api:qa
+```
+From within your edge-api director
+4. Execute Podman 
+```
+run -p 3000 --security-opt label=disable --group-add tty --rm -ti -v $(pwd):/edge-api quay.io/cloudservices/edge-api:libfdo-data /bin/bash
+```
+5. Open edge-api 
+```
+cd edge-api
+```
+6. Start the service 
+```
+DEBUG=True AUTH=False go run main.go [remember your vars]
+```
+
+Now the application should be running. You can test this by port-forwarding the app in one terminal and running a curl command in another as follows:
+
+**Terminal 2**
+```
+curl -v http://0.0.0.0:37335/docs)
+```
+
+Using podman you might encounter permission denied error, well that’s error is because of podman  rootless state.
+To solve it just change the volume you mount to ${pwd}:/edge-api:Z .
+This way you will only need to run podman run --rm -ti -p 3000:3000 -v $(pwd):/edge-api:Z quay.io/cloudservices/edge-api:libfdo-data /bin/bash
+
 ## Development
 Now you can build and deploy the application.
 
