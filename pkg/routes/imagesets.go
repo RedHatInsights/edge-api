@@ -107,9 +107,10 @@ func ImageSetCtx(next http.Handler) http.Handler {
 				json.NewEncoder(w).Encode(&err)
 				return
 			}
-			db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
-			db.DB.Where("id = ?", &imageSet.Images[len(imageSet.Images)-1].InstallerID).Find(&imageSet.Images[len(imageSet.Images)-1].Installer)
-
+			if imageSet.Images != nil {
+				db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
+				db.DB.Where("id = ?", &imageSet.Images[len(imageSet.Images)-1].InstallerID).Find(&imageSet.Images[len(imageSet.Images)-1].Installer)
+			}
 			Imgs := returnImageDetails(imageSet, s)
 			imageSet.Images = Imgs
 
@@ -165,6 +166,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 
 // GetImageSetsByID returns the list of Image Sets by a given Image Set ID
 func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
+	var imageSetData models.ImageSet
 	var image *[]models.Image
 	var response common.EdgeAPIPaginatedResponse
 	pagination := common.GetPagination(r)
@@ -192,8 +194,10 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
+	imageSetData = *imageSet
+	imageSetData.Images = *image
 	response.Count = int64(len(*image))
-	response.Data = &image
+	response.Data = &imageSetData
 
 	json.NewEncoder(w).Encode(response)
 
