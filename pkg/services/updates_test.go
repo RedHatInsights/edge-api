@@ -167,7 +167,9 @@ var _ = Describe("UpdateService Basic functions", func() {
 				err := updateService.ProcessPlaybookDispatcherRunEvent(message)
 				Expect(err).To(BeNil())
 				db.DB.First(&d, d.ID)
+				db.DB.First(&u, u.ID)
 				Expect(d.Status).To(Equal(models.DispatchRecordStatusError))
+				Expect(u.Status).To(Equal(models.UpdateStatusError))
 			})
 		})
 
