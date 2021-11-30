@@ -233,9 +233,10 @@ LHS Docker Configuration
 copy contents into ~/.config/containers/auth.json
 ```
 3. Pull podman image 
-```podman pull quay.io/cloudservices/edge-api:qa
 ```
-From within your edge-api director
+podman pull quay.io/cloudservices/edge-api:qa
+```
+From within your edge-api directory
 4. Execute Podman 
 ```
 run -p 3000 --security-opt label=disable --group-add tty --rm -ti -v $(pwd):/edge-api quay.io/cloudservices/edge-api:libfdo-data /bin/bash
