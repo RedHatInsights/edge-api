@@ -119,8 +119,7 @@ func (ovs *OwnershipVoucherService) storeOwnershipVouchers(data []models.Ownersh
 	logFields := log.Fields{"method": "services.storeOwnershipVouchers"}
 	ovs.log.WithFields(logFields).Debug("Store empty devices, with FDO info")
 	for _, voucherData := range data {
-		// create if not exist
-		db.DB.Where("guid = ?", voucherData.GUID).FirstOrCreate(&voucherData)
+		db.DB.Where("deleted_at is null and guid = ?", voucherData.GUID).FirstOrCreate(&voucherData)
 	}
 }
 
@@ -133,8 +132,7 @@ func (ovs *OwnershipVoucherService) removeOwnershipVouchers(fdoUUIDList []string
 			ovs.log.WithFields(logFields).Error("Failed to get ownership voucher by GUID ", guid)
 			continue
 		}
-		// remove completely
-		db.DB.Unscoped().Delete(&models.OwnershipVoucherData{}, "guid = ?", ov.GUID)
+		db.DB.Delete(ov)
 	}
 }
 
