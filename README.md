@@ -257,7 +257,7 @@ Now the application should be running. You can test this running a curl command 
 curl -v http://0.0.0.0:3000/docs)
 ```
 
-Using podman you might encounter permission denied error, well that’s error is because of podman  rootless state.
+Using podman you might encounter permission denied error, well that error is because of podman  rootless state.
 To solve it just change the volume you mount to ${pwd}:/edge-api:Z .
 This way you will only need to run podman run --rm -ti -p 3000:3000 -v $(pwd):/edge-api:Z quay.io/cloudservices/edge-api:libfdo-data /bin/bash
 
