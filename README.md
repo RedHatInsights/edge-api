@@ -236,10 +236,10 @@ copy contents into ~/.config/containers/auth.json
 ```
 podman pull quay.io/cloudservices/edge-api:qa
 ```
-From within your edge-api directory
+**From within your edge-api directory**
 4. Execute Podman 
 ```
-run -p 3000 --security-opt label=disable --group-add tty --rm -ti -v $(pwd):/edge-api quay.io/cloudservices/edge-api:libfdo-data /bin/bash
+podman run --rm -ti -p 3000:3000 -v $(pwd):/edge-api:Z quay.io/cloudservices/edge-api:libfdo-data /bin/bash
 ```
 5. Open edge-api 
 ```
@@ -247,20 +247,36 @@ cd edge-api
 ```
 6. Start the service 
 ```
-DEBUG=True AUTH=False go run main.go [remember your vars]
+DEBUG=True AUTH=False go run main.go
 ```
 
-Now the application should be running. You can test this by port-forwarding the app in one terminal and running a curl command in another as follows:
+Now the application should be running. You can test this running a curl command in another as follows:
 
 **Terminal 2**
 ```
-curl -v http://0.0.0.0:37335/docs)
+curl -v http://0.0.0.0:3000/docs)
 ```
 
 Using podman you might encounter permission denied error, well that’s error is because of podman  rootless state.
 To solve it just change the volume you mount to ${pwd}:/edge-api:Z .
 This way you will only need to run podman run --rm -ti -p 3000:3000 -v $(pwd):/edge-api:Z quay.io/cloudservices/edge-api:libfdo-data /bin/bash
 
+**libfdo-data**
+The :libfdo-data is a bit special and can help with running tests, it contains a script that can help you run the tests from:
+
+1. edge-api upstream (clone on each run)
+```
+podman run --rm -ti quay.io/cloudservices/edge-api:libfdo-data
+```
+2. your edge-api fork (clone on each run)
+```
+podman build -f ./test-container --build-arg GIT_BRANCH=fdo --build-arg GIT_REMOTE=https://github.com/Avielyo10/edge-api.git -t quay.io/ayosef/libfdo-data:test
+podman run --rm -ti quay.io/ayosef/libfdo-data:test
+```
+3. your localhost with volume
+```
+podman run --rm -ti -v $(pwd):/edge-api:Z quay.io/cloudservices/edge-api:libfdo-data
+```
 ## Development
 Now you can build and deploy the application.
 
