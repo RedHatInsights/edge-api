@@ -1,8 +1,5 @@
 package models
 
-/*
-
- */
 // FDODevice has a one OwnershipVoucherData and a one FDO User
 type FDODevice struct {
 	Model

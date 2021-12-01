@@ -32,6 +32,7 @@ var _ = Describe("Ownershipvoucher unit tests", func() {
 			for _, ownershipVoucher := range ownershipVouchers {
 				fdoDevice, err := ownershipVoucherService.GetFDODeviceByGUID(ownershipVoucher.GUID)
 				Expect(fdoDevice).ToNot(BeNil())
+				Expect(fdoDevice.InitialUser).ToNot(BeNil())
 				Expect(fdoDevice.OwnershipVoucherData.GUID).To(Equal(ownershipVoucher.GUID))
 				Expect(fdoDevice.OwnershipVoucherData.ProtocolVersion).To(Equal(ownershipVoucher.ProtocolVersion))
 				Expect(fdoDevice.OwnershipVoucherData.DeviceName).To(Equal(ownershipVoucher.DeviceName))
@@ -72,10 +73,17 @@ var _ = Describe("Ownershipvoucher unit tests", func() {
 				Expect(err).ToNot(BeNil())
 			}
 		})
-		It("should delete ownershipvouchers", func() {
+		It("ownershipvouchers shouldn't be found", func() {
 			for _, ownershipVoucher := range ownershipVouchers {
 				ov, err := ownershipVoucherService.GetOwnershipVouchersByGUID(ownershipVoucher.GUID)
 				Expect(ov).To(BeNil())
+				Expect(err).ToNot(BeNil())
+			}
+		})
+		It("users shouldn't be found", func ()  {
+			for _, ownershipVoucher := range ownershipVouchers {
+				user, err := ownershipVoucherService.GetFDOUserByGUID(ownershipVoucher.GUID)
+				Expect(user).To(BeNil())
 				Expect(err).ToNot(BeNil())
 			}
 		})
