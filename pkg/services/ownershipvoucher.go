@@ -153,7 +153,7 @@ func (ovs *OwnershipVoucherService) GetFDOUserByGUID(ownershipVoucherGUID string
 	ovs.log.WithFields(logFields).Debug("Getting FDO user by FDO device")
 	var fdoUser models.FDOUser
 	result := db.DB.Joins("JOIN ownership_voucher_data ON ownership_voucher_data.fdo_device_id = fdo_users.fdo_device_id and ownership_voucher_data.guid = ?",
-	ownershipVoucherGUID).First(&fdoUser)
+		ownershipVoucherGUID).First(&fdoUser)
 	if result.Error != nil {
 		ovs.log.WithFields(logFields).Error("Failed to get FDO user by FDO device ", result.Error)
 		return nil, result.Error

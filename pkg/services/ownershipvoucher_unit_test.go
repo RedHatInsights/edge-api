@@ -14,7 +14,7 @@ var _ = Describe("Ownershipvoucher unit tests", func() {
 	// create Ownershipvouchers
 	ownershipVoucherService := NewOwnershipVoucherService(context.Background(), log.NewEntry(log.New()))
 	ownershipVouchers := []models.OwnershipVoucherData{}
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 5; i++ {
 		ownershipVouchers = append(ownershipVouchers, models.OwnershipVoucherData{
 			GUID:            faker.UUIDHyphenated(),
 			ProtocolVersion: 100,
@@ -40,6 +40,7 @@ var _ = Describe("Ownershipvoucher unit tests", func() {
 			}
 		})
 	})
+	
 	Context("connect devices", func() {
 		It("all disconnected", func() {
 			for _, ownershipVoucher := range ownershipVouchers {
@@ -80,7 +81,7 @@ var _ = Describe("Ownershipvoucher unit tests", func() {
 				Expect(err).ToNot(BeNil())
 			}
 		})
-		It("users shouldn't be found", func ()  {
+		It("users shouldn't be found", func() {
 			for _, ownershipVoucher := range ownershipVouchers {
 				user, err := ownershipVoucherService.GetFDOUserByGUID(ownershipVoucher.GUID)
 				Expect(user).To(BeNil())
