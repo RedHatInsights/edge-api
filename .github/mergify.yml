@@ -46,7 +46,7 @@ pull_request_rules:
           This pull request looks stale. Feel free to reopen it if you think it's a mistake.
   - name: waiting for review
     conditions:
-      - "#approved-reviews-by<2"
+      - "#approved-reviews-by<1"
       - created-at<1 days ago
     actions:
       label:
@@ -54,7 +54,7 @@ pull_request_rules:
           - waiting for review
   - name: remove waiting for review label if not needed
     conditions:
-      - "#approved-reviews-by>=2"
+      - "#approved-reviews-by>=1"
     actions:
       label:
         remove:
