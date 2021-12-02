@@ -1,8 +1,8 @@
 #!/bin/bash
 
 export APP_NAME="edge"  # name of app-sre "application" folder this component lives in
-export COMPONENT_NAME="edge"  # name of app-sre "resourceTemplate" in deploy.yaml for this component
-export IMAGE="quay.io/cloudservices/edge"  # image location on quay
+export COMPONENT_NAME="edge-api"  # name of app-sre "resourceTemplate" in deploy.yaml for this component
+export IMAGE="quay.io/cloudservices/edge-api"  # image location on quay
 
 export IQE_PLUGINS="edge"  # name of the IQE plugin for this app.
 export IQE_MARKER_EXPRESSION="edge_smoke"  # This is the value passed to pytest -m
