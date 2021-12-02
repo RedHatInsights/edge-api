@@ -1,0 +1,27 @@
+---
+apiVersion: v1
+kind: Template
+metadata:
+  name: edge-post-deployment-tests
+objects:
+- apiVersion: cloud.redhat.com/v1alpha1
+  kind: ClowdJobInvocation
+  metadata:
+    name: edge-post-deployment-tests-${IMAGE_TAG}-${UID}
+  spec:
+    appName: edge
+    testing:
+      iqe:
+        debug: false
+        # TODO: Stole from template. Change me after talking to a Quality Engineer.
+        # dynaconfEnvName: clowder_stage_smoke
+        # filter: ''
+        # marker: 'smoke'
+parameters:
+- name: IMAGE_TAG
+  value: ''
+  required: true
+- name: UID
+  description: "Unique CJI name suffix"
+  generate: expression
+  from: "[a-z0-9]{6}"
