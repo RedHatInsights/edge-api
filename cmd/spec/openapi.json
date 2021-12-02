@@ -2796,7 +2796,10 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "array"
+                "type": "array",
+                "items":{
+                  "type":"string"
+                }
               }
             }
           },
@@ -2845,7 +2848,10 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "array"
+                "type": "array",
+                "items":{
+                  "type": "string"
+                }
               }
             }
           },
@@ -3031,6 +3037,30 @@
             "in": "path",
             "name": "ImageSetId",
             "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Define sort fields: Created_at, Name, Status. To sort DESC use -",
+            "in": "query",
+            "name": "sort_by",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "field: filter by name",
+            "in": "query",
+            "name": "name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "field: filter by status",
+            "in": "query",
+            "name": "status",
             "schema": {
               "type": "string"
             }

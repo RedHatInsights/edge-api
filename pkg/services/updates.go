@@ -331,6 +331,7 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 	} else if e.Payload.Status == PlaybookStatusRunning {
 		dispatchRecord.Status = models.DispatchRecordStatusRunning
 	} else {
+		dispatchRecord.Status = models.DispatchRecordStatusError
 		log.Fatal("Playbook status is not on the json schema for this event")
 	}
 	result = db.DB.Save(&dispatchRecord)
@@ -344,7 +345,7 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 // SetUpdateStatusBasedOnDispatchRecord is the function that, given a dispatch record, finds the update transaction related to and update its status if necessary
 func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord models.DispatchRecord) error {
 	var update models.UpdateTransaction
-	result := db.DB.
+	result := db.DB.Preload("DispatchRecords").
 		Table("update_transactions").
 		Joins(
 			`JOIN updatetransaction_dispatchrecords ON update_transactions.id = updatetransaction_dispatchrecords.update_transaction_id`).
@@ -365,6 +366,7 @@ func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord mode
 			break
 		}
 	}
+
 	if allSuccess {
 		update.Status = models.UpdateStatusSuccess
 	}

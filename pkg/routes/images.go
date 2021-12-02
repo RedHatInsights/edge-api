@@ -293,13 +293,15 @@ func validateGetAllImagesSearchParams(next http.Handler) http.Handler {
 
 // GetAllImages image objects from the database for an account
 func GetAllImages(w http.ResponseWriter, r *http.Request) {
+	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	services.Log.Debug("Getting all images")
 	var count int64
 	var images []models.Image
 	result := imageFilters(r, db.DB)
 	pagination := common.GetPagination(r)
 	account, err := common.GetAccount(r)
 	if err != nil {
-		log.Info(err)
+		services.Log.WithField("error", err).Debug("Account not found")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
@@ -307,16 +309,15 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	}
 	countResult := imageFilters(r, db.DB.Model(&models.Image{})).Where("images.account = ?", account).Count(&count)
 	if countResult.Error != nil {
+		services.Log.WithField("error", countResult.Error.Error()).Error("Error retrieving images")
 		countErr := errors.NewInternalServerError()
-		log.Error(countErr)
 		w.WriteHeader(countErr.GetStatus())
 		json.NewEncoder(w).Encode(&countErr)
 		return
 	}
 	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Preload("Commit.Repo").Where("images.account = ?", account).Joins("Commit").Joins("Installer").Find(&images)
-
 	if result.Error != nil {
-		log.Error(err)
+		services.Log.WithField("error", result.Error.Error()).Error("Error retrieving images")
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
@@ -498,40 +499,41 @@ type CheckImageNameResponse struct {
 
 // CheckImageName verifies that ImageName exists
 func CheckImageName(w http.ResponseWriter, r *http.Request) {
+	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	services.Log.Debug("Checking image name")
 	var image *models.Image
 	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
-		log.Error(err)
-		err := errors.NewInternalServerError()
+		services.Log.WithField("error", err.Error()).Debug("Bad request")
+		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
 	account, err := common.GetAccount(r)
 	if err != nil {
+		services.Log.WithField("error", err.Error()).Debug("Bad request")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-
-	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
-	if image != nil {
-
-		imageExists, err := services.ImageService.CheckImageName(image.Name, account)
-		if err != nil {
-			err := errors.NewInternalServerError()
-			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(CheckImageNameResponse{
-			ImageExists: imageExists,
-		})
+	if image == nil {
+		err := errors.NewInternalServerError()
+		services.Log.WithField("error", err.Error()).Error("Internal Server Error")
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(&err)
+	}
+	imageExists, err := services.ImageService.CheckImageName(image.Name, account)
+	if err != nil {
+		services.Log.WithField("error", err.Error()).Error("Internal Server Error")
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	var errImageNotFilled = errors.NewInternalServerError()
-	w.WriteHeader(errImageNotFilled.GetStatus())
-	json.NewEncoder(w).Encode(&errImageNotFilled)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(CheckImageNameResponse{
+		ImageExists: imageExists,
+	})
 }
 
 // RetryCreateImage retries the image creation

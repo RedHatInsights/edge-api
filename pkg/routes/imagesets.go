@@ -30,11 +30,12 @@ func MakeImageSetsRouter(sub chi.Router) {
 	sub.With(validateFilterParams).With(common.Paginate).Get("/", ListAllImageSets)
 	sub.Route("/{imageSetId}", func(r chi.Router) {
 		r.Use(ImageSetCtx)
-		r.Get("/", GetImageSetsByID)
+		r.With(validateFilterParams).With(common.Paginate).Get("/", GetImageSetsByID)
 	})
 }
 
 var imageSetFilters = common.ComposeFilters(
+
 	common.ContainFilterHandler(&common.Filter{
 		QueryParam: "status",
 		DBField:    "images.status",
@@ -44,6 +45,23 @@ var imageSetFilters = common.ComposeFilters(
 		DBField:    "image_sets.name",
 	}),
 	common.SortFilterHandler("image_sets", "created_at", "DESC"),
+)
+
+var imageDetailFilters = common.ComposeFilters(
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "status",
+		DBField:    "images.status",
+	}),
+
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "name",
+		DBField:    "images.name",
+	}),
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "version",
+		DBField:    "images.version",
+	}),
+	common.SortFilterHandler("images", "updated_at", "DESC"),
 )
 
 var imageStatusFilters = common.ComposeFilters(
@@ -89,9 +107,10 @@ func ImageSetCtx(next http.Handler) http.Handler {
 				json.NewEncoder(w).Encode(&err)
 				return
 			}
-			db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
-			db.DB.Where("id = ?", &imageSet.Images[len(imageSet.Images)-1].InstallerID).Find(&imageSet.Images[len(imageSet.Images)-1].Installer)
-
+			if imageSet.Images != nil {
+				db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
+				db.DB.Where("id = ?", &imageSet.Images[len(imageSet.Images)-1].InstallerID).Find(&imageSet.Images[len(imageSet.Images)-1].Installer)
+			}
 			Imgs := returnImageDetails(imageSet, s)
 			imageSet.Images = Imgs
 
@@ -128,7 +147,6 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	log.Debugf("r.URL.Query() %v \n", r.URL.Query().Get("sort_by"))
 	if r.URL.Query().Get("sort_by") != "status" && r.URL.Query().Get("sort_by") != "-status" {
 		result = imageSetFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Where(`Image_Sets.account = ? `, account).Find(&imageSet)
-
 	} else {
 		result = imageStatusFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Where(`Image_Sets.account = ? `, account).Find(&imageSet)
 
@@ -148,8 +166,18 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 
 // GetImageSetsByID returns the list of Image Sets by a given Image Set ID
 func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
+	var imageSetData models.ImageSet
+	var image *[]models.Image
 	var response common.EdgeAPIPaginatedResponse
-
+	pagination := common.GetPagination(r)
+	account, err := common.GetAccount(r)
+	if err != nil {
+		log.Info(err)
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
 	ctx := r.Context()
 	imageSet, ok := ctx.Value(imageSetKey).(*models.ImageSet)
 	if !ok {
@@ -157,8 +185,20 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
-	response.Count = int64(len(imageSet.Images))
-	response.Data = &imageSet
+	result := imageDetailFilters(r, db.DB.Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
+		Joins(`JOIN Image_Sets ON Image_Sets.id = Images.image_set_id`).
+		Where(`Image_Sets.account = ? and  Image_sets.id = ?`, account, &imageSet.ID).Find(&image)
+
+	if result.Error != nil {
+		err := errors.NewBadRequest("Error to filter images")
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(&err)
+	}
+	imageSetData = *imageSet
+	imageSetData.Images = *image
+	response.Count = int64(len(*image))
+	response.Data = &imageSetData
+
 	json.NewEncoder(w).Encode(response)
 
 }
@@ -204,6 +244,7 @@ func contains(s []string, searchterm string) bool {
 
 func returnImageDetails(imageSet models.ImageSet, s *dependencies.EdgeAPIServices) []models.Image {
 	var Imgs []models.Image
+
 	for _, image := range imageSet.Images {
 		id := strconv.FormatUint(uint64(image.ID), 10)
 		img, err := s.ImageService.GetImageByID(id)
