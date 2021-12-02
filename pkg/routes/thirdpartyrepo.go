@@ -25,13 +25,13 @@ const tprepoKey tprepoTypeKey = iota
 
 // MakeThirdPartyRepoRouter adds suport for operation on ThirdPartyRepo
 func MakeThirdPartyRepoRouter(sub chi.Router) {
-	sub.With(validateGetAllThirdPartyRepoFilterParams).With(common.Paginate).Get("/", GetAllThirdPartyRepo)
-	sub.Post("/", CreateThirdPartyRepo)
-	sub.Route("/{ID}", func(r chi.Router) {
-		r.Use(ThirdPartyRepoCtx)
-		r.Get("/", GetThirdPartyRepoByID)
-		r.Put("/", CreateThirdPartyRepoUpdate)
-		r.Delete("/", DeleteThirdPartyRepoByID)
+	sub.With(validateGetAllThirdPartyRepoFilterParams).With(common.Paginate).Get("/", GetAllThirdPartyRepo) // TODO: Consistent logging
+	sub.Post("/", CreateThirdPartyRepo)                                                                     // TODO: Consistent logging
+	sub.Route("/{ID}", func(r chi.Router) {                                                                 // TODO: Consistent logging
+		r.Use(ThirdPartyRepoCtx)                // TODO: Consistent logging
+		r.Get("/", GetThirdPartyRepoByID)       // TODO: Consistent logging
+		r.Put("/", CreateThirdPartyRepoUpdate)  // TODO: Consistent logging
+		r.Delete("/", DeleteThirdPartyRepoByID) // TODO: Consistent logging
 	})
 }
 

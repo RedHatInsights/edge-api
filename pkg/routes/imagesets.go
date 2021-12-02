@@ -27,10 +27,10 @@ var statusOption = []string{models.ImageStatusCreated, models.ImageStatusBuildin
 
 // MakeImageSetsRouter adds support for operations on image-sets
 func MakeImageSetsRouter(sub chi.Router) {
-	sub.With(validateFilterParams).With(common.Paginate).Get("/", ListAllImageSets)
+	sub.With(validateFilterParams).With(common.Paginate).Get("/", ListAllImageSets) // TODO: Consistent logging
 	sub.Route("/{imageSetId}", func(r chi.Router) {
-		r.Use(ImageSetCtx)
-		r.With(validateFilterParams).With(common.Paginate).Get("/", GetImageSetsByID)
+		r.Use(ImageSetCtx)                                                            // TODO: Consistent logging
+		r.With(validateFilterParams).With(common.Paginate).Get("/", GetImageSetsByID) // TODO: Consistent logging
 	})
 }
 
