@@ -18,9 +18,9 @@ func (e *apiError) GetStatus() int    { return e.Status }
 func (e *apiError) SetTitle(t string) { e.Title = t }
 
 type apiError struct {
-	Code   string `json:"Code"`
-	Status int    `json:"Status"`
-	Title  string `json:"Title"`
+	Code   string `json:"code"`
+	Status int    `json:"status"`
+	Title  string `json:"title"`
 }
 
 // InternalServerError defines a generic error for Edge API

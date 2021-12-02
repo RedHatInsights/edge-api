@@ -120,10 +120,10 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 
 // UpdatePostJSON contains the update structure for the device
 type UpdatePostJSON struct {
-	CommitID   uint   `json:"CommitID"`
-	DeviceUUID string `json:"DeviceUUID"`
+	CommitID   uint   `json:"commit_id"`
+	DeviceUUID string `json:"device_uuid"`
 	// TODO: Implement updates by tag
-	// Tag        string `json:"Tag"`
+	// Tag        string `json:"tag"`
 }
 
 func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTransaction, error) {

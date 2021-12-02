@@ -494,7 +494,7 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 
 // CheckImageNameResponse indicates whether or not the image exists
 type CheckImageNameResponse struct {
-	ImageExists bool `json:"ImageExists"`
+	ImageExists bool `json:"image_exists"`
 }
 
 // CheckImageName verifies that ImageName exists
