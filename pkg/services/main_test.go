@@ -37,7 +37,9 @@ func setupTestDB() {
 		&models.Repo{},
 		&models.Device{},
 		&models.DispatchRecord{},
+		&models.FDODevice{},
 		&models.OwnershipVoucherData{},
+		&models.FDOUser{},
 	)
 	if err != nil {
 		panic(err)

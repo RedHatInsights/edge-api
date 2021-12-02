@@ -19,7 +19,6 @@ var _ = Describe("Ownershipvoucher unit tests", func() {
 			GUID:            faker.UUIDHyphenated(),
 			ProtocolVersion: 100,
 			DeviceName:      faker.Name(),
-			DeviceUUID:      faker.UUIDHyphenated(),
 		})
 	}
 	fdoUUIDList := []string{}
@@ -27,30 +26,34 @@ var _ = Describe("Ownershipvoucher unit tests", func() {
 		fdoUUIDList = append(fdoUUIDList, ownershipVoucher.GUID)
 	}
 
-	Context("store Ownershipvouchers", func() {
-		It("should store Ownershipvouchers", func() {
-			ownershipVoucherService.storeOwnershipVouchers(ownershipVouchers)
+	Context("store FDO devices", func() {
+		ownershipVoucherService.storeFDODevices(ownershipVouchers)
+		It("should store devices", func() {
 			for _, ownershipVoucher := range ownershipVouchers {
-				ov, err := ownershipVoucherService.GetOwnershipVoucherByGUID(ownershipVoucher.GUID)
-				Expect(ov.GUID).To(Equal(ownershipVoucher.GUID))
-				Expect(ov.ProtocolVersion).To(Equal(ownershipVoucher.ProtocolVersion))
-				Expect(ov.DeviceName).To(Equal(ownershipVoucher.DeviceName))
-				Expect(ov.DeviceUUID).To(Equal(ownershipVoucher.DeviceUUID))
+				fdoDevice, err := ownershipVoucherService.GetFDODeviceByGUID(ownershipVoucher.GUID)
+				Expect(fdoDevice).ToNot(BeNil())
+				Expect(fdoDevice.InitialUser).ToNot(BeNil())
+				Expect(fdoDevice.OwnershipVoucherData.GUID).To(Equal(ownershipVoucher.GUID))
+				Expect(fdoDevice.OwnershipVoucherData.ProtocolVersion).To(Equal(ownershipVoucher.ProtocolVersion))
+				Expect(fdoDevice.OwnershipVoucherData.DeviceName).To(Equal(ownershipVoucher.DeviceName))
 				Expect(err).To(BeNil())
 			}
 		})
 	})
+	
 	Context("connect devices", func() {
 		It("all disconnected", func() {
 			for _, ownershipVoucher := range ownershipVouchers {
-				Expect(ownershipVoucher.DeviceConnected).To(Equal(false))
+				fdoDevice, err := ownershipVoucherService.GetFDODeviceByGUID(ownershipVoucher.GUID)
+				Expect(fdoDevice.Connected).To(Equal(false))
+				Expect(err).To(BeNil())
 			}
 		})
 		It("should connect devices", func() {
 			ownershipVoucherService.ConnectDevices(fdoUUIDList)
 			for _, ownershipVoucher := range ownershipVouchers {
-				ov, err := ownershipVoucherService.GetOwnershipVoucherByGUID(ownershipVoucher.GUID)
-				Expect(ov.DeviceConnected).To(Equal(true))
+				fdoDevice, err := ownershipVoucherService.GetFDODeviceByGUID(ownershipVoucher.GUID)
+				Expect(fdoDevice.Connected).To(Equal(true))
 				Expect(err).To(BeNil())
 			}
 		})
@@ -59,14 +62,29 @@ var _ = Describe("Ownershipvoucher unit tests", func() {
 	Context("delete devices", func() {
 		It("devices should be found", func() {
 			for _, ownershipVoucher := range ownershipVouchers {
-				_, err := ownershipVoucherService.GetOwnershipVoucherByGUID(ownershipVoucher.GUID)
+				_, err := ownershipVoucherService.GetFDODeviceByGUID(ownershipVoucher.GUID)
 				Expect(err).To(BeNil())
 			}
 		})
 		It("should delete devices", func() {
-			ownershipVoucherService.removeOwnershipVouchers(fdoUUIDList)
+			ownershipVoucherService.removeFDODevices(fdoUUIDList)
 			for _, ownershipVoucher := range ownershipVouchers {
-				_, err := ownershipVoucherService.GetOwnershipVoucherByGUID(ownershipVoucher.GUID)
+				device, err := ownershipVoucherService.GetFDODeviceByGUID(ownershipVoucher.GUID)
+				Expect(device).To(BeNil())
+				Expect(err).ToNot(BeNil())
+			}
+		})
+		It("ownershipvouchers shouldn't be found", func() {
+			for _, ownershipVoucher := range ownershipVouchers {
+				ov, err := ownershipVoucherService.GetOwnershipVouchersByGUID(ownershipVoucher.GUID)
+				Expect(ov).To(BeNil())
+				Expect(err).ToNot(BeNil())
+			}
+		})
+		It("users shouldn't be found", func() {
+			for _, ownershipVoucher := range ownershipVouchers {
+				user, err := ownershipVoucherService.GetFDOUserByGUID(ownershipVoucher.GUID)
+				Expect(user).To(BeNil())
 				Expect(err).ToNot(BeNil())
 			}
 		})

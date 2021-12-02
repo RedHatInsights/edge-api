@@ -59,7 +59,7 @@ func main() {
 		&models.Commit{}, &models.UpdateTransaction{},
 		&models.Package{}, &models.Image{}, &models.Repo{},
 		&models.DispatchRecord{}, &models.ThirdPartyRepo{},
-		&models.OwnershipVoucherData{})
+		&models.FDODevice{}, &models.OwnershipVoucherData{}, &models.FDOUser{})
 	if err != nil {
 		panic(err)
 	}
