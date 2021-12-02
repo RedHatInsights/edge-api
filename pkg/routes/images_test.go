@@ -40,15 +40,15 @@ func TestCreateWasCalledWithWrongBody(t *testing.T) {
 func TestCreateWasCalledWithNameNotSet(t *testing.T) {
 	config.Get().Debug = false
 	var jsonStr = []byte(`{
-		"Distribution": "rhel-8",
-		"OutputTypes": ["rhel-edge-installer"],
-		"Commit": {
-			"Arch": "x86_64",
-			"Packages" : [ { "name" : "vim"  } ]
+		"distribution": "rhel-8",
+		"output_types": ["rhel-edge-installer"],
+		"commit": {
+			"arch": "x86_64",
+			"packages" : [ { "name" : "vim"  } ]
 		},
-		"Installer": {
-			"Username": "root",
-			"Sshkey": "ssh-rsa d9:f158:00:abcd"
+		"installer": {
+			"username": "root",
+			"ssh_key": "ssh-rsa d9:f158:00:abcd"
 		}
 	}`)
 	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
@@ -69,16 +69,16 @@ func TestCreateWasCalledWithNameNotSet(t *testing.T) {
 
 func TestCreate(t *testing.T) {
 	var jsonStr = []byte(`{
-		"Name": "image2",
-		"Distribution": "rhel-8",
-		"OutputTypes": ["rhel-edge-installer"],
-		"Commit": {
-			"Arch": "x86_64",
-			"Packages" : [ { "name" : "vim"  } ]
+		"name": "image2",
+		"distribution": "rhel-8",
+		"output_types": ["rhel-edge-installer"],
+		"commit": {
+			"arch": "x86_64",
+			"packages" : [ { "name" : "vim"  } ]
 		},
-		"Installer": {
-			"Username": "root",
-			"Sshkey": "ssh-rsa d9:f158:00:abcd"
+		"installer": {
+			"username": "root",
+			"ssh_key": "ssh-rsa d9:f158:00:abcd"
 		}
 	}`)
 	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
