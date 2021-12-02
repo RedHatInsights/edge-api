@@ -27,7 +27,9 @@ type OwnershipVoucherServiceInterface interface {
 	BatchDeleteOwnershipVouchers(fdoUUIDList []string) (interface{}, error)
 	ConnectDevices(fdoUUIDList []string) ([]interface{}, []error)
 	ParseOwnershipVouchers(voucherBytes []byte) ([]models.OwnershipVoucherData, error)
+	GetOwnershipVoucherByGUID(OwnershipVoucherGUID string) (*models.OwnershipVoucherData, error)
 	storeOwnershipVouchers(data []models.OwnershipVoucherData)
+	removeOwnershipVouchers(fdoUUIDList []string)
 	parseVouchers(voucherBytes []byte) ([]models.OwnershipVoucherData, error)
 	createFDOClient() *fdo.Client
 }
@@ -66,6 +68,7 @@ func (ovs *OwnershipVoucherService) BatchDeleteOwnershipVouchers(fdoUUIDList []s
 	ovs.log.WithFields(logFields).Debug("Deleting ownership vouchers")
 	fdoClient := ovs.createFDOClient()
 	resp, err := fdoClient.BatchDelete(fdoUUIDList)
+	ovs.removeOwnershipVouchers(fdoUUIDList)
 	return resp, err
 }
 
@@ -73,16 +76,15 @@ func (ovs *OwnershipVoucherService) BatchDeleteOwnershipVouchers(fdoUUIDList []s
 func (ovs *OwnershipVoucherService) ConnectDevices(fdoUUIDList []string) (resp []interface{}, errList []error) {
 	logFields := log.Fields{"method": "services.ConnectDevices"}
 	ovs.log.WithFields(logFields).Debug("Connecting devices")
-	deviceService := NewDeviceService(ovs.ctx)
 	for _, guid := range fdoUUIDList {
-		device, err := deviceService.GetDeviceByUUID(guid) // get device by UUID which was set to be FDO GUID
+		ov, err := ovs.GetOwnershipVoucherByGUID(guid)
 		if err != nil {
-			ovs.log.WithFields(logFields).Warn("Couldn't find device ", guid, err)
+			ovs.log.WithFields(logFields).Warn("Couldn't find OwnershipVoucher ", guid, err)
 			errList = append(errList, errors.New(guid))
 		} else {
-			device.Connected = true
+			ov.DeviceConnected = true
 			resp = append(resp, map[string]string{"guid": guid})
-			db.DB.Save(&device)
+			db.DB.Save(&ov)
 		}
 	}
 	return
@@ -100,16 +102,37 @@ func (ovs *OwnershipVoucherService) ParseOwnershipVouchers(voucherBytes []byte) 
 	return data, nil
 }
 
+// GetOwnershipVoucherByGUID receives GUID string and get a *models.OwnershipVoucherData back
+func (ovs *OwnershipVoucherService) GetOwnershipVoucherByGUID(OwnershipVoucherGUID string) (*models.OwnershipVoucherData, error) {
+	logFields := log.Fields{"method": "services.GetOwnershipVoucherByGUID"}
+	ovs.log.WithFields(logFields).Debug("Getting ownership voucher by GUID")
+	var ov models.OwnershipVoucherData
+	result := db.DB.Where("guid = ?", OwnershipVoucherGUID).First(&ov)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &ov, nil
+}
+
 // storeOwnershipVouchers stores ownership vouchers to the database
 func (ovs *OwnershipVoucherService) storeOwnershipVouchers(data []models.OwnershipVoucherData) {
 	logFields := log.Fields{"method": "services.storeOwnershipVouchers"}
 	ovs.log.WithFields(logFields).Debug("Store empty devices, with FDO info")
 	for _, voucherData := range data {
-		var device models.Device
-		device.UUID = voucherData.GUID // make it searchable
-		device.Connected = false       // disconnected until FDO will say otherwise
-		device.OwnershipVoucherData = &voucherData
-		db.DB.Save(&device)
+		db.DB.Where("deleted_at is null and guid = ?", voucherData.GUID).FirstOrCreate(&voucherData)
+	}
+}
+
+// removeOwnershipVouchers removes ownership vouchers from the database
+func (ovs *OwnershipVoucherService) removeOwnershipVouchers(fdoUUIDList []string) {
+	logFields := log.Fields{"method": "services.removeOwnershipVouchers"}
+	for _, guid := range fdoUUIDList {
+		ov, err := ovs.GetOwnershipVoucherByGUID(guid)
+		if err != nil {
+			ovs.log.WithFields(logFields).Error("Failed to get ownership voucher by GUID ", guid)
+			continue
+		}
+		db.DB.Delete(ov)
 	}
 }
 
