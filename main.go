@@ -90,7 +90,6 @@ func main() {
 	}
 
 	ar.Route("/api/edge/v1", func(s chi.Router) {
-		s.Route("/commits", routes.MakeCommitsRouter)
 		s.Route("/images", routes.MakeImagesRouter)
 		s.Route("/updates", routes.MakeUpdatesRouter)
 		s.Route("/image-sets", routes.MakeImageSetsRouter)
