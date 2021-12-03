@@ -34,19 +34,19 @@ func MakeImagesRouter(sub chi.Router) {
 	sub.Post("/", CreateImage)
 	sub.Post("/checkImageName", CheckImageName)
 	sub.Route("/{ostreeCommitHash}/info", func(r chi.Router) {
-		r.Use(ImageByOSTreeHashCtx)
-		r.Get("/", GetImageByOstree)
+		r.Use(ImageByOSTreeHashCtx)  // TODO: Consistent logging
+		r.Get("/", GetImageByOstree) // TODO: Consistent logging
 	})
 	sub.Route("/{imageId}", func(r chi.Router) {
-		r.Use(ImageByIDCtx)
-		r.Get("/", GetImageByID)
-		r.Get("/status", GetImageStatusByID)
-		r.Get("/repo", GetRepoForImage)
-		r.Get("/metadata", GetMetadataForImage)
-		r.Post("/installer", CreateInstallerForImage)
-		r.Post("/kickstart", CreateKickStartForImage)
-		r.Post("/update", CreateImageUpdate)
-		r.Post("/retry", RetryCreateImage)
+		r.Use(ImageByIDCtx)                           // TODO: Consistent logging
+		r.Get("/", GetImageByID)                      // TODO: Consistent logging
+		r.Get("/status", GetImageStatusByID)          // TODO: Consistent logging
+		r.Get("/repo", GetRepoForImage)               // TODO: Consistent logging
+		r.Get("/metadata", GetMetadataForImage)       // TODO: Consistent logging
+		r.Post("/installer", CreateInstallerForImage) // TODO: Consistent logging
+		r.Post("/kickstart", CreateKickStartForImage) // TODO: Consistent logging
+		r.Post("/update", CreateImageUpdate)          // TODO: Consistent logging
+		r.Post("/retry", RetryCreateImage)            // TODO: Consistent logging
 	})
 }
 
