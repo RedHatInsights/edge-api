@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"text/template"
 	"time"
@@ -48,15 +50,12 @@ type UpdateService struct {
 
 type playbooks struct {
 	GoTemplateRemoteName string
-	GoTemplateRemoteURL  string
-	GoTemplateContentURL string
 	GoTemplateGpgVerify  string
 	OstreeRemoteName     string
-	OstreeRemoteURL      string
-	OstreeContentURL     string
 	OstreeGpgVerify      string
 	OstreeGpgKeypath     string
-	OstreeRemoteTemplate string
+	FleetInfraEnv        string
+	UpdateNumber         string
 }
 
 // TemplateRemoteInfo the values to playbook
@@ -224,12 +223,19 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 		log.Errorf("Error parsing playbook template  :: %s", err.Error())
 		return "", err
 	}
+	var envName string
+	if strings.Contains(cfg.BucketName, "-prod") || strings.Contains(cfg.BucketName, "-prod") || strings.Contains(cfg.BucketName, "-prod") {
+		bucketNameSplit := strings.Split(cfg.BucketName, "-")
+		envName = bucketNameSplit[len(bucketNameSplit)-1]
+	} else {
+		envName = "dev"
+	}
 	templateData := playbooks{
 		GoTemplateRemoteName: templateInfo.RemoteName,
-		GoTemplateRemoteURL:  templateInfo.RemoteURL,
-		GoTemplateContentURL: templateInfo.ContentURL,
 		OstreeGpgVerify:      "false",
 		OstreeGpgKeypath:     "/etc/pki/rpm-gpg/",
+		FleetInfraEnv:        envName,
+		UpdateNumber:         strconv.FormatUint(uint64(templateInfo.UpdateTransactionID), 10),
 	}
 
 	fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", account, templateInfo.UpdateTransactionID)
