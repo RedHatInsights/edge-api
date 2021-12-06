@@ -46,3 +46,14 @@ jobs:
 
       - name: Upload coverage to Codecov
         run: bash <(curl -s https://codecov.io/bash)
+
+      - name: Set up python3
+        uses: actions/setup-python@v2
+        with:
+         python-version: '3.9'
+
+      - name: Install openapi-spec-validator
+        run: pip install openapi-spec-validator
+     
+      - name: Validate spec-file
+        run: python3 -m openapi_spec_validator ${{ github.workspace }}/cmd/spec/openapi.json
