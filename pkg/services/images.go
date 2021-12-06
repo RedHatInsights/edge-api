@@ -144,9 +144,9 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		if image.Commit.OSTreeRef == "" {
 			if previousImage.Commit.OSTreeRef != "" {
 				image.Commit.OSTreeRef = previousImage.Commit.OSTreeRef
-
+			} else {
+				image.Commit.OSTreeRef = config.Get().DefaultOSTreeRef
 			}
-			image.Commit.OSTreeRef = config.Get().DefaultOSTreeRef
 		}
 	} else {
 		// Previous image was not built sucessfully

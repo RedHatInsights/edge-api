@@ -2,7 +2,9 @@ package imagebuilder
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -112,5 +114,34 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(img).ToNot(BeNil())
 		Expect(img.Installer.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
+	})
+	It("test compose image when ostree parent commit is empty", func() {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer GinkgoRecover()
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			b, err := ioutil.ReadAll(r.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(b).ToNot(BeNil())
+			var req ComposeRequest
+			err = json.Unmarshal(b, &req)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(req.ImageRequests[0].Ostree).To(BeNil())
+			fmt.Fprintln(w, `{"id": "compose-job-id-returned-from-image-builder"}`)
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+
+		pkgs := []models.Package{}
+		img := &models.Image{Distribution: "rhel-8",
+			Packages: pkgs,
+			Commit: &models.Commit{
+				Arch: "x86_64",
+				Repo: &models.Repo{},
+			}}
+		img, err := client.ComposeCommit(img)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(img).ToNot(BeNil())
+		Expect(img.Commit.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
 	})
 })
