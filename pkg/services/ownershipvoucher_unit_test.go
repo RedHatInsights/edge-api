@@ -40,7 +40,7 @@ var _ = Describe("Ownershipvoucher unit tests", func() {
 			}
 		})
 	})
-	
+
 	Context("connect devices", func() {
 		It("all disconnected", func() {
 			for _, ownershipVoucher := range ownershipVouchers {
