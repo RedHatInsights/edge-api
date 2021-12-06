@@ -9,7 +9,8 @@ pull_request_rules:
       - base=main
       - "#approved-reviews-by>=1"
       - "#changes-requested-reviews-by=0"
-      - check-success=Build
+      - check-success=Coverage Testing
+      - check-success=Lint
       - check-success=ci.ext.devshift.net PR build
       - check-success=ci.int.devshift.net PR build
       - label!=work in progress
