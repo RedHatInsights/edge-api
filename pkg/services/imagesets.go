@@ -16,7 +16,7 @@ import (
 // the business logic of ImageSets
 type ImageSetsServiceInterface interface {
 	ListAllImageSets(w http.ResponseWriter, r *http.Request) error
-	GetImageSetsByID(imageSetId int) (*models.ImageSet, error)
+	GetImageSetsByID(imageSetID int) (*models.ImageSet, error)
 }
 
 // NewImageSetsService gives a instance of the main implementation of a ImageSetsServiceInterface
