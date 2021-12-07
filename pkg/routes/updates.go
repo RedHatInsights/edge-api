@@ -22,12 +22,12 @@ import (
 
 // MakeUpdatesRouter adds support for operations on update
 func MakeUpdatesRouter(sub chi.Router) {
-	sub.With(common.Paginate).Get("/", GetUpdates)
+	sub.With(common.Paginate).Get("/", GetUpdates) // TODO: Consistent logging
 	sub.Post("/", AddUpdate)
 	sub.Route("/{updateID}", func(r chi.Router) {
-		r.Use(UpdateCtx)
-		r.Get("/", GetUpdateByID)
-		r.Get("/update-playbook.yml", GetUpdatePlaybook)
+		r.Use(UpdateCtx)                                 // TODO: Consistent logging
+		r.Get("/", GetUpdateByID)                        // TODO: Consistent logging
+		r.Get("/update-playbook.yml", GetUpdatePlaybook) // TODO: Consistent logging
 	})
 	// TODO: This is for backwards compatibility with the previous route
 	// Once the frontend starts querying the device

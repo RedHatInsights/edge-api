@@ -3,42 +3,27 @@
   become: true
   hosts: localhost
   vars:
-    ostree_remote_name: "{{ .GoTemplateRemoteName }}"
-    ostree_remote_url: "{{ .GoTemplateRemoteURL }}"
-    ostree_content_url: "{{ .GoTemplateContentURL }}"
-    ostree_gpg_verify: "{{ .GoTemplateGpgVerify }}"
+    fleet_infra_env: "@@ .FleetInfraEnv @@"
+    update_number: "@@ .UpdateNumber @@"
+    s3_buckets:
+      prod: "rh-edge-tarballs-prod"
+      stage: "rh-edge-tarballs-stage"
+      perf: "rh-edge-tarballs-perf"
+    repo_url: "https://{{ buckets[fleet_infra_env] | default('rh-edge-tarballs-prod') }}.s3.us-east-1.amazonaws.com/{{ update_number }}/upd/{{ update_number }}/repo"
+    ostree_remote_name: "@@ .GoTemplateRemoteName @@"
+    ostree_gpg_verify: "@@ .OstreeGpgVerify @@"
+    ostree_gpg_keypath: "@@ .OstreeGpgKeypath @@"
     ostree_remote_template: |
-      [remote "{{ .OstreeRemoteName}}"]
-      url={{.OstreeRemoteURL}}
-      gpg-verify={{.OstreeGpgVerify}}
-      gpgkeypath={{.OstreeGpgKeypath}}
-      contenturl={{.OstreeContentURL}}
-    insights_signature_exclude: "/vars/insights_signature,/vars/ostree_remote_name,/vars/ostree_remote_url,/vars/ostree_content_url,/vars/ostree_gpg_verify,/vars/ostree_remote_template"
-    insights_signature: !!binary |
-      TFMwdExTMUNSVWRKVGlCUVIxQWdVMGxIVGtGVVZWSkZMUzB0TFMwS1ZtVnljMmx2YmpvZ1IyNTFV
-      RWNnZGpFS0NtbFJTVlpCZDFWQldWcDNVSGx6ZG5jMU9FUXJhalZ3VGtGUmFXVnpaeTg0UTNCUVlu
-      SjZTalZqTVU0eFRWTnpXazU1V0hVd2FWcFFORE51UkcxTE5sTUtTM1JqUjJoQ1NqZzRaMlV5WlVW
-      M2RIVk9XRWROVVVFckswWnlZMFpwYzBScFYwd3JMMWxzWW05SVlrNXFkblptYlVOUFEwTlhiMjh2
-      T0RKdGIySjFVZ3A2TVdGRVUwMUJjMkZtV0ZGb1UzUnRSV0ZaVlRKd1NXUmtXamR4Wm5Kdll6UjZj
-      MmxuWWpkT1MyWldja1ZzZWpsMkszWkpVMmhsWWpOcGRYVllZVlZMQ2k5dFowRkdUVlJuVUVSMFZt
-      bDVUa2xqY3pGbmNFUTVRamwxZWpJNUszUXdZbkJaWTJoNGNrWnFRVWh3UW1WTVJVSmFjVk5YVUhK
-      QldpdE5SQzl4VnpRS2RtVjVhemxrUkZJME0yZDJUSGQwWVV0T01WSnJkbXhOZGxVeWNVSlhkMWQw
-      ZERWRlEwRnRjRU0yYWk5UmJWTnZkbWxGYUd4bVpXbEJaUzh3ZUVOalZRcHVlR1JWUkRCcWFGaFFh
-      SFZRYldkVVlXSllXVnBSYkc1V1YxZExjblpQZFcxMFdXVlZZelJUUVZOM1VUaEpLMEpVVVVORWRG
-      ZFBhRWdyY0RSdlFrNXhDa3hwVVVWaE0xSlRibVJZYVRNelpuUm9lRVV4YnpOWlNYVlphblY2Ymt0
-      SFdVTnpkMEZFV0ZSdFIwUjFhek0wVlV0eVlrdERSWEZQYkZCbmMyWkpPRVFLZUdGa1F6aEJVazlJ
-      VjJSYU1rdEdSUzlhVDFoU1ozaElaM1JXZUZGT1pscHZjRFpNU0VOSlNXNVFVWGhyZEdGSVUxaGtV
-      a0ZUTW5sUlVsTTFhVmhNVVFwcmNWRTBRWEZRWVdKVk1uY3hURzFDU1hoRE5YSkdRbll6YkdnclVu
-      SlljV3B2Y1hObk9ESklRVUpsYzNoa1VYUldjRFJ4TjFGd1FtcFFNRVpZUXk4ckNqWlVWWFpqY25W
-      VFVWcFNZMVl4VFZVNFdXOXFNR01yT1ZKS2JUQTBUVWxRUzFnMFIwNXZOMmxHUXpSeGFIVk9SR0pD
-      ZUhsalNGWlhMMFZ1YzNOaWVUSUtlRnBwTVU5bmJUTndWR1J2WVc1b2RtcEJXVGc1VW5WclluTXJO
-      aXRGWVdsaFFYWk5VbmhyYVdkdlJqWmxlVUZxTm1KWlkyaDBhMWszUkc1VVpERjBUUXByVURSQmIz
-      aEtlV1ozTkQwS1BYcDFURkFLTFMwdExTMUZUa1FnVUVkUUlGTkpSMDVCVkZWU1JTMHRMUzB0Q2c9
-      PQ==
+      [remote "{{ ostree_remote_name }}"]
+      url={{ repo_url }}
+      gpg-verify={{ ostree_gpg_verify }}
+      gpgkeypath={{ ostree_gpg_keypath }}
+      contenturl={{ repo_url }}
+    insights_signature_exclude: "/vars/insights_signature,/vars/fleet_infra_env,/vars/update_number,/vars/ostree_remote_name,/vars/ostree_gpg_verify"
   tasks:
     - name: apply templated ostree remote config
       ansible.builtin.copy:
-        content: "{{.OstreeRemoteTemplate}}"
+        content: "{{ ostree_remote_template }}"
         dest: /etc/ostree/remotes.d/rhel-edge.conf
     - name: run rpmostree update
       ansible.builtin.shell: rpm-ostree upgrade --allow-downgrade
