@@ -137,6 +137,15 @@ func TestGetStatus(t *testing.T) {
 	}
 }
 
+type ImageResponse struct {
+	Image             models.Image `json:"Image"`
+	AditionalPackages int          `json:"AditionalPackages"`
+	Packages          int          `json:"Packages"`
+	UpdateAdded       int          `json:"UpdateAdded"`
+	UpdateRemoved     int          `json:"UpdateRemoved"`
+	UpdateUpdated     int          `json:"UpdateUpdated"`
+}
+
 func TestGetImageById(t *testing.T) {
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
@@ -166,20 +175,41 @@ func TestGetImageById(t *testing.T) {
 		return
 	}
 
-	var ir models.Image
+	var ir ImageResponse
 	respBody, err := ioutil.ReadAll(rr.Body)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
+	fmt.Printf(":: respBody :: %v\n", &ir)
 	err = json.Unmarshal(respBody, &ir)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
-	if ir.ID != testImage.ID {
+	if ir.Packages != 0 {
+		t.Errorf("wrong image packages: got %v want %v",
+			ir.Packages, 0)
+	}
+	if ir.AditionalPackages != 0 {
+		t.Errorf("wrong image AditionalPackages: got %v want %v",
+			ir.AditionalPackages, 0)
+	}
+	if ir.UpdateAdded != 0 {
+		t.Errorf("wrong image UpdateAdded: got %v want %v",
+			ir.UpdateAdded, 0)
+	}
+	if ir.UpdateRemoved != 0 {
+		t.Errorf("wrong image UpdateRemoved: got %v want %v",
+			ir.UpdateRemoved, 0)
+	}
+	if ir.UpdateUpdated != 0 {
+		t.Errorf("wrong image UpdateUpdated: got %v want %v",
+			ir.UpdateUpdated, 0)
+	}
+	if ir.Image.ID != testImage.ID {
 		t.Errorf("wrong image status: got %v want %v",
-			ir.ID, testImage.ID)
+			ir.Image.ID, testImage.ID)
 	}
 }
 
