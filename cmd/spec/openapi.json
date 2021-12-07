@@ -88,34 +88,6 @@
           "UpdatedAt": {
             "format": "date-time",
             "type": "string"
-          },
-          "fdo": {
-            "properties": {
-              "CreatedAt": {
-                "format": "date-time",
-                "type": "string"
-              },
-              "DeletedAt": {},
-              "ID": {
-                "minimum": 0,
-                "type": "integer"
-              },
-              "UpdatedAt": {
-                "format": "date-time",
-                "type": "string"
-              },
-              "device_name": {
-                "type": "string"
-              },
-              "guid": {
-                "type": "string"
-              },
-              "protocol_version": {
-                "minimum": 0,
-                "type": "integer"
-              }
-            },
-            "type": "object"
           }
         },
         "type": "object"
@@ -148,34 +120,6 @@
               "UpdatedAt": {
                 "format": "date-time",
                 "type": "string"
-              },
-              "fdo": {
-                "properties": {
-                  "CreatedAt": {
-                    "format": "date-time",
-                    "type": "string"
-                  },
-                  "DeletedAt": {},
-                  "ID": {
-                    "minimum": 0,
-                    "type": "integer"
-                  },
-                  "UpdatedAt": {
-                    "format": "date-time",
-                    "type": "string"
-                  },
-                  "device_name": {
-                    "type": "string"
-                  },
-                  "guid": {
-                    "type": "string"
-                  },
-                  "protocol_version": {
-                    "minimum": 0,
-                    "type": "integer"
-                  }
-                },
-                "type": "object"
               }
             },
             "type": "object"
@@ -1259,34 +1203,6 @@
                       "UpdatedAt": {
                         "format": "date-time",
                         "type": "string"
-                      },
-                      "fdo": {
-                        "properties": {
-                          "CreatedAt": {
-                            "format": "date-time",
-                            "type": "string"
-                          },
-                          "DeletedAt": {},
-                          "ID": {
-                            "minimum": 0,
-                            "type": "integer"
-                          },
-                          "UpdatedAt": {
-                            "format": "date-time",
-                            "type": "string"
-                          },
-                          "device_name": {
-                            "type": "string"
-                          },
-                          "guid": {
-                            "type": "string"
-                          },
-                          "protocol_version": {
-                            "minimum": 0,
-                            "type": "integer"
-                          }
-                        },
-                        "type": "object"
                       }
                     },
                     "type": "object"
@@ -1327,34 +1243,6 @@
                           "UpdatedAt": {
                             "format": "date-time",
                             "type": "string"
-                          },
-                          "fdo": {
-                            "properties": {
-                              "CreatedAt": {
-                                "format": "date-time",
-                                "type": "string"
-                              },
-                              "DeletedAt": {},
-                              "ID": {
-                                "minimum": 0,
-                                "type": "integer"
-                              },
-                              "UpdatedAt": {
-                                "format": "date-time",
-                                "type": "string"
-                              },
-                              "device_name": {
-                                "type": "string"
-                              },
-                              "guid": {
-                                "type": "string"
-                              },
-                              "protocol_version": {
-                                "minimum": 0,
-                                "type": "integer"
-                              }
-                            },
-                            "type": "object"
                           }
                         },
                         "type": "object"
@@ -1820,6 +1708,277 @@
         },
         "type": "object"
       },
+      "v1.ImageDetail": {
+        "properties": {
+          "AditionalPackages": {
+            "type": "integer"
+          },
+          "Image": {
+            "properties": {
+              "Account": {
+                "type": "string"
+              },
+              "Commit": {
+                "properties": {
+                  "Account": {
+                    "type": "string"
+                  },
+                  "Arch": {
+                    "type": "string"
+                  },
+                  "BlueprintToml": {
+                    "type": "string"
+                  },
+                  "BuildDate": {
+                    "type": "string"
+                  },
+                  "BuildNumber": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "ComposeJobID": {
+                    "type": "string"
+                  },
+                  "CreatedAt": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "DeletedAt": {},
+                  "ID": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "ImageBuildHash": {
+                    "type": "string"
+                  },
+                  "ImageBuildParentHash": {
+                    "type": "string"
+                  },
+                  "ImageBuildTarURL": {
+                    "type": "string"
+                  },
+                  "InstalledPackages": {
+                    "items": {
+                      "properties": {
+                        "CreatedAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "DeletedAt": {},
+                        "ID": {
+                          "minimum": 0,
+                          "type": "integer"
+                        },
+                        "UpdatedAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "arch": {
+                          "type": "string"
+                        },
+                        "epoch": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "release": {
+                          "type": "string"
+                        },
+                        "sigmd5": {
+                          "type": "string"
+                        },
+                        "signature": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "type": "string"
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "OSTreeCommit": {
+                    "type": "string"
+                  },
+                  "OSTreeParentCommit": {
+                    "type": "string"
+                  },
+                  "OSTreeRef": {
+                    "type": "string"
+                  },
+                  "Repo": {
+                    "properties": {
+                      "CreatedAt": {
+                        "format": "date-time",
+                        "type": "string"
+                      },
+                      "DeletedAt": {},
+                      "ID": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "RepoStatus": {
+                        "type": "string"
+                      },
+                      "RepoURL": {
+                        "type": "string"
+                      },
+                      "UpdatedAt": {
+                        "format": "date-time",
+                        "type": "string"
+                      }
+                    },
+                    "type": "object"
+                  },
+                  "RepoID": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "Status": {
+                    "type": "string"
+                  },
+                  "UpdatedAt": {
+                    "format": "date-time",
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "CommitID": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "CreatedAt": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "DeletedAt": {},
+              "Description": {
+                "type": "string"
+              },
+              "Distribution": {
+                "type": "string"
+              },
+              "ID": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "ImageSetID": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "ImageType": {
+                "type": "string"
+              },
+              "Installer": {
+                "properties": {
+                  "Account": {
+                    "type": "string"
+                  },
+                  "Checksum": {
+                    "type": "string"
+                  },
+                  "ComposeJobID": {
+                    "type": "string"
+                  },
+                  "CreatedAt": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "DeletedAt": {},
+                  "ID": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "ImageBuildISOURL": {
+                    "type": "string"
+                  },
+                  "SshKey": {
+                    "type": "string"
+                  },
+                  "Status": {
+                    "type": "string"
+                  },
+                  "UpdatedAt": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "Username": {
+                    "type": "string"
+                  }
+                },
+                "type": "object"
+              },
+              "InstallerID": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "Name": {
+                "type": "string"
+              },
+              "OutputTypes": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "Packages": {
+                "items": {
+                  "properties": {
+                    "CreatedAt": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "DeletedAt": {},
+                    "ID": {
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "Name": {
+                      "type": "string"
+                    },
+                    "UpdatedAt": {
+                      "format": "date-time",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "Status": {
+                "type": "string"
+              },
+              "UpdatedAt": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "Version": {
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          },
+          "Packages": {
+            "type": "integer"
+          },
+          "UpdateAdded": {
+            "type": "integer"
+          },
+          "UpdateRemoved": {
+            "type": "integer"
+          },
+          "UpdateUpdated": {
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
       "v1.ImageSetDetails": {
         "properties": {
           "Account": {
@@ -2148,6 +2307,10 @@
             "device_name": {
               "type": "string"
             },
+            "fdo_device_id": {
+              "minimum": 0,
+              "type": "integer"
+            },
             "guid": {
               "type": "string"
             },
@@ -2356,34 +2519,6 @@
                 "UpdatedAt": {
                   "format": "date-time",
                   "type": "string"
-                },
-                "fdo": {
-                  "properties": {
-                    "CreatedAt": {
-                      "format": "date-time",
-                      "type": "string"
-                    },
-                    "DeletedAt": {},
-                    "ID": {
-                      "minimum": 0,
-                      "type": "integer"
-                    },
-                    "UpdatedAt": {
-                      "format": "date-time",
-                      "type": "string"
-                    },
-                    "device_name": {
-                      "type": "string"
-                    },
-                    "guid": {
-                      "type": "string"
-                    },
-                    "protocol_version": {
-                      "minimum": 0,
-                      "type": "integer"
-                    }
-                  },
-                  "type": "object"
                 }
               },
               "type": "object"
@@ -2424,34 +2559,6 @@
                     "UpdatedAt": {
                       "format": "date-time",
                       "type": "string"
-                    },
-                    "fdo": {
-                      "properties": {
-                        "CreatedAt": {
-                          "format": "date-time",
-                          "type": "string"
-                        },
-                        "DeletedAt": {},
-                        "ID": {
-                          "minimum": 0,
-                          "type": "integer"
-                        },
-                        "UpdatedAt": {
-                          "format": "date-time",
-                          "type": "string"
-                        },
-                        "device_name": {
-                          "type": "string"
-                        },
-                        "guid": {
-                          "type": "string"
-                        },
-                        "protocol_version": {
-                          "minimum": 0,
-                          "type": "integer"
-                        }
-                      },
-                      "type": "object"
                     }
                   },
                   "type": "object"
@@ -2796,10 +2903,10 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "array",
-                "items":{
-                  "type":"string"
-                }
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
               }
             }
           },
@@ -2848,10 +2955,10 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "array",
-                "items":{
+                "items": {
                   "type": "string"
-                }
+                },
+                "type": "array"
               }
             }
           },
@@ -3252,7 +3359,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v1.Image"
+                  "$ref": "#/components/schemas/v1.ImageDetail"
                 }
               }
             },

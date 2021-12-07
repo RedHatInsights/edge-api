@@ -356,12 +356,12 @@ func GetImageStatusByID(w http.ResponseWriter, r *http.Request) {
 
 //ImageDetail return the structure to inform package info to images
 type ImageDetail struct {
-	Image             *models.Image
-	AditionalPackages int
-	Packages          int
-	UpdateAdded       int
-	UpdateRemoved     int
-	UpdateUpdated     int
+	Image             *models.Image `json:"Image"`
+	AditionalPackages int           `json:"AditionalPackages"`
+	Packages          int           `json:"Packages"`
+	UpdateAdded       int           `json:"UpdateAdded"`
+	UpdateRemoved     int           `json:"UpdateRemoved"`
+	UpdateUpdated     int           `json:"UpdateUpdated"`
 }
 
 // GetImageByID obtains a image from the database for an account
