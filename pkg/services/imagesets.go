@@ -76,6 +76,7 @@ func (s *ImageSetsService) ListAllImageSets(w http.ResponseWriter, r *http.Reque
 	return nil
 }
 
+// GetImageSetsByID to get image set by id
 func (s *ImageSetsService) GetImageSetsByID(imageSetID int) (*models.ImageSet, error) {
 	var imageSet models.ImageSet
 	result := db.DB.Where("Image_sets.id = ?", imageSetID).Find(&imageSet)
