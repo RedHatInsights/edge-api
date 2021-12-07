@@ -55,7 +55,11 @@ func main() {
 	}
 
 	// Automigration
-	err := db.DB.AutoMigrate(&models.ImageSet{}, &models.Commit{}, &models.UpdateTransaction{}, &models.Package{}, &models.Image{}, &models.Repo{}, &models.DispatchRecord{}, &models.ThirdPartyRepo{})
+	err := db.DB.AutoMigrate(&models.ImageSet{},
+		&models.Commit{}, &models.UpdateTransaction{},
+		&models.Package{}, &models.Image{}, &models.Repo{},
+		&models.DispatchRecord{}, &models.ThirdPartyRepo{},
+		&models.FDODevice{}, &models.OwnershipVoucherData{}, &models.FDOUser{})
 	if err != nil {
 		panic(err)
 	}

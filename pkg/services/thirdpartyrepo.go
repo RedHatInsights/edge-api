@@ -98,23 +98,22 @@ func (s *ThirdPartyRepoService) DeleteThirdPartyRepoByID(ID string) (*models.Thi
 	result := db.DB.Where("id = ?", ID).First(&tprepo)
 	if result.Error != nil {
 		return nil, new(ThirdPartyRepositoryNotFound)
-	} else {
-		if err != nil {
-			return nil, new(AccountNotSet)
-		}
-		repoDetails, err := s.GetThirdPartyRepoByID(ID)
-		if err != nil {
-			log.Info(err)
-		}
-		if repoDetails.Name == "" {
-			return nil, errors.NewInternalServerError()
-		}
+	}
+	if err != nil {
+		return nil, new(AccountNotSet)
+	}
+	repoDetails, err := s.GetThirdPartyRepoByID(ID)
+	if err != nil {
+		log.Info(err)
+	}
+	if repoDetails.Name == "" {
+		return nil, errors.NewInternalServerError()
+	}
 
-		delForm := db.DB.Where("account = ? and id = ?", account, ID).Delete(&tprepo)
-		if delForm.Error != nil {
-			err := errors.NewInternalServerError()
-			return nil, err
-		}
+	delForm := db.DB.Where("account = ? and id = ?", account, ID).Delete(&tprepo)
+	if delForm.Error != nil {
+		err := errors.NewInternalServerError()
+		return nil, err
 	}
 	return &tprepo, nil
 }

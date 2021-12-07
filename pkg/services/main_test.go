@@ -11,16 +11,17 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
+// This will setup the test database and run the tests for whole package
 func TestMain(m *testing.M) {
-	setUp()
+	setupTestDB()
 	retCode := m.Run()
-	tearDown()
+	tearDownTestDB()
 	os.Exit(retCode)
 }
 
 var dbName string
 
-func setUp() {
+func setupTestDB() {
 	config.Init()
 	config.Get().Debug = true
 	time := time.Now().UnixNano()
@@ -36,12 +37,15 @@ func setUp() {
 		&models.Repo{},
 		&models.Device{},
 		&models.DispatchRecord{},
+		&models.FDODevice{},
+		&models.OwnershipVoucherData{},
+		&models.FDOUser{},
 	)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func tearDown() {
+func tearDownTestDB() {
 	os.Remove(dbName)
 }

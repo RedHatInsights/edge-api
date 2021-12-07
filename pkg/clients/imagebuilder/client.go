@@ -209,7 +209,7 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 		}
 		req.ImageRequests[0].Ostree.Ref = image.Commit.OSTreeRef
 	}
-	if image.Commit.OSTreeRef != "" {
+	if image.Commit.OSTreeParentCommit != "" {
 		if req.ImageRequests[0].Ostree == nil {
 			req.ImageRequests[0].Ostree = &OSTree{}
 		}

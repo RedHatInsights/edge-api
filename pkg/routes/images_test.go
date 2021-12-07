@@ -342,7 +342,7 @@ func TestGetImageByOstree(t *testing.T) {
 	}
 }
 
-func TestPostcheckImageNameAlreadyExist(t *testing.T) {
+func TestPostCheckImageNameAlreadyExist(t *testing.T) {
 
 	var jsonStr = []byte(`{
 		"Name": "Image Name in DB",
@@ -369,6 +369,7 @@ func TestPostcheckImageNameAlreadyExist(t *testing.T) {
 	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any()).Return(true, nil)
 	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
 	})
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
@@ -384,7 +385,7 @@ func TestPostcheckImageNameAlreadyExist(t *testing.T) {
 
 }
 
-func TestPostcheckImageNameNotExist(t *testing.T) {
+func TestPostCheckImageNameDoesNotExist(t *testing.T) {
 
 	var jsonStr = []byte(`{
 		"Name": "Image Name not in DB",
@@ -411,6 +412,7 @@ func TestPostcheckImageNameNotExist(t *testing.T) {
 	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any()).Return(false, nil)
 	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
 	})
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()

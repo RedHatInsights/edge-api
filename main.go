@@ -62,6 +62,7 @@ func main() {
 		"DatabaseType":             cfg.Database.Type,
 		"DatabaseName":             cfg.Database.Name,
 		"IsKafkaEnabled":           cfg.KafkaConfig != nil,
+		"FDOHostURL":               cfg.FDO.URL,
 	}).Info("Configuration Values")
 
 	r := chi.NewRouter()
@@ -89,7 +90,6 @@ func main() {
 	}
 
 	ar.Route("/api/edge/v1", func(s chi.Router) {
-		s.Route("/commits", routes.MakeCommitsRouter)
 		s.Route("/images", routes.MakeImagesRouter)
 		s.Route("/updates", routes.MakeUpdatesRouter)
 		s.Route("/image-sets", routes.MakeImageSetsRouter)
