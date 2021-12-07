@@ -107,6 +107,7 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 				return
 			}
 			ctx := context.WithValue(r.Context(), imageKey, image)
+
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
 			err := errors.NewBadRequest("Image ID required")
@@ -353,10 +354,38 @@ func GetImageStatusByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type ImageDetail struct {
+	Image             *models.Image
+	AditionalPackages int
+	Packages          int
+	UpdateAdded       int
+	UpdateRemoved     int
+	UpdateUpdated     int
+}
+
 // GetImageByID obtains a image from the database for an account
 func GetImageByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		json.NewEncoder(w).Encode(image)
+		var imgDetail ImageDetail
+		imgDetail.Image = image
+		imgDetail.Packages = len(image.Commit.InstalledPackages)
+		imgDetail.AditionalPackages = len(image.Packages)
+		services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+
+		upd, err := services.ImageService.GetUpdateInfo(*image)
+		if err != nil {
+			log.Errorf("error getting update info: %v", err)
+		}
+		if upd != nil {
+			imgDetail.UpdateAdded = len(upd[len(upd)-1].PackageDiff.Removed)
+			imgDetail.UpdateRemoved = len(upd[len(upd)-1].PackageDiff.Added)
+			imgDetail.UpdateUpdated = len(upd[len(upd)-1].PackageDiff.Upgraded)
+		} else {
+			imgDetail.UpdateAdded = 0
+			imgDetail.UpdateRemoved = 0
+			imgDetail.UpdateUpdated = 0
+		}
+		json.NewEncoder(w).Encode(imgDetail)
 	}
 }
 

@@ -40,6 +40,7 @@ type ImageServiceInterface interface {
 	SetErrorStatusOnImage(err error, i *models.Image)
 	CreateRepoForImage(i *models.Image) (*models.Repo, error)
 	GetImageByID(id string) (*models.Image, error)
+	GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable, error)
 	GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error)
 	CheckImageName(name, account string) (bool, error)
 	RetryCreateImage(image *models.Image) error
@@ -677,7 +678,7 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 	if err != nil {
 		return nil, new(IDMustBeInteger)
 	}
-	result := db.DB.Preload("Commit.Repo").Where("images.account = ?", account).Joins("Commit").First(&image, id)
+	result := db.DB.Preload("Commit.Repo").Preload("Commit.InstalledPackages").Where("images.account = ?", account).Joins("Commit").First(&image, id)
 	if result.Error != nil {
 		return nil, new(ImageNotFoundError)
 	}
@@ -758,4 +759,32 @@ func uploadTarRepo(account, imageName string, repoId int) (string, error) {
 	log.Infof(":: uploadTarRepo Finish ::\n")
 
 	return url, nil
+}
+
+func (s *ImageService) GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable, error) {
+	var images []models.Image
+	var imageDiff []ImageUpdateAvailable
+	updates := db.DB.Where("Image_set_id = ? and Images.Status = ? and Images.Id < ?",
+		image.ImageSetID, models.ImageStatusSuccess, image.ID).Joins("Commit").
+		Order("Images.updated_at desc").Find(&images)
+
+	if updates.Error != nil {
+		return nil, new(UpdateNotFoundError)
+	}
+	if updates.RowsAffected == 0 {
+		return nil, nil
+	}
+
+	for _, upd := range images {
+		db.DB.First(&upd.Commit, upd.CommitID)
+		db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages)
+		db.DB.Model(&upd).Association("Packages").Find(&upd.Packages)
+		var delta ImageUpdateAvailable
+		diff := getDiffOnUpdate(image, upd)
+		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
+		delta.Image = upd
+		delta.PackageDiff = diff
+		imageDiff = append(imageDiff, delta)
+	}
+	return imageDiff, nil
 }
