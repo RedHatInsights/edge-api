@@ -22,7 +22,7 @@ type InventoryData struct {
 	Total    int
 	Count    int
 	Page     int
-	Per_page int
+	PerPage int
 	Results  []InventoryResponse
 }
 
