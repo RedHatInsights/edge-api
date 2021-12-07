@@ -16,10 +16,10 @@ import (
 
 // ClientInterface is an Interface to make request to InventoryAPI
 type ClientInterface interface {
-	ReturnDevices(parameters *InventoryParams) (Response, error)
+	ReturnDevices(parameters *Params) (Response, error)
 	ReturnDevicesByID(deviceID string) (Response, error)
 	ReturnDevicesByTag(tag string) (Response, error)
-	BuildURL(parameters *InventoryParams) string
+	BuildURL(parameters *Params) string
 }
 
 // Client is the implementation of an ClientInterface
@@ -70,8 +70,8 @@ const (
 	FilterParams = "?staleness=fresh&filter[system_profile][host_type]=edge&fields[system_profile]=host_type,operating_system,greenboot_status,greenboot_fallback_detected,rpm_ostree_deployments,rhc_client_id,rhc_config_state"
 )
 
-// InventoryParams represents the struct of params to be sent
-type InventoryParams struct {
+// Params represents the struct of params to be sent
+type Params struct {
 	PerPage      string
 	Page         string
 	OrderBy      string
@@ -81,7 +81,7 @@ type InventoryParams struct {
 }
 
 // BuildURL call the inventoryApi endpoint
-func (c *Client) BuildURL(parameters *InventoryParams) string {
+func (c *Client) BuildURL(parameters *Params) string {
 	URL, err := url.Parse(config.Get().InventoryConfig.URL)
 	if err != nil {
 		log.Println("Couldn't parse inventory host")
@@ -114,7 +114,7 @@ func (c *Client) BuildURL(parameters *InventoryParams) string {
 }
 
 // ReturnDevices will return the list of devices without filter by tag or uuid
-func (c *Client) ReturnDevices(parameters *InventoryParams) (Response, error) {
+func (c *Client) ReturnDevices(parameters *Params) (Response, error) {
 
 	fullURL := c.BuildURL(parameters)
 

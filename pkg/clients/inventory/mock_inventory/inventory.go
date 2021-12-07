@@ -34,7 +34,7 @@ func (m *MockClientInterface) EXPECT() *MockClientInterfaceMockRecorder {
 }
 
 // ReturnDevices mocks base method
-func (m *MockClientInterface) ReturnDevices(parameters *inventory.InventoryParams) (inventory.Response, error) {
+func (m *MockClientInterface) ReturnDevices(parameters *inventory.Params) (inventory.Response, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReturnDevices", parameters)
 	ret0, _ := ret[0].(inventory.Response)
@@ -79,7 +79,7 @@ func (mr *MockClientInterfaceMockRecorder) ReturnDevicesByTag(tag interface{}) *
 }
 
 // BuildURL mocks base method
-func (m *MockClientInterface) BuildURL(parameters *inventory.InventoryParams) string {
+func (m *MockClientInterface) BuildURL(parameters *inventory.Params) string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BuildURL", parameters)
 	ret0, _ := ret[0].(string)
