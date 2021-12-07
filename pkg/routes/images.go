@@ -354,6 +354,7 @@ func GetImageStatusByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//ImageDetail return the structure to inform package info to images
 type ImageDetail struct {
 	Image             *models.Image
 	AditionalPackages int

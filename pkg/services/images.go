@@ -747,9 +747,10 @@ func (s *ImageService) setBuildingStatusOnImageToRetryBuild(image *models.Image)
 	}
 	return nil
 }
-func uploadTarRepo(account, imageName string, repoId int) (string, error) {
+
+func uploadTarRepo(account, imageName string, repoID int) (string, error) {
 	log.Infof(":: uploadTarRepo Started ::\n")
-	uploadPath := fmt.Sprintf("%s/tar/%v/%s", account, repoId, imageName)
+	uploadPath := fmt.Sprintf("%s/tar/%v/%s", account, repoID, imageName)
 	filesService := NewFilesService()
 	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
 
@@ -761,6 +762,7 @@ func uploadTarRepo(account, imageName string, repoId int) (string, error) {
 	return url, nil
 }
 
+//GetUpdateInfo return package info when has an update to the image
 func (s *ImageService) GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable, error) {
 	var images []models.Image
 	var imageDiff []ImageUpdateAvailable
