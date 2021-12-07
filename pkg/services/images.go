@@ -145,9 +145,9 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		if image.Commit.OSTreeRef == "" {
 			if previousImage.Commit.OSTreeRef != "" {
 				image.Commit.OSTreeRef = previousImage.Commit.OSTreeRef
-
+			} else {
+				image.Commit.OSTreeRef = config.Get().DefaultOSTreeRef
 			}
-			image.Commit.OSTreeRef = config.Get().DefaultOSTreeRef
 		}
 	} else {
 		// Previous image was not built sucessfully
@@ -747,7 +747,6 @@ func (s *ImageService) setBuildingStatusOnImageToRetryBuild(image *models.Image)
 	}
 	return nil
 }
-
 func uploadTarRepo(account, imageName string, repoID int) (string, error) {
 	log.Infof(":: uploadTarRepo Started ::\n")
 	uploadPath := fmt.Sprintf("%s/tar/%v/%s", account, repoID, imageName)

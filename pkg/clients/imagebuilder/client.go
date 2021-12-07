@@ -41,7 +41,7 @@ func InitClient(ctx context.Context, log *log.Entry) *Client {
 
 // OSTree gives OSTree information for an image
 type OSTree struct {
-	URL string `json:"url"`
+	URL string `json:"url,omitempty"`
 	Ref string `json:"ref"`
 }
 
@@ -209,7 +209,7 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 		}
 		req.ImageRequests[0].Ostree.Ref = image.Commit.OSTreeRef
 	}
-	if image.Commit.OSTreeRef != "" {
+	if image.Commit.OSTreeParentCommit != "" {
 		if req.ImageRequests[0].Ostree == nil {
 			req.ImageRequests[0].Ostree = &OSTree{}
 		}
