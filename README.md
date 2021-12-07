@@ -1,4 +1,4 @@
-[![Go](https://github.com/RedHatInsights/edge-api/actions/workflows/go.yml/badge.svg)](https://github.com/RedHatInsights/edge-api/actions/workflows/go.yml)
+[![Go](https://github.com/RedHatInsights/edge-api/actions/workflows/coverage_testing.yml/badge.svg)](https://github.com/RedHatInsights/edge-api/actions/workflows/coverage_testing.yml)
 [![codecov](https://codecov.io/gh/RedHatInsights/edge-api/branch/main/graph/badge.svg?token=1CEO1MRGUB)](https://codecov.io/gh/RedHatInsights/edge-api) 
 # Overview
 - [Getting started](#intro)
