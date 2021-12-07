@@ -767,7 +767,7 @@ func (s *ImageService) GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable
 	updates := db.DB.Where("Image_set_id = ? and Images.Status = ? and Images.Id < ?",
 		image.ImageSetID, models.ImageStatusSuccess, image.ID).Joins("Commit").
 		Order("Images.updated_at desc").Find(&images)
-	fmt.Printf("\n...Updates.... %v\n", updates)
+
 	if updates.Error != nil {
 		return nil, new(UpdateNotFoundError)
 	}

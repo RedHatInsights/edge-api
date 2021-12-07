@@ -144,7 +144,19 @@ func TestGetImageById(t *testing.T) {
 	}
 	rr := httptest.NewRecorder()
 
+	ctrl := gomock.NewController(t)
+
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	mockImageService.EXPECT().GetUpdateInfo(gomock.Any()).Return(nil, nil)
+
 	ctx := context.WithValue(req.Context(), imageKey, &testImage)
+
+	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
+	})
+
 	handler := http.HandlerFunc(GetImageByID)
 	handler.ServeHTTP(rr, req.WithContext(ctx))
 

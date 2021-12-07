@@ -372,21 +372,18 @@ func GetImageByID(w http.ResponseWriter, r *http.Request) {
 		imgDetail.AditionalPackages = len(image.Packages)
 		services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 
-		if image != nil {
-			fmt.Printf("\n:::IMAGE::: %v\n", image)
-			upd, err := services.ImageService.GetUpdateInfo(*image)
-			if err != nil {
-				log.Errorf("error getting update info: %v", err)
-			}
-			if upd != nil {
-				imgDetail.UpdateAdded = len(upd[len(upd)-1].PackageDiff.Removed)
-				imgDetail.UpdateRemoved = len(upd[len(upd)-1].PackageDiff.Added)
-				imgDetail.UpdateUpdated = len(upd[len(upd)-1].PackageDiff.Upgraded)
-			} else {
-				imgDetail.UpdateAdded = 0
-				imgDetail.UpdateRemoved = 0
-				imgDetail.UpdateUpdated = 0
-			}
+		upd, err := services.ImageService.GetUpdateInfo(*image)
+		if err != nil {
+			log.Errorf("error getting update info: %v", err)
+		}
+		if upd != nil {
+			imgDetail.UpdateAdded = len(upd[len(upd)-1].PackageDiff.Removed)
+			imgDetail.UpdateRemoved = len(upd[len(upd)-1].PackageDiff.Added)
+			imgDetail.UpdateUpdated = len(upd[len(upd)-1].PackageDiff.Upgraded)
+		} else {
+			imgDetail.UpdateAdded = 0
+			imgDetail.UpdateRemoved = 0
+			imgDetail.UpdateUpdated = 0
 		}
 		json.NewEncoder(w).Encode(imgDetail)
 	}
