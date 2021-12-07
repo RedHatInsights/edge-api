@@ -36,8 +36,8 @@ type InventoryResponse struct {
 
 // GetInventory make the call to inventory api and inject edge info
 func GetInventory(w http.ResponseWriter, r *http.Request) {
-	var param *inventory.InventoryParams
-	param = new(inventory.InventoryParams)
+	var param *inventory.Params
+	param = new(inventory.Params)
 
 	param.PerPage = r.URL.Query().Get("per_page")
 	param.Page = r.URL.Query().Get("page")
@@ -69,7 +69,7 @@ func GetInventory(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetUpdateAvailableInfo returns the image information
-func GetUpdateAvailableInfo(param *inventory.InventoryParams, r *http.Request, inventoryResp inventory.Response) (IvtResponse []InventoryResponse) {
+func GetUpdateAvailableInfo(param *inventory.Params, r *http.Request, inventoryResp inventory.Response) (IvtResponse []InventoryResponse) {
 	var ivt []InventoryResponse
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	deviceService := services.DeviceService
