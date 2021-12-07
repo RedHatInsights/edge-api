@@ -253,7 +253,7 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string) (strin
 	return tarFileName, nil
 }
 
-// ExtractVersionRepo Download and Extract the repo tarball to dest dir
+// UploadVersionRepo Upload the repo tarball to the repo service
 func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string, dest string) error {
 	//Upload ImageBuildTar to repo
 	log.Debugf("UploadVersionRepo::CommitID: %d", c.ID)
