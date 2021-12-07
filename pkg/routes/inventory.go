@@ -19,11 +19,11 @@ func MakeInventoryRouter(sub chi.Router) {
 
 // InventoryData represents the structure of inventory response
 type InventoryData struct {
-	Total    int
-	Count    int
-	Page     int
+	Total   int
+	Count   int
+	Page    int
 	PerPage int
-	Results  []InventoryResponse
+	Results []InventoryResponse
 }
 
 // InventoryResponse represents the structure of inventory data on response
