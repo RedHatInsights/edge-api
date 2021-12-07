@@ -157,7 +157,7 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	
+
 	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&tprepo)
 	if result.Error != nil {
 		err := errors.NewBadRequest("Not Found")
