@@ -13,10 +13,9 @@ objects:
     testing:
       iqe:
         debug: false
-        # TODO: Stole from template. Change me after talking to a Quality Engineer.
-        # dynaconfEnvName: clowder_stage_smoke
-        # filter: ''
-        # marker: 'smoke'
+        dynaconfEnvName: stage
+        filter: ''
+        marker: 'core'
 parameters:
 - name: IMAGE_TAG
   value: ''
