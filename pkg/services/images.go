@@ -41,6 +41,7 @@ type ImageServiceInterface interface {
 	CreateRepoForImage(i *models.Image) (*models.Repo, error)
 	GetImageByID(id string) (*models.Image, error)
 	GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable, error)
+	AddPackageInfo(image *models.Image) (ImageDetail, error)
 	GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error)
 	CheckImageName(name, account string) (bool, error)
 	RetryCreateImage(image *models.Image) error
@@ -653,6 +654,39 @@ func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) er
 	return nil
 }
 
+type ImageDetail struct {
+	Image             *models.Image `json:"Image"`
+	AditionalPackages int           `json:"AditionalPackages"`
+	Packages          int           `json:"Packages"`
+	UpdateAdded       int           `json:"UpdateAdded"`
+	UpdateRemoved     int           `json:"UpdateRemoved"`
+	UpdateUpdated     int           `json:"UpdateUpdated"`
+}
+
+func (s *ImageService) AddPackageInfo(image *models.Image) (ImageDetail, error) {
+	var imgDetail ImageDetail
+	imgDetail.Image = image
+	imgDetail.Packages = len(image.Commit.InstalledPackages)
+	imgDetail.AditionalPackages = len(image.Packages)
+
+	upd, err := s.GetUpdateInfo(*image)
+	if err != nil {
+		log.Errorf("error getting update info: %v", err)
+		return imgDetail, err
+	}
+	if upd != nil {
+		imgDetail.UpdateAdded = len(upd[len(upd)-1].PackageDiff.Removed)
+		imgDetail.UpdateRemoved = len(upd[len(upd)-1].PackageDiff.Added)
+		imgDetail.UpdateUpdated = len(upd[len(upd)-1].PackageDiff.Upgraded)
+	} else {
+		imgDetail.UpdateAdded = 0
+		imgDetail.UpdateRemoved = 0
+		imgDetail.UpdateUpdated = 0
+	}
+	fmt.Printf("imgDetail:: %v \n", imgDetail)
+	return imgDetail, nil
+}
+
 func addImageExtraData(image *models.Image) (*models.Image, error) {
 	if image.InstallerID != nil {
 		result := db.DB.First(&image.Installer, image.InstallerID)
@@ -682,6 +716,7 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 	if result.Error != nil {
 		return nil, new(ImageNotFoundError)
 	}
+	s.AddPackageInfo(&image)
 	return addImageExtraData(&image)
 }
 
