@@ -147,7 +147,7 @@ func (ovs *OwnershipVoucherService) GetOwnershipVouchersByGUID(ownershipVoucherG
 	return &ov, nil
 }
 
-// GetFDOUserByFDODevice receives a *models.FDODevice and get a *models.FDOUser back
+// GetFDOUserByGUID receives an ownership voucher GUID and get a *models.FDOUser back
 func (ovs *OwnershipVoucherService) GetFDOUserByGUID(ownershipVoucherGUID string) (*models.FDOUser, error) {
 	logFields := log.Fields{"method": "services.GetFDOUserByFDODevice"}
 	ovs.log.WithFields(logFields).Debug("Getting FDO user by FDO device")
