@@ -204,7 +204,7 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 
 	details.ImageSetData = *imageSet
 	details.Images = Imgs
-	fmt.Printf(">>>>>>>>>>>>> details: %v\n", details)
+
 	if Imgs != nil && Imgs[len(Imgs)-1].Image != nil && Imgs[len(Imgs)-1].Image.InstallerID != nil {
 		img := Imgs[len(Imgs)-1].Image
 		result = db.DB.First(&img.Installer, img.InstallerID)
