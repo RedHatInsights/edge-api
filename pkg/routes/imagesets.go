@@ -159,9 +159,9 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 
 }
 
-type imageSetImagePackages struct {
+type ImageSetImagePackages struct {
 	ImageSetData     models.ImageSet `json:"ImageSet"`
-	ImageDetail      []ImageDetail   `json:"ImageDetail"`
+	Images           []ImageDetail   `json:"Images"`
 	ImageBuildISOURL string          `json:"ImageBuildISOURL"`
 }
 
@@ -169,7 +169,7 @@ type imageSetImagePackages struct {
 func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	// var imageSetData models.ImageSet
 	var images []models.Image
-	var details imageSetImagePackages
+	var details ImageSetImagePackages
 	var response common.EdgeAPIPaginatedResponse
 	pagination := common.GetPagination(r)
 	account, err := common.GetAccount(r)
@@ -202,7 +202,7 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	Imgs := returnImageDetails(images, s)
 
 	details.ImageSetData = *imageSet
-	details.ImageDetail = Imgs
+	details.Images = Imgs
 	if Imgs != nil && Imgs[len(Imgs)-1].Image != nil && Imgs[len(Imgs)-1].Image.InstallerID != nil {
 		img := Imgs[len(Imgs)-1].Image
 		result = db.DB.First(&img.Installer, img.InstallerID)

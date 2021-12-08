@@ -586,7 +586,7 @@ paths:
                     type: integer
                     example: 100
                   Data:
-                    $ref: "#/components/schemas/v1.ImageSetDetails"
+                    $ref: "#/components/schemas/v1.ImageSetImagePackages"
           description: OK
   /images/checkImageName:
     post:
