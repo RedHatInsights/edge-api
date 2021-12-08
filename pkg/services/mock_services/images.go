@@ -148,6 +148,21 @@ func (mr *MockImageServiceInterfaceMockRecorder) GetUpdateInfo(image interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUpdateInfo", reflect.TypeOf((*MockImageServiceInterface)(nil).GetUpdateInfo), image)
 }
 
+// AddPackageInfo mocks base method
+func (m *MockImageServiceInterface) AddPackageInfo(image *models.Image) (services.ImageDetail, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddPackageInfo", image)
+	ret0, _ := ret[0].(services.ImageDetail)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AddPackageInfo indicates an expected call of AddPackageInfo
+func (mr *MockImageServiceInterfaceMockRecorder) AddPackageInfo(image interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPackageInfo", reflect.TypeOf((*MockImageServiceInterface)(nil).AddPackageInfo), image)
+}
+
 // GetImageByOSTreeCommitHash mocks base method
 func (m *MockImageServiceInterface) GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error) {
 	m.ctrl.T.Helper()

@@ -80,8 +80,6 @@ var imageStatusFilters = common.ComposeFilters(
 func ImageSetCtx(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
-
 		var imageSet models.ImageSet
 		account, err := common.GetAccount(r)
 		if err != nil {
@@ -111,9 +109,6 @@ func ImageSetCtx(next http.Handler) http.Handler {
 				db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
 				db.DB.Where("id = ?", &imageSet.Images[len(imageSet.Images)-1].InstallerID).Find(&imageSet.Images[len(imageSet.Images)-1].Installer)
 			}
-			// Imgs := returnImageDetails(imageSet.Images, s)
-			// imageSet.Images = Imgs
-
 			ctx := context.WithValue(r.Context(), imageSetKey, &imageSet)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
@@ -165,8 +160,9 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 }
 
 type imageSetImagePackages struct {
-	imageSetData models.ImageSet
-	ImageDetail  []ImageDetail
+	ImageSetData     models.ImageSet `json:"ImageSet"`
+	ImageDetail      []ImageDetail   `json:"ImageDetail"`
+	ImageBuildISOURL string          `json:"ImageBuildISOURL"`
 }
 
 // GetImageSetsByID returns the list of Image Sets by a given Image Set ID
@@ -205,13 +201,14 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	Imgs := returnImageDetails(images, s)
 
-	// imageSetData = *imageSet
-	// imageSetData.Images = images
-	// imageSetData.Detail = Imgs
-	// response.Count = int64(len(images))
-	// response.Data = &imageSetData
-	details.imageSetData = *imageSet
+	details.ImageSetData = *imageSet
 	details.ImageDetail = Imgs
+	if Imgs != nil && Imgs[len(Imgs)-1].Image != nil && Imgs[len(Imgs)-1].Image.InstallerID != nil {
+		img := Imgs[len(Imgs)-1].Image
+		result = db.DB.First(&img.Installer, img.InstallerID)
+		details.ImageBuildISOURL = img.Installer.ImageBuildISOURL
+	}
+
 	response.Data = &details
 	response.Count = int64(len(images))
 	json.NewEncoder(w).Encode(response)
