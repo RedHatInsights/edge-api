@@ -203,6 +203,7 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 
 	details.ImageSetData = *imageSet
 	details.Images = Imgs
+	fmt.Printf(">>>>>>>>>>>>> details: %v\n", details)
 	if Imgs != nil && Imgs[len(Imgs)-1].Image != nil && Imgs[len(Imgs)-1].Image.InstallerID != nil {
 		img := Imgs[len(Imgs)-1].Image
 		result = db.DB.First(&img.Installer, img.InstallerID)
@@ -257,15 +258,21 @@ func contains(s []string, searchterm string) bool {
 func returnImageDetails(images []models.Image, s *dependencies.EdgeAPIServices) []ImageDetail {
 	var Imgs []ImageDetail
 
-	for _, image := range images {
-		var i ImageDetail
-		// id := strconv.FormatUint(uint64(image.ID), 10)
-		img, err := s.ImageService.AddPackageInfo(&image)
-		i = ImageDetail(img)
+	for idx, i := range images {
+		fmt.Printf("::: Range:: %v\n", i.ID)
+		err := db.DB.Model(i).Association("Packages").Find(&images[idx].Packages)
+		if err != nil {
+			return nil
+		}
+		img, err := s.ImageService.AddPackageInfo(&images[idx])
+
 		if err != nil {
 			log.Error("Image detail not found \n")
 		}
-		Imgs = append(Imgs, i)
+		Imgs = append(Imgs, ImageDetail(img))
+		fmt.Printf("::: list last element:: %v\n", Imgs[len(Imgs)-1].Image.ID)
 	}
+
+	fmt.Printf("::: list :: %v\n", Imgs)
 	return Imgs
 }

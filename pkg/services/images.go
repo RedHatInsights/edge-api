@@ -685,7 +685,6 @@ func (s *ImageService) AddPackageInfo(image *models.Image) (ImageDetail, error) 
 		imgDetail.UpdateRemoved = 0
 		imgDetail.UpdateUpdated = 0
 	}
-	fmt.Printf("imgDetail:: %v \n", imgDetail)
 	return imgDetail, nil
 }
 
