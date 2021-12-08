@@ -25,9 +25,12 @@ RUN go build -o /go/bin/edge-api-migrate cmd/migrate/migrate.go
 ######################################
 # STEP 2: build the dependencies image
 ######################################
-FROM quay.io/centos/centos:8 AS ubi-micro-build
+FROM registry.access.redhat.com/ubi8/ubi AS ubi-micro-build
 RUN mkdir -p /mnt/rootfs
+# This step is needed because of subscription-manager issue. 
+RUN yum install pykickstart mtools xorriso genisoimage -y
 RUN yum install --installroot /mnt/rootfs \
+    coreutils-single glibc-minimal-langpack \
     pykickstart mtools xorriso genisoimage \
     syslinux isomd5sum file ostree \
     --releasever 8 --setopt \
@@ -38,13 +41,22 @@ RUN rm -rf /mnt/rootfs/var/cache/* /mnt/rootfs/var/log/dnf* /mnt/rootfs/var/log/
 ####################################
 # STEP 3: build edge-api micro image
 ####################################
-FROM registry.access.redhat.com/ubi8/ubi-micro
-ENV MTOOLS_SKIP_CHECK=1
-ENV PATH /usr/bin:/usr/local/bin:/mnt/rootfs/usr/bin:/mnt/rootfs/usr/local/bin
-ENV LD_LIBRARY_PATH /usr/local/lib:/usr/local/lib64:/mnt/rootfs/usr/local/lib:/mnt/rootfs/usr/local/lib64
+FROM scratch
+LABEL maintainer="Red Hat, Inc."
+LABEL com.redhat.component="ubi8-micro-container"
 
-# Copy the edge-api dependencies into the image.
+#label for EULA
+LABEL com.redhat.license_terms="https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI"
+
+#labels for container catalog
+LABEL summary="edge-api micro image"
+LABEL description="The edge-api project is an API server for fleet edge management capabilities."
+LABEL io.k8s.display-name="edge-api-micro"
+
 COPY --from=ubi-micro-build /mnt/rootfs/ /
+COPY --from=ubi-micro-build /etc/yum.repos.d/ubi.repo /etc/yum.repos.d/ubi.repo
+
+ENV MTOOLS_SKIP_CHECK=1
 
 # Copy the edge-api binaries into the image.
 COPY --from=edge-builder /go/bin/edge-api /usr/bin
@@ -60,7 +72,8 @@ COPY --from=edge-builder /src/mypackage/myapp/pkg/services/templateKickstart.ks 
 COPY --from=edge-builder /src/mypackage/myapp/pkg/services/template_playbook/template_playbook_dispatcher_ostree_upgrade_payload.yml /usr/local/etc
 
 # interim FDO requirements
-COPY --from=quay.io/cloudservices/edge-api:libfdo-data /usr/local/lib/libfdo_data.so.0 /usr/local/lib/libfdo_data.so.0
+ENV LD_LIBRARY_PATH /usr/local/lib
+COPY --from=quay.io/cloudservices/edge-api:libfdo-data ${LD_LIBRARY_PATH}/libfdo_data.so.0 ${LD_LIBRARY_PATH}/libfdo_data.so.0
 COPY --from=quay.io/cloudservices/edge-api:libfdo-data /usr/local/include/fdo_data.h /usr/local/include/fdo_data.h
 
 USER 1001
