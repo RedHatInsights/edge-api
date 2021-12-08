@@ -159,6 +159,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 
 }
 
+//ImageSetImagePackages return info related to details on images from imageset
 type ImageSetImagePackages struct {
 	ImageSetData     models.ImageSet `json:"ImageSet"`
 	Images           []ImageDetail   `json:"Images"`
