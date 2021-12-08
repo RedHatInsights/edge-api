@@ -54,6 +54,19 @@ func main() {
 		db.DB.Save(image)
 	}
 
+	// If there any updates in progress, in the current architecture, we need to set them as errors because this is a brand new deployment
+	var updates []models.UpdateTransaction
+	db.DB.Where(&models.UpdateTransaction{Status: models.UpdateStatusBuilding}).Or(&models.UpdateTransaction{Status: models.UpdateStatusCreated}).Find(&updates)
+	for _, update := range updates {
+		log.WithField("updateID", update.ID).Debug("Found update with building status")
+		update.Status = models.UpdateStatusError
+		if update.Repo != nil {
+			update.Repo.Status = models.RepoStatusError
+			db.DB.Save(update.Repo)
+		}
+		db.DB.Save(update)
+	}
+
 	// Automigration
 	err := db.DB.AutoMigrate(&models.ImageSet{},
 		&models.Commit{}, &models.UpdateTransaction{},
