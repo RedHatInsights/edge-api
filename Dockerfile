@@ -27,7 +27,7 @@ RUN go build -o /go/bin/edge-api-migrate cmd/migrate/migrate.go
 ######################################
 FROM registry.access.redhat.com/ubi8/ubi AS ubi-micro-build
 RUN mkdir -p /mnt/rootfs
-# This step is needed because for subscription-manager refresh. 
+# This step is needed for subscription-manager refresh. 
 RUN yum install coreutils-single -y
 RUN yum install --installroot /mnt/rootfs \
     coreutils-single glibc-minimal-langpack \
