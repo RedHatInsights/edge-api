@@ -11,29 +11,29 @@ import (
 // ImageSet represents a collection of images
 type ImageSet struct {
 	Model
-	Name    string  `json:"Name"`
-	Version int     `json:"Version" gorm:"default:1"`
-	Account string  `json:"Account"`
-	Images  []Image `json:"Images"`
+	Name    string  `json:"name"`
+	Version int     `json:"version" gorm:"default:1"`
+	Account string  `json:"account"`
+	Images  []Image `json:"images"`
 }
 
 // Image is what generates a OSTree Commit.
 type Image struct {
 	Model
-	Name         string         `json:"Name"`
-	Account      string         `json:"Account"`
-	Distribution string         `json:"Distribution"`
-	Description  string         `json:"Description"`
-	Status       string         `json:"Status"`
-	Version      int            `json:"Version" gorm:"default:1"`
-	ImageType    string         `json:"ImageType"` // TODO: Remove as soon as the frontend stops using
-	OutputTypes  pq.StringArray `gorm:"type:text[]" json:"OutputTypes"`
-	CommitID     uint           `json:"CommitID"`
-	Commit       *Commit        `json:"Commit"`
-	InstallerID  *uint          `json:"InstallerID"`
-	Installer    *Installer     `json:"Installer"`
-	ImageSetID   *uint          `json:"ImageSetID"` // TODO: Wipe staging database and set to not nullable
-	Packages     []Package      `json:"Packages" gorm:"many2many:images_packages;"`
+	Name         string         `json:"name"`
+	Account      string         `json:"account"`
+	Distribution string         `json:"distribution"`
+	Description  string         `json:"description"`
+	Status       string         `json:"status"`
+	Version      int            `json:"version" gorm:"default:1"`
+	ImageType    string         `json:"image_type"` // TODO: Remove as soon as the frontend stops using
+	OutputTypes  pq.StringArray `gorm:"type:text[]" json:"output_types"`
+	CommitID     uint           `json:"commit_id"`
+	Commit       *Commit        `json:"commit"`
+	InstallerID  *uint          `json:"installer_id"`
+	Installer    *Installer     `json:"installer"`
+	ImageSetID   *uint          `json:"image_set_id"` // TODO: Wipe staging database and set to not nullable
+	Packages     []Package      `json:"packages" gorm:"many2many:images_packages;"`
 }
 
 const (

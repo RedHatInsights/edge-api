@@ -37,9 +37,9 @@ type DeviceService struct {
 
 // DeviceDetails is a Device with Image and Update transactions
 type DeviceDetails struct {
-	Device             *models.Device              `json:"Device,omitempty"`
-	Image              *ImageInfo                  `json:"ImageInfo"`
-	UpdateTransactions *[]models.UpdateTransaction `json:"UpdateTransactions,omitempty"`
+	Device             *models.Device              `json:"device,omitempty"`
+	Image              *ImageInfo                  `json:"image_info"`
+	UpdateTransactions *[]models.UpdateTransaction `json:"update_transactions,omitempty"`
 }
 
 // GetDeviceByID receives DeviceID uint and get a *models.Device back
@@ -96,22 +96,22 @@ func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*DeviceDetails, err
 
 // ImageUpdateAvailable contains image and differences between current and available commits
 type ImageUpdateAvailable struct {
-	Image       models.Image `json:"Image"`
-	PackageDiff DeltaDiff    `json:"PackageDiff"`
+	Image       models.Image `json:"image"`
+	PackageDiff DeltaDiff    `json:"package_diff"`
 }
 
 // DeltaDiff provides package difference details between current and available commits
 type DeltaDiff struct {
-	Added    []models.InstalledPackage `json:"Added"`
-	Removed  []models.InstalledPackage `json:"Removed"`
-	Upgraded []models.InstalledPackage `json:"Upgraded"`
+	Added    []models.InstalledPackage `json:"added"`
+	Removed  []models.InstalledPackage `json:"removed"`
+	Upgraded []models.InstalledPackage `json:"upgraded"`
 }
 
 // ImageInfo contains Image with updates available and rollback image
 type ImageInfo struct {
-	Image            models.Image            `json:"Image"`
-	UpdatesAvailable *[]ImageUpdateAvailable `json:"UpdatesAvailable,omitempty"`
-	Rollback         *models.Image           `json:"RollbackImage,omitempty"`
+	Image            models.Image            `json:"image"`
+	UpdatesAvailable *[]ImageUpdateAvailable `json:"updates_available,omitempty"`
+	Rollback         *models.Image           `json:"rollback_image,omitempty"`
 }
 
 // GetUpdateAvailableForDeviceByUUID returns if exists update for the current image at the device.

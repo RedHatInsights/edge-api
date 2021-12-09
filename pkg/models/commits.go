@@ -13,35 +13,35 @@ const (
 type Commit struct {
 	Model
 	Name                 string
-	Account              string             `json:"Account"`
-	ImageBuildHash       string             `json:"ImageBuildHash"`
-	ImageBuildParentHash string             `json:"ImageBuildParentHash"`
-	ImageBuildTarURL     string             `json:"ImageBuildTarURL"`
-	OSTreeCommit         string             `json:"OSTreeCommit"`
-	OSTreeParentCommit   string             `json:"OSTreeParentCommit"`
-	OSTreeRef            string             `json:"OSTreeRef"`
-	BuildDate            string             `json:"BuildDate"`
-	BuildNumber          uint               `json:"BuildNumber"`
-	BlueprintToml        string             `json:"BlueprintToml"`
-	Arch                 string             `json:"Arch"`
-	InstalledPackages    []InstalledPackage `json:"InstalledPackages,omitempty" gorm:"many2many:commit_installed_packages;"`
-	ComposeJobID         string             `json:"ComposeJobID"`
-	Status               string             `json:"Status"`
-	RepoID               *uint              `json:"RepoID"`
-	Repo                 *Repo              `json:"Repo"`
+	Account              string             `json:"account"`
+	ImageBuildHash       string             `json:"image_build_hash"`
+	ImageBuildParentHash string             `json:"image_build_parent_hash"`
+	ImageBuildTarURL     string             `json:"image_build_tar_url"`
+	OSTreeCommit         string             `json:"os_tree_commit"`
+	OSTreeParentCommit   string             `json:"os_tree_parent_commit"`
+	OSTreeRef            string             `json:"os_tree_ref"`
+	BuildDate            string             `json:"build_date"`
+	BuildNumber          uint               `json:"build_number"`
+	BlueprintToml        string             `json:"blueprint_toml"`
+	Arch                 string             `json:"arch"`
+	InstalledPackages    []InstalledPackage `json:"installed_packages,omitempty" gorm:"many2many:commit_installed_packages;"`
+	ComposeJobID         string             `json:"compose_job_id"`
+	Status               string             `json:"status"`
+	RepoID               *uint              `json:"repo_id"`
+	Repo                 *Repo              `json:"repo"`
 }
 
 // Repo is the delivery mechanism of a Commit over HTTP
 type Repo struct {
 	Model
-	URL    string `json:"RepoURL"`
-	Status string `json:"RepoStatus"`
+	URL    string `json:"repo_url"`
+	Status string `json:"repo_status"`
 }
 
 // Package represents the packages a Commit can have
 type Package struct {
 	Model
-	Name string `json:"Name"`
+	Name string `json:"name"`
 }
 
 // InstalledPackage represents installed packages a image has
