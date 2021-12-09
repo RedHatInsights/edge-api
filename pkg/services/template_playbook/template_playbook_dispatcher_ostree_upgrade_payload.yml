@@ -9,17 +9,17 @@
       prod: "rh-edge-tarballs-prod"
       stage: "rh-edge-tarballs-stage"
       perf: "rh-edge-tarballs-perf"
-    repo_url: "https://{{ buckets[fleet_infra_env] | default('rh-edge-tarballs-prod') }}.s3.us-east-1.amazonaws.com/{{ update_number }}/upd/{{ update_number }}/repo"
+    repo_url: "https://{{ s3_buckets[fleet_infra_env] | default('rh-edge-tarballs-prod') }}.s3.us-east-1.amazonaws.com/{{ update_number }}/upd/{{ update_number }}/repo"
     ostree_remote_name: "@@ .GoTemplateRemoteName @@"
-    ostree_gpg_verify: "@@ .OstreeGpgVerify @@"
-    ostree_gpg_keypath: "@@ .OstreeGpgKeypath @@"
+    ostree_gpg_verify: "false"
+    ostree_gpg_keypath: "/etc/pki/rpm-gpg/"
     ostree_remote_template: |
       [remote "{{ ostree_remote_name }}"]
       url={{ repo_url }}
       gpg-verify={{ ostree_gpg_verify }}
       gpgkeypath={{ ostree_gpg_keypath }}
       contenturl={{ repo_url }}
-    insights_signature_exclude: "/vars/insights_signature,/vars/fleet_infra_env,/vars/update_number,/vars/ostree_remote_name,/vars/ostree_gpg_verify"
+    insights_signature_exclude: "/vars/insights_signature,/vars/fleet_infra_env,/vars/update_number,/vars/ostree_remote_name"
   tasks:
     - name: apply templated ostree remote config
       ansible.builtin.copy:
