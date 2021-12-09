@@ -6,11 +6,7 @@ ifeq ($(UNAME_S),Darwin)
 	OS_SED += ""
 endif
 
-ifeq ($(OS),Darwin)
-	CONTAINERER=docker
-else
-	CONTAINERER=podman
-endif
+OCI_TOOL=$(shell command -v podman || command -v docker)
 CONTAINER_TAG="quay.io/cloudservices/edge-api"
 
 KUBECTL=kubectl
@@ -60,7 +56,7 @@ lint:
 	golint $$(go list ./... | grep -v /vendor/)
 
 build:
-	$(CONTAINERER) build . -t $(CONTAINER_TAG)
+	$(OCI_TOOL) build . -t $(CONTAINER_TAG)
 
 scan_project:
 	./sonarqube.sh
