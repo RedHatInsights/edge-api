@@ -356,22 +356,23 @@ func GetImageStatusByID(w http.ResponseWriter, r *http.Request) {
 
 //ImageDetail return the structure to inform package info to images
 type ImageDetail struct {
-	Image             *models.Image `json:"Image"`
-	AditionalPackages int           `json:"AditionalPackages"`
-	Packages          int           `json:"Packages"`
-	UpdateAdded       int           `json:"UpdateAdded"`
-	UpdateRemoved     int           `json:"UpdateRemoved"`
-	UpdateUpdated     int           `json:"UpdateUpdated"`
+	Image             *models.Image `json:"image"`
+	AditionalPackages int           `json:"aditional_packages"`
+	Packages          int           `json:"packages"`
+	UpdateAdded       int           `json:"update_added"`
+	UpdateRemoved     int           `json:"update_removed"`
+	UpdateUpdated     int           `json:"update_updated"`
 }
 
 // GetImageByID obtains a image from the database for an account
 func GetImageByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
+		services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+
 		var imgDetail ImageDetail
 		imgDetail.Image = image
 		imgDetail.Packages = len(image.Commit.InstalledPackages)
 		imgDetail.AditionalPackages = len(image.Packages)
-		services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 
 		upd, err := services.ImageService.GetUpdateInfo(*image)
 		if err != nil {

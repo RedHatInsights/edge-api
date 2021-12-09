@@ -161,9 +161,9 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 
 //ImageSetImagePackages return info related to details on images from imageset
 type ImageSetImagePackages struct {
-	ImageSetData     models.ImageSet `json:"ImageSet"`
-	Images           []ImageDetail   `json:"Images"`
-	ImageBuildISOURL string          `json:"ImageBuildISOURL"`
+	ImageSetData     models.ImageSet `json:"image_set"`
+	Images           []ImageDetail   `json:"images"`
+	ImageBuildISOURL string          `json:"image_build_iso_url"`
 }
 
 // GetImageSetsByID returns the list of Image Sets by a given Image Set ID

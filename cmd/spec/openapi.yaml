@@ -1188,9 +1188,9 @@ components:
       type: object
     v1.ImageDetail:
       properties:
-        AditionalPackages:
+        aditional_packages:
           type: integer
-        Image:
+        image:
           properties:
             Account:
               type: string
@@ -1365,13 +1365,13 @@ components:
             Version:
               type: integer
           type: object
-        Packages:
+        packages:
           type: integer
-        UpdateAdded:
+        update_added:
           type: integer
-        UpdateRemoved:
+        update_removed:
           type: integer
-        UpdateUpdated:
+        update_updated:
           type: integer
       type: object
     v1.ImageSetDetails:
@@ -1572,9 +1572,9 @@ components:
       type: object
     v1.ImageSetImagePackages:
       properties:
-        ImageBuildISOURL:
+        image_build_iso_url:
           type: string
-        ImageSet:
+        image_set:
           properties:
             Account:
               type: string
@@ -1770,12 +1770,12 @@ components:
             Version:
               type: integer
           type: object
-        Images:
+        images:
           items:
             properties:
-              AditionalPackages:
+              aditional_packages:
                 type: integer
-              Image:
+              image:
                 properties:
                   Account:
                     type: string
@@ -1950,13 +1950,13 @@ components:
                   Version:
                     type: integer
                 type: object
-              Packages:
+              packages:
                 type: integer
-              UpdateAdded:
+              update_added:
                 type: integer
-              UpdateRemoved:
+              update_removed:
                 type: integer
-              UpdateUpdated:
+              update_updated:
                 type: integer
             type: object
           type: array

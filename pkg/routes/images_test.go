@@ -138,12 +138,12 @@ func TestGetStatus(t *testing.T) {
 }
 
 type ImageResponse struct {
-	Image             models.Image `json:"Image"`
-	AditionalPackages int          `json:"AditionalPackages"`
-	Packages          int          `json:"Packages"`
-	UpdateAdded       int          `json:"UpdateAdded"`
-	UpdateRemoved     int          `json:"UpdateRemoved"`
-	UpdateUpdated     int          `json:"UpdateUpdated"`
+	Image             models.Image `json:"image"`
+	AditionalPackages int          `json:"aditional_packages"`
+	Packages          int          `json:"packages"`
+	UpdateAdded       int          `json:"update_added"`
+	UpdateRemoved     int          `json:"update_removed"`
+	UpdateUpdated     int          `json:"update_updated"`
 }
 
 func TestGetImageById(t *testing.T) {
