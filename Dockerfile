@@ -28,7 +28,7 @@ RUN go build -o /go/bin/edge-api-migrate cmd/migrate/migrate.go
 FROM registry.access.redhat.com/ubi8/ubi AS ubi-micro-build
 RUN mkdir -p /mnt/rootfs
 # This step is needed because of subscription-manager issue. 
-RUN yum install pykickstart mtools xorriso genisoimage -y
+RUN yum install coreutils-single -y
 RUN yum install --installroot /mnt/rootfs \
     coreutils-single glibc-minimal-langpack \
     pykickstart mtools xorriso genisoimage \
@@ -45,10 +45,10 @@ FROM scratch
 LABEL maintainer="Red Hat, Inc."
 LABEL com.redhat.component="ubi8-micro-container"
 
-#label for EULA
+# label for EULA
 LABEL com.redhat.license_terms="https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI"
 
-#labels for container catalog
+# labels for container catalog
 LABEL summary="edge-api micro image"
 LABEL description="The edge-api project is an API server for fleet edge management capabilities."
 LABEL io.k8s.display-name="edge-api-micro"
