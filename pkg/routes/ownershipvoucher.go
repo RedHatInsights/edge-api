@@ -15,11 +15,11 @@ import (
 // MakeFDORouter creates a router for the FDO API
 func MakeFDORouter(sub chi.Router) {
 	sub.Route("/ownership_voucher", func(r chi.Router) {
-		r.Use(validateMiddleware)
-		r.Post("/", CreateOwnershipVouchers)
-		r.Post("/delete", DeleteOwnershipVouchers)
-		r.Post("/parse", ParseOwnershipVouchers)
-		r.Post("/connect", ConnectDevices)
+		r.Use(validateMiddleware)                  // TODO: Consistent logging
+		r.Post("/", CreateOwnershipVouchers)       // TODO: Consistent logging
+		r.Post("/delete", DeleteOwnershipVouchers) // TODO: Consistent logging
+		r.Post("/parse", ParseOwnershipVouchers)   // TODO: Consistent logging
+		r.Post("/connect", ConnectDevices)         // TODO: Consistent logging
 	})
 }
 
