@@ -1,0 +1,33 @@
+services: docker
+language: go
+go: 1.15
+env:
+  global:
+    - FLEET_MANAGEMENT_ORG: quay.io/fleet-management
+    - DEFAULT_BRANCH: main
+  jobs:
+    - REPO_NAME=libfdo-data DOCKERFILE=./test-container/Dockerfile
+    - REPO_NAME=edge-api DOCKERFILE=./Dockerfile
+before_install:
+  - |
+    if [ "${TRAVIS_EVENT_TYPE}" == "pull_request" ]; then
+      export TAG="pr-${TRAVIS_PULL_REQUEST}"
+    else
+      export TAG="latest"
+    fi
+# For edge-api we need some packages that only avialable for subscribed users
+# therefore we will use centos8
+# Don't spam quay repo with PR builds, give it 3 days
+before_script:
+  - |
+    if [ "${REPO_NAME}" == "edge-api" ]; then
+      sed -i 's|registry.access.redhat.com/ubi8/ubi|quay.io/centos/centos:8|' ${DOCKERFILE}
+      sed -i 's|.*ubi-micro-build.*ubi.repo||' ${DOCKERFILE}
+    fi
+    if [ "${TRAVIS_EVENT_TYPE}" == "pull_request" ]; then
+      echo "LABEL quay.expires-after=3d" >> ${DOCKERFILE}
+    fi
+script:
+  - docker build -t ${FLEET_MANAGEMENT_ORG}/${REPO_NAME}:${TAG} -f ${DOCKERFILE} .
+  - docker login quay.io -u ${FLEETER_BOT} -p ${FLEETER_PASS} >/dev/null 2>&1
+  - docker push ${FLEET_MANAGEMENT_ORG}/${REPO_NAME}:${TAG}
