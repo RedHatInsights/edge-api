@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 )
+
 func TestStatusOK(t *testing.T) {
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
@@ -26,4 +27,3 @@ func TestStatusOK(t *testing.T) {
 			rr.Body.String(), expected)
 	}
 }
-

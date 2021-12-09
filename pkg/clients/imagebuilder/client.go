@@ -41,7 +41,7 @@ func InitClient(ctx context.Context, log *log.Entry) *Client {
 
 // OSTree gives OSTree information for an image
 type OSTree struct {
-	URL string `json:"url"`
+	URL string `json:"url,omitempty"`
 	Ref string `json:"ref"`
 }
 
@@ -149,8 +149,12 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
+		var code int
+		if res != nil {
+			code = res.StatusCode
+		}
 		c.log.WithFields(log.Fields{
-			"statusCode": res.StatusCode,
+			"statusCode": code,
 			"error":      err,
 		}).Error("Image Builder Compose Request Error")
 		return nil, err
@@ -205,7 +209,7 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 		}
 		req.ImageRequests[0].Ostree.Ref = image.Commit.OSTreeRef
 	}
-	if image.Commit.OSTreeRef != "" {
+	if image.Commit.OSTreeParentCommit != "" {
 		if req.ImageRequests[0].Ostree == nil {
 			req.ImageRequests[0].Ostree = &OSTree{}
 		}
@@ -304,7 +308,7 @@ func (c *Client) getComposeStatus(jobID string) (*ComposeStatus, error) {
 		return nil, err
 	}
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request for status was not sucessful")
+		return nil, fmt.Errorf("request for status was not successful")
 	}
 
 	err = json.Unmarshal(respBody, &cs)

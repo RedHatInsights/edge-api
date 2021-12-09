@@ -2,7 +2,9 @@ components:
   schemas:
     v1.AddUpdate:
       properties:
-        CommitID: {}
+        CommitID:
+          minimum: 0
+          type: integer
         DeviceUUID:
           type: string
       type: object
@@ -28,7 +30,9 @@ components:
         DeletedAt: {}
         Description:
           type: string
-        ID: {}
+        ID:
+          minimum: 0
+          type: integer
         Name:
           type: string
         URL:
@@ -47,7 +51,9 @@ components:
         DeletedAt: {}
         DesiredHash:
           type: string
-        ID: {}
+        ID:
+          minimum: 0
+          type: integer
         RHCClientID:
           type: string
         UUID:
@@ -55,6 +61,26 @@ components:
         UpdatedAt:
           format: date-time
           type: string
+        fdo:
+          properties:
+            CreatedAt:
+              format: date-time
+              type: string
+            DeletedAt: {}
+            ID:
+              minimum: 0
+              type: integer
+            UpdatedAt:
+              format: date-time
+              type: string
+            device_name:
+              type: string
+            guid:
+              type: string
+            protocol_version:
+              minimum: 0
+              type: integer
+          type: object
       type: object
     v1.DeviceDetails:
       properties:
@@ -68,7 +94,9 @@ components:
             DeletedAt: {}
             DesiredHash:
               type: string
-            ID: {}
+            ID:
+              minimum: 0
+              type: integer
             RHCClientID:
               type: string
             UUID:
@@ -76,6 +104,26 @@ components:
             UpdatedAt:
               format: date-time
               type: string
+            fdo:
+              properties:
+                CreatedAt:
+                  format: date-time
+                  type: string
+                DeletedAt: {}
+                ID:
+                  minimum: 0
+                  type: integer
+                UpdatedAt:
+                  format: date-time
+                  type: string
+                device_name:
+                  type: string
+                guid:
+                  type: string
+                protocol_version:
+                  minimum: 0
+                  type: integer
+              type: object
           type: object
         ImageInfo:
           properties:
@@ -93,14 +141,18 @@ components:
                       type: string
                     BuildDate:
                       type: string
-                    BuildNumber: {}
+                    BuildNumber:
+                      minimum: 0
+                      type: integer
                     ComposeJobID:
                       type: string
                     CreatedAt:
                       format: date-time
                       type: string
                     DeletedAt: {}
-                    ID: {}
+                    ID:
+                      minimum: 0
+                      type: integer
                     ImageBuildHash:
                       type: string
                     ImageBuildParentHash:
@@ -114,7 +166,9 @@ components:
                             format: date-time
                             type: string
                           DeletedAt: {}
-                          ID: {}
+                          ID:
+                            minimum: 0
+                            type: integer
                           UpdatedAt:
                             format: date-time
                             type: string
@@ -148,7 +202,9 @@ components:
                           format: date-time
                           type: string
                         DeletedAt: {}
-                        ID: {}
+                        ID:
+                          minimum: 0
+                          type: integer
                         RepoStatus:
                           type: string
                         RepoURL:
@@ -157,14 +213,18 @@ components:
                           format: date-time
                           type: string
                       type: object
-                    RepoID: {}
+                    RepoID:
+                      minimum: 0
+                      type: integer
                     Status:
                       type: string
                     UpdatedAt:
                       format: date-time
                       type: string
                   type: object
-                CommitID: {}
+                CommitID:
+                  minimum: 0
+                  type: integer
                 CreatedAt:
                   format: date-time
                   type: string
@@ -173,8 +233,12 @@ components:
                   type: string
                 Distribution:
                   type: string
-                ID: {}
-                ImageSetID: {}
+                ID:
+                  minimum: 0
+                  type: integer
+                ImageSetID:
+                  minimum: 0
+                  type: integer
                 ImageType:
                   type: string
                 Installer:
@@ -189,7 +253,9 @@ components:
                       format: date-time
                       type: string
                     DeletedAt: {}
-                    ID: {}
+                    ID:
+                      minimum: 0
+                      type: integer
                     ImageBuildISOURL:
                       type: string
                     SshKey:
@@ -202,7 +268,9 @@ components:
                     Username:
                       type: string
                   type: object
-                InstallerID: {}
+                InstallerID:
+                  minimum: 0
+                  type: integer
                 Name:
                   type: string
                 OutputTypes:
@@ -216,7 +284,9 @@ components:
                         format: date-time
                         type: string
                       DeletedAt: {}
-                      ID: {}
+                      ID:
+                        minimum: 0
+                        type: integer
                       Name:
                         type: string
                       UpdatedAt:
@@ -246,14 +316,18 @@ components:
                       type: string
                     BuildDate:
                       type: string
-                    BuildNumber: {}
+                    BuildNumber:
+                      minimum: 0
+                      type: integer
                     ComposeJobID:
                       type: string
                     CreatedAt:
                       format: date-time
                       type: string
                     DeletedAt: {}
-                    ID: {}
+                    ID:
+                      minimum: 0
+                      type: integer
                     ImageBuildHash:
                       type: string
                     ImageBuildParentHash:
@@ -267,7 +341,9 @@ components:
                             format: date-time
                             type: string
                           DeletedAt: {}
-                          ID: {}
+                          ID:
+                            minimum: 0
+                            type: integer
                           UpdatedAt:
                             format: date-time
                             type: string
@@ -301,7 +377,9 @@ components:
                           format: date-time
                           type: string
                         DeletedAt: {}
-                        ID: {}
+                        ID:
+                          minimum: 0
+                          type: integer
                         RepoStatus:
                           type: string
                         RepoURL:
@@ -310,14 +388,18 @@ components:
                           format: date-time
                           type: string
                       type: object
-                    RepoID: {}
+                    RepoID:
+                      minimum: 0
+                      type: integer
                     Status:
                       type: string
                     UpdatedAt:
                       format: date-time
                       type: string
                   type: object
-                CommitID: {}
+                CommitID:
+                  minimum: 0
+                  type: integer
                 CreatedAt:
                   format: date-time
                   type: string
@@ -326,8 +408,12 @@ components:
                   type: string
                 Distribution:
                   type: string
-                ID: {}
-                ImageSetID: {}
+                ID:
+                  minimum: 0
+                  type: integer
+                ImageSetID:
+                  minimum: 0
+                  type: integer
                 ImageType:
                   type: string
                 Installer:
@@ -342,7 +428,9 @@ components:
                       format: date-time
                       type: string
                     DeletedAt: {}
-                    ID: {}
+                    ID:
+                      minimum: 0
+                      type: integer
                     ImageBuildISOURL:
                       type: string
                     SshKey:
@@ -355,7 +443,9 @@ components:
                     Username:
                       type: string
                   type: object
-                InstallerID: {}
+                InstallerID:
+                  minimum: 0
+                  type: integer
                 Name:
                   type: string
                 OutputTypes:
@@ -369,7 +459,9 @@ components:
                         format: date-time
                         type: string
                       DeletedAt: {}
-                      ID: {}
+                      ID:
+                        minimum: 0
+                        type: integer
                       Name:
                         type: string
                       UpdatedAt:
@@ -402,14 +494,18 @@ components:
                             type: string
                           BuildDate:
                             type: string
-                          BuildNumber: {}
+                          BuildNumber:
+                            minimum: 0
+                            type: integer
                           ComposeJobID:
                             type: string
                           CreatedAt:
                             format: date-time
                             type: string
                           DeletedAt: {}
-                          ID: {}
+                          ID:
+                            minimum: 0
+                            type: integer
                           ImageBuildHash:
                             type: string
                           ImageBuildParentHash:
@@ -423,7 +519,9 @@ components:
                                   format: date-time
                                   type: string
                                 DeletedAt: {}
-                                ID: {}
+                                ID:
+                                  minimum: 0
+                                  type: integer
                                 UpdatedAt:
                                   format: date-time
                                   type: string
@@ -457,7 +555,9 @@ components:
                                 format: date-time
                                 type: string
                               DeletedAt: {}
-                              ID: {}
+                              ID:
+                                minimum: 0
+                                type: integer
                               RepoStatus:
                                 type: string
                               RepoURL:
@@ -466,14 +566,18 @@ components:
                                 format: date-time
                                 type: string
                             type: object
-                          RepoID: {}
+                          RepoID:
+                            minimum: 0
+                            type: integer
                           Status:
                             type: string
                           UpdatedAt:
                             format: date-time
                             type: string
                         type: object
-                      CommitID: {}
+                      CommitID:
+                        minimum: 0
+                        type: integer
                       CreatedAt:
                         format: date-time
                         type: string
@@ -482,8 +586,12 @@ components:
                         type: string
                       Distribution:
                         type: string
-                      ID: {}
-                      ImageSetID: {}
+                      ID:
+                        minimum: 0
+                        type: integer
+                      ImageSetID:
+                        minimum: 0
+                        type: integer
                       ImageType:
                         type: string
                       Installer:
@@ -498,7 +606,9 @@ components:
                             format: date-time
                             type: string
                           DeletedAt: {}
-                          ID: {}
+                          ID:
+                            minimum: 0
+                            type: integer
                           ImageBuildISOURL:
                             type: string
                           SshKey:
@@ -511,7 +621,9 @@ components:
                           Username:
                             type: string
                         type: object
-                      InstallerID: {}
+                      InstallerID:
+                        minimum: 0
+                        type: integer
                       Name:
                         type: string
                       OutputTypes:
@@ -525,7 +637,9 @@ components:
                               format: date-time
                               type: string
                             DeletedAt: {}
-                            ID: {}
+                            ID:
+                              minimum: 0
+                              type: integer
                             Name:
                               type: string
                             UpdatedAt:
@@ -550,7 +664,9 @@ components:
                               format: date-time
                               type: string
                             DeletedAt: {}
-                            ID: {}
+                            ID:
+                              minimum: 0
+                              type: integer
                             UpdatedAt:
                               format: date-time
                               type: string
@@ -579,7 +695,9 @@ components:
                               format: date-time
                               type: string
                             DeletedAt: {}
-                            ID: {}
+                            ID:
+                              minimum: 0
+                              type: integer
                             UpdatedAt:
                               format: date-time
                               type: string
@@ -608,7 +726,9 @@ components:
                               format: date-time
                               type: string
                             DeletedAt: {}
-                            ID: {}
+                            ID:
+                              minimum: 0
+                              type: integer
                             UpdatedAt:
                               format: date-time
                               type: string
@@ -649,14 +769,18 @@ components:
                     type: string
                   BuildDate:
                     type: string
-                  BuildNumber: {}
+                  BuildNumber:
+                    minimum: 0
+                    type: integer
                   ComposeJobID:
                     type: string
                   CreatedAt:
                     format: date-time
                     type: string
                   DeletedAt: {}
-                  ID: {}
+                  ID:
+                    minimum: 0
+                    type: integer
                   ImageBuildHash:
                     type: string
                   ImageBuildParentHash:
@@ -670,7 +794,9 @@ components:
                           format: date-time
                           type: string
                         DeletedAt: {}
-                        ID: {}
+                        ID:
+                          minimum: 0
+                          type: integer
                         UpdatedAt:
                           format: date-time
                           type: string
@@ -704,7 +830,9 @@ components:
                         format: date-time
                         type: string
                       DeletedAt: {}
-                      ID: {}
+                      ID:
+                        minimum: 0
+                        type: integer
                       RepoStatus:
                         type: string
                       RepoURL:
@@ -713,14 +841,18 @@ components:
                         format: date-time
                         type: string
                     type: object
-                  RepoID: {}
+                  RepoID:
+                    minimum: 0
+                    type: integer
                   Status:
                     type: string
                   UpdatedAt:
                     format: date-time
                     type: string
                 type: object
-              CommitID: {}
+              CommitID:
+                minimum: 0
+                type: integer
               CreatedAt:
                 format: date-time
                 type: string
@@ -736,7 +868,9 @@ components:
                     DeletedAt: {}
                     DesiredHash:
                       type: string
-                    ID: {}
+                    ID:
+                      minimum: 0
+                      type: integer
                     RHCClientID:
                       type: string
                     UUID:
@@ -744,6 +878,26 @@ components:
                     UpdatedAt:
                       format: date-time
                       type: string
+                    fdo:
+                      properties:
+                        CreatedAt:
+                          format: date-time
+                          type: string
+                        DeletedAt: {}
+                        ID:
+                          minimum: 0
+                          type: integer
+                        UpdatedAt:
+                          format: date-time
+                          type: string
+                        device_name:
+                          type: string
+                        guid:
+                          type: string
+                        protocol_version:
+                          minimum: 0
+                          type: integer
+                      type: object
                   type: object
                 type: array
               DispatchRecords:
@@ -763,7 +917,9 @@ components:
                         DeletedAt: {}
                         DesiredHash:
                           type: string
-                        ID: {}
+                        ID:
+                          minimum: 0
+                          type: integer
                         RHCClientID:
                           type: string
                         UUID:
@@ -771,9 +927,33 @@ components:
                         UpdatedAt:
                           format: date-time
                           type: string
+                        fdo:
+                          properties:
+                            CreatedAt:
+                              format: date-time
+                              type: string
+                            DeletedAt: {}
+                            ID:
+                              minimum: 0
+                              type: integer
+                            UpdatedAt:
+                              format: date-time
+                              type: string
+                            device_name:
+                              type: string
+                            guid:
+                              type: string
+                            protocol_version:
+                              minimum: 0
+                              type: integer
+                          type: object
                       type: object
-                    DeviceID: {}
-                    ID: {}
+                    DeviceID:
+                      minimum: 0
+                      type: integer
+                    ID:
+                      minimum: 0
+                      type: integer
                     PlaybookDispatcherID:
                       type: string
                     PlaybookURL:
@@ -785,7 +965,9 @@ components:
                       type: string
                   type: object
                 type: array
-              ID: {}
+              ID:
+                minimum: 0
+                type: integer
               OldCommits:
                 items:
                   properties:
@@ -797,14 +979,18 @@ components:
                       type: string
                     BuildDate:
                       type: string
-                    BuildNumber: {}
+                    BuildNumber:
+                      minimum: 0
+                      type: integer
                     ComposeJobID:
                       type: string
                     CreatedAt:
                       format: date-time
                       type: string
                     DeletedAt: {}
-                    ID: {}
+                    ID:
+                      minimum: 0
+                      type: integer
                     ImageBuildHash:
                       type: string
                     ImageBuildParentHash:
@@ -818,7 +1004,9 @@ components:
                             format: date-time
                             type: string
                           DeletedAt: {}
-                          ID: {}
+                          ID:
+                            minimum: 0
+                            type: integer
                           UpdatedAt:
                             format: date-time
                             type: string
@@ -852,7 +1040,9 @@ components:
                           format: date-time
                           type: string
                         DeletedAt: {}
-                        ID: {}
+                        ID:
+                          minimum: 0
+                          type: integer
                         RepoStatus:
                           type: string
                         RepoURL:
@@ -861,7 +1051,9 @@ components:
                           format: date-time
                           type: string
                       type: object
-                    RepoID: {}
+                    RepoID:
+                      minimum: 0
+                      type: integer
                     Status:
                       type: string
                     UpdatedAt:
@@ -875,7 +1067,9 @@ components:
                     format: date-time
                     type: string
                   DeletedAt: {}
-                  ID: {}
+                  ID:
+                    minimum: 0
+                    type: integer
                   RepoStatus:
                     type: string
                   RepoURL:
@@ -884,7 +1078,9 @@ components:
                     format: date-time
                     type: string
                 type: object
-              RepoID: {}
+              RepoID:
+                minimum: 0
+                type: integer
               Status:
                 type: string
               Tag:
@@ -909,14 +1105,18 @@ components:
               type: string
             BuildDate:
               type: string
-            BuildNumber: {}
+            BuildNumber:
+              minimum: 0
+              type: integer
             ComposeJobID:
               type: string
             CreatedAt:
               format: date-time
               type: string
             DeletedAt: {}
-            ID: {}
+            ID:
+              minimum: 0
+              type: integer
             ImageBuildHash:
               type: string
             ImageBuildParentHash:
@@ -930,7 +1130,9 @@ components:
                     format: date-time
                     type: string
                   DeletedAt: {}
-                  ID: {}
+                  ID:
+                    minimum: 0
+                    type: integer
                   UpdatedAt:
                     format: date-time
                     type: string
@@ -964,7 +1166,9 @@ components:
                   format: date-time
                   type: string
                 DeletedAt: {}
-                ID: {}
+                ID:
+                  minimum: 0
+                  type: integer
                 RepoStatus:
                   type: string
                 RepoURL:
@@ -973,14 +1177,18 @@ components:
                   format: date-time
                   type: string
               type: object
-            RepoID: {}
+            RepoID:
+              minimum: 0
+              type: integer
             Status:
               type: string
             UpdatedAt:
               format: date-time
               type: string
           type: object
-        CommitID: {}
+        CommitID:
+          minimum: 0
+          type: integer
         CreatedAt:
           format: date-time
           type: string
@@ -989,8 +1197,12 @@ components:
           type: string
         Distribution:
           type: string
-        ID: {}
-        ImageSetID: {}
+        ID:
+          minimum: 0
+          type: integer
+        ImageSetID:
+          minimum: 0
+          type: integer
         ImageType:
           type: string
         Installer:
@@ -1005,7 +1217,9 @@ components:
               format: date-time
               type: string
             DeletedAt: {}
-            ID: {}
+            ID:
+              minimum: 0
+              type: integer
             ImageBuildISOURL:
               type: string
             SshKey:
@@ -1018,7 +1232,9 @@ components:
             Username:
               type: string
           type: object
-        InstallerID: {}
+        InstallerID:
+          minimum: 0
+          type: integer
         Name:
           type: string
         OutputTypes:
@@ -1032,7 +1248,9 @@ components:
                 format: date-time
                 type: string
               DeletedAt: {}
-              ID: {}
+              ID:
+                minimum: 0
+                type: integer
               Name:
                 type: string
               UpdatedAt:
@@ -1056,7 +1274,9 @@ components:
           format: date-time
           type: string
         DeletedAt: {}
-        ID: {}
+        ID:
+          minimum: 0
+          type: integer
         Images:
           items:
             properties:
@@ -1072,14 +1292,18 @@ components:
                     type: string
                   BuildDate:
                     type: string
-                  BuildNumber: {}
+                  BuildNumber:
+                    minimum: 0
+                    type: integer
                   ComposeJobID:
                     type: string
                   CreatedAt:
                     format: date-time
                     type: string
                   DeletedAt: {}
-                  ID: {}
+                  ID:
+                    minimum: 0
+                    type: integer
                   ImageBuildHash:
                     type: string
                   ImageBuildParentHash:
@@ -1093,7 +1317,9 @@ components:
                           format: date-time
                           type: string
                         DeletedAt: {}
-                        ID: {}
+                        ID:
+                          minimum: 0
+                          type: integer
                         UpdatedAt:
                           format: date-time
                           type: string
@@ -1127,7 +1353,9 @@ components:
                         format: date-time
                         type: string
                       DeletedAt: {}
-                      ID: {}
+                      ID:
+                        minimum: 0
+                        type: integer
                       RepoStatus:
                         type: string
                       RepoURL:
@@ -1136,14 +1364,18 @@ components:
                         format: date-time
                         type: string
                     type: object
-                  RepoID: {}
+                  RepoID:
+                    minimum: 0
+                    type: integer
                   Status:
                     type: string
                   UpdatedAt:
                     format: date-time
                     type: string
                 type: object
-              CommitID: {}
+              CommitID:
+                minimum: 0
+                type: integer
               CreatedAt:
                 format: date-time
                 type: string
@@ -1152,8 +1384,12 @@ components:
                 type: string
               Distribution:
                 type: string
-              ID: {}
-              ImageSetID: {}
+              ID:
+                minimum: 0
+                type: integer
+              ImageSetID:
+                minimum: 0
+                type: integer
               ImageType:
                 type: string
               Installer:
@@ -1168,7 +1404,9 @@ components:
                     format: date-time
                     type: string
                   DeletedAt: {}
-                  ID: {}
+                  ID:
+                    minimum: 0
+                    type: integer
                   ImageBuildISOURL:
                     type: string
                   SshKey:
@@ -1181,7 +1419,9 @@ components:
                   Username:
                     type: string
                 type: object
-              InstallerID: {}
+              InstallerID:
+                minimum: 0
+                type: integer
               Name:
                 type: string
               OutputTypes:
@@ -1195,7 +1435,9 @@ components:
                       format: date-time
                       type: string
                     DeletedAt: {}
-                    ID: {}
+                    ID:
+                      minimum: 0
+                      type: integer
                     Name:
                       type: string
                     UpdatedAt:
@@ -1238,13 +1480,37 @@ components:
         Title:
           type: string
       type: object
+    v1.OwnershipVoucherData:
+      items:
+        properties:
+          CreatedAt:
+            format: date-time
+            type: string
+          DeletedAt: {}
+          ID:
+            minimum: 0
+            type: integer
+          UpdatedAt:
+            format: date-time
+            type: string
+          device_name:
+            type: string
+          guid:
+            type: string
+          protocol_version:
+            minimum: 0
+            type: integer
+        type: object
+      type: array
     v1.Repo:
       properties:
         CreatedAt:
           format: date-time
           type: string
         DeletedAt: {}
-        ID: {}
+        ID:
+          minimum: 0
+          type: integer
         RepoStatus:
           type: string
         RepoURL:
@@ -1267,14 +1533,18 @@ components:
               type: string
             BuildDate:
               type: string
-            BuildNumber: {}
+            BuildNumber:
+              minimum: 0
+              type: integer
             ComposeJobID:
               type: string
             CreatedAt:
               format: date-time
               type: string
             DeletedAt: {}
-            ID: {}
+            ID:
+              minimum: 0
+              type: integer
             ImageBuildHash:
               type: string
             ImageBuildParentHash:
@@ -1288,7 +1558,9 @@ components:
                     format: date-time
                     type: string
                   DeletedAt: {}
-                  ID: {}
+                  ID:
+                    minimum: 0
+                    type: integer
                   UpdatedAt:
                     format: date-time
                     type: string
@@ -1322,7 +1594,9 @@ components:
                   format: date-time
                   type: string
                 DeletedAt: {}
-                ID: {}
+                ID:
+                  minimum: 0
+                  type: integer
                 RepoStatus:
                   type: string
                 RepoURL:
@@ -1331,14 +1605,18 @@ components:
                   format: date-time
                   type: string
               type: object
-            RepoID: {}
+            RepoID:
+              minimum: 0
+              type: integer
             Status:
               type: string
             UpdatedAt:
               format: date-time
               type: string
           type: object
-        CommitID: {}
+        CommitID:
+          minimum: 0
+          type: integer
         CreatedAt:
           format: date-time
           type: string
@@ -1354,7 +1632,9 @@ components:
               DeletedAt: {}
               DesiredHash:
                 type: string
-              ID: {}
+              ID:
+                minimum: 0
+                type: integer
               RHCClientID:
                 type: string
               UUID:
@@ -1362,6 +1642,26 @@ components:
               UpdatedAt:
                 format: date-time
                 type: string
+              fdo:
+                properties:
+                  CreatedAt:
+                    format: date-time
+                    type: string
+                  DeletedAt: {}
+                  ID:
+                    minimum: 0
+                    type: integer
+                  UpdatedAt:
+                    format: date-time
+                    type: string
+                  device_name:
+                    type: string
+                  guid:
+                    type: string
+                  protocol_version:
+                    minimum: 0
+                    type: integer
+                type: object
             type: object
           type: array
         DispatchRecords:
@@ -1381,7 +1681,9 @@ components:
                   DeletedAt: {}
                   DesiredHash:
                     type: string
-                  ID: {}
+                  ID:
+                    minimum: 0
+                    type: integer
                   RHCClientID:
                     type: string
                   UUID:
@@ -1389,9 +1691,33 @@ components:
                   UpdatedAt:
                     format: date-time
                     type: string
+                  fdo:
+                    properties:
+                      CreatedAt:
+                        format: date-time
+                        type: string
+                      DeletedAt: {}
+                      ID:
+                        minimum: 0
+                        type: integer
+                      UpdatedAt:
+                        format: date-time
+                        type: string
+                      device_name:
+                        type: string
+                      guid:
+                        type: string
+                      protocol_version:
+                        minimum: 0
+                        type: integer
+                    type: object
                 type: object
-              DeviceID: {}
-              ID: {}
+              DeviceID:
+                minimum: 0
+                type: integer
+              ID:
+                minimum: 0
+                type: integer
               PlaybookDispatcherID:
                 type: string
               PlaybookURL:
@@ -1403,7 +1729,9 @@ components:
                 type: string
             type: object
           type: array
-        ID: {}
+        ID:
+          minimum: 0
+          type: integer
         OldCommits:
           items:
             properties:
@@ -1415,14 +1743,18 @@ components:
                 type: string
               BuildDate:
                 type: string
-              BuildNumber: {}
+              BuildNumber:
+                minimum: 0
+                type: integer
               ComposeJobID:
                 type: string
               CreatedAt:
                 format: date-time
                 type: string
               DeletedAt: {}
-              ID: {}
+              ID:
+                minimum: 0
+                type: integer
               ImageBuildHash:
                 type: string
               ImageBuildParentHash:
@@ -1436,7 +1768,9 @@ components:
                       format: date-time
                       type: string
                     DeletedAt: {}
-                    ID: {}
+                    ID:
+                      minimum: 0
+                      type: integer
                     UpdatedAt:
                       format: date-time
                       type: string
@@ -1470,7 +1804,9 @@ components:
                     format: date-time
                     type: string
                   DeletedAt: {}
-                  ID: {}
+                  ID:
+                    minimum: 0
+                    type: integer
                   RepoStatus:
                     type: string
                   RepoURL:
@@ -1479,7 +1815,9 @@ components:
                     format: date-time
                     type: string
                 type: object
-              RepoID: {}
+              RepoID:
+                minimum: 0
+                type: integer
               Status:
                 type: string
               UpdatedAt:
@@ -1493,7 +1831,9 @@ components:
               format: date-time
               type: string
             DeletedAt: {}
-            ID: {}
+            ID:
+              minimum: 0
+              type: integer
             RepoStatus:
               type: string
             RepoURL:
@@ -1502,7 +1842,9 @@ components:
               format: date-time
               type: string
           type: object
-        RepoID: {}
+        RepoID:
+          minimum: 0
+          type: integer
         Status:
           type: string
         Tag:
@@ -1741,6 +2083,30 @@ paths:
           description: There was an internal server error.
       summary: Get Image OSTree repo.
       description: Returns the information of the OSTree Repository of a particular Image.
+  /images/{imageId}/retry:
+    post:
+      operationId: retryImage
+      parameters:
+        - name: imageId
+          in: path
+          required: true
+          description: ImageID
+          schema:
+            type: integer
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.Image"
+          description: Retry is being processed
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.InternalServerError"
+          description: There was an internal server error.
+      summary: Retries an building image from stratch
   /updates:
     post:
       operationId: UpdateDevice
@@ -1937,7 +2303,6 @@ paths:
                 properties:
                   Image:
                     $ref: "#/components/schemas/v1.Image"
-
           description: OK
         "400":
           content:
@@ -1998,12 +2363,12 @@ paths:
           description: "Define sort fields: Created_at, Name, Status. To sort DESC use -"
           schema:
             type: string
-        - name: name 
+        - name: name
           in: query
           description: "field: filter by name"
           schema:
             type: string
-        - name: status 
+        - name: status
           in: query
           description: "field: filter by status"
           schema:
@@ -2040,8 +2405,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.InternalServerError"
-          description: There was an internal server error. 
-      summary: Return the list of image sets.     
+          description: There was an internal server error.
+      summary: Return the list of image sets.
   /image-sets/{ImageSetId}:
     get:
       operationId: GetImageSetsByID
@@ -2050,6 +2415,21 @@ paths:
           in: path
           required: true
           description: ImageSetId
+          schema:
+            type: integer
+        - name: sort_by
+          in: query
+          description: "Define sort fields: Created_at, Name, Status. To sort DESC use -"
+          schema:
+            type: string
+        - name: name
+          in: query
+          description: "field: filter by name"
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: "field: filter by status"
           schema:
             type: string
       responses:
@@ -2093,7 +2473,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
-      summary: Check if image name is in use for current account 
+      summary: Check if image name is in use for current account
   /thirdpartyrepo:
     post:
       operationId: CreateThirdPartyRepo
@@ -2131,7 +2511,7 @@ paths:
           description: "fields: created_at, name, updated_at. To sort DESC use - before the fields."
           schema:
             type: string
-        - name: name 
+        - name: name
           in: query
           description: "field: filter by name"
           schema:
@@ -2173,8 +2553,7 @@ paths:
           required: true
           description: An unique existing third party repository id.
           schema:
-            type:
-              integer
+            type: integer
       responses:
         "200":
           content:
@@ -2203,14 +2582,13 @@ paths:
           required: true
           description: An unique existing third party repository id.
           schema:
-            type:
-              integer
+            type: integer
       requestBody:
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/v1.CreateThirdPartyRepo"
-        required: true  
+        required: true
       responses:
         "200":
           content:
@@ -2230,7 +2608,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
-      summary: Creates an Update for third party repository  
+      summary: Creates an Update for third party repository
     delete:
       operationId: DeleteThirdPartyRepoByID
       parameters:
@@ -2239,8 +2617,7 @@ paths:
           required: true
           description: An unique existing third party repository id.
           schema:
-            type:
-              integer
+            type: integer
       responses:
         "200":
           content:
@@ -2261,3 +2638,131 @@ paths:
                 $ref: '#/components/schemas/v1.InternalServerError'
           description: There was an internal server error.
       summary: Delete third party repository using id.
+  /fdo/ownership_voucher:
+    post:
+      operationId: CreateOwnershipVouchers
+      requestBody:
+        description: CBOR encoding of the ownership vouchers.
+        required: true
+        content:
+          application/cbor:
+            schema:
+              type: object
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  guid:
+                    type: string
+                    description: FDO GUID for the device.
+          description: Created
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Upload ownership vouchers.
+  /fdo/ownership_voucher/delete:
+    post:
+      operationId: DeleteOwnershipVouchers
+      requestBody:
+        description: list of GUIDs for which the Ownership Vouchers should get deleted.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Delete ownership vouchers.
+  /fdo/ownership_voucher/parse:
+    post:
+      operationId: ParseOwnershipVouchers
+      requestBody:
+        description: CBOR encoding of the ownership vouchers.
+        required: true
+        content:
+          application/cbor:
+            schema:
+              type: object
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.OwnershipVoucherData'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Parse ownership vouchers.
+  /fdo/ownership_voucher/connect:
+    post:
+      operationId: ConnectDevices
+      requestBody:
+        description: list of GUIDs for which the Ownership Vouchers should get deleted.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.BadRequest'
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/v1.InternalServerError'
+          description: There was an internal server error.
+      summary: Connect devices by their GUIDs.

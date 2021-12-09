@@ -101,7 +101,7 @@ type uploadDetails struct {
 func worker(uploadQueue chan *uploadDetails) {
 	for p := range uploadQueue {
 		fname, err := p.uploader.UploadFile(p.fileName, p.uploadPath)
-		log.Tracef("Filename: %s with counter %d was uploaded sucessfully", fname, p.count)
+		log.Tracef("Filename: %s with counter %d was uploaded successfully", fname, p.count)
 		if err != nil {
 			log.Errorf("error: %v", err)
 		}

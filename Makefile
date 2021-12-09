@@ -6,11 +6,7 @@ ifeq ($(UNAME_S),Darwin)
 	OS_SED += ""
 endif
 
-ifeq ($(OS),Darwin)
-	CONTAINERER=docker
-else
-	CONTAINERER=podman
-endif
+OCI_TOOL=$(shell command -v podman || command -v docker)
 CONTAINER_TAG="quay.io/cloudservices/edge-api"
 
 KUBECTL=kubectl
@@ -50,14 +46,17 @@ test:
 coverage: 
 	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
 
+coverage-html:
+	 go tool cover -html=coverage.txt -o coverage.html
+
 vet:
-	go vet $$(go list ./... | grep -Ev '(/vendor/|/ownershipvoucher|/fdo)')
+	go vet $$(go list ./... | grep -v /vendor/)
 
 lint:
 	golint $$(go list ./... | grep -v /vendor/)
 
 build:
-	$(CONTAINERER) build . -t $(CONTAINER_TAG)
+	$(OCI_TOOL) build . -t $(CONTAINER_TAG)
 
 scan_project:
 	./sonarqube.sh

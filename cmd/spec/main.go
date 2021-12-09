@@ -20,6 +20,12 @@ func main() {
 	components := openapi3.NewComponents()
 	components.Schemas = make(map[string]*openapi3.SchemaRef)
 
+	ovData, _, err := openapi3gen.NewSchemaRefForValue(&[]models.OwnershipVoucherData{})
+	if err != nil {
+		panic(err)
+	}
+	components.Schemas["v1.OwnershipVoucherData"] = ovData
+
 	image, _, err := openapi3gen.NewSchemaRefForValue(&models.Image{})
 	if err != nil {
 		panic(err)
@@ -128,7 +134,7 @@ func main() {
 	checkErr(err)
 	err = ioutil.WriteFile("./cmd/spec/openapi.yaml", b.Bytes(), 0666)
 	checkErr(err)
-	fmt.Println("Spec was generated sucessfully")
+	fmt.Println("Spec was generated successfully")
 }
 
 func checkErr(err error) {

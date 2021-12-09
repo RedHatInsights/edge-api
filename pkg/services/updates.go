@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"text/template"
 	"time"
@@ -48,15 +50,12 @@ type UpdateService struct {
 
 type playbooks struct {
 	GoTemplateRemoteName string
-	GoTemplateRemoteURL  string
-	GoTemplateContentURL string
 	GoTemplateGpgVerify  string
 	OstreeRemoteName     string
-	OstreeRemoteURL      string
-	OstreeContentURL     string
 	OstreeGpgVerify      string
 	OstreeGpgKeypath     string
-	OstreeRemoteTemplate string
+	FleetInfraEnv        string
+	UpdateNumber         string
 }
 
 // TemplateRemoteInfo the values to playbook
@@ -101,8 +100,8 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 
 	WaitGroup.Add(1) // Processing one update
 	defer func() {
-		WaitGroup.Done() // Done with one update (sucessfuly or not)
-		log.Debug("Done with one update - sucessfuly or not")
+		WaitGroup.Done() // Done with one update (successfuly or not)
+		log.Debug("Done with one update - successfuly or not")
 		if err := recover(); err != nil {
 			log.Fatalf("%s", err)
 		}
@@ -135,9 +134,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		log.Error(err)
 		return nil, err
 	}
-	// FIXME - implement playbook dispatcher scheduling
-	// 1. Create template Playbook
-	// 2. Upload templated playbook
+
 	var remoteInfo TemplateRemoteInfo
 	remoteInfo.RemoteURL = update.Repo.URL
 	remoteInfo.RemoteName = "rhel-edge"
@@ -205,7 +202,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 
 // GetUpdatePlaybook is the function that returns the path to an update playbook
 func (s *UpdateService) GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error) {
-	fname := fmt.Sprintf("playbook_dispatcher_update_%d.yml", update.ID)
+	fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", update.Account, update.ID)
 	path := fmt.Sprintf("%s/playbooks/%s", update.Account, fname)
 	return s.FilesService.GetFile(path)
 }
@@ -221,31 +218,32 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 	cfg := config.Get()
 	filePath := cfg.TemplatesPath
 	templateName := "template_playbook_dispatcher_ostree_upgrade_payload.yml"
-	template, err := template.ParseFiles(filePath + templateName)
+	templateContents, err := template.New("").Delims("@@", "@@").ParseFiles(filePath + templateName)
 	if err != nil {
 		log.Errorf("Error parsing playbook template  :: %s", err.Error())
 		return "", err
 	}
+	var envName string
+	if strings.Contains(cfg.BucketName, "-prod") || strings.Contains(cfg.BucketName, "-prod") || strings.Contains(cfg.BucketName, "-prod") {
+		bucketNameSplit := strings.Split(cfg.BucketName, "-")
+		envName = bucketNameSplit[len(bucketNameSplit)-1]
+	} else {
+		envName = "dev"
+	}
 	templateData := playbooks{
 		GoTemplateRemoteName: templateInfo.RemoteName,
-		GoTemplateRemoteURL:  templateInfo.RemoteURL,
-		GoTemplateContentURL: templateInfo.ContentURL,
-		GoTemplateGpgVerify:  templateInfo.GpgVerify,
-		OstreeRemoteName:     "{{ ostree_remote_name }}",
-		OstreeRemoteURL:      "{{ ostree_remote_url }}",
-		OstreeContentURL:     "{{ ostree_content_url }}",
-		OstreeGpgVerify:      "false",
-		OstreeGpgKeypath:     "/etc/pki/rpm-gpg/",
-		OstreeRemoteTemplate: "{{ ostree_remote_template }}"}
+		FleetInfraEnv:        envName,
+		UpdateNumber:         strconv.FormatUint(uint64(templateInfo.UpdateTransactionID), 10),
+	}
 
-	fname := fmt.Sprintf("playbook_dispatcher_update_%d.yml", templateInfo.UpdateTransactionID)
+	fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", account, templateInfo.UpdateTransactionID)
 	tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
 	f, err := os.Create(tmpfilepath)
 	if err != nil {
 		log.Errorf("Error creating file: %s", err.Error())
 		return "", err
 	}
-	err = template.Execute(f, templateData)
+	err = templateContents.Execute(f, templateData)
 	if err != nil {
 		log.Errorf("Error executing template: %s ", err.Error())
 		return "", err
@@ -290,7 +288,7 @@ func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*
 const (
 	// PlaybookStatusRunning is the status when a playbook is still running
 	PlaybookStatusRunning = "running"
-	// PlaybookStatusSuccess is the status when a playbook has run sucessfully
+	// PlaybookStatusSuccess is the status when a playbook has run successfully
 	PlaybookStatusSuccess = "success"
 	// PlaybookStatusFailure is the status when a playbook execution fails
 	PlaybookStatusFailure = "failure"
@@ -313,7 +311,7 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 		log.Debug("Playbook is running - waiting for next messages")
 		return nil
 	} else if e.Payload.Status == PlaybookStatusSuccess {
-		log.Debug("The playbook was applied sucessfully. Waiting two minutes for reboot before setting status to success.")
+		log.Debug("The playbook was applied successfully. Waiting two minutes for reboot before setting status to success.")
 		time.Sleep(s.WaitForReboot)
 	}
 
@@ -331,6 +329,7 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 	} else if e.Payload.Status == PlaybookStatusRunning {
 		dispatchRecord.Status = models.DispatchRecordStatusRunning
 	} else {
+		dispatchRecord.Status = models.DispatchRecordStatusError
 		log.Fatal("Playbook status is not on the json schema for this event")
 	}
 	result = db.DB.Save(&dispatchRecord)
@@ -344,7 +343,8 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 // SetUpdateStatusBasedOnDispatchRecord is the function that, given a dispatch record, finds the update transaction related to and update its status if necessary
 func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord models.DispatchRecord) error {
 	var update models.UpdateTransaction
-	result := db.DB.
+	allSuccess := true
+	result := db.DB.Preload("DispatchRecords").
 		Table("update_transactions").
 		Joins(
 			`JOIN updatetransaction_dispatchrecords ON update_transactions.id = updatetransaction_dispatchrecords.update_transaction_id`).
@@ -352,10 +352,11 @@ func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord mode
 			dispatchRecord.ID,
 		).First(&update)
 	if result.Error != nil {
+		allSuccess = false
+		update.Status = models.UpdateStatusError
 		return result.Error
 	}
 
-	allSuccess := true
 	for _, d := range update.DispatchRecords {
 		if d.Status != models.DispatchRecordStatusComplete {
 			allSuccess = false
@@ -365,6 +366,7 @@ func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord mode
 			break
 		}
 	}
+
 	if allSuccess {
 		update.Status = models.UpdateStatusSuccess
 	}

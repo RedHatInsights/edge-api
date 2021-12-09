@@ -34,11 +34,12 @@ func (m *MockThirdPartyRepoServiceInterface) EXPECT() *MockThirdPartyRepoService
 }
 
 // CreateThirdPartyRepo mocks base method
-func (m *MockThirdPartyRepoServiceInterface) CreateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string) error {
+func (m *MockThirdPartyRepoServiceInterface) CreateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string) (*models.ThirdPartyRepo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateThirdPartyRepo", tprepo, account)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(*models.ThirdPartyRepo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // CreateThirdPartyRepo indicates an expected call of CreateThirdPartyRepo

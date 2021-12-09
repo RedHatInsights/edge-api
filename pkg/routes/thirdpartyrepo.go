@@ -25,13 +25,13 @@ const tprepoKey tprepoTypeKey = iota
 
 // MakeThirdPartyRepoRouter adds suport for operation on ThirdPartyRepo
 func MakeThirdPartyRepoRouter(sub chi.Router) {
-	sub.With(validateGetAllThirdPartyRepoFilterParams).With(common.Paginate).Get("/", GetAllThirdPartyRepo)
-	sub.Post("/", CreateThirdPartyRepo)
-	sub.Route("/{ID}", func(r chi.Router) {
-		r.Use(ThirdPartyRepoCtx)
-		r.Get("/", GetThirdPartyRepoByID)
-		r.Put("/", CreateThirdPartyRepoUpdate)
-		r.Delete("/", DeleteThirdPartyRepoByID)
+	sub.With(validateGetAllThirdPartyRepoFilterParams).With(common.Paginate).Get("/", GetAllThirdPartyRepo) // TODO: Consistent logging
+	sub.Post("/", CreateThirdPartyRepo)                                                                     // TODO: Consistent logging
+	sub.Route("/{ID}", func(r chi.Router) {                                                                 // TODO: Consistent logging
+		r.Use(ThirdPartyRepoCtx)                // TODO: Consistent logging
+		r.Get("/", GetThirdPartyRepoByID)       // TODO: Consistent logging
+		r.Put("/", CreateThirdPartyRepoUpdate)  // TODO: Consistent logging
+		r.Delete("/", DeleteThirdPartyRepoByID) // TODO: Consistent logging
 	})
 }
 
@@ -60,7 +60,7 @@ type CreateTPRepoRequest struct {
 func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	defer r.Body.Close()
-	tprepo, err := createRequest(w, r)
+	thirdPartyRepo, err := createRequest(w, r)
 	if err != nil {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
@@ -68,7 +68,7 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	log.Infof("ThirdPartyRepo::create: %#v", tprepo)
+	log.Infof("ThirdPartyRepo::create: %#v", thirdPartyRepo)
 
 	account, err := common.GetAccount(r)
 	if err != nil {
@@ -79,7 +79,7 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = services.ThirdPartyRepoService.CreateThirdPartyRepo(tprepo, account)
+	thirdPartyRepo, err = services.ThirdPartyRepoService.CreateThirdPartyRepo(thirdPartyRepo, account)
 	if err != nil {
 		log.Error(err)
 		err := errors.NewInternalServerError()
@@ -89,7 +89,7 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(&tprepo)
+	json.NewEncoder(w).Encode(&thirdPartyRepo)
 
 }
 
@@ -156,9 +156,9 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
-	} else {
-		result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&tprepo)
 	}
+
+	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&tprepo)
 	if result.Error != nil {
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
