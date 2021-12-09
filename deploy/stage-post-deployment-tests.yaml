@@ -13,7 +13,7 @@ objects:
     testing:
       iqe:
         debug: false
-        dynaconfEnvName: stage
+        dynaconfEnvName: stage_proxy
         filter: ''
         marker: 'core'
 parameters:
