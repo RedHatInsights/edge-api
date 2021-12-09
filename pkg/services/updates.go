@@ -232,8 +232,6 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 	}
 	templateData := playbooks{
 		GoTemplateRemoteName: templateInfo.RemoteName,
-		OstreeGpgVerify:      "false",
-		OstreeGpgKeypath:     "/etc/pki/rpm-gpg/",
 		FleetInfraEnv:        envName,
 		UpdateNumber:         strconv.FormatUint(uint64(templateInfo.UpdateTransactionID), 10),
 	}
