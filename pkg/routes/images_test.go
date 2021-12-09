@@ -181,7 +181,6 @@ func TestGetImageById(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 
-	fmt.Printf(":: respBody :: %v\n", &ir)
 	err = json.Unmarshal(respBody, &ir)
 	if err != nil {
 		t.Errorf(err.Error())
