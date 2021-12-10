@@ -153,6 +153,9 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	if err := db.DB.Save(&update).Error; err != nil {
 		return nil, err
 	}
+	if err := db.DB.Save(&update.Repo).Error; err != nil {
+		return nil, err
+	}
 
 	return update, nil
 }
