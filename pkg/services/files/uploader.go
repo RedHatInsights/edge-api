@@ -128,7 +128,6 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 		if err != nil {
 			log.Warnf("incoming error!: %#v", err)
 		}
-		log.Debugf("S3Uploader::UploadRepo::path: %#v", path)
 		if info.IsDir() {
 			return nil
 		}
