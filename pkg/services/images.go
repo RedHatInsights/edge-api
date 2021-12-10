@@ -40,6 +40,8 @@ type ImageServiceInterface interface {
 	SetErrorStatusOnImage(err error, i *models.Image)
 	CreateRepoForImage(i *models.Image) (*models.Repo, error)
 	GetImageByID(id string) (*models.Image, error)
+	GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable, error)
+	AddPackageInfo(image *models.Image) (ImageDetail, error)
 	GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error)
 	CheckImageName(name, account string) (bool, error)
 	RetryCreateImage(image *models.Image) error
@@ -652,6 +654,40 @@ func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) er
 	return nil
 }
 
+//ImageDetail return the structure to inform package info to images
+type ImageDetail struct {
+	Image             *models.Image `json:"image"`
+	AditionalPackages int           `json:"aditional_packages"`
+	Packages          int           `json:"packages"`
+	UpdateAdded       int           `json:"update_added"`
+	UpdateRemoved     int           `json:"update_removed"`
+	UpdateUpdated     int           `json:"update_updated"`
+}
+
+// AddPackageInfo return info related to packages on image
+func (s *ImageService) AddPackageInfo(image *models.Image) (ImageDetail, error) {
+	var imgDetail ImageDetail
+	imgDetail.Image = image
+	imgDetail.Packages = len(image.Commit.InstalledPackages)
+	imgDetail.AditionalPackages = len(image.Packages)
+
+	upd, err := s.GetUpdateInfo(*image)
+	if err != nil {
+		log.Errorf("error getting update info: %v", err)
+		return imgDetail, err
+	}
+	if upd != nil {
+		imgDetail.UpdateAdded = len(upd[len(upd)-1].PackageDiff.Removed)
+		imgDetail.UpdateRemoved = len(upd[len(upd)-1].PackageDiff.Added)
+		imgDetail.UpdateUpdated = len(upd[len(upd)-1].PackageDiff.Upgraded)
+	} else {
+		imgDetail.UpdateAdded = 0
+		imgDetail.UpdateRemoved = 0
+		imgDetail.UpdateUpdated = 0
+	}
+	return imgDetail, nil
+}
+
 func addImageExtraData(image *models.Image) (*models.Image, error) {
 	if image.InstallerID != nil {
 		result := db.DB.First(&image.Installer, image.InstallerID)
@@ -677,10 +713,11 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 	if err != nil {
 		return nil, new(IDMustBeInteger)
 	}
-	result := db.DB.Preload("Commit.Repo").Where("images.account = ?", account).Joins("Commit").First(&image, id)
+	result := db.DB.Preload("Commit.Repo").Preload("Commit.InstalledPackages").Where("images.account = ?", account).Joins("Commit").First(&image, id)
 	if result.Error != nil {
 		return nil, new(ImageNotFoundError)
 	}
+	s.AddPackageInfo(&image)
 	return addImageExtraData(&image)
 }
 
@@ -758,4 +795,33 @@ func uploadTarRepo(account, imageName string, repoID int) (string, error) {
 	log.Infof(":: uploadTarRepo Finish ::\n")
 
 	return url, nil
+}
+
+//GetUpdateInfo return package info when has an update to the image
+func (s *ImageService) GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable, error) {
+	var images []models.Image
+	var imageDiff []ImageUpdateAvailable
+	updates := db.DB.Where("Image_set_id = ? and Images.Status = ? and Images.Id < ?",
+		image.ImageSetID, models.ImageStatusSuccess, image.ID).Joins("Commit").
+		Order("Images.updated_at desc").Find(&images)
+
+	if updates.Error != nil {
+		return nil, new(UpdateNotFoundError)
+	}
+	if updates.RowsAffected == 0 {
+		return nil, nil
+	}
+
+	for _, upd := range images {
+		db.DB.First(&upd.Commit, upd.CommitID)
+		db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages)
+		db.DB.Model(&upd).Association("Packages").Find(&upd.Packages)
+		var delta ImageUpdateAvailable
+		diff := getDiffOnUpdate(image, upd)
+		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
+		delta.Image = upd
+		delta.PackageDiff = diff
+		imageDiff = append(imageDiff, delta)
+	}
+	return imageDiff, nil
 }
