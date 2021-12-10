@@ -224,7 +224,7 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 		return "", err
 	}
 	var envName string
-	if strings.Contains(cfg.BucketName, "-prod") || strings.Contains(cfg.BucketName, "-prod") || strings.Contains(cfg.BucketName, "-prod") {
+	if strings.Contains(cfg.BucketName, "-prod") || strings.Contains(cfg.BucketName, "-stage") || strings.Contains(cfg.BucketName, "-perf") {
 		bucketNameSplit := strings.Split(cfg.BucketName, "-")
 		envName = bucketNameSplit[len(bucketNameSplit)-1]
 	} else {
