@@ -28,6 +28,7 @@ type UpdateServiceInterface interface {
 	GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error)
 	GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error)
 	ProcessPlaybookDispatcherRunEvent(message []byte) error
+	WriteTemplate(templateInfo TemplateRemoteInfo, account string) (string, error)
 }
 
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
@@ -56,6 +57,7 @@ type playbooks struct {
 	OstreeGpgKeypath     string
 	FleetInfraEnv        string
 	UpdateNumber         string
+	RepoURL              string
 }
 
 // TemplateRemoteInfo the values to playbook
@@ -141,7 +143,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	remoteInfo.ContentURL = update.Repo.URL
 	remoteInfo.UpdateTransactionID = update.ID
 	remoteInfo.GpgVerify = "false"
-	playbookURL, err := s.writeTemplate(remoteInfo, update.Account)
+	playbookURL, err := s.WriteTemplate(remoteInfo, update.Account)
 	if err != nil {
 		update.Status = models.UpdateStatusError
 		db.DB.Save(update)
@@ -214,16 +216,15 @@ func (s *UpdateService) getPlaybookURL(updateID uint) string {
 	return url
 }
 
-func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account string) (string, error) {
+func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, account string) (string, error) {
 	cfg := config.Get()
 	filePath := cfg.TemplatesPath
 	templateName := "template_playbook_dispatcher_ostree_upgrade_payload.yml"
-	template, err := template.ParseFiles(filePath + templateName)
+	templateContents, err := template.New(templateName).Delims("@@", "@@").ParseFiles(filePath + templateName)
 	if err != nil {
 		log.Errorf("Error parsing playbook template  :: %s", err.Error())
 		return "", err
 	}
-	templateContents := template.Delims("@@", "@@")
 	var envName string
 	if strings.Contains(cfg.BucketName, "-prod") || strings.Contains(cfg.BucketName, "-stage") || strings.Contains(cfg.BucketName, "-perf") {
 		bucketNameSplit := strings.Split(cfg.BucketName, "-")
@@ -235,6 +236,7 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 		GoTemplateRemoteName: templateInfo.RemoteName,
 		FleetInfraEnv:        envName,
 		UpdateNumber:         strconv.FormatUint(uint64(templateInfo.UpdateTransactionID), 10),
+		RepoURL:              "https://{{ s3_buckets[fleet_infra_env] | default('rh-edge-tarballs-prod') }}.s3.us-east-1.amazonaws.com/{{ update_number }}/upd/{{ update_number }}/repo",
 	}
 
 	fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", account, templateInfo.UpdateTransactionID)

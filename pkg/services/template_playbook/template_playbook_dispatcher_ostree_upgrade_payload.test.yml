@@ -3,14 +3,14 @@
   become: true
   hosts: localhost
   vars:
-    fleet_infra_env: "@@ .FleetInfraEnv @@"
-    update_number: "@@ .UpdateNumber @@"
+    fleet_infra_env: "dev"
+    update_number: "1000"
     s3_buckets:
       prod: "rh-edge-tarballs-prod"
       stage: "rh-edge-tarballs-stage"
       perf: "rh-edge-tarballs-perf"
-    repo_url: "@@ .RepoURL @@"
-    ostree_remote_name: "@@ .GoTemplateRemoteName @@"
+    repo_url: "https://{{ s3_buckets[fleet_infra_env] | default('rh-edge-tarballs-prod') }}.s3.us-east-1.amazonaws.com/{{ update_number }}/upd/{{ update_number }}/repo"
+    ostree_remote_name: "remote-name"
     ostree_gpg_verify: "false"
     ostree_gpg_keypath: "/etc/pki/rpm-gpg/"
     ostree_remote_template: |
