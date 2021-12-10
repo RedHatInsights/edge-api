@@ -10,6 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	models "github.com/redhatinsights/edge-api/pkg/models"
+	services "github.com/redhatinsights/edge-api/pkg/services"
 )
 
 // MockUpdateServiceInterface is a mock of UpdateServiceInterface interface.
@@ -92,4 +93,19 @@ func (m *MockUpdateServiceInterface) ProcessPlaybookDispatcherRunEvent(message [
 func (mr *MockUpdateServiceInterfaceMockRecorder) ProcessPlaybookDispatcherRunEvent(message interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessPlaybookDispatcherRunEvent", reflect.TypeOf((*MockUpdateServiceInterface)(nil).ProcessPlaybookDispatcherRunEvent), message)
+}
+
+// WriteTemplate mocks base method.
+func (m *MockUpdateServiceInterface) WriteTemplate(templateInfo services.TemplateRemoteInfo, account string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WriteTemplate", templateInfo, account)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// WriteTemplate indicates an expected call of WriteTemplate.
+func (mr *MockUpdateServiceInterfaceMockRecorder) WriteTemplate(templateInfo, account interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteTemplate", reflect.TypeOf((*MockUpdateServiceInterface)(nil).WriteTemplate), templateInfo, account)
 }
