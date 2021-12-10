@@ -32,6 +32,18 @@ func main() {
 	}
 	components.Schemas["v1.Image"] = image
 
+	imageDetail, _, err := openapi3gen.NewSchemaRefForValue(&routes.ImageDetail{})
+	if err != nil {
+		panic(err)
+	}
+	components.Schemas["v1.ImageDetail"] = imageDetail
+
+	ImageSetImagePackages, _, err := openapi3gen.NewSchemaRefForValue(&routes.ImageSetImagePackages{})
+	if err != nil {
+		panic(err)
+	}
+	components.Schemas["v1.ImageSetImagePackages"] = ImageSetImagePackages
+
 	repo, _, err := openapi3gen.NewSchemaRefForValue(&models.Repo{})
 	if err != nil {
 		panic(err)
