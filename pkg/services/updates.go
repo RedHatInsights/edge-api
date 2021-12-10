@@ -218,11 +218,12 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 	cfg := config.Get()
 	filePath := cfg.TemplatesPath
 	templateName := "template_playbook_dispatcher_ostree_upgrade_payload.yml"
-	templateContents, err := template.New("").Delims("@@", "@@").ParseFiles(filePath + templateName)
+	template, err := template.ParseFiles(filePath + templateName)
 	if err != nil {
 		log.Errorf("Error parsing playbook template  :: %s", err.Error())
 		return "", err
 	}
+	templateContents := template.Delims("@@", "@@")
 	var envName string
 	if strings.Contains(cfg.BucketName, "-prod") || strings.Contains(cfg.BucketName, "-stage") || strings.Contains(cfg.BucketName, "-perf") {
 		bucketNameSplit := strings.Split(cfg.BucketName, "-")
