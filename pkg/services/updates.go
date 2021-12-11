@@ -216,6 +216,7 @@ func (s *UpdateService) getPlaybookURL(updateID uint) string {
 	return url
 }
 
+// WriteTemplate is the function that writes template to be executed
 func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, account string) (string, error) {
 	cfg := config.Get()
 	filePath := cfg.TemplatesPath
