@@ -115,6 +115,7 @@ func ImageSetCtx(next http.Handler) http.Handler {
 	})
 }
 
+//ImageSetIntallerURL returns Imageset structure with last installer available
 type ImageSetIntallerURL struct {
 	ImageSetData     models.ImageSet `json:"image_set"`
 	ImageBuildISOURL *string         `json:"image_build_iso_url"`
