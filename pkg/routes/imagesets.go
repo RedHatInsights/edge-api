@@ -115,9 +115,15 @@ func ImageSetCtx(next http.Handler) http.Handler {
 	})
 }
 
+type ImageSetIntallerURL struct {
+	ImageSetData     models.ImageSet `json:"image_set"`
+	ImageBuildISOURL *string         `json:"image_build_iso_url"`
+}
+
 // ListAllImageSets return the list of image sets and images
 func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
-	var imageSet *[]models.ImageSet
+	var imageSet []models.ImageSet
+	var imageSetInfo []ImageSetIntallerURL
 	var count int64
 	result := imageSetFilters(r, db.DB)
 	pagination := common.GetPagination(r)
@@ -147,14 +153,25 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 
 	}
 
+	for _, img := range imageSet {
+		var imgSet ImageSetIntallerURL
+		imgSet.ImageSetData = img
+		if img.Images != nil && img.Images[len(img.Images)-1].InstallerID != nil {
+			result = db.DB.First(&img.Images[len(img.Images)-1].Installer, img.Images[len(img.Images)-1].InstallerID)
+			imgSet.ImageBuildISOURL = &img.Images[len(img.Images)-1].Installer.ImageBuildISOURL
+		}
+
+		imageSetInfo = append(imageSetInfo, imgSet)
+	}
 	if result.Error != nil {
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
+
 	var response common.EdgeAPIPaginatedResponse
 	response.Count = count
-	response.Data = &imageSet
+	response.Data = imageSetInfo
 	json.NewEncoder(w).Encode(response)
 
 }

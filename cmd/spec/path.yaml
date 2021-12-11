@@ -529,7 +529,7 @@ paths:
                   Data:
                     type: array
                     items:
-                      $ref: "#/components/schemas/v1.ImageSetDetails"
+                      $ref: "#/components/schemas/v1.ImageSetIntallerURL"
           description: OK
         "404":
           content:
