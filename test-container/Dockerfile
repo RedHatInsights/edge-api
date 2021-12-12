@@ -43,8 +43,10 @@ RUN echo -e 'if [[ ! -d "edge-api" ]];then \n\
 RUN chmod +x ./test.sh
 
 ENV LD_LIBRARY_PATH /usr/local/lib
-COPY --from=builder /fido-device-onboard-rs/target/debug/libfdo_data.so ${LD_LIBRARY_PATH}/libfdo_data.so.0
-COPY --from=builder /fido-device-onboard-rs/libfdo-data/fdo_data.h /usr/local/include/
+COPY --from=builder /fido-device-onboard-rs/target/debug/libfdo_data.so ${LD_LIBRARY_PATH}/libfdo_data.so
+RUN link ${LD_LIBRARY_PATH}/libfdo_data.so ${LD_LIBRARY_PATH}/libfdo_data.so.0 && \
+    mkdir -p /usr/local/include/libfdo-data
+COPY --from=builder /fido-device-onboard-rs/libfdo-data/fdo_data.h /usr/local/include/libfdo-data/fdo_data.h
 COPY --from=builder /fido-device-onboard-rs/libfdo-data/test_assets/testdevice1.ov ./testdevice1.ov
 
 ARG GIT_BRANCH="main"

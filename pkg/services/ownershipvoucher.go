@@ -1,19 +1,15 @@
 package services
 
-// #cgo LDFLAGS: -l:libfdo_data.so.0
-// #include <stdlib.h>
-// #include <fdo_data.h>
-import "C"
 import (
 	"context"
 	"errors"
 
+	libfdo "github.com/fedora-iot/fido-device-onboard-rs/libfdo-data-go"
 	"github.com/redhatinsights/edge-api/pkg/clients/fdo"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
-	"gorm.io/gorm"
-
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 // OwnershipVoucherService for ownership voucher management
@@ -198,32 +194,28 @@ func (ovs *OwnershipVoucherService) removeFDODevices(fdoUUIDList []string) {
 
 // parseVouchers parses vouchers from a byte array, returning the data and error if any
 func (ovs *OwnershipVoucherService) parseVouchers(voucherBytes []byte) ([]models.OwnershipVoucherData, error) {
-	voucherBytesLen := C.size_t(len(voucherBytes))
-	voucherCBytes := C.CBytes(voucherBytes)
-	defer C.free(voucherCBytes)
-
-	voucher := C.fdo_ownershipvoucher_from_data(voucherCBytes, voucherBytesLen)
-	defer C.fdo_ownershipvoucher_free(voucher)
-	if voucher == nil {
-		ovs.log.WithField("method", "services.parseVouchers").Error("Failed to parse ownership voucher")
-		return nil, errors.New("failed to parse ownership voucher")
+	logFields := log.Fields{"method": "services.parseVouchers"}
+	vouchers, err := libfdo.ParseManyOwnershipVouchers(voucherBytes)
+	if err != nil {
+		ovs.log.WithFields(logFields).Error("Failed to parse vouchers ", err)
+		return nil, err
 	}
+	defer vouchers.Free()
 
-	guidC := C.fdo_ownershipvoucher_header_get_guid(voucher)
-	defer C.fdo_free_string(guidC)
-	guid := C.GoString(guidC)
-
-	devinfoC := C.fdo_ownershipvoucher_header_get_device_info_string(voucher)
-	defer C.fdo_free_string(devinfoC)
-	devinfo := C.GoString(devinfoC)
-
-	return []models.OwnershipVoucherData{
-		models.OwnershipVoucherData{
-			ProtocolVersion: uint(C.fdo_ownershipvoucher_header_get_protocol_version(voucher)),
-			GUID:            guid,
-			DeviceName:      devinfo,
-		},
-	}, nil
+	var data []models.OwnershipVoucherData
+	for i := 0; i < vouchers.Len(); i++ {
+		voucher, err := vouchers.GetVoucher(i)
+		if err != nil {
+			ovs.log.WithFields(logFields).Error("Failed to get voucher ", err)
+			return nil, err
+		}
+		data = append(data, models.OwnershipVoucherData{
+			GUID:            voucher.GetGUID(),
+			ProtocolVersion: voucher.GetProtocolVersion(),
+			DeviceName:      voucher.GetDeviceInfo(),
+		})
+	}
+	return data, nil
 }
 
 // createFDOClient creates a new FDO client
