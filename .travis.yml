@@ -39,9 +39,7 @@ jobs:
         - docker build -t ${FLEET_MANAGEMENT_ORG}/edge-api:${TAG} -f ./Dockerfile .
     - name: "Static Code Analysis"
       script:
-      - echo "curl -L https://github.com/dominikh/go-tools/releases/download/2021.1.2/staticcheck_linux_amd64.tar.gz | tar xz" >> staticcheck.sh
-      - echo "./staticcheck/staticcheck -go 1.15 -f stylish ./..." >> staticcheck.sh
-      - docker run --rm -w /edge-api -v $(pwd):/edge-api ${FLEET_MANAGEMENT_ORG}/libfdo-data:${TAG} sh staticcheck.sh
+      - docker run --rm -w /edge-api -v $(pwd):/edge-api ${FLEET_MANAGEMENT_ORG}/libfdo-data:${TAG} staticcheck -go 1.15 -f stylish ./...
     - name: "Validate spec-file"
       language: python
       python: 3.9
