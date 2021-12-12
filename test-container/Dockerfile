@@ -8,7 +8,7 @@ RUN cd fido-device-onboard-rs && cargo build --lib
 
 RUN yum install --installroot /mnt/rootfs \
     coreutils-single glibc-minimal-langpack \
-    make go git-core \
+    make go git-core tar gzip \
     --releasever 8 --setopt \
     install_weak_deps=false --nodocs -y; \
     yum --installroot /mnt/rootfs clean all

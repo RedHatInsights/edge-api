@@ -5,28 +5,68 @@ env:
   global:
     - FLEET_MANAGEMENT_ORG: quay.io/fleet-management
     - DEFAULT_BRANCH: main
-    - secure: ARRa4MvZafDwj/5ZJe8dbrVi7X7izKmcWbBT94/wYPTXR/MJL5+p8GTpJGAcjSUqpkJLDOoXdgr7AtlHPlhYYYEu+D/FPjERVE4q5ggPXPt+3P0YBgVcSmrJpS2igWM8ha9vzynqUEpwUr4qOLq+NWGu4zZ7lV8VPaCL21hIoB+RJeXo0JLXtm/r0hfCTbR9g4M0C7B2rZV7D7hRonmmAjumKGZlI1LffVTTLVtkdqFqOaDVJLRvyBFMfTFMGa8Ow18mgut18+G3eI0jiUV74pApTa9idfbe6BF7eF3ISQcqdkDW5SdHJm1bnUGLCg9gobjOf0dM5pbZJoId6mINR0oUn2qifwFpiqOTurGqfya6GFX+1O+tIS3i0cO9HtzUWX299gGAZYxsSKMwdK7bKNyPPe64iATBZzoqGLfUfkROdYtx65BdNXW/lmScxcEiOiBLAN0IiZYhLJQ3EA14G6cc4FHmK6T20NP7hojfCWo2emmNgLFiE0Zh0fpuQVtfd6xZXcVadHX5pgPmpdSMsIwXChzgeV3p/HxIvQ3t56Oj8b0imjeQoKO9zGxzNBNZ4eAAU97SI+9M0L6uRbNXlzRjl1TbxK9ud3kNXfe7x+d0xZDMa62UgAQdH9fSfIqlhsCwLQmjAe3pMi42VL74GZWGAMADYRvkqlm4TFP+JP0=
-    - secure: Zegy/7fvNJMw4eLe/myYco7mxZjLQerej3vkgbi/toMk+8ERu9i1pfE7GmAsIT2QEZ466sd70OuilspX8JLkzkyF5rViIQOl/dPU4bf6DgYW+yfDJZ4kHPnOUR5fHghZaYFgJq9jFk+EDnVzK7DoptKEWPfk2NAPCwv5Vmv0kgqvmPLG+NeVkhtx/QXalXiHcpDXSWSZaWtMdBF2RTi4VdhDIEsWKEpkK1Qr2WODNACSuyBRlG/Jd57AE3I4T4Kw3N2IlVu8G86+zlDp3B6cPh47+eauufyMCNargpZRmTAtXFMhnbpsEjgWZZ1jRvDtFiI0fHYnDHtB1AkzFt0M9Kn+9pDR7ihSBUfP785qudlNai5jH3/bPwyx/nLnbv4yQQk3Dzzi+dtPsWGOCUeDy0mQiN0uDGj71+Vysuwe3SkR1y3SzkhuSaab729sj/h7WvymueNjxVUX7EmLQ00LK5gqm5+bl1jnazIdaYKx8BEzXu5Qy8h5RqDRNUezSnnARTw3woqec3AocOYhXJalTinTEMW0HIPBZ8DMqlZCabYnJw4Dif1Xj33Y24BZshoWyO2xPiNV8pDasx+QnSsV9x9xdtN45dSe77RwPr66QHnw8R/YdOu0DIpFlfCPubb+XbyhBKNVDeINE0zDG5YKmKZmviVqBVna8X65tsBE3cc=
-  jobs:
-    - REPO_NAME=libfdo-data DOCKERFILE=./test-container/Dockerfile
-    - REPO_NAME=edge-api DOCKERFILE=./Dockerfile
+cache:
+  bundler: true
+  directories:
+    - $HOME/docker
+before_cache:
+  # Save tagged docker images
+  - >
+    mkdir -p $HOME/docker && docker images -a --filter='dangling=false' --format '{{.Repository}}:{{.Tag}} {{.ID}}'
+    | xargs -n 2 -t sh -c 'test -e $HOME/docker/$1.tar.gz || docker save $0 | gzip -2 > $HOME/docker/$1.tar.gz'
 before_install:
+  # Load cached docker images
+  - if [[ -d $HOME/docker ]]; then ls $HOME/docker/*.tar.gz | xargs -I {file} sh -c "zcat {file} | docker load"; fi
   - |
     if [ "${TRAVIS_EVENT_TYPE}" == "pull_request" ]; then
       export TAG="pr-${TRAVIS_PULL_REQUEST}"
     else
       export TAG="latest"
     fi
-before_script:
-  - |
-    if [ "${REPO_NAME}" == "edge-api" ]; then
-      sed -i 's|registry.access.redhat.com/ubi8/ubi|quay.io/centos/centos:8|' ${DOCKERFILE}
-      sed -i 's|.*ubi-micro-build.*ubi.repo||' ${DOCKERFILE}
-    fi
-    if [ "${TRAVIS_EVENT_TYPE}" == "pull_request" ]; then
-      echo "LABEL quay.expires-after=3d" >> ${DOCKERFILE}
-    fi
-script:
-  - docker build -t ${FLEET_MANAGEMENT_ORG}/${REPO_NAME}:${TAG} -f ${DOCKERFILE} .
-  - docker login quay.io -u ${FLEETER_BOT} -p ${FLEETER_PASS} >/dev/null 2>&1
-  - docker push ${FLEET_MANAGEMENT_ORG}/${REPO_NAME}:${TAG}
+jobs:
+  include:
+    - stage: "Build libfdo-data"
+      script:
+        - if [ "${TRAVIS_EVENT_TYPE}" == "pull_request" ]; then echo "LABEL quay.expires-after=3d" >> ./test-container/Dockerfile; fi 
+        - docker build -t ${FLEET_MANAGEMENT_ORG}/libfdo-data:${TAG} -f ./test-container/Dockerfile .
+    - stage: "Build & Test"
+      name: "Build edge-api"
+      script:
+        - if [ "${TRAVIS_EVENT_TYPE}" == "pull_request" ]; then echo "LABEL quay.expires-after=3d" >> ./Dockerfile; fi
+        - sed -i 's|registry.access.redhat.com/ubi8/ubi|quay.io/centos/centos:8|' ./Dockerfile
+        - sed -i 's|.*ubi-micro-build.*ubi.repo||' ./Dockerfile
+        - sed -i "s|${FLEET_MANAGEMENT_ORG}/libfdo-data|${FLEET_MANAGEMENT_ORG}/libfdo-data:${TAG}|" ./Dockerfile
+        - docker build -t ${FLEET_MANAGEMENT_ORG}/edge-api:${TAG} -f ./Dockerfile .
+    - name: "Static Code Analysis"
+      script:
+      - echo "curl -L https://github.com/dominikh/go-tools/releases/download/2021.1.2/staticcheck_linux_amd64.tar.gz | tar xz" >> staticcheck.sh
+      - echo "./staticcheck/staticcheck -go 1.15 -f stylish ./..." >> staticcheck.sh
+      - docker run --rm -w /edge-api -v $(pwd):/edge-api ${FLEET_MANAGEMENT_ORG}/libfdo-data:${TAG} sh staticcheck.sh
+    - name: "Validate spec-file"
+      language: python
+      python: 3.9
+      install: pip install openapi-spec-validator
+      script: python3 -m openapi_spec_validator ./cmd/spec/openapi.json
+    - name: "Coverage Testing"
+      script:
+        - docker run --rm -v $(pwd):/edge-api ${FLEET_MANAGEMENT_ORG}/libfdo-data:${TAG}
+        - bash <(curl -s https://codecov.io/bash)
+    - name: "Code Formatting"
+      script: |
+        [ $(go fmt ./... | wc -l) -eq 0 ]
+    - name: "Code Linting"
+      env:
+        - GOPATH=${HOME}/go
+        - PATH=${PATH}:${GOPATH}/bin
+      script:
+      - go get -u golang.org/x/lint/golint
+      - |
+        [ $(make -s lint | wc -l) -eq 0 ]
+    - stage: "Deploy"
+      env:
+        - secure: ARRa4MvZafDwj/5ZJe8dbrVi7X7izKmcWbBT94/wYPTXR/MJL5+p8GTpJGAcjSUqpkJLDOoXdgr7AtlHPlhYYYEu+D/FPjERVE4q5ggPXPt+3P0YBgVcSmrJpS2igWM8ha9vzynqUEpwUr4qOLq+NWGu4zZ7lV8VPaCL21hIoB+RJeXo0JLXtm/r0hfCTbR9g4M0C7B2rZV7D7hRonmmAjumKGZlI1LffVTTLVtkdqFqOaDVJLRvyBFMfTFMGa8Ow18mgut18+G3eI0jiUV74pApTa9idfbe6BF7eF3ISQcqdkDW5SdHJm1bnUGLCg9gobjOf0dM5pbZJoId6mINR0oUn2qifwFpiqOTurGqfya6GFX+1O+tIS3i0cO9HtzUWX299gGAZYxsSKMwdK7bKNyPPe64iATBZzoqGLfUfkROdYtx65BdNXW/lmScxcEiOiBLAN0IiZYhLJQ3EA14G6cc4FHmK6T20NP7hojfCWo2emmNgLFiE0Zh0fpuQVtfd6xZXcVadHX5pgPmpdSMsIwXChzgeV3p/HxIvQ3t56Oj8b0imjeQoKO9zGxzNBNZ4eAAU97SI+9M0L6uRbNXlzRjl1TbxK9ud3kNXfe7x+d0xZDMa62UgAQdH9fSfIqlhsCwLQmjAe3pMi42VL74GZWGAMADYRvkqlm4TFP+JP0=
+        - secure: Zegy/7fvNJMw4eLe/myYco7mxZjLQerej3vkgbi/toMk+8ERu9i1pfE7GmAsIT2QEZ466sd70OuilspX8JLkzkyF5rViIQOl/dPU4bf6DgYW+yfDJZ4kHPnOUR5fHghZaYFgJq9jFk+EDnVzK7DoptKEWPfk2NAPCwv5Vmv0kgqvmPLG+NeVkhtx/QXalXiHcpDXSWSZaWtMdBF2RTi4VdhDIEsWKEpkK1Qr2WODNACSuyBRlG/Jd57AE3I4T4Kw3N2IlVu8G86+zlDp3B6cPh47+eauufyMCNargpZRmTAtXFMhnbpsEjgWZZ1jRvDtFiI0fHYnDHtB1AkzFt0M9Kn+9pDR7ihSBUfP785qudlNai5jH3/bPwyx/nLnbv4yQQk3Dzzi+dtPsWGOCUeDy0mQiN0uDGj71+Vysuwe3SkR1y3SzkhuSaab729sj/h7WvymueNjxVUX7EmLQ00LK5gqm5+bl1jnazIdaYKx8BEzXu5Qy8h5RqDRNUezSnnARTw3woqec3AocOYhXJalTinTEMW0HIPBZ8DMqlZCabYnJw4Dif1Xj33Y24BZshoWyO2xPiNV8pDasx+QnSsV9x9xdtN45dSe77RwPr66QHnw8R/YdOu0DIpFlfCPubb+XbyhBKNVDeINE0zDG5YKmKZmviVqBVna8X65tsBE3cc=
+      script:
+        - docker login quay.io -u ${FLEETER_BOT} -p ${FLEETER_PASS} >/dev/null 2>&1
+        - docker push ${FLEET_MANAGEMENT_ORG}/libfdo-data:${TAG}
+        - docker push ${FLEET_MANAGEMENT_ORG}/edge-api:${TAG}
