@@ -51,9 +51,6 @@ jobs:
     - name: "Code Formatting"
       script: "[ $(go fmt ./... | wc -l) -eq 0 ]"
     - name: "Code Linting"
-      env:
-        - GOPATH=${HOME}/go
-        - PATH=${PATH}:${GOPATH}/bin
       script:
         - go get -u golang.org/x/lint/golint
         - "[ $(make -s lint | wc -l) -eq 0 ]"
