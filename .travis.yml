@@ -5,6 +5,10 @@ env:
   global:
     - FLEET_MANAGEMENT_ORG: quay.io/fleet-management
     - DEFAULT_BRANCH: main
+branches:
+  only:
+    - main
+    - api-snake
 before_install:
   - |
     if [ "${TRAVIS_EVENT_TYPE}" == "pull_request" ]; then
