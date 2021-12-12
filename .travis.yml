@@ -4,7 +4,6 @@ go: 1.15
 env:
   global:
     - FLEET_MANAGEMENT_ORG: quay.io/fleet-management
-    - DEFAULT_BRANCH: main
 branches:
   only:
     - main
