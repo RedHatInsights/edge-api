@@ -36,8 +36,7 @@ type InventoryResponse struct {
 
 // GetInventory make the call to inventory api and inject edge info
 func GetInventory(w http.ResponseWriter, r *http.Request) {
-	var param *inventory.Params
-	param = new(inventory.Params)
+	var param *inventory.Params = new(inventory.Params)
 
 	param.PerPage = r.URL.Query().Get("per_page")
 	param.Page = r.URL.Query().Get("page")
@@ -53,7 +52,7 @@ func GetInventory(w http.ResponseWriter, r *http.Request) {
 
 	inventory, err := client.ReturnDevices(param)
 	if err != nil || inventory.Count == 0 {
-		err := errors.NewNotFound(fmt.Sprintf("No devices found "))
+		err := errors.NewNotFound("No devices found")
 		w.WriteHeader(err.GetStatus())
 
 	}

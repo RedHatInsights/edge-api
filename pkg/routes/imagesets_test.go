@@ -29,6 +29,9 @@ func TestListAllImageSets(t *testing.T) {
 
 	}
 	respBody, err := ioutil.ReadAll(rr.Body)
+	if err != nil {
+		t.Errorf("failed reading response body: %s", err.Error())
+	}
 	var result common.EdgeAPIPaginatedResponse
 	err = json.Unmarshal(respBody, &result)
 	if err != nil {
