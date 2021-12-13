@@ -35,7 +35,7 @@ jobs:
         - if [ "${TRAVIS_EVENT_TYPE}" == "pull_request" ]; then echo "LABEL quay.expires-after=3d" >> ./Dockerfile; fi
         - sed -i 's|registry.access.redhat.com/ubi8/ubi|quay.io/centos/centos:8|' ./Dockerfile
         - sed -i 's|.*ubi-micro-build.*ubi.repo||' ./Dockerfile
-        - sed -i "s|${FLEET_MANAGEMENT_ORG}/libfdo-data|${FLEET_MANAGEMENT_ORG}/libfdo-data:${TAG}|" ./Dockerfile
+        - sed -i "s|${FLEET_MANAGEMENT_ORG}/libfdo-data:latest|${FLEET_MANAGEMENT_ORG}/libfdo-data:${TAG}|" ./Dockerfile
         - docker build -t ${FLEET_MANAGEMENT_ORG}/edge-api:${TAG} -f ./Dockerfile .
         - docker login quay.io -u ${FLEETER_BOT} -p ${FLEETER_PASS} >/dev/null 2>&1
         - docker push ${FLEET_MANAGEMENT_ORG}/edge-api:${TAG}
