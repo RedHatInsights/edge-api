@@ -71,7 +71,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 
 	log.Infof("RepoBuilder::updateCommitID %d and UpdateTransactionID %d", update.Commit.ID, update.ID)
 
-	path := filepath.Join(cfg.RepoTempPath, "upd/", strconv.FormatUint(uint64(update.RepoID), 10))
+	path := filepath.Join(cfg.RepoTempPath, "upd/", strconv.FormatUint(uint64(update.ID), 10))
 	log.Infof("RepoBuilder::path: %#v", path)
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
@@ -141,7 +141,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
 	log.Infof("::BuildUpdateRepo:uploader.UploadRepo: BEGIN")
-	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(update.RepoID), 10))
+	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(update.ID), 10))
 	log.Infof("::BuildUpdateRepo:uploader.UploadRepo: FINISH")
 	log.Infof("::BuildUpdateRepo:repoURL: %#v", repoURL)
 	if err != nil {
