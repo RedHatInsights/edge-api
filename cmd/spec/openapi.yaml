@@ -1961,7 +1961,7 @@ components:
             type: object
           type: array
       type: object
-    v1.ImageSetIntallerURL:
+    v1.ImageSetInstallerURL:
       properties:
         image_build_iso_url:
           type: string
@@ -2201,6 +2201,7 @@ components:
           guid:
             type: string
           protocol_version:
+            maximum: 4294967295
             minimum: 0
             type: integer
         type: object
@@ -3049,7 +3050,7 @@ paths:
                   Data:
                     type: array
                     items:
-                      $ref: "#/components/schemas/v1.ImageSetIntallerURL"
+                      $ref: "#/components/schemas/v1.ImageSetInstallerURL"
           description: OK
         "404":
           content:

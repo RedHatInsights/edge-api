@@ -2823,7 +2823,7 @@
         },
         "type": "object"
       },
-      "v1.ImageSetIntallerURL": {
+      "v1.ImageSetInstallerURL": {
         "properties": {
           "image_build_iso_url": {
             "type": "string"
@@ -3167,6 +3167,7 @@
               "type": "string"
             },
             "protocol_version": {
+              "maximum": 4294967295,
               "minimum": 0,
               "type": "integer"
             }
@@ -3942,7 +3943,7 @@
                     },
                     "Data": {
                       "items": {
-                        "$ref": "#/components/schemas/v1.ImageSetIntallerURL"
+                        "$ref": "#/components/schemas/v1.ImageSetInstallerURL"
                       },
                       "type": "array"
                     }

@@ -117,8 +117,8 @@ func ImageSetCtx(next http.Handler) http.Handler {
 	})
 }
 
-//ImageSetIntallerURL returns Imageset structure with last installer available
-type ImageSetIntallerURL struct {
+//ImageSetInstallerURL returns Imageset structure with last installer available
+type ImageSetInstallerURL struct {
 	ImageSetData     models.ImageSet `json:"image_set"`
 	ImageBuildISOURL *string         `json:"image_build_iso_url"`
 }
@@ -126,7 +126,7 @@ type ImageSetIntallerURL struct {
 // ListAllImageSets return the list of image sets and images
 func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	var imageSet []models.ImageSet
-	var imageSetInfo []ImageSetIntallerURL
+	var imageSetInfo []ImageSetInstallerURL
 	var count int64
 	var result *gorm.DB
 	pagination := common.GetPagination(r)
@@ -156,7 +156,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, img := range imageSet {
-		var imgSet ImageSetIntallerURL
+		var imgSet ImageSetInstallerURL
 		imgSet.ImageSetData = img
 		if img.Images != nil && img.Images[len(img.Images)-1].InstallerID != nil {
 			result = db.DB.First(&img.Images[len(img.Images)-1].Installer, img.Images[len(img.Images)-1].InstallerID)

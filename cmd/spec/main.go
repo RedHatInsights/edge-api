@@ -44,11 +44,11 @@ func main() {
 	}
 	components.Schemas["v1.ImageSetImagePackages"] = ImageSetImagePackages
 
-	ImageSetIntallerURL, _, err := openapi3gen.NewSchemaRefForValue(&routes.ImageSetIntallerURL{})
+	ImageSetInstallerURL, _, err := openapi3gen.NewSchemaRefForValue(&routes.ImageSetInstallerURL{})
 	if err != nil {
 		panic(err)
 	}
-	components.Schemas["v1.ImageSetIntallerURL"] = ImageSetIntallerURL
+	components.Schemas["v1.ImageSetInstallerURL"] = ImageSetInstallerURL
 
 	repo, _, err := openapi3gen.NewSchemaRefForValue(&models.Repo{})
 	if err != nil {
