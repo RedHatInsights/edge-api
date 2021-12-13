@@ -39,19 +39,22 @@ func TestCreateWasCalledWithWrongBody(t *testing.T) {
 
 func TestCreateWasCalledWithNameNotSet(t *testing.T) {
 	config.Get().Debug = false
-	var jsonStr = []byte(`{
-		"Distribution": "rhel-8",
-		"OutputTypes": ["rhel-edge-installer"],
-		"Commit": {
-			"Arch": "x86_64",
-			"Packages" : [ { "name" : "vim"  } ]
+	image := models.Image{
+		Distribution: "rhel-8",
+		OutputTypes:  []string{"rhel-edge-installer"},
+		Commit: &models.Commit{
+			Arch: "x86_64",
+			InstalledPackages: []models.InstalledPackage{
+				{Name: "vim"},
+			},
 		},
-		"Installer": {
-			"Username": "root",
-			"Sshkey": "ssh-rsa d9:f158:00:abcd"
-		}
-	}`)
-	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
+		Installer: &models.Installer{
+			Username: "root",
+			SSHKey:   "ssh-rsa d9:f158:00:abcd",
+		},
+	}
+	jsonBytes, _ := json.Marshal(image)
+	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonBytes))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,20 +71,23 @@ func TestCreateWasCalledWithNameNotSet(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	var jsonStr = []byte(`{
-		"Name": "image2",
-		"Distribution": "rhel-8",
-		"OutputTypes": ["rhel-edge-installer"],
-		"Commit": {
-			"Arch": "x86_64",
-			"Packages" : [ { "name" : "vim"  } ]
+	image := models.Image{
+		Name:         "image2",
+		Distribution: "rhel-8",
+		OutputTypes:  []string{"rhel-edge-installer"},
+		Commit: &models.Commit{
+			Arch: "x86_64",
+			InstalledPackages: []models.InstalledPackage{
+				{Name: "vim"},
+			},
 		},
-		"Installer": {
-			"Username": "root",
-			"Sshkey": "ssh-rsa d9:f158:00:abcd"
-		}
-	}`)
-	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
+		Installer: &models.Installer{
+			Username: "root",
+			SSHKey:   "ssh-rsa d9:f158:00:abcd",
+		},
+	}
+	jsonBytes, _ := json.Marshal(image)
+	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonBytes))
 	if err != nil {
 		t.Fatal(err)
 	}
