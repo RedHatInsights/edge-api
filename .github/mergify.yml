@@ -11,6 +11,7 @@ pull_request_rules:
       - "#changes-requested-reviews-by=0"
       - check-success=Coverage Testing
       - check-success=Lint
+      - check-success=Travis CI - Pull Request
       - check-success=ci.ext.devshift.net PR build
       - check-success=ci.int.devshift.net PR build
       - label!=work in progress
@@ -47,15 +48,17 @@ pull_request_rules:
           This pull request looks stale. Feel free to reopen it if you think it's a mistake.
   - name: waiting for review
     conditions:
-      - "#approved-reviews-by<1"
+      - "#commented-reviews-by<1"
       - created-at<1 days ago
+      - -draft
     actions:
       label:
         add:
           - waiting for review
   - name: remove waiting for review label if not needed
     conditions:
-      - "#approved-reviews-by>=1"
+      - "#commented-reviews-by>=1"
+      - -draft
     actions:
       label:
         remove:
