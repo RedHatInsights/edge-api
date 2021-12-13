@@ -355,7 +355,6 @@ func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord mode
 			dispatchRecord.ID,
 		).First(&update)
 	if result.Error != nil {
-		update.Status = models.UpdateStatusError
 		result := db.DB.Save(&update)
 		return result.Error
 	}
