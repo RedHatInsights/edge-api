@@ -94,7 +94,7 @@ var _ = Describe("Client", func() {
 			It("should successfully unmarshal json", func() {
 				Expect(err).To(BeNil())
 				Expect(ovsData).ToNot(BeNil())
-				Expect(ovsData[0].ProtocolVersion).To(Equal(uint(100)))
+				Expect(ovsData[0].ProtocolVersion).To(Equal(uint32(100)))
 				Expect(ovsData[0].GUID).To(Equal("214d64be-3227-92da-0333-b1e1fe832f24"))
 				Expect(ovsData[0].DeviceName).To(Equal("testdevice1"))
 			})
@@ -118,7 +118,7 @@ var _ = Describe("Client", func() {
 			It("should successfully unmarshal json", func() {
 				Expect(err).To(BeNil())
 				Expect(ovsData).ToNot(BeNil())
-				Expect(ovsData[0].ProtocolVersion).To(Equal(uint(100)))
+				Expect(ovsData[0].ProtocolVersion).To(Equal(uint32(100)))
 				Expect(ovsData[0].GUID).To(Equal("12345678-1234-1234-1234-123456789012"))
 				Expect(ovsData[0].DeviceName).To(Equal("test-device"))
 			})

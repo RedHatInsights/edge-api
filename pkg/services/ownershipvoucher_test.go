@@ -65,7 +65,7 @@ var _ = Describe("Ownershipvoucher", func() {
 		It("should parse without error", func() {
 			data, err := ovs.ParseOwnershipVouchers(ovb)
 			Expect(err).To(BeNil())
-			Expect(data[0].ProtocolVersion).To(Equal(uint(100)))
+			Expect(data[0].ProtocolVersion).To(Equal(uint32(100)))
 			Expect(data[0].DeviceName).To(Equal("testdevice1"))
 			Expect(data[0].GUID).To(Equal("214d64be-3227-92da-0333-b1e1fe832f24"))
 		})
@@ -73,7 +73,7 @@ var _ = Describe("Ownershipvoucher", func() {
 			badOV := ovb[1:]
 			data, err := ovs.ParseOwnershipVouchers(badOV)
 			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("failed to parse ownership voucher"))
+			Expect(err.Error()).To(ContainSubstring("failed to parse ownership vouchers"))
 			Expect(data).To(BeNil())
 		})
 	})
@@ -88,7 +88,7 @@ var _ = Describe("Ownershipvoucher", func() {
 			badOV := ovb[1:]
 			j, err := ovs.BatchUploadOwnershipVouchers(badOV, 1)
 			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("failed to parse ownership voucher"))
+			Expect(err.Error()).To(ContainSubstring("failed to parse ownership vouchers"))
 			Expect(j).To(BeNil())
 		})
 		It("should create ownership vouchers with bad number of OVs", func() {

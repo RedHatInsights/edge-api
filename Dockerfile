@@ -13,8 +13,9 @@ RUN go get -d -v
 
 # interim FDO requirements
 ENV LD_LIBRARY_PATH /usr/local/lib
-COPY --from=quay.io/fleet-management/libfdo-data ${LD_LIBRARY_PATH}/libfdo_data.so.0 ${LD_LIBRARY_PATH}/libfdo_data.so.0
-COPY --from=quay.io/fleet-management/libfdo-data /usr/local/include/fdo_data.h /usr/local/include/fdo_data.h
+RUN mkdir -p /usr/local/include/libfdo-data
+COPY --from=quay.io/fleet-management/libfdo-data ${LD_LIBRARY_PATH}/ ${LD_LIBRARY_PATH}/
+COPY --from=quay.io/fleet-management/libfdo-data /usr/local/include/libfdo-data/fdo_data.h /usr/local/include/libfdo-data/fdo_data.h
 
 # Build the binary.
 RUN go build -o /go/bin/edge-api
@@ -73,8 +74,9 @@ COPY --from=edge-builder /src/mypackage/myapp/pkg/services/template_playbook/tem
 
 # interim FDO requirements
 ENV LD_LIBRARY_PATH /usr/local/lib
-COPY --from=quay.io/fleet-management/libfdo-data ${LD_LIBRARY_PATH}/libfdo_data.so.0 ${LD_LIBRARY_PATH}/libfdo_data.so.0
-COPY --from=quay.io/fleet-management/libfdo-data /usr/local/include/fdo_data.h /usr/local/include/fdo_data.h
+RUN mkdir -p /usr/local/include/libfdo-data
+COPY --from=edge-builder ${LD_LIBRARY_PATH}/ ${LD_LIBRARY_PATH}/
+COPY --from=edge-builder /usr/local/include/libfdo-data/fdo_data.h /usr/local/include/libfdo-data/fdo_data.h
 
 USER 1001
 CMD ["edge-api"]
