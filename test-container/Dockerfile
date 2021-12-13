@@ -2,9 +2,13 @@
 ###### Build the FDO package ######
 ###################################
 FROM registry.access.redhat.com/ubi8/ubi AS builder
-RUN yum install -y cargo git-core openssl-devel go
+RUN yum install -y cargo git-core openssl-devel go tar gzip
+RUN curl -L https://github.com/dominikh/go-tools/releases/download/2021.1.2/staticcheck_linux_amd64.tar.gz | tar xz
 RUN git clone https://github.com/fedora-iot/fido-device-onboard-rs.git
-RUN cd fido-device-onboard-rs && cargo build --lib
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN source $HOME/.cargo/env && \
+    rustup default nightly && rustup update && \
+    cd fido-device-onboard-rs && cargo build --lib
 
 RUN yum install --installroot /mnt/rootfs \
     coreutils-single glibc-minimal-langpack \
@@ -13,6 +17,7 @@ RUN yum install --installroot /mnt/rootfs \
     install_weak_deps=false --nodocs -y; \
     yum --installroot /mnt/rootfs clean all
 RUN rm -rf /mnt/rootfs/var/cache/* /mnt/rootfs/var/log/dnf* /mnt/rootfs/var/log/yum.*
+RUN cp ./staticcheck/staticcheck /mnt/rootfs/usr/bin/
 
 ##############################################
 ###### Build libfdo-data test container ######
@@ -38,8 +43,10 @@ RUN echo -e 'if [[ ! -d "edge-api" ]];then \n\
 RUN chmod +x ./test.sh
 
 ENV LD_LIBRARY_PATH /usr/local/lib
-COPY --from=builder /fido-device-onboard-rs/target/debug/libfdo_data.so ${LD_LIBRARY_PATH}/libfdo_data.so.0
-COPY --from=builder /fido-device-onboard-rs/libfdo-data/fdo_data.h /usr/local/include/
+COPY --from=builder /fido-device-onboard-rs/target/debug/libfdo_data.so ${LD_LIBRARY_PATH}/libfdo_data.so
+RUN link ${LD_LIBRARY_PATH}/libfdo_data.so ${LD_LIBRARY_PATH}/libfdo_data.so.0 && \
+    mkdir -p /usr/local/include/libfdo-data
+COPY --from=builder /fido-device-onboard-rs/libfdo-data/fdo_data.h /usr/local/include/libfdo-data/fdo_data.h
 COPY --from=builder /fido-device-onboard-rs/libfdo-data/test_assets/testdevice1.ov ./testdevice1.ov
 
 ARG GIT_BRANCH="main"

@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"gorm.io/gorm"
+
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -126,7 +128,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	var imageSet []models.ImageSet
 	var imageSetInfo []ImageSetIntallerURL
 	var count int64
-	result := imageSetFilters(r, db.DB)
+	var result *gorm.DB
 	pagination := common.GetPagination(r)
 	account, err := common.GetAccount(r)
 
@@ -151,7 +153,6 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		result = imageSetFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Where(`Image_Sets.account = ? `, account).Find(&imageSet)
 	} else {
 		result = imageStatusFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Where(`Image_Sets.account = ? `, account).Find(&imageSet)
-
 	}
 
 	for _, img := range imageSet {
@@ -174,7 +175,6 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	response.Count = count
 	response.Data = imageSetInfo
 	json.NewEncoder(w).Encode(response)
-
 }
 
 //ImageSetImagePackages return info related to details on images from imageset
@@ -207,7 +207,7 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 	}
 	result := imageDetailFilters(r, db.DB.Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
-		Preload("Commit.Repo").Preload("Commit.InstalledPackages").
+		Preload("Commit.Repo").Preload("Commit.InstalledPackages").Preload("Installer").
 		Joins(`JOIN Image_Sets ON Image_Sets.id = Images.image_set_id`).
 		Where(`Image_Sets.account = ? and  Image_sets.id = ?`, account, &imageSet.ID).Find(&images)
 
@@ -225,14 +225,12 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 
 	if Imgs != nil && Imgs[len(Imgs)-1].Image != nil && Imgs[len(Imgs)-1].Image.InstallerID != nil {
 		img := Imgs[len(Imgs)-1].Image
-		result = db.DB.First(&img.Installer, img.InstallerID)
 		details.ImageBuildISOURL = img.Installer.ImageBuildISOURL
 	}
 
 	response.Data = &details
 	response.Count = int64(len(images))
 	json.NewEncoder(w).Encode(response)
-
 }
 
 func validateFilterParams(next http.Handler) http.Handler {
