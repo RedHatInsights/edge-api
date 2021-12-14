@@ -225,6 +225,5 @@ func (ovs *OwnershipVoucherService) createFDOClient() *fdo.Client {
 
 // help function to join OwnershipVoucherData & FDOUser with FDODevices
 func joinWithFDODevices(guid string) *gorm.DB {
-	return db.DB.Joins("JOIN ownership_voucher_data ON ownership_voucher_data.fdo_device_id = fdo_devices.id and ownership_voucher_data.guid = ?",
-		guid).Joins("JOIN fdo_users ON fdo_users.fdo_device_id = fdo_devices.id")
+	return db.DB.Joins("OwnershipVoucherData").Joins("InitialUser").Find(&models.FDODevice{}, "`OwnershipVoucherData`.`guid` = ?", guid)
 }
