@@ -191,9 +191,9 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			db.DB.Save(&device)
 		}
 		update.DispatchRecords = dispatchRecords
-		tx := db.DB.Save(&update)
-		if tx.Error != nil {
-			log.Errorf("Error saving update: %s ", tx.Error.Error())
+		err = s.SetUpdateStatus(update)
+		if err != nil {
+			log.Errorf("Error saving update: %s ", err.Error())
 			return nil, err
 		}
 	}
@@ -347,7 +347,6 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 // SetUpdateStatusBasedOnDispatchRecord is the function that, given a dispatch record, finds the update transaction related to and update its status if necessary
 func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord models.DispatchRecord) error {
 	var update models.UpdateTransaction
-	allSuccess := true
 	result := db.DB.Preload("DispatchRecords").
 		Table("update_transactions").
 		Joins(
@@ -356,10 +355,16 @@ func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord mode
 			dispatchRecord.ID,
 		).First(&update)
 	if result.Error != nil {
-		allSuccess = false
-		update.Status = models.UpdateStatusError
 		return result.Error
 	}
+
+	return s.SetUpdateStatus(&update)
+
+}
+
+// SetUpdateStatus is the function to set the update status from an UpdateTransaction
+func (s *UpdateService) SetUpdateStatus(update *models.UpdateTransaction) error {
+	allSuccess := true
 
 	for _, d := range update.DispatchRecords {
 		if d.Status != models.DispatchRecordStatusComplete {
@@ -370,10 +375,11 @@ func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord mode
 			break
 		}
 	}
-
 	if allSuccess {
 		update.Status = models.UpdateStatusSuccess
+	} else {
+		update.Status = models.UpdateStatusError
 	}
-	result = db.DB.Save(&update)
+	result := db.DB.Save(update)
 	return result.Error
 }
