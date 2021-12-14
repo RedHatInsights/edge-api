@@ -377,9 +377,8 @@ func (s *UpdateService) SetUpdateStatus(update *models.UpdateTransaction) error 
 	}
 	if allSuccess {
 		update.Status = models.UpdateStatusSuccess
-	} else {
-		update.Status = models.UpdateStatusError
 	}
+	// If there isn't an error and it's not all success, some updates are still happening
 	result := db.DB.Save(update)
 	return result.Error
 }
