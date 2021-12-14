@@ -117,9 +117,16 @@ func ImageSetCtx(next http.Handler) http.Handler {
 	})
 }
 
+//ImageSetInstallerURL returns Imageset structure with last installer available
+type ImageSetInstallerURL struct {
+	ImageSetData     models.ImageSet `json:"image_set"`
+	ImageBuildISOURL *string         `json:"image_build_iso_url"`
+}
+
 // ListAllImageSets return the list of image sets and images
 func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
-	var imageSet *[]models.ImageSet
+	var imageSet []models.ImageSet
+	var imageSetInfo []ImageSetInstallerURL
 	var count int64
 	var result *gorm.DB
 	pagination := common.GetPagination(r)
@@ -148,14 +155,25 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		result = imageStatusFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Where(`Image_Sets.account = ? `, account).Find(&imageSet)
 	}
 
+	for _, img := range imageSet {
+		var imgSet ImageSetInstallerURL
+		imgSet.ImageSetData = img
+		if img.Images != nil && img.Images[len(img.Images)-1].InstallerID != nil {
+			result = db.DB.First(&img.Images[len(img.Images)-1].Installer, img.Images[len(img.Images)-1].InstallerID)
+			imgSet.ImageBuildISOURL = &img.Images[len(img.Images)-1].Installer.ImageBuildISOURL
+		}
+
+		imageSetInfo = append(imageSetInfo, imgSet)
+	}
 	if result.Error != nil {
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
+
 	var response common.EdgeAPIPaginatedResponse
 	response.Count = count
-	response.Data = &imageSet
+	response.Data = imageSetInfo
 	json.NewEncoder(w).Encode(response)
 }
 
