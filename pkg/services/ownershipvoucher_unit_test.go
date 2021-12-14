@@ -74,19 +74,5 @@ var _ = Describe("Ownershipvoucher unit tests", func() {
 				Expect(err).ToNot(BeNil())
 			}
 		})
-		It("ownershipvouchers shouldn't be found", func() {
-			for _, ownershipVoucher := range ownershipVouchers {
-				ov, err := ownershipVoucherService.GetOwnershipVouchersByGUID(ownershipVoucher.GUID)
-				Expect(ov).To(BeNil())
-				Expect(err).ToNot(BeNil())
-			}
-		})
-		It("users shouldn't be found", func() {
-			for _, ownershipVoucher := range ownershipVouchers {
-				user, err := ownershipVoucherService.GetFDOUserByGUID(ownershipVoucher.GUID)
-				Expect(user).To(BeNil())
-				Expect(err).ToNot(BeNil())
-			}
-		})
 	})
 })
