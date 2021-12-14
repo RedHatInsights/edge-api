@@ -13,9 +13,9 @@ objects:
     testing:
       iqe:
         debug: false
-        dynaconfEnvName: stage_proxy
+        dynaconfEnvName: post_deploy
         filter: ''
-        marker: 'core'
+        marker: 'rest'
 parameters:
 - name: IMAGE_TAG
   value: ''
