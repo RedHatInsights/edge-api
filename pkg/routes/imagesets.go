@@ -155,12 +155,16 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		result = imageStatusFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Where(`Image_Sets.account = ? `, account).Find(&imageSet)
 	}
 
-	for _, img := range imageSet {
+	for idx, img := range imageSet {
 		var imgSet ImageSetInstallerURL
 		imgSet.ImageSetData = img
-		if img.Images != nil && img.Images[len(img.Images)-1].InstallerID != nil {
-			result = db.DB.First(&img.Images[len(img.Images)-1].Installer, img.Images[len(img.Images)-1].InstallerID)
-			imgSet.ImageBuildISOURL = &img.Images[len(img.Images)-1].Installer.ImageBuildISOURL
+
+		if imageSet[idx].Images != nil {
+			lastImage := imageSet[idx].Images[len(img.Images)-1]
+			if lastImage.InstallerID != nil {
+				result = db.DB.First(&lastImage.Installer, lastImage.InstallerID)
+				imgSet.ImageBuildISOURL = &lastImage.Installer.ImageBuildISOURL
+			}
 		}
 
 		imageSetInfo = append(imageSetInfo, imgSet)
