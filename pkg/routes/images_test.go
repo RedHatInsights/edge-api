@@ -138,12 +138,12 @@ func TestGetStatus(t *testing.T) {
 }
 
 type ImageResponse struct {
-	Image             models.Image `json:"image"`
-	AditionalPackages int          `json:"aditional_packages"`
-	Packages          int          `json:"packages"`
-	UpdateAdded       int          `json:"update_added"`
-	UpdateRemoved     int          `json:"update_removed"`
-	UpdateUpdated     int          `json:"update_updated"`
+	Image              models.Image `json:"image"`
+	AdditionalPackages int          `json:"additional_packages"`
+	Packages           int          `json:"packages"`
+	UpdateAdded        int          `json:"update_added"`
+	UpdateRemoved      int          `json:"update_removed"`
+	UpdateUpdated      int          `json:"update_updated"`
 }
 
 func TestGetImageById(t *testing.T) {
@@ -190,9 +190,9 @@ func TestGetImageById(t *testing.T) {
 		t.Errorf("wrong image packages: got %v want %v",
 			ir.Packages, 0)
 	}
-	if ir.AditionalPackages != 0 {
-		t.Errorf("wrong image AditionalPackages: got %v want %v",
-			ir.AditionalPackages, 0)
+	if ir.AdditionalPackages != 0 {
+		t.Errorf("wrong image AdditionalPackages: got %v want %v",
+			ir.AdditionalPackages, 0)
 	}
 	if ir.UpdateAdded != 0 {
 		t.Errorf("wrong image UpdateAdded: got %v want %v",
