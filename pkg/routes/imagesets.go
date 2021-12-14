@@ -46,7 +46,7 @@ var imageSetFilters = common.ComposeFilters(
 		QueryParam: "name",
 		DBField:    "image_sets.name",
 	}),
-	common.SortFilterHandler("image_sets", "created_at", "DESC"),
+	common.SortFilterHandler("image_sets", "updated_at", "DESC"),
 )
 
 var imageDetailFilters = common.ComposeFilters(
@@ -75,7 +75,7 @@ var imageStatusFilters = common.ComposeFilters(
 		QueryParam: "name",
 		DBField:    "image_sets.name",
 	}),
-	common.SortFilterHandler("images", "created_at", "DESC"),
+	common.SortFilterHandler("images", "updated_at", "DESC"),
 )
 
 // ImageSetCtx provides the handler for Image Sets
@@ -157,7 +157,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 
 	for idx, img := range imageSet {
 		var imgSet ImageSetInstallerURL
-		imgSet.ImageSetData = img
+		imgSet.ImageSetData = imageSet[idx]
 
 		if imageSet[idx].Images != nil {
 			lastImage := imageSet[idx].Images[len(img.Images)-1]
