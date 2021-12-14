@@ -95,6 +95,34 @@ func (mr *MockUpdateServiceInterfaceMockRecorder) ProcessPlaybookDispatcherRunEv
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessPlaybookDispatcherRunEvent", reflect.TypeOf((*MockUpdateServiceInterface)(nil).ProcessPlaybookDispatcherRunEvent), message)
 }
 
+// SetUpdateStatus mocks base method.
+func (m *MockUpdateServiceInterface) SetUpdateStatus(update *models.UpdateTransaction) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetUpdateStatus", update)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetUpdateStatus indicates an expected call of SetUpdateStatus.
+func (mr *MockUpdateServiceInterfaceMockRecorder) SetUpdateStatus(update interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetUpdateStatus", reflect.TypeOf((*MockUpdateServiceInterface)(nil).SetUpdateStatus), update)
+}
+
+// SetUpdateStatusBasedOnDispatchRecord mocks base method.
+func (m *MockUpdateServiceInterface) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord models.DispatchRecord) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetUpdateStatusBasedOnDispatchRecord", dispatchRecord)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetUpdateStatusBasedOnDispatchRecord indicates an expected call of SetUpdateStatusBasedOnDispatchRecord.
+func (mr *MockUpdateServiceInterfaceMockRecorder) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetUpdateStatusBasedOnDispatchRecord", reflect.TypeOf((*MockUpdateServiceInterface)(nil).SetUpdateStatusBasedOnDispatchRecord), dispatchRecord)
+}
+
 // WriteTemplate mocks base method.
 func (m *MockUpdateServiceInterface) WriteTemplate(templateInfo services.TemplateRemoteInfo, account string) (string, error) {
 	m.ctrl.T.Helper()

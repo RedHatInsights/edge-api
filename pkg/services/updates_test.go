@@ -244,4 +244,82 @@ var _ = Describe("UpdateService Basic functions", func() {
 			})
 		})
 	})
+
+	Describe("Set status on update", func() {
+
+		var updateService services.UpdateServiceInterface
+
+		BeforeEach(func() {
+			updateService = &services.UpdateService{
+				Context: context.Background(),
+			}
+
+		})
+		Context("when update is still processing", func() {
+			d1 := &models.DispatchRecord{
+				PlaybookDispatcherID: faker.UUIDHyphenated(),
+				Status:               models.DispatchRecordStatusCreated,
+			}
+			d2 := &models.DispatchRecord{
+				PlaybookDispatcherID: faker.UUIDHyphenated(),
+				Status:               models.DispatchRecordStatusComplete,
+			}
+			db.DB.Create(d1)
+			db.DB.Create(d2)
+			u := &models.UpdateTransaction{
+				DispatchRecords: []models.DispatchRecord{*d1, *d2},
+				Status:          models.UpdateStatusBuilding,
+			}
+			db.DB.Create(u)
+			It("should keep update status", func() {
+				updateService.SetUpdateStatus(u)
+				db.DB.First(&u, u.ID)
+				Expect(u.Status).To(Equal(models.UpdateStatusBuilding))
+			})
+		})
+		Context("when one of the dispatch records has error", func() {
+			d1 := &models.DispatchRecord{
+				PlaybookDispatcherID: faker.UUIDHyphenated(),
+				Status:               models.DispatchRecordStatusError,
+			}
+			d2 := &models.DispatchRecord{
+				PlaybookDispatcherID: faker.UUIDHyphenated(),
+				Status:               models.DispatchRecordStatusCreated,
+			}
+			db.DB.Create(d1)
+			db.DB.Create(d2)
+			u := &models.UpdateTransaction{
+				DispatchRecords: []models.DispatchRecord{*d1, *d2},
+				Status:          models.UpdateStatusBuilding,
+			}
+			db.DB.Create(u)
+			It("should set the update status as error", func() {
+				updateService.SetUpdateStatus(u)
+				db.DB.First(&u, u.ID)
+				Expect(u.Status).To(Equal(models.UpdateStatusError))
+			})
+		})
+		Context("when all of the dispatch records have completed", func() {
+			d1 := &models.DispatchRecord{
+				PlaybookDispatcherID: faker.UUIDHyphenated(),
+				Status:               models.DispatchRecordStatusComplete,
+			}
+			d2 := &models.DispatchRecord{
+				PlaybookDispatcherID: faker.UUIDHyphenated(),
+				Status:               models.DispatchRecordStatusComplete,
+			}
+			db.DB.Create(d1)
+			db.DB.Create(d2)
+			u := &models.UpdateTransaction{
+				DispatchRecords: []models.DispatchRecord{*d1, *d2},
+				Status:          models.UpdateStatusBuilding,
+			}
+			db.DB.Create(u)
+			It("should set the update status as error", func() {
+				updateService.SetUpdateStatus(u)
+				db.DB.First(&u, u.ID)
+				Expect(u.Status).To(Equal(models.UpdateStatusSuccess))
+			})
+		})
+	})
 })
