@@ -20,7 +20,7 @@ func NewExtractor() Extractor {
 // TARFileExtractor implements a method to extract TAR files into a path
 type TARFileExtractor struct{}
 
-// Extracts file to destination path
+// Extract extracts file to destination path
 func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
 	defer rc.Close()
 	tarReader := tar.NewReader(rc)

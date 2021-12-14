@@ -16,7 +16,7 @@ import (
 // the business logic of ImageSets
 type ImageSetsServiceInterface interface {
 	ListAllImageSets(w http.ResponseWriter, r *http.Request) error
-	GetImageSetsByID(imageSetId int) (*models.ImageSet, error)
+	GetImageSetsByID(imageSetID int) (*models.ImageSet, error)
 }
 
 // NewImageSetsService gives a instance of the main implementation of a ImageSetsServiceInterface
@@ -76,6 +76,7 @@ func (s *ImageSetsService) ListAllImageSets(w http.ResponseWriter, r *http.Reque
 	return nil
 }
 
+// GetImageSetsByID to get image set by id
 func (s *ImageSetsService) GetImageSetsByID(imageSetID int) (*models.ImageSet, error) {
 	var imageSet models.ImageSet
 	result := db.DB.Where("Image_sets.id = ?", imageSetID).Find(&imageSet)

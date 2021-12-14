@@ -19,11 +19,11 @@ func MakeInventoryRouter(sub chi.Router) {
 
 // InventoryData represents the structure of inventory response
 type InventoryData struct {
-	Total    int
-	Count    int
-	Page     int
-	Per_page int
-	Results  []InventoryResponse
+	Total   int
+	Count   int
+	Page    int
+	PerPage int
+	Results []InventoryResponse
 }
 
 // InventoryResponse represents the structure of inventory data on response
@@ -36,8 +36,7 @@ type InventoryResponse struct {
 
 // GetInventory make the call to inventory api and inject edge info
 func GetInventory(w http.ResponseWriter, r *http.Request) {
-	var param *inventory.InventoryParams
-	param = new(inventory.InventoryParams)
+	var param *inventory.Params = new(inventory.Params)
 
 	param.PerPage = r.URL.Query().Get("per_page")
 	param.Page = r.URL.Query().Get("page")
@@ -53,7 +52,7 @@ func GetInventory(w http.ResponseWriter, r *http.Request) {
 
 	inventory, err := client.ReturnDevices(param)
 	if err != nil || inventory.Count == 0 {
-		err := errors.NewNotFound(fmt.Sprintf("No devices found "))
+		err := errors.NewNotFound("No devices found")
 		w.WriteHeader(err.GetStatus())
 
 	}
@@ -69,7 +68,7 @@ func GetInventory(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetUpdateAvailableInfo returns the image information
-func GetUpdateAvailableInfo(param *inventory.InventoryParams, r *http.Request, inventoryResp inventory.Response) (IvtResponse []InventoryResponse) {
+func GetUpdateAvailableInfo(param *inventory.Params, r *http.Request, inventoryResp inventory.Response) (IvtResponse []InventoryResponse) {
 	var ivt []InventoryResponse
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	deviceService := services.DeviceService

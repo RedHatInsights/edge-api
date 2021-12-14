@@ -71,7 +71,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 
 	log.Infof("RepoBuilder::updateCommitID %d and UpdateTransactionID %d", update.Commit.ID, update.ID)
 
-	path := filepath.Join(cfg.RepoTempPath, "upd/", strconv.FormatUint(uint64(update.RepoID), 10))
+	path := filepath.Join(cfg.RepoTempPath, "upd/", strconv.FormatUint(uint64(update.ID), 10))
 	log.Infof("RepoBuilder::path: %#v", path)
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
@@ -141,7 +141,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
 	log.Infof("::BuildUpdateRepo:uploader.UploadRepo: BEGIN")
-	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(update.RepoID), 10))
+	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(update.ID), 10))
 	log.Infof("::BuildUpdateRepo:uploader.UploadRepo: FINISH")
 	log.Infof("::BuildUpdateRepo:repoURL: %#v", repoURL)
 	if err != nil {
@@ -151,6 +151,9 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	update.Repo.URL = repoURL
 	update.Repo.Status = models.RepoStatusSuccess
 	if err := db.DB.Save(&update).Error; err != nil {
+		return nil, err
+	}
+	if err := db.DB.Save(&update.Repo).Error; err != nil {
 		return nil, err
 	}
 
@@ -253,12 +256,12 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string) (strin
 	return tarFileName, nil
 }
 
-// ExtractVersionRepo Download and Extract the repo tarball to dest dir
+// UploadVersionRepo Upload the repo tarball to the repo service
 func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string, dest string) error {
 	//Upload ImageBuildTar to repo
 	log.Debugf("UploadVersionRepo::CommitID: %d", c.ID)
-	repoTarUrl, errorUpl := uploadTarRepo(c.Account, tarFileName, int(*c.RepoID))
-	c.ImageBuildTarURL = repoTarUrl
+	repoTarURL, errorUpl := uploadTarRepo(c.Account, tarFileName, int(*c.RepoID))
+	c.ImageBuildTarURL = repoTarURL
 	log.Debugf("Finish UploadVersionRepo::CommitID: %d", c.ID)
 	if errorUpl != nil {
 		log.Errorf("Failed to open file: %s", filepath.Join(dest, tarFileName))

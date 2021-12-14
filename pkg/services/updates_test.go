@@ -4,12 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io/ioutil"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -116,6 +119,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 	})
 	Describe("playbook dispatcher event handling", func() {
+
 		var updateService services.UpdateServiceInterface
 
 		BeforeEach(func() {
@@ -199,6 +203,45 @@ var _ = Describe("UpdateService Basic functions", func() {
 			message, _ := json.Marshal(event)
 			err := updateService.ProcessPlaybookDispatcherRunEvent(message)
 			Expect(err).To(HaveOccurred())
+		})
+	})
+	Describe("write template", func() {
+		Context("when upload works", func() {
+			It("to build the template properly", func() {
+				cfg := config.Get()
+				cfg.TemplatesPath = "./template_playbook/"
+				t := services.TemplateRemoteInfo{
+					UpdateTransactionID: 1000,
+					RemoteName:          "remote-name",
+				}
+				account := "1005"
+				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", account, t.UpdateTransactionID)
+				tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
+
+				defer GinkgoRecover()
+				ctrl := gomock.NewController(GinkgoT())
+				defer ctrl.Finish()
+				mockFilesService := mock_services.NewMockFilesService(ctrl)
+				updateService := &services.UpdateService{
+					Context:      context.Background(),
+					FilesService: mockFilesService,
+				}
+				mockUploader := mock_services.NewMockUploader(ctrl)
+				mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", account, fname)).Do(func(x, y string) {
+					actual, err := ioutil.ReadFile(x)
+					Expect(err).ToNot(HaveOccurred())
+					expected, err := ioutil.ReadFile("./template_playbook/template_playbook_dispatcher_ostree_upgrade_payload.test.yml")
+					Expect(err).ToNot(HaveOccurred())
+					Expect(string(actual)).To(BeEquivalentTo(string(expected)))
+				}).Return("url", nil)
+				mockFilesService.EXPECT().GetUploader().Return(mockUploader)
+
+				url, err := updateService.WriteTemplate(t, account)
+
+				Expect(err).ToNot(HaveOccurred())
+				Expect(url).ToNot(BeNil())
+				Expect(url).To(BeEquivalentTo("http://localhost:3000/api/edge/v1/updates/1000/update-playbook.yml"))
+			})
 		})
 	})
 })

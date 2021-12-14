@@ -115,7 +115,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v1.Image"
+                $ref: "#/components/schemas/v1.ImageDetail"
           description: OK
         "400":
           content:
@@ -529,7 +529,7 @@ paths:
                   Data:
                     type: array
                     items:
-                      $ref: "#/components/schemas/v1.ImageSetDetails"
+                      $ref: "#/components/schemas/v1.ImageSetInstallerURL"
           description: OK
         "404":
           content:
@@ -586,7 +586,7 @@ paths:
                     type: integer
                     example: 100
                   Data:
-                    $ref: "#/components/schemas/v1.ImageSetDetails"
+                    $ref: "#/components/schemas/v1.ImageSetImagePackages"
           description: OK
   /images/checkImageName:
     post:
