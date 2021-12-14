@@ -372,7 +372,7 @@ func GetImageByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetImageByID obtains a image from the database for an account
+// GetImageDetailsByID obtains a image from the database for an account
 func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
