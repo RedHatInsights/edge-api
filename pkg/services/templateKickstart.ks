@@ -37,6 +37,8 @@ echo PRE-INSTALL
 	|| echo "No fleet_env.bash file to copy"
 [[ -e /run/install/repo/fleet_authkeys.txt ]] && cp /run/install/repo/fleet_authkeys.txt /tmp \
 	|| echo "No fleet_authkeys.txt file to copy"
+[[ -e /run/install/repo/fleet_tags.yaml ]] && cp /run/install/repo/fleet_tags.yaml /tmp \
+	|| echo "No fleet_tags.yaml file to copy"
 
 %end
 
@@ -49,6 +51,8 @@ echo POST-COPYFILES
 	|| "No fleet_env.bash file to copy"
 [[ -e /tmp/fleet_authkeys.txt ]] && cp /run/install/repo/fleet_authkeys.txt /mnt/sysroot/root \
 	|| "No fleet_authkeys.txt file to copy"
+[[ -e /tmp/fleet_tags.yaml ]] && cp /run/install/repo/fleet_tags.yaml /mnt/sysroot/root \
+	|| "No fleet_tags.yaml file to copy"
 
 %end
 
@@ -139,6 +143,8 @@ if [ -e /root/fleet_env.bash ]
 then
 	source /root/fleet_env.bash
 
+	[[ -e /root/fleet_tags.yaml ]] && cp /root/fleet_tags.yaml /etc/insights-client/tags.yaml
+
 	if [[ -z ${RHC_ORGID+x} ]] && [[ -z ${RHC_USER+x} ]]
 	then
 		echo "No credentials provided for registration"
@@ -165,8 +171,8 @@ then
 		# Set specific display name set in custom post
 		if [ -z ${INSIGHTS_DISPLAY_NAME+x} ]
 		then
-			# Replace localhost with Machine ID and set Insights display name
-			# Machine ID was chosen based on availability. Refactor based on feedback
+			# Replace localhost with Subscription Manager ID and set Insights display name
+			# Subscription Manager ID was chosen based on availability. Refactor based on feedback
 			statichostname=$(hostnamectl | grep "Static hostname" | awk -F": " '{print $2}')
 			transienthostname=$(hostnamectl | grep "Transient hostname" | awk -F": " '{print $2}')
 			[[ -z ${transienthostname+x} ]] && displayname=${statichostname} || displayname=${transienthostname}
