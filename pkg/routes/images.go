@@ -40,6 +40,7 @@ func MakeImagesRouter(sub chi.Router) {
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageByIDCtx)                           // TODO: Consistent logging
 		r.Get("/", GetImageByID)                      // TODO: Consistent logging
+		r.Get("/details", GetImageDetailsByID)        // TODO: Consistent logging
 		r.Get("/status", GetImageStatusByID)          // TODO: Consistent logging
 		r.Get("/repo", GetRepoForImage)               // TODO: Consistent logging
 		r.Get("/metadata", GetMetadataForImage)       // TODO: Consistent logging
@@ -366,6 +367,13 @@ type ImageDetail struct {
 
 // GetImageByID obtains a image from the database for an account
 func GetImageByID(w http.ResponseWriter, r *http.Request) {
+	if image := getImage(w, r); image != nil {
+		json.NewEncoder(w).Encode(image)
+	}
+}
+
+// GetImageByID obtains a image from the database for an account
+func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 
