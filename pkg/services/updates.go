@@ -362,6 +362,7 @@ func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord mode
 
 }
 
+// SetUpdateStatus is the function to set the update status from an UpdateTransaction
 func (s *UpdateService) SetUpdateStatus(update *models.UpdateTransaction) error {
 	allSuccess := true
 
