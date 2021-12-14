@@ -23,14 +23,14 @@ jobs:
   include:
     - stage: "Build libfdo-data"
       script:
-        - if [ "$TRAVIS_PULL_REQUEST" != false ]; then echo "LABEL quay.expires-after=1h" >> ./test-container/Dockerfile; fi
+        - if [ "$TRAVIS_PULL_REQUEST" != false ]; then echo "LABEL quay.expires-after=2d" >> ./test-container/Dockerfile; fi
         - docker build -t ${LIBFDO_IMAGE} -f ./test-container/Dockerfile .
         - docker login quay.io -u ${FLEETER_BOT:-${FLEETER_BOT_PR}} -p ${FLEETER_PASS:-${FLEETER_PASS_PR}} >/dev/null 2>&1
         - docker push ${LIBFDO_IMAGE}
     - stage: "Build & Test"
       name: "Build edge-api"
       script:
-        - if [ "$TRAVIS_PULL_REQUEST" != false ]; then echo "LABEL quay.expires-after=1h" >> ./Dockerfile; fi
+        - if [ "$TRAVIS_PULL_REQUEST" != false ]; then echo "LABEL quay.expires-after=2d" >> ./Dockerfile; fi
         - sed -i 's|registry.access.redhat.com/ubi8/ubi|quay.io/centos/centos:8|' ./Dockerfile
         - sed -i 's|.*ubi-micro-build.*ubi.repo||' ./Dockerfile
         - sed -i "s|${FLEET_MANAGEMENT_ORG}/libfdo-data|${LIBFDO_IMAGE}|" ./Dockerfile
