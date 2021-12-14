@@ -29,6 +29,8 @@ type UpdateServiceInterface interface {
 	GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error)
 	ProcessPlaybookDispatcherRunEvent(message []byte) error
 	WriteTemplate(templateInfo TemplateRemoteInfo, account string) (string, error)
+	SetUpdateStatusBasedOnDispatchRecord(dispatchRecord models.DispatchRecord) error
+	SetUpdateStatus(update *models.UpdateTransaction) error
 }
 
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
