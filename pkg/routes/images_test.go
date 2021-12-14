@@ -146,7 +146,7 @@ type ImageResponse struct {
 	UpdateUpdated      int          `json:"update_updated"`
 }
 
-func TestGetImageById(t *testing.T) {
+func TestGetImageDetailsById(t *testing.T) {
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -166,7 +166,7 @@ func TestGetImageById(t *testing.T) {
 		Log:          log.NewEntry(log.StandardLogger()),
 	})
 
-	handler := http.HandlerFunc(GetImageByID)
+	handler := http.HandlerFunc(GetImageDetailsByID)
 	handler.ServeHTTP(rr, req.WithContext(ctx))
 
 	if status := rr.Code; status != http.StatusOK {
