@@ -40,6 +40,7 @@ func setupTestDB() {
 		&models.FDODevice{},
 		&models.OwnershipVoucherData{},
 		&models.FDOUser{},
+		&models.SSHKey{},
 	)
 	if err != nil {
 		panic(err)
