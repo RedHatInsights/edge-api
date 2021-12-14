@@ -656,12 +656,12 @@ func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) er
 
 //ImageDetail return the structure to inform package info to images
 type ImageDetail struct {
-	Image             *models.Image `json:"image"`
-	AditionalPackages int           `json:"aditional_packages"`
-	Packages          int           `json:"packages"`
-	UpdateAdded       int           `json:"update_added"`
-	UpdateRemoved     int           `json:"update_removed"`
-	UpdateUpdated     int           `json:"update_updated"`
+	Image              *models.Image `json:"image"`
+	AdditionalPackages int           `json:"additional_packages"`
+	Packages           int           `json:"packages"`
+	UpdateAdded        int           `json:"update_added"`
+	UpdateRemoved      int           `json:"update_removed"`
+	UpdateUpdated      int           `json:"update_updated"`
 }
 
 // AddPackageInfo return info related to packages on image
@@ -669,7 +669,7 @@ func (s *ImageService) AddPackageInfo(image *models.Image) (ImageDetail, error) 
 	var imgDetail ImageDetail
 	imgDetail.Image = image
 	imgDetail.Packages = len(image.Commit.InstalledPackages)
-	imgDetail.AditionalPackages = len(image.Packages)
+	imgDetail.AdditionalPackages = len(image.Packages)
 
 	upd, err := s.GetUpdateInfo(*image)
 	if err != nil {

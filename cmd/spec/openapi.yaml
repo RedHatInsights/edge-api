@@ -1188,7 +1188,7 @@ components:
       type: object
     v1.ImageDetail:
       properties:
-        aditional_packages:
+        additional_packages:
           type: integer
         image:
           properties:
@@ -1773,7 +1773,7 @@ components:
         images:
           items:
             properties:
-              aditional_packages:
+              additional_packages:
                 type: integer
               image:
                 properties:

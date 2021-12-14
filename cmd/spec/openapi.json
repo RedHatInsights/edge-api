@@ -1710,7 +1710,7 @@
       },
       "v1.ImageDetail": {
         "properties": {
-          "aditional_packages": {
+          "additional_packages": {
             "type": "integer"
           },
           "image": {
@@ -2549,7 +2549,7 @@
           "images": {
             "items": {
               "properties": {
-                "aditional_packages": {
+                "additional_packages": {
                   "type": "integer"
                 },
                 "image": {
