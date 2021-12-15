@@ -78,7 +78,7 @@ var _ = Describe("Ownershipvoucher unit tests", func() {
 				result := db.DB.Unscoped().Preload("OwnershipVoucherData",
 					"guid = ?", ownershipVoucher.GUID).Preload("InitialUser").Find(&deletedDevice)
 				Expect(result.Error).To(BeNil())
-				Expect(deletedDevice.Model.DeletedAt.Valid).To(BeTrue())
+				Expect(deletedDevice.DeletedAt.Valid).To(BeTrue())
 			}
 		})
 		It("ownershipvouchers shouldn't be found", func() {
@@ -90,7 +90,7 @@ var _ = Describe("Ownershipvoucher unit tests", func() {
 						return db.Unscoped()
 					}).Preload("InitialUser").Find(&deletedDevice)
 				Expect(result.Error).To(BeNil())
-				Expect(deletedDevice.OwnershipVoucherData.Model.DeletedAt.Valid).To(BeTrue())
+				Expect(deletedDevice.OwnershipVoucherData.DeletedAt.Valid).To(BeTrue())
 			}
 		})
 		It("users shouldn't be found", func() {
@@ -101,10 +101,10 @@ var _ = Describe("Ownershipvoucher unit tests", func() {
 					return db.Unscoped()
 				}).Find(&deletedDevice)
 				Expect(result.Error).To(BeNil())
-				Expect(deletedDevice.InitialUser.Model.DeletedAt.Valid).To(BeTrue())
+				Expect(deletedDevice.InitialUser.DeletedAt.Valid).To(BeTrue())
 			}
 		})
-		It("before delete works without error", func() {
+		It("`BeforeDelete` works without error", func() {
 			// create new ownershipvoucher
 			ov := models.OwnershipVoucherData{
 				GUID:            faker.UUIDHyphenated(),
@@ -123,9 +123,9 @@ var _ = Describe("Ownershipvoucher unit tests", func() {
 			device, err = ownershipVoucherService.GetFDODeviceByGUID(ov.GUID)
 			Expect(device).ToNot(BeNil())
 			Expect(err).To(BeNil())
-			Expect(device.Model.DeletedAt.Valid).To(BeFalse())                     // not deleted
-			Expect(device.OwnershipVoucherData.Model.DeletedAt.Valid).To(BeTrue()) // deleted
-			Expect(device.InitialUser.Model.DeletedAt.Valid).To(BeTrue())          // deleted
+			Expect(device.DeletedAt.Valid).To(BeFalse())                     // not deleted
+			Expect(device.OwnershipVoucherData.DeletedAt.Valid).To(BeTrue()) // deleted
+			Expect(device.InitialUser.DeletedAt.Valid).To(BeTrue())          // deleted
 		})
 	})
 })

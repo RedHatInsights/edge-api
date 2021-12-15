@@ -35,6 +35,10 @@ func setUp() {
 		Repo{},
 		Device{},
 		DispatchRecord{},
+		FDODevice{},
+		OwnershipVoucherData{},
+		FDOUser{},
+		SSHKey{},
 	)
 	var testImage = Image{
 		Account:      "0000000",
