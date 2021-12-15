@@ -40,6 +40,7 @@ func MakeImagesRouter(sub chi.Router) {
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageByIDCtx)                           // TODO: Consistent logging
 		r.Get("/", GetImageByID)                      // TODO: Consistent logging
+		r.Get("/details", GetImageDetailsByID)        // TODO: Consistent logging
 		r.Get("/status", GetImageStatusByID)          // TODO: Consistent logging
 		r.Get("/repo", GetRepoForImage)               // TODO: Consistent logging
 		r.Get("/metadata", GetMetadataForImage)       // TODO: Consistent logging
@@ -356,23 +357,30 @@ func GetImageStatusByID(w http.ResponseWriter, r *http.Request) {
 
 //ImageDetail return the structure to inform package info to images
 type ImageDetail struct {
-	Image             *models.Image `json:"image"`
-	AditionalPackages int           `json:"aditional_packages"`
-	Packages          int           `json:"packages"`
-	UpdateAdded       int           `json:"update_added"`
-	UpdateRemoved     int           `json:"update_removed"`
-	UpdateUpdated     int           `json:"update_updated"`
+	Image              *models.Image `json:"image"`
+	AdditionalPackages int           `json:"additional_packages"`
+	Packages           int           `json:"packages"`
+	UpdateAdded        int           `json:"update_added"`
+	UpdateRemoved      int           `json:"update_removed"`
+	UpdateUpdated      int           `json:"update_updated"`
 }
 
 // GetImageByID obtains a image from the database for an account
 func GetImageByID(w http.ResponseWriter, r *http.Request) {
+	if image := getImage(w, r); image != nil {
+		json.NewEncoder(w).Encode(image)
+	}
+}
+
+// GetImageDetailsByID obtains a image from the database for an account
+func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 
 		var imgDetail ImageDetail
 		imgDetail.Image = image
 		imgDetail.Packages = len(image.Commit.InstalledPackages)
-		imgDetail.AditionalPackages = len(image.Packages)
+		imgDetail.AdditionalPackages = len(image.Packages)
 
 		upd, err := services.ImageService.GetUpdateInfo(*image)
 		if err != nil {

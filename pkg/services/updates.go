@@ -29,6 +29,8 @@ type UpdateServiceInterface interface {
 	GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error)
 	ProcessPlaybookDispatcherRunEvent(message []byte) error
 	WriteTemplate(templateInfo TemplateRemoteInfo, account string) (string, error)
+	SetUpdateStatusBasedOnDispatchRecord(dispatchRecord models.DispatchRecord) error
+	SetUpdateStatus(update *models.UpdateTransaction) error
 }
 
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
@@ -377,9 +379,8 @@ func (s *UpdateService) SetUpdateStatus(update *models.UpdateTransaction) error 
 	}
 	if allSuccess {
 		update.Status = models.UpdateStatusSuccess
-	} else {
-		update.Status = models.UpdateStatusError
 	}
+	// If there isn't an error and it's not all success, some updates are still happening
 	result := db.DB.Save(update)
 	return result.Error
 }
