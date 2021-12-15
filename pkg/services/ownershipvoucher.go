@@ -138,8 +138,6 @@ func (ovs *OwnershipVoucherService) removeFDODevices(fdoUUIDList []string) {
 		if result.Error != nil {
 			ovs.log.WithFields(logFields).Error("Failed to remove FDO device ", result.Error)
 		}
-		db.DB.Delete(&fdoDevice.InitialUser)
-		db.DB.Delete(&fdoDevice.OwnershipVoucherData)
 		db.DB.Delete(&fdoDevice)
 	}
 }
