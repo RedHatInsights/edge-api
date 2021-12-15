@@ -116,6 +116,31 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	if previousImage == nil {
 		return new(ImageNotFoundError)
 	}
+	/*
+		nowImage is the version of current Image which we are updating i.e if we are updating image1 to image 2 then image1 is the nowImage.
+		currentHighestImageVersion is the latest version present in the DB of image we're updating.
+		nextImageVersion is the next version of current image to which we are updating the image i.e if image3 is the next version of image2.
+	*/
+	var nowImage *models.Image
+	var currentHighestImageVersion *models.Image
+	var nextImageVersion *models.Image
+	nowVersionImage := db.DB.Where("version = ?", previousImage.Version).First(&nowImage)
+	if nowVersionImage.Error != nil {
+		return nowVersionImage.Error
+	}
+	currentVersionImage := db.DB.Select("version").Where("name = ? ", previousImage.Name).Order("version desc").First(&currentHighestImageVersion)
+	if currentVersionImage.Error != nil {
+		return currentVersionImage.Error
+	}
+	var compareImageVersion = nowImage.Version + 1
+	newImageVersion := db.DB.Select("version").Where("version = ? and name = ? ", compareImageVersion, previousImage.Name).Find(&nextImageVersion)
+	if newImageVersion.Error != nil {
+		return newImageVersion.Error
+	}
+	if currentHighestImageVersion.Version == compareImageVersion || nextImageVersion.Version == compareImageVersion {
+		// err := errors.NewBadRequest("only the latest updated image can be modified")
+		return new(ImageVersionAlreadyExists)
+	}
 	if previousImage.Status == models.ImageStatusSuccess {
 		// Previous image was built sucessfully
 		var currentImageSet models.ImageSet

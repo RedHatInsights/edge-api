@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"testing"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
@@ -10,6 +11,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder/mock_imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -241,3 +243,14 @@ var _ = Describe("Image Service Test", func() {
 		})
 	})
 })
+
+func TestUpdateImageHasVersionAlreadyExists(t *testing.T) {
+	image := &models.Image{}
+	previousImage := &models.Image{
+		Name:    models.ImageNameAlreadyExists,
+		Version: image.Version,
+	}
+	if services.ImageService.UpdateImage(image, previousImage) == new(ImageVersionAlreadyExists) {
+		t.Error("image version for updated image already exists")
+	}
+}

@@ -185,29 +185,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
-	var nowImage *models.Image                   // This is the version of current Image which we are updating i.e if we are updating image1 to image 2 then image1 is the nowImage.
-	var currentHighestImageVersion *models.Image // This is the latest version present in the DB of image we're updating.
-	var nextImageVersion *models.Image           // nextImageVersion is the next version of current image to which we are updating the image i.e if image3 is the next version of image2.
-	nowVersionImage := db.DB.Where("version = ?", previousImage.Version).First(&nowImage)
-	if nowVersionImage.Error != nil {
-		return
-	}
-	currentVersionImage := db.DB.Select("version").Where("name = ? ", previousImage.Name).Order("version desc").First(&currentHighestImageVersion)
-	if currentVersionImage.Error != nil {
-		return
-	}
-	var compareImageVersion = nowImage.Version + 1
-	newImageVersion := db.DB.Select("version").Where("version = ? and name = ? ", compareImageVersion, previousImage.Name).Find(&nextImageVersion)
-	if newImageVersion.Error != nil {
-		return
-	}
-	// log.Infof("currentHighestVersion: %v, nowImageVersion %v, nextImageVersion %v", currentHighestImageVersion.Version, nowImage.Version, nextImageVersion.Version) // we can delete this later
-	if currentHighestImageVersion.Version == compareImageVersion || nextImageVersion.Version == compareImageVersion {
-		err := errors.NewBadRequest("only the latest updated image can be modified")
-		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
+
 	account, err := common.GetAccount(r)
 	if err != nil || previousImage.Account != account {
 		log.WithFields(log.Fields{
