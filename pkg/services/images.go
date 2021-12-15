@@ -614,7 +614,7 @@ func (s *ImageService) CheckImageName(name, account string) (bool, error) {
 func (s *ImageService) exeInjectionScript(kickstart string, image string, imageID uint) error {
 	fleetBashScript := "/usr/local/bin/fleetkick.sh"
 	workDir := fmt.Sprintf("/var/tmp/workdir%d", imageID)
-	err := os.Mkdir(workDir, 0755)
+	err := os.Mkdir(workDir, 0750)
 	if err != nil {
 		return err
 	}
