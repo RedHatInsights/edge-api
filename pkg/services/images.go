@@ -506,7 +506,7 @@ func (s *ImageService) downloadISO(isoName string, url string) error {
 	defer iso.Close()
 
 	log.Infof("Downloading ISO %s", url)
-	res, err := http.Get(url)
+	res, err := http.Get(url) // #nosec
 	if err != nil {
 		return err
 	}
