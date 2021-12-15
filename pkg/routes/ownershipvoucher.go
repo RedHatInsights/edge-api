@@ -46,7 +46,7 @@ func CreateOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 		case "bad request":
 			services.Log.Error("Couldn't upload ownership vouchers ", err.Error())
 			w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		default:
 			services.Log.Error(err.Error())
@@ -55,7 +55,7 @@ func CreateOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // DeleteOwnershipVouchers deletes devices for the given ownership vouchers GUIDs
@@ -84,7 +84,7 @@ func DeleteOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 		case "bad request":
 			services.Log.Error("Couldn't delete ownership vouchers ", err.Error())
 			w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
-			json.NewEncoder(w).Encode(resp)
+			_ = json.NewEncoder(w).Encode(resp)
 			return
 		default:
 			services.Log.Error(err.Error())
@@ -93,7 +93,7 @@ func DeleteOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // ParseOwnershipVouchers parses ownership vouchers from the given cbor binary data
@@ -114,7 +114,7 @@ func ParseOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // ConnectDevices connects devices to the given ownership vouchers
@@ -147,11 +147,11 @@ func ConnectDevices(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(errors.NewBadRequest("unknown_device").GetStatus())
 		resp := map[string]interface{}{"error_code": "unknown_device"}
 		resp["error_details"] = map[string]interface{}{"unknown": unknownDevices}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // validate upload request headers
@@ -186,7 +186,7 @@ func validateMiddleware(next http.Handler) http.Handler {
 		_, ok := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 		if !ok {
 			w.WriteHeader(errors.NewInternalServerError().GetStatus())
-			json.NewEncoder(w).Encode(interface{}("Internal server error"))
+			_ = json.NewEncoder(w).Encode(interface{}("Internal server error"))
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -198,5 +198,5 @@ func badRequestResponseBuilder(w http.ResponseWriter, e errors.APIError, errorCo
 	w.WriteHeader(e.GetStatus())
 	resp := map[string]interface{}{"error_code": errorCode}
 	resp["error_details"] = map[string]string{"error_message": e.Error()}
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }

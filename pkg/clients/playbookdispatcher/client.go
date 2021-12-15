@@ -49,7 +49,7 @@ func (c *Client) ExecuteDispatcher(payload DispatcherPayload) ([]Response, error
 	payloadAry := [1]DispatcherPayload{payload}
 
 	payloadBuf := new(bytes.Buffer)
-	json.NewEncoder(payloadBuf).Encode(payloadAry)
+	_ = json.NewEncoder(payloadBuf).Encode(payloadAry)
 	log.Infof("::executeDispatcher::BEGIN")
 	fullURL := c.url + "/internal/dispatch"
 	log.Infof("Requesting url: %s\n", fullURL)

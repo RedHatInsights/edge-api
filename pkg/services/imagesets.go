@@ -64,15 +64,15 @@ func (s *ImageSetsService) ListAllImageSets(w http.ResponseWriter, r *http.Reque
 		countErr := errors.NewInternalServerError()
 		log.Error(countErr)
 		w.WriteHeader(countErr.GetStatus())
-		json.NewEncoder(w).Encode(&countErr)
+		_ = json.NewEncoder(w).Encode(&countErr)
 	}
 	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("images.Image_set_id  is ?", image.ImageSetID).Find(&images)
 	if result.Error != nil {
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 	}
-	json.NewEncoder(w).Encode(map[string]interface{}{"data": &images, "count": count})
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"data": &images, "count": count})
 	return nil
 }
 

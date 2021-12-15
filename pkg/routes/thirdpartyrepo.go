@@ -65,7 +65,7 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 		return
 	}
 	log.Infof("ThirdPartyRepo::create: %#v", thirdPartyRepo)
@@ -75,7 +75,7 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 		return
 	}
 
@@ -85,11 +85,11 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewInternalServerError()
 		err.SetTitle("failed creating third party repository")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(&thirdPartyRepo)
+	_ = json.NewEncoder(w).Encode(&thirdPartyRepo)
 
 }
 
@@ -100,7 +100,7 @@ func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRe
 		log.Error(err)
 		err := errors.NewBadRequest("invalid JSON request")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 		return nil, err
 	}
 
@@ -124,7 +124,7 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 		return
 	}
 	pagination := common.GetPagination(r)
@@ -133,7 +133,7 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		countErr := errors.NewInternalServerError()
 		log.Error(countErr)
 		w.WriteHeader(countErr.GetStatus())
-		json.NewEncoder(w).Encode(&countErr)
+		_ = json.NewEncoder(w).Encode(&countErr)
 		return
 	}
 	log.Debugf("r.URL.Query() %v \n", r.URL.Query().Get("sort_by"))
@@ -147,14 +147,14 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			err := errors.NewBadRequest(err.Error())
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			_ = json.NewEncoder(w).Encode(&err)
 			return
 		}
 	}
 	if err := result.Where(filterMap).Limit(pagination.Limit).Offset(pagination.Offset).Find(&tprepo).Error; err != nil {
 		err := errors.NewBadRequest("this is not a valid filter. filter must be in name.value")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 		return
 	}
 
@@ -162,10 +162,10 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	if result.Error != nil {
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 	}
 
-	json.NewEncoder(w).Encode(map[string]interface{}{"data": &tprepo, "count": count})
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"data": &tprepo, "count": count})
 
 }
 
@@ -178,7 +178,7 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 			if err != nil {
 				err := errors.NewBadRequest(err.Error())
 				w.WriteHeader(err.GetStatus())
-				json.NewEncoder(w).Encode(&err)
+				_ = json.NewEncoder(w).Encode(&err)
 				return
 			}
 
@@ -205,10 +205,10 @@ func GetThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Error(responseErr)
 		w.WriteHeader(responseErr.GetStatus())
-		json.NewEncoder(w).Encode(&responseErr)
+		_ = json.NewEncoder(w).Encode(&responseErr)
 		return
 	}
-	json.NewEncoder(w).Encode(&tprepo)
+	_ = json.NewEncoder(w).Encode(&tprepo)
 }
 
 // CreateThirdPartyRepoUpdate updates the existing third party repository
@@ -220,7 +220,7 @@ func CreateThirdPartyRepoUpdate(w http.ResponseWriter, r *http.Request) {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 		return
 	}
 	account, err := common.GetAccount(r)
@@ -228,7 +228,7 @@ func CreateThirdPartyRepoUpdate(w http.ResponseWriter, r *http.Request) {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 		return
 	}
 
@@ -239,7 +239,7 @@ func CreateThirdPartyRepoUpdate(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewInternalServerError()
 		err.SetTitle("failed updating third party repository")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -247,7 +247,7 @@ func CreateThirdPartyRepoUpdate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Info(err)
 	}
-	json.NewEncoder(w).Encode(repoDetails)
+	_ = json.NewEncoder(w).Encode(repoDetails)
 }
 
 // DeleteThirdPartyRepoByID deletes the third party repository using ID
@@ -267,11 +267,11 @@ func DeleteThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 		}
 		log.Error(responseErr)
 		w.WriteHeader(responseErr.GetStatus())
-		json.NewEncoder(w).Encode(&responseErr)
+		_ = json.NewEncoder(w).Encode(&responseErr)
 		return
 	}
 	_ = tprepo
-	json.NewEncoder(w).Encode(&tprepo)
+	_ = json.NewEncoder(w).Encode(&tprepo)
 }
 
 func validateGetAllThirdPartyRepoFilterParams(next http.Handler) http.Handler {
@@ -297,7 +297,7 @@ func validateGetAllThirdPartyRepoFilterParams(next http.Handler) http.Handler {
 			return
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(&errs)
+		_ = json.NewEncoder(w).Encode(&errs)
 	})
 }
 

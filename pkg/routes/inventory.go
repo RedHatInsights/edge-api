@@ -64,7 +64,7 @@ func GetInventory(w http.ResponseWriter, r *http.Request) {
 	InventoryData.Total = inventory.Total
 	InventoryData.Results = results
 
-	json.NewEncoder(w).Encode(InventoryData)
+	_ = json.NewEncoder(w).Encode(InventoryData)
 }
 
 // GetUpdateAvailableInfo returns the image information
