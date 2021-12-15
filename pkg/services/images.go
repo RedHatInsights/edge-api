@@ -618,8 +618,10 @@ func (s *ImageService) exeInjectionScript(kickstart string, image string, imageI
 	if err != nil {
 		return err
 	}
-
-	cmd := exec.Command(fleetBashScript, kickstart, image, image, workDir)
+	cmd := &exec.Cmd{
+		Path: fleetBashScript,
+		Args: []string{kickstart, image, image, workDir},
+	}
 	output, err := cmd.Output()
 	if err != nil {
 		return err
