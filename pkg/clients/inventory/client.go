@@ -142,7 +142,7 @@ func (c *Client) ReturnDevices(parameters *Params) (Response, error) {
 	}
 	defer resp.Body.Close()
 	var bodyResp Response
-	json.Unmarshal([]byte(body), &bodyResp)
+	_ = json.Unmarshal([]byte(body), &bodyResp)
 	log.Infof("struct: %v\n", bodyResp)
 	return bodyResp, nil
 
@@ -181,7 +181,7 @@ func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
 	}
 	defer resp.Body.Close()
 	var inventory Response
-	json.Unmarshal([]byte(body), &inventory)
+	_ = json.Unmarshal([]byte(body), &inventory)
 	log.Infof("::Updates::ReturnDevicesByID::inventory: %v\n", inventory)
 
 	return inventory, nil
@@ -218,7 +218,7 @@ func (c *Client) ReturnDevicesByTag(tag string) (Response, error) {
 		return Response{}, err
 	}
 	var inventory Response
-	json.Unmarshal([]byte(body), &inventory)
+	_ = json.Unmarshal([]byte(body), &inventory)
 	log.Infof("struct: %v\n", inventory)
 	return inventory, nil
 }

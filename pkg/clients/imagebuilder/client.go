@@ -396,7 +396,7 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	}
 
 	var metadata Metadata
-	json.Unmarshal(respBody, &metadata)
+	_ = json.Unmarshal(respBody, &metadata)
 	for n := range metadata.InstalledPackages {
 		pkg := models.InstalledPackage{
 			Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,

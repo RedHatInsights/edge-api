@@ -90,7 +90,7 @@ func (c *Client) ExecuteDispatcher(payload DispatcherPayload) ([]Response, error
 	defer resp.Body.Close()
 
 	var playbookResponse []Response
-	json.Unmarshal([]byte(body), &playbookResponse)
+	_ = json.Unmarshal([]byte(body), &playbookResponse)
 	log.Infof("::executeDispatcher::playbookResponse: %#v", playbookResponse)
 	return playbookResponse, nil
 }

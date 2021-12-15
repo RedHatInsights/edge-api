@@ -69,7 +69,7 @@ func (c *Client) BatchDelete(fdoUUIDList []string) (interface{}, error) {
 // Decode response body into json
 func decodeResBody(body *io.ReadCloser) interface{} {
 	var j interface{}
-	json.NewDecoder(*body).Decode(&j)
+	_ = json.NewDecoder(*body).Decode(&j)
 	return j
 }
 
