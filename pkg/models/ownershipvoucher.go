@@ -36,7 +36,7 @@ type SSHKey struct {
 	FDOUserID uint   `json:"fdo_user_id"`
 }
 
-// BeforeDelete, set deleted_at for OwnershipVoucherData and FDOUser
+// BeforeDelete set deleted_at for OwnershipVoucherData and FDOUser
 func (device *FDODevice) BeforeDelete(tx *gorm.DB) (err error) {
 	if device.OwnershipVoucherData != nil {
 		err = tx.Model(OwnershipVoucherData{}).Where("fdo_device_id = ?", device.ID).Delete(&OwnershipVoucherData{}).Error
