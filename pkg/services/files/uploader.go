@@ -173,7 +173,7 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 func (u *S3Uploader) UploadFile(fname string, uploadPath string) (string, error) {
 	log.Tracef("S3Uploader::UploadFileToS3::fname: %#v", fname)
 	log.Tracef("S3Uploader::UploadFileToS3::S3path: %#v", uploadPath)
-	f, err := os.Open(fname)
+	f, err := os.Open(filepath.Clean(fname))
 	if err != nil {
 		return "", fmt.Errorf("failed to open file %q, %v", fname, err)
 	}

@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"syscall"
@@ -638,7 +639,7 @@ func (s *ImageService) exeInjectionScript(kickstart string, image string, imageI
 func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) error {
 	log.Infof("Calculating sha256 checksum for ISO %s", isoPath)
 
-	fh, err := os.Open(isoPath)
+	fh, err := os.Open(filepath.Clean(isoPath))
 	if err != nil {
 		return err
 	}

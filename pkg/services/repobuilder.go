@@ -279,7 +279,7 @@ func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string, d
 // ExtractVersionRepo Download and Extract the repo tarball to dest dir
 func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, dest string) error {
 
-	tarFile, err := os.Open(filepath.Join(dest, tarFileName))
+	tarFile, err := os.Open(filepath.Clean(filepath.Join(dest, tarFileName)))
 
 	if err != nil {
 		log.Errorf("Failed to open file: %s", filepath.Join(dest, tarFileName))
