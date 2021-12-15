@@ -509,7 +509,11 @@ func (s *ImageService) downloadISO(isoName string, url string) error {
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	defer func() {
+		if err := res.Body.Close(); err != nil {
+			log.Error("Error closing file: ", err)
+		}
+	}()
 
 	_, err = io.Copy(iso, res.Body)
 	if err != nil {
@@ -638,7 +642,11 @@ func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) er
 	if err != nil {
 		return err
 	}
-	defer fh.Close()
+	defer func() {
+		if err := fh.Close(); err != nil {
+			log.Error("Error closing file: ", err)
+		}
+	}()
 
 	sumCalculator := sha256.New()
 	_, err = io.Copy(sumCalculator, fh)
