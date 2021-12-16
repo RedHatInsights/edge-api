@@ -811,7 +811,7 @@ func (s *ImageService) checkForDuplicateImageVersion(previousImage *models.Image
 	var nowImage *models.Image
 	var currentHighestImageVersion *models.Image
 	var nextImageVersion *models.Image
-  
+
 	nowVersionImage := db.DB.Where("version = ?", previousImage.Version).First(&nowImage)
 	if nowVersionImage.Error != nil {
 		return nowVersionImage.Error
