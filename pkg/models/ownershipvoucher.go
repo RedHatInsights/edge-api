@@ -1,5 +1,7 @@
 package models
 
+import "gorm.io/gorm"
+
 // FDODevice has a one OwnershipVoucherData and a one FDO User
 type FDODevice struct {
 	Model
@@ -13,7 +15,7 @@ type FDODevice struct {
 // OwnershipVoucherData represents the data of an ownership voucher
 type OwnershipVoucherData struct {
 	Model
-	ProtocolVersion uint   `json:"protocol_version"`
+	ProtocolVersion uint32 `json:"protocol_version"`
 	GUID            string `json:"guid"`
 	DeviceName      string `json:"device_name"`
 	FDODeviceID     uint   `json:"fdo_device_id"`
@@ -32,4 +34,15 @@ type SSHKey struct {
 	Model
 	Key       string `json:"key"`
 	FDOUserID uint   `json:"fdo_user_id"`
+}
+
+// BeforeDelete set deleted_at for OwnershipVoucherData and FDOUser
+func (device *FDODevice) BeforeDelete(tx *gorm.DB) (err error) {
+	if device.OwnershipVoucherData != nil {
+		err = tx.Model(OwnershipVoucherData{}).Where("fdo_device_id = ?", device.ID).Delete(&OwnershipVoucherData{}).Error
+	}
+	if device.InitialUser != nil {
+		err = tx.Model(FDOUser{}).Where("fdo_device_id = ?", device.ID).Delete(&FDOUser{}).Error
+	}
+	return
 }

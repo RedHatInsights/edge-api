@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"gorm.io/gorm"
+
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -44,7 +46,7 @@ var imageSetFilters = common.ComposeFilters(
 		QueryParam: "name",
 		DBField:    "image_sets.name",
 	}),
-	common.SortFilterHandler("image_sets", "created_at", "DESC"),
+	common.SortFilterHandler("image_sets", "updated_at", "DESC"),
 )
 
 var imageDetailFilters = common.ComposeFilters(
@@ -73,15 +75,13 @@ var imageStatusFilters = common.ComposeFilters(
 		QueryParam: "name",
 		DBField:    "image_sets.name",
 	}),
-	common.SortFilterHandler("images", "created_at", "DESC"),
+	common.SortFilterHandler("images", "updated_at", "DESC"),
 )
 
 // ImageSetCtx provides the handler for Image Sets
 func ImageSetCtx(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
-
 		var imageSet models.ImageSet
 		account, err := common.GetAccount(r)
 		if err != nil {
@@ -111,20 +111,24 @@ func ImageSetCtx(next http.Handler) http.Handler {
 				db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
 				db.DB.Where("id = ?", &imageSet.Images[len(imageSet.Images)-1].InstallerID).Find(&imageSet.Images[len(imageSet.Images)-1].Installer)
 			}
-			Imgs := returnImageDetails(imageSet, s)
-			imageSet.Images = Imgs
-
 			ctx := context.WithValue(r.Context(), imageSetKey, &imageSet)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		}
 	})
 }
 
+//ImageSetInstallerURL returns Imageset structure with last installer available
+type ImageSetInstallerURL struct {
+	ImageSetData     models.ImageSet `json:"image_set"`
+	ImageBuildISOURL *string         `json:"image_build_iso_url"`
+}
+
 // ListAllImageSets return the list of image sets and images
 func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
-	var imageSet *[]models.ImageSet
+	var imageSet []models.ImageSet
+	var imageSetInfo []ImageSetInstallerURL
 	var count int64
-	result := imageSetFilters(r, db.DB)
+	var result *gorm.DB
 	pagination := common.GetPagination(r)
 	account, err := common.GetAccount(r)
 
@@ -149,25 +153,46 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		result = imageSetFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Where(`Image_Sets.account = ? `, account).Find(&imageSet)
 	} else {
 		result = imageStatusFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Where(`Image_Sets.account = ? `, account).Find(&imageSet)
-
 	}
 
+	for idx, img := range imageSet {
+		var imgSet ImageSetInstallerURL
+		imgSet.ImageSetData = imageSet[idx]
+
+		if imageSet[idx].Images != nil {
+			lastImage := imageSet[idx].Images[len(img.Images)-1]
+			if lastImage.InstallerID != nil {
+				result = db.DB.First(&lastImage.Installer, lastImage.InstallerID)
+				imgSet.ImageBuildISOURL = &lastImage.Installer.ImageBuildISOURL
+			}
+		}
+
+		imageSetInfo = append(imageSetInfo, imgSet)
+	}
 	if result.Error != nil {
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
+
 	var response common.EdgeAPIPaginatedResponse
 	response.Count = count
-	response.Data = &imageSet
+	response.Data = imageSetInfo
 	json.NewEncoder(w).Encode(response)
+}
 
+//ImageSetImagePackages return info related to details on images from imageset
+type ImageSetImagePackages struct {
+	ImageSetData     models.ImageSet `json:"image_set"`
+	Images           []ImageDetail   `json:"images"`
+	ImageBuildISOURL string          `json:"image_build_iso_url"`
 }
 
 // GetImageSetsByID returns the list of Image Sets by a given Image Set ID
 func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
-	var imageSetData models.ImageSet
-	var image *[]models.Image
+	// var imageSetData models.ImageSet
+	var images []models.Image
+	var details ImageSetImagePackages
 	var response common.EdgeAPIPaginatedResponse
 	pagination := common.GetPagination(r)
 	account, err := common.GetAccount(r)
@@ -186,21 +211,30 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 	}
 	result := imageDetailFilters(r, db.DB.Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
+		Preload("Commit.Repo").Preload("Commit.InstalledPackages").Preload("Installer").
 		Joins(`JOIN Image_Sets ON Image_Sets.id = Images.image_set_id`).
-		Where(`Image_Sets.account = ? and  Image_sets.id = ?`, account, &imageSet.ID).Find(&image)
+		Where(`Image_Sets.account = ? and  Image_sets.id = ?`, account, &imageSet.ID).Find(&images)
 
 	if result.Error != nil {
 		err := errors.NewBadRequest("Error to filter images")
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
-	imageSetData = *imageSet
-	imageSetData.Images = *image
-	response.Count = int64(len(*image))
-	response.Data = &imageSetData
 
+	s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	Imgs := returnImageDetails(images, s)
+
+	details.ImageSetData = *imageSet
+	details.Images = Imgs
+
+	if Imgs != nil && Imgs[len(Imgs)-1].Image != nil && Imgs[len(Imgs)-1].Image.InstallerID != nil {
+		img := Imgs[len(Imgs)-1].Image
+		details.ImageBuildISOURL = img.Installer.ImageBuildISOURL
+	}
+
+	response.Data = &details
+	response.Count = int64(len(images))
 	json.NewEncoder(w).Encode(response)
-
 }
 
 func validateFilterParams(next http.Handler) http.Handler {
@@ -242,16 +276,21 @@ func contains(s []string, searchterm string) bool {
 	return false
 }
 
-func returnImageDetails(imageSet models.ImageSet, s *dependencies.EdgeAPIServices) []models.Image {
-	var Imgs []models.Image
+func returnImageDetails(images []models.Image, s *dependencies.EdgeAPIServices) []ImageDetail {
+	var Imgs []ImageDetail
 
-	for _, image := range imageSet.Images {
-		id := strconv.FormatUint(uint64(image.ID), 10)
-		img, err := s.ImageService.GetImageByID(id)
+	for idx, i := range images {
+		err := db.DB.Model(i).Association("Packages").Find(&images[idx].Packages)
+		if err != nil {
+			return nil
+		}
+		img, err := s.ImageService.AddPackageInfo(&images[idx])
+
 		if err != nil {
 			log.Error("Image detail not found \n")
 		}
-		Imgs = append(Imgs, *img)
+		Imgs = append(Imgs, ImageDetail(img))
 	}
+
 	return Imgs
 }

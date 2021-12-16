@@ -55,7 +55,7 @@ objects:
         - name: ENABLE_CLOUDWATCH_LOGGING
           value: ${ENABLE_CLOUDWATCH_LOGGING}
         - name: AUTH
-          value: ${ENABLE_RH_IDENITY_PROCESSING}
+          value: ${ENABLE_RH_IDENTITY_PROCESSING}
         - name: EDGETARBALLSBUCKET
           value: ${EDGE_TARBALLS_BUCKET}
         - name: OPENAPIFILEPATH
@@ -105,44 +105,71 @@ objects:
 parameters:
 - description: Cpu limit of service
   name: CPU_LIMIT
+  required: false
   value: "1"
-- description: memory limit of service
+- description: Memory limit of service
   name: MEMORY_LIMIT
+  required: false
   value: 1Gi
-- name: MIN_REPLICAS
+- description: Minimum number of edge-api pods to deploy
+  name: MIN_REPLICAS
+  required: false
   value: "1"
 - description: Image tag
   name: IMAGE_TAG
   required: true
 - description: Image name
   name: IMAGE
+  required: false
   value: quay.io/cloudservices/edge-api
-- description: Determines Clowder deployment
+- description: Determines if Clowder deployment is enabled
   name: CLOWDER_ENABLED
+  required: false
   value: "true"
 - description: ClowdEnv Name
   name: ENV_NAME
-  requred: false
+  required: false
 - description: Determines if Cloud Watch logging is enabled
   name: ENABLE_CLOUDWATCH_LOGGING
+  required: false
   value: "true"
-- name: EDGE_TARBALLS_BUCKET
+- description: Edge S3 bucket name
+  name: EDGE_TARBALLS_BUCKET
+  required: false
   value: rh-edge-tarballs
-- name: OPEN_API_FILEPATH
+- description: Relative path to JSON version of OpenAPI specification
+  name: OPEN_API_FILEPATH
+  required: false
   value: /var/tmp/openapi.json
-- name: ENABLE_RH_IDENITY_PROCESSING
+- description: Flag indicating RedHat Identity processing is enabled
+  name: ENABLE_RH_IDENTITY_PROCESSING
+  required: false
   value: "true"
-- name: IMAGEBUILDER_URL
+- description: ImageBuilder service URL
+  name: IMAGEBUILDER_URL
+  required: false
   value: "http://image-builder:8080"
-- name: INVENTORYURL
+- description: Host Inventory service URL
+  name: INVENTORYURL
+  required: false
   value: "http://host-inventory-service:8080/"
-- name: PLAYBOOKDISPATCHERURL
+- description: Playbook Dispatcher service URL
+  name: PLAYBOOKDISPATCHERURL
+  required: false
   value: "http://host-playbook-dispatcher:8080/"
-- name: EDGEAPIBASEURL
+- description: Edge-api Base URL
+  name: EDGEAPIBASEURL
+  required: false
   value: "https://cloud.stage.redhat.com"
-- name: UPLOADWORKERS
+- description: Number of workers for uploading to a backing object storage bucket
+  name: UPLOADWORKERS
+  required: false
   value: "100"
-- name: FDO_HOST_URL
+- description: FDO service URL
+  name: FDO_HOST_URL
+  required: false
   value: "https://fdo.redhat.com"
-- name: FDO_API_VERSION
+- description: FDO API version
+  name: FDO_API_VERSION
+  required: false
   value: "v1"

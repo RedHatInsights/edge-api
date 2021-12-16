@@ -137,15 +137,36 @@ func TestGetStatus(t *testing.T) {
 	}
 }
 
-func TestGetImageById(t *testing.T) {
+type ImageResponse struct {
+	Image              models.Image `json:"image"`
+	AdditionalPackages int          `json:"additional_packages"`
+	Packages           int          `json:"packages"`
+	UpdateAdded        int          `json:"update_added"`
+	UpdateRemoved      int          `json:"update_removed"`
+	UpdateUpdated      int          `json:"update_updated"`
+}
+
+func TestGetImageDetailsById(t *testing.T) {
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	rr := httptest.NewRecorder()
 
+	ctrl := gomock.NewController(t)
+
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	mockImageService.EXPECT().GetUpdateInfo(gomock.Any()).Return(nil, nil)
+
 	ctx := context.WithValue(req.Context(), imageKey, &testImage)
-	handler := http.HandlerFunc(GetImageByID)
+
+	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
+	})
+
+	handler := http.HandlerFunc(GetImageDetailsByID)
 	handler.ServeHTTP(rr, req.WithContext(ctx))
 
 	if status := rr.Code; status != http.StatusOK {
@@ -154,7 +175,7 @@ func TestGetImageById(t *testing.T) {
 		return
 	}
 
-	var ir models.Image
+	var ir ImageResponse
 	respBody, err := ioutil.ReadAll(rr.Body)
 	if err != nil {
 		t.Errorf(err.Error())
@@ -165,9 +186,29 @@ func TestGetImageById(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 
-	if ir.ID != testImage.ID {
+	if ir.Packages != 0 {
+		t.Errorf("wrong image packages: got %v want %v",
+			ir.Packages, 0)
+	}
+	if ir.AdditionalPackages != 0 {
+		t.Errorf("wrong image AdditionalPackages: got %v want %v",
+			ir.AdditionalPackages, 0)
+	}
+	if ir.UpdateAdded != 0 {
+		t.Errorf("wrong image UpdateAdded: got %v want %v",
+			ir.UpdateAdded, 0)
+	}
+	if ir.UpdateRemoved != 0 {
+		t.Errorf("wrong image UpdateRemoved: got %v want %v",
+			ir.UpdateRemoved, 0)
+	}
+	if ir.UpdateUpdated != 0 {
+		t.Errorf("wrong image UpdateUpdated: got %v want %v",
+			ir.UpdateUpdated, 0)
+	}
+	if ir.Image.ID != testImage.ID {
 		t.Errorf("wrong image status: got %v want %v",
-			ir.ID, testImage.ID)
+			ir.Image.ID, testImage.ID)
 	}
 }
 

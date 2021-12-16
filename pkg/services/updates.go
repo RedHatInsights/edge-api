@@ -28,6 +28,9 @@ type UpdateServiceInterface interface {
 	GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error)
 	GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error)
 	ProcessPlaybookDispatcherRunEvent(message []byte) error
+	WriteTemplate(templateInfo TemplateRemoteInfo, account string) (string, error)
+	SetUpdateStatusBasedOnDispatchRecord(dispatchRecord models.DispatchRecord) error
+	SetUpdateStatus(update *models.UpdateTransaction) error
 }
 
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
@@ -56,6 +59,7 @@ type playbooks struct {
 	OstreeGpgKeypath     string
 	FleetInfraEnv        string
 	UpdateNumber         string
+	RepoURL              string
 }
 
 // TemplateRemoteInfo the values to playbook
@@ -141,7 +145,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	remoteInfo.ContentURL = update.Repo.URL
 	remoteInfo.UpdateTransactionID = update.ID
 	remoteInfo.GpgVerify = "false"
-	playbookURL, err := s.writeTemplate(remoteInfo, update.Account)
+	playbookURL, err := s.WriteTemplate(remoteInfo, update.Account)
 	if err != nil {
 		update.Status = models.UpdateStatusError
 		db.DB.Save(update)
@@ -189,9 +193,9 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			db.DB.Save(&device)
 		}
 		update.DispatchRecords = dispatchRecords
-		tx := db.DB.Save(&update)
-		if tx.Error != nil {
-			log.Errorf("Error saving update: %s ", tx.Error.Error())
+		err = s.SetUpdateStatus(update)
+		if err != nil {
+			log.Errorf("Error saving update: %s ", err.Error())
 			return nil, err
 		}
 	}
@@ -214,17 +218,18 @@ func (s *UpdateService) getPlaybookURL(updateID uint) string {
 	return url
 }
 
-func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account string) (string, error) {
+// WriteTemplate is the function that writes the template to a file
+func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, account string) (string, error) {
 	cfg := config.Get()
 	filePath := cfg.TemplatesPath
 	templateName := "template_playbook_dispatcher_ostree_upgrade_payload.yml"
-	templateContents, err := template.New("").Delims("@@", "@@").ParseFiles(filePath + templateName)
+	templateContents, err := template.New(templateName).Delims("@@", "@@").ParseFiles(filePath + templateName)
 	if err != nil {
 		log.Errorf("Error parsing playbook template  :: %s", err.Error())
 		return "", err
 	}
 	var envName string
-	if strings.Contains(cfg.BucketName, "-prod") || strings.Contains(cfg.BucketName, "-prod") || strings.Contains(cfg.BucketName, "-prod") {
+	if strings.Contains(cfg.BucketName, "-prod") || strings.Contains(cfg.BucketName, "-stage") || strings.Contains(cfg.BucketName, "-perf") {
 		bucketNameSplit := strings.Split(cfg.BucketName, "-")
 		envName = bucketNameSplit[len(bucketNameSplit)-1]
 	} else {
@@ -232,10 +237,9 @@ func (s *UpdateService) writeTemplate(templateInfo TemplateRemoteInfo, account s
 	}
 	templateData := playbooks{
 		GoTemplateRemoteName: templateInfo.RemoteName,
-		OstreeGpgVerify:      "false",
-		OstreeGpgKeypath:     "/etc/pki/rpm-gpg/",
 		FleetInfraEnv:        envName,
 		UpdateNumber:         strconv.FormatUint(uint64(templateInfo.UpdateTransactionID), 10),
+		RepoURL:              "https://{{ s3_buckets[fleet_infra_env] | default('rh-edge-tarballs-prod') }}.s3.us-east-1.amazonaws.com/{{ update_number }}/upd/{{ update_number }}/repo",
 	}
 
 	fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", account, templateInfo.UpdateTransactionID)
@@ -345,7 +349,6 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 // SetUpdateStatusBasedOnDispatchRecord is the function that, given a dispatch record, finds the update transaction related to and update its status if necessary
 func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord models.DispatchRecord) error {
 	var update models.UpdateTransaction
-	allSuccess := true
 	result := db.DB.Preload("DispatchRecords").
 		Table("update_transactions").
 		Joins(
@@ -354,10 +357,16 @@ func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord mode
 			dispatchRecord.ID,
 		).First(&update)
 	if result.Error != nil {
-		allSuccess = false
-		update.Status = models.UpdateStatusError
 		return result.Error
 	}
+
+	return s.SetUpdateStatus(&update)
+
+}
+
+// SetUpdateStatus is the function to set the update status from an UpdateTransaction
+func (s *UpdateService) SetUpdateStatus(update *models.UpdateTransaction) error {
+	allSuccess := true
 
 	for _, d := range update.DispatchRecords {
 		if d.Status != models.DispatchRecordStatusComplete {
@@ -368,10 +377,10 @@ func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord mode
 			break
 		}
 	}
-
 	if allSuccess {
 		update.Status = models.UpdateStatusSuccess
 	}
-	result = db.DB.Save(&update)
+	// If there isn't an error and it's not all success, some updates are still happening
+	result := db.DB.Save(update)
 	return result.Error
 }

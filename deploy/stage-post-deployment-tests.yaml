@@ -9,13 +9,13 @@ objects:
   metadata:
     name: edge-post-deployment-tests-${IMAGE_TAG}-${UID}
   spec:
-    appName: edge
+    appName: edge-api
     testing:
       iqe:
         debug: false
-        dynaconfEnvName: stage
+        dynaconfEnvName: post_deploy
         filter: ''
-        marker: 'core'
+        marker: 'rest'
 parameters:
 - name: IMAGE_TAG
   value: ''
