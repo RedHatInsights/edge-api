@@ -25,6 +25,7 @@ type KafkaConsumerService struct {
 	UpdateService UpdateServiceInterface
 	RetryMinutes  uint
 	config        *clowder.KafkaConfig
+	shuttingDown  bool
 }
 
 // NewKafkaConsumerService gives a instance of the Kafka implementation of ConsumerService
@@ -34,6 +35,7 @@ func NewKafkaConsumerService(config *clowder.KafkaConfig) ConsumerService {
 		UpdateService: NewUpdateService(context.Background()),
 		RetryMinutes:  5,
 		config:        config,
+		shuttingDown:  false,
 	}
 	s.Reader = s.initReader()
 	return s
@@ -103,6 +105,7 @@ func (s *KafkaConsumerService) RegisterShutdown() {
 	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 	<-sigint
 	log.Info("Closing Kafka readers...")
+	s.shuttingDown = true
 	s.Reader.Close()
 }
 
@@ -115,6 +118,12 @@ func (s *KafkaConsumerService) Start() {
 		// The only way to actually exit this for is sending an exit signal to the app
 		// Due to this call, this is also a method that can't be unit tested (see comment in the method above)
 		err := s.ConsumePlaybookDispatcherRuns()
+		if s.shuttingDown {
+			log.WithFields(log.Fields{
+				"error": err.Error(),
+			}).Error("There was en error connecting to the broker. Reader was intentionally closed.")
+			break
+		}
 		log.WithFields(log.Fields{
 			"error":          err.Error(),
 			"minutesToRetry": s.RetryMinutes,
