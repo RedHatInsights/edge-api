@@ -85,9 +85,12 @@ if [ -e /root/fleet_env.bash ]
 then
 	source /root/fleet_env.bash
 
-	[[ -z $ADMIN_USER ]] && echo "No admin user specified" || useradd -m -G wheel $ADMIN_USER
 	if [ -e /root/fleet_authkeys.txt ]
 	then
+		# Grab the ADMIN_USER from the first line of the authkeys file
+		ADMIN_USER=$(grep ADMIN_USER /root/fleet_authkeys.txt | awk -F= '{print $2}')
+		[[ -z $ADMIN_USER ]] && echo "No admin user specified" || useradd -m -G wheel $ADMIN_USER
+
 		USER_HOME=$(getent passwd $ADMIN_USER | awk -F: '{print $6}')
 		mkdir -p ${USER_HOME}/.ssh
 		chmod 755 ${USER_HOME}/.ssh
