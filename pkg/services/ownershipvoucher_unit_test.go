@@ -6,8 +6,10 @@ import (
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 var _ = Describe("Ownershipvoucher unit tests", func() {
@@ -72,21 +74,58 @@ var _ = Describe("Ownershipvoucher unit tests", func() {
 				device, err := ownershipVoucherService.GetFDODeviceByGUID(ownershipVoucher.GUID)
 				Expect(device).To(BeNil())
 				Expect(err).ToNot(BeNil())
+				var deletedDevice models.FDODevice
+				result := db.DB.Unscoped().Preload("OwnershipVoucherData",
+					"guid = ?", ownershipVoucher.GUID).Preload("InitialUser").Find(&deletedDevice)
+				Expect(result.Error).To(BeNil())
+				Expect(deletedDevice.DeletedAt.Valid).To(BeTrue())
 			}
 		})
 		It("ownershipvouchers shouldn't be found", func() {
 			for _, ownershipVoucher := range ownershipVouchers {
-				ov, err := ownershipVoucherService.GetOwnershipVouchersByGUID(ownershipVoucher.GUID)
-				Expect(ov).To(BeNil())
-				Expect(err).ToNot(BeNil())
+				var deletedDevice models.FDODevice
+				result := db.DB.Unscoped().Preload("OwnershipVoucherData",
+					"guid = ?", ownershipVoucher.GUID).Preload("OwnershipVoucherData",
+					func(db *gorm.DB) *gorm.DB {
+						return db.Unscoped()
+					}).Preload("InitialUser").Find(&deletedDevice)
+				Expect(result.Error).To(BeNil())
+				Expect(deletedDevice.OwnershipVoucherData.DeletedAt.Valid).To(BeTrue())
 			}
 		})
 		It("users shouldn't be found", func() {
 			for _, ownershipVoucher := range ownershipVouchers {
-				user, err := ownershipVoucherService.GetFDOUserByGUID(ownershipVoucher.GUID)
-				Expect(user).To(BeNil())
-				Expect(err).ToNot(BeNil())
+				var deletedDevice models.FDODevice
+				result := db.DB.Unscoped().Preload("OwnershipVoucherData",
+					"guid = ?", ownershipVoucher.GUID).Preload("InitialUser", func(db *gorm.DB) *gorm.DB {
+					return db.Unscoped()
+				}).Find(&deletedDevice)
+				Expect(result.Error).To(BeNil())
+				Expect(deletedDevice.InitialUser.DeletedAt.Valid).To(BeTrue())
 			}
+		})
+		It("`BeforeDelete` works without error", func() {
+			// create new ownershipvoucher
+			ov := models.OwnershipVoucherData{
+				GUID:            faker.UUIDHyphenated(),
+				ProtocolVersion: 100,
+				DeviceName:      faker.Name(),
+			}
+			ownershipVoucherService.storeFDODevices([]models.OwnershipVoucherData{ov})
+			// check existence
+			device, err := ownershipVoucherService.GetFDODeviceByGUID(ov.GUID)
+			Expect(device).ToNot(BeNil())
+			Expect(err).To(BeNil())
+			// execute before delete
+			err = device.BeforeDelete(db.DB)
+			Expect(err).To(BeNil())
+			// device should exist after `BeforeDelete`
+			device, err = ownershipVoucherService.GetFDODeviceByGUID(ov.GUID)
+			Expect(device).ToNot(BeNil())
+			Expect(err).To(BeNil())
+			Expect(device.DeletedAt.Valid).To(BeFalse())                     // not deleted
+			Expect(device.OwnershipVoucherData.DeletedAt.Valid).To(BeTrue()) // deleted
+			Expect(device.InitialUser.DeletedAt.Valid).To(BeTrue())          // deleted
 		})
 	})
 })
