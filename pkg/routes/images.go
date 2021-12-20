@@ -38,8 +38,8 @@ func MakeImagesRouter(sub chi.Router) {
 		r.Get("/", GetImageByOstree) // TODO: Consistent logging
 	})
 	sub.Route("/{imageId}", func(r chi.Router) {
-		r.Use(ImageByIDCtx)                           // TODO: Consistent logging
-		r.Get("/", GetImageByID)                      // TODO: Consistent logging
+		r.Use(ImageByIDCtx)
+		r.Get("/", GetImageByID)
 		r.Get("/details", GetImageDetailsByID)        // TODO: Consistent logging
 		r.Get("/status", GetImageStatusByID)          // TODO: Consistent logging
 		r.Get("/repo", GetRepoForImage)               // TODO: Consistent logging
@@ -90,6 +90,7 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 		if imageID := chi.URLParam(r, "imageId"); imageID != "" {
+			s.Log = s.Log.WithField("imageID", imageID)
 			image, err := s.ImageService.GetImageByID(imageID)
 			if err != nil {
 				var responseErr errors.APIError
@@ -111,6 +112,7 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
+			s.Log.Debug("Image ID was not passed to the request or it was empty")
 			err := errors.NewBadRequest("Image ID required")
 			w.WriteHeader(err.GetStatus())
 			json.NewEncoder(w).Encode(&err)

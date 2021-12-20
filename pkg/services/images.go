@@ -711,17 +711,19 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 	var image models.Image
 	account, err := common.GetAccountFromContext(s.ctx)
 	if err != nil {
+		s.log.WithField("error", err).Error("Error retrieving account")
 		return nil, new(AccountNotSet)
 	}
 	id, err := strconv.Atoi(imageID)
 	if err != nil {
+		s.log.WithField("error", err).Debug("Request related error - ID is not integer")
 		return nil, new(IDMustBeInteger)
 	}
 	result := db.DB.Preload("Commit.Repo").Preload("Commit.InstalledPackages").Where("images.account = ?", account).Joins("Commit").First(&image, id)
 	if result.Error != nil {
+		s.log.WithField("error", err).Debug("Request related error - image is not found")
 		return nil, new(ImageNotFoundError)
 	}
-	s.AddPackageInfo(&image)
 	return addImageExtraData(&image)
 }
 
