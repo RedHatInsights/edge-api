@@ -30,14 +30,8 @@ podman build -f Dockerfile -t "${IMAGE}:${IMAGE_TAG}" .
 # Push image to remote repository
 podman push "${IMAGE}:${IMAGE_TAG}"
 
-# Update LATEST tag on remote repository to this hash
-podman tag "${IMAGE}:${IMAGE_TAG}" "${IMAGE}:latest"
-podman push "${IMAGE}:latest"
-
-# Update MAIN tag on remote repository to this hash
-podman tag "${IMAGE}:${IMAGE_TAG}" "${IMAGE}:main"
-podman push "${IMAGE}:main"
-
-# Update QA tag on remote repository to this hash
-podman tag "${IMAGE}:${IMAGE_TAG}" "${IMAGE}:qa"
-podman push "${IMAGE}:qa"
+TAGS="latest main qa"
+for tag in $(echo $TAGS); do
+    podman tag "${IMAGE}:${IMAGE_TAG}" "${IMAGE}:${tag}"
+    podman push "${IMAGE}:${tag}"
+done
