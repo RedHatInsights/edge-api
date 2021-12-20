@@ -34,8 +34,8 @@ func MakeImagesRouter(sub chi.Router) {
 	sub.Post("/", CreateImage)
 	sub.Post("/checkImageName", CheckImageName)
 	sub.Route("/{ostreeCommitHash}/info", func(r chi.Router) {
-		r.Use(ImageByOSTreeHashCtx)  // TODO: Consistent logging
-		r.Get("/", GetImageByOstree) // TODO: Consistent logging
+		r.Use(ImageByOSTreeHashCtx)
+		r.Get("/", GetImageByOstree)
 	})
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageByIDCtx)
