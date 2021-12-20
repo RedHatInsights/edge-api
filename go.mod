@@ -1,42 +1,44 @@
 module github.com/redhatinsights/edge-api
 
 require (
-	github.com/aws/aws-sdk-go v1.38.51
+	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
+	github.com/aws/aws-sdk-go v1.42.23
 	github.com/bxcodec/faker/v3 v3.6.0
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/fedora-iot/fido-device-onboard-rs/libfdo-data-go v0.0.0-20211210154920-5c241beb5c4e
 	github.com/getkin/kin-openapi v0.83.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi v4.1.2+incompatible
-	github.com/go-openapi/runtime v0.19.29
+	github.com/go-openapi/analysis v0.21.1 // indirect
+	github.com/go-openapi/runtime v0.21.0
+	github.com/go-openapi/strfmt v0.21.1 // indirect
+	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/golang/mock v1.6.0
+	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/jackc/pgproto3/v2 v2.0.7 // indirect
+	github.com/jackc/pgx/v4 v4.14.1 // indirect
+	github.com/jinzhu/now v1.1.4 // indirect
 	github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936
-	github.com/lib/pq v1.3.0
-	github.com/magiconair/properties v1.8.5 // indirect
-	github.com/mattn/go-sqlite3 v1.14.7 // indirect
-	github.com/mitchellh/mapstructure v1.4.1 // indirect
+	github.com/lib/pq v1.10.4
+	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.16.0
-	github.com/pelletier/go-toml v1.9.1 // indirect
-	github.com/prometheus/client_golang v1.10.0
-	github.com/prometheus/common v0.25.0 // indirect
-	github.com/redhatinsights/app-common-go v1.5.2
-	github.com/redhatinsights/platform-go-middlewares v0.8.1
-	github.com/segmentio/kafka-go v0.4.22
+	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
+	github.com/prometheus/client_golang v1.11.0
+	github.com/prometheus/common v0.32.1 // indirect
+	github.com/prometheus/procfs v0.7.3 // indirect
+	github.com/redhatinsights/app-common-go v1.6.0
+	github.com/redhatinsights/platform-go-middlewares v0.10.0
+	github.com/segmentio/kafka-go v0.4.25
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/afero v1.6.0 // indirect
-	github.com/spf13/cast v1.3.1 // indirect
-	github.com/spf13/jwalterweatherman v1.1.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.7.1
-	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect
-	golang.org/x/sys v0.0.0-20210514084401-e8d321eab015 // indirect
-	gopkg.in/ini.v1 v1.62.0 // indirect
-	gorm.io/driver/postgres v1.1.0
-	gorm.io/driver/sqlite v1.1.4
-	gorm.io/gorm v1.21.14
+	github.com/spf13/viper v1.10.1
+	go.mongodb.org/mongo-driver v1.8.1 // indirect
+	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3 // indirect
+	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f // indirect
+	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
+	gorm.io/driver/postgres v1.2.3
+	gorm.io/driver/sqlite v1.2.6
+	gorm.io/gorm v1.22.4
 )
 
-go 1.15
+go 1.16
