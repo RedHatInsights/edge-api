@@ -1,6 +1,6 @@
 services: docker
 language: go
-go: 1.15
+go: 1.16
 env:
   global:
     - FLEET_MANAGEMENT_ORG: quay.io/fleet-management
