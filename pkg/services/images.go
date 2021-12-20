@@ -118,6 +118,10 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	if previousImage == nil {
 		return new(ImageNotFoundError)
 	}
+	err := s.checkForDuplicateImageVersion(previousImage)
+	if err != nil {
+		return errors.NewBadRequest("only the latest updated image can be modified")
+	}
 	if previousImage.Status == models.ImageStatusSuccess {
 		// Previous image was built sucessfully
 		var currentImageSet models.ImageSet
@@ -154,7 +158,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		// Previous image was not built sucessfully
 		s.log.WithField("previousImageID", previousImage.ID).Info("Creating an update based on a image with a status that is not success")
 	}
-	image, err := s.imageBuilder.ComposeCommit(image)
+	image, err = s.imageBuilder.ComposeCommit(image)
 	if err != nil {
 		return err
 	}
@@ -795,6 +799,36 @@ func uploadTarRepo(account, imageName string, repoID int) (string, error) {
 	log.Infof(":: uploadTarRepo Finish ::\n")
 
 	return url, nil
+}
+
+// checkForDuplicateImageVersion make sure that there is no same image version present
+func (s *ImageService) checkForDuplicateImageVersion(previousImage *models.Image) error {
+	/*
+		nowImage is the version of current Image which we are updating i.e if we are updating image1 to image 2 then image1 is the nowImage.
+		currentHighestImageVersion is the latest version present in the DB of image we're updating.
+		nextImageVersion is the next version of current image to which we are updating the image i.e if image3 is the next version of image2.
+	*/
+	var nowImage *models.Image
+	var currentHighestImageVersion *models.Image
+	var nextImageVersion *models.Image
+
+	nowVersionImage := db.DB.Where("version = ?", previousImage.Version).First(&nowImage)
+	if nowVersionImage.Error != nil {
+		return nowVersionImage.Error
+	}
+	currentVersionImage := db.DB.Select("version").Where("name = ? ", previousImage.Name).Order("version desc").First(&currentHighestImageVersion)
+	if currentVersionImage.Error != nil {
+		return currentVersionImage.Error
+	}
+	var compareImageVersion = nowImage.Version + 1
+	newImageVersion := db.DB.Select("version").Where("version = ? and name = ? ", compareImageVersion, previousImage.Name).Find(&nextImageVersion)
+	if newImageVersion.Error != nil {
+		return newImageVersion.Error
+	}
+	if currentHighestImageVersion.Version == compareImageVersion || nextImageVersion.Version == compareImageVersion {
+		return new(ImageVersionAlreadyExists)
+	}
+	return nil
 }
 
 //GetUpdateInfo return package info when has an update to the image

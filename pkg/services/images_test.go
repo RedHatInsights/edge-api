@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"testing"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
@@ -241,3 +242,11 @@ var _ = Describe("Image Service Test", func() {
 		})
 	})
 })
+
+func TestUpdateImageHasVersionAlreadyExists(t *testing.T) {
+	var service ImageService
+	image := &models.Image{}
+	if service.checkForDuplicateImageVersion(image) == new(ImageVersionAlreadyExists) {
+		t.Error("image version for updated image already exists")
+	}
+}

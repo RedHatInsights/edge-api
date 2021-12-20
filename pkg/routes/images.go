@@ -187,6 +187,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
+
 	account, err := common.GetAccount(r)
 	if err != nil || previousImage.Account != account {
 		log.WithFields(log.Fields{
