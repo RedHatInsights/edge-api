@@ -58,6 +58,7 @@ func ImageByOSTreeHashCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 		if commitHash := chi.URLParam(r, "ostreeCommitHash"); commitHash != "" {
+			s.Log = s.Log.WithField("ostreeCommitHash", commitHash)
 			image, err := s.ImageService.GetImageByOSTreeCommitHash(commitHash)
 			if err != nil {
 				var responseErr errors.APIError
