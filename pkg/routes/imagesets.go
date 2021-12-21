@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -46,7 +47,7 @@ var imageSetFilters = common.ComposeFilters(
 		QueryParam: "name",
 		DBField:    "image_sets.name",
 	}),
-	common.SortFilterHandler("image_sets", "updated_at", "DESC"),
+	common.SortFilterHandler("images", "created_at", "DESC"),
 )
 
 var imageDetailFilters = common.ComposeFilters(
@@ -63,7 +64,7 @@ var imageDetailFilters = common.ComposeFilters(
 		QueryParam: "version",
 		DBField:    "images.version",
 	}),
-	common.SortFilterHandler("images", "updated_at", "DESC"),
+	common.SortFilterHandler("images", "created_at", "DESC"),
 )
 
 var imageStatusFilters = common.ComposeFilters(
@@ -75,7 +76,7 @@ var imageStatusFilters = common.ComposeFilters(
 		QueryParam: "name",
 		DBField:    "image_sets.name",
 	}),
-	common.SortFilterHandler("images", "updated_at", "DESC"),
+	common.SortFilterHandler("images", "created_at", "DESC"),
 )
 
 // ImageSetCtx provides the handler for Image Sets
@@ -140,7 +141,9 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	countResult := imageSetFilters(r, db.DB.Model(&models.ImageSet{})).Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Where(`Image_Sets.account = ? `, account).Count(&count)
+	countResult := imageSetFilters(r, db.DB.Model(&models.ImageSet{})).
+		Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).
+		Where(`Image_Sets.account = ? `, account).Count(&count)
 	if countResult.Error != nil {
 		countErr := errors.NewInternalServerError()
 		log.Error(countErr)
@@ -148,27 +151,40 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&countErr)
 		return
 	}
-	log.Debugf("r.URL.Query() %v \n", r.URL.Query().Get("sort_by"))
-	if r.URL.Query().Get("sort_by") != "status" && r.URL.Query().Get("sort_by") != "-status" {
-		result = imageSetFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Where(`Image_Sets.account = ? `, account).Find(&imageSet)
+
+	if r.URL.Query().Get("status") == "" && (r.URL.Query().Get("sort_by") != "-status" || r.URL.Query().Get("sort_by") != "status") {
+		result = imageSetFilters(r, db.DB.Model(&models.ImageSet{})).
+			Limit(pagination.Limit).Offset(pagination.Offset).
+			Preload("Images").
+			Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).
+			Where(`Image_Sets.account = ? `, account).Find(&imageSet)
 	} else {
-		result = imageStatusFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).Preload("Images").Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Where(`Image_Sets.account = ? `, account).Find(&imageSet)
+
+		result = imageStatusFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).
+			Preload("Images", "lower(status) in (?)", strings.ToLower(r.URL.Query().Get("status"))).
+			Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).
+			Where(`Image_Sets.account = ? `, account).Find(&imageSet)
+
 	}
 
 	for idx, img := range imageSet {
 		var imgSet ImageSetInstallerURL
 		imgSet.ImageSetData = imageSet[idx]
-
-		if imageSet[idx].Images != nil {
-			lastImage := imageSet[idx].Images[len(img.Images)-1]
-			if lastImage.InstallerID != nil {
-				result = db.DB.First(&lastImage.Installer, lastImage.InstallerID)
-				imgSet.ImageBuildISOURL = &lastImage.Installer.ImageBuildISOURL
+		sort.Slice(img.Images, func(i, j int) bool {
+			return img.Images[i].ID > img.Images[j].ID
+		})
+		for _, i := range img.Images {
+			if i.InstallerID != nil {
+				result = db.DB.First(&i.Installer, &i.InstallerID)
+				if i.Installer.ImageBuildISOURL != "" {
+					imgSet.ImageBuildISOURL = &i.Installer.ImageBuildISOURL
+					break
+				}
 			}
 		}
-
 		imageSetInfo = append(imageSetInfo, imgSet)
 	}
+
 	if result.Error != nil {
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
