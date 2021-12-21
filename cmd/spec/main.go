@@ -20,103 +20,103 @@ func main() {
 	components := openapi3.NewComponents()
 	components.Schemas = make(map[string]*openapi3.SchemaRef)
 
-	ovData, _, err := openapi3gen.NewSchemaRefForValue(&[]models.OwnershipVoucherData{})
+	ovData, err := openapi3gen.NewSchemaRefForValue(&[]models.OwnershipVoucherData{})
 	if err != nil {
 		panic(err)
 	}
 	components.Schemas["v1.OwnershipVoucherData"] = ovData
 
-	image, _, err := openapi3gen.NewSchemaRefForValue(&models.Image{})
+	image, err := openapi3gen.NewSchemaRefForValue(&models.Image{})
 	if err != nil {
 		panic(err)
 	}
 	components.Schemas["v1.Image"] = image
 
-	imageDetail, _, err := openapi3gen.NewSchemaRefForValue(&routes.ImageDetail{})
+	imageDetail, err := openapi3gen.NewSchemaRefForValue(&routes.ImageDetail{})
 	if err != nil {
 		panic(err)
 	}
 	components.Schemas["v1.ImageDetail"] = imageDetail
 
-	ImageSetImagePackages, _, err := openapi3gen.NewSchemaRefForValue(&routes.ImageSetImagePackages{})
+	ImageSetImagePackages, err := openapi3gen.NewSchemaRefForValue(&routes.ImageSetImagePackages{})
 	if err != nil {
 		panic(err)
 	}
 	components.Schemas["v1.ImageSetImagePackages"] = ImageSetImagePackages
 
-	ImageSetInstallerURL, _, err := openapi3gen.NewSchemaRefForValue(&routes.ImageSetInstallerURL{})
+	ImageSetInstallerURL, err := openapi3gen.NewSchemaRefForValue(&routes.ImageSetInstallerURL{})
 	if err != nil {
 		panic(err)
 	}
 	components.Schemas["v1.ImageSetInstallerURL"] = ImageSetInstallerURL
 
-	repo, _, err := openapi3gen.NewSchemaRefForValue(&models.Repo{})
+	repo, err := openapi3gen.NewSchemaRefForValue(&models.Repo{})
 	if err != nil {
 		panic(err)
 	}
 	components.Schemas["v1.Repo"] = repo
 
-	updates, _, err := openapi3gen.NewSchemaRefForValue(&routes.UpdatePostJSON{})
+	updates, err := openapi3gen.NewSchemaRefForValue(&routes.UpdatePostJSON{})
 	if err != nil {
 		panic(err)
 	}
 	components.Schemas["v1.AddUpdate"] = updates
 
-	updateTransaction, _, err := openapi3gen.NewSchemaRefForValue(&models.UpdateTransaction{})
+	updateTransaction, err := openapi3gen.NewSchemaRefForValue(&models.UpdateTransaction{})
 	if err != nil {
 		panic(err)
 	}
 	components.Schemas["v1.UpdateTransaction"] = updateTransaction
 
-	deviceDetails, _, err := openapi3gen.NewSchemaRefForValue(&services.DeviceDetails{})
+	deviceDetails, err := openapi3gen.NewSchemaRefForValue(&services.DeviceDetails{})
 	if err != nil {
 		panic(err)
 	}
 	components.Schemas["v1.DeviceDetails"] = deviceDetails
-	device, _, err := openapi3gen.NewSchemaRefForValue(&models.Device{})
+	device, err := openapi3gen.NewSchemaRefForValue(&models.Device{})
 	if err != nil {
 		panic(err)
 	}
 	components.Schemas["v1.Device"] = device
 
-	imageSetDetails, _, err := openapi3gen.NewSchemaRefForValue(&models.ImageSet{})
+	imageSetDetails, err := openapi3gen.NewSchemaRefForValue(&models.ImageSet{})
 	if err != nil {
 		panic(err)
 	}
 	components.Schemas["v1.ImageSetDetails"] = imageSetDetails
 
-	checkImageResponse, _, err := openapi3gen.NewSchemaRefForValue(&routes.CheckImageNameResponse{})
+	checkImageResponse, err := openapi3gen.NewSchemaRefForValue(&routes.CheckImageNameResponse{})
 	if err != nil {
 		panic(err)
 	}
 	components.Schemas["v1.CheckImageResponse"] = checkImageResponse
 
 	var checkNameBool bool
-	boolSchema, _, err := openapi3gen.NewSchemaRefForValue(checkNameBool)
+	boolSchema, err := openapi3gen.NewSchemaRefForValue(checkNameBool)
 	if err != nil {
 		panic(err)
 	}
 	components.Schemas["v1.bool"] = boolSchema
 
-	internalServerError, _, err := openapi3gen.NewSchemaRefForValue(&errors.InternalServerError{})
+	internalServerError, err := openapi3gen.NewSchemaRefForValue(&errors.InternalServerError{})
 	if err != nil {
 		panic(err)
 	}
 	components.Schemas["v1.InternalServerError"] = internalServerError
 
-	badRequest, _, err := openapi3gen.NewSchemaRefForValue(&errors.BadRequest{})
+	badRequest, err := openapi3gen.NewSchemaRefForValue(&errors.BadRequest{})
 	if err != nil {
 		panic(err)
 	}
 	components.Schemas["v1.BadRequest"] = badRequest
 
-	notFound, _, err := openapi3gen.NewSchemaRefForValue(&errors.NotFound{})
+	notFound, err := openapi3gen.NewSchemaRefForValue(&errors.NotFound{})
 	if err != nil {
 		panic(err)
 	}
 	components.Schemas["v1.NotFound"] = notFound
 
-	thirdpartyrepo, _, err := openapi3gen.NewSchemaRefForValue(&models.ThirdPartyRepo{})
+	thirdpartyrepo, err := openapi3gen.NewSchemaRefForValue(&models.ThirdPartyRepo{})
 	if err != nil {
 		panic(err)
 	}
