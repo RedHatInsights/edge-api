@@ -849,12 +849,13 @@ func (s *ImageService) GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable
 		Order("Images.updated_at desc").Find(&images)
 
 	if updates.Error != nil {
+		s.log.WithField("error", updates.Error.Error()).Error("Error retrieving update")
 		return nil, new(UpdateNotFoundError)
 	}
 	if updates.RowsAffected == 0 {
+		s.log.Info("No rows affected")
 		return nil, nil
 	}
-
 	for _, upd := range images {
 		db.DB.First(&upd.Commit, upd.CommitID)
 		db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages)

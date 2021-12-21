@@ -40,7 +40,7 @@ func MakeImagesRouter(sub chi.Router) {
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageByIDCtx)
 		r.Get("/", GetImageByID)
-		r.Get("/details", GetImageDetailsByID)        // TODO: Consistent logging
+		r.Get("/details", GetImageDetailsByID)
 		r.Get("/status", GetImageStatusByID)          // TODO: Consistent logging
 		r.Get("/repo", GetRepoForImage)               // TODO: Consistent logging
 		r.Get("/metadata", GetMetadataForImage)       // TODO: Consistent logging
@@ -380,7 +380,6 @@ func GetImageByID(w http.ResponseWriter, r *http.Request) {
 func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
-
 		var imgDetail ImageDetail
 		imgDetail.Image = image
 		imgDetail.Packages = len(image.Commit.InstalledPackages)
@@ -388,7 +387,7 @@ func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 
 		upd, err := services.ImageService.GetUpdateInfo(*image)
 		if err != nil {
-			log.Errorf("error getting update info: %v", err)
+			services.Log.WithField("error", err.Error()).Error("Error getting update info")
 		}
 		if upd != nil {
 			imgDetail.UpdateAdded = len(upd[len(upd)-1].PackageDiff.Removed)
