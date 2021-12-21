@@ -33,7 +33,7 @@ func Init(ctx context.Context) *EdgeAPIServices {
 	return &EdgeAPIServices{
 		CommitService:           services.NewCommitService(ctx),
 		ImageService:            services.NewImageService(ctx, log),
-		RepoService:             services.NewRepoService(ctx),
+		RepoService:             services.NewRepoService(ctx, log),
 		ImageSetService:         services.NewImageSetsService(ctx),
 		UpdateService:           services.NewUpdateService(ctx),
 		DeviceService:           services.NewDeviceService(ctx),

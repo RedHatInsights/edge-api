@@ -11,43 +11,31 @@ import (
 // RepoServiceInterface defines the interface to handle the business logic of RHEL for Edge Devices
 type RepoServiceInterface interface {
 	GetRepoByID(repoID *uint) (*models.Repo, error)
-	GetRepoByCommitID(commitID uint) (*models.Repo, error)
 }
 
 // NewRepoService gives a instance of the main implementation of RepoServiceInterface
-func NewRepoService(ctx context.Context) RepoServiceInterface {
+func NewRepoService(ctx context.Context, log *log.Entry) RepoServiceInterface {
 	return &RepoService{
 		ctx: ctx,
+		log: log,
 	}
 }
 
 // RepoService is the main implementation of a RepoServiceInterface
 type RepoService struct {
 	ctx context.Context
+	log *log.Entry
 }
 
 // GetRepoByID receives RepoID uint and get a *models.Repo back
 func (s *RepoService) GetRepoByID(repoID *uint) (*models.Repo, error) {
-	log.Debugf("GetRepoByID::repoID: %#v", repoID)
+	s.log.Debug("Retrieving repo by ID")
 	var repo models.Repo
 	result := db.DB.First(&repo, repoID)
-	log.Debugf("GetRepoByID::result: %#v", result)
-	log.Debugf("GetRepoByID::repo: %#v", repo)
 	if result.Error != nil {
+		s.log.Error("Error retrieving image repository")
 		return nil, result.Error
 	}
-	return &repo, nil
-}
-
-// GetRepoByCommitID receives Repo.CommitID uint and get a *models.Repo back
-func (s *RepoService) GetRepoByCommitID(commitID uint) (*models.Repo, error) {
-	log.Debugf("GetRepoByCommitID::commitID: %#v", commitID)
-	var repo models.Repo
-	result := db.DB.Where("commit_id = ?", commitID).First(&repo)
-	log.Debugf("GetRepoByCommitID::result: %#v", result)
-	log.Debugf("GetRepoByCommitID::repo: %#v", repo)
-	if result.Error != nil {
-		return nil, result.Error
-	}
+	s.log.Debug("Repo by ID retrieved successfully")
 	return &repo, nil
 }

@@ -34,21 +34,6 @@ func (m *MockRepoServiceInterface) EXPECT() *MockRepoServiceInterfaceMockRecorde
 	return m.recorder
 }
 
-// GetRepoByCommitID mocks base method.
-func (m *MockRepoServiceInterface) GetRepoByCommitID(commitID uint) (*models.Repo, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRepoByCommitID", commitID)
-	ret0, _ := ret[0].(*models.Repo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetRepoByCommitID indicates an expected call of GetRepoByCommitID.
-func (mr *MockRepoServiceInterfaceMockRecorder) GetRepoByCommitID(commitID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRepoByCommitID", reflect.TypeOf((*MockRepoServiceInterface)(nil).GetRepoByCommitID), commitID)
-}
-
 // GetRepoByID mocks base method.
 func (m *MockRepoServiceInterface) GetRepoByID(repoID *uint) (*models.Repo, error) {
 	m.ctrl.T.Helper()
