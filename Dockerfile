@@ -22,6 +22,7 @@ RUN go build -o /go/bin/edge-api
 
 # Build the migration binary.
 RUN go build -o /go/bin/edge-api-migrate cmd/migrate/migrate.go
+RUN go build -o /go/bin/edge-api-wipe cmd/db/wipe.go
 
 ######################################
 # STEP 2: build the dependencies image
@@ -62,6 +63,7 @@ ENV MTOOLS_SKIP_CHECK=1
 # Copy the edge-api binaries into the image.
 COPY --from=edge-builder /go/bin/edge-api /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-migrate /usr/bin
+COPY --from=edge-builder /go/bin/edge-api-wipe /usr/bin
 COPY --from=edge-builder /src/mypackage/myapp/cmd/spec/openapi.json /var/tmp
 
 # kickstart inject requirements
