@@ -692,15 +692,17 @@ func (s *ImageService) AddPackageInfo(image *models.Image) (ImageDetail, error) 
 	return imgDetail, nil
 }
 
-func addImageExtraData(image *models.Image) (*models.Image, error) {
+func (s *ImageService) addImageExtraData(image *models.Image) (*models.Image, error) {
 	if image.InstallerID != nil {
 		result := db.DB.First(&image.Installer, image.InstallerID)
 		if result.Error != nil {
+			s.log.WithField("error", result.Error).Error("Error retrieving installer for image")
 			return nil, result.Error
 		}
 	}
 	err := db.DB.Model(image).Association("Packages").Find(&image.Packages)
 	if err != nil {
+		s.log.WithField("error", err).Error("Error packages from image")
 		return nil, err
 	}
 	return image, nil
@@ -724,21 +726,26 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 		s.log.WithField("error", err).Debug("Request related error - image is not found")
 		return nil, new(ImageNotFoundError)
 	}
-	return addImageExtraData(&image)
+	return s.addImageExtraData(&image)
 }
 
 // GetImageByOSTreeCommitHash retrieves an image by its ostree commit hash
 func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error) {
+	s.log.Info("Getting image by OSTreeHash")
 	var image models.Image
 	account, err := common.GetAccountFromContext(s.ctx)
 	if err != nil {
+		s.log.Error("Error retreving account")
 		return nil, new(AccountNotSet)
 	}
 	result := db.DB.Where("images.account = ? and os_tree_commit = ?", account, commitHash).Joins("Commit").First(&image)
 	if result.Error != nil {
+		s.log.WithField("error", result.Error).Error("Error retrieving image by OSTreeHash")
 		return nil, new(ImageNotFoundError)
 	}
-	return addImageExtraData(&image)
+	s.log = s.log.WithField("imageID", image.ID)
+	s.log.Info("Image successfuly retrievedd by its OSTreeHash")
+	return s.addImageExtraData(&image)
 }
 
 // RetryCreateImage retries the whole post process of the image creation
