@@ -24,17 +24,6 @@ export REGISTRY_AUTH_FILE="${AUTH_CONF_DIR}/auth.json"
 podman login -u="${QUAY_USER}" -p="${QUAY_TOKEN}" quay.io
 podman login -u="${RH_REGISTRY_USER}" -p="${RH_REGISTRY_TOKEN}" registry.redhat.io
 
-# This will remove unnecessary image tags from quay.io
-# keep only 'latest', 'main' & 'qa' tags && pr tags with expiration date
-TAGS_TO_REMOVE=$(skopeo inspect docker://${IMAGE} \
-    | jq -r '.RepoTags[]' | xargs \
-    | sed -r 's/(,|latest|main|qa)//g')
-for tag in $(echo $TAGS_TO_REMOVE); do
-    echo "removing $tag"
-    skopeo inspect docker://${IMAGE}:$tag | jq -e '.Labels."quay.expires-after"' || \
-        skopeo delete --force docker://${IMAGE}:$tag
-done
-
 # Build image
 podman build -f Dockerfile -t "${IMAGE}:${IMAGE_TAG}" .
 
