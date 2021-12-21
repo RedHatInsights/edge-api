@@ -34,8 +34,8 @@ func MakeImagesRouter(sub chi.Router) {
 	sub.Post("/", CreateImage)
 	sub.Post("/checkImageName", CheckImageName)
 	sub.Route("/{ostreeCommitHash}/info", func(r chi.Router) {
-		r.Use(ImageByOSTreeHashCtx)  // TODO: Consistent logging
-		r.Get("/", GetImageByOstree) // TODO: Consistent logging
+		r.Use(ImageByOSTreeHashCtx)
+		r.Get("/", GetImageByOstree)
 	})
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageByIDCtx)
@@ -58,6 +58,7 @@ func ImageByOSTreeHashCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 		if commitHash := chi.URLParam(r, "ostreeCommitHash"); commitHash != "" {
+			s.Log = s.Log.WithField("ostreeCommitHash", commitHash)
 			image, err := s.ImageService.GetImageByOSTreeCommitHash(commitHash)
 			if err != nil {
 				var responseErr errors.APIError
