@@ -23,6 +23,12 @@ objects:
       podSpec:
         image: ${IMAGE}:${IMAGE_TAG}
         initContainers:
+        - name: wipe-db
+          command:
+          - bash
+          - -c
+          - edge-api-wipe
+          inheritEnv: true
         - name: run-migrations
           command:
           - bash
