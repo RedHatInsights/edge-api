@@ -31,12 +31,6 @@ objects:
           - -c
           - edge-api-wipe
           inheritEnv: true
-        - name: run-migrations
-          command:
-          - bash
-          - -c
-          - edge-api-migrate
-          inheritEnv: true
         livenessProbe:
           failureThreshold: 3
           httpGet:
