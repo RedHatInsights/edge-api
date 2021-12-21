@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 
@@ -22,14 +23,28 @@ type ConsumerService interface {
 type KafkaConsumerService struct {
 	Reader        *kafka.Reader
 	UpdateService UpdateServiceInterface
+	RetryMinutes  uint
+	config        *clowder.KafkaConfig
+	shuttingDown  bool
 }
 
 // NewKafkaConsumerService gives a instance of the Kafka implementation of ConsumerService
 func NewKafkaConsumerService(config *clowder.KafkaConfig) ConsumerService {
 	// to consume messages
+	s := &KafkaConsumerService{
+		UpdateService: NewUpdateService(context.Background()),
+		RetryMinutes:  5,
+		config:        config,
+		shuttingDown:  false,
+	}
+	s.Reader = s.initReader()
+	return s
+}
+
+func (s *KafkaConsumerService) initReader() *kafka.Reader {
 	topic := "platform.playbook-dispatcher.runs"
-	brokers := make([]string, len(config.Brokers))
-	for i, b := range config.Brokers {
+	brokers := make([]string, len(s.config.Brokers))
+	for i, b := range s.config.Brokers {
 		brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
 	}
 	log.WithFields(log.Fields{
@@ -41,20 +56,22 @@ func NewKafkaConsumerService(config *clowder.KafkaConfig) ConsumerService {
 		Topic:   topic,
 		GroupID: "edge-fleet-management-update-playbook",
 	})
-	return &KafkaConsumerService{Reader: r, UpdateService: NewUpdateService(context.Background())}
+	return r
 }
 
 // ConsumePlaybookDispatcherRuns is the method that consumes from the topic that gives us the execution of playbook from playbook dispatcher service
-func (s *KafkaConsumerService) ConsumePlaybookDispatcherRuns() {
+func (s *KafkaConsumerService) ConsumePlaybookDispatcherRuns() error {
 	log.Info("Starting to consume playbook dispatcher's runs")
-
+	// Keep as much logic out of this is method as the Kafka Reader is not mockable for unit tests, as per
+	// https://github.com/segmentio/kafka-go/issues/794
+	// Most of the logic needs to be under the ProcessPlaybookDispatcherRunEvent service
 	for {
 		m, err := s.Reader.ReadMessage(context.Background())
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error": err.Error(),
 			}).Error("Error reading message from Kafka topic")
-			break
+			return err
 		}
 		log.WithFields(log.Fields{
 			"topic":  m.Topic,
@@ -88,6 +105,7 @@ func (s *KafkaConsumerService) RegisterShutdown() {
 	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 	<-sigint
 	log.Info("Closing Kafka readers...")
+	s.shuttingDown = true
 	s.Reader.Close()
 }
 
@@ -96,7 +114,21 @@ func (s *KafkaConsumerService) Start() {
 	log.Info("Starting consumers...")
 
 	go s.RegisterShutdown()
-	go s.ConsumePlaybookDispatcherRuns()
-
-	log.Info("Consumers started...")
+	for {
+		// The only way to actually exit this for is sending an exit signal to the app
+		// Due to this call, this is also a method that can't be unit tested (see comment in the method above)
+		err := s.ConsumePlaybookDispatcherRuns()
+		if s.shuttingDown {
+			log.WithFields(log.Fields{
+				"error": err.Error(),
+			}).Error("There was en error connecting to the broker. Reader was intentionally closed.")
+			break
+		}
+		log.WithFields(log.Fields{
+			"error":          err.Error(),
+			"minutesToRetry": s.RetryMinutes,
+		}).Error("There was en error connecting to the broker. Retry in a few minutes.")
+		time.Sleep(time.Minute * time.Duration(s.RetryMinutes))
+		s.Reader = s.initReader()
+	}
 }

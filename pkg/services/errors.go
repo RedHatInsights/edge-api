@@ -41,3 +41,10 @@ type ThirdPartyRepositoryNotFound struct{}
 func (e *ThirdPartyRepositoryNotFound) Error() string {
 	return "third party repository was not found"
 }
+
+// ImageVersionAlreadyExists indicates the updated image version was already present
+type ImageVersionAlreadyExists struct{}
+
+func (e *ImageVersionAlreadyExists) Error() string {
+	return "updated image version already exists"
+}

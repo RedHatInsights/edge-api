@@ -118,6 +118,10 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	if previousImage == nil {
 		return new(ImageNotFoundError)
 	}
+	err := s.checkForDuplicateImageVersion(previousImage)
+	if err != nil {
+		return errors.NewBadRequest("only the latest updated image can be modified")
+	}
 	if previousImage.Status == models.ImageStatusSuccess {
 		// Previous image was built sucessfully
 		var currentImageSet models.ImageSet
@@ -154,7 +158,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		// Previous image was not built sucessfully
 		s.log.WithField("previousImageID", previousImage.ID).Info("Creating an update based on a image with a status that is not success")
 	}
-	image, err := s.imageBuilder.ComposeCommit(image)
+	image, err = s.imageBuilder.ComposeCommit(image)
 	if err != nil {
 		return err
 	}
@@ -688,15 +692,17 @@ func (s *ImageService) AddPackageInfo(image *models.Image) (ImageDetail, error) 
 	return imgDetail, nil
 }
 
-func addImageExtraData(image *models.Image) (*models.Image, error) {
+func (s *ImageService) addImageExtraData(image *models.Image) (*models.Image, error) {
 	if image.InstallerID != nil {
 		result := db.DB.First(&image.Installer, image.InstallerID)
 		if result.Error != nil {
+			s.log.WithField("error", result.Error).Error("Error retrieving installer for image")
 			return nil, result.Error
 		}
 	}
 	err := db.DB.Model(image).Association("Packages").Find(&image.Packages)
 	if err != nil {
+		s.log.WithField("error", err).Error("Error packages from image")
 		return nil, err
 	}
 	return image, nil
@@ -707,32 +713,39 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 	var image models.Image
 	account, err := common.GetAccountFromContext(s.ctx)
 	if err != nil {
+		s.log.WithField("error", err).Error("Error retrieving account")
 		return nil, new(AccountNotSet)
 	}
 	id, err := strconv.Atoi(imageID)
 	if err != nil {
+		s.log.WithField("error", err).Debug("Request related error - ID is not integer")
 		return nil, new(IDMustBeInteger)
 	}
 	result := db.DB.Preload("Commit.Repo").Preload("Commit.InstalledPackages").Where("images.account = ?", account).Joins("Commit").First(&image, id)
 	if result.Error != nil {
+		s.log.WithField("error", err).Debug("Request related error - image is not found")
 		return nil, new(ImageNotFoundError)
 	}
-	s.AddPackageInfo(&image)
-	return addImageExtraData(&image)
+	return s.addImageExtraData(&image)
 }
 
 // GetImageByOSTreeCommitHash retrieves an image by its ostree commit hash
 func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error) {
+	s.log.Info("Getting image by OSTreeHash")
 	var image models.Image
 	account, err := common.GetAccountFromContext(s.ctx)
 	if err != nil {
+		s.log.Error("Error retreving account")
 		return nil, new(AccountNotSet)
 	}
 	result := db.DB.Where("images.account = ? and os_tree_commit = ?", account, commitHash).Joins("Commit").First(&image)
 	if result.Error != nil {
+		s.log.WithField("error", result.Error).Error("Error retrieving image by OSTreeHash")
 		return nil, new(ImageNotFoundError)
 	}
-	return addImageExtraData(&image)
+	s.log = s.log.WithField("imageID", image.ID)
+	s.log.Info("Image successfuly retrievedd by its OSTreeHash")
+	return s.addImageExtraData(&image)
 }
 
 // RetryCreateImage retries the whole post process of the image creation
@@ -797,6 +810,36 @@ func uploadTarRepo(account, imageName string, repoID int) (string, error) {
 	return url, nil
 }
 
+// checkForDuplicateImageVersion make sure that there is no same image version present
+func (s *ImageService) checkForDuplicateImageVersion(previousImage *models.Image) error {
+	/*
+		nowImage is the version of current Image which we are updating i.e if we are updating image1 to image 2 then image1 is the nowImage.
+		currentHighestImageVersion is the latest version present in the DB of image we're updating.
+		nextImageVersion is the next version of current image to which we are updating the image i.e if image3 is the next version of image2.
+	*/
+	var nowImage *models.Image
+	var currentHighestImageVersion *models.Image
+	var nextImageVersion *models.Image
+
+	nowVersionImage := db.DB.Where("version = ?", previousImage.Version).First(&nowImage)
+	if nowVersionImage.Error != nil {
+		return nowVersionImage.Error
+	}
+	currentVersionImage := db.DB.Select("version").Where("name = ? ", previousImage.Name).Order("version desc").First(&currentHighestImageVersion)
+	if currentVersionImage.Error != nil {
+		return currentVersionImage.Error
+	}
+	var compareImageVersion = nowImage.Version + 1
+	newImageVersion := db.DB.Select("version").Where("version = ? and name = ? ", compareImageVersion, previousImage.Name).Find(&nextImageVersion)
+	if newImageVersion.Error != nil {
+		return newImageVersion.Error
+	}
+	if currentHighestImageVersion.Version == compareImageVersion || nextImageVersion.Version == compareImageVersion {
+		return new(ImageVersionAlreadyExists)
+	}
+	return nil
+}
+
 //GetUpdateInfo return package info when has an update to the image
 func (s *ImageService) GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable, error) {
 	var images []models.Image
@@ -806,12 +849,13 @@ func (s *ImageService) GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable
 		Order("Images.updated_at desc").Find(&images)
 
 	if updates.Error != nil {
+		s.log.WithField("error", updates.Error.Error()).Error("Error retrieving update")
 		return nil, new(UpdateNotFoundError)
 	}
 	if updates.RowsAffected == 0 {
+		s.log.Info("No rows affected")
 		return nil, nil
 	}
-
 	for _, upd := range images {
 		db.DB.First(&upd.Commit, upd.CommitID)
 		db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages)

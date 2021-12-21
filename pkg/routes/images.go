@@ -34,13 +34,13 @@ func MakeImagesRouter(sub chi.Router) {
 	sub.Post("/", CreateImage)
 	sub.Post("/checkImageName", CheckImageName)
 	sub.Route("/{ostreeCommitHash}/info", func(r chi.Router) {
-		r.Use(ImageByOSTreeHashCtx)  // TODO: Consistent logging
-		r.Get("/", GetImageByOstree) // TODO: Consistent logging
+		r.Use(ImageByOSTreeHashCtx)
+		r.Get("/", GetImageByOstree)
 	})
 	sub.Route("/{imageId}", func(r chi.Router) {
-		r.Use(ImageByIDCtx)                           // TODO: Consistent logging
-		r.Get("/", GetImageByID)                      // TODO: Consistent logging
-		r.Get("/details", GetImageDetailsByID)        // TODO: Consistent logging
+		r.Use(ImageByIDCtx)
+		r.Get("/", GetImageByID)
+		r.Get("/details", GetImageDetailsByID)
 		r.Get("/status", GetImageStatusByID)          // TODO: Consistent logging
 		r.Get("/repo", GetRepoForImage)               // TODO: Consistent logging
 		r.Get("/metadata", GetMetadataForImage)       // TODO: Consistent logging
@@ -58,6 +58,7 @@ func ImageByOSTreeHashCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 		if commitHash := chi.URLParam(r, "ostreeCommitHash"); commitHash != "" {
+			s.Log = s.Log.WithField("ostreeCommitHash", commitHash)
 			image, err := s.ImageService.GetImageByOSTreeCommitHash(commitHash)
 			if err != nil {
 				var responseErr errors.APIError
@@ -90,6 +91,7 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 		if imageID := chi.URLParam(r, "imageId"); imageID != "" {
+			s.Log = s.Log.WithField("imageID", imageID)
 			image, err := s.ImageService.GetImageByID(imageID)
 			if err != nil {
 				var responseErr errors.APIError
@@ -111,6 +113,7 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
+			s.Log.Debug("Image ID was not passed to the request or it was empty")
 			err := errors.NewBadRequest("Image ID required")
 			w.WriteHeader(err.GetStatus())
 			json.NewEncoder(w).Encode(&err)
@@ -187,6 +190,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 	}
+
 	account, err := common.GetAccount(r)
 	if err != nil || previousImage.Account != account {
 		log.WithFields(log.Fields{
@@ -376,7 +380,6 @@ func GetImageByID(w http.ResponseWriter, r *http.Request) {
 func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
-
 		var imgDetail ImageDetail
 		imgDetail.Image = image
 		imgDetail.Packages = len(image.Commit.InstalledPackages)
@@ -384,7 +387,7 @@ func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 
 		upd, err := services.ImageService.GetUpdateInfo(*image)
 		if err != nil {
-			log.Errorf("error getting update info: %v", err)
+			services.Log.WithField("error", err.Error()).Error("Error getting update info")
 		}
 		if upd != nil {
 			imgDetail.UpdateAdded = len(upd[len(upd)-1].PackageDiff.Removed)
