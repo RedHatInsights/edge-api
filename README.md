@@ -141,7 +141,7 @@ For these steps, only git and Docker are necessary from the information above. K
 3. Run the migrations to create the database schema (this will download dependencies).
 
      ```bash
-     go run cmd/migrate/migrate.go
+     go run cmd/migrate/main.go
      ```
 
 4. Run the project in debug mode. Debug mode allows unauthenticated calls and it's essential for local development.
@@ -282,7 +282,7 @@ You should get a 200 response back.
 3. Execute Podman
 
      ```bash
-     podman run --rm -ti -p 3000:3000 -v $(pwd):/edge-api:Z quay.io/cloudservices/edge-api:qa
+     podman run --rm -ti -p 3000:3000 -v $(pwd):/edge-api:Z quay.io/fleet-management/edge-api:latest
      ```
 
 Now the application should be running. You can test this running a curl command in another as follows:
@@ -298,12 +298,12 @@ To solve it just change the volume you mount to `${pwd}:/edge-api:Z`.
 
 ### Testing locally with libfdo-data
 
-The `quay.io/cloudservices/edge-api:libfdo-data` image is a special testing container, it contains a script that can help you run the tests from:
+The `quay.io/fleet-management/libfdo-data:latest` image is a special testing container, it contains a script that can help you run the tests from:
 
 1. edge-api upstream (clone on each run)
 
      ```bash
-     podman run --rm -ti quay.io/cloudservices/edge-api:libfdo-data
+     podman run --rm -ti quay.io/fleet-management/libfdo-data:latest
      ```
 
 2. your edge-api fork (clone on each run)
@@ -316,7 +316,7 @@ The `quay.io/cloudservices/edge-api:libfdo-data` image is a special testing cont
 3. your localhost with volume
 
      ```bash
-     podman run --rm -ti -v $(pwd):/edge-api:Z quay.io/cloudservices/edge-api:libfdo-data
+     podman run --rm -ti -v $(pwd):/edge-api:Z quay.io/fleet-management/libfdo-data:latest
      ```
 
 ## Development

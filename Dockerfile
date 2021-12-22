@@ -21,7 +21,7 @@ COPY --from=quay.io/fleet-management/libfdo-data /usr/local/include/libfdo-data/
 RUN go build -tags=fdo -o /go/bin/edge-api
 
 # Build the migration binary.
-RUN go build -o /go/bin/edge-api-migrate cmd/migrate/migrate.go
+RUN go build -o /go/bin/edge-api-migrate cmd/migrate/main.go
 RUN go build -o /go/bin/edge-api-wipe cmd/db/wipe.go
 
 ######################################

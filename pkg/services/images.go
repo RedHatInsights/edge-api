@@ -752,12 +752,12 @@ func (s *ImageService) RetryCreateImage(image *models.Image) error {
 	// recompose commit
 	image, err := s.imageBuilder.ComposeCommit(image)
 	if err != nil {
-		s.log.Error("Failed recomposing commit")
+		s.log.WithField("error", err.Error()).Error("Failed recomposing commit")
 		return err
 	}
 	err = s.setBuildingStatusOnImageToRetryBuild(image)
 	if err != nil {
-		s.log.Error("Failed setting image status")
+		s.log.WithField("error", err.Error()).Error("Failed setting image status")
 		return nil
 	}
 	go s.postProcessImage(image.ID)
