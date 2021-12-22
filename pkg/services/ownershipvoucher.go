@@ -14,8 +14,7 @@ import (
 
 // OwnershipVoucherService for ownership voucher management
 type OwnershipVoucherService struct {
-	ctx context.Context
-	log *log.Entry
+	Service
 }
 
 // OwnershipVoucherServiceInterface is the interface for the ownership voucher service
@@ -33,10 +32,7 @@ type OwnershipVoucherServiceInterface interface {
 
 // NewOwnershipVoucherService creates a new ownership voucher service
 func NewOwnershipVoucherService(ctx context.Context, log *log.Entry) OwnershipVoucherServiceInterface {
-	return &OwnershipVoucherService{
-		ctx: ctx,
-		log: log.WithField("service", "ownershipvoucher"),
-	}
+	return &OwnershipVoucherService{Service: Service{ctx: ctx, log: log.WithField("service", "ownershipvoucher")}}	
 }
 
 // BatchUploadOwnershipVouchers creates empty devices with ownership vouchers data
