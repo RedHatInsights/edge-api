@@ -141,7 +141,7 @@ For these steps, only git and Docker are necessary from the information above. K
 3. Run the migrations to create the database schema (this will download dependencies).
 
      ```bash
-     go run cmd/migrate/migrate.go
+     go run cmd/migrate/main.go
      ```
 
 4. Run the project in debug mode. Debug mode allows unauthenticated calls and it's essential for local development.
