@@ -12,6 +12,7 @@ What is it?
 - [ ] New feature (non-breaking change which adds functionality)
 - [ ] Documentation update
 - [ ] Tests update
+- [ ] Refactor
 
 # Checklist:
 

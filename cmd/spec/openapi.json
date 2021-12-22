@@ -3635,469 +3635,7 @@
   },
   "openapi": "3.0.0",
   "paths": {
-    "/devices/{DeviceUUID}": {
-      "get": {
-        "operationId": "getDevice",
-        "parameters": [
-          {
-            "description": "DeviceUUID",
-            "in": "path",
-            "name": "DeviceUUID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.DeviceDetails"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.BadRequest"
-                }
-              }
-            },
-            "description": "The request sent couldn't be processed."
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.NotFound"
-                }
-              }
-            },
-            "description": "The device was not found."
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.InternalServerError"
-                }
-              }
-            },
-            "description": "There was an internal server error."
-          }
-        },
-        "summary": "Get a device by UUID."
-      }
-    },
-    "/fdo/ownership_voucher": {
-      "post": {
-        "operationId": "CreateOwnershipVouchers",
-        "requestBody": {
-          "content": {
-            "application/cbor": {
-              "schema": {
-                "type": "object"
-              }
-            }
-          },
-          "description": "CBOR encoding of the ownership vouchers.",
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "guid": {
-                      "description": "FDO GUID for the device.",
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Created"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.BadRequest"
-                }
-              }
-            },
-            "description": "The request sent couldn't be processed."
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.InternalServerError"
-                }
-              }
-            },
-            "description": "There was an internal server error."
-          }
-        },
-        "summary": "Upload ownership vouchers."
-      }
-    },
-    "/fdo/ownership_voucher/connect": {
-      "post": {
-        "operationId": "ConnectDevices",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              }
-            }
-          },
-          "description": "list of GUIDs for which the Ownership Vouchers should get deleted.",
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.BadRequest"
-                }
-              }
-            },
-            "description": "The request sent couldn't be processed."
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.InternalServerError"
-                }
-              }
-            },
-            "description": "There was an internal server error."
-          }
-        },
-        "summary": "Connect devices by their GUIDs."
-      }
-    },
-    "/fdo/ownership_voucher/delete": {
-      "post": {
-        "operationId": "DeleteOwnershipVouchers",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              }
-            }
-          },
-          "description": "list of GUIDs for which the Ownership Vouchers should get deleted.",
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.BadRequest"
-                }
-              }
-            },
-            "description": "The request sent couldn't be processed."
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.InternalServerError"
-                }
-              }
-            },
-            "description": "There was an internal server error."
-          }
-        },
-        "summary": "Delete ownership vouchers."
-      }
-    },
-    "/fdo/ownership_voucher/parse": {
-      "post": {
-        "operationId": "ParseOwnershipVouchers",
-        "requestBody": {
-          "content": {
-            "application/cbor": {
-              "schema": {
-                "type": "object"
-              }
-            }
-          },
-          "description": "CBOR encoding of the ownership vouchers.",
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.OwnershipVoucherData"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.BadRequest"
-                }
-              }
-            },
-            "description": "The request sent couldn't be processed."
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.InternalServerError"
-                }
-              }
-            },
-            "description": "There was an internal server error."
-          }
-        },
-        "summary": "Parse ownership vouchers."
-      }
-    },
-    "/image-sets": {
-      "get": {
-        "operationId": "ListAllImageSets",
-        "parameters": [
-          {
-            "description": "Define sort fields: Created_at, Name, Status. To sort DESC use -",
-            "in": "query",
-            "name": "sort_by",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "field: filter by name",
-            "in": "query",
-            "name": "name",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "field: filter by status",
-            "in": "query",
-            "name": "status",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "Count": {
-                      "example": 100,
-                      "type": "integer"
-                    },
-                    "Data": {
-                      "items": {
-                        "$ref": "#/components/schemas/v1.ImageSetInstallerURL"
-                      },
-                      "type": "array"
-                    }
-                  },
-                  "type": "object"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.BadRequest"
-                }
-              }
-            },
-            "description": "The request sent couldn't be processed."
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.NotFound"
-                }
-              }
-            },
-            "description": "The Image Set was not found."
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.InternalServerError"
-                }
-              }
-            },
-            "description": "There was an internal server error."
-          }
-        },
-        "summary": "Return the list of image sets."
-      }
-    },
-    "/image-sets/{ImageSetId}": {
-      "get": {
-        "operationId": "GetImageSetsByID",
-        "parameters": [
-          {
-            "description": "ImageSetId",
-            "in": "path",
-            "name": "ImageSetId",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "description": "Define sort fields: Created_at, Name, Status. To sort DESC use -",
-            "in": "query",
-            "name": "sort_by",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "field: filter by name",
-            "in": "query",
-            "name": "name",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "field: filter by status",
-            "in": "query",
-            "name": "status",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "Count": {
-                      "example": 100,
-                      "type": "integer"
-                    },
-                    "Data": {
-                      "$ref": "#/components/schemas/v1.ImageSetImagePackages"
-                    }
-                  },
-                  "type": "object"
-                }
-              }
-            },
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/images": {
-      "get": {
-        "operationId": "listImages",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "count": {
-                      "example": 100,
-                      "type": "integer"
-                    },
-                    "data": {
-                      "items": {
-                        "$ref": "#/components/schemas/v1.Image"
-                      },
-                      "type": "array"
-                    }
-                  },
-                  "type": "object"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.BadRequest"
-                }
-              }
-            },
-            "description": "The request sent couldn't be processed."
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.InternalServerError"
-                }
-              }
-            },
-            "description": "There was an internal server error."
-          }
-        },
-        "summary": "Lists all images for an account."
-      },
       "post": {
         "operationId": "createImage",
         "requestBody": {
@@ -4143,221 +3681,27 @@
           }
         },
         "summary": "Composes an image on Image Builder"
-      }
-    },
-    "/images/checkImageName": {
-      "post": {
-        "operationId": "checkImageName",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/v1.Image"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.CheckImageResponse"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.BadRequest"
-                }
-              }
-            },
-            "description": "The request sent couldn't be processed."
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.InternalServerError"
-                }
-              }
-            },
-            "description": "There was an internal server error."
-          }
-        },
-        "summary": "Check if image name is in use for current account"
-      }
-    },
-    "/images/{imageId}": {
+      },
       "get": {
-        "operationId": "getImage",
-        "parameters": [
-          {
-            "description": "ImageID",
-            "in": "path",
-            "name": "imageId",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
+        "operationId": "listImages",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v1.ImageDetail"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.BadRequest"
-                }
-              }
-            },
-            "description": "The request sent couldn't be processed."
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.InternalServerError"
-                }
-              }
-            },
-            "description": "There was an internal server error."
-          }
-        },
-        "summary": "Get an image by id."
-      }
-    },
-    "/images/{imageId}/repo": {
-      "get": {
-        "description": "Returns the information of the OSTree Repository of a particular Image.",
-        "operationId": "getImageRepo",
-        "parameters": [
-          {
-            "description": "ImageID",
-            "in": "path",
-            "name": "imageId",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.Repo"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.BadRequest"
-                }
-              }
-            },
-            "description": "The request sent couldn't be processed."
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.InternalServerError"
-                }
-              }
-            },
-            "description": "There was an internal server error."
-          }
-        },
-        "summary": "Get Image OSTree repo."
-      }
-    },
-    "/images/{imageId}/retry": {
-      "post": {
-        "operationId": "retryImage",
-        "parameters": [
-          {
-            "description": "ImageID",
-            "in": "path",
-            "name": "imageId",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.Image"
-                }
-              }
-            },
-            "description": "Retry is being processed"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.InternalServerError"
-                }
-              }
-            },
-            "description": "There was an internal server error."
-          }
-        },
-        "summary": "Retries an building image from stratch"
-      }
-    },
-    "/images/{imageId}/status": {
-      "get": {
-        "description": "This method goes to image builder if the image is still building and updates the status if needed.",
-        "operationId": "getImageStatus",
-        "parameters": [
-          {
-            "description": "ImageID",
-            "in": "path",
-            "name": "imageId",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
+                  "type": "object",
                   "properties": {
-                    "Status": {
-                      "example": "BUILDING",
-                      "type": "string"
+                    "count": {
+                      "type": "integer",
+                      "example": 100
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/v1.Image"
+                      }
                     }
-                  },
-                  "type": "object"
+                  }
                 }
               }
             },
@@ -4384,7 +3728,7 @@
             "description": "There was an internal server error."
           }
         },
-        "summary": "Get image status."
+        "summary": "Lists all images for an account."
       }
     },
     "/images/{imageId}/update": {
@@ -4392,10 +3736,10 @@
         "operationId": "CreateImageUpdate",
         "parameters": [
           {
-            "description": "ImageID",
-            "in": "path",
             "name": "imageId",
+            "in": "path",
             "required": true,
+            "description": "ImageID",
             "schema": {
               "type": "integer"
             }
@@ -4446,15 +3790,113 @@
         "summary": "Composes an Update for a image"
       }
     },
+    "/images/{imageId}": {
+      "get": {
+        "operationId": "getImage",
+        "parameters": [
+          {
+            "name": "imageId",
+            "in": "path",
+            "required": true,
+            "description": "ImageID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.Image"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Get an image by id."
+      }
+    },
+    "/images/{imageId}/details": {
+      "get": {
+        "operationId": "getImageDetail",
+        "parameters": [
+          {
+            "name": "imageId",
+            "in": "path",
+            "required": true,
+            "description": "ImageID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.ImageDetail"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Get an image by id."
+      }
+    },
     "/images/{ostreeCommitHash}/info": {
       "get": {
         "operationId": "GetImageByOstree",
         "parameters": [
           {
-            "description": "ostreeCommitHash",
-            "in": "path",
             "name": "ostreeCommitHash",
+            "in": "path",
             "required": true,
+            "description": "ostreeCommitHash",
             "schema": {
               "type": "string"
             }
@@ -4495,24 +3937,17 @@
         "summary": "Get an image by ostree hash."
       }
     },
-    "/thirdpartyrepo": {
+    "/images/{imageId}/status": {
       "get": {
-        "operationId": "GetAllThirdPartyRepo",
+        "operationId": "getImageStatus",
         "parameters": [
           {
-            "description": "fields: created_at, name, updated_at. To sort DESC use - before the fields.",
-            "in": "query",
-            "name": "sort_by",
+            "name": "imageId",
+            "in": "path",
+            "required": true,
+            "description": "ImageID",
             "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "field: filter by name",
-            "in": "query",
-            "name": "name",
-            "schema": {
-              "type": "string"
+              "type": "integer"
             }
           }
         ],
@@ -4521,19 +3956,13 @@
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "object",
                   "properties": {
-                    "count": {
-                      "example": 100,
-                      "type": "integer"
-                    },
-                    "data": {
-                      "items": {
-                        "$ref": "#/components/schemas/v1.CreateThirdPartyRepo"
-                      },
-                      "type": "array"
+                    "Status": {
+                      "type": "string",
+                      "example": "BUILDING"
                     }
-                  },
-                  "type": "object"
+                  }
                 }
               }
             },
@@ -4560,8 +3989,695 @@
             "description": "There was an internal server error."
           }
         },
-        "summary": "Lists all Third Party Repository for an account."
+        "summary": "Get image status.",
+        "description": "This method goes to image builder if the image is still building and updates the status if needed."
+      }
+    },
+    "/images/{imageId}/repo": {
+      "get": {
+        "operationId": "getImageRepo",
+        "parameters": [
+          {
+            "name": "imageId",
+            "in": "path",
+            "required": true,
+            "description": "ImageID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.Repo"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Get Image OSTree repo.",
+        "description": "Returns the information of the OSTree Repository of a particular Image."
+      }
+    },
+    "/images/{imageId}/retry": {
+      "post": {
+        "operationId": "retryImage",
+        "parameters": [
+          {
+            "name": "imageId",
+            "in": "path",
+            "required": true,
+            "description": "ImageID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.Image"
+                }
+              }
+            },
+            "description": "Retry is being processed"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Retries an building image from stratch"
+      }
+    },
+    "/updates": {
+      "post": {
+        "operationId": "UpdateDevice",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/v1.AddUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.UpdateTransaction"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Executes a device update.",
+        "description": "Executes a device update."
       },
+      "get": {
+        "operationId": "ListUpdates",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/v1.UpdateTransaction"
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Gets all device updates.",
+        "description": "Gets all device updates."
+      }
+    },
+    "/updates/{updateID}": {
+      "get": {
+        "operationId": "GetUpdate",
+        "parameters": [
+          {
+            "name": "updateID",
+            "in": "path",
+            "required": true,
+            "description": "An unique ID to identify the update",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.UpdateTransaction"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Gets a single requested update.",
+        "description": "Gets a single requested update."
+      }
+    },
+    "/updates/{updateID}/update-playbook.yml": {
+      "get": {
+        "operationId": "GetUpdatePlaybook",
+        "parameters": [
+          {
+            "name": "updateID",
+            "in": "path",
+            "required": true,
+            "description": "An unique ID to identify the update the playbook belongs to",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "ansible playbook for an update"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        }
+      }
+    },
+    "/updates/device/{DeviceUUID}": {
+      "get": {
+        "operationId": "GetUpdateStatusForDevice",
+        "parameters": [
+          {
+            "name": "DeviceUUID",
+            "in": "path",
+            "required": true,
+            "description": "DeviceUUID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.DeviceDetails"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          }
+        },
+        "summary": "Return list of available updates for a device.",
+        "description": "Return list of available updates for a device."
+      }
+    },
+    "/updates/device/{DeviceUUID}/updates": {
+      "get": {
+        "operationId": "GetUpdateAvailableForDevice",
+        "parameters": [
+          {
+            "name": "DeviceUUID",
+            "in": "path",
+            "required": true,
+            "description": "DeviceUUID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "Image": {
+                        "$ref": "#/components/schemas/v1.Image"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Return list of available updates for a device.",
+        "description": "Return list of available updates for a device."
+      }
+    },
+    "/updates/device/{DeviceUUID}/image": {
+      "get": {
+        "operationId": "GetImageInfo",
+        "parameters": [
+          {
+            "name": "DeviceUUID",
+            "in": "path",
+            "required": true,
+            "description": "DeviceUUID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Image": {
+                      "$ref": "#/components/schemas/v1.Image"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Return image running on device.",
+        "description": "Return image running on device."
+      }
+    },
+    "/devices/{DeviceUUID}": {
+      "get": {
+        "operationId": "getDevice",
+        "parameters": [
+          {
+            "name": "DeviceUUID",
+            "in": "path",
+            "required": true,
+            "description": "DeviceUUID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.DeviceDetails"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.NotFound"
+                }
+              }
+            },
+            "description": "The device was not found."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Get a device by UUID."
+      }
+    },
+    "/image-sets": {
+      "get": {
+        "operationId": "ListAllImageSets",
+        "parameters": [
+          {
+            "name": "sort_by",
+            "in": "query",
+            "description": "Define sort fields: Created_at, Name, Status. To sort DESC use -",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "field: filter by name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "field: filter by status",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Count": {
+                      "type": "integer",
+                      "example": 100
+                    },
+                    "Data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/v1.ImageSetInstallerURL"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.NotFound"
+                }
+              }
+            },
+            "description": "The Image Set was not found."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Return the list of image sets."
+      }
+    },
+    "/image-sets/{ImageSetId}": {
+      "get": {
+        "operationId": "GetImageSetsByID",
+        "parameters": [
+          {
+            "name": "ImageSetId",
+            "in": "path",
+            "required": true,
+            "description": "ImageSetId",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "description": "Define sort fields: Created_at, Name, Status. To sort DESC use -",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "field: filter by name",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "field: filter by status",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "Count": {
+                      "type": "integer",
+                      "example": 100
+                    },
+                    "Data": {
+                      "$ref": "#/components/schemas/v1.ImageSetImagePackages"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/images/checkImageName": {
+      "post": {
+        "operationId": "checkImageName",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/v1.Image"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.CheckImageResponse"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.BadRequest"
+                }
+              }
+            },
+            "description": "The request sent couldn't be processed."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Check if image name is in use for current account"
+      }
+    },
+    "/thirdpartyrepo": {
       "post": {
         "operationId": "CreateThirdPartyRepo",
         "requestBody": {
@@ -4607,19 +4723,24 @@
           }
         },
         "summary": "Create Third Party Repository for an account."
-      }
-    },
-    "/thirdpartyrepo/{ID}": {
-      "delete": {
-        "operationId": "DeleteThirdPartyRepoByID",
+      },
+      "get": {
+        "operationId": "GetAllThirdPartyRepo",
         "parameters": [
           {
-            "description": "An unique existing third party repository id.",
-            "in": "path",
-            "name": "ID",
-            "required": true,
+            "name": "sort_by",
+            "in": "query",
+            "description": "fields: created_at, name, updated_at. To sort DESC use - before the fields.",
             "schema": {
-              "type": "integer"
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "field: filter by name",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -4628,21 +4749,33 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v1.CreateThirdPartyRepo"
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer",
+                      "example": 100
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/v1.CreateThirdPartyRepo"
+                      }
+                    }
+                  }
                 }
               }
             },
             "description": "OK"
           },
-          "404": {
+          "400": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v1.NotFound"
+                  "$ref": "#/components/schemas/v1.BadRequest"
                 }
               }
             },
-            "description": "third party repository was not found."
+            "description": "The request sent couldn't be processed."
           },
           "500": {
             "content": {
@@ -4655,16 +4788,18 @@
             "description": "There was an internal server error."
           }
         },
-        "summary": "Delete third party repository using id."
-      },
+        "summary": "Lists all Third Party Repository for an account."
+      }
+    },
+    "/thirdpartyrepo/{ID}": {
       "get": {
         "operationId": "GetThirdPartyRepoByID",
         "parameters": [
           {
-            "description": "An unique existing third party repository id.",
-            "in": "path",
             "name": "ID",
+            "in": "path",
             "required": true,
+            "description": "An unique existing third party repository id.",
             "schema": {
               "type": "integer"
             }
@@ -4708,10 +4843,10 @@
         "operationId": "CreateThirdPartyRepoUpdate",
         "parameters": [
           {
-            "description": "An unique existing third party repository id.",
-            "in": "path",
             "name": "ID",
+            "in": "path",
             "required": true,
+            "description": "An unique existing third party repository id.",
             "schema": {
               "type": "integer"
             }
@@ -4760,25 +4895,85 @@
           }
         },
         "summary": "Creates an Update for third party repository"
-      }
-    },
-    "/updates": {
-      "get": {
-        "description": "Gets all device updates.",
-        "operationId": "ListUpdates",
+      },
+      "delete": {
+        "operationId": "DeleteThirdPartyRepoByID",
+        "parameters": [
+          {
+            "name": "ID",
+            "in": "path",
+            "required": true,
+            "description": "An unique existing third party repository id.",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/v1.UpdateTransaction"
-                  },
-                  "type": "array"
+                  "$ref": "#/components/schemas/v1.CreateThirdPartyRepo"
                 }
               }
             },
             "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.NotFound"
+                }
+              }
+            },
+            "description": "third party repository was not found."
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/v1.InternalServerError"
+                }
+              }
+            },
+            "description": "There was an internal server error."
+          }
+        },
+        "summary": "Delete third party repository using id."
+      }
+    },
+    "/fdo/ownership_voucher": {
+      "post": {
+        "operationId": "CreateOwnershipVouchers",
+        "requestBody": {
+          "description": "CBOR encoding of the ownership vouchers.",
+          "required": true,
+          "content": {
+            "application/cbor": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "guid": {
+                      "type": "string",
+                      "description": "FDO GUID for the device."
+                    }
+                  }
+                }
+              }
+            },
+            "description": "Created"
           },
           "400": {
             "content": {
@@ -4794,128 +4989,38 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v1.BadRequest"
+                  "$ref": "#/components/schemas/v1.InternalServerError"
                 }
               }
             },
             "description": "There was an internal server error."
           }
         },
-        "summary": "Gets all device updates."
-      },
+        "summary": "Upload ownership vouchers."
+      }
+    },
+    "/fdo/ownership_voucher/delete": {
       "post": {
-        "description": "Executes a device update.",
-        "operationId": "UpdateDevice",
+        "operationId": "DeleteOwnershipVouchers",
         "requestBody": {
+          "description": "list of GUIDs for which the Ownership Vouchers should get deleted.",
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/v1.AddUpdate"
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v1.UpdateTransaction"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.BadRequest"
-                }
-              }
-            },
-            "description": "The request sent couldn't be processed."
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.BadRequest"
-                }
-              }
-            },
-            "description": "There was an internal server error."
-          }
-        },
-        "summary": "Executes a device update."
-      }
-    },
-    "/updates/device/{DeviceUUID}": {
-      "get": {
-        "description": "Return list of available updates for a device.",
-        "operationId": "GetUpdateStatusForDevice",
-        "parameters": [
-          {
-            "description": "DeviceUUID",
-            "in": "path",
-            "name": "DeviceUUID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.DeviceDetails"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.BadRequest"
-                }
-              }
-            },
-            "description": "The request sent couldn't be processed."
-          }
-        },
-        "summary": "Return list of available updates for a device."
-      }
-    },
-    "/updates/device/{DeviceUUID}/image": {
-      "get": {
-        "description": "Return image running on device.",
-        "operationId": "GetImageInfo",
-        "parameters": [
-          {
-            "description": "DeviceUUID",
-            "in": "path",
-            "name": "DeviceUUID",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "properties": {
-                    "Image": {
-                      "$ref": "#/components/schemas/v1.Image"
-                    }
-                  },
                   "type": "object"
                 }
               }
@@ -4943,38 +5048,29 @@
             "description": "There was an internal server error."
           }
         },
-        "summary": "Return image running on device."
+        "summary": "Delete ownership vouchers."
       }
     },
-    "/updates/device/{DeviceUUID}/updates": {
-      "get": {
-        "description": "Return list of available updates for a device.",
-        "operationId": "GetUpdateAvailableForDevice",
-        "parameters": [
-          {
-            "description": "DeviceUUID",
-            "in": "path",
-            "name": "DeviceUUID",
-            "required": true,
-            "schema": {
-              "type": "string"
+    "/fdo/ownership_voucher/parse": {
+      "post": {
+        "operationId": "ParseOwnershipVouchers",
+        "requestBody": {
+          "description": "CBOR encoding of the ownership vouchers.",
+          "required": true,
+          "content": {
+            "application/cbor": {
+              "schema": {
+                "type": "object"
+              }
             }
           }
-        ],
+        },
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "items": {
-                    "properties": {
-                      "Image": {
-                        "$ref": "#/components/schemas/v1.Image"
-                      }
-                    },
-                    "type": "object"
-                  },
-                  "type": "array"
+                  "$ref": "#/components/schemas/v1.OwnershipVoucherData"
                 }
               }
             },
@@ -5001,82 +5097,34 @@
             "description": "There was an internal server error."
           }
         },
-        "summary": "Return list of available updates for a device."
+        "summary": "Parse ownership vouchers."
       }
     },
-    "/updates/{updateID}": {
-      "get": {
-        "description": "Gets a single requested update.",
-        "operationId": "GetUpdate",
-        "parameters": [
-          {
-            "description": "An unique ID to identify the update",
-            "in": "path",
-            "name": "updateID",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.UpdateTransaction"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.BadRequest"
-                }
-              }
-            },
-            "description": "The request sent couldn't be processed."
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.InternalServerError"
-                }
-              }
-            },
-            "description": "There was an internal server error."
-          }
-        },
-        "summary": "Gets a single requested update."
-      }
-    },
-    "/updates/{updateID}/update-playbook.yml": {
-      "get": {
-        "operationId": "GetUpdatePlaybook",
-        "parameters": [
-          {
-            "description": "An unique ID to identify the update the playbook belongs to",
-            "in": "path",
-            "name": "updateID",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "example": "ansible playbook for an update",
+    "/fdo/ownership_voucher/connect": {
+      "post": {
+        "operationId": "ConnectDevices",
+        "requestBody": {
+          "description": "list of GUIDs for which the Ownership Vouchers should get deleted.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
                   "type": "string"
                 }
               }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
             },
             "description": "OK"
           },
@@ -5100,7 +5148,8 @@
             },
             "description": "There was an internal server error."
           }
-        }
+        },
+        "summary": "Connect devices by their GUIDs."
       }
     }
   }
