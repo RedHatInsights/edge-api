@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"fmt"
-	"testing"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
@@ -102,9 +101,8 @@ var _ = Describe("Image Service Test", func() {
 					},
 					OutputTypes: []string{models.ImageTypeCommit},
 				}
-				err := service.setFinalImageStatus(image)
+				service.setFinalImageStatus(image)
 
-				Expect(err).ToNot(HaveOccurred())
 				Expect(image.Status).To(Equal(models.ImageStatusSuccess))
 			})
 			It("should set status to error when error", func() {
@@ -114,9 +112,8 @@ var _ = Describe("Image Service Test", func() {
 					},
 					OutputTypes: []string{models.ImageTypeCommit},
 				}
-				err := service.setFinalImageStatus(image)
+				service.setFinalImageStatus(image)
 
-				Expect(err).ToNot(HaveOccurred())
 				Expect(image.Status).To(Equal(models.ImageStatusError))
 			})
 			It("should set status as error when building", func() {
@@ -126,9 +123,8 @@ var _ = Describe("Image Service Test", func() {
 					},
 					OutputTypes: []string{models.ImageTypeCommit},
 				}
-				err := service.setFinalImageStatus(image)
+				service.setFinalImageStatus(image)
 
-				Expect(err).ToNot(HaveOccurred())
 				Expect(image.Commit.Status).To(Equal(models.ImageStatusError))
 				Expect(image.Status).To(Equal(models.ImageStatusError))
 			})
@@ -141,9 +137,8 @@ var _ = Describe("Image Service Test", func() {
 					},
 					OutputTypes: []string{models.ImageTypeInstaller},
 				}
-				err := service.setFinalImageStatus(image)
+				service.setFinalImageStatus(image)
 
-				Expect(err).ToNot(HaveOccurred())
 				Expect(image.Status).To(Equal(models.ImageStatusSuccess))
 			})
 			It("should set status to error when error", func() {
@@ -153,9 +148,8 @@ var _ = Describe("Image Service Test", func() {
 					},
 					OutputTypes: []string{models.ImageTypeInstaller},
 				}
-				err := service.setFinalImageStatus(image)
+				service.setFinalImageStatus(image)
 
-				Expect(err).ToNot(HaveOccurred())
 				Expect(image.Status).To(Equal(models.ImageStatusError))
 			})
 			It("should set status as error when building", func() {
@@ -165,9 +159,8 @@ var _ = Describe("Image Service Test", func() {
 					},
 					OutputTypes: []string{models.ImageTypeInstaller},
 				}
-				err := service.setFinalImageStatus(image)
+				service.setFinalImageStatus(image)
 
-				Expect(err).ToNot(HaveOccurred())
 				Expect(image.Installer.Status).To(Equal(models.ImageStatusError))
 				Expect(image.Status).To(Equal(models.ImageStatusError))
 			})
@@ -184,9 +177,8 @@ var _ = Describe("Image Service Test", func() {
 					},
 					OutputTypes: []string{models.ImageTypeInstaller, models.ImageTypeCommit},
 				}
-				err := service.setFinalImageStatus(image)
+				service.setFinalImageStatus(image)
 
-				Expect(err).ToNot(HaveOccurred())
 				Expect(image.Status).To(Equal(models.ImageStatusSuccess))
 			})
 			It("should set status to error when error", func() {
@@ -199,9 +191,8 @@ var _ = Describe("Image Service Test", func() {
 					},
 					OutputTypes: []string{models.ImageTypeInstaller, models.ImageTypeCommit},
 				}
-				err := service.setFinalImageStatus(image)
+				service.setFinalImageStatus(image)
 
-				Expect(err).ToNot(HaveOccurred())
 				Expect(image.Status).To(Equal(models.ImageStatusError))
 			})
 			It("should set status as error when building", func() {
@@ -214,9 +205,8 @@ var _ = Describe("Image Service Test", func() {
 					},
 					OutputTypes: []string{models.ImageTypeInstaller, models.ImageTypeCommit},
 				}
-				err := service.setFinalImageStatus(image)
+				service.setFinalImageStatus(image)
 
-				Expect(err).ToNot(HaveOccurred())
 				Expect(image.Installer.Status).To(Equal(models.ImageStatusError))
 				Expect(image.Status).To(Equal(models.ImageStatusError))
 			})
@@ -242,13 +232,14 @@ var _ = Describe("Image Service Test", func() {
 				Expect(image.Installer.Status).To(Equal(models.ImageStatusCreated))
 			})
 		})
+		Context("when trying to update a image whose version already exists", func() {
+			It("should set status to building", func() {
+				image := &models.Image{}
+				err := service.checkForDuplicateImageVersion(image)
+
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(new(ImageVersionAlreadyExists)))
+			})
+		})
 	})
 })
-
-func TestUpdateImageHasVersionAlreadyExists(t *testing.T) {
-	var service ImageService
-	image := &models.Image{}
-	if service.checkForDuplicateImageVersion(image) == new(ImageVersionAlreadyExists) {
-		t.Error("image version for updated image already exists")
-	}
-}

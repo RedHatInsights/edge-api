@@ -39,6 +39,7 @@ type ImageServiceInterface interface {
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
 	CreateRepoForImage(i *models.Image) (*models.Repo, error)
+	CreateInstallerForImage(i *models.Image) (*models.Image, error)
 	GetImageByID(id string) (*models.Image, error)
 	GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable, error)
 	AddPackageInfo(image *models.Image) (ImageDetail, error)
@@ -195,20 +196,10 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	return nil
 }
 
-func (s *ImageService) postProcessInstaller(i *models.Image) error {
+func (s *ImageService) postProcessInstaller(image *models.Image) error {
 	s.log.Debug("Post processing installer")
-	i, err := s.imageBuilder.ComposeInstaller(i)
-	if err != nil {
-		return err
-	}
-	i.Installer.Status = models.ImageStatusBuilding
-	tx := db.DB.Save(&i.Installer)
-	if tx.Error != nil {
-		s.log.WithField("error", err.Error()).Error("Error setting installer building status")
-		return err
-	}
 	for {
-		i, err := s.UpdateImageStatus(i)
+		i, err := s.UpdateImageStatus(image)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Update image status error")
 			return err
@@ -219,16 +210,20 @@ func (s *ImageService) postProcessInstaller(i *models.Image) error {
 		time.Sleep(1 * time.Minute)
 	}
 
-	if i.Installer.Status == models.ImageStatusSuccess {
-		err = s.AddUserInfo(i)
+	if image.Installer.Status == models.ImageStatusSuccess {
+		err := s.AddUserInfo(image)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Kickstart file injection failed")
 			return err
 		}
 	}
+	// Regardless of the status, call this method to make sure the status will be updated
+	// It updates the status across the image and not just the installer
+	s.log.Debug("Setting final image status")
+	s.setFinalImageStatus(image)
+	s.log.Debug("Post processing image with installer is done")
 	return nil
 }
-
 func (s *ImageService) postProcessCommit(image *models.Image) error {
 	s.log.Debug("Post processing commit")
 	for {
@@ -257,10 +252,17 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 			return err
 		}
 	}
+	if !image.HasOutputType(models.ImageTypeInstaller) {
+		image.Installer = nil
+		s.log.Debug("Setting final image status - no installer to create")
+		s.setFinalImageStatus(image)
+		s.log.Debug("Post processing image is done - no installer to create")
+	}
+	s.log.Debug("Post processing commit is done")
 	return nil
 }
 
-func (s *ImageService) setFinalImageStatus(i *models.Image) error {
+func (s *ImageService) setFinalImageStatus(i *models.Image) {
 	// image status can be success if all output types are successful
 	// if any status are not final (success/error) then sets to error
 	// image status is error if any output status is error
@@ -295,7 +297,9 @@ func (s *ImageService) setFinalImageStatus(i *models.Image) error {
 	}
 
 	tx := db.DB.Save(i)
-	return tx.Error
+	if tx.Error != nil {
+		s.log.WithField("error", tx.Error.Error()).Fatal("Couldn't set final image status")
+	}
 }
 
 // Every log message in this method already has commit id and image id injected
@@ -333,24 +337,14 @@ func (s *ImageService) postProcessImage(id uint) {
 
 	if i.Commit.Status == models.ImageStatusSuccess {
 		s.log.Debug("Commit is successful")
-		// TODO: We need to discuss this whole thing post-July deliverable
 		if i.HasOutputType(models.ImageTypeInstaller) {
-			err = s.postProcessInstaller(i)
+			i, err = s.CreateInstallerForImage(i)
 			if err != nil {
 				s.SetErrorStatusOnImage(err, i)
 				s.log.WithField("error", err.Error()).Fatal("Failed creating installer for image")
 			}
-		} else {
-			// Cleaning up possible non nil installers if doesnt have output type installer
-			i.Installer = nil
 		}
 	}
-	s.log.Debug("Setting final image status")
-	err = s.setFinalImageStatus(i)
-	if err != nil {
-		s.log.WithField("error", err.Error()).Fatal("Couldn't set final image status")
-	}
-	s.log.Debug("Post processing image is done")
 }
 
 // CreateRepoForImage creates the OSTree repo to host that image
@@ -878,5 +872,28 @@ func (s *ImageService) GetMetadata(image *models.Image) (*models.Image, error) {
 		return nil, err
 	}
 	s.log.Debug("Metadata retrieved successfully")
+	return image, nil
+}
+
+// CreateInstallerForImage creates a installer given an existent iamge
+func (s *ImageService) CreateInstallerForImage(image *models.Image) (*models.Image, error) {
+	s.log.Debug("Creating installer for image")
+	image.ImageType = models.ImageTypeInstaller
+	image.Installer.Status = models.ImageStatusBuilding
+	tx := db.DB.Save(&image)
+	if tx.Error != nil {
+		s.log.WithField("error", tx.Error.Error()).Error("Error saving image")
+		return nil, tx.Error
+	}
+	tx = db.DB.Save(&image.Installer)
+	if tx.Error != nil {
+		s.log.WithField("error", tx.Error.Error()).Error("Error saving installer")
+		return nil, tx.Error
+	}
+	image, err := s.imageBuilder.ComposeInstaller(image)
+	if err != nil {
+		return nil, err
+	}
+	go s.postProcessInstaller(image)
 	return image, nil
 }
