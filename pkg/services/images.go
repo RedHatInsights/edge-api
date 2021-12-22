@@ -45,6 +45,7 @@ type ImageServiceInterface interface {
 	GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error)
 	CheckImageName(name, account string) (bool, error)
 	RetryCreateImage(image *models.Image) error
+	GetMetadata(image *models.Image) (*models.Image, error)
 }
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
@@ -866,4 +867,16 @@ func (s *ImageService) GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable
 		imageDiff = append(imageDiff, delta)
 	}
 	return imageDiff, nil
+}
+
+//GetMetadata return package info when has an update to the image
+func (s *ImageService) GetMetadata(image *models.Image) (*models.Image, error) {
+	s.log.Debug("Retrieving metadata")
+	image, err := s.imageBuilder.GetMetadata(image)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error retrieving metadata")
+		return nil, err
+	}
+	s.log.Debug("Metadata retrieved successfully")
+	return image, nil
 }

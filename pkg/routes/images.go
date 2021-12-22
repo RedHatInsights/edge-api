@@ -41,8 +41,8 @@ func MakeImagesRouter(sub chi.Router) {
 		r.Use(ImageByIDCtx)
 		r.Get("/", GetImageByID)
 		r.Get("/details", GetImageDetailsByID)
-		r.Get("/status", GetImageStatusByID)          // TODO: Consistent logging
-		r.Get("/repo", GetRepoForImage)               // TODO: Consistent logging
+		r.Get("/status", GetImageStatusByID)
+		r.Get("/repo", GetRepoForImage)
 		r.Get("/metadata", GetMetadataForImage)       // TODO: Consistent logging
 		r.Post("/installer", CreateInstallerForImage) // TODO: Consistent logging
 		r.Post("/kickstart", CreateKickStartForImage) // TODO: Consistent logging
@@ -491,6 +491,7 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+		services.Log = services.Log.WithField("repoID", image.Commit.RepoID)
 		repo, err := services.RepoService.GetRepoByID(image.Commit.RepoID)
 		if err != nil {
 			err := errors.NewNotFound(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.CommitID))
@@ -505,9 +506,8 @@ func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 //GetMetadataForImage gets the metadata from image-builder on /metadata endpoint
 func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
-	client := imagebuilder.InitClient(r.Context(), services.Log)
 	if image := getImage(w, r); image != nil {
-		meta, err := client.GetMetadata(image)
+		meta, err := services.ImageService.GetMetadata(image)
 		if err != nil {
 			err := errors.NewInternalServerError()
 			w.WriteHeader(err.GetStatus())
