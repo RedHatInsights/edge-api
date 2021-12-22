@@ -18,7 +18,7 @@ COPY --from=quay.io/fleet-management/libfdo-data ${LD_LIBRARY_PATH}/ ${LD_LIBRAR
 COPY --from=quay.io/fleet-management/libfdo-data /usr/local/include/libfdo-data/fdo_data.h /usr/local/include/libfdo-data/fdo_data.h
 
 # Build the binary.
-RUN go build -o /go/bin/edge-api
+RUN go build -tags=fdo -o /go/bin/edge-api
 
 # Build the migration binary.
 RUN go build -o /go/bin/edge-api-migrate cmd/migrate/main.go

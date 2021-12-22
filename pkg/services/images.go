@@ -50,17 +50,15 @@ type ImageServiceInterface interface {
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
 func NewImageService(ctx context.Context, log *log.Entry) ImageServiceInterface {
 	return &ImageService{
-		ctx:          ctx,
+		Service:      Service{ctx: ctx, log: log.WithField("service", "image")},
 		imageBuilder: imagebuilder.InitClient(ctx, log),
-		log:          log,
 		repoBuilder:  NewRepoBuilder(ctx, log),
 	}
 }
 
 // ImageService is the main implementation of a ImageServiceInterface
 type ImageService struct {
-	ctx context.Context
-	log *log.Entry
+	Service
 
 	imageBuilder imagebuilder.ClientInterface
 	repoBuilder  RepoBuilderInterface

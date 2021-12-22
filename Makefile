@@ -41,19 +41,19 @@ help:
 
 
 test:
-	go test $$(go list ./... | grep -Ev '(/test/|/ownershipvoucher|/fdo)') $(TEST_OPTIONS)
+	go test -tags=fdo $$(go list -tags=fdo ./... | grep -v /test/) $(TEST_OPTIONS)
 
 coverage: 
-	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
+	go test -tags=fdo $$(go list -tags=fdo ./... | grep -v /test/) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
 
 coverage-html:
-	 go tool cover -html=coverage.txt -o coverage.html
+	go tool cover -html=coverage.txt -o coverage.html
 
 vet:
-	go vet $$(go list ./... | grep -v /vendor/)
+	go vet -tags=fdo $$(go list -tags=fdo ./... | grep -v /vendor/)
 
 lint:
-	golint $$(go list ./... | grep -v /vendor/)
+	golint $$(go list -tags=fdo ./... | grep -v /vendor/)
 
 build:
 	$(OCI_TOOL) build . -t $(CONTAINER_TAG)
