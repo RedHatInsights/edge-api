@@ -5,13 +5,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Blueprint for a service
+// Service is a blueprint for a service
 type Service struct {
 	ctx context.Context
 	log *log.Entry
 }
 
-// Blueprint for a service interface
+// ServiceInterface defines the interface for a service
 type ServiceInterface interface{}
 
 // NewService creates a new service pointer
