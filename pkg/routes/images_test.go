@@ -293,6 +293,7 @@ func TestGetRepoForImage(t *testing.T) {
 	mockRepoService.EXPECT().GetRepoByID(gomock.Any()).Return(&testRepo, nil)
 	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
 		RepoService: mockRepoService,
+		Log:         log.NewEntry(log.StandardLogger()),
 	})
 	ctx = context.WithValue(ctx, imageKey, &testImage)
 	req = req.WithContext(ctx)
