@@ -337,6 +337,7 @@ func TestGetRepoForImageWhenNotFound(t *testing.T) {
 	mockRepoService.EXPECT().GetRepoByID(gomock.Any()).Return(nil, errors.New("not found"))
 	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
 		RepoService: mockRepoService,
+		Log:         log.NewEntry(log.StandardLogger()),
 	})
 	ctx = context.WithValue(ctx, imageKey, &testImage)
 	req = req.WithContext(ctx)
