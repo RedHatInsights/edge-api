@@ -584,7 +584,7 @@ func RetryCreateImage(w http.ResponseWriter, r *http.Request) {
 		services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 		err := services.ImageService.RetryCreateImage(image)
 		if err != nil {
-			log.Error(err)
+			services.Log.WithField("error", err.Error()).Error("Failed to retry to create image")
 			err := errors.NewInternalServerError()
 			err.SetTitle("Failed creating image")
 			w.WriteHeader(err.GetStatus())

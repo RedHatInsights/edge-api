@@ -1,3 +1,6 @@
+//go:build fdo
+// +build fdo
+
 package services
 
 import (

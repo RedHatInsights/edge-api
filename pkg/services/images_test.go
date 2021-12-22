@@ -23,8 +23,10 @@ var _ = Describe("Image Service Test", func() {
 		defer ctrl.Finish()
 		mockImageBuilderClient = mock_imagebuilder.NewMockClientInterface(ctrl)
 		service = ImageService{
-			ctx:          context.Background(),
-			log:          log.NewEntry(log.StandardLogger()),
+			Service: Service{
+				ctx: context.Background(),
+				log: log.NewEntry(log.StandardLogger()),
+			},
 			imageBuilder: mockImageBuilderClient,
 		}
 	})

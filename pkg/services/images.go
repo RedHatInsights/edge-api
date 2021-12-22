@@ -51,17 +51,15 @@ type ImageServiceInterface interface {
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
 func NewImageService(ctx context.Context, log *log.Entry) ImageServiceInterface {
 	return &ImageService{
-		ctx:          ctx,
+		Service:      Service{ctx: ctx, log: log.WithField("service", "image")},
 		imageBuilder: imagebuilder.InitClient(ctx, log),
-		log:          log,
 		repoBuilder:  NewRepoBuilder(ctx, log),
 	}
 }
 
 // ImageService is the main implementation of a ImageServiceInterface
 type ImageService struct {
-	ctx context.Context
-	log *log.Entry
+	Service
 
 	imageBuilder imagebuilder.ClientInterface
 	repoBuilder  RepoBuilderInterface
@@ -755,12 +753,12 @@ func (s *ImageService) RetryCreateImage(image *models.Image) error {
 	// recompose commit
 	image, err := s.imageBuilder.ComposeCommit(image)
 	if err != nil {
-		s.log.Error("Failed recomposing commit")
+		s.log.WithField("error", err.Error()).Error("Failed recomposing commit")
 		return err
 	}
 	err = s.setBuildingStatusOnImageToRetryBuild(image)
 	if err != nil {
-		s.log.Error("Failed setting image status")
+		s.log.WithField("error", err.Error()).Error("Failed setting image status")
 		return nil
 	}
 	go s.postProcessImage(image.ID)
