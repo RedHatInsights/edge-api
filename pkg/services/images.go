@@ -121,15 +121,19 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	if err != nil {
 		return errors.NewBadRequest("only the latest updated image can be modified")
 	}
+
+	// important: update the image imageSet for any previous image build status,
+	// otherwise image will be orphaned from its imageSet if previous build failed
+	image.ImageSetID = previousImage.ImageSetID
+
 	if previousImage.Status == models.ImageStatusSuccess {
-		// Previous image was built sucessfully
+		// Previous image was built successfully
 		var currentImageSet models.ImageSet
 		result := db.DB.Where("Id = ?", previousImage.ImageSetID).First(&currentImageSet)
 		if result.Error != nil {
 			return result.Error
 		}
 		currentImageSet.Version = currentImageSet.Version + 1
-		image.ImageSetID = previousImage.ImageSetID
 		if err := db.DB.Save(currentImageSet).Error; err != nil {
 			return result.Error
 		}
