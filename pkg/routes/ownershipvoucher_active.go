@@ -49,7 +49,9 @@ func CreateOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 		case "bad request":
 			services.Log.WithField("error", err.Error()).Error("Couldn't upload ownership vouchers due to a bad request")
 			w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
-			json.NewEncoder(w).Encode(resp)
+			if err := json.NewEncoder(w).Encode(resp); err != nil {
+				services.Log.Error("Error while trying to encode ", resp)
+			}
 			return
 		default:
 			services.Log.WithField("error", err.Error()).Error("Couldn't upload ownership vouchers")
@@ -58,7 +60,9 @@ func CreateOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		services.Log.Error("Error while trying to encode ", resp)
+	}
 }
 
 // DeleteOwnershipVouchers deletes devices for the given ownership vouchers GUIDs
@@ -87,7 +91,9 @@ func DeleteOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 		case "bad request":
 			services.Log.WithField("error", err.Error()).Error("Couldn't delete ownership vouchers due to a bad request")
 			w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
-			json.NewEncoder(w).Encode(resp)
+			if err := json.NewEncoder(w).Encode(resp); err != nil {
+				services.Log.Error("Error while trying to encode ", resp)
+			}
 			return
 		default:
 			services.Log.WithField("error", err.Error()).Error("Couldn't delete ownership vouchers")
@@ -96,7 +102,9 @@ func DeleteOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		services.Log.Error("Error while trying to encode ", resp)
+	}
 }
 
 // ParseOwnershipVouchers parses ownership vouchers from the given cbor binary data
@@ -117,7 +125,9 @@ func ParseOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		services.Log.Error("Error while trying to encode ", resp)
+	}
 }
 
 // ConnectDevices connects devices to the given ownership vouchers
@@ -150,11 +160,15 @@ func ConnectDevices(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(errors.NewBadRequest("unknown_device").GetStatus())
 		resp := map[string]interface{}{"error_code": "unknown_device"}
 		resp["error_details"] = map[string]interface{}{"unknown": unknownDevices}
-		json.NewEncoder(w).Encode(resp)
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			services.Log.Error("Error while trying to encode ", resp)
+		}
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(resp)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		services.Log.Error("Error while trying to encode ", resp)
+	}
 }
 
 // validate upload request headers
@@ -189,7 +203,10 @@ func validateMiddleware(next http.Handler) http.Handler {
 		services := dependencies.ServicesFromContext(r.Context())
 		if services.OwnershipVoucherService == nil {
 			w.WriteHeader(errors.NewInternalServerError().GetStatus())
-			json.NewEncoder(w).Encode(interface{}("Internal server error"))
+			if err := json.NewEncoder(w).Encode(interface{}("Internal server error")); err != nil {
+				services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+				services.Log.Error("Error while trying to encode ", interface{}("Internal server error"))
+			}
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -201,5 +218,5 @@ func badRequestResponseBuilder(w http.ResponseWriter, e errors.APIError, errorCo
 	w.WriteHeader(e.GetStatus())
 	resp := map[string]interface{}{"error_code": errorCode}
 	resp["error_details"] = map[string]string{"error_message": e.Error()}
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }

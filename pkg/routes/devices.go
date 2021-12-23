@@ -43,7 +43,9 @@ func DeviceCtx(next http.Handler) http.Handler {
 		if dc.DeviceUUID == "" {
 			err := errors.NewBadRequest("DeviceUUID must be sent")
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				log.Error("Error while trying to encode ", &err)
+			}
 			return
 		}
 		// TODO: Implement devices by tag
@@ -62,19 +64,25 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	}
 	result, err := s.DeviceService.GetUpdateAvailableForDeviceByUUID(dc.DeviceUUID)
 	if err == nil {
-		json.NewEncoder(w).Encode(result)
+		if err := json.NewEncoder(w).Encode(result); err != nil {
+			log.Error("Error while trying to encode ", result)
+		}
 		return
 	}
 	if _, ok := err.(*services.DeviceNotFoundError); ok {
 		err := errors.NewNotFound("Could not find device")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			log.Error("Error while trying to encode ", &err)
+		}
 		return
 	}
 	if _, ok := err.(*services.UpdateNotFoundError); ok {
 		err := errors.NewNotFound("Could not find update")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			log.Error("Error while trying to encode ", &err)
+		}
 		return
 	}
 	apierr := errors.NewInternalServerError()
@@ -83,7 +91,9 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 		"statusCode": apierr.GetStatus(),
 		"error":      apierr.Error(),
 	}).Error("Error retrieving updates for device")
-	json.NewEncoder(w).Encode(&err)
+	if err := json.NewEncoder(w).Encode(&err); err != nil {
+		log.Error("Error while trying to encode ", &err)
+	}
 }
 
 // GetDeviceImageInfo returns the information of a running image for a device
@@ -96,13 +106,17 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	result, err := s.DeviceService.GetDeviceImageInfo(dc.DeviceUUID)
 	if err == nil {
-		json.NewEncoder(w).Encode(result)
+		if err := json.NewEncoder(w).Encode(result); err != nil {
+			log.Error("Error while trying to encode ", result)
+		}
 		return
 	}
 	if _, ok := err.(*services.DeviceNotFoundError); ok {
 		err := errors.NewNotFound("Could not find device")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			log.Error("Error while trying to encode ", &err)
+		}
 		return
 	}
 	apierr := errors.NewInternalServerError()
@@ -111,7 +125,9 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 		"statusCode": apierr.GetStatus(),
 		"error":      apierr.Error(),
 	}).Error("Error getting image info for device")
-	json.NewEncoder(w).Encode(&err)
+	if err := json.NewEncoder(w).Encode(&err); err != nil {
+		log.Error("Error while trying to encode ", &err)
+	}
 }
 
 // GetDevice returns all available information that edge api has about a device
@@ -127,7 +143,9 @@ func GetDevice(w http.ResponseWriter, r *http.Request) {
 	}
 	result, err := s.DeviceService.GetDeviceDetails(dc.DeviceUUID)
 	if err == nil {
-		json.NewEncoder(w).Encode(result)
+		if err := json.NewEncoder(w).Encode(result); err != nil {
+			log.Error("Error while trying to encode ", result)
+		}
 		return
 	}
 	if _, ok := err.(*services.ImageNotFoundError); ok {
@@ -139,7 +157,9 @@ func GetDevice(w http.ResponseWriter, r *http.Request) {
 	if _, ok := err.(*services.DeviceNotFoundError); ok {
 		err := errors.NewNotFound("Could not find device")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			log.Error("Error while trying to encode ", &err)
+		}
 		return
 	}
 	apierr := errors.NewInternalServerError()
@@ -148,5 +168,7 @@ func GetDevice(w http.ResponseWriter, r *http.Request) {
 		"statusCode": apierr.GetStatus(),
 		"error":      apierr.Error(),
 	}).Error("Error retrieving updates for device")
-	json.NewEncoder(w).Encode(&err)
+	if err := json.NewEncoder(w).Encode(&err); err != nil {
+		log.Error("Error while trying to encode ", &err)
+	}
 }

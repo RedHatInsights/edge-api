@@ -51,7 +51,9 @@ func UpdateCtx(next http.Handler) http.Handler {
 			}).Error("Error retrieving account")
 			err := errors.NewBadRequest(err.Error())
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				log.Error("Error while trying to encode ", &err)
+			}
 			return
 		}
 		updateID := chi.URLParam(r, "updateID")
@@ -59,14 +61,18 @@ func UpdateCtx(next http.Handler) http.Handler {
 		if updateID == "" {
 			err := errors.NewBadRequest("UpdateTransactionID can't be empty")
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				log.Error("Error while trying to encode ", &err)
+			}
 			return
 		}
 		id, err := strconv.Atoi(updateID)
 		if err != nil {
 			err := errors.NewBadRequest(err.Error())
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				log.Error("Error while trying to encode ", &err)
+			}
 			return
 		}
 		result := db.DB.Preload("DispatchRecords").Preload("Devices").Where("update_transactions.account = ?", account).Joins("Commit").Joins("Repo").Find(&update, id)
@@ -76,7 +82,9 @@ func UpdateCtx(next http.Handler) http.Handler {
 			}).Error("Error retrieving update")
 			err := errors.NewInternalServerError()
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				log.Error("Error while trying to encode ", &err)
+			}
 			return
 		}
 		ctx := context.WithValue(r.Context(), UpdateContextKey, &update)
@@ -97,7 +105,9 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 		services.Log.WithField("error", err.Error()).Error("Error getting update playbook")
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			log.Error("Error while trying to encode ", &err)
+		}
 		return
 	}
 	defer playbook.Close()
@@ -106,7 +116,9 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 		services.Log.WithField("error", err.Error()).Error("Error reading the update playbook")
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			log.Error("Error while trying to encode ", &err)
+		}
 		return
 	}
 }
@@ -138,7 +150,9 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(&updates)
+	if err := json.NewEncoder(w).Encode(&updates); err != nil {
+		log.Error("Error while trying to encode ", &updates)
+	}
 }
 
 // UpdatePostJSON contains the update structure for the device
@@ -354,7 +368,9 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	services.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
 	go services.UpdateService.CreateUpdate(update.ID)
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(update)
+	if err := json.NewEncoder(w).Encode(update); err != nil {
+		log.Error("Error while trying to encode ", update)
+	}
 
 }
 
@@ -365,7 +381,9 @@ func GetUpdateByID(w http.ResponseWriter, r *http.Request) {
 		// Error set by UpdateCtx already
 		return
 	}
-	json.NewEncoder(w).Encode(update)
+	if err := json.NewEncoder(w).Encode(update); err != nil {
+		log.Error("Error while trying to encode ", update)
+	}
 }
 
 func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction {

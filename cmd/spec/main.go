@@ -130,7 +130,9 @@ func main() {
 	swagger.Components = components
 
 	b := &bytes.Buffer{}
-	err = json.NewEncoder(b).Encode(swagger)
+	if err := json.NewEncoder(b).Encode(swagger); err != nil {
+		fmt.Println("Error while trying to encode ", swagger)
+	}
 	checkErr(err)
 
 	schema, err := yaml.JSONToYAML(b.Bytes())

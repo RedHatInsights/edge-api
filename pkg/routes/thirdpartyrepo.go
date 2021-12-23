@@ -84,7 +84,9 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		services.Log.WithField("error", err.Error()).Error("Account was not set")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			log.Error("Error while trying to encode ", &err)
+		}
 		return
 	}
 
@@ -94,11 +96,15 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewInternalServerError()
 		err.SetTitle("failed creating third party repository")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.Error("Error while trying to encode ", &err)
+		}
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(&thirdPartyRepo)
+	if err := json.NewEncoder(w).Encode(&thirdPartyRepo); err != nil {
+		services.Log.Error("Error while trying to encode ", &thirdPartyRepo)
+	}
 
 }
 
@@ -111,7 +117,9 @@ func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRe
 		services.Log.WithField("error", err.Error()).Error("Error parsing json from third party repo")
 		err := errors.NewBadRequest("invalid JSON request")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			log.Error("Error while trying to encode ", &err)
+		}
 		return nil, err
 	}
 	services.Log = services.Log.WithFields(log.Fields{
@@ -125,7 +133,6 @@ func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRe
 		w.WriteHeader(err.GetStatus())
 		return nil, err
 	}
-
 	return tprepo, nil
 }
 
@@ -140,7 +147,9 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		services.Log.WithField("error", err.Error()).Error("Error retrieving account from the request")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.Error("Error while trying to encode ", &err)
+		}
 		return
 	}
 	pagination := common.GetPagination(r)
@@ -149,7 +158,9 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		services.Log.WithField("error", err.Error()).Error("Error counting results")
 		countErr := errors.NewInternalServerError()
 		w.WriteHeader(countErr.GetStatus())
-		json.NewEncoder(w).Encode(&countErr)
+		if err := json.NewEncoder(w).Encode(&countErr); err != nil {
+			services.Log.Error("Error while trying to encode ", &countErr)
+		}
 		return
 	}
 	services.Log.WithField("sortBy", r.URL.Query().Get("sort_by")).Debug("Sorting third party repos by ...")
@@ -163,7 +174,9 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			err := errors.NewBadRequest(err.Error())
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				services.Log.Error("Error while trying to encode ", &err)
+			}
 			return
 		}
 	}
@@ -171,7 +184,9 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		services.Log.WithField("error", err.Error()).Debug("Error parsing pagination filters")
 		err := errors.NewBadRequest("this is not a valid filter. filter must be in name.value")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.Error("Error while trying to encode ", &err)
+		}
 		return
 	}
 
@@ -180,10 +195,14 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		services.Log.WithField("error", err.Error()).Error("Error returning results")
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.Error("Error while trying to encode ", &err)
+		}
 	}
 
-	json.NewEncoder(w).Encode(map[string]interface{}{"data": &tprepo, "count": count})
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{"data": &tprepo, "count": count}); err != nil {
+		services.Log.Error("Error while trying to encode ", map[string]interface{}{"data": &tprepo, "count": count})
+	}
 
 }
 
@@ -199,7 +218,10 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 				s.Log.Debug("ID is not an integer")
 				err := errors.NewBadRequest(err.Error())
 				w.WriteHeader(err.GetStatus())
-				json.NewEncoder(w).Encode(&err)
+				if err := json.NewEncoder(w).Encode(&err); err != nil {
+					services := dependencies.ServicesFromContext(r.Context())
+					services.Log.Error("Error while trying to encode ", &err)
+				}
 				return
 			}
 
@@ -296,7 +318,9 @@ func DeleteThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		_ = tprepo
-		json.NewEncoder(w).Encode(&tprepo)
+		if err := json.NewEncoder(w).Encode(&tprepo); err != nil {
+			s.Log.Error("Error while trying to encode ", &tprepo)
+		}
 	}
 }
 
@@ -323,7 +347,10 @@ func validateGetAllThirdPartyRepoFilterParams(next http.Handler) http.Handler {
 			return
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(&errs)
+		if err := json.NewEncoder(w).Encode(&errs); err != nil {
+			services := dependencies.ServicesFromContext(r.Context())
+			services.Log.Error("Error while trying to encode ", &errs)
+		}
 	})
 }
 
