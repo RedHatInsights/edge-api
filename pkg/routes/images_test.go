@@ -467,7 +467,7 @@ func TestPostCheckImageNameDoesNotExist(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	var ir bool
-	json.Unmarshal(respBody, &ir)
+	_ = json.Unmarshal(respBody, &ir)
 	if ir != false {
 		t.Errorf("fail to validate name should exists")
 	}

@@ -47,28 +47,28 @@ func UpdateCtx(next http.Handler) http.Handler {
 		if err != nil {
 			err := errors.NewBadRequest(err.Error())
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			_ = json.NewEncoder(w).Encode(&err)
 			return
 		}
 		updateID := chi.URLParam(r, "updateID")
 		if updateID == "" {
 			err := errors.NewBadRequest("UpdateTransactionID can't be empty")
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			_ = json.NewEncoder(w).Encode(&err)
 			return
 		}
 		id, err := strconv.Atoi(updateID)
 		if err != nil {
 			err := errors.NewBadRequest(err.Error())
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			_ = json.NewEncoder(w).Encode(&err)
 			return
 		}
 		result := db.DB.Preload("DispatchRecords").Preload("Devices").Where("update_transactions.account = ?", account).Joins("Commit").Joins("Repo").Find(&update, id)
 		if result.Error != nil {
 			err := errors.NewInternalServerError()
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			_ = json.NewEncoder(w).Encode(&err)
 			return
 		}
 		ctx := context.WithValue(r.Context(), UpdateContextKey, &update)
@@ -87,7 +87,7 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 		return
 	}
 	defer playbook.Close()
@@ -95,7 +95,7 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 		return
 	}
 }
@@ -115,7 +115,7 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(w).Encode(&updates)
+	_ = json.NewEncoder(w).Encode(&updates)
 }
 
 // UpdatePostJSON contains the update structure for the device
@@ -299,7 +299,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	log.Infof("AddUpdate:: call::	service.CreateUpdate :: %d", update.ID)
 	go service.CreateUpdate(update.ID)
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(update)
+	_ = json.NewEncoder(w).Encode(update)
 
 }
 
@@ -309,7 +309,7 @@ func GetUpdateByID(w http.ResponseWriter, r *http.Request) {
 	if update == nil {
 		return
 	}
-	json.NewEncoder(w).Encode(update)
+	_ = json.NewEncoder(w).Encode(update)
 }
 
 func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction {

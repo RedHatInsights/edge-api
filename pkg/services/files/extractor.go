@@ -32,7 +32,7 @@ func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
 			return err
 		}
 
-		path := filepath.Join(dst, header.Name)
+		path := filepath.Clean(filepath.Join(dst, header.Name))
 		info := header.FileInfo()
 		if info.IsDir() {
 			if err = os.MkdirAll(path, info.Mode()); err != nil {

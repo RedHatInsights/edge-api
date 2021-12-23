@@ -133,7 +133,7 @@ type InstalledPackage struct {
 
 func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 	payloadBuf := new(bytes.Buffer)
-	json.NewEncoder(payloadBuf).Encode(composeReq)
+	_ = json.NewEncoder(payloadBuf).Encode(composeReq)
 	cfg := config.Get()
 	url := fmt.Sprintf("%s/api/image-builder/v1/compose", cfg.ImageBuilderConfig.URL)
 	c.log.WithFields(log.Fields{
@@ -396,7 +396,7 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	}
 
 	var metadata Metadata
-	json.Unmarshal(respBody, &metadata)
+	_ = json.Unmarshal(respBody, &metadata)
 	for n := range metadata.InstalledPackages {
 		pkg := models.InstalledPackage{
 			Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,

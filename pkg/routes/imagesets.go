@@ -89,7 +89,7 @@ func ImageSetCtx(next http.Handler) http.Handler {
 			log.Info(err)
 			err := errors.NewBadRequest(err.Error())
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			_ = json.NewEncoder(w).Encode(&err)
 			return
 		}
 		if imageSetID := chi.URLParam(r, "imageSetId"); imageSetID != "" {
@@ -97,7 +97,7 @@ func ImageSetCtx(next http.Handler) http.Handler {
 			if err != nil {
 				err := errors.NewBadRequest(err.Error())
 				w.WriteHeader(err.GetStatus())
-				json.NewEncoder(w).Encode(&err)
+				_ = json.NewEncoder(w).Encode(&err)
 				return
 			}
 			result := db.DB.Where("account = ? and Image_sets.id = ?", account, imageSetID).Find(&imageSet)
@@ -105,7 +105,7 @@ func ImageSetCtx(next http.Handler) http.Handler {
 			if result.Error != nil {
 				err := errors.NewNotFound(result.Error.Error())
 				w.WriteHeader(err.GetStatus())
-				json.NewEncoder(w).Encode(&err)
+				_ = json.NewEncoder(w).Encode(&err)
 				return
 			}
 			if imageSet.Images != nil {
@@ -137,7 +137,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 		return
 	}
 
@@ -148,7 +148,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		countErr := errors.NewInternalServerError()
 		log.Error(countErr)
 		w.WriteHeader(countErr.GetStatus())
-		json.NewEncoder(w).Encode(&countErr)
+		_ = json.NewEncoder(w).Encode(&countErr)
 		return
 	}
 
@@ -188,13 +188,13 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	if result.Error != nil {
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 	}
 
 	var response common.EdgeAPIPaginatedResponse
 	response.Count = count
 	response.Data = imageSetInfo
-	json.NewEncoder(w).Encode(response)
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 //ImageSetImagePackages return info related to details on images from imageset
@@ -216,7 +216,7 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		log.Info(err)
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 		return
 	}
 	ctx := r.Context()
@@ -224,7 +224,7 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		err := errors.NewBadRequest("Must pass image set id")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 	}
 	result := imageDetailFilters(r, db.DB.Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
 		Preload("Commit.Repo").Preload("Commit.InstalledPackages").Preload("Installer").
@@ -234,7 +234,7 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	if result.Error != nil {
 		err := errors.NewBadRequest("Error to filter images")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 	}
 
 	s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
@@ -250,7 +250,7 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 
 	response.Data = &details
 	response.Count = int64(len(images))
-	json.NewEncoder(w).Encode(response)
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 func validateFilterParams(next http.Handler) http.Handler {
@@ -279,7 +279,7 @@ func validateFilterParams(next http.Handler) http.Handler {
 			return
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(&errs)
+		_ = json.NewEncoder(w).Encode(&errs)
 	})
 }
 

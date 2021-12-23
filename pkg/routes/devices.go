@@ -44,7 +44,7 @@ func DeviceCtx(next http.Handler) http.Handler {
 		if uCtx.DeviceUUID == "" {
 			err := errors.NewBadRequest("DeviceUUID must be sent")
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			_ = json.NewEncoder(w).Encode(&err)
 			return
 		}
 		// TODO: Implement devices by tag
@@ -66,19 +66,19 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	contextServices, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	result, err := contextServices.DeviceService.GetUpdateAvailableForDeviceByUUID(dc.DeviceUUID)
 	if err == nil {
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 		return
 	}
 	if _, ok := err.(*services.DeviceNotFoundError); ok {
 		err := errors.NewNotFound("Could not find device")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 		return
 	}
 	if _, ok := err.(*services.UpdateNotFoundError); ok {
 		err := errors.NewNotFound("Could not find update")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 		return
 	}
 	log.WithFields(log.Fields{
@@ -90,7 +90,7 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 		"requestId":  request_id.GetReqID(r.Context()),
 		"statusCode": apierr.GetStatus(),
 	}).Error(apierr)
-	json.NewEncoder(w).Encode(&err)
+	_ = json.NewEncoder(w).Encode(&err)
 }
 
 // GetDeviceImageInfo returns the information of a running image for a device
@@ -102,13 +102,13 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 	contextServices, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	result, err := contextServices.DeviceService.GetDeviceImageInfo(dc.DeviceUUID)
 	if err == nil {
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 		return
 	}
 	if _, ok := err.(*services.DeviceNotFoundError); ok {
 		err := errors.NewNotFound("Could not find device")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 		return
 	}
 	log.WithFields(log.Fields{
@@ -120,7 +120,7 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 		"requestId":  request_id.GetReqID(r.Context()),
 		"statusCode": apierr.GetStatus(),
 	}).Error(apierr)
-	json.NewEncoder(w).Encode(&err)
+	_ = json.NewEncoder(w).Encode(&err)
 }
 
 // GetDevice returns all available information that edge api has about a device
@@ -136,13 +136,13 @@ func GetDevice(w http.ResponseWriter, r *http.Request) {
 	contextServices, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	result, err := contextServices.DeviceService.GetDeviceDetails(dc.DeviceUUID)
 	if err == nil {
-		json.NewEncoder(w).Encode(result)
+		_ = json.NewEncoder(w).Encode(result)
 		return
 	}
 	if _, ok := err.(*services.DeviceNotFoundError); ok {
 		err := errors.NewNotFound("Could not find device")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		_ = json.NewEncoder(w).Encode(&err)
 		return
 	}
 	log.WithFields(log.Fields{
@@ -154,5 +154,5 @@ func GetDevice(w http.ResponseWriter, r *http.Request) {
 		"requestId":  request_id.GetReqID(r.Context()),
 		"statusCode": apierr.GetStatus(),
 	}).Error(apierr)
-	json.NewEncoder(w).Encode(&err)
+	_ = json.NewEncoder(w).Encode(&err)
 }

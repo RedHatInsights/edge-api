@@ -39,7 +39,7 @@ var _ = Describe("Ownershipvoucher", func() {
 		config.Get().FDO.URL = fdoMockServer.Addr // set FDO mock server address in config
 		http.HandleFunc(fmt.Sprintf("/management/%s/ownership_voucher", config.Get().FDO.APIVersion), func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusCreated)
-			json.NewEncoder(w).Encode(models.OwnershipVoucherData{
+			_ = json.NewEncoder(w).Encode(models.OwnershipVoucherData{
 				ProtocolVersion: 100,
 				GUID:            "12345678-1234-1234-1234-123456789012",
 				DeviceName:      "test-device",
@@ -47,7 +47,7 @@ var _ = Describe("Ownershipvoucher", func() {
 		})
 		http.HandleFunc(fmt.Sprintf("/management/%s/ownership_voucher/delete", config.Get().FDO.APIVersion), func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"op": "delete", "status": "OK"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"op": "delete", "status": "OK"})
 		})
 		go fdoMockServer.Serve(listener)
 	})

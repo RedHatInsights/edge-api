@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"syscall"
@@ -508,11 +509,15 @@ func (s *ImageService) downloadISO(isoName string, url string) error {
 	defer iso.Close()
 
 	log.Infof("Downloading ISO %s", url)
-	res, err := http.Get(url)
+	res, err := http.Get(url) // #nosec
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	defer func() {
+		if err := res.Body.Close(); err != nil {
+			log.Error("Error closing file: ", err)
+		}
+	}()
 
 	_, err = io.Copy(iso, res.Body)
 	if err != nil {
@@ -617,12 +622,14 @@ func (s *ImageService) CheckImageName(name, account string) (bool, error) {
 func (s *ImageService) exeInjectionScript(kickstart string, image string, imageID uint) error {
 	fleetBashScript := "/usr/local/bin/fleetkick.sh"
 	workDir := fmt.Sprintf("/var/tmp/workdir%d", imageID)
-	err := os.Mkdir(workDir, 0755)
+	err := os.Mkdir(workDir, 0750)
 	if err != nil {
 		return err
 	}
-
-	cmd := exec.Command(fleetBashScript, kickstart, image, image, workDir)
+	cmd := &exec.Cmd{
+		Path: fleetBashScript,
+		Args: []string{kickstart, image, image, workDir},
+	}
 	output, err := cmd.Output()
 	if err != nil {
 		return err
@@ -635,11 +642,15 @@ func (s *ImageService) exeInjectionScript(kickstart string, image string, imageI
 func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) error {
 	log.Infof("Calculating sha256 checksum for ISO %s", isoPath)
 
-	fh, err := os.Open(isoPath)
+	fh, err := os.Open(filepath.Clean(isoPath))
 	if err != nil {
 		return err
 	}
-	defer fh.Close()
+	defer func() {
+		if err := fh.Close(); err != nil {
+			log.Error("Error closing file: ", err)
+		}
+	}()
 
 	sumCalculator := sha256.New()
 	_, err = io.Copy(sumCalculator, fh)
