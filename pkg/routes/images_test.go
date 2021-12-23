@@ -99,7 +99,7 @@ func TestCreate(t *testing.T) {
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
 	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any()).Return(nil)
-	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),
 	})
@@ -169,7 +169,7 @@ func TestGetImageDetailsById(t *testing.T) {
 
 	ctx := context.WithValue(req.Context(), imageKey, &testImage)
 
-	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),
 	})
@@ -299,7 +299,7 @@ func TestGetRepoForImage(t *testing.T) {
 	defer ctrl.Finish()
 	mockRepoService := mock_services.NewMockRepoServiceInterface(ctrl)
 	mockRepoService.EXPECT().GetRepoByID(gomock.Any()).Return(&testRepo, nil)
-	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		RepoService: mockRepoService,
 		Log:         log.NewEntry(log.StandardLogger()),
 	})
@@ -343,7 +343,7 @@ func TestGetRepoForImageWhenNotFound(t *testing.T) {
 	defer ctrl.Finish()
 	mockRepoService := mock_services.NewMockRepoServiceInterface(ctrl)
 	mockRepoService.EXPECT().GetRepoByID(gomock.Any()).Return(nil, errors.New("not found"))
-	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		RepoService: mockRepoService,
 		Log:         log.NewEntry(log.StandardLogger()),
 	})
@@ -418,7 +418,7 @@ func TestPostCheckImageNameAlreadyExist(t *testing.T) {
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
 	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any()).Return(true, nil)
-	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),
 	})
@@ -461,7 +461,7 @@ func TestPostCheckImageNameDoesNotExist(t *testing.T) {
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
 	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any()).Return(false, nil)
-	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),
 	})

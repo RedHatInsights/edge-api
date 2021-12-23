@@ -63,7 +63,7 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	if dc.DeviceUUID == "" {
 		return // Error set by DeviceCtx method
 	}
-	contextServices, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	contextServices, _ := dependencies.ServicesFromContext(r.Context())
 	result, err := contextServices.DeviceService.GetUpdateAvailableForDeviceByUUID(dc.DeviceUUID)
 	if err == nil {
 		json.NewEncoder(w).Encode(result)
@@ -99,7 +99,7 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 	if dc.DeviceUUID == "" {
 		return // Error set by DeviceCtx method
 	}
-	contextServices, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	contextServices, _ := dependencies.ServicesFromContext(r.Context())
 	result, err := contextServices.DeviceService.GetDeviceImageInfo(dc.DeviceUUID)
 	if err == nil {
 		json.NewEncoder(w).Encode(result)
@@ -133,7 +133,7 @@ func GetDevice(w http.ResponseWriter, r *http.Request) {
 	if dc.DeviceUUID == "" {
 		return // Error set by DeviceCtx method
 	}
-	contextServices, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	contextServices, _ := dependencies.ServicesFromContext(r.Context())
 	result, err := contextServices.DeviceService.GetDeviceDetails(dc.DeviceUUID)
 	if err == nil {
 		json.NewEncoder(w).Encode(result)

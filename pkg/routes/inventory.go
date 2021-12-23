@@ -70,7 +70,7 @@ func GetInventory(w http.ResponseWriter, r *http.Request) {
 // GetUpdateAvailableInfo returns the image information
 func GetUpdateAvailableInfo(param *inventory.Params, r *http.Request, inventoryResp inventory.Response) (IvtResponse []InventoryResponse) {
 	var ivt []InventoryResponse
-	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	services, _ := dependencies.ServicesFromContext(r.Context())
 	deviceService := services.DeviceService
 
 	for _, device := range inventoryResp.Result {

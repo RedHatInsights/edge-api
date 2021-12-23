@@ -63,7 +63,7 @@ func TestGetUpdatePlaybook(t *testing.T) {
 	reader := ioutil.NopCloser(strings.NewReader(playbookString))
 	mockUpdateService := mock_services.NewMockUpdateServiceInterface(ctrl)
 	mockUpdateService.EXPECT().GetUpdatePlaybook(gomock.Eq(update)).Return(reader, nil)
-	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		UpdateService: mockUpdateService,
 	})
 	req = req.WithContext(ctx)

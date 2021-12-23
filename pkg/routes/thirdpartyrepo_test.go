@@ -2,7 +2,6 @@ package routes
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -59,7 +58,7 @@ func TestCreateThirdPartyRepo(t *testing.T) {
 	defer ctrl.Finish()
 	mockThirdPartyRepoService := mock_services.NewMockThirdPartyRepoServiceInterface(ctrl)
 	mockThirdPartyRepoService.EXPECT().CreateThirdPartyRepo(gomock.Any(), gomock.Any()).Return(&tprepo, nil)
-	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ThirdPartyRepoService: mockThirdPartyRepoService,
 		Log:                   log.NewEntry(log.StandardLogger()),
 	})

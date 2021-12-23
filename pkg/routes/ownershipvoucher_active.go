@@ -28,7 +28,7 @@ func MakeFDORouter(sub chi.Router) {
 
 // CreateOwnershipVouchers creates empty devices for the given ownership vouchers
 func CreateOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
-	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	services, _ := dependencies.ServicesFromContext(r.Context())
 	defer r.Body.Close()
 
 	validationErr := validateUploadRequestHeaders(r)
@@ -63,7 +63,7 @@ func CreateOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 
 // DeleteOwnershipVouchers deletes devices for the given ownership vouchers GUIDs
 func DeleteOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
-	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	services, _ := dependencies.ServicesFromContext(r.Context())
 	defer r.Body.Close()
 
 	validationErr := validateContentTypeJSONHeader(r)
@@ -101,7 +101,7 @@ func DeleteOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 
 // ParseOwnershipVouchers parses ownership vouchers from the given cbor binary data
 func ParseOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
-	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	services, _ := dependencies.ServicesFromContext(r.Context())
 	defer r.Body.Close()
 
 	if r.Header.Get("Content-Type") != "application/cbor" {
@@ -122,7 +122,7 @@ func ParseOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 
 // ConnectDevices connects devices to the given ownership vouchers
 func ConnectDevices(w http.ResponseWriter, r *http.Request) {
-	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	services, _ := dependencies.ServicesFromContext(r.Context())
 	defer r.Body.Close()
 
 	validationErr := validateContentTypeJSONHeader(r)
@@ -186,7 +186,7 @@ func validateMiddleware(next http.Handler) http.Handler {
 			badRequestResponseBuilder(w, errors.NewBadRequest("Accept header must be application/json"), "invalid_header")
 			return
 		}
-		_, ok := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+		_, ok := dependencies.ServicesFromContext(r.Context())
 		if !ok {
 			w.WriteHeader(errors.NewInternalServerError().GetStatus())
 			json.NewEncoder(w).Encode(interface{}("Internal server error"))
