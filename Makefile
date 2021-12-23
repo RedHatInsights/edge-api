@@ -12,6 +12,7 @@ CONTAINER_TAG="quay.io/cloudservices/edge-api"
 KUBECTL=kubectl
 NAMESPACE=default
 TEST_OPTIONS="-race"
+BUILD_TAGS=-tags=fdo
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of:"
@@ -41,19 +42,19 @@ help:
 
 
 test:
-	go test -tags=fdo $$(go list -tags=fdo ./... | grep -v /test/) $(TEST_OPTIONS)
+	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /test/) $(TEST_OPTIONS)
 
 coverage: 
-	go test -tags=fdo $$(go list -tags=fdo ./... | grep -v /test/) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
+	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /test/) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
 
 coverage-html:
 	go tool cover -html=coverage.txt -o coverage.html
 
 vet:
-	go vet -tags=fdo $$(go list -tags=fdo ./... | grep -v /vendor/)
+	go vet $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
 
 lint:
-	golint $$(go list -tags=fdo ./... | grep -v /vendor/)
+	golint $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
 
 build:
 	$(OCI_TOOL) build . -t $(CONTAINER_TAG)
