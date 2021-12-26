@@ -12,7 +12,7 @@ objects:
     appName: edge-api
     testing:
       iqe:
-        debug: false
+        debug: true
         dynaconfEnvName: post_deploy
         filter: ''
         marker: 'rest'
