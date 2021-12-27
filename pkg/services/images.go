@@ -338,13 +338,17 @@ func (s *ImageService) postProcessImage(id uint) {
 	if i.Commit.Status == models.ImageStatusSuccess {
 		s.log.Debug("Commit is successful")
 		if i.HasOutputType(models.ImageTypeInstaller) {
-			i, err = s.CreateInstallerForImage(i)
+			i, err, c := s.CreateInstallerForImage(i)
+			if c != nil {
+				err = <-c
+			}
 			if err != nil {
 				s.SetErrorStatusOnImage(err, i)
 				s.log.WithField("error", err.Error()).Fatal("Failed creating installer for image")
 			}
 		}
 	}
+	s.log.Debug("Post processing image is done")
 }
 
 // CreateRepoForImage creates the OSTree repo to host that image
@@ -876,24 +880,29 @@ func (s *ImageService) GetMetadata(image *models.Image) (*models.Image, error) {
 }
 
 // CreateInstallerForImage creates a installer given an existent iamge
-func (s *ImageService) CreateInstallerForImage(image *models.Image) (*models.Image, error) {
+func (s *ImageService) CreateInstallerForImage(image *models.Image) (*models.Image, error, chan error) {
 	s.log.Debug("Creating installer for image")
+	c := make(chan error)
+
 	image.ImageType = models.ImageTypeInstaller
 	image.Installer.Status = models.ImageStatusBuilding
 	tx := db.DB.Save(&image)
 	if tx.Error != nil {
 		s.log.WithField("error", tx.Error.Error()).Error("Error saving image")
-		return nil, tx.Error
+		return nil, tx.Error, c
 	}
 	tx = db.DB.Save(&image.Installer)
 	if tx.Error != nil {
 		s.log.WithField("error", tx.Error.Error()).Error("Error saving installer")
-		return nil, tx.Error
+		return nil, tx.Error, c
 	}
 	image, err := s.imageBuilder.ComposeInstaller(image)
 	if err != nil {
-		return nil, err
+		return nil, err, c
 	}
-	go s.postProcessInstaller(image)
-	return image, nil
+	go func(chan error) {
+		err := s.postProcessInstaller(image)
+		c <- err
+	}(c)
+	return image, nil, c
 }
