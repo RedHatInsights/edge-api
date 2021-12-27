@@ -39,7 +39,7 @@ type ImageServiceInterface interface {
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
 	CreateRepoForImage(i *models.Image) (*models.Repo, error)
-	CreateInstallerForImage(i *models.Image) (*models.Image, error)
+	CreateInstallerForImage(i *models.Image) (*models.Image, error, chan error)
 	GetImageByID(id string) (*models.Image, error)
 	GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable, error)
 	AddPackageInfo(image *models.Image) (ImageDetail, error)

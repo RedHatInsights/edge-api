@@ -94,12 +94,13 @@ func (mr *MockImageServiceInterfaceMockRecorder) CreateImage(image, account inte
 }
 
 // CreateInstallerForImage mocks base method.
-func (m *MockImageServiceInterface) CreateInstallerForImage(i *models.Image) (*models.Image, error) {
+func (m *MockImageServiceInterface) CreateInstallerForImage(i *models.Image) (*models.Image, error, chan error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateInstallerForImage", i)
 	ret0, _ := ret[0].(*models.Image)
 	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret2, _ := ret[2].(chan error)
+	return ret0, ret1, ret2
 }
 
 // CreateInstallerForImage indicates an expected call of CreateInstallerForImage.
