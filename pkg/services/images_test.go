@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder/mock_imagebuilder"
+	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
@@ -232,10 +233,12 @@ var _ = Describe("Image Service Test", func() {
 				Expect(image.Installer.Status).To(Equal(models.ImageStatusCreated))
 			})
 		})
-		Context("when trying to update a image whose version already exists", func() {
-			It("should set status to building", func() {
-				image := &models.Image{}
-				err := service.checkForDuplicateImageVersion(image)
+		Context("when checking if the image version we are trying to create is duplicate", func() {
+			It("shouldnt be able to", func() {
+				image := &models.Image{Version: 1, Name: "image-same-name"}
+				db.DB.Save(image)
+				db.DB.Save(&models.Image{Version: 2, Name: "image-same-name"})
+				err := service.checkIfIsLatestVersion(image)
 
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(new(ImageVersionAlreadyExists)))

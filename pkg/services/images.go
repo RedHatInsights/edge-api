@@ -118,7 +118,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	if previousImage == nil {
 		return new(ImageNotFoundError)
 	}
-	err := s.checkForDuplicateImageVersion(previousImage)
+	err := s.checkIfIsLatestVersion(previousImage)
 	if err != nil {
 		return errors.NewBadRequest("only the latest updated image can be modified")
 	}
@@ -803,8 +803,8 @@ func uploadTarRepo(account, imageName string, repoID int) (string, error) {
 	return url, nil
 }
 
-// checkForDuplicateImageVersion make sure that there is no same image version present
-func (s *ImageService) checkForDuplicateImageVersion(previousImage *models.Image) error {
+// checkIfIsLatestVersion make sure that there is no same image version present
+func (s *ImageService) checkIfIsLatestVersion(previousImage *models.Image) error {
 	/*
 		nowImage is the version of current Image which we are updating i.e if we are updating image1 to image 2 then image1 is the nowImage.
 		currentHighestImageVersion is the latest version present in the DB of image we're updating.
