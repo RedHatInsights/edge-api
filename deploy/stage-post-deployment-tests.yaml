@@ -13,7 +13,7 @@ objects:
     testing:
       iqe:
         debug: false
-        dynaconfEnvName: post_deploy
+        dynaconfEnvName: 'post_deploy'
         filter: ''
         marker: 'rest'
 parameters:
