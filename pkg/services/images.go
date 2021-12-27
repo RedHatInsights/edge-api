@@ -153,8 +153,13 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	if err != nil {
 		return errors.NewBadRequest("only the latest updated image can be modified")
 	}
+
+	// important: update the image imageSet for any previous image build status,
+	// otherwise image will be orphaned from its imageSet if previous build failed
+	image.ImageSetID = previousImage.ImageSetID
+
 	if previousImage.Status == models.ImageStatusSuccess {
-		// Previous image was built sucessfully
+		// Previous image was built successfully
 		var currentImageSet models.ImageSet
 		result := db.DB.Where("Id = ?", previousImage.ImageSetID).First(&currentImageSet)
 
@@ -163,7 +168,6 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 			return result.Error
 		}
 		currentImageSet.Version = currentImageSet.Version + 1
-		image.ImageSetID = previousImage.ImageSetID
 		if err := db.DB.Save(currentImageSet).Error; err != nil {
 			return result.Error
 		}
@@ -815,12 +819,12 @@ func (s *ImageService) RetryCreateImage(image *models.Image) error {
 	// recompose commit
 	image, err := s.ImageBuilder.ComposeCommit(image)
 	if err != nil {
-		s.log.Error("Failed recomposing commit")
+		s.log.WithField("error", err.Error()).Error("Failed recomposing commit")
 		return err
 	}
 	err = s.SetBuildingStatusOnImageToRetryBuild(image)
 	if err != nil {
-		s.log.Error("Failed setting image status")
+		s.log.WithField("error", err.Error()).Error("Failed setting image status")
 		return nil
 	}
 	go s.postProcessImage(image.ID)
