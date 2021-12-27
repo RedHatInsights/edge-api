@@ -39,7 +39,7 @@ type ImageServiceInterface interface {
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
 	CreateRepoForImage(i *models.Image) (*models.Repo, error)
-	CreateInstallerForImage(i *models.Image) (*models.Image, error, chan error)
+	CreateInstallerForImage(i *models.Image) (*models.Image, chan error, error)
 	GetImageByID(id string) (*models.Image, error)
 	GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable, error)
 	AddPackageInfo(image *models.Image) (ImageDetail, error)
@@ -338,7 +338,7 @@ func (s *ImageService) postProcessImage(id uint) {
 	if i.Commit.Status == models.ImageStatusSuccess {
 		s.log.Debug("Commit is successful")
 		if i.HasOutputType(models.ImageTypeInstaller) {
-			i, err, c := s.CreateInstallerForImage(i)
+			i, c, err := s.CreateInstallerForImage(i)
 			if c != nil {
 				err = <-c
 			}
@@ -880,7 +880,7 @@ func (s *ImageService) GetMetadata(image *models.Image) (*models.Image, error) {
 }
 
 // CreateInstallerForImage creates a installer given an existent iamge
-func (s *ImageService) CreateInstallerForImage(image *models.Image) (*models.Image, error, chan error) {
+func (s *ImageService) CreateInstallerForImage(image *models.Image) (*models.Image, chan error, error) {
 	s.log.Debug("Creating installer for image")
 	c := make(chan error)
 
@@ -889,20 +889,20 @@ func (s *ImageService) CreateInstallerForImage(image *models.Image) (*models.Ima
 	tx := db.DB.Save(&image)
 	if tx.Error != nil {
 		s.log.WithField("error", tx.Error.Error()).Error("Error saving image")
-		return nil, tx.Error, c
+		return nil, c, tx.Error
 	}
 	tx = db.DB.Save(&image.Installer)
 	if tx.Error != nil {
 		s.log.WithField("error", tx.Error.Error()).Error("Error saving installer")
-		return nil, tx.Error, c
+		return nil, c, tx.Error
 	}
 	image, err := s.imageBuilder.ComposeInstaller(image)
 	if err != nil {
-		return nil, err, c
+		return nil, c, err
 	}
 	go func(chan error) {
 		err := s.postProcessInstaller(image)
 		c <- err
 	}(c)
-	return image, nil, c
+	return image, c, nil
 }

@@ -420,7 +420,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	image, err, _ := services.ImageService.CreateInstallerForImage(image)
+	image, _, err := services.ImageService.CreateInstallerForImage(image)
 	if err != nil {
 		log.WithField("error", err).Error("Failed to create installer")
 		err := errors.NewInternalServerError()
