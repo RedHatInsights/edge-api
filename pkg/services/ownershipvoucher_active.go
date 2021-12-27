@@ -40,10 +40,6 @@ func NewOwnershipVoucherService(ctx context.Context, log *log.Entry) OwnershipVo
 	}
 }
 
-func (s *OwnershipVoucherService) InitService(ctx context.Context, log *log.Entry) ServiceInterface {
-	return NewOwnershipVoucherService(ctx, log)
-}
-
 // BatchUploadOwnershipVouchers creates empty devices with ownership vouchers data
 func (ovs *OwnershipVoucherService) BatchUploadOwnershipVouchers(voucherBytes []byte, numOfOVs uint) (interface{}, error) {
 	logFields := log.Fields{"method": "services.BatchUploadOwnershipVouchers"}
