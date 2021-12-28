@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
-	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
@@ -410,64 +409,26 @@ func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateInstallerForImage creates a installer for a Image
-// It requires a created image and an update for the commit
+// It requires a created image and a repo with a successful status
 func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	image := getImage(w, r)
-	var imageInstaller *models.Installer
-	if err := json.NewDecoder(r.Body).Decode(&imageInstaller); err != nil {
-		log.Error(err)
+	if err := json.NewDecoder(r.Body).Decode(&image.Installer); err != nil {
+		log.WithField("error", err).Error("Failed to decode installer")
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-	image.ImageType = models.ImageTypeInstaller
-	image.Installer = imageInstaller
-
-	tx := db.DB.Save(&image)
-	if tx.Error != nil {
-		log.Fatal(tx.Error)
-		err := errors.NewInternalServerError()
-		err.SetTitle("Failed saving image status")
-		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
-		return
-	}
-	client := imagebuilder.InitClient(r.Context(), services.Log)
-	image, err := client.ComposeInstaller(image)
+	image, _, err := services.ImageService.CreateInstallerForImage(image)
 	if err != nil {
-		log.Error(err)
+		log.WithField("error", err).Error("Failed to create installer")
 		err := errors.NewInternalServerError()
+		err.SetTitle("Failed to create installer")
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return
 	}
-
-	go func(id uint, ctx context.Context) {
-
-		services, _ := ctx.Value(dependencies.Key).(*dependencies.EdgeAPIServices)
-		var i *models.Image
-		db.DB.Joins("Commit").Joins("Installer").First(&i, id)
-		for {
-			i, err := services.ImageService.UpdateImageStatus(i)
-			if err != nil {
-				services.ImageService.SetErrorStatusOnImage(err, i)
-			}
-			if i.Installer.Status != models.ImageStatusBuilding {
-				break
-			}
-			time.Sleep(1 * time.Minute)
-		}
-		if i.Installer.Status == models.ImageStatusSuccess {
-			err = services.ImageService.AddUserInfo(image)
-			if err != nil {
-				// TODO: Temporary. Handle error better.
-				log.Errorf("Kickstart file injection failed %s", err.Error())
-			}
-		}
-	}(image.ID, r.Context())
-
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&image)
 }
