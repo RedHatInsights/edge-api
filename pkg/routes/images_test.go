@@ -55,6 +55,10 @@ func TestCreateWasCalledWithNameNotSet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctx := context.WithValue(req.Context(), dependencies.Key, &dependencies.EdgeAPIServices{
+		Log: log.NewEntry(log.StandardLogger()),
+	})
+	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(CreateImage)
 
