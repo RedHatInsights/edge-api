@@ -70,7 +70,7 @@ func (s *ThirdPartyRepoService) UpdateThirdPartyRepo(tprepo *models.ThirdPartyRe
 	tprepo.Account = account
 	repoDetails, err := s.GetThirdPartyRepoByID(ID)
 	if err != nil {
-		log.Info(err)
+		s.log.WithField("error", err.Error()).Error("Error retieving third party repository")
 	}
 	if tprepo.Name != "" {
 		repoDetails.Name = tprepo.Name
@@ -104,7 +104,7 @@ func (s *ThirdPartyRepoService) DeleteThirdPartyRepoByID(ID string) (*models.Thi
 	}
 	repoDetails, err := s.GetThirdPartyRepoByID(ID)
 	if err != nil {
-		log.Info(err)
+		s.log.WithField("error", err.Error()).Error("Error retieving third party repository")
 	}
 	if repoDetails.Name == "" {
 		return nil, errors.NewInternalServerError()
@@ -112,6 +112,7 @@ func (s *ThirdPartyRepoService) DeleteThirdPartyRepoByID(ID string) (*models.Thi
 
 	delForm := db.DB.Where("account = ? and id = ?", account, ID).Delete(&tprepo)
 	if delForm.Error != nil {
+		s.log.WithField("error", delForm.Error.Error()).Error("Error deleting third party repository")
 		err := errors.NewInternalServerError()
 		return nil, err
 	}
