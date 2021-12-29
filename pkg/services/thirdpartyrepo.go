@@ -20,15 +20,15 @@ type ThirdPartyRepoServiceInterface interface {
 }
 
 // NewThirdPartyRepoService gives a instance of the main implementation of a ThirdPartyRepoServiceInterface
-func NewThirdPartyRepoService(ctx context.Context) ThirdPartyRepoServiceInterface {
+func NewThirdPartyRepoService(ctx context.Context, log *log.Entry) ThirdPartyRepoServiceInterface {
 	return &ThirdPartyRepoService{
-		ctx: ctx,
+		Service: Service{ctx: ctx, log: log.WithField("service", "image")},
 	}
 }
 
 // ThirdPartyRepoService is the main implementation of a ThirdPartyRepoServiceInterface
 type ThirdPartyRepoService struct {
-	ctx context.Context
+	Service
 }
 
 // CreateThirdPartyRepo creates the ThirdPartyRepo for an Account on our database
@@ -42,9 +42,9 @@ func (s *ThirdPartyRepoService) CreateThirdPartyRepo(thirdPartyRepo *models.Thir
 		}
 		result := db.DB.Create(&thirdPartyRepo)
 		if result.Error != nil {
+			s.log.WithField("error", result.Error.Error()).Error("Error creating third party repository")
 			return nil, result.Error
 		}
-		log.Infof("Getting ThirdPartyRepo info: repo %s, %s", thirdPartyRepo.URL, thirdPartyRepo.Name)
 
 	}
 	return thirdPartyRepo, nil

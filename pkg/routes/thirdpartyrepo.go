@@ -30,7 +30,7 @@ func MakeThirdPartyRepoRouter(sub chi.Router) {
 	sub.Route("/{ID}", func(r chi.Router) {                                                                 // TODO: Consistent logging
 		r.Use(ThirdPartyRepoCtx)                // TODO: Consistent logging
 		r.Get("/", GetThirdPartyRepoByID)       // TODO: Consistent logging
-		r.Put("/", CreateThirdPartyRepoUpdate)  // TODO: Consistent logging
+		r.Put("/", UpdateThirdPartyRepo)        // TODO: Consistent logging
 		r.Delete("/", DeleteThirdPartyRepoByID) // TODO: Consistent logging
 	})
 }
@@ -62,17 +62,14 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	thirdPartyRepo, err := createRequest(w, r)
 	if err != nil {
-		log.Info(err)
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		// error handled by createRequest already
 		return
 	}
-	log.Infof("ThirdPartyRepo::create: %#v", thirdPartyRepo)
+	services.Log.Info("Creating third party repository")
 
 	account, err := common.GetAccount(r)
 	if err != nil {
-		log.Info(err)
+		services.Log.WithField("error", err.Error()).Error("Account was not set")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
@@ -81,7 +78,7 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 
 	thirdPartyRepo, err = services.ThirdPartyRepoService.CreateThirdPartyRepo(thirdPartyRepo, account)
 	if err != nil {
-		log.Error(err)
+		services.Log.WithField("error", err.Error()).Error("Error creating third party repository")
 		err := errors.NewInternalServerError()
 		err.SetTitle("failed creating third party repository")
 		w.WriteHeader(err.GetStatus())
@@ -95,17 +92,23 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 
 // createRequest validates request to create ThirdPartyRepo.
 func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRepo, error) {
+	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+
 	var tprepo *models.ThirdPartyRepo
 	if err := json.NewDecoder(r.Body).Decode(&tprepo); err != nil {
-		log.Error(err)
+		services.Log.WithField("error", err.Error()).Error("Error parsing json from third party repo")
 		err := errors.NewBadRequest("invalid JSON request")
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return nil, err
 	}
+	services.Log = services.Log.WithFields(log.Fields{
+		"URL":  tprepo.URL,
+		"name": tprepo.Name,
+	})
 
 	if err := tprepo.ValidateRequest(); err != nil {
-		log.Info(err)
+		services.Log.WithField("error", err.Error()).Info("Error validation request from third party repo")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		return nil, err
@@ -211,16 +214,13 @@ func GetThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&tprepo)
 }
 
-// CreateThirdPartyRepoUpdate updates the existing third party repository
-func CreateThirdPartyRepoUpdate(w http.ResponseWriter, r *http.Request) {
+// UpdateThirdPartyRepo updates the existing third party repository
+func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	defer r.Body.Close()
 	tprepo, err := createRequest(w, r)
 	if err != nil {
-		log.Info(err)
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		// error handled by createRequest already
 		return
 	}
 	account, err := common.GetAccount(r)
