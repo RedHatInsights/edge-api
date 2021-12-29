@@ -13,6 +13,7 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
+	log "github.com/sirupsen/logrus"
 )
 
 func TestCreateWasCalledWithURLNotSet(t *testing.T) {
@@ -25,6 +26,11 @@ func TestCreateWasCalledWithURLNotSet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctx := req.Context()
+	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+		Log: log.NewEntry(log.StandardLogger()),
+	})
+	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(CreateThirdPartyRepo)
 
@@ -55,6 +61,7 @@ func TestCreateThirdPartyRepo(t *testing.T) {
 	mockThirdPartyRepoService.EXPECT().CreateThirdPartyRepo(gomock.Any(), gomock.Any()).Return(&tprepo, nil)
 	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
 		ThirdPartyRepoService: mockThirdPartyRepoService,
+		Log:                   log.NewEntry(log.StandardLogger()),
 	})
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()

@@ -37,7 +37,7 @@ func Init(ctx context.Context) *EdgeAPIServices {
 		ImageSetService:         services.NewImageSetsService(ctx),
 		UpdateService:           services.NewUpdateService(ctx),
 		DeviceService:           services.NewDeviceService(ctx),
-		ThirdPartyRepoService:   services.NewThirdPartyRepoService(ctx),
+		ThirdPartyRepoService:   services.NewThirdPartyRepoService(ctx, log),
 		OwnershipVoucherService: services.NewOwnershipVoucherService(ctx, log),
 		Log:                     log,
 	}
