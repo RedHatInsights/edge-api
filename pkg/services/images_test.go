@@ -105,7 +105,7 @@ var _ = Describe("Image Service Test", func() {
 				}
 				parentRepo := &models.Repo{URL: faker.URL()}
 				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, fmt.Errorf("Failed creating commit for image"))
-				mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(parentRepo)
+				mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(parentRepo, nil)
 				err := service.UpdateImage(image, previousImage)
 
 				Expect(err).To(HaveOccurred())
