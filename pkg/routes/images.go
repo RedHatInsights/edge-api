@@ -55,7 +55,7 @@ var validStatuses = []string{models.ImageStatusCreated, models.ImageStatusBuildi
 // ImageByOSTreeHashCtx is a handler for Images but adds finding images by Ostree Hash
 func ImageByOSTreeHashCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		s, _ := dependencies.ServicesFromContext(r.Context())
+		s := dependencies.ServicesFromContext(r.Context())
 		if commitHash := chi.URLParam(r, "ostreeCommitHash"); commitHash != "" {
 			s.Log = s.Log.WithField("ostreeCommitHash", commitHash)
 			image, err := s.ImageService.GetImageByOSTreeCommitHash(commitHash)
@@ -88,7 +88,7 @@ func ImageByOSTreeHashCtx(next http.Handler) http.Handler {
 // ImageByIDCtx is a handler for Image requests
 func ImageByIDCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		s, _ := dependencies.ServicesFromContext(r.Context())
+		s := dependencies.ServicesFromContext(r.Context())
 		if imageID := chi.URLParam(r, "imageId"); imageID != "" {
 			s.Log = s.Log.WithField("imageID", imageID)
 			image, err := s.ImageService.GetImageByID(imageID)
@@ -144,7 +144,7 @@ type CreateImageRequest struct {
 // It always creates a commit on Image Builder.
 // Then we create our repo with the ostree commit and if needed, create the installer.
 func CreateImage(w http.ResponseWriter, r *http.Request) {
-	services, _ := dependencies.ServicesFromContext(r.Context())
+	services := dependencies.ServicesFromContext(r.Context())
 	defer r.Body.Close()
 	image, err := initImageCreateRequest(w, r)
 	if err != nil {
@@ -179,7 +179,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 
 // CreateImageUpdate creates an update for an exitent image on hosted image builder.
 func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
-	services, _ := dependencies.ServicesFromContext(r.Context())
+	services := dependencies.ServicesFromContext(r.Context())
 	defer r.Body.Close()
 	image, err := initImageCreateRequest(w, r)
 	if err != nil {
@@ -206,7 +206,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 
 // initImageCreateRequest validates request to create/update an image.
 func initImageCreateRequest(w http.ResponseWriter, r *http.Request) (*models.Image, error) {
-	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	services := dependencies.ServicesFromContext(r.Context())
 	var image *models.Image
 	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
 		services.Log.WithField("error", err.Error()).Error("Error decoding image json")
@@ -287,7 +287,7 @@ func validateGetAllImagesSearchParams(next http.Handler) http.Handler {
 
 // GetAllImages image objects from the database for an account
 func GetAllImages(w http.ResponseWriter, r *http.Request) {
-	services, _ := dependencies.ServicesFromContext(r.Context())
+	services := dependencies.ServicesFromContext(r.Context())
 	services.Log.Debug("Getting all images")
 	var count int64
 	var images []models.Image
@@ -367,7 +367,7 @@ func GetImageByID(w http.ResponseWriter, r *http.Request) {
 // GetImageDetailsByID obtains a image from the database for an account
 func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		services, _ := dependencies.ServicesFromContext(r.Context())
+		services := dependencies.ServicesFromContext(r.Context())
 		var imgDetail ImageDetail
 		imgDetail.Image = image
 		imgDetail.Packages = len(image.Commit.InstalledPackages)
@@ -400,7 +400,7 @@ func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 // CreateInstallerForImage creates a installer for a Image
 // It requires a created image and a repo with a successful status
 func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
-	services, _ := dependencies.ServicesFromContext(r.Context())
+	services := dependencies.ServicesFromContext(r.Context())
 	image := getImage(w, r)
 	if err := json.NewDecoder(r.Body).Decode(&image.Installer); err != nil {
 		services.Log.WithField("error", err).Error("Failed to decode installer")
@@ -427,7 +427,7 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 	image := getImage(w, r)
 
 	go func(id uint, ctx context.Context) {
-		services, _ := dependencies.ServicesFromContext(r.Context())
+		services := dependencies.ServicesFromContext(r.Context())
 		var i *models.Image
 		db.DB.Joins("Commit").Joins("Installer").First(&i, id)
 		db.DB.First(&i.Commit, i.CommitID)
@@ -440,7 +440,7 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 //GetRepoForImage gets the repository for a Image
 func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		services, _ := dependencies.ServicesFromContext(r.Context())
+		services := dependencies.ServicesFromContext(r.Context())
 		services.Log = services.Log.WithField("repoID", image.Commit.RepoID)
 		repo, err := services.RepoService.GetRepoByID(image.Commit.RepoID)
 		if err != nil {
@@ -455,7 +455,7 @@ func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 
 //GetMetadataForImage gets the metadata from image-builder on /metadata endpoint
 func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
-	services, _ := dependencies.ServicesFromContext(r.Context())
+	services := dependencies.ServicesFromContext(r.Context())
 	if image := getImage(w, r); image != nil {
 		meta, err := services.ImageService.GetMetadata(image)
 		if err != nil {
@@ -471,7 +471,7 @@ func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 // CreateKickStartForImage creates a kickstart file for an existent image
 func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		services, _ := dependencies.ServicesFromContext(r.Context())
+		services := dependencies.ServicesFromContext(r.Context())
 		err := services.ImageService.AddUserInfo(image)
 		if err != nil {
 			// TODO: Temporary. Handle error better.
@@ -491,7 +491,7 @@ type CheckImageNameResponse struct {
 
 // CheckImageName verifies that ImageName exists
 func CheckImageName(w http.ResponseWriter, r *http.Request) {
-	services, _ := dependencies.ServicesFromContext(r.Context())
+	services := dependencies.ServicesFromContext(r.Context())
 	services.Log.Debug("Checking image name")
 	var image *models.Image
 	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
@@ -531,7 +531,7 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 // RetryCreateImage retries the image creation
 func RetryCreateImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		services, _ := dependencies.ServicesFromContext(r.Context())
+		services := dependencies.ServicesFromContext(r.Context())
 		err := services.ImageService.RetryCreateImage(image)
 		if err != nil {
 			services.Log.WithField("error", err.Error()).Error("Failed to retry to create image")

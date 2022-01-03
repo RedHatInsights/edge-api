@@ -250,7 +250,7 @@ func GetThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 // UpdateThirdPartyRepo updates the existing third party repository
 func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	if oldtprepo := getThirdPartyRepo(w, r); oldtprepo != nil {
-		services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+		services := dependencies.ServicesFromContext(r.Context())
 		defer r.Body.Close()
 		tprepo, err := createRequest(w, r)
 		if err != nil {
@@ -278,7 +278,7 @@ func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 // DeleteThirdPartyRepoByID deletes the third party repository using ID
 func DeleteThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 	if tprepo := getThirdPartyRepo(w, r); tprepo != nil {
-		s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+		s := dependencies.ServicesFromContext(r.Context())
 
 		tprepo, err := s.ThirdPartyRepoService.DeleteThirdPartyRepoByID(fmt.Sprint(tprepo.ID))
 		if err != nil {

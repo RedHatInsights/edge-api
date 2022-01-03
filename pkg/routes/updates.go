@@ -82,7 +82,7 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 	if update == nil {
 		return
 	}
-	services, _ := dependencies.ServicesFromContext(r.Context())
+	services := dependencies.ServicesFromContext(r.Context())
 	playbook, err := services.UpdateService.GetUpdatePlaybook(update)
 	if err != nil {
 		err := errors.NewInternalServerError()

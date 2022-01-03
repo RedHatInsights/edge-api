@@ -26,7 +26,7 @@ func TestCreateWasCalledWithWrongBody(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx := context.WithValue(req.Context(), dependencies.Key, &dependencies.EdgeAPIServices{
+	ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{
 		Log: log.NewEntry(log.StandardLogger()),
 	})
 	req = req.WithContext(ctx)
@@ -59,7 +59,7 @@ func TestCreateWasCalledWithNameNotSet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx := context.WithValue(req.Context(), dependencies.Key, &dependencies.EdgeAPIServices{
+	ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{
 		Log: log.NewEntry(log.StandardLogger()),
 	})
 	req = req.WithContext(ctx)

@@ -26,7 +26,7 @@ func TestCreateWasCalledWithURLNotSet(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx := req.Context()
-	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		Log: log.NewEntry(log.StandardLogger()),
 	})
 	req = req.WithContext(ctx)
@@ -82,6 +82,8 @@ func TestGetAllThirdPartyRepo(t *testing.T) {
 	}
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(GetAllThirdPartyRepo)
+	ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
+	req = req.WithContext(ctx)
 	handler.ServeHTTP(rr, req)
 
 	if status := rr.Code; status != http.StatusOK {

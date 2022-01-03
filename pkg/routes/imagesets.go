@@ -237,7 +237,7 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 	}
 
-	s, _ := dependencies.ServicesFromContext(r.Context())
+	s := dependencies.ServicesFromContext(r.Context())
 	Imgs := returnImageDetails(images, s)
 
 	details.ImageSetData = *imageSet

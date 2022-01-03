@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -58,6 +59,8 @@ func TestGetImageSetByID(t *testing.T) {
 
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
+	ctx = dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
+	req = req.WithContext(ctx)
 	handler := http.HandlerFunc(GetImageSetsByID)
 
 	handler.ServeHTTP(rr, req.WithContext(ctx))

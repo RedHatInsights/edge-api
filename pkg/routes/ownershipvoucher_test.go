@@ -285,6 +285,13 @@ var _ = Describe("Ownershipvoucher", func() {
 	Context("bad router", func() {
 		It("should fail", func() {
 			badRouter := chi.NewRouter()
+			badRouter.Use(func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					edgeAPIServices := &dependencies.EdgeAPIServices{}
+					ctx := dependencies.ContextWithServices(r.Context(), edgeAPIServices)
+					next.ServeHTTP(w, r.WithContext(ctx))
+				})
+			})
 			routes.MakeFDORouter(badRouter)
 			req, _ := http.NewRequest(http.MethodPost, "/ownership_voucher/delete", bytes.NewBuffer(fdoUUIDListAsBytes))
 			resRec := httptest.NewRecorder()
