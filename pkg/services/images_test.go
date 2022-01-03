@@ -80,35 +80,66 @@ var _ = Describe("Image Service Test", func() {
 		})
 		Context("when previous image has failed status", func() {
 			It("should have an error returned by image builder", func() {
-				image := &models.Image{}
+				id, _ := faker.RandomInt(1)
+				uid := uint(id[0])
+				imageSet := &models.ImageSet{}
+				result := db.DB.Save(imageSet)
+				Expect(result.Error).To(Not(HaveOccurred()))
 				previousImage := &models.Image{
-					Status: models.ImageStatusError,
+					Status:     models.ImageStatusSuccess,
+					Commit:     &models.Commit{RepoID: &uid},
+					Version:    1,
+					Name:       faker.Name(),
+					ImageSetID: &imageSet.ID,
 				}
-				err := fmt.Errorf("Failed creating commit for image")
-				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, err)
+				image := &models.Image{
+					Commit:      &models.Commit{},
+					OutputTypes: []string{models.ImageTypeCommit},
+					Version:     2,
+					Name:        previousImage.Name,
+				}
+				result = db.DB.Save(previousImage)
+				Expect(result.Error).To(Not(HaveOccurred()))
+				expectedErr := fmt.Errorf("Failed creating commit for image")
+				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
+				mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(&models.Repo{}, nil)
+				actualErr := service.UpdateImage(image, previousImage)
 
-				err = service.UpdateImage(image, previousImage)
-
-				Expect(err).To(HaveOccurred())
-				Expect(err).ToNot(MatchError(new(services.ImageNotFoundError)))
-				Expect(err).To(MatchError(err))
+				Expect(actualErr).To(HaveOccurred())
+				Expect(actualErr).To(MatchError(expectedErr))
 			})
 		})
 		Context("when previous image has success status", func() {
 			It("should have the parent image repo url set as parent commit url", func() {
-				image := &models.Image{}
 				id, _ := faker.RandomInt(1)
 				uid := uint(id[0])
+				imageSet := &models.ImageSet{}
+				result := db.DB.Save(imageSet)
+				Expect(result.Error).To(Not(HaveOccurred()))
 				previousImage := &models.Image{
-					Status: models.ImageStatusSuccess,
-					Commit: &models.Commit{RepoID: &uid},
+					Status:     models.ImageStatusSuccess,
+					Commit:     &models.Commit{RepoID: &uid},
+					Version:    1,
+					Name:       faker.Name(),
+					ImageSetID: &imageSet.ID,
 				}
-				parentRepo := &models.Repo{URL: faker.URL()}
-				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, fmt.Errorf("Failed creating commit for image"))
-				mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(parentRepo, nil)
-				err := service.UpdateImage(image, previousImage)
+				image := &models.Image{
+					Commit:      &models.Commit{},
+					OutputTypes: []string{models.ImageTypeCommit},
+					Version:     2,
+					Name:        previousImage.Name,
+				}
+				result = db.DB.Save(previousImage)
+				Expect(result.Error).To(Not(HaveOccurred()))
 
-				Expect(err).To(HaveOccurred())
+				parentRepo := &models.Repo{URL: faker.URL()}
+				expectedErr := fmt.Errorf("Failed creating commit for image")
+				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
+				mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(parentRepo, nil)
+				actualErr := service.UpdateImage(image, previousImage)
+
+				Expect(actualErr).To(HaveOccurred())
+				Expect(actualErr).To(MatchError(expectedErr))
 				Expect(image.Commit.OSTreeParentCommit).To(Equal(parentRepo.URL))
 			})
 		})
