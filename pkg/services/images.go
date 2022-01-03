@@ -47,14 +47,18 @@ type ImageServiceInterface interface {
 	CheckImageName(name, account string) (bool, error)
 	RetryCreateImage(image *models.Image) error
 	GetMetadata(image *models.Image) (*models.Image, error)
+	SetFinalImageStatus(i *models.Image)
+	CheckIfIsLatestVersion(previousImage *models.Image) error
+	SetBuildingStatusOnImageToRetryBuild(image *models.Image) error
 }
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
 func NewImageService(ctx context.Context, log *log.Entry) ImageServiceInterface {
 	return &ImageService{
 		Service:      Service{ctx: ctx, log: log.WithField("service", "image")},
-		imageBuilder: imagebuilder.InitClient(ctx, log),
-		repoBuilder:  NewRepoBuilder(ctx, log),
+		ImageBuilder: imagebuilder.InitClient(ctx, log),
+		RepoBuilder:  NewRepoBuilder(ctx, log),
+		RepoService:  NewRepoService(ctx, log),
 	}
 }
 
@@ -62,8 +66,9 @@ func NewImageService(ctx context.Context, log *log.Entry) ImageServiceInterface 
 type ImageService struct {
 	Service
 
-	imageBuilder imagebuilder.ClientInterface
-	repoBuilder  RepoBuilderInterface
+	ImageBuilder imagebuilder.ClientInterface
+	RepoBuilder  RepoBuilderInterface
+	RepoService  RepoServiceInterface
 }
 
 // CreateImage creates an Image for an Account on Image Builder and on our database
@@ -76,7 +81,7 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 	if set.Error == nil {
 		image.ImageSetID = &imageSet.ID
 	}
-	image, err := s.imageBuilder.ComposeCommit(image)
+	image, err := s.ImageBuilder.ComposeCommit(image)
 	if err != nil {
 		return err
 	}
@@ -115,10 +120,11 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 
 // UpdateImage updates an image, adding a new version of this image to an imageset
 func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Image) error {
+	s.log.Info("Updating image...")
 	if previousImage == nil {
 		return new(ImageNotFoundError)
 	}
-	err := s.checkIfIsLatestVersion(previousImage)
+	err := s.CheckIfIsLatestVersion(previousImage)
 	if err != nil {
 		return errors.NewBadRequest("only the latest updated image can be modified")
 	}
@@ -132,25 +138,23 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		var currentImageSet models.ImageSet
 		result := db.DB.Where("Id = ?", previousImage.ImageSetID).First(&currentImageSet)
 		if result.Error != nil {
+			s.log.WithField("error", result.Error.Error()).Error("Error retrieving the image set from parent image")
 			return result.Error
 		}
 		currentImageSet.Version = currentImageSet.Version + 1
 		if err := db.DB.Save(currentImageSet).Error; err != nil {
 			return result.Error
 		}
-		if image.Commit.OSTreeParentCommit == "" {
-			if previousImage.Commit.OSTreeParentCommit != "" {
-				image.Commit.OSTreeParentCommit = previousImage.Commit.OSTreeParentCommit
-			} else {
-				var repo *RepoService
-				repoURL, err := repo.GetRepoByID(previousImage.Commit.RepoID)
-				if err != nil {
-					err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
-					return err
-				}
-				image.Commit.OSTreeParentCommit = repoURL.URL
-			}
+
+		// Always get the repo URL from the previous Image's commit
+		repo, err := s.RepoService.GetRepoByID(previousImage.Commit.RepoID)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Commit repo wasn't found on the database")
+			err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
+			return err
 		}
+
+		image.Commit.OSTreeParentCommit = repo.URL
 		if image.Commit.OSTreeRef == "" {
 			if previousImage.Commit.OSTreeRef != "" {
 				image.Commit.OSTreeRef = previousImage.Commit.OSTreeRef
@@ -162,7 +166,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		// Previous image was not built sucessfully
 		s.log.WithField("previousImageID", previousImage.ID).Info("Creating an update based on a image with a status that is not success")
 	}
-	image, err = s.imageBuilder.ComposeCommit(image)
+	image, err = s.ImageBuilder.ComposeCommit(image)
 	if err != nil {
 		return err
 	}
@@ -182,19 +186,25 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		image.Installer.Account = image.Account
 		tx := db.DB.Create(&image.Installer)
 		if tx.Error != nil {
+			s.log.WithField("error", tx.Error.Error()).Error("Error creating installer")
 			return tx.Error
 		}
 	}
 	tx := db.DB.Create(&image.Commit)
 	if tx.Error != nil {
+		s.log.WithField("error", tx.Error.Error()).Error("Error creating commit")
 		return tx.Error
 	}
 	tx = db.DB.Create(&image)
 	if tx.Error != nil {
+		s.log.WithField("error", tx.Error.Error()).Error("Error creating image")
 		return tx.Error
 	}
 
-	s.log = s.log.WithFields(log.Fields{"imageID": image.ID, "commitID": image.Commit.ID})
+	s.log = s.log.WithFields(log.Fields{"updatedImageID": image.ID, "updatedCommitID": image.Commit.ID})
+
+	s.log.Info("Image Updated successfully - starting bulding processs")
+
 	go s.postProcessImage(image.ID)
 
 	return nil
@@ -224,7 +234,7 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 	// Regardless of the status, call this method to make sure the status will be updated
 	// It updates the status across the image and not just the installer
 	s.log.Debug("Setting final image status")
-	s.setFinalImageStatus(image)
+	s.SetFinalImageStatus(image)
 	s.log.Debug("Post processing image with installer is done")
 	return nil
 }
@@ -243,7 +253,7 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 	}
 
 	if image.Commit.Status == models.ImageStatusSuccess {
-		i, err := s.imageBuilder.GetMetadata(image)
+		i, err := s.ImageBuilder.GetMetadata(image)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Failed getting metadata from image builder")
 			s.SetErrorStatusOnImage(err, i)
@@ -259,14 +269,14 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 	if !image.HasOutputType(models.ImageTypeInstaller) {
 		image.Installer = nil
 		s.log.Debug("Setting final image status - no installer to create")
-		s.setFinalImageStatus(image)
+		s.SetFinalImageStatus(image)
 		s.log.Debug("Post processing image is done - no installer to create")
 	}
 	s.log.Debug("Post processing commit is done")
 	return nil
 }
 
-func (s *ImageService) setFinalImageStatus(i *models.Image) {
+func (s *ImageService) SetFinalImageStatus(i *models.Image) {
 	// image status can be success if all output types are successful
 	// if any status are not final (success/error) then sets to error
 	// image status is error if any output status is error
@@ -377,7 +387,7 @@ func (s *ImageService) CreateRepoForImage(i *models.Image) (*models.Repo, error)
 	}
 	log.Debug("OSTree repo was saved to commit")
 
-	repo, err := s.repoBuilder.ImportRepo(repo)
+	repo, err := s.RepoBuilder.ImportRepo(repo)
 	if err != nil {
 		return nil, err
 	}
@@ -570,7 +580,7 @@ func (s *ImageService) cleanFiles(kickstart string, isoName string, imageID uint
 // UpdateImageStatus updates the status of an commit and/or installer based on Image Builder's status
 func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, error) {
 	if image.Commit.Status == models.ImageStatusBuilding {
-		image, err := s.imageBuilder.GetCommitStatus(image)
+		image, err := s.ImageBuilder.GetCommitStatus(image)
 		if err != nil {
 			return image, err
 		}
@@ -582,7 +592,7 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 		}
 	}
 	if image.Installer != nil && image.Installer.Status == models.ImageStatusBuilding {
-		image, err := s.imageBuilder.GetInstallerStatus(image)
+		image, err := s.ImageBuilder.GetInstallerStatus(image)
 		if err != nil {
 			return image, err
 		}
@@ -753,12 +763,12 @@ func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Im
 func (s *ImageService) RetryCreateImage(image *models.Image) error {
 	s.log = s.log.WithFields(log.Fields{"imageID": image.ID, "commitID": image.Commit.ID})
 	// recompose commit
-	image, err := s.imageBuilder.ComposeCommit(image)
+	image, err := s.ImageBuilder.ComposeCommit(image)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Failed recomposing commit")
 		return err
 	}
-	err = s.setBuildingStatusOnImageToRetryBuild(image)
+	err = s.SetBuildingStatusOnImageToRetryBuild(image)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Failed setting image status")
 		return nil
@@ -767,7 +777,7 @@ func (s *ImageService) RetryCreateImage(image *models.Image) error {
 	return nil
 }
 
-func (s *ImageService) setBuildingStatusOnImageToRetryBuild(image *models.Image) error {
+func (s *ImageService) SetBuildingStatusOnImageToRetryBuild(image *models.Image) error {
 	image.Status = models.ImageStatusBuilding
 	if image.Commit != nil {
 		image.Commit.Status = models.ImageStatusBuilding
@@ -811,8 +821,8 @@ func uploadTarRepo(account, imageName string, repoID int) (string, error) {
 	return url, nil
 }
 
-// checkIfIsLatestVersion make sure that there is no same image version present
-func (s *ImageService) checkIfIsLatestVersion(previousImage *models.Image) error {
+// CheckIfIsLatestVersion make sure that there is no same image version present
+func (s *ImageService) CheckIfIsLatestVersion(previousImage *models.Image) error {
 	/*
 		nowImage is the version of current Image which we are updating i.e if we are updating image1 to image 2 then image1 is the nowImage.
 		currentHighestImageVersion is the latest version present in the DB of image we're updating.
@@ -874,7 +884,7 @@ func (s *ImageService) GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable
 //GetMetadata return package info when has an update to the image
 func (s *ImageService) GetMetadata(image *models.Image) (*models.Image, error) {
 	s.log.Debug("Retrieving metadata")
-	image, err := s.imageBuilder.GetMetadata(image)
+	image, err := s.ImageBuilder.GetMetadata(image)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error retrieving metadata")
 		return nil, err
@@ -900,7 +910,7 @@ func (s *ImageService) CreateInstallerForImage(image *models.Image) (*models.Ima
 		s.log.WithField("error", tx.Error.Error()).Error("Error saving installer")
 		return nil, c, tx.Error
 	}
-	image, err := s.imageBuilder.ComposeInstaller(image)
+	image, err := s.ImageBuilder.ComposeInstaller(image)
 	if err != nil {
 		return nil, c, err
 	}

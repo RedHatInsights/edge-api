@@ -64,6 +64,20 @@ func (mr *MockImageServiceInterfaceMockRecorder) AddUserInfo(image interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUserInfo", reflect.TypeOf((*MockImageServiceInterface)(nil).AddUserInfo), image)
 }
 
+// CheckIfIsLatestVersion mocks base method.
+func (m *MockImageServiceInterface) CheckIfIsLatestVersion(previousImage *models.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckIfIsLatestVersion", previousImage)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CheckIfIsLatestVersion indicates an expected call of CheckIfIsLatestVersion.
+func (mr *MockImageServiceInterfaceMockRecorder) CheckIfIsLatestVersion(previousImage interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckIfIsLatestVersion", reflect.TypeOf((*MockImageServiceInterface)(nil).CheckIfIsLatestVersion), previousImage)
+}
+
 // CheckImageName mocks base method.
 func (m *MockImageServiceInterface) CheckImageName(name, account string) (bool, error) {
 	m.ctrl.T.Helper()
@@ -198,6 +212,20 @@ func (mr *MockImageServiceInterfaceMockRecorder) RetryCreateImage(image interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RetryCreateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).RetryCreateImage), image)
 }
 
+// SetBuildingStatusOnImageToRetryBuild mocks base method.
+func (m *MockImageServiceInterface) SetBuildingStatusOnImageToRetryBuild(image *models.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetBuildingStatusOnImageToRetryBuild", image)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetBuildingStatusOnImageToRetryBuild indicates an expected call of SetBuildingStatusOnImageToRetryBuild.
+func (mr *MockImageServiceInterfaceMockRecorder) SetBuildingStatusOnImageToRetryBuild(image interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBuildingStatusOnImageToRetryBuild", reflect.TypeOf((*MockImageServiceInterface)(nil).SetBuildingStatusOnImageToRetryBuild), image)
+}
+
 // SetErrorStatusOnImage mocks base method.
 func (m *MockImageServiceInterface) SetErrorStatusOnImage(err error, i *models.Image) {
 	m.ctrl.T.Helper()
@@ -208,6 +236,18 @@ func (m *MockImageServiceInterface) SetErrorStatusOnImage(err error, i *models.I
 func (mr *MockImageServiceInterfaceMockRecorder) SetErrorStatusOnImage(err, i interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetErrorStatusOnImage", reflect.TypeOf((*MockImageServiceInterface)(nil).SetErrorStatusOnImage), err, i)
+}
+
+// SetFinalImageStatus mocks base method.
+func (m *MockImageServiceInterface) SetFinalImageStatus(i *models.Image) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetFinalImageStatus", i)
+}
+
+// SetFinalImageStatus indicates an expected call of SetFinalImageStatus.
+func (mr *MockImageServiceInterfaceMockRecorder) SetFinalImageStatus(i interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetFinalImageStatus", reflect.TypeOf((*MockImageServiceInterface)(nil).SetFinalImageStatus), i)
 }
 
 // UpdateImage mocks base method.

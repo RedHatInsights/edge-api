@@ -222,7 +222,7 @@ func initImageCreateRequest(w http.ResponseWriter, r *http.Request) (*models.Ima
 		json.NewEncoder(w).Encode(&err)
 		return nil, err
 	}
-	services.Log = services.Log.WithField("imageID", image.Name)
+	services.Log = services.Log.WithField("imageName", image.Name)
 	return image, nil
 }
 

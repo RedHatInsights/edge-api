@@ -1,4 +1,4 @@
-package services
+package services_test
 
 import (
 	"context"
@@ -11,23 +11,25 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder/mock_imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services"
+	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 	log "github.com/sirupsen/logrus"
 )
 
 var _ = Describe("Image Service Test", func() {
-	var service ImageService
+	var service services.ImageService
 	var hash string
 	var mockImageBuilderClient *mock_imagebuilder.MockClientInterface
+	var mockRepoService *mock_services.MockRepoServiceInterface
 	BeforeEach(func() {
 		ctrl := gomock.NewController(GinkgoT())
 		defer ctrl.Finish()
 		mockImageBuilderClient = mock_imagebuilder.NewMockClientInterface(ctrl)
-		service = ImageService{
-			Service: Service{
-				ctx: context.Background(),
-				log: log.NewEntry(log.StandardLogger()),
-			},
-			imageBuilder: mockImageBuilderClient,
+		mockRepoService = mock_services.NewMockRepoServiceInterface(ctrl)
+		service = services.ImageService{
+			Service:      services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+			ImageBuilder: mockImageBuilderClient,
+			RepoService:  mockRepoService,
 		}
 	})
 	Describe("get image", func() {
@@ -40,7 +42,7 @@ var _ = Describe("Image Service Test", func() {
 			})
 			It("should have an error", func() {
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(new(ImageNotFoundError)))
+				Expect(err).To(MatchError(new(services.ImageNotFoundError)))
 			})
 			It("should have a empty image", func() {
 				Expect(image).To(BeNil())
@@ -57,7 +59,7 @@ var _ = Describe("Image Service Test", func() {
 
 			It("should have an error", func() {
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(new(ImageNotFoundError)))
+				Expect(err).To(MatchError(new(services.ImageNotFoundError)))
 			})
 			It("should have a empty image", func() {
 				Expect(image).To(BeNil())
@@ -73,7 +75,7 @@ var _ = Describe("Image Service Test", func() {
 			})
 			It("should have an error", func() {
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(new(ImageNotFoundError)))
+				Expect(err).To(MatchError(new(services.ImageNotFoundError)))
 			})
 		})
 		Context("when previous image has failed status", func() {
@@ -88,8 +90,23 @@ var _ = Describe("Image Service Test", func() {
 				err = service.UpdateImage(image, previousImage)
 
 				Expect(err).To(HaveOccurred())
-				Expect(err).ToNot(MatchError(new(ImageNotFoundError)))
+				Expect(err).ToNot(MatchError(new(services.ImageNotFoundError)))
 				Expect(err).To(MatchError(err))
+			})
+		})
+		Context("when previous image has success status", func() {
+			It("should have the parent image repo url set as parent commit url", func() {
+				image := &models.Image{}
+				previousImage := &models.Image{
+					Status: models.ImageStatusSuccess,
+				}
+				parentRepo := &models.Repo{URL: faker.URL()}
+				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, fmt.Errorf("Failed creating commit for image"))
+				mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(parentRepo)
+				err := service.UpdateImage(image, previousImage)
+
+				Expect(err).To(HaveOccurred())
+				Expect(image.Commit.OSTreeParentCommit).To(Equal(parentRepo.URL))
 			})
 		})
 	})
@@ -102,7 +119,7 @@ var _ = Describe("Image Service Test", func() {
 					},
 					OutputTypes: []string{models.ImageTypeCommit},
 				}
-				service.setFinalImageStatus(image)
+				service.SetFinalImageStatus(image)
 
 				Expect(image.Status).To(Equal(models.ImageStatusSuccess))
 			})
@@ -113,7 +130,7 @@ var _ = Describe("Image Service Test", func() {
 					},
 					OutputTypes: []string{models.ImageTypeCommit},
 				}
-				service.setFinalImageStatus(image)
+				service.SetFinalImageStatus(image)
 
 				Expect(image.Status).To(Equal(models.ImageStatusError))
 			})
@@ -124,7 +141,7 @@ var _ = Describe("Image Service Test", func() {
 					},
 					OutputTypes: []string{models.ImageTypeCommit},
 				}
-				service.setFinalImageStatus(image)
+				service.SetFinalImageStatus(image)
 
 				Expect(image.Commit.Status).To(Equal(models.ImageStatusError))
 				Expect(image.Status).To(Equal(models.ImageStatusError))
@@ -138,7 +155,7 @@ var _ = Describe("Image Service Test", func() {
 					},
 					OutputTypes: []string{models.ImageTypeInstaller},
 				}
-				service.setFinalImageStatus(image)
+				service.SetFinalImageStatus(image)
 
 				Expect(image.Status).To(Equal(models.ImageStatusSuccess))
 			})
@@ -149,7 +166,7 @@ var _ = Describe("Image Service Test", func() {
 					},
 					OutputTypes: []string{models.ImageTypeInstaller},
 				}
-				service.setFinalImageStatus(image)
+				service.SetFinalImageStatus(image)
 
 				Expect(image.Status).To(Equal(models.ImageStatusError))
 			})
@@ -160,7 +177,7 @@ var _ = Describe("Image Service Test", func() {
 					},
 					OutputTypes: []string{models.ImageTypeInstaller},
 				}
-				service.setFinalImageStatus(image)
+				service.SetFinalImageStatus(image)
 
 				Expect(image.Installer.Status).To(Equal(models.ImageStatusError))
 				Expect(image.Status).To(Equal(models.ImageStatusError))
@@ -178,7 +195,7 @@ var _ = Describe("Image Service Test", func() {
 					},
 					OutputTypes: []string{models.ImageTypeInstaller, models.ImageTypeCommit},
 				}
-				service.setFinalImageStatus(image)
+				service.SetFinalImageStatus(image)
 
 				Expect(image.Status).To(Equal(models.ImageStatusSuccess))
 			})
@@ -192,7 +209,7 @@ var _ = Describe("Image Service Test", func() {
 					},
 					OutputTypes: []string{models.ImageTypeInstaller, models.ImageTypeCommit},
 				}
-				service.setFinalImageStatus(image)
+				service.SetFinalImageStatus(image)
 
 				Expect(image.Status).To(Equal(models.ImageStatusError))
 			})
@@ -206,7 +223,7 @@ var _ = Describe("Image Service Test", func() {
 					},
 					OutputTypes: []string{models.ImageTypeInstaller, models.ImageTypeCommit},
 				}
-				service.setFinalImageStatus(image)
+				service.SetFinalImageStatus(image)
 
 				Expect(image.Installer.Status).To(Equal(models.ImageStatusError))
 				Expect(image.Status).To(Equal(models.ImageStatusError))
@@ -225,7 +242,7 @@ var _ = Describe("Image Service Test", func() {
 					Status:      models.ImageStatusError,
 					OutputTypes: []string{models.ImageTypeInstaller, models.ImageTypeCommit},
 				}
-				err := service.setBuildingStatusOnImageToRetryBuild(image)
+				err := service.SetBuildingStatusOnImageToRetryBuild(image)
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(image.Status).To(Equal(models.ImageStatusBuilding))
@@ -238,10 +255,10 @@ var _ = Describe("Image Service Test", func() {
 				image := &models.Image{Version: 1, Name: "image-same-name"}
 				db.DB.Save(image)
 				db.DB.Save(&models.Image{Version: 2, Name: "image-same-name"})
-				err := service.checkIfIsLatestVersion(image)
+				err := service.CheckIfIsLatestVersion(image)
 
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(new(ImageVersionAlreadyExists)))
+				Expect(err).To(MatchError(new(services.ImageVersionAlreadyExists)))
 			})
 		})
 	})
