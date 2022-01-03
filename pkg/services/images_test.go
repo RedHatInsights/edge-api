@@ -97,8 +97,11 @@ var _ = Describe("Image Service Test", func() {
 		Context("when previous image has success status", func() {
 			It("should have the parent image repo url set as parent commit url", func() {
 				image := &models.Image{}
+				id, _ := faker.RandomInt(0)
+				uid := uint(id[0])
 				previousImage := &models.Image{
 					Status: models.ImageStatusSuccess,
+					Commit: &models.Commit{RepoID: &uid},
 				}
 				parentRepo := &models.Repo{URL: faker.URL()}
 				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, fmt.Errorf("Failed creating commit for image"))
