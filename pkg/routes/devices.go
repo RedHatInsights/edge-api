@@ -56,8 +56,8 @@ func DeviceCtx(next http.Handler) http.Handler {
 
 func getDevice(w http.ResponseWriter, r *http.Request) *models.Device {
 	ctx := r.Context()
-	dc, ok := ctx.Value(DeviceContextKey).(*DeviceContext)
-	if dc == nil || dc.DeviceUUID == "" {
+	dc, ok := ctx.Value(DeviceContextKey).(DeviceContext)
+	if dc.DeviceUUID == "" {
 		return nil // Error set by DeviceCtx method
 	}
 	if !ok {

@@ -12,6 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
+	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 )
@@ -57,12 +58,13 @@ func TestGetAvailableUpdateForDeviceWhenDeviceIsNotFound(t *testing.T) {
 	dc := DeviceContext{
 		DeviceUUID: faker.UUIDHyphenated(),
 	}
-	ctx := context.WithValue(req.Context(), DeviceContextKey, dc)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	mockDeviceService := mock_services.NewMockDeviceServiceInterface(ctrl)
+	mockDeviceService.EXPECT().GetDeviceByUUID(gomock.Eq(dc.DeviceUUID)).Return(&models.Device{UUID: dc.DeviceUUID}, nil)
 	mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(dc.DeviceUUID)).Return(nil, new(services.DeviceNotFoundError))
+	ctx := context.WithValue(req.Context(), DeviceContextKey, dc)
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		DeviceService: mockDeviceService,
 		Log:           log.NewEntry(log.StandardLogger()),
@@ -95,6 +97,7 @@ func TestGetAvailableUpdateForDeviceWhenAUnexpectedErrorHappens(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDeviceService := mock_services.NewMockDeviceServiceInterface(ctrl)
+	mockDeviceService.EXPECT().GetDeviceByUUID(gomock.Eq(dc.DeviceUUID)).Return(&models.Device{UUID: dc.DeviceUUID}, nil)
 	mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(dc.DeviceUUID)).Return(nil, errors.New("random error"))
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		DeviceService: mockDeviceService,
