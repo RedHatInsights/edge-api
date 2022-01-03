@@ -42,11 +42,11 @@ func MakeImagesRouter(sub chi.Router) {
 		r.Get("/details", GetImageDetailsByID)
 		r.Get("/status", GetImageStatusByID)
 		r.Get("/repo", GetRepoForImage)
-		r.Get("/metadata", GetMetadataForImage)       // TODO: Consistent logging
-		r.Post("/installer", CreateInstallerForImage) // TODO: Consistent logging
-		r.Post("/kickstart", CreateKickStartForImage) // TODO: Consistent logging
-		r.Post("/update", CreateImageUpdate)          // TODO: Consistent logging
-		r.Post("/retry", RetryCreateImage)            // TODO: Consistent logging
+		r.Get("/metadata", GetMetadataForImage)
+		r.Post("/installer", CreateInstallerForImage)
+		r.Post("/kickstart", CreateKickStartForImage)
+		r.Post("/update", CreateImageUpdate)
+		r.Post("/retry", RetryCreateImage)
 	})
 }
 
@@ -108,8 +108,18 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 				json.NewEncoder(w).Encode(&responseErr)
 				return
 			}
+			account, err := common.GetAccount(r)
+			if err != nil || image.Account != account {
+				log.WithFields(log.Fields{
+					"error":   err.Error(),
+					"account": account,
+				}).Error("Error retrieving account or image doesn't belong to account")
+				err := errors.NewBadRequest(err.Error())
+				w.WriteHeader(err.GetStatus())
+				json.NewEncoder(w).Encode(&err)
+				return
+			}
 			ctx := context.WithValue(r.Context(), imageKey, image)
-
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
 			s.Log.Debug("Image ID was not passed to the request or it was empty")
@@ -143,7 +153,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	}
 	account, err := common.GetAccount(r)
 	if err != nil {
-		log.Debug(err)
+		services.Log.WithField("error", err.Error()).Error("Failed retrieving account from request")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
@@ -173,39 +183,17 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	image, err := initImageCreateRequest(w, r)
 	if err != nil {
-		log.WithFields(log.Fields{
-			"error":   err.Error(),
-			"imageID": image.ID,
-		}).Debug("Error parsing json")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		// initImageCreateRequest() already writes the response
 		return
 	}
-	ctx := r.Context()
-	previousImage, ok := ctx.Value(imageKey).(*models.Image)
-	if !ok {
-		err := errors.NewBadRequest("Must pass image id")
-		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
-	}
-
-	account, err := common.GetAccount(r)
-	if err != nil || previousImage.Account != account {
-		log.WithFields(log.Fields{
-			"error":   err.Error(),
-			"account": account,
-			"imageID": image.ID,
-		}).Error("Error retrieving account")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+	previousImage := getImage(w, r)
+	if image == nil {
+		// getImage already writes the response
 		return
 	}
-
 	err = services.ImageService.UpdateImage(image, previousImage)
 	if err != nil {
-		log.Error(err)
+		log.WithField("error", err.Error()).Error("Failed creating an update to an image")
 		err := errors.NewInternalServerError()
 		err.SetTitle("Failed creating image")
 		w.WriteHeader(err.GetStatus())
@@ -214,26 +202,27 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&image)
-
 }
 
 // initImageCreateRequest validates request to create/update an image.
 func initImageCreateRequest(w http.ResponseWriter, r *http.Request) (*models.Image, error) {
+	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	var image *models.Image
 	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
-		log.Error(err)
+		services.Log.WithField("error", err.Error()).Error("Error decoding image json")
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return nil, err
 	}
 	if err := image.ValidateRequest(); err != nil {
-		log.Info(err)
+		services.Log.WithField("error", err.Error()).Info("Error validating image")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return nil, err
 	}
+	services.Log = services.Log.WithField("imageID", image.Name)
 	return image, nil
 }
 
@@ -414,7 +403,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
 	image := getImage(w, r)
 	if err := json.NewDecoder(r.Body).Decode(&image.Installer); err != nil {
-		log.WithField("error", err).Error("Failed to decode installer")
+		services.Log.WithField("error", err).Error("Failed to decode installer")
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
@@ -422,7 +411,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	}
 	image, _, err := services.ImageService.CreateInstallerForImage(image)
 	if err != nil {
-		log.WithField("error", err).Error("Failed to create installer")
+		services.Log.WithField("error", err).Error("Failed to create installer")
 		err := errors.NewInternalServerError()
 		err.SetTitle("Failed to create installer")
 		w.WriteHeader(err.GetStatus())
@@ -486,7 +475,7 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 		err := services.ImageService.AddUserInfo(image)
 		if err != nil {
 			// TODO: Temporary. Handle error better.
-			log.Errorf("Kickstart file injection failed %s", err.Error())
+			services.Log.Errorf("Kickstart file injection failed %s", err.Error())
 			err := errors.NewInternalServerError()
 			w.WriteHeader(err.GetStatus())
 			json.NewEncoder(w).Encode(&err)
