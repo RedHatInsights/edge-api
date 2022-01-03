@@ -20,17 +20,17 @@ type DeviceServiceInterface interface {
 }
 
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
-func NewDeviceService(ctx context.Context) DeviceServiceInterface {
+func NewDeviceService(ctx context.Context, log *log.Entry) DeviceServiceInterface {
 	return &DeviceService{
-		ctx:           ctx,
 		updateService: NewUpdateService(ctx),
 		inventory:     inventory.InitClient(ctx),
+		Service:       Service{ctx: ctx, log: log.WithField("service", "image")},
 	}
 }
 
 // DeviceService is the main implementation of a DeviceServiceInterface
 type DeviceService struct {
-	ctx           context.Context
+	Service
 	updateService UpdateServiceInterface
 	inventory     inventory.ClientInterface
 }
@@ -44,12 +44,12 @@ type DeviceDetails struct {
 
 // GetDeviceByID receives DeviceID uint and get a *models.Device back
 func (s *DeviceService) GetDeviceByID(deviceID uint) (*models.Device, error) {
-	log.Debugf("GetDeviceByID::deviceID: %#v", deviceID)
+	s.log = s.log.WithField("deviceID", deviceID)
+	s.log.Info("Get device by id")
 	var device models.Device
 	result := db.DB.First(&device, deviceID)
-	log.Debugf("GetDeviceByID::result: %#v", result)
-	log.Debugf("GetDeviceByID::device: %#v", device)
 	if result.Error != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error finding device")
 		return nil, result.Error
 	}
 	return &device, nil
@@ -57,12 +57,12 @@ func (s *DeviceService) GetDeviceByID(deviceID uint) (*models.Device, error) {
 
 // GetDeviceByUUID receives UUID string and get a *models.Device back
 func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, error) {
-	log.Debugf("GetDeviceByUUID::deviceUUID: %#v", deviceUUID)
+	s.log = s.log.WithField("deviceUUID", deviceUUID)
+	s.log.Info("Get device by uuid")
 	var device models.Device
 	result := db.DB.Where("uuid = ?", deviceUUID).First(&device)
-	log.Debugf("GetDeviceByUUID::result: %#v", result)
-	log.Debugf("GetDeviceByUUID::device: %#v", device)
 	if result.Error != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error finding device")
 		return nil, result.Error
 	}
 	return &device, nil
@@ -70,19 +70,24 @@ func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, erro
 
 // GetDeviceDetails provides details for a given Device UUID
 func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*DeviceDetails, error) {
+	s.log = s.log.WithField("deviceUUID", deviceUUID)
+	s.log.Info("Get device by uuid")
+
 	imageInfo, err := s.GetDeviceImageInfo(deviceUUID)
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Could not find information about the running image on the device")
 		return nil, err
 	}
 	device, err := s.GetDeviceByUUID(deviceUUID)
 	if err != nil {
-		log.Debugf("Could not find device on the devices table yet - %s", deviceUUID)
+		s.log.Info("Could not find device on the devices table yet - returning just the data from inventory")
 	}
 	// In order to have an update transaction for a device it must be a least created
 	var updates *[]models.UpdateTransaction
 	if device != nil {
 		updates, err = s.updateService.GetUpdateTransactionsForDevice(device)
 		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Could not find information about updates for this device")
 			return nil, err
 		}
 	}
@@ -116,6 +121,7 @@ type ImageInfo struct {
 
 // GetUpdateAvailableForDeviceByUUID returns if exists update for the current image at the device.
 func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]ImageUpdateAvailable, error) {
+	s.log = s.log.WithField("deviceUUID", deviceUUID)
 	var lastDeployment inventory.OSTree
 	var imageDiff []ImageUpdateAvailable
 	device, err := s.inventory.ReturnDevicesByID(deviceUUID)
@@ -135,13 +141,13 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 	var currentImage models.Image
 	result := db.DB.Model(&models.Image{}).Joins("Commit").Where("OS_Tree_Commit = ?", lastDeployment.Checksum).First(&currentImage)
 	if result.Error != nil || result.RowsAffected == 0 {
-		log.Error(result.Error)
+		s.log.WithField("error", result.Error.Error()).Error("Could not find device")
 		return nil, new(DeviceNotFoundError)
 	}
 
 	err = db.DB.Model(&currentImage.Commit).Association("InstalledPackages").Find(&currentImage.Commit.InstalledPackages)
 	if err != nil {
-		log.Error(result.Error)
+		s.log.WithField("error", err.Error()).Error("Could not find device")
 		return nil, new(DeviceNotFoundError)
 	}
 
@@ -210,6 +216,7 @@ func getDiffOnUpdate(oldImg models.Image, newImg models.Image) DeltaDiff {
 
 // GetDeviceImageInfo returns the information of a running image for a device
 func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error) {
+	s.log = s.log.WithField("deviceUUID", deviceUUID)
 	var ImageInfo ImageInfo
 	var currentImage models.Image
 	var rollback *models.Image
@@ -231,7 +238,7 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error
 	result := db.DB.Model(&models.Image{}).Joins("Commit").Where("OS_Tree_Commit = ?", lastDeployment.Checksum).First(&currentImage)
 
 	if result.Error != nil || result == nil {
-		log.Error(result.Error)
+		s.log.WithField("error", err.Error()).Error("Could not find device image info")
 		return nil, new(ImageNotFoundError)
 	}
 	if currentImage.ImageSetID != nil {
@@ -239,7 +246,7 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error
 	}
 	updateAvailable, err := s.GetUpdateAvailableForDeviceByUUID(deviceUUID)
 	if err != nil {
-		log.Error(err.Error())
+		s.log.WithField("error", err.Error()).Error("Could not find updates available to get image info")
 		return nil, err
 	} else if updateAvailable != nil {
 		ImageInfo.UpdatesAvailable = &updateAvailable

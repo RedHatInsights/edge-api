@@ -39,20 +39,17 @@ type DeviceContext struct {
 // DeviceCtx is a handler for Device requests
 func DeviceCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var uCtx DeviceContext
-		uCtx.DeviceUUID = chi.URLParam(r, "DeviceUUID")
-		if uCtx.DeviceUUID == "" {
+		var dc DeviceContext
+		dc.DeviceUUID = chi.URLParam(r, "DeviceUUID")
+		if dc.DeviceUUID == "" {
 			err := errors.NewBadRequest("DeviceUUID must be sent")
 			w.WriteHeader(err.GetStatus())
 			json.NewEncoder(w).Encode(&err)
 			return
 		}
 		// TODO: Implement devices by tag
-		// uCtx.Tag = chi.URLParam(r, "Tag")
-		log.Debugf("UpdateCtx::uCtx: %#v", uCtx)
-		ctx := context.WithValue(r.Context(), DeviceContextKey, uCtx)
-		log.Debugf("UpdateCtx::ctx: %#v", ctx)
-
+		// dc.Tag = chi.URLParam(r, "Tag")
+		ctx := context.WithValue(r.Context(), DeviceContextKey, dc)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
