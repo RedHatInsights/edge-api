@@ -276,6 +276,7 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 	return nil
 }
 
+// SetFinalImageStatus sets the final image status
 func (s *ImageService) SetFinalImageStatus(i *models.Image) {
 	// image status can be success if all output types are successful
 	// if any status are not final (success/error) then sets to error
@@ -777,6 +778,7 @@ func (s *ImageService) RetryCreateImage(image *models.Image) error {
 	return nil
 }
 
+// SetBuildingStatusOnImageToRetryBuild set building status on image so we can try the build
 func (s *ImageService) SetBuildingStatusOnImageToRetryBuild(image *models.Image) error {
 	image.Status = models.ImageStatusBuilding
 	if image.Commit != nil {
