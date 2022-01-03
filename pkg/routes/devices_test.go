@@ -9,6 +9,7 @@ import (
 
 	faker "github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -31,6 +32,7 @@ func TestGetAvailableUpdateForDeviceWithEmptyUUID(t *testing.T) {
 	mockDeviceService := mock_services.NewMockDeviceServiceInterface(ctrl)
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		DeviceService: mockDeviceService,
+		Log:           log.NewEntry(log.StandardLogger()),
 	})
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
@@ -63,6 +65,7 @@ func TestGetAvailableUpdateForDeviceWhenDeviceIsNotFound(t *testing.T) {
 	mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(dc.DeviceUUID)).Return(nil, new(services.DeviceNotFoundError))
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		DeviceService: mockDeviceService,
+		Log:           log.NewEntry(log.StandardLogger()),
 	})
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
@@ -95,6 +98,7 @@ func TestGetAvailableUpdateForDeviceWhenAUnexpectedErrorHappens(t *testing.T) {
 	mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(dc.DeviceUUID)).Return(nil, errors.New("random error"))
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		DeviceService: mockDeviceService,
+		Log:           log.NewEntry(log.StandardLogger()),
 	})
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()

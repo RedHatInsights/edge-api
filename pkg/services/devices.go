@@ -238,7 +238,7 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error
 	result := db.DB.Model(&models.Image{}).Joins("Commit").Where("OS_Tree_Commit = ?", lastDeployment.Checksum).First(&currentImage)
 
 	if result.Error != nil || result == nil {
-		s.log.WithField("error", err.Error()).Error("Could not find device image info")
+		s.log.WithField("error", result.Error.Error()).Error("Could not find device image info")
 		return nil, new(ImageNotFoundError)
 	}
 	if currentImage.ImageSetID != nil {
