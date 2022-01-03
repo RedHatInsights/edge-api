@@ -93,6 +93,22 @@ func (mr *MockImageServiceInterfaceMockRecorder) CreateImage(image, account inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).CreateImage), image, account)
 }
 
+// CreateInstallerForImage mocks base method.
+func (m *MockImageServiceInterface) CreateInstallerForImage(i *models.Image) (*models.Image, chan error, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateInstallerForImage", i)
+	ret0, _ := ret[0].(*models.Image)
+	ret1, _ := ret[1].(chan error)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// CreateInstallerForImage indicates an expected call of CreateInstallerForImage.
+func (mr *MockImageServiceInterfaceMockRecorder) CreateInstallerForImage(i interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInstallerForImage", reflect.TypeOf((*MockImageServiceInterface)(nil).CreateInstallerForImage), i)
+}
+
 // CreateRepoForImage mocks base method.
 func (m *MockImageServiceInterface) CreateRepoForImage(i *models.Image) (*models.Repo, error) {
 	m.ctrl.T.Helper()
