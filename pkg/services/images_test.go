@@ -97,7 +97,7 @@ var _ = Describe("Image Service Test", func() {
 		Context("when previous image has success status", func() {
 			It("should have the parent image repo url set as parent commit url", func() {
 				image := &models.Image{}
-				id, _ := faker.RandomInt(0)
+				id, _ := faker.RandomInt(1)
 				uid := uint(id[0])
 				previousImage := &models.Image{
 					Status: models.ImageStatusSuccess,
