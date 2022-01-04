@@ -56,16 +56,16 @@ type CreateTPRepoRequest struct {
 	Repo *models.ThirdPartyRepo
 }
 
-func getThirdPartyRepo(w http.ResponseWriter, r *http.Request) *models.Image {
+func getThirdPartyRepo(w http.ResponseWriter, r *http.Request) *models.ThirdPartyRepo {
 	ctx := r.Context()
-	image, ok := ctx.Value(imageKey).(*models.Image)
+	tprepo, ok := ctx.Value(tprepoKey).(*models.ThirdPartyRepo)
 	if !ok {
 		err := errors.NewBadRequest("Must pass image identifier")
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return nil
 	}
-	return image
+	return tprepo
 }
 
 // CreateThirdPartyRepo creates Third Party Repository
