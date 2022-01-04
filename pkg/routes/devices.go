@@ -81,7 +81,7 @@ func getDevice(w http.ResponseWriter, r *http.Request) *models.Device {
 // GetUpdateAvailableForDevice returns if exists update for the current image at the device.
 func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	if device := getDevice(w, r); device != nil {
-		s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+		s := dependencies.ServicesFromContext(r.Context())
 		result, err := s.DeviceService.GetUpdateAvailableForDeviceByUUID(device.UUID)
 		if err == nil {
 			json.NewEncoder(w).Encode(result)
