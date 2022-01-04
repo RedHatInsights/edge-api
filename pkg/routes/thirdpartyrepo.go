@@ -70,7 +70,7 @@ func getThirdPartyRepo(w http.ResponseWriter, r *http.Request) *models.Image {
 
 // CreateThirdPartyRepo creates Third Party Repository
 func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
-	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	services := dependencies.ServicesFromContext(r.Context())
 	defer r.Body.Close()
 	thirdPartyRepo, err := createRequest(w, r)
 	if err != nil {
@@ -104,7 +104,7 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 
 // createRequest validates request to create ThirdPartyRepo.
 func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRepo, error) {
-	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	services := dependencies.ServicesFromContext(r.Context())
 
 	var tprepo *models.ThirdPartyRepo
 	if err := json.NewDecoder(r.Body).Decode(&tprepo); err != nil {
@@ -131,7 +131,7 @@ func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRe
 
 // GetAllThirdPartyRepo return all the ThirdPartyRepo
 func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
-	services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+	services := dependencies.ServicesFromContext(r.Context())
 	var tprepo *[]models.ThirdPartyRepo
 	var count int64
 	result := thirdPartyRepoFilters(r, db.DB)
@@ -190,7 +190,7 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 // ThirdPartyRepoCtx is a handler to Third Party Repository requests
 func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+		s := dependencies.ServicesFromContext(r.Context())
 
 		if ID := chi.URLParam(r, "ID"); ID != "" {
 			_, err := strconv.Atoi(ID)
@@ -250,7 +250,7 @@ func GetThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 // UpdateThirdPartyRepo updates the existing third party repository
 func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	if oldtprepo := getThirdPartyRepo(w, r); oldtprepo != nil {
-		services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+		services := dependencies.ServicesFromContext(r.Context())
 		defer r.Body.Close()
 		tprepo, err := createRequest(w, r)
 		if err != nil {
@@ -278,7 +278,7 @@ func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 // DeleteThirdPartyRepoByID deletes the third party repository using ID
 func DeleteThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 	if tprepo := getThirdPartyRepo(w, r); tprepo != nil {
-		s, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+		s := dependencies.ServicesFromContext(r.Context())
 
 		tprepo, err := s.ThirdPartyRepoService.DeleteThirdPartyRepoByID(fmt.Sprint(tprepo.ID))
 		if err != nil {
