@@ -68,7 +68,7 @@ func DeleteOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 
 	validationErr := validateContentTypeJSONHeader(r)
 	if validationErr != nil {
-		services.Log..WithError("error", validationErr.Error()).Error("Couldn't validate ownership voucher delete request headers")
+		services.Log.WithError("error", validationErr.Error()).Error("Couldn't validate ownership voucher delete request headers")
 		badRequestResponseBuilder(w, validationErr, "invalid_header")
 		return
 	}
