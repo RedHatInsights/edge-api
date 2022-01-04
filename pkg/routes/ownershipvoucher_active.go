@@ -18,11 +18,11 @@ import (
 // MakeFDORouter creates a router for the FDO API
 func MakeFDORouter(sub chi.Router) {
 	sub.Route("/ownership_voucher", func(r chi.Router) {
-		r.Use(validateMiddleware)                  // TODO: Consistent logging
-		r.Post("/", CreateOwnershipVouchers)       // TODO: Consistent logging
-		r.Post("/delete", DeleteOwnershipVouchers) // TODO: Consistent logging
-		r.Post("/parse", ParseOwnershipVouchers)   // TODO: Consistent logging
-		r.Post("/connect", ConnectDevices)         // TODO: Consistent logging
+		r.Use(validateMiddleware)
+		r.Post("/", CreateOwnershipVouchers)
+		r.Post("/delete", DeleteOwnershipVouchers)
+		r.Post("/parse", ParseOwnershipVouchers)
+		r.Post("/connect", ConnectDevices)
 	})
 }
 
@@ -33,7 +33,7 @@ func CreateOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 
 	validationErr := validateUploadRequestHeaders(r)
 	if validationErr != nil {
-		services.Log.Error("Couldn't validate ownership voucher upload request headers ", validationErr.Error())
+		services.Log.WithError("error", validationErr.Error()).Error("Couldn't validate ownership voucher upload request headers")
 		badRequestResponseBuilder(w, validationErr, "invalid_header")
 		return
 	}
@@ -47,12 +47,12 @@ func CreateOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err.Error() {
 		case "bad request":
-			services.Log.Error("Couldn't upload ownership vouchers ", err.Error())
+			services.Log.WithError("error", err.Error()).Error("Couldn't upload ownership vouchers due to a bad request")
 			w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
 			json.NewEncoder(w).Encode(resp)
 			return
 		default:
-			services.Log.Error(err.Error())
+			services.Log.WithError("error", err.Error()).Error("Couldn't upload ownership vouchers")
 			badRequestResponseBuilder(w, errors.NewBadRequest(err.Error()), "fdo_client")
 			return
 		}
@@ -68,7 +68,7 @@ func DeleteOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 
 	validationErr := validateContentTypeJSONHeader(r)
 	if validationErr != nil {
-		services.Log.Error("Couldn't validate ownership voucher delete request headers ", validationErr.Error())
+		services.Log..WithError("error", validationErr.Error()).Error("Couldn't validate ownership voucher delete request headers")
 		badRequestResponseBuilder(w, validationErr, "invalid_header")
 		return
 	}
@@ -85,12 +85,12 @@ func DeleteOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch err.Error() {
 		case "bad request":
-			services.Log.Error("Couldn't delete ownership vouchers ", err.Error())
+			services.Log.WithError("error", err.Error()).Error("Couldn't delete ownership vouchers due to a bad request")
 			w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
 			json.NewEncoder(w).Encode(resp)
 			return
 		default:
-			services.Log.Error(err.Error())
+			services.Log.WithError("error", err.Error()).Error("Couldn't delete ownership vouchers")
 			badRequestResponseBuilder(w, errors.NewBadRequest(err.Error()), "fdo_client")
 			return
 		}
@@ -112,7 +112,7 @@ func ParseOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := services.OwnershipVoucherService.ParseOwnershipVouchers(data)
 	if err != nil {
-		services.Log.Error("Couldn't parse ownership vouchers ", err.Error())
+		services.Log.WithError("error", err.Error()).Error("Couldn't parse ownership vouchers")
 		badRequestResponseBuilder(w, errors.NewBadRequest(err.Error()), "validation_parse_error")
 		return
 	}
@@ -127,7 +127,7 @@ func ConnectDevices(w http.ResponseWriter, r *http.Request) {
 
 	validationErr := validateContentTypeJSONHeader(r)
 	if validationErr != nil {
-		services.Log.Error("Couldn't validate connect request headers ", validationErr.Error())
+		services.Log.WithError("error", validationErr.Error()).Error("Couldn't validate connect request headers")
 		badRequestResponseBuilder(w, validationErr, "invalid_header")
 		return
 	}
