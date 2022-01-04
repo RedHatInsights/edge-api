@@ -12,6 +12,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory/mock_inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	log "github.com/sirupsen/logrus"
 )
 
 func TestGetUpdateAvailableForDeviceByUUIDWhenErrorOnInventoryAPI(t *testing.T) {
@@ -24,7 +25,10 @@ func TestGetUpdateAvailableForDeviceByUUIDWhenErrorOnInventoryAPI(t *testing.T) 
 	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(inventory.Response{}, errors.New("error on inventory api"))
 
 	deviceService := DeviceService{
-		ctx:       context.Background(),
+		Service: Service{
+			ctx: context.Background(),
+			log: log.NewEntry(log.StandardLogger()),
+		},
 		inventory: mockInventoryClient,
 	}
 
@@ -48,7 +52,10 @@ func TestGetUpdateAvailableForDeviceByUUIDWhenDeviceIsNotFoundOnInventoryAPI(t *
 	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
 	deviceService := DeviceService{
-		ctx:       context.Background(),
+		Service: Service{
+			ctx: context.Background(),
+			log: log.NewEntry(log.StandardLogger()),
+		},
 		inventory: mockInventoryClient,
 	}
 
@@ -80,7 +87,10 @@ func TestGetUpdateAvailableForDeviceByUUID(t *testing.T) {
 	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
 	deviceService := DeviceService{
-		ctx:       context.Background(),
+		Service: Service{
+			ctx: context.Background(),
+			log: log.NewEntry(log.StandardLogger()),
+		},
 		inventory: mockInventoryClient,
 	}
 
@@ -177,7 +187,10 @@ func TestGetUpdateAvailableForDeviceByUUIDWhenNoUpdateIsAvailable(t *testing.T) 
 	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
 	deviceService := DeviceService{
-		ctx:       context.Background(),
+		Service: Service{
+			ctx: context.Background(),
+			log: log.NewEntry(log.StandardLogger()),
+		},
 		inventory: mockInventoryClient,
 	}
 
@@ -218,7 +231,10 @@ func TestGetUpdateAvailableForDeviceByUUIDWhenNoChecksumIsFound(t *testing.T) {
 	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
 	deviceService := DeviceService{
-		ctx:       context.Background(),
+		Service: Service{
+			ctx: context.Background(),
+			log: log.NewEntry(log.StandardLogger()),
+		},
 		inventory: mockInventoryClient,
 	}
 	updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
@@ -305,7 +321,10 @@ func TestGetImageForDeviceByUUID(t *testing.T) {
 	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(2)
 
 	deviceService := DeviceService{
-		ctx:       context.Background(),
+		Service: Service{
+			ctx: context.Background(),
+			log: log.NewEntry(log.StandardLogger()),
+		},
 		inventory: mockInventoryClient,
 	}
 	imageSet := &models.ImageSet{
@@ -365,7 +384,10 @@ func TestGetNoImageForDeviceByUUID(t *testing.T) {
 	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
 	deviceService := DeviceService{
-		ctx:       context.Background(),
+		Service: Service{
+			ctx: context.Background(),
+			log: log.NewEntry(log.StandardLogger()),
+		},
 		inventory: mockInventoryClient,
 	}
 

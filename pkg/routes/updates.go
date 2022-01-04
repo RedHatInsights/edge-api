@@ -218,7 +218,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	for _, device := range inventory.Result {
 		//  Check for the existence of a Repo that already has this commit and don't duplicate
 		var updateDevice *models.Device
-		deviceService := services.NewDeviceService(r.Context())
+		deviceService := services.NewDeviceService(r.Context(), log.NewEntry(log.StandardLogger()))
 		updateDevice, err = deviceService.GetDeviceByUUID(device.ID)
 		if err != nil {
 			if !(err.Error() == "record not found") {
