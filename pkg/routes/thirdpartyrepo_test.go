@@ -2,7 +2,6 @@ package routes
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -27,7 +26,7 @@ func TestCreateWasCalledWithURLNotSet(t *testing.T) {
 		t.Fatal(err)
 	}
 	ctx := req.Context()
-	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		Log: log.NewEntry(log.StandardLogger()),
 	})
 	req = req.WithContext(ctx)
@@ -59,7 +58,7 @@ func TestCreateThirdPartyRepo(t *testing.T) {
 	defer ctrl.Finish()
 	mockThirdPartyRepoService := mock_services.NewMockThirdPartyRepoServiceInterface(ctrl)
 	mockThirdPartyRepoService.EXPECT().CreateThirdPartyRepo(gomock.Any(), gomock.Any()).Return(&tprepo, nil)
-	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ThirdPartyRepoService: mockThirdPartyRepoService,
 		Log:                   log.NewEntry(log.StandardLogger()),
 	})
@@ -83,6 +82,8 @@ func TestGetAllThirdPartyRepo(t *testing.T) {
 	}
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(GetAllThirdPartyRepo)
+	ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
+	req = req.WithContext(ctx)
 	handler.ServeHTTP(rr, req)
 
 	if status := rr.Code; status != http.StatusOK {

@@ -43,16 +43,31 @@ func Init(ctx context.Context) *EdgeAPIServices {
 	}
 }
 
-type key int
+type servicesKeyType string
 
-// Key is the context key for dependencies on the request context
-const Key key = iota
+// servicesKey is the context key for dependencies on the request context
+const servicesKey = servicesKeyType("services")
+
+// ContextWithServices add edge apis services to context
+func ContextWithServices(ctx context.Context, services *EdgeAPIServices) context.Context {
+	return context.WithValue(ctx, servicesKey, services)
+}
+
+// ServicesFromContext return the edge api services from context
+func ServicesFromContext(ctx context.Context) *EdgeAPIServices {
+	edgeAPIServices, ok := ctx.Value(servicesKey).(*EdgeAPIServices)
+	if !ok {
+		log.Fatal("Could not get EdgeAPIServices from Context")
+	}
+
+	return edgeAPIServices
+}
 
 // Middleware is the dependencies Middleware that serves all Edge API services on the current request context
 func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		services := Init(r.Context())
-		ctx := context.WithValue(r.Context(), Key, services)
+		edgeAPIServices := Init(r.Context())
+		ctx := ContextWithServices(r.Context(), edgeAPIServices)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

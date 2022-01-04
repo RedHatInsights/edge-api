@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -14,7 +15,7 @@ type Service struct {
 // ServiceInterface defines the interface for a service
 type ServiceInterface interface{}
 
-// NewService creates a new service pointer
-func NewService(ctx context.Context, log *log.Entry) ServiceInterface {
-	return &Service{ctx: ctx, log: log}
+// NewService creates a new service
+func NewService(ctx context.Context, log *log.Entry) Service {
+	return Service{ctx: ctx, log: log}
 }

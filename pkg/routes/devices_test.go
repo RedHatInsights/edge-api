@@ -29,7 +29,7 @@ func TestGetAvailableUpdateForDeviceWithEmptyUUID(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockDeviceService := mock_services.NewMockDeviceServiceInterface(ctrl)
-	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		DeviceService: mockDeviceService,
 	})
 	req = req.WithContext(ctx)
@@ -61,7 +61,7 @@ func TestGetAvailableUpdateForDeviceWhenDeviceIsNotFound(t *testing.T) {
 
 	mockDeviceService := mock_services.NewMockDeviceServiceInterface(ctrl)
 	mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(dc.DeviceUUID)).Return(nil, new(services.DeviceNotFoundError))
-	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		DeviceService: mockDeviceService,
 	})
 	req = req.WithContext(ctx)
@@ -93,7 +93,7 @@ func TestGetAvailableUpdateForDeviceWhenAUnexpectedErrorHappens(t *testing.T) {
 
 	mockDeviceService := mock_services.NewMockDeviceServiceInterface(ctrl)
 	mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(dc.DeviceUUID)).Return(nil, errors.New("random error"))
-	ctx = context.WithValue(ctx, dependencies.Key, &dependencies.EdgeAPIServices{
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		DeviceService: mockDeviceService,
 	})
 	req = req.WithContext(ctx)
