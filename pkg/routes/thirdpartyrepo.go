@@ -60,7 +60,7 @@ func getThirdPartyRepo(w http.ResponseWriter, r *http.Request) *models.ThirdPart
 	ctx := r.Context()
 	tprepo, ok := ctx.Value(tprepoKey).(*models.ThirdPartyRepo)
 	if !ok {
-		err := errors.NewBadRequest("Must pass image identifier")
+		err := errors.NewBadRequest("Failed getting third party repo from context")
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
 		return nil
@@ -191,10 +191,10 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		s := dependencies.ServicesFromContext(r.Context())
-
 		if ID := chi.URLParam(r, "ID"); ID != "" {
 			_, err := strconv.Atoi(ID)
 			s.Log = s.Log.WithField("thirdPartyRepoID", ID)
+			s.Log.Debug("Retrieving third party repo")
 			if err != nil {
 				s.Log.Debug("ID is not an integer")
 				err := errors.NewBadRequest(err.Error())
@@ -228,11 +228,11 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 				json.NewEncoder(w).Encode(&err)
 				return
 			}
-			ctx := context.WithValue(r.Context(), tprepoKey, &tprepo)
+			ctx := context.WithValue(r.Context(), tprepoKey, tprepo)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
-			s.Log.Debug("Image ID was not passed to the request or it was empty")
-			err := errors.NewBadRequest("Image ID required")
+			s.Log.Debug("Third Party Repo ID was not passed to the request or it was empty")
+			err := errors.NewBadRequest("Third Party Repo ID required")
 			w.WriteHeader(err.GetStatus())
 			json.NewEncoder(w).Encode(&err)
 			return
