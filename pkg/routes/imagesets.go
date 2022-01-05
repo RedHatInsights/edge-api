@@ -30,10 +30,10 @@ var statusOption = []string{models.ImageStatusCreated, models.ImageStatusBuildin
 
 // MakeImageSetsRouter adds support for operations on image-sets
 func MakeImageSetsRouter(sub chi.Router) {
-	sub.With(validateFilterParams).With(common.Paginate).Get("/", ListAllImageSets) // TODO: Consistent logging
-	sub.Route("/{imageSetId}", func(r chi.Router) {
-		r.Use(ImageSetCtx)                                                            // TODO: Consistent logging
-		r.With(validateFilterParams).With(common.Paginate).Get("/", GetImageSetsByID) // TODO: Consistent logging
+	sub.With(validateFilterParams).With(common.Paginate).Get("/", ListAllImageSets)
+	sub.Route("/{imageSetID}", func(r chi.Router) {
+		r.Use(ImageSetCtx)
+		r.With(validateFilterParams).With(common.Paginate).Get("/", GetImageSetsByID)
 	})
 }
 
@@ -83,16 +83,21 @@ var imageStatusFilters = common.ComposeFilters(
 func ImageSetCtx(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s := dependencies.ServicesFromContext(r.Context())
 		var imageSet models.ImageSet
 		account, err := common.GetAccount(r)
 		if err != nil {
-			log.Info(err)
+			s.Log.WithFields(log.Fields{
+				"error":   err.Error(),
+				"account": account,
+			}).Error("Error retrieving account")
 			err := errors.NewBadRequest(err.Error())
 			w.WriteHeader(err.GetStatus())
 			json.NewEncoder(w).Encode(&err)
 			return
 		}
-		if imageSetID := chi.URLParam(r, "imageSetId"); imageSetID != "" {
+		if imageSetID := chi.URLParam(r, "imageSetID"); imageSetID != "" {
+			s.Log = s.Log.WithField("imageSetID", imageSetID)
 			_, err := strconv.Atoi(imageSetID)
 			if err != nil {
 				err := errors.NewBadRequest(err.Error())
@@ -126,6 +131,8 @@ type ImageSetInstallerURL struct {
 
 // ListAllImageSets return the list of image sets and images
 func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
+	s := dependencies.ServicesFromContext(r.Context())
+
 	var imageSet []models.ImageSet
 	var imageSetInfo []ImageSetInstallerURL
 	var count int64
@@ -134,7 +141,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	account, err := common.GetAccount(r)
 
 	if err != nil {
-		log.Info(err)
+		s.Log.WithField("error", err.Error()).Error("Error listing all image sets - bad request")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
@@ -145,8 +152,8 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).
 		Where(`Image_Sets.account = ? `, account).Count(&count)
 	if countResult.Error != nil {
+		s.Log.WithField("error", countResult.Error.Error()).Error("Error counting results for image sets list")
 		countErr := errors.NewInternalServerError()
-		log.Error(countErr)
 		w.WriteHeader(countErr.GetStatus())
 		json.NewEncoder(w).Encode(&countErr)
 		return
@@ -159,14 +166,19 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 			Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).
 			Where(`Image_Sets.account = ? `, account).Find(&imageSet)
 	} else {
-
 		result = imageStatusFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).
 			Preload("Images", "lower(status) in (?)", strings.ToLower(r.URL.Query().Get("status"))).
 			Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).
 			Where(`Image_Sets.account = ? `, account).Find(&imageSet)
 
 	}
-
+	if result.Error != nil {
+		s.Log.WithField("error", countResult.Error.Error()).Error("Image sets not found")
+		err := errors.NewBadRequest("Not Found")
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
 	for idx, img := range imageSet {
 		var imgSet ImageSetInstallerURL
 		imgSet.ImageSetData = imageSet[idx]
@@ -184,17 +196,18 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		}
 		imageSetInfo = append(imageSetInfo, imgSet)
 	}
-
 	if result.Error != nil {
+		s.Log.WithField("error", countResult.Error.Error()).Error("Image sets not found")
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
+		return
 	}
 
-	var response common.EdgeAPIPaginatedResponse
-	response.Count = count
-	response.Data = imageSetInfo
-	json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(&common.EdgeAPIPaginatedResponse{
+		Count: count,
+		Data:  imageSetInfo,
+	})
 }
 
 //ImageSetImagePackages return info related to details on images from imageset
@@ -206,14 +219,17 @@ type ImageSetImagePackages struct {
 
 // GetImageSetsByID returns the list of Image Sets by a given Image Set ID
 func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
-	// var imageSetData models.ImageSet
 	var images []models.Image
 	var details ImageSetImagePackages
-	var response common.EdgeAPIPaginatedResponse
+	s := dependencies.ServicesFromContext(r.Context())
+
 	pagination := common.GetPagination(r)
 	account, err := common.GetAccount(r)
 	if err != nil {
-		log.Info(err)
+		s.Log.WithFields(log.Fields{
+			"error":   err.Error(),
+			"account": account,
+		}).Error("Error retrieving account")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
@@ -237,7 +253,6 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&err)
 	}
 
-	s := dependencies.ServicesFromContext(r.Context())
 	Imgs := returnImageDetails(images, s)
 
 	details.ImageSetData = *imageSet
@@ -248,9 +263,10 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		details.ImageBuildISOURL = img.Installer.ImageBuildISOURL
 	}
 
-	response.Data = &details
-	response.Count = int64(len(images))
-	json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(&common.EdgeAPIPaginatedResponse{
+		Data:  &details,
+		Count: int64(len(images)),
+	})
 }
 
 func validateFilterParams(next http.Handler) http.Handler {
