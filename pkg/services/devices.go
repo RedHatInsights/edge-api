@@ -50,7 +50,7 @@ func (s *DeviceService) GetDeviceByID(deviceID uint) (*models.Device, error) {
 	result := db.DB.First(&device, deviceID)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error finding device")
-		return nil, result.Error
+		return nil, new(DeviceNotFoundError)
 	}
 	return &device, nil
 }
@@ -63,7 +63,7 @@ func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, erro
 	result := db.DB.Where("uuid = ?", deviceUUID).First(&device)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error finding device")
-		return nil, result.Error
+		return nil, new(DeviceNotFoundError)
 	}
 	return &device, nil
 }
