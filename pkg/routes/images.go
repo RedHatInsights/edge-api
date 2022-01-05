@@ -110,7 +110,7 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 			}
 			account, err := common.GetAccount(r)
 			if err != nil || image.Account != account {
-				log.WithFields(log.Fields{
+				s.Log.WithFields(log.Fields{
 					"error":   err.Error(),
 					"account": account,
 				}).Error("Error retrieving account or image doesn't belong to account")

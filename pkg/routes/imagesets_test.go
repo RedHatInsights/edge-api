@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/redhatinsights/edge-api/pkg/dependencies"
 
 	"github.com/golang/mock/gomock"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -21,6 +22,7 @@ func TestListAllImageSets(t *testing.T) {
 		t.Fatal(err)
 	}
 	rr := httptest.NewRecorder()
+	req = req.WithContext(dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{}))
 	handler := http.HandlerFunc(ListAllImageSets)
 	handler.ServeHTTP(rr, req)
 
