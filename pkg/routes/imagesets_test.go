@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/redhatinsights/edge-api/pkg/dependencies"
 
 	"github.com/golang/mock/gomock"
 	"github.com/redhatinsights/edge-api/pkg/models"
