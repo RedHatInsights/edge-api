@@ -2,7 +2,7 @@ module github.com/redhatinsights/edge-api
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
-	github.com/aws/aws-sdk-go v1.42.26
+	github.com/aws/aws-sdk-go v1.42.27
 	github.com/bxcodec/faker/v3 v3.7.0
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/fedora-iot/fido-device-onboard-rs/libfdo-data-go v0.0.0-20211210154920-5c241beb5c4e
@@ -34,7 +34,6 @@ require (
 	github.com/spf13/viper v1.10.1
 	go.mongodb.org/mongo-driver v1.8.1 // indirect
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3 // indirect
-	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f // indirect
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
 	gorm.io/driver/postgres v1.2.3
 	gorm.io/driver/sqlite v1.2.6
