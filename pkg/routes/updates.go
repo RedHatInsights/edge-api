@@ -221,7 +221,8 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		deviceService := services.NewDeviceService(r.Context(), log.NewEntry(log.StandardLogger()))
 		updateDevice, err = deviceService.GetDeviceByUUID(device.ID)
 		if err != nil {
-			if !(err.Error() == "record not found") {
+			log.Errorf("updateFromHTTP::GetDeviceByUUID::Error: %#v", err.Error())
+			if !(err.Error() == "Device was not found") {
 				log.Errorf("updateFromHTTP::GetDeviceByUUID::updateDevice: %#v, %#v", repo, err)
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return &models.UpdateTransaction{}, err
