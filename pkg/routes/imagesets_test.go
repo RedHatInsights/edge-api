@@ -22,6 +22,7 @@ func TestListAllImageSets(t *testing.T) {
 		t.Fatal(err)
 	}
 	rr := httptest.NewRecorder()
+	req = req.WithContext(dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{}))
 	handler := http.HandlerFunc(ListAllImageSets)
 	handler.ServeHTTP(rr, req)
 
