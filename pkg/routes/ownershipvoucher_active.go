@@ -204,7 +204,7 @@ func validateMiddleware(next http.Handler) http.Handler {
 		if services.OwnershipVoucherService == nil {
 			w.WriteHeader(errors.NewInternalServerError().GetStatus())
 			if err := json.NewEncoder(w).Encode(interface{}("Internal server error")); err != nil {
-				services, _ := r.Context().Value(dependencies.Key).(*dependencies.EdgeAPIServices)
+				services := dependencies.ServicesFromContext(r.Context())
 				services.Log.Error("Error while trying to encode ", interface{}("Internal server error"))
 			}
 			return
