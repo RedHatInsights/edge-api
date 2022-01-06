@@ -62,7 +62,9 @@ func getThirdPartyRepo(w http.ResponseWriter, r *http.Request) *models.ThirdPart
 	if !ok {
 		err := errors.NewBadRequest("Failed getting third party repo from context")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			log.Error("Error while trying to encode ", &err)
+		}
 		return nil
 	}
 	return tprepo
@@ -236,7 +238,9 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 					responseErr.SetTitle("failed getting third party repository")
 				}
 				w.WriteHeader(responseErr.GetStatus())
-				json.NewEncoder(w).Encode(&responseErr)
+				if err := json.NewEncoder(w).Encode(&responseErr); err != nil {
+					s.Log.Error("Error while trying to encode ", &responseErr)
+				}
 				return
 			}
 			account, err := common.GetAccount(r)
@@ -247,7 +251,9 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 				}).Error("Error retrieving account or third party repo doesn't belong to account")
 				err := errors.NewBadRequest(err.Error())
 				w.WriteHeader(err.GetStatus())
-				json.NewEncoder(w).Encode(&err)
+				if err := json.NewEncoder(w).Encode(&err); err != nil {
+					s.Log.Error("Error while trying to encode ", &err)
+				}
 				return
 			}
 			ctx := context.WithValue(r.Context(), tprepoKey, tprepo)
@@ -256,7 +262,9 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 			s.Log.Debug("Third Party Repo ID was not passed to the request or it was empty")
 			err := errors.NewBadRequest("Third Party Repo ID required")
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				s.Log.Error("Error while trying to encode ", &err)
+			}
 			return
 		}
 	})
@@ -265,7 +273,9 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 // GetThirdPartyRepoByID gets the Third Party repository by ID from the database
 func GetThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 	if tprepo := getThirdPartyRepo(w, r); tprepo != nil {
-		json.NewEncoder(w).Encode(tprepo)
+		if err := json.NewEncoder(w).Encode(tprepo); err != nil {
+			log.Error("Error while trying to encode ", tprepo)
+		}
 	}
 }
 
@@ -285,7 +295,9 @@ func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 			err := errors.NewInternalServerError()
 			err.SetTitle("failed updating third party repository")
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				services.Log.Error("Error while trying to encode ", &err)
+			}
 			return
 		}
 		w.WriteHeader(http.StatusOK)
@@ -293,7 +305,9 @@ func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			services.Log.WithField("error", err.Error()).Error("Error getting third party repository")
 		}
-		json.NewEncoder(w).Encode(repoDetails)
+		if err := json.NewEncoder(w).Encode(repoDetails); err != nil {
+			services.Log.Error("Error while trying to encode ", repoDetails)
+		}
 	}
 }
 
@@ -314,7 +328,9 @@ func DeleteThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 			}
 			s.Log.WithField("error", err.Error()).Error("Error deleting third party repository")
 			w.WriteHeader(responseErr.GetStatus())
-			json.NewEncoder(w).Encode(&responseErr)
+			if err := json.NewEncoder(w).Encode(&responseErr); err != nil {
+				s.Log.Error("Error while trying to encode ", &responseErr)
+			}
 			return
 		}
 		_ = tprepo

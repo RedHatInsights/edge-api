@@ -186,7 +186,9 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		s.Log.WithField("error", countResult.Error.Error()).Error("Image sets not found")
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			log.Error("Error while trying to encode ", &err)
+		}
 		return
 	}
 	for idx, img := range imageSet {

@@ -122,7 +122,9 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 				}).Error("Error retrieving account or image doesn't belong to account")
 				err := errors.NewBadRequest(err.Error())
 				w.WriteHeader(err.GetStatus())
-				json.NewEncoder(w).Encode(&err)
+				if err := json.NewEncoder(w).Encode(&err); err != nil {
+					s.Log.Error("Error while trying to encode ", &err)
+				}
 				return
 			}
 			ctx := context.WithValue(r.Context(), imageKey, image)
