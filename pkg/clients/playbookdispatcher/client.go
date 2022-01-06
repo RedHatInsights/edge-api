@@ -87,6 +87,8 @@ func (c *Client) ExecuteDispatcher(payload DispatcherPayload) ([]Response, error
 	}
 
 	var playbookResponse []Response
-	json.Unmarshal([]byte(body), &playbookResponse)
+	if err := json.Unmarshal([]byte(body), &playbookResponse); err != nil {
+		c.log.Error("Error while trying to unmarshal ", &playbookResponse)
+	}
 	return playbookResponse, nil
 }

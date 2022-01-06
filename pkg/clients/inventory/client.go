@@ -191,7 +191,9 @@ func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
 		return Response{}, fmt.Errorf("error requesting InventoryResponse, got status code %d and body %s", res.StatusCode, body)
 	}
 	var inventory Response
-	json.Unmarshal([]byte(body), &inventory)
+	if err := json.Unmarshal([]byte(body), &inventory); err != nil {
+		log.Error("Error while trying to unmarshal ", &inventory)
+	}
 	return inventory, nil
 
 }
@@ -233,6 +235,8 @@ func (c *Client) ReturnDevicesByTag(tag string) (Response, error) {
 		return Response{}, fmt.Errorf("error requesting InventoryResponse, got status code %d and body %s", res.StatusCode, body)
 	}
 	var inventory Response
-	json.Unmarshal([]byte(body), &inventory)
+	if err := json.Unmarshal([]byte(body), &inventory); err != nil {
+		log.Error("Error while trying to unmarshal ", &inventory)
+	}
 	return inventory, nil
 }
