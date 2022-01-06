@@ -15,15 +15,15 @@ type CommitServiceInterface interface {
 }
 
 // NewCommitService gives a instance of the main implementation of CommitServiceInterface
-func NewCommitService(ctx context.Context) CommitServiceInterface {
+func NewCommitService(ctx context.Context, log *log.Entry) CommitServiceInterface {
 	return &CommitService{
-		ctx: ctx,
+		Service: Service{ctx: ctx, log: log.WithField("service", "commit")},
 	}
 }
 
 // CommitService is the main implementation of a CommitServiceInterface
 type CommitService struct {
-	ctx context.Context
+	Service
 }
 
 // GetCommitByID receives CommitID uint and get a *models.Commit back

@@ -15,19 +15,18 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
-	"github.com/redhatinsights/edge-api/pkg/services"
 
 	log "github.com/sirupsen/logrus"
 )
 
 // MakeUpdatesRouter adds support for operations on update
 func MakeUpdatesRouter(sub chi.Router) {
-	sub.With(common.Paginate).Get("/", GetUpdates) // TODO: Consistent logging
+	sub.With(common.Paginate).Get("/", GetUpdates)
 	sub.Post("/", AddUpdate)
 	sub.Route("/{updateID}", func(r chi.Router) {
-		r.Use(UpdateCtx)                                 // TODO: Consistent logging
-		r.Get("/", GetUpdateByID)                        // TODO: Consistent logging
-		r.Get("/update-playbook.yml", GetUpdatePlaybook) // TODO: Consistent logging
+		r.Use(UpdateCtx)
+		r.Get("/", GetUpdateByID)
+		r.Get("/update-playbook.yml", GetUpdatePlaybook)
 	})
 	// TODO: This is for backwards compatibility with the previous route
 	// Once the frontend starts querying the device
@@ -42,15 +41,21 @@ const UpdateContextKey updateContextKey = iota
 // UpdateCtx is a handler for Update requests
 func UpdateCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		services := dependencies.ServicesFromContext(r.Context())
 		var update models.UpdateTransaction
 		account, err := common.GetAccount(r)
 		if err != nil {
+			services.Log.WithFields(log.Fields{
+				"error":   err.Error(),
+				"account": account,
+			}).Error("Error retrieving account")
 			err := errors.NewBadRequest(err.Error())
 			w.WriteHeader(err.GetStatus())
 			json.NewEncoder(w).Encode(&err)
 			return
 		}
 		updateID := chi.URLParam(r, "updateID")
+		services.Log = services.Log.WithField("updateID", updateID)
 		if updateID == "" {
 			err := errors.NewBadRequest("UpdateTransactionID can't be empty")
 			w.WriteHeader(err.GetStatus())
@@ -66,6 +71,9 @@ func UpdateCtx(next http.Handler) http.Handler {
 		}
 		result := db.DB.Preload("DispatchRecords").Preload("Devices").Where("update_transactions.account = ?", account).Joins("Commit").Joins("Repo").Find(&update, id)
 		if result.Error != nil {
+			services.Log.WithFields(log.Fields{
+				"error": result.Error.Error(),
+			}).Error("Error retrieving update")
 			err := errors.NewInternalServerError()
 			w.WriteHeader(err.GetStatus())
 			json.NewEncoder(w).Encode(&err)
@@ -80,11 +88,13 @@ func UpdateCtx(next http.Handler) http.Handler {
 func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 	update := getUpdate(w, r)
 	if update == nil {
+		// Error set by UpdateCtx already
 		return
 	}
 	services := dependencies.ServicesFromContext(r.Context())
 	playbook, err := services.UpdateService.GetUpdatePlaybook(update)
 	if err != nil {
+		services.Log.WithField("error", err.Error()).Error("Error getting update playbook")
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
@@ -93,6 +103,7 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 	defer playbook.Close()
 	_, err = io.Copy(w, playbook)
 	if err != nil {
+		services.Log.WithField("error", err.Error()).Error("Error reading the update playbook")
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
@@ -102,16 +113,28 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 
 // GetUpdates returns the updates for the device
 func GetUpdates(w http.ResponseWriter, r *http.Request) {
+	services := dependencies.ServicesFromContext(r.Context())
 	var updates []models.UpdateTransaction
 	account, err := common.GetAccount(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		services.Log.WithFields(log.Fields{
+			"error":   err.Error(),
+			"account": account,
+		}).Error("Error retrieving account")
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(&err)
 		return
 	}
 	// FIXME - need to sort out how to get this query to be against commit.account
 	result := db.DB.Preload("DispatchRecords").Preload("Devices").Where("update_transactions.account = ?", account).Joins("Commit").Joins("Repo").Find(&updates)
 	if result.Error != nil {
-		http.Error(w, result.Error.Error(), http.StatusBadRequest)
+		services.Log.WithFields(log.Fields{
+			"error": result.Error.Error(),
+		}).Error("Error retrieving updates")
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(&err)
 		return
 	}
 
@@ -127,13 +150,18 @@ type UpdatePostJSON struct {
 }
 
 func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTransaction, error) {
-	log.Infof("updateFromHTTP:: Begin")
+	services := dependencies.ServicesFromContext(r.Context())
+	services.Log.Info("Update is being created")
 
 	account, err := common.GetAccount(r)
 	if err != nil {
-		err := errors.NewInternalServerError()
-		err.SetTitle("No account found")
+		services.Log.WithFields(log.Fields{
+			"error":   err.Error(),
+			"account": account,
+		}).Error("Error retrieving account")
+		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(&err)
 		return nil, err
 	}
 
@@ -144,7 +172,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		w.WriteHeader(err.GetStatus())
 		return nil, err
 	}
-	log.Infof("updateFromHTTP::updateJSON: %#v", updateJSON)
+	services.Log.WithField("updateJSON", updateJSON).Debug("Update JSON received")
 
 	if updateJSON.CommitID == 0 {
 		err := errors.NewBadRequest("Must provide a CommitID")
@@ -177,7 +205,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		}
 	}
 
-	log.Infof("updateFromHTTP::inventory: %#v", inventory)
+	services.Log.WithField("inventoryDevice", inventory).Debug("Device retrieved from inventory")
 
 	// Create the models.UpdateTransaction
 	update := models.UpdateTransaction{
@@ -189,11 +217,14 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	}
 
 	// Get the models.Commit from the Commit ID passed in via JSON
-	commitService := services.NewCommitService(r.Context())
-	update.Commit, err = commitService.GetCommitByID(updateJSON.CommitID)
-	log.Infof("updateFromHTTP::update.Commit: %#v", update.Commit)
+	update.Commit, err = services.CommitService.GetCommitByID(updateJSON.CommitID)
+	services.Log.WithField("commit", update.Commit).Debug("Commit retrieved from this update")
 	update.DispatchRecords = []models.DispatchRecord{}
 	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error":    err.Error(),
+			"commitID": updateJSON.CommitID,
+		}).Error("No commit found for Commit ID")
 		err := errors.NewInternalServerError()
 		err.SetTitle(fmt.Sprintf("No commit found for CommitID %d", updateJSON.CommitID))
 		w.WriteHeader(err.GetStatus())
@@ -202,31 +233,36 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 
 	//  Removing commit dependency to avoid overwriting the repo
 	var repo *models.Repo
-	log.Infof("creating new repo for update transaction: %d", update.ID)
+	services.Log.WithField("updateID", update.ID).Debug("Ceating new repo for update transaction")
 	repo = &models.Repo{
 		Status: models.RepoStatusBuilding,
 	}
 	db.DB.Create(&repo)
 	update.Repo = repo
-	log.Infof("Getting repo info: repo %s, %d", repo.URL, repo.ID)
+	services.Log.WithFields(log.Fields{
+		"repoURL": repo.URL,
+		"repoID":  repo.ID,
+	}).Debug("Getting repo info")
 
 	devices := update.Devices
 	oldCommits := update.OldCommits
 
-	// - populate the update.Devices []Device data
-	log.Infof("Devices in this tag %v", inventory.Result)
 	for _, device := range inventory.Result {
 		//  Check for the existence of a Repo that already has this commit and don't duplicate
 		var updateDevice *models.Device
-		deviceService := services.NewDeviceService(r.Context(), log.NewEntry(log.StandardLogger()))
-		updateDevice, err = deviceService.GetDeviceByUUID(device.ID)
+		updateDevice, err = services.DeviceService.GetDeviceByUUID(device.ID)
 		if err != nil {
-			log.Errorf("updateFromHTTP::GetDeviceByUUID::Error: %#v", err.Error())
 			if !(err.Error() == "Device was not found") {
-				log.Errorf("updateFromHTTP::GetDeviceByUUID::updateDevice: %#v, %#v", repo, err)
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				services.Log.WithField("error", err.Error()).Error("Device was not found in our database")
+				err := errors.NewBadRequest(err.Error())
+				w.WriteHeader(err.GetStatus())
+				json.NewEncoder(w).Encode(&err)
 				return &models.UpdateTransaction{}, err
 			}
+			services.Log.WithFields(log.Fields{
+				"error":      err.Error(),
+				"deviceUUID": device.ID,
+			}).Info("Creating a new device on the database")
 			log.Infof("Existing Device not found in database, creating new one: %s", device.ID)
 			updateDevice = &models.Device{
 				UUID: device.ID,
@@ -240,27 +276,34 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 			return nil, result.Error
 		}
 
-		log.Infof("updateFromHTTP::updateDevice: %#v", updateDevice)
-		devices = append(devices, *updateDevice)
-		log.Infof("updateFromHTTP::devices: %#v", devices)
-		update.Devices = devices
-		log.Infof("updateFromHTTP::update.Devices: %#v", devices)
+		services.Log.WithFields(log.Fields{
+			"updateDevice": updateDevice,
+		}).Debug("Saved updated device")
 
-		for _, ostreeDeployment := range device.Ostree.RpmOstreeDeployments {
-			if ostreeDeployment.Booted {
-				log.Infof("updateFromHTTP::ostreeDeployment.Booted: %#v", ostreeDeployment)
+		devices = append(devices, *updateDevice)
+		update.Devices = devices
+
+		for _, deployment := range device.Ostree.RpmOstreeDeployments {
+			services.Log.WithFields(log.Fields{
+				"ostreeDeployment": deployment,
+			}).Debug("Got ostree deployment for device")
+			if deployment.Booted {
+				services.Log.WithFields(log.Fields{
+					"booted": deployment.Booted,
+				}).Debug("device has been booted")
 				var oldCommit models.Commit
-				result := db.DB.Where("os_tree_commit = ?", ostreeDeployment.Checksum).First(&oldCommit)
-				log.Infof("updateFromHTTP::result: %#v", result)
+				result := db.DB.Where("os_tree_commit = ?", deployment.Checksum).First(&oldCommit)
 				if result.Error != nil {
 					if result.Error.Error() != "record not found" {
-						log.Errorf("updateFromHTTP::result.Error: %#v", result.Error)
-						http.Error(w, result.Error.Error(), http.StatusBadRequest)
+						services.Log.WithField("error", err.Error()).Error("Error returning old commit for this ostree checksum")
+						err := errors.NewBadRequest(err.Error())
+						w.WriteHeader(err.GetStatus())
+						json.NewEncoder(w).Encode(&err)
 						return &models.UpdateTransaction{}, err
 					}
 				}
 				if result.RowsAffected == 0 {
-					log.Infof("Old Commit not found in database: %s", ostreeDeployment.Checksum)
+					services.Log.Debug("No old commits found")
 				} else {
 					oldCommits = append(oldCommits, oldCommit)
 				}
@@ -269,36 +312,48 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	}
 	update.OldCommits = oldCommits
 	if err := db.DB.Save(&update).Error; err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(&err)
 		return nil, err
 	}
-	log.Infof("updateFromHTTP::update: %#v", update)
-	log.Infof("updateFromHTTP:: END")
+	services.Log.WithField("updateID", update.ID).Info("Update has been created")
 	return &update, nil
 }
 
-// AddUpdate adds an object to the database for an account
+// AddUpdate updates a device
 func AddUpdate(w http.ResponseWriter, r *http.Request) {
-	log.Infof("AddUpdate::update:: Begin")
+	services := dependencies.ServicesFromContext(r.Context())
+	services.Log.Info("Starting update")
 	update, err := updateFromHTTP(w, r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		services.Log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Error("Error building update from request")
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.GetStatus())
 		return
 	}
-	log.Infof("AddUpdate::update: %#v", update)
-
 	update.Account, err = common.GetAccount(r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		services.Log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Error("Error retrieving account")
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.GetStatus())
 		return
 	}
 	result := db.DB.Save(&update)
 	if result.Error != nil {
-		http.Error(w, result.Error.Error(), http.StatusBadRequest)
+		services.Log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Error("Error saving update")
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.GetStatus())
+		return
 	}
-	service := services.NewUpdateService(r.Context())
-	log.Infof("AddUpdate:: call::	service.CreateUpdate :: %d", update.ID)
-	go service.CreateUpdate(update.ID)
+	services.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
+	go services.UpdateService.CreateUpdate(update.ID)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(update)
 
@@ -308,6 +363,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 func GetUpdateByID(w http.ResponseWriter, r *http.Request) {
 	update := getUpdate(w, r)
 	if update == nil {
+		// Error set by UpdateCtx already
 		return
 	}
 	json.NewEncoder(w).Encode(update)
@@ -317,6 +373,7 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction
 	ctx := r.Context()
 	update, ok := ctx.Value(UpdateContextKey).(*models.UpdateTransaction)
 	if !ok {
+		// Error set by UpdateCtx already
 		return nil
 	}
 	return update

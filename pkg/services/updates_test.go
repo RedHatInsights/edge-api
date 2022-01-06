@@ -11,6 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -23,7 +24,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 	Describe("creation of the service", func() {
 		Context("returns a correct instance", func() {
 			ctx := context.Background()
-			s := services.NewUpdateService(ctx)
+			s := services.NewUpdateService(ctx, log.NewEntry(log.StandardLogger()))
 			It("not to be nil", func() {
 				Expect(s).ToNot(BeNil())
 			})
@@ -32,7 +33,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 	Describe("update retrieval", func() {
 		var updateService services.UpdateServiceInterface
 		BeforeEach(func() {
-			updateService = services.NewUpdateService(context.Background())
+			updateService = services.NewUpdateService(context.Background(), log.NewEntry(log.StandardLogger()))
 		})
 		Context("by device", func() {
 			uuid := faker.UUIDHyphenated()
@@ -91,7 +92,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			defer ctrl.Finish()
 			mockRepoBuilder = mock_services.NewMockRepoBuilderInterface(ctrl)
 			updateService = &services.UpdateService{
-				Context:       context.Background(),
+				Service:       services.NewService(context.Background(), log.WithField("service", "update")),
 				RepoBuilder:   mockRepoBuilder,
 				WaitForReboot: 0,
 			}
@@ -124,7 +125,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		BeforeEach(func() {
 			updateService = &services.UpdateService{
-				Context: context.Background(),
+				Service: services.NewService(context.Background(), log.WithField("service", "update")),
 			}
 
 		})
@@ -223,7 +224,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				defer ctrl.Finish()
 				mockFilesService := mock_services.NewMockFilesService(ctrl)
 				updateService := &services.UpdateService{
-					Context:      context.Background(),
+					Service:      services.NewService(context.Background(), log.WithField("service", "update")),
 					FilesService: mockFilesService,
 				}
 				mockUploader := mock_services.NewMockUploader(ctrl)
@@ -251,7 +252,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		BeforeEach(func() {
 			updateService = &services.UpdateService{
-				Context: context.Background(),
+				Service: services.NewService(context.Background(), log.WithField("service", "update")),
 			}
 
 		})
