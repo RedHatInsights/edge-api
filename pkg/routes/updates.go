@@ -263,7 +263,6 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 				"error":      err.Error(),
 				"deviceUUID": device.ID,
 			}).Info("Creating a new device on the database")
-			log.Infof("Existing Device not found in database, creating new one: %s", device.ID)
 			updateDevice = &models.Device{
 				UUID: device.ID,
 			}

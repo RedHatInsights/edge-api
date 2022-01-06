@@ -161,7 +161,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			PlaybookURL: playbookURL,
 			Account:     update.Account,
 		}
-		log.Debug("Calling playbook dispatcher")
+		s.log.Debug("Calling playbook dispatcher")
 		client := playbookdispatcher.InitClient(s.ctx)
 		exc, err := client.ExecuteDispatcher(payloadDispatcher)
 
@@ -261,7 +261,7 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, account s
 		s.log.WithField("error", err.Error()).Errorf("Error uploading file to S3")
 		return "", err
 	}
-	log.WithField("playbookURL", playbookURL).Info("Template file uploaded to S3")
+	s.log.WithField("playbookURL", playbookURL).Info("Template file uploaded to S3")
 	err = os.Remove(tmpfilepath)
 	if err != nil {
 		// TODO: Fail silently, find a way to create alerts based on this log

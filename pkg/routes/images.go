@@ -193,7 +193,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	err = services.ImageService.UpdateImage(image, previousImage)
 	if err != nil {
-		log.WithField("error", err.Error()).Error("Failed creating an update to an image")
+		services.log.WithField("error", err.Error()).Error("Failed creating an update to an image")
 		err := errors.NewInternalServerError()
 		err.SetTitle("Failed creating image")
 		w.WriteHeader(err.GetStatus())
