@@ -82,7 +82,9 @@ func TestGetAllThirdPartyRepo(t *testing.T) {
 	}
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(GetAllThirdPartyRepo)
-	ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
+	ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{
+		Log: log.NewEntry(log.StandardLogger()),
+	})
 	req = req.WithContext(ctx)
 	handler.ServeHTTP(rr, req)
 
