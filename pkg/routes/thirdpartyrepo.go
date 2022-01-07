@@ -152,7 +152,7 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(&countErr)
 		return
 	}
-	log.Debugf("r.URL.Query() %v \n", r.URL.Query().Get("sort_by"))
+	services.Log.WithField("sortBy", r.URL.Query().Get("sort_by")).Debug("Sorting third party repos by ...")
 	if r.URL.Query().Get("sort_by") != "name" && r.URL.Query().Get("sort_by") != "-name" {
 		result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&tprepo)
 	}
@@ -219,7 +219,7 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 			}
 			account, err := common.GetAccount(r)
 			if err != nil || tprepo.Account != account {
-				log.WithFields(log.Fields{
+				s.Log.WithFields(log.Fields{
 					"error":   err.Error(),
 					"account": account,
 				}).Error("Error retrieving account or third party repo doesn't belong to account")
@@ -269,7 +269,7 @@ func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		repoDetails, err := services.ThirdPartyRepoService.GetThirdPartyRepoByID(fmt.Sprint(oldtprepo.ID))
 		if err != nil {
-			log.Info(err)
+			services.Log.WithField("error", err.Error()).Error("Error getting third party repository")
 		}
 		json.NewEncoder(w).Encode(repoDetails)
 	}

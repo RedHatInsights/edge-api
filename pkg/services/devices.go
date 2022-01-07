@@ -22,7 +22,7 @@ type DeviceServiceInterface interface {
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
 func NewDeviceService(ctx context.Context, log *log.Entry) DeviceServiceInterface {
 	return &DeviceService{
-		updateService: NewUpdateService(ctx),
+		updateService: NewUpdateService(ctx, log),
 		inventory:     inventory.InitClient(ctx),
 		Service:       Service{ctx: ctx, log: log.WithField("service", "image")},
 	}
@@ -68,7 +68,7 @@ func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, erro
 	return &device, nil
 }
 
-// GetDeviceDetails provides details for a given Device UUID
+// GetDeviceDetails provides details for a given Device UUID by going to inventory API and trying to also merge with the information on our database
 func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*DeviceDetails, error) {
 	s.log = s.log.WithField("deviceUUID", deviceUUID)
 	s.log.Info("Get device by uuid")
