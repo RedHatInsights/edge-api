@@ -8,7 +8,6 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
-	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	log "github.com/sirupsen/logrus"
 )
@@ -54,84 +53,65 @@ func DeviceCtx(next http.Handler) http.Handler {
 	})
 }
 
-func getDevice(w http.ResponseWriter, r *http.Request) *models.Device {
-	ctx := r.Context()
-	dc, ok := ctx.Value(DeviceContextKey).(DeviceContext)
-	if dc.DeviceUUID == "" {
-		return nil // Error set by DeviceCtx method
-	}
-	if !ok {
-		err := errors.NewBadRequest("Must pass device identifier")
-		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
-		return nil
-	}
+// GetUpdateAvailableForDevice returns if exists update for the current image at the device.
+func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	s := dependencies.ServicesFromContext(r.Context())
-	s.Log = s.Log.WithField("UUID", dc.DeviceUUID)
-	device, err := s.DeviceService.GetDeviceByUUID(dc.DeviceUUID)
+	dc, ok := r.Context().Value(DeviceContextKey).(DeviceContext)
+	if dc.DeviceUUID == "" || !ok {
+		return // Error set by DeviceCtx method
+	}
+	result, err := s.DeviceService.GetUpdateAvailableForDeviceByUUID(dc.DeviceUUID)
+	if err == nil {
+		json.NewEncoder(w).Encode(result)
+		return
+	}
 	if _, ok := err.(*services.DeviceNotFoundError); ok {
 		err := errors.NewNotFound("Could not find device")
 		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
-		return nil
+		return
 	}
-	return device
-}
-
-// GetUpdateAvailableForDevice returns if exists update for the current image at the device.
-func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
-	if device := getDevice(w, r); device != nil {
-		s := dependencies.ServicesFromContext(r.Context())
-		result, err := s.DeviceService.GetUpdateAvailableForDeviceByUUID(device.UUID)
-		if err == nil {
-			json.NewEncoder(w).Encode(result)
-			return
-		}
-		if _, ok := err.(*services.DeviceNotFoundError); ok {
-			err := errors.NewNotFound("Could not find device")
-			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
-			return
-		}
-		if _, ok := err.(*services.UpdateNotFoundError); ok {
-			err := errors.NewNotFound("Could not find update")
-			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
-			return
-		}
-		apierr := errors.NewInternalServerError()
-		w.WriteHeader(apierr.GetStatus())
-		s.Log.WithFields(log.Fields{
-			"statusCode": apierr.GetStatus(),
-			"error":      apierr.Error(),
-		}).Error("Error retrieving updates for device")
+	if _, ok := err.(*services.UpdateNotFoundError); ok {
+		err := errors.NewNotFound("Could not find update")
+		w.WriteHeader(err.GetStatus())
 		json.NewEncoder(w).Encode(&err)
+		return
 	}
+	apierr := errors.NewInternalServerError()
+	w.WriteHeader(apierr.GetStatus())
+	s.Log.WithFields(log.Fields{
+		"statusCode": apierr.GetStatus(),
+		"error":      apierr.Error(),
+	}).Error("Error retrieving updates for device")
+	json.NewEncoder(w).Encode(&err)
 }
 
 // GetDeviceImageInfo returns the information of a running image for a device
 func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
-	if device := getDevice(w, r); device != nil {
-		s := dependencies.ServicesFromContext(r.Context())
-		result, err := s.DeviceService.GetDeviceImageInfo(device.UUID)
-		if err == nil {
-			json.NewEncoder(w).Encode(result)
-			return
-		}
-		if _, ok := err.(*services.DeviceNotFoundError); ok {
-			err := errors.NewNotFound("Could not find device")
-			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
-			return
-		}
-		apierr := errors.NewInternalServerError()
-		w.WriteHeader(apierr.GetStatus())
-		s.Log.WithFields(log.Fields{
-			"statusCode": apierr.GetStatus(),
-			"error":      apierr.Error(),
-		}).Error("Error getting image info for device")
-		json.NewEncoder(w).Encode(&err)
+
+	s := dependencies.ServicesFromContext(r.Context())
+	dc, ok := r.Context().Value(DeviceContextKey).(DeviceContext)
+	if dc.DeviceUUID == "" || !ok {
+		return // Error set by DeviceCtx method
 	}
+	result, err := s.DeviceService.GetDeviceImageInfo(dc.DeviceUUID)
+	if err == nil {
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+	if _, ok := err.(*services.DeviceNotFoundError); ok {
+		err := errors.NewNotFound("Could not find device")
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	apierr := errors.NewInternalServerError()
+	w.WriteHeader(apierr.GetStatus())
+	s.Log.WithFields(log.Fields{
+		"statusCode": apierr.GetStatus(),
+		"error":      apierr.Error(),
+	}).Error("Error getting image info for device")
+	json.NewEncoder(w).Encode(&err)
 }
 
 // GetDevice returns all available information that edge api has about a device
