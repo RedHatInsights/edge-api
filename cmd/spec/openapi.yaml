@@ -2800,7 +2800,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
-      summary: Retries an building image from stratch
+      summary: Retries building an image from scratch
   /updates:
     post:
       operationId: UpdateDevice

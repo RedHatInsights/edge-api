@@ -256,6 +256,17 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string) (strin
 	return tarFileName, nil
 }
 
+func uploadTarRepo(account, imageName string, repoID int) (string, error) {
+	uploadPath := fmt.Sprintf("%s/tar/%v/%s", account, repoID, imageName)
+	filesService := NewFilesService()
+	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
+
+	if err != nil {
+		return "error", fmt.Errorf("error uploading the Tar :: %s :: %s", uploadPath, err.Error())
+	}
+	return url, nil
+}
+
 // UploadVersionRepo Upload the repo tarball to the repo service
 func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string, dest string) error {
 	//Upload ImageBuildTar to repo

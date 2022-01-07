@@ -16,7 +16,7 @@ type ImageSetsServiceInterface interface {
 }
 
 // NewImageSetsService gives a instance of the main implementation of a ImageSetsServiceInterface
-func NewImageSetsService(ctx context.Context) ImageSetsServiceInterface {
+func NewImageSetsService(ctx context.Context, log *log.Entry) ImageSetsServiceInterface {
 	return &ImageSetsService{
 		Service: Service{ctx: ctx, log: log.WithField("service", "image-sets")},
 	}
