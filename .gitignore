@@ -21,6 +21,8 @@ edge-api
 
 quay-cloudservices-pull.yaml
 
+# Pipfile.lock to allow multiple versions of Python to be supported (for bonfire)
+Pipfile.lock
 
 # pyenv
 .python-version
