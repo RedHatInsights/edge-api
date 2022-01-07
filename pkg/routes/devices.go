@@ -140,31 +140,33 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 // Returns updates available to a device.
 // Returns updates transactions for that device, if any.
 func GetDevice(w http.ResponseWriter, r *http.Request) {
-	if device := getDevice(w, r); device != nil {
-		s := dependencies.ServicesFromContext(r.Context())
-		result, err := s.DeviceService.GetDeviceDetails(device.UUID)
-		if err == nil {
-			json.NewEncoder(w).Encode(result)
-			return
-		}
-		if _, ok := err.(*services.ImageNotFoundError); ok {
-			err := errors.NewNotFound("Could not find image")
-			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
-			return
-		}
-		if _, ok := err.(*services.DeviceNotFoundError); ok {
-			err := errors.NewNotFound("Could not find device")
-			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
-			return
-		}
-		apierr := errors.NewInternalServerError()
-		w.WriteHeader(apierr.GetStatus())
-		s.Log.WithFields(log.Fields{
-			"statusCode": apierr.GetStatus(),
-			"error":      apierr.Error(),
-		}).Error("Error retrieving updates for device")
-		json.NewEncoder(w).Encode(&err)
+	s := dependencies.ServicesFromContext(r.Context())
+	dc, ok := r.Context().Value(DeviceContextKey).(DeviceContext)
+	if dc.DeviceUUID == "" || !ok {
+		return // Error set by DeviceCtx method
 	}
+	result, err := s.DeviceService.GetDeviceDetails(dc.DeviceUUID)
+	if err == nil {
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+	if _, ok := err.(*services.ImageNotFoundError); ok {
+		err := errors.NewNotFound("Could not find image")
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	if _, ok := err.(*services.DeviceNotFoundError); ok {
+		err := errors.NewNotFound("Could not find device")
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(&err)
+		return
+	}
+	apierr := errors.NewInternalServerError()
+	w.WriteHeader(apierr.GetStatus())
+	s.Log.WithFields(log.Fields{
+		"statusCode": apierr.GetStatus(),
+		"error":      apierr.Error(),
+	}).Error("Error retrieving updates for device")
+	json.NewEncoder(w).Encode(&err)
 }
