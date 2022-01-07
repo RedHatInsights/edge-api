@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/services/files"
+	log "github.com/sirupsen/logrus"
 )
 
 // FilesService is the interface for Files-related service information
@@ -31,7 +32,7 @@ type S3FilesService struct {
 }
 
 // NewFilesService creates a new service to handle files
-func NewFilesService() FilesService {
+func NewFilesService(log *log.Entry) FilesService {
 	cfg := config.Get()
 	var sess *session.Session
 	if cfg.Debug {
@@ -54,7 +55,7 @@ func NewFilesService() FilesService {
 		Client:     client,
 		Bucket:     cfg.BucketName,
 		extractor:  files.NewExtractor(),
-		uploader:   files.NewUploader(),
+		uploader:   files.NewUploader(log),
 		downloader: files.NewDownloader(),
 	}
 }

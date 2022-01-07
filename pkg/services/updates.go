@@ -37,7 +37,7 @@ type UpdateServiceInterface interface {
 func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterface {
 	return &UpdateService{
 		Service:       Service{ctx: ctx, log: log.WithField("service", "update")},
-		FilesService:  NewFilesService(),
+		FilesService:  NewFilesService(log),
 		RepoBuilder:   NewRepoBuilder(ctx, log),
 		WaitForReboot: time.Minute * 5,
 	}
@@ -162,7 +162,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			Account:     update.Account,
 		}
 		s.log.Debug("Calling playbook dispatcher")
-		client := playbookdispatcher.InitClient(s.ctx)
+		client := playbookdispatcher.InitClient(s.ctx, s.log)
 		exc, err := client.ExecuteDispatcher(payloadDispatcher)
 
 		if err != nil {
