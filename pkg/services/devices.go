@@ -68,7 +68,7 @@ func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, erro
 	return &device, nil
 }
 
-// GetDeviceDetails provides details for a given Device UUID
+// GetDeviceDetails provides details for a given Device UUID by going to inventory API and trying to also merge with the information on our database
 func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*DeviceDetails, error) {
 	s.log = s.log.WithField("deviceUUID", deviceUUID)
 	s.log.Info("Get device by uuid")
