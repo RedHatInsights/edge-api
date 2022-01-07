@@ -177,6 +177,15 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 	}
 
 	tarFileName, err := rb.DownloadVersionRepo(&cmt, path)
+	if err != nil {
+		r.Status = models.RepoStatusError
+		result := db.DB.Save(&r)
+		if result.Error != nil {
+			rb.log.WithField("error", result.Error.Error()).Error("Error saving repo...")
+		}
+		rb.log.WithField("error", err.Error()).Error("Error downloading repo...")
+		return nil, fmt.Errorf("error downloading repo")
+	}
 	errUpload := rb.UploadVersionRepo(&cmt, tarFileName, path)
 	if errUpload != nil {
 		r.Status = models.RepoStatusError
