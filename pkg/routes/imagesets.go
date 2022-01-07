@@ -319,7 +319,7 @@ func returnImageDetails(images []models.Image, s *dependencies.EdgeAPIServices) 
 		img, err := s.ImageService.AddPackageInfo(&images[idx])
 
 		if err != nil {
-			log.Error("Image detail not found \n")
+			s.Log.Error("Image detail not found")
 		}
 		Imgs = append(Imgs, ImageDetail(img))
 	}

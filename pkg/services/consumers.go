@@ -32,7 +32,7 @@ type KafkaConsumerService struct {
 func NewKafkaConsumerService(config *clowder.KafkaConfig) ConsumerService {
 	// to consume messages
 	s := &KafkaConsumerService{
-		UpdateService: NewUpdateService(context.Background()),
+		UpdateService: NewUpdateService(context.Background(), log.WithField("service", "update")),
 		RetryMinutes:  5,
 		config:        config,
 		shuttingDown:  false,

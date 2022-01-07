@@ -171,13 +171,13 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 	}
 
 	if err != nil {
-		c.log.Error(err)
+		c.log.WithField("error", err.Error()).Error("Error sending request to image builder")
 		return nil, err
 	}
 	cr := &ComposeResult{}
 	err = json.Unmarshal(respBody, &cr)
 	if err != nil {
-		c.log.Error(err)
+		c.log.WithField("error", err.Error()).Error("Error unmarshalling response JSON")
 		return nil, err
 	}
 
@@ -218,6 +218,7 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 
 	cr, err := c.compose(req)
 	if err != nil {
+		c.log.WithField("error", err.Error()).Error("Error sending request to image builder")
 		return nil, err
 	}
 	image.Commit.ComposeJobID = cr.ID
@@ -255,11 +256,11 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 		image.Status = models.ImageStatusError
 		tx := db.DB.Save(&image)
 		if tx.Error != nil {
-			log.Error(tx.Error)
+			c.log.WithField("error", tx.Error.Error()).Error("Error saving image")
 		}
 		tx = db.DB.Save(&image.Installer)
 		if tx.Error != nil {
-			log.Error(tx.Error)
+			c.log.WithField("error", tx.Error.Error()).Error("Error saving installer")
 		}
 		return nil, err
 	}
@@ -268,11 +269,11 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 	image.Status = models.ImageStatusBuilding
 	tx := db.DB.Save(&image)
 	if tx.Error != nil {
-		log.Error(tx.Error)
+		c.log.WithField("error", tx.Error.Error()).Error("Error saving image")
 	}
 	tx = db.DB.Save(&image.Installer)
 	if tx.Error != nil {
-		log.Error(tx.Error)
+		c.log.WithField("error", tx.Error.Error()).Error("Error saving installer")
 	}
 	return image, nil
 }

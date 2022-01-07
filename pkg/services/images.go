@@ -386,13 +386,13 @@ func (s *ImageService) CreateRepoForImage(i *models.Image) (*models.Repo, error)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
-	log.Debug("OSTree repo was saved to commit")
+	s.log.Debug("OSTree repo was saved to commit")
 
 	repo, err := s.RepoBuilder.ImportRepo(repo)
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("OSTree repo is ready")
+	s.log.Infof("OSTree repo is ready")
 
 	return repo, nil
 }
@@ -404,28 +404,24 @@ func (s *ImageService) SetErrorStatusOnImage(err error, i *models.Image) {
 		tx := db.DB.Save(i)
 		s.log.Debug("Image saved with error status")
 		if tx.Error != nil {
-			s.log.Error(tx.Error)
-			panic(tx.Error)
+			s.log.WithField("error", tx.Error.Error()).Error("Error saving image")
 		}
 		if i.Commit != nil {
 			i.Commit.Status = models.ImageStatusError
 			tx := db.DB.Save(i.Commit)
 			if tx.Error != nil {
-				s.log.Error(tx.Error)
-				panic(tx.Error)
+				s.log.WithField("error", tx.Error.Error()).Error("Error saving commit")
 			}
 		}
 		if i.Installer != nil {
 			i.Installer.Status = models.ImageStatusError
 			tx := db.DB.Save(i.Installer)
 			if tx.Error != nil {
-				s.log.Error(tx.Error)
-				panic(tx.Error)
+				s.log.WithField("error", tx.Error.Error()).Error("Error saving installer")
 			}
 		}
 		if err != nil {
-			s.log.Error(err)
-			panic(err)
+			s.log.WithField("error", tx.Error.Error()).Fatal("Error setting image final status")
 		}
 	}
 }
@@ -489,21 +485,25 @@ func (s *ImageService) addSSHKeyToKickstart(sshKey string, username string, kick
 
 	td := UnameSSH{sshKey, username}
 
-	log.Infof("Opening file %s", cfg.TemplatesPath)
+	s.log.WithField("templatesPath", cfg.TemplatesPath).Debug("Opening file")
 	t, err := template.ParseFiles(cfg.TemplatesPath + "templateKickstart.ks")
 	if err != nil {
 		return err
 	}
 
-	log.Infof("Creating file %s", kickstart)
+	s.log.WithField("kickstart", kickstart).Debug("Creating file")
 	file, err := os.Create(kickstart)
 	if err != nil {
 		return err
 	}
 
-	log.Infof("Injecting username %s and key %s into template", username, sshKey)
+	s.log.WithFields(log.Fields{
+		"username": username,
+		"sshKey":   sshKey,
+	}).Debug("Injecting username and key into template")
 	err = t.Execute(file, td)
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Failed adding username and sshkey on image")
 		return err
 	}
 	file.Close()
@@ -513,14 +513,15 @@ func (s *ImageService) addSSHKeyToKickstart(sshKey string, username string, kick
 
 // Download created ISO into the file system.
 func (s *ImageService) downloadISO(isoName string, url string) error {
-	log.Infof("Creating iso %s", isoName)
+
+	s.log.WithField("isoName", isoName).Debug("Creating iso")
 	iso, err := os.Create(isoName)
 	if err != nil {
 		return err
 	}
 	defer iso.Close()
 
-	log.Infof("Downloading ISO %s", url)
+	s.log.WithField("url", url).Debug("Downloading iso")
 	res, err := http.Get(url)
 	if err != nil {
 		return err
@@ -529,6 +530,7 @@ func (s *ImageService) downloadISO(isoName string, url string) error {
 
 	_, err = io.Copy(iso, res.Body)
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Failed downloading iso")
 		return err
 	}
 
@@ -558,22 +560,25 @@ func (s *ImageService) uploadISO(image *models.Image, imageName string) error {
 func (s *ImageService) cleanFiles(kickstart string, isoName string, imageID uint) error {
 	err := os.Remove(kickstart)
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error removing kickstart file")
 		return err
 	}
-	log.Info("Kickstart file " + kickstart + " removed!")
+	s.log.WithField("kickstart", kickstart).Debug("Kickstart file removed")
 
 	err = os.Remove(isoName)
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error removing tmp iso")
 		return err
 	}
-	log.Info("ISO file " + isoName + " removed!")
+	s.log.WithField("isoName", isoName).Debug("ISO file removed")
 
 	workDir := fmt.Sprintf("/var/tmp/workdir%d", imageID)
 	err = os.RemoveAll(workDir)
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error removing work dir path")
 		return err
 	}
-	log.Info("work dir file " + workDir + " removed!")
+	s.log.WithField("workDir", workDir).Debug("Work dir path removed")
 
 	return nil
 }
@@ -632,24 +637,27 @@ func (s *ImageService) exeInjectionScript(kickstart string, image string, imageI
 	workDir := fmt.Sprintf("/var/tmp/workdir%d", imageID)
 	err := os.Mkdir(workDir, 0755)
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error giving permissions to execute fleetkick")
 		return err
 	}
 
 	cmd := exec.Command(fleetBashScript, kickstart, image, image, workDir)
 	output, err := cmd.Output()
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error executing fleetkick")
 		return err
 	}
-	log.Infof("fleetkick output: %s\n", output)
+	s.log.WithField("output", output).Info("Fleetkick Output")
 	return nil
 }
 
 // Calculate the checksum of the final ISO.
 func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) error {
-	log.Infof("Calculating sha256 checksum for ISO %s", isoPath)
+	s.log.WithField("isoPath", isoPath).Info("Calculating sha256 checksum for ISO")
 
 	fh, err := os.Open(isoPath)
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error opening ISO file")
 		return err
 	}
 	defer fh.Close()
@@ -657,13 +665,15 @@ func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) er
 	sumCalculator := sha256.New()
 	_, err = io.Copy(sumCalculator, fh)
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error calculating sha256 checksum for ISO")
 		return err
 	}
 
 	image.Installer.Checksum = hex.EncodeToString(sumCalculator.Sum(nil))
-	log.Infof("Checksum (sha256): %s", image.Installer.Checksum)
+	s.log.WithField("checksum", image.Installer.Checksum).Info("Checksum calculated")
 	tx := db.DB.Save(&image.Installer)
 	if tx.Error != nil {
+		s.log.WithField("error", err.Error()).Error("Error saving installer")
 		return tx.Error
 	}
 
@@ -689,7 +699,7 @@ func (s *ImageService) AddPackageInfo(image *models.Image) (ImageDetail, error) 
 
 	upd, err := s.GetUpdateInfo(*image)
 	if err != nil {
-		log.Errorf("error getting update info: %v", err)
+		s.log.WithField("error", err.Error()).Error("Error getting update info")
 		return imgDetail, err
 	}
 	if upd != nil {
@@ -808,19 +818,6 @@ func (s *ImageService) SetBuildingStatusOnImageToRetryBuild(image *models.Image)
 		return tx.Error
 	}
 	return nil
-}
-func uploadTarRepo(account, imageName string, repoID int) (string, error) {
-	log.Infof(":: uploadTarRepo Started ::\n")
-	uploadPath := fmt.Sprintf("%s/tar/%v/%s", account, repoID, imageName)
-	filesService := NewFilesService()
-	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
-
-	if err != nil {
-		return "error", fmt.Errorf("error uploading the Tar :: %s :: %s", uploadPath, err.Error())
-	}
-	log.Infof(":: uploadTarRepo Finish ::\n")
-
-	return url, nil
 }
 
 // CheckIfIsLatestVersion make sure that there is no same image version present
