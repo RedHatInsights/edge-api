@@ -33,7 +33,7 @@
                 "sha256:b778ce0c909a2653741cb4b1ac7015b5c130ab9c897611df43ae6a58523cb965"
             ],
             "markers": "python_full_version >= '3.5.3'",
-            "version": "==3.6.2"
+            "version": ">=3.7.4"
         },
         "anytree": {
             "hashes": [
@@ -420,7 +420,7 @@
                 "sha256:f8a7bff6e8664afc4e6c28b983845c5bc14965030e3fb98789734d416af77c4b"
             ],
             "markers": "python_full_version >= '3.6.1'",
-            "version": "==8.1"
+            "version": ">=9.1"
         },
         "yarl": {
             "hashes": [
