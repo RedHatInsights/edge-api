@@ -157,7 +157,7 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 
 	for i, ud := range uploadDetailsList {
 		<-ud.done
-		u.log.Trace("%d file is done", i)
+		u.log.WithField("index", i).Trace("File is done")
 		close(ud.done)
 	}
 	close(uploadQueue)
