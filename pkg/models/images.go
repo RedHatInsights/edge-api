@@ -34,7 +34,7 @@ type Image struct {
 	Installer                *Installer     `json:"Installer"`
 	ImageSetID               *uint          `json:"ImageSetID"` // TODO: Wipe staging database and set to not nullable
 	Packages                 []Package      `json:"Packages" gorm:"many2many:images_packages;"`
-	ThirdPartyRepositoryName string         `json:"payload_url"`
+	ThirdPartyRepositoryName string         `json:"ThirdPartyRepositoryName"`
 }
 
 const (

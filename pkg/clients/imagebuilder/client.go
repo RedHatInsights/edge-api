@@ -201,7 +201,7 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 	var payload_repo Repository
 	var err error
-	_, err = GetThirdParyUrl()
+	_, err = c.GetThirdPartyUrl(image)
 	if err != nil {
 		return nil, errors.New("error getting information on third Party repository")
 
@@ -437,16 +437,14 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 }
 
 // GetThirdParyUrl finds the url of Third Party Repository using the name
-func GetThirdParyUrl() (string, error) {
-	var i models.Image
+func (c *Client) GetThirdPartyUrl(image *models.Image) (string, error) {
 	var thirdpartyrepo *models.ThirdPartyRepo
-	tprepoUrl := db.DB.Model(&models.ThirdPartyRepo{}).Select("url").Where("name = ?", i.ThirdPartyRepositoryName).Find(&thirdpartyrepo)
+	tprepoUrl := db.DB.Model(&models.ThirdPartyRepo{}).Select("url").Where("name = ?", image.ThirdPartyRepositoryName).Find(&thirdpartyrepo)
 	if tprepoUrl.Error != nil {
 		log.Error(tprepoUrl.Error)
 	}
 	var payload_repo Repository
 	payload_repo.Baseurl = &thirdpartyrepo.URL
-
 	return thirdpartyrepo.URL, nil
 
 }
