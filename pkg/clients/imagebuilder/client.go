@@ -47,7 +47,19 @@ type OSTree struct {
 
 // Customizations is made of the packages that are baked into an image
 type Customizations struct {
-	Packages *[]string `json:"packages"`
+	Packages            *[]string     `json:"packages"`
+	PayloadRepositories *[]Repository `json:"payload_repositories,omitempty"`
+}
+
+// Respository is the record of Third Party Repository
+type Repository struct {
+	Baseurl    *string `json:"baseurl,omitempty"`
+	CheckGpg   *bool   `json:"check_gpg,omitempty"`
+	GpgKey     *string `json:"gpg_key,omitempty"`
+	IgnoreSsl  *bool   `json:"ignore_ssl,omitempty"`
+	Metalink   *string `json:"metalink,omitempty"`
+	Mirrorlist *string `json:"mirrorlist,omitempty"`
+	Rhsm       bool    `json:"rhsm"`
 }
 
 // UploadRequest is the upload options accepted by Image Builder API
@@ -187,9 +199,22 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 
 // ComposeCommit composes a Commit on ImageBuilder
 func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
+	var payload_repo Repository
+	var err error
+	_, err = GetThirdParyUrl()
+	if err != nil {
+		return nil, errors.New("error getting information on third Party repository")
+
+	}
+
 	req := &ComposeRequest{
 		Customizations: &Customizations{
 			Packages: image.GetPackagesList(),
+			PayloadRepositories: &[]Repository{
+				{
+					Baseurl: payload_repo.Baseurl,
+				},
+			},
 		},
 
 		Distribution: image.Distribution,
@@ -409,4 +434,19 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	image.Commit.OSTreeCommit = metadata.OstreeCommit
 	c.log.Infof("Done with metadata for image")
 	return image, nil
+}
+
+// GetThirdParyUrl finds the url of Third Party Repository using the name
+func GetThirdParyUrl() (string, error) {
+	var i models.Image
+	var thirdpartyrepo *models.ThirdPartyRepo
+	tprepoUrl := db.DB.Model(&models.ThirdPartyRepo{}).Select("url").Where("name = ?", i.ThirdPartyRepositoryName).Find(&thirdpartyrepo)
+	if tprepoUrl.Error != nil {
+		log.Error(tprepoUrl.Error)
+	}
+	var payload_repo Repository
+	payload_repo.Baseurl = &thirdpartyrepo.URL
+
+	return thirdpartyrepo.URL, nil
+
 }
