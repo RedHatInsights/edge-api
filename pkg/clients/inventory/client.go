@@ -157,8 +157,7 @@ func (c *Client) ReturnDevices(parameters *Params) (Response, error) {
 
 // ReturnDevicesByID will return the list of devices by uuid
 func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
-	deviceIDParam := "&hostname_or_id=" + deviceID
-	url := fmt.Sprintf("%s/%s/%s/%s", config.Get().InventoryConfig.URL, inventoryAPI, FilterParams, deviceIDParam)
+	url := fmt.Sprintf("%s/%s%s&hostname_or_id=%s", config.Get().InventoryConfig.URL, inventoryAPI, FilterParams, deviceID)
 	c.log.WithFields(log.Fields{
 		"url": url,
 	}).Info("Inventory ReturnDevicesByID Request Started")
@@ -200,7 +199,7 @@ func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
 // ReturnDevicesByTag will return the list of devices by tag
 func (c *Client) ReturnDevicesByTag(tag string) (Response, error) {
 	tagsParam := "?tags=" + tag
-	url := fmt.Sprintf("%s/%s/%s/%s", config.Get().InventoryConfig.URL, inventoryAPI, FilterParams, tagsParam)
+	url := fmt.Sprintf("%s/%s%s%s", config.Get().InventoryConfig.URL, inventoryAPI, FilterParams, tagsParam)
 	c.log.WithFields(log.Fields{
 		"url": url,
 	}).Info("Inventory ReturnDevicesByTag Request Started")
