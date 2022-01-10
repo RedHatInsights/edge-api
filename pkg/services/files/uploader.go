@@ -185,7 +185,7 @@ func (u *S3Uploader) UploadFile(fname string, uploadPath string) (string, error)
 		ACL:    aws.String("public-read"),
 	})
 
-	u.log.WithField("result", result).Error("Finished upload to AWS S3")
+	u.log.WithField("result", result).Info("Finished upload to AWS S3")
 	if err != nil {
 		u.log.WithField("error", err.Error()).Error("Error uploading to AWS S3")
 		return "", err

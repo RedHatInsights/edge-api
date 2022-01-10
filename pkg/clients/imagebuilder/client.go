@@ -338,7 +338,7 @@ func (c *Client) GetInstallerStatus(image *models.Image) (*models.Image, error) 
 	if err != nil {
 		return nil, err
 	}
-	c.log.Info(fmt.Sprintf("Got installer status %s", cs.ImageStatus.Status))
+	c.log.WithField("status", cs.ImageStatus.Status).Info("Got installer status")
 	if cs.ImageStatus.Status == imageStatusSuccess {
 		image.Installer.Status = models.ImageStatusSuccess
 		image.Installer.ImageBuildISOURL = cs.ImageStatus.UploadStatus.Options.URL
