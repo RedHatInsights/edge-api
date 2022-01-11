@@ -165,15 +165,14 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 		"responseBody": string(respBody),
 		"error":        err,
 	}).Info("Image Builder Compose Response")
-
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusCreated {
 		return nil, fmt.Errorf("image is not being created by image builder")
 	}
 
-	if err != nil {
-		c.log.WithField("error", err.Error()).Error("Error sending request to image builder")
-		return nil, err
-	}
 	cr := &ComposeResult{}
 	err = json.Unmarshal(respBody, &cr)
 	if err != nil {
@@ -181,7 +180,6 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 		return nil, err
 	}
 
-	defer res.Body.Close()
 	return cr, nil
 }
 
@@ -254,19 +252,11 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 	if err != nil {
 		image.Installer.Status = models.ImageStatusError
 		image.Status = models.ImageStatusError
-		tx := db.DB.Save(&image)
-		if tx.Error != nil {
-			c.log.WithField("error", tx.Error.Error()).Error("Error saving image")
-		}
-		tx = db.DB.Save(&image.Installer)
-		if tx.Error != nil {
-			c.log.WithField("error", tx.Error.Error()).Error("Error saving installer")
-		}
-		return nil, err
+	} else {
+		image.Installer.ComposeJobID = cr.ID
+		image.Installer.Status = models.ImageStatusBuilding
+		image.Status = models.ImageStatusBuilding
 	}
-	image.Installer.ComposeJobID = cr.ID
-	image.Installer.Status = models.ImageStatusBuilding
-	image.Status = models.ImageStatusBuilding
 	tx := db.DB.Save(&image)
 	if tx.Error != nil {
 		c.log.WithField("error", tx.Error.Error()).Error("Error saving image")
@@ -274,6 +264,9 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 	tx = db.DB.Save(&image.Installer)
 	if tx.Error != nil {
 		c.log.WithField("error", tx.Error.Error()).Error("Error saving installer")
+	}
+	if err != nil {
+		return nil, err
 	}
 	return image, nil
 }
@@ -299,25 +292,25 @@ func (c *Client) getComposeStatus(jobID string) (*ComposeStatus, error) {
 		}).Error("Image Builder ComposeStatus Request Error")
 		return nil, err
 	}
-	respBody, err := ioutil.ReadAll(res.Body)
+	body, err := ioutil.ReadAll(res.Body)
 	c.log.WithFields(log.Fields{
 		"statusCode":   res.StatusCode,
-		"responseBody": string(respBody),
+		"responseBody": string(body),
 		"error":        err,
 	}).Info("Image Builder ComposeStatus Response")
 	if err != nil {
 		return nil, err
 	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("request for status was not successful")
 	}
 
-	err = json.Unmarshal(respBody, &cs)
+	err = json.Unmarshal(body, &cs)
 	if err != nil {
 		return nil, err
 	}
 
-	defer res.Body.Close()
 	return cs, nil
 }
 
@@ -345,7 +338,7 @@ func (c *Client) GetInstallerStatus(image *models.Image) (*models.Image, error) 
 	if err != nil {
 		return nil, err
 	}
-	c.log.Info(fmt.Sprintf("Got installer status %s", cs.ImageStatus.Status))
+	c.log.WithField("status", cs.ImageStatus.Status).Info("Got installer status")
 	if cs.ImageStatus.Status == imageStatusSuccess {
 		image.Installer.Status = models.ImageStatusSuccess
 		image.Installer.ImageBuildISOURL = cs.ImageStatus.UploadStatus.Options.URL

@@ -37,7 +37,7 @@ type UpdateServiceInterface interface {
 func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterface {
 	return &UpdateService{
 		Service:       Service{ctx: ctx, log: log.WithField("service", "update")},
-		FilesService:  NewFilesService(),
+		FilesService:  NewFilesService(log),
 		RepoBuilder:   NewRepoBuilder(ctx, log),
 		WaitForReboot: time.Minute * 5,
 	}
@@ -104,8 +104,8 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 
 	WaitGroup.Add(1) // Processing one update
 	defer func() {
-		WaitGroup.Done() // Done with one update (successfuly or not)
-		s.log.Debug("Done with one update - successfuly or not")
+		WaitGroup.Done() // Done with one update (successfully or not)
+		s.log.Debug("Done with one update - successfully or not")
 		if err := recover(); err != nil {
 			s.log.WithField("error", err).Fatal("Error on update")
 		}
@@ -162,7 +162,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			Account:     update.Account,
 		}
 		s.log.Debug("Calling playbook dispatcher")
-		client := playbookdispatcher.InitClient(s.ctx)
+		client := playbookdispatcher.InitClient(s.ctx, s.log)
 		exc, err := client.ExecuteDispatcher(payloadDispatcher)
 
 		if err != nil {
