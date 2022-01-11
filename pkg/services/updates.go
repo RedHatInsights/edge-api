@@ -104,8 +104,8 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 
 	WaitGroup.Add(1) // Processing one update
 	defer func() {
-		WaitGroup.Done() // Done with one update (successfuly or not)
-		s.log.Debug("Done with one update - successfuly or not")
+		WaitGroup.Done() // Done with one update (successfully or not)
+		s.log.Debug("Done with one update - successfully or not")
 		if err := recover(); err != nil {
 			s.log.WithField("error", err).Fatal("Error on update")
 		}

@@ -325,10 +325,10 @@ func (s *ImageService) postProcessImage(id uint) {
 
 	WaitGroup.Add(1) // Processing one image
 	defer func() {
-		WaitGroup.Done() // Done with one image (successfuly or not)
-		s.log.Debug("Done with one image - successfuly or not")
+		WaitGroup.Done() // Done with one image (successfully or not)
+		s.log.Debug("Done with one image - successfully or not")
 		if err := recover(); err != nil {
-			s.log.Fatalf("%s", err)
+			s.log.Fatalf("Error recovering post process image goroutine")
 		}
 	}()
 	go func(i *models.Image) {
@@ -620,6 +620,7 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 
 // CheckImageName returns false if the image doesnt exist and true if the image exists
 func (s *ImageService) CheckImageName(name, account string) (bool, error) {
+	s.log.WithField("name", name).Debug("Checking image name")
 	var imageFindByName *models.Image
 	result := db.DB.Where("name = ? AND account = ?", name, account).First(&imageFindByName)
 	if result.Error != nil {
@@ -766,7 +767,7 @@ func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Im
 		return nil, new(ImageNotFoundError)
 	}
 	s.log = s.log.WithField("imageID", image.ID)
-	s.log.Info("Image successfuly retrievedd by its OSTreeHash")
+	s.log.Info("Image successfully retrieved by its OSTreeHash")
 	return s.addImageExtraData(&image)
 }
 
