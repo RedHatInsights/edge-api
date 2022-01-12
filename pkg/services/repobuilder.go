@@ -107,6 +107,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		// If there are any old commits, we need to download them all to be merged
 		// into the update commit repo
 		for _, commit := range update.OldCommits {
+			commit := commit // this will prevent implicit memory aliasing in the loop
 			tarFileName, err := rb.DownloadVersionRepo(&commit, filepath.Join(stagePath, commit.OSTreeCommit))
 			if err != nil {
 				rb.log.WithField("error", err.Error()).Error("Error downloading tar")

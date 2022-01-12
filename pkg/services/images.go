@@ -874,6 +874,7 @@ func (s *ImageService) GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable
 		return nil, nil
 	}
 	for _, upd := range images {
+		upd := upd // this will prevent implicit memory aliasing in the loop
 		db.DB.First(&upd.Commit, upd.CommitID)
 		db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages)
 		db.DB.Model(&upd).Association("Packages").Find(&upd.Packages)
