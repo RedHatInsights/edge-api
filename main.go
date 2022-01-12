@@ -80,6 +80,7 @@ func main() {
 	r.Get("/api/edge/v1/openapi.json", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, cfg.OpenAPIFilePath)
 	})
+
 	// Authenticated routes
 	ar := r.Group(nil)
 	if cfg.Auth {

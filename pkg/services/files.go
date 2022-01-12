@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -14,6 +15,27 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type BasicFileService struct {
+	extractor  files.Extractor
+	uploader   files.Uploader
+	downloader files.Downloader
+}
+
+// GetExtractor retuns a new extractor for files
+func (s *BasicFileService) GetExtractor() files.Extractor {
+	return s.extractor
+}
+
+// GetUploader retuns a new uploader for files
+func (s *BasicFileService) GetUploader() files.Uploader {
+	return s.uploader
+}
+
+// GetDownloader retuns a new downloads for files
+func (s *BasicFileService) GetDownloader() files.Downloader {
+	return s.downloader
+}
+
 // FilesService is the interface for Files-related service information
 type FilesService interface {
 	GetFile(path string) (io.ReadCloser, error)
@@ -24,16 +46,27 @@ type FilesService interface {
 
 // S3FilesService contains S3 files-related information
 type S3FilesService struct {
-	Client     *s3.S3
-	Bucket     string
-	extractor  files.Extractor
-	uploader   files.Uploader
-	downloader files.Downloader
+	Client *s3.S3
+	Bucket string
+	BasicFileService
+}
+
+type LocalFilesService struct {
+	BasicFileService
 }
 
 // NewFilesService creates a new service to handle files
 func NewFilesService(log *log.Entry) FilesService {
 	cfg := config.Get()
+	if cfg.Local {
+		return &LocalFilesService{
+			BasicFileService{
+				extractor:  files.NewExtractor(log),
+				uploader:   files.NewUploader(log),
+				downloader: files.NewDownloader(),
+			},
+		}
+	}
 	var sess *session.Session
 	if cfg.Debug {
 		sess = session.Must(session.NewSessionWithOptions(session.Options{
@@ -52,27 +85,24 @@ func NewFilesService(log *log.Entry) FilesService {
 	}
 	client := s3.New(sess)
 	return &S3FilesService{
-		Client:     client,
-		Bucket:     cfg.BucketName,
-		extractor:  files.NewExtractor(log),
-		uploader:   files.NewUploader(log),
-		downloader: files.NewDownloader(),
+		Client: client,
+		Bucket: cfg.BucketName,
+		BasicFileService: BasicFileService{
+			extractor:  files.NewExtractor(log),
+			uploader:   files.NewUploader(log),
+			downloader: files.NewDownloader(),
+		},
 	}
 }
 
-// GetExtractor retuns a new extractor for files
-func (s *S3FilesService) GetExtractor() files.Extractor {
-	return s.extractor
-}
-
-// GetUploader retuns a new uploader for files
-func (s *S3FilesService) GetUploader() files.Uploader {
-	return s.uploader
-}
-
-// GetDownloader retuns a new downloads for files
-func (s *S3FilesService) GetDownloader() files.Downloader {
-	return s.downloader
+// GetFile retuns the file given a path
+func (s *LocalFilesService) GetFile(path string) (io.ReadCloser, error) {
+	path = "/tmp/" + path
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
 }
 
 // GetFile retuns the file given a path

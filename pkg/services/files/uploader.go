@@ -3,6 +3,7 @@ package files
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -26,9 +27,9 @@ func NewUploader(log *log.Entry) Uploader {
 	cfg := config.Get()
 	var uploader Uploader
 	uploader = &FileUploader{
-		BaseDir: "./",
+		BaseDir: "/tmp",
 	}
-	if cfg.BucketName != "" {
+	if !cfg.Local {
 		uploader = newS3Uploader(log)
 	}
 	return uploader
@@ -49,8 +50,8 @@ type FileUploader struct {
 	BaseDir string
 }
 
-// UploadRepo is Basically a dummy function that returns the src, but allows offline
-// development without S3 and satisfies the interface
+// UploadRepo basically copies everything on the src to the local server path
+// Allowing offline development without S3 and satisfying the interface
 func (u *FileUploader) UploadRepo(src string, account string) (string, error) {
 	return src, nil
 }
@@ -58,7 +59,13 @@ func (u *FileUploader) UploadRepo(src string, account string) (string, error) {
 // UploadFile is Basically a dummy function that returns no error but allows offline
 // development without S3 and satisfies the interface
 func (u *FileUploader) UploadFile(fname string, uploadPath string) (string, error) {
-	return fname, nil
+	destfile := u.BaseDir + "image.iso"
+	cmd := exec.Command("cp", fname, destfile)
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
+	return destfile, nil
 }
 
 func newS3Uploader(log *log.Entry) *S3Uploader {
