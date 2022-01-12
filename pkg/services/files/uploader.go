@@ -56,8 +56,8 @@ func (u *FileUploader) UploadRepo(src string, account string) (string, error) {
 	return src, nil
 }
 
-// UploadFile is Basically a dummy function that returns no error but allows offline
-// development without S3 and satisfies the interface
+// UploadFile basically copies a file to the local server path
+// Allowing offline development without S3 and satisfying the interface
 func (u *FileUploader) UploadFile(fname string, uploadPath string) (string, error) {
 	destfile := u.BaseDir + "image.iso"
 	cmd := exec.Command("cp", fname, destfile)
