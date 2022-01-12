@@ -124,7 +124,7 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 
 	var uploadDetailsList []*uploadDetails
 
-	filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+	if err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			u.log.WithField("error", err.Error()).Error("Error opening file")
 		}
@@ -141,7 +141,10 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 		uploadDetailsList = append(uploadDetailsList, res)
 		count++
 		return nil
-	})
+	}); err != nil {
+		u.log.WithField("error", err.Error()).Error("Error walking directory")
+		return "", err
+	}
 
 	log.WithField("fileCount", len(uploadDetailsList)).Debug("Files are being uploaded....")
 
@@ -190,7 +193,10 @@ func (u *S3Uploader) UploadFile(fname string, uploadPath string) (string, error)
 		u.log.WithField("error", err.Error()).Error("Error uploading to AWS S3")
 		return "", err
 	}
-	f.Close()
+	if err := f.Close(); err != nil {
+		u.log.WithField("error", err.Error()).Error("Error closing file")
+		return "", err
+	}
 	region := *u.Client.Config.Region
 	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", u.Bucket, region, uploadPath)
 	u.log.WithField("s3URL", s3URL).Info("Upload file finished...")

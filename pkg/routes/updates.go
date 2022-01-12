@@ -135,7 +135,9 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 		}).Error("Error retrieving account")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			log.Error("Error while trying to encode ", &err)
+		}
 		return
 	}
 	// FIXME - need to sort out how to get this query to be against commit.account
@@ -146,7 +148,9 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 		}).Error("Error retrieving updates")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			log.Error("Error while trying to encode ", &err)
+		}
 		return
 	}
 
@@ -175,7 +179,9 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		}).Error("Error retrieving account")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			log.Error("Error while trying to encode ", &err)
+		}
 		return nil, err
 	}
 
@@ -270,7 +276,9 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 				services.Log.WithField("error", err.Error()).Error("Device was not found in our database")
 				err := errors.NewBadRequest(err.Error())
 				w.WriteHeader(err.GetStatus())
-				json.NewEncoder(w).Encode(&err)
+				if err := json.NewEncoder(w).Encode(&err); err != nil {
+					log.Error("Error while trying to encode ", &err)
+				}
 				return &models.UpdateTransaction{}, err
 			}
 			services.Log.WithFields(log.Fields{
@@ -311,7 +319,9 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 						services.Log.WithField("error", err.Error()).Error("Error returning old commit for this ostree checksum")
 						err := errors.NewBadRequest(err.Error())
 						w.WriteHeader(err.GetStatus())
-						json.NewEncoder(w).Encode(&err)
+						if err := json.NewEncoder(w).Encode(&err); err != nil {
+							services.Log.WithField("error", err.Error()).Error("Error encoding error")
+						}
 						return &models.UpdateTransaction{}, err
 					}
 				}
@@ -327,7 +337,9 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	if err := db.DB.Save(&update).Error; err != nil {
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error encoding error")
+		}
 		return nil, err
 	}
 	services.Log.WithField("updateID", update.ID).Info("Update has been created")

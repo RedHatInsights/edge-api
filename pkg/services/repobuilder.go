@@ -319,7 +319,10 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 		rb.log.WithField("error", err.Error()).Error("Error extracting tar file")
 		return err
 	}
-	tarFile.Close()
+	if err := tarFile.Close(); err != nil {
+		rb.log.WithField("error", err.Error()).Error("Error closing tar file")
+		return err
+	}
 	log.Debugf("Unpacking tarball finished::tarFileName: %#v", tarFileName)
 
 	err = os.Remove(filepath.Join(dest, tarFileName))

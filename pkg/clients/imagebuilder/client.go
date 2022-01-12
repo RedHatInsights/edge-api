@@ -133,7 +133,9 @@ type InstalledPackage struct {
 
 func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 	payloadBuf := new(bytes.Buffer)
-	json.NewEncoder(payloadBuf).Encode(composeReq)
+	if err := json.NewEncoder(payloadBuf).Encode(composeReq); err != nil {
+		return nil, err
+	}
 	cfg := config.Get()
 	url := fmt.Sprintf("%s/api/image-builder/v1/compose", cfg.ImageBuilderConfig.URL)
 	c.log.WithFields(log.Fields{

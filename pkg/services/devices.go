@@ -162,8 +162,14 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 	for _, upd := range images {
 		upd := upd // this will prevent implicit memory aliasing in the loop
 		db.DB.First(&upd.Commit, upd.CommitID)
-		db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages)
-		db.DB.Model(&upd).Association("Packages").Find(&upd.Packages)
+		if err := db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages); err != nil {
+			s.log.WithField("error", err.Error()).Error("Could not find installed packages")
+			return nil, err
+		}
+		if err := db.DB.Model(&upd).Association("Packages").Find(&upd.Packages); err != nil {
+			s.log.WithField("error", err.Error()).Error("Could not find packages")
+			return nil, err
+		}
 		var delta ImageUpdateAvailable
 		diff := getDiffOnUpdate(currentImage, upd)
 		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages

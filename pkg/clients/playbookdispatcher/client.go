@@ -48,7 +48,9 @@ type Response struct {
 // ExecuteDispatcher executes a DispatcherPayload, sending it to playbook dispatcher
 func (c *Client) ExecuteDispatcher(payload DispatcherPayload) ([]Response, error) {
 	payloadBuf := new(bytes.Buffer)
-	json.NewEncoder(payloadBuf).Encode([1]DispatcherPayload{payload})
+	if err := json.NewEncoder(payloadBuf).Encode([1]DispatcherPayload{payload}); err != nil {
+		return nil, err
+	}
 	url := c.url + "/internal/dispatch"
 	c.log.WithFields(log.Fields{
 		"url":     url,

@@ -373,7 +373,7 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 // GetImageStatusByID returns the image status.
 func GetImageStatusByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		json.NewEncoder(w).Encode(struct {
+		if err := json.NewEncoder(w).Encode(struct {
 			Status string
 			Name   string
 			ID     uint
@@ -381,7 +381,10 @@ func GetImageStatusByID(w http.ResponseWriter, r *http.Request) {
 			image.Status,
 			image.Name,
 			image.ID,
-		})
+		}); err != nil {
+			services := dependencies.ServicesFromContext(r.Context())
+			services.Log.Error("Error while trying to encode ", &err)
+		}
 	}
 }
 
@@ -483,7 +486,9 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 		var i *models.Image
 		db.DB.Joins("Commit").Joins("Installer").First(&i, id)
 		db.DB.First(&i.Commit, i.CommitID)
-		services.ImageService.CreateRepoForImage(i)
+		if _, err := services.ImageService.CreateRepoForImage(i); err != nil {
+			services.Log.WithField("error", err).Error("Failed to create repo")
+		}
 	}(image.ID, r.Context())
 
 	w.WriteHeader(http.StatusOK)
@@ -592,9 +597,11 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(CheckImageNameResponse{
+	if err := json.NewEncoder(w).Encode(CheckImageNameResponse{
 		ImageExists: imageExists,
-	})
+	}); err != nil {
+		services.Log.Error("Error while trying to encode ", &err)
+	}
 }
 
 // RetryCreateImage retries the image creation

@@ -151,7 +151,9 @@ func GetDevice(w http.ResponseWriter, r *http.Request) {
 	if _, ok := err.(*services.ImageNotFoundError); ok {
 		err := errors.NewNotFound("Could not find image")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			log.Error("Error while trying to encode ", &err)
+		}
 		return
 	}
 	if _, ok := err.(*services.DeviceNotFoundError); ok {

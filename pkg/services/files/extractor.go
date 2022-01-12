@@ -55,11 +55,15 @@ func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
 				if err == io.EOF {
 					break
 				}
-				file.Close()
+				if err := file.Close(); err != nil {
+					return err
+				}
 				return err
 			}
 		}
-		file.Close()
+		if err := file.Close(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
