@@ -69,10 +69,10 @@ COPY --from=edge-builder /src/github.com/RedHatInsights/edge-api/cmd/spec/openap
 # kickstart inject requirements
 COPY --from=edge-builder /src/github.com/RedHatInsights/edge-api/scripts/fleetkick.sh /usr/local/bin
 RUN chmod +x /usr/local/bin/fleetkick.sh
-COPY --from=edge-builder /src/github.com/RedHatInsights/edge-api/pkg/services/templateKickstart.ks /usr/local/etc
+COPY --from=edge-builder /src/github.com/RedHatInsights/edge-api/templates/templateKickstart.ks /usr/local/etc
 
 # template to playbook dispatcher
-COPY --from=edge-builder /src/github.com/RedHatInsights/edge-api/pkg/services/template_playbook/template_playbook_dispatcher_ostree_upgrade_payload.yml /usr/local/etc
+COPY --from=edge-builder /src/github.com/RedHatInsights/edge-api/templates/template_playbook_dispatcher_ostree_upgrade_payload.yml /usr/local/etc
 
 # interim FDO requirements
 ENV LD_LIBRARY_PATH /usr/local/lib
