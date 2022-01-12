@@ -305,7 +305,7 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 	}
 	rb.log = rb.log.WithField("commitID", c.ID)
 	rb.log.Info("Extracting repo")
-	tarFile, err := os.Open(filepath.Join(dest, tarFileName))
+	tarFile, err := os.Open(filepath.Clean(filepath.Join(dest, tarFileName)))
 	if err != nil {
 		rb.log.WithFields(log.Fields{
 			"error":    err.Error(),

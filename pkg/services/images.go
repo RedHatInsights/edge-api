@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"syscall"
@@ -522,7 +523,7 @@ func (s *ImageService) downloadISO(isoName string, url string) error {
 	defer iso.Close()
 
 	s.log.WithField("url", url).Debug("Downloading iso")
-	res, err := http.Get(url)
+	res, err := http.Get(url) // #nosec G107
 	if err != nil {
 		return err
 	}
@@ -661,7 +662,7 @@ func (s *ImageService) exeInjectionScript(kickstart string, image string, imageI
 func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) error {
 	s.log.WithField("isoPath", isoPath).Info("Calculating sha256 checksum for ISO")
 
-	fh, err := os.Open(isoPath)
+	fh, err := os.Open(filepath.Clean(isoPath))
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error opening ISO file")
 		return err

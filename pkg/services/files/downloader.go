@@ -22,7 +22,7 @@ type HTTPDownloader struct{}
 // DownloadToPath download function that puts the source_url into the destination_path on the local filesystem
 func (d *HTTPDownloader) DownloadToPath(sourceURL string, destinationPath string) error {
 
-	resp, err := http.Get(sourceURL)
+	resp, err := http.Get(sourceURL) // #nosec G107
 	if err != nil {
 		return err
 	}
