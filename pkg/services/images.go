@@ -636,13 +636,18 @@ func (s *ImageService) CheckImageName(name, account string) (bool, error) {
 func (s *ImageService) exeInjectionScript(kickstart string, image string, imageID uint) error {
 	fleetBashScript := "/usr/local/bin/fleetkick.sh"
 	workDir := fmt.Sprintf("/var/tmp/workdir%d", imageID)
-	err := os.Mkdir(workDir, 0755)
+	err := os.Mkdir(workDir, 0750)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error giving permissions to execute fleetkick")
 		return err
 	}
 
-	cmd := exec.Command(fleetBashScript, kickstart, image, image, workDir)
+	cmd := &exec.Cmd{
+		Path: fleetBashScript,
+		Args: []string{
+			kickstart, image, image, workDir,
+		},
+	}
 	output, err := cmd.Output()
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error executing fleetkick")
