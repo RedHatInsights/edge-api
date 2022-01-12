@@ -492,7 +492,6 @@ type CheckImageNameResponse struct {
 // CheckImageName verifies that ImageName exists
 func CheckImageName(w http.ResponseWriter, r *http.Request) {
 	services := dependencies.ServicesFromContext(r.Context())
-	services.Log.Debug("Checking image name")
 	var image *models.Image
 	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
 		services.Log.WithField("error", err.Error()).Debug("Bad request")

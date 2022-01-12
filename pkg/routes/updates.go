@@ -185,7 +185,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		w.WriteHeader(err.GetStatus())
 		return nil, err
 	}
-	client := inventory.InitClient(r.Context())
+	client := inventory.InitClient(r.Context(), log.NewEntry(log.StandardLogger()))
 	var inventory inventory.Response
 	// TODO: Implement update by tag
 	// if updateJSON.Tag != "" {

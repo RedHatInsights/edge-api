@@ -23,7 +23,7 @@ type DeviceServiceInterface interface {
 func NewDeviceService(ctx context.Context, log *log.Entry) DeviceServiceInterface {
 	return &DeviceService{
 		updateService: NewUpdateService(ctx, log),
-		inventory:     inventory.InitClient(ctx),
+		inventory:     inventory.InitClient(ctx, log),
 		Service:       Service{ctx: ctx, log: log.WithField("service", "image")},
 	}
 }

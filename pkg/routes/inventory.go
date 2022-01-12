@@ -10,6 +10,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	log "github.com/sirupsen/logrus"
 )
 
 // MakeInventoryRouter adds support for operations on inventory
@@ -45,7 +46,7 @@ func GetInventory(w http.ResponseWriter, r *http.Request) {
 	param.HostnameOrID = r.URL.Query().Get("hostname_or_id")
 	param.DeviceStatus = r.URL.Query().Get("device_status")
 
-	client := inventory.InitClient(r.Context())
+	client := inventory.InitClient(r.Context(), log.NewEntry(log.StandardLogger()))
 
 	var InventoryData InventoryData
 	var results []InventoryResponse
