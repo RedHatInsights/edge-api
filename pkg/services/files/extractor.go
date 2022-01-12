@@ -44,10 +44,15 @@ func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
 		if err != nil {
 			return err
 		}
-		_, err = io.Copy(file, tarReader)
-		if err != nil {
-			file.Close()
-			return err
+		for {
+			_, err = io.CopyN(file, tarReader, 1024*1024)
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				file.Close()
+				return err
+			}
 		}
 		file.Close()
 	}
