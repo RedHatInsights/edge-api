@@ -1,6 +1,7 @@
 package files
 
 import (
+	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"os"
@@ -32,7 +33,11 @@ func (d *HTTPDownloader) DownloadToPath(sourceURL string, destinationPath string
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func() {
+		if err := out.Close(); err != nil {
+			log.WithField("error", err.Error()).Error("Error closing file")
+		}
+	}()
 
 	_, err = io.Copy(out, resp.Body)
 	return err
