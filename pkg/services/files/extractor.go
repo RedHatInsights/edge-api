@@ -2,9 +2,11 @@ package files
 
 import (
 	"archive/tar"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Extractor defines methods to extract files to path
@@ -32,7 +34,10 @@ func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
 			return err
 		}
 
-		path := filepath.Join(dst, header.Name)
+		path, err := sanitizeExtractPath(header.Name, dst)
+		if err != nil {
+			return err
+		}
 		info := header.FileInfo()
 		if info.IsDir() {
 			if err = os.MkdirAll(path, info.Mode()); err != nil {
@@ -57,4 +62,12 @@ func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
 		file.Close()
 	}
 	return nil
+}
+
+func sanitizeExtractPath(filePath string, destination string) (destpath string, err error) {
+	destpath = filepath.Join(destination, filePath)
+	if !strings.HasPrefix(destpath, filepath.Clean(destination)+string(os.PathSeparator)) {
+		err = fmt.Errorf("%s: illegal file path", filePath)
+	}
+	return
 }
