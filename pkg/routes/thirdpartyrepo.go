@@ -63,7 +63,7 @@ func getThirdPartyRepo(w http.ResponseWriter, r *http.Request) *models.ThirdPart
 		err := errors.NewBadRequest("Failed getting third party repo from context")
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.Error("Error while trying to encode ", &err)
+			log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return nil
 	}
@@ -87,7 +87,7 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.Error("Error while trying to encode ", &err)
+			log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return
 	}
@@ -99,13 +99,13 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		err.SetTitle("failed creating third party repository")
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.Error("Error while trying to encode ", &err)
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return
 	}
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(&thirdPartyRepo); err != nil {
-		services.Log.Error("Error while trying to encode ", &thirdPartyRepo)
+		services.Log.WithField("error", thirdPartyRepo).Error("Error while trying to encode")
 	}
 
 }
@@ -120,7 +120,7 @@ func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRe
 		err := errors.NewBadRequest("invalid JSON request")
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.Error("Error while trying to encode ", &err)
+			log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return nil, err
 	}
@@ -150,7 +150,7 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.Error("Error while trying to encode ", &err)
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return
 	}
@@ -161,7 +161,7 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		countErr := errors.NewInternalServerError()
 		w.WriteHeader(countErr.GetStatus())
 		if err := json.NewEncoder(w).Encode(&countErr); err != nil {
-			services.Log.Error("Error while trying to encode ", &countErr)
+			services.Log.WithField("error", countErr.Error()).Error("Error while trying to encode")
 		}
 		return
 	}
@@ -177,7 +177,7 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 			err := errors.NewBadRequest(err.Error())
 			w.WriteHeader(err.GetStatus())
 			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.Error("Error while trying to encode ", &err)
+				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 			}
 			return
 		}
@@ -187,7 +187,7 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewBadRequest("this is not a valid filter. filter must be in name.value")
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.Error("Error while trying to encode ", &err)
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return
 	}
@@ -198,12 +198,12 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.Error("Error while trying to encode ", &err)
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 	}
 
 	if err := json.NewEncoder(w).Encode(map[string]interface{}{"data": &tprepo, "count": count}); err != nil {
-		services.Log.Error("Error while trying to encode ", map[string]interface{}{"data": &tprepo, "count": count})
+		services.Log.WithField("error", map[string]interface{}{"data": &tprepo, "count": count}).Error("Error while trying to encode")
 	}
 
 }
@@ -222,7 +222,7 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 				w.WriteHeader(err.GetStatus())
 				if err := json.NewEncoder(w).Encode(&err); err != nil {
 					services := dependencies.ServicesFromContext(r.Context())
-					services.Log.Error("Error while trying to encode ", &err)
+					services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 				}
 				return
 			}
@@ -239,7 +239,7 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 				}
 				w.WriteHeader(responseErr.GetStatus())
 				if err := json.NewEncoder(w).Encode(&responseErr); err != nil {
-					s.Log.Error("Error while trying to encode ", &responseErr)
+					s.Log.WithField("error", responseErr.Error()).Error("Error while trying to encode")
 				}
 				return
 			}
@@ -252,7 +252,7 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 				err := errors.NewBadRequest(err.Error())
 				w.WriteHeader(err.GetStatus())
 				if err := json.NewEncoder(w).Encode(&err); err != nil {
-					s.Log.Error("Error while trying to encode ", &err)
+					s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 				}
 				return
 			}
@@ -263,7 +263,7 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 			err := errors.NewBadRequest("Third Party Repo ID required")
 			w.WriteHeader(err.GetStatus())
 			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				s.Log.Error("Error while trying to encode ", &err)
+				s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 			}
 			return
 		}
@@ -274,7 +274,8 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 func GetThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 	if tprepo := getThirdPartyRepo(w, r); tprepo != nil {
 		if err := json.NewEncoder(w).Encode(tprepo); err != nil {
-			log.Error("Error while trying to encode ", tprepo)
+			services := dependencies.ServicesFromContext(r.Context())
+			services.Log.WithField("error", tprepo).Error("Error while trying to encode")
 		}
 	}
 }
@@ -296,7 +297,7 @@ func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 			err.SetTitle("failed updating third party repository")
 			w.WriteHeader(err.GetStatus())
 			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.Error("Error while trying to encode ", &err)
+				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 			}
 			return
 		}
@@ -306,7 +307,7 @@ func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 			services.Log.WithField("error", err.Error()).Error("Error getting third party repository")
 		}
 		if err := json.NewEncoder(w).Encode(repoDetails); err != nil {
-			services.Log.Error("Error while trying to encode ", repoDetails)
+			services.Log.WithField("error", repoDetails).Error("Error while trying to encode")
 		}
 	}
 }
@@ -329,13 +330,13 @@ func DeleteThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 			s.Log.WithField("error", err.Error()).Error("Error deleting third party repository")
 			w.WriteHeader(responseErr.GetStatus())
 			if err := json.NewEncoder(w).Encode(&responseErr); err != nil {
-				s.Log.Error("Error while trying to encode ", &responseErr)
+				s.Log.WithField("error", responseErr.Error()).Error("Error while trying to encode")
 			}
 			return
 		}
 		_ = tprepo
 		if err := json.NewEncoder(w).Encode(&tprepo); err != nil {
-			s.Log.Error("Error while trying to encode ", &tprepo)
+			s.Log.WithField("error", tprepo).Error("Error while trying to encode")
 		}
 	}
 }
@@ -365,7 +366,7 @@ func validateGetAllThirdPartyRepoFilterParams(next http.Handler) http.Handler {
 		w.WriteHeader(http.StatusBadRequest)
 		if err := json.NewEncoder(w).Encode(&errs); err != nil {
 			services := dependencies.ServicesFromContext(r.Context())
-			services.Log.Error("Error while trying to encode ", &errs)
+			services.Log.WithField("error", errs).Error("Error while trying to encode")
 		}
 	})
 }

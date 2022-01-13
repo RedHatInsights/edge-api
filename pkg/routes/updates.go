@@ -52,7 +52,7 @@ func UpdateCtx(next http.Handler) http.Handler {
 			err := errors.NewBadRequest(err.Error())
 			w.WriteHeader(err.GetStatus())
 			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				log.Error("Error while trying to encode ", &err)
+				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 			}
 			return
 		}
@@ -62,7 +62,7 @@ func UpdateCtx(next http.Handler) http.Handler {
 			err := errors.NewBadRequest("UpdateTransactionID can't be empty")
 			w.WriteHeader(err.GetStatus())
 			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				log.Error("Error while trying to encode ", &err)
+				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 			}
 			return
 		}
@@ -71,7 +71,7 @@ func UpdateCtx(next http.Handler) http.Handler {
 			err := errors.NewBadRequest(err.Error())
 			w.WriteHeader(err.GetStatus())
 			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				log.Error("Error while trying to encode ", &err)
+				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 			}
 			return
 		}
@@ -83,7 +83,7 @@ func UpdateCtx(next http.Handler) http.Handler {
 			err := errors.NewInternalServerError()
 			w.WriteHeader(err.GetStatus())
 			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				log.Error("Error while trying to encode ", &err)
+				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 			}
 			return
 		}
@@ -106,7 +106,7 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.Error("Error while trying to encode ", &err)
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return
 	}
@@ -117,7 +117,7 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.Error("Error while trying to encode ", &err)
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return
 	}
@@ -136,7 +136,7 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.Error("Error while trying to encode ", &err)
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return
 	}
@@ -149,13 +149,13 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.Error("Error while trying to encode ", &err)
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return
 	}
 
 	if err := json.NewEncoder(w).Encode(&updates); err != nil {
-		log.Error("Error while trying to encode ", &updates)
+		services.Log.WithField("error", updates).Error("Error while trying to encode")
 	}
 }
 
@@ -180,7 +180,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.Error("Error while trying to encode ", &err)
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return nil, err
 	}
@@ -277,7 +277,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 				err := errors.NewBadRequest(err.Error())
 				w.WriteHeader(err.GetStatus())
 				if err := json.NewEncoder(w).Encode(&err); err != nil {
-					log.Error("Error while trying to encode ", &err)
+					services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 				}
 				return &models.UpdateTransaction{}, err
 			}
@@ -381,7 +381,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	go services.UpdateService.CreateUpdate(update.ID)
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(update); err != nil {
-		log.Error("Error while trying to encode ", update)
+		services.Log.WithField("error", update).Error("Error while trying to encode")
 	}
 
 }
@@ -394,7 +394,8 @@ func GetUpdateByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := json.NewEncoder(w).Encode(update); err != nil {
-		log.Error("Error while trying to encode ", update)
+		services := dependencies.ServicesFromContext(r.Context())
+		services.Log.WithField("error", update).Error("Error while trying to encode")
 	}
 }
 

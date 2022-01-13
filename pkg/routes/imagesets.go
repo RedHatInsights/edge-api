@@ -94,7 +94,7 @@ func ImageSetCtx(next http.Handler) http.Handler {
 			err := errors.NewBadRequest(err.Error())
 			w.WriteHeader(err.GetStatus())
 			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				log.Error("Error while trying to encode ", &err)
+				log.WithField("error", err.Error()).Error("Error while trying to encode")
 			}
 			return
 		}
@@ -105,7 +105,7 @@ func ImageSetCtx(next http.Handler) http.Handler {
 				err := errors.NewBadRequest(err.Error())
 				w.WriteHeader(err.GetStatus())
 				if err := json.NewEncoder(w).Encode(&err); err != nil {
-					log.Error("Error while trying to encode ", &err)
+					log.WithField("error", err.Error()).Error("Error while trying to encode")
 				}
 				return
 			}
@@ -115,7 +115,7 @@ func ImageSetCtx(next http.Handler) http.Handler {
 				err := errors.NewNotFound(result.Error.Error())
 				w.WriteHeader(err.GetStatus())
 				if err := json.NewEncoder(w).Encode(&err); err != nil {
-					log.Error("Error while trying to encode ", &err)
+					log.WithField("error", err.Error()).Error("Error while trying to encode")
 				}
 				return
 			}
@@ -151,7 +151,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.Error("Error while trying to encode ", &err)
+			log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return
 	}
@@ -164,7 +164,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		countErr := errors.NewInternalServerError()
 		w.WriteHeader(countErr.GetStatus())
 		if err := json.NewEncoder(w).Encode(&countErr); err != nil {
-			log.Error("Error while trying to encode ", &countErr)
+			log.WithField("error", countErr.Error()).Error("Error while trying to encode")
 		}
 		return
 	}
@@ -187,7 +187,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.Error("Error while trying to encode ", &err)
+			log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return
 	}
@@ -213,7 +213,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			s.Log.Error("Error while trying to encode ", &err)
+			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return
 	}
@@ -222,10 +222,10 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		Count: count,
 		Data:  imageSetInfo,
 	}); err != nil {
-		s.Log.Error("Error while trying to encode ", &common.EdgeAPIPaginatedResponse{
+		s.Log.WithField("error", &common.EdgeAPIPaginatedResponse{
 			Count: count,
 			Data:  imageSetInfo,
-		})
+		}).Error("Error while trying to encode")
 	}
 }
 
@@ -252,7 +252,7 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.Error("Error while trying to encode ", &err)
+			log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return
 	}
@@ -262,7 +262,7 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewBadRequest("Must pass image set id")
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.Error("Error while trying to encode ", &err)
+			log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 	}
 	result := imageDetailFilters(r, db.DB.Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
@@ -274,7 +274,7 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewBadRequest("Error to filter images")
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.Error("Error while trying to encode ", &err)
+			log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 	}
 
@@ -292,10 +292,9 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		Data:  &details,
 		Count: int64(len(images)),
 	}); err != nil {
-		log.Error("Error while trying to encode ", &common.EdgeAPIPaginatedResponse{
-			Data:  &details,
+		s.Log.WithField("error", &common.EdgeAPIPaginatedResponse{Data: &details,
 			Count: int64(len(images)),
-		})
+		}).Error("Error while trying to encode")
 	}
 }
 
@@ -326,7 +325,7 @@ func validateFilterParams(next http.Handler) http.Handler {
 		}
 		w.WriteHeader(http.StatusBadRequest)
 		if err := json.NewEncoder(w).Encode(&errs); err != nil {
-			log.Error("Error while trying to encode ", &errs)
+			log.WithField("error", errs).Error("Error while trying to encode")
 		}
 	})
 }

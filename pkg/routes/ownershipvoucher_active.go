@@ -50,7 +50,7 @@ func CreateOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 			services.Log.WithField("error", err.Error()).Error("Couldn't upload ownership vouchers due to a bad request")
 			w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
 			if err := json.NewEncoder(w).Encode(resp); err != nil {
-				services.Log.Error("Error while trying to encode ", resp)
+				services.Log.WithField("error", resp).Error("Error while trying to encode")
 			}
 			return
 		default:
@@ -61,7 +61,7 @@ func CreateOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		services.Log.Error("Error while trying to encode ", resp)
+		services.Log.WithField("error", resp).Error("Error while trying to encode")
 	}
 }
 
@@ -92,7 +92,7 @@ func DeleteOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 			services.Log.WithField("error", err.Error()).Error("Couldn't delete ownership vouchers due to a bad request")
 			w.WriteHeader(errors.NewBadRequest(err.Error()).GetStatus())
 			if err := json.NewEncoder(w).Encode(resp); err != nil {
-				services.Log.Error("Error while trying to encode ", resp)
+				services.Log.WithField("error", resp).Error("Error while trying to encode")
 			}
 			return
 		default:
@@ -103,7 +103,7 @@ func DeleteOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		services.Log.Error("Error while trying to encode ", resp)
+		services.Log.WithField("error", resp).Error("Error while trying to encode")
 	}
 }
 
@@ -126,7 +126,7 @@ func ParseOwnershipVouchers(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		services.Log.Error("Error while trying to encode ", resp)
+		services.Log.WithField("error", resp).Error("Error while trying to encode")
 	}
 }
 
@@ -161,13 +161,13 @@ func ConnectDevices(w http.ResponseWriter, r *http.Request) {
 		resp := map[string]interface{}{"error_code": "unknown_device"}
 		resp["error_details"] = map[string]interface{}{"unknown": unknownDevices}
 		if err := json.NewEncoder(w).Encode(resp); err != nil {
-			services.Log.Error("Error while trying to encode ", resp)
+			services.Log.WithField("error", resp).Error("Error while trying to encode")
 		}
 		return
 	}
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		services.Log.Error("Error while trying to encode ", resp)
+		services.Log.WithField("error", resp).Error("Error while trying to encode")
 	}
 }
 
@@ -203,9 +203,9 @@ func validateMiddleware(next http.Handler) http.Handler {
 		services := dependencies.ServicesFromContext(r.Context())
 		if services.OwnershipVoucherService == nil {
 			w.WriteHeader(errors.NewInternalServerError().GetStatus())
-			if err := json.NewEncoder(w).Encode(interface{}("Internal server error")); err != nil {
+			if err := json.NewEncoder(w).Encode(errors.NewInternalServerError()); err != nil {
 				services := dependencies.ServicesFromContext(r.Context())
-				services.Log.Error("Error while trying to encode ", interface{}("Internal server error"))
+				services.Log.WithField("error", errors.NewInternalServerError()).Error("Error while trying to encode")
 			}
 			return
 		}
