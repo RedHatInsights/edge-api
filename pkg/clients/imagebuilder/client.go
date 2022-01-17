@@ -15,6 +15,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 )
 
 // ClientInterface is an Interface to make request to ImageBuilder
@@ -51,7 +52,7 @@ type Customizations struct {
 	PayloadRepositories *[]Repository `json:"payload_repositories,omitempty"`
 }
 
-// Respository is the record of Third Party Repository
+// Repository is the record of Third Party Repository
 type Repository struct {
 	Baseurl    *string `json:"baseurl,omitempty"`
 	CheckGpg   *bool   `json:"check_gpg,omitempty"`
@@ -199,9 +200,7 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 
 // ComposeCommit composes a Commit on ImageBuilder
 func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
-	var payload_repo Repository
-	var err error
-	_, err = c.GetThirdPartyUrl(image)
+	payloadURL, err := c.GetThirdPartyURL(image)
 	if err != nil {
 		return nil, errors.New("error getting information on third Party repository")
 
@@ -212,7 +211,7 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 			Packages: image.GetPackagesList(),
 			PayloadRepositories: &[]Repository{
 				{
-					Baseurl: payload_repo.Baseurl,
+					Baseurl: &payloadURL,
 				},
 			},
 		},
@@ -436,15 +435,17 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	return image, nil
 }
 
-// GetThirdParyUrl finds the url of Third Party Repository using the name
-func (c *Client) GetThirdPartyUrl(image *models.Image) (string, error) {
+// GetThirdPartyURL finds the url of Third Party Repository using the name
+func (c *Client) GetThirdPartyURL(image *models.Image) (string, error) {
 	var thirdpartyrepo *models.ThirdPartyRepo
-	tprepoUrl := db.DB.Model(&models.ThirdPartyRepo{}).Select("url").Where("name = ?", image.ThirdPartyRepositoryName).Find(&thirdpartyrepo)
-	if tprepoUrl.Error != nil {
-		log.Error(tprepoUrl.Error)
+	account, err := common.GetAccountFromContext(c.ctx)
+	if err != nil {
+		c.log.WithField("error", err).Error("Error retrieving account")
+		return err.Error(), nil
 	}
-	var payload_repo Repository
-	payload_repo.Baseurl = &thirdpartyrepo.URL
+	tprepoURL := db.DB.Model(&models.ThirdPartyRepo{}).Select("url").Where("account = ? and id = ?", account, image.ThirdPartyRepositoryID).Find(&thirdpartyrepo)
+	if tprepoURL.Error != nil {
+		log.Error(tprepoURL.Error)
+	}
 	return thirdpartyrepo.URL, nil
-
 }
