@@ -2636,7 +2636,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v1.Image"
+                $ref: "#/components/schemas/v1.ImageDetail"
           description: OK
         "400":
           content:
@@ -2919,7 +2919,7 @@ paths:
           description: There was an internal server error.
   /updates/device/{DeviceUUID}:
     get:
-      operationId: GetUpdateStatusForDevice
+      operationId: GetDeviceByUUID
       parameters:
         - name: DeviceUUID
           in: path
