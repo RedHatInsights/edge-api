@@ -47,7 +47,7 @@ var imageSetFilters = common.ComposeFilters(
 		QueryParam: "name",
 		DBField:    "image_sets.name",
 	}),
-	common.SortFilterHandler("images", "created_at", "DESC"),
+	common.SortFilterHandler("image_sets", "created_at", "DESC"),
 )
 
 var imageDetailFilters = common.ComposeFilters(
