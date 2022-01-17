@@ -14,122 +14,57 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes"
 )
 
+type EdgeAPISchemaGen struct {
+	Components openapi3.Components
+}
+
+func (s *EdgeAPISchemaGen) Init() {
+	s.Components = openapi3.NewComponents()
+	s.Components.Schemas = make(map[string]*openapi3.SchemaRef)
+}
+
+func (s *EdgeAPISchemaGen) AddSchema(name string, model interface{}) {
+	schema, err := openapi3gen.NewSchemaRefForValue(model, s.Components.Schemas)
+	if err != nil {
+		panic(err)
+	}
+	s.Components.Schemas[name] = schema
+}
+
 // Used to generate openapi yaml file for components.
 func main() {
-	components := openapi3.NewComponents()
-	components.Schemas = make(map[string]*openapi3.SchemaRef)
-
-	ovData, err := openapi3gen.NewSchemaRefForValue(&[]models.OwnershipVoucherData{}, components.Schemas)
-	if err != nil {
-		panic(err)
-	}
-	components.Schemas["v1.OwnershipVoucherData"] = ovData
-
-	image, err := openapi3gen.NewSchemaRefForValue(&models.Image{}, components.Schemas)
-	if err != nil {
-		panic(err)
-	}
-	components.Schemas["v1.Image"] = image
-
-	imageDetail, err := openapi3gen.NewSchemaRefForValue(&routes.ImageDetail{}, components.Schemas)
-	if err != nil {
-		panic(err)
-	}
-	components.Schemas["v1.ImageDetail"] = imageDetail
-
-	ImageSetImagePackages, err := openapi3gen.NewSchemaRefForValue(&routes.ImageSetImagePackages{}, components.Schemas)
-	if err != nil {
-		panic(err)
-	}
-	components.Schemas["v1.ImageSetImagePackages"] = ImageSetImagePackages
-
-	ImageSetInstallerURL, err := openapi3gen.NewSchemaRefForValue(&routes.ImageSetInstallerURL{}, components.Schemas)
-	if err != nil {
-		panic(err)
-	}
-	components.Schemas["v1.ImageSetInstallerURL"] = ImageSetInstallerURL
-
-	repo, err := openapi3gen.NewSchemaRefForValue(&models.Repo{}, components.Schemas)
-	if err != nil {
-		panic(err)
-	}
-	components.Schemas["v1.Repo"] = repo
-
-	updates, err := openapi3gen.NewSchemaRefForValue(&routes.UpdatePostJSON{}, components.Schemas)
-	if err != nil {
-		panic(err)
-	}
-	components.Schemas["v1.AddUpdate"] = updates
-
-	updateTransaction, err := openapi3gen.NewSchemaRefForValue(&models.UpdateTransaction{}, components.Schemas)
-	if err != nil {
-		panic(err)
-	}
-	components.Schemas["v1.UpdateTransaction"] = updateTransaction
-
-	deviceDetails, err := openapi3gen.NewSchemaRefForValue(&models.DeviceDetails{}, components.Schemas)
-	if err != nil {
-		panic(err)
-	}
-	components.Schemas["v1.DeviceDetails"] = deviceDetails
-	device, err := openapi3gen.NewSchemaRefForValue(&models.Device{}, components.Schemas)
-	if err != nil {
-		panic(err)
-	}
-	components.Schemas["v1.Device"] = device
-
-	imageSetDetails, err := openapi3gen.NewSchemaRefForValue(&models.ImageSet{}, components.Schemas)
-	if err != nil {
-		panic(err)
-	}
-	components.Schemas["v1.ImageSetDetails"] = imageSetDetails
-
-	checkImageResponse, err := openapi3gen.NewSchemaRefForValue(&routes.CheckImageNameResponse{}, components.Schemas)
-	if err != nil {
-		panic(err)
-	}
-	components.Schemas["v1.CheckImageResponse"] = checkImageResponse
-
-	var checkNameBool bool
-	boolSchema, err := openapi3gen.NewSchemaRefForValue(checkNameBool, components.Schemas)
-	if err != nil {
-		panic(err)
-	}
-	components.Schemas["v1.bool"] = boolSchema
-
-	internalServerError, err := openapi3gen.NewSchemaRefForValue(&errors.InternalServerError{}, components.Schemas)
-	if err != nil {
-		panic(err)
-	}
-	components.Schemas["v1.InternalServerError"] = internalServerError
-
-	badRequest, err := openapi3gen.NewSchemaRefForValue(&errors.BadRequest{}, components.Schemas)
-	if err != nil {
-		panic(err)
-	}
-	components.Schemas["v1.BadRequest"] = badRequest
-
-	notFound, err := openapi3gen.NewSchemaRefForValue(&errors.NotFound{}, components.Schemas)
-	if err != nil {
-		panic(err)
-	}
-	components.Schemas["v1.NotFound"] = notFound
-
-	thirdpartyrepo, err := openapi3gen.NewSchemaRefForValue(&models.ThirdPartyRepo{}, components.Schemas)
-	if err != nil {
-		panic(err)
-	}
-	components.Schemas["v1.CreateThirdPartyRepo"] = thirdpartyrepo
+	gen := EdgeAPISchemaGen{}
+	gen.Init()
+	gen.AddSchema("v1.OwnershipVoucherData", &[]models.OwnershipVoucherData{})
+	gen.AddSchema("v1.Image", &models.Image{})
+	gen.AddSchema("v1.PackageDiff", &models.Image{})
+	gen.AddSchema("v1.ImageDetail", &routes.ImageDetail{})
+	gen.AddSchema("v1.ImageSetImagePackages", &routes.ImageSetImagePackages{})
+	gen.AddSchema("v1.ImageSetInstallerURL", &routes.ImageSetInstallerURL{})
+	gen.AddSchema("v1.Repo", &models.Repo{})
+	gen.AddSchema("v1.AddUpdate", &routes.UpdatePostJSON{})
+	gen.AddSchema("v1.UpdateTransaction", &models.UpdateTransaction{})
+	gen.AddSchema("v1.DeviceDetails", &models.DeviceDetails{})
+	gen.AddSchema("v1.Device", &models.Device{})
+	gen.AddSchema("v1.ImageSet", &models.ImageSet{})
+	gen.AddSchema("v1.Device", &models.Device{})
+	gen.AddSchema("v1.CheckImageResponse", &routes.CheckImageNameResponse{})
+	var booleanResponse bool
+	gen.AddSchema("v1.bool", booleanResponse)
+	gen.AddSchema("v1.InternalServerError", &errors.InternalServerError{})
+	gen.AddSchema("v1.BadRequest", &errors.BadRequest{})
+	gen.AddSchema("v1.NotFound", &errors.NotFound{})
+	gen.AddSchema("v1.ThirdPartyRepo", &models.ThirdPartyRepo{})
 
 	type Swagger struct {
 		Components openapi3.Components `json:"components,omitempty" yaml:"components,omitempty"`
 	}
 
 	swagger := Swagger{}
-	swagger.Components = components
+	swagger.Components = gen.Components
 
 	b := &bytes.Buffer{}
-	err = json.NewEncoder(b).Encode(swagger)
+	err := json.NewEncoder(b).Encode(swagger)
 	checkErr(err)
 
 	schema, err := yaml.JSONToYAML(b.Bytes())

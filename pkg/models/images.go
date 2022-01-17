@@ -38,12 +38,12 @@ type Image struct {
 
 // ImageUpdateAvailable contains image and differences between current and available commits
 type ImageUpdateAvailable struct {
-	Image       Image     `json:"Image"`
-	PackageDiff DeltaDiff `json:"PackageDiff"`
+	Image       Image       `json:"Image"`
+	PackageDiff PackageDiff `json:"PackageDiff"`
 }
 
-// DeltaDiff provides package difference details between current and available commits
-type DeltaDiff struct {
+// PackageDiff provides package difference details between current and available commits
+type PackageDiff struct {
 	Added    []InstalledPackage `json:"Added"`
 	Removed  []InstalledPackage `json:"Removed"`
 	Upgraded []InstalledPackage `json:"Upgraded"`
