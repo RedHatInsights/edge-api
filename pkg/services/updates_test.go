@@ -210,7 +210,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		Context("when upload works", func() {
 			It("to build the template properly", func() {
 				cfg := config.Get()
-				cfg.TemplatesPath = "./template_playbook/"
+				cfg.TemplatesPath = "./../../templates/"
 				t := services.TemplateRemoteInfo{
 					UpdateTransactionID: 1000,
 					RemoteName:          "remote-name",
@@ -231,7 +231,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", account, fname)).Do(func(x, y string) {
 					actual, err := ioutil.ReadFile(x)
 					Expect(err).ToNot(HaveOccurred())
-					expected, err := ioutil.ReadFile("./template_playbook/template_playbook_dispatcher_ostree_upgrade_payload.test.yml")
+					expected, err := ioutil.ReadFile("./../../templates/template_playbook_dispatcher_ostree_upgrade_payload.test.yml")
 					Expect(err).ToNot(HaveOccurred())
 					Expect(string(actual)).To(BeEquivalentTo(string(expected)))
 				}).Return("url", nil)
