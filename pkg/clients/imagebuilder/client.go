@@ -394,6 +394,7 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	var metadata Metadata
 	if err := json.Unmarshal(respBody, &metadata); err != nil {
 		c.log.Error("Error while trying to unmarshal ", metadata)
+		return nil, err
 	}
 	for n := range metadata.InstalledPackages {
 		pkg := models.InstalledPackage{
