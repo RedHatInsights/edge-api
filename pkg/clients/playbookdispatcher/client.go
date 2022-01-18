@@ -91,6 +91,7 @@ func (c *Client) ExecuteDispatcher(payload DispatcherPayload) ([]Response, error
 	var playbookResponse []Response
 	if err := json.Unmarshal([]byte(body), &playbookResponse); err != nil {
 		c.log.Error("Error while trying to unmarshal ", &playbookResponse)
+		return nil, err
 	}
 	return playbookResponse, nil
 }
