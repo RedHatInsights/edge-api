@@ -36,6 +36,26 @@ type Image struct {
 	Packages     []Package      `json:"Packages" gorm:"many2many:images_packages;"`
 }
 
+// ImageUpdateAvailable contains image and differences between current and available commits
+type ImageUpdateAvailable struct {
+	Image       Image     `json:"Image"`
+	PackageDiff DeltaDiff `json:"PackageDiff"`
+}
+
+// DeltaDiff provides package difference details between current and available commits
+type DeltaDiff struct {
+	Added    []InstalledPackage `json:"Added"`
+	Removed  []InstalledPackage `json:"Removed"`
+	Upgraded []InstalledPackage `json:"Upgraded"`
+}
+
+// ImageInfo contains Image with updates available and rollback image
+type ImageInfo struct {
+	Image            Image                   `json:"Image"`
+	UpdatesAvailable *[]ImageUpdateAvailable `json:"UpdatesAvailable,omitempty"`
+	Rollback         *Image                  `json:"RollbackImage,omitempty"`
+}
+
 const (
 	// DistributionCantBeNilMessage is the error message when a distribution is nil
 	DistributionCantBeNilMessage = "distribution can't be empty"

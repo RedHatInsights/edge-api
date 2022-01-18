@@ -9,7 +9,6 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	models "github.com/redhatinsights/edge-api/pkg/models"
-	services "github.com/redhatinsights/edge-api/pkg/services"
 )
 
 // MockDeviceServiceInterface is a mock of DeviceServiceInterface interface.
@@ -66,10 +65,10 @@ func (mr *MockDeviceServiceInterfaceMockRecorder) GetDeviceByUUID(deviceUUID int
 }
 
 // GetDeviceDetails mocks base method.
-func (m *MockDeviceServiceInterface) GetDeviceDetails(deviceUUID string) (*services.DeviceDetails, error) {
+func (m *MockDeviceServiceInterface) GetDeviceDetails(deviceUUID string) (*models.DeviceDetails, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDeviceDetails", deviceUUID)
-	ret0, _ := ret[0].(*services.DeviceDetails)
+	ret0, _ := ret[0].(*models.DeviceDetails)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -81,10 +80,10 @@ func (mr *MockDeviceServiceInterfaceMockRecorder) GetDeviceDetails(deviceUUID in
 }
 
 // GetDeviceImageInfo mocks base method.
-func (m *MockDeviceServiceInterface) GetDeviceImageInfo(deviceUUID string) (*services.ImageInfo, error) {
+func (m *MockDeviceServiceInterface) GetDeviceImageInfo(deviceUUID string) (*models.ImageInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDeviceImageInfo", deviceUUID)
-	ret0, _ := ret[0].(*services.ImageInfo)
+	ret0, _ := ret[0].(*models.ImageInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -96,10 +95,10 @@ func (mr *MockDeviceServiceInterfaceMockRecorder) GetDeviceImageInfo(deviceUUID 
 }
 
 // GetUpdateAvailableForDeviceByUUID mocks base method.
-func (m *MockDeviceServiceInterface) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]services.ImageUpdateAvailable, error) {
+func (m *MockDeviceServiceInterface) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]models.ImageUpdateAvailable, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUpdateAvailableForDeviceByUUID", deviceUUID)
-	ret0, _ := ret[0].([]services.ImageUpdateAvailable)
+	ret0, _ := ret[0].([]models.ImageUpdateAvailable)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
