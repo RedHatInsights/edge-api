@@ -192,7 +192,8 @@ func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
 	}
 	var inventory Response
 	if err := json.Unmarshal([]byte(body), &inventory); err != nil {
-		log.Error("Error while trying to unmarshal ", &inventory)
+		c.log.Error("Error while trying to unmarshal ", &inventory)
+		return Response{}, err
 	}
 	return inventory, nil
 
