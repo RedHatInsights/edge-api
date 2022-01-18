@@ -41,7 +41,7 @@ type ImageServiceInterface interface {
 	CreateRepoForImage(i *models.Image) (*models.Repo, error)
 	CreateInstallerForImage(i *models.Image) (*models.Image, chan error, error)
 	GetImageByID(id string) (*models.Image, error)
-	GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable, error)
+	GetUpdateInfo(image models.Image) ([]models.ImageUpdateAvailable, error)
 	AddPackageInfo(image *models.Image) (ImageDetail, error)
 	GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error)
 	CheckImageName(name, account string) (bool, error)
@@ -852,9 +852,9 @@ func (s *ImageService) CheckIfIsLatestVersion(previousImage *models.Image) error
 }
 
 //GetUpdateInfo return package info when has an update to the image
-func (s *ImageService) GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable, error) {
+func (s *ImageService) GetUpdateInfo(image models.Image) ([]models.ImageUpdateAvailable, error) {
 	var images []models.Image
-	var imageDiff []ImageUpdateAvailable
+	var imageDiff []models.ImageUpdateAvailable
 	updates := db.DB.Where("Image_set_id = ? and Images.Status = ? and Images.Id < ?",
 		image.ImageSetID, models.ImageStatusSuccess, image.ID).Joins("Commit").
 		Order("Images.updated_at desc").Find(&images)
@@ -871,7 +871,7 @@ func (s *ImageService) GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable
 		db.DB.First(&upd.Commit, upd.CommitID)
 		db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages)
 		db.DB.Model(&upd).Association("Packages").Find(&upd.Packages)
-		var delta ImageUpdateAvailable
+		var delta models.ImageUpdateAvailable
 		diff := getDiffOnUpdate(image, upd)
 		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
 		delta.Image = upd

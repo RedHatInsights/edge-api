@@ -184,10 +184,10 @@ func (mr *MockImageServiceInterfaceMockRecorder) GetMetadata(image interface{}) 
 }
 
 // GetUpdateInfo mocks base method.
-func (m *MockImageServiceInterface) GetUpdateInfo(image models.Image) ([]services.ImageUpdateAvailable, error) {
+func (m *MockImageServiceInterface) GetUpdateInfo(image models.Image) ([]models.ImageUpdateAvailable, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUpdateInfo", image)
-	ret0, _ := ret[0].([]services.ImageUpdateAvailable)
+	ret0, _ := ret[0].([]models.ImageUpdateAvailable)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
