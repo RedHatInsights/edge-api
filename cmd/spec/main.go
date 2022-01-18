@@ -14,16 +14,16 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes"
 )
 
-type EdgeAPISchemaGen struct {
+type edgeAPISchemaGen struct {
 	Components openapi3.Components
 }
 
-func (s *EdgeAPISchemaGen) Init() {
+func (s *edgeAPISchemaGen) init() {
 	s.Components = openapi3.NewComponents()
 	s.Components.Schemas = make(map[string]*openapi3.SchemaRef)
 }
 
-func (s *EdgeAPISchemaGen) AddSchema(name string, model interface{}) {
+func (s *edgeAPISchemaGen) addSchema(name string, model interface{}) {
 	schema, err := openapi3gen.NewSchemaRefForValue(model, s.Components.Schemas)
 	if err != nil {
 		panic(err)
@@ -33,28 +33,28 @@ func (s *EdgeAPISchemaGen) AddSchema(name string, model interface{}) {
 
 // Used to generate openapi yaml file for components.
 func main() {
-	gen := EdgeAPISchemaGen{}
-	gen.Init()
-	gen.AddSchema("v1.OwnershipVoucherData", &[]models.OwnershipVoucherData{})
-	gen.AddSchema("v1.Image", &models.Image{})
-	gen.AddSchema("v1.PackageDiff", &models.Image{})
-	gen.AddSchema("v1.ImageDetail", &routes.ImageDetail{})
-	gen.AddSchema("v1.ImageSetImagePackages", &routes.ImageSetImagePackages{})
-	gen.AddSchema("v1.ImageSetInstallerURL", &routes.ImageSetInstallerURL{})
-	gen.AddSchema("v1.Repo", &models.Repo{})
-	gen.AddSchema("v1.AddUpdate", &routes.UpdatePostJSON{})
-	gen.AddSchema("v1.UpdateTransaction", &models.UpdateTransaction{})
-	gen.AddSchema("v1.DeviceDetails", &models.DeviceDetails{})
-	gen.AddSchema("v1.Device", &models.Device{})
-	gen.AddSchema("v1.ImageSet", &models.ImageSet{})
-	gen.AddSchema("v1.Device", &models.Device{})
-	gen.AddSchema("v1.CheckImageResponse", &routes.CheckImageNameResponse{})
+	gen := edgeAPISchemaGen{}
+	gen.init()
+	gen.addSchema("v1.OwnershipVoucherData", &[]models.OwnershipVoucherData{})
+	gen.addSchema("v1.Image", &models.Image{})
+	gen.addSchema("v1.PackageDiff", &models.Image{})
+	gen.addSchema("v1.ImageDetail", &routes.ImageDetail{})
+	gen.addSchema("v1.ImageSetImagePackages", &routes.ImageSetImagePackages{})
+	gen.addSchema("v1.ImageSetInstallerURL", &routes.ImageSetInstallerURL{})
+	gen.addSchema("v1.Repo", &models.Repo{})
+	gen.addSchema("v1.AddUpdate", &routes.UpdatePostJSON{})
+	gen.addSchema("v1.UpdateTransaction", &models.UpdateTransaction{})
+	gen.addSchema("v1.DeviceDetails", &models.DeviceDetails{})
+	gen.addSchema("v1.Device", &models.Device{})
+	gen.addSchema("v1.ImageSet", &models.ImageSet{})
+	gen.addSchema("v1.Device", &models.Device{})
+	gen.addSchema("v1.CheckImageResponse", &routes.CheckImageNameResponse{})
 	var booleanResponse bool
-	gen.AddSchema("v1.bool", booleanResponse)
-	gen.AddSchema("v1.InternalServerError", &errors.InternalServerError{})
-	gen.AddSchema("v1.BadRequest", &errors.BadRequest{})
-	gen.AddSchema("v1.NotFound", &errors.NotFound{})
-	gen.AddSchema("v1.ThirdPartyRepo", &models.ThirdPartyRepo{})
+	gen.addSchema("v1.bool", booleanResponse)
+	gen.addSchema("v1.InternalServerError", &errors.InternalServerError{})
+	gen.addSchema("v1.BadRequest", &errors.BadRequest{})
+	gen.addSchema("v1.NotFound", &errors.NotFound{})
+	gen.addSchema("v1.ThirdPartyRepo", &models.ThirdPartyRepo{})
 
 	type Swagger struct {
 		Components openapi3.Components `json:"components,omitempty" yaml:"components,omitempty"`
