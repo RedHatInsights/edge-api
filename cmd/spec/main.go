@@ -12,7 +12,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes"
-	"github.com/redhatinsights/edge-api/pkg/services"
 )
 
 // Used to generate openapi yaml file for components.
@@ -68,7 +67,7 @@ func main() {
 	}
 	components.Schemas["v1.UpdateTransaction"] = updateTransaction
 
-	deviceDetails, err := openapi3gen.NewSchemaRefForValue(&services.DeviceDetails{}, components.Schemas)
+	deviceDetails, err := openapi3gen.NewSchemaRefForValue(&models.DeviceDetails{}, components.Schemas)
 	if err != nil {
 		panic(err)
 	}

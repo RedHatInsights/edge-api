@@ -9,7 +9,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
-	"github.com/redhatinsights/edge-api/pkg/services"
+	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -32,7 +32,7 @@ type InventoryResponse struct {
 	ID         string
 	DeviceName string
 	LastSeen   string
-	ImageInfo  *services.ImageInfo
+	ImageInfo  *models.ImageInfo
 }
 
 // GetInventory make the call to inventory api and inject edge info
@@ -66,7 +66,8 @@ func GetInventory(w http.ResponseWriter, r *http.Request) {
 	InventoryData.Results = results
 
 	if err := json.NewEncoder(w).Encode(InventoryData); err != nil {
-		client.log.WithField("error", err.Error()).Error("Error while trying to encode")
+		services := dependencies.ServicesFromContext(r.Context())
+		services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 	}
 }
 

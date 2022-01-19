@@ -14,9 +14,9 @@ import (
 type DeviceServiceInterface interface {
 	GetDeviceByID(deviceID uint) (*models.Device, error)
 	GetDeviceByUUID(deviceUUID string) (*models.Device, error)
-	GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]ImageUpdateAvailable, error)
-	GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error)
-	GetDeviceDetails(deviceUUID string) (*DeviceDetails, error)
+	GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]models.ImageUpdateAvailable, error)
+	GetDeviceImageInfo(deviceUUID string) (*models.ImageInfo, error)
+	GetDeviceDetails(deviceUUID string) (*models.DeviceDetails, error)
 }
 
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
@@ -33,13 +33,6 @@ type DeviceService struct {
 	Service
 	updateService UpdateServiceInterface
 	inventory     inventory.ClientInterface
-}
-
-// DeviceDetails is a Device with Image and Update transactions
-type DeviceDetails struct {
-	Device             *models.Device              `json:"Device,omitempty"`
-	Image              *ImageInfo                  `json:"ImageInfo"`
-	UpdateTransactions *[]models.UpdateTransaction `json:"UpdateTransactions,omitempty"`
 }
 
 // GetDeviceByID receives DeviceID uint and get a *models.Device back
@@ -69,7 +62,7 @@ func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, erro
 }
 
 // GetDeviceDetails provides details for a given Device UUID by going to inventory API and trying to also merge with the information on our database
-func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*DeviceDetails, error) {
+func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*models.DeviceDetails, error) {
 	s.log = s.log.WithField("deviceUUID", deviceUUID)
 	s.log.Info("Get device by uuid")
 
@@ -91,7 +84,7 @@ func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*DeviceDetails, err
 			return nil, err
 		}
 	}
-	details := &DeviceDetails{
+	details := &models.DeviceDetails{
 		Device:             device,
 		Image:              imageInfo,
 		UpdateTransactions: updates,
@@ -99,31 +92,11 @@ func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*DeviceDetails, err
 	return details, nil
 }
 
-// ImageUpdateAvailable contains image and differences between current and available commits
-type ImageUpdateAvailable struct {
-	Image       models.Image `json:"Image"`
-	PackageDiff DeltaDiff    `json:"PackageDiff"`
-}
-
-// DeltaDiff provides package difference details between current and available commits
-type DeltaDiff struct {
-	Added    []models.InstalledPackage `json:"Added"`
-	Removed  []models.InstalledPackage `json:"Removed"`
-	Upgraded []models.InstalledPackage `json:"Upgraded"`
-}
-
-// ImageInfo contains Image with updates available and rollback image
-type ImageInfo struct {
-	Image            models.Image            `json:"Image"`
-	UpdatesAvailable *[]ImageUpdateAvailable `json:"UpdatesAvailable,omitempty"`
-	Rollback         *models.Image           `json:"RollbackImage,omitempty"`
-}
-
 // GetUpdateAvailableForDeviceByUUID returns if exists update for the current image at the device.
-func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]ImageUpdateAvailable, error) {
+func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]models.ImageUpdateAvailable, error) {
 	s.log = s.log.WithField("deviceUUID", deviceUUID)
 	var lastDeployment inventory.OSTree
-	var imageDiff []ImageUpdateAvailable
+	var imageDiff []models.ImageUpdateAvailable
 	device, err := s.inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || device.Total != 1 {
 		return nil, new(DeviceNotFoundError)
@@ -170,7 +143,7 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 			s.log.WithField("error", err.Error()).Error("Could not find packages")
 			return nil, err
 		}
-		var delta ImageUpdateAvailable
+		var delta models.ImageUpdateAvailable
 		diff := getDiffOnUpdate(currentImage, upd)
 		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
 		delta.Image = upd
@@ -212,8 +185,8 @@ func getVersionDiff(new, old []models.InstalledPackage) []models.InstalledPackag
 	return diff
 }
 
-func getDiffOnUpdate(oldImg models.Image, newImg models.Image) DeltaDiff {
-	results := DeltaDiff{
+func getDiffOnUpdate(oldImg models.Image, newImg models.Image) models.DeltaDiff {
+	results := models.DeltaDiff{
 		Added:    getPackageDiff(newImg.Commit.InstalledPackages, oldImg.Commit.InstalledPackages),
 		Removed:  getPackageDiff(oldImg.Commit.InstalledPackages, newImg.Commit.InstalledPackages),
 		Upgraded: getVersionDiff(newImg.Commit.InstalledPackages, oldImg.Commit.InstalledPackages),
@@ -222,9 +195,9 @@ func getDiffOnUpdate(oldImg models.Image, newImg models.Image) DeltaDiff {
 }
 
 // GetDeviceImageInfo returns the information of a running image for a device
-func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*ImageInfo, error) {
+func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*models.ImageInfo, error) {
 	s.log = s.log.WithField("deviceUUID", deviceUUID)
-	var ImageInfo ImageInfo
+	var ImageInfo models.ImageInfo
 	var currentImage models.Image
 	var rollback *models.Image
 	var lastDeployment inventory.OSTree
