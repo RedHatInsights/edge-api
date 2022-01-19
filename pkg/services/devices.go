@@ -178,8 +178,8 @@ func getVersionDiff(new, old []models.InstalledPackage) []models.InstalledPackag
 	return diff
 }
 
-func getDiffOnUpdate(oldImg models.Image, newImg models.Image) models.DeltaDiff {
-	results := models.DeltaDiff{
+func getDiffOnUpdate(oldImg models.Image, newImg models.Image) models.PackageDiff {
+	results := models.PackageDiff{
 		Added:    getPackageDiff(newImg.Commit.InstalledPackages, oldImg.Commit.InstalledPackages),
 		Removed:  getPackageDiff(oldImg.Commit.InstalledPackages, newImg.Commit.InstalledPackages),
 		Upgraded: getVersionDiff(newImg.Commit.InstalledPackages, oldImg.Commit.InstalledPackages),
