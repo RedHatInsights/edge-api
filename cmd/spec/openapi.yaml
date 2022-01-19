@@ -22,25 +22,6 @@ components:
         ImageExists:
           type: boolean
       type: object
-    v1.CreateThirdPartyRepo:
-      properties:
-        CreatedAt:
-          format: date-time
-          type: string
-        DeletedAt: {}
-        Description:
-          type: string
-        ID:
-          minimum: 0
-          type: integer
-        Name:
-          type: string
-        URL:
-          type: string
-        UpdatedAt:
-          format: date-time
-          type: string
-      type: object
     v1.Device:
       properties:
         Connected:
@@ -1374,7 +1355,7 @@ components:
         update_updated:
           type: integer
       type: object
-    v1.ImageSetDetails:
+    v1.ImageSet:
       properties:
         Account:
           type: string
@@ -2206,6 +2187,181 @@ components:
             type: integer
         type: object
       type: array
+    v1.PackageDiff:
+      properties:
+        Account:
+          type: string
+        Commit:
+          properties:
+            Account:
+              type: string
+            Arch:
+              type: string
+            BlueprintToml:
+              type: string
+            BuildDate:
+              type: string
+            BuildNumber:
+              minimum: 0
+              type: integer
+            ComposeJobID:
+              type: string
+            CreatedAt:
+              format: date-time
+              type: string
+            DeletedAt: {}
+            ID:
+              minimum: 0
+              type: integer
+            ImageBuildHash:
+              type: string
+            ImageBuildParentHash:
+              type: string
+            ImageBuildTarURL:
+              type: string
+            InstalledPackages:
+              items:
+                properties:
+                  CreatedAt:
+                    format: date-time
+                    type: string
+                  DeletedAt: {}
+                  ID:
+                    minimum: 0
+                    type: integer
+                  UpdatedAt:
+                    format: date-time
+                    type: string
+                  arch:
+                    type: string
+                  epoch:
+                    type: string
+                  name:
+                    type: string
+                  release:
+                    type: string
+                  sigmd5:
+                    type: string
+                  signature:
+                    type: string
+                  type:
+                    type: string
+                  version:
+                    type: string
+                type: object
+              type: array
+            OSTreeCommit:
+              type: string
+            OSTreeParentCommit:
+              type: string
+            OSTreeRef:
+              type: string
+            Repo:
+              properties:
+                CreatedAt:
+                  format: date-time
+                  type: string
+                DeletedAt: {}
+                ID:
+                  minimum: 0
+                  type: integer
+                RepoStatus:
+                  type: string
+                RepoURL:
+                  type: string
+                UpdatedAt:
+                  format: date-time
+                  type: string
+              type: object
+            RepoID:
+              minimum: 0
+              type: integer
+            Status:
+              type: string
+            UpdatedAt:
+              format: date-time
+              type: string
+          type: object
+        CommitID:
+          minimum: 0
+          type: integer
+        CreatedAt:
+          format: date-time
+          type: string
+        DeletedAt: {}
+        Description:
+          type: string
+        Distribution:
+          type: string
+        ID:
+          minimum: 0
+          type: integer
+        ImageSetID:
+          minimum: 0
+          type: integer
+        ImageType:
+          type: string
+        Installer:
+          properties:
+            Account:
+              type: string
+            Checksum:
+              type: string
+            ComposeJobID:
+              type: string
+            CreatedAt:
+              format: date-time
+              type: string
+            DeletedAt: {}
+            ID:
+              minimum: 0
+              type: integer
+            ImageBuildISOURL:
+              type: string
+            SshKey:
+              type: string
+            Status:
+              type: string
+            UpdatedAt:
+              format: date-time
+              type: string
+            Username:
+              type: string
+          type: object
+        InstallerID:
+          minimum: 0
+          type: integer
+        Name:
+          type: string
+        OutputTypes:
+          items:
+            type: string
+          type: array
+        Packages:
+          items:
+            properties:
+              CreatedAt:
+                format: date-time
+                type: string
+              DeletedAt: {}
+              ID:
+                minimum: 0
+                type: integer
+              Name:
+                type: string
+              UpdatedAt:
+                format: date-time
+                type: string
+            type: object
+          type: array
+        Status:
+          type: string
+        UpdatedAt:
+          format: date-time
+          type: string
+        Version:
+          type: integer
+      type: object
     v1.Repo:
       properties:
         CreatedAt:
@@ -2218,6 +2374,25 @@ components:
         RepoStatus:
           type: string
         RepoURL:
+          type: string
+        UpdatedAt:
+          format: date-time
+          type: string
+      type: object
+    v1.ThirdPartyRepo:
+      properties:
+        CreatedAt:
+          format: date-time
+          type: string
+        DeletedAt: {}
+        Description:
+          type: string
+        ID:
+          minimum: 0
+          type: integer
+        Name:
+          type: string
+        URL:
           type: string
         UpdatedAt:
           format: date-time
@@ -2963,6 +3138,8 @@ paths:
                   properties:
                     Image:
                       $ref: "#/components/schemas/v1.Image"
+                    PackageDiff:
+                      $ref: "#/components/schemas/v1.PackageDiff"
           description: OK
         "400":
           content:
@@ -3175,14 +3352,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/v1.CreateThirdPartyRepo'
+              $ref: '#/components/schemas/v1.ThirdPartyRepo'
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.CreateThirdPartyRepo'
+                $ref: '#/components/schemas/v1.ThirdPartyRepo'
           description: OK
         "400":
           content:
@@ -3223,7 +3400,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/v1.CreateThirdPartyRepo'
+                      $ref: '#/components/schemas/v1.ThirdPartyRepo'
           description: OK
         "400":
           content:
@@ -3253,7 +3430,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/v1.CreateThirdPartyRepo'
+                $ref: '#/components/schemas/v1.ThirdPartyRepo'
           description: OK
         "404":
           content:
@@ -3281,14 +3458,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/v1.CreateThirdPartyRepo"
+              $ref: "#/components/schemas/v1.ThirdPartyRepo"
         required: true
       responses:
         "200":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v1.CreateThirdPartyRepo"
+                $ref: "#/components/schemas/v1.ThirdPartyRepo"
           description: OK
         "400":
           content:
@@ -3317,7 +3494,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v1.CreateThirdPartyRepo"
+                $ref: "#/components/schemas/v1.ThirdPartyRepo"
           description: OK
         "404":
           content:
