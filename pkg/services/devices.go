@@ -180,6 +180,8 @@ func getVersionDiff(new, old []models.InstalledPackage) []models.InstalledPackag
 	return diff
 }
 
+// GetDiffOnUpdate returns the diff between two images.
+// TODO: Move out to a different package, as this is devices related, either to image service or image models.
 func GetDiffOnUpdate(oldImg models.Image, newImg models.Image) models.PackageDiff {
 	results := models.PackageDiff{
 		Added:    getPackageDiff(newImg.Commit.InstalledPackages, oldImg.Commit.InstalledPackages),

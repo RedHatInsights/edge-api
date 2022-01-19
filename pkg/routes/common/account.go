@@ -10,6 +10,7 @@ import (
 )
 
 const (
+	// DefaultAccount that will return on tests and on debug/local mode
 	DefaultAccount = "0000000"
 )
 
