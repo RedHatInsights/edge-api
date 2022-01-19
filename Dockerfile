@@ -49,6 +49,8 @@ RUN rm -rf /mnt/rootfs/var/cache/* /mnt/rootfs/var/log/dnf* /mnt/rootfs/var/log/
 FROM scratch
 LABEL maintainer="Red Hat, Inc."
 LABEL com.redhat.component="ubi8-micro-container"
+
+# label for EULA
 LABEL com.redhat.license_terms="https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI"
 
 # labels for container catalog
