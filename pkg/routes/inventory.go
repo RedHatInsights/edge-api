@@ -66,7 +66,7 @@ func GetInventory(w http.ResponseWriter, r *http.Request) {
 	InventoryData.Results = results
 
 	if err := json.NewEncoder(w).Encode(InventoryData); err != nil {
-		fmt.Println("Error while trying to encode ", InventoryData)
+		client.log.WithField("error", err.Error()).Error("Error while trying to encode")
 	}
 }
 

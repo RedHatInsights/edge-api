@@ -44,6 +44,7 @@ func DeviceCtx(next http.Handler) http.Handler {
 			err := errors.NewBadRequest("DeviceUUID must be sent")
 			w.WriteHeader(err.GetStatus())
 			if err := json.NewEncoder(w).Encode(&err); err != nil {
+
 				log.WithField("error", err.Error()).Error("Error while trying to encode")
 			}
 			return
@@ -65,7 +66,7 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	result, err := s.DeviceService.GetUpdateAvailableForDeviceByUUID(dc.DeviceUUID)
 	if err == nil {
 		if err := json.NewEncoder(w).Encode(result); err != nil {
-			log.WithField("error", result).Error("Error while trying to encode")
+			s.log.WithField("error", result).Error("Error while trying to encode")
 		}
 		return
 	}
@@ -73,7 +74,7 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewNotFound("Could not find device")
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.WithField("error", err.Error()).Error("Error while trying to encode")
+			s.log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return
 	}
@@ -81,7 +82,7 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewNotFound("Could not find update")
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.WithField("error", err.Error()).Error("Error while trying to encode")
+			s.log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return
 	}
@@ -92,7 +93,7 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 		"error":      apierr.Error(),
 	}).Error("Error retrieving updates for device")
 	if err := json.NewEncoder(w).Encode(&err); err != nil {
-		log.WithField("error", err.Error()).Error("Error while trying to encode")
+		s.log.WithField("error", err.Error()).Error("Error while trying to encode")
 	}
 }
 
@@ -107,7 +108,7 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 	result, err := s.DeviceService.GetDeviceImageInfo(dc.DeviceUUID)
 	if err == nil {
 		if err := json.NewEncoder(w).Encode(result); err != nil {
-			log.WithField("error", result).Error("Error while trying to encode")
+			s.log.WithField("error", result).Error("Error while trying to encode")
 		}
 		return
 	}
@@ -115,7 +116,7 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewNotFound("Could not find device")
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.WithField("error", err.Error()).Error("Error while trying to encode")
+			s.log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return
 	}
@@ -126,7 +127,7 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 		"error":      apierr.Error(),
 	}).Error("Error getting image info for device")
 	if err := json.NewEncoder(w).Encode(&err); err != nil {
-		log.WithField("error", err.Error()).Error("Error while trying to encode")
+		s.log.WithField("error", err.Error()).Error("Error while trying to encode")
 	}
 }
 
@@ -144,7 +145,7 @@ func GetDevice(w http.ResponseWriter, r *http.Request) {
 	result, err := s.DeviceService.GetDeviceDetails(dc.DeviceUUID)
 	if err == nil {
 		if err := json.NewEncoder(w).Encode(result); err != nil {
-			log.WithField("error", result).Error("Error while trying to encode")
+			s.log.WithField("error", result).Error("Error while trying to encode")
 		}
 		return
 	}
@@ -152,7 +153,7 @@ func GetDevice(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewNotFound("Could not find image")
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.WithField("error", err.Error()).Error("Error while trying to encode")
+			s.log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return
 	}
@@ -171,6 +172,6 @@ func GetDevice(w http.ResponseWriter, r *http.Request) {
 		"error":      apierr.Error(),
 	}).Error("Error retrieving updates for device")
 	if err := json.NewEncoder(w).Encode(&err); err != nil {
-		log.WithField("error", err.Error()).Error("Error while trying to encode")
+		s.log.WithField("error", err.Error()).Error("Error while trying to encode")
 	}
 }
