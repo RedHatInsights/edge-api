@@ -49,6 +49,9 @@ jobs:
 
       - name: Install openapi-spec-validator
         run: pip install openapi-spec-validator
+
+      - name: Generate API docs spec file
+        run: go run cmd/spec/main.go
      
       - name: Validate spec-file
         run: python3 -m openapi_spec_validator ${{ github.workspace }}/cmd/spec/openapi.json
