@@ -93,7 +93,9 @@ func ImageSetCtx(next http.Handler) http.Handler {
 			}).Error("Error retrieving account")
 			err := errors.NewBadRequest(err.Error())
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+			}
 			return
 		}
 		if imageSetID := chi.URLParam(r, "imageSetID"); imageSetID != "" {
@@ -102,7 +104,9 @@ func ImageSetCtx(next http.Handler) http.Handler {
 			if err != nil {
 				err := errors.NewBadRequest(err.Error())
 				w.WriteHeader(err.GetStatus())
-				json.NewEncoder(w).Encode(&err)
+				if err := json.NewEncoder(w).Encode(&err); err != nil {
+					s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+				}
 				return
 			}
 			result := db.DB.Where("account = ? and Image_sets.id = ?", account, imageSetID).Find(&imageSet)
@@ -110,7 +114,9 @@ func ImageSetCtx(next http.Handler) http.Handler {
 			if result.Error != nil {
 				err := errors.NewNotFound(result.Error.Error())
 				w.WriteHeader(err.GetStatus())
-				json.NewEncoder(w).Encode(&err)
+				if err := json.NewEncoder(w).Encode(&err); err != nil {
+					s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+				}
 				return
 			}
 			if imageSet.Images != nil {
@@ -144,7 +150,9 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		s.Log.WithField("error", err.Error()).Error("Error listing all image sets - bad request")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 		return
 	}
 
@@ -155,7 +163,9 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		s.Log.WithField("error", countResult.Error.Error()).Error("Error counting results for image sets list")
 		countErr := errors.NewInternalServerError()
 		w.WriteHeader(countErr.GetStatus())
-		json.NewEncoder(w).Encode(&countErr)
+		if err := json.NewEncoder(w).Encode(&countErr); err != nil {
+			s.Log.WithField("error", countErr.Error()).Error("Error while trying to encode")
+		}
 		return
 	}
 
@@ -176,7 +186,9 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		s.Log.WithField("error", countResult.Error.Error()).Error("Image sets not found")
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 		return
 	}
 	for idx, img := range imageSet {
@@ -200,14 +212,21 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		s.Log.WithField("error", countResult.Error.Error()).Error("Image sets not found")
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 		return
 	}
 
-	json.NewEncoder(w).Encode(&common.EdgeAPIPaginatedResponse{
+	if err := json.NewEncoder(w).Encode(&common.EdgeAPIPaginatedResponse{
 		Count: count,
 		Data:  imageSetInfo,
-	})
+	}); err != nil {
+		s.Log.WithField("error", &common.EdgeAPIPaginatedResponse{
+			Count: count,
+			Data:  imageSetInfo,
+		}).Error("Error while trying to encode")
+	}
 }
 
 //ImageSetImagePackages return info related to details on images from imageset
@@ -232,7 +251,9 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		}).Error("Error retrieving account")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 		return
 	}
 	ctx := r.Context()
@@ -240,7 +261,9 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		err := errors.NewBadRequest("Must pass image set id")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 	}
 	result := imageDetailFilters(r, db.DB.Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
 		Preload("Commit.Repo").Preload("Commit.InstalledPackages").Preload("Installer").
@@ -250,7 +273,9 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	if result.Error != nil {
 		err := errors.NewBadRequest("Error to filter images")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 	}
 
 	Imgs := returnImageDetails(images, s)
@@ -263,10 +288,14 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		details.ImageBuildISOURL = img.Installer.ImageBuildISOURL
 	}
 
-	json.NewEncoder(w).Encode(&common.EdgeAPIPaginatedResponse{
+	if err := json.NewEncoder(w).Encode(&common.EdgeAPIPaginatedResponse{
 		Data:  &details,
 		Count: int64(len(images)),
-	})
+	}); err != nil {
+		s.Log.WithField("error", &common.EdgeAPIPaginatedResponse{Data: &details,
+			Count: int64(len(images)),
+		}).Error("Error while trying to encode")
+	}
 }
 
 func validateFilterParams(next http.Handler) http.Handler {
@@ -295,7 +324,10 @@ func validateFilterParams(next http.Handler) http.Handler {
 			return
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(&errs)
+		if err := json.NewEncoder(w).Encode(&errs); err != nil {
+			services := dependencies.ServicesFromContext(r.Context())
+			services.Log.WithField("error", errs).Error("Error while trying to encode")
+		}
 	})
 }
 

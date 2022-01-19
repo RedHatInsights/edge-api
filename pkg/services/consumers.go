@@ -106,7 +106,11 @@ func (s *KafkaConsumerService) RegisterShutdown() {
 	<-sigint
 	log.Info("Closing Kafka readers...")
 	s.shuttingDown = true
-	s.Reader.Close()
+	if err := s.Reader.Close(); err != nil {
+		log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Error("Error closing Kafka reader")
+	}
 }
 
 // Start consumers for this application

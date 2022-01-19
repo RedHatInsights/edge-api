@@ -82,9 +82,9 @@ func main() {
 
 	jsonB, err := json.MarshalIndent(doc, "", "  ")
 	checkErr(err)
-	err = ioutil.WriteFile("./cmd/spec/openapi.json", jsonB, 0666)
+	err = ioutil.WriteFile("./cmd/spec/openapi.json", jsonB, 0600)
 	checkErr(err)
-	err = ioutil.WriteFile("./cmd/spec/openapi.yaml", b.Bytes(), 0666)
+	err = ioutil.WriteFile("./cmd/spec/openapi.yaml", b.Bytes(), 0600)
 	checkErr(err)
 	fmt.Println("Spec was generated successfully")
 }

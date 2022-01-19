@@ -107,6 +107,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		// If there are any old commits, we need to download them all to be merged
 		// into the update commit repo
 		for _, commit := range update.OldCommits {
+			commit := commit // this will prevent implicit memory aliasing in the loop
 			tarFileName, err := rb.DownloadVersionRepo(&commit, filepath.Join(stagePath, commit.OSTreeCommit))
 			if err != nil {
 				rb.log.WithField("error", err.Error()).Error("Error downloading tar")
@@ -305,7 +306,7 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 	}
 	rb.log = rb.log.WithField("commitID", c.ID)
 	rb.log.Info("Extracting repo")
-	tarFile, err := os.Open(filepath.Join(dest, tarFileName))
+	tarFile, err := os.Open(filepath.Clean(filepath.Join(dest, tarFileName)))
 	if err != nil {
 		rb.log.WithFields(log.Fields{
 			"error":    err.Error(),
@@ -318,7 +319,10 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 		rb.log.WithField("error", err.Error()).Error("Error extracting tar file")
 		return err
 	}
-	tarFile.Close()
+	if err := tarFile.Close(); err != nil {
+		rb.log.WithField("error", err.Error()).Error("Error closing tar file")
+		return err
+	}
 	log.Debugf("Unpacking tarball finished::tarFileName: %#v", tarFileName)
 
 	err = os.Remove(filepath.Join(dest, tarFileName))
@@ -330,9 +334,19 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 	var cmd *exec.Cmd
 	if c.OSTreeRef == "" {
 		cfg := config.Get()
-		cmd = exec.Command("ostree", "--repo", "./repo", "commit", cfg.DefaultOSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber))
+		cmd = &exec.Cmd{
+			Path: "ostree",
+			Args: []string{
+				"--repo", "./repo", "commit", cfg.DefaultOSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber),
+			},
+		}
 	} else {
-		cmd = exec.Command("ostree", "--repo", "./repo", "commit", c.OSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber))
+		cmd = &exec.Cmd{
+			Path: "ostree",
+			Args: []string{
+				"--repo", "./repo", "commit", c.OSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber),
+			},
+		}
 	}
 	err = cmd.Run()
 	if err != nil {
@@ -363,14 +377,24 @@ func (rb *RepoBuilder) repoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 	}
 
 	// pull the local repo at the exact rev (which was HEAD of o.OSTreeRef)
-	cmd := exec.Command("ostree", "--repo", uprepo, "pull-local", oldrepo, oldRevParse)
+	cmd := &exec.Cmd{
+		Path: "ostree",
+		Args: []string{
+			"--repo", uprepo, "pull-local", oldrepo, oldRevParse,
+		},
+	}
 	err = cmd.Run()
 	if err != nil {
 		return err
 	}
 
 	// generate static delta
-	cmd = exec.Command("ostree", "--repo", uprepo, "static-delta", "generate", "--from", oldRevParse, "--to", updateRevParse)
+	cmd = &exec.Cmd{
+		Path: "ostree",
+		Args: []string{
+			"--repo", uprepo, "static-delta", "generate", "--from", oldRevParse, "--to", updateRevParse,
+		},
+	}
 	err = cmd.Run()
 	if err != nil {
 		return err
