@@ -9,6 +9,10 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
 
+const (
+	DefaultAccount = "0000000"
+)
+
 // GetAccount from http request header
 func GetAccount(r *http.Request) (string, error) {
 	return GetAccountFromContext(r.Context())
@@ -18,7 +22,7 @@ func GetAccount(r *http.Request) (string, error) {
 func GetAccountFromContext(ctx context.Context) (string, error) {
 	if config.Get() != nil {
 		if !config.Get().Auth {
-			return "0000000", nil
+			return DefaultAccount, nil
 		}
 		if ctx.Value(identity.Key) != nil {
 			ident := identity.Get(ctx)

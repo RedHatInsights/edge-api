@@ -747,7 +747,7 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 	}
 	result := db.DB.Preload("Commit.Repo").Preload("Commit.InstalledPackages").Where("images.account = ?", account).Joins("Commit").First(&image, id)
 	if result.Error != nil {
-		s.log.WithField("error", err).Debug("Request related error - image is not found")
+		s.log.WithField("error", result.Error.Error()).Debug("Request related error - image is not found")
 		return nil, new(ImageNotFoundError)
 	}
 	return s.addImageExtraData(&image)
@@ -924,19 +924,19 @@ func (s *ImageService) CreateInstallerForImage(image *models.Image) (*models.Ima
 
 // GetRollbackImage returns the previous image from the image set in case of a rollback
 func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, error) {
-	s.log.Info("Getting image by OSTreeHash")
+	s.log.Info("Getting rollback image")
 	var rollback models.Image
 	account, err := common.GetAccountFromContext(s.ctx)
 	if err != nil {
 		s.log.Error("Error retreving account")
 		return nil, new(AccountNotSet)
 	}
-	result := db.DB.Joins("Commit").Joins("Installer").Preload("Packages").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where("images.account = ? and image_set_id = ? and id < ?", account, image.ImageSetID, image.ID).Last(&rollback)
+	result := db.DB.Joins("Commit").Joins("Installer").Preload("Packages").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where("images.account = ? AND image_set_id = ? AND images.id < ? ", account, image.ImageSetID, image.ID).Last(&rollback)
 	if result.Error != nil {
-		s.log.WithField("error", result.Error).Error("Error retrieving image by OSTreeHash")
+		s.log.WithField("error", result.Error).Error("Error retrieving rollback image")
 		return nil, new(ImageNotFoundError)
 	}
 	s.log = s.log.WithField("imageID", image.ID)
-	s.log.Info("Image successfully retrieved by its OSTreeHash")
+	s.log.Info("Rollback image successfully retrieved")
 	return &rollback, nil
 }
