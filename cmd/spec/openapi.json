@@ -4463,7 +4463,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v1.ImageDetail"
+                  "$ref": "#/components/schemas/v1.Image"
                 }
               }
             },
@@ -5211,12 +5211,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "properties": {
-                    "Image": {
-                      "$ref": "#/components/schemas/v1.Image"
-                    }
-                  },
-                  "type": "object"
+                  "$ref": "#/components/schemas/v1.Image"
                 }
               }
             },
