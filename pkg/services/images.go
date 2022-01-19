@@ -50,6 +50,7 @@ type ImageServiceInterface interface {
 	SetFinalImageStatus(i *models.Image)
 	CheckIfIsLatestVersion(previousImage *models.Image) error
 	SetBuildingStatusOnImageToRetryBuild(image *models.Image) error
+	GetRollbackImage(image *models.Image) (*models.Image, error)
 }
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
@@ -328,7 +329,7 @@ func (s *ImageService) postProcessImage(id uint) {
 		WaitGroup.Done() // Done with one image (successfully or not)
 		s.log.Debug("Done with one image - successfully or not")
 		if err := recover(); err != nil {
-			s.log.Fatalf("Error recovering post process image goroutine")
+			s.log.WithField("error", err).Fatalf("Error recovering post process image goroutine")
 		}
 	}()
 	go func(i *models.Image) {
@@ -754,21 +755,21 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 
 // GetImageByOSTreeCommitHash retrieves an image by its ostree commit hash
 func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error) {
-	s.log.Info("Getting image by OSTreeHash")
+	s.log.WithField("ostreeHash", commitHash).Info("Getting image by OSTreeHash")
 	var image models.Image
 	account, err := common.GetAccountFromContext(s.ctx)
 	if err != nil {
 		s.log.Error("Error retreving account")
 		return nil, new(AccountNotSet)
 	}
-	result := db.DB.Where("images.account = ? and os_tree_commit = ?", account, commitHash).Joins("Commit").First(&image)
+	result := db.DB.Where("images.account = ?", account).Joins("JOIN commits ON commits.id = images.commit_id AND commits.os_tree_commit = ?", commitHash).Joins("Installer").Preload("Packages").Preload("Commit.InstalledPackages").Preload("Commit.Repo").First(&image)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error).Error("Error retrieving image by OSTreeHash")
 		return nil, new(ImageNotFoundError)
 	}
 	s.log = s.log.WithField("imageID", image.ID)
 	s.log.Info("Image successfully retrieved by its OSTreeHash")
-	return s.addImageExtraData(&image)
+	return &image, nil
 }
 
 // RetryCreateImage retries the whole post process of the image creation
@@ -872,7 +873,7 @@ func (s *ImageService) GetUpdateInfo(image models.Image) ([]models.ImageUpdateAv
 		db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages)
 		db.DB.Model(&upd).Association("Packages").Find(&upd.Packages)
 		var delta models.ImageUpdateAvailable
-		diff := getDiffOnUpdate(image, upd)
+		diff := GetDiffOnUpdate(image, upd)
 		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
 		delta.Image = upd
 		delta.PackageDiff = diff
@@ -919,4 +920,23 @@ func (s *ImageService) CreateInstallerForImage(image *models.Image) (*models.Ima
 		c <- err
 	}(c)
 	return image, c, nil
+}
+
+// GetRollbackImage returns the previous image from the image set in case of a rollback
+func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, error) {
+	s.log.Info("Getting image by OSTreeHash")
+	var rollback models.Image
+	account, err := common.GetAccountFromContext(s.ctx)
+	if err != nil {
+		s.log.Error("Error retreving account")
+		return nil, new(AccountNotSet)
+	}
+	result := db.DB.Joins("Commit").Joins("Installer").Preload("Packages").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where("images.account = ? and image_set_id = ? and id < ?", account, image.ImageSetID, image.ID).Last(&rollback)
+	if result.Error != nil {
+		s.log.WithField("error", result.Error).Error("Error retrieving image by OSTreeHash")
+		return nil, new(ImageNotFoundError)
+	}
+	s.log = s.log.WithField("imageID", image.ID)
+	s.log.Info("Image successfully retrieved by its OSTreeHash")
+	return &rollback, nil
 }
