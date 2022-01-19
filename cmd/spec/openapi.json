@@ -4463,7 +4463,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v1.ImageDetail"
+                  "$ref": "#/components/schemas/v1.Image"
                 }
               }
             },
