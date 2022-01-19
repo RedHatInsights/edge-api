@@ -169,7 +169,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.URL.Query().Get("status") == "" && (r.URL.Query().Get("sort_by") != "-status" || r.URL.Query().Get("sort_by") != "status") {
+	if r.URL.Query().Get("sort_by") != "-status" && r.URL.Query().Get("sort_by") != "status" {
 		result = imageSetFilters(r, db.DB.Model(&models.ImageSet{})).
 			Limit(pagination.Limit).Offset(pagination.Offset).
 			Preload("Images").
