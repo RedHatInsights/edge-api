@@ -5211,7 +5211,12 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/v1.Image"
+                  "properties": {
+                    "Image": {
+                      "$ref": "#/components/schemas/v1.Image"
+                    }
+                  },
+                  "type": "object"
                 }
               }
             },
