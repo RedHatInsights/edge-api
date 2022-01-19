@@ -20,21 +20,21 @@ type ImageSet struct {
 // Image is what generates a OSTree Commit.
 type Image struct {
 	Model
-	Name                   string         `json:"Name"`
-	Account                string         `json:"Account"`
-	Distribution           string         `json:"Distribution"`
-	Description            string         `json:"Description"`
-	Status                 string         `json:"Status"`
-	Version                int            `json:"Version" gorm:"default:1"`
-	ImageType              string         `json:"ImageType"` // TODO: Remove as soon as the frontend stops using
-	OutputTypes            pq.StringArray `gorm:"type:text[]" json:"OutputTypes"`
-	CommitID               uint           `json:"CommitID"`
-	Commit                 *Commit        `json:"Commit"`
-	InstallerID            *uint          `json:"InstallerID"`
-	Installer              *Installer     `json:"Installer"`
-	ImageSetID             *uint          `json:"ImageSetID"` // TODO: Wipe staging database and set to not nullable
-	Packages               []Package      `json:"Packages" gorm:"many2many:images_packages;"`
-	ThirdPartyRepositoryID *uint          `json:"ThirdPartyRepositoryID"`
+	Name                   string           `json:"Name"`
+	Account                string           `json:"Account"`
+	Distribution           string           `json:"Distribution"`
+	Description            string           `json:"Description"`
+	Status                 string           `json:"Status"`
+	Version                int              `json:"Version" gorm:"default:1"`
+	ImageType              string           `json:"ImageType"` // TODO: Remove as soon as the frontend stops using
+	OutputTypes            pq.StringArray   `gorm:"type:text[]" json:"OutputTypes"`
+	CommitID               uint             `json:"CommitID"`
+	Commit                 *Commit          `json:"Commit"`
+	InstallerID            *uint            `json:"InstallerID"`
+	Installer              *Installer       `json:"Installer"`
+	ImageSetID             *uint            `json:"ImageSetID"` // TODO: Wipe staging database and set to not nullable
+	Packages               []Package        `json:"Packages" gorm:"many2many:images_packages;"`
+	ThirdPartyRepositories []ThirdPartyRepo `json:"ThirdPartyRepositories" gorm:"many2many:images_repos;"`
 }
 
 const (
