@@ -1,4 +1,4 @@
-package services
+package services_test
 
 import (
 	"context"
@@ -12,6 +12,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory/mock_inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services"
+	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -24,12 +26,9 @@ func TestGetUpdateAvailableForDeviceByUUIDWhenErrorOnInventoryAPI(t *testing.T) 
 	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
 	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(inventory.Response{}, errors.New("error on inventory api"))
 
-	deviceService := DeviceService{
-		Service: Service{
-			ctx: context.Background(),
-			log: log.NewEntry(log.StandardLogger()),
-		},
-		inventory: mockInventoryClient,
+	deviceService := services.DeviceService{
+		Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+		Inventory: mockInventoryClient,
 	}
 
 	updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
@@ -37,7 +36,7 @@ func TestGetUpdateAvailableForDeviceByUUIDWhenErrorOnInventoryAPI(t *testing.T) 
 		t.Errorf("Expected nil updates available, got %#v", updatesAvailable)
 	}
 
-	if _, ok := err.(*DeviceNotFoundError); !ok {
+	if _, ok := err.(*services.DeviceNotFoundError); !ok {
 		t.Errorf("Expected DeviceNotFoundError, got %#v", err)
 	}
 }
@@ -51,12 +50,9 @@ func TestGetUpdateAvailableForDeviceByUUIDWhenDeviceIsNotFoundOnInventoryAPI(t *
 	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
 	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
-	deviceService := DeviceService{
-		Service: Service{
-			ctx: context.Background(),
-			log: log.NewEntry(log.StandardLogger()),
-		},
-		inventory: mockInventoryClient,
+	deviceService := services.DeviceService{
+		Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+		Inventory: mockInventoryClient,
 	}
 
 	updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
@@ -64,7 +60,7 @@ func TestGetUpdateAvailableForDeviceByUUIDWhenDeviceIsNotFoundOnInventoryAPI(t *
 		t.Errorf("Expected nil updates available, got %#v", updatesAvailable)
 	}
 
-	if _, ok := err.(*DeviceNotFoundError); !ok {
+	if _, ok := err.(*services.DeviceNotFoundError); !ok {
 		t.Errorf("Expected DeviceNotFoundError, got %#v", err)
 	}
 }
@@ -86,12 +82,9 @@ func TestGetUpdateAvailableForDeviceByUUID(t *testing.T) {
 	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
 	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
-	deviceService := DeviceService{
-		Service: Service{
-			ctx: context.Background(),
-			log: log.NewEntry(log.StandardLogger()),
-		},
-		inventory: mockInventoryClient,
+	deviceService := services.DeviceService{
+		Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+		Inventory: mockInventoryClient,
 	}
 
 	imageSet := &models.ImageSet{
@@ -186,12 +179,9 @@ func TestGetUpdateAvailableForDeviceByUUIDWhenNoUpdateIsAvailable(t *testing.T) 
 	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
 	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
-	deviceService := DeviceService{
-		Service: Service{
-			ctx: context.Background(),
-			log: log.NewEntry(log.StandardLogger()),
-		},
-		inventory: mockInventoryClient,
+	deviceService := services.DeviceService{
+		Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+		Inventory: mockInventoryClient,
 	}
 
 	oldImage := &models.Image{
@@ -230,19 +220,17 @@ func TestGetUpdateAvailableForDeviceByUUIDWhenNoChecksumIsFound(t *testing.T) {
 	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
 	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
-	deviceService := DeviceService{
-		Service: Service{
-			ctx: context.Background(),
-			log: log.NewEntry(log.StandardLogger()),
-		},
-		inventory: mockInventoryClient,
+	deviceService := services.DeviceService{
+		Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+		Inventory: mockInventoryClient,
 	}
+
 	updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
 	if updatesAvailable != nil {
 		t.Errorf("Expected nil updates available, got %#v", updatesAvailable)
 	}
 
-	if _, ok := err.(*DeviceNotFoundError); !ok {
+	if _, ok := err.(*services.DeviceNotFoundError); !ok {
 		t.Errorf("Expected DeviceNotFoundError, got %#v", err)
 	}
 }
@@ -289,7 +277,7 @@ func TestGetDiffOnUpdate(t *testing.T) {
 			},
 		},
 	}
-	deltaDiff := getDiffOnUpdate(oldImage, newImage)
+	deltaDiff := services.GetDiffOnUpdate(oldImage, newImage)
 
 	if len(deltaDiff.Added) != 1 {
 		t.Errorf("Expected one package on the diff added,, got %d", len(deltaDiff.Added))
@@ -319,49 +307,57 @@ func TestGetImageForDeviceByUUID(t *testing.T) {
 	}}
 	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
 	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(2)
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
 
-	deviceService := DeviceService{
-		Service: Service{
-			ctx: context.Background(),
-			log: log.NewEntry(log.StandardLogger()),
-		},
-		inventory: mockInventoryClient,
+	deviceService := services.DeviceService{
+		Service:      services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+		Inventory:    mockInventoryClient,
+		ImageService: mockImageService,
 	}
+
 	imageSet := &models.ImageSet{
 		Name:    "test",
-		Version: 1,
+		Version: 2,
 	}
 	db.DB.Create(imageSet)
 	oldImage := &models.Image{
 		Commit: &models.Commit{
-			OSTreeCommit: checksum,
+			OSTreeCommit: fmt.Sprintf("a-old-%s", checksum),
 		},
 		Status:     models.ImageStatusSuccess,
 		ImageSetID: &imageSet.ID,
+		Version:    1,
 	}
 	db.DB.Create(oldImage.Commit)
 	db.DB.Create(oldImage)
 	fmt.Printf("Old image was created with id %d\n", oldImage.ID)
 	newImage := &models.Image{
 		Commit: &models.Commit{
-			OSTreeCommit: fmt.Sprintf("a-new-%s", checksum),
+			OSTreeCommit: checksum,
 		},
 		Status:     models.ImageStatusSuccess,
 		ImageSetID: &imageSet.ID,
+		Version:    2,
 	}
 	db.DB.Create(newImage.Commit)
 	db.DB.Create(newImage)
 	fmt.Printf("New image was created with id %d\n", newImage.ID)
-	fmt.Printf("New image was created with id %d\n", *newImage.ImageSetID)
+	fmt.Printf("New image was created with image set id %d\n", *newImage.ImageSetID)
+
+	mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(newImage, nil)
+	mockImageService.EXPECT().GetRollbackImage(gomock.Eq(newImage)).Return(oldImage, nil)
+
 	imageInfo, err := deviceService.GetDeviceImageInfo(uuid)
 	if err != nil {
 		t.Errorf("Expected nil err, got %#v", err)
 	}
 	fmt.Printf("imageInfo:: %v \n", imageInfo.Image.ID)
-	fmt.Printf("imageInfo:: %v \n", oldImage.ID)
-	if oldImage.Commit.OSTreeCommit != imageInfo.Image.Commit.OSTreeCommit {
-		t.Errorf("Expected image info to be %d, got %d", imageInfo.Image.ID, oldImage.ID)
-
+	fmt.Printf("rollbackImageInfo:: %v \n", imageInfo.Rollback.ID)
+	if oldImage.Commit.OSTreeCommit != imageInfo.Rollback.Commit.OSTreeCommit {
+		t.Errorf("Expected image info to be %d, got %d", imageInfo.Rollback.ID, oldImage.ID)
+	}
+	if newImage.Commit.OSTreeCommit != imageInfo.Image.Commit.OSTreeCommit {
+		t.Errorf("Expected image info to be %d, got %d", imageInfo.Image.ID, newImage.ID)
 	}
 }
 
@@ -382,13 +378,13 @@ func TestGetNoImageForDeviceByUUID(t *testing.T) {
 	}}
 	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
 	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(nil, errors.New("Not found"))
 
-	deviceService := DeviceService{
-		Service: Service{
-			ctx: context.Background(),
-			log: log.NewEntry(log.StandardLogger()),
-		},
-		inventory: mockInventoryClient,
+	deviceService := services.DeviceService{
+		Service:      services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+		Inventory:    mockInventoryClient,
+		ImageService: mockImageService,
 	}
 
 	_, err := deviceService.GetDeviceImageInfo(uuid)

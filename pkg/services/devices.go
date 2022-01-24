@@ -22,8 +22,9 @@ type DeviceServiceInterface interface {
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
 func NewDeviceService(ctx context.Context, log *log.Entry) DeviceServiceInterface {
 	return &DeviceService{
-		updateService: NewUpdateService(ctx, log),
-		inventory:     inventory.InitClient(ctx, log),
+		UpdateService: NewUpdateService(ctx, log),
+		ImageService:  NewImageService(ctx, log),
+		Inventory:     inventory.InitClient(ctx, log),
 		Service:       Service{ctx: ctx, log: log.WithField("service", "image")},
 	}
 }
@@ -31,8 +32,9 @@ func NewDeviceService(ctx context.Context, log *log.Entry) DeviceServiceInterfac
 // DeviceService is the main implementation of a DeviceServiceInterface
 type DeviceService struct {
 	Service
-	updateService UpdateServiceInterface
-	inventory     inventory.ClientInterface
+	UpdateService UpdateServiceInterface
+	ImageService  ImageServiceInterface
+	Inventory     inventory.ClientInterface
 }
 
 // GetDeviceByID receives DeviceID uint and get a *models.Device back
@@ -78,7 +80,7 @@ func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*models.DeviceDetai
 	// In order to have an update transaction for a device it must be a least created
 	var updates *[]models.UpdateTransaction
 	if device != nil {
-		updates, err = s.updateService.GetUpdateTransactionsForDevice(device)
+		updates, err = s.UpdateService.GetUpdateTransactionsForDevice(device)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Could not find information about updates for this device")
 			return nil, err
@@ -97,7 +99,7 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 	s.log = s.log.WithField("deviceUUID", deviceUUID)
 	var lastDeployment inventory.OSTree
 	var imageDiff []models.ImageUpdateAvailable
-	device, err := s.inventory.ReturnDevicesByID(deviceUUID)
+	device, err := s.Inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || device.Total != 1 {
 		return nil, new(DeviceNotFoundError)
 	}
@@ -144,7 +146,7 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 			return nil, err
 		}
 		var delta models.ImageUpdateAvailable
-		diff := getDiffOnUpdate(currentImage, upd)
+		diff := GetDiffOnUpdate(currentImage, upd)
 		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
 		delta.Image = upd
 		delta.PackageDiff = diff
@@ -185,7 +187,9 @@ func getVersionDiff(new, old []models.InstalledPackage) []models.InstalledPackag
 	return diff
 }
 
-func getDiffOnUpdate(oldImg models.Image, newImg models.Image) models.PackageDiff {
+// GetDiffOnUpdate returns the diff between two images.
+// TODO: Move out to a different package, as this is devices related, either to image service or image models.
+func GetDiffOnUpdate(oldImg models.Image, newImg models.Image) models.PackageDiff {
 	results := models.PackageDiff{
 		Added:    getPackageDiff(newImg.Commit.InstalledPackages, oldImg.Commit.InstalledPackages),
 		Removed:  getPackageDiff(oldImg.Commit.InstalledPackages, newImg.Commit.InstalledPackages),
@@ -198,10 +202,10 @@ func getDiffOnUpdate(oldImg models.Image, newImg models.Image) models.PackageDif
 func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*models.ImageInfo, error) {
 	s.log = s.log.WithField("deviceUUID", deviceUUID)
 	var ImageInfo models.ImageInfo
-	var currentImage models.Image
+	var currentImage *models.Image
 	var rollback *models.Image
 	var lastDeployment inventory.OSTree
-	device, err := s.inventory.ReturnDevicesByID(deviceUUID)
+	device, err := s.Inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || device.Total != 1 {
 		return nil, new(DeviceNotFoundError)
 	}
@@ -215,15 +219,19 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*models.ImageInfo
 		}
 	}
 
-	result := db.DB.Model(&models.Image{}).Joins("Commit").Where("OS_Tree_Commit = ?", lastDeployment.Checksum).First(&currentImage)
-
-	if result.Error != nil || result == nil {
-		s.log.WithField("error", result.Error.Error()).Error("Could not find device image info")
+	currentImage, err = s.ImageService.GetImageByOSTreeCommitHash(lastDeployment.Checksum)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Could not find device image info")
 		return nil, new(ImageNotFoundError)
 	}
-	if currentImage.ImageSetID != nil {
-		db.DB.Where("Image_Set_Id = ? and id < ?", currentImage.ImageSetID, currentImage.ID).Last(&rollback)
+	if currentImage.Version > 1 {
+		rollback, err = s.ImageService.GetRollbackImage(currentImage)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Could not find rollback image info")
+			return nil, new(ImageNotFoundError)
+		}
 	}
+
 	updateAvailable, err := s.GetUpdateAvailableForDeviceByUUID(deviceUUID)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Could not find updates available to get image info")
@@ -232,7 +240,7 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*models.ImageInfo
 		ImageInfo.UpdatesAvailable = &updateAvailable
 	}
 	ImageInfo.Rollback = rollback
-	ImageInfo.Image = currentImage
+	ImageInfo.Image = *currentImage
 
 	return &ImageInfo, nil
 }
