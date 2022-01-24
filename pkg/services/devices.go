@@ -17,6 +17,7 @@ type DeviceServiceInterface interface {
 	GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]models.ImageUpdateAvailable, error)
 	GetDeviceImageInfo(deviceUUID string) (*models.ImageInfo, error)
 	GetDeviceDetails(deviceUUID string) (*models.DeviceDetails, error)
+	GetDevices(params *inventory.Params) (*models.DeviceDetailsList, error)
 }
 
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
@@ -87,7 +88,7 @@ func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*models.DeviceDetai
 		}
 	}
 	details := &models.DeviceDetails{
-		Device:             device,
+		Device:             models.DeviceOnSteroids{Device: device},
 		Image:              imageInfo,
 		UpdateTransactions: updates,
 	}
@@ -243,4 +244,47 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*models.ImageInfo
 	ImageInfo.Image = *currentImage
 
 	return &ImageInfo, nil
+}
+
+func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDetailsList, error) {
+	inventoryDevices, err := s.Inventory.ReturnDevices(params)
+	if err != nil {
+		// TODO: Log
+		return nil, err
+	}
+	list := &models.DeviceDetailsList{
+		Devices: make([]models.DeviceDetails, len(inventoryDevices.Result)),
+	}
+	for _, device := range inventoryDevices.Result {
+		dd := models.DeviceDetails{}
+		dd.Device = models.DeviceOnSteroids{
+			Device: &models.Device{
+				UUID:        device.ID,
+				RHCClientID: "",
+			},
+			DeviceName: device.DisplayName,
+			LastSeen:   device.LastSeen,
+		}
+		imageInfo, err := s.GetDeviceImageInfo(device.ID)
+		if err != nil {
+			dd.Image = nil
+		} else if imageInfo != nil {
+			dd.Image = imageInfo
+		}
+		if params != nil && imageInfo != nil {
+			if params.DeviceStatus == "update_available" && imageInfo.UpdatesAvailable != nil {
+				list.Devices = append(list.Devices, dd)
+			} else if params.DeviceStatus == "running" && imageInfo.UpdatesAvailable == nil {
+				list.Devices = append(list.Devices, dd)
+			} else if params.DeviceStatus == "" {
+				list.Devices = append(list.Devices, dd)
+			}
+			// TODO: Quite sure that if it ends up not adding to the list here, the count/total will be messed up and we need as strategy for that
+		} else {
+			list.Devices = append(list.Devices, dd)
+		}
+	}
+	list.Count = inventoryDevices.Count
+	list.Total = inventoryDevices.Total
+	return list, nil
 }

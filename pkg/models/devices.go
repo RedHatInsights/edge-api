@@ -1,11 +1,24 @@
 package models
 
+type DeviceOnSteroids struct {
+	*Device
+	DeviceName string
+	LastSeen   string
+}
+
 // DeviceDetails is a Device with Image and Update transactions
 // It contains data from multiple tables on the database
 type DeviceDetails struct {
-	Device             *Device              `json:"Device,omitempty"`
+	Device             DeviceOnSteroids     `json:"Device,omitempty"`
 	Image              *ImageInfo           `json:"ImageInfo"`
 	UpdateTransactions *[]UpdateTransaction `json:"UpdateTransactions,omitempty"`
+}
+
+// DeviceDetailsList is the list of devices with details from Inventory and Edge API
+type DeviceDetailsList struct {
+	Total   int             `json:"total"`
+	Count   int             `json:"count"`
+	Devices []DeviceDetails `json:"data"`
 }
 
 // Device is a record of Edge Devices referenced by their UUID as per the

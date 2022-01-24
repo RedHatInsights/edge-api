@@ -4,17 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/url"
 
 	"github.com/go-chi/chi"
+	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
+	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	log "github.com/sirupsen/logrus"
 )
 
 // MakeDevicesRouter adds support for operations on update
 func MakeDevicesRouter(sub chi.Router) {
-	sub.Get("/", GetInventory) // TODO: Still a proof-of-concept and needs to be refactored in the future
+	sub.Get("/", GetDevices)
 	sub.Route("/{DeviceUUID}", func(r chi.Router) {
 		r.Use(DeviceCtx)
 		r.Get("/", GetDevice)
@@ -99,7 +102,6 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 
 // GetDeviceImageInfo returns the information of a running image for a device
 func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
-
 	s := dependencies.ServicesFromContext(r.Context())
 	dc, ok := r.Context().Value(DeviceContextKey).(DeviceContext)
 	if dc.DeviceUUID == "" || !ok {
@@ -173,5 +175,53 @@ func GetDevice(w http.ResponseWriter, r *http.Request) {
 	}).Error("Error retrieving updates for device")
 	if err := json.NewEncoder(w).Encode(&err); err != nil {
 		s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+	}
+}
+
+// InventoryData represents the structure of inventory response
+type InventoryData struct {
+	Total   int
+	Count   int
+	Page    int
+	PerPage int
+	Results []InventoryResponse
+}
+
+// InventoryResponse represents the structure of inventory data on response
+type InventoryResponse struct {
+	ID         string
+	DeviceName string
+	LastSeen   string
+	ImageInfo  *models.ImageInfo
+}
+
+func deviceListFilters(v url.Values) *inventory.Params {
+	var param *inventory.Params = new(inventory.Params)
+	param.PerPage = v.Get("per_page")
+	param.Page = v.Get("page")
+	param.OrderBy = v.Get("order_by")
+	param.OrderHow = v.Get("order_how")
+	param.HostnameOrID = v.Get("hostname_or_id")
+	param.DeviceStatus = v.Get("device_status")
+	return param
+}
+
+// GetDevices return the device data both on Edge API and InventoryAPI
+func GetDevices(w http.ResponseWriter, r *http.Request) {
+	services := dependencies.ServicesFromContext(r.Context())
+	params := deviceListFilters(r.URL.Query())
+	inventory, err := services.DeviceService.GetDevices(params)
+	if err != nil || inventory.Count == 0 {
+		err := errors.NewNotFound("No devices found")
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(err)
+		return
+	}
+	if err := json.NewEncoder(w).Encode(inventory); err != nil {
+		services := dependencies.ServicesFromContext(r.Context())
+		services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.GetStatus())
+		json.NewEncoder(w).Encode(err)
 	}
 }
