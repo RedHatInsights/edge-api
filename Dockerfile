@@ -24,6 +24,9 @@ RUN go build -tags=fdo -o /go/bin/edge-api
 RUN go build -o /go/bin/edge-api-migrate cmd/migrate/main.go
 RUN go build -o /go/bin/edge-api-wipe cmd/db/wipe.go
 
+# Run the doc binary
+RUN go run cmd/spec/main.go
+
 ######################################
 # STEP 2: build the dependencies image
 ######################################

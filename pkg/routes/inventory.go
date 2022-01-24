@@ -65,7 +65,10 @@ func GetInventory(w http.ResponseWriter, r *http.Request) {
 	InventoryData.Total = inventory.Total
 	InventoryData.Results = results
 
-	json.NewEncoder(w).Encode(InventoryData)
+	if err := json.NewEncoder(w).Encode(InventoryData); err != nil {
+		services := dependencies.ServicesFromContext(r.Context())
+		services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+	}
 }
 
 // GetUpdateAvailableInfo returns the image information

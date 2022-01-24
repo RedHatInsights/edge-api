@@ -47,7 +47,9 @@ var _ = Describe("Ownershipvoucher", func() {
 		})
 		http.HandleFunc(fmt.Sprintf("/management/%s/ownership_voucher/delete", config.Get().FDO.APIVersion), func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"op": "delete", "status": "OK"})
+			if err := json.NewEncoder(w).Encode(map[string]string{"op": "delete", "status": "OK"}); err != nil {
+				log.Error("Error while trying to encode ", map[string]string{"op": "delete", "status": "OK"})
+			}
 		})
 		go fdoMockServer.Serve(listener)
 	})

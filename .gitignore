@@ -41,3 +41,6 @@ config.yaml
 
 #sonarqube
 sonarqube/
+
+openapi.json
+openapi.yaml

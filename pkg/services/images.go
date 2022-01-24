@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"syscall"
@@ -507,7 +508,10 @@ func (s *ImageService) addSSHKeyToKickstart(sshKey string, username string, kick
 		s.log.WithField("error", err.Error()).Error("Failed adding username and sshkey on image")
 		return err
 	}
-	file.Close()
+	if err := file.Close(); err != nil {
+		s.log.WithField("error", err.Error()).Error("Failed closing file")
+		return err
+	}
 
 	return nil
 }
@@ -520,10 +524,14 @@ func (s *ImageService) downloadISO(isoName string, url string) error {
 	if err != nil {
 		return err
 	}
-	defer iso.Close()
+	defer func() {
+		if err := iso.Close(); err != nil {
+			s.log.WithField("error", err.Error()).Error("Error closing file")
+		}
+	}()
 
 	s.log.WithField("url", url).Debug("Downloading iso")
-	res, err := http.Get(url)
+	res, err := http.Get(url) // #nosec G107
 	if err != nil {
 		return err
 	}
@@ -637,13 +645,18 @@ func (s *ImageService) CheckImageName(name, account string) (bool, error) {
 func (s *ImageService) exeInjectionScript(kickstart string, image string, imageID uint) error {
 	fleetBashScript := "/usr/local/bin/fleetkick.sh"
 	workDir := fmt.Sprintf("/var/tmp/workdir%d", imageID)
-	err := os.Mkdir(workDir, 0755)
+	err := os.Mkdir(workDir, 0750)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error giving permissions to execute fleetkick")
 		return err
 	}
 
-	cmd := exec.Command(fleetBashScript, kickstart, image, image, workDir)
+	cmd := &exec.Cmd{
+		Path: fleetBashScript,
+		Args: []string{
+			kickstart, image, image, workDir,
+		},
+	}
 	output, err := cmd.Output()
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error executing fleetkick")
@@ -657,12 +670,16 @@ func (s *ImageService) exeInjectionScript(kickstart string, image string, imageI
 func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) error {
 	s.log.WithField("isoPath", isoPath).Info("Calculating sha256 checksum for ISO")
 
-	fh, err := os.Open(isoPath)
+	fh, err := os.Open(filepath.Clean(isoPath))
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error opening ISO file")
 		return err
 	}
-	defer fh.Close()
+	defer func() {
+		if err := fh.Close(); err != nil {
+			s.log.WithField("error", err.Error()).Error("Error closing file")
+		}
+	}()
 
 	sumCalculator := sha256.New()
 	_, err = io.Copy(sumCalculator, fh)
@@ -869,9 +886,16 @@ func (s *ImageService) GetUpdateInfo(image models.Image) ([]models.ImageUpdateAv
 		return nil, nil
 	}
 	for _, upd := range images {
+		upd := upd // this will prevent implicit memory aliasing in the loop
 		db.DB.First(&upd.Commit, upd.CommitID)
-		db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages)
-		db.DB.Model(&upd).Association("Packages").Find(&upd.Packages)
+		if err := db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages); err != nil {
+			s.log.WithField("error", err.Error()).Error("Error retrieving installed packages")
+			return nil, err
+		}
+		if err := db.DB.Model(&upd).Association("Packages").Find(&upd.Packages); err != nil {
+			s.log.WithField("error", err.Error()).Error("Error retrieving updated packages")
+			return nil, err
+		}
 		var delta models.ImageUpdateAvailable
 		diff := GetDiffOnUpdate(image, upd)
 		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
