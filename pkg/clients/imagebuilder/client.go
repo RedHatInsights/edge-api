@@ -54,13 +54,13 @@ type Customizations struct {
 
 // Repository is the record of Third Party Repository
 type Repository struct {
-	Baseurl    []string `json:"baseurl,omitempty"`
-	CheckGpg   *bool    `json:"check_gpg,omitempty"`
-	GpgKey     *string  `json:"gpg_key,omitempty"`
-	IgnoreSsl  *bool    `json:"ignore_ssl,omitempty"`
-	Metalink   *string  `json:"metalink,omitempty"`
-	Mirrorlist *string  `json:"mirrorlist,omitempty"`
-	Rhsm       bool     `json:"rhsm"`
+	BaseURL    string  `json:"baseurl"`
+	CheckGPG   *bool   `json:"check_gpg,omitempty"`
+	GPGKey     *string `json:"gpg_key,omitempty"`
+	IgnoreSSL  *bool   `json:"ignore_ssl,omitempty"`
+	MetaLink   *string `json:"metalink,omitempty"`
+	MirrorList *string `json:"mirrorlist,omitempty"`
+	RHSM       bool    `json:"rhsm,omitempty"`
 }
 
 // UploadRequest is the upload options accepted by Image Builder API
@@ -201,21 +201,12 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 // ComposeCommit composes a Commit on ImageBuilder
 func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 	payloadURL, err := c.GetThirdPartyURL(image)
-	if err != nil {
-		return nil, errors.New("error getting information on third Party repository")
-
-	}
 
 	req := &ComposeRequest{
 		Customizations: &Customizations{
-			Packages: image.GetPackagesList(),
-			PayloadRepositories: &[]Repository{
-				{
-					Baseurl: payloadURL,
-				},
-			},
+			Packages:            image.GetPackagesList(),
+			PayloadRepositories: &payloadURL,
 		},
-
 		Distribution: image.Distribution,
 		ImageRequests: []ImageRequest{
 			{
@@ -436,21 +427,22 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 }
 
 // GetThirdPartyURL finds the url of Third Party Repository using the name
-func (c *Client) GetThirdPartyURL(image *models.Image) ([]string, error) {
+func (c *Client) GetThirdPartyURL(image *models.Image) ([]Repository, error) {
 	var thirdpartyrepo *models.ThirdPartyRepo
 	account, err := common.GetAccountFromContext(c.ctx)
 	if err != nil {
 		c.log.WithField("error", err).Error("error retrieving account")
 		return nil, errors.New("error retrieving account")
 	}
-	pkgs := make([]string, len(image.ThirdPartyRepositories))
+	pkgs := make([]Repository, len(image.ThirdPartyRepositories))
 	for i := range image.ThirdPartyRepositories {
 		tprepoURL := db.DB.Model(&models.ThirdPartyRepo{}).Select("url").Where("account = ? and id = ?", account, image.ThirdPartyRepositories[i].ID).Find(&thirdpartyrepo)
 		if tprepoURL.Error != nil {
 			log.Error(tprepoURL.Error)
 		}
-		pkgs[i] = thirdpartyrepo.URL
-
+		pkgs[i] = Repository{
+			BaseURL: thirdpartyrepo.URL,
+		}
 	}
 
 	return pkgs, err
