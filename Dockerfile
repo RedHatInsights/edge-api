@@ -68,6 +68,7 @@ COPY --from=edge-builder /go/bin/edge-api /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-migrate /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-wipe /usr/bin
 COPY --from=edge-builder /src/github.com/RedHatInsights/edge-api/cmd/spec/openapi.json /var/tmp
+RUN chmod 0644 /var/tmp/openapi.json
 
 # kickstart inject requirements
 COPY --from=edge-builder /src/github.com/RedHatInsights/edge-api/scripts/fleetkick.sh /usr/local/bin
