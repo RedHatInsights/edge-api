@@ -34,10 +34,12 @@ func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
 			return err
 		}
 
-		path, err := sanitizeExtractPath(header.Name, dst)
-		if err != nil {
-			return err
-		}
+		path := filepath.Join(dst, header.Name)
+		// FIX ME!!! - Rollback previous solution due an error on sanitizeExtractPath
+		// path, err := sanitizeExtractPath(header.Name, dst)
+		// if err != nil {
+		// 	return err
+		// }
 		info := header.FileInfo()
 		if info.IsDir() {
 			if err = os.MkdirAll(path, info.Mode()); err != nil {
@@ -45,7 +47,9 @@ func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
 			}
 			continue
 		}
-		file, err := os.OpenFile(filepath.Clean(path), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
+		file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
+		// FIX ME!!! - Rollback previous solution due an error on sanitizeExtractPath
+		// file, err := os.OpenFile(filepath.Clean(path), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
 		if err != nil {
 			return err
 		}
