@@ -246,6 +246,7 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*models.ImageInfo
 	return &ImageInfo, nil
 }
 
+// GetDevices returns a list of EdgeDevices, which is a mix of device information from EdgeAPI and InventoryAPI
 func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDetailsList, error) {
 	s.log.Info("Getting devices...")
 	inventoryDevices, err := s.Inventory.ReturnDevices(params)
