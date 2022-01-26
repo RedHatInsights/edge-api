@@ -202,7 +202,8 @@ func deviceListFilters(v url.Values) *inventory.Params {
 	param.OrderBy = v.Get("order_by")
 	param.OrderHow = v.Get("order_how")
 	param.HostnameOrID = v.Get("hostname_or_id")
-	param.DeviceStatus = v.Get("device_status")
+	// TODO: Plan and figure out how to filter this properly
+	// param.DeviceStatus = v.Get("device_status")
 	return param
 }
 
