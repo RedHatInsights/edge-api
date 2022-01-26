@@ -1,6 +1,9 @@
 package models
 
-type DeviceOnSteroids struct {
+// EdgeDevice is the entity that represents and Edge Device
+// It is a combination of the data of a Device owned by Inventory API
+// and the Device data saved on Edge API
+type EdgeDevice struct {
 	*Device
 	DeviceName string
 	LastSeen   string
@@ -9,7 +12,7 @@ type DeviceOnSteroids struct {
 // DeviceDetails is a Device with Image and Update transactions
 // It contains data from multiple tables on the database
 type DeviceDetails struct {
-	Device             DeviceOnSteroids     `json:"Device,omitempty"`
+	Device             EdgeDevice           `json:"Device,omitempty"`
 	Image              *ImageInfo           `json:"ImageInfo"`
 	UpdateTransactions *[]UpdateTransaction `json:"UpdateTransactions,omitempty"`
 }

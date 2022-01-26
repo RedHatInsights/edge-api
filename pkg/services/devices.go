@@ -88,7 +88,7 @@ func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*models.DeviceDetai
 		}
 	}
 	details := &models.DeviceDetails{
-		Device:             models.DeviceOnSteroids{Device: device},
+		Device:             models.EdgeDevice{Device: device},
 		Image:              imageInfo,
 		UpdateTransactions: updates,
 	}
@@ -257,7 +257,7 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 	}
 	for _, device := range inventoryDevices.Result {
 		dd := models.DeviceDetails{}
-		dd.Device = models.DeviceOnSteroids{
+		dd.Device = models.EdgeDevice{
 			Device: &models.Device{
 				UUID:        device.ID,
 				RHCClientID: "",
