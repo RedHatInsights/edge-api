@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"testing"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
@@ -17,379 +19,319 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func TestGetUpdateAvailableForDeviceByUUIDWhenErrorOnInventoryAPI(t *testing.T) {
+var _ = Describe("DeviceService", func() {
+	Context("GetUpdateAvailableForDeviceByUUID", func() {
+		When("error on InventoryAPI", func() {
+			ctrl := gomock.NewController(GinkgoT())
+			defer ctrl.Finish()
+			uuid := faker.UUIDHyphenated()
+			mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
+			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(inventory.Response{}, errors.New("error on inventory api"))
+			deviceService := services.DeviceService{
+				Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+				Inventory: mockInventoryClient,
+			}
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+			updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
+			Expect(updatesAvailable).To(BeNil())
+			Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
+		})
+		When("device is not found on InventoryAPI", func() {
+			ctrl := gomock.NewController(GinkgoT())
+			defer ctrl.Finish()
+			uuid := faker.UUIDHyphenated()
+			resp := inventory.Response{}
+			mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
+			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
-	uuid := faker.UUIDHyphenated()
-	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
-	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(inventory.Response{}, errors.New("error on inventory api"))
+			deviceService := services.DeviceService{
+				Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+				Inventory: mockInventoryClient,
+			}
 
-	deviceService := services.DeviceService{
-		Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
-		Inventory: mockInventoryClient,
-	}
-
-	updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
-	if updatesAvailable != nil {
-		t.Errorf("Expected nil updates available, got %#v", updatesAvailable)
-	}
-
-	if _, ok := err.(*services.DeviceNotFoundError); !ok {
-		t.Errorf("Expected DeviceNotFoundError, got %#v", err)
-	}
-}
-func TestGetUpdateAvailableForDeviceByUUIDWhenDeviceIsNotFoundOnInventoryAPI(t *testing.T) {
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	uuid := faker.UUIDHyphenated()
-	resp := inventory.Response{}
-	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
-	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
-
-	deviceService := services.DeviceService{
-		Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
-		Inventory: mockInventoryClient,
-	}
-
-	updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
-	if updatesAvailable != nil {
-		t.Errorf("Expected nil updates available, got %#v", updatesAvailable)
-	}
-
-	if _, ok := err.(*services.DeviceNotFoundError); !ok {
-		t.Errorf("Expected DeviceNotFoundError, got %#v", err)
-	}
-}
-func TestGetUpdateAvailableForDeviceByUUID(t *testing.T) {
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	uuid := faker.UUIDHyphenated()
-	checksum := "fake-checksum"
-	resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Devices{
-		{ID: uuid, Ostree: inventory.SystemProfile{
-			RHCClientID: faker.UUIDHyphenated(),
-			RpmOstreeDeployments: []inventory.OSTree{
-				{Checksum: checksum, Booted: true},
-			},
-		}},
-	}}
-	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
-	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
-
-	deviceService := services.DeviceService{
-		Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
-		Inventory: mockInventoryClient,
-	}
-
-	imageSet := &models.ImageSet{
-		Name:    "test",
-		Version: 1,
-	}
-	db.DB.Create(imageSet)
-	oldImage := &models.Image{
-		Commit: &models.Commit{
-			OSTreeCommit: checksum,
-			InstalledPackages: []models.InstalledPackage{
-				{
-					Name:    "ansible",
-					Version: "1.0.0",
-				},
-				{
-					Name:    "yum",
-					Version: "2:6.0-1",
-				},
-			},
-		},
-		Status:     models.ImageStatusSuccess,
-		ImageSetID: &imageSet.ID,
-	}
-	db.DB.Create(oldImage.Commit)
-	db.DB.Create(oldImage)
-	newImage := &models.Image{
-		Commit: &models.Commit{
-			OSTreeCommit: fmt.Sprintf("a-new-%s", checksum),
-			InstalledPackages: []models.InstalledPackage{
-				{
-					Name:    "yum",
-					Version: "3:6.0-1",
-				},
-				{
-					Name:    "vim",
-					Version: "2.0.0",
-				},
-			},
-		},
-		Status:     models.ImageStatusSuccess,
-		ImageSetID: &imageSet.ID,
-	}
-	db.DB.Create(newImage.Commit)
-	db.DB.Create(newImage)
-	updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
-	if err != nil {
-		t.Errorf("Expected nil err, got %#v", err)
-	}
-	if len(updatesAvailable) != 1 {
-		t.Errorf("Expected one update available, got %d", len(updatesAvailable))
-	}
-	newUpdate := updatesAvailable[0]
-	if newUpdate.Image.ID != newImage.ID {
-		t.Errorf("Expected new image to be %d, got %d", newImage.ID, newUpdate.Image.ID)
-	}
-	if len(newUpdate.PackageDiff.Upgraded) != 1 {
-		t.Errorf("Expected package diff upgraded len to be 1, got %d", len(newUpdate.PackageDiff.Upgraded))
-	}
-	if len(newUpdate.PackageDiff.Added) != 1 {
-		t.Errorf("Expected package diff added len to be 1, got %d", len(newUpdate.PackageDiff.Added))
-	}
-	if len(newUpdate.PackageDiff.Removed) != 1 {
-		t.Errorf("Expected package diff removed len to be 1, got %d", len(newUpdate.PackageDiff.Removed))
-	}
-
-}
-func TestGetUpdateAvailableForDeviceByUUIDWhenNoUpdateIsAvailable(t *testing.T) {
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	uuid := faker.UUIDHyphenated()
-	checksum := "fake-checksum-2"
-	resp := inventory.Response{
-		Total: 1,
-		Count: 1,
-		Result: []inventory.Devices{
-			{
-				ID: uuid,
-				Ostree: inventory.SystemProfile{
+			updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
+			Expect(updatesAvailable).To(BeNil())
+			Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
+		})
+		When("everything is okay", func() {
+			ctrl := gomock.NewController(GinkgoT())
+			defer ctrl.Finish()
+			uuid := faker.UUIDHyphenated()
+			checksum := "fake-checksum"
+			resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Devices{
+				{ID: uuid, Ostree: inventory.SystemProfile{
 					RHCClientID: faker.UUIDHyphenated(),
 					RpmOstreeDeployments: []inventory.OSTree{
-						{
-							Checksum: checksum,
-							Booted:   true,
-						},
+						{Checksum: checksum, Booted: true},
 					},
 				}},
-		},
-	}
-	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
-	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
+			}}
+			mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
+			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
-	deviceService := services.DeviceService{
-		Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
-		Inventory: mockInventoryClient,
-	}
+			deviceService := services.DeviceService{
+				Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+				Inventory: mockInventoryClient,
+			}
 
-	oldImage := &models.Image{
-		Commit: &models.Commit{
-			OSTreeCommit: checksum,
-		},
-		Status: models.ImageStatusSuccess,
-	}
-	db.DB.Create(oldImage)
+			imageSet := &models.ImageSet{
+				Name:    "test",
+				Version: 1,
+			}
+			db.DB.Create(imageSet)
+			oldImage := &models.Image{
+				Commit: &models.Commit{
+					OSTreeCommit: checksum,
+					InstalledPackages: []models.InstalledPackage{
+						{
+							Name:    "ansible",
+							Version: "1.0.0",
+						},
+						{
+							Name:    "yum",
+							Version: "2:6.0-1",
+						},
+					},
+				},
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+			}
+			db.DB.Create(oldImage.Commit)
+			db.DB.Create(oldImage)
+			newImage := &models.Image{
+				Commit: &models.Commit{
+					OSTreeCommit: fmt.Sprintf("a-new-%s", checksum),
+					InstalledPackages: []models.InstalledPackage{
+						{
+							Name:    "yum",
+							Version: "3:6.0-1",
+						},
+						{
+							Name:    "vim",
+							Version: "2.0.0",
+						},
+					},
+				},
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+			}
+			db.DB.Create(newImage.Commit)
+			db.DB.Create(newImage)
+			updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
 
-	updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
-	if updatesAvailable != nil {
-		t.Errorf("Expected nil updates available, got %#v", updatesAvailable)
-	}
+			Expect(err).To(BeNil())
+			Expect(updatesAvailable).To(HaveLen(1))
+			newUpdate := updatesAvailable[0]
+			Expect(newUpdate.Image.ID).To(Equal(newImage.ID))
+			Expect(newUpdate.PackageDiff.Upgraded).To(HaveLen(1))
+			Expect(newUpdate.PackageDiff.Added).To(HaveLen(1))
+			Expect(newUpdate.PackageDiff.Removed).To(HaveLen(1))
+		})
+		When("no update is available", func() {
+			ctrl := gomock.NewController(GinkgoT())
+			defer ctrl.Finish()
+			uuid := faker.UUIDHyphenated()
+			checksum := "fake-checksum-2"
+			resp := inventory.Response{
+				Total: 1,
+				Count: 1,
+				Result: []inventory.Devices{
+					{
+						ID: uuid,
+						Ostree: inventory.SystemProfile{
+							RHCClientID: faker.UUIDHyphenated(),
+							RpmOstreeDeployments: []inventory.OSTree{
+								{
+									Checksum: checksum,
+									Booted:   true,
+								},
+							},
+						}},
+				},
+			}
+			mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
+			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
-	if err != nil {
-		t.Errorf("Expected nil err, got %#v", err)
-	}
-}
+			deviceService := services.DeviceService{
+				Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+				Inventory: mockInventoryClient,
+			}
 
-func TestGetUpdateAvailableForDeviceByUUIDWhenNoChecksumIsFound(t *testing.T) {
+			oldImage := &models.Image{
+				Commit: &models.Commit{
+					OSTreeCommit: checksum,
+				},
+				Status: models.ImageStatusSuccess,
+			}
+			db.DB.Create(oldImage)
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+			updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
+			Expect(updatesAvailable).To(BeNil())
+			Expect(err).To(BeNil())
+		})
+		When("no checksum is found", func() {
+			ctrl := gomock.NewController(GinkgoT())
+			defer ctrl.Finish()
+			uuid := faker.UUIDHyphenated()
+			checksum := "fake-checksum-3"
+			resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Devices{
+				{ID: uuid, Ostree: inventory.SystemProfile{
+					RHCClientID: faker.UUIDHyphenated(),
+					RpmOstreeDeployments: []inventory.OSTree{
+						{Checksum: checksum, Booted: true},
+					},
+				}},
+			}}
+			mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
+			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
-	uuid := faker.UUIDHyphenated()
-	checksum := "fake-checksum-3"
-	resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Devices{
-		{ID: uuid, Ostree: inventory.SystemProfile{
-			RHCClientID: faker.UUIDHyphenated(),
-			RpmOstreeDeployments: []inventory.OSTree{
-				{Checksum: checksum, Booted: true},
+			deviceService := services.DeviceService{
+				Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+				Inventory: mockInventoryClient,
+			}
+
+			updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
+			Expect(updatesAvailable).To(BeNil())
+			Expect(err).ToNot(BeNil())
+			Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
+		})
+	})
+	Context("GetDiffOnUpdate", func() {
+
+		oldImage := models.Image{
+			Commit: &models.Commit{
+				InstalledPackages: []models.InstalledPackage{
+					{
+						Name:    "vim",
+						Version: "2.2",
+					},
+					{
+						Name:    "ansible",
+						Version: "1",
+					},
+					{
+						Name:    "yum",
+						Version: "2:6.0-1",
+					},
+					{
+						Name:    "dnf",
+						Version: "2:6.0-1",
+					},
+				},
 			},
-		}},
-	}}
-	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
-	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
-
-	deviceService := services.DeviceService{
-		Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
-		Inventory: mockInventoryClient,
-	}
-
-	updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
-	if updatesAvailable != nil {
-		t.Errorf("Expected nil updates available, got %#v", updatesAvailable)
-	}
-
-	if _, ok := err.(*services.DeviceNotFoundError); !ok {
-		t.Errorf("Expected DeviceNotFoundError, got %#v", err)
-	}
-}
-
-func TestGetDiffOnUpdate(t *testing.T) {
-
-	oldImage := models.Image{
-		Commit: &models.Commit{
-			InstalledPackages: []models.InstalledPackage{
-				{
-					Name:    "vim",
-					Version: "2.2",
-				},
-				{
-					Name:    "ansible",
-					Version: "1",
-				},
-				{
-					Name:    "yum",
-					Version: "2:6.0-1",
-				},
-				{
-					Name:    "dnf",
-					Version: "2:6.0-1",
+		}
+		newImage := models.Image{
+			Commit: &models.Commit{
+				InstalledPackages: []models.InstalledPackage{
+					{
+						Name:    "zsh",
+						Version: "1",
+					},
+					{
+						Name:    "yum",
+						Version: "2:6.0-2.el6",
+					},
+					{
+						Name:    "dnf",
+						Version: "2:6.0-1",
+					},
 				},
 			},
-		},
-	}
-	newImage := models.Image{
-		Commit: &models.Commit{
-			InstalledPackages: []models.InstalledPackage{
-				{
-					Name:    "zsh",
-					Version: "1",
+		}
+		deltaDiff := services.GetDiffOnUpdate(oldImage, newImage)
+		Expect(deltaDiff.Added).To(HaveLen(1))
+		Expect(deltaDiff.Removed).To(HaveLen(2))
+		Expect(deltaDiff.Upgraded).To(HaveLen(1))
+	})
+	Context("GetImageForDeviceByUUID", func() {
+		When("Image is found", func() {
+			ctrl := gomock.NewController(GinkgoT())
+			defer ctrl.Finish()
+
+			uuid := faker.UUIDHyphenated()
+			checksum := "fake-checksum"
+			resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Devices{
+				{ID: uuid, Ostree: inventory.SystemProfile{
+					RHCClientID: faker.UUIDHyphenated(),
+					RpmOstreeDeployments: []inventory.OSTree{
+						{Checksum: checksum, Booted: true},
+					},
+				}},
+			}}
+			mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
+			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(2)
+			mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+
+			deviceService := services.DeviceService{
+				Service:      services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+				Inventory:    mockInventoryClient,
+				ImageService: mockImageService,
+			}
+
+			imageSet := &models.ImageSet{
+				Name:    "test",
+				Version: 2,
+			}
+			db.DB.Create(imageSet)
+			oldImage := &models.Image{
+				Commit: &models.Commit{
+					OSTreeCommit: fmt.Sprintf("a-old-%s", checksum),
 				},
-				{
-					Name:    "yum",
-					Version: "2:6.0-2.el6",
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    1,
+			}
+			db.DB.Create(oldImage.Commit)
+			db.DB.Create(oldImage)
+			fmt.Printf("Old image was created with id %d\n", oldImage.ID)
+			newImage := &models.Image{
+				Commit: &models.Commit{
+					OSTreeCommit: checksum,
 				},
-				{
-					Name:    "dnf",
-					Version: "2:6.0-1",
-				},
-			},
-		},
-	}
-	deltaDiff := services.GetDiffOnUpdate(oldImage, newImage)
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    2,
+			}
+			db.DB.Create(newImage.Commit)
+			db.DB.Create(newImage)
+			fmt.Printf("New image was created with id %d\n", newImage.ID)
+			fmt.Printf("New image was created with image set id %d\n", *newImage.ImageSetID)
 
-	if len(deltaDiff.Added) != 1 {
-		t.Errorf("Expected one package on the diff added,, got %d", len(deltaDiff.Added))
-	}
-	if len(deltaDiff.Removed) != 2 {
-		t.Errorf("Expected two packages on the diff removed, got %d", len(deltaDiff.Removed))
-	}
-	if len(deltaDiff.Upgraded) != 1 {
-		t.Errorf("Expected one package upgraded, got %d", len(deltaDiff.Removed))
-	}
-}
+			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(newImage, nil)
+			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(newImage)).Return(oldImage, nil)
 
-func TestGetImageForDeviceByUUID(t *testing.T) {
+			imageInfo, err := deviceService.GetDeviceImageInfo(uuid)
+			Expect(err).ToNot(BeNil())
+			Expect(oldImage.Commit.OSTreeCommit).To(Equal(imageInfo.Rollback.Commit.OSTreeCommit))
+			Expect(newImage.Commit.OSTreeCommit).To(Equal(imageInfo.Image.Commit.OSTreeCommit))
+		})
+		When("Image is not found", func() {
+			ctrl := gomock.NewController(GinkgoT())
+			defer ctrl.Finish()
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+			uuid := faker.UUIDHyphenated()
+			checksum := "123"
+			resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Devices{
+				{ID: uuid, Ostree: inventory.SystemProfile{
+					RHCClientID: faker.UUIDHyphenated(),
+					RpmOstreeDeployments: []inventory.OSTree{
+						{Checksum: checksum, Booted: true},
+					},
+				}},
+			}}
+			mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
+			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
+			mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(nil, errors.New("Not found"))
 
-	uuid := faker.UUIDHyphenated()
-	checksum := "fake-checksum"
-	resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Devices{
-		{ID: uuid, Ostree: inventory.SystemProfile{
-			RHCClientID: faker.UUIDHyphenated(),
-			RpmOstreeDeployments: []inventory.OSTree{
-				{Checksum: checksum, Booted: true},
-			},
-		}},
-	}}
-	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
-	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(2)
-	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+			deviceService := services.DeviceService{
+				Service:      services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+				Inventory:    mockInventoryClient,
+				ImageService: mockImageService,
+			}
 
-	deviceService := services.DeviceService{
-		Service:      services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
-		Inventory:    mockInventoryClient,
-		ImageService: mockImageService,
-	}
-
-	imageSet := &models.ImageSet{
-		Name:    "test",
-		Version: 2,
-	}
-	db.DB.Create(imageSet)
-	oldImage := &models.Image{
-		Commit: &models.Commit{
-			OSTreeCommit: fmt.Sprintf("a-old-%s", checksum),
-		},
-		Status:     models.ImageStatusSuccess,
-		ImageSetID: &imageSet.ID,
-		Version:    1,
-	}
-	db.DB.Create(oldImage.Commit)
-	db.DB.Create(oldImage)
-	fmt.Printf("Old image was created with id %d\n", oldImage.ID)
-	newImage := &models.Image{
-		Commit: &models.Commit{
-			OSTreeCommit: checksum,
-		},
-		Status:     models.ImageStatusSuccess,
-		ImageSetID: &imageSet.ID,
-		Version:    2,
-	}
-	db.DB.Create(newImage.Commit)
-	db.DB.Create(newImage)
-	fmt.Printf("New image was created with id %d\n", newImage.ID)
-	fmt.Printf("New image was created with image set id %d\n", *newImage.ImageSetID)
-
-	mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(newImage, nil)
-	mockImageService.EXPECT().GetRollbackImage(gomock.Eq(newImage)).Return(oldImage, nil)
-
-	imageInfo, err := deviceService.GetDeviceImageInfo(uuid)
-	if err != nil {
-		t.Errorf("Expected nil err, got %#v", err)
-	}
-	fmt.Printf("imageInfo:: %v \n", imageInfo.Image.ID)
-	fmt.Printf("rollbackImageInfo:: %v \n", imageInfo.Rollback.ID)
-	if oldImage.Commit.OSTreeCommit != imageInfo.Rollback.Commit.OSTreeCommit {
-		t.Errorf("Expected image info to be %d, got %d", imageInfo.Rollback.ID, oldImage.ID)
-	}
-	if newImage.Commit.OSTreeCommit != imageInfo.Image.Commit.OSTreeCommit {
-		t.Errorf("Expected image info to be %d, got %d", imageInfo.Image.ID, newImage.ID)
-	}
-}
-
-func TestGetNoImageForDeviceByUUID(t *testing.T) {
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	uuid := faker.UUIDHyphenated()
-	checksum := "123"
-	resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Devices{
-		{ID: uuid, Ostree: inventory.SystemProfile{
-			RHCClientID: faker.UUIDHyphenated(),
-			RpmOstreeDeployments: []inventory.OSTree{
-				{Checksum: checksum, Booted: true},
-			},
-		}},
-	}}
-	mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
-	mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
-	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(nil, errors.New("Not found"))
-
-	deviceService := services.DeviceService{
-		Service:      services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
-		Inventory:    mockInventoryClient,
-		ImageService: mockImageService,
-	}
-
-	_, err := deviceService.GetDeviceImageInfo(uuid)
-	if err == nil {
-		t.Errorf("Expected ImageNotFoundError, got Nil")
-	}
-
-}
+			_, err := deviceService.GetDeviceImageInfo(uuid)
+			Expect(err).To(MatchError(new(services.ImageNotFoundError)))
+		})
+	})
+})

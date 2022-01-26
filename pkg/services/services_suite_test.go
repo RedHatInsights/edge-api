@@ -8,6 +8,7 @@ import (
 )
 
 func TestServiceSuite(t *testing.T) {
+	defer GinkgoRecover()
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Services Suite")
 }

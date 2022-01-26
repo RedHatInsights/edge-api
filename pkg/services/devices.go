@@ -247,44 +247,45 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*models.ImageInfo
 }
 
 func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDetailsList, error) {
+	s.log.Info("Getting devices...")
 	inventoryDevices, err := s.Inventory.ReturnDevices(params)
 	if err != nil {
-		// TODO: Log
+		s.log.WithField("error", err.Error()).Error("Error retrieving devices from inventory")
 		return nil, err
 	}
 	list := &models.DeviceDetailsList{
 		Devices: make([]models.DeviceDetails, len(inventoryDevices.Result)),
+		Count:   inventoryDevices.Count,
+		Total:   inventoryDevices.Total,
 	}
+	s.log.Info("Adding Edge Device information...")
 	for _, device := range inventoryDevices.Result {
 		dd := models.DeviceDetails{}
 		dd.Device = models.EdgeDevice{
 			Device: &models.Device{
 				UUID:        device.ID,
-				RHCClientID: "",
+				RHCClientID: device.Ostree.RHCClientID,
 			},
 			DeviceName: device.DisplayName,
 			LastSeen:   device.LastSeen,
 		}
+		s.log.WithField("deviceID", device.ID).Info("Getting image info for device...")
 		imageInfo, err := s.GetDeviceImageInfo(device.ID)
 		if err != nil {
 			dd.Image = nil
 		} else if imageInfo != nil {
 			dd.Image = imageInfo
 		}
-		if params != nil && imageInfo != nil {
-			if params.DeviceStatus == "update_available" && imageInfo.UpdatesAvailable != nil {
-				list.Devices = append(list.Devices, dd)
-			} else if params.DeviceStatus == "running" && imageInfo.UpdatesAvailable == nil {
-				list.Devices = append(list.Devices, dd)
-			} else if params.DeviceStatus == "" {
-				list.Devices = append(list.Devices, dd)
-			}
-			// TODO: Quite sure that if it ends up not adding to the list here, the count/total will be messed up and we need as strategy for that
-		} else {
-			list.Devices = append(list.Devices, dd)
-		}
+		// TODO: Add back the ability to filter by status when we figure out how to do pagination
+		// if params != nil && imageInfo != nil {
+		// 	if params.DeviceStatus == "update_available" && imageInfo.UpdatesAvailable != nil {
+		// 		list.Devices = append(list.Devices, dd)
+		// 	} else if params.DeviceStatus == "running" && imageInfo.UpdatesAvailable == nil {
+		// 		list.Devices = append(list.Devices, dd)
+		// 	} else if params.DeviceStatus == "" {
+		// 		list.Devices = append(list.Devices, dd)
+		// 	}
+		list.Devices = append(list.Devices, dd)
 	}
-	list.Count = inventoryDevices.Count
-	list.Total = inventoryDevices.Total
 	return list, nil
 }
