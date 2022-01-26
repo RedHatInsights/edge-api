@@ -214,7 +214,7 @@ func GetDevices(w http.ResponseWriter, r *http.Request) {
 	if err != nil || inventory.Count == 0 {
 		err := errors.NewNotFound("No devices found")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(err)
+		_ = json.NewEncoder(w).Encode(err)
 		return
 	}
 	if err := json.NewEncoder(w).Encode(inventory); err != nil {
@@ -222,6 +222,6 @@ func GetDevices(w http.ResponseWriter, r *http.Request) {
 		services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(err)
+		_ = json.NewEncoder(w).Encode(err)
 	}
 }
