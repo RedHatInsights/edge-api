@@ -255,7 +255,7 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		return nil, err
 	}
 	list := &models.DeviceDetailsList{
-		Devices: make([]models.DeviceDetails, len(inventoryDevices.Result)),
+		Devices: make([]models.DeviceDetails, inventoryDevices.Count),
 		Count:   inventoryDevices.Count,
 		Total:   inventoryDevices.Total,
 	}

@@ -58,7 +58,7 @@ var _ = Describe("DeviceService", func() {
 			defer ctrl.Finish()
 			uuid := faker.UUIDHyphenated()
 			checksum := "fake-checksum"
-			resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Devices{
+			resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
 				{ID: uuid, Ostree: inventory.SystemProfile{
 					RHCClientID: faker.UUIDHyphenated(),
 					RpmOstreeDeployments: []inventory.OSTree{
@@ -135,7 +135,7 @@ var _ = Describe("DeviceService", func() {
 			resp := inventory.Response{
 				Total: 1,
 				Count: 1,
-				Result: []inventory.Devices{
+				Result: []inventory.Device{
 					{
 						ID: uuid,
 						Ostree: inventory.SystemProfile{
@@ -174,7 +174,7 @@ var _ = Describe("DeviceService", func() {
 			defer ctrl.Finish()
 			uuid := faker.UUIDHyphenated()
 			checksum := "fake-checksum-3"
-			resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Devices{
+			resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
 				{ID: uuid, Ostree: inventory.SystemProfile{
 					RHCClientID: faker.UUIDHyphenated(),
 					RpmOstreeDeployments: []inventory.OSTree{
@@ -250,7 +250,7 @@ var _ = Describe("DeviceService", func() {
 
 			uuid := faker.UUIDHyphenated()
 			checksum := "fake-checksum"
-			resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Devices{
+			resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
 				{ID: uuid, Ostree: inventory.SystemProfile{
 					RHCClientID: faker.UUIDHyphenated(),
 					RpmOstreeDeployments: []inventory.OSTree{
@@ -311,7 +311,7 @@ var _ = Describe("DeviceService", func() {
 
 			uuid := faker.UUIDHyphenated()
 			checksum := "123"
-			resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Devices{
+			resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
 				{ID: uuid, Ostree: inventory.SystemProfile{
 					RHCClientID: faker.UUIDHyphenated(),
 					RpmOstreeDeployments: []inventory.OSTree{
@@ -332,6 +332,63 @@ var _ = Describe("DeviceService", func() {
 
 			_, err := deviceService.GetDeviceImageInfo(uuid)
 			Expect(err).To(MatchError(new(services.ImageNotFoundError)))
+		})
+	})
+	Context("GetDevices", func() {
+		When("no devices are returned from InventoryAPI", func() {
+			ctrl := gomock.NewController(GinkgoT())
+			defer ctrl.Finish()
+			params := new(inventory.Params)
+			mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
+			mockInventoryClient.EXPECT().ReturnDevices(gomock.Eq(params)).Return(inventory.Response{
+				Total: 0,
+				Count: 0,
+			}, nil)
+			deviceService := services.DeviceService{
+				Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+				Inventory: mockInventoryClient,
+			}
+
+			devices, err := deviceService.GetDevices(params)
+			Expect(devices).ToNot(BeNil())
+			Expect(devices.Devices).To(HaveLen(1))
+			Expect(devices.Count).To(Equal(0))
+			Expect(devices.Total).To(Equal(0))
+			Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
+		})
+		When("devices are returned from InventoryAPI", func() {
+			ctrl := gomock.NewController(GinkgoT())
+			defer ctrl.Finish()
+			params := new(inventory.Params)
+			deviceWithImage := models.Device{}
+			deviceWithNoImage := models.Device{}
+			mockInventoryClient := mock_inventory.NewMockClientInterface(ctrl)
+			mockInventoryClient.EXPECT().ReturnDevices(gomock.Eq(params)).Return(inventory.Response{
+				Total: 2,
+				Count: 2,
+				Result: []inventory.Device{{
+					ID:          deviceWithImage.UUID,
+					DisplayName: "oi",
+					LastSeen:    "b",
+					Ostree:      inventory.SystemProfile{RHCClientID: "", RpmOstreeDeployments: []inventory.OSTree{}},
+				}, {
+					ID:          deviceWithNoImage.UUID,
+					DisplayName: "oi",
+					LastSeen:    "b",
+					Ostree:      inventory.SystemProfile{RHCClientID: "", RpmOstreeDeployments: []inventory.OSTree{}},
+				}},
+			}, nil)
+			deviceService := services.DeviceService{
+				Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+				Inventory: mockInventoryClient,
+			}
+
+			devices, err := deviceService.GetDevices(params)
+			Expect(devices).ToNot(BeNil())
+			Expect(devices.Devices).To(HaveLen(1))
+			Expect(devices.Count).To(Equal(0))
+			Expect(devices.Total).To(Equal(0))
+			Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 		})
 	})
 })
