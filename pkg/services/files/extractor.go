@@ -42,7 +42,7 @@ func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
 		if err != nil {
 			// FIX ME!!! - Rollback previous solution due an error on sanitizeExtractPath
 			// Crawl: log error and dont return since this code is hard to test locally
-			f.log.WithError(err.Error()).Error("Error sanitizing path")
+			f.log.WithField("error", err.Error()).Error("Error sanitizing path")
 			// 	return err
 		}
 		info := header.FileInfo()
