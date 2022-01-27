@@ -1,0 +1,57 @@
+name: Go
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Display build environment
+        run: printenv
+
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+      
+      - name: fmt
+        run: |
+          [ $(go fmt ./... | wc -l) -eq 0 ]
+
+      - name: Get dependencies
+        run: go get -u golang.org/x/lint/golint
+
+      - name: Lint
+        run: |
+          [ $(make -s lint | wc -l) -eq 0 ]
+
+      - name: Vet
+        uses: addnab/docker-run-action@v3
+        with:
+          image: quay.io/fleet-management/libfdo-data:latest
+          options: -v ${{ github.workspace }}:/edge-api
+          run: make -C edge-api vet
+
+      - name: Set up python3
+        uses: actions/setup-python@v2
+        with:
+         python-version: '3.9'
+
+      - name: Install openapi-spec-validator
+        run: pip install openapi-spec-validator
+
+      - name: Generate API docs spec file
+        run: go run cmd/spec/main.go
+     
+      - name: Validate spec-file
+        run: python3 -m openapi_spec_validator ${{ github.workspace }}/cmd/spec/openapi.json
