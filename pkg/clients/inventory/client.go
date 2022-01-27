@@ -35,13 +35,13 @@ func InitClient(ctx context.Context, log *log.Entry) *Client {
 
 // Response lists devices returned by InventoryAPI
 type Response struct {
-	Total  int       `json:"total"`
-	Count  int       `json:"count"`
-	Result []Devices `json:"results"`
+	Total  int      `json:"total"`
+	Count  int      `json:"count"`
+	Result []Device `json:"results"`
 }
 
-// Devices represents the struct of a Device on Inventory API
-type Devices struct {
+// Device represents the struct of a Device on Inventory API
+type Device struct {
 	ID              string        `json:"id"`
 	DisplayName     string        `json:"display_name"`
 	LastSeen        string        `json:"updated"`

@@ -17,6 +17,7 @@ type DeviceServiceInterface interface {
 	GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]models.ImageUpdateAvailable, error)
 	GetDeviceImageInfo(deviceUUID string) (*models.ImageInfo, error)
 	GetDeviceDetails(deviceUUID string) (*models.DeviceDetails, error)
+	GetDevices(params *inventory.Params) (*models.DeviceDetailsList, error)
 }
 
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
@@ -87,7 +88,7 @@ func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*models.DeviceDetai
 		}
 	}
 	details := &models.DeviceDetails{
-		Device:             device,
+		Device:             models.EdgeDevice{Device: device},
 		Image:              imageInfo,
 		UpdateTransactions: updates,
 	}
@@ -243,4 +244,49 @@ func (s *DeviceService) GetDeviceImageInfo(deviceUUID string) (*models.ImageInfo
 	ImageInfo.Image = *currentImage
 
 	return &ImageInfo, nil
+}
+
+// GetDevices returns a list of EdgeDevices, which is a mix of device information from EdgeAPI and InventoryAPI
+func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDetailsList, error) {
+	s.log.Info("Getting devices...")
+	inventoryDevices, err := s.Inventory.ReturnDevices(params)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error retrieving devices from inventory")
+		return nil, err
+	}
+	list := &models.DeviceDetailsList{
+		Devices: make([]models.DeviceDetails, inventoryDevices.Count),
+		Count:   inventoryDevices.Count,
+		Total:   inventoryDevices.Total,
+	}
+	s.log.Info("Adding Edge Device information...")
+	for _, device := range inventoryDevices.Result {
+		dd := models.DeviceDetails{}
+		dd.Device = models.EdgeDevice{
+			Device: &models.Device{
+				UUID:        device.ID,
+				RHCClientID: device.Ostree.RHCClientID,
+			},
+			DeviceName: device.DisplayName,
+			LastSeen:   device.LastSeen,
+		}
+		s.log.WithField("deviceID", device.ID).Info("Getting image info for device...")
+		imageInfo, err := s.GetDeviceImageInfo(device.ID)
+		if err != nil {
+			dd.Image = nil
+		} else if imageInfo != nil {
+			dd.Image = imageInfo
+		}
+		// TODO: Add back the ability to filter by status when we figure out how to do pagination
+		// if params != nil && imageInfo != nil {
+		// 	if params.DeviceStatus == "update_available" && imageInfo.UpdatesAvailable != nil {
+		// 		list.Devices = append(list.Devices, dd)
+		// 	} else if params.DeviceStatus == "running" && imageInfo.UpdatesAvailable == nil {
+		// 		list.Devices = append(list.Devices, dd)
+		// 	} else if params.DeviceStatus == "" {
+		// 		list.Devices = append(list.Devices, dd)
+		// 	}
+		list.Devices = append(list.Devices, dd)
+	}
+	return list, nil
 }
