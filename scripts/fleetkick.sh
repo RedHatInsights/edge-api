@@ -60,7 +60,7 @@ insert_kickstart() {
     DIR=$2
 
     echo "Copying ks file $KS to $DIR"
-    [[ -e $KS ]] && [[ -e $DIR ]] && cp $KS $DIR || (echo "ERROR: no kickstart file" && exit 1)
+    [[ -e $KS ]] && cp $KS $DIR || (echo "ERROR: no kickstart file" && exit 1)
 }
 
 
