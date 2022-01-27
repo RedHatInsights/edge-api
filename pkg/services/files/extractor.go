@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // Extractor defines methods to extract files to path
@@ -15,12 +17,14 @@ type Extractor interface {
 }
 
 // NewExtractor returns the main extractor used by EdgeAPI
-func NewExtractor() Extractor {
-	return &TARFileExtractor{}
+func NewExtractor(log *log.Entry) Extractor {
+	return &TARFileExtractor{log: log}
 }
 
 // TARFileExtractor implements a method to extract TAR files into a path
-type TARFileExtractor struct{}
+type TARFileExtractor struct {
+	log *log.Entry
+}
 
 // Extract extracts file to destination path
 func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
@@ -34,12 +38,13 @@ func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
 			return err
 		}
 
-		path := filepath.Join(dst, header.Name)
-		// FIX ME!!! - Rollback previous solution due an error on sanitizeExtractPath
-		// path, err := sanitizeExtractPath(header.Name, dst)
-		// if err != nil {
-		// 	return err
-		// }
+		path, err := sanitizeExtractPath(dst, header.Name)
+		if err != nil {
+			// FIX ME!!! - Rollback previous solution due an error on sanitizeExtractPath
+			// Crawl: log error and dont return since this code is hard to test locally
+			f.log.WithField("error", err.Error()).Error("Error sanitizing path")
+			// 	return err
+		}
 		info := header.FileInfo()
 		if info.IsDir() {
 			if err = os.MkdirAll(path, info.Mode()); err != nil {
@@ -72,10 +77,11 @@ func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
 	return nil
 }
 
-func sanitizeExtractPath(filePath string, destination string) (destpath string, err error) {
+func sanitizeExtractPath(destination string, filePath string) (destpath string, err error) {
 	destpath = filepath.Join(destination, filePath)
-	if !strings.HasPrefix(destpath, filepath.Clean(destination)+string(os.PathSeparator)) {
-		err = fmt.Errorf("%s: illegal file path", filePath)
+	prefix := filepath.Clean(destination) + string(os.PathSeparator)
+	if !strings.HasPrefix(destpath, prefix) {
+		err = fmt.Errorf("%s: illegal file path, prefix: %s, destpath: %s", filePath, prefix, destpath)
 	}
 	return
 }
