@@ -2,11 +2,8 @@ package files
 
 import (
 	"archive/tar"
-	"fmt"
 	"io"
 	"os"
-	"path/filepath"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -38,12 +35,9 @@ func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
 			return err
 		}
 
-		path, err := sanitizeExtractPath(dst, header.Name)
+		path, err := sanitizePath(dst, header.Name)
 		if err != nil {
-			// FIX ME!!! - Rollback previous solution due an error on sanitizeExtractPath
-			// Crawl: log error and dont return since this code is hard to test locally
 			f.log.WithField("error", err.Error()).Error("Error sanitizing path")
-			// 	return err
 		}
 		info := header.FileInfo()
 		if info.IsDir() {
@@ -53,8 +47,6 @@ func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
 			continue
 		}
 		file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
-		// FIX ME!!! - Rollback previous solution due an error on sanitizeExtractPath
-		// file, err := os.OpenFile(filepath.Clean(path), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
 		if err != nil {
 			return err
 		}
@@ -75,13 +67,4 @@ func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
 		}
 	}
 	return nil
-}
-
-func sanitizeExtractPath(destination string, filePath string) (destpath string, err error) {
-	destpath = filepath.Join(destination, filePath)
-	prefix := filepath.Clean(destination) + string(os.PathSeparator)
-	if !strings.HasPrefix(destpath, prefix) {
-		err = fmt.Errorf("%s: illegal file path, prefix: %s, destpath: %s", filePath, prefix, destpath)
-	}
-	return
 }
