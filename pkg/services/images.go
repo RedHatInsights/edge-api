@@ -654,7 +654,7 @@ func (s *ImageService) exeInjectionScript(kickstart string, image string, imageI
 	cmd := &exec.Cmd{
 		Path: fleetBashScript,
 		Args: []string{
-			kickstart, image, image, workDir,
+			fleetBashScript, kickstart, image, image, workDir,
 		},
 	}
 	output, err := cmd.Output()
