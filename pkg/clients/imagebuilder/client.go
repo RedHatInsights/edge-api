@@ -200,14 +200,14 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 
 // ComposeCommit composes a Commit on ImageBuilder
 func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
-	payloadURL, err := c.GetThirdPartyRepos(image)
+	payloadRepos, err := c.GetThirdPartyRepos(image)
 	if err != nil {
 		return nil, errors.New("error getting information on third Party repository")
 	}
 	req := &ComposeRequest{
 		Customizations: &Customizations{
 			Packages:            image.GetPackagesList(),
-			PayloadRepositories: &payloadURL,
+			PayloadRepositories: &payloadRepos,
 		},
 		Distribution: image.Distribution,
 		ImageRequests: []ImageRequest{
