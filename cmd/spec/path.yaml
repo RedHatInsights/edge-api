@@ -541,6 +541,7 @@ paths:
       parameters:
         - name: DeviceUUID
           in: path
+          required: true
           description: DeviceUUID
           schema:
             type: string
