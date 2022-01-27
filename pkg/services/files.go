@@ -54,7 +54,7 @@ func NewFilesService(log *log.Entry) FilesService {
 	return &S3FilesService{
 		Client:     client,
 		Bucket:     cfg.BucketName,
-		extractor:  files.NewExtractor(),
+		extractor:  files.NewExtractor(log),
 		uploader:   files.NewUploader(log),
 		downloader: files.NewDownloader(),
 	}
