@@ -430,7 +430,6 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 
 // GetThirdPartyRepos finds the url of Third Party Repository using the name
 func (c *Client) GetThirdPartyRepos(image *models.Image) ([]Repository, error) {
-	var thirdpartyrepo *models.ThirdPartyRepo
 	account, err := common.GetAccountFromContext(c.ctx)
 	if err != nil {
 		c.log.WithField("error", err).Error("error retrieving account")
@@ -438,9 +437,11 @@ func (c *Client) GetThirdPartyRepos(image *models.Image) ([]Repository, error) {
 	}
 	repos := make([]Repository, len(image.ThirdPartyRepositories))
 	for i := range image.ThirdPartyRepositories {
-		tprepoURL := db.DB.Model(&models.ThirdPartyRepo{}).Select("url").Where("account = ? and id = ?", account, image.ThirdPartyRepositories[i].ID).Find(&thirdpartyrepo)
-		if tprepoURL.Error != nil {
-			log.Error(tprepoURL.Error)
+		var thirdpartyrepo models.ThirdPartyRepo
+		result := db.DB.Where("account = ? and id = ?", account, image.ThirdPartyRepositories[i].ID).First(&thirdpartyrepo)
+		if result.Error != nil {
+			log.Error(result.Error)
+			return nil, result.Error
 		}
 		repos[i] = Repository{
 			BaseURL: thirdpartyrepo.URL,
