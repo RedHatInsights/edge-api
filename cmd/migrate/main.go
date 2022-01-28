@@ -77,5 +77,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	db.DB.Migrator().DropColumn(&models.Device{}, "DesiredHash")
 	log.Info("Migration Completed")
 }
