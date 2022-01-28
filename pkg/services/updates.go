@@ -332,6 +332,8 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 		dispatchRecord.Status = models.DispatchRecordStatusError
 	} else if e.Payload.Status == PlaybookStatusSuccess {
 		// TODO: We might wanna check if it's really success by checking the running hash on the device here
+		dispatchRecord.Device.CurrentHash = dispatchRecord.Device.AvailableHash
+		dispatchRecord.Device.AvailableHash = os.DevNull
 		dispatchRecord.Status = models.DispatchRecordStatusComplete
 	} else if e.Payload.Status == PlaybookStatusRunning {
 		dispatchRecord.Status = models.DispatchRecordStatusRunning

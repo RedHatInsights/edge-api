@@ -17,10 +17,10 @@ var (
 	tprepo    models.ThirdPartyRepo
 
 	testDevices = []models.Device{
-		{UUID: "1", CurrentHash: "11"},
-		{UUID: "2", CurrentHash: "11"},
-		{UUID: "3", CurrentHash: "22"},
-		{UUID: "4", CurrentHash: "12"},
+		{UUID: "1", AvailableHash: "11"},
+		{UUID: "2", AvailableHash: "11"},
+		{UUID: "3", AvailableHash: "22"},
+		{UUID: "4", AvailableHash: "12"},
 	}
 
 	testUpdates = []models.UpdateTransaction{
