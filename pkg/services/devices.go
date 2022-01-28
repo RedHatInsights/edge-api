@@ -260,7 +260,7 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		Total:   inventoryDevices.Total,
 	}
 	s.log.Info("Adding Edge Device information...")
-	for _, device := range inventoryDevices.Result {
+	for i, device := range inventoryDevices.Result {
 		dd := models.DeviceDetails{}
 		dd.Device = models.EdgeDevice{
 			Device: &models.Device{
@@ -286,7 +286,7 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		// 	} else if params.DeviceStatus == "" {
 		// 		list.Devices = append(list.Devices, dd)
 		// 	}
-		list.Devices = append(list.Devices, dd)
+		list.Devices[i] = dd
 	}
 	return list, nil
 }
