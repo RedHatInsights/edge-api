@@ -2,11 +2,11 @@ package files
 
 import (
 	"archive/tar"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // Extractor defines methods to extract files to path
@@ -15,12 +15,14 @@ type Extractor interface {
 }
 
 // NewExtractor returns the main extractor used by EdgeAPI
-func NewExtractor() Extractor {
-	return &TARFileExtractor{}
+func NewExtractor(log *log.Entry) Extractor {
+	return &TARFileExtractor{log: log}
 }
 
 // TARFileExtractor implements a method to extract TAR files into a path
-type TARFileExtractor struct{}
+type TARFileExtractor struct {
+	log *log.Entry
+}
 
 // Extract extracts file to destination path
 func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
@@ -34,12 +36,10 @@ func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
 			return err
 		}
 
-		path := filepath.Join(dst, header.Name)
-		// FIX ME!!! - Rollback previous solution due an error on sanitizeExtractPath
-		// path, err := sanitizeExtractPath(header.Name, dst)
-		// if err != nil {
-		// 	return err
-		// }
+		path, err := sanitizePath(dst, header.Name)
+		if err != nil {
+			f.log.WithField("error", err.Error()).Error("Error sanitizing path")
+		}
 		info := header.FileInfo()
 		if info.IsDir() {
 			if err = os.MkdirAll(path, info.Mode()); err != nil {
@@ -47,9 +47,7 @@ func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
 			}
 			continue
 		}
-		file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
-		// FIX ME!!! - Rollback previous solution due an error on sanitizeExtractPath
-		// file, err := os.OpenFile(filepath.Clean(path), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
+		file, err := os.OpenFile(filepath.Clean(path), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
 		if err != nil {
 			return err
 		}
@@ -70,12 +68,4 @@ func (f *TARFileExtractor) Extract(rc io.ReadCloser, dst string) error {
 		}
 	}
 	return nil
-}
-
-func sanitizeExtractPath(filePath string, destination string) (destpath string, err error) {
-	destpath = filepath.Join(destination, filePath)
-	if !strings.HasPrefix(destpath, filepath.Clean(destination)+string(os.PathSeparator)) {
-		err = fmt.Errorf("%s: illegal file path", filePath)
-	}
-	return
 }

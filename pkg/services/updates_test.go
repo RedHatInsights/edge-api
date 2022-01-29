@@ -219,7 +219,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", account, t.UpdateTransactionID)
 				tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
 
-				defer GinkgoRecover()
 				ctrl := gomock.NewController(GinkgoT())
 				defer ctrl.Finish()
 				mockFilesService := mock_services.NewMockFilesService(ctrl)

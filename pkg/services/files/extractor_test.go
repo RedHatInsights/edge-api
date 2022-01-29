@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"testing"
+
+	"github.com/sirupsen/logrus"
 )
 
 func TestUntar(t *testing.T) {
@@ -47,7 +49,7 @@ func TestUntar(t *testing.T) {
 		t.Error("Unable to open mock tar file before test")
 	}
 	extractPath := "/tmp/"
-	err := NewExtractor().Extract(unTarFile, extractPath)
+	err := NewExtractor(logrus.NewEntry(logrus.StandardLogger())).Extract(unTarFile, extractPath)
 	if err != nil {
 		t.Error("Unable to extract mock tar file", err)
 	}
