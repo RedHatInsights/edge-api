@@ -332,14 +332,14 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 	if c.OSTreeRef == "" {
 		cfg := config.Get()
 		cmd = &exec.Cmd{
-			Path: "ostree",
+			Path: "/usr/bin/ostree",
 			Args: []string{
 				"--repo", "./repo", "commit", cfg.DefaultOSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber),
 			},
 		}
 	} else {
 		cmd = &exec.Cmd{
-			Path: "ostree",
+			Path: "/usr/bin/ostree",
 			Args: []string{
 				"--repo", "./repo", "commit", c.OSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber),
 			},
@@ -375,7 +375,7 @@ func (rb *RepoBuilder) repoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 
 	// pull the local repo at the exact rev (which was HEAD of o.OSTreeRef)
 	cmd := &exec.Cmd{
-		Path: "ostree",
+		Path: "/usr/bin/ostree",
 		Args: []string{
 			"--repo", uprepo, "pull-local", oldrepo, oldRevParse,
 		},
@@ -387,7 +387,7 @@ func (rb *RepoBuilder) repoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 
 	// generate static delta
 	cmd = &exec.Cmd{
-		Path: "ostree",
+		Path: "/usr/bin/ostree",
 		Args: []string{
 			"--repo", uprepo, "static-delta", "generate", "--from", oldRevParse, "--to", updateRevParse,
 		},
