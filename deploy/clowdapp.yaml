@@ -105,6 +105,7 @@ objects:
       - unleash-proxy
     optionalDependencies:
       - "host-inventory"
+      - ingress
     featureFlags: true
 
 parameters:
