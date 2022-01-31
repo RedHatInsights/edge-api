@@ -39,7 +39,7 @@ func main() {
 	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec("DELETE FROM commit_packages")
 	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec("DELETE FROM updatetransaction_devices")
 	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec("DELETE FROM commit_installed_packages")
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec("DELETE FROM devices_groups")
+	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec("DELETE FROM device_groups_devices")
 	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec("DROP TABLE updaterecord_commits")
 	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec("DROP TABLE updaterecord_devices")
 	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec("DROP TABLE update_records")
@@ -59,6 +59,6 @@ func main() {
 	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.OwnershipVoucherData{})
 	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.FDOUser{})
 	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.SSHKey{})
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Group{})
+	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.DeviceGroup{})
 	log.Info("Wipe Completed")
 }

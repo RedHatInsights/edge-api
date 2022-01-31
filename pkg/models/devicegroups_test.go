@@ -10,14 +10,14 @@ import (
 func TestGroupValidateRequest(t *testing.T) {
 	testScenarios := []struct {
 		name     string
-		group    *Group
+		group    *DeviceGroup
 		expected error
 	}{
-		{name: "Empty name", group: &Group{Account: "111111", Type: "static"}, expected: errors.New(GroupNameEmptyErrorMessage)},
-		{name: "Invalid type", group: &Group{Name: "test_group", Account: "111111", Type: "invalid type"}, expected: errors.New(GroupTypeInvalidErrorMessage)},
-		{name: "Invalid name", group: &Group{Name: "** test group", Account: "111111", Type: GroupTypeDefault}, expected: errors.New(GroupNameInvalidErrorMessage)},
-		{name: "Empty account", group: &Group{Name: "test_group", Type: "static"}, expected: errors.New(GroupAccountEmptyErrorMessage)},
-		{name: "Valid Group", group: &Group{Name: "test_group", Account: "111111", Type: GroupTypeDefault}, expected: nil},
+		{name: "Empty name", group: &DeviceGroup{Account: "111111", Type: "static"}, expected: errors.New(DeviceGroupNameEmptyErrorMessage)},
+		{name: "Invalid type", group: &DeviceGroup{Name: "test_group", Account: "111111", Type: "invalid type"}, expected: errors.New(DeviceGroupTypeInvalidErrorMessage)},
+		{name: "Invalid name", group: &DeviceGroup{Name: "** test group", Account: "111111", Type: DeviceGroupTypeDefault}, expected: errors.New(DeviceGroupNameInvalidErrorMessage)},
+		{name: "Empty account", group: &DeviceGroup{Name: "test_group", Type: "static"}, expected: errors.New(DeviceGroupAccountEmptyErrorMessage)},
+		{name: "Valid DeviceGroup", group: &DeviceGroup{Name: "test_group", Account: "111111", Type: DeviceGroupTypeDefault}, expected: nil},
 	}
 
 	for _, testScenario := range testScenarios {
@@ -37,13 +37,13 @@ func TestGroupValidateRequest(t *testing.T) {
 func TestGroupCreateUpdateConstraint(t *testing.T) {
 	groupInitialAccount := "111111"
 	groupInitialName := "test_group"
-	groupInitialType := GroupTypeDynamic
+	groupInitialType := DeviceGroupTypeDynamic
 
 	groupNewAccount := "222222"
-	groupNewType := GroupTypeStatic
+	groupNewType := DeviceGroupTypeStatic
 	groupNewName := "new_test_group"
 
-	group := Group{Name: groupInitialName, Account: groupInitialAccount, Type: groupInitialType}
+	group := DeviceGroup{Name: groupInitialName, Account: groupInitialAccount, Type: groupInitialType}
 
 	err := group.ValidateRequest()
 	if err != nil {
@@ -52,13 +52,13 @@ func TestGroupCreateUpdateConstraint(t *testing.T) {
 
 	result := db.DB.Create(&group)
 	if result.Error != nil {
-		t.Errorf("Failed to create Group: %q", result.Error)
+		t.Errorf("Failed to create DeviceGroup: %q", result.Error)
 	}
 
-	var savedGroup Group
+	var savedGroup DeviceGroup
 	result = db.DB.First(&savedGroup, group.ID)
 	if result.Error != nil {
-		t.Errorf("Failed to retreive the created Group: %q", result.Error)
+		t.Errorf("Failed to retreive the created DeviceGroup: %q", result.Error)
 	}
 
 	savedGroup.Account = groupNewAccount
@@ -67,13 +67,13 @@ func TestGroupCreateUpdateConstraint(t *testing.T) {
 
 	result = db.DB.Save(&savedGroup)
 	if result.Error != nil {
-		t.Errorf("Failed to save the created Group: %q", result.Error)
+		t.Errorf("Failed to save the created DeviceGroup: %q", result.Error)
 	}
 
-	var updatedGroup Group
+	var updatedGroup DeviceGroup
 	result = db.DB.First(&updatedGroup, group.ID)
 	if result.Error != nil {
-		t.Errorf("Failed to retreive the updated Group: %q", result.Error)
+		t.Errorf("Failed to retreive the updated DeviceGroup: %q", result.Error)
 	}
 	// The group Account should not be updated
 	if updatedGroup.Account != groupInitialAccount {
@@ -83,7 +83,7 @@ func TestGroupCreateUpdateConstraint(t *testing.T) {
 	if updatedGroup.Type != groupInitialType {
 		t.Errorf("The group Type has been updated expected: %q  but found %q", groupInitialAccount, updatedGroup.Type)
 	}
-	// The Group Name has to be updated
+	// The DeviceGroup Name has to be updated
 	if updatedGroup.Name != groupNewName {
 		t.Errorf("Failed to update group name expected: %q but found: %q", groupNewName, updatedGroup.Name)
 	}

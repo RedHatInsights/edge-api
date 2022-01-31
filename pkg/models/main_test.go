@@ -39,7 +39,7 @@ func setUp() {
 		OwnershipVoucherData{},
 		FDOUser{},
 		SSHKey{},
-		Group{},
+		DeviceGroup{},
 	)
 	var testImage = Image{
 		Account:      "0000000",
