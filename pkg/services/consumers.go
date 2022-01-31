@@ -95,7 +95,6 @@ func (s *KafkaConsumerService) ConsumePlaybookDispatcherRuns() error {
 		} else {
 			log.Debug("Skipping message - it is not from edge service")
 		}
-
 	}
 }
 
