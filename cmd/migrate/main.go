@@ -73,7 +73,7 @@ func main() {
 		&models.Package{}, &models.Image{}, &models.Repo{},
 		&models.DispatchRecord{}, &models.ThirdPartyRepo{},
 		&models.FDODevice{}, &models.OwnershipVoucherData{},
-		&models.FDOUser{}, &models.SSHKey{})
+		&models.FDOUser{}, &models.SSHKey{}, &models.Group{})
 	if err != nil {
 		panic(err)
 	}
