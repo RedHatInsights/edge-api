@@ -103,6 +103,7 @@ objects:
       topicName: platform.edge.fleetmgmt.device-update
     optionalDependencies:
     - "host-inventory"
+    - ingress
 
 parameters:
 - description: Cpu limit of service
