@@ -323,7 +323,7 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 	}
 
 	var dispatchRecord models.DispatchRecord
-	result := db.DB.Where(&models.DispatchRecord{PlaybookDispatcherID: e.Payload.ID}).First(&dispatchRecord)
+	result := db.DB.Where(&models.DispatchRecord{PlaybookDispatcherID: e.Payload.ID}).Preload("Device").First(&dispatchRecord)
 	if result.Error != nil {
 		return result.Error
 	}
