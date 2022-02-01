@@ -292,6 +292,7 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 	return list, nil
 }
 
+// GetDeviceLastBootedDeployment returns the last booted deployment for a device
 func (s *DeviceService) GetDeviceLastBootedDeployment(device inventory.Device) *inventory.OSTree {
 	var lastDeployment *inventory.OSTree
 	for _, rpmOstree := range device.Ostree.RpmOstreeDeployments {
@@ -302,6 +303,8 @@ func (s *DeviceService) GetDeviceLastBootedDeployment(device inventory.Device) *
 	}
 	return lastDeployment
 }
+
+// GetDeviceLastDeployment returns the last deployment for a device
 func (s *DeviceService) GetDeviceLastDeployment(device inventory.Device) *inventory.OSTree {
 	var lastDeployment *inventory.OSTree
 	for _, rpmOstree := range device.Ostree.RpmOstreeDeployments {
