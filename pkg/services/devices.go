@@ -296,6 +296,7 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 func (s *DeviceService) GetDeviceLastBootedDeployment(device inventory.Device) *inventory.OSTree {
 	var lastDeployment *inventory.OSTree
 	for _, rpmOstree := range device.Ostree.RpmOstreeDeployments {
+	        rpmOstree := rpmOstree
 		if rpmOstree.Booted {
 			lastDeployment = &rpmOstree
 			break
