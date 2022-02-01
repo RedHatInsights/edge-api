@@ -18,6 +18,7 @@ type DeviceServiceInterface interface {
 	GetDeviceImageInfo(deviceUUID string) (*models.ImageInfo, error)
 	GetDeviceDetails(deviceUUID string) (*models.DeviceDetails, error)
 	GetDevices(params *inventory.Params) (*models.DeviceDetailsList, error)
+	GetDeviceLastDeployment(device inventory.Device) *inventory.OSTree
 }
 
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
@@ -98,7 +99,6 @@ func (s *DeviceService) GetDeviceDetails(deviceUUID string) (*models.DeviceDetai
 // GetUpdateAvailableForDeviceByUUID returns if exists update for the current image at the device.
 func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]models.ImageUpdateAvailable, error) {
 	s.log = s.log.WithField("deviceUUID", deviceUUID)
-	var lastDeployment inventory.OSTree
 	var imageDiff []models.ImageUpdateAvailable
 	device, err := s.Inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || device.Total != 1 {
@@ -106,12 +106,7 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 	}
 
 	lastDevice := device.Result[len(device.Result)-1]
-	for _, rpmOstree := range lastDevice.Ostree.RpmOstreeDeployments {
-		if rpmOstree.Booted {
-			lastDeployment = rpmOstree
-			break
-		}
-	}
+	lastDeployment := s.GetDeviceLastDeployment(lastDevice)
 
 	var images []models.Image
 	var currentImage models.Image
@@ -270,6 +265,11 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 			DeviceName: device.DisplayName,
 			LastSeen:   device.LastSeen,
 		}
+
+		lastDeployment := s.GetDeviceLastDeployment(device)
+		if lastDeployment != nil {
+			dd.Device.Booted = lastDeployment.Booted
+		}
 		s.log.WithField("deviceID", device.ID).Info("Getting image info for device...")
 		imageInfo, err := s.GetDeviceImageInfo(device.ID)
 		if err != nil {
@@ -289,4 +289,15 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		list.Devices[i] = dd
 	}
 	return list, nil
+}
+
+func (s *DeviceService) GetDeviceLastDeployment(device inventory.Device) *inventory.OSTree {
+	var lastDeployment *inventory.OSTree
+	for _, rpmOstree := range device.Ostree.RpmOstreeDeployments {
+		if rpmOstree.Booted {
+			lastDeployment = &rpmOstree
+			break
+		}
+	}
+	return lastDeployment
 }
