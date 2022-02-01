@@ -67,7 +67,7 @@ func TestGetAllDeviceGroupsFilterParams(t *testing.T) {
 
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 	for _, te := range tt {
-		req, err := http.NewRequest("GET", fmt.Sprintf("/groups?%s", te.params), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("/device-groups?%s", te.params), nil)
 		if err != nil {
 			t.Fatal(err)
 		}

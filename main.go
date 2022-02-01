@@ -96,7 +96,7 @@ func main() {
 		s.Route("/devices", routes.MakeDevicesRouter)
 		s.Route("/thirdpartyrepo", routes.MakeThirdPartyRepoRouter)
 		s.Route("/fdo", routes.MakeFDORouter)
-		s.Route("/groups", routes.MakeDeviceGroupsRouter)
+		s.Route("/device-groups", routes.MakeDeviceGroupsRouter)
 	})
 
 	mr := chi.NewRouter()
