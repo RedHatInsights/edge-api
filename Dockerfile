@@ -62,21 +62,21 @@ COPY --from=ubi-micro-build /mnt/rootfs/ /
 COPY --from=ubi-micro-build /etc/yum.repos.d/ubi.repo /etc/yum.repos.d/ubi.repo
 
 ENV MTOOLS_SKIP_CHECK=1
+ENV EDGE_API_WORKSPACE /src/github.com/RedHatInsights/edge-api
 
 # Copy the edge-api binaries into the image.
 COPY --from=edge-builder /go/bin/edge-api /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-migrate /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-wipe /usr/bin
-COPY --from=edge-builder /src/github.com/RedHatInsights/edge-api/cmd/spec/openapi.json /var/tmp
-RUN chmod 0644 /var/tmp/openapi.json
+COPY --from=edge-builder ${EDGE_API_WORKSPACE}/cmd/spec/openapi.json /var/tmp
 
 # kickstart inject requirements
-COPY --from=edge-builder /src/github.com/RedHatInsights/edge-api/scripts/fleetkick.sh /usr/local/bin
+COPY --from=edge-builder ${EDGE_API_WORKSPACE}/scripts/fleetkick.sh /usr/local/bin
 RUN chmod +x /usr/local/bin/fleetkick.sh
-COPY --from=edge-builder /src/github.com/RedHatInsights/edge-api/templates/templateKickstart.ks /usr/local/etc
+COPY --from=edge-builder ${EDGE_API_WORKSPACE}/templates/templateKickstart.ks /usr/local/etc
 
 # template to playbook dispatcher
-COPY --from=edge-builder /src/github.com/RedHatInsights/edge-api/templates/template_playbook_dispatcher_ostree_upgrade_payload.yml /usr/local/etc
+COPY --from=edge-builder ${EDGE_API_WORKSPACE}/templates/template_playbook_dispatcher_ostree_upgrade_payload.yml /usr/local/etc
 
 # interim FDO requirements
 ENV LD_LIBRARY_PATH /usr/local/lib

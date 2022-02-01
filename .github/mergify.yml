@@ -22,7 +22,6 @@ pull_request_rules:
       - "#changes-requested-reviews-by=0"
       - check-success=Lint
       - check-success=Travis CI - Pull Request
-      - check-success=ci.ext.devshift.net PR build
       - check-success=ci.int.devshift.net PR build
       - label!=work in progress
       - label!=do not merge
