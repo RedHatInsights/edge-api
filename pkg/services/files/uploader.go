@@ -65,7 +65,7 @@ func (u *LocalUploader) UploadRepo(src string, account string) (string, error) {
 // Allowing offline development without S3 and satisfying the interface
 func (u *LocalUploader) UploadFile(fname string, uploadPath string) (string, error) {
 	destfile := u.BaseDir + uploadPath
-	cmd := exec.Command("cp", fname, destfile)
+	cmd := exec.Command("cp", fname, destfile) //#nosec G204 - This uploadPath variable is actually controlled by the calling method
 	err := cmd.Run()
 	if err != nil {
 		return "", err

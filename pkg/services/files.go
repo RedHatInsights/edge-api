@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -101,7 +102,7 @@ func NewFilesService(log *log.Entry) FilesService {
 // GetFile retuns the file given a path
 func (s *LocalFilesService) GetFile(path string) (io.ReadCloser, error) {
 	path = "/tmp/" + path
-	f, err := os.Open(path)
+	f, err := os.Open(filepath.Clean(path))
 	if err != nil {
 		return nil, err
 	}
