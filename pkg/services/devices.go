@@ -309,6 +309,7 @@ func (s *DeviceService) GetDeviceLastBootedDeployment(device inventory.Device) *
 func (s *DeviceService) GetDeviceLastDeployment(device inventory.Device) *inventory.OSTree {
 	var lastDeployment *inventory.OSTree
 	for _, rpmOstree := range device.Ostree.RpmOstreeDeployments {
+	        rpmOstree := rpmOstree
 		lastDeployment = &rpmOstree
 	}
 	return lastDeployment
