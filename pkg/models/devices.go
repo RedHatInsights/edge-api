@@ -43,4 +43,5 @@ type Device struct {
 	Name          string    `json:"Name"`
 	LastSeen      time.Time `json:"LastSeen"`
 	CurrentHash   string    `json:"CurrentHash,omitempty"`
+	Account       string    `json:"Account"`
 }
