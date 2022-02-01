@@ -151,3 +151,17 @@ func (mr *MockDeviceServiceInterfaceMockRecorder) GetDeviceLastBootedDeployment(
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceLastBootedDeployment", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetDeviceLastBootedDeployment), device)
 }
+
+// ProcessPlatformInventoryCreateEvent mocks base method
+func (m *MockDeviceServiceInterface) ProcessPlatformInventoryCreateEvent(message []byte) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProcessPlatformInventoryCreateEvent", message)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ProcessPlatformInventoryCreateEvent indicates an expected call of ProcessPlatformInventoryCreateEvent
+func (mr *MockDeviceServiceInterfaceMockRecorder) ProcessPlatformInventoryCreateEvent(message interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessPlatformInventoryCreateEvent", reflect.TypeOf((*MockDeviceServiceInterface)(nil).ProcessPlatformInventoryCreateEvent), message)
+}

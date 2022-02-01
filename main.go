@@ -137,10 +137,11 @@ func main() {
 	}()
 	if cfg.KafkaConfig != nil {
 		log.Info("Starting Kafka Consumers")
-		go func() {
-			consumerService := services.NewKafkaConsumerService(cfg.KafkaConfig)
-			consumerService.Start()
-		}()
+		playbookConsumer := services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.playbook-dispatcher.runs")
+		go playbookConsumer.Start()
+		platformInvConsumer := services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.inventory.events")
+		go platformInvConsumer.Start()
+
 	}
 
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
