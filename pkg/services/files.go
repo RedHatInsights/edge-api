@@ -15,6 +15,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// BasicFileService is the base file service struct
+// It serves as a base for other file services implementations
 type BasicFileService struct {
 	extractor  files.Extractor
 	uploader   files.Uploader
@@ -51,6 +53,7 @@ type S3FilesService struct {
 	BasicFileService
 }
 
+// LocalFilesService only handles local uploads
 type LocalFilesService struct {
 	BasicFileService
 }
