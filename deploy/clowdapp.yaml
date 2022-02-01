@@ -101,9 +101,12 @@ objects:
     - replicas: 3
       partitions: 3
       topicName: platform.edge.fleetmgmt.device-update
+    dependencies:
+      - unleash-proxy
     optionalDependencies:
-    - "host-inventory"
-    - ingress
+      - "host-inventory"
+      - ingress
+    featureFlags: true
 
 parameters:
 - description: Cpu limit of service
