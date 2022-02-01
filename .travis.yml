@@ -31,7 +31,7 @@ jobs:
       name: "Build edge-api"
       script:
         - if [ "$TRAVIS_PULL_REQUEST" != false ]; then echo "LABEL quay.expires-after=2d" >> ./Dockerfile; fi
-        - sed -i 's|registry.access.redhat.com/ubi8/ubi|quay.io/centos/centos:8|' ./Dockerfile
+        - sed -i 's|registry.access.redhat.com/ubi8/ubi|quay.io/centos/centos:stream8|' ./Dockerfile
         - sed -i 's|.*ubi-micro-build.*ubi.repo||' ./Dockerfile
         - sed -i "s|${FLEET_MANAGEMENT_ORG}/libfdo-data|${LIBFDO_IMAGE}|" ./Dockerfile
         - docker build -t ${EDGE_API_IMAGE} -f ./Dockerfile .
