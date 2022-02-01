@@ -26,7 +26,7 @@ type Uploader interface {
 func NewUploader(log *log.Entry) Uploader {
 	cfg := config.Get()
 	var uploader Uploader
-	uploader = &FileUploader{
+	uploader = &LocalUploader{
 		BaseDir: "/tmp",
 	}
 	if !cfg.Local {
@@ -43,23 +43,28 @@ type S3Uploader struct {
 	log               *log.Entry
 }
 
-// FileUploader isn't actually an uploader but implements the interface in
+// LocalUploader isn't actually an uploader but implements the interface in
 // order to allow the workflow to be done to completion on a local machine
 // without S3
-type FileUploader struct {
+type LocalUploader struct {
 	BaseDir string
 }
 
-// UploadRepo basically copies everything on the src to the local server path
+// UploadRepo just returns the src repo folder
+// It doesnt do anything and it doesn't delete the original folder
+// It returns error if the repo is not using u.BaseDir as its base folder
 // Allowing offline development without S3 and satisfying the interface
-func (u *FileUploader) UploadRepo(src string, account string) (string, error) {
-	return src, nil
+func (u *LocalUploader) UploadRepo(src string, account string) (string, error) {
+	if strings.HasPrefix(src, u.BaseDir) {
+		return src, nil
+	}
+	return "", fmt.Errorf("invalid folder to upload on local uploader")
 }
 
 // UploadFile basically copies a file to the local server path
 // Allowing offline development without S3 and satisfying the interface
-func (u *FileUploader) UploadFile(fname string, uploadPath string) (string, error) {
-	destfile := u.BaseDir + "image.iso"
+func (u *LocalUploader) UploadFile(fname string, uploadPath string) (string, error) {
+	destfile := u.BaseDir + uploadPath
 	cmd := exec.Command("cp", fname, destfile)
 	err := cmd.Run()
 	if err != nil {
