@@ -19,6 +19,7 @@ type DeviceServiceInterface interface {
 	GetDeviceDetails(deviceUUID string) (*models.DeviceDetails, error)
 	GetDevices(params *inventory.Params) (*models.DeviceDetailsList, error)
 	GetDeviceLastDeployment(device inventory.Device) *inventory.OSTree
+	GetDeviceLastBootedDeployment(device inventory.Device) *inventory.OSTree
 }
 
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
@@ -106,7 +107,7 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 	}
 
 	lastDevice := device.Result[len(device.Result)-1]
-	lastDeployment := s.GetDeviceLastDeployment(lastDevice)
+	lastDeployment := s.GetDeviceLastBootedDeployment(lastDevice)
 
 	var images []models.Image
 	var currentImage models.Image
@@ -291,13 +292,20 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 	return list, nil
 }
 
-func (s *DeviceService) GetDeviceLastDeployment(device inventory.Device) *inventory.OSTree {
+func (s *DeviceService) GetDeviceLastBootedDeployment(device inventory.Device) *inventory.OSTree {
 	var lastDeployment *inventory.OSTree
 	for _, rpmOstree := range device.Ostree.RpmOstreeDeployments {
 		if rpmOstree.Booted {
 			lastDeployment = &rpmOstree
 			break
 		}
+	}
+	return lastDeployment
+}
+func (s *DeviceService) GetDeviceLastDeployment(device inventory.Device) *inventory.OSTree {
+	var lastDeployment *inventory.OSTree
+	for _, rpmOstree := range device.Ostree.RpmOstreeDeployments {
+		lastDeployment = &rpmOstree
 	}
 	return lastDeployment
 }
