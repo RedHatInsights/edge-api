@@ -21,9 +21,9 @@ func MakeDeviceGroupsRouter(sub chi.Router) {
 	sub.Post("/", CreateDeviceGroup)
 	sub.Route("/{ID}", func(r chi.Router) {
 		// MUST ADD CONTEXT
-		r.Get("/", GetGroupById)
-		r.Put("/", UpdateGroup)
-		r.Delete("/", DeleteGroupByID)
+		r.Get("/", GetDeviceGroupByID)
+		r.Put("/", UpdateDeviceGroup)
+		r.Delete("/", DeleteDeviceGroupByID)
 	})
 }
 
@@ -112,18 +112,22 @@ func GetAllDeviceGroups(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// CreateDeviceGroup is the route to create a new device group
 func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func GetGroupById(w http.ResponseWriter, r *http.Request) {
+// GetDeviceGroupByID return devices groups for an account and Id
+func GetDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func UpdateGroup(w http.ResponseWriter, r *http.Request) {
+// UpdateDeviceGroup updates the existing device group
+func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func DeleteGroupByID(w http.ResponseWriter, r *http.Request) {
+// DeleteDeviceGroupByID deletes an existing device group
+func DeleteDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
 
 }
