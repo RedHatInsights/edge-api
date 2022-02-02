@@ -435,16 +435,28 @@ func (c *Client) GetThirdPartyRepos(image *models.Image) ([]Repository, error) {
 		c.log.WithField("error", err).Error("error retrieving account")
 		return nil, errors.New("error retrieving account")
 	}
+
 	repos := make([]Repository, len(image.ThirdPartyRepositories))
+	thirdpartyrepo := make([]models.ThirdPartyRepo, len(image.ThirdPartyRepositories))
+	thirdpartyrepoID := make([]int, len(image.ThirdPartyRepositories))
+
 	for i := range image.ThirdPartyRepositories {
-		var thirdpartyrepo models.ThirdPartyRepo
-		result := db.DB.Where("account = ? and id = ?", account, image.ThirdPartyRepositories[i].ID).First(&thirdpartyrepo)
-		if result.Error != nil {
-			log.Error(result.Error)
-			return nil, result.Error
-		}
+		thirdpartyrepoID[i] = int(image.ThirdPartyRepositories[i].ID)
+	}
+	var count int64
+	result := db.DB.Where("account = ?", account).Find(&thirdpartyrepo, thirdpartyrepoID).Count(&count)
+	if result.Error != nil {
+		log.Error(result.Error)
+		return nil, result.Error
+	}
+
+	if count != int64(len(thirdpartyrepoID)) {
+		return nil, errors.New("enter valid third party repository id")
+	}
+
+	for i := range thirdpartyrepoID {
 		repos[i] = Repository{
-			BaseURL: thirdpartyrepo.URL,
+			BaseURL: thirdpartyrepo[i].URL,
 		}
 	}
 
