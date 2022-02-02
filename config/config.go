@@ -31,6 +31,7 @@ type EdgeConfig struct {
 	UploadWorkers            int
 	KafkaConfig              *clowder.KafkaConfig
 	FDO                      *fdoConfig
+	Local                    bool
 }
 
 type dbConfig struct {
@@ -97,6 +98,7 @@ func Init() {
 	options.SetDefault("FDOHostURL", "https://fdo.redhat.com")
 	options.SetDefault("FDOApiVersion", "v1")
 	options.SetDefault("FDOAuthorizationBearer", "lorum-ipsum")
+	options.SetDefault("Local", false)
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
@@ -136,6 +138,7 @@ func Init() {
 			APIVersion:          options.GetString("FDOApiVersion"),
 			AuthorizationBearer: options.GetString("FDOAuthorizationBearer"),
 		},
+		Local: options.GetBool("Local"),
 	}
 
 	database := options.GetString("database")

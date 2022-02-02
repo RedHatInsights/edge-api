@@ -3,6 +3,7 @@ package files
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -25,10 +26,10 @@ type Uploader interface {
 func NewUploader(log *log.Entry) Uploader {
 	cfg := config.Get()
 	var uploader Uploader
-	uploader = &FileUploader{
-		BaseDir: "./",
+	uploader = &LocalUploader{
+		BaseDir: "/tmp",
 	}
-	if cfg.BucketName != "" {
+	if !cfg.Local {
 		uploader = newS3Uploader(log)
 	}
 	return uploader
@@ -42,23 +43,34 @@ type S3Uploader struct {
 	log               *log.Entry
 }
 
-// FileUploader isn't actually an uploader but implements the interface in
+// LocalUploader isn't actually an uploader but implements the interface in
 // order to allow the workflow to be done to completion on a local machine
 // without S3
-type FileUploader struct {
+type LocalUploader struct {
 	BaseDir string
 }
 
-// UploadRepo is Basically a dummy function that returns the src, but allows offline
-// development without S3 and satisfies the interface
-func (u *FileUploader) UploadRepo(src string, account string) (string, error) {
-	return src, nil
+// UploadRepo just returns the src repo folder
+// It doesnt do anything and it doesn't delete the original folder
+// It returns error if the repo is not using u.BaseDir as its base folder
+// Allowing offline development without S3 and satisfying the interface
+func (u *LocalUploader) UploadRepo(src string, account string) (string, error) {
+	if strings.HasPrefix(src, u.BaseDir) {
+		return src, nil
+	}
+	return "", fmt.Errorf("invalid folder to upload on local uploader")
 }
 
-// UploadFile is Basically a dummy function that returns no error but allows offline
-// development without S3 and satisfies the interface
-func (u *FileUploader) UploadFile(fname string, uploadPath string) (string, error) {
-	return fname, nil
+// UploadFile basically copies a file to the local server path
+// Allowing offline development without S3 and satisfying the interface
+func (u *LocalUploader) UploadFile(fname string, uploadPath string) (string, error) {
+	destfile := u.BaseDir + uploadPath
+	cmd := exec.Command("cp", fname, destfile) //#nosec G204 - This uploadPath variable is actually controlled by the calling method
+	err := cmd.Run()
+	if err != nil {
+		return "", err
+	}
+	return destfile, nil
 }
 
 func newS3Uploader(log *log.Entry) *S3Uploader {
