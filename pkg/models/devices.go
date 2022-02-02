@@ -9,6 +9,7 @@ type EdgeDevice struct {
 	*Device
 	DeviceName string
 	LastSeen   string
+	Booted     bool
 }
 
 // DeviceDetails is a Device with Image and Update transactions
@@ -34,10 +35,10 @@ type DeviceDetailsList struct {
 type Device struct {
 	Model
 	UUID          string    `json:"UUID"`
-	AvailableHash string    `json:"AvailableHash"`
+	AvailableHash string    `json:"AvailableHash,omitempty"`
 	RHCClientID   string    `json:"RHCClientID"`
 	Connected     bool      `gorm:"default:true" json:"Connected"`
 	Name          string    `json:"Name"`
 	LastSeen      time.Time `json:"LastSeen"`
-	CurrentHash   string    `json:"CurrentHash"`
+	CurrentHash   string    `json:"CurrentHash,omitempty"`
 }
