@@ -123,7 +123,7 @@ func TestCreatedAtFilterHandler(t *testing.T) {
 	images := []models.Image{}
 	result.Find(&images)
 	for _, image := range images {
-		if image.CreatedAt.Format(LayoutISO) != nowStr {
+		if image.CreatedAt.Time.Format(LayoutISO) != nowStr {
 			t.Errorf("Expected image created at will be %s but %s", nowStr, image.CreatedAt.Format(LayoutISO))
 		}
 	}
