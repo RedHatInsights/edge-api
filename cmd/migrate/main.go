@@ -77,5 +77,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	log.Info("Migration Completed")
 }

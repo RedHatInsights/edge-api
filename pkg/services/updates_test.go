@@ -130,9 +130,16 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		})
 		Context("when record is found and status is success", func() {
+			uuid := faker.UUIDHyphenated()
+			device := models.Device{
+				UUID: uuid,
+			}
+			db.DB.Create(&device)
+			fmt.Printf("TESTETETETETETETETE :::::: %v\n", device.ID)
 			d := &models.DispatchRecord{
 				PlaybookDispatcherID: faker.UUIDHyphenated(),
 				Status:               models.UpdateStatusBuilding,
+				DeviceID:             device.ID,
 			}
 			db.DB.Create(d)
 			u := &models.UpdateTransaction{
@@ -190,9 +197,15 @@ var _ = Describe("UpdateService Basic functions", func() {
 			Expect(err).To(HaveOccurred())
 		})
 		It("should give error when dispatch record is not found", func() {
+			uuid := faker.UUIDHyphenated()
+			device := models.Device{
+				UUID: uuid,
+			}
+			db.DB.Create(&device)
 			d := &models.DispatchRecord{
 				PlaybookDispatcherID: faker.UUIDHyphenated(),
 				Status:               models.UpdateStatusBuilding,
+				DeviceID:             device.ID,
 			}
 			db.DB.Create(d)
 			event := &services.PlaybookDispatcherEvent{
