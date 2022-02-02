@@ -48,3 +48,10 @@ type ImageVersionAlreadyExists struct{}
 func (e *ImageVersionAlreadyExists) Error() string {
 	return "updated image version already exists"
 }
+
+// ImageSetAlreadyExists indicates the ImageSet attempting to be created already exists
+type ImageSetAlreadyExists struct{}
+
+func (e *ImageSetAlreadyExists) Error() string {
+	return "image set already exists"
+}

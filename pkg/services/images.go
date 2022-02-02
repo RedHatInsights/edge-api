@@ -75,15 +75,35 @@ type ImageService struct {
 
 // CreateImage creates an Image for an Account on Image Builder and on our database
 func (s *ImageService) CreateImage(image *models.Image, account string) error {
+	// Check for exising ImageSet to add this Image to
+	var imageSetExists bool
+	var imageSetModel models.ImageSet
 	var imageSet models.ImageSet
-	imageSet.Account = account
-	imageSet.Name = image.Name
-	imageSet.Version = image.Version
-	set := db.DB.Create(&imageSet)
-	if set.Error == nil {
-		image.ImageSetID = &imageSet.ID
+
+	err := db.DB.Model(imageSetModel).
+		Select("count(*) > 0").
+		Where("name = ? AND account = ?", image.Name, account).
+		Find(&imageSetExists).
+		Error
+
+	if (err == nil) && imageSetExists {
+		result := db.DB.Where("name = ? AND account = ?", image.Name, account).First(&imageSet)
+		if result.Error != nil {
+			s.log.WithField("error", result.Error.Error()).Error("Error checking for previous image set existence")
+			return result.Error
+		}
+		log.Errorf("ImageSet %s already exists, UpdateImage transaction expected and not CreateImage", image.Name)
+		return new(ImageSetAlreadyExists)
+	} else {
+		imageSet.Version = image.Version
+		set := db.DB.Create(&imageSet)
+		if set.Error != nil {
+			return set.Error
+		}
 	}
-	image, err := s.ImageBuilder.ComposeCommit(image)
+
+	image.ImageSetID = &imageSet.ID
+	image, err = s.ImageBuilder.ComposeCommit(image)
 	if err != nil {
 		return err
 	}
@@ -139,6 +159,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		// Previous image was built successfully
 		var currentImageSet models.ImageSet
 		result := db.DB.Where("Id = ?", previousImage.ImageSetID).First(&currentImageSet)
+
 		if result.Error != nil {
 			s.log.WithField("error", result.Error.Error()).Error("Error retrieving the image set from parent image")
 			return result.Error
