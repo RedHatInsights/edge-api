@@ -3,9 +3,10 @@ package routes
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/redhatinsights/edge-api/pkg/db"
 	"net/http"
 	"time"
+
+	"github.com/redhatinsights/edge-api/pkg/db"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
@@ -17,6 +18,13 @@ import (
 // MakeDeviceGroupsRouter adds support for device groups operations
 func MakeDeviceGroupsRouter(sub chi.Router) {
 	sub.With(validateGetAllDeviceGroupsFilterParams).With(common.Paginate).Get("/", GetAllDeviceGroups)
+	sub.Post("/", CreateDeviceGroup)
+	sub.Route("/{ID}", func(r chi.Router) {
+		// MUST ADD CONTEXT
+		r.Get("/", GetDeviceGroupByID)
+		r.Put("/", UpdateDeviceGroup)
+		r.Delete("/", DeleteDeviceGroupByID)
+	})
 }
 
 func logRequestAPIError(w http.ResponseWriter, log *log.Entry, apiError errors.APIError) {
@@ -102,4 +110,24 @@ func GetAllDeviceGroups(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(map[string]interface{}{"data": deviceGroups, "count": deviceGroupsCount}); err != nil {
 		services.Log.WithField("error", map[string]interface{}{"data": &deviceGroups, "count": deviceGroupsCount}).Error("Error while trying to encode")
 	}
+}
+
+// CreateDeviceGroup is the route to create a new device group
+func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
+
+}
+
+// GetDeviceGroupByID return devices groups for an account and Id
+func GetDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
+
+}
+
+// UpdateDeviceGroup updates the existing device group
+func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
+
+}
+
+// DeleteDeviceGroupByID deletes an existing device group
+func DeleteDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
+
 }
