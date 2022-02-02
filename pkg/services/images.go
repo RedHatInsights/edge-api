@@ -94,12 +94,11 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 		}
 		log.Errorf("ImageSet %s already exists, UpdateImage transaction expected and not CreateImage", image.Name)
 		return new(ImageSetAlreadyExists)
-	} else {
-		imageSet.Version = image.Version
-		set := db.DB.Create(&imageSet)
-		if set.Error != nil {
-			return set.Error
-		}
+	}
+	imageSet.Version = image.Version
+	set := db.DB.Create(&imageSet)
+	if set.Error != nil {
+		return set.Error
 	}
 
 	image.ImageSetID = &imageSet.ID
