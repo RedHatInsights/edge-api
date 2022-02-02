@@ -9,10 +9,9 @@ export IQE_MARKER_EXPRESSION="edge_smoke"  # This is the value passed to pytest 
 export IQE_FILTER_EXPRESSION=""  # This is the value passed to pytest -k
 export IQE_CJI_TIMEOUT="30m"  # This is the time to wait for smoke test to complete or fail
 
-
 # Install bonfire repo/initialize
 CICD_URL=https://raw.githubusercontent.com/RedHatInsights/bonfire/master/cicd
-curl -s $CICD_URL/bootstrap.sh > .cicd_bootstrap.sh && source .cicd_bootstrap.sh
+curl -s $CICD_URL/bootstrap.sh > ${WORKSPACE}/cicd_bootstrap.sh && source ${WORKSPACE}/cicd_bootstrap.sh
 
 # Build the image and push to quay
 source $CICD_ROOT/build.sh

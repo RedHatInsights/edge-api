@@ -11,17 +11,22 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
+	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 	log "github.com/sirupsen/logrus"
 )
 
 func TestCreateWasCalledWithURLNotSet(t *testing.T) {
 	config.Get().Debug = false
-	var jsonStr = []byte(`{
-		"Description": "This is Third Party repository",
-  	    "Name": "Repository1"
-	}`)
-	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
+	jsonRepo := &models.ThirdPartyRepo{
+		Description: "This is Third Party repository",
+		Name:        "Repository1",
+	}
+	jsonRepoBytes, err := json.Marshal(jsonRepo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonRepoBytes))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,13 +47,16 @@ func TestCreateWasCalledWithURLNotSet(t *testing.T) {
 }
 
 func TestCreateThirdPartyRepo(t *testing.T) {
-	var jsonStr = []byte(`{
-		"URL": "http://www.thirdpartyurl.com/in/thisrepo",
-    	"Description": "This is Third Party repository",
-    	"Name": "Repository1"
-		}
-	}`)
-	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
+	jsonRepo := &models.ThirdPartyRepo{
+		URL:         "http://www.thirdpartyurl.com/in/thisrepo",
+		Description: "This is Third Party repository",
+		Name:        "Repository1",
+	}
+	jsonRepoBytes, err := json.Marshal(jsonRepo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonRepoBytes))
 	if err != nil {
 		t.Fatal(err)
 	}
