@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// TypeEnum define type for groups
 type TypeEnum string
 
 const (
