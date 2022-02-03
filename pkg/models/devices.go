@@ -10,6 +10,7 @@ type EdgeDevice struct {
 	DeviceName string
 	LastSeen   string
 	// Booted status is referring to the LastDeployment of this device
+	// TODO: Needs to be rethinked when we get to the greenbot epic
 	Booted bool
 }
 
