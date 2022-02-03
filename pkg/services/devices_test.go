@@ -67,7 +67,7 @@ var _ = Describe("DeviceService", func() {
 				device.Ostree.RpmOstreeDeployments[1].Booted = true
 				lastDeployment := deviceService.GetDeviceLastDeployment(device)
 				Expect(lastDeployment).ToNot(BeNil())
-				Expect(lastDeployment.Booted).To(BeTrue())
+				Expect(lastDeployment.Booted).To(BeFalse())
 			})
 		})
 	})

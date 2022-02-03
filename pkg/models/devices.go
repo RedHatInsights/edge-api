@@ -9,7 +9,8 @@ type EdgeDevice struct {
 	*Device
 	DeviceName string
 	LastSeen   string
-	Booted     bool
+	// Booted status is referring to the LastDeployment of this device
+	Booted bool
 }
 
 // DeviceDetails is a Device with Image and Update transactions
