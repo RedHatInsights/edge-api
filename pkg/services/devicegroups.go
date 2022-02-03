@@ -11,6 +11,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type TypeEnum string
+
+const (
+	static  TypeEnum = "Static"
+	dynamic TypeEnum = "Dynamic"
+)
+
 // DeviceGroupsServiceInterface defines the interface that helps handle
 // the business logic of creating and getting device groups
 type DeviceGroupsServiceInterface interface {
@@ -73,7 +80,7 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 func (s *DeviceGroupsService) CreateDeviceGroup(deviceGroup *models.DeviceGroup) (*models.DeviceGroup, error) {
 	group := &models.DeviceGroup{
 		Name:    deviceGroup.Name,
-		Type:    "Static",
+		Type:    string(static),
 		Account: deviceGroup.Account,
 	}
 	result := db.DB.Create(&group)
