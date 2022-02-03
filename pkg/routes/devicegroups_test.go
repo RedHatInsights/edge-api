@@ -143,10 +143,10 @@ func TestCreateDeviceGroup(t *testing.T) {
 	}
 	ctx := req.Context()
 	ctrl := gomock.NewController(t)
-	var deviceGroup = *&models.DeviceGroup{}
+	// var deviceGroup = &models.DeviceGroup{}
 	defer ctrl.Finish()
 	mockDeviceGroupsService := mock_services.NewMockDeviceGroupsServiceInterface(ctrl)
-	mockDeviceGroupsService.EXPECT().CreateDeviceGroup(gomock.Any()).Return(&deviceGroup, nil)
+	mockDeviceGroupsService.EXPECT().CreateDeviceGroup(gomock.Any()).Return(&models.DeviceGroup{}, nil)
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		DeviceGroupsService: mockDeviceGroupsService,
 		Log:                 log.NewEntry(log.StandardLogger()),
