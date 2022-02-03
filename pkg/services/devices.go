@@ -108,6 +108,9 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 
 	lastDevice := device.Result[len(device.Result)-1]
 	lastDeployment := s.GetDeviceLastBootedDeployment(lastDevice)
+	if lastDeployment == nil {
+		return nil, new(DeviceNotFoundError)
+	}
 
 	var images []models.Image
 	var currentImage models.Image
