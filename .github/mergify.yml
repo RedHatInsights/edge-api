@@ -4,7 +4,7 @@ queue_rules:
       - base=main
       - "#approved-reviews-by>=1"
 pull_request_rules:
-  - name: Automatic merge for Dependabot pull requests
+  - name: Automatic merge for Dependabot pull requests 🤖
     conditions:
       - author~=^dependabot(|-preview)\[bot\]$
       - "#approved-reviews-by>=1"
@@ -15,6 +15,7 @@ pull_request_rules:
         name: edge-api
         method: merge
         rebase_fallback: none
+        priority: low
   - name: Automatic merge on approval
     conditions:
       - base=main
@@ -25,11 +26,30 @@ pull_request_rules:
       - check-success=ci.int.devshift.net PR build
       - label!=work in progress
       - label!=do not merge
+      - label!=hotfix⚡️
     actions:
       queue:
         name: edge-api
         method: merge
         rebase_fallback: none
+        priority: medium
+  - name: Automatic merge on approval for hotfix⚡️
+    conditions:
+      - base=main
+      - "#approved-reviews-by>=1"
+      - "#changes-requested-reviews-by=0"
+      - check-success=Lint
+      - check-success=Travis CI - Pull Request
+      - check-success=ci.int.devshift.net PR build
+      - label!=work in progress
+      - label!=do not merge
+      - label=hotfix⚡️ 
+    actions:
+      queue:
+        name: edge-api
+        method: merge
+        rebase_fallback: none
+        priority: high
   - name: warn on conflicts
     conditions:
       - conflict

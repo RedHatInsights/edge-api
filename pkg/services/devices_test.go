@@ -37,6 +37,88 @@ var _ = Describe("DeviceService", func() {
 			ImageService: mockImageService,
 		}
 	})
+	Context("get last deployment", func() {
+		var device inventory.Device
+		BeforeEach(func() {
+			device = inventory.Device{}
+		})
+		When("list is empty", func() {
+			It("should return nil for default values", func() {
+				lastDeployment := deviceService.GetDeviceLastDeployment(device)
+				Expect(lastDeployment).To(BeNil())
+			})
+			It("should return nil for empty list", func() {
+				device.Ostree.RpmOstreeDeployments = make([]inventory.OSTree, 0)
+				lastDeployment := deviceService.GetDeviceLastDeployment(device)
+				Expect(lastDeployment).To(BeNil())
+			})
+		})
+		When("deployment exists", func() {
+			It("should return first if only one", func() {
+				device.Ostree.RpmOstreeDeployments = make([]inventory.OSTree, 1)
+				device.Ostree.RpmOstreeDeployments[0].Booted = false
+				lastDeployment := deviceService.GetDeviceLastDeployment(device)
+				Expect(lastDeployment).ToNot(BeNil())
+				Expect(lastDeployment.Booted).To(BeFalse())
+			})
+			It("should return last if more than one", func() {
+				device.Ostree.RpmOstreeDeployments = make([]inventory.OSTree, 2)
+				device.Ostree.RpmOstreeDeployments[0].Booted = false
+				device.Ostree.RpmOstreeDeployments[1].Booted = true
+				lastDeployment := deviceService.GetDeviceLastDeployment(device)
+				Expect(lastDeployment).ToNot(BeNil())
+				Expect(lastDeployment.Booted).To(BeTrue())
+			})
+		})
+	})
+	Context("get last booted deployment", func() {
+		var device inventory.Device
+		BeforeEach(func() {
+			device = inventory.Device{}
+		})
+		When("list is empty", func() {
+			It("should return nil for default values", func() {
+				lastDeployment := deviceService.GetDeviceLastDeployment(device)
+				Expect(lastDeployment).To(BeNil())
+			})
+			It("should return nil for empty list", func() {
+				device.Ostree.RpmOstreeDeployments = make([]inventory.OSTree, 0)
+				lastDeployment := deviceService.GetDeviceLastDeployment(device)
+				Expect(lastDeployment).To(BeNil())
+			})
+		})
+		When("deployment exists", func() {
+			It("should return nil if only one and not booted", func() {
+				device.Ostree.RpmOstreeDeployments = make([]inventory.OSTree, 1)
+				device.Ostree.RpmOstreeDeployments[0].Booted = false
+				lastDeployment := deviceService.GetDeviceLastBootedDeployment(device)
+				Expect(lastDeployment).To(BeNil())
+			})
+			It("should return nil if only one and booted", func() {
+				device.Ostree.RpmOstreeDeployments = make([]inventory.OSTree, 1)
+				device.Ostree.RpmOstreeDeployments[0].Booted = true
+				lastDeployment := deviceService.GetDeviceLastBootedDeployment(device)
+				Expect(lastDeployment).ToNot(BeNil())
+				Expect(lastDeployment.Booted).To(BeTrue())
+			})
+			It("should return last if more than one and last is booted", func() {
+				device.Ostree.RpmOstreeDeployments = make([]inventory.OSTree, 2)
+				device.Ostree.RpmOstreeDeployments[0].Booted = false
+				device.Ostree.RpmOstreeDeployments[1].Booted = true
+				lastDeployment := deviceService.GetDeviceLastBootedDeployment(device)
+				Expect(lastDeployment).ToNot(BeNil())
+				Expect(lastDeployment.Booted).To(BeTrue())
+			})
+			It("should return first if more than one and last is not booted", func() {
+				device.Ostree.RpmOstreeDeployments = make([]inventory.OSTree, 2)
+				device.Ostree.RpmOstreeDeployments[0].Booted = true
+				device.Ostree.RpmOstreeDeployments[1].Booted = false
+				lastDeployment := deviceService.GetDeviceLastBootedDeployment(device)
+				Expect(lastDeployment).ToNot(BeNil())
+				Expect(lastDeployment.Booted).To(BeTrue())
+			})
+		})
+	})
 	Context("GetUpdateAvailableForDeviceByUUID", func() {
 		When("error on InventoryAPI", func() {
 			It("should return error and no updates available", func() {
