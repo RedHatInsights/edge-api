@@ -35,18 +35,18 @@ func (m *MockDeviceGroupsServiceInterface) EXPECT() *MockDeviceGroupsServiceInte
 }
 
 // CreateDeviceGroup mocks base method
-func (m *MockDeviceGroupsServiceInterface) CreateDeviceGroup(deviceGroup *models.DeviceGroup, account string) (*models.DeviceGroup, error) {
+func (m *MockDeviceGroupsServiceInterface) CreateDeviceGroup(deviceGroup *models.DeviceGroup) (*models.DeviceGroup, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateDeviceGroup", deviceGroup, account)
+	ret := m.ctrl.Call(m, "CreateDeviceGroup", deviceGroup)
 	ret0, _ := ret[0].(*models.DeviceGroup)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateDeviceGroup indicates an expected call of CreateDeviceGroup
-func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) CreateDeviceGroup(deviceGroup, account interface{}) *gomock.Call {
+func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) CreateDeviceGroup(deviceGroup interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDeviceGroup", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).CreateDeviceGroup), deviceGroup, account)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDeviceGroup", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).CreateDeviceGroup), deviceGroup)
 }
 
 // GetDeviceGroups mocks base method
