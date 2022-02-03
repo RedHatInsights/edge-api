@@ -69,6 +69,7 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 	return &deviceGroups, nil
 }
 
+//CreateDeviceGroup creaate a device group for an account
 func (s *DeviceGroupsService) CreateDeviceGroup(deviceGroup *models.DeviceGroup) (*models.DeviceGroup, error) {
 	group := &models.DeviceGroup{
 		Name:    deviceGroup.Name,
