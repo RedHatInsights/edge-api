@@ -383,7 +383,7 @@ var _ = Describe("DeviceService", func() {
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(newImage, nil)
 				mockImageService.EXPECT().GetRollbackImage(gomock.Eq(newImage)).Return(oldImage, nil)
 
-				imageInfo, err := deviceService.GetDeviceImageInfo(uuid)
+				imageInfo, err := deviceService.GetDeviceImageInfoByUUID(uuid)
 				Expect(err).To(BeNil())
 				Expect(oldImage.Commit.OSTreeCommit).To(Equal(imageInfo.Rollback.Commit.OSTreeCommit))
 				Expect(newImage.Commit.OSTreeCommit).To(Equal(imageInfo.Image.Commit.OSTreeCommit))
@@ -403,7 +403,7 @@ var _ = Describe("DeviceService", func() {
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(nil, errors.New("Not found"))
 
-				_, err := deviceService.GetDeviceImageInfo(uuid)
+				_, err := deviceService.GetDeviceImageInfoByUUID(uuid)
 				Expect(err).To(MatchError(new(services.ImageNotFoundError)))
 			})
 		})
