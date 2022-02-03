@@ -291,7 +291,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 			db.DB.Create(&updateDevice)
 		}
 		updateDevice.RHCClientID = device.Ostree.RHCClientID
-		updateDevice.DesiredHash = update.Commit.OSTreeCommit
+		updateDevice.AvailableHash = update.Commit.OSTreeCommit
 		result := db.DB.Save(&updateDevice)
 		if result.Error != nil {
 			return nil, result.Error

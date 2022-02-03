@@ -61,3 +61,23 @@ The `models` layer defines the database schema and the API models. They are esse
 The `clients` packages are implementation of API calls to internal services. Those APIs do not have go clients, therefore we create a client for it. This is particularly important for us to mock API calls to other services while unit tests our service layer.
 
 Other folders were created in a peer-need basis, always following the idea that we want to avoid a `helpers` or `utils` package, otherwise this will be a package where we'll put everything in and there is a high chance that we aren't designing our software correctly.
+
+## How do we do logging
+
+We need to be very careful on our code and make sure we are adding logs in all of the right levels for all endpoints, across the code. 
+
+Logging must follow the above logging key concepts as much as possible.
+
+### Key concepts
+
+- Messages will only contain plain English and we should be able to group by messages, which means that no variables can be added.
+- All useful data must go onto extra fields. Try to keep the pattern for the extra field name from the rest of the code for common things ("error" for errros, "imageID" for image ID, or for other objects use "objectID").
+- The dependencies middleware adds request-id and account number for debugging & distributed tracing. This is important and needs to be used accross all log messages.
+- The HTTP Handler has an instance of log that can be accessed through services.Log.
+- The services used by the HTTP Handler should be initialized by the dependencies middleware, and they should accept an instance of a LogEntry on the constructor. This needs to be per-request, and relies heavily on context, to be able to have one instance of logging per dependency. This can be refactored in the future if we realize its not the best way (its probably not) as long as we keep the funcionality.
+- Each service will gain a log entry as a private variable and this LogEntry should be used to log inside of the service (s.log instead of log)
+- All IDs must be added to the LogEntry when an object is saved.
+- All errors must be logged by the first method that catches them.
+- Be mindful of log levels. **Debug** is for insights of a route. **Info** should give enough information on a production service to answer most questions about what happened to a specific route for a specific customer.**Error** are for actual errors.
+
+Happy logging!

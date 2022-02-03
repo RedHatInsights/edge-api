@@ -323,7 +323,7 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 	}
 
 	var dispatchRecord models.DispatchRecord
-	result := db.DB.Where(&models.DispatchRecord{PlaybookDispatcherID: e.Payload.ID}).First(&dispatchRecord)
+	result := db.DB.Where(&models.DispatchRecord{PlaybookDispatcherID: e.Payload.ID}).Preload("Device").First(&dispatchRecord)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -331,8 +331,11 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 	if e.Payload.Status == PlaybookStatusFailure || e.Payload.Status == PlaybookStatusTimeout {
 		dispatchRecord.Status = models.DispatchRecordStatusError
 	} else if e.Payload.Status == PlaybookStatusSuccess {
+		fmt.Printf("$$$$$$$$$ dispatchRecord.Device %v\n", dispatchRecord.Device)
 		// TODO: We might wanna check if it's really success by checking the running hash on the device here
 		dispatchRecord.Status = models.DispatchRecordStatusComplete
+		dispatchRecord.Device.AvailableHash = os.DevNull
+		dispatchRecord.Device.CurrentHash = dispatchRecord.Device.AvailableHash
 	} else if e.Payload.Status == PlaybookStatusRunning {
 		dispatchRecord.Status = models.DispatchRecordStatusRunning
 	} else {
