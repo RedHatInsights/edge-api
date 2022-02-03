@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/models"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
@@ -114,7 +115,41 @@ func GetAllDeviceGroups(w http.ResponseWriter, r *http.Request) {
 
 // CreateDeviceGroup is the route to create a new device group
 func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
+	services := dependencies.ServicesFromContext(r.Context())
+	defer r.Body.Close()
+	deviceGroup, err := createDeviceRequest(w, r)
+	if err != nil {
+		// error handled by createRequest already
+		return
+	}
+	services.Log.Info("Creating a device group")
 
+	account, err := common.GetAccount(r)
+	if err != nil {
+		services.Log.WithField("error", err.Error()).Error("Account was not set")
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.GetStatus())
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
+		return
+	}
+
+	deviceGroup, err = services.DeviceGroupsService.CreateDeviceGroup(deviceGroup, account)
+	if err != nil {
+		services.Log.WithField("error", err.Error()).Error("Error creating a device group")
+		err := errors.NewInternalServerError()
+		err.SetTitle("failed creating third party repository")
+		w.WriteHeader(err.GetStatus())
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(&deviceGroup); err != nil {
+		services.Log.WithField("error", deviceGroup).Error("Error while trying to encode")
+	}
 }
 
 // GetDeviceGroupByID return devices groups for an account and Id
@@ -130,4 +165,31 @@ func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 // DeleteDeviceGroupByID deletes an existing device group
 func DeleteDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
 
+}
+
+// createDeviceRequest validates request to create Device Group.
+func createDeviceRequest(w http.ResponseWriter, r *http.Request) (*models.DeviceGroup, error) {
+	services := dependencies.ServicesFromContext(r.Context())
+
+	var deviceGroup *models.DeviceGroup
+	if err := json.NewDecoder(r.Body).Decode(&deviceGroup); err != nil {
+		services.Log.WithField("error", err.Error()).Error("Error parsing json from device group")
+		err := errors.NewBadRequest("invalid JSON request")
+		w.WriteHeader(err.GetStatus())
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
+		return nil, err
+	}
+	services.Log = services.Log.WithFields(log.Fields{
+		"name": deviceGroup.Name,
+	})
+
+	if err := deviceGroup.ValidateRequest(); err != nil {
+		services.Log.WithField("error", err.Error()).Info("Error validation request from device group")
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.GetStatus())
+		return nil, err
+	}
+	return deviceGroup, nil
 }

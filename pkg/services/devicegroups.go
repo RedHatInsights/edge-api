@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+
 	"gorm.io/gorm"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -13,6 +14,7 @@ import (
 // DeviceGroupsServiceInterface defines the interface that helps handle
 // the business logic of creating and getting device groups
 type DeviceGroupsServiceInterface interface {
+	CreateDeviceGroup(deviceGroup *models.DeviceGroup, account string) (*models.DeviceGroup, error)
 	GetDeviceGroups(account string, limit int, offset int, tx *gorm.DB) (*[]models.DeviceGroup, error)
 	GetDeviceGroupsCount(account string, tx *gorm.DB) (int64, error)
 }
@@ -65,4 +67,19 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 	}
 
 	return &deviceGroups, nil
+}
+
+func (s *DeviceGroupsService) CreateDeviceGroup(deviceGroup *models.DeviceGroup, account string) (*models.DeviceGroup, error) {
+	group := &models.DeviceGroup{
+		Name:    deviceGroup.Name,
+		Type:    "Static",
+		Account: account,
+	}
+	result := db.DB.Create(&group)
+	if result.Error != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error creating device group")
+		return nil, result.Error
+	}
+
+	return group, nil
 }

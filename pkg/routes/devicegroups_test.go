@@ -3,12 +3,13 @@ package routes
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/golang/mock/gomock"
-	"github.com/redhatinsights/edge-api/pkg/models"
-	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	log "github.com/sirupsen/logrus"
