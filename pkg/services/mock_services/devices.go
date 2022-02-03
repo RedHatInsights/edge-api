@@ -123,3 +123,31 @@ func (mr *MockDeviceServiceInterfaceMockRecorder) GetDevices(params interface{})
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDevices", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetDevices), params)
 }
+
+// GetDeviceLastDeployment mocks base method
+func (m *MockDeviceServiceInterface) GetDeviceLastDeployment(device inventory.Device) *inventory.OSTree {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDeviceLastDeployment", device)
+	ret0, _ := ret[0].(*inventory.OSTree)
+	return ret0
+}
+
+// GetDeviceLastDeployment indicates an expected call of GetDeviceLastDeployment
+func (mr *MockDeviceServiceInterfaceMockRecorder) GetDeviceLastDeployment(device interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceLastDeployment", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetDeviceLastDeployment), device)
+}
+
+// GetDeviceLastBootedDeployment mocks base method
+func (m *MockDeviceServiceInterface) GetDeviceLastBootedDeployment(device inventory.Device) *inventory.OSTree {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDeviceLastBootedDeployment", device)
+	ret0, _ := ret[0].(*inventory.OSTree)
+	return ret0
+}
+
+// GetDeviceLastBootedDeployment indicates an expected call of GetDeviceLastBootedDeployment
+func (mr *MockDeviceServiceInterfaceMockRecorder) GetDeviceLastBootedDeployment(device interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceLastBootedDeployment", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetDeviceLastBootedDeployment), device)
+}
