@@ -119,27 +119,17 @@ func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	deviceGroup, err := createDeviceRequest(w, r)
 	if err != nil {
-		// error handled by createRequest already
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.GetStatus())
 		return
 	}
 	services.Log.Info("Creating a device group")
 
-	account, err := common.GetAccount(r)
-	if err != nil {
-		services.Log.WithField("error", err.Error()).Error("Account was not set")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
-		return
-	}
-
-	deviceGroup, err = services.DeviceGroupsService.CreateDeviceGroup(deviceGroup, account)
+	deviceGroup, err = services.DeviceGroupsService.CreateDeviceGroup(deviceGroup)
 	if err != nil {
 		services.Log.WithField("error", err.Error()).Error("Error creating a device group")
 		err := errors.NewInternalServerError()
-		err.SetTitle("failed creating third party repository")
+		err.SetTitle("failed creating device group")
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
 			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
@@ -181,9 +171,21 @@ func createDeviceRequest(w http.ResponseWriter, r *http.Request) (*models.Device
 		}
 		return nil, err
 	}
+
+	account, err := common.GetAccount(r)
+	if err != nil {
+		services.Log.WithField("error", err.Error()).Error("Account was not set")
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.GetStatus())
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
+	}
 	services.Log = services.Log.WithFields(log.Fields{
-		"name": deviceGroup.Name,
+		"name":    deviceGroup.Name,
+		"account": deviceGroup.Account,
 	})
+	deviceGroup.Account = account
 
 	if err := deviceGroup.ValidateRequest(); err != nil {
 		services.Log.WithField("error", err.Error()).Info("Error validation request from device group")

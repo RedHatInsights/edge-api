@@ -14,7 +14,7 @@ import (
 // DeviceGroupsServiceInterface defines the interface that helps handle
 // the business logic of creating and getting device groups
 type DeviceGroupsServiceInterface interface {
-	CreateDeviceGroup(deviceGroup *models.DeviceGroup, account string) (*models.DeviceGroup, error)
+	CreateDeviceGroup(deviceGroup *models.DeviceGroup) (*models.DeviceGroup, error)
 	GetDeviceGroups(account string, limit int, offset int, tx *gorm.DB) (*[]models.DeviceGroup, error)
 	GetDeviceGroupsCount(account string, tx *gorm.DB) (int64, error)
 }
@@ -69,11 +69,11 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 	return &deviceGroups, nil
 }
 
-func (s *DeviceGroupsService) CreateDeviceGroup(deviceGroup *models.DeviceGroup, account string) (*models.DeviceGroup, error) {
+func (s *DeviceGroupsService) CreateDeviceGroup(deviceGroup *models.DeviceGroup) (*models.DeviceGroup, error) {
 	group := &models.DeviceGroup{
 		Name:    deviceGroup.Name,
 		Type:    "Static",
-		Account: account,
+		Account: deviceGroup.Account,
 	}
 	result := db.DB.Create(&group)
 	if result.Error != nil {
