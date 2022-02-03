@@ -15,6 +15,7 @@ type Model struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"DeletedAt,omitempty"`
 }
 
+// EdgeAPITime is a time.Time with a valid flag.
 type EdgeAPITime sql.NullTime
 
 // Scan implements the Scanner interface.
