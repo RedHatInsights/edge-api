@@ -1,14 +1,17 @@
 package routes
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/golang/mock/gomock"
-	"github.com/redhatinsights/edge-api/pkg/models"
-	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	log "github.com/sirupsen/logrus"
@@ -93,4 +96,70 @@ func TestGetAllDeviceGroupsFilterParams(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestCreateGroupWithoutAccount(t *testing.T) {
+	config.Get().Debug = false
+	jsonRepo := &models.DeviceGroup{
+		Name: "Group1",
+	}
+	jsonRepoBytes, err := json.Marshal(jsonRepo)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonRepoBytes))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := req.Context()
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+		Log: log.NewEntry(log.StandardLogger()),
+	})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(CreateDeviceGroup)
+
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusBadRequest)
+	}
+	config.Get().Debug = true
+}
+
+func TestCreateDeviceGroup(t *testing.T) {
+	jsonRepo := &models.DeviceGroup{
+		Name:    "Group1",
+		Type:    "static",
+		Account: "000000",
+	}
+	jsonRepoBytes, err := json.Marshal(jsonRepo)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonRepoBytes))
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	ctx := req.Context()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDeviceGroupsService := mock_services.NewMockDeviceGroupsServiceInterface(ctrl)
+	mockDeviceGroupsService.EXPECT().CreateDeviceGroup(gomock.Any()).Return(&models.DeviceGroup{}, nil)
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+		DeviceGroupsService: mockDeviceGroupsService,
+		Log:                 log.NewEntry(log.StandardLogger()),
+	})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(CreateDeviceGroup)
+
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v, want %v",
+			status, http.StatusOK)
+
+	}
+
 }
