@@ -144,4 +144,41 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(img).ToNot(BeNil())
 		Expect(img.Commit.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
 	})
+	Describe("get thirdpartyrepo information", func() {
+		Context("when thirdpartyrepo information does exists", func() {
+			It("should have third party repository url as payloadrepository baseurl", func() {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusCreated)
+					fmt.Fprintln(w, `{"id": "compose-request-id-returned-from-image-builder"}`)
+				}))
+				defer ts.Close()
+				config.Get().ImageBuilderConfig.URL = ts.URL
+				thirdpartyrepoURL := "http://www.thirdpartyrepo.com"
+				repos := Repository{
+					BaseURL: thirdpartyrepoURL,
+				}
+				req := &ComposeRequest{
+					Customizations: &Customizations{
+						PayloadRepositories: &[]Repository{repos},
+					},
+					Distribution: "rhel-8",
+					ImageRequests: []ImageRequest{
+						{
+							Architecture: "x86_64",
+							ImageType:    models.ImageTypeCommit,
+							UploadRequest: &UploadRequest{
+								Options: make(map[string]string),
+								Type:    "aws.s3",
+							},
+						}},
+				}
+				cr, err := client.compose(req)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cr).ToNot(BeNil())
+				Expect(cr.ID).To(Equal("compose-request-id-returned-from-image-builder"))
+
+			})
+		})
+	})
 })
