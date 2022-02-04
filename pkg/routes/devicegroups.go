@@ -41,7 +41,7 @@ func DeviceGroupCtx(next http.Handler) http.Handler {
 		s := dependencies.ServicesFromContext(r.Context())
 		if ID := chi.URLParam(r, "ID"); ID != "" {
 			_, err := strconv.Atoi(ID)
-			s.Log = s.Log.WithField("deviceGroup ID", ID)
+			s.Log = s.Log.WithField("deviceGroupID", ID)
 			s.Log.Debug("Retrieving device group")
 			if err != nil {
 				s.Log.Debug("ID is not an integer")
