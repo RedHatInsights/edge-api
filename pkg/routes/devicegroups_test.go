@@ -2,6 +2,7 @@ package routes
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -162,4 +163,55 @@ func TestCreateDeviceGroup(t *testing.T) {
 
 	}
 
+}
+
+func TestGetDeviceGroupByID(t *testing.T) {
+	deviceGroupId := &models.DeviceGroup{}
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := context.WithValue(req.Context(), deviceGroupKey, deviceGroupId)
+	ctrl := gomock.NewController(t)
+
+	defer ctrl.Finish()
+
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	ctx = dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
+	req = req.WithContext(ctx)
+	handler := http.HandlerFunc(GetDeviceGroupByID)
+
+	handler.ServeHTTP(rr, req.WithContext(ctx))
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v, want %v",
+			status, http.StatusOK)
+
+	}
+}
+
+func TestGetDeviceGroupByIDInvalid(t *testing.T) {
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := context.WithValue(req.Context(), deviceGroupKey, "a")
+	ctrl := gomock.NewController(t)
+
+	defer ctrl.Finish()
+
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	ctx = dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
+	req = req.WithContext(ctx)
+	handler := http.HandlerFunc(GetDeviceGroupByID)
+
+	handler.ServeHTTP(rr, req.WithContext(ctx))
+	if status := rr.Code; status == http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v, want %v",
+			status, http.StatusOK)
+
+	}
 }
