@@ -7,6 +7,7 @@ import (
 
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -25,6 +26,7 @@ type DeviceGroupsServiceInterface interface {
 	CreateDeviceGroup(deviceGroup *models.DeviceGroup) (*models.DeviceGroup, error)
 	GetDeviceGroups(account string, limit int, offset int, tx *gorm.DB) (*[]models.DeviceGroup, error)
 	GetDeviceGroupsCount(account string, tx *gorm.DB) (int64, error)
+	GetDeviceGroupByID(ID string) (*models.DeviceGroup, error)
 }
 
 // DeviceGroupsService is the main implementation of a DeviceGroupsServiceInterface
@@ -91,4 +93,18 @@ func (s *DeviceGroupsService) CreateDeviceGroup(deviceGroup *models.DeviceGroup)
 	}
 
 	return group, nil
+}
+
+// GetDeviceGroupByID gets the Third Party Repository by ID from the database
+func (s *DeviceGroupsService) GetDeviceGroupByID(ID string) (*models.DeviceGroup, error) {
+	var deviceGroup models.DeviceGroup
+	account, err := common.GetAccountFromContext(s.ctx)
+	if err != nil {
+		return nil, new(AccountNotSet)
+	}
+	result := db.DB.Where("account = ? and id = ?", account, ID).First(&deviceGroup)
+	if result.Error != nil {
+		return nil, new(DeviceGroupNotFound)
+	}
+	return &deviceGroup, nil
 }

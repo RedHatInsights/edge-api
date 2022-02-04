@@ -48,3 +48,10 @@ type ImageVersionAlreadyExists struct{}
 func (e *ImageVersionAlreadyExists) Error() string {
 	return "updated image version already exists"
 }
+
+// DeviceGroupNotFound indicates the Third Party Repository was not found
+type DeviceGroupNotFound struct{}
+
+func (e *DeviceGroupNotFound) Error() string {
+	return "device group was not found"
+}
