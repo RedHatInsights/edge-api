@@ -86,13 +86,17 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 		Find(&imageSetExists).
 		Error
 
-	if (err == nil) && imageSetExists {
+	if err != nil {
+		return err
+	}
+
+	if imageSetExists {
 		result := db.DB.Where("name = ? AND account = ?", image.Name, account).First(&imageSet)
 		if result.Error != nil {
 			s.log.WithField("error", result.Error.Error()).Error("Error checking for previous image set existence")
 			return result.Error
 		}
-		s.log.WithField("imageSetName", name).Error("ImageSet already exists, UpdateImage transaction expected and not CreateImage", image.Name)
+		s.log.WithField("imageSetName", image.Name).Error("ImageSet already exists, UpdateImage transaction expected and not CreateImage", image.Name)
 		return new(ImageSetAlreadyExists)
 	}
 	imageSet.Version = image.Version
