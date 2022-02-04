@@ -232,15 +232,17 @@ func (s *DeviceService) GetDeviceImageInfo(device inventory.Device) (*models.Ima
 	var ImageInfo models.ImageInfo
 	var currentImage *models.Image
 	var rollback *models.Image
-	var lastDeployment inventory.OSTree
+	var lastDeployment *inventory.OSTree
 
 	for _, rpmOstree := range device.Ostree.RpmOstreeDeployments {
 		if rpmOstree.Booted {
-			lastDeployment = rpmOstree
+			lastDeployment = &rpmOstree
 			break
 		}
 	}
-
+	if lastDeployment == nil {
+		return nil, new(ImageNotFoundError)
+	}
 	currentImage, err := s.ImageService.GetImageByOSTreeCommitHash(lastDeployment.Checksum)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Could not find device image info")
@@ -279,6 +281,9 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		Devices: make([]models.DeviceDetails, inventoryDevices.Count),
 		Count:   inventoryDevices.Count,
 		Total:   inventoryDevices.Total,
+	}
+	if inventoryDevices.Count == 0 {
+		return list, nil
 	}
 	s.log.Info("Adding Edge Device information...")
 	for i, device := range inventoryDevices.Result {
