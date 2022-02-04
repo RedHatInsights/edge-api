@@ -67,7 +67,7 @@ var _ = Describe("DeviceService", func() {
 				device.Ostree.RpmOstreeDeployments[1].Booted = true
 				lastDeployment := deviceService.GetDeviceLastDeployment(device)
 				Expect(lastDeployment).ToNot(BeNil())
-				Expect(lastDeployment.Booted).To(BeTrue())
+				Expect(lastDeployment.Booted).To(BeFalse())
 			})
 		})
 	})
@@ -130,8 +130,31 @@ var _ = Describe("DeviceService", func() {
 			})
 		})
 		When("device is not found on InventoryAPI", func() {
-			It("should not return error and zero updates available", func() {
+			It("should return error and nil updates available", func() {
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(inventory.Response{}, nil)
+
+				deviceService := services.DeviceService{
+					Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+					Inventory: mockInventoryClient,
+				}
+
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
+				Expect(updatesAvailable).To(BeNil())
+				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
+			})
+		})
+		When("there are no booted deployments", func() {
+			It("should return error and nil updates available", func() {
+				checksum := "fake-checksum"
+				resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
+					{ID: uuid, Ostree: inventory.SystemProfile{
+						RHCClientID: faker.UUIDHyphenated(),
+						RpmOstreeDeployments: []inventory.OSTree{
+							{Checksum: checksum, Booted: false},
+						},
+					}},
+				}}
+				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
 				deviceService := services.DeviceService{
 					Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
