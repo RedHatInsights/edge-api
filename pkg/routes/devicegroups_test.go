@@ -166,13 +166,13 @@ func TestCreateDeviceGroup(t *testing.T) {
 }
 
 func TestGetDeviceGroupByID(t *testing.T) {
-	deviceGroupId := &models.DeviceGroup{}
+	deviceGroupID := &models.DeviceGroup{}
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ctx := context.WithValue(req.Context(), deviceGroupKey, deviceGroupId)
+	ctx := context.WithValue(req.Context(), deviceGroupKey, deviceGroupID)
 	ctrl := gomock.NewController(t)
 
 	defer ctrl.Finish()
