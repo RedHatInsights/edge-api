@@ -108,6 +108,9 @@ func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]
 
 	lastDevice := device.Result[len(device.Result)-1]
 	lastDeployment := s.GetDeviceLastBootedDeployment(lastDevice)
+	if lastDeployment == nil {
+		return nil, new(DeviceNotFoundError)
+	}
 
 	var images []models.Image
 	var currentImage models.Image
@@ -307,10 +310,8 @@ func (s *DeviceService) GetDeviceLastBootedDeployment(device inventory.Device) *
 
 // GetDeviceLastDeployment returns the last deployment for a device
 func (s *DeviceService) GetDeviceLastDeployment(device inventory.Device) *inventory.OSTree {
-	var lastDeployment *inventory.OSTree
-	for _, rpmOstree := range device.Ostree.RpmOstreeDeployments {
-		rpmOstree := rpmOstree
-		lastDeployment = &rpmOstree
+	if len(device.Ostree.RpmOstreeDeployments) > 0 {
+		return &device.Ostree.RpmOstreeDeployments[0]
 	}
-	return lastDeployment
+	return nil
 }
