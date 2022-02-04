@@ -27,6 +27,9 @@ RUN go build -o /go/bin/edge-api-wipe cmd/db/wipe.go
 # Run the doc binary
 RUN go run cmd/spec/main.go
 
+# Build the kafka binary
+RUN go build -o /go/bin/edge-api-kafkadev cmd/kafka/main.go
+
 ######################################
 # STEP 2: build the dependencies image
 ######################################
@@ -68,6 +71,7 @@ ENV EDGE_API_WORKSPACE /src/github.com/RedHatInsights/edge-api
 COPY --from=edge-builder /go/bin/edge-api /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-migrate /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-wipe /usr/bin
+COPY --from=edge-builder /go/bin/edge-api-kafkadev /usr/bin
 COPY --from=edge-builder ${EDGE_API_WORKSPACE}/cmd/spec/openapi.json /var/tmp
 
 # kickstart inject requirements
