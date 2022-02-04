@@ -138,7 +138,7 @@ func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(&deviceGroup); err != nil {
-		services.Log.WithField("error", deviceGroup).Error("Error while trying to encode")
+		services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 	}
 }
 

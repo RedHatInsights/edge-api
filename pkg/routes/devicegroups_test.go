@@ -135,15 +135,14 @@ func TestCreateDeviceGroup(t *testing.T) {
 	}
 	jsonRepoBytes, err := json.Marshal(jsonRepo)
 	if err != nil {
-		t.Fatal(err)
+		t.Errorf(err.Error())
 	}
 	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonRepoBytes))
 	if err != nil {
-		t.Fatal(err)
+		t.Errorf(err.Error())
 	}
 	ctx := req.Context()
 	ctrl := gomock.NewController(t)
-	// var deviceGroup = &models.DeviceGroup{}
 	defer ctrl.Finish()
 	mockDeviceGroupsService := mock_services.NewMockDeviceGroupsServiceInterface(ctrl)
 	mockDeviceGroupsService.EXPECT().CreateDeviceGroup(gomock.Any()).Return(&models.DeviceGroup{}, nil)
