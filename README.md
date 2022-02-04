@@ -1,6 +1,6 @@
 # Edge API
 
-[![Go](https://github.com/RedHatInsights/edge-api/actions/workflows/coverage_testing.yml/badge.svg)](https://github.com/RedHatInsights/edge-api/actions/workflows/coverage_testing.yml)
+[![Build Status](https://app.travis-ci.com/RedHatInsights/edge-api.svg?branch=main)](https://app.travis-ci.com/RedHatInsights/edge-api)
 [![codecov](https://codecov.io/gh/RedHatInsights/edge-api/branch/main/graph/badge.svg?token=1CEO1MRGUB)](https://codecov.io/gh/RedHatInsights/edge-api)
 
 ## Overview
