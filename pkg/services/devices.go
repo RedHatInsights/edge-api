@@ -235,6 +235,7 @@ func (s *DeviceService) GetDeviceImageInfo(device inventory.Device) (*models.Ima
 	var lastDeployment *inventory.OSTree
 
 	for _, rpmOstree := range device.Ostree.RpmOstreeDeployments {
+		rpmOstree := rpmOstree
 		if rpmOstree.Booted {
 			lastDeployment = &rpmOstree
 			break
