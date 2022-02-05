@@ -6,7 +6,7 @@ require (
 	github.com/bxcodec/faker/v3 v3.7.0
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/fedora-iot/fido-device-onboard-rs/libfdo-data-go v0.0.0-20211210154920-5c241beb5c4e
-	github.com/getkin/kin-openapi v0.88.0
+	github.com/getkin/kin-openapi v0.89.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-openapi/analysis v0.21.1 // indirect

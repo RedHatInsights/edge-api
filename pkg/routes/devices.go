@@ -107,7 +107,7 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 	if dc.DeviceUUID == "" || !ok {
 		return // Error set by DeviceCtx method
 	}
-	result, err := s.DeviceService.GetDeviceImageInfo(dc.DeviceUUID)
+	result, err := s.DeviceService.GetDeviceImageInfoByUUID(dc.DeviceUUID)
 	if err == nil {
 		if err := json.NewEncoder(w).Encode(result); err != nil {
 			s.Log.WithField("error", result).Error("Error while trying to encode")
@@ -144,7 +144,7 @@ func GetDevice(w http.ResponseWriter, r *http.Request) {
 	if dc.DeviceUUID == "" || !ok {
 		return // Error set by DeviceCtx method
 	}
-	result, err := s.DeviceService.GetDeviceDetails(dc.DeviceUUID)
+	result, err := s.DeviceService.GetDeviceDetailsByUUID(dc.DeviceUUID)
 	if err == nil {
 		if err := json.NewEncoder(w).Encode(result); err != nil {
 			s.Log.WithField("error", result).Error("Error while trying to encode")
