@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -155,6 +156,12 @@ func (c *Client) ReturnDevices(parameters *Params) (Response, error) {
 
 // ReturnDevicesByID will return the list of devices by uuid
 func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
+	if _, err := uuid.Parse(deviceID); err != nil {
+		c.log.WithFields(log.Fields{
+			"error": err,
+		}).Error("invalid device ID, ", deviceID)
+		return Response{}, err
+	}
 	url := fmt.Sprintf("%s/%s%s&hostname_or_id=%s", config.Get().InventoryConfig.URL, inventoryAPI, FilterParams, deviceID)
 	c.log.WithFields(log.Fields{
 		"url": url,
