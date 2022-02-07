@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
@@ -23,37 +24,61 @@ type ConsumerService interface {
 type KafkaConsumerService struct {
 	Reader        *kafka.Reader
 	UpdateService UpdateServiceInterface
+	DeviceService DeviceServiceInterface
 	RetryMinutes  uint
 	config        *clowder.KafkaConfig
 	shuttingDown  bool
+	topic         string
+}
+
+// PlatformInsightsCreateEventPayload is the body of the create event found on the platform.inventory.events kafka topic.
+type PlatformInsightsCreateEventPayload struct {
+	Type         string `json:"type"`
+	PlatformMeta string `json:"platform_metadata"`
+	Metadata     struct {
+		RequestID string `json:"request_id"`
+	} `json:"metadata"`
+	Host struct {
+		ID             string `json:"id"`
+		Account        string `json:"account"`
+		DisplayName    string `json:"display_name"`
+		AnsibleHost    string `json:"ansible_host"`
+		Fqdn           string `json:"fqdn"`
+		InsightsID     string `json:"insights_id"`
+		StaleTimestamp string `json:"stale_timestamp"`
+		Reporter       string `json:"reporter"`
+		Tags           string `json:"tags"`
+		SystemProfile  string `json:"system_profile"`
+	} `json:"host"`
 }
 
 // NewKafkaConsumerService gives a instance of the Kafka implementation of ConsumerService
-func NewKafkaConsumerService(config *clowder.KafkaConfig) ConsumerService {
+func NewKafkaConsumerService(config *clowder.KafkaConfig, topic string) ConsumerService {
 	// to consume messages
 	s := &KafkaConsumerService{
 		UpdateService: NewUpdateService(context.Background(), log.WithField("service", "update")),
+		DeviceService: NewDeviceService(context.Background(), log.WithField("service", "device")),
 		RetryMinutes:  5,
 		config:        config,
 		shuttingDown:  false,
+		topic:         topic,
 	}
 	s.Reader = s.initReader()
 	return s
 }
 
 func (s *KafkaConsumerService) initReader() *kafka.Reader {
-	topic := "platform.playbook-dispatcher.runs"
 	brokers := make([]string, len(s.config.Brokers))
 	for i, b := range s.config.Brokers {
 		brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
 	}
 	log.WithFields(log.Fields{
-		"brokers": brokers, "topic": topic,
+		"brokers": brokers, "topic": s.topic,
 	}).Debug("Connecting with Kafka broker")
 	// make a new reader that consumes from topic from this consumer group
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: brokers,
-		Topic:   topic,
+		Topic:   s.topic,
 		GroupID: "edge-fleet-management-update-playbook",
 	})
 	return r
@@ -98,6 +123,45 @@ func (s *KafkaConsumerService) ConsumePlaybookDispatcherRuns() error {
 	}
 }
 
+// ConsumeInventoryCreateEvents parses create events from platform.inventory.events kafka topic and save them as devices in the DB
+func (s *KafkaConsumerService) ConsumeInventoryCreateEvents() error {
+	log.Info("Starting to consume platform inventory create events")
+	for {
+		m, err := s.Reader.ReadMessage(context.Background())
+		if err != nil {
+			log.WithFields(log.Fields{
+				"error": err.Error(),
+			}).Error("Error reading message from Kafka topic")
+			return err
+		}
+		log.WithFields(log.Fields{
+			"topic":  m.Topic,
+			"offset": m.Offset,
+			"key":    string(m.Key),
+			"value":  string(m.Value),
+		}).Debug("Read message from Kafka topic")
+
+		// dont know the format of the header, will attempt to parse the body and log the header
+		// further optimisation can be done once the header is known
+		var e *PlatformInsightsCreateEventPayload
+		err = json.Unmarshal(m.Value, &e)
+		if err != nil {
+			log.Debug("Skipping message - it is not a create message")
+		} else {
+			if e.Type == "created" {
+				err = s.DeviceService.ProcessPlatformInventoryCreateEvent(m.Value)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"error": err,
+					}).Error("Error writing Kafka message to DB")
+				}
+			} else {
+				log.Debug("Skipping message none create message from platform insights")
+			}
+		}
+	}
+}
+
 // RegisterShutdown listens to os signals to wrap up reader work
 func (s *KafkaConsumerService) RegisterShutdown() {
 	sigint := make(chan os.Signal, 1)
@@ -120,7 +184,12 @@ func (s *KafkaConsumerService) Start() {
 	for {
 		// The only way to actually exit this for is sending an exit signal to the app
 		// Due to this call, this is also a method that can't be unit tested (see comment in the method above)
-		err := s.ConsumePlaybookDispatcherRuns()
+		var err error
+		if s.topic == "platform.playbook-dispatcher.runs" {
+			err = s.ConsumePlaybookDispatcherRuns()
+		} else if s.topic == "platform.inventory.events" {
+			err = s.ConsumeInventoryCreateEvents()
+		}
 		if s.shuttingDown {
 			log.WithFields(log.Fields{
 				"error": err.Error(),

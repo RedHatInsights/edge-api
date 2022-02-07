@@ -2,12 +2,14 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 
 	version "github.com/knqyf263/go-rpm-version"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm/clause"
 )
 
 // DeviceServiceInterface defines the interface to handle the business logic of RHEL for Edge Devices
@@ -25,6 +27,7 @@ type DeviceServiceInterface interface {
 	GetDeviceImageInfo(device inventory.Device) (*models.ImageInfo, error)
 	GetDeviceLastDeployment(device inventory.Device) *inventory.OSTree
 	GetDeviceLastBootedDeployment(device inventory.Device) *inventory.OSTree
+	ProcessPlatformInventoryCreateEvent(message []byte) error
 }
 
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
@@ -340,6 +343,32 @@ func (s *DeviceService) GetDeviceLastBootedDeployment(device inventory.Device) *
 func (s *DeviceService) GetDeviceLastDeployment(device inventory.Device) *inventory.OSTree {
 	if len(device.Ostree.RpmOstreeDeployments) > 0 {
 		return &device.Ostree.RpmOstreeDeployments[0]
+	}
+	return nil
+}
+
+// ProcessPlatformInventoryCreateEvent is a method to processes messages from platform.inventory.events kafka topic and save them as devices in the DB
+func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) error {
+	var e *PlatformInsightsCreateEventPayload
+	err := json.Unmarshal(message, &e)
+	if err != nil {
+		log.Debug("Skipping message - it is not from edge service")
+	} else {
+		if e.Type == "created" {
+			var newDevice = models.Device{
+				UUID:        string(e.Host.ID),
+				RHCClientID: string(e.Host.InsightsID),
+				Account:     string(e.Host.Account),
+			}
+			result := db.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
+			if result.Error != nil {
+				log.WithFields(log.Fields{
+					"error": result.Error,
+				}).Error("Error writing Kafka message to DB")
+			}
+			return result.Error
+		}
+		log.Debug("Skipping message none create message from platform insights")
 	}
 	return nil
 }
