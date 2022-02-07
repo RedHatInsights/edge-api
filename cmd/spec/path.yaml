@@ -511,12 +511,12 @@ paths:
           in: query
           description: "field: choose which filter to order"
           schema:
-            type: integer
+            type: string
         - name: order_how
           in: query
           description: "field: choose to order asc or desc"
           schema:
-            type: integer
+            type: string
         - name: hostname_or_id
           in: query
           description: "field: filter by hostname_or_id"
