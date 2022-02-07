@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -114,7 +115,6 @@ func (c *Client) BuildURL(parameters *Params) string {
 
 // ReturnDevices will return the list of devices without filter by tag or uuid
 func (c *Client) ReturnDevices(parameters *Params) (Response, error) {
-
 	url := c.BuildURL(parameters)
 	c.log.WithFields(log.Fields{
 		"url": url,
@@ -130,8 +130,7 @@ func (c *Client) ReturnDevices(parameters *Params) (Response, error) {
 	res, err := client.Do(req)
 	if err != nil {
 		c.log.WithFields(log.Fields{
-			"statusCode": res.StatusCode,
-			"error":      err,
+			"error": err,
 		}).Error("Inventory ReturnDevices Request Error")
 		return Response{}, err
 	}
@@ -157,7 +156,13 @@ func (c *Client) ReturnDevices(parameters *Params) (Response, error) {
 
 // ReturnDevicesByID will return the list of devices by uuid
 func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
-	url := fmt.Sprintf("%s/%s/%s", config.Get().InventoryConfig.URL, inventoryAPI, deviceID)
+	if _, err := uuid.Parse(deviceID); err != nil {
+		c.log.WithFields(log.Fields{
+			"error": err,
+		}).Error("invalid device ID, ", deviceID)
+		return Response{}, err
+	}
+	url := fmt.Sprintf("%s/%s%s&hostname_or_id=%s", config.Get().InventoryConfig.URL, inventoryAPI, FilterParams, deviceID)
 	c.log.WithFields(log.Fields{
 		"url": url,
 	}).Info("Inventory ReturnDevicesByID Request Started")
@@ -171,8 +176,7 @@ func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
 
 	if err != nil {
 		c.log.WithFields(log.Fields{
-			"statusCode": res.StatusCode,
-			"error":      err,
+			"error": err,
 		}).Error("Inventory ReturnDevicesByID Request Error")
 		return Response{}, err
 	}
@@ -217,8 +221,7 @@ func (c *Client) ReturnDevicesByTag(tag string) (Response, error) {
 
 	if err != nil {
 		c.log.WithFields(log.Fields{
-			"statusCode": res.StatusCode,
-			"error":      err,
+			"error": err,
 		}).Error("Inventory ReturnDevicesByTag Request Error")
 		return Response{}, err
 	}

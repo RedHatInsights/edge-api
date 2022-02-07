@@ -48,3 +48,17 @@ type ImageVersionAlreadyExists struct{}
 func (e *ImageVersionAlreadyExists) Error() string {
 	return "updated image version already exists"
 }
+
+// DeviceGroupNotFound indicates the Third Party Repository was not found
+type DeviceGroupNotFound struct{}
+
+func (e *DeviceGroupNotFound) Error() string {
+	return "device group was not found"
+}
+
+// ImageSetAlreadyExists indicates the ImageSet attempting to be created already exists
+type ImageSetAlreadyExists struct{}
+
+func (e *ImageSetAlreadyExists) Error() string {
+	return "image set already exists"
+}

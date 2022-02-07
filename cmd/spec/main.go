@@ -56,6 +56,7 @@ func main() {
 	gen.addSchema("v1.NotFound", &errors.NotFound{})
 	gen.addSchema("v1.ThirdPartyRepo", &models.ThirdPartyRepo{})
 	gen.addSchema("v1.DeviceDetailsList", &models.DeviceDetailsList{})
+	gen.addSchema("v1.DeviceGroup", &models.DeviceGroup{})
 
 	type Swagger struct {
 		Components openapi3.Components `json:"components,omitempty" yaml:"components,omitempty"`

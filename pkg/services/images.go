@@ -75,15 +75,38 @@ type ImageService struct {
 
 // CreateImage creates an Image for an Account on Image Builder and on our database
 func (s *ImageService) CreateImage(image *models.Image, account string) error {
+	// Check for exising ImageSet to add this Image to
+	var imageSetExists bool
+	var imageSetModel models.ImageSet
 	var imageSet models.ImageSet
-	imageSet.Account = account
-	imageSet.Name = image.Name
+
+	err := db.DB.Model(imageSetModel).
+		Select("count(*) > 0").
+		Where("name = ? AND account = ?", image.Name, account).
+		Find(&imageSetExists).
+		Error
+
+	if err != nil {
+		return err
+	}
+
+	if imageSetExists {
+		result := db.DB.Where("name = ? AND account = ?", image.Name, account).First(&imageSet)
+		if result.Error != nil {
+			s.log.WithField("error", result.Error.Error()).Error("Error checking for previous image set existence")
+			return result.Error
+		}
+		s.log.WithField("imageSetName", image.Name).Error("ImageSet already exists, UpdateImage transaction expected and not CreateImage", image.Name)
+		return new(ImageSetAlreadyExists)
+	}
 	imageSet.Version = image.Version
 	set := db.DB.Create(&imageSet)
-	if set.Error == nil {
-		image.ImageSetID = &imageSet.ID
+	if set.Error != nil {
+		return set.Error
 	}
-	image, err := s.ImageBuilder.ComposeCommit(image)
+
+	image.ImageSetID = &imageSet.ID
+	image, err = s.ImageBuilder.ComposeCommit(image)
 	if err != nil {
 		return err
 	}
@@ -139,6 +162,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		// Previous image was built successfully
 		var currentImageSet models.ImageSet
 		result := db.DB.Where("Id = ?", previousImage.ImageSetID).First(&currentImageSet)
+
 		if result.Error != nil {
 			s.log.WithField("error", result.Error.Error()).Error("Error retrieving the image set from parent image")
 			return result.Error
@@ -315,7 +339,7 @@ func (s *ImageService) SetFinalImageStatus(i *models.Image) {
 
 	tx := db.DB.Save(i)
 	if tx.Error != nil {
-		s.log.WithField("error", tx.Error.Error()).Fatal("Couldn't set final image status")
+		s.log.WithField("error", tx.Error.Error()).Error("Couldn't set final image status")
 	}
 }
 
@@ -330,7 +354,7 @@ func (s *ImageService) postProcessImage(id uint) {
 		WaitGroup.Done() // Done with one image (successfully or not)
 		s.log.Debug("Done with one image - successfully or not")
 		if err := recover(); err != nil {
-			s.log.WithField("error", err).Fatalf("Error recovering post process image goroutine")
+			s.log.WithField("error", err).Errorf("Error recovering post process image goroutine")
 		}
 	}()
 	go func(i *models.Image) {
@@ -349,7 +373,7 @@ func (s *ImageService) postProcessImage(id uint) {
 	err := s.postProcessCommit(i)
 	if err != nil {
 		s.SetErrorStatusOnImage(err, i)
-		s.log.WithField("error", err.Error()).Fatal("Failed creating commit for image")
+		s.log.WithField("error", err.Error()).Error("Failed creating commit for image")
 	}
 
 	if i.Commit.Status == models.ImageStatusSuccess {
@@ -361,7 +385,7 @@ func (s *ImageService) postProcessImage(id uint) {
 			}
 			if err != nil {
 				s.SetErrorStatusOnImage(err, i)
-				s.log.WithField("error", err.Error()).Fatal("Failed creating installer for image")
+				s.log.WithField("error", err.Error()).Error("Failed creating installer for image")
 			}
 		}
 	}
@@ -423,7 +447,7 @@ func (s *ImageService) SetErrorStatusOnImage(err error, i *models.Image) {
 			}
 		}
 		if err != nil {
-			s.log.WithField("error", tx.Error.Error()).Fatal("Error setting image final status")
+			s.log.WithField("error", tx.Error.Error()).Error("Error setting image final status")
 		}
 	}
 }
@@ -955,7 +979,7 @@ func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, err
 		s.log.Error("Error retreving account")
 		return nil, new(AccountNotSet)
 	}
-	result := db.DB.Joins("Commit").Joins("Installer").Preload("Packages").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where("images.account = ? AND image_set_id = ? AND images.id < ? ", account, image.ImageSetID, image.ID).Last(&rollback)
+	result := db.DB.Joins("Commit").Joins("Installer").Preload("Packages").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where(&models.Image{ImageSetID: image.ImageSetID, Account: account}).Last(&rollback, "images.id < ?", image.ID)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error).Error("Error retrieving rollback image")
 		return nil, new(ImageNotFoundError)
