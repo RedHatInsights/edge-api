@@ -238,7 +238,34 @@ func getDeviceGroups(w http.ResponseWriter, r *http.Request) *models.DeviceGroup
 
 // UpdateDeviceGroup updates the existing device group
 func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
-
+	if oldDeviceGroup := getDeviceGroups(w, r); oldDeviceGroup != nil {
+		services := dependencies.ServicesFromContext(r.Context())
+		defer r.Body.Close()
+		deviceGroup, err := createDeviceRequest(w, r)
+		if err != nil {
+			// error handled by createRequest already
+			return
+		}
+		err = services.DeviceGroupsService.UpdateDeviceGroup(deviceGroup, oldDeviceGroup.Account, fmt.Sprint(oldDeviceGroup.ID))
+		if err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error updating device group")
+			err := errors.NewInternalServerError()
+			err.SetTitle("failed updating third party repository")
+			w.WriteHeader(err.GetStatus())
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+			}
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		repoDetails, err := services.DeviceGroupsService.GetDeviceGroupByID(fmt.Sprint(oldDeviceGroup.ID))
+		if err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error getting device group")
+		}
+		if err := json.NewEncoder(w).Encode(repoDetails); err != nil {
+			services.Log.WithField("error", repoDetails).Error("Error while trying to encode")
+		}
+	}
 }
 
 // DeleteDeviceGroupByID deletes an existing device group
