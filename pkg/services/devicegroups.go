@@ -27,6 +27,7 @@ type DeviceGroupsServiceInterface interface {
 	GetDeviceGroups(account string, limit int, offset int, tx *gorm.DB) (*[]models.DeviceGroup, error)
 	GetDeviceGroupsCount(account string, tx *gorm.DB) (int64, error)
 	GetDeviceGroupByID(ID string) (*models.DeviceGroup, error)
+	UpdateDeviceGroup(deviceGroup *models.DeviceGroup, account string, ID string) error
 }
 
 // DeviceGroupsService is the main implementation of a DeviceGroupsServiceInterface
@@ -107,4 +108,23 @@ func (s *DeviceGroupsService) GetDeviceGroupByID(ID string) (*models.DeviceGroup
 		return nil, new(DeviceGroupNotFound)
 	}
 	return &deviceGroup, nil
+}
+
+func (s *DeviceGroupsService) UpdateDeviceGroup(deviceGroup *models.DeviceGroup, account string, ID string) error {
+
+	deviceGroup.Account = account
+	groupDetails, err := s.GetDeviceGroupByID(ID)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error retieving third party repository")
+	}
+	if groupDetails.Name != "" {
+		groupDetails.Name = deviceGroup.Name
+	}
+
+	result := db.DB.Save(&groupDetails)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
 }
