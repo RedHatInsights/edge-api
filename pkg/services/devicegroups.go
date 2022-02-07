@@ -96,7 +96,7 @@ func (s *DeviceGroupsService) CreateDeviceGroup(deviceGroup *models.DeviceGroup)
 	return group, nil
 }
 
-// GetDeviceGroupByID gets the Third Party Repository by ID from the database
+// GetDeviceGroupByID gets the device group by ID from the database
 func (s *DeviceGroupsService) GetDeviceGroupByID(ID string) (*models.DeviceGroup, error) {
 	var deviceGroup models.DeviceGroup
 	account, err := common.GetAccountFromContext(s.ctx)
@@ -110,6 +110,7 @@ func (s *DeviceGroupsService) GetDeviceGroupByID(ID string) (*models.DeviceGroup
 	return &deviceGroup, nil
 }
 
+// UpdateDeviceGroup update an existent group
 func (s *DeviceGroupsService) UpdateDeviceGroup(deviceGroup *models.DeviceGroup, account string, ID string) error {
 
 	deviceGroup.Account = account
