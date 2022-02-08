@@ -71,7 +71,7 @@ type ImageService struct {
 	RepoService  RepoServiceInterface
 }
 
-// validateAllImagesPackagesAreFromAccount validates the account for Third Party Repositories
+// ValidateAllImagesPackagesAreFromAccount validates the account for Third Party Repositories
 func ValidateAllImagesPackagesAreFromAccount(account string, repos []models.ThirdPartyRepo) (bool, error) {
 
 	var ids []uint
