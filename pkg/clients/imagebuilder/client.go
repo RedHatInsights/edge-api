@@ -453,10 +453,9 @@ func (c *Client) GetThirdPartyRepos(image *models.Image) ([]Repository, error) {
 	if count != int64(len(thirdpartyrepoIDS)) {
 		return nil, errors.New("enter valid third party repository id")
 	}
-	for int := 0; ind < len(thirdpartyrepos); ind++ {
-
-		repos[repoID] = Repository{
-			BaseURL: thirdpartyrepos[repoID].URL,
+	for i := 0; i < len(thirdpartyrepos); i++ {
+		repos[i] = Repository{
+			BaseURL: thirdpartyrepos[i].URL,
 		}
 	}
 
