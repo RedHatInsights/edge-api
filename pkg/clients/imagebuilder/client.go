@@ -440,8 +440,8 @@ func (c *Client) GetThirdPartyRepos(image *models.Image) ([]Repository, error) {
 	thirdpartyrepos := make([]models.ThirdPartyRepo, len(image.ThirdPartyRepositories))
 	thirdpartyrepoIDS := make([]int, len(image.ThirdPartyRepositories))
 
-	for i := range image.ThirdPartyRepositories {
-		thirdpartyrepoIDS[i] = int(image.ThirdPartyRepositories[i].ID)
+	for repo := range image.ThirdPartyRepositories {
+		thirdpartyrepoIDS[repo] = int(image.ThirdPartyRepositories[repo].ID)
 	}
 	var count int64
 	result := db.DB.Where("account = ?", account).Find(&thirdpartyrepos, thirdpartyrepoIDS).Count(&count)
@@ -453,9 +453,9 @@ func (c *Client) GetThirdPartyRepos(image *models.Image) ([]Repository, error) {
 	if count != int64(len(thirdpartyrepoIDS)) {
 		return nil, errors.New("enter valid third party repository id")
 	}
-	for i := range thirdpartyrepoIDS {
-		repos[i] = Repository{
-			BaseURL: thirdpartyrepos[i].URL,
+	for repoID := 0; repoID < len(thirdpartyrepos); repoID++ {
+		repos[repoID] = Repository{
+			BaseURL: thirdpartyrepos[repoID].URL,
 		}
 	}
 

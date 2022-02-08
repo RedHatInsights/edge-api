@@ -71,6 +71,23 @@ type ImageService struct {
 	RepoService  RepoServiceInterface
 }
 
+// validateAllImagesPackagesAreFromAccount validates the account for Third Party Repositories
+func ValidateAllImagesPackagesAreFromAccount(account string, repos []models.ThirdPartyRepo) (bool, error) {
+
+	var ids []uint
+	for _, repo := range repos {
+		ids = append(ids, repo.ID)
+	}
+
+	var existingRepos []models.ThirdPartyRepo
+
+	if res := db.DB.Where(models.ThirdPartyRepo{Account: account}).Find(&existingRepos, ids); res.Error != nil {
+		return false, res.Error
+	}
+
+	return len(existingRepos) != len(repos), nil
+}
+
 // CreateImage creates an Image for an Account on Image Builder and on our database
 func (s *ImageService) CreateImage(image *models.Image, account string) error {
 	var imageSet models.ImageSet
@@ -103,6 +120,13 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 		if tx.Error != nil {
 			return tx.Error
 		}
+	}
+	validRepos, err := ValidateAllImagesPackagesAreFromAccount(account, image.ThirdPartyRepositories)
+	if err != nil {
+		return err
+	}
+	if !validRepos {
+		return errors.NewBadRequest("repos are not valid")
 	}
 	tx := db.DB.Create(&image.Commit)
 	if tx.Error != nil {
