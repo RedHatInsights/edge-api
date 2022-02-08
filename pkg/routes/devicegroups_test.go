@@ -215,3 +215,42 @@ func TestGetDeviceGroupByIDInvalid(t *testing.T) {
 
 	}
 }
+
+func TestUpdateDeviceGroup(t *testing.T) {
+	updDevice := &models.DeviceGroup{
+		Name:    "UpdGroup1",
+		Type:    "static",
+		Account: "000000",
+	}
+	jsonDeviceBytes, err := json.Marshal(updDevice)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	req, err := http.NewRequest("PUT", "/1", bytes.NewBuffer(jsonDeviceBytes))
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	ctx := req.Context()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDeviceGroupsService := mock_services.NewMockDeviceGroupsServiceInterface(ctrl)
+	mockDeviceGroupsService.EXPECT().UpdateDeviceGroup(updDevice, "000000", "1").Return(nil)
+
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+		DeviceGroupsService: mockDeviceGroupsService,
+		Log:                 log.NewEntry(log.StandardLogger()),
+	})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(UpdateDeviceGroup)
+
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v, want %v",
+			status, http.StatusOK)
+
+	}
+
+}
