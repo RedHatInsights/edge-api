@@ -1076,4 +1076,47 @@ paths:
               schema:
                 $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
-      summary: Creates an Update for device group 
+      summary: Creates an Update for device group
+  /device-groups/{ID}/devices:
+    post:
+      operationId: AddDeviceGroupDevices
+      parameters:
+        - name: ID
+          in: path
+          required: true
+          description: Device Group Id
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1.DeviceGroup"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/v1.Device"
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.BadRequest"
+          description: The request sent couldn't be processed.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.NotFound"
+          description: device group not found or devices not found.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.InternalServerError"
+          description: There was an internal server error.
+      summary: Add devices to device group.
