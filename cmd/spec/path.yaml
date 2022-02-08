@@ -984,6 +984,46 @@ paths:
           description: There was an internal server error.
       summary: Connect devices by their GUIDs.
   /device-groups:
+     get:
+       operationId: GetAllDeviceGroups
+       parameters:
+         - name: sort_by
+           in: query
+           description: "fields: created_at, name, updated_at. To sort DESC use - before the fields."
+           schema:
+             type: string
+         - name: name
+           in: query
+           description: "field: filter by name"
+           schema:
+             type: string
+       responses:
+         "200":
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   count:
+                     type: integer
+                     example: 100
+                   data:
+                     type: array
+                     items:
+                       $ref: '#/components/schemas/v1.DeviceGroup'
+           description: OK
+         "400":
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/schemas/v1.BadRequest'
+           description: The request sent couldn't be processed.
+         "500":
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/schemas/v1.InternalServerError'
+           description: There was an internal server error.
      post:
       operationId: CreateDeviceGroup
       requestBody:
