@@ -72,7 +72,7 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 
 	var deviceGroups []models.DeviceGroup
 
-	res := tx.Limit(limit).Offset(offset).Where("account = ?", account).Find(&deviceGroups)
+	res := tx.Limit(limit).Offset(offset).Where("account = ?", account).Preload("Devices").Find(&deviceGroups)
 
 	if res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device groups")
@@ -105,7 +105,7 @@ func (s *DeviceGroupsService) GetDeviceGroupByID(ID string) (*models.DeviceGroup
 	if err != nil {
 		return nil, new(AccountNotSet)
 	}
-	result := db.DB.Where("account = ? and id = ?", account, ID).First(&deviceGroup)
+	result := db.DB.Where("account = ? and id = ?", account, ID).Preload("Devices").First(&deviceGroup)
 	if result.Error != nil {
 		return nil, new(DeviceGroupNotFound)
 	}
