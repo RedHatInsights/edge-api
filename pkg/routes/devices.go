@@ -26,10 +26,10 @@ func MakeDevicesRouter(sub chi.Router) {
 	})
 }
 
-type deviceContextKey int
+type deviceContextKeyType string
 
-// DeviceContextKey is the key to DeviceContext (for Device requests)
-const DeviceContextKey deviceContextKey = iota
+// deviceContextKey is the key to DeviceContext (for Device requests)
+const deviceContextKey = deviceContextKeyType("device_context_key")
 
 // DeviceContext implements context interfaces so we can shuttle around multiple values
 type DeviceContext struct {
@@ -47,14 +47,13 @@ func DeviceCtx(next http.Handler) http.Handler {
 			err := errors.NewBadRequest("DeviceUUID must be sent")
 			w.WriteHeader(err.GetStatus())
 			if err := json.NewEncoder(w).Encode(&err); err != nil {
-
 				log.WithField("error", err.Error()).Error("Error while trying to encode")
 			}
 			return
 		}
 		// TODO: Implement devices by tag
 		// dc.Tag = chi.URLParam(r, "Tag")
-		ctx := context.WithValue(r.Context(), DeviceContextKey, dc)
+		ctx := context.WithValue(r.Context(), deviceContextKey, dc)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -62,7 +61,7 @@ func DeviceCtx(next http.Handler) http.Handler {
 // GetUpdateAvailableForDevice returns if exists update for the current image at the device.
 func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	s := dependencies.ServicesFromContext(r.Context())
-	dc, ok := r.Context().Value(DeviceContextKey).(DeviceContext)
+	dc, ok := r.Context().Value(deviceContextKey).(DeviceContext)
 	if dc.DeviceUUID == "" || !ok {
 		return // Error set by DeviceCtx method
 	}
@@ -103,7 +102,7 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 // GetDeviceImageInfo returns the information of a running image for a device
 func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 	s := dependencies.ServicesFromContext(r.Context())
-	dc, ok := r.Context().Value(DeviceContextKey).(DeviceContext)
+	dc, ok := r.Context().Value(deviceContextKey).(DeviceContext)
 	if dc.DeviceUUID == "" || !ok {
 		return // Error set by DeviceCtx method
 	}
@@ -140,7 +139,7 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 // Returns updates transactions for that device, if any.
 func GetDevice(w http.ResponseWriter, r *http.Request) {
 	s := dependencies.ServicesFromContext(r.Context())
-	dc, ok := r.Context().Value(DeviceContextKey).(DeviceContext)
+	dc, ok := r.Context().Value(deviceContextKey).(DeviceContext)
 	if dc.DeviceUUID == "" || !ok {
 		return // Error set by DeviceCtx method
 	}
