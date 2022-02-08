@@ -352,7 +352,7 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 	var e *PlatformInsightsCreateEventPayload
 	err := json.Unmarshal(message, &e)
 	if err != nil {
-		log.Debug("Skipping message - it is not from edge service")
+		log.Debug("Skipping message - it is not a create message")
 	} else {
 		if e.Type == "created" {
 			var newDevice = models.Device{
@@ -368,7 +368,7 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 			}
 			return result.Error
 		}
-		log.Debug("Skipping message none create message from platform insights")
+		log.Debug("Skipping message - not a create message from platform insights")
 	}
 	return nil
 }
