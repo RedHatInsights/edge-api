@@ -80,21 +80,15 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 	var imageSetModel models.ImageSet
 	var imageSet models.ImageSet
 
-	s.log.WithField("imageSetName", image.Name).Info("CreateImage() 1")
-
 	err := db.DB.Model(imageSetModel).
 		Select("count(*) > 0").
 		Where("name = ? AND account = ?", image.Name, account).
 		Find(&imageSetExists).
 		Error
 
-	s.log.WithField("imageSetName", image.Name).Info("CreateImage() 2")
-
 	if err != nil {
 		return err
 	}
-
-	s.log.WithField("imageSetName", image.Name).Info("CreateImage() 3")
 
 	if imageSetExists {
 		result := db.DB.Where("name = ? AND account = ?", image.Name, account).First(&imageSet)
@@ -105,9 +99,6 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 		s.log.WithField("imageSetName", image.Name).Error("ImageSet already exists, UpdateImage transaction expected and not CreateImage", image.Name)
 		return new(ImageSetAlreadyExists)
 	}
-
-	s.log.WithField("imageSetName", image.Name).Info("CreateImage() 4")
-
 	imageSet.Version = image.Version
 	set := db.DB.Create(&imageSet)
 	if set.Error != nil {
