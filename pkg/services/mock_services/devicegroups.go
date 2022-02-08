@@ -93,3 +93,17 @@ func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) GetDeviceGroupByID(ID in
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceGroupByID", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).GetDeviceGroupByID), ID)
 }
+
+// UpdateDeviceGroup mocks base method
+func (m *MockDeviceGroupsServiceInterface) UpdateDeviceGroup(deviceGroup *models.DeviceGroup, account, ID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateDeviceGroup", deviceGroup, account, ID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateDeviceGroup indicates an expected call of UpdateDeviceGroup
+func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) UpdateDeviceGroup(deviceGroup, account, ID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeviceGroup", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).UpdateDeviceGroup), deviceGroup, account, ID)
+}

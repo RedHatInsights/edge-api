@@ -215,3 +215,46 @@ func TestGetDeviceGroupByIDInvalid(t *testing.T) {
 
 	}
 }
+
+func TestUpdateDeviceGroup(t *testing.T) {
+	updDevice := &models.DeviceGroup{
+		Name:    "UpdGroup1",
+		Type:    "static",
+		Account: "0000000",
+	}
+	jsonDeviceBytes, err := json.Marshal(updDevice)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	url := fmt.Sprintf("/%d", updDevice.ID)
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonDeviceBytes))
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	ctx := req.Context()
+	ctx = setContextDeviceGroup(ctx, updDevice)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDeviceGroupsService := mock_services.NewMockDeviceGroupsServiceInterface(ctrl)
+	mockDeviceGroupsService.EXPECT().GetDeviceGroupByID(fmt.Sprintf("%d", updDevice.ID)).Return(updDevice, nil)
+	mockDeviceGroupsService.EXPECT().UpdateDeviceGroup(updDevice, "0000000", fmt.Sprintf("%d", updDevice.ID)).Return(nil)
+
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+		DeviceGroupsService: mockDeviceGroupsService,
+		Log:                 log.NewEntry(log.StandardLogger()),
+	})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(UpdateDeviceGroup)
+
+	handler.ServeHTTP(rr, req)
+	fmt.Printf("RR: %v\n", rr)
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v, want %v",
+			status, http.StatusOK)
+
+	}
+
+}

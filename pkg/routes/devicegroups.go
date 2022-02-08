@@ -23,6 +23,10 @@ type deviceGroupTypeKey int
 
 const deviceGroupKey deviceGroupTypeKey = iota
 
+func setContextDeviceGroup(ctx context.Context, deviceGroup *models.DeviceGroup) context.Context {
+	return context.WithValue(ctx, deviceGroupKey, deviceGroup)
+}
+
 // MakeDeviceGroupsRouter adds support for device groups operations
 func MakeDeviceGroupsRouter(sub chi.Router) {
 	sub.With(validateGetAllDeviceGroupsFilterParams).With(common.Paginate).Get("/", GetAllDeviceGroups)
@@ -83,7 +87,7 @@ func DeviceGroupCtx(next http.Handler) http.Handler {
 				}
 				return
 			}
-			ctx := context.WithValue(r.Context(), deviceGroupKey, deviceGroup)
+			ctx := setContextDeviceGroup(r.Context(), deviceGroup)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
 			s.Log.Debug("deviceGroup ID was not passed to the request or it was empty")
@@ -238,7 +242,34 @@ func getDeviceGroups(w http.ResponseWriter, r *http.Request) *models.DeviceGroup
 
 // UpdateDeviceGroup updates the existing device group
 func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
-
+	if oldDeviceGroup := getDeviceGroups(w, r); oldDeviceGroup != nil {
+		services := dependencies.ServicesFromContext(r.Context())
+		defer r.Body.Close()
+		deviceGroup, err := createDeviceRequest(w, r)
+		if err != nil {
+			// error handled by createRequest already
+			return
+		}
+		err = services.DeviceGroupsService.UpdateDeviceGroup(deviceGroup, oldDeviceGroup.Account, fmt.Sprint(oldDeviceGroup.ID))
+		if err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error updating device group")
+			err := errors.NewInternalServerError()
+			err.SetTitle("failed updating third party repository")
+			w.WriteHeader(err.GetStatus())
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+			}
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		repoDetails, err := services.DeviceGroupsService.GetDeviceGroupByID(fmt.Sprint(oldDeviceGroup.ID))
+		if err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error getting device group")
+		}
+		if err := json.NewEncoder(w).Encode(repoDetails); err != nil {
+			services.Log.WithField("error", repoDetails).Error("Error while trying to encode")
+		}
+	}
 }
 
 // DeleteDeviceGroupByID deletes an existing device group
