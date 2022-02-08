@@ -78,6 +78,12 @@ func ValidateAllImagesPackagesAreFromAccount(account string, repos []models.Thir
 	for _, repo := range repos {
 		ids = append(ids, repo.ID)
 	}
+	if account == "" {
+		return false, errors.NewBadRequest("repository information is not valid")
+	}
+	if len(repos) == 0 {
+		return true, nil
+	}
 
 	var existingRepos []models.ThirdPartyRepo
 
