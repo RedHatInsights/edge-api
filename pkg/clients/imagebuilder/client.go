@@ -454,6 +454,7 @@ func (c *Client) GetThirdPartyRepos(image *models.Image) ([]Repository, error) {
 		return nil, errors.New("enter valid third party repository id")
 	}
 	for repoID := 0; repoID < len(thirdpartyrepos); repoID++ {
+
 		repos[repoID] = Repository{
 			BaseURL: thirdpartyrepos[repoID].URL,
 		}
