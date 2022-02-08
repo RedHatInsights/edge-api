@@ -17,8 +17,8 @@ import (
 type TypeEnum string
 
 const (
-	static  TypeEnum = "Static"
-	dynamic TypeEnum = "Dynamic"
+	static  TypeEnum = models.DeviceGroupTypeStatic
+	dynamic TypeEnum = models.DeviceGroupTypeDynamic
 )
 
 // DeviceGroupsServiceInterface defines the interface that helps handle
@@ -82,7 +82,7 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 	return &deviceGroups, nil
 }
 
-//CreateDeviceGroup creaate a device group for an account
+//CreateDeviceGroup create a device group for an account
 func (s *DeviceGroupsService) CreateDeviceGroup(deviceGroup *models.DeviceGroup) (*models.DeviceGroup, error) {
 	group := &models.DeviceGroup{
 		Name:    deviceGroup.Name,
@@ -118,7 +118,7 @@ func (s *DeviceGroupsService) UpdateDeviceGroup(deviceGroup *models.DeviceGroup,
 	deviceGroup.Account = account
 	groupDetails, err := s.GetDeviceGroupByID(ID)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Error retieving third party repository")
+		s.log.WithField("error", err.Error()).Error("Error retrieving device group")
 	}
 	if groupDetails.Name != "" {
 		groupDetails.Name = deviceGroup.Name

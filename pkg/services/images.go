@@ -835,29 +835,32 @@ func (s *ImageService) RetryCreateImage(image *models.Image) error {
 
 // SetBuildingStatusOnImageToRetryBuild set building status on image so we can try the build
 func (s *ImageService) SetBuildingStatusOnImageToRetryBuild(image *models.Image) error {
+	s.log.Debug("Setting image status")
 	image.Status = models.ImageStatusBuilding
 	if image.Commit != nil {
+		s.log.Debug("Setting commit status")
 		image.Commit.Status = models.ImageStatusBuilding
 		// Repo will be recreated from scratch, its safer and simpler as this stage
 		if image.Commit.Repo != nil {
+			s.log.Debug("Reset repo")
 			image.Commit.Repo = nil
-			tx := db.DB.Save(image.Commit.Repo)
-			if tx.Error != nil {
-				return tx.Error
-			}
 		}
+		s.log.Debug("Saving commit status")
 		tx := db.DB.Save(image.Commit)
 		if tx.Error != nil {
 			return tx.Error
 		}
 	}
 	if image.Installer != nil {
+		s.log.Debug("Setting installer status")
 		image.Installer.Status = models.ImageStatusCreated
+		s.log.Debug("Saving installer status")
 		tx := db.DB.Save(image.Installer)
 		if tx.Error != nil {
 			return tx.Error
 		}
 	}
+	s.log.Debug("Saving image status")
 	tx := db.DB.Save(image)
 	if tx.Error != nil {
 		return tx.Error

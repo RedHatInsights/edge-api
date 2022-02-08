@@ -87,9 +87,7 @@ func (s *DeviceService) GetDeviceDetails(device inventory.Device) (*models.Devic
 	}
 	// Get device on Edge API, not on inventory
 	databaseDevice, err := s.GetDeviceByUUID(device.ID)
-	if err != nil {
-		s.log.Info("Could not find device on the devices table yet - returning just the data from inventory")
-	}
+
 	// In order to have an update transaction for a device it must be a least created
 	var updates *[]models.UpdateTransaction
 	if databaseDevice != nil {
@@ -99,8 +97,20 @@ func (s *DeviceService) GetDeviceDetails(device inventory.Device) (*models.Devic
 			return nil, err
 		}
 	}
+	if err != nil {
+		s.log.Info("Could not find device on the devices table yet - returning just the data from inventory")
+		// if err != nil then databaseDevice is nil pointer
+		databaseDevice = &models.Device{
+			UUID:        device.ID,
+			RHCClientID: device.Ostree.RHCClientID,
+		}
+	}
 	details := &models.DeviceDetails{
-		Device:             models.EdgeDevice{Device: databaseDevice},
+		Device: models.EdgeDevice{
+			Device:     databaseDevice,
+			DeviceName: device.DisplayName,
+			LastSeen:   device.LastSeen,
+		},
 		Image:              imageInfo,
 		UpdateTransactions: updates,
 	}
