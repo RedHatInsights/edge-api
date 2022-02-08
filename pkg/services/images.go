@@ -74,15 +74,15 @@ type ImageService struct {
 // ValidateAllImagesPackagesAreFromAccount validates the account for Third Party Repositories
 func ValidateAllImagesPackagesAreFromAccount(account string, repos []models.ThirdPartyRepo) (bool, error) {
 
-	var ids []uint
-	for _, repo := range repos {
-		ids = append(ids, repo.ID)
-	}
 	if account == "" {
 		return false, errors.NewBadRequest("repository information is not valid")
 	}
 	if len(repos) == 0 {
 		return true, nil
+	}
+	var ids []uint
+	for _, repo := range repos {
+		ids = append(ids, repo.ID)
 	}
 
 	var existingRepos []models.ThirdPartyRepo
@@ -150,11 +150,16 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 
 // UpdateImage updates an image, adding a new version of this image to an imageset
 func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Image) error {
+	account, err := common.GetAccountFromContext(s.ctx)
+	if err != nil {
+		s.log.Error("Error retreving account")
+		return new(AccountNotSet)
+	}
 	s.log.Info("Updating image...")
 	if previousImage == nil {
 		return new(ImageNotFoundError)
 	}
-	err := s.CheckIfIsLatestVersion(previousImage)
+	err = s.CheckIfIsLatestVersion(previousImage)
 	if err != nil {
 		return errors.NewBadRequest("only the latest updated image can be modified")
 	}
@@ -219,6 +224,13 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 			s.log.WithField("error", tx.Error.Error()).Error("Error creating installer")
 			return tx.Error
 		}
+	}
+	validRepos, err := ValidateAllImagesPackagesAreFromAccount(account, image.ThirdPartyRepositories)
+	if err != nil {
+		return err
+	}
+	if !validRepos {
+		return errors.NewBadRequest("repos are not valid")
 	}
 	tx := db.DB.Create(&image.Commit)
 	if tx.Error != nil {
