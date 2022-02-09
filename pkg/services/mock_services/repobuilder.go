@@ -63,20 +63,6 @@ func (mr *MockRepoBuilderInterfaceMockRecorder) ImportRepo(r interface{}) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ImportRepo", reflect.TypeOf((*MockRepoBuilderInterface)(nil).ImportRepo), r)
 }
 
-// DownloadExtractVersionRepo mocks base method
-func (m *MockRepoBuilderInterface) DownloadExtractVersionRepo(c *models.Commit, dest string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DownloadExtractVersionRepo", c, dest)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DownloadExtractVersionRepo indicates an expected call of DownloadExtractVersionRepo
-func (mr *MockRepoBuilderInterfaceMockRecorder) DownloadExtractVersionRepo(c, dest interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadExtractVersionRepo", reflect.TypeOf((*MockRepoBuilderInterface)(nil).DownloadExtractVersionRepo), c, dest)
-}
-
 // DownloadVersionRepo mocks base method
 func (m *MockRepoBuilderInterface) DownloadVersionRepo(c *models.Commit, dest string) (string, error) {
 	m.ctrl.T.Helper()
@@ -107,15 +93,15 @@ func (mr *MockRepoBuilderInterfaceMockRecorder) ExtractVersionRepo(c, tarFileNam
 }
 
 // UploadVersionRepo mocks base method
-func (m *MockRepoBuilderInterface) UploadVersionRepo(c *models.Commit, tarFileName, dest string) error {
+func (m *MockRepoBuilderInterface) UploadVersionRepo(c *models.Commit, tarFileName string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UploadVersionRepo", c, tarFileName, dest)
+	ret := m.ctrl.Call(m, "UploadVersionRepo", c, tarFileName)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UploadVersionRepo indicates an expected call of UploadVersionRepo
-func (mr *MockRepoBuilderInterfaceMockRecorder) UploadVersionRepo(c, tarFileName, dest interface{}) *gomock.Call {
+func (mr *MockRepoBuilderInterfaceMockRecorder) UploadVersionRepo(c, tarFileName interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadVersionRepo", reflect.TypeOf((*MockRepoBuilderInterface)(nil).UploadVersionRepo), c, tarFileName, dest)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadVersionRepo", reflect.TypeOf((*MockRepoBuilderInterface)(nil).UploadVersionRepo), c, tarFileName)
 }

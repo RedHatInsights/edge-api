@@ -73,6 +73,29 @@ type ImageService struct {
 	RepoService  RepoServiceInterface
 }
 
+// ValidateAlIImageReposAreFromAccount validates the account for Third Party Repositories
+func ValidateAlIImageReposAreFromAccount(account string, repos []models.ThirdPartyRepo) error {
+
+	if account == "" {
+		return errors.NewBadRequest("repository information is not valid")
+	}
+	if len(repos) == 0 {
+		return nil
+	}
+	var ids []uint
+	for _, repo := range repos {
+		ids = append(ids, repo.ID)
+	}
+
+	var existingRepos []models.ThirdPartyRepo
+
+	if res := db.DB.Where(models.ThirdPartyRepo{Account: account}).Find(&existingRepos, ids); res.Error != nil {
+		return res.Error
+	}
+
+	return nil
+}
+
 // CreateImage creates an Image for an Account on Image Builder and on our database
 func (s *ImageService) CreateImage(image *models.Image, account string) error {
 	// Check for exising ImageSet to add this Image to
@@ -107,12 +130,12 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 		return set.Error
 	}
 
+	image.Account = account
 	image.ImageSetID = &imageSet.ID
 	image, err = s.ImageBuilder.ComposeCommit(image)
 	if err != nil {
 		return err
 	}
-	image.Account = account
 	image.Commit.Account = account
 	image.Commit.Status = models.ImageStatusBuilding
 	image.Status = models.ImageStatusBuilding
@@ -130,6 +153,9 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 		if tx.Error != nil {
 			return tx.Error
 		}
+	}
+	if err := ValidateAlIImageReposAreFromAccount(account, image.ThirdPartyRepositories); err != nil {
+		return err
 	}
 	tx := db.DB.Create(&image.Commit)
 	if tx.Error != nil {
@@ -159,6 +185,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	// important: update the image imageSet for any previous image build status,
 	// otherwise image will be orphaned from its imageSet if previous build failed
 	image.ImageSetID = previousImage.ImageSetID
+	image.Account = previousImage.Account
 
 	if previousImage.Status == models.ImageStatusSuccess {
 		// Previous image was built successfully
@@ -198,7 +225,6 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	if err != nil {
 		return err
 	}
-	image.Account = previousImage.Account
 	image.Commit.Account = previousImage.Account
 	image.Commit.Status = models.ImageStatusBuilding
 	image.Status = models.ImageStatusBuilding
@@ -217,6 +243,9 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 			s.log.WithField("error", tx.Error.Error()).Error("Error creating installer")
 			return tx.Error
 		}
+	}
+	if err := ValidateAlIImageReposAreFromAccount(image.Account, image.ThirdPartyRepositories); err != nil {
+		return err
 	}
 	tx := db.DB.Create(&image.Commit)
 	if tx.Error != nil {

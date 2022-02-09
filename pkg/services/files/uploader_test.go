@@ -2,10 +2,7 @@ package files_test
 
 import (
 	"fmt"
-	"io/fs"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -21,6 +18,7 @@ var _ = Describe("Uploader Test", func() {
 		var uploader files.Uploader
 		BeforeEach(func() {
 			logEntry = log.NewEntry(log.StandardLogger())
+			config.Init()
 			cfg := config.Get()
 			cfg.Local = true
 			account = "000000"
@@ -56,27 +54,27 @@ var _ = Describe("Uploader Test", func() {
 			})
 		})
 		When("upload file", func() {
-			var path, filename, data string
+			var path, filename string
 			BeforeEach(func() {
-				data = "i am a file data"
 				filename = "random-filename.txt"
-				path = fmt.Sprintf("/tmp/random-folder/%s", filename)
+				path = "/tmp"
+				path = fmt.Sprintf("%s/%s", path, filename)
 				f, err := os.Create(path)
 				if err != nil {
 					log.Fatal(err)
 				}
 				defer f.Close()
-				ioutil.WriteFile(path, []byte(data), fs.ModeAppend)
+				os.Create(path)
 			})
 			AfterEach(func() {
 				os.Remove(path)
 			})
-			It("returns error", func() {
-				_, filename := filepath.Split(path)
-				newFilePath, err := uploader.UploadFile(path, filename)
+			It("doesnt returns error", func() {
+				destfile := "random-file.txt"
+				newFilePath, err := uploader.UploadFile(path, destfile)
 
+				Expect(newFilePath).To(Equal(fmt.Sprintf("/tmp/%s", destfile)))
 				Expect(err).ToNot(HaveOccurred())
-				Expect(newFilePath).To(Equal(fmt.Sprintf("/tmp/%s", filename)))
 			})
 		})
 	})

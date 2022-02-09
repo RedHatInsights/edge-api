@@ -387,4 +387,22 @@ var _ = Describe("Image Service Test", func() {
 			})
 		})
 	})
+	Describe("validate images packages account", func() {
+		Context("when creating an image using third party repository", func() {
+			It("should validate the images packages from account", func() {
+				var repos []models.ThirdPartyRepo
+				account := "00000"
+				err := services.ValidateAlIImageReposAreFromAccount(account, repos)
+				Expect(err).ToNot(HaveOccurred())
+
+			})
+			It("should give an error", func() {
+				var repos []models.ThirdPartyRepo
+				account := ""
+				err := services.ValidateAlIImageReposAreFromAccount(account, repos)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError("repository information is not valid"))
+			})
+		})
+	})
 })

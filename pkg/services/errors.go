@@ -84,3 +84,17 @@ type DeviceGroupDevicesNotSupplied struct{}
 func (e *DeviceGroupDevicesNotSupplied) Error() string {
 	return "devices must be supplied to be added to device group"
 }
+
+// DeviceGroupAlreadyExists indicates that device group already exists
+type DeviceGroupAlreadyExists struct{}
+
+func (e *DeviceGroupAlreadyExists) Error() string {
+	return "device group already exists"
+}
+
+// DeviceGroupAccountOrNameUndefined indicates that device group account or name are undefined
+type DeviceGroupAccountOrNameUndefined struct{}
+
+func (e *DeviceGroupAccountOrNameUndefined) Error() string {
+	return "device group account or name are undefined"
+}

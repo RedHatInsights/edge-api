@@ -44,6 +44,19 @@ func NewDeviceGroupsService(ctx context.Context, log *log.Entry) DeviceGroupsSer
 	}
 }
 
+// deviceGroupNameExists check if a device group exists by account and name
+func deviceGroupNameExists(account string, name string) (bool, error) {
+	if account == "" || name == "" {
+		return false, new(DeviceGroupAccountOrNameUndefined)
+	}
+	var deviceGroupsCount int64
+	result := db.DB.Model(&models.DeviceGroup{}).Where(models.DeviceGroup{Account: account, Name: name}).Count(&deviceGroupsCount)
+	if result.Error != nil {
+		return false, result.Error
+	}
+	return deviceGroupsCount > 0, nil
+}
+
 // GetDeviceGroupsCount get the device groups account records count from the database
 func (s *DeviceGroupsService) GetDeviceGroupsCount(account string, tx *gorm.DB) (int64, error) {
 
@@ -84,6 +97,14 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 
 //CreateDeviceGroup create a device group for an account
 func (s *DeviceGroupsService) CreateDeviceGroup(deviceGroup *models.DeviceGroup) (*models.DeviceGroup, error) {
+	deviceGroupExists, err := deviceGroupNameExists(deviceGroup.Account, deviceGroup.Name)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error when checking if device group exists")
+		return nil, err
+	}
+	if deviceGroupExists {
+		return nil, new(DeviceGroupAlreadyExists)
+	}
 	group := &models.DeviceGroup{
 		Name:    deviceGroup.Name,
 		Type:    string(static),
@@ -114,7 +135,6 @@ func (s *DeviceGroupsService) GetDeviceGroupByID(ID string) (*models.DeviceGroup
 
 // UpdateDeviceGroup update an existent group
 func (s *DeviceGroupsService) UpdateDeviceGroup(deviceGroup *models.DeviceGroup, account string, ID string) error {
-
 	deviceGroup.Account = account
 	groupDetails, err := s.GetDeviceGroupByID(ID)
 	if err != nil {
@@ -122,6 +142,14 @@ func (s *DeviceGroupsService) UpdateDeviceGroup(deviceGroup *models.DeviceGroup,
 	}
 	if groupDetails.Name != "" {
 		groupDetails.Name = deviceGroup.Name
+		deviceGroupExists, err := deviceGroupNameExists(groupDetails.Account, groupDetails.Name)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Error when checking if device group exists")
+			return err
+		}
+		if deviceGroupExists {
+			return new(DeviceGroupAlreadyExists)
+		}
 	}
 
 	result := db.DB.Save(&groupDetails)
