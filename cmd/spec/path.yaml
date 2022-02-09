@@ -38,10 +38,10 @@ paths:
       operationId: listImages
       parameters:
         - name: sort_by
-           in: query
-           description: "fields: created_at, distribution, name, status. To sort DESC use - before the fields."
-           schema:
-             type: string
+          in: query
+          description: "fields: created_at, distribution, name, status. To sort DESC use - before the fields."
+          schema:
+            type: string
         - name: name
           in: query
           description: "field: filter by name"
