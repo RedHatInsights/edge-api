@@ -2,8 +2,10 @@ package routes
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/redhatinsights/edge-api/pkg/db"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -162,4 +164,160 @@ func TestCreateDeviceGroup(t *testing.T) {
 
 	}
 
+}
+
+func TestGetDeviceGroupByID(t *testing.T) {
+	deviceGroupID := &models.DeviceGroup{}
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := context.WithValue(req.Context(), deviceGroupKey, deviceGroupID)
+	ctrl := gomock.NewController(t)
+
+	defer ctrl.Finish()
+
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	ctx = dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
+	req = req.WithContext(ctx)
+	handler := http.HandlerFunc(GetDeviceGroupByID)
+
+	handler.ServeHTTP(rr, req.WithContext(ctx))
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v, want %v",
+			status, http.StatusOK)
+
+	}
+}
+
+func TestGetDeviceGroupByIDInvalid(t *testing.T) {
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := context.WithValue(req.Context(), deviceGroupKey, "a")
+	ctrl := gomock.NewController(t)
+
+	defer ctrl.Finish()
+
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	ctx = dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
+	req = req.WithContext(ctx)
+	handler := http.HandlerFunc(GetDeviceGroupByID)
+
+	handler.ServeHTTP(rr, req.WithContext(ctx))
+	if status := rr.Code; status == http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v, want %v",
+			status, http.StatusOK)
+
+	}
+}
+
+func TestAddDeviceGroupDevices(t *testing.T) {
+	account := "1111111"
+	deviceGroups := []models.DeviceGroup{
+		{Name: "test_group_1", Account: account, Type: models.DeviceGroupTypeDefault},
+	}
+	devices := []models.Device{
+		{Account: account, UUID: "1"},
+		{Account: account, UUID: "2"},
+	}
+	for _, deviceGroup := range deviceGroups {
+		if res := db.DB.Create(&deviceGroup); res.Error != nil {
+			t.Errorf("Failed to create DeviceGroup: %q", res.Error)
+		}
+	}
+	for _, device := range devices {
+		if res := db.DB.Create(&device); res.Error != nil {
+			t.Errorf("Failed to create Device: %q", res.Error)
+		}
+	}
+
+	var accountDeviceGroup models.DeviceGroup
+	if res := db.DB.Where(models.DeviceGroup{Account: account}).First(&accountDeviceGroup); res.Error != nil {
+		t.Errorf("Failed to get device group: %q", res.Error)
+	}
+	var accountDevices []models.Device
+	if res := db.DB.Where(models.Device{Account: account}).Find(&accountDevices); res.Error != nil {
+		t.Errorf("Failed to get Devices: %q", res.Error)
+	}
+
+	postBody, err := json.Marshal(models.DeviceGroup{Devices: accountDevices})
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+
+	url := fmt.Sprintf("/%d/devices", accountDeviceGroup.ID)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(postBody))
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+	ctx := req.Context()
+	ctx = setContextDeviceGroup(ctx, &accountDeviceGroup)
+	handler := http.HandlerFunc(AddDeviceGroupDevices)
+	controller := gomock.NewController(t)
+	defer controller.Finish()
+
+	deviceGroupsService := mock_services.NewMockDeviceGroupsServiceInterface(controller)
+	deviceGroupsService.EXPECT().AddDeviceGroupDevices(account, accountDeviceGroup.ID, accountDevices).Return(&accountDevices, nil)
+
+	edgeAPIServices := &dependencies.EdgeAPIServices{
+		DeviceGroupsService: deviceGroupsService,
+		Log:                 log.NewEntry(log.StandardLogger()),
+	}
+
+	req = req.WithContext(dependencies.ContextWithServices(ctx, edgeAPIServices))
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v, want %v",
+			status, http.StatusOK)
+	}
+}
+
+func TestUpdateDeviceGroup(t *testing.T) {
+	updDevice := &models.DeviceGroup{
+		Name:    "UpdGroup1",
+		Type:    "static",
+		Account: "0000000",
+	}
+	jsonDeviceBytes, err := json.Marshal(updDevice)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	url := fmt.Sprintf("/%d", updDevice.ID)
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonDeviceBytes))
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	ctx := req.Context()
+	ctx = setContextDeviceGroup(ctx, updDevice)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockDeviceGroupsService := mock_services.NewMockDeviceGroupsServiceInterface(ctrl)
+	mockDeviceGroupsService.EXPECT().GetDeviceGroupByID(fmt.Sprintf("%d", updDevice.ID)).Return(updDevice, nil)
+	mockDeviceGroupsService.EXPECT().UpdateDeviceGroup(updDevice, "0000000", fmt.Sprintf("%d", updDevice.ID)).Return(nil)
+
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+		DeviceGroupsService: mockDeviceGroupsService,
+		Log:                 log.NewEntry(log.StandardLogger()),
+	})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(UpdateDeviceGroup)
+
+	handler.ServeHTTP(rr, req)
+	fmt.Printf("RR: %v\n", rr)
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v, want %v",
+			status, http.StatusOK)
+	}
 }
