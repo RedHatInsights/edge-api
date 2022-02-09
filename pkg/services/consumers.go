@@ -137,15 +137,15 @@ func (s *KafkaConsumerService) ConsumeInventoryCreateEvents() error {
 		for _, h := range m.Headers {
 			if h.Key == "event_type" {
 				eventType = string(h.Value)
-				log.WithFields(log.Fields{
-					"topic":  m.Topic,
-					"offset": m.Offset,
-					"key":    string(m.Key),
-					"value":  string(m.Value),
-				}).Debug("Read message from Kafka topic")
 			}
 		}
 		if eventType == "created" {
+			log.WithFields(log.Fields{
+				"topic":  m.Topic,
+				"offset": m.Offset,
+				"key":    string(m.Key),
+				"value":  string(m.Value),
+			}).Debug("Read message from Kafka topic")
 			err = s.DeviceService.ProcessPlatformInventoryCreateEvent(m.Value)
 			if err != nil {
 				log.WithFields(log.Fields{
