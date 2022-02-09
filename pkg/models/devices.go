@@ -1,7 +1,5 @@
 package models
 
-import "time"
-
 // EdgeDevice is the entity that represents and Edge Device
 // It is a combination of the data of a Device owned by Inventory API
 // and the Device data saved on Edge API
@@ -36,11 +34,12 @@ type DeviceDetailsList struct {
 //	and 1 is reachable.
 type Device struct {
 	Model
-	UUID          string    `json:"UUID"`
-	AvailableHash string    `json:"AvailableHash,omitempty"`
-	RHCClientID   string    `json:"RHCClientID"`
-	Connected     bool      `gorm:"default:true" json:"Connected"`
-	Name          string    `json:"Name"`
-	LastSeen      time.Time `json:"LastSeen"`
-	CurrentHash   string    `json:"CurrentHash,omitempty"`
+	UUID          string      `json:"UUID"`
+	AvailableHash string      `json:"AvailableHash,omitempty"`
+	RHCClientID   string      `json:"RHCClientID"`
+	Connected     bool        `gorm:"default:true" json:"Connected"`
+	Name          string      `json:"Name"`
+	LastSeen      EdgeAPITime `json:"LastSeen"`
+	CurrentHash   string      `json:"CurrentHash,omitempty"`
+	Account       string      `json:"Account"`
 }

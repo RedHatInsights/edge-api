@@ -511,12 +511,12 @@ paths:
           in: query
           description: "field: choose which filter to order"
           schema:
-            type: integer
+            type: string
         - name: order_how
           in: query
           description: "field: choose to order asc or desc"
           schema:
-            type: integer
+            type: string
         - name: hostname_or_id
           in: query
           description: "field: filter by hostname_or_id"
@@ -984,6 +984,46 @@ paths:
           description: There was an internal server error.
       summary: Connect devices by their GUIDs.
   /device-groups:
+     get:
+       operationId: GetAllDeviceGroups
+       parameters:
+         - name: sort_by
+           in: query
+           description: "fields: created_at, name, updated_at. To sort DESC use - before the fields."
+           schema:
+             type: string
+         - name: name
+           in: query
+           description: "field: filter by name"
+           schema:
+             type: string
+       responses:
+         "200":
+           content:
+             application/json:
+               schema:
+                 type: object
+                 properties:
+                   count:
+                     type: integer
+                     example: 100
+                   data:
+                     type: array
+                     items:
+                       $ref: '#/components/schemas/v1.DeviceGroup'
+           description: OK
+         "400":
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/schemas/v1.BadRequest'
+           description: The request sent couldn't be processed.
+         "500":
+           content:
+             application/json:
+               schema:
+                 $ref: '#/components/schemas/v1.InternalServerError'
+           description: There was an internal server error.
      post:
       operationId: CreateDeviceGroup
       requestBody:
@@ -1012,3 +1052,111 @@ paths:
                 $ref: '#/components/schemas/v1.InternalServerError'
           description: There was an internal server error.
       summary: Create Device Group for an account.
+  /device-groups/{ID}:
+    get:
+      operationId: GetDeviceGroupByID
+      parameters:
+        - name: ID
+          in: path
+          required: true
+          description: Device Group Id
+          schema:
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.DeviceGroup"
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.BadRequest"
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.InternalServerError"
+          description: There was an internal server error.
+      summary: Get an device group by id.
+    put:
+      operationId: UpdateDeviceGroup
+      parameters:
+        - name: ID
+          in: path
+          required: true
+          description: An unique existing device group id.
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1.DeviceGroup"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.DeviceGroup"
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.BadRequest"
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.InternalServerError"
+          description: There was an internal server error.
+      summary: Creates an Update for device group
+  /device-groups/{ID}/devices:
+    post:
+      operationId: AddDeviceGroupDevices
+      parameters:
+        - name: ID
+          in: path
+          required: true
+          description: Device Group Id
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1.DeviceGroup"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/v1.Device"
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.BadRequest"
+          description: The request sent couldn't be processed.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.NotFound"
+          description: device group not found or devices not found.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.InternalServerError"
+          description: There was an internal server error.
+      summary: Add devices to device group.

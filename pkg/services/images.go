@@ -99,6 +99,8 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 		s.log.WithField("imageSetName", image.Name).Error("ImageSet already exists, UpdateImage transaction expected and not CreateImage", image.Name)
 		return new(ImageSetAlreadyExists)
 	}
+	imageSet.Account = account
+	imageSet.Name = image.Name
 	imageSet.Version = image.Version
 	set := db.DB.Create(&imageSet)
 	if set.Error != nil {
@@ -339,7 +341,7 @@ func (s *ImageService) SetFinalImageStatus(i *models.Image) {
 
 	tx := db.DB.Save(i)
 	if tx.Error != nil {
-		s.log.WithField("error", tx.Error.Error()).Fatal("Couldn't set final image status")
+		s.log.WithField("error", tx.Error.Error()).Error("Couldn't set final image status")
 	}
 }
 
@@ -354,7 +356,7 @@ func (s *ImageService) postProcessImage(id uint) {
 		WaitGroup.Done() // Done with one image (successfully or not)
 		s.log.Debug("Done with one image - successfully or not")
 		if err := recover(); err != nil {
-			s.log.WithField("error", err).Fatalf("Error recovering post process image goroutine")
+			s.log.WithField("error", err).Errorf("Error recovering post process image goroutine")
 		}
 	}()
 	go func(i *models.Image) {
@@ -373,7 +375,7 @@ func (s *ImageService) postProcessImage(id uint) {
 	err := s.postProcessCommit(i)
 	if err != nil {
 		s.SetErrorStatusOnImage(err, i)
-		s.log.WithField("error", err.Error()).Fatal("Failed creating commit for image")
+		s.log.WithField("error", err.Error()).Error("Failed creating commit for image")
 	}
 
 	if i.Commit.Status == models.ImageStatusSuccess {
@@ -385,7 +387,7 @@ func (s *ImageService) postProcessImage(id uint) {
 			}
 			if err != nil {
 				s.SetErrorStatusOnImage(err, i)
-				s.log.WithField("error", err.Error()).Fatal("Failed creating installer for image")
+				s.log.WithField("error", err.Error()).Error("Failed creating installer for image")
 			}
 		}
 	}
@@ -447,7 +449,7 @@ func (s *ImageService) SetErrorStatusOnImage(err error, i *models.Image) {
 			}
 		}
 		if err != nil {
-			s.log.WithField("error", tx.Error.Error()).Fatal("Error setting image final status")
+			s.log.WithField("error", tx.Error.Error()).Error("Error setting image final status")
 		}
 	}
 }
@@ -833,29 +835,32 @@ func (s *ImageService) RetryCreateImage(image *models.Image) error {
 
 // SetBuildingStatusOnImageToRetryBuild set building status on image so we can try the build
 func (s *ImageService) SetBuildingStatusOnImageToRetryBuild(image *models.Image) error {
+	s.log.Debug("Setting image status")
 	image.Status = models.ImageStatusBuilding
 	if image.Commit != nil {
+		s.log.Debug("Setting commit status")
 		image.Commit.Status = models.ImageStatusBuilding
 		// Repo will be recreated from scratch, its safer and simpler as this stage
 		if image.Commit.Repo != nil {
+			s.log.Debug("Reset repo")
 			image.Commit.Repo = nil
-			tx := db.DB.Save(image.Commit.Repo)
-			if tx.Error != nil {
-				return tx.Error
-			}
 		}
+		s.log.Debug("Saving commit status")
 		tx := db.DB.Save(image.Commit)
 		if tx.Error != nil {
 			return tx.Error
 		}
 	}
 	if image.Installer != nil {
+		s.log.Debug("Setting installer status")
 		image.Installer.Status = models.ImageStatusCreated
+		s.log.Debug("Saving installer status")
 		tx := db.DB.Save(image.Installer)
 		if tx.Error != nil {
 			return tx.Error
 		}
 	}
+	s.log.Debug("Saving image status")
 	tx := db.DB.Save(image)
 	if tx.Error != nil {
 		return tx.Error

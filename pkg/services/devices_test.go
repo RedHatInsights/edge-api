@@ -2,6 +2,7 @@ package services_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -458,6 +459,40 @@ var _ = Describe("DeviceService", func() {
 				Expect(devices.Total).To(Equal(2))
 				Expect(err).To(BeNil())
 			})
+		})
+	})
+	Context("ProcessPlatformInventoryCreateEvent", func() {
+		uuid := faker.UUIDHyphenated()
+		device := models.Device{
+			UUID: uuid,
+		}
+		type PlatformInsightsCreateEventPayload struct {
+			Type         string `json:"type"`
+			PlatformMeta string `json:"platform_metadata"`
+			Metadata     struct {
+				RequestID string `json:"request_id"`
+			} `json:"metadata"`
+			Host struct {
+				ID             string `json:"id"`
+				Account        string `json:"account"`
+				DisplayName    string `json:"display_name"`
+				AnsibleHost    string `json:"ansible_host"`
+				Fqdn           string `json:"fqdn"`
+				InsightsID     string `json:"insights_id"`
+				StaleTimestamp string `json:"stale_timestamp"`
+				Reporter       string `json:"reporter"`
+				Tags           string `json:"tags"`
+				SystemProfile  string `json:"system_profile"`
+			} `json:"host"`
+		}
+		event := new(PlatformInsightsCreateEventPayload)
+		event.Host.ID = uuid
+		event.Host.Account = "TESTACCOUNT"
+		message, _ := json.Marshal(event)
+		It("should update devices when no record is found", func() {
+			deviceService.ProcessPlatformInventoryCreateEvent(message)
+			db.DB.First(&device, device.UUID)
+			Expect(device.UUID).To(Equal(event.Host.ID))
 		})
 	})
 })
