@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 
 	"gorm.io/gorm"
 
@@ -16,8 +17,8 @@ import (
 type TypeEnum string
 
 const (
-	static  TypeEnum = "Static"
-	dynamic TypeEnum = "Dynamic"
+	static  TypeEnum = models.DeviceGroupTypeStatic
+	dynamic TypeEnum = models.DeviceGroupTypeDynamic
 )
 
 // DeviceGroupsServiceInterface defines the interface that helps handle
@@ -28,6 +29,7 @@ type DeviceGroupsServiceInterface interface {
 	GetDeviceGroupsCount(account string, tx *gorm.DB) (int64, error)
 	GetDeviceGroupByID(ID string) (*models.DeviceGroup, error)
 	UpdateDeviceGroup(deviceGroup *models.DeviceGroup, account string, ID string) error
+	AddDeviceGroupDevices(account string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error)
 }
 
 // DeviceGroupsService is the main implementation of a DeviceGroupsServiceInterface
@@ -70,7 +72,7 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 
 	var deviceGroups []models.DeviceGroup
 
-	res := tx.Limit(limit).Offset(offset).Where("account = ?", account).Find(&deviceGroups)
+	res := tx.Limit(limit).Offset(offset).Where("account = ?", account).Preload("Devices").Find(&deviceGroups)
 
 	if res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device groups")
@@ -80,7 +82,7 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 	return &deviceGroups, nil
 }
 
-//CreateDeviceGroup creaate a device group for an account
+//CreateDeviceGroup create a device group for an account
 func (s *DeviceGroupsService) CreateDeviceGroup(deviceGroup *models.DeviceGroup) (*models.DeviceGroup, error) {
 	group := &models.DeviceGroup{
 		Name:    deviceGroup.Name,
@@ -103,7 +105,7 @@ func (s *DeviceGroupsService) GetDeviceGroupByID(ID string) (*models.DeviceGroup
 	if err != nil {
 		return nil, new(AccountNotSet)
 	}
-	result := db.DB.Where("account = ? and id = ?", account, ID).First(&deviceGroup)
+	result := db.DB.Where("account = ? and id = ?", account, ID).Preload("Devices").First(&deviceGroup)
 	if result.Error != nil {
 		return nil, new(DeviceGroupNotFound)
 	}
@@ -116,7 +118,7 @@ func (s *DeviceGroupsService) UpdateDeviceGroup(deviceGroup *models.DeviceGroup,
 	deviceGroup.Account = account
 	groupDetails, err := s.GetDeviceGroupByID(ID)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Error retieving third party repository")
+		s.log.WithField("error", err.Error()).Error("Error retrieving device group")
 	}
 	if groupDetails.Name != "" {
 		groupDetails.Name = deviceGroup.Name
@@ -128,4 +130,51 @@ func (s *DeviceGroupsService) UpdateDeviceGroup(deviceGroup *models.DeviceGroup,
 	}
 
 	return nil
+}
+
+// AddDeviceGroupDevices add devices to device group
+func (s *DeviceGroupsService) AddDeviceGroupDevices(account string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error) {
+	if account == "" || deviceGroupID == 0 {
+		s.log.Debug("account and deviceGroupID must be defined")
+		return nil, new(DeviceGroupAccountOrIDUndefined)
+	}
+
+	if len(devices) == 0 {
+		return nil, new(DeviceGroupDevicesNotSupplied)
+	}
+
+	// get the device group
+	var deviceGroup models.DeviceGroup
+	if res := db.DB.Where(models.DeviceGroup{Account: account}).First(&deviceGroup, deviceGroupID); res.Error != nil {
+		return nil, res.Error
+	}
+
+	// get the device ids needed to be added to device group and remove duplicates and undefined
+	mapDeviceIDS := make(map[uint]bool, len(devices))
+	devicesIDsToAdd := make([]uint, 0, len(devices))
+	for _, device := range devices {
+		if _, ok := mapDeviceIDS[device.ID]; !ok && device.ID != 0 {
+			mapDeviceIDS[device.ID] = true
+			devicesIDsToAdd = append(devicesIDsToAdd, device.ID)
+		}
+	}
+
+	// we need to be sure that all the devices we want to add already exists and have the same account as the current device group account
+	var devicesToAdd []models.Device
+	if res := db.DB.Where(models.Device{Account: account}).Find(&devicesToAdd, devicesIDsToAdd); res.Error != nil {
+		return nil, res.Error
+	}
+
+	missingDevicesCount := len(devicesIDsToAdd) - len(devicesToAdd)
+	if missingDevicesCount != 0 {
+		s.log.Debug(fmt.Sprintf("devices where not found among the device group account: %d", missingDevicesCount))
+		return nil, new(DeviceGroupAccountDevicesNotFound)
+	}
+
+	s.log.Debug(fmt.Sprintf("adding %d devices to device group id: %d", len(devicesToAdd), deviceGroup.ID))
+	if err := db.DB.Model(&deviceGroup).Association("Devices").Append(devicesToAdd); err != nil {
+		return nil, err
+	}
+
+	return &devicesToAdd, nil
 }
