@@ -23,6 +23,7 @@ RUN go build -tags=fdo -o /go/bin/edge-api
 # Build the migration binary.
 RUN go build -o /go/bin/edge-api-migrate cmd/migrate/main.go
 RUN go build -o /go/bin/edge-api-wipe cmd/db/wipe.go
+RUN go build -o /go/bin/edge-api-wipe cmd/db/set_account_on_device.go
 
 # Run the doc binary
 RUN go run cmd/spec/main.go
