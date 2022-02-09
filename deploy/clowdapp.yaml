@@ -150,7 +150,6 @@ objects:
       - "host-inventory"
       - ingress
     featureFlags: true
-    inMemoryDb: true
 
 parameters:
 - description: Cpu limit of service
