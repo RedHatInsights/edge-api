@@ -47,7 +47,19 @@ type OSTree struct {
 
 // Customizations is made of the packages that are baked into an image
 type Customizations struct {
-	Packages *[]string `json:"packages"`
+	Packages            *[]string     `json:"packages"`
+	PayloadRepositories *[]Repository `json:"payload_repositories,omitempty"`
+}
+
+// Repository is the record of Third Party Repository
+type Repository struct {
+	BaseURL    string  `json:"baseurl"`
+	CheckGPG   *bool   `json:"check_gpg,omitempty"`
+	GPGKey     *string `json:"gpg_key,omitempty"`
+	IgnoreSSL  *bool   `json:"ignore_ssl,omitempty"`
+	MetaLink   *string `json:"metalink,omitempty"`
+	MirrorList *string `json:"mirrorlist,omitempty"`
+	RHSM       bool    `json:"rhsm,omitempty"`
 }
 
 // UploadRequest is the upload options accepted by Image Builder API
@@ -187,11 +199,15 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 
 // ComposeCommit composes a Commit on ImageBuilder
 func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
+	payloadRepos, err := c.GetImageThirdPartyRepos(image)
+	if err != nil {
+		return nil, errors.New("error getting information on third Party repository")
+	}
 	req := &ComposeRequest{
 		Customizations: &Customizations{
-			Packages: image.GetPackagesList(),
+			Packages:            image.GetPackagesList(),
+			PayloadRepositories: &payloadRepos,
 		},
-
 		Distribution: image.Distribution,
 		ImageRequests: []ImageRequest{
 			{
@@ -408,4 +424,38 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	image.Commit.OSTreeCommit = metadata.OstreeCommit
 	c.log.Infof("Done with metadata for image")
 	return image, nil
+}
+
+// GetImageThirdPartyRepos finds the url of Third Party Repository using the name
+func (c *Client) GetImageThirdPartyRepos(image *models.Image) ([]Repository, error) {
+	if len(image.ThirdPartyRepositories) == 0 {
+		return []Repository{}, nil
+	}
+	if image.Account == "" {
+		return nil, errors.New("error retriving account information, image account undefined")
+	}
+	repos := make([]Repository, len(image.ThirdPartyRepositories))
+	thirdpartyrepos := make([]models.ThirdPartyRepo, len(image.ThirdPartyRepositories))
+	thirdpartyrepoIDS := make([]int, len(image.ThirdPartyRepositories))
+
+	for repo := range image.ThirdPartyRepositories {
+		thirdpartyrepoIDS[repo] = int(image.ThirdPartyRepositories[repo].ID)
+	}
+	var count int64
+	result := db.DB.Where("account = ?", image.Account).Find(&thirdpartyrepos, thirdpartyrepoIDS).Count(&count)
+	if result.Error != nil {
+		log.Error(result.Error)
+		return nil, result.Error
+	}
+
+	if count != int64(len(thirdpartyrepoIDS)) {
+		return nil, errors.New("enter valid third party repository id")
+	}
+	for i := 0; i < len(thirdpartyrepos); i++ {
+		repos[i] = Repository{
+			BaseURL: thirdpartyrepos[i].URL,
+		}
+	}
+
+	return repos, nil
 }
