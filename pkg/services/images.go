@@ -71,14 +71,14 @@ type ImageService struct {
 	RepoService  RepoServiceInterface
 }
 
-// ValidateAllImagesPackagesAreFromAccount validates the account for Third Party Repositories
-func ValidateAllImagesPackagesAreFromAccount(account string, repos []models.ThirdPartyRepo) (bool, error) {
+// ValidateAlIImageReposAreFromAccount validates the account for Third Party Repositories
+func ValidateAlIImageReposAreFromAccount(account string, repos []models.ThirdPartyRepo) error {
 
 	if account == "" {
-		return false, errors.NewBadRequest("repository information is not valid")
+		return errors.NewBadRequest("repository information is not valid")
 	}
 	if len(repos) == 0 {
-		return true, nil
+		return nil
 	}
 	var ids []uint
 	for _, repo := range repos {
@@ -88,10 +88,10 @@ func ValidateAllImagesPackagesAreFromAccount(account string, repos []models.Thir
 	var existingRepos []models.ThirdPartyRepo
 
 	if res := db.DB.Where(models.ThirdPartyRepo{Account: account}).Find(&existingRepos, ids); res.Error != nil {
-		return false, res.Error
+		return res.Error
 	}
 
-	return len(existingRepos) != len(repos), nil
+	return nil
 }
 
 // CreateImage creates an Image for an Account on Image Builder and on our database
@@ -127,12 +127,8 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 			return tx.Error
 		}
 	}
-	validRepos, err := ValidateAllImagesPackagesAreFromAccount(account, image.ThirdPartyRepositories)
-	if err != nil {
+	if err := ValidateAlIImageReposAreFromAccount(account, image.ThirdPartyRepositories); err != nil {
 		return err
-	}
-	if !validRepos {
-		return errors.NewBadRequest("repos are not valid")
 	}
 	tx := db.DB.Create(&image.Commit)
 	if tx.Error != nil {
@@ -220,12 +216,8 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 			return tx.Error
 		}
 	}
-	validRepos, err := ValidateAllImagesPackagesAreFromAccount(image.Account, image.ThirdPartyRepositories)
-	if err != nil {
+	if err := ValidateAlIImageReposAreFromAccount(image.Account, image.ThirdPartyRepositories); err != nil {
 		return err
-	}
-	if !validRepos {
-		return errors.NewBadRequest("repos are not valid")
 	}
 	tx := db.DB.Create(&image.Commit)
 	if tx.Error != nil {

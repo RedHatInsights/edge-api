@@ -199,7 +199,7 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 
 // ComposeCommit composes a Commit on ImageBuilder
 func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
-	payloadRepos, err := c.GetImagesThirdPartyRepos(image)
+	payloadRepos, err := c.GetImageThirdPartyRepos(image)
 	if err != nil {
 		return nil, errors.New("error getting information on third Party repository")
 	}
@@ -427,8 +427,14 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	return image, nil
 }
 
-// GetImagesThirdPartyRepos finds the url of Third Party Repository using the name
-func (c *Client) GetImagesThirdPartyRepos(image *models.Image) ([]Repository, error) {
+// GetImageThirdPartyRepos finds the url of Third Party Repository using the name
+func (c *Client) GetImageThirdPartyRepos(image *models.Image) ([]Repository, error) {
+	if len(image.ThirdPartyRepositories) == 0 {
+		return []Repository{}, nil
+	}
+	if image.Account == "" {
+		return nil, errors.New("error retriving account information, image account undefined")
+	}
 	repos := make([]Repository, len(image.ThirdPartyRepositories))
 	thirdpartyrepos := make([]models.ThirdPartyRepo, len(image.ThirdPartyRepositories))
 	thirdpartyrepoIDS := make([]int, len(image.ThirdPartyRepositories))
