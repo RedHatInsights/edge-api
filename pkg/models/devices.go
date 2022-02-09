@@ -5,8 +5,8 @@ package models
 // and the Device data saved on Edge API
 type EdgeDevice struct {
 	*Device
-	DeviceName string
-	LastSeen   string
+	DeviceName string // TODO: Can be deleted when we start saving the name field on the Device object
+	LastSeen   string // TODO: Can be deleted when we start saving lastseen field on the Device object
 	// Booted status is referring to the LastDeployment of this device
 	// TODO: Needs to be rethinked when we get to the greenbot epic
 	Booted bool
