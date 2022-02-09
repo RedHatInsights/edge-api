@@ -4,11 +4,43 @@ import (
 	"context"
 	"fmt"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	log "github.com/sirupsen/logrus"
+	"strconv"
 	"testing"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
 )
+
+func TestCreateUpdateDeviceGroupNameDuplicate(t *testing.T) {
+	ctx := context.Background()
+	deviceGroupsService := NewDeviceGroupsService(ctx, log.NewEntry(log.StandardLogger()))
+	account, err := common.GetAccountFromContext(ctx)
+	if err != nil {
+		t.Fatalf("Failed to get the account: %q", err)
+	}
+
+	expectedError := "device group already exists"
+	deviceGroupName := "test_group_1"
+	deviceGroup, err := deviceGroupsService.CreateDeviceGroup(&models.DeviceGroup{Name: deviceGroupName, Account: account, Type: models.DeviceGroupTypeDefault})
+	if err != nil {
+		t.Fatalf("Failed to create DeviceGroup: %q", err)
+	}
+
+	_, err = deviceGroupsService.CreateDeviceGroup(&models.DeviceGroup{Name: deviceGroupName, Account: account, Type: models.DeviceGroupTypeDefault})
+	if err == nil {
+		t.Errorf("Expected add device group to fail and error not nil")
+	} else if err.Error() != expectedError {
+		t.Errorf(fmt.Sprintf("Expected error : %s  , but received %s", expectedError, err.Error()))
+	}
+
+	err = deviceGroupsService.UpdateDeviceGroup(&models.DeviceGroup{Name: deviceGroupName}, account, strconv.FormatUint(uint64(deviceGroup.ID), 10))
+	if err == nil {
+		t.Errorf("Expected update device group to fail and error not nil")
+	} else if err.Error() != expectedError {
+		t.Errorf(fmt.Sprintf("Expected error : %s  , but received %s", expectedError, err.Error()))
+	}
+}
 
 func TestAddDeviceGroupDevices(t *testing.T) {
 	deviceGroupsService := NewDeviceGroupsService(context.Background(), log.NewEntry(log.StandardLogger()))

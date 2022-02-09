@@ -43,23 +43,18 @@ func MakeDeviceGroupsRouter(sub chi.Router) {
 // DeviceGroupCtx is a handler to Device Group requests
 func DeviceGroupCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		s := dependencies.ServicesFromContext(r.Context())
+		ctxServices := dependencies.ServicesFromContext(r.Context())
 		if ID := chi.URLParam(r, "ID"); ID != "" {
 			_, err := strconv.Atoi(ID)
-			s.Log = s.Log.WithField("deviceGroupID", ID)
-			s.Log.Debug("Retrieving device group")
+			ctxServices.Log = ctxServices.Log.WithField("deviceGroupID", ID)
+			ctxServices.Log.Debug("Retrieving device group")
 			if err != nil {
-				s.Log.Debug("ID is not an integer")
-				err := errors.NewBadRequest(err.Error())
-				w.WriteHeader(err.GetStatus())
-				if err := json.NewEncoder(w).Encode(&err); err != nil {
-					ctxServices := dependencies.ServicesFromContext(r.Context())
-					ctxServices.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-				}
+				ctxServices.Log.Debug("ID is not an integer")
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 				return
 			}
 
-			deviceGroup, err := s.DeviceGroupsService.GetDeviceGroupByID(ID)
+			deviceGroup, err := ctxServices.DeviceGroupsService.GetDeviceGroupByID(ID)
 			if err != nil {
 				var responseErr errors.APIError
 				switch err.(type) {
@@ -69,34 +64,23 @@ func DeviceGroupCtx(next http.Handler) http.Handler {
 					responseErr = errors.NewInternalServerError()
 					responseErr.SetTitle("failed getting third device group")
 				}
-				w.WriteHeader(responseErr.GetStatus())
-				if err := json.NewEncoder(w).Encode(&responseErr); err != nil {
-					s.Log.WithField("error", responseErr.Error()).Error("Error while trying to encode")
-				}
+				respondWithAPIError(w, ctxServices.Log, responseErr)
 				return
 			}
 			account, err := common.GetAccount(r)
 			if err != nil || deviceGroup.Account != account {
-				s.Log.WithFields(log.Fields{
+				ctxServices.Log.WithFields(log.Fields{
 					"error":   err.Error(),
 					"account": account,
 				}).Error("Error retrieving account or device group doesn't belong to account")
-				err := errors.NewBadRequest(err.Error())
-				w.WriteHeader(err.GetStatus())
-				if err := json.NewEncoder(w).Encode(&err); err != nil {
-					s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-				}
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 				return
 			}
 			ctx := setContextDeviceGroup(r.Context(), deviceGroup)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
-			s.Log.Debug("deviceGroup ID was not passed to the request or it was empty")
-			err := errors.NewBadRequest("deviceGroup ID required")
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+			ctxServices.Log.Debug("deviceGroup ID was not passed to the request or it was empty")
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("deviceGroup ID required"))
 			return
 		}
 	})
@@ -205,11 +189,8 @@ func GetAllDeviceGroups(w http.ResponseWriter, r *http.Request) {
 // CreateDeviceGroup is the route to create a new device group
 func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
-	defer r.Body.Close()
 	deviceGroup, err := createDeviceRequest(w, r)
 	if err != nil {
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
 		return
 	}
 	ctxServices.Log.Info("Creating a device group")
@@ -217,40 +198,37 @@ func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	deviceGroup, err = ctxServices.DeviceGroupsService.CreateDeviceGroup(deviceGroup)
 	if err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Error creating a device group")
-		err := errors.NewInternalServerError()
-		err.SetTitle("failed creating device group")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			ctxServices.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		var apiError errors.APIError
+		switch err.(type) {
+		case *services.DeviceGroupAlreadyExists:
+			apiError = errors.NewBadRequest(err.Error())
+		default:
+			apiError := errors.NewInternalServerError()
+			apiError.SetTitle("failed updating device group")
 		}
+		respondWithAPIError(w, ctxServices.Log, apiError)
 		return
 	}
+
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(&deviceGroup); err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-	}
+	respondWithJSONBody(w, ctxServices.Log, &deviceGroup)
 }
 
 // GetDeviceGroupByID return devices groups for an account and Id
 func GetDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
 	if deviceGroup := getContextDeviceGroup(w, r); deviceGroup != nil {
-		if err := json.NewEncoder(w).Encode(deviceGroup); err != nil {
-			ctxServices := dependencies.ServicesFromContext(r.Context())
-			ctxServices.Log.WithField("error", deviceGroup).Error("Error while trying to encode")
-		}
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		respondWithJSONBody(w, ctxServices.Log, deviceGroup)
 	}
-
 }
+
 func getContextDeviceGroup(w http.ResponseWriter, r *http.Request) *models.DeviceGroup {
 	ctx := r.Context()
 	deviceGroup, ok := ctx.Value(deviceGroupKey).(*models.DeviceGroup)
 
 	if !ok {
-		err := errors.NewBadRequest("Failed getting device group from context")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		ctxServices := dependencies.ServicesFromContext(ctx)
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("Failed getting device group from context"))
 		return nil
 	}
 	return deviceGroup
@@ -259,31 +237,35 @@ func getContextDeviceGroup(w http.ResponseWriter, r *http.Request) *models.Devic
 // UpdateDeviceGroup updates the existing device group
 func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	if oldDeviceGroup := getContextDeviceGroup(w, r); oldDeviceGroup != nil {
-		services := dependencies.ServicesFromContext(r.Context())
-		defer r.Body.Close()
+		ctxServices := dependencies.ServicesFromContext(r.Context())
 		deviceGroup, err := createDeviceRequest(w, r)
 		if err != nil {
 			// error handled by createRequest already
 			return
 		}
-		err = services.DeviceGroupsService.UpdateDeviceGroup(deviceGroup, oldDeviceGroup.Account, fmt.Sprint(oldDeviceGroup.ID))
+		err = ctxServices.DeviceGroupsService.UpdateDeviceGroup(deviceGroup, oldDeviceGroup.Account, fmt.Sprint(oldDeviceGroup.ID))
 		if err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error updating device group")
-			err := errors.NewInternalServerError()
-			err.SetTitle("failed updating third party repository")
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+			ctxServices.Log.WithField("error", err.Error()).Error("Error updating device group")
+			var apiError errors.APIError
+			switch err.(type) {
+			case *services.DeviceGroupAlreadyExists:
+				apiError = errors.NewBadRequest(err.Error())
+			default:
+				apiError := errors.NewInternalServerError()
+				apiError.SetTitle("failed updating device group")
 			}
+			respondWithAPIError(w, ctxServices.Log, apiError)
 			return
 		}
 		w.WriteHeader(http.StatusOK)
-		repoDetails, err := services.DeviceGroupsService.GetDeviceGroupByID(fmt.Sprint(oldDeviceGroup.ID))
+		updatedDeviceGroup, err := ctxServices.DeviceGroupsService.GetDeviceGroupByID(fmt.Sprint(oldDeviceGroup.ID))
 		if err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error getting device group")
-		}
-		if err := json.NewEncoder(w).Encode(repoDetails); err != nil {
-			services.Log.WithField("error", repoDetails).Error("Error while trying to encode")
+			ctxServices.Log.WithField("error", err.Error()).Error("Error getting device group")
+			err := errors.NewInternalServerError()
+			err.SetTitle("failed to get device group")
+			respondWithAPIError(w, ctxServices.Log, err)
+		} else {
+			respondWithJSONBody(w, ctxServices.Log, updatedDeviceGroup)
 		}
 	}
 }
@@ -298,24 +280,15 @@ func createDeviceRequest(w http.ResponseWriter, r *http.Request) (*models.Device
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 
 	var deviceGroup *models.DeviceGroup
-	if err := json.NewDecoder(r.Body).Decode(&deviceGroup); err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Error parsing json from device group")
-		err := errors.NewBadRequest("invalid JSON request")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+	if err := readRequestJSONBody(w, r, ctxServices.Log, &deviceGroup); err != nil {
 		return nil, err
 	}
 
 	account, err := common.GetAccount(r)
 	if err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Account was not set")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+		return nil, err
 	}
 	ctxServices.Log = ctxServices.Log.WithFields(log.Fields{
 		"name":    deviceGroup.Name,
@@ -325,8 +298,7 @@ func createDeviceRequest(w http.ResponseWriter, r *http.Request) (*models.Device
 
 	if err := deviceGroup.ValidateRequest(); err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Info("Error validation request from device group")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 		return nil, err
 	}
 	return deviceGroup, nil
