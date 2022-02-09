@@ -26,7 +26,7 @@ type RepoBuilderInterface interface {
 	ImportRepo(r *models.Repo) (*models.Repo, error)
 	DownloadVersionRepo(c *models.Commit, dest string) (string, error)
 	ExtractVersionRepo(c *models.Commit, tarFileName string, dest string) error
-	UploadVersionRepo(c *models.Commit, tarFileName string, dest string) error
+	UploadVersionRepo(c *models.Commit, tarFileName string) error
 }
 
 // RepoBuilder is the implementation of a RepoBuilderInterface
@@ -187,7 +187,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		rb.log.WithField("error", err.Error()).Error("Error downloading repo...")
 		return nil, fmt.Errorf("error downloading repo")
 	}
-	errUpload := rb.UploadVersionRepo(&cmt, tarFileName, path)
+	errUpload := rb.UploadVersionRepo(&cmt, tarFileName)
 	if errUpload != nil {
 		r.Status = models.RepoStatusError
 		result := db.DB.Save(&r)
@@ -275,15 +275,20 @@ func (rb *RepoBuilder) uploadTarRepo(account, imageName string, repoID int) (str
 	return url, nil
 }
 
-// UploadVersionRepo Upload the repo tarball to the repo service
-func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string, dest string) error {
+// UploadVersionRepo uploads the repo tarball to the repository storage
+func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string) error {
 	if c == nil {
 		rb.log.Error("nil pointer to models.Commit provided")
 		return errors.New("invalid Commit Provided: nil pointer")
 	}
-	rb.log = rb.log.WithField("commitID", c.ID)
+	if c.RepoID == nil {
+		rb.log.Error("nil pointer to models.Commit.RepoID provided")
+		return errors.New("invalid Commit Provided: nil pointer")
+	}
+	repoID := int(*c.RepoID)
+	rb.log = rb.log.WithFields(log.Fields{"commitID": c.ID, "tarFileName": tarFileName, "repoID": repoID})
 	rb.log.Info("Uploading repo")
-	repoTarURL, err := rb.uploadTarRepo(c.Account, tarFileName, int(*c.RepoID))
+	repoTarURL, err := rb.uploadTarRepo(c.Account, tarFileName, repoID)
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Failed to upload repo")
 		return err
