@@ -28,6 +28,7 @@ func NewUploader(log *log.Entry) Uploader {
 	var uploader Uploader
 	uploader = &LocalUploader{
 		BaseDir: "/tmp",
+		log:     log,
 	}
 	if !cfg.Local {
 		uploader = newS3Uploader(log)
@@ -48,6 +49,7 @@ type S3Uploader struct {
 // without S3
 type LocalUploader struct {
 	BaseDir string
+	log     *log.Entry
 }
 
 // UploadRepo just returns the src repo folder
@@ -65,6 +67,7 @@ func (u *LocalUploader) UploadRepo(src string, account string) (string, error) {
 // Allowing offline development without S3 and satisfying the interface
 func (u *LocalUploader) UploadFile(fname string, uploadPath string) (string, error) {
 	destfile := filepath.Clean(u.BaseDir + "/" + uploadPath)
+	u.log.WithFields(log.Fields{"fname": fname, "destfine": destfile}).Debug("Copying fname to destfile")
 	cmd := exec.Command("cp", fname, destfile) //#nosec G204 - This uploadPath variable is actually controlled by the calling method
 	err := cmd.Run()
 	if err != nil {
