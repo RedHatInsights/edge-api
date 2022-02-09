@@ -7,8 +7,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"testing"
 
+	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 
 	"github.com/golang/mock/gomock"
@@ -190,5 +192,57 @@ func TestDetailSearchParams(t *testing.T) {
 				t.Errorf("in %q: was expected to have %v but not found in %v", te.name, exErr, jsonBody)
 			}
 		}
+	}
+}
+
+func TestImageSetFiltersParams(t *testing.T) {
+	tt := []struct {
+		name   string
+		params string
+	}{
+		{
+			name:   "sort by image_set name",
+			params: "sort_by=-name",
+		},
+	}
+	var sortTable = regexp.MustCompile(`image_sets`)
+	for _, te := range tt {
+		req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/1?%s", te.params), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := imageSetFilters(req, db.DB.Model(&models.ImageSet{}))
+		c := fmt.Sprintf("%v", got.Statement.Clauses["ORDER BY"].Expression)
+		sortTable.MatchString(c)
+		if !sortTable.MatchString(c) {
+			t.Errorf("Expected ImageSet got: %v", c)
+		}
+
+	}
+}
+
+func TestImageSetDetailFiltersParams(t *testing.T) {
+	tt := []struct {
+		name   string
+		params string
+	}{
+		{
+			name:   "sort by image_set name",
+			params: "sort_by=-name",
+		},
+	}
+	var sortTable = regexp.MustCompile(`images`)
+	for _, te := range tt {
+		req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/1?%s", te.params), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := imageDetailFilters(req, db.DB.Model(&models.ImageSet{}))
+		c := fmt.Sprintf("%v", got.Statement.Clauses["ORDER BY"].Expression)
+		sortTable.MatchString(c)
+		if !sortTable.MatchString(c) {
+			t.Errorf("Expected ImageSet got: %v", c)
+		}
+
 	}
 }

@@ -34,18 +34,18 @@ type UpdateServiceInterface interface {
 }
 
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
-func NewUpdateService(ctx context.Context) UpdateServiceInterface {
+func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterface {
 	return &UpdateService{
-		Context:       ctx,
-		FilesService:  NewFilesService(),
-		RepoBuilder:   NewRepoBuilder(ctx, log.NewEntry(log.StandardLogger())),
+		Service:       Service{ctx: ctx, log: log.WithField("service", "update")},
+		FilesService:  NewFilesService(log),
+		RepoBuilder:   NewRepoBuilder(ctx, log),
 		WaitForReboot: time.Minute * 5,
 	}
 }
 
 // UpdateService is the main implementation of a UpdateServiceInterface
 type UpdateService struct {
-	Context       context.Context
+	Service
 	RepoBuilder   RepoBuilderInterface
 	FilesService  FilesService
 	WaitForReboot time.Duration
@@ -104,10 +104,10 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 
 	WaitGroup.Add(1) // Processing one update
 	defer func() {
-		WaitGroup.Done() // Done with one update (successfuly or not)
-		log.Debug("Done with one update - successfuly or not")
+		WaitGroup.Done() // Done with one update (successfully or not)
+		s.log.Debug("Done with one update - successfully or not")
 		if err := recover(); err != nil {
-			log.Fatalf("%s", err)
+			s.log.WithField("error", err).Fatal("Error on update")
 		}
 	}()
 	go func(update *models.UpdateTransaction) {
@@ -117,14 +117,14 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		// Reload update to get updated status
 		db.DB.First(&update, update.ID)
 		if update.Status == models.UpdateStatusBuilding {
-			log.WithFields(log.Fields{
+			s.log.WithFields(log.Fields{
 				"signal":   sig,
 				"updateID": update.ID,
 			}).Info("Captured signal marking update as error")
 			update.Status = models.UpdateStatusError
 			tx := db.DB.Save(update)
 			if tx.Error != nil {
-				log.Fatalf("Error saving update: %s", tx.Error.Error())
+				s.log.WithField("error", tx.Error.Error()).Fatal("Error saving update")
 			}
 			WaitGroup.Done()
 		}
@@ -135,7 +135,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		db.DB.First(&update, id)
 		update.Status = models.UpdateStatusError
 		db.DB.Save(update)
-		log.Error(err)
+		s.log.WithField("error", err.Error()).Error("Error building update repo")
 		return nil, err
 	}
 
@@ -149,24 +149,25 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	if err != nil {
 		update.Status = models.UpdateStatusError
 		db.DB.Save(update)
-		log.Error(err)
+		s.log.WithField("error", err.Error()).Error("Error writing playbook template")
 		return nil, err
 	}
 	// 3. Loop through all devices in UpdateTransaction
 	dispatchRecords := update.DispatchRecords
 	for _, device := range update.Devices {
+		device := device // this will prevent implicit memory aliasing in the loop
 		// Create new &DispatcherPayload{}
 		payloadDispatcher := playbookdispatcher.DispatcherPayload{
 			Recipient:   device.RHCClientID,
 			PlaybookURL: playbookURL,
 			Account:     update.Account,
 		}
-		log.Infof("Call Execute Dispatcher: : %#v", payloadDispatcher)
-		client := playbookdispatcher.InitClient(s.Context)
+		s.log.Debug("Calling playbook dispatcher")
+		client := playbookdispatcher.InitClient(s.ctx, s.log)
 		exc, err := client.ExecuteDispatcher(payloadDispatcher)
 
 		if err != nil {
-			log.Errorf("Error on playbook-dispatcher execution: %#v ", err)
+			s.log.WithField("error", err.Error()).Error("Error on playbook-dispatcher execution")
 			update.Status = models.UpdateStatusError
 			db.DB.Save(update)
 			return nil, err
@@ -195,12 +196,12 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		update.DispatchRecords = dispatchRecords
 		err = s.SetUpdateStatus(update)
 		if err != nil {
-			log.Errorf("Error saving update: %s ", err.Error())
+			s.log.WithField("error", err.Error()).Error("Error saving update")
 			return nil, err
 		}
 	}
 
-	log.Infof("Update was finished for :: %d", update.ID)
+	s.log.WithField("updateID", update.ID).Info("Update was finished")
 	return update, nil
 }
 
@@ -225,7 +226,7 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, account s
 	templateName := "template_playbook_dispatcher_ostree_upgrade_payload.yml"
 	templateContents, err := template.New(templateName).Delims("@@", "@@").ParseFiles(filePath + templateName)
 	if err != nil {
-		log.Errorf("Error parsing playbook template  :: %s", err.Error())
+		s.log.WithField("error", err.Error()).Errorf("Error parsing playbook template")
 		return "", err
 	}
 	var envName string
@@ -246,31 +247,31 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, account s
 	tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
 	f, err := os.Create(tmpfilepath)
 	if err != nil {
-		log.Errorf("Error creating file: %s", err.Error())
+		s.log.WithField("error", err.Error()).Errorf("Error creating file")
 		return "", err
 	}
 	err = templateContents.Execute(f, templateData)
 	if err != nil {
-		log.Errorf("Error executing template: %s ", err.Error())
+		s.log.WithField("error", err.Error()).Errorf("Error executing template")
 		return "", err
 	}
 
 	uploadPath := fmt.Sprintf("%s/playbooks/%s", account, fname)
 	playbookURL, err := s.FilesService.GetUploader().UploadFile(tmpfilepath, uploadPath)
 	if err != nil {
-		log.Errorf("Error uploading file to S3: %s ", err.Error())
+		s.log.WithField("error", err.Error()).Errorf("Error uploading file to S3")
 		return "", err
 	}
-	log.Infof("Template file uploaded to S3, URL: %s", playbookURL)
+	s.log.WithField("playbookURL", playbookURL).Info("Template file uploaded to S3")
 	err = os.Remove(tmpfilepath)
 	if err != nil {
 		// TODO: Fail silently, find a way to create alerts based on this log
 		// The container will end up out of space if we don't fix it in the long run.
-		log.Errorf("Error deleting temp file: %s ", err.Error())
+		s.log.WithField("error", err.Error()).Error("Error deleting temp file")
 	}
 	playbookURL = s.getPlaybookURL(templateInfo.UpdateTransactionID)
-	log.Infof("Proxied playbook URL: %s", playbookURL)
-	log.Infof("::WriteTemplate: ENDs")
+	s.log.WithField("playbookURL", playbookURL).Info("Proxied playbook URL")
+	s.log.Infof("Update was finished")
 	return playbookURL, nil
 }
 
@@ -309,20 +310,20 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 	if err != nil {
 		return err
 	}
-	log := log.WithFields(log.Fields{
+	s.log = log.WithFields(log.Fields{
 		"PlaybookDispatcherID": e.Payload.ID,
 		"Status":               e.Payload.Status,
 	})
 	if e.Payload.Status == PlaybookStatusRunning {
-		log.Debug("Playbook is running - waiting for next messages")
+		s.log.Debug("Playbook is running - waiting for next messages")
 		return nil
 	} else if e.Payload.Status == PlaybookStatusSuccess {
-		log.Debug("The playbook was applied successfully. Waiting two minutes for reboot before setting status to success.")
+		s.log.Debug("The playbook was applied successfully. Waiting two minutes for reboot before setting status to success.")
 		time.Sleep(s.WaitForReboot)
 	}
 
 	var dispatchRecord models.DispatchRecord
-	result := db.DB.Where(&models.DispatchRecord{PlaybookDispatcherID: e.Payload.ID}).First(&dispatchRecord)
+	result := db.DB.Where(&models.DispatchRecord{PlaybookDispatcherID: e.Payload.ID}).Preload("Device").First(&dispatchRecord)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -330,13 +331,16 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 	if e.Payload.Status == PlaybookStatusFailure || e.Payload.Status == PlaybookStatusTimeout {
 		dispatchRecord.Status = models.DispatchRecordStatusError
 	} else if e.Payload.Status == PlaybookStatusSuccess {
+		fmt.Printf("$$$$$$$$$ dispatchRecord.Device %v\n", dispatchRecord.Device)
 		// TODO: We might wanna check if it's really success by checking the running hash on the device here
 		dispatchRecord.Status = models.DispatchRecordStatusComplete
+		dispatchRecord.Device.AvailableHash = os.DevNull
+		dispatchRecord.Device.CurrentHash = dispatchRecord.Device.AvailableHash
 	} else if e.Payload.Status == PlaybookStatusRunning {
 		dispatchRecord.Status = models.DispatchRecordStatusRunning
 	} else {
 		dispatchRecord.Status = models.DispatchRecordStatusError
-		log.Fatal("Playbook status is not on the json schema for this event")
+		s.log.Fatal("Playbook status is not on the json schema for this event")
 	}
 	result = db.DB.Save(&dispatchRecord)
 	if result.Error != nil {

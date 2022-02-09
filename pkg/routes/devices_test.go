@@ -1,119 +1,92 @@
-package routes
+package routes_test
 
 import (
-	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"testing"
 
-	faker "github.com/bxcodec/faker/v3"
+	"github.com/bxcodec/faker/v3"
+	"github.com/go-chi/chi"
 	"github.com/golang/mock/gomock"
 	log "github.com/sirupsen/logrus"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 )
 
-func TestGetAvailableUpdateForDeviceWithEmptyUUID(t *testing.T) {
-	// Given
-	req, err := http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	dc := DeviceContext{
-		DeviceUUID: "",
-	}
-	ctx := context.WithValue(req.Context(), DeviceContextKey, dc)
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+var _ = Describe("Devices Router", func() {
+	var deviceUUID string
+	var mockDeviceService *mock_services.MockDeviceServiceInterface
+	var router chi.Router
 
-	mockDeviceService := mock_services.NewMockDeviceServiceInterface(ctrl)
-	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
-		DeviceService: mockDeviceService,
-		Log:           log.NewEntry(log.StandardLogger()),
+	BeforeEach(func() {
+		// Given
+		deviceUUID = faker.UUIDHyphenated()
+		ctrl := gomock.NewController(GinkgoT())
+		defer ctrl.Finish()
+
+		mockDeviceService = mock_services.NewMockDeviceServiceInterface(ctrl)
+		mockServices := &dependencies.EdgeAPIServices{
+			DeviceService: mockDeviceService,
+			Log:           log.NewEntry(log.StandardLogger()),
+		}
+		router = chi.NewRouter()
+		router.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				fmt.Println(mockServices)
+				ctx := dependencies.ContextWithServices(r.Context(), mockServices)
+				next.ServeHTTP(w, r.WithContext(ctx))
+			})
+		})
+		router.Route("/devices", routes.MakeDevicesRouter)
 	})
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-	handler := DeviceCtx(http.HandlerFunc(GetUpdateAvailableForDevice))
+	Context("get available updates", func() {
+		var req *http.Request
 
-	// When
-	handler.ServeHTTP(rr, req.WithContext(ctx))
-
-	// Then
-	if status := rr.Code; status != http.StatusBadRequest {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusBadRequest)
-		return
-	}
-}
-func TestGetAvailableUpdateForDeviceWhenDeviceIsNotFound(t *testing.T) {
-	// Given
-	req, err := http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	dc := DeviceContext{
-		DeviceUUID: faker.UUIDHyphenated(),
-	}
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockDeviceService := mock_services.NewMockDeviceServiceInterface(ctrl)
-	mockDeviceService.EXPECT().GetDeviceByUUID(gomock.Eq(dc.DeviceUUID)).Return(&models.Device{UUID: dc.DeviceUUID}, nil)
-	mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(dc.DeviceUUID)).Return(nil, new(services.DeviceNotFoundError))
-	ctx := context.WithValue(req.Context(), DeviceContextKey, dc)
-	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
-		DeviceService: mockDeviceService,
-		Log:           log.NewEntry(log.StandardLogger()),
+		When("device UUID is empty", func() {
+			BeforeEach(func() {
+				var err error
+				req, err = http.NewRequest("GET", "/devices//updates", nil)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			It("should give an error", func() {
+				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID)).Return(nil, new(services.DeviceNotFoundError))
+				recorder := httptest.NewRecorder()
+				router.ServeHTTP(recorder, req)
+				Expect(recorder.Code).To(Equal(http.StatusBadRequest))
+			})
+		})
+		When("device UUID is passed", func() {
+			BeforeEach(func() {
+				var err error
+				req, err = http.NewRequest("GET", fmt.Sprintf("/devices/%s/updates", deviceUUID), nil)
+				Expect(err).ToNot(HaveOccurred())
+			})
+			It("should fail when device is not found", func() {
+				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID)).Return(nil, new(services.DeviceNotFoundError))
+				recorder := httptest.NewRecorder()
+				router.ServeHTTP(recorder, req)
+				Expect(recorder.Code).To(Equal(http.StatusNotFound))
+			})
+			It("should fail when unexpected error happens", func() {
+				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID)).Return(nil, errors.New("random error"))
+				recorder := httptest.NewRecorder()
+				router.ServeHTTP(recorder, req)
+				Expect(recorder.Code).To(Equal(http.StatusInternalServerError))
+			})
+			It("should return when everything is okay", func() {
+				updates := make([]models.ImageUpdateAvailable, 0)
+				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID)).Return(updates, nil)
+				recorder := httptest.NewRecorder()
+				router.ServeHTTP(recorder, req)
+				Expect(recorder.Code).To(Equal(http.StatusOK))
+			})
+		})
 	})
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(GetUpdateAvailableForDevice)
-
-	// When
-	handler.ServeHTTP(rr, req.WithContext(ctx))
-
-	// Then
-	if status := rr.Code; status != http.StatusNotFound {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusNotFound)
-		return
-	}
-}
-func TestGetAvailableUpdateForDeviceWhenAUnexpectedErrorHappens(t *testing.T) {
-	// Given
-	req, err := http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	dc := DeviceContext{
-		DeviceUUID: faker.UUIDHyphenated(),
-	}
-	ctx := context.WithValue(req.Context(), DeviceContextKey, dc)
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockDeviceService := mock_services.NewMockDeviceServiceInterface(ctrl)
-	mockDeviceService.EXPECT().GetDeviceByUUID(gomock.Eq(dc.DeviceUUID)).Return(&models.Device{UUID: dc.DeviceUUID}, nil)
-	mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(dc.DeviceUUID)).Return(nil, errors.New("random error"))
-	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
-		DeviceService: mockDeviceService,
-		Log:           log.NewEntry(log.StandardLogger()),
-	})
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(GetUpdateAvailableForDevice)
-
-	// When
-	handler.ServeHTTP(rr, req.WithContext(ctx))
-
-	// Then
-	if status := rr.Code; status != http.StatusInternalServerError {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusInternalServerError)
-		return
-	}
-}
+})

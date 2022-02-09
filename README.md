@@ -1,6 +1,6 @@
 # Edge API
 
-[![Go](https://github.com/RedHatInsights/edge-api/actions/workflows/coverage_testing.yml/badge.svg)](https://github.com/RedHatInsights/edge-api/actions/workflows/coverage_testing.yml)
+[![Build Status](https://app.travis-ci.com/RedHatInsights/edge-api.svg?branch=main)](https://app.travis-ci.com/RedHatInsights/edge-api)
 [![codecov](https://codecov.io/gh/RedHatInsights/edge-api/branch/main/graph/badge.svg?token=1CEO1MRGUB)](https://codecov.io/gh/RedHatInsights/edge-api)
 
 ## Overview
@@ -363,7 +363,7 @@ make test
 
 The [openapi3gen](https://github.com/getkin/kin-openapi/tree/v0.65.0/openapi3gen) package generates the docs for the models in the project and we have to update the routes by hand on the [path.yml](cmd/spec/path.yaml) file. Our generation [script](cmd/spec/main.go) adds the routes that you wrote by hand, creating an openapi.json and a openapi.yaml.
 
-You have to commit and create a pull-request to update the docs as this process is not automated as of now.
+You have to commit and create a pull-request to update the docs.
 
 To run the comand that generates the docs, you can use:
 

@@ -25,7 +25,7 @@ ISOCFG="${WORKDIR}/isolinux/isolinux.cfg"
 EFICFG="${WORKDIR}/EFI/BOOT/grub.cfg"
 EFI_DIR="${WORKDIR}/EFI/BOOT"
 EFI_IMAGEPATH="${WORKDIR}/images/efiboot.img"
-KSFILE=`basename "$KS_FQPATH"`
+KSFILE="fleet.ks"
 
 
 validate_kickstart() {
@@ -60,7 +60,7 @@ insert_kickstart() {
     DIR=$2
 
     echo "Copying ks file $KS to $DIR"
-    [[ -e $KS ]] && [[ -e $DIR ]] && cp $KS $DIR || (echo "ERROR: no kickstart file" && exit 1)
+    [[ -e $KS ]] && cp $KS $DIR || (echo "ERROR: no kickstart file" && exit 1)
 }
 
 
@@ -163,7 +163,7 @@ validate_kickstart "$KS_FQPATH"
 VOLID=$(get_iso_volid "$ISO_IN")
 echo "VOLID: $VOLID"
 explode_iso "$ISO_IN" $WORKDIR
-insert_kickstart "$KS_FQPATH" $WORKDIR
+insert_kickstart "$KS_FQPATH" "${WORKDIR}/${KSFILE}"
 edit_isolinux $ISOCFG $VOLID "$KSFILE"
 edit_efiboot $EFICFG $VOLID "$KSFILE"
 modify_efiboot_image $EFICFG $EFI_IMAGEPATH

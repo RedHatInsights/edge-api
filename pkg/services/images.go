@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"syscall"
@@ -41,7 +42,7 @@ type ImageServiceInterface interface {
 	CreateRepoForImage(i *models.Image) (*models.Repo, error)
 	CreateInstallerForImage(i *models.Image) (*models.Image, chan error, error)
 	GetImageByID(id string) (*models.Image, error)
-	GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable, error)
+	GetUpdateInfo(image models.Image) ([]models.ImageUpdateAvailable, error)
 	AddPackageInfo(image *models.Image) (ImageDetail, error)
 	GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error)
 	CheckImageName(name, account string) (bool, error)
@@ -50,6 +51,7 @@ type ImageServiceInterface interface {
 	SetFinalImageStatus(i *models.Image)
 	CheckIfIsLatestVersion(previousImage *models.Image) error
 	SetBuildingStatusOnImageToRetryBuild(image *models.Image) error
+	GetRollbackImage(image *models.Image) (*models.Image, error)
 }
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
@@ -96,16 +98,41 @@ func ValidateAlIImageReposAreFromAccount(account string, repos []models.ThirdPar
 
 // CreateImage creates an Image for an Account on Image Builder and on our database
 func (s *ImageService) CreateImage(image *models.Image, account string) error {
+	// Check for exising ImageSet to add this Image to
+	var imageSetExists bool
+	var imageSetModel models.ImageSet
 	var imageSet models.ImageSet
+
+	err := db.DB.Model(imageSetModel).
+		Select("count(*) > 0").
+		Where("name = ? AND account = ?", image.Name, account).
+		Find(&imageSetExists).
+		Error
+
+	if err != nil {
+		return err
+	}
+
+	if imageSetExists {
+		result := db.DB.Where("name = ? AND account = ?", image.Name, account).First(&imageSet)
+		if result.Error != nil {
+			s.log.WithField("error", result.Error.Error()).Error("Error checking for previous image set existence")
+			return result.Error
+		}
+		s.log.WithField("imageSetName", image.Name).Error("ImageSet already exists, UpdateImage transaction expected and not CreateImage", image.Name)
+		return new(ImageSetAlreadyExists)
+	}
 	imageSet.Account = account
 	imageSet.Name = image.Name
 	imageSet.Version = image.Version
 	set := db.DB.Create(&imageSet)
-	if set.Error == nil {
-		image.ImageSetID = &imageSet.ID
+	if set.Error != nil {
+		return set.Error
 	}
+
 	image.Account = account
-	image, err := s.ImageBuilder.ComposeCommit(image)
+	image.ImageSetID = &imageSet.ID
+	image, err = s.ImageBuilder.ComposeCommit(image)
 	if err != nil {
 		return err
 	}
@@ -164,6 +191,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		// Previous image was built successfully
 		var currentImageSet models.ImageSet
 		result := db.DB.Where("Id = ?", previousImage.ImageSetID).First(&currentImageSet)
+
 		if result.Error != nil {
 			s.log.WithField("error", result.Error.Error()).Error("Error retrieving the image set from parent image")
 			return result.Error
@@ -342,7 +370,7 @@ func (s *ImageService) SetFinalImageStatus(i *models.Image) {
 
 	tx := db.DB.Save(i)
 	if tx.Error != nil {
-		s.log.WithField("error", tx.Error.Error()).Fatal("Couldn't set final image status")
+		s.log.WithField("error", tx.Error.Error()).Error("Couldn't set final image status")
 	}
 }
 
@@ -354,10 +382,10 @@ func (s *ImageService) postProcessImage(id uint) {
 
 	WaitGroup.Add(1) // Processing one image
 	defer func() {
-		WaitGroup.Done() // Done with one image (successfuly or not)
-		s.log.Debug("Done with one image - successfuly or not")
+		WaitGroup.Done() // Done with one image (successfully or not)
+		s.log.Debug("Done with one image - successfully or not")
 		if err := recover(); err != nil {
-			s.log.Fatalf("%s", err)
+			s.log.WithField("error", err).Errorf("Error recovering post process image goroutine")
 		}
 	}()
 	go func(i *models.Image) {
@@ -376,7 +404,7 @@ func (s *ImageService) postProcessImage(id uint) {
 	err := s.postProcessCommit(i)
 	if err != nil {
 		s.SetErrorStatusOnImage(err, i)
-		s.log.WithField("error", err.Error()).Fatal("Failed creating commit for image")
+		s.log.WithField("error", err.Error()).Error("Failed creating commit for image")
 	}
 
 	if i.Commit.Status == models.ImageStatusSuccess {
@@ -388,7 +416,7 @@ func (s *ImageService) postProcessImage(id uint) {
 			}
 			if err != nil {
 				s.SetErrorStatusOnImage(err, i)
-				s.log.WithField("error", err.Error()).Fatal("Failed creating installer for image")
+				s.log.WithField("error", err.Error()).Error("Failed creating installer for image")
 			}
 		}
 	}
@@ -415,13 +443,13 @@ func (s *ImageService) CreateRepoForImage(i *models.Image) (*models.Repo, error)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
-	log.Debug("OSTree repo was saved to commit")
+	s.log.Debug("OSTree repo was saved to commit")
 
 	repo, err := s.RepoBuilder.ImportRepo(repo)
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("OSTree repo is ready")
+	s.log.Infof("OSTree repo is ready")
 
 	return repo, nil
 }
@@ -433,28 +461,24 @@ func (s *ImageService) SetErrorStatusOnImage(err error, i *models.Image) {
 		tx := db.DB.Save(i)
 		s.log.Debug("Image saved with error status")
 		if tx.Error != nil {
-			s.log.Error(tx.Error)
-			panic(tx.Error)
+			s.log.WithField("error", tx.Error.Error()).Error("Error saving image")
 		}
 		if i.Commit != nil {
 			i.Commit.Status = models.ImageStatusError
 			tx := db.DB.Save(i.Commit)
 			if tx.Error != nil {
-				s.log.Error(tx.Error)
-				panic(tx.Error)
+				s.log.WithField("error", tx.Error.Error()).Error("Error saving commit")
 			}
 		}
 		if i.Installer != nil {
 			i.Installer.Status = models.ImageStatusError
 			tx := db.DB.Save(i.Installer)
 			if tx.Error != nil {
-				s.log.Error(tx.Error)
-				panic(tx.Error)
+				s.log.WithField("error", tx.Error.Error()).Error("Error saving installer")
 			}
 		}
 		if err != nil {
-			s.log.Error(err)
-			panic(err)
+			s.log.WithField("error", tx.Error.Error()).Error("Error setting image final status")
 		}
 	}
 }
@@ -518,39 +542,51 @@ func (s *ImageService) addSSHKeyToKickstart(sshKey string, username string, kick
 
 	td := UnameSSH{sshKey, username}
 
-	log.Infof("Opening file %s", cfg.TemplatesPath)
+	s.log.WithField("templatesPath", cfg.TemplatesPath).Debug("Opening file")
 	t, err := template.ParseFiles(cfg.TemplatesPath + "templateKickstart.ks")
 	if err != nil {
 		return err
 	}
 
-	log.Infof("Creating file %s", kickstart)
+	s.log.WithField("kickstart", kickstart).Debug("Creating file")
 	file, err := os.Create(kickstart)
 	if err != nil {
 		return err
 	}
 
-	log.Infof("Injecting username %s and key %s into template", username, sshKey)
+	s.log.WithFields(log.Fields{
+		"username": username,
+		"sshKey":   sshKey,
+	}).Debug("Injecting username and key into template")
 	err = t.Execute(file, td)
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Failed adding username and sshkey on image")
 		return err
 	}
-	file.Close()
+	if err := file.Close(); err != nil {
+		s.log.WithField("error", err.Error()).Error("Failed closing file")
+		return err
+	}
 
 	return nil
 }
 
 // Download created ISO into the file system.
 func (s *ImageService) downloadISO(isoName string, url string) error {
-	log.Infof("Creating iso %s", isoName)
+
+	s.log.WithField("isoName", isoName).Debug("Creating iso")
 	iso, err := os.Create(isoName)
 	if err != nil {
 		return err
 	}
-	defer iso.Close()
+	defer func() {
+		if err := iso.Close(); err != nil {
+			s.log.WithField("error", err.Error()).Error("Error closing file")
+		}
+	}()
 
-	log.Infof("Downloading ISO %s", url)
-	res, err := http.Get(url)
+	s.log.WithField("url", url).Debug("Downloading iso")
+	res, err := http.Get(url) // #nosec G107
 	if err != nil {
 		return err
 	}
@@ -558,6 +594,7 @@ func (s *ImageService) downloadISO(isoName string, url string) error {
 
 	_, err = io.Copy(iso, res.Body)
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Failed downloading iso")
 		return err
 	}
 
@@ -568,7 +605,7 @@ func (s *ImageService) downloadISO(isoName string, url string) error {
 func (s *ImageService) uploadISO(image *models.Image, imageName string) error {
 
 	uploadPath := fmt.Sprintf("%s/isos/%s.iso", image.Account, image.Name)
-	filesService := NewFilesService()
+	filesService := NewFilesService(s.log)
 	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
 
 	if err != nil {
@@ -587,22 +624,25 @@ func (s *ImageService) uploadISO(image *models.Image, imageName string) error {
 func (s *ImageService) cleanFiles(kickstart string, isoName string, imageID uint) error {
 	err := os.Remove(kickstart)
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error removing kickstart file")
 		return err
 	}
-	log.Info("Kickstart file " + kickstart + " removed!")
+	s.log.WithField("kickstart", kickstart).Debug("Kickstart file removed")
 
 	err = os.Remove(isoName)
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error removing tmp iso")
 		return err
 	}
-	log.Info("ISO file " + isoName + " removed!")
+	s.log.WithField("isoName", isoName).Debug("ISO file removed")
 
 	workDir := fmt.Sprintf("/var/tmp/workdir%d", imageID)
 	err = os.RemoveAll(workDir)
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error removing work dir path")
 		return err
 	}
-	log.Info("work dir file " + workDir + " removed!")
+	s.log.WithField("workDir", workDir).Debug("Work dir path removed")
 
 	return nil
 }
@@ -644,6 +684,7 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 
 // CheckImageName returns false if the image doesnt exist and true if the image exists
 func (s *ImageService) CheckImageName(name, account string) (bool, error) {
+	s.log.WithField("name", name).Debug("Checking image name")
 	var imageFindByName *models.Image
 	result := db.DB.Where("name = ? AND account = ?", name, account).First(&imageFindByName)
 	if result.Error != nil {
@@ -659,40 +700,54 @@ func (s *ImageService) CheckImageName(name, account string) (bool, error) {
 func (s *ImageService) exeInjectionScript(kickstart string, image string, imageID uint) error {
 	fleetBashScript := "/usr/local/bin/fleetkick.sh"
 	workDir := fmt.Sprintf("/var/tmp/workdir%d", imageID)
-	err := os.Mkdir(workDir, 0755)
+	err := os.Mkdir(workDir, 0750)
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error giving permissions to execute fleetkick")
 		return err
 	}
 
-	cmd := exec.Command(fleetBashScript, kickstart, image, image, workDir)
+	cmd := &exec.Cmd{
+		Path: fleetBashScript,
+		Args: []string{
+			fleetBashScript, kickstart, image, image, workDir,
+		},
+	}
 	output, err := cmd.Output()
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error executing fleetkick")
 		return err
 	}
-	log.Infof("fleetkick output: %s\n", output)
+	s.log.WithField("output", output).Info("Fleetkick Output")
 	return nil
 }
 
 // Calculate the checksum of the final ISO.
 func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) error {
-	log.Infof("Calculating sha256 checksum for ISO %s", isoPath)
+	s.log.WithField("isoPath", isoPath).Info("Calculating sha256 checksum for ISO")
 
-	fh, err := os.Open(isoPath)
+	fh, err := os.Open(filepath.Clean(isoPath))
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error opening ISO file")
 		return err
 	}
-	defer fh.Close()
+	defer func() {
+		if err := fh.Close(); err != nil {
+			s.log.WithField("error", err.Error()).Error("Error closing file")
+		}
+	}()
 
 	sumCalculator := sha256.New()
 	_, err = io.Copy(sumCalculator, fh)
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error calculating sha256 checksum for ISO")
 		return err
 	}
 
 	image.Installer.Checksum = hex.EncodeToString(sumCalculator.Sum(nil))
-	log.Infof("Checksum (sha256): %s", image.Installer.Checksum)
+	s.log.WithField("checksum", image.Installer.Checksum).Info("Checksum calculated")
 	tx := db.DB.Save(&image.Installer)
 	if tx.Error != nil {
+		s.log.WithField("error", err.Error()).Error("Error saving installer")
 		return tx.Error
 	}
 
@@ -718,7 +773,7 @@ func (s *ImageService) AddPackageInfo(image *models.Image) (ImageDetail, error) 
 
 	upd, err := s.GetUpdateInfo(*image)
 	if err != nil {
-		log.Errorf("error getting update info: %v", err)
+		s.log.WithField("error", err.Error()).Error("Error getting update info")
 		return imgDetail, err
 	}
 	if upd != nil {
@@ -764,7 +819,7 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 	}
 	result := db.DB.Preload("Commit.Repo").Preload("Commit.InstalledPackages").Where("images.account = ?", account).Joins("Commit").First(&image, id)
 	if result.Error != nil {
-		s.log.WithField("error", err).Debug("Request related error - image is not found")
+		s.log.WithField("error", result.Error.Error()).Debug("Request related error - image is not found")
 		return nil, new(ImageNotFoundError)
 	}
 	return s.addImageExtraData(&image)
@@ -772,21 +827,21 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 
 // GetImageByOSTreeCommitHash retrieves an image by its ostree commit hash
 func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error) {
-	s.log.Info("Getting image by OSTreeHash")
+	s.log.WithField("ostreeHash", commitHash).Info("Getting image by OSTreeHash")
 	var image models.Image
 	account, err := common.GetAccountFromContext(s.ctx)
 	if err != nil {
 		s.log.Error("Error retreving account")
 		return nil, new(AccountNotSet)
 	}
-	result := db.DB.Where("images.account = ? and os_tree_commit = ?", account, commitHash).Joins("Commit").First(&image)
+	result := db.DB.Where("images.account = ?", account).Joins("JOIN commits ON commits.id = images.commit_id AND commits.os_tree_commit = ?", commitHash).Joins("Installer").Preload("Packages").Preload("Commit.InstalledPackages").Preload("Commit.Repo").First(&image)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error).Error("Error retrieving image by OSTreeHash")
 		return nil, new(ImageNotFoundError)
 	}
 	s.log = s.log.WithField("imageID", image.ID)
-	s.log.Info("Image successfuly retrievedd by its OSTreeHash")
-	return s.addImageExtraData(&image)
+	s.log.Info("Image successfully retrieved by its OSTreeHash")
+	return &image, nil
 }
 
 // RetryCreateImage retries the whole post process of the image creation
@@ -809,47 +864,37 @@ func (s *ImageService) RetryCreateImage(image *models.Image) error {
 
 // SetBuildingStatusOnImageToRetryBuild set building status on image so we can try the build
 func (s *ImageService) SetBuildingStatusOnImageToRetryBuild(image *models.Image) error {
+	s.log.Debug("Setting image status")
 	image.Status = models.ImageStatusBuilding
 	if image.Commit != nil {
+		s.log.Debug("Setting commit status")
 		image.Commit.Status = models.ImageStatusBuilding
 		// Repo will be recreated from scratch, its safer and simpler as this stage
 		if image.Commit.Repo != nil {
+			s.log.Debug("Reset repo")
 			image.Commit.Repo = nil
-			tx := db.DB.Save(image.Commit.Repo)
-			if tx.Error != nil {
-				return tx.Error
-			}
 		}
+		s.log.Debug("Saving commit status")
 		tx := db.DB.Save(image.Commit)
 		if tx.Error != nil {
 			return tx.Error
 		}
 	}
 	if image.Installer != nil {
+		s.log.Debug("Setting installer status")
 		image.Installer.Status = models.ImageStatusCreated
+		s.log.Debug("Saving installer status")
 		tx := db.DB.Save(image.Installer)
 		if tx.Error != nil {
 			return tx.Error
 		}
 	}
+	s.log.Debug("Saving image status")
 	tx := db.DB.Save(image)
 	if tx.Error != nil {
 		return tx.Error
 	}
 	return nil
-}
-func uploadTarRepo(account, imageName string, repoID int) (string, error) {
-	log.Infof(":: uploadTarRepo Started ::\n")
-	uploadPath := fmt.Sprintf("%s/tar/%v/%s", account, repoID, imageName)
-	filesService := NewFilesService()
-	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
-
-	if err != nil {
-		return "error", fmt.Errorf("error uploading the Tar :: %s :: %s", uploadPath, err.Error())
-	}
-	log.Infof(":: uploadTarRepo Finish ::\n")
-
-	return url, nil
 }
 
 // CheckIfIsLatestVersion make sure that there is no same image version present
@@ -883,9 +928,9 @@ func (s *ImageService) CheckIfIsLatestVersion(previousImage *models.Image) error
 }
 
 //GetUpdateInfo return package info when has an update to the image
-func (s *ImageService) GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable, error) {
+func (s *ImageService) GetUpdateInfo(image models.Image) ([]models.ImageUpdateAvailable, error) {
 	var images []models.Image
-	var imageDiff []ImageUpdateAvailable
+	var imageDiff []models.ImageUpdateAvailable
 	updates := db.DB.Where("Image_set_id = ? and Images.Status = ? and Images.Id < ?",
 		image.ImageSetID, models.ImageStatusSuccess, image.ID).Joins("Commit").
 		Order("Images.updated_at desc").Find(&images)
@@ -899,11 +944,18 @@ func (s *ImageService) GetUpdateInfo(image models.Image) ([]ImageUpdateAvailable
 		return nil, nil
 	}
 	for _, upd := range images {
+		upd := upd // this will prevent implicit memory aliasing in the loop
 		db.DB.First(&upd.Commit, upd.CommitID)
-		db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages)
-		db.DB.Model(&upd).Association("Packages").Find(&upd.Packages)
-		var delta ImageUpdateAvailable
-		diff := getDiffOnUpdate(image, upd)
+		if err := db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages); err != nil {
+			s.log.WithField("error", err.Error()).Error("Error retrieving installed packages")
+			return nil, err
+		}
+		if err := db.DB.Model(&upd).Association("Packages").Find(&upd.Packages); err != nil {
+			s.log.WithField("error", err.Error()).Error("Error retrieving updated packages")
+			return nil, err
+		}
+		var delta models.ImageUpdateAvailable
+		diff := GetDiffOnUpdate(image, upd)
 		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
 		delta.Image = upd
 		delta.PackageDiff = diff
@@ -950,4 +1002,23 @@ func (s *ImageService) CreateInstallerForImage(image *models.Image) (*models.Ima
 		c <- err
 	}(c)
 	return image, c, nil
+}
+
+// GetRollbackImage returns the previous image from the image set in case of a rollback
+func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, error) {
+	s.log.Info("Getting rollback image")
+	var rollback models.Image
+	account, err := common.GetAccountFromContext(s.ctx)
+	if err != nil {
+		s.log.Error("Error retreving account")
+		return nil, new(AccountNotSet)
+	}
+	result := db.DB.Joins("Commit").Joins("Installer").Preload("Packages").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where(&models.Image{ImageSetID: image.ImageSetID, Account: account}).Last(&rollback, "images.id < ?", image.ID)
+	if result.Error != nil {
+		s.log.WithField("error", result.Error).Error("Error retrieving rollback image")
+		return nil, new(ImageNotFoundError)
+	}
+	s.log = s.log.WithField("imageID", image.ID)
+	s.log.Info("Rollback image successfully retrieved")
+	return &rollback, nil
 }

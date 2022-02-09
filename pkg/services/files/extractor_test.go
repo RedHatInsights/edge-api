@@ -2,9 +2,12 @@ package files
 
 import (
 	"archive/tar"
+	"fmt"
 	"log"
 	"os"
 	"testing"
+
+	"github.com/sirupsen/logrus"
 )
 
 func TestUntar(t *testing.T) {
@@ -45,13 +48,18 @@ func TestUntar(t *testing.T) {
 	if errOpenFile != nil {
 		t.Error("Unable to open mock tar file before test")
 	}
-	NewExtractor().Extract(unTarFile, `./`)
+	extractPath := "/tmp/"
+	err := NewExtractor(logrus.NewEntry(logrus.StandardLogger())).Extract(unTarFile, extractPath)
+	if err != nil {
+		t.Error("Unable to extract mock tar file", err)
+	}
 	for name := range files {
 		// check if file exist after untar method calls
-		if _, err := os.Stat(name); os.IsNotExist(err) {
-			t.Fail()
+		fileName := fmt.Sprint(extractPath + name)
+		if _, err := os.Stat(fileName); os.IsNotExist(err) {
+			t.Error("File not found after untar method call", err)
 		}
-		os.Remove(name)
+		os.Remove(fileName)
 	}
 	os.Remove(tarPath)
 }
