@@ -15,7 +15,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
-	"github.com/redhatinsights/edge-api/pkg/routes/common"
 )
 
 // ClientInterface is an Interface to make request to ImageBuilder
@@ -200,7 +199,7 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 
 // ComposeCommit composes a Commit on ImageBuilder
 func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
-	payloadRepos, err := c.GetThirdPartyRepos(image)
+	payloadRepos, err := c.GetImagesThirdPartyRepos(image)
 	if err != nil {
 		return nil, errors.New("error getting information on third Party repository")
 	}
@@ -428,14 +427,8 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	return image, nil
 }
 
-// GetThirdPartyRepos finds the url of Third Party Repository using the name
-func (c *Client) GetThirdPartyRepos(image *models.Image) ([]Repository, error) {
-	account, err := common.GetAccountFromContext(c.ctx)
-	if err != nil {
-		c.log.WithField("error", err).Error("error retrieving account")
-		return nil, errors.New("error retrieving account")
-	}
-
+// GetImagesThirdPartyRepos finds the url of Third Party Repository using the name
+func (c *Client) GetImagesThirdPartyRepos(image *models.Image) ([]Repository, error) {
 	repos := make([]Repository, len(image.ThirdPartyRepositories))
 	thirdpartyrepos := make([]models.ThirdPartyRepo, len(image.ThirdPartyRepositories))
 	thirdpartyrepoIDS := make([]int, len(image.ThirdPartyRepositories))
@@ -444,7 +437,7 @@ func (c *Client) GetThirdPartyRepos(image *models.Image) ([]Repository, error) {
 		thirdpartyrepoIDS[repo] = int(image.ThirdPartyRepositories[repo].ID)
 	}
 	var count int64
-	result := db.DB.Where("account = ?", account).Find(&thirdpartyrepos, thirdpartyrepoIDS).Count(&count)
+	result := db.DB.Where("account = ?", image.Account).Find(&thirdpartyrepos, thirdpartyrepoIDS).Count(&count)
 	if result.Error != nil {
 		log.Error(result.Error)
 		return nil, result.Error
@@ -459,5 +452,5 @@ func (c *Client) GetThirdPartyRepos(image *models.Image) ([]Repository, error) {
 		}
 	}
 
-	return repos, err
+	return repos, nil
 }

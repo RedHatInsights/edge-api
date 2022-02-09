@@ -306,6 +306,14 @@ var _ = Describe("Image Service Test", func() {
 				Expect(validRepos).ToNot(BeNil())
 
 			})
+			It("should give an error", func() {
+				var repos []models.ThirdPartyRepo
+				account := ""
+				validRepos, err := services.ValidateAllImagesPackagesAreFromAccount(account, repos)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError("repository information is not valid"))
+				Expect(validRepos).To(BeNil())
+			})
 		})
 	})
 })

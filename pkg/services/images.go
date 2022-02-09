@@ -104,11 +104,11 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 	if set.Error == nil {
 		image.ImageSetID = &imageSet.ID
 	}
+	image.Account = account
 	image, err := s.ImageBuilder.ComposeCommit(image)
 	if err != nil {
 		return err
 	}
-	image.Account = account
 	image.Commit.Account = account
 	image.Commit.Status = models.ImageStatusBuilding
 	image.Status = models.ImageStatusBuilding
@@ -150,16 +150,11 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 
 // UpdateImage updates an image, adding a new version of this image to an imageset
 func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Image) error {
-	account, err := common.GetAccountFromContext(s.ctx)
-	if err != nil {
-		s.log.Error("Error retreving account")
-		return new(AccountNotSet)
-	}
 	s.log.Info("Updating image...")
 	if previousImage == nil {
 		return new(ImageNotFoundError)
 	}
-	err = s.CheckIfIsLatestVersion(previousImage)
+	err := s.CheckIfIsLatestVersion(previousImage)
 	if err != nil {
 		return errors.NewBadRequest("only the latest updated image can be modified")
 	}
@@ -167,6 +162,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	// important: update the image imageSet for any previous image build status,
 	// otherwise image will be orphaned from its imageSet if previous build failed
 	image.ImageSetID = previousImage.ImageSetID
+	image.Account = previousImage.Account
 
 	if previousImage.Status == models.ImageStatusSuccess {
 		// Previous image was built successfully
@@ -205,7 +201,6 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	if err != nil {
 		return err
 	}
-	image.Account = previousImage.Account
 	image.Commit.Account = previousImage.Account
 	image.Commit.Status = models.ImageStatusBuilding
 	image.Status = models.ImageStatusBuilding
@@ -225,7 +220,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 			return tx.Error
 		}
 	}
-	validRepos, err := ValidateAllImagesPackagesAreFromAccount(account, image.ThirdPartyRepositories)
+	validRepos, err := ValidateAllImagesPackagesAreFromAccount(image.Account, image.ThirdPartyRepositories)
 	if err != nil {
 		return err
 	}
