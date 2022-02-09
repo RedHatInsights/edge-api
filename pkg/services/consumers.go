@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
@@ -134,30 +133,27 @@ func (s *KafkaConsumerService) ConsumeInventoryCreateEvents() error {
 			}).Error("Error reading message from Kafka topic")
 			return err
 		}
-		log.WithFields(log.Fields{
-			"topic":  m.Topic,
-			"offset": m.Offset,
-			"key":    string(m.Key),
-			"value":  string(m.Value),
-		}).Debug("Read message from Kafka topic")
-
-		// dont know the format of the header, will attempt to parse the body and log the header
-		// further optimisation can be done once the header is known
-		var e *PlatformInsightsCreateEventPayload
-		err = json.Unmarshal(m.Value, &e)
-		if err != nil {
-			log.Debug("Skipping message - it is not a create message")
-		} else {
-			if e.Type == "created" {
-				err = s.DeviceService.ProcessPlatformInventoryCreateEvent(m.Value)
-				if err != nil {
-					log.WithFields(log.Fields{
-						"error": err,
-					}).Error("Error writing Kafka message to DB")
-				}
-			} else {
-				log.Debug("Skipping message none create message from platform insights")
+		var eventType string
+		for _, h := range m.Headers {
+			if h.Key == "event_type" {
+				eventType = string(h.Value)
 			}
+		}
+		if eventType == "created" {
+			log.WithFields(log.Fields{
+				"topic":  m.Topic,
+				"offset": m.Offset,
+				"key":    string(m.Key),
+				"value":  string(m.Value),
+			}).Debug("Read message from Kafka topic")
+			err = s.DeviceService.ProcessPlatformInventoryCreateEvent(m.Value)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"error": err,
+				}).Error("Error writing Kafka message to DB")
+			}
+		} else {
+			log.Debug("Skipping message - not a create message from platform insights")
 		}
 	}
 }
