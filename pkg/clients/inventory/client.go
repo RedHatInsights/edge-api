@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -25,22 +26,23 @@ type ClientInterface interface {
 // Client is the implementation of an ClientInterface
 type Client struct {
 	ctx context.Context
+	log *log.Entry
 }
 
-// InitClient initializes the client for InventoryAPI
-func InitClient(ctx context.Context) *Client {
-	return &Client{ctx: ctx}
+// InitClient initializes the client for Image Builder
+func InitClient(ctx context.Context, log *log.Entry) *Client {
+	return &Client{ctx: ctx, log: log}
 }
 
 // Response lists devices returned by InventoryAPI
 type Response struct {
-	Total  int       `json:"total"`
-	Count  int       `json:"count"`
-	Result []Devices `json:"results"`
+	Total  int      `json:"total"`
+	Count  int      `json:"count"`
+	Result []Device `json:"results"`
 }
 
-// Devices represents the struct of a Device on Inventory API
-type Devices struct {
+// Device represents the struct of a Device on Inventory API
+type Device struct {
 	ID              string        `json:"id"`
 	DisplayName     string        `json:"display_name"`
 	LastSeen        string        `json:"updated"`
@@ -84,12 +86,10 @@ type Params struct {
 func (c *Client) BuildURL(parameters *Params) string {
 	URL, err := url.Parse(config.Get().InventoryConfig.URL)
 	if err != nil {
-		log.Println("Couldn't parse inventory host")
+		c.log.WithField("url", config.Get().InventoryConfig.URL).Error("Couldn't parse inventory host")
 		return ""
 	}
-	fmt.Printf("Url:: %v\n", URL)
 	URL.Path += inventoryAPI
-	fmt.Printf("UrlPath:: %v\n", URL.Path)
 	params := url.Values{}
 	params.Add("filter[system_profile][host_type]", "edge")
 	params.Add("fields[system_profile]", fmt.Sprintf("%s=%s", "fields[system_profile]", Fields))
@@ -109,20 +109,17 @@ func (c *Client) BuildURL(parameters *Params) string {
 		params.Add("hostname_or_id", parameters.HostnameOrID)
 	}
 	URL.RawQuery = params.Encode()
-
+	c.log.WithField("URL", URL.String()).Debug("Inventory URL built")
 	return URL.String()
 }
 
 // ReturnDevices will return the list of devices without filter by tag or uuid
 func (c *Client) ReturnDevices(parameters *Params) (Response, error) {
-
-	fullURL := c.BuildURL(parameters)
-
-	// url := fmt.Sprintf("%s/%s", config.Get().InventoryConfig.URL, inventoryAPI)
-	// fullURL := url + FilterParams
-	fmt.Printf("fullURL:: %v\n", fullURL)
-	log.Infof("Requesting url: %s\n", fullURL)
-	req, _ := http.NewRequest("GET", fullURL, nil)
+	url := c.BuildURL(parameters)
+	c.log.WithFields(log.Fields{
+		"url": url,
+	}).Info("Inventory ReturnDevices Request Started")
+	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Content-Type", "application/json")
 	headers := clients.GetOutgoingHeaders(c.ctx)
 	for key, value := range headers {
@@ -130,60 +127,78 @@ func (c *Client) ReturnDevices(parameters *Params) (Response, error) {
 	}
 
 	client := &http.Client{}
-	resp, err := client.Do(req)
+	res, err := client.Do(req)
 	if err != nil {
-		log.Errorf("ReturnDevices: %s", err)
+		c.log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Inventory ReturnDevices Request Error")
 		return Response{}, err
 	}
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(res.Body)
+	c.log.WithFields(log.Fields{
+		"statusCode":   res.StatusCode,
+		"responseBody": string(body),
+		"error":        err,
+	}).Info("Inventory ReturnDevices Response")
 	if err != nil {
-		log.Errorf("ReturnDevices: %s", err)
 		return Response{}, err
 	}
-	defer resp.Body.Close()
+
+	defer res.Body.Close()
 	var bodyResp Response
-	json.Unmarshal([]byte(body), &bodyResp)
-	log.Infof("struct: %v\n", bodyResp)
+	err = json.Unmarshal(body, &bodyResp)
+	if err != nil {
+		return Response{}, err
+	}
 	return bodyResp, nil
 
 }
 
 // ReturnDevicesByID will return the list of devices by uuid
 func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
-	deviceIDParam := "&hostname_or_id=" + deviceID
-	log.Infof("::deviceIDParam: %s\n", deviceIDParam)
-	url := fmt.Sprintf("%s/%s", config.Get().InventoryConfig.URL, inventoryAPI)
-	fullURL := url + FilterParams + deviceIDParam
-	log.Infof("Requesting url: %s\n", fullURL)
-	req, _ := http.NewRequest("GET", fullURL, nil)
+	if _, err := uuid.Parse(deviceID); err != nil {
+		c.log.WithFields(log.Fields{
+			"error": err,
+		}).Error("invalid device ID, ", deviceID)
+		return Response{}, err
+	}
+	url := fmt.Sprintf("%s/%s%s&hostname_or_id=%s", config.Get().InventoryConfig.URL, inventoryAPI, FilterParams, deviceID)
+	c.log.WithFields(log.Fields{
+		"url": url,
+	}).Info("Inventory ReturnDevicesByID Request Started")
+	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Content-Type", "application/json")
 	for key, value := range clients.GetOutgoingHeaders(c.ctx) {
 		req.Header.Add(key, value)
 	}
 	client := &http.Client{}
-	resp, err := client.Do(req)
+	res, err := client.Do(req)
 
 	if err != nil {
-		log.Errorf("ReturnDevicesByID: %s", err)
+		c.log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Inventory ReturnDevicesByID Request Error")
 		return Response{}, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
-		log.Errorf("error requesting InventoryResponse, got status code %d and body %s", resp.StatusCode, body)
-		return Response{}, fmt.Errorf("error requesting InventoryResponse, got status code %d and body %s", resp.StatusCode, body)
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(res.Body)
+	c.log.WithFields(log.Fields{
+		"statusCode":   res.StatusCode,
+		"responseBody": string(body),
+		"error":        err,
+	}).Info("Inventory ReturnDevicesByID Response")
 	if err != nil {
-		log.Errorf("ReturnDevicesByID: %s", err)
 		return Response{}, err
 	}
-	defer resp.Body.Close()
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return Response{}, fmt.Errorf("error requesting InventoryResponse, got status code %d and body %s", res.StatusCode, body)
+	}
 	var inventory Response
-	json.Unmarshal([]byte(body), &inventory)
-	log.Infof("::Updates::ReturnDevicesByID::inventory: %v\n", inventory)
-
+	if err := json.Unmarshal([]byte(body), &inventory); err != nil {
+		c.log.Error("Error while trying to unmarshal ", &inventory)
+		return Response{}, err
+	}
 	return inventory, nil
 
 }
@@ -191,34 +206,42 @@ func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
 // ReturnDevicesByTag will return the list of devices by tag
 func (c *Client) ReturnDevicesByTag(tag string) (Response, error) {
 	tagsParam := "?tags=" + tag
-	url := fmt.Sprintf("%s/%s", config.Get().InventoryConfig.URL, inventoryAPI)
-	fullURL := url + FilterParams + tagsParam
-	log.Infof("Requesting url: %s\n", fullURL)
-	req, _ := http.NewRequest("GET", fullURL, nil)
+	url := fmt.Sprintf("%s/%s%s%s", config.Get().InventoryConfig.URL, inventoryAPI, FilterParams, tagsParam)
+	c.log.WithFields(log.Fields{
+		"url": url,
+	}).Info("Inventory ReturnDevicesByTag Request Started")
+	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Content-Type", "application/json")
 	headers := clients.GetOutgoingHeaders(c.ctx)
 	for key, value := range headers {
 		req.Header.Add(key, value)
 	}
 	client := &http.Client{}
-	resp, err := client.Do(req)
+	res, err := client.Do(req)
 
 	if err != nil {
-		log.Errorf("ReturnDevicesByTag: %s", err)
+		c.log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Inventory ReturnDevicesByTag Request Error")
 		return Response{}, err
 	}
-	if resp.StatusCode != http.StatusOK {
-		body, _ := ioutil.ReadAll(resp.Body)
-		log.Errorf("error requesting inventory, got status code %d and body %s", resp.StatusCode, body)
-		return Response{}, fmt.Errorf("error requesting inventory, got status code %d and body %s", resp.StatusCode, body)
-	}
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(res.Body)
+	c.log.WithFields(log.Fields{
+		"statusCode":   res.StatusCode,
+		"responseBody": string(body),
+		"error":        err,
+	}).Info("Inventory ReturnDevicesByTag Response")
 	if err != nil {
-		log.Errorf("ReturnDevicesByTag: %s", err)
 		return Response{}, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return Response{}, fmt.Errorf("error requesting InventoryResponse, got status code %d and body %s", res.StatusCode, body)
 	}
 	var inventory Response
-	json.Unmarshal([]byte(body), &inventory)
-	log.Infof("struct: %v\n", inventory)
+	if err := json.Unmarshal([]byte(body), &inventory); err != nil {
+		c.log.Error("Error while trying to unmarshal ", &inventory)
+		return Response{}, err
+	}
 	return inventory, nil
 }

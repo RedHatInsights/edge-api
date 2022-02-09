@@ -80,6 +80,7 @@ func main() {
 	r.Get("/api/edge/v1/openapi.json", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, cfg.OpenAPIFilePath)
 	})
+
 	// Authenticated routes
 	ar := r.Group(nil)
 	if cfg.Auth {
@@ -96,6 +97,7 @@ func main() {
 		s.Route("/devices", routes.MakeDevicesRouter)
 		s.Route("/thirdpartyrepo", routes.MakeThirdPartyRepoRouter)
 		s.Route("/fdo", routes.MakeFDORouter)
+		s.Route("/device-groups", routes.MakeDeviceGroupsRouter)
 	})
 
 	mr := chi.NewRouter()
@@ -135,10 +137,11 @@ func main() {
 	}()
 	if cfg.KafkaConfig != nil {
 		log.Info("Starting Kafka Consumers")
-		go func() {
-			consumerService := services.NewKafkaConsumerService(cfg.KafkaConfig)
-			consumerService.Start()
-		}()
+		playbookConsumer := services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.playbook-dispatcher.runs")
+		go playbookConsumer.Start()
+		platformInvConsumer := services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.inventory.events")
+		go platformInvConsumer.Start()
+
 	}
 
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {

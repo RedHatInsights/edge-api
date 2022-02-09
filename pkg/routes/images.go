@@ -70,7 +70,9 @@ func ImageByOSTreeHashCtx(next http.Handler) http.Handler {
 					responseErr = errors.NewInternalServerError()
 				}
 				w.WriteHeader(responseErr.GetStatus())
-				json.NewEncoder(w).Encode(&responseErr)
+				if err := json.NewEncoder(w).Encode(&responseErr); err != nil {
+					s.Log.WithField("error", responseErr.Error()).Error("Error while trying to encode")
+				}
 				return
 			}
 			ctx := context.WithValue(r.Context(), imageKey, image)
@@ -78,7 +80,9 @@ func ImageByOSTreeHashCtx(next http.Handler) http.Handler {
 		} else {
 			err := errors.NewBadRequest("OSTreeCommitHash required")
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+			}
 			return
 		}
 	})
@@ -105,7 +109,9 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 					responseErr = errors.NewInternalServerError()
 				}
 				w.WriteHeader(responseErr.GetStatus())
-				json.NewEncoder(w).Encode(&responseErr)
+				if err := json.NewEncoder(w).Encode(&responseErr); err != nil {
+					s.Log.WithField("error", responseErr.Error()).Error("Error while trying to encode")
+				}
 				return
 			}
 			account, err := common.GetAccount(r)
@@ -116,7 +122,9 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 				}).Error("Error retrieving account or image doesn't belong to account")
 				err := errors.NewBadRequest(err.Error())
 				w.WriteHeader(err.GetStatus())
-				json.NewEncoder(w).Encode(&err)
+				if err := json.NewEncoder(w).Encode(&err); err != nil {
+					s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+				}
 				return
 			}
 			ctx := context.WithValue(r.Context(), imageKey, image)
@@ -125,7 +133,9 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 			s.Log.Debug("Image ID was not passed to the request or it was empty")
 			err := errors.NewBadRequest("Image ID required")
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+			}
 			return
 		}
 	})
@@ -156,25 +166,30 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		services.Log.WithField("error", err.Error()).Error("Failed retrieving account from request")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 		return
 	}
 	services.Log.Debug("Creating image")
 	err = services.ImageService.CreateImage(image, account)
 	if err != nil {
-		services.Log.Error(err)
+		services.Log.WithField("error", err.Error()).Error("Failed creating image")
 		err := errors.NewInternalServerError()
 		err.SetTitle("Failed creating image")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 		return
 	}
 	services.Log.WithFields(log.Fields{
 		"imageId": image.ID,
 	}).Info("Image created")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(&image)
-
+	if err := json.NewEncoder(w).Encode(&image); err != nil {
+		services.Log.WithField("error", image).Error("Error while trying to encode")
+	}
 }
 
 // CreateImageUpdate creates an update for an exitent image on hosted image builder.
@@ -193,15 +208,19 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	err = services.ImageService.UpdateImage(image, previousImage)
 	if err != nil {
-		log.WithField("error", err.Error()).Error("Failed creating an update to an image")
+		services.Log.WithField("error", err.Error()).Error("Failed creating an update to an image")
 		err := errors.NewInternalServerError()
 		err.SetTitle("Failed creating image")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(&image)
+	if err := json.NewEncoder(w).Encode(&image); err != nil {
+		services.Log.WithField("error", image).Error("Error while trying to encode")
+	}
 }
 
 // initImageCreateRequest validates request to create/update an image.
@@ -212,14 +231,18 @@ func initImageCreateRequest(w http.ResponseWriter, r *http.Request) (*models.Ima
 		services.Log.WithField("error", err.Error()).Error("Error decoding image json")
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 		return nil, err
 	}
 	if err := image.ValidateRequest(); err != nil {
 		services.Log.WithField("error", err.Error()).Info("Error validating image")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 		return nil, err
 	}
 	services.Log = services.Log.WithField("imageName", image.Name)
@@ -281,7 +304,10 @@ func validateGetAllImagesSearchParams(next http.Handler) http.Handler {
 			return
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(&errs)
+		if err := json.NewEncoder(w).Encode(&errs); err != nil {
+			services := dependencies.ServicesFromContext(r.Context())
+			services.Log.WithField("error", errs).Error("Error while trying to encode")
+		}
 	})
 }
 
@@ -298,7 +324,9 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 		services.Log.WithField("error", err).Debug("Account not found")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 		return
 	}
 	countResult := imageFilters(r, db.DB.Model(&models.Image{})).Where("images.account = ?", account).Count(&count)
@@ -306,7 +334,9 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 		services.Log.WithField("error", countResult.Error.Error()).Error("Error retrieving images")
 		countErr := errors.NewInternalServerError()
 		w.WriteHeader(countErr.GetStatus())
-		json.NewEncoder(w).Encode(&countErr)
+		if err := json.NewEncoder(w).Encode(&countErr); err != nil {
+			services.Log.WithField("error", countErr).Error("Error while trying to encode")
+		}
 		return
 	}
 	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Preload("Commit.Repo").Where("images.account = ?", account).Joins("Commit").Joins("Installer").Find(&images)
@@ -314,10 +344,14 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 		services.Log.WithField("error", result.Error.Error()).Error("Error retrieving images")
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 		return
 	}
-	json.NewEncoder(w).Encode(map[string]interface{}{"data": &images, "count": count})
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{"data": &images, "count": count}); err != nil {
+		services.Log.WithField("error", map[string]interface{}{"data": &images, "count": count}).Error("Error while trying to encode")
+	}
 }
 
 func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
@@ -326,7 +360,10 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 	if !ok {
 		err := errors.NewBadRequest("Must pass image identifier")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services := dependencies.ServicesFromContext(r.Context())
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 		return nil
 	}
 	return image
@@ -335,7 +372,7 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 // GetImageStatusByID returns the image status.
 func GetImageStatusByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		json.NewEncoder(w).Encode(struct {
+		if err := json.NewEncoder(w).Encode(struct {
 			Status string
 			Name   string
 			ID     uint
@@ -343,7 +380,10 @@ func GetImageStatusByID(w http.ResponseWriter, r *http.Request) {
 			image.Status,
 			image.Name,
 			image.ID,
-		})
+		}); err != nil {
+			services := dependencies.ServicesFromContext(r.Context())
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 	}
 }
 
@@ -360,7 +400,10 @@ type ImageDetail struct {
 // GetImageByID obtains a image from the database for an account
 func GetImageByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		json.NewEncoder(w).Encode(image)
+		if err := json.NewEncoder(w).Encode(image); err != nil {
+			services := dependencies.ServicesFromContext(r.Context())
+			services.Log.WithField("error", image).Error("Error while trying to encode")
+		}
 	}
 }
 
@@ -386,14 +429,19 @@ func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 			imgDetail.UpdateRemoved = 0
 			imgDetail.UpdateUpdated = 0
 		}
-		json.NewEncoder(w).Encode(imgDetail)
+		if err := json.NewEncoder(w).Encode(imgDetail); err != nil {
+			services.Log.WithField("error", imgDetail).Error("Error while trying to encode")
+		}
 	}
 }
 
 // GetImageByOstree obtains a image from the database for an account based on Commit Ostree
 func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		json.NewEncoder(w).Encode(&image)
+		if err := json.NewEncoder(w).Encode(&image); err != nil {
+			services := dependencies.ServicesFromContext(r.Context())
+			services.Log.WithField("error", image).Error("Error while trying to encode")
+		}
 	}
 }
 
@@ -406,7 +454,9 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		services.Log.WithField("error", err).Error("Failed to decode installer")
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 		return
 	}
 	image, _, err := services.ImageService.CreateInstallerForImage(image)
@@ -415,11 +465,15 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		err := errors.NewInternalServerError()
 		err.SetTitle("Failed to create installer")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(&image)
+	if err := json.NewEncoder(w).Encode(&image); err != nil {
+		services.Log.WithField("error", image).Error("Error while trying to encode")
+	}
 }
 
 // CreateRepoForImage creates a repo for a Image
@@ -431,7 +485,9 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 		var i *models.Image
 		db.DB.Joins("Commit").Joins("Installer").First(&i, id)
 		db.DB.First(&i.Commit, i.CommitID)
-		services.ImageService.CreateRepoForImage(i)
+		if _, err := services.ImageService.CreateRepoForImage(i); err != nil {
+			services.Log.WithField("error", err).Error("Failed to create repo")
+		}
 	}(image.ID, r.Context())
 
 	w.WriteHeader(http.StatusOK)
@@ -446,10 +502,14 @@ func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			err := errors.NewNotFound(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.CommitID))
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+			}
 			return
 		}
-		json.NewEncoder(w).Encode(repo)
+		if err := json.NewEncoder(w).Encode(repo); err != nil {
+			services.Log.WithField("error", repo).Error("Error while trying to encode")
+		}
 	}
 }
 
@@ -461,10 +521,14 @@ func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			err := errors.NewInternalServerError()
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+			}
 			return
 		}
-		json.NewEncoder(w).Encode(meta)
+		if err := json.NewEncoder(w).Encode(meta); err != nil {
+			services.Log.WithField("error", meta).Error("Error while trying to encode")
+		}
 	}
 }
 
@@ -478,7 +542,9 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 			services.Log.Errorf("Kickstart file injection failed %s", err.Error())
 			err := errors.NewInternalServerError()
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+			}
 			return
 		}
 	}
@@ -492,40 +558,49 @@ type CheckImageNameResponse struct {
 // CheckImageName verifies that ImageName exists
 func CheckImageName(w http.ResponseWriter, r *http.Request) {
 	services := dependencies.ServicesFromContext(r.Context())
-	services.Log.Debug("Checking image name")
 	var image *models.Image
 	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
 		services.Log.WithField("error", err.Error()).Debug("Bad request")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 	}
 	account, err := common.GetAccount(r)
 	if err != nil {
 		services.Log.WithField("error", err.Error()).Debug("Bad request")
 		err := errors.NewBadRequest(err.Error())
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 		return
 	}
 	if image == nil {
 		err := errors.NewInternalServerError()
 		services.Log.WithField("error", err.Error()).Error("Internal Server Error")
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 	}
 	imageExists, err := services.ImageService.CheckImageName(image.Name, account)
 	if err != nil {
 		services.Log.WithField("error", err.Error()).Error("Internal Server Error")
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
-		json.NewEncoder(w).Encode(&err)
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(CheckImageNameResponse{
+	if err := json.NewEncoder(w).Encode(CheckImageNameResponse{
 		ImageExists: imageExists,
-	})
+	}); err != nil {
+		services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+	}
 }
 
 // RetryCreateImage retries the image creation
@@ -538,10 +613,14 @@ func RetryCreateImage(w http.ResponseWriter, r *http.Request) {
 			err := errors.NewInternalServerError()
 			err.SetTitle("Failed creating image")
 			w.WriteHeader(err.GetStatus())
-			json.NewEncoder(w).Encode(&err)
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+			}
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(&image)
+		if err := json.NewEncoder(w).Encode(&image); err != nil {
+			services.Log.WithField("error", image).Error("Error while trying to encode")
+		}
 	}
 }

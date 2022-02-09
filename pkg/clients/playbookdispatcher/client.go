@@ -21,14 +21,15 @@ type ClientInterface interface {
 // Client is the implementation of an ClientInterface
 type Client struct {
 	ctx context.Context
+	log *log.Entry
 	url string
 	psk string
 }
 
 // InitClient initializes the client for Image Builder
-func InitClient(ctx context.Context) *Client {
+func InitClient(ctx context.Context, log *log.Entry) *Client {
 	cfg := config.Get()
-	return &Client{ctx: ctx, url: cfg.PlaybookDispatcherConfig.URL, psk: cfg.PlaybookDispatcherConfig.PSK}
+	return &Client{ctx: ctx, log: log, url: cfg.PlaybookDispatcherConfig.URL, psk: cfg.PlaybookDispatcherConfig.PSK}
 }
 
 // DispatcherPayload represents the payload sent to playbook dispatcher
@@ -46,51 +47,51 @@ type Response struct {
 
 // ExecuteDispatcher executes a DispatcherPayload, sending it to playbook dispatcher
 func (c *Client) ExecuteDispatcher(payload DispatcherPayload) ([]Response, error) {
-	payloadAry := [1]DispatcherPayload{payload}
-
 	payloadBuf := new(bytes.Buffer)
-	json.NewEncoder(payloadBuf).Encode(payloadAry)
-	log.Infof("::executeDispatcher::BEGIN")
-	fullURL := c.url + "/internal/dispatch"
-	log.Infof("Requesting url: %s\n", fullURL)
-	req, _ := http.NewRequest("POST", fullURL, payloadBuf)
-
+	if err := json.NewEncoder(payloadBuf).Encode([1]DispatcherPayload{payload}); err != nil {
+		return nil, err
+	}
+	url := c.url + "/internal/dispatch"
+	c.log.WithFields(log.Fields{
+		"url":     url,
+		"payload": payloadBuf.String(),
+	}).Info("PlaybookDispatcher ExecuteDispatcher Request Started")
+	req, _ := http.NewRequest("POST", url, payloadBuf)
 	req.Header.Add("Content-Type", "application/json")
-
 	headers := clients.GetOutgoingHeaders(c.ctx)
 	for key, value := range headers {
-		log.Infof("Playbook dispatcher headers: %#v, %#v", key, value)
 		req.Header.Add(key, value)
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("PSK %s", c.psk))
 
-	log.Infof("ExecuteDispatcher:: req.Header:: %#v", req.Header)
 	client := &http.Client{}
-	resp, err := client.Do(req)
-
+	res, err := client.Do(req)
 	if err != nil {
-		log.Errorf("Error Code:: Playbook dispatcher: %#v", resp)
-		log.Errorf("Error:: Playbook dispatcher: %#v", err)
-		log.Errorf("Error:: Playbook dispatcher: %#v", err.Error())
+		c.log.WithFields(log.Fields{
+			"statusCode": res.StatusCode,
+			"error":      err,
+		}).Error("PlaybookDispatcher ExecuteDispatcher Request Error")
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusMultiStatus {
-		body, _ := ioutil.ReadAll(resp.Body)
-		log.Errorf("error calling playbook dispatcher, got status code %d and body %s", resp.StatusCode, body)
-		return nil, err
-	}
-	log.Infof("::executeDispatcher::END")
-	log.Infof("::executeDispatcher::response: %#v", resp.Body)
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(res.Body)
+	c.log.WithFields(log.Fields{
+		"statusCode":   res.StatusCode,
+		"responseBody": string(body),
+		"error":        err,
+	}).Info("PlaybookDispatcher ExecuteDispatcher Response")
 	if err != nil {
-		log.Errorf("executeDispatcher: %#v", err.Error())
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusMultiStatus {
+		return nil, fmt.Errorf("error calling playbook dispatcher, got status code %d and body %s", res.StatusCode, body)
+	}
 
 	var playbookResponse []Response
-	json.Unmarshal([]byte(body), &playbookResponse)
-	log.Infof("::executeDispatcher::playbookResponse: %#v", playbookResponse)
+	if err := json.Unmarshal([]byte(body), &playbookResponse); err != nil {
+		c.log.Error("Error while trying to unmarshal ", &playbookResponse)
+		return nil, err
+	}
 	return playbookResponse, nil
 }

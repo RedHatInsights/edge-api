@@ -43,19 +43,26 @@ func TestCreateWasCalledWithWrongBody(t *testing.T) {
 
 func TestCreateWasCalledWithNameNotSet(t *testing.T) {
 	config.Get().Debug = false
-	var jsonStr = []byte(`{
-		"Distribution": "rhel-8",
-		"OutputTypes": ["rhel-edge-installer"],
-		"Commit": {
-			"Arch": "x86_64",
-			"Packages" : [ { "name" : "vim"  } ]
+	jsonImage := &models.Image{
+		Distribution: "rhel-8",
+		OutputTypes:  []string{"rhel-edge-installer"},
+		Commit: &models.Commit{
+			Arch: "x86_64",
+			InstalledPackages: []models.InstalledPackage{
+				{Name: "vim"},
+			},
 		},
-		"Installer": {
-			"Username": "root",
-			"Sshkey": "ssh-rsa d9:f158:00:abcd"
-		}
-	}`)
-	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
+		Installer: &models.Installer{
+			Username: "root",
+			SSHKey:   "ssh-rsa d9:f158:00:abcd",
+		},
+	}
+	var buf bytes.Buffer
+	err := json.NewEncoder(&buf).Encode(jsonImage)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	req, err := http.NewRequest("POST", "/", &buf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,20 +83,27 @@ func TestCreateWasCalledWithNameNotSet(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	var jsonStr = []byte(`{
-		"Name": "image2",
-		"Distribution": "rhel-8",
-		"OutputTypes": ["rhel-edge-installer"],
-		"Commit": {
-			"Arch": "x86_64",
-			"Packages" : [ { "name" : "vim"  } ]
+	jsonImage := &models.Image{
+		Name:         "image2",
+		Distribution: "rhel-8",
+		OutputTypes:  []string{"rhel-edge-installer"},
+		Commit: &models.Commit{
+			Arch: "x86_64",
+			InstalledPackages: []models.InstalledPackage{
+				{Name: "vim"},
+			},
 		},
-		"Installer": {
-			"Username": "root",
-			"Sshkey": "ssh-rsa d9:f158:00:abcd"
-		}
-	}`)
-	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
+		Installer: &models.Installer{
+			Username: "root",
+			SSHKey:   "ssh-rsa d9:f158:00:abcd",
+		},
+	}
+	var buf bytes.Buffer
+	err := json.NewEncoder(&buf).Encode(jsonImage)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	req, err := http.NewRequest("POST", "/", &buf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -394,21 +408,27 @@ func TestGetImageByOstree(t *testing.T) {
 }
 
 func TestPostCheckImageNameAlreadyExist(t *testing.T) {
-
-	var jsonStr = []byte(`{
-		"Name": "Image Name in DB",
-		"Distribution": "rhel-8",
-		"OutputTypes": ["rhel-edge-installer"],
-		"Commit": {
-			"Arch": "x86_64",
-			"Packages" : [ { "name" : "vim"  } ]
+	jsonImage := &models.Image{
+		Name:         "Image Name in DB",
+		Distribution: "rhel-8",
+		OutputTypes:  []string{"rhel-edge-installer"},
+		Commit: &models.Commit{
+			Arch: "x86_64",
+			InstalledPackages: []models.InstalledPackage{
+				{Name: "vim"},
+			},
 		},
-		"Installer": {
-			"Username": "root",
-			"Sshkey": "ssh-rsa d9:f158:00:abcd"
-		}
-	}`)
-	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonStr))
+		Installer: &models.Installer{
+			Username: "root",
+			SSHKey:   "ssh-rsa d9:f158:00:abcd",
+		},
+	}
+	var buf bytes.Buffer
+	err := json.NewEncoder(&buf).Encode(jsonImage)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	req, err := http.NewRequest("POST", "/", &buf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -437,21 +457,27 @@ func TestPostCheckImageNameAlreadyExist(t *testing.T) {
 }
 
 func TestPostCheckImageNameDoesNotExist(t *testing.T) {
-
-	var jsonStr = []byte(`{
-		"Name": "Image Name not in DB",
-		"Distribution": "rhel-8",
-		"OutputTypes": ["rhel-edge-installer"],
-		"Commit": {
-			"Arch": "x86_64",
-			"Packages" : [ { "name" : "vim"  } ]
+	jsonImage := &models.Image{
+		Name:         "Image Name not in DB",
+		Distribution: "rhel-8",
+		OutputTypes:  []string{"rhel-edge-installer"},
+		Commit: &models.Commit{
+			Arch: "x86_64",
+			InstalledPackages: []models.InstalledPackage{
+				{Name: "vim"},
+			},
 		},
-		"Installer": {
-			"Username": "root",
-			"Sshkey": "ssh-rsa d9:f158:00:abcd"
-		}
-	}`)
-	req, err := http.NewRequest("POST", "/checkImageName", bytes.NewBuffer(jsonStr))
+		Installer: &models.Installer{
+			Username: "root",
+			SSHKey:   "ssh-rsa d9:f158:00:abcd",
+		},
+	}
+	var buf bytes.Buffer
+	err := json.NewEncoder(&buf).Encode(jsonImage)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	req, err := http.NewRequest("POST", "/checkImageName", &buf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -475,7 +501,9 @@ func TestPostCheckImageNameDoesNotExist(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 	var ir bool
-	json.Unmarshal(respBody, &ir)
+	if err := json.Unmarshal(respBody, &ir); err != nil {
+		log.Error("Error while trying to unmarshal ", &ir)
+	}
 	if ir != false {
 		t.Errorf("fail to validate name should exists")
 	}

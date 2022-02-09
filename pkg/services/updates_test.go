@@ -11,6 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -23,7 +24,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 	Describe("creation of the service", func() {
 		Context("returns a correct instance", func() {
 			ctx := context.Background()
-			s := services.NewUpdateService(ctx)
+			s := services.NewUpdateService(ctx, log.NewEntry(log.StandardLogger()))
 			It("not to be nil", func() {
 				Expect(s).ToNot(BeNil())
 			})
@@ -32,7 +33,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 	Describe("update retrieval", func() {
 		var updateService services.UpdateServiceInterface
 		BeforeEach(func() {
-			updateService = services.NewUpdateService(context.Background())
+			updateService = services.NewUpdateService(context.Background(), log.NewEntry(log.StandardLogger()))
 		})
 		Context("by device", func() {
 			uuid := faker.UUIDHyphenated()
@@ -91,7 +92,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			defer ctrl.Finish()
 			mockRepoBuilder = mock_services.NewMockRepoBuilderInterface(ctrl)
 			updateService = &services.UpdateService{
-				Context:       context.Background(),
+				Service:       services.NewService(context.Background(), log.WithField("service", "update")),
 				RepoBuilder:   mockRepoBuilder,
 				WaitForReboot: 0,
 			}
@@ -124,14 +125,21 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		BeforeEach(func() {
 			updateService = &services.UpdateService{
-				Context: context.Background(),
+				Service: services.NewService(context.Background(), log.WithField("service", "update")),
 			}
 
 		})
 		Context("when record is found and status is success", func() {
+			uuid := faker.UUIDHyphenated()
+			device := models.Device{
+				UUID: uuid,
+			}
+			db.DB.Create(&device)
+			fmt.Printf("TESTETETETETETETETE :::::: %v\n", device.ID)
 			d := &models.DispatchRecord{
 				PlaybookDispatcherID: faker.UUIDHyphenated(),
 				Status:               models.UpdateStatusBuilding,
+				DeviceID:             device.ID,
 			}
 			db.DB.Create(d)
 			u := &models.UpdateTransaction{
@@ -189,9 +197,15 @@ var _ = Describe("UpdateService Basic functions", func() {
 			Expect(err).To(HaveOccurred())
 		})
 		It("should give error when dispatch record is not found", func() {
+			uuid := faker.UUIDHyphenated()
+			device := models.Device{
+				UUID: uuid,
+			}
+			db.DB.Create(&device)
 			d := &models.DispatchRecord{
 				PlaybookDispatcherID: faker.UUIDHyphenated(),
 				Status:               models.UpdateStatusBuilding,
+				DeviceID:             device.ID,
 			}
 			db.DB.Create(d)
 			event := &services.PlaybookDispatcherEvent{
@@ -209,7 +223,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		Context("when upload works", func() {
 			It("to build the template properly", func() {
 				cfg := config.Get()
-				cfg.TemplatesPath = "./template_playbook/"
+				cfg.TemplatesPath = "./../../templates/"
 				t := services.TemplateRemoteInfo{
 					UpdateTransactionID: 1000,
 					RemoteName:          "remote-name",
@@ -218,19 +232,18 @@ var _ = Describe("UpdateService Basic functions", func() {
 				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", account, t.UpdateTransactionID)
 				tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
 
-				defer GinkgoRecover()
 				ctrl := gomock.NewController(GinkgoT())
 				defer ctrl.Finish()
 				mockFilesService := mock_services.NewMockFilesService(ctrl)
 				updateService := &services.UpdateService{
-					Context:      context.Background(),
+					Service:      services.NewService(context.Background(), log.WithField("service", "update")),
 					FilesService: mockFilesService,
 				}
 				mockUploader := mock_services.NewMockUploader(ctrl)
 				mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", account, fname)).Do(func(x, y string) {
 					actual, err := ioutil.ReadFile(x)
 					Expect(err).ToNot(HaveOccurred())
-					expected, err := ioutil.ReadFile("./template_playbook/template_playbook_dispatcher_ostree_upgrade_payload.test.yml")
+					expected, err := ioutil.ReadFile("./../../templates/template_playbook_dispatcher_ostree_upgrade_payload.test.yml")
 					Expect(err).ToNot(HaveOccurred())
 					Expect(string(actual)).To(BeEquivalentTo(string(expected)))
 				}).Return("url", nil)
@@ -251,7 +264,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		BeforeEach(func() {
 			updateService = &services.UpdateService{
-				Context: context.Background(),
+				Service: services.NewService(context.Background(), log.WithField("service", "update")),
 			}
 
 		})

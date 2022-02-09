@@ -40,14 +40,16 @@ var _ = Describe("Ownershipvoucher", func() {
 		http.HandleFunc(fmt.Sprintf("/management/%s/ownership_voucher", config.Get().FDO.APIVersion), func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusCreated)
 			json.NewEncoder(w).Encode(models.OwnershipVoucherData{
-				ProtocolVersion: 100,
+				ProtocolVersion: 101,
 				GUID:            "12345678-1234-1234-1234-123456789012",
 				DeviceName:      "test-device",
 			})
 		})
 		http.HandleFunc(fmt.Sprintf("/management/%s/ownership_voucher/delete", config.Get().FDO.APIVersion), func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			json.NewEncoder(w).Encode(map[string]string{"op": "delete", "status": "OK"})
+			if err := json.NewEncoder(w).Encode(map[string]string{"op": "delete", "status": "OK"}); err != nil {
+				log.Error("Error while trying to encode ", map[string]string{"op": "delete", "status": "OK"})
+			}
 		})
 		go fdoMockServer.Serve(listener)
 	})
@@ -68,9 +70,9 @@ var _ = Describe("Ownershipvoucher", func() {
 		It("should parse without error", func() {
 			data, err := ovs.ParseOwnershipVouchers(ovb)
 			Expect(err).To(BeNil())
-			Expect(data[0].ProtocolVersion).To(Equal(uint32(100)))
-			Expect(data[0].DeviceName).To(Equal("testdevice1"))
-			Expect(data[0].GUID).To(Equal("214d64be-3227-92da-0333-b1e1fe832f24"))
+			Expect(data[0].ProtocolVersion).To(Equal(uint32(101)))
+			Expect(data[0].DeviceName).To(Equal("testdevice"))
+			Expect(data[0].GUID).To(Equal("18907279-a41d-049a-ae3c-4da4ce61c14b"))
 		})
 		It("should parse with error", func() {
 			badOV := ovb[1:]

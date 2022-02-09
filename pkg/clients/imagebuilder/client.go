@@ -145,7 +145,9 @@ type InstalledPackage struct {
 
 func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 	payloadBuf := new(bytes.Buffer)
-	json.NewEncoder(payloadBuf).Encode(composeReq)
+	if err := json.NewEncoder(payloadBuf).Encode(composeReq); err != nil {
+		return nil, err
+	}
 	cfg := config.Get()
 	url := fmt.Sprintf("%s/api/image-builder/v1/compose", cfg.ImageBuilderConfig.URL)
 	c.log.WithFields(log.Fields{
@@ -177,23 +179,21 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 		"responseBody": string(respBody),
 		"error":        err,
 	}).Info("Image Builder Compose Response")
-
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusCreated {
 		return nil, fmt.Errorf("image is not being created by image builder")
 	}
 
-	if err != nil {
-		c.log.Error(err)
-		return nil, err
-	}
 	cr := &ComposeResult{}
 	err = json.Unmarshal(respBody, &cr)
 	if err != nil {
-		c.log.Error(err)
+		c.log.WithField("error", err.Error()).Error("Error unmarshalling response JSON")
 		return nil, err
 	}
 
-	defer res.Body.Close()
 	return cr, nil
 }
 
@@ -234,6 +234,7 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 
 	cr, err := c.compose(req)
 	if err != nil {
+		c.log.WithField("error", err.Error()).Error("Error sending request to image builder")
 		return nil, err
 	}
 	image.Commit.ComposeJobID = cr.ID
@@ -269,26 +270,21 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 	if err != nil {
 		image.Installer.Status = models.ImageStatusError
 		image.Status = models.ImageStatusError
-		tx := db.DB.Save(&image)
-		if tx.Error != nil {
-			log.Error(tx.Error)
-		}
-		tx = db.DB.Save(&image.Installer)
-		if tx.Error != nil {
-			log.Error(tx.Error)
-		}
-		return nil, err
+	} else {
+		image.Installer.ComposeJobID = cr.ID
+		image.Installer.Status = models.ImageStatusBuilding
+		image.Status = models.ImageStatusBuilding
 	}
-	image.Installer.ComposeJobID = cr.ID
-	image.Installer.Status = models.ImageStatusBuilding
-	image.Status = models.ImageStatusBuilding
 	tx := db.DB.Save(&image)
 	if tx.Error != nil {
-		log.Error(tx.Error)
+		c.log.WithField("error", tx.Error.Error()).Error("Error saving image")
 	}
 	tx = db.DB.Save(&image.Installer)
 	if tx.Error != nil {
-		log.Error(tx.Error)
+		c.log.WithField("error", tx.Error.Error()).Error("Error saving installer")
+	}
+	if err != nil {
+		return nil, err
 	}
 	return image, nil
 }
@@ -314,25 +310,25 @@ func (c *Client) getComposeStatus(jobID string) (*ComposeStatus, error) {
 		}).Error("Image Builder ComposeStatus Request Error")
 		return nil, err
 	}
-	respBody, err := ioutil.ReadAll(res.Body)
+	body, err := ioutil.ReadAll(res.Body)
 	c.log.WithFields(log.Fields{
 		"statusCode":   res.StatusCode,
-		"responseBody": string(respBody),
+		"responseBody": string(body),
 		"error":        err,
 	}).Info("Image Builder ComposeStatus Response")
 	if err != nil {
 		return nil, err
 	}
+	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("request for status was not successful")
 	}
 
-	err = json.Unmarshal(respBody, &cs)
+	err = json.Unmarshal(body, &cs)
 	if err != nil {
 		return nil, err
 	}
 
-	defer res.Body.Close()
 	return cs, nil
 }
 
@@ -360,7 +356,7 @@ func (c *Client) GetInstallerStatus(image *models.Image) (*models.Image, error) 
 	if err != nil {
 		return nil, err
 	}
-	c.log.Info(fmt.Sprintf("Got installer status %s", cs.ImageStatus.Status))
+	c.log.WithField("status", cs.ImageStatus.Status).Info("Got installer status")
 	if cs.ImageStatus.Status == imageStatusSuccess {
 		image.Installer.Status = models.ImageStatusSuccess
 		image.Installer.ImageBuildISOURL = cs.ImageStatus.UploadStatus.Options.URL
@@ -412,7 +408,10 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	}
 
 	var metadata Metadata
-	json.Unmarshal(respBody, &metadata)
+	if err := json.Unmarshal(respBody, &metadata); err != nil {
+		c.log.Error("Error while trying to unmarshal ", metadata)
+		return nil, err
+	}
 	for n := range metadata.InstalledPackages {
 		pkg := models.InstalledPackage{
 			Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,
