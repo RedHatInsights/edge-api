@@ -34,6 +34,6 @@ func main() {
 	db.InitDB()
 
 	log.Info("Setting default account to existent devices...")
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec("UPDATE Devices set account = '0000000'")
+	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec("UPDATE Devices set account = '6089719' WHERE account IS NULL OR account = ''")
 	log.Info("Update Completed")
 }
