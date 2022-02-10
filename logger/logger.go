@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/redhatinsights/edge-api/config"
 	lc "github.com/redhatinsights/platform-go-middlewares/logging/cloudwatch"
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -71,7 +70,7 @@ func FlushLogger() {
 
 // LogErrorandPanic Records the error, flushes the buffer, then panics the container
 func LogErrorandPanic(msg string, err error) {
-	log.WithFields(logrus.Fields{"error": err}).Error(msg)
+	log.WithFields(log.Fields{"error": err}).Error(msg)
 	FlushLogger()
 	panic(err)
 }
