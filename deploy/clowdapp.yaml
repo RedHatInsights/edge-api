@@ -89,7 +89,7 @@ objects:
             cpu: 500m
             memory: 512Mi
     - name: kafkadev
-      minReplicas: 0
+      minReplicas: 1
       podSpec:
         image: ${IMAGE}:${IMAGE_TAG}
         command:
