@@ -41,7 +41,7 @@ func InitLogger() {
 		awsconf := aws.NewConfig().WithRegion(cfg.Logging.Region).WithCredentials(cred)
 		hook, err := lc.NewBatchingHook(cfg.Logging.LogGroup, cfg.Hostname, awsconf, 10*time.Second)
 		if err != nil {
-			log.Info(err)
+			log.WithFields(log.Fields{"error": err.Error()}).Error("Error creating AWS hook")
 		}
 		log.AddHook(hook)
 		log.SetFormatter(&log.JSONFormatter{
@@ -64,7 +64,10 @@ func InitLogger() {
 // FlushLogger Flush batched logging messages
 func FlushLogger() {
 	if hook != nil {
-		hook.Flush()
+		err := hook.Flush()
+		if err != nil {
+			log.WithFields(log.Fields{"error": err.Error()}).Error("Error flushing batched logging messages")
+		}
 	}
 }
 
