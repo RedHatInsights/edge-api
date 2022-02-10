@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/logger"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -91,7 +92,7 @@ func newS3Uploader(log *log.Entry) *S3Uploader {
 			Credentials: credentials.NewStaticCredentials(cfg.AccessKey, cfg.SecretKey, ""),
 		})
 		if err != nil {
-			LogErrorandPanic(err)
+			logger.LogErrorandPanic("Fatal error creating HTTP session", err)
 		}
 	}
 	client := s3.New(sess)
