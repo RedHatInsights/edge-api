@@ -73,8 +73,8 @@ type ImageService struct {
 	RepoService  RepoServiceInterface
 }
 
-// ValidateAllImageReposAreFromAccount validates the account for Third Party Repositories
-func ValidateAllImageReposAreFromAccount(account string, repos []models.ThirdPartyRepo) error {
+// ValidateAlIImageReposAreFromAccount validates the account for Third Party Repositories
+func ValidateAlIImageReposAreFromAccount(account string, repos []models.ThirdPartyRepo) error {
 
 	if account == "" {
 		return errors.NewBadRequest("repository information is not valid")
@@ -154,7 +154,7 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 			return tx.Error
 		}
 	}
-	if err := ValidateAllImageReposAreFromAccount(account, image.ThirdPartyRepositories); err != nil {
+	if err := ValidateAlIImageReposAreFromAccount(account, image.ThirdPartyRepositories); err != nil {
 		return err
 	}
 	tx := db.DB.Create(&image.Commit)
@@ -244,7 +244,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 			return tx.Error
 		}
 	}
-	if err := ValidateAllImageReposAreFromAccount(image.Account, image.ThirdPartyRepositories); err != nil {
+	if err := ValidateAlIImageReposAreFromAccount(image.Account, image.ThirdPartyRepositories); err != nil {
 		return err
 	}
 	tx := db.DB.Create(&image.Commit)
