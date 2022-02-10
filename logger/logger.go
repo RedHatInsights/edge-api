@@ -12,11 +12,15 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/redhatinsights/edge-api/config"
 	lc "github.com/redhatinsights/platform-go-middlewares/logging/cloudwatch"
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
 // Log is an instance of the global logrus.Logger
 var logLevel log.Level
+
+// hook is an instance of cloudwatch.hook
+var hook *lc.Hook
 
 // InitLogger initializes the API logger
 func InitLogger() {
@@ -56,4 +60,18 @@ func InitLogger() {
 
 	log.SetOutput(os.Stdout)
 	log.SetLevel(logLevel)
+}
+
+// Flush batched logging messages
+func FlushLogger() {
+	if hook != nil {
+		hook.Flush()
+	}
+}
+
+// This function records the error, flushes the buffer, then panics the container
+func LogErrorandPanic(msg string, err error) {
+	log.WithFields(logrus.Fields{"error": err}).Error(msg)
+	FlushLogger()
+	panic(err)
 }

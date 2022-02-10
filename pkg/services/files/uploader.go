@@ -91,7 +91,7 @@ func newS3Uploader(log *log.Entry) *S3Uploader {
 			Credentials: credentials.NewStaticCredentials(cfg.AccessKey, cfg.SecretKey, ""),
 		})
 		if err != nil {
-			panic(err)
+			LogErrorandPanic(err)
 		}
 	}
 	client := s3.New(sess)
