@@ -26,7 +26,7 @@ require (
 	github.com/prometheus/client_golang v1.12.1
 	github.com/redhatinsights/app-common-go v1.6.0
 	github.com/redhatinsights/platform-go-middlewares v0.10.0
-	github.com/segmentio/kafka-go v0.4.27
+	github.com/segmentio/kafka-go v0.4.28
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.10.1
 	go.mongodb.org/mongo-driver v1.8.1 // indirect
