@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/errors"
 
 	"github.com/redhatinsights/edge-api/pkg/clients/fdo"
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -176,6 +177,81 @@ var _ = Describe("Client", func() {
 				Expect(j).ToNot(BeNil())
 				Expect(j.(map[string]interface{})["op"]).To(Equal("delete"))
 				Expect(j.(map[string]interface{})["status"]).To(Equal("OK"))
+			})
+		})
+	})
+
+	Describe("API errors handling", func() {
+		client := fdo.InitClient(ctx, log.NewEntry(testLogger))
+		ov, _ := ioutil.ReadFile("/testdevice1.ov")
+		Context("upload ov - bad request", func() {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusBadRequest)
+				json.NewEncoder(w).Encode(errors.NewBadRequest("bad request"))
+			}))
+			defer ts.Close()
+			config.Get().FDO.URL = ts.URL
+			_, err := client.BatchUpload(ov, 1)
+			It("should fail upload ov", func() {
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(ContainSubstring("bad request"))
+			})
+		})
+		Context("delete ov - bad request", func() {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusBadRequest)
+				json.NewEncoder(w).Encode(errors.NewBadRequest("bad request"))
+			}))
+			defer ts.Close()
+			config.Get().FDO.URL = ts.URL
+			_, err := client.BatchDelete([]string{"a9bcd683-a7e4-46ed-80b2-6e55e8610d04", "1ea69fcb-b784-4d0f-ab4d-94589c6cc7ad"})
+			It("should fail delete ov", func() {
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(ContainSubstring("bad request"))
+			})
+		})
+		Context("upload ov - internal server error", func() {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(errors.NewInternalServerError())
+			}))
+			defer ts.Close()
+			config.Get().FDO.URL = ts.URL
+			_, err := client.BatchUpload(ov, 1)
+			It("should fail upload ov", func() {
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("unknown error with status code: " + strconv.Itoa(http.StatusInternalServerError)))
+			})
+		})
+		Context("delete ov - internal server error", func() {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(errors.NewInternalServerError())
+			}))
+			defer ts.Close()
+			config.Get().FDO.URL = ts.URL
+			_, err := client.BatchDelete([]string{"a9bcd683-a7e4-46ed-80b2-6e55e8610d04", "1ea69fcb-b784-4d0f-ab4d-94589c6cc7ad"})
+			It("should fail delete ov", func() {
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("unknown error with status code: " + strconv.Itoa(http.StatusInternalServerError)))
+			})
+		})
+		Context("upload ov - no FDO server available", func() {
+			_, err := client.BatchUpload(ov, 1)
+			It("should fail upload ov", func() {
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(ContainSubstring("connection refused"))
+			})
+		})
+		Context("delete ov - no FDO server available", func() {
+			_, err := client.BatchDelete([]string{"a9bcd683-a7e4-46ed-80b2-6e55e8610d04", "1ea69fcb-b784-4d0f-ab4d-94589c6cc7ad"})
+			It("should fail delete ov", func() {
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(ContainSubstring("connection refused"))
 			})
 		})
 	})
