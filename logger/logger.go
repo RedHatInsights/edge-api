@@ -62,14 +62,14 @@ func InitLogger() {
 	log.SetLevel(logLevel)
 }
 
-// Flush batched logging messages
+// FlushLogger Flush batched logging messages
 func FlushLogger() {
 	if hook != nil {
 		hook.Flush()
 	}
 }
 
-// This function records the error, flushes the buffer, then panics the container
+// LogErrorandPanic Records the error, flushes the buffer, then panics the container
 func LogErrorandPanic(msg string, err error) {
 	log.WithFields(logrus.Fields{"error": err}).Error(msg)
 	FlushLogger()
