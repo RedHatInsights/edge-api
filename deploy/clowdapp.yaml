@@ -31,7 +31,7 @@ objects:
           - -c
           - edge-api-migrate
           inheritEnv: true
-         - name: run-migrations
+        - name: run-update
           command:
           - bash
           - -c
