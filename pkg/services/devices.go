@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	version "github.com/knqyf263/go-rpm-version"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
@@ -302,15 +303,18 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 	s.log.Info("Adding Edge Device information...")
 	for i, device := range inventoryDevices.Result {
 		dd := models.DeviceDetails{}
+		fmt.Printf("### Device Details: ### %v\n", device.Account)
 		dd.Device = models.EdgeDevice{
 			Device: &models.Device{
 				UUID:        device.ID,
 				RHCClientID: device.Ostree.RHCClientID,
+				Account:     device.Account,
 			},
+			Account:    device.Account,
 			DeviceName: device.DisplayName,
 			LastSeen:   device.LastSeen,
 		}
-
+		fmt.Printf("### Device Details: ### %v\n", dd.Device)
 		lastDeployment := s.GetDeviceLastDeployment(device)
 		if lastDeployment != nil {
 			dd.Device.Booted = lastDeployment.Booted
