@@ -306,11 +306,12 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 			Device: &models.Device{
 				UUID:        device.ID,
 				RHCClientID: device.Ostree.RHCClientID,
+				Account:     device.Account,
 			},
+			Account:    device.Account,
 			DeviceName: device.DisplayName,
 			LastSeen:   device.LastSeen,
 		}
-
 		lastDeployment := s.GetDeviceLastDeployment(device)
 		if lastDeployment != nil {
 			dd.Device.Booted = lastDeployment.Booted
