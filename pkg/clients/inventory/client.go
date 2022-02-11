@@ -48,6 +48,7 @@ type Device struct {
 	LastSeen        string        `json:"updated"`
 	UpdateAvailable bool          `json:"update_available"`
 	Ostree          SystemProfile `json:"system_profile"`
+	Account         string        `json:"account"`
 }
 
 // SystemProfile represents the struct of a SystemProfile on Inventory API
