@@ -8,9 +8,11 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
+	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	log "github.com/sirupsen/logrus"
 )
@@ -18,6 +20,7 @@ import (
 // MakeDevicesRouter adds support for operations on update
 func MakeDevicesRouter(sub chi.Router) {
 	sub.Get("/", GetDevices)
+	sub.Get("/db", GetDBDevices) //tmp validation
 	sub.Route("/{DeviceUUID}", func(r chi.Router) {
 		r.Use(DeviceCtx)
 		r.Get("/", GetDevice)
@@ -224,4 +227,30 @@ func GetDevices(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(err.GetStatus())
 		_ = json.NewEncoder(w).Encode(err)
 	}
+}
+
+// GetDBDevices return the device data on EdgeAPI DB
+func GetDBDevices(w http.ResponseWriter, r *http.Request) {
+	services := dependencies.ServicesFromContext(r.Context())
+	var devices *[]models.Device
+	pagination := common.GetPagination(r)
+	account, err := common.GetAccount(r)
+	if err != nil {
+		services.Log.WithField("error", err).Debug("Account not found")
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.GetStatus())
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
+		return
+	}
+	db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&devices)
+	if err := json.NewEncoder(w).Encode(devices); err != nil {
+		services := dependencies.ServicesFromContext(r.Context())
+		services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.GetStatus())
+		_ = json.NewEncoder(w).Encode(err)
+	}
+
 }
