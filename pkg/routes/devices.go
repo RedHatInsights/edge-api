@@ -229,6 +229,7 @@ func GetDevices(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetDBDevices return the device data on EdgeAPI DB
 func GetDBDevices(w http.ResponseWriter, r *http.Request) {
 	services := dependencies.ServicesFromContext(r.Context())
 	var devices *[]models.Device
