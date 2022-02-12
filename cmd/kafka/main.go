@@ -18,7 +18,7 @@ type RecordValue struct {
 
 func main() {
 	if clowder.IsClowderEnabled() {
-		fmt.Printf("Public Port: %d", clowder.LoadedConfig.PublicPort)
+		fmt.Printf("Public Port: %d\n", clowder.LoadedConfig.PublicPort)
 
 		brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
 		for i, b := range clowder.LoadedConfig.Kafka.Brokers {
@@ -34,7 +34,7 @@ func main() {
 
 		// Create Producer instance
 		p, err := kafka.NewProducer(&kafka.ConfigMap{
-			"bootstrap.servers": brokers})
+			"bootstrap.servers": brokers[0]})
 		if err != nil {
 			fmt.Printf("Failed to create producer: %s", err)
 			os.Exit(1)
