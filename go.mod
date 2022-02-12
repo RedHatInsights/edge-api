@@ -5,6 +5,7 @@ require (
 	github.com/aws/aws-sdk-go v1.42.50
 	github.com/bxcodec/faker/v3 v3.7.0
 	github.com/cavaliercoder/grab v2.0.0+incompatible
+	github.com/confluentinc/confluent-kafka-go v1.8.2 // indirect
 	github.com/fedora-iot/fido-device-onboard-rs/libfdo-data-go v0.0.0-20211210154920-5c241beb5c4e
 	github.com/getkin/kin-openapi v0.89.0
 	github.com/ghodss/yaml v1.0.0
@@ -33,6 +34,7 @@ require (
 	go.mongodb.org/mongo-driver v1.8.1 // indirect
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
+	gopkg.in/confluentinc/confluent-kafka-go.v1 v1.8.2 // indirect
 	gorm.io/driver/postgres v1.2.3
 	gorm.io/driver/sqlite v1.2.6
 	gorm.io/gorm v1.22.5
