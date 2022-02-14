@@ -285,8 +285,7 @@ func DeleteDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 		return
 	}
-	w.WriteHeader(http.StatusOK)
-	respondWithJSONBody(w, ctxServices.Log, map[string]interface{}{"message": "Device group deleted", "device_group_id": deviceGroup.ID})
+	respondWithJSONBody(w, ctxServices.Log, map[string]interface{}{"message": "Device group deleted"})
 }
 
 // createDeviceRequest validates request to create Device Group.
