@@ -313,14 +313,14 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 	if res := db.DB.Where("account = ? AND uuid IN ?", account, devicesUUIDs).Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
 	}
-	mapDdevicesUUIDToID := make(map[string]uint, len(devicesUUIDs))
+	mapDevicesUUIDToID := make(map[string]uint, len(devicesUUIDs))
 	for _, device := range storedDevices {
-		mapDdevicesUUIDToID[device.UUID] = device.ID
+		mapDevicesUUIDToID[device.UUID] = device.ID
 	}
 
 	s.log.Info("Adding Edge Device information...")
 	for i, device := range inventoryDevices.Result {
-		dbDeviceID, ok := mapDdevicesUUIDToID[device.ID]
+		dbDeviceID, ok := mapDevicesUUIDToID[device.ID]
 		if !ok {
 			dbDeviceID = 0
 		}
