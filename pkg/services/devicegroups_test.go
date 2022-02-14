@@ -69,13 +69,8 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 		}
 		var deviceGroupDB models.DeviceGroup
 		It("should create a DeviceGroup", func() {
-			for _, device := range devices {
-				err := db.DB.Create(&device).Error
-				Expect(err).To(BeNil())
-			}
-			dg, err := deviceGroupsService.CreateDeviceGroup(deviceGroup)
-			Expect(err).To(BeNil())
-			Expect(dg).NotTo(BeNil())
+			dbResult := db.DB.Create(&deviceGroup).Error
+			Expect(dbResult).To(BeNil())
 		})
 		It("should get the DeviceGroup ID", func() {
 			dbResult := db.DB.Where("name = ?", deviceGroupName).First(&deviceGroupDB)
