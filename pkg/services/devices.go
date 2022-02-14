@@ -8,6 +8,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm/clause"
 )
@@ -299,11 +300,34 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 	if inventoryDevices.Count == 0 {
 		return list, nil
 	}
+	// Build a map from the received devices UUIDs and the already saved db devices IDs
+	account, err := common.GetAccountFromContext(s.ctx)
+	if err != nil {
+		return nil, err
+	}
+	devicesUUIDs := make([]string, 0, len(inventoryDevices.Result))
+	for _, device := range inventoryDevices.Result {
+		devicesUUIDs = append(devicesUUIDs, device.ID)
+	}
+	var storedDevices []models.Device
+	if res := db.DB.Where("account = ? AND uuid IN ?", account, devicesUUIDs).Find(&storedDevices); res.Error != nil {
+		return nil, res.Error
+	}
+	mapDevicesUUIDToID := make(map[string]uint, len(devicesUUIDs))
+	for _, device := range storedDevices {
+		mapDevicesUUIDToID[device.UUID] = device.ID
+	}
+
 	s.log.Info("Adding Edge Device information...")
 	for i, device := range inventoryDevices.Result {
+		dbDeviceID, ok := mapDevicesUUIDToID[device.ID]
+		if !ok {
+			dbDeviceID = 0
+		}
 		dd := models.DeviceDetails{}
 		dd.Device = models.EdgeDevice{
 			Device: &models.Device{
+				Model:       models.Model{ID: dbDeviceID},
 				UUID:        device.ID,
 				RHCClientID: device.Ostree.RHCClientID,
 				Account:     device.Account,
