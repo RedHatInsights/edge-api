@@ -79,17 +79,17 @@ func (s *DeviceGroupsService) GetDeviceGroupsCount(account string, tx *gorm.DB) 
 
 // DeleteDeviceGroupByID deletes the device group by ID from the database
 func (s *DeviceGroupsService) DeleteDeviceGroupByID(ID string) error {
-	s.log = s.log.WithField("device_group_id", ID)
-	s.log.Info("Deleting device group")
+	sLog := s.log.WithField("device_group_id", ID)
+	sLog.Info("Deleting device group")
 	deviceGroup, err := s.GetDeviceGroupByID(ID) // get the device group
 	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Error getting device group")
+		sLog.WithField("error", err.Error()).Error("Error getting device group")
 		return err
 	}
 	// delete the device group
 	result := db.DB.Delete(&deviceGroup)
 	if result.Error != nil {
-		s.log.WithField("error", result.Error.Error()).Error("Error deleting device group")
+		sLog.WithField("error", result.Error.Error()).Error("Error deleting device group")
 		return result.Error
 	}
 	return nil

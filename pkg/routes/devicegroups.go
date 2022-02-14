@@ -277,11 +277,11 @@ func DeleteDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
 	if deviceGroup == nil {
 		return // error handled by getContextDeviceGroup already
 	}
-	ctxServices.Log = ctxServices.Log.WithField("device_group_id", deviceGroup.ID)
-	ctxServices.Log.Info("Deleting a device group")
+	ctxLog := ctxServices.Log.WithField("device_group_id", deviceGroup.ID)
+	ctxLog.Info("Deleting a device group")
 	err := ctxServices.DeviceGroupsService.DeleteDeviceGroupByID(fmt.Sprint(deviceGroup.ID))
 	if err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Error deleting device group")
+		ctxLog.WithField("error", err.Error()).Error("Error deleting device group")
 		var apiError errors.APIError
 		switch err.(type) {
 		case *services.AccountNotSet:
@@ -291,10 +291,10 @@ func DeleteDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
 		default:
 			apiError = errors.NewInternalServerError()
 		}
-		respondWithAPIError(w, ctxServices.Log, apiError)
+		respondWithAPIError(w, ctxLog, apiError)
 		return
 	}
-	respondWithJSONBody(w, ctxServices.Log, map[string]interface{}{"message": "Device group deleted"})
+	respondWithJSONBody(w, ctxLog, map[string]interface{}{"message": "Device group deleted"})
 }
 
 // createDeviceRequest validates request to create Device Group.
