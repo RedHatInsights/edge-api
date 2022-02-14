@@ -1,156 +1,194 @@
-package services
+package services_test
 
 import (
 	"context"
-	"fmt"
+	"strconv"
+
+	"github.com/bxcodec/faker/v3"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	"github.com/redhatinsights/edge-api/pkg/services"
+
 	log "github.com/sirupsen/logrus"
-	"strconv"
-	"testing"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
 )
 
-func TestCreateUpdateDeviceGroupNameDuplicate(t *testing.T) {
-	ctx := context.Background()
-	deviceGroupsService := NewDeviceGroupsService(ctx, log.NewEntry(log.StandardLogger()))
-	account, err := common.GetAccountFromContext(ctx)
-	if err != nil {
-		t.Fatalf("Failed to get the account: %q", err)
-	}
+var _ = Describe("DeviceGroupsService basic functions", func() {
+	var (
+		ctx                 context.Context
+		deviceGroupsService services.DeviceGroupsServiceInterface
+	)
+	BeforeEach(func() {
+		ctx = context.Background()
+		deviceGroupsService = services.NewDeviceGroupsService(ctx, log.NewEntry(log.StandardLogger()))
+	})
 
-	expectedError := "device group already exists"
-	deviceGroupName := "test_group_1"
-	deviceGroup, err := deviceGroupsService.CreateDeviceGroup(&models.DeviceGroup{Name: deviceGroupName, Account: account, Type: models.DeviceGroupTypeDefault})
-	if err != nil {
-		t.Fatalf("Failed to create DeviceGroup: %q", err)
-	}
+	Context("creation of duplicated DeviceGroup name", func() {
+		account, err := common.GetAccountFromContext(ctx)
+		It("should return account from conext without error", func() {
+			Expect(err).To(BeNil())
+		})
+		It("should fail to create a DeviceGroup with duplicated name", func() {
+			deviceGroupName := faker.Name()
+			deviceGroup, err := deviceGroupsService.CreateDeviceGroup(&models.DeviceGroup{Name: deviceGroupName, Account: account, Type: models.DeviceGroupTypeDefault})
+			Expect(err).To(BeNil())
+			Expect(deviceGroup).NotTo(BeNil())
 
-	_, err = deviceGroupsService.CreateDeviceGroup(&models.DeviceGroup{Name: deviceGroupName, Account: account, Type: models.DeviceGroupTypeDefault})
-	if err == nil {
-		t.Errorf("Expected add device group to fail and error not nil")
-	} else if err.Error() != expectedError {
-		t.Errorf(fmt.Sprintf("Expected error : %s  , but received %s", expectedError, err.Error()))
-	}
+			_, err = deviceGroupsService.CreateDeviceGroup(&models.DeviceGroup{Name: deviceGroupName, Account: account, Type: models.DeviceGroupTypeDefault})
+			Expect(err).NotTo(BeNil())
+			Expect(err.Error()).To(Equal("device group already exists"))
+		})
+	})
 
-	err = deviceGroupsService.UpdateDeviceGroup(&models.DeviceGroup{Name: deviceGroupName}, account, strconv.FormatUint(uint64(deviceGroup.ID), 10))
-	if err == nil {
-		t.Errorf("Expected update device group to fail and error not nil")
-	} else if err.Error() != expectedError {
-		t.Errorf(fmt.Sprintf("Expected error : %s  , but received %s", expectedError, err.Error()))
-	}
-}
-
-func TestAddDeviceGroupDevices(t *testing.T) {
-	deviceGroupsService := NewDeviceGroupsService(context.Background(), log.NewEntry(log.StandardLogger()))
-	account1 := "1111111"
-	account2 := "2222222"
-
-	deviceGroups := []models.DeviceGroup{
-		{Name: "test_group_1", Account: account1, Type: models.DeviceGroupTypeDefault},
-		{Name: "test_group_2", Account: account2, Type: models.DeviceGroupTypeDefault},
-	}
-
-	devices := []models.Device{
-		{Account: account1, UUID: "1"},
-		{Account: account1, UUID: "2"},
-		{Account: account2, UUID: "3"},
-	}
-
-	for _, deviceGroup := range deviceGroups {
-		if res := db.DB.Create(&deviceGroup); res.Error != nil {
-			t.Errorf("Failed to create DeviceGroup: %q", res.Error)
+	Context("deletion of DeviceGroup", func() {
+		account, err := common.GetAccountFromContext(ctx)
+		It("should return account from conext without error", func() {
+			Expect(err).To(BeNil())
+		})
+		deviceGroupName := faker.Name()
+		devices := []models.Device{
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+			},
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+			},
 		}
-	}
-	for _, device := range devices {
-		if res := db.DB.Create(&device); res.Error != nil {
-			t.Errorf("Failed to create Device: %q", res.Error)
+		deviceGroup := &models.DeviceGroup{
+			Name:    deviceGroupName,
+			Type:    models.DeviceGroupTypeDefault,
+			Account: account,
+			Devices: devices,
 		}
-	}
-
-	var account1DeviceGroup models.DeviceGroup
-	if res := db.DB.Where(models.DeviceGroup{Account: account1}).First(&account1DeviceGroup); res.Error != nil {
-		t.Errorf("Failed to get device group: %q", res.Error)
-	}
-	var account1Devices []models.Device
-	if res := db.DB.Where(models.Device{Account: account1}).Find(&account1Devices); res.Error != nil {
-		t.Errorf("Failed to get Devices: %q", res.Error)
-	}
-
-	if len(account1Devices) == 0 {
-		t.Errorf("account 2 Devices was not found")
-	}
-
-	addedDevices, err := deviceGroupsService.AddDeviceGroupDevices(account1, account1DeviceGroup.ID, account1Devices)
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-	if addedDevices == nil {
-		t.Fatal("no device added")
-	}
-
-	if len(*addedDevices) != len(account1Devices) {
-		t.Errorf(fmt.Sprintf("expected the The number of added devices to be: %d but found %d", len(account1Devices), len(*addedDevices)))
-	}
-
-	for _, device := range *addedDevices {
-		if device.Account != account1 {
-			t.Errorf(fmt.Sprintf("expected device account to be: %s but found %s", account1, device.Account))
+		var deviceGroupDB models.DeviceGroup
+		It("should create a DeviceGroup", func() {
+			dbResult := db.DB.Create(&deviceGroup).Error
+			Expect(dbResult).To(BeNil())
+		})
+		It("should get the DeviceGroup ID", func() {
+			dbResult := db.DB.Where("name = ?", deviceGroupName).First(&deviceGroupDB)
+			Expect(dbResult.Error).To(BeNil())
+			Expect(deviceGroupDB.ID).NotTo(BeZero())
+		})
+		When("deleting a DeviceGroup", func() {
+			It("should delete the DeviceGroup", func() {
+				err := deviceGroupsService.DeleteDeviceGroupByID(strconv.Itoa(int(deviceGroupDB.ID)))
+				Expect(err).To(BeNil())
+			})
+			It("should not find the DeviceGroup", func() {
+				dbResult := db.DB.Where("name = ?", deviceGroupName).First(&deviceGroupDB)
+				Expect(dbResult.Error).NotTo(BeNil())
+			})
+			It("should not find the devices in the DeviceGroup", func() {
+				var devicesFromDB []models.Device
+				db.DB.Where("name in (?)", []string{devices[0].Name, devices[1].Name}).Find(&devicesFromDB)
+				Expect(devicesFromDB).To(BeEmpty())
+			})
+		})
+		It("should fail to delete a DeviceGroup with invalid ID", func() {
+			err := deviceGroupsService.DeleteDeviceGroupByID("invalid-id")
+			Expect(err).NotTo(BeNil())
+			expectedError := services.DeviceGroupNotFound{}
+			Expect(err.Error()).To(Equal(expectedError.Error()))
+		})
+	})
+	Context("adding devices to DeviceGroup", func() {
+		account1 := faker.UUIDHyphenated()
+		account2 := faker.UUIDHyphenated()
+		deviceGroupName1 := faker.Name()
+		deviceGroupName2 := faker.Name()
+		devices := []models.Device{
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account1,
+			},
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account1,
+			},
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account2,
+			},
 		}
-	}
+		deviceGroups := []models.DeviceGroup{
+			{Name: deviceGroupName1, Account: account1, Type: models.DeviceGroupTypeDefault},
+			{Name: deviceGroupName2, Account: account2, Type: models.DeviceGroupTypeDefault},
+		}
+		It("should create DeviceGroups", func() {
+			for _, device := range devices {
+				err := db.DB.Create(&device).Error
+				Expect(err).To(BeNil())
+			}
+			for _, deviceGroup := range deviceGroups {
+				_, err := deviceGroupsService.CreateDeviceGroup(&deviceGroup)
+				Expect(err).To(BeNil())
+			}
+		})
+		var devicesFromDB1 []models.Device
+		var deviceGroup1 models.DeviceGroup
+		It("should add devices to DeviceGroups", func() {
+			dbResult := db.DB.Where("name in (?)", []string{devices[0].Name, devices[1].Name}).Find(&devicesFromDB1)
+			Expect(dbResult.Error).To(BeNil())
 
-	// re-add devices
-	_, err = deviceGroupsService.AddDeviceGroupDevices(account1, account1DeviceGroup.ID, account1Devices)
-	if err != nil {
-		t.Errorf(err.Error())
-	}
+			dbResult = db.DB.Where("name = ?", deviceGroupName1).First(&deviceGroup1)
+			Expect(dbResult.Error).To(BeNil())
 
-	// get device group with and devices with account2
-	var account2DeviceGroup models.DeviceGroup
-	if res := db.DB.Where(models.DeviceGroup{Account: account2}).First(&account2DeviceGroup); res.Error != nil {
-		t.Errorf("Failed to get device group: %q", res.Error)
-	}
-	var account2Devices []models.Device
-	if res := db.DB.Where(models.Device{Account: account2}).Find(&account2Devices); res.Error != nil {
-		t.Errorf("Failed to get Devices: %q", res.Error)
-	}
-	if len(account2Devices) == 0 {
-		t.Errorf("account 2 Devices was not found")
-	}
+			addedDevices, err := deviceGroupsService.AddDeviceGroupDevices(account1, deviceGroup1.ID, devicesFromDB1)
+			Expect(err).To(BeNil())
+			Expect(len(*addedDevices)).To(Equal(2))
+		})
+		When("re-adding devices", func() {
+			It("should not return an error", func() {
+				_, err := deviceGroupsService.AddDeviceGroupDevices(account1, deviceGroup1.ID, devicesFromDB1)
+				Expect(err).To(BeNil())
+			})
+		})
+		When("adding emtpy devices", func() {
+			It("should fail", func() {
+				_, err := deviceGroupsService.AddDeviceGroupDevices(account1, deviceGroup1.ID, []models.Device{})
+				Expect(err).NotTo(BeNil())
+				expectedErr := services.DeviceGroupDevicesNotSupplied{}
+				Expect(err.Error()).To(Equal(expectedErr.Error()))
+			})
+		})
+		When("adding with empty account", func() {
+			It("should fail", func() {
+				_, err := deviceGroupsService.AddDeviceGroupDevices("", deviceGroup1.ID, devicesFromDB1)
+				Expect(err).NotTo(BeNil())
+				expectedErr := services.DeviceGroupAccountOrIDUndefined{}
+				Expect(err.Error()).To(Equal(expectedErr.Error()))
+			})
+		})
+		When("adding with empty DeviceGroup ID", func() {
+			It("should fail", func() {
+				_, err := deviceGroupsService.AddDeviceGroupDevices(account1, 0, devicesFromDB1)
+				Expect(err).NotTo(BeNil())
+				expectedErr := services.DeviceGroupAccountOrIDUndefined{}
+				Expect(err.Error()).To(Equal(expectedErr.Error()))
+			})
+		})
+		When("adding devices with wrong account", func() {
+			It("should fail", func() {
+				var devicesFromDB []models.Device
+				dbResult := db.DB.Where("account in (?)", []string{account1, account2}).Find(&devicesFromDB)
+				Expect(dbResult.Error).To(BeNil())
 
-	// add devices with account2 to device group with account 1
-	_, err = deviceGroupsService.AddDeviceGroupDevices(account1, account1DeviceGroup.ID, account2Devices)
-	ExpectedError := "devices not found among the device group account"
-	if err == nil {
-		t.Errorf("Expected add devices to fail and error not nil")
-	} else if err.Error() != ExpectedError {
-		t.Errorf(fmt.Sprintf("Expected error : %s  , but received %s", ExpectedError, err.Error()))
-	}
-
-	// add with empty devices
-	_, err = deviceGroupsService.AddDeviceGroupDevices(account1, account1DeviceGroup.ID, []models.Device{})
-	ExpectedError = "devices must be supplied to be added to device group"
-	if err == nil {
-		t.Errorf("Expected add devices to fail and error not nil")
-	} else if err.Error() != ExpectedError {
-		t.Errorf(fmt.Sprintf("Expected error : %s  , but received %s", ExpectedError, err.Error()))
-	}
-
-	// add with empty account
-	_, err = deviceGroupsService.AddDeviceGroupDevices("", account1DeviceGroup.ID, account1Devices)
-	ExpectedError = "account or deviceGroupID undefined"
-	if err == nil {
-		t.Errorf("Expected add devices to fail and error not nil")
-	} else if err.Error() != ExpectedError {
-		t.Errorf(fmt.Sprintf("Expected error : %s  , but received %s", ExpectedError, err.Error()))
-	}
-
-	// add with empty device group id
-	_, err = deviceGroupsService.AddDeviceGroupDevices(account1, 0, account1Devices)
-	if err == nil {
-		t.Errorf("Expected add devices to fail and error not nil")
-	} else if err.Error() != ExpectedError {
-		t.Errorf(fmt.Sprintf("Expected error : %s  , but received %s", ExpectedError, err.Error()))
-	}
-}
+				_, err := deviceGroupsService.AddDeviceGroupDevices(account1, deviceGroup1.ID, devicesFromDB)
+				Expect(err).NotTo(BeNil())
+				expectedErr := services.DeviceGroupAccountDevicesNotFound{}
+				Expect(err.Error()).To(Equal(expectedErr.Error()))
+			})
+		})
+	})
+})

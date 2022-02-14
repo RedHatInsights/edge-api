@@ -28,6 +28,7 @@ type DeviceGroupsServiceInterface interface {
 	GetDeviceGroups(account string, limit int, offset int, tx *gorm.DB) (*[]models.DeviceGroup, error)
 	GetDeviceGroupsCount(account string, tx *gorm.DB) (int64, error)
 	GetDeviceGroupByID(ID string) (*models.DeviceGroup, error)
+	DeleteDeviceGroupByID(ID string) error
 	UpdateDeviceGroup(deviceGroup *models.DeviceGroup, account string, ID string) error
 	AddDeviceGroupDevices(account string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error)
 }
@@ -74,6 +75,24 @@ func (s *DeviceGroupsService) GetDeviceGroupsCount(account string, tx *gorm.DB) 
 	}
 
 	return count, nil
+}
+
+// DeleteDeviceGroupByID deletes the device group by ID from the database
+func (s *DeviceGroupsService) DeleteDeviceGroupByID(ID string) error {
+	sLog := s.log.WithField("device_group_id", ID)
+	sLog.Info("Deleting device group")
+	deviceGroup, err := s.GetDeviceGroupByID(ID) // get the device group
+	if err != nil {
+		sLog.WithField("error", err.Error()).Error("Error getting device group")
+		return err
+	}
+	// delete the device group
+	result := db.DB.Delete(&deviceGroup)
+	if result.Error != nil {
+		sLog.WithField("error", result.Error.Error()).Error("Error deleting device group")
+		return result.Error
+	}
+	return nil
 }
 
 // GetDeviceGroups get the device groups objects from the database

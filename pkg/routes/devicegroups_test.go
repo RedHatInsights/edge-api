@@ -5,10 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/redhatinsights/edge-api/pkg/db"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/bxcodec/faker/v3"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/redhatinsights/edge-api/pkg/db"
 
 	"github.com/golang/mock/gomock"
 	"github.com/redhatinsights/edge-api/config"
@@ -321,3 +325,73 @@ func TestUpdateDeviceGroup(t *testing.T) {
 			status, http.StatusOK)
 	}
 }
+
+var _ = Describe("DeviceGroup routes", func() {
+	Context("delete DeviceGroup", func() {
+		account := "0000000"
+		deviceGroupName := faker.Name()
+		devices := []models.Device{
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+			},
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+			},
+		}
+		deviceGroup := &models.DeviceGroup{
+			Name:    deviceGroupName,
+			Type:    models.DeviceGroupTypeDefault,
+			Account: account,
+			Devices: devices,
+		}
+		When("saving DeviceGroup", func() {
+			It("should succeed", func() {
+				dbResult := db.DB.Create(&deviceGroup).Error
+				Expect(dbResult).To(BeNil())
+			})
+		})
+		var deviceGroupBytes []byte
+		var err error
+		When("marshal DeviceGroup", func() {
+			It("should succeed", func() {
+				deviceGroupBytes, err = json.Marshal(deviceGroup)
+				Expect(err).To(BeNil())
+				Expect(deviceGroupBytes).NotTo(BeNil())
+			})
+		})
+
+		When("all is valid", func() {
+			url := fmt.Sprintf("/%d", deviceGroup.ID)
+			req, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer(deviceGroupBytes))
+			It("should create new request", func() {
+				Expect(err).To(BeNil())
+			})
+
+			ctx := req.Context()
+			ctx = setContextDeviceGroup(ctx, deviceGroup)
+			ctrl := gomock.NewController(GinkgoT())
+			defer ctrl.Finish()
+
+			// setup mock for DeviceGroupsService
+			mockDeviceGroupsService := mock_services.NewMockDeviceGroupsServiceInterface(ctrl)
+			mockDeviceGroupsService.EXPECT().DeleteDeviceGroupByID(fmt.Sprintf("%d", deviceGroup.ID)).Return(nil)
+
+			ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+				DeviceGroupsService: mockDeviceGroupsService,
+				Log:                 log.NewEntry(log.StandardLogger()),
+			})
+			req = req.WithContext(ctx)
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(DeleteDeviceGroupByID)
+
+			handler.ServeHTTP(rr, req)
+			It("should return status code 200", func() {
+				Expect(rr.Code).To(Equal(http.StatusOK))
+			})
+		})
+	})
+})
