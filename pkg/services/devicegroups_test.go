@@ -95,7 +95,8 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 		It("should fail to delete a DeviceGroup with invalid ID", func() {
 			err := deviceGroupsService.DeleteDeviceGroupByID("invalid-id")
 			Expect(err).NotTo(BeNil())
-			Expect(err.Error()).To(Equal("device group was not found"))
+			expectedError := services.DeviceGroupNotFound{}
+			Expect(err.Error()).To(Equal(expectedError.Error()))
 		})
 	})
 	Context("adding devices to DeviceGroup", func() {
