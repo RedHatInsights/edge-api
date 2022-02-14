@@ -272,7 +272,21 @@ func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 
 // DeleteDeviceGroupByID deletes an existing device group
 func DeleteDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
-
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	deviceGroup := getContextDeviceGroup(w, r)
+	if deviceGroup == nil {
+		return // error handled by getContextDeviceGroup already
+	}
+	ctxServices.Log = ctxServices.Log.WithField("device_group_id", deviceGroup.ID)
+	ctxServices.Log.Info("Deleting a device group")
+	err := ctxServices.DeviceGroupsService.DeleteDeviceGroupByID(fmt.Sprint(deviceGroup.ID))
+	if err != nil {
+		ctxServices.Log.WithField("error", err.Error()).Error("Error deleting device group")
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	respondWithJSONBody(w, ctxServices.Log, map[string]interface{}{"message": "Device group deleted", "device_group_id": deviceGroup.ID})
 }
 
 // createDeviceRequest validates request to create Device Group.
