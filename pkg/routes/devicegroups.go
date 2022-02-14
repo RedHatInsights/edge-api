@@ -282,7 +282,16 @@ func DeleteDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
 	err := ctxServices.DeviceGroupsService.DeleteDeviceGroupByID(fmt.Sprint(deviceGroup.ID))
 	if err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Error deleting device group")
-		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+		var apiError errors.APIError
+		switch err.(type) {
+		case *services.AccountNotSet:
+			apiError = errors.NewBadRequest(err.Error())
+		case *services.DeviceGroupNotFound:
+			apiError = errors.NewNotFound(err.Error())
+		default:
+			apiError = errors.NewInternalServerError()
+		}
+		respondWithAPIError(w, ctxServices.Log, apiError)
 		return
 	}
 	respondWithJSONBody(w, ctxServices.Log, map[string]interface{}{"message": "Device group deleted"})
