@@ -19,9 +19,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type deviceGroupTypeKey int
+type deviceGroupTypeKey string
 
-const deviceGroupKey deviceGroupTypeKey = iota
+const deviceGroupKey = deviceGroupTypeKey("device_group_key")
 
 func setContextDeviceGroup(ctx context.Context, deviceGroup *models.DeviceGroup) context.Context {
 	return context.WithValue(ctx, deviceGroupKey, deviceGroup)
