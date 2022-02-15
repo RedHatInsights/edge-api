@@ -452,4 +452,89 @@ var _ = Describe("DeviceGroup routes", func() {
 			})
 		})
 	})
+	Context("delete device from DeviceGroup", func() {
+		account := faker.UUIDHyphenated()
+		deviceGroupName := faker.Name()
+		devices := []models.Device{
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+			},
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+			},
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+			},
+		}
+		deviceGroup := models.DeviceGroup{
+			Name:    deviceGroupName,
+			Account: account,
+			Type:    models.DeviceGroupTypeDefault,
+			Devices: devices,
+		}
+
+		It("should create device group with devices", func() {
+			res := db.DB.Create(&deviceGroup)
+			Expect(res.Error).To(BeNil())
+			Expect(deviceGroup.ID).NotTo(Equal(0))
+		})
+		It("load device-group with devices", func() {
+			res := db.DB.Preload("Devices").First(&deviceGroup, deviceGroup.ID)
+			Expect(res.Error).To(BeNil())
+			for _, device := range deviceGroup.Devices {
+				// ensure all devices are defined
+				Expect(device.ID).NotTo(Equal(0))
+			}
+		})
+		When("device-group and devices are defined", func() {
+
+			It("should delete the first device", func() {
+				devicesToRemove := deviceGroup.Devices[:1]
+				url := fmt.Sprintf("/%d/devices/%d", deviceGroup.ID, devicesToRemove[0].ID)
+				req, err := http.NewRequest(http.MethodDelete, url, nil)
+				Expect(err).To(BeNil())
+
+				ctx := req.Context()
+				ctx = setContextDeviceGroup(ctx, &deviceGroup)
+				ctx = setContextDeviceGroupDevice(ctx, &devicesToRemove[0])
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+				rr := httptest.NewRecorder()
+
+				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupDevices(account, deviceGroup.ID, devicesToRemove).Return(&devicesToRemove, nil)
+				handler := http.HandlerFunc(DeleteDeviceGroupDevice)
+				handler.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusOK))
+			})
+
+			It("should delete the second and third devices", func() {
+
+				devicesToRemove := deviceGroup.Devices[1:]
+				devicesToRemoveJSON, err := json.Marshal(models.DeviceGroup{Devices: devicesToRemove})
+				Expect(err).To(BeNil())
+
+				url := fmt.Sprintf("/%d/devices", deviceGroup.ID)
+				req, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer(devicesToRemoveJSON))
+				Expect(err).To(BeNil())
+
+				ctx := req.Context()
+				ctx = setContextDeviceGroup(ctx, &deviceGroup)
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+				rr := httptest.NewRecorder()
+
+				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupDevices(account, deviceGroup.ID, devicesToRemove).Return(&devicesToRemove, nil)
+				handler := http.HandlerFunc(DeleteDeviceGroupDevices)
+				handler.ServeHTTP(rr, req)
+
+				Expect(rr.Code).To(Equal(http.StatusOK))
+			})
+		})
+	})
 })

@@ -30,7 +30,9 @@ type DeviceGroupsServiceInterface interface {
 	GetDeviceGroupByID(ID string) (*models.DeviceGroup, error)
 	DeleteDeviceGroupByID(ID string) error
 	UpdateDeviceGroup(deviceGroup *models.DeviceGroup, account string, ID string) error
+	GetDeviceGroupDeviceByID(account string, deviceGroupID uint, deviceID uint) (*models.Device, error)
 	AddDeviceGroupDevices(account string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error)
+	DeleteDeviceGroupDevices(account string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error)
 }
 
 // DeviceGroupsService is the main implementation of a DeviceGroupsServiceInterface
@@ -179,6 +181,32 @@ func (s *DeviceGroupsService) UpdateDeviceGroup(deviceGroup *models.DeviceGroup,
 	return nil
 }
 
+// GetDeviceGroupDeviceByID return the device of a device group by its ID
+func (s *DeviceGroupsService) GetDeviceGroupDeviceByID(account string, deviceGroupID uint, deviceID uint) (*models.Device, error) {
+	if account == "" || deviceGroupID == 0 {
+		s.log.Debug("account and deviceGroupID must be defined")
+		return nil, new(DeviceGroupAccountOrIDUndefined)
+	}
+
+	if deviceID == 0 {
+		return nil, new(DeviceGroupDeviceNotSupplied)
+	}
+
+	// get the device group
+	var deviceGroup models.DeviceGroup
+	if res := db.DB.Where(models.DeviceGroup{Account: account}).First(&deviceGroup, deviceGroupID); res.Error != nil {
+		return nil, res.Error
+	}
+
+	// we need to be sure that all the devices we want to remove already exists and belong to device group
+	var device models.Device
+	if err := db.DB.Model(&deviceGroup).Association("Devices").Find(&device, deviceID); err != nil {
+		return nil, err
+	}
+
+	return &device, nil
+}
+
 // AddDeviceGroupDevices add devices to device group
 func (s *DeviceGroupsService) AddDeviceGroupDevices(account string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error) {
 	if account == "" || deviceGroupID == 0 {
@@ -224,4 +252,51 @@ func (s *DeviceGroupsService) AddDeviceGroupDevices(account string, deviceGroupI
 	}
 
 	return &devicesToAdd, nil
+}
+
+// DeleteDeviceGroupDevices delete devices from device-group
+func (s *DeviceGroupsService) DeleteDeviceGroupDevices(account string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error) {
+	if account == "" || deviceGroupID == 0 {
+		s.log.Debug("account and deviceGroupID must be defined")
+		return nil, new(DeviceGroupAccountOrIDUndefined)
+	}
+
+	if len(devices) == 0 {
+		return nil, new(DeviceGroupDevicesNotSupplied)
+	}
+
+	// get the device group
+	var deviceGroup models.DeviceGroup
+	if res := db.DB.Where(models.DeviceGroup{Account: account}).First(&deviceGroup, deviceGroupID); res.Error != nil {
+		return nil, res.Error
+	}
+
+	// get the device ids needed to be deleted from device group, remove duplicates and undefined
+	mapDeviceIDS := make(map[uint]bool, len(devices))
+	devicesIDsToRemove := make([]uint, 0, len(devices))
+	for _, device := range devices {
+		if _, ok := mapDeviceIDS[device.ID]; !ok && device.ID != 0 {
+			mapDeviceIDS[device.ID] = true
+			devicesIDsToRemove = append(devicesIDsToRemove, device.ID)
+		}
+	}
+
+	// we need to be sure that all the devices we want to remove already exists and belong to device group
+	var devicesToRemove []models.Device
+	if err := db.DB.Model(&deviceGroup).Association("Devices").Find(&devicesToRemove, devicesIDsToRemove); err != nil {
+		return nil, err
+	}
+
+	missingDevicesCount := len(devicesIDsToRemove) - len(devicesToRemove)
+	if missingDevicesCount != 0 {
+		s.log.Debug(fmt.Sprintf("devices not found in the device group: %d", missingDevicesCount))
+		return nil, new(DeviceGroupDevicesNotFound)
+	}
+
+	s.log.Debug(fmt.Sprintf("removing %d devices from device group id: %d", len(devicesToRemove), deviceGroup.ID))
+	if err := db.DB.Model(&deviceGroup).Association("Devices").Delete(devicesToRemove); err != nil {
+		return nil, err
+	}
+
+	return &devicesToRemove, nil
 }
