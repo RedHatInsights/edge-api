@@ -174,57 +174,6 @@ func TestCreateDeviceGroup(t *testing.T) {
 
 }
 
-func TestGetDeviceGroupByID(t *testing.T) {
-	deviceGroupID := &models.DeviceGroup{}
-	req, err := http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	ctx := context.WithValue(req.Context(), deviceGroupKey, deviceGroupID)
-	ctrl := gomock.NewController(t)
-
-	defer ctrl.Finish()
-
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-	ctx = dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
-	req = req.WithContext(ctx)
-	handler := http.HandlerFunc(GetDeviceGroupByID)
-
-	handler.ServeHTTP(rr, req.WithContext(ctx))
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v, want %v",
-			status, http.StatusOK)
-
-	}
-}
-
-func TestGetDeviceGroupByIDInvalid(t *testing.T) {
-	req, err := http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	ctx := context.WithValue(req.Context(), deviceGroupKey, "a")
-	ctrl := gomock.NewController(t)
-
-	defer ctrl.Finish()
-
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-	ctx = dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
-	req = req.WithContext(ctx)
-	handler := http.HandlerFunc(GetDeviceGroupByID)
-
-	handler.ServeHTTP(rr, req.WithContext(ctx))
-	if status := rr.Code; status == http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v, want %v",
-			status, http.StatusOK)
-
-	}
-}
-
 var _ = Describe("DeviceGroup routes", func() {
 	var (
 		ctrl                    *gomock.Controller
@@ -244,6 +193,46 @@ var _ = Describe("DeviceGroup routes", func() {
 	})
 	AfterEach(func() {
 		ctrl.Finish()
+	})
+	Context("get DeviceGroup by id", func() {
+		It("should return 200", func() {
+			fakeID, _ := faker.RandomInt(1000, 2000, 1)
+			fakeIDUint := uint(fakeID[0])
+			req, err := http.NewRequest("GET", "/", nil)
+			Expect(err).To(BeNil())
+
+			ctx := context.WithValue(req.Context(), deviceGroupKey, &models.DeviceGroup{
+				Model: models.Model{
+					ID: fakeIDUint,
+				},
+			})
+			req = req.WithContext(ctx)
+			ctx = dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
+			req = req.WithContext(ctx)
+			rr := httptest.NewRecorder()
+
+			handler := http.HandlerFunc(GetDeviceGroupByID)
+			handler.ServeHTTP(rr, req.WithContext(ctx))
+			// Check the status code is what we expect.
+			Expect(rr.Code).To(Equal(http.StatusOK))
+		})
+	})
+	Context("get DeviceGroup by invalid id", func() {
+		It("should return 400", func() {
+			req, err := http.NewRequest("GET", "/", nil)
+			Expect(err).To(BeNil())
+
+			ctx := context.WithValue(req.Context(), deviceGroupKey, "a")
+			req = req.WithContext(ctx)
+			ctx = dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
+			req = req.WithContext(ctx)
+			rr := httptest.NewRecorder()
+
+			handler := http.HandlerFunc(GetDeviceGroupByID)
+			handler.ServeHTTP(rr, req.WithContext(ctx))
+			// Check the status code is what we expect.
+			Expect(rr.Code).To(Equal(http.StatusBadRequest))
+		})
 	})
 	Context("adding devices to DeviceGroup", func() {
 		account := faker.UUIDHyphenated()
