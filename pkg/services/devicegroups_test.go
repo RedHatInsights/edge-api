@@ -2,7 +2,7 @@ package services_test
 
 import (
 	"context"
-	"strconv"
+	"fmt"
 
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo"
@@ -67,23 +67,22 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 			Account: account,
 			Devices: devices,
 		}
-		var deviceGroupDB models.DeviceGroup
 		It("should create a DeviceGroup", func() {
 			dbResult := db.DB.Create(&deviceGroup).Error
 			Expect(dbResult).To(BeNil())
 		})
 		It("should get the DeviceGroup ID", func() {
-			dbResult := db.DB.Where("name = ?", deviceGroupName).First(&deviceGroupDB)
+			dbResult := db.DB.Where("name = ?", deviceGroupName).First(&deviceGroup)
 			Expect(dbResult.Error).To(BeNil())
-			Expect(deviceGroupDB.ID).NotTo(BeZero())
+			Expect(deviceGroup.ID).NotTo(BeZero())
 		})
 		When("deleting a DeviceGroup", func() {
 			It("should delete the DeviceGroup", func() {
-				err := deviceGroupsService.DeleteDeviceGroupByID(strconv.Itoa(int(deviceGroupDB.ID)))
+				err := deviceGroupsService.DeleteDeviceGroupByID(fmt.Sprintf("%d", deviceGroup.ID))
 				Expect(err).To(BeNil())
 			})
 			It("should not find the DeviceGroup", func() {
-				dbResult := db.DB.Where("name = ?", deviceGroupName).First(&deviceGroupDB)
+				dbResult := db.DB.Where("name = ?", deviceGroupName).First(&deviceGroup)
 				Expect(dbResult.Error).NotTo(BeNil())
 			})
 			It("should not find the devices in the DeviceGroup", func() {
@@ -127,12 +126,12 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 		}
 		It("should create DeviceGroups", func() {
 			for _, device := range devices {
-				err := db.DB.Create(&device).Error
-				Expect(err).To(BeNil())
+				dbResult := db.DB.Create(&device).Error
+				Expect(dbResult).To(BeNil())
 			}
 			for _, deviceGroup := range deviceGroups {
-				_, err := deviceGroupsService.CreateDeviceGroup(&deviceGroup)
-				Expect(err).To(BeNil())
+				dbResult := db.DB.Create(&deviceGroup).Error
+				Expect(dbResult).To(BeNil())
 			}
 		})
 		var devicesFromDB1 []models.Device
