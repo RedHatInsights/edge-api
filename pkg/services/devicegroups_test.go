@@ -126,12 +126,12 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 		}
 		It("should create DeviceGroups", func() {
 			for _, device := range devices {
-				err := db.DB.Create(&device).Error
-				Expect(err).To(BeNil())
+				dbResult := db.DB.Create(&device).Error
+				Expect(dbResult).To(BeNil())
 			}
 			for _, deviceGroup := range deviceGroups {
-				_, err := deviceGroupsService.CreateDeviceGroup(&deviceGroup)
-				Expect(err).To(BeNil())
+				dbResult := db.DB.Create(&deviceGroup).Error
+				Expect(dbResult).To(BeNil())
 			}
 		})
 		var devicesFromDB1 []models.Device

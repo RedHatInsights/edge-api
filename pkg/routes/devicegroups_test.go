@@ -225,70 +225,6 @@ func TestGetDeviceGroupByIDInvalid(t *testing.T) {
 	}
 }
 
-func TestAddDeviceGroupDevices(t *testing.T) {
-	account := "1111111"
-	deviceGroups := []models.DeviceGroup{
-		{Name: "test_group_1", Account: account, Type: models.DeviceGroupTypeDefault},
-	}
-	devices := []models.Device{
-		{Account: account, UUID: "1"},
-		{Account: account, UUID: "2"},
-	}
-	for _, deviceGroup := range deviceGroups {
-		if res := db.DB.Create(&deviceGroup); res.Error != nil {
-			t.Errorf("Failed to create DeviceGroup: %q", res.Error)
-		}
-	}
-	for _, device := range devices {
-		if res := db.DB.Create(&device); res.Error != nil {
-			t.Errorf("Failed to create Device: %q", res.Error)
-		}
-	}
-
-	var accountDeviceGroup models.DeviceGroup
-	if res := db.DB.Where(models.DeviceGroup{Account: account}).First(&accountDeviceGroup); res.Error != nil {
-		t.Errorf("Failed to get device group: %q", res.Error)
-	}
-	var accountDevices []models.Device
-	if res := db.DB.Where(models.Device{Account: account}).Find(&accountDevices); res.Error != nil {
-		t.Errorf("Failed to get Devices: %q", res.Error)
-	}
-
-	postBody, err := json.Marshal(models.DeviceGroup{Devices: accountDevices})
-	if err != nil {
-		t.Fatal(err)
-		return
-	}
-
-	url := fmt.Sprintf("/%d/devices", accountDeviceGroup.ID)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(postBody))
-	if err != nil {
-		t.Fatal(err)
-	}
-	rr := httptest.NewRecorder()
-	ctx := req.Context()
-	ctx = setContextDeviceGroup(ctx, &accountDeviceGroup)
-	handler := http.HandlerFunc(AddDeviceGroupDevices)
-	controller := gomock.NewController(t)
-	defer controller.Finish()
-
-	deviceGroupsService := mock_services.NewMockDeviceGroupsServiceInterface(controller)
-	deviceGroupsService.EXPECT().AddDeviceGroupDevices(account, accountDeviceGroup.ID, accountDevices).Return(&accountDevices, nil)
-
-	edgeAPIServices := &dependencies.EdgeAPIServices{
-		DeviceGroupsService: deviceGroupsService,
-		Log:                 log.NewEntry(log.StandardLogger()),
-	}
-
-	req = req.WithContext(dependencies.ContextWithServices(ctx, edgeAPIServices))
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v, want %v",
-			status, http.StatusOK)
-	}
-}
-
 var _ = Describe("DeviceGroup routes", func() {
 	var (
 		ctrl                    *gomock.Controller
@@ -308,6 +244,67 @@ var _ = Describe("DeviceGroup routes", func() {
 	})
 	AfterEach(func() {
 		ctrl.Finish()
+	})
+	Context("adding devices to DeviceGroup", func() {
+		account := faker.UUIDHyphenated()
+		deviceGroupName := faker.Name()
+		devices := []models.Device{
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+			},
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+			},
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+			},
+		}
+		deviceGroup := models.DeviceGroup{Name: deviceGroupName, Account: account, Type: models.DeviceGroupTypeDefault}
+		Context("adding Devices & DeviceGroup to DB", func() {
+			for _, device := range devices {
+				dbResult := db.DB.Create(&device).Error
+				Expect(dbResult).To(BeNil())
+			}
+			dbResult := db.DB.Create(&deviceGroup).Error
+			Expect(dbResult).To(BeNil())
+		})
+
+		Context("get DeviceGroup from DB", func() {
+			dbResult := db.DB.Where(models.DeviceGroup{Account: account}).First(&deviceGroup).Error
+			Expect(dbResult).To(BeNil())
+			dbResult = db.DB.Where(models.Device{Account: account}).Find(&devices).Error
+			Expect(dbResult).To(BeNil())
+		})
+		jsonDeviceBytes, err := json.Marshal(models.DeviceGroup{Devices: devices})
+		Expect(err).To(BeNil())
+
+		url := fmt.Sprintf("/%d/devices", deviceGroup.ID)
+		req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonDeviceBytes))
+		Expect(err).To(BeNil())
+
+		When("all is valid", func() {
+			It("should add devices to DeviceGroup", func() {
+				ctx := req.Context()
+				ctx = setContextDeviceGroup(ctx, &deviceGroup)
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+				rr := httptest.NewRecorder()
+
+				// setup mock for DeviceGroupsService
+				mockDeviceGroupsService.EXPECT().AddDeviceGroupDevices(account, deviceGroup.ID, devices).Return(&devices, nil)
+
+				handler := http.HandlerFunc(AddDeviceGroupDevices)
+				handler.ServeHTTP(rr, req)
+				// Check the status code is what we expect.
+				Expect(rr.Code).To(Equal(http.StatusOK))
+			})
+		})
 	})
 	Context("update DeviceGroup", func() {
 		updDevice := &models.DeviceGroup{
