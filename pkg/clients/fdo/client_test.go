@@ -14,8 +14,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/errors"
+	"github.com/redhatinsights/edge-api/pkg/models"
 
 	"github.com/redhatinsights/edge-api/pkg/clients/fdo"
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -93,8 +93,8 @@ var _ = Describe("Client", func() {
 				Expect(j).ToNot(BeNil())
 			})
 			ovsData := [1]models.OwnershipVoucherData{}
-			resJson, _ := json.Marshal(j)
-			err = json.Unmarshal(resJson, &ovsData)
+			resJSON, _ := json.Marshal(j)
+			err = json.Unmarshal(resJSON, &ovsData)
 			It("should successfully unmarshal json", func() {
 				Expect(err).To(BeNil())
 				Expect(ovsData).ToNot(BeNil())
@@ -117,8 +117,8 @@ var _ = Describe("Client", func() {
 				Expect(j).ToNot(BeNil())
 			})
 			ovsData := [10]models.OwnershipVoucherData{}
-			resJson, _ := json.Marshal(j)
-			err = json.Unmarshal(resJson, &ovsData)
+			resJSON, _ := json.Marshal(j)
+			err = json.Unmarshal(resJSON, &ovsData)
 			It("should successfully unmarshal json", func() {
 				Expect(err).To(BeNil())
 				Expect(ovsData).ToNot(BeNil())
