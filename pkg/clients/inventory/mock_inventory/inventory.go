@@ -5,9 +5,10 @@
 package mock_inventory
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	inventory "github.com/redhatinsights/edge-api/pkg/clients/inventory"
-	reflect "reflect"
 )
 
 // MockClientInterface is a mock of ClientInterface interface

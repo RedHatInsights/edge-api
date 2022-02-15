@@ -71,8 +71,8 @@ func FlushLogger() {
 	}
 }
 
-// LogErrorandPanic Records the error, flushes the buffer, then panics the container
-func LogErrorandPanic(msg string, err error) {
+// LogErrorAndPanic Records the error, flushes the buffer, then panics the container
+func LogErrorAndPanic(msg string, err error) {
 	log.WithFields(log.Fields{"error": err}).Error(msg)
 	FlushLogger()
 	panic(err)
