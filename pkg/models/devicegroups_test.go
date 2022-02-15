@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"github.com/bxcodec/faker/v3"
 	"testing"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -86,5 +87,60 @@ func TestGroupCreateUpdateConstraint(t *testing.T) {
 	// The DeviceGroup Name has to be updated
 	if updatedGroup.Name != groupNewName {
 		t.Errorf("Failed to update group name expected: %q but found: %q", groupNewName, updatedGroup.Name)
+	}
+}
+
+func TestBeforeDelete(t *testing.T) {
+	account := faker.UUIDHyphenated()
+	deviceGroupName := faker.Name()
+	devices := []Device{
+		{
+			Name:    faker.Name(),
+			UUID:    faker.UUIDHyphenated(),
+			Account: account,
+		},
+		{
+			Name:    faker.Name(),
+			UUID:    faker.UUIDHyphenated(),
+			Account: account,
+		},
+	}
+	deviceGroup := &DeviceGroup{
+		Name:    deviceGroupName,
+		Type:    DeviceGroupTypeDefault,
+		Account: account,
+		Devices: devices,
+	}
+	// Create the DeviceGroup
+	err := db.DB.Create(&deviceGroup).Error
+	if err != nil {
+		t.Error("Error saving device group to DB")
+	}
+	// Check all in DB
+	var deviecsFromDB []Device
+	err = db.DB.Where("account = ?", account).Find(&deviecsFromDB).Error
+	if err != nil {
+		t.Error("Error retrieving devices from DB")
+	}
+	if len(deviecsFromDB) != len(devices) {
+		t.Errorf("Expected %d devices but found %d: %v", len(devices), len(deviecsFromDB), deviecsFromDB)
+	}
+	// BeforeDelete the DeviceGroup should delete the Devices and not the DeviceGroup
+	err = deviceGroup.BeforeDelete(db.DB)
+	if err != nil {
+		t.Error("Error running BeforeDelete")
+	}
+	deviecsFromDB = []Device{}
+	err = db.DB.Where("account = ?", account).Find(&deviecsFromDB).Error
+	if err != nil {
+		t.Error("Error retrieving devices from DB")
+	}
+	if len(deviecsFromDB) != 0 {
+		t.Errorf("Expected 0 devices but found %d: %v", len(deviecsFromDB), deviecsFromDB)
+	}
+	var deviceGroupDB DeviceGroup
+	err = db.DB.Where("name = ?", deviceGroupName).Find(&deviceGroupDB).Error
+	if err != nil {
+		t.Error("Error retrieving device group from DB")
 	}
 }

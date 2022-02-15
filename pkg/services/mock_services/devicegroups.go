@@ -65,6 +65,20 @@ func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) CreateDeviceGroup(device
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateDeviceGroup", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).CreateDeviceGroup), deviceGroup)
 }
 
+// DeleteDeviceGroupByID mocks base method.
+func (m *MockDeviceGroupsServiceInterface) DeleteDeviceGroupByID(ID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteDeviceGroupByID", ID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteDeviceGroupByID indicates an expected call of DeleteDeviceGroupByID.
+func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) DeleteDeviceGroupByID(ID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDeviceGroupByID", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).DeleteDeviceGroupByID), ID)
+}
+
 // GetDeviceGroupByID mocks base method.
 func (m *MockDeviceGroupsServiceInterface) GetDeviceGroupByID(ID string) (*models.DeviceGroup, error) {
 	m.ctrl.T.Helper()

@@ -107,7 +107,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		WaitGroup.Done() // Done with one update (successfully or not)
 		s.log.Debug("Done with one update - successfully or not")
 		if err := recover(); err != nil {
-			s.log.WithField("error", err).Fatal("Error on update")
+			s.log.WithField("error", err).Error("Error on update")
 		}
 	}()
 	go func(update *models.UpdateTransaction) {
@@ -124,7 +124,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			update.Status = models.UpdateStatusError
 			tx := db.DB.Save(update)
 			if tx.Error != nil {
-				s.log.WithField("error", tx.Error.Error()).Fatal("Error saving update")
+				s.log.WithField("error", tx.Error.Error()).Error("Error saving update")
 			}
 			WaitGroup.Done()
 		}
@@ -340,7 +340,7 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 		dispatchRecord.Status = models.DispatchRecordStatusRunning
 	} else {
 		dispatchRecord.Status = models.DispatchRecordStatusError
-		s.log.Fatal("Playbook status is not on the json schema for this event")
+		s.log.Error("Playbook status is not on the json schema for this event")
 	}
 	result = db.DB.Save(&dispatchRecord)
 	if result.Error != nil {

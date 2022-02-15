@@ -23,6 +23,7 @@ RUN go build -tags=fdo -o /go/bin/edge-api
 # Build the migration binary.
 RUN go build -o /go/bin/edge-api-migrate cmd/migrate/main.go
 RUN go build -o /go/bin/edge-api-wipe cmd/db/wipe.go
+RUN go build -o /go/bin/edge-api-migrate-device cmd/db/updDb/set_account_on_device.go
 
 # Run the doc binary
 RUN go run cmd/spec/main.go
@@ -71,6 +72,7 @@ ENV EDGE_API_WORKSPACE /src/github.com/RedHatInsights/edge-api
 COPY --from=edge-builder /go/bin/edge-api /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-migrate /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-wipe /usr/bin
+COPY --from=edge-builder /go/bin/edge-api-migrate-device /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-kafkadev /usr/bin
 COPY --from=edge-builder ${EDGE_API_WORKSPACE}/cmd/spec/openapi.json /var/tmp
 

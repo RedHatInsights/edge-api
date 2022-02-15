@@ -19,9 +19,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type deviceGroupTypeKey int
+type deviceGroupTypeKey string
 
-const deviceGroupKey deviceGroupTypeKey = iota
+const deviceGroupKey = deviceGroupTypeKey("device_group_key")
 
 func setContextDeviceGroup(ctx context.Context, deviceGroup *models.DeviceGroup) context.Context {
 	return context.WithValue(ctx, deviceGroupKey, deviceGroup)
@@ -272,7 +272,29 @@ func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 
 // DeleteDeviceGroupByID deletes an existing device group
 func DeleteDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
-
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	deviceGroup := getContextDeviceGroup(w, r)
+	if deviceGroup == nil {
+		return // error handled by getContextDeviceGroup already
+	}
+	ctxLog := ctxServices.Log.WithField("device_group_id", deviceGroup.ID)
+	ctxLog.Info("Deleting a device group")
+	err := ctxServices.DeviceGroupsService.DeleteDeviceGroupByID(fmt.Sprint(deviceGroup.ID))
+	if err != nil {
+		ctxLog.WithField("error", err.Error()).Error("Error deleting device group")
+		var apiError errors.APIError
+		switch err.(type) {
+		case *services.AccountNotSet:
+			apiError = errors.NewBadRequest(err.Error())
+		case *services.DeviceGroupNotFound:
+			apiError = errors.NewNotFound(err.Error())
+		default:
+			apiError = errors.NewInternalServerError()
+		}
+		respondWithAPIError(w, ctxLog, apiError)
+		return
+	}
+	respondWithJSONBody(w, ctxLog, map[string]interface{}{"message": "Device group deleted"})
 }
 
 // createDeviceRequest validates request to create Device Group.
