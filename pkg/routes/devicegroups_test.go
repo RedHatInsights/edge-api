@@ -13,6 +13,12 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/errors"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
+
+	// "github.com/redhatinsights/edge-api/pkg/errors"
+
+	"github.com/redhatinsights/edge-api/pkg/services"
 
 	"github.com/golang/mock/gomock"
 	"github.com/redhatinsights/edge-api/config"
@@ -327,8 +333,27 @@ func TestUpdateDeviceGroup(t *testing.T) {
 }
 
 var _ = Describe("DeviceGroup routes", func() {
+	var (
+		ctrl                    *gomock.Controller
+		mockDeviceGroupsService *mock_services.MockDeviceGroupsServiceInterface
+		edgeAPIServices         *dependencies.EdgeAPIServices
+	)
+	BeforeEach(func() {
+		ctrl = gomock.NewController(GinkgoT())
+		mockDeviceGroupsService = mock_services.NewMockDeviceGroupsServiceInterface(ctrl)
+		edgeAPIServices = &dependencies.EdgeAPIServices{
+			DeviceGroupsService: mockDeviceGroupsService,
+			Log:                 log.NewEntry(log.StandardLogger()),
+		}
+		Expect(ctrl).ToNot(BeNil())
+		Expect(mockDeviceGroupsService).ToNot(BeNil())
+		Expect(edgeAPIServices).ToNot(BeNil())
+	})
+	AfterEach(func() {
+		ctrl.Finish()
+	})
 	Context("delete DeviceGroup", func() {
-		account := "0000000"
+		account := common.DefaultAccount
 		deviceGroupName := faker.Name()
 		devices := []models.Device{
 			{
@@ -348,49 +373,132 @@ var _ = Describe("DeviceGroup routes", func() {
 			Account: account,
 			Devices: devices,
 		}
-		When("saving DeviceGroup", func() {
-			It("should succeed", func() {
-				dbResult := db.DB.Create(&deviceGroup).Error
-				Expect(dbResult).To(BeNil())
-			})
+		Context("saving DeviceGroup", func() {
+			dbResult := db.DB.Create(&deviceGroup).Error
+			Expect(dbResult).To(BeNil())
 		})
-		var deviceGroupBytes []byte
-		var err error
-		When("marshal DeviceGroup", func() {
-			It("should succeed", func() {
-				deviceGroupBytes, err = json.Marshal(deviceGroup)
-				Expect(err).To(BeNil())
-				Expect(deviceGroupBytes).NotTo(BeNil())
-			})
+		Context("getting DeviceGroup", func() {
+			dbResult := db.DB.Where(models.DeviceGroup{Name: deviceGroupName, Account: account}).First(&deviceGroup).Error
+			Expect(dbResult).To(BeNil())
 		})
-
 		When("all is valid", func() {
 			url := fmt.Sprintf("/%d", deviceGroup.ID)
-			req, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer(deviceGroupBytes))
-			It("should create new request", func() {
-				Expect(err).To(BeNil())
-			})
+			req, err := http.NewRequest(http.MethodDelete, url, nil)
+			Expect(err).To(BeNil())
 
-			ctx := req.Context()
-			ctx = setContextDeviceGroup(ctx, deviceGroup)
-			ctrl := gomock.NewController(GinkgoT())
-			defer ctrl.Finish()
-
-			// setup mock for DeviceGroupsService
-			mockDeviceGroupsService := mock_services.NewMockDeviceGroupsServiceInterface(ctrl)
-			mockDeviceGroupsService.EXPECT().DeleteDeviceGroupByID(fmt.Sprintf("%d", deviceGroup.ID)).Return(nil)
-
-			ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
-				DeviceGroupsService: mockDeviceGroupsService,
-				Log:                 log.NewEntry(log.StandardLogger()),
-			})
-			req = req.WithContext(ctx)
-			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(DeleteDeviceGroupByID)
-
-			handler.ServeHTTP(rr, req)
 			It("should return status code 200", func() {
+				ctx := req.Context()
+				ctx = setContextDeviceGroup(ctx, deviceGroup)
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+				rr := httptest.NewRecorder()
+
+				// setup mock for DeviceGroupsService
+				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupByID(fmt.Sprintf("%d", deviceGroup.ID)).Return(nil)
+
+				handler := http.HandlerFunc(DeleteDeviceGroupByID)
+				handler.ServeHTTP(rr, req)
+				// Check the status code is what we expect.
 				Expect(rr.Code).To(Equal(http.StatusOK))
+			})
+		})
+		When("no device group in context", func() {
+			url := fmt.Sprintf("/%d", deviceGroup.ID)
+			req, err := http.NewRequest(http.MethodDelete, url, nil)
+			Expect(err).To(BeNil())
+
+			It("should return status code 400", func() {
+				ctx := req.Context()
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+				rr := httptest.NewRecorder()
+
+				handler := http.HandlerFunc(DeleteDeviceGroupByID)
+				handler.ServeHTTP(rr, req)
+				// Check the status code is what we expect.
+				Expect(rr.Code).To(Equal(http.StatusBadRequest))
+			})
+		})
+		When("no account", func() {
+			fakeID, _ := faker.RandomInt(1000, 2000, 1)
+			fakeIDUint := uint(fakeID[0])
+			url := fmt.Sprintf("/%d", fakeIDUint)
+			req, err := http.NewRequest(http.MethodDelete, url, nil)
+			Expect(err).To(BeNil())
+
+			It("should return status code 400", func() {
+				ctx := req.Context()
+				ctx = setContextDeviceGroup(ctx, &models.DeviceGroup{
+					Model: models.Model{
+						ID: fakeIDUint,
+					},
+					Account: "",
+				})
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+				rr := httptest.NewRecorder()
+
+				// setup mock for DeviceGroupsService
+				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupByID(fmt.Sprint(fakeIDUint)).Return(new(services.AccountNotSet))
+
+				handler := http.HandlerFunc(DeleteDeviceGroupByID)
+				handler.ServeHTTP(rr, req)
+				// Check the status code is what we expect.
+				Expect(rr.Code).To(Equal(http.StatusBadRequest))
+			})
+		})
+		When("no such ID", func() {
+			fakeID, _ := faker.RandomInt(1000, 2000, 1)
+			fakeIDUint := uint(fakeID[0])
+			url := fmt.Sprintf("/%d", fakeIDUint)
+			req, err := http.NewRequest(http.MethodDelete, url, nil)
+			Expect(err).To(BeNil())
+
+			It("should return status code 404", func() {
+				ctx := req.Context()
+				ctx = setContextDeviceGroup(ctx, &models.DeviceGroup{
+					Model: models.Model{
+						ID: fakeIDUint,
+					},
+				})
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+				rr := httptest.NewRecorder()
+
+				// setup mock for DeviceGroupsService
+				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupByID(fmt.Sprint(fakeIDUint)).Return(new(services.DeviceGroupNotFound))
+
+				handler := http.HandlerFunc(DeleteDeviceGroupByID)
+				handler.ServeHTTP(rr, req)
+				// Check the status code is what we expect.
+				Expect(rr.Code).To(Equal(http.StatusNotFound))
+			})
+		})
+		When("something bad happened", func() {
+			fakeID, _ := faker.RandomInt(1000, 2000, 1)
+			fakeIDUint := uint(fakeID[0])
+			url := fmt.Sprintf("/%d", fakeIDUint)
+			req, err := http.NewRequest(http.MethodDelete, url, nil)
+			Expect(err).To(BeNil())
+
+			It("should return status code 500", func() {
+				ctx := req.Context()
+				ctx = setContextDeviceGroup(ctx, &models.DeviceGroup{
+					Model: models.Model{
+						ID: fakeIDUint,
+					},
+				})
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+				rr := httptest.NewRecorder()
+
+				// setup mock for DeviceGroupsService
+				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupByID(fmt.Sprint(fakeIDUint)).Return(errors.NewInternalServerError())
+
+				handler := http.HandlerFunc(DeleteDeviceGroupByID)
+				handler.ServeHTTP(rr, req)
+				// Check the status code is what we expect.
+				Expect(rr.Code).To(Equal(http.StatusInternalServerError))
 			})
 		})
 	})
