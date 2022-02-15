@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/logger"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -33,6 +34,6 @@ func InitDB() {
 
 	DB, err = gorm.Open(dia, &gorm.Config{})
 	if err != nil {
-		panic(fmt.Sprintf("failed to connect database: %s", err.Error()))
+		logger.LogErrorAndPanic("failed to connect database", err)
 	}
 }
