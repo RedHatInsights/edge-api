@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"testing"
 
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo"
@@ -26,35 +25,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	log "github.com/sirupsen/logrus"
 )
-
-func TestGetAllDeviceGroups(t *testing.T) {
-	req, err := http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(GetAllDeviceGroups)
-	ctx := req.Context()
-	controller := gomock.NewController(t)
-	defer controller.Finish()
-
-	deviceGroupsService := mock_services.NewMockDeviceGroupsServiceInterface(controller)
-	deviceGroupsService.EXPECT().GetDeviceGroupsCount(gomock.Any(), gomock.Any()).Return(int64(0), nil)
-	deviceGroupsService.EXPECT().GetDeviceGroups(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&[]models.DeviceGroup{}, nil)
-
-	edgeAPIServices := &dependencies.EdgeAPIServices{
-		DeviceGroupsService: deviceGroupsService,
-		Log:                 log.NewEntry(log.StandardLogger()),
-	}
-
-	req = req.WithContext(dependencies.ContextWithServices(ctx, edgeAPIServices))
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v, want %v",
-			status, http.StatusOK)
-	}
-}
 
 var _ = Describe("DeviceGroup routes", func() {
 	var (
@@ -140,7 +110,7 @@ var _ = Describe("DeviceGroup routes", func() {
 			rr := httptest.NewRecorder()
 
 			handler := http.HandlerFunc(GetDeviceGroupByID)
-			handler.ServeHTTP(rr, req.WithContext(ctx))
+			handler.ServeHTTP(rr, req)
 			// Check the status code is what we expect.
 			Expect(rr.Code).To(Equal(http.StatusOK))
 		})
@@ -157,9 +127,30 @@ var _ = Describe("DeviceGroup routes", func() {
 			rr := httptest.NewRecorder()
 
 			handler := http.HandlerFunc(GetDeviceGroupByID)
-			handler.ServeHTTP(rr, req.WithContext(ctx))
+			handler.ServeHTTP(rr, req)
 			// Check the status code is what we expect.
 			Expect(rr.Code).To(Equal(http.StatusBadRequest))
+		})
+	})
+	Context("get all devices", func() {
+		req, err := http.NewRequest("GET", "/", nil)
+		Expect(err).To(BeNil())
+		When("all is valid", func() {
+			It("should return 200", func() {
+				ctx := req.Context()
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+				rr := httptest.NewRecorder()
+
+				// setup mock for DeviceGroupsService
+				mockDeviceGroupsService.EXPECT().GetDeviceGroupsCount(gomock.Any(), gomock.Any()).Return(int64(0), nil)
+				mockDeviceGroupsService.EXPECT().GetDeviceGroups(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&[]models.DeviceGroup{}, nil)
+
+				handler := http.HandlerFunc(GetAllDeviceGroups)
+				handler.ServeHTTP(rr, req)
+				// Check the status code is what we expect.
+				Expect(rr.Code).To(Equal(http.StatusOK))
+			})
 		})
 	})
 	Context("adding devices to DeviceGroup", func() {
