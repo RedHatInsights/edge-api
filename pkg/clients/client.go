@@ -21,7 +21,7 @@ func GetOutgoingHeaders(ctx context.Context) map[string]string {
 		xhrid := identity.Get(ctx)
 		identityHeaders, err := json.Marshal(xhrid)
 		if err != nil {
-			logger.LogErrorandPanic("Error getting request ID", err)
+			logger.LogErrorAndPanic("Error getting request ID", err)
 		}
 		headers["x-rh-identity"] = base64.StdEncoding.EncodeToString(identityHeaders)
 	}

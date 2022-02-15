@@ -92,7 +92,7 @@ func newS3Uploader(log *log.Entry) *S3Uploader {
 			Credentials: credentials.NewStaticCredentials(cfg.AccessKey, cfg.SecretKey, ""),
 		})
 		if err != nil {
-			logger.LogErrorandPanic("Fatal error creating HTTP session", err)
+			logger.LogErrorAndPanic("Fatal error creating HTTP session", err)
 		}
 	}
 	client := s3.New(sess)
