@@ -12,6 +12,7 @@ import (
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
@@ -19,7 +20,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services"
 
 	"github.com/golang/mock/gomock"
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 
@@ -56,129 +56,12 @@ func TestGetAllDeviceGroups(t *testing.T) {
 	}
 }
 
-func TestGetAllDeviceGroupsFilterParams(t *testing.T) {
-	tt := []struct {
-		name          string
-		params        string
-		expectedError []validationError
-	}{
-		{
-			name:   "bad created_at date",
-			params: "created_at=today",
-			expectedError: []validationError{
-				{Key: "created_at", Reason: `parsing time "today" as "2006-01-02": cannot parse "today" as "2006"`},
-			},
-		},
-		{
-			name:   "bad sort_by",
-			params: "sort_by=test",
-			expectedError: []validationError{
-				{Key: "sort_by", Reason: "test is not a valid sort_by. Sort-by must be name or created_at or updated_at"},
-			},
-		},
-	}
-
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
-	for _, te := range tt {
-		req, err := http.NewRequest("GET", fmt.Sprintf("/device-groups?%s", te.params), nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		w := httptest.NewRecorder()
-		validateGetAllDeviceGroupsFilterParams(next).ServeHTTP(w, req)
-
-		resp := w.Result()
-		var jsonBody []validationError
-		err = json.NewDecoder(resp.Body).Decode(&jsonBody)
-		if err != nil {
-			t.Errorf("failed decoding response body: %s", err.Error())
-		}
-		for _, exErr := range te.expectedError {
-			found := false
-			for _, jsErr := range jsonBody {
-				if jsErr.Key == exErr.Key && jsErr.Reason == exErr.Reason {
-					found = true
-					break
-				}
-			}
-			if !found {
-				t.Errorf("in %q: was expected to have %v but not found in %v", te.name, exErr, jsonBody)
-			}
-		}
-	}
-}
-
-func TestCreateGroupWithoutAccount(t *testing.T) {
-	config.Get().Debug = false
-	jsonRepo := &models.DeviceGroup{
-		Name: "Group1",
-	}
-	jsonRepoBytes, err := json.Marshal(jsonRepo)
-	if err != nil {
-		t.Fatal(err)
-	}
-	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonRepoBytes))
-	if err != nil {
-		t.Fatal(err)
-	}
-	ctx := req.Context()
-	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
-		Log: log.NewEntry(log.StandardLogger()),
-	})
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(CreateDeviceGroup)
-
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusBadRequest {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusBadRequest)
-	}
-	config.Get().Debug = true
-}
-
-func TestCreateDeviceGroup(t *testing.T) {
-	jsonRepo := &models.DeviceGroup{
-		Name:    "Group1",
-		Type:    "static",
-		Account: "000000",
-	}
-	jsonRepoBytes, err := json.Marshal(jsonRepo)
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-	req, err := http.NewRequest("POST", "/", bytes.NewBuffer(jsonRepoBytes))
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-	ctx := req.Context()
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockDeviceGroupsService := mock_services.NewMockDeviceGroupsServiceInterface(ctrl)
-	mockDeviceGroupsService.EXPECT().CreateDeviceGroup(gomock.Any()).Return(&models.DeviceGroup{}, nil)
-	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
-		DeviceGroupsService: mockDeviceGroupsService,
-		Log:                 log.NewEntry(log.StandardLogger()),
-	})
-	req = req.WithContext(ctx)
-	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(CreateDeviceGroup)
-
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v, want %v",
-			status, http.StatusOK)
-
-	}
-
-}
-
 var _ = Describe("DeviceGroup routes", func() {
 	var (
 		ctrl                    *gomock.Controller
 		mockDeviceGroupsService *mock_services.MockDeviceGroupsServiceInterface
 		edgeAPIServices         *dependencies.EdgeAPIServices
+		deviceGroupName         = "test-device-group"
 	)
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
@@ -193,6 +76,51 @@ var _ = Describe("DeviceGroup routes", func() {
 	})
 	AfterEach(func() {
 		ctrl.Finish()
+	})
+	Context("get all devices with filter parameters", func() {
+		tt := []struct {
+			name          string
+			params        string
+			expectedError []validationError
+		}{
+			{
+				name:   "bad created_at date",
+				params: "created_at=today",
+				expectedError: []validationError{
+					{Key: "created_at", Reason: `parsing time "today" as "2006-01-02": cannot parse "today" as "2006"`},
+				},
+			},
+			{
+				name:   "bad sort_by",
+				params: "sort_by=test",
+				expectedError: []validationError{
+					{Key: "sort_by", Reason: "test is not a valid sort_by. Sort-by must be name or created_at or updated_at"},
+				},
+			},
+		}
+
+		next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+		for _, te := range tt {
+			req, err := http.NewRequest("GET", fmt.Sprintf("/device-groups?%s", te.params), nil)
+			Expect(err).ToNot(HaveOccurred())
+			w := httptest.NewRecorder()
+			validateGetAllDeviceGroupsFilterParams(next).ServeHTTP(w, req)
+
+			resp := w.Result()
+			var jsonBody []validationError
+			err = json.NewDecoder(resp.Body).Decode(&jsonBody)
+			Expect(err).ToNot(HaveOccurred())
+			for _, exErr := range te.expectedError {
+				found := false
+				for _, jsErr := range jsonBody {
+					if jsErr.Key == exErr.Key && jsErr.Reason == exErr.Reason {
+						found = true
+						break
+					}
+				}
+				Expect(found).To(BeTrue(), fmt.Sprintf("in %q: was expected to have %v but not found in %v", te.name, exErr, jsonBody))
+			}
+		}
 	})
 	Context("get DeviceGroup by id", func() {
 		It("should return 200", func() {
@@ -274,7 +202,7 @@ var _ = Describe("DeviceGroup routes", func() {
 		Expect(err).To(BeNil())
 
 		url := fmt.Sprintf("/%d/devices", deviceGroup.ID)
-		req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonDeviceBytes))
+		req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonDeviceBytes))
 		Expect(err).To(BeNil())
 
 		When("all is valid", func() {
@@ -295,30 +223,86 @@ var _ = Describe("DeviceGroup routes", func() {
 			})
 		})
 	})
-	Context("update DeviceGroup", func() {
-		updDevice := &models.DeviceGroup{
-			Name:    "Group1",
-			Type:    models.DeviceGroupTypeDefault,
-			Account: common.DefaultAccount,
-		}
-		jsonDeviceBytes, err := json.Marshal(updDevice)
-		Expect(err).To(BeNil())
-
-		url := fmt.Sprintf("/%d", updDevice.ID)
-		req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonDeviceBytes))
-		Expect(err).To(BeNil())
-
+	Context("create DeviceGroup", func() {
 		When("all is valid", func() {
-			It("should update DeviceGroup", func() {
+			deviceGroup := &models.DeviceGroup{
+				Name:    deviceGroupName,
+				Type:    models.DeviceGroupTypeDefault,
+				Account: common.DefaultAccount,
+			}
+			jsonDeviceBytes, err := json.Marshal(deviceGroup)
+			Expect(err).To(BeNil())
+
+			url := fmt.Sprintf("/%d", deviceGroup.ID)
+			req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonDeviceBytes))
+			Expect(err).To(BeNil())
+			It("should create DeviceGroup", func() {
 				ctx := req.Context()
-				ctx = setContextDeviceGroup(ctx, updDevice)
+				ctx = setContextDeviceGroup(ctx, deviceGroup)
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
 
 				// setup mock for DeviceGroupsService
-				mockDeviceGroupsService.EXPECT().GetDeviceGroupByID(fmt.Sprintf("%d", updDevice.ID)).Return(updDevice, nil)
-				mockDeviceGroupsService.EXPECT().UpdateDeviceGroup(updDevice, common.DefaultAccount, fmt.Sprintf("%d", updDevice.ID)).Return(nil)
+				mockDeviceGroupsService.EXPECT().CreateDeviceGroup(deviceGroup).Return(deviceGroup, nil)
+
+				handler := http.HandlerFunc(CreateDeviceGroup)
+				handler.ServeHTTP(rr, req)
+				// Check the status code is what we expect.
+				Expect(rr.Code).To(Equal(http.StatusOK))
+			})
+		})
+		When("no account", func() {
+			deviceGroup := &models.DeviceGroup{
+				Name:    faker.Name(),
+				Type:    models.DeviceGroupTypeDefault,
+				Account: "",
+			}
+			jsonDeviceBytes, err := json.Marshal(deviceGroup)
+			Expect(err).To(BeNil())
+
+			req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(jsonDeviceBytes))
+			Expect(err).To(BeNil())
+			It("should return 400", func() {
+				config.Get().Auth = true // enable auth to avoid default account
+				ctx := req.Context()
+				ctx = setContextDeviceGroup(ctx, deviceGroup)
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+				rr := httptest.NewRecorder()
+
+				handler := http.HandlerFunc(CreateDeviceGroup)
+				handler.ServeHTTP(rr, req)
+				// Check the status code is what we expect.
+				Expect(rr.Code).To(Equal(http.StatusBadRequest))
+				config.Get().Auth = false // disable auth
+			})
+		})
+	})
+	Context("update DeviceGroup", func() {
+		deviceGroupUpdated := &models.DeviceGroup{
+			Name:    deviceGroupName,
+			Type:    models.DeviceGroupTypeDefault,
+			Account: common.DefaultAccount,
+		}
+		jsonDeviceBytes, err := json.Marshal(deviceGroupUpdated)
+		Expect(err).To(BeNil())
+
+		url := fmt.Sprintf("/%d", deviceGroupUpdated.ID)
+		req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(jsonDeviceBytes))
+		Expect(err).To(BeNil())
+
+		When("all is valid", func() {
+			It("should update DeviceGroup", func() {
+				ctx := req.Context()
+				ctx = setContextDeviceGroup(ctx, deviceGroupUpdated)
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+				rr := httptest.NewRecorder()
+
+				// setup mock for DeviceGroupsService
+				mockDeviceGroupsService.EXPECT().GetDeviceGroupByID(fmt.Sprintf("%d", deviceGroupUpdated.ID)).Return(deviceGroupUpdated, nil)
+				mockDeviceGroupsService.EXPECT().UpdateDeviceGroup(deviceGroupUpdated, common.DefaultAccount, fmt.Sprintf("%d", deviceGroupUpdated.ID)).Return(nil)
 
 				handler := http.HandlerFunc(UpdateDeviceGroup)
 				handler.ServeHTTP(rr, req)
