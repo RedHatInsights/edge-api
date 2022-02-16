@@ -62,7 +62,7 @@ func ContextWithServices(ctx context.Context, services *EdgeAPIServices) context
 func ServicesFromContext(ctx context.Context) *EdgeAPIServices {
 	edgeAPIServices, ok := ctx.Value(servicesKey).(*EdgeAPIServices)
 	// If there is problem with context, there is a critical issue with the
-	// environment or code and we need to raisd an alert and panic the container
+	// environment or code and we need to raise an alert and panic the container
 	if !ok {
 		err := errors.New("Could not get EdgeAPIServices from Context")
 		logger.LogErrorAndPanic("Could not get EdgeAPIServices from Context", err)
