@@ -1,9 +1,5 @@
 #!/bin/bash
 
-podman images | awk '{print $1, $3}' | \
-    grep -e none -e quay.io/fleet-management -e quay.io/cloudservices/edge-api | \
-    awk '{print $2}' | xargs podman image rm -f
-
 export APP_NAME="edge"  # name of app-sre "application" folder this component lives in
 export COMPONENT_NAME="edge-api"  # name of app-sre "resourceTemplate" in deploy.yaml for this component
 export IMAGE="quay.io/cloudservices/edge-api"  # image location on quay
