@@ -5,10 +5,9 @@
 package mock_services
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	models "github.com/redhatinsights/edge-api/pkg/models"
+	reflect "reflect"
 )
 
 // MockThirdPartyRepoServiceInterface is a mock of ThirdPartyRepoServiceInterface interface

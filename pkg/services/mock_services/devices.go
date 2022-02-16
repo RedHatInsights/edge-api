@@ -5,11 +5,10 @@
 package mock_services
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	inventory "github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	models "github.com/redhatinsights/edge-api/pkg/models"
+	reflect "reflect"
 )
 
 // MockDeviceServiceInterface is a mock of DeviceServiceInterface interface
