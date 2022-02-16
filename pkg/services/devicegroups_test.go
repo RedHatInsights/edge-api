@@ -18,10 +18,12 @@ import (
 
 var _ = Describe("DeviceGroupsService basic functions", func() {
 	var (
+		ctx                 context.Context
 		deviceGroupsService services.DeviceGroupsServiceInterface
 	)
 	BeforeEach(func() {
-		deviceGroupsService = services.NewDeviceGroupsService(context.Background(), log.NewEntry(log.StandardLogger()))
+		ctx = context.Background()
+		deviceGroupsService = services.NewDeviceGroupsService(ctx, log.NewEntry(log.StandardLogger()))
 	})
 
 	Context("creation of duplicated DeviceGroup name", func() {
