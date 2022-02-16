@@ -42,12 +42,8 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 			Expect(err.Error()).To(Equal("device group already exists"))
 		})
 	})
-
 	Context("deletion of DeviceGroup", func() {
-		account, err := common.GetAccountFromContext(ctx)
-		It("should return account from context without error", func() {
-			Expect(err).To(BeNil())
-		})
+		account := common.DefaultAccount
 		deviceGroupName := faker.Name()
 		devices := []models.Device{
 			{
