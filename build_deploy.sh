@@ -44,3 +44,7 @@ for tag in $(echo $TAGS); do
     podman tag "${IMAGE}:${IMAGE_TAG}" "${IMAGE}:${tag}"
     podman push "${IMAGE}:${tag}"
 done
+
+podman images | awk '{print $1, $3}' | \
+    grep -e none -e quay.io/fleet-management -e quay.io/cloudservices/edge-api | \
+    awk '{print $2}' | xargs podman image rm -f
