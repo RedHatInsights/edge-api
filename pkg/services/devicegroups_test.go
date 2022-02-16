@@ -45,7 +45,7 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 
 	Context("deletion of DeviceGroup", func() {
 		account, err := common.GetAccountFromContext(ctx)
-		It("should return account from conext without error", func() {
+		It("should return account from context without error", func() {
 			Expect(err).To(BeNil())
 		})
 		deviceGroupName := faker.Name()
@@ -187,6 +187,108 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 				Expect(err).NotTo(BeNil())
 				expectedErr := services.DeviceGroupAccountDevicesNotFound{}
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
+			})
+		})
+	})
+
+	Context("delete DeviceGroup devices", func() {
+		account, err := common.GetAccountFromContext(ctx)
+		It("should return account from context without error", func() {
+			Expect(err).To(BeNil())
+		})
+		deviceGroupName := faker.Name()
+		devices := []models.Device{
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+			},
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+			},
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+			},
+		}
+		deviceGroup := &models.DeviceGroup{
+			Name:    deviceGroupName,
+			Type:    models.DeviceGroupTypeDefault,
+			Account: account,
+			Devices: devices,
+		}
+
+		It("should create DeviceGroup", func() {
+			err := db.DB.Create(&deviceGroup).Error
+			Expect(err).To(BeNil())
+		})
+
+		When("device group created", func() {
+			var deviceGroupID uint
+			var savedDeviceGroup models.DeviceGroup
+			It("should get the saved DeviceGroup", func() {
+				res := db.DB.Where("name = ?", deviceGroupName).Preload("Devices").First(&savedDeviceGroup)
+				Expect(res.Error).To(BeNil())
+				Expect(savedDeviceGroup.ID).NotTo(BeZero())
+				Expect(len(savedDeviceGroup.Devices) > 0).To(BeTrue())
+				Expect(len(savedDeviceGroup.Devices)).To(Equal(len(devices)))
+				deviceGroupID = savedDeviceGroup.ID
+			})
+			// delete the first device
+			var deletedDeviceID uint
+			It("should remove device from device-group", func() {
+				deletedDevices, delErr := deviceGroupsService.DeleteDeviceGroupDevices(account, deviceGroupID, []models.Device{savedDeviceGroup.Devices[0]})
+				Expect(delErr).To(BeNil())
+				Expect(deletedDevices).NotTo(BeNil())
+				Expect(len(*deletedDevices) > 0).To(BeTrue())
+				deletedDeviceID = (*deletedDevices)[0].ID
+				Expect(deletedDeviceID).To(Equal(savedDeviceGroup.Devices[0].ID))
+			})
+
+			var newSavedDeviceGroup models.DeviceGroup
+			It("should get the saved DeviceGroup after device delete", func() {
+				res := db.DB.Model(&newSavedDeviceGroup).Preload("Devices").First(&newSavedDeviceGroup, deviceGroupID)
+				Expect(res.Error).To(BeNil())
+				Expect(newSavedDeviceGroup.ID).NotTo(BeZero())
+				Expect(len(newSavedDeviceGroup.Devices) > 0).To(BeTrue())
+			})
+			It("should not return the deleted device group device any more", func() {
+				Expect(len(newSavedDeviceGroup.Devices)).To(Equal(len(devices) - 1))
+				var deletedDevicesIDS = make([]uint, 0, len(devices))
+				for _, device := range newSavedDeviceGroup.Devices {
+					if device.ID == deviceGroupID {
+						deletedDevicesIDS = append(deletedDevicesIDS, device.ID)
+					}
+				}
+				Expect(deletedDevicesIDS).To(BeEmpty())
+			})
+
+			It("should return error when device does not exist in device-group", func() {
+				_, err := deviceGroupsService.DeleteDeviceGroupDevices(account, deviceGroupID, []models.Device{savedDeviceGroup.Devices[0]})
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("devices not found in device group"))
+			})
+
+			It("should return error when account is undefined", func() {
+				_, err := deviceGroupsService.DeleteDeviceGroupDevices("", deviceGroupID, []models.Device{savedDeviceGroup.Devices[0]})
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("account or deviceGroupID undefined"))
+			})
+
+			It("should return error when deviceGroupId is undefined", func() {
+				_, err := deviceGroupsService.DeleteDeviceGroupDevices(account, 0, []models.Device{savedDeviceGroup.Devices[0]})
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("account or deviceGroupID undefined"))
+
+			})
+
+			It("should return error when devices not supplied", func() {
+				_, err := deviceGroupsService.DeleteDeviceGroupDevices(account, deviceGroupID, []models.Device{})
+				Expect(err).ToNot(BeNil())
+				Expect(err.Error()).To(Equal("devices must be supplied to be added to or removed from device group"))
 			})
 		})
 	})
