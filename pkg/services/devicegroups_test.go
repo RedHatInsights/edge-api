@@ -18,19 +18,14 @@ import (
 
 var _ = Describe("DeviceGroupsService basic functions", func() {
 	var (
-		ctx                 context.Context
 		deviceGroupsService services.DeviceGroupsServiceInterface
 	)
 	BeforeEach(func() {
-		ctx = context.Background()
-		deviceGroupsService = services.NewDeviceGroupsService(ctx, log.NewEntry(log.StandardLogger()))
+		deviceGroupsService = services.NewDeviceGroupsService(context.Background(), log.NewEntry(log.StandardLogger()))
 	})
 
 	Context("creation of duplicated DeviceGroup name", func() {
-		account, err := common.GetAccountFromContext(ctx)
-		It("should return account from conext without error", func() {
-			Expect(err).To(BeNil())
-		})
+		account := common.DefaultAccount
 		It("should fail to create a DeviceGroup with duplicated name", func() {
 			deviceGroupName := faker.Name()
 			deviceGroup, err := deviceGroupsService.CreateDeviceGroup(&models.DeviceGroup{Name: deviceGroupName, Account: account, Type: models.DeviceGroupTypeDefault})
@@ -63,8 +58,18 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 			Account: account,
 			Devices: devices,
 		}
+		// same account, out of the DeviceGroup
+		outOfGroupDevice := models.Device{
+			Name:    faker.Name(),
+			UUID:    faker.UUIDHyphenated(),
+			Account: account,
+		}
 		It("should create a DeviceGroup", func() {
 			dbResult := db.DB.Create(&deviceGroup).Error
+			Expect(dbResult).To(BeNil())
+		})
+		It("should create out of the device", func() {
+			dbResult := db.DB.Create(&outOfGroupDevice).Error
 			Expect(dbResult).To(BeNil())
 		})
 		It("should get the DeviceGroup ID", func() {
@@ -85,6 +90,10 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 				var devicesFromDB []models.Device
 				db.DB.Where("name in (?)", []string{devices[0].Name, devices[1].Name}).Find(&devicesFromDB)
 				Expect(devicesFromDB).To(BeEmpty())
+			})
+			It("should find the out of the DeviceGroup device", func() {
+				dbResult := db.DB.Where("name = ?", outOfGroupDevice.Name).First(&outOfGroupDevice)
+				Expect(dbResult.Error).To(BeNil())
 			})
 		})
 		It("should fail to delete a DeviceGroup with invalid ID", func() {
