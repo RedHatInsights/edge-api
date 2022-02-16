@@ -249,8 +249,9 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string) (strin
 	if c.ImageBuildHash != "" {
 		tarFileName = strings.Join([]string{c.ImageBuildHash, "tar"}, ".")
 	}
+	tarFileName = filepath.Join(dest, tarFileName)
 	log.WithField("tarFileName", tarFileName).Debug("Grabbing tar file")
-	_, err = grab.Get(filepath.Join(dest, tarFileName), c.ImageBuildTarURL)
+	_, err = grab.Get(tarFileName, c.ImageBuildTarURL)
 
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error grabbing tar file")
@@ -311,11 +312,11 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 	}
 	rb.log = rb.log.WithField("commitID", c.ID)
 	rb.log.Info("Extracting repo")
-	tarFile, err := os.Open(filepath.Clean(filepath.Join(dest, tarFileName)))
+	tarFile, err := os.Open(filepath.Clean(tarFileName))
 	if err != nil {
 		rb.log.WithFields(log.Fields{
 			"error":    err.Error(),
-			"filepath": filepath.Join(dest, tarFileName),
+			"filepath": tarFileName,
 		}).Error("Failed to open file")
 		return err
 	}
@@ -327,7 +328,7 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 
 	log.Debugf("Unpacking tarball finished::tarFileName: %#v", tarFileName)
 
-	err = os.Remove(filepath.Join(dest, tarFileName))
+	err = os.Remove(tarFileName)
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error removing tar file")
 		return err
