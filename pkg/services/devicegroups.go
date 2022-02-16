@@ -288,7 +288,7 @@ func (s *DeviceGroupsService) DeleteDeviceGroupDevices(account string, deviceGro
 	}
 
 	missingDevicesCount := len(devicesIDsToRemove) - len(devicesToRemove)
-	if missingDevicesCount != 0 {
+	if len(devicesToRemove) == 0 || missingDevicesCount != 0 {
 		s.log.Debug(fmt.Sprintf("devices not found in the device group: %d", missingDevicesCount))
 		return nil, new(DeviceGroupDevicesNotFound)
 	}

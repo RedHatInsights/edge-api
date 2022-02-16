@@ -45,10 +45,10 @@ func MakeDeviceGroupsRouter(sub chi.Router) {
 		r.Put("/", UpdateDeviceGroup)
 		r.Delete("/", DeleteDeviceGroupByID)
 		r.Post("/devices", AddDeviceGroupDevices)
-		r.Delete("/devices", DeleteDeviceGroupDevices)
+		r.Delete("/devices", DeleteDeviceGroupManyDevices)
 		r.Route("/devices/{DEVICE_ID}", func(d chi.Router) {
 			d.Use(DeviceGroupDeviceCtx)
-			d.Delete("/", DeleteDeviceGroupDevice)
+			d.Delete("/", DeleteDeviceGroupOneDevice)
 		})
 	})
 }
@@ -106,7 +106,6 @@ func DeviceGroupDeviceCtx(next http.Handler) http.Handler {
 		deviceGroup := getContextDeviceGroup(w, r)
 		if deviceGroup == nil {
 			ctxServices.Log.Debug("device-group not defined")
-			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("device-group is not defined"))
 			return
 		}
 		if strDeviceID := chi.URLParam(r, "DEVICE_ID"); strDeviceID != "" {
@@ -433,8 +432,8 @@ func AddDeviceGroupDevices(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, ctxServices.Log, devicesAdded)
 }
 
-// DeleteDeviceGroupDevices delete the requested devices from device-group
-func DeleteDeviceGroupDevices(w http.ResponseWriter, r *http.Request) {
+// DeleteDeviceGroupManyDevices delete the requested devices from device-group
+func DeleteDeviceGroupManyDevices(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	contextDeviceGroup := getContextDeviceGroup(w, r)
 	if contextDeviceGroup == nil {
@@ -465,8 +464,8 @@ func DeleteDeviceGroupDevices(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, ctxServices.Log, deletedDevices)
 }
 
-// DeleteDeviceGroupDevice delete the requested device from device-group
-func DeleteDeviceGroupDevice(w http.ResponseWriter, r *http.Request) {
+// DeleteDeviceGroupOneDevice delete the requested device from device-group
+func DeleteDeviceGroupOneDevice(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	contextDeviceGroup := getContextDeviceGroup(w, r)
 	contextDeviceGroupDevice := getContextDeviceGroupDevice(w, r)

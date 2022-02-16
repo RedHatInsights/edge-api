@@ -508,7 +508,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				rr := httptest.NewRecorder()
 
 				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupDevices(account, deviceGroup.ID, devicesToRemove).Return(&devicesToRemove, nil)
-				handler := http.HandlerFunc(DeleteDeviceGroupDevice)
+				handler := http.HandlerFunc(DeleteDeviceGroupOneDevice)
 				handler.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(http.StatusOK))
 			})
@@ -530,7 +530,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				rr := httptest.NewRecorder()
 
 				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupDevices(account, deviceGroup.ID, devicesToRemove).Return(&devicesToRemove, nil)
-				handler := http.HandlerFunc(DeleteDeviceGroupDevices)
+				handler := http.HandlerFunc(DeleteDeviceGroupManyDevices)
 				handler.ServeHTTP(rr, req)
 
 				Expect(rr.Code).To(Equal(http.StatusOK))
