@@ -9,12 +9,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/clients"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"strconv"
+
+	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/clients"
+	log "github.com/sirupsen/logrus"
 )
 
 // ClientInterface is an Interface to make request to FDO onboarding server

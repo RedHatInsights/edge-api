@@ -71,6 +71,13 @@ func (e *DeviceGroupAccountDevicesNotFound) Error() string {
 
 }
 
+// DeviceGroupDevicesNotFound indicates that devices not found in the device group collection
+type DeviceGroupDevicesNotFound struct{}
+
+func (e *DeviceGroupDevicesNotFound) Error() string {
+	return "devices not found in device group"
+}
+
 // DeviceGroupAccountOrIDUndefined indicates that device group account or ID was not supplied
 type DeviceGroupAccountOrIDUndefined struct{}
 
@@ -82,7 +89,14 @@ func (e *DeviceGroupAccountOrIDUndefined) Error() string {
 type DeviceGroupDevicesNotSupplied struct{}
 
 func (e *DeviceGroupDevicesNotSupplied) Error() string {
-	return "devices must be supplied to be added to device group"
+	return "devices must be supplied to be added to or removed from device group"
+}
+
+// DeviceGroupDeviceNotSupplied indicates that device group device was not supplied
+type DeviceGroupDeviceNotSupplied struct{}
+
+func (e *DeviceGroupDeviceNotSupplied) Error() string {
+	return "device-group device must be supplied"
 }
 
 // DeviceGroupAlreadyExists indicates that device group already exists

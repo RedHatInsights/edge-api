@@ -48,7 +48,17 @@ type PlatformInsightsCreateEventPayload struct {
 		StaleTimestamp string `json:"stale_timestamp"`
 		Reporter       string `json:"reporter"`
 		Tags           string `json:"tags"`
-		SystemProfile  string `json:"system_profile"`
+		SystemProfile  struct {
+			HostType             string `json:"host_type"`
+			RPMOstreeDeployments struct {
+				ID       string `json:"id"`
+				Booted   bool   `json:"booted"`
+				Origin   string `json:"origin"`
+				Osname   string `json:"osname"`
+				Pinned   bool   `json:"pinned"`
+				Checksum string `json:"checksum"`
+			} `json:"rpm_ostree_deployments"`
+		} `json:"system_profile"`
 	} `json:"host"`
 }
 
