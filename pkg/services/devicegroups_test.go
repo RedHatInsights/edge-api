@@ -134,22 +134,21 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 				Expect(dbResult).To(BeNil())
 			}
 		})
-		var devicesFromDB1 []models.Device
 		var deviceGroup1 models.DeviceGroup
 		It("should add devices to DeviceGroups", func() {
-			dbResult := db.DB.Where("name in (?)", []string{devices[0].Name, devices[1].Name}).Find(&devicesFromDB1)
+			dbResult := db.DB.Where("name in (?)", []string{devices[0].Name, devices[1].Name}).Find(&devices)
 			Expect(dbResult.Error).To(BeNil())
 
 			dbResult = db.DB.Where("name = ?", deviceGroupName1).First(&deviceGroup1)
 			Expect(dbResult.Error).To(BeNil())
 
-			addedDevices, err := deviceGroupsService.AddDeviceGroupDevices(account1, deviceGroup1.ID, devicesFromDB1)
+			addedDevices, err := deviceGroupsService.AddDeviceGroupDevices(account1, deviceGroup1.ID, devices)
 			Expect(err).To(BeNil())
 			Expect(len(*addedDevices)).To(Equal(2))
 		})
 		When("re-adding devices", func() {
 			It("should not return an error", func() {
-				_, err := deviceGroupsService.AddDeviceGroupDevices(account1, deviceGroup1.ID, devicesFromDB1)
+				_, err := deviceGroupsService.AddDeviceGroupDevices(account1, deviceGroup1.ID, devices)
 				Expect(err).To(BeNil())
 			})
 		})
@@ -163,7 +162,7 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 		})
 		When("adding with empty account", func() {
 			It("should fail", func() {
-				_, err := deviceGroupsService.AddDeviceGroupDevices("", deviceGroup1.ID, devicesFromDB1)
+				_, err := deviceGroupsService.AddDeviceGroupDevices("", deviceGroup1.ID, devices)
 				Expect(err).NotTo(BeNil())
 				expectedErr := services.DeviceGroupAccountOrIDUndefined{}
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
@@ -171,7 +170,7 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 		})
 		When("adding with empty DeviceGroup ID", func() {
 			It("should fail", func() {
-				_, err := deviceGroupsService.AddDeviceGroupDevices(account1, 0, devicesFromDB1)
+				_, err := deviceGroupsService.AddDeviceGroupDevices(account1, 0, devices)
 				Expect(err).NotTo(BeNil())
 				expectedErr := services.DeviceGroupAccountOrIDUndefined{}
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
