@@ -2,8 +2,10 @@ package dependencies
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
+	"github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
@@ -25,6 +27,7 @@ type EdgeAPIServices struct {
 }
 
 // Init creates all services that Edge API depends on in order to have dependency injection on context
+// Context is the environment for a request (think Bash environment variables)
 func Init(ctx context.Context) *EdgeAPIServices {
 	account, _ := common.GetAccountFromContext(ctx)
 	log := log.WithFields(log.Fields{
@@ -58,8 +61,11 @@ func ContextWithServices(ctx context.Context, services *EdgeAPIServices) context
 // ServicesFromContext return the edge api services from context
 func ServicesFromContext(ctx context.Context) *EdgeAPIServices {
 	edgeAPIServices, ok := ctx.Value(servicesKey).(*EdgeAPIServices)
+	// If there is problem with context, there is a critical issue with the
+	// environment or code and we need to raisd an alert and panic the container
 	if !ok {
-		log.Fatal("Could not get EdgeAPIServices from Context")
+		err := errors.New("Could not get EdgeAPIServices from Context")
+		logger.LogErrorAndPanic("Could not get EdgeAPIServices from Context", err)
 	}
 
 	return edgeAPIServices
