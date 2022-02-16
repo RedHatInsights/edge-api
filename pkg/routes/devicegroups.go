@@ -27,6 +27,14 @@ func setContextDeviceGroup(ctx context.Context, deviceGroup *models.DeviceGroup)
 	return context.WithValue(ctx, deviceGroupKey, deviceGroup)
 }
 
+type deviceGroupDeviceKeyType string
+
+const deviceGroupDeviceKey = deviceGroupDeviceKeyType("device_group_device_key")
+
+func setContextDeviceGroupDevice(ctx context.Context, deviceGroupDevice *models.Device) context.Context {
+	return context.WithValue(ctx, deviceGroupDeviceKey, deviceGroupDevice)
+}
+
 // MakeDeviceGroupsRouter adds support for device groups operations
 func MakeDeviceGroupsRouter(sub chi.Router) {
 	sub.With(validateGetAllDeviceGroupsFilterParams).With(common.Paginate).Get("/", GetAllDeviceGroups)
@@ -37,6 +45,11 @@ func MakeDeviceGroupsRouter(sub chi.Router) {
 		r.Put("/", UpdateDeviceGroup)
 		r.Delete("/", DeleteDeviceGroupByID)
 		r.Post("/devices", AddDeviceGroupDevices)
+		r.Delete("/devices", DeleteDeviceGroupManyDevices)
+		r.Route("/devices/{DEVICE_ID}", func(d chi.Router) {
+			d.Use(DeviceGroupDeviceCtx)
+			d.Delete("/", DeleteDeviceGroupOneDevice)
+		})
 	})
 }
 
@@ -81,6 +94,56 @@ func DeviceGroupCtx(next http.Handler) http.Handler {
 		} else {
 			ctxServices.Log.Debug("deviceGroup ID was not passed to the request or it was empty")
 			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("deviceGroup ID required"))
+			return
+		}
+	})
+}
+
+// DeviceGroupDeviceCtx is a handler to DeviceGroup Device requests
+func DeviceGroupDeviceCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		deviceGroup := getContextDeviceGroup(w, r)
+		if deviceGroup == nil {
+			ctxServices.Log.Debug("device-group not defined")
+			return
+		}
+		if strDeviceID := chi.URLParam(r, "DEVICE_ID"); strDeviceID != "" {
+			deviceID, err := strconv.ParseUint(strDeviceID, 10, 32)
+			deviceLog := ctxServices.Log.WithField("deviceID", strDeviceID)
+			deviceLog.Debug("Retrieving device-group device")
+			if err != nil {
+				deviceLog.Debug("deviceID is not an integer")
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+				return
+			}
+			account, err := common.GetAccount(r)
+			if err != nil {
+				ctxServices.Log.WithFields(log.Fields{"error": err.Error()}).Error("Error retrieving account or device group doesn't belong to account")
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+				return
+			}
+			deviceGroupDevice, err := ctxServices.DeviceGroupsService.GetDeviceGroupDeviceByID(account, deviceGroup.ID, uint(deviceID))
+			if err != nil {
+				var responseErr errors.APIError
+				switch err.(type) {
+				case *services.DeviceGroupNotFound:
+					responseErr = errors.NewNotFound(err.Error())
+				case *services.DeviceGroupDeviceNotSupplied:
+					responseErr = errors.NewBadRequest("Device group device not supplied")
+				default:
+					responseErr = errors.NewInternalServerError()
+					responseErr.SetTitle("failed getting third device group")
+				}
+				respondWithAPIError(w, ctxServices.Log, responseErr)
+				return
+			}
+
+			ctx := setContextDeviceGroupDevice(r.Context(), deviceGroupDevice)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		} else {
+			ctxServices.Log.Debug("deviceGroup deviceID was not passed to the request or it was empty")
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("deviceGroup deviceID required"))
 			return
 		}
 	})
@@ -326,6 +389,17 @@ func createDeviceRequest(w http.ResponseWriter, r *http.Request) (*models.Device
 	return deviceGroup, nil
 }
 
+func getContextDeviceGroupDevice(w http.ResponseWriter, r *http.Request) *models.Device {
+	ctx := r.Context()
+	deviceGroupDevice, ok := ctx.Value(deviceGroupDeviceKey).(*models.Device)
+	if !ok {
+		ctxServices := dependencies.ServicesFromContext(ctx)
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("Failed getting device-group device from context"))
+		return nil
+	}
+	return deviceGroupDevice
+}
+
 // AddDeviceGroupDevices add devices to device group
 func AddDeviceGroupDevices(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -356,4 +430,67 @@ func AddDeviceGroupDevices(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSONBody(w, ctxServices.Log, devicesAdded)
+}
+
+// DeleteDeviceGroupManyDevices delete the requested devices from device-group
+func DeleteDeviceGroupManyDevices(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	contextDeviceGroup := getContextDeviceGroup(w, r)
+	if contextDeviceGroup == nil {
+		return
+	}
+
+	var requestDeviceGroup models.DeviceGroup
+	if err := readRequestJSONBody(w, r, ctxServices.Log, &requestDeviceGroup); err != nil {
+		return
+	}
+
+	deletedDevices, err := ctxServices.DeviceGroupsService.DeleteDeviceGroupDevices(contextDeviceGroup.Account, contextDeviceGroup.ID, requestDeviceGroup.Devices)
+	if err != nil {
+		ctxServices.Log.WithField("error", err.Error()).Error("Error when removing deviceGroup devices")
+		var apiError errors.APIError
+		switch err.(type) {
+		case *services.DeviceGroupDevicesNotSupplied, *services.DeviceGroupAccountOrIDUndefined:
+			apiError = errors.NewBadRequest(err.Error())
+		case *services.DeviceGroupDevicesNotFound:
+			apiError = errors.NewNotFound(err.Error())
+		default:
+			apiError = errors.NewInternalServerError()
+		}
+		respondWithAPIError(w, ctxServices.Log, apiError)
+		return
+	}
+
+	respondWithJSONBody(w, ctxServices.Log, deletedDevices)
+}
+
+// DeleteDeviceGroupOneDevice delete the requested device from device-group
+func DeleteDeviceGroupOneDevice(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	contextDeviceGroup := getContextDeviceGroup(w, r)
+	contextDeviceGroupDevice := getContextDeviceGroupDevice(w, r)
+	if contextDeviceGroupDevice == nil {
+		return
+	}
+
+	_, err := ctxServices.DeviceGroupsService.DeleteDeviceGroupDevices(
+		contextDeviceGroup.Account, contextDeviceGroup.ID, []models.Device{*contextDeviceGroupDevice},
+	)
+
+	if err != nil {
+		ctxServices.Log.WithField("error", err.Error()).Error("Error when removing deviceGroup devices")
+		var apiError errors.APIError
+		switch err.(type) {
+		case *services.DeviceGroupDevicesNotSupplied, *services.DeviceGroupAccountOrIDUndefined:
+			apiError = errors.NewBadRequest(err.Error())
+		case *services.DeviceGroupDevicesNotFound:
+			apiError = errors.NewNotFound(err.Error())
+		default:
+			apiError = errors.NewInternalServerError()
+		}
+		respondWithAPIError(w, ctxServices.Log, apiError)
+		return
+	}
+
+	respondWithJSONBody(w, ctxServices.Log, contextDeviceGroupDevice)
 }
