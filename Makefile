@@ -44,14 +44,23 @@ help:
 test:
 	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /test/) $(TEST_OPTIONS)
 
+test-no-fdo:
+	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS)
+
 coverage: 
 	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /test/) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
+
+coverage-no-fdo: 
+	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
 
 coverage-html:
 	go tool cover -html=coverage.txt -o coverage.html
 
 vet:
 	go vet $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
+
+vet-no-fdo:
+	go vet $$(go list ./... | grep -v /vendor/)
 
 lint:
 	golint $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
