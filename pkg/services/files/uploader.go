@@ -190,21 +190,18 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 // UploadFile takes a Filename path as a string and then uploads that to
 // the supplied location in s3
 func (u *S3Uploader) UploadFile(fname string, uploadPath string) (string, error) {
-	u.log = u.log.WithFields(log.Fields{"fname": fname, "uploadPath": uploadPath})
-	u.log.Info("Uploading file")
 	f, err := os.Open(filepath.Clean(fname))
 	if err != nil {
 		return "", fmt.Errorf("failed to open file %q, %v", fname, err)
 	}
 	// Upload the file to S3.
-	result, err := u.Client.PutObject(&s3.PutObjectInput{
+	_, err = u.Client.PutObject(&s3.PutObjectInput{
 		Bucket: aws.String(u.Bucket),
 		Key:    aws.String(uploadPath),
 		Body:   f,
 		ACL:    aws.String("public-read"),
 	})
 
-	u.log.WithField("result", result).Info("Finished upload to AWS S3")
 	if err != nil {
 		u.log.WithField("error", err.Error()).Error("Error uploading to AWS S3")
 		return "", err
@@ -215,6 +212,5 @@ func (u *S3Uploader) UploadFile(fname string, uploadPath string) (string, error)
 	}
 	region := *u.Client.Config.Region
 	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", u.Bucket, region, uploadPath)
-	u.log.WithField("s3URL", s3URL).Info("Upload file finished...")
 	return s3URL, nil
 }
