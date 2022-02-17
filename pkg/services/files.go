@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/services/files"
 	log "github.com/sirupsen/logrus"
 )
@@ -84,7 +85,7 @@ func NewFilesService(log *log.Entry) FilesService {
 			Credentials: credentials.NewStaticCredentials(cfg.AccessKey, cfg.SecretKey, ""),
 		})
 		if err != nil {
-			panic(err)
+			logger.LogErrorAndPanic("failure creating new session", err)
 		}
 	}
 	client := s3.New(sess)

@@ -121,10 +121,10 @@ func main() {
 		<-sigint
 		log.Info("Shutting down gracefully...")
 		if err := srv.Shutdown(context.Background()); err != nil {
-			log.WithFields(log.Fields{"error": err}).Fatal("HTTP Server Shutdown failed")
+			l.LogErrorAndPanic("HTTP server (web port) shutdown failed", err)
 		}
 		if err := msrv.Shutdown(context.Background()); err != nil {
-			log.WithFields(log.Fields{"error": err}).Fatal("HTTP Server Shutdown failed")
+			l.LogErrorAndPanic("HTTP server (metrics port) shutdown failed", err)
 		}
 		services.WaitGroup.Wait()
 		close(gracefulStop)
@@ -132,20 +132,22 @@ func main() {
 
 	go func() {
 		if err := msrv.ListenAndServe(); err != http.ErrServerClosed {
-			log.WithFields(log.Fields{"error": err}).Fatal("Metrics Service Stopped")
+			l.LogErrorAndPanic("metrics service stopped unexpectedly", err)
 		}
 	}()
 	if cfg.KafkaConfig != nil {
 		log.Info("Starting Kafka Consumers")
 		playbookConsumer := services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.playbook-dispatcher.runs")
-		go playbookConsumer.Start()
 		platformInvConsumer := services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.inventory.events")
-		go platformInvConsumer.Start()
+		if playbookConsumer != nil && platformInvConsumer != nil {
+			go playbookConsumer.Start()
+			go platformInvConsumer.Start()
+		}
 
 	}
 
 	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-		log.WithFields(log.Fields{"error": err}).Fatal("Service Stopped")
+		l.LogErrorAndPanic("web service stopped unexpectedly", err)
 	}
 
 	<-gracefulStop
