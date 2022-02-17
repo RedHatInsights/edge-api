@@ -138,9 +138,11 @@ func main() {
 	if cfg.KafkaConfig != nil {
 		log.Info("Starting Kafka Consumers")
 		playbookConsumer := services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.playbook-dispatcher.runs")
-		go playbookConsumer.Start()
 		platformInvConsumer := services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.inventory.events")
-		go platformInvConsumer.Start()
+		if playbookConsumer != nil && platformInvConsumer != nil {
+			go playbookConsumer.Start()
+			go platformInvConsumer.Start()
+		}
 
 	}
 
