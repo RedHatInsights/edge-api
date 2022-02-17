@@ -25,9 +25,7 @@ func (s *edgeAPISchemaGen) init() {
 
 func (s *edgeAPISchemaGen) addSchema(name string, model interface{}) {
 	schema, err := openapi3gen.NewSchemaRefForValue(model, s.Components.Schemas)
-	if err != nil {
-		panic(err)
-	}
+	checkErr(err)
 	s.Components.Schemas[name] = schema
 }
 
