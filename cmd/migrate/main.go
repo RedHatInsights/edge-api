@@ -75,7 +75,7 @@ func main() {
 		&models.FDODevice{}, &models.OwnershipVoucherData{},
 		&models.FDOUser{}, &models.SSHKey{}, &models.DeviceGroup{})
 	if err != nil {
-		panic(err)
+		l.LogErrorAndPanic("database automigrate failure", err)
 	}
 
 	log.Info("Migration Completed")
