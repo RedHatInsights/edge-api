@@ -77,6 +77,9 @@ func NewKafkaConsumerService(config *clowder.KafkaConfig, topic string) Consumer
 		s.consumer = s.ConsumePlaybookDispatcherRuns
 	} else if s.topic == "platform.inventory.events" {
 		s.consumer = s.ConsumeInventoryCreateEvents
+	} else {
+		log.Errorf("No consumer for topic: %s", topic)
+		return nil
 	}
 	s.Reader = s.initReader()
 	return s

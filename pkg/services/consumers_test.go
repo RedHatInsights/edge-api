@@ -11,7 +11,7 @@ var _ = Describe("ConsumerService basic functions", func() {
 	Describe("creation of the service", func() {
 		Context("returns a correct instance", func() {
 			p := 9092
-			topic := "test1"
+			topic := "platform.playbook-dispatcher.runs"
 			config := &v1.KafkaConfig{Brokers: []v1.BrokerConfig{{Hostname: "localhost", Port: &p}}}
 			s := services.NewKafkaConsumerService(config, topic)
 			It("not to be nil", func() {
