@@ -40,12 +40,9 @@ var _ = Describe("RepoBuilder Service Test", func() {
 
 				os.MkdirAll(filePathExtraction, 0755)
 				testFilePath, _ := createTestFile(filePath)
-				testTarFile = filepath.Join(filePath, testTarFile)
-				err := createTarball(testTarFile, testFilePath)
+				createTarball(filepath.Join(filePath, testTarFile), testFilePath)
 
-				Expect(err).ToNot(HaveOccurred())
-
-				err = service.ExtractVersionRepo(commit, testTarFile, filePath)
+				err := service.ExtractVersionRepo(commit, testTarFile, filePath)
 
 				Expect(err).ToNot(HaveOccurred())
 
