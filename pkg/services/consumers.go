@@ -49,15 +49,7 @@ type PlatformInsightsCreateEventPayload struct {
 		Reporter       string `json:"reporter"`
 		Tags           string `json:"tags"`
 		SystemProfile  struct {
-			HostType             string `json:"host_type"`
-			RPMOstreeDeployments struct {
-				ID       string `json:"id"`
-				Booted   bool   `json:"booted"`
-				Origin   string `json:"origin"`
-				Osname   string `json:"osname"`
-				Pinned   bool   `json:"pinned"`
-				Checksum string `json:"checksum"`
-			} `json:"rpm_ostree_deployments"`
+			HostType string `json:"host_type"`
 		} `json:"system_profile"`
 	} `json:"host"`
 }
