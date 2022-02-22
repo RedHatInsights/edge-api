@@ -389,7 +389,7 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 	if err != nil {
 		log.Debug("Skipping message - it is not a create message")
 	} else {
-		if e.Type == "created" && e.Host.SystemProfile.HostType == "edge" && e.Host.SystemProfile.RPMOstreeDeployments.Origin == "rhel-edge:rhel/8/x86_64/edge" {
+		if e.Type == "created" && e.Host.SystemProfile.HostType == "edge" {
 			var newDevice = models.Device{
 				UUID:        string(e.Host.ID),
 				RHCClientID: string(e.Host.InsightsID),

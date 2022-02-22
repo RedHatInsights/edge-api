@@ -28,6 +28,7 @@ type KafkaConsumerService struct {
 	config        *clowder.KafkaConfig
 	shuttingDown  bool
 	topic         string
+	consumer      func() error
 }
 
 // PlatformInsightsCreateEventPayload is the body of the create event found on the platform.inventory.events kafka topic.
@@ -48,15 +49,7 @@ type PlatformInsightsCreateEventPayload struct {
 		Reporter       string `json:"reporter"`
 		Tags           string `json:"tags"`
 		SystemProfile  struct {
-			HostType             string `json:"host_type"`
-			RPMOstreeDeployments struct {
-				ID       string `json:"id"`
-				Booted   bool   `json:"booted"`
-				Origin   string `json:"origin"`
-				Osname   string `json:"osname"`
-				Pinned   bool   `json:"pinned"`
-				Checksum string `json:"checksum"`
-			} `json:"rpm_ostree_deployments"`
+			HostType string `json:"host_type"`
 		} `json:"system_profile"`
 	} `json:"host"`
 }
@@ -71,6 +64,14 @@ func NewKafkaConsumerService(config *clowder.KafkaConfig, topic string) Consumer
 		config:        config,
 		shuttingDown:  false,
 		topic:         topic,
+	}
+	if topic == "platform.playbook-dispatcher.runs" {
+		s.consumer = s.ConsumePlaybookDispatcherRuns
+	} else if s.topic == "platform.inventory.events" {
+		s.consumer = s.ConsumeInventoryCreateEvents
+	} else {
+		log.Errorf("No consumer for topic: %s", topic)
+		return nil
 	}
 	s.Reader = s.initReader()
 	return s
@@ -190,12 +191,7 @@ func (s *KafkaConsumerService) Start() {
 	for {
 		// The only way to actually exit this for is sending an exit signal to the app
 		// Due to this call, this is also a method that can't be unit tested (see comment in the method above)
-		var err error
-		if s.topic == "platform.playbook-dispatcher.runs" {
-			err = s.ConsumePlaybookDispatcherRuns()
-		} else if s.topic == "platform.inventory.events" {
-			err = s.ConsumeInventoryCreateEvents()
-		}
+		err := s.consumer()
 		if s.shuttingDown {
 			log.WithFields(log.Fields{
 				"error": err.Error(),
