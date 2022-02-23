@@ -18,6 +18,9 @@ import (
 // Log is an instance of the global logrus.Logger
 var logLevel log.Level
 
+// hook is an instance of cloudwatch.hook
+var hook *lc.Hook
+
 // InitLogger initializes the API logger
 func InitLogger() {
 
@@ -38,7 +41,7 @@ func InitLogger() {
 		awsconf := aws.NewConfig().WithRegion(cfg.Logging.Region).WithCredentials(cred)
 		hook, err := lc.NewBatchingHook(cfg.Logging.LogGroup, cfg.Hostname, awsconf, 10*time.Second)
 		if err != nil {
-			log.Info(err)
+			log.WithFields(log.Fields{"error": err.Error()}).Error("Error creating AWS hook")
 		}
 		log.AddHook(hook)
 		log.SetFormatter(&log.JSONFormatter{
@@ -56,4 +59,21 @@ func InitLogger() {
 
 	log.SetOutput(os.Stdout)
 	log.SetLevel(logLevel)
+}
+
+// FlushLogger Flush batched logging messages
+func FlushLogger() {
+	if hook != nil {
+		err := hook.Flush()
+		if err != nil {
+			log.WithFields(log.Fields{"error": err.Error()}).Error("Error flushing batched logging messages")
+		}
+	}
+}
+
+// LogErrorAndPanic Records the error, flushes the buffer, then panics the container
+func LogErrorAndPanic(msg string, err error) {
+	log.WithFields(log.Fields{"error": err}).Error(msg)
+	FlushLogger()
+	panic(err)
 }

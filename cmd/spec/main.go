@@ -25,13 +25,12 @@ func (s *edgeAPISchemaGen) init() {
 
 func (s *edgeAPISchemaGen) addSchema(name string, model interface{}) {
 	schema, err := openapi3gen.NewSchemaRefForValue(model, s.Components.Schemas)
-	if err != nil {
-		panic(err)
-	}
+	checkErr(err)
 	s.Components.Schemas[name] = schema
 }
 
 // Used to generate openapi yaml file for components.
+// Typically, runs either locally or as part of GitHub Actions (.github/workflows/lint.yml)
 func main() {
 	gen := edgeAPISchemaGen{}
 	gen.init()
@@ -93,6 +92,7 @@ func main() {
 
 func checkErr(err error) {
 	if err != nil {
+		// This will not cause the pod to crash so don't call LogErrorAndPanic()
 		panic(err)
 	}
 }

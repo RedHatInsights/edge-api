@@ -32,11 +32,12 @@ podman push "${IMAGE}:${IMAGE_TAG}"
 
 TAGS="latest main qa"
 # check if a change is under cmd/kafka directory and tag accordingly
-num_files=$(git log --raw -n 1 --no-merges | egrep "^:.*" | wc -l)
+#num_files=$(git log --raw -n 1 --no-merges | egrep "^:.*" | wc -l)
 num_kafka_files=$(git log --raw -n 1 --no-merges | egrep "^:.*cmd/kafka" | wc -l)
 # if all changes are under cmd/kafka then only tag kafka
 if [[ $num_kafka_files -gt 0 ]]; then
-    [[ num_files -eq num_kafka_files ]] && TAGS="kafka" || TAGS="$TAGS kafka"
+    #[[ num_files -eq num_kafka_files ]] && TAGS="kafka" || TAGS="$TAGS kafka"
+    TAGS="$TAGS kafka"
 fi
 
 for tag in $(echo $TAGS); do

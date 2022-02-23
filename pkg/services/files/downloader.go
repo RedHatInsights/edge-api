@@ -1,10 +1,11 @@
 package files
 
 import (
-	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // Downloader is the interface that downloads a source into a path

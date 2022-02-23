@@ -1098,6 +1098,41 @@ paths:
                 $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
       summary: Get an device group by id.
+    delete:
+      operationId: DeleteDeviceGroupByID
+      parameters:
+        - name: ID
+          in: path
+          required: true
+          description: Device Group Id
+          schema:
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.DeviceGroup"
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.BadRequest"
+          description: The request sent couldn't be processed.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.NotFound"
+          description: device group not found or devices not found.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.InternalServerError"
+          description: There was an internal server error.
+      summary: Delete device group by id.
     put:
       operationId: UpdateDeviceGroup
       parameters:
@@ -1176,3 +1211,92 @@ paths:
                 $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
       summary: Add devices to device group.
+    delete:
+      operationId: DeleteDeviceGroupDevices
+      parameters:
+        - name: ID
+          in: path
+          required: true
+          description: Device Group Id
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1.DeviceGroup"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/v1.Device"
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.BadRequest"
+          description: The request sent couldn't be processed.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.NotFound"
+          description: device group not found or devices not found.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.InternalServerError"
+          description: There was an internal server error.
+      summary: Remove devices from device-group.
+  /device-groups/{ID}/devices/{DEVICE_ID}:
+    delete:
+      operationId: DeleteDeviceGroupDevice
+      parameters:
+        - name: ID
+          in: path
+          required: true
+          description: Device Group Id
+          schema:
+            type: integer
+        - name: DEVICE_ID
+          in: path
+          required: true
+          description: Device Id
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1.DeviceGroup"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.Device"
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.BadRequest"
+          description: The request sent couldn't be processed.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.NotFound"
+          description: device group not found or device not found.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.InternalServerError"
+          description: There was an internal server error.
+      summary: Remove device from device-group.

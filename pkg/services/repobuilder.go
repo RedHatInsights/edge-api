@@ -70,7 +70,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		return nil, errors.New("repo unavailable")
 	}
 	cfg := config.Get()
-	path := filepath.Join(cfg.RepoTempPath, "upd/", strconv.FormatUint(uint64(update.ID), 10))
+	path := filepath.Clean(filepath.Join(cfg.RepoTempPath, "upd/", strconv.FormatUint(uint64(update.ID), 10)))
 	rb.log.WithField("path", path).Debug("Update path will be created")
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
@@ -92,7 +92,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	}
 
 	if len(update.OldCommits) > 0 {
-		stagePath := filepath.Join(path, "staging")
+		stagePath := filepath.Clean(filepath.Join(path, "staging"))
 		err = os.MkdirAll(stagePath, os.FileMode(int(0755)))
 		if err != nil {
 			rb.log.WithField("error", err.Error()).Error("Error making dir")
@@ -108,7 +108,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		// into the update commit repo
 		for _, commit := range update.OldCommits {
 			commit := commit // this will prevent implicit memory aliasing in the loop
-			tarFileName, err := rb.DownloadVersionRepo(&commit, filepath.Join(stagePath, commit.OSTreeCommit))
+			tarFileName, err := rb.DownloadVersionRepo(&commit, filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit)))
 			if err != nil {
 				rb.log.WithField("error", err.Error()).Error("Error downloading tar")
 				return nil, fmt.Errorf("error Upload repo repo :: %s", err.Error())
@@ -119,7 +119,8 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 				return nil, err
 			}
 			// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
-			err = rb.repoPullLocalStaticDeltas(update.Commit, &commit, filepath.Join(path, "repo"), filepath.Join(stagePath, commit.OSTreeCommit, "repo"))
+			err = rb.repoPullLocalStaticDeltas(update.Commit, &commit, filepath.Clean(filepath.Join(path, "repo")),
+				filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit, "repo")))
 			if err != nil {
 				rb.log.WithField("error", err.Error()).Error("Error pulling static deltas")
 				return nil, err
@@ -138,7 +139,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
 
 	rb.log.Info("Upload repo")
-	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(update.ID), 10))
+	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Clean(filepath.Join(path, "repo")), strconv.FormatUint(uint64(update.ID), 10))
 	rb.log.Info("Finished uploading repo")
 	if err != nil {
 		return nil, err
@@ -165,7 +166,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		return nil, cmtDB.Error
 	}
 	cfg := config.Get()
-	path := filepath.Join(cfg.RepoTempPath, strconv.FormatUint(uint64(r.ID), 10))
+	path := filepath.Clean(filepath.Join(cfg.RepoTempPath, strconv.FormatUint(uint64(r.ID), 10)))
 	rb.log.WithField("path", path).Debug("Importing repo...")
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
@@ -208,7 +209,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		return nil, fmt.Errorf("error extracting repo :: %s", err.Error())
 	}
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
-	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Join(path, "repo"), strconv.FormatUint(uint64(r.ID), 10))
+	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Clean(filepath.Join(path, "repo")), strconv.FormatUint(uint64(r.ID), 10))
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error uploading repo")
 		return nil, fmt.Errorf("error uploading repo :: %s", err.Error())
@@ -249,8 +250,9 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string) (strin
 	if c.ImageBuildHash != "" {
 		tarFileName = strings.Join([]string{c.ImageBuildHash, "tar"}, ".")
 	}
+	tarFileName = filepath.Clean(filepath.Join(dest, tarFileName))
 	log.WithField("tarFileName", tarFileName).Debug("Grabbing tar file")
-	_, err = grab.Get(filepath.Join(dest, tarFileName), c.ImageBuildTarURL)
+	_, err = grab.Get(tarFileName, c.ImageBuildTarURL)
 
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error grabbing tar file")
@@ -264,6 +266,7 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string) (strin
 func (rb *RepoBuilder) uploadTarRepo(account, imageName string, repoID int) (string, error) {
 	rb.log.Info("Start upload tar repo")
 	uploadPath := fmt.Sprintf("%s/tar/%v/%s", account, repoID, imageName)
+	uploadPath = filepath.Clean(uploadPath)
 	filesService := NewFilesService(rb.log)
 	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
 
@@ -311,15 +314,15 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 	}
 	rb.log = rb.log.WithField("commitID", c.ID)
 	rb.log.Info("Extracting repo")
-	tarFile, err := os.Open(filepath.Clean(filepath.Join(dest, tarFileName)))
+	tarFile, err := os.Open(filepath.Clean(tarFileName))
 	if err != nil {
 		rb.log.WithFields(log.Fields{
 			"error":    err.Error(),
-			"filepath": filepath.Join(dest, tarFileName),
+			"filepath": tarFileName,
 		}).Error("Failed to open file")
 		return err
 	}
-	err = rb.filesService.GetExtractor().Extract(tarFile, filepath.Join(dest))
+	err = rb.filesService.GetExtractor().Extract(tarFile, filepath.Clean(filepath.Join(dest)))
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error extracting tar file")
 		return err
@@ -327,7 +330,7 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 
 	log.Debugf("Unpacking tarball finished::tarFileName: %#v", tarFileName)
 
-	err = os.Remove(filepath.Join(dest, tarFileName))
+	err = os.Remove(tarFileName)
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error removing tar file")
 		return err
