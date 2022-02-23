@@ -31,29 +31,6 @@ type KafkaConsumerService struct {
 	consumer      func() error
 }
 
-// PlatformInsightsCreateEventPayload is the body of the create event found on the platform.inventory.events kafka topic.
-type PlatformInsightsCreateEventPayload struct {
-	Type         string `json:"type"`
-	PlatformMeta string `json:"platform_metadata"`
-	Metadata     struct {
-		RequestID string `json:"request_id"`
-	} `json:"metadata"`
-	Host struct {
-		ID             string `json:"id"`
-		Account        string `json:"account"`
-		DisplayName    string `json:"display_name"`
-		AnsibleHost    string `json:"ansible_host"`
-		Fqdn           string `json:"fqdn"`
-		InsightsID     string `json:"insights_id"`
-		StaleTimestamp string `json:"stale_timestamp"`
-		Reporter       string `json:"reporter"`
-		Tags           string `json:"tags"`
-		SystemProfile  struct {
-			HostType string `json:"host_type"`
-		} `json:"system_profile"`
-	} `json:"host"`
-}
-
 // NewKafkaConsumerService gives a instance of the Kafka implementation of ConsumerService
 func NewKafkaConsumerService(config *clowder.KafkaConfig, topic string) ConsumerService {
 	// to consume messages
