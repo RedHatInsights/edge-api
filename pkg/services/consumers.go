@@ -3,9 +3,6 @@ package services
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
@@ -17,6 +14,7 @@ import (
 // ConsumerService is the interface that takes care of our consumer implementation
 type ConsumerService interface {
 	Start()
+	Close()
 }
 
 // KafkaConsumerService is the implementation of a consumer service based on Kafka topics
@@ -33,25 +31,28 @@ type KafkaConsumerService struct {
 
 // NewKafkaConsumerService gives a instance of the Kafka implementation of ConsumerService
 func NewKafkaConsumerService(config *clowder.KafkaConfig, topic string) ConsumerService {
-	// to consume messages
-	s := &KafkaConsumerService{
-		UpdateService: NewUpdateService(context.Background(), log.WithField("service", "update")),
-		DeviceService: NewDeviceService(context.Background(), log.WithField("service", "device")),
-		RetryMinutes:  5,
-		config:        config,
-		shuttingDown:  false,
-		topic:         topic,
+	if config != nil {
+		// to consume messages
+		s := &KafkaConsumerService{
+			UpdateService: NewUpdateService(context.Background(), log.WithField("service", "update")),
+			DeviceService: NewDeviceService(context.Background(), log.WithField("service", "device")),
+			RetryMinutes:  5,
+			config:        config,
+			shuttingDown:  false,
+			topic:         topic,
+		}
+		if topic == "platform.playbook-dispatcher.runs" {
+			s.consumer = s.ConsumePlaybookDispatcherRuns
+		} else if s.topic == "platform.inventory.events" {
+			s.consumer = s.ConsumeInventoryCreateEvents
+		} else {
+			log.Errorf("No consumer for topic: %s", topic)
+			return nil
+		}
+		s.Reader = s.initReader()
+		return s
 	}
-	if topic == "platform.playbook-dispatcher.runs" {
-		s.consumer = s.ConsumePlaybookDispatcherRuns
-	} else if s.topic == "platform.inventory.events" {
-		s.consumer = s.ConsumeInventoryCreateEvents
-	} else {
-		log.Errorf("No consumer for topic: %s", topic)
-		return nil
-	}
-	s.Reader = s.initReader()
-	return s
+	return nil
 }
 
 func (s *KafkaConsumerService) initReader() *kafka.Reader {
@@ -146,11 +147,8 @@ func (s *KafkaConsumerService) ConsumeInventoryCreateEvents() error {
 	}
 }
 
-// RegisterShutdown listens to os signals to wrap up reader work
-func (s *KafkaConsumerService) RegisterShutdown() {
-	sigint := make(chan os.Signal, 1)
-	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
-	<-sigint
+// Close listens to os signals to wrap up reader work
+func (s *KafkaConsumerService) Close() {
 	log.Info("Closing Kafka readers...")
 	s.shuttingDown = true
 	if err := s.Reader.Close(); err != nil {
@@ -163,8 +161,6 @@ func (s *KafkaConsumerService) RegisterShutdown() {
 // Start consumers for this application
 func (s *KafkaConsumerService) Start() {
 	log.Info("Starting consumers...")
-
-	go s.RegisterShutdown()
 	for {
 		// The only way to actually exit this for is sending an exit signal to the app
 		// Due to this call, this is also a method that can't be unit tested (see comment in the method above)

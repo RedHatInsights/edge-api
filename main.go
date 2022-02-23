@@ -98,13 +98,20 @@ func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 	return route
 }
 
-func serveWeb(cfg *config.EdgeConfig) *http.Server {
+func serveWeb(cfg *config.EdgeConfig, consumers []services.ConsumerService) *http.Server {
 	server := http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.WebPort),
 		Handler:      webRoutes(cfg),
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
+	server.RegisterOnShutdown(func() {
+		for _, consumer := range consumers {
+			if consumer != nil {
+				consumer.Close()
+			}
+		}
+	})
 	go func() {
 		if err := server.ListenAndServe(); err != http.ErrServerClosed {
 			l.LogErrorAndPanic("web service stopped unexpectedly", err)
@@ -152,16 +159,19 @@ func main() {
 		"FDOHostURL":               cfg.FDO.URL,
 	}).Info("Configuration Values")
 
-	webServer := serveWeb(cfg)
+	consumers := []services.ConsumerService{
+		services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.playbook-dispatcher.runs"),
+		services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.inventory.events"),
+	}
+	webServer := serveWeb(cfg, consumers)
 	metricsServer := serveMetrics(cfg.MetricsPort)
 
 	if cfg.KafkaConfig != nil {
 		log.Info("Starting Kafka Consumers")
-		playbookConsumer := services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.playbook-dispatcher.runs")
-		platformInvConsumer := services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.inventory.events")
-		if playbookConsumer != nil && platformInvConsumer != nil {
-			go playbookConsumer.Start()
-			go platformInvConsumer.Start()
+		for _, consumer := range consumers {
+			if consumer != nil {
+				go consumer.Start()
+			}
 		}
 	}
 	<-sigint
