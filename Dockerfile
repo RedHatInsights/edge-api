@@ -72,7 +72,7 @@ ENV EDGE_API_WORKSPACE /src/github.com/RedHatInsights/edge-api
 COPY --from=edge-builder /go/bin/edge-api /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-migrate /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-wipe /usr/bin
-#COPY --from=edge-builder /go/bin/edge-api-migrate-device /usr/bin
+COPY --from=edge-builder /go/bin/edge-api-migrate-device /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-kafkadev /usr/bin
 COPY --from=edge-builder ${EDGE_API_WORKSPACE}/cmd/spec/openapi.json /var/tmp
 
