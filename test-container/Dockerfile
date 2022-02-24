@@ -9,7 +9,8 @@ RUN git clone https://github.com/fedora-iot/fido-device-onboard-rs.git
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 RUN source $HOME/.cargo/env && \
     rustup default nightly && rustup update && \
-    cd fido-device-onboard-rs && cargo build --lib
+    cd fido-device-onboard-rs && cargo build --release
+    #cd fido-device-onboard-rs && cargo build --lib
 
 RUN yum install --installroot /mnt/rootfs \
     coreutils-single glibc-minimal-langpack \
