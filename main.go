@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -137,27 +138,10 @@ func main() {
 
 	initDependencies()
 	cfg := config.Get()
-	log.WithFields(log.Fields{
-		"Hostname":                 cfg.Hostname,
-		"Auth":                     cfg.Auth,
-		"WebPort":                  cfg.WebPort,
-		"MetricsPort":              cfg.MetricsPort,
-		"LogLevel":                 cfg.LogLevel,
-		"Debug":                    cfg.Debug,
-		"BucketName":               cfg.BucketName,
-		"BucketRegion":             cfg.BucketRegion,
-		"RepoTempPath ":            cfg.RepoTempPath,
-		"OpenAPIFilePath ":         cfg.OpenAPIFilePath,
-		"ImageBuilderURL":          cfg.ImageBuilderConfig.URL,
-		"DefaultOSTreeRef":         cfg.DefaultOSTreeRef,
-		"InventoryURL":             cfg.InventoryConfig.URL,
-		"PlaybookDispatcherConfig": cfg.PlaybookDispatcherConfig.URL,
-		"TemplatesPath":            cfg.TemplatesPath,
-		"DatabaseType":             cfg.Database.Type,
-		"DatabaseName":             cfg.Database.Name,
-		"IsKafkaEnabled":           cfg.KafkaConfig != nil,
-		"FDOHostURL":               cfg.FDO.URL,
-	}).Info("Configuration Values")
+	var configValues map[string]interface{}
+	cfgBytes, _ := json.Marshal(cfg)
+	_ = json.Unmarshal(cfgBytes, &configValues)
+	log.WithFields(configValues).Info("Configuration Values")
 
 	consumers := []services.ConsumerService{
 		services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.playbook-dispatcher.runs"),
