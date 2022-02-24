@@ -52,13 +52,17 @@ func Paginate(next http.Handler) http.Handler {
 			}
 			pagination.Limit = valInt
 		}
-		if val, ok := r.URL.Query()["offset"]; ok {
-			valInt, err := strconv.Atoi(val[0])
-			if err != nil {
-				errors.NewBadRequest(err.Error())
-				return
+		if r.URL.Query()["name"] != nil {
+			pagination.Offset = 0
+		} else {
+			if val, ok := r.URL.Query()["offset"]; ok {
+				valInt, err := strconv.Atoi(val[0])
+				if err != nil {
+					errors.NewBadRequest(err.Error())
+					return
+				}
+				pagination.Offset = valInt
 			}
-			pagination.Offset = valInt
 		}
 		ctx := context.WithValue(r.Context(), PaginationKey, pagination)
 		next.ServeHTTP(w, r.WithContext(ctx))
