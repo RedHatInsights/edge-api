@@ -132,8 +132,8 @@ func gracefulTermination(server *http.Server, serviceName string) {
 }
 
 func main() {
-	sigint := make(chan os.Signal, 1)
-	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
+	interruptSignal := make(chan os.Signal, 1)
+	signal.Notify(interruptSignal, os.Interrupt, syscall.SIGTERM)
 
 	initDependencies()
 	cfg := config.Get()
@@ -174,7 +174,7 @@ func main() {
 			}
 		}
 	}
-	<-sigint
+	<-interruptSignal
 	log.Info("Shutting down gracefully...")
 	gracefulTermination(webServer, "web")
 	gracefulTermination(metricsServer, "metrics")
