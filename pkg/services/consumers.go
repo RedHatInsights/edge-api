@@ -31,28 +31,28 @@ type KafkaConsumerService struct {
 
 // NewKafkaConsumerService gives a instance of the Kafka implementation of ConsumerService
 func NewKafkaConsumerService(config *clowder.KafkaConfig, topic string) ConsumerService {
-	if config != nil {
-		// to consume messages
-		s := &KafkaConsumerService{
-			UpdateService: NewUpdateService(context.Background(), log.WithField("service", "update")),
-			DeviceService: NewDeviceService(context.Background(), log.WithField("service", "device")),
-			RetryMinutes:  5,
-			config:        config,
-			shuttingDown:  false,
-			topic:         topic,
-		}
-		if topic == "platform.playbook-dispatcher.runs" {
-			s.consumer = s.ConsumePlaybookDispatcherRuns
-		} else if s.topic == "platform.inventory.events" {
-			s.consumer = s.ConsumeInventoryCreateEvents
-		} else {
-			log.Errorf("No consumer for topic: %s", topic)
-			return nil
-		}
-		s.Reader = s.initReader()
-		return s
+	if config == nil {
+		return nil
 	}
-	return nil
+	// to consume messages
+	s := &KafkaConsumerService{
+		UpdateService: NewUpdateService(context.Background(), log.WithField("service", "update")),
+		DeviceService: NewDeviceService(context.Background(), log.WithField("service", "device")),
+		RetryMinutes:  5,
+		config:        config,
+		shuttingDown:  false,
+		topic:         topic,
+	}
+	if topic == "platform.playbook-dispatcher.runs" {
+		s.consumer = s.ConsumePlaybookDispatcherRuns
+	} else if s.topic == "platform.inventory.events" {
+		s.consumer = s.ConsumeInventoryCreateEvents
+	} else {
+		log.Errorf("No consumer for topic: %s", topic)
+		return nil
+	}
+	s.Reader = s.initReader()
+	return s
 }
 
 func (s *KafkaConsumerService) initReader() *kafka.Reader {
