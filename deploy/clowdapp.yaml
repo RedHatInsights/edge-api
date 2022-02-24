@@ -31,12 +31,6 @@ objects:
           - -c
           - edge-api-migrate
           inheritEnv: true
-        - name: run-update
-          command:
-          - bash
-          - -c
-          - edge-api-migrate-device
-          inheritEnv: true
         livenessProbe:
           failureThreshold: 3
           httpGet:
