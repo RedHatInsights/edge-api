@@ -124,6 +124,7 @@ func (s *DeviceService) GetDeviceDetails(device inventory.Device) (*models.Devic
 			Device:     databaseDevice,
 			DeviceName: device.DisplayName,
 			LastSeen:   device.LastSeen,
+			Account:    device.Account,
 		},
 		Image:              imageInfo,
 		UpdateTransactions: updates,
