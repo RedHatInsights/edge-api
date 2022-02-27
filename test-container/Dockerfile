@@ -1,15 +1,12 @@
 ###################################
 ###### Build the FDO package ######
 ###################################
-FROM registry.access.redhat.com/ubi8/ubi AS builder
-RUN yum install -y cargo git-core openssl-devel go tar gzip
+FROM quay.io/fedora/fedora AS builder
+RUN yum install -y cargo git-core openssl-devel go tar gzip make gcc openssl findutils tpm2-tss-devel swtpm swtpm-tools rust
 RUN curl -L https://github.com/dominikh/go-tools/releases/download/2021.1.2/staticcheck_linux_amd64.tar.gz | tar xz
 RUN curl -L https://github.com/securego/gosec/releases/download/v2.9.5/gosec_2.9.5_linux_amd64.tar.gz | tar xz
 RUN git clone https://github.com/fedora-iot/fido-device-onboard-rs.git
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-RUN source $HOME/.cargo/env && \
-    rustup default nightly && rustup update && \
-    cd fido-device-onboard-rs && cargo build --lib
+RUN cd fido-device-onboard-rs && cargo build --lib
 
 RUN yum install --installroot /mnt/rootfs \
     coreutils-single glibc-minimal-langpack \
