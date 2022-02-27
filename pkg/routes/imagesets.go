@@ -176,8 +176,6 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 			Preload("Images.Commit").
 			Preload("Images.Installer").
 			Preload("Images.Commit.Repo").
-			Preload("Images.Packages").
-			Preload("Images.Commit.InstalledPackages").
 			Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).
 			Where(`Image_Sets.account = ? `, account).Find(&imageSet)
 	} else {
@@ -186,8 +184,6 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 			Preload("Images.Commit").
 			Preload("Images.Installer").
 			Preload("Images.Commit.Repo").
-			Preload("Images.Packages").
-			Preload("Images.Commit.InstalledPackages").
 			Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).
 			Joins("Commit").Joins("Installer").
 			Where(`Image_Sets.account = ? `, account).Find(&imageSet)
