@@ -43,4 +43,5 @@ type Device struct {
 	LastSeen      EdgeAPITime `json:"LastSeen"`
 	CurrentHash   string      `json:"CurrentHash,omitempty"`
 	Account       string      `json:"Account"`
+	DeviceGroupID uint        `json:"DeviceGroupID,omitempty"`
 }
