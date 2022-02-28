@@ -12,7 +12,7 @@ type Model struct {
 	ID        uint           `gorm:"primarykey" json:"ID,omitempty"`
 	CreatedAt EdgeAPITime    `json:"CreatedAt,omitempty"`
 	UpdatedAt EdgeAPITime    `json:"UpdatedAt,omitempty"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"DeletedAt,omitempty"`
+	DeletedAt gorm.DeletedAt `json:"DeletedAt,omitempty"`
 }
 
 // EdgeAPITime is a time.Time with a valid flag.
