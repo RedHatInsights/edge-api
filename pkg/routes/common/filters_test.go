@@ -79,6 +79,32 @@ func TestContainFilterHandler(t *testing.T) {
 	}
 }
 
+func TestContainFilterHandlerWithMultiple(t *testing.T) {
+	filter := ComposeFilters(ContainFilterHandler(&Filter{
+		QueryParam: "status",
+		DBField:    "images.status",
+	}))
+	req, err := http.NewRequest(http.MethodGet, "/images?status=SUCCESS&status=ERROR", nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %s", err)
+	}
+	result := filter(req, db.DB)
+	images := []models.Image{}
+	result.Find(&images)
+	hasBothStatus := 0
+	for _, image := range images {
+		if image.Status == "SUCCESS" {
+			hasBothStatus++
+		} else if image.Status == "ERROR" {
+			hasBothStatus++
+		}
+	}
+	fmt.Println(hasBothStatus, len(images))
+	if hasBothStatus != len(images) {
+		t.Errorf("Expected images with both status SUCCESS and ERROR to be returned but got only one status")
+	}
+}
+
 func TestOneOfFilterHandler(t *testing.T) {
 	filter := ComposeFilters(OneOfFilterHandler(&Filter{
 		QueryParam: "status",
