@@ -48,7 +48,7 @@ func NewKafkaConsumerService(config *clowder.KafkaConfig, topic string) Consumer
 	if topic == "platform.playbook-dispatcher.runs" {
 		s.consumer = s.ConsumePlaybookDispatcherRuns
 	} else if s.topic == "platform.inventory.events" {
-		s.consumer = s.ConsumeInventoryCreateEvents
+		s.consumer = s.ConsumePlatformInventoryEvents
 	} else if s.topic == "platform.edge.fleetmgmt.image-build" {
 		s.consumer = s.ConsumeImageBuildEvents
 	} else {
@@ -115,8 +115,8 @@ func (s *KafkaConsumerService) ConsumePlaybookDispatcherRuns() error {
 	}
 }
 
-// ConsumeInventoryCreateEvents parses create events from platform.inventory.events kafka topic and save them as devices in the DB
-func (s *KafkaConsumerService) ConsumeInventoryCreateEvents() error {
+// ConsumePlatformInventoryEvents parses create events from platform.inventory.events kafka topic and save them as devices in the DB
+func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 	log.Info("Starting to consume platform inventory create events")
 	for {
 		m, err := s.Reader.ReadMessage(context.Background())
@@ -130,23 +130,32 @@ func (s *KafkaConsumerService) ConsumeInventoryCreateEvents() error {
 		for _, h := range m.Headers {
 			if h.Key == "event_type" {
 				eventType = string(h.Value)
+				break
 			}
 		}
-		if eventType == "created" {
-			log.WithFields(log.Fields{
-				"topic":  m.Topic,
-				"offset": m.Offset,
-				"key":    string(m.Key),
-				"value":  string(m.Value),
-			}).Debug("Read message from Kafka topic")
+		if eventType != InventoryEventTypeCreated && eventType != InventoryEventTypeUpdated {
+			log.Debug("Skipping kafka message - Insights Platform Inventory message is not a created and not an updated event type")
+			continue
+		}
+		log.WithFields(log.Fields{
+			"topic":  m.Topic,
+			"offset": m.Offset,
+			"key":    string(m.Key),
+			"value":  string(m.Value),
+		}).Debug("Read message from Kafka topic")
+
+		switch eventType {
+		case InventoryEventTypeCreated:
 			err = s.DeviceService.ProcessPlatformInventoryCreateEvent(m.Value)
-			if err != nil {
-				log.WithFields(log.Fields{
-					"error": err,
-				}).Error("Error writing Kafka message to DB")
-			}
-		} else {
-			log.Debug("Skipping message - not a create message from platform insights")
+		case InventoryEventTypeUpdated:
+			err = s.DeviceService.ProcessPlatformInventoryUpdatedEvent(m.Value)
+		default:
+			err = nil
+		}
+		if err != nil {
+			log.WithFields(log.Fields{
+				"error": err,
+			}).Error("Error writing Kafka message to DB")
 		}
 	}
 }
