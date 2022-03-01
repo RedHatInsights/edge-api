@@ -116,31 +116,25 @@ func TestBeforeDelete(t *testing.T) {
 	if err != nil {
 		t.Error("Error saving device group to DB")
 	}
-	// Check all in DB
-	var deviecsFromDB []Device
-	err = db.DB.Where("account = ?", account).Find(&deviecsFromDB).Error
+	// Get the device group from DB
+	err = db.DB.Where("name = ?", deviceGroupName).Find(&deviceGroup).Error
 	if err != nil {
-		t.Error("Error retrieving devices from DB")
+		t.Error("Error retrieving device group from DB")
 	}
-	if len(deviecsFromDB) != len(devices) {
-		t.Errorf("Expected %d devices but found %d: %v", len(devices), len(deviecsFromDB), deviecsFromDB)
+	if len(deviceGroup.Devices) != 2 {
+		t.Errorf("Expected 2 devices but found %d: %v", len(deviceGroup.Devices), deviceGroup.Devices)
 	}
 	// BeforeDelete the DeviceGroup should delete the Devices and not the DeviceGroup
 	err = deviceGroup.BeforeDelete(db.DB)
 	if err != nil {
 		t.Error("Error running BeforeDelete")
 	}
-	deviecsFromDB = []Device{}
-	err = db.DB.Where("account = ?", account).Find(&deviecsFromDB).Error
-	if err != nil {
-		t.Error("Error retrieving devices from DB")
-	}
-	if len(deviecsFromDB) != 0 {
-		t.Errorf("Expected 0 devices but found %d: %v", len(deviecsFromDB), deviecsFromDB)
-	}
-	var deviceGroupDB DeviceGroup
-	err = db.DB.Where("name = ?", deviceGroupName).Find(&deviceGroupDB).Error
+	// Get the device group from DB
+	err = db.DB.Where("name = ?", deviceGroupName).Find(&deviceGroup).Error
 	if err != nil {
 		t.Error("Error retrieving device group from DB")
+	}
+	if len(deviceGroup.Devices) != 0 {
+		t.Errorf("Expected 0 devices but found %d: %v", len(deviceGroup.Devices), deviceGroup.Devices)
 	}
 }

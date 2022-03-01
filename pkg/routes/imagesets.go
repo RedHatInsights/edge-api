@@ -170,24 +170,20 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.URL.Query().Get("sort_by") != "-status" && r.URL.Query().Get("sort_by") != "status" {
-		result = imageSetFilters(r, db.DB.Model(&models.ImageSet{})).
+		result = imageSetFilters(r, db.DB.Debug().Model(&models.ImageSet{})).
 			Limit(pagination.Limit).Offset(pagination.Offset).
 			Preload("Images").
 			Preload("Images.Commit").
 			Preload("Images.Installer").
 			Preload("Images.Commit.Repo").
-			Preload("Images.Packages").
-			Preload("Images.Commit.InstalledPackages").
 			Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).
 			Where(`Image_Sets.account = ? `, account).Find(&imageSet)
 	} else {
-		result = imageStatusFilters(r, db.DB.Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).
+		result = imageStatusFilters(r, db.DB.Debug().Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).
 			Preload("Images", "lower(status) in (?)", strings.ToLower(r.URL.Query().Get("status"))).
 			Preload("Images.Commit").
 			Preload("Images.Installer").
 			Preload("Images.Commit.Repo").
-			Preload("Images.Packages").
-			Preload("Images.Commit.InstalledPackages").
 			Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).
 			Joins("Commit").Joins("Installer").
 			Where(`Image_Sets.account = ? `, account).Find(&imageSet)
