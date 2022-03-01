@@ -179,7 +179,9 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 			Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).
 			Where(`Image_Sets.account = ? `, account).Find(&imageSet)
 	} else {
-		result = imageStatusFilters(r, db.DB.Debug().Model(&models.ImageSet{})).Limit(pagination.Limit).Offset(pagination.Offset).
+		// this code is no longer run, but would be used if sorting by status is re-implemented.
+		result = imageStatusFilters(r, db.DB.Debug().Model(&models.ImageSet{})).
+			Limit(pagination.Limit).Offset(pagination.Offset).
 			Preload("Images", "lower(status) in (?)", strings.ToLower(r.URL.Query().Get("status"))).
 			Preload("Images.Commit").
 			Preload("Images.Installer").
@@ -190,7 +192,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 
 	}
 	if result.Error != nil {
-		s.Log.WithField("error", countResult.Error.Error()).Error("Image sets not found")
+		s.Log.WithField("error", result.Error.Error()).Error("Image sets not found")
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
@@ -218,7 +220,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		imageSetInfo = append(imageSetInfo, imgSet)
 	}
 	if result.Error != nil {
-		s.Log.WithField("error", countResult.Error.Error()).Error("Image sets not found")
+		s.Log.WithField("error", result.Error.Error()).Error("Image sets not found")
 		err := errors.NewBadRequest("Not Found")
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
