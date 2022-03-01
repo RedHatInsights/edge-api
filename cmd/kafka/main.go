@@ -17,6 +17,8 @@ type RecordValue struct {
 }
 
 func main() {
+	/* I am leaving all of this in place for testing.
+	It will be replaced in a few days. */
 	if clowder.IsClowderEnabled() {
 		fmt.Printf("Public Port: %d\n", clowder.LoadedConfig.PublicPort)
 
@@ -63,7 +65,6 @@ func main() {
 		fmt.Printf("10 messages were produced to topic %s!", topic)
 
 		p.Close()
-
 	}
 
 	fmt.Println("Entering an infinite loop...")

@@ -58,5 +58,5 @@ func (group *DeviceGroup) ValidateRequest() error {
 
 // BeforeDelete is called before deleting a device group, delete the device group devices first
 func (group *DeviceGroup) BeforeDelete(tx *gorm.DB) error {
-	return tx.Where(&Device{Account: group.Account}).Delete(&group.Devices).Error
+	return tx.Model(group).Association("Devices").Delete(&group.Devices)
 }

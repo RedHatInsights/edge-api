@@ -31,6 +31,19 @@ type DeviceServiceInterface interface {
 	ProcessPlatformInventoryCreateEvent(message []byte) error
 }
 
+// PlatformInsightsCreateEventPayload is the body of the create event found on the platform.inventory.events kafka topic.
+type PlatformInsightsCreateEventPayload struct {
+	Type string `json:"type"`
+	Host struct {
+		ID            string `json:"id"`
+		Account       string `json:"account"`
+		InsightsID    string `json:"insights_id"`
+		SystemProfile struct {
+			HostType string `json:"host_type"`
+		} `json:"system_profile"`
+	} `json:"host"`
+}
+
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
 func NewDeviceService(ctx context.Context, log *log.Entry) DeviceServiceInterface {
 	return &DeviceService{
@@ -111,6 +124,7 @@ func (s *DeviceService) GetDeviceDetails(device inventory.Device) (*models.Devic
 			Device:     databaseDevice,
 			DeviceName: device.DisplayName,
 			LastSeen:   device.LastSeen,
+			Account:    device.Account,
 		},
 		Image:              imageInfo,
 		UpdateTransactions: updates,
@@ -387,9 +401,15 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 	var e *PlatformInsightsCreateEventPayload
 	err := json.Unmarshal(message, &e)
 	if err != nil {
-		log.Debug("Skipping message - it is not a create message")
+		log.WithFields(log.Fields{
+			"value": string(message),
+		}).Debug("Skipping message - it is not a create message" + err.Error())
 	} else {
 		if e.Type == "created" && e.Host.SystemProfile.HostType == "edge" {
+			log.WithFields(log.Fields{
+				"host_id": string(e.Host.ID),
+				"value":   string(message),
+			}).Debug("Saving newly created edge device")
 			var newDevice = models.Device{
 				UUID:        string(e.Host.ID),
 				RHCClientID: string(e.Host.InsightsID),
@@ -398,7 +418,8 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 			result := db.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
 			if result.Error != nil {
 				log.WithFields(log.Fields{
-					"error": result.Error,
+					"host_id": string(e.Host.ID),
+					"error":   result.Error,
 				}).Error("Error writing Kafka message to DB")
 			}
 			return result.Error

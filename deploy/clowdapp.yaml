@@ -31,12 +31,6 @@ objects:
           - -c
           - edge-api-migrate
           inheritEnv: true
-        - name: run-update
-          command:
-          - bash
-          - -c
-          - edge-api-migrate-device
-          inheritEnv: true
         livenessProbe:
           failureThreshold: 3
           httpGet:
@@ -94,12 +88,12 @@ objects:
           requests:
             cpu: 500m
             memory: 512Mi
-    - name: kafkadev
+    - name: ibvents
       minReplicas: 1
       podSpec:
         image: ${IMAGE}:${IMAGE_TAG}
         command:
-        - /usr/bin/edge-api-kafkadev
+        - /usr/bin/edge-api-ibvents
         env:
         - name: CLOWDER_ENABLED
           value: ${CLOWDER_ENABLED}

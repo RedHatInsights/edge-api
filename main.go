@@ -5,11 +5,13 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	redoc "github.com/go-openapi/runtime/middleware"
 	"github.com/redhatinsights/edge-api/config"
@@ -40,33 +42,28 @@ func initDependencies() {
 	db.InitDB()
 }
 
-func main() {
-	initDependencies()
-	cfg := config.Get()
-	log.WithFields(log.Fields{
-		"Hostname":                 cfg.Hostname,
-		"Auth":                     cfg.Auth,
-		"WebPort":                  cfg.WebPort,
-		"MetricsPort":              cfg.MetricsPort,
-		"LogLevel":                 cfg.LogLevel,
-		"Debug":                    cfg.Debug,
-		"BucketName":               cfg.BucketName,
-		"BucketRegion":             cfg.BucketRegion,
-		"RepoTempPath ":            cfg.RepoTempPath,
-		"OpenAPIFilePath ":         cfg.OpenAPIFilePath,
-		"ImageBuilderURL":          cfg.ImageBuilderConfig.URL,
-		"DefaultOSTreeRef":         cfg.DefaultOSTreeRef,
-		"InventoryURL":             cfg.InventoryConfig.URL,
-		"PlaybookDispatcherConfig": cfg.PlaybookDispatcherConfig.URL,
-		"TemplatesPath":            cfg.TemplatesPath,
-		"DatabaseType":             cfg.Database.Type,
-		"DatabaseName":             cfg.Database.Name,
-		"IsKafkaEnabled":           cfg.KafkaConfig != nil,
-		"FDOHostURL":               cfg.FDO.URL,
-	}).Info("Configuration Values")
+func serveMetrics(port int) *http.Server {
+	metricsRoute := chi.NewRouter()
+	metricsRoute.Get("/", routes.StatusOK)
+	metricsRoute.Handle("/metrics", promhttp.Handler())
+	server := http.Server{
+		Addr:         fmt.Sprintf(":%d", port),
+		Handler:      metricsRoute,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+	go func() {
+		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+			l.LogErrorAndPanic("metrics service stopped unexpectedly", err)
+		}
+	}()
+	log.Info("metrics service started")
+	return &server
+}
 
-	r := chi.NewRouter()
-	r.Use(
+func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
+	route := chi.NewRouter()
+	route.Use(
 		request_id.ConfiguredRequestID("x-rh-insights-request-id"),
 		middleware.RealIP,
 		middleware.Recoverer,
@@ -76,21 +73,21 @@ func main() {
 	)
 
 	// Unauthenticated routes
-	r.Get("/", routes.StatusOK)
-	r.Get("/api/edge/v1/openapi.json", func(w http.ResponseWriter, r *http.Request) {
+	route.Get("/", routes.StatusOK)
+	route.Get("/api/edge/v1/openapi.json", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, cfg.OpenAPIFilePath)
 	})
 
 	// Authenticated routes
-	ar := r.Group(nil)
+	authRoute := route.Group(nil)
 	if cfg.Auth {
-		ar.Use(
+		authRoute.Use(
 			identity.EnforceIdentity,
 			dependencies.Middleware,
 		)
 	}
 
-	ar.Route("/api/edge/v1", func(s chi.Router) {
+	authRoute.Route("/api/edge/v1", func(s chi.Router) {
 		s.Route("/images", routes.MakeImagesRouter)
 		s.Route("/updates", routes.MakeUpdatesRouter)
 		s.Route("/image-sets", routes.MakeImageSetsRouter)
@@ -99,57 +96,71 @@ func main() {
 		s.Route("/fdo", routes.MakeFDORouter)
 		s.Route("/device-groups", routes.MakeDeviceGroupsRouter)
 	})
+	return route
+}
 
-	mr := chi.NewRouter()
-	mr.Get("/", routes.StatusOK)
-	mr.Handle("/metrics", promhttp.Handler())
-
-	srv := http.Server{
-		Addr:    fmt.Sprintf(":%d", cfg.WebPort),
-		Handler: r,
+func serveWeb(cfg *config.EdgeConfig, consumers []services.ConsumerService) *http.Server {
+	server := http.Server{
+		Addr:         fmt.Sprintf(":%d", cfg.WebPort),
+		Handler:      webRoutes(cfg),
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
-
-	msrv := http.Server{
-		Addr:    fmt.Sprintf(":%d", cfg.MetricsPort),
-		Handler: mr,
-	}
-
-	gracefulStop := make(chan struct{})
-	go func() {
-		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
-		<-sigint
-		log.Info("Shutting down gracefully...")
-		if err := srv.Shutdown(context.Background()); err != nil {
-			l.LogErrorAndPanic("HTTP server (web port) shutdown failed", err)
+	server.RegisterOnShutdown(func() {
+		for _, consumer := range consumers {
+			if consumer != nil {
+				consumer.Close()
+			}
 		}
-		if err := msrv.Shutdown(context.Background()); err != nil {
-			l.LogErrorAndPanic("HTTP server (metrics port) shutdown failed", err)
-		}
-		services.WaitGroup.Wait()
-		close(gracefulStop)
-	}()
-
+	})
 	go func() {
-		if err := msrv.ListenAndServe(); err != http.ErrServerClosed {
-			l.LogErrorAndPanic("metrics service stopped unexpectedly", err)
+		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+			l.LogErrorAndPanic("web service stopped unexpectedly", err)
 		}
 	}()
+	log.Info("web service started")
+	return &server
+}
+
+func gracefulTermination(server *http.Server, serviceName string) {
+	log.Infof("%s service stopped", serviceName)
+	ctxShutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second) // 5 seconds for graceful shutdown
+	defer cancel()
+	if err := server.Shutdown(ctxShutdown); err != nil {
+		l.LogErrorAndPanic(fmt.Sprintf("%s service shutdown failed", serviceName), err)
+	}
+	log.Infof("%s service shutdown complete", serviceName)
+}
+
+func main() {
+	interruptSignal := make(chan os.Signal, 1)
+	signal.Notify(interruptSignal, os.Interrupt, syscall.SIGTERM)
+
+	initDependencies()
+	cfg := config.Get()
+	var configValues map[string]interface{}
+	cfgBytes, _ := json.Marshal(cfg)
+	_ = json.Unmarshal(cfgBytes, &configValues)
+	log.WithFields(configValues).Info("Configuration Values")
+
+	consumers := []services.ConsumerService{
+		services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.playbook-dispatcher.runs"),
+		services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.inventory.events"),
+	}
+	webServer := serveWeb(cfg, consumers)
+	metricsServer := serveMetrics(cfg.MetricsPort)
+
 	if cfg.KafkaConfig != nil {
 		log.Info("Starting Kafka Consumers")
-		playbookConsumer := services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.playbook-dispatcher.runs")
-		platformInvConsumer := services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.inventory.events")
-		if playbookConsumer != nil && platformInvConsumer != nil {
-			go playbookConsumer.Start()
-			go platformInvConsumer.Start()
+		for _, consumer := range consumers {
+			if consumer != nil {
+				go consumer.Start()
+			}
 		}
-
 	}
-
-	if err := srv.ListenAndServe(); err != http.ErrServerClosed {
-		l.LogErrorAndPanic("web service stopped unexpectedly", err)
-	}
-
-	<-gracefulStop
+	<-interruptSignal
+	log.Info("Shutting down gracefully...")
+	gracefulTermination(webServer, "web")
+	gracefulTermination(metricsServer, "metrics")
 	log.Info("Everything has shut down, goodbye")
 }
