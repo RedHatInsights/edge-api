@@ -20,10 +20,17 @@ type Filter struct {
 
 // ContainFilterHandler handles sub string values
 func ContainFilterHandler(filter *Filter) FilterFunc {
-	sqlQuery := fmt.Sprintf("%s LIKE ?", filter.DBField)
 	return FilterFunc(func(r *http.Request, tx *gorm.DB) *gorm.DB {
-		if val := r.URL.Query().Get(filter.QueryParam); val != "" {
-			tx = tx.Where(sqlQuery, "%"+val+"%")
+		if multipleStatusQuery := r.URL.Query()[filter.QueryParam]; len(multipleStatusQuery) > 1 {
+			for i, q := range multipleStatusQuery {
+				if i == 0 {
+					tx = tx.Where(fmt.Sprintf("%s LIKE ?", filter.DBField), q)
+				} else {
+					tx = tx.Or(fmt.Sprintf("%s LIKE ?", filter.DBField), q)
+				}
+			}
+		} else if val := r.URL.Query().Get(filter.QueryParam); val != "" {
+			tx = tx.Where(fmt.Sprintf("%s LIKE ?", filter.DBField), "%"+val+"%")
 		}
 		return tx
 	})
