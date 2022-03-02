@@ -60,8 +60,18 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 			Account: account,
 			Devices: devices,
 		}
+		// same account, out of the DeviceGroup
+		outOfGroupDevice := models.Device{
+			Name:    faker.Name(),
+			UUID:    faker.UUIDHyphenated(),
+			Account: account,
+		}
 		It("should create a DeviceGroup", func() {
 			dbResult := db.DB.Create(&deviceGroup).Error
+			Expect(dbResult).To(BeNil())
+		})
+		It("should create out of the device", func() {
+			dbResult := db.DB.Create(&outOfGroupDevice).Error
 			Expect(dbResult).To(BeNil())
 		})
 		It("should get the DeviceGroup ID", func() {
@@ -78,10 +88,14 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 				dbResult := db.DB.Where("name = ?", deviceGroupName).First(&deviceGroup)
 				Expect(dbResult.Error).NotTo(BeNil())
 			})
-			It("should find the devices in the DB", func() {
+			It("should not find the devices in the DeviceGroup", func() {
 				var devicesFromDB []models.Device
-				Expect(db.DB.Where("name in (?)", []string{devices[0].Name, devices[1].Name}).Find(&devicesFromDB).Error).To(BeNil())
-				Expect(devicesFromDB).NotTo(BeEmpty())
+				db.DB.Where("name in (?)", []string{devices[0].Name, devices[1].Name}).Find(&devicesFromDB)
+				Expect(devicesFromDB).To(BeEmpty())
+			})
+			It("should find the out of the DeviceGroup device", func() {
+				dbResult := db.DB.Where("name = ?", outOfGroupDevice.Name).First(&outOfGroupDevice)
+				Expect(dbResult.Error).To(BeNil())
 			})
 		})
 		It("should fail to delete a DeviceGroup with invalid ID", func() {
@@ -145,11 +159,27 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 				Expect(err).To(BeNil())
 			})
 		})
-		When("adding emtpy devices", func() {
+		When("adding empty devices", func() {
 			It("should fail", func() {
 				_, err := deviceGroupsService.AddDeviceGroupDevices(account1, deviceGroup1.ID, []models.Device{})
 				Expect(err).NotTo(BeNil())
 				expectedErr := services.DeviceGroupDevicesNotSupplied{}
+				Expect(err.Error()).To(Equal(expectedErr.Error()))
+			})
+		})
+		When("adding multiple devices; one not exist", func() {
+			It("should fail", func() {
+				_, err := deviceGroupsService.AddDeviceGroupDevices(account1, deviceGroup1.ID, []models.Device{devices[0], {Name: faker.Name(), Model: models.Model{ID: 0}}})
+				Expect(err).NotTo(BeNil())
+				expectedErr := services.DeviceGroupAccountDevicesNotFound{}
+				Expect(err.Error()).To(Equal(expectedErr.Error()))
+			})
+		})
+		When("adding not existing device to existing device-group", func() {
+			It("should fail", func() {
+				_, err := deviceGroupsService.AddDeviceGroupDevices(account1, deviceGroup1.ID, []models.Device{{Name: faker.Name(), Model: models.Model{ID: 0}}})
+				Expect(err).NotTo(BeNil())
+				expectedErr := services.DeviceGroupAccountDevicesNotFound{}
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
 			})
 		})
