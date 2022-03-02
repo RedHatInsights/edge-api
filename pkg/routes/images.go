@@ -483,7 +483,16 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 	go func(id uint, ctx context.Context) {
 		services := dependencies.ServicesFromContext(r.Context())
 		var i *models.Image
-		db.DB.Joins("Commit").Joins("Installer").First(&i, id)
+		result := db.DB.Joins("Commit").Joins("Installer").First(&i, id)
+		if result.Error != nil {
+			services.Log.WithField("error", result.Error.Error()).Debug("Query error")
+			err := errors.NewBadRequest(result.Error.Error())
+			w.WriteHeader(err.GetStatus())
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				services.Log.WithField("error", result.Error.Error()).Error("Error while trying to encode")
+			}
+			return
+		}
 		db.DB.First(&i.Commit, i.CommitID)
 		if _, err := services.ImageService.CreateRepoForImage(i); err != nil {
 			services.Log.WithField("error", err).Error("Failed to create repo")

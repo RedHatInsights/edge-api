@@ -257,7 +257,15 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	repo = &models.Repo{
 		Status: models.RepoStatusBuilding,
 	}
-	db.DB.Create(&repo)
+	result := db.DB.Create(&repo)
+	if result.Error != nil {
+		services.Log.WithField("error", result.Error.Error()).Debug("Result error")
+		err := errors.NewBadRequest(result.Error.Error())
+		w.WriteHeader(err.GetStatus())
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", result.Error.Error()).Error("Error while trying to encode")
+		}
+	}
 	update.Repo = repo
 	services.Log.WithFields(log.Fields{
 		"repoURL": repo.URL,
