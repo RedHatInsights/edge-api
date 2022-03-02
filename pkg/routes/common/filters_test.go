@@ -99,7 +99,6 @@ func TestContainFilterHandlerWithMultiple(t *testing.T) {
 			hasBothStatus++
 		}
 	}
-	fmt.Println(hasBothStatus, len(images))
 	if hasBothStatus != len(images) {
 		t.Errorf("Expected images with both status SUCCESS and ERROR to be returned but got only one status")
 	}
