@@ -144,6 +144,15 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	var tprepo *[]models.ThirdPartyRepo
 	var count int64
 	result := thirdPartyRepoFilters(r, db.DB)
+	if result.Error != nil {
+		services.Log.WithField("error", result.Error.Error()).Debug("Result error")
+		err := errors.NewBadRequest(result.Error.Error())
+		w.WriteHeader(err.GetStatus())
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", result.Error.Error()).Error("Error while trying to encode")
+		}
+		return
+	}
 	account, err := common.GetAccount(r)
 	if err != nil {
 		services.Log.WithField("error", err.Error()).Error("Error retrieving account from the request")
