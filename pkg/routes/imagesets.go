@@ -156,19 +156,6 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	countResult := imageSetFilters(r, db.DB.Model(&models.ImageSet{})).
-		Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).
-		Where(`Image_Sets.account = ? `, account).Count(&count)
-	if countResult.Error != nil {
-		s.Log.WithField("error", countResult.Error.Error()).Error("Error counting results for image sets list")
-		countErr := errors.NewInternalServerError()
-		w.WriteHeader(countErr.GetStatus())
-		if err := json.NewEncoder(w).Encode(&countErr); err != nil {
-			s.Log.WithField("error", countErr.Error()).Error("Error while trying to encode")
-		}
-		return
-	}
-
 	if r.URL.Query().Get("sort_by") != "-status" && r.URL.Query().Get("sort_by") != "status" {
 		result = imageSetFilters(r, db.DB.Debug().Model(&models.ImageSet{})).
 			Limit(pagination.Limit).Offset(pagination.Offset).
