@@ -97,6 +97,8 @@ func TestContainFilterHandlerWithMultiple(t *testing.T) {
 			hasBothStatus++
 		} else if image.Status == "ERROR" {
 			hasBothStatus++
+		} else {
+			t.Errorf("Expected image status to be SUCCESS or ERROR but got %s", image.Status)
 		}
 	}
 	if hasBothStatus != len(images) {

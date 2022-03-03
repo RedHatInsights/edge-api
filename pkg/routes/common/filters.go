@@ -22,14 +22,15 @@ type Filter struct {
 func ContainFilterHandler(filter *Filter) FilterFunc {
 	return FilterFunc(func(r *http.Request, tx *gorm.DB) *gorm.DB {
 		if multipleStatusQuery := r.URL.Query()[filter.QueryParam]; len(multipleStatusQuery) > 1 {
-			for i, q := range multipleStatusQuery {
+			for i, query := range multipleStatusQuery {
 				if i == 0 {
-					tx = tx.Where("? LIKE ?", filter.DBField, q)
+					tx = tx.Where("? LIKE ?", filter.DBField, query)
 				} else {
-					tx = tx.Or("? LIKE ?", filter.DBField, q)
+					tx = tx.Or("? LIKE ?", filter.DBField, query)
 				}
 			}
-		} else if val := r.URL.Query().Get(filter.QueryParam); val != "" {
+		}
+		if val := r.URL.Query().Get(filter.QueryParam); val != "" {
 			tx = tx.Where(fmt.Sprintf("%s LIKE ?", filter.DBField), "%"+val+"%")
 		}
 		return tx
