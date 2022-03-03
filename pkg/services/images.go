@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -26,6 +27,10 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"gorm.io/gorm"
+
+	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
+
+	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 )
 
 // WaitGroup is the waitg roup for pending image builds
@@ -276,11 +281,54 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 			return err
 		}
 		if i.Installer.Status != models.ImageStatusBuilding {
+			// if clowder is enabled, send an event on Image Build completion
+			// TODO: break this out into its own function
+			if clowder.IsClowderEnabled() {
+				fmt.Printf("Public Port: %d\n", clowder.LoadedConfig.PublicPort)
+
+				brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
+				for i, b := range clowder.LoadedConfig.Kafka.Brokers {
+					brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
+					fmt.Println(brokers[i])
+				}
+
+				topic := "platform.edge.fleetmgmt.image-build"
+
+				// Create Producer instance
+				p, err := kafka.NewProducer(&kafka.ConfigMap{
+					"bootstrap.servers": brokers[0]})
+				if err != nil {
+					fmt.Printf("Failed to create producer: %s", err)
+					os.Exit(1)
+				}
+				recordKey := "imagebuild"
+				//data := &RecordValue{
+				//	ImageId: 123456789}
+				recordValue, _ := json.Marshal(&image)
+				fmt.Printf("Preparing to produce record: %s\t%s\n", recordKey, recordValue)
+				perr := p.Produce(&kafka.Message{
+					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+					Key:            []byte(recordKey),
+					Value:          []byte(recordValue),
+				}, nil)
+				if perr != nil {
+					fmt.Println("Error sending message")
+				}
+
+				// Wait for all messages to be delivered
+				p.Flush(15 * 1000)
+				p.Close()
+
+				fmt.Printf("Message was produced to topic %s!\n", topic)
+			}
+
 			break
 		}
 		time.Sleep(1 * time.Minute)
 	}
 
+	// EDA - we'll break this code here and move the following calls to the Consumer.
+	// TODO: trace the call stack backwards to make sure subsequent steps follow consumer calls.
 	if image.Installer.Status == models.ImageStatusSuccess {
 		err := s.AddUserInfo(image)
 		if err != nil {
