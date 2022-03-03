@@ -205,7 +205,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				rr := httptest.NewRecorder()
 
 				// setup mock for DeviceGroupsService
-				mockDeviceGroupsService.EXPECT().AddDeviceGroupDevices(account, deviceGroup.ID, devices).Return(&devices, nil)
+				mockDeviceGroupsService.EXPECT().AddDeviceGroupDevices(account, deviceGroup.ID, gomock.Any()).Return(&devices, nil)
 
 				handler := http.HandlerFunc(AddDeviceGroupDevices)
 				handler.ServeHTTP(rr, req)
@@ -529,7 +529,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
 
-				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupDevices(account, deviceGroup.ID, devicesToRemove).Return(&devicesToRemove, nil)
+				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupDevices(account, deviceGroup.ID, gomock.Any()).Return(&devicesToRemove, nil)
 				handler := http.HandlerFunc(DeleteDeviceGroupManyDevices)
 				handler.ServeHTTP(rr, req)
 

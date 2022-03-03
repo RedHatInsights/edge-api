@@ -24,6 +24,7 @@ func MakeDevicesRouter(sub chi.Router) {
 	sub.Route("/{DeviceUUID}", func(r chi.Router) {
 		r.Use(DeviceCtx)
 		r.Get("/", GetDevice)
+		r.Get("/dbinfo", GetDeviceDBInfo)
 		r.Get("/updates", GetUpdateAvailableForDevice)
 		r.Get("/image", GetDeviceImageInfo)
 	})
@@ -244,7 +245,55 @@ func GetDBDevices(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&devices)
+	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&devices)
+	if result.Error != nil {
+		services.Log.WithField("error", result.Error.Error()).Debug("Result error")
+		err := errors.NewBadRequest(result.Error.Error())
+		w.WriteHeader(err.GetStatus())
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", result.Error.Error()).Error("Error while trying to encode")
+		}
+		return
+	}
+	if err := json.NewEncoder(w).Encode(devices); err != nil {
+		services := dependencies.ServicesFromContext(r.Context())
+		services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.GetStatus())
+		_ = json.NewEncoder(w).Encode(err)
+	}
+
+}
+
+// GetDeviceDBInfo return the device data on EdgeAPI DB
+func GetDeviceDBInfo(w http.ResponseWriter, r *http.Request) {
+	services := dependencies.ServicesFromContext(r.Context())
+	var devices *[]models.Device
+	// pagination := common.GetPagination(r)
+	dc, ok := r.Context().Value(deviceContextKey).(DeviceContext)
+	if dc.DeviceUUID == "" || !ok {
+		return // Error set by DeviceCtx method
+	}
+	account, err := common.GetAccount(r)
+	if err != nil {
+		services.Log.WithField("error", err).Debug("Account not found")
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.GetStatus())
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
+		return
+	}
+	result := db.DB.Where("account = ? and UUID = ?", account, dc.DeviceUUID).Find(&devices)
+	if result.Error != nil {
+		services.Log.WithField("error", err).Debug("Result error")
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.GetStatus())
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
+		return
+	}
 	if err := json.NewEncoder(w).Encode(devices); err != nil {
 		services := dependencies.ServicesFromContext(r.Context())
 		services.Log.WithField("error", err.Error()).Error("Error while trying to encode")

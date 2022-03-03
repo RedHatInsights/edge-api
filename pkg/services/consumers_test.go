@@ -9,13 +9,19 @@ import (
 
 var _ = Describe("ConsumerService basic functions", func() {
 	Describe("creation of the service", func() {
+		p := 9092
+		topic := "platform.playbook-dispatcher.runs"
 		Context("returns a correct instance", func() {
-			p := 9092
-			topic := "platform.playbook-dispatcher.runs"
 			config := &v1.KafkaConfig{Brokers: []v1.BrokerConfig{{Hostname: "localhost", Port: &p}}}
 			s := services.NewKafkaConsumerService(config, topic)
 			It("not to be nil", func() {
 				Expect(s).ToNot(BeNil())
+			})
+		})
+		Context("nil instance", func() {
+			It("returns nil", func() {
+				s := services.NewKafkaConsumerService(nil, topic)
+				Expect(s).To(BeNil())
 			})
 		})
 	})

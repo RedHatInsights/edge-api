@@ -8,67 +8,67 @@ import (
 
 // EdgeConfig represents the runtime configuration
 type EdgeConfig struct {
-	Hostname                 string
-	Auth                     bool
-	WebPort                  int
-	MetricsPort              int
-	Logging                  *loggingConfig
-	LogLevel                 string
-	Debug                    bool
-	Database                 *dbConfig
-	BucketName               string
-	BucketRegion             *string
-	AccessKey                string
-	SecretKey                string
-	RepoTempPath             string
-	OpenAPIFilePath          string
-	ImageBuilderConfig       *imageBuilderConfig
-	InventoryConfig          *inventoryConfig
-	DefaultOSTreeRef         string
-	PlaybookDispatcherConfig *playbookDispatcherConfig
-	TemplatesPath            string
-	EdgeAPIBaseURL           string
-	UploadWorkers            int
-	KafkaConfig              *clowder.KafkaConfig
-	FDO                      *fdoConfig
-	Local                    bool
+	Hostname                 string                    `json:"hostname,omitempty"`
+	Auth                     bool                      `json:"auth,omitempty"`
+	WebPort                  int                       `json:"web_port,omitempty"`
+	MetricsPort              int                       `json:"metrics_port,omitempty"`
+	Logging                  *loggingConfig            `json:"logging,omitempty"`
+	LogLevel                 string                    `json:"log_level,omitempty"`
+	Debug                    bool                      `json:"debug,omitempty"`
+	Database                 *dbConfig                 `json:"database,omitempty"`
+	BucketName               string                    `json:"bucket_name,omitempty"`
+	BucketRegion             *string                   `json:"bucket_region,omitempty"`
+	AccessKey                string                    `json:"-"`
+	SecretKey                string                    `json:"-"`
+	RepoTempPath             string                    `json:"repo_temp_path,omitempty"`
+	OpenAPIFilePath          string                    `json:"openapi_file_path,omitempty"`
+	ImageBuilderConfig       *imageBuilderConfig       `json:"image_builder,omitempty"`
+	InventoryConfig          *inventoryConfig          `json:"inventory,omitempty"`
+	DefaultOSTreeRef         string                    `json:"default_ostree_ref,omitempty"`
+	PlaybookDispatcherConfig *playbookDispatcherConfig `json:"playbook_dispatcher,omitempty"`
+	TemplatesPath            string                    `json:"templates_path,omitempty"`
+	EdgeAPIBaseURL           string                    `json:"edge_api_base_url,omitempty"`
+	UploadWorkers            int                       `json:"upload_workers,omitempty"`
+	KafkaConfig              *clowder.KafkaConfig      `json:"kafka,omitempty"`
+	FDO                      *fdoConfig                `json:"fdo,omitempty"`
+	Local                    bool                      `json:"local,omitempty"`
 }
 
 type dbConfig struct {
-	Type     string
-	User     string
-	Password string
-	Hostname string
-	Port     uint
-	Name     string
+	Type     string `json:"type,omitempty"`
+	User     string `json:"user,omitempty"`
+	Password string `json:"-"`
+	Hostname string `json:"hostname,omitempty"`
+	Port     uint   `json:"port,omitempty"`
+	Name     string `json:"name,omitempty"`
 }
 
 type fdoConfig struct {
-	URL                 string
-	APIVersion          string
-	AuthorizationBearer string
+	URL                 string `json:"url,omitempty"`
+	APIVersion          string `json:"api_version,omitempty"`
+	AuthorizationBearer string `json:"-"`
 }
 
 type imageBuilderConfig struct {
-	URL string
+	URL string `json:"url,omitempty"`
 }
 
 type inventoryConfig struct {
-	URL string
+	URL string `json:"url,omitempty"`
 }
 
 type playbookDispatcherConfig struct {
-	URL    string
-	PSK    string
-	Status string
+	URL    string `json:"url,omitempty"`
+	PSK    string `json:"-"`
+	Status string `json:"status,omitempty"`
 }
 
 //
 type loggingConfig struct {
-	AccessKeyID     string
-	SecretAccessKey string
-	LogGroup        string
-	Region          string
+	AccessKeyID     string `json:"-"`
+	SecretAccessKey string `json:"-"`
+	LogGroup        string `json:"log_group,omitempty"`
+	Region          string `json:"region,omitempty"`
 }
 
 var config *EdgeConfig

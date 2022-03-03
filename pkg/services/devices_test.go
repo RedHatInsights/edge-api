@@ -505,4 +505,63 @@ var _ = Describe("DeviceService", func() {
 			Expect(device.UUID).To(Equal(event.Host.ID))
 		})
 	})
+	Context("ProcessPlatformInventoryUpdatedEvent", func() {
+		type PlatformInsightsUpdatedEventPayload struct {
+			Type string `json:"type"`
+			Host struct {
+				ID            string `json:"id"`
+				Account       string `json:"account"`
+				InsightsID    string `json:"insights_id"`
+				SystemProfile struct {
+					HostType string `json:"host_type"`
+				} `json:"system_profile"`
+			} `json:"host"`
+		}
+
+		It("should create a device when device does not exist", func() {
+			event := new(PlatformInsightsUpdatedEventPayload)
+			event.Host.ID = faker.UUIDHyphenated()
+			event.Host.InsightsID = faker.UUIDHyphenated()
+			event.Host.Account = faker.UUIDHyphenated()
+			event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
+			message, err := json.Marshal(event)
+			Expect(err).To(BeNil())
+
+			err = deviceService.ProcessPlatformInventoryUpdatedEvent(message)
+			Expect(err).To(BeNil())
+
+			var device models.Device
+			res := db.DB.Where("uuid = ?", event.Host.ID).First(&device)
+			Expect(res.Error).To(BeNil())
+			Expect(device.Account).To(Equal(event.Host.Account))
+			Expect(device.RHCClientID).To(Equal(event.Host.InsightsID))
+		})
+
+		It("should update device account when device exists", func() {
+			// create a device without account
+			device := models.Device{
+				UUID:        faker.UUIDHyphenated(),
+				RHCClientID: faker.UUIDHyphenated(),
+			}
+			res := db.DB.Create(&device)
+			Expect(res.Error).To(BeNil())
+
+			event := new(PlatformInsightsUpdatedEventPayload)
+			event.Host.ID = device.UUID
+			event.Host.InsightsID = device.RHCClientID
+			event.Host.Account = faker.UUIDHyphenated()
+			event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
+			message, err := json.Marshal(event)
+			Expect(err).To(BeNil())
+
+			err = deviceService.ProcessPlatformInventoryUpdatedEvent(message)
+			Expect(err).To(BeNil())
+
+			var savedDevice models.Device
+			res = db.DB.Where("uuid = ?", device.UUID).First(&savedDevice)
+			Expect(res.Error).To(BeNil())
+			Expect(savedDevice.Account).To(Equal(event.Host.Account))
+		})
+
+	})
 })

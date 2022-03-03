@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"encoding/json"
-
 	version "github.com/knqyf263/go-rpm-version"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -11,6 +10,15 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm/clause"
+)
+
+const (
+	// InventoryEventTypeCreated represent the Created inventory event type
+	InventoryEventTypeCreated = "created"
+	// InventoryEventTypeUpdated represent the Updated inventory event type
+	InventoryEventTypeUpdated = "updated"
+	// InventoryHostTypeEdge represent the inventory host_ype = "edge"
+	InventoryHostTypeEdge = "edge"
 )
 
 // DeviceServiceInterface defines the interface to handle the business logic of RHEL for Edge Devices
@@ -29,10 +37,11 @@ type DeviceServiceInterface interface {
 	GetDeviceLastDeployment(device inventory.Device) *inventory.OSTree
 	GetDeviceLastBootedDeployment(device inventory.Device) *inventory.OSTree
 	ProcessPlatformInventoryCreateEvent(message []byte) error
+	ProcessPlatformInventoryUpdatedEvent(message []byte) error
 }
 
-// PlatformInsightsCreateEventPayload is the body of the create event found on the platform.inventory.events kafka topic.
-type PlatformInsightsCreateEventPayload struct {
+// PlatformInsightsCreateUpdateEventPayload is the body of the create event found on the platform.inventory.events kafka topic.
+type PlatformInsightsCreateUpdateEventPayload struct {
 	Type string `json:"type"`
 	Host struct {
 		ID            string `json:"id"`
@@ -396,16 +405,57 @@ func (s *DeviceService) GetDeviceLastDeployment(device inventory.Device) *invent
 	return nil
 }
 
+// ProcessPlatformInventoryUpdatedEvent processes messages from platform.inventory.events kafka topic with event_type="updated"
+func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) error {
+	var eventData PlatformInsightsCreateUpdateEventPayload
+	if err := json.Unmarshal(message, &eventData); err != nil {
+		s.log.WithFields(log.Fields{"value": string(message), "error": err}).Debug(
+			"Skipping kafka message - it's not a Platform Insights Inventory message with event type: updated, as unable to unmarshal the message")
+		return err
+	}
+	if eventData.Type != InventoryEventTypeUpdated && eventData.Host.SystemProfile.HostType != InventoryHostTypeEdge {
+		s.log.Debug("Skipping kafka message - Platform Insights Inventory message host type is not edge and event type is not updated")
+		return nil
+	}
+	deviceUUID := eventData.Host.ID
+	deviceAccount := eventData.Host.Account
+	device, err := s.GetDeviceByUUID(deviceUUID)
+	if err != nil {
+		// create a new device if it does not exist.
+		var newDevice = models.Device{
+			UUID:        deviceUUID,
+			RHCClientID: eventData.Host.InsightsID,
+			Account:     deviceAccount,
+		}
+		if result := db.DB.Create(&newDevice); result.Error != nil {
+			s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error}).Error("Error creating device")
+			return result.Error
+		}
+		s.log.WithFields(log.Fields{"host_id": deviceUUID}).Debug("Device account created")
+		return nil
+	}
+	if device.Account == "" {
+		// Update account if undefined
+		device.Account = deviceAccount
+		if result := db.DB.Save(device); result.Error != nil {
+			s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error}).Error("Error updating device account")
+			return result.Error
+		}
+		s.log.WithFields(log.Fields{"host_id": deviceUUID}).Debug("Device account updated")
+	}
+	return nil
+}
+
 // ProcessPlatformInventoryCreateEvent is a method to processes messages from platform.inventory.events kafka topic and save them as devices in the DB
 func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) error {
-	var e *PlatformInsightsCreateEventPayload
+	var e *PlatformInsightsCreateUpdateEventPayload
 	err := json.Unmarshal(message, &e)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"value": string(message),
 		}).Debug("Skipping message - it is not a create message" + err.Error())
 	} else {
-		if e.Type == "created" && e.Host.SystemProfile.HostType == "edge" {
+		if e.Type == InventoryEventTypeCreated && e.Host.SystemProfile.HostType == InventoryHostTypeEdge {
 			log.WithFields(log.Fields{
 				"host_id": string(e.Host.ID),
 				"value":   string(message),

@@ -357,6 +357,8 @@ Golang also provides a unit test infrastructure `test`. Run unit tests with the 
 make test
 ```
 
+If you encounter issues, please follow steps under [Setup Podman to run FDO](https://github.com/RedHatInsights/edge-api#setup-podman-to-run-fdo) to setup your system, then [Testing locally with libfdo-data](https://github.com/RedHatInsights/edge-api#testing-locally-with-libfdo-data) to run tests within a speciialized container.
+
 ### API docs
 
 [kin-openapi](https://github.com/getkin/kin-openapi) is a tool that helps us handle docs in the format of [Open API spec](https://github.com/OAI/OpenAPI-Specification). Sadly, it does not generate docs *automagically*. We have a [script](cmd/spec/main.go) that generates the docs and you have to add your model there to be picked by the code generation.
