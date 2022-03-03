@@ -89,4 +89,24 @@ var _ = Describe("Devices Router", func() {
 			})
 		})
 	})
+	Context("get list of device", func() {
+
+		When("when device is not found", func() {
+			It("should return 200", func() {
+				req, err := http.NewRequest("GET", "/devices", nil)
+				if err != nil {
+					Expect(err).ToNot(HaveOccurred())
+				}
+				rr := httptest.NewRecorder()
+				handler := http.HandlerFunc(routes.GetDevice)
+				ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{
+					Log: log.NewEntry(log.StandardLogger()),
+				})
+				req = req.WithContext(ctx)
+				handler.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusOK))
+
+			})
+		})
+	})
 })

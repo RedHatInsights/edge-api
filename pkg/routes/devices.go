@@ -213,7 +213,7 @@ func GetDevices(w http.ResponseWriter, r *http.Request) {
 	services := dependencies.ServicesFromContext(r.Context())
 	params := deviceListFilters(r.URL.Query())
 	inventory, err := services.DeviceService.GetDevices(params)
-	if err != nil || inventory.Count == 0 {
+	if err != nil {
 		err := errors.NewNotFound("No devices found")
 		w.WriteHeader(err.GetStatus())
 		_ = json.NewEncoder(w).Encode(err)
