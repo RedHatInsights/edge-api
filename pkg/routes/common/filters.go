@@ -24,13 +24,12 @@ func ContainFilterHandler(filter *Filter) FilterFunc {
 		if multipleStatusQuery := r.URL.Query()[filter.QueryParam]; len(multipleStatusQuery) > 1 {
 			for i, query := range multipleStatusQuery {
 				if i == 0 {
-					tx = tx.Where("? LIKE ?", filter.DBField, query)
+					tx = tx.Where(fmt.Sprintf("%s LIKE ?", filter.DBField), "%"+query+"%")
 				} else {
-					tx = tx.Or("? LIKE ?", filter.DBField, query)
+					tx = tx.Or(fmt.Sprintf("%s LIKE ?", filter.DBField), "%"+query+"%")
 				}
 			}
-		}
-		if val := r.URL.Query().Get(filter.QueryParam); val != "" {
+		} else if val := r.URL.Query().Get(filter.QueryParam); val != "" {
 			tx = tx.Where(fmt.Sprintf("%s LIKE ?", filter.DBField), "%"+val+"%")
 		}
 		return tx
