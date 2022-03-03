@@ -171,25 +171,14 @@ func (s *KafkaConsumerService) ConsumeImageBuildEvents() error {
 			}).Error("Error reading message from Kafka topic")
 			return err
 		}
-		var eventType string
-		for _, h := range m.Headers {
-			if h.Key == "event_type" {
-				eventType = string(h.Value)
-			}
-		}
-		if eventType == "imagebuild" {
-			log.WithFields(log.Fields{
-				"topic":  m.Topic,
-				"offset": m.Offset,
-				"key":    string(m.Key),
-				"value":  string(m.Value),
-			}).Debug("Read message from Kafka topic")
-
-			// Handling the image build event will be added after/with the producer.
-
-		} else {
-			log.Debug("Skipping message - not an edge image build message")
-		}
+		// temporarily modified this to just print any message since we control this topic
+		// will become more specific with event handler step coming next
+		log.WithFields(log.Fields{
+			"topic":  m.Topic,
+			"offset": m.Offset,
+			"key":    string(m.Key),
+			"value":  string(m.Value),
+		}).Debug("Read message from Kafka topic")
 	}
 }
 
