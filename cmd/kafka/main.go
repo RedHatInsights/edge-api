@@ -13,7 +13,7 @@ import (
 
 // RecordValue represents the struct of the value in a Kafka message
 type RecordValue struct {
-	ImageId int
+	Count int
 }
 
 func main() {
@@ -34,20 +34,19 @@ func main() {
 			fmt.Println(topics[i])
 		}
 
-		topic := "platform.edge.fleetmgmt.image-build"
+		// Create Producer instance
+		p, err := kafka.NewProducer(&kafka.ConfigMap{
+			"bootstrap.servers": brokers[0]})
+		if err != nil {
+			fmt.Printf("Failed to create producer: %s", err)
+			os.Exit(1)
+		}
 
-		fmt.Println("Entering an infinite loop...")
-		for {
-			// Create Producer instance
-			p, err := kafka.NewProducer(&kafka.ConfigMap{
-				"bootstrap.servers": brokers[0]})
-			if err != nil {
-				fmt.Printf("Failed to create producer: %s", err)
-				os.Exit(1)
-			}
-			recordKey := "imagebuild"
+		topic := "platform.edge.fleetmgmt.image-build"
+		for n := 0; n < 10; n++ {
+			recordKey := "alice"
 			data := &RecordValue{
-				ImageId: 123456789}
+				Count: n}
 			recordValue, _ := json.Marshal(&data)
 			fmt.Printf("Preparing to produce record: %s\t%s\n", recordKey, recordValue)
 			perr := p.Produce(&kafka.Message{
@@ -56,16 +55,21 @@ func main() {
 				Value:          []byte(recordValue),
 			}, nil)
 			if perr != nil {
-				fmt.Println("Error sending message")
+				fmt.Printf("Error sending message %d\n", n)
 			}
-
-			// Wait for all messages to be delivered
-			p.Flush(15 * 1000)
-			p.Close()
-
-			fmt.Printf("Messages was produced to topic %s!", topic)
-			fmt.Println("Sleeping 5 minutes...")
-			time.Sleep(5 * time.Minute)
 		}
+
+		// Wait for all messages to be delivered
+		p.Flush(15 * 1000)
+
+		fmt.Printf("10 messages were produced to topic %s!", topic)
+
+		p.Close()
+	}
+
+	fmt.Println("Entering an infinite loop...")
+	for {
+		fmt.Println("Sleeping 300...")
+		time.Sleep(300 * time.Second)
 	}
 }
