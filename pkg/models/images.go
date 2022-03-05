@@ -32,7 +32,7 @@ type Image struct {
 	Commit                 *Commit          `json:"Commit"`
 	InstallerID            *uint            `json:"InstallerID"`
 	Installer              *Installer       `json:"Installer"`
-	ImageSetID             *uint            `json:"ImageSetID"` // TODO: Wipe staging database and set to not nullable
+	ImageSetID             *uint            `json:"ImageSetID" gorm:"index"` // TODO: Wipe staging database and set to not nullable
 	Packages               []Package        `json:"Packages" gorm:"many2many:images_packages;"`
 	ThirdPartyRepositories []ThirdPartyRepo `json:"ThirdPartyRepositories" gorm:"many2many:images_repos;"`
 }
