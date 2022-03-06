@@ -45,13 +45,14 @@ func NewKafkaConsumerService(config *clowder.KafkaConfig, topic string) Consumer
 		shuttingDown:  false,
 		topic:         topic,
 	}
-	if topic == "platform.playbook-dispatcher.runs" {
+	switch topic {
+	case "platform.playbook-dispatcher.runs":
 		s.consumer = s.ConsumePlaybookDispatcherRuns
-	} else if s.topic == "platform.inventory.events" {
+	case "platform.inventory.events":
 		s.consumer = s.ConsumePlatformInventoryEvents
-	} else if s.topic == "platform.edge.fleetmgmt.image-build" {
+	case "platform.edge.fleetmgmt.image-build":
 		s.consumer = s.ConsumeImageBuildEvents
-	} else {
+	default:
 		log.Errorf("No consumer for topic: %s", topic)
 		return nil
 	}

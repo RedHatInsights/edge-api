@@ -1,6 +1,7 @@
 package services_test
 
 import (
+	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/redhatinsights/app-common-go/pkg/api/v1"
@@ -9,18 +10,28 @@ import (
 
 var _ = Describe("ConsumerService basic functions", func() {
 	Describe("creation of the service", func() {
-		p := 9092
-		topic := "platform.playbook-dispatcher.runs"
+		port := 9092
+		config := &v1.KafkaConfig{Brokers: []v1.BrokerConfig{{Hostname: "localhost", Port: &port}}}
+		topics := []string{"platform.playbook-dispatcher.runs",
+			"platform.inventory.events", "platform.edge.fleetmgmt.image-build"}
+		nonRealTopic := faker.DomainName()
 		Context("returns a correct instance", func() {
-			config := &v1.KafkaConfig{Brokers: []v1.BrokerConfig{{Hostname: "localhost", Port: &p}}}
-			s := services.NewKafkaConsumerService(config, topic)
-			It("not to be nil", func() {
-				Expect(s).ToNot(BeNil())
-			})
+			for _, topic := range topics {
+				s := services.NewKafkaConsumerService(config, topic)
+				It("not to be nil", func() {
+					Expect(s).ToNot(BeNil())
+				})
+			}
 		})
 		Context("nil instance", func() {
+			for _, topic := range topics {
+				It("returns nil", func() {
+					s := services.NewKafkaConsumerService(nil, topic)
+					Expect(s).To(BeNil())
+				})
+			}
 			It("returns nil", func() {
-				s := services.NewKafkaConsumerService(nil, topic)
+				s := services.NewKafkaConsumerService(config, nonRealTopic)
 				Expect(s).To(BeNil())
 			})
 		})
