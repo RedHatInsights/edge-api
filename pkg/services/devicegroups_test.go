@@ -155,8 +155,10 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 		})
 		When("adding multiple devices; one not exist", func() {
 			It("should fail", func() {
-				It("should fail", func() {
-				devices, err := deviceGroupsService.AddDeviceGroupDevices(account1, deviceGroup1.ID, []models.Device{devices[0], {Name: faker.Name(), Model: models.Model{ID: uint(rand.Uint64())}}})
+				var fakeDevice models.Device
+				err := faker.FakeData(&fakeDevice)
+				Expect(err).To(BeNil())
+				devices, err := deviceGroupsService.AddDeviceGroupDevices(account1, deviceGroup1.ID, []models.Device{devices[0], fakeDevice})
 				Expect(devices).To(BeNil())
 				Expect(err).NotTo(BeNil())
 				expectedErr := services.DeviceGroupAccountDevicesNotFound{}
@@ -165,7 +167,11 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 		})
 		When("adding not existing device to existing device-group", func() {
 			It("should fail", func() {
-				_, err := deviceGroupsService.AddDeviceGroupDevices(account1, deviceGroup1.ID, []models.Device{models.Device{Name: faker.Name(), Model: models.Model{ID: 0}}})
+				var fakeDevice models.Device
+				err := faker.FakeData(&fakeDevice)
+				Expect(err).To(BeNil())
+				devices, err := deviceGroupsService.AddDeviceGroupDevices(account1, deviceGroup1.ID, []models.Device{fakeDevice})
+				Expect(devices).To(BeNil())
 				Expect(err).NotTo(BeNil())
 				expectedErr := services.DeviceGroupAccountDevicesNotFound{}
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
