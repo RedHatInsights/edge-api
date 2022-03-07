@@ -535,5 +535,24 @@ var _ = Describe("DeviceGroup routes", func() {
 				Expect(rr.Code).To(Equal(http.StatusOK))
 			})
 		})
+		When("sending invalid request body", func() {
+			It("should return status code 400", func() {
+				url := fmt.Sprintf("/%d/devices", deviceGroup.ID)
+				req, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer([]byte("{}")))
+				Expect(err).To(BeNil())
+
+				ctx := req.Context()
+				ctx = setContextDeviceGroup(ctx, &deviceGroup)
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+				rr := httptest.NewRecorder()
+
+				var devicesToRemove []models.Device
+				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupDevices(account, deviceGroup.ID, devicesToRemove).Return(nil, new(services.DeviceGroupDevicesNotSupplied))
+				handler := http.HandlerFunc(DeleteDeviceGroupManyDevices)
+				handler.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusBadRequest))
+			})
+		})
 	})
 })
