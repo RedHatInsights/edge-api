@@ -320,7 +320,7 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 			})
 
 			// delete device from another device-group
-			It("should not remove non existing devices from device-group", func() {
+			It("should not remove non existing devices from device-group; device from another device-group", func() {
 				var fakeDeviceGroup models.DeviceGroup
 				err = faker.FakeData(&fakeDeviceGroup)
 				Expect(err).To(BeNil())
@@ -334,7 +334,7 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 			})
 
 			// delete multiple devices; one of them does not exist AND one of them does not belong to the device-group
-			It("should not remove non existing devices from device-group", func() {
+			It("should not remove non existing devices from device-group; one of them does not belong to the device-group", func() {
 				var fakeDevice models.Device
 				err := faker.FakeData(&fakeDevice)
 				Expect(err).To(BeNil())
