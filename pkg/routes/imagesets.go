@@ -120,7 +120,16 @@ func ImageSetCtx(next http.Handler) http.Handler {
 				return
 			}
 			if imageSet.Images != nil {
-				db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
+				result := db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
+				if result.Error != nil {
+					s.Log.WithField("error", result.Error.Error()).Debug("Result error")
+					err := errors.NewBadRequest(result.Error.Error())
+					w.WriteHeader(err.GetStatus())
+					if err := json.NewEncoder(w).Encode(&err); err != nil {
+						s.Log.WithField("error", result.Error.Error()).Error("Error while trying to encode")
+					}
+					return
+				}
 				db.DB.Where("id = ?", &imageSet.Images[len(imageSet.Images)-1].InstallerID).Find(&imageSet.Images[len(imageSet.Images)-1].Installer)
 			}
 			ctx := context.WithValue(r.Context(), imageSetKey, &imageSet)

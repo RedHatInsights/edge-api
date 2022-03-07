@@ -257,7 +257,15 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	repo = &models.Repo{
 		Status: models.RepoStatusBuilding,
 	}
-	db.DB.Create(&repo)
+	result := db.DB.Create(&repo)
+	if result.Error != nil {
+		services.Log.WithField("error", result.Error.Error()).Debug("Result error")
+		err := errors.NewBadRequest(result.Error.Error())
+		w.WriteHeader(err.GetStatus())
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", result.Error.Error()).Error("Error while trying to encode")
+		}
+	}
 	update.Repo = repo
 	services.Log.WithFields(log.Fields{
 		"repoURL": repo.URL,
@@ -286,12 +294,19 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 				"deviceUUID": device.ID,
 			}).Info("Creating a new device on the database")
 			updateDevice = &models.Device{
-				UUID: device.ID,
+				UUID:    device.ID,
+				Account: account,
 			}
-			db.DB.Create(&updateDevice)
+			if result := db.DB.Create(&updateDevice); result.Error != nil {
+				return nil, result.Error
+			}
 		}
 		updateDevice.RHCClientID = device.Ostree.RHCClientID
 		updateDevice.AvailableHash = update.Commit.OSTreeCommit
+		// update the device account if undefined
+		if updateDevice.Account == "" {
+			updateDevice.Account = account
+		}
 		result := db.DB.Save(&updateDevice)
 		if result.Error != nil {
 			return nil, result.Error

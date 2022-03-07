@@ -22,6 +22,7 @@ type KafkaConsumerService struct {
 	Reader        *kafka.Reader
 	UpdateService UpdateServiceInterface
 	DeviceService DeviceServiceInterface
+	ImageService  ImageServiceInterface
 	RetryMinutes  uint
 	config        *clowder.KafkaConfig
 	shuttingDown  bool
@@ -38,16 +39,20 @@ func NewKafkaConsumerService(config *clowder.KafkaConfig, topic string) Consumer
 	s := &KafkaConsumerService{
 		UpdateService: NewUpdateService(context.Background(), log.WithField("service", "update")),
 		DeviceService: NewDeviceService(context.Background(), log.WithField("service", "device")),
+		ImageService:  NewImageService(context.Background(), log.WithField("service", "image")),
 		RetryMinutes:  5,
 		config:        config,
 		shuttingDown:  false,
 		topic:         topic,
 	}
-	if topic == "platform.playbook-dispatcher.runs" {
+	switch topic {
+	case "platform.playbook-dispatcher.runs":
 		s.consumer = s.ConsumePlaybookDispatcherRuns
-	} else if s.topic == "platform.inventory.events" {
-		s.consumer = s.ConsumeInventoryCreateEvents
-	} else {
+	case "platform.inventory.events":
+		s.consumer = s.ConsumePlatformInventoryEvents
+	case "platform.edge.fleetmgmt.image-build":
+		s.consumer = s.ConsumeImageBuildEvents
+	default:
 		log.Errorf("No consumer for topic: %s", topic)
 		return nil
 	}
@@ -111,9 +116,54 @@ func (s *KafkaConsumerService) ConsumePlaybookDispatcherRuns() error {
 	}
 }
 
-// ConsumeInventoryCreateEvents parses create events from platform.inventory.events kafka topic and save them as devices in the DB
-func (s *KafkaConsumerService) ConsumeInventoryCreateEvents() error {
+// ConsumePlatformInventoryEvents parses create events from platform.inventory.events kafka topic and save them as devices in the DB
+func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 	log.Info("Starting to consume platform inventory create events")
+	for {
+		m, err := s.Reader.ReadMessage(context.Background())
+		if err != nil {
+			log.WithFields(log.Fields{
+				"error": err.Error(),
+			}).Error("Error reading message from Kafka topic")
+			return err
+		}
+		var eventType string
+		for _, h := range m.Headers {
+			if h.Key == "event_type" {
+				eventType = string(h.Value)
+				break
+			}
+		}
+		if eventType != InventoryEventTypeCreated && eventType != InventoryEventTypeUpdated {
+			log.Debug("Skipping kafka message - Insights Platform Inventory message is not a created and not an updated event type")
+			continue
+		}
+		log.WithFields(log.Fields{
+			"topic":  m.Topic,
+			"offset": m.Offset,
+			"key":    string(m.Key),
+			"value":  string(m.Value),
+		}).Debug("Read message from Kafka topic")
+
+		switch eventType {
+		case InventoryEventTypeCreated:
+			err = s.DeviceService.ProcessPlatformInventoryCreateEvent(m.Value)
+		case InventoryEventTypeUpdated:
+			err = s.DeviceService.ProcessPlatformInventoryUpdatedEvent(m.Value)
+		default:
+			err = nil
+		}
+		if err != nil {
+			log.WithFields(log.Fields{
+				"error": err,
+			}).Error("Error writing Kafka message to DB")
+		}
+	}
+}
+
+// ConsumeImageBuildEvents parses create events from platform.edge.fleetmgmt.image-build kafka topic
+func (s *KafkaConsumerService) ConsumeImageBuildEvents() error {
+	log.Info("Starting to consume image build events")
 	for {
 		m, err := s.Reader.ReadMessage(context.Background())
 		if err != nil {
@@ -128,21 +178,18 @@ func (s *KafkaConsumerService) ConsumeInventoryCreateEvents() error {
 				eventType = string(h.Value)
 			}
 		}
-		if eventType == "created" {
+		if eventType == "imagebuild" {
 			log.WithFields(log.Fields{
 				"topic":  m.Topic,
 				"offset": m.Offset,
 				"key":    string(m.Key),
 				"value":  string(m.Value),
 			}).Debug("Read message from Kafka topic")
-			err = s.DeviceService.ProcessPlatformInventoryCreateEvent(m.Value)
-			if err != nil {
-				log.WithFields(log.Fields{
-					"error": err,
-				}).Error("Error writing Kafka message to DB")
-			}
+
+			// Handling the image build event will be added after/with the producer.
+
 		} else {
-			log.Debug("Skipping message - not a create message from platform insights")
+			log.Debug("Skipping message - not an edge image build message")
 		}
 	}
 }

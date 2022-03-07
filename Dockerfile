@@ -1,7 +1,7 @@
 ############################################
 # STEP 1: build executable edge-api binaries
 ############################################
-FROM registry.access.redhat.com/ubi8/go-toolset:1.16.7 AS edge-builder
+FROM registry.access.redhat.com/ubi8/go-toolset:latest AS edge-builder
 WORKDIR $GOPATH/src/github.com/RedHatInsights/edge-api/
 COPY . .
 # Use go mod
@@ -36,7 +36,7 @@ RUN go build -o /go/bin/edge-api-ibvents cmd/kafka/main.go
 ######################################
 FROM registry.access.redhat.com/ubi8/ubi AS ubi-micro-build
 RUN mkdir -p /mnt/rootfs
-# This step is needed for subscription-manager refresh. 
+# This step is needed for subscription-manager refresh.
 RUN yum install coreutils-single -y
 RUN yum install --installroot /mnt/rootfs \
     coreutils-single glibc-minimal-langpack \
