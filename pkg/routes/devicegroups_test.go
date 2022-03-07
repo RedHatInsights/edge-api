@@ -493,7 +493,6 @@ var _ = Describe("DeviceGroup routes", func() {
 			}
 		})
 		When("device-group and devices are defined", func() {
-
 			It("should delete the first device", func() {
 				devicesToRemove := deviceGroup.Devices[:1]
 				url := fmt.Sprintf("/%d/devices/%d", deviceGroup.ID, devicesToRemove[0].ID)
