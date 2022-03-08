@@ -48,6 +48,18 @@ func (mr *MockImageServiceInterfaceMockRecorder) CreateImage(image, account inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).CreateImage), image, account)
 }
 
+// ResumeBuilds mocks base method
+func (m *MockImageServiceInterface) ResumeBuilds() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "ResumeBuilds")
+}
+
+// ResumeBuilds indicates an expected call of ResumeBuilds
+func (mr *MockImageServiceInterfaceMockRecorder) ResumeBuilds() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResumeBuilds", reflect.TypeOf((*MockImageServiceInterface)(nil).ResumeBuilds))
+}
+
 // UpdateImage mocks base method
 func (m *MockImageServiceInterface) UpdateImage(image, previousImage *models.Image) error {
 	m.ctrl.T.Helper()
