@@ -98,21 +98,28 @@ func ValidateAllImageReposAreFromAccount(account string, repos []models.ThirdPar
 
 // CreateImage creates an Image for an Account on Image Builder and on our database
 func (s *ImageService) CreateImage(image *models.Image, account string) error {
-	// Check for exising ImageSet to add this Image to
+	// Check for existing ImageSet and return if exists
+	// TODO: this routine needs to become a function under imagesets
 	var imageSetExists bool
 	var imageSetModel models.ImageSet
 	var imageSet models.ImageSet
 
+	// query to check if there are more than 0 matching imagesets
+	// NOTE: see fix below, we iterate over the DB twice if one exists
+	// just use the second query and return on first match
 	err := db.DB.Model(imageSetModel).
 		Select("count(*) > 0").
 		Where("name = ? AND account = ?", image.Name, account).
 		Find(&imageSetExists).
 		Error
 
+	// gorm error check
 	if err != nil {
 		return err
 	}
 
+	// requery to get imageset details and then return
+	// FIXME: this is leftover from previous functionality. Do one query or the other.
 	if imageSetExists {
 		result := db.DB.Where("name = ? AND account = ?", image.Name, account).First(&imageSet)
 		if result.Error != nil {
@@ -122,6 +129,9 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 		s.log.WithField("imageSetName", image.Name).Error("ImageSet already exists, UpdateImage transaction expected and not CreateImage", image.Name)
 		return new(ImageSetAlreadyExists)
 	}
+
+	// Create a new imageset
+	// TODO: this should be a function under imagesets
 	imageSet.Account = account
 	imageSet.Name = image.Name
 	imageSet.Version = image.Version
@@ -130,13 +140,16 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 		return set.Error
 	}
 
+	// create an image under the new imageset
 	image.Account = account
 	image.ImageSetID = &imageSet.ID
+	// make the initial call to Image Builder
 	image, err = s.ImageBuilder.ComposeCommit(image)
 	if err != nil {
 		return err
 	}
 	image.Commit.Account = account
+	// FIXME: Status below is already set in the call to ComposeCommit()
 	image.Commit.Status = models.ImageStatusBuilding
 	image.Status = models.ImageStatusBuilding
 	// TODO: Remove code when frontend is not using ImageType on the table
@@ -374,12 +387,17 @@ func (s *ImageService) SetFinalImageStatus(i *models.Image) {
 	}
 }
 
-// Every log message in this method already has commit id and image id injected
 func (s *ImageService) postProcessImage(id uint) {
+	// NOTE: Every log message in this method already has commit id and image id injected
+
 	s.log.Debug("Post processing image")
+	// get image data from DB based on image.ID
 	var i *models.Image
 	db.DB.Joins("Commit").Joins("Installer").First(&i, id)
 
+	// The WaitGroup is used for setting the status of in-progress builds to Error
+	// 		when the Edge API application shuts down with a SIGTERM.
+	// TODO: tweak to leave in BUILDING status for restart process
 	WaitGroup.Add(1) // Processing one image
 	defer func() {
 		WaitGroup.Done() // Done with one image (successfully or not)
