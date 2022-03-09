@@ -42,6 +42,7 @@ func MakeDeviceGroupsRouter(sub chi.Router) {
 	sub.Get("/db", GetDBDevices)
 	sub.Route("/{ID}", func(r chi.Router) {
 		r.Use(DeviceGroupCtx)
+		r.Get("/dbinfo", GetDeviceDBInfo)
 		r.Get("/", GetDeviceGroupByID)
 		r.Put("/", UpdateDeviceGroup)
 		r.Delete("/", DeleteDeviceGroupByID)
