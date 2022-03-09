@@ -9,11 +9,9 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"strconv"
 	"sync"
-	"syscall"
 	"text/template"
 	"time"
 
@@ -35,6 +33,7 @@ var WaitGroup sync.WaitGroup
 // the business logic of creating RHEL For Edge Images
 type ImageServiceInterface interface {
 	CreateImage(image *models.Image, account string) error
+	ResumeBuilds()
 	UpdateImage(image *models.Image, previousImage *models.Image) error
 	AddUserInfo(image *models.Image) error
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
@@ -387,37 +386,26 @@ func (s *ImageService) SetFinalImageStatus(i *models.Image) {
 	}
 }
 
+// ResumeBuilds resumes only the builds that were running when the application restarted.
+func (s *ImageService) ResumeBuilds() {
+	s.log.Debug("Resuming builds in progress.")
+	var images []models.Image
+	db.DB.Debug().Where(&models.Image{Status: models.ImageStatusBuilding}).Find(&images)
+	// loop through the results and start up a new process for each image
+	for _, image := range images {
+		log.WithField("imageID", image.ID).Debug("Resuming build process for image")
+
+		go s.postProcessImage(image.ID)
+	}
+}
+
 func (s *ImageService) postProcessImage(id uint) {
 	// NOTE: Every log message in this method already has commit id and image id injected
 
 	s.log.Debug("Post processing image")
 	// get image data from DB based on image.ID
 	var i *models.Image
-	db.DB.Joins("Commit").Joins("Installer").First(&i, id)
-
-	// The WaitGroup is used for setting the status of in-progress builds to Error
-	// 		when the Edge API application shuts down with a SIGTERM.
-	// TODO: tweak to leave in BUILDING status for restart process
-	WaitGroup.Add(1) // Processing one image
-	defer func() {
-		WaitGroup.Done() // Done with one image (successfully or not)
-		s.log.Debug("Done with one image - successfully or not")
-		if err := recover(); err != nil {
-			s.log.WithField("error", err).Errorf("Error recovering post process image goroutine")
-		}
-	}()
-	go func(i *models.Image) {
-		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
-		sig := <-sigint
-		// Reload image to get updated status
-		db.DB.Joins("Commit").Joins("Installer").First(&i, i.ID)
-		if i.Status == models.ImageStatusBuilding {
-			s.log.WithField("signal", sig).Info("Captured signal marking image as error", sig)
-			s.SetErrorStatusOnImage(nil, i)
-			WaitGroup.Done()
-		}
-	}(i)
+	db.DB.Debug().Joins("Commit").Joins("Installer").First(&i, id)
 
 	err := s.postProcessCommit(i)
 	if err != nil {
