@@ -39,10 +39,8 @@ func setContextDeviceGroupDevice(ctx context.Context, deviceGroupDevice *models.
 func MakeDeviceGroupsRouter(sub chi.Router) {
 	sub.With(validateGetAllDeviceGroupsFilterParams).With(common.Paginate).Get("/", GetAllDeviceGroups)
 	sub.Post("/", CreateDeviceGroup)
-	sub.Get("/db", GetDBDevices)
 	sub.Route("/{ID}", func(r chi.Router) {
 		r.Use(DeviceGroupCtx)
-		r.Get("/dbinfo", GetDeviceDBInfo)
 		r.Get("/", GetDeviceGroupByID)
 		r.Put("/", UpdateDeviceGroup)
 		r.Delete("/", DeleteDeviceGroupByID)

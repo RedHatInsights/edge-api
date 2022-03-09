@@ -20,8 +20,10 @@ import (
 // MakeDevicesRouter adds support for operations on update
 func MakeDevicesRouter(sub chi.Router) {
 	sub.Get("/", GetDevices)
+	sub.Get("/db", GetDBDevices)
 	sub.Route("/{DeviceUUID}", func(r chi.Router) {
 		r.Use(DeviceCtx)
+		r.Get("/dbinfo", GetDeviceDBInfo)
 		r.Get("/", GetDevice)
 		r.Get("/updates", GetUpdateAvailableForDevice)
 		r.Get("/image", GetDeviceImageInfo)
