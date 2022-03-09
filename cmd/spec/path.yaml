@@ -1269,11 +1269,6 @@ paths:
           description: Device Id
           schema:
             type: integer
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/v1.DeviceGroup"
       responses:
         "200":
           content:
