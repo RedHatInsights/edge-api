@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,6 +25,9 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"gorm.io/gorm"
+
+	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
+	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 )
 
 // WaitGroup is the waitg roup for pending image builds
@@ -287,7 +291,49 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 			s.log.WithField("error", err.Error()).Error("Update image status error")
 			return err
 		}
+
+		// the Image Builder status has changed from BUILDING
 		if i.Installer.Status != models.ImageStatusBuilding {
+
+			// if clowder is enabled, send an event on Image Build completion
+			// TODO: break this out into its own function
+			if clowder.IsClowderEnabled() {
+				fmt.Printf("Public Port: %d\n", clowder.LoadedConfig.PublicPort)
+
+				brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
+				for i, b := range clowder.LoadedConfig.Kafka.Brokers {
+					brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
+					fmt.Println(brokers[i])
+				}
+
+				topic := "platform.edge.fleetmgmt.image-build"
+
+				// Create Producer instance
+				p, err := kafka.NewProducer(&kafka.ConfigMap{
+					"bootstrap.servers": brokers[0]})
+				if err != nil {
+					fmt.Printf("Failed to create producer: %s", err)
+					os.Exit(1)
+				}
+				recordKey := "postProcessInstaller"
+				recordValue, _ := json.Marshal(&image)
+				fmt.Printf("Preparing to produce record: %s\t%s\n", recordKey, recordValue)
+				perr := p.Produce(&kafka.Message{
+					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+					Key:            []byte(recordKey),
+					Value:          []byte(recordValue),
+				}, nil)
+				if perr != nil {
+					fmt.Println("Error sending message")
+				}
+
+				// Wait for all messages to be delivered
+				p.Flush(15 * 1000)
+				p.Close()
+
+				fmt.Printf("postProcessInstaller message was produced to topic %s!\n", topic)
+			}
+
 			break
 		}
 		time.Sleep(1 * time.Minute)
@@ -316,6 +362,46 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 			return err
 		}
 		if i.Commit.Status != models.ImageStatusBuilding {
+
+			// if clowder is enabled, send an event on Image Build completion
+			// TODO: break this out into its own function
+			if clowder.IsClowderEnabled() {
+				fmt.Printf("Public Port: %d\n", clowder.LoadedConfig.PublicPort)
+
+				brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
+				for i, b := range clowder.LoadedConfig.Kafka.Brokers {
+					brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
+					fmt.Println(brokers[i])
+				}
+
+				topic := "platform.edge.fleetmgmt.image-build"
+
+				// Create Producer instance
+				p, err := kafka.NewProducer(&kafka.ConfigMap{
+					"bootstrap.servers": brokers[0]})
+				if err != nil {
+					fmt.Printf("Failed to create producer: %s", err)
+					os.Exit(1)
+				}
+				recordKey := "postProcessCommit"
+				recordValue, _ := json.Marshal(&image)
+				fmt.Printf("Preparing to produce record: %s\t%s\n", recordKey, recordValue)
+				perr := p.Produce(&kafka.Message{
+					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+					Key:            []byte(recordKey),
+					Value:          []byte(recordValue),
+				}, nil)
+				if perr != nil {
+					fmt.Println("Error sending message")
+				}
+
+				// Wait for all messages to be delivered
+				p.Flush(15 * 1000)
+				p.Close()
+
+				fmt.Printf("postProcessCommit Message was produced to topic %s!\n", topic)
+			}
+
 			break
 		}
 		time.Sleep(1 * time.Minute)
@@ -388,6 +474,7 @@ func (s *ImageService) SetFinalImageStatus(i *models.Image) {
 
 // ResumeBuilds resumes only the builds that were running when the application restarted.
 func (s *ImageService) ResumeBuilds() {
+	// TODO: refactor this out to ibvents pod
 	s.log.Debug("Resuming builds in progress.")
 	var images []models.Image
 	db.DB.Debug().Where(&models.Image{Status: models.ImageStatusBuilding}).Find(&images)
@@ -395,7 +482,7 @@ func (s *ImageService) ResumeBuilds() {
 	for _, image := range images {
 		log.WithField("imageID", image.ID).Debug("Resuming build process for image")
 
-		go s.postProcessImage(image.ID)
+		// go s.postProcessImage(image.ID)
 	}
 }
 
@@ -982,7 +1069,7 @@ func (s *ImageService) GetMetadata(image *models.Image) (*models.Image, error) {
 	return image, nil
 }
 
-// CreateInstallerForImage creates a installer given an existent iamge
+// CreateInstallerForImage creates a installer given an existing image
 func (s *ImageService) CreateInstallerForImage(image *models.Image) (*models.Image, chan error, error) {
 	s.log.Debug("Creating installer for image")
 	c := make(chan error)
