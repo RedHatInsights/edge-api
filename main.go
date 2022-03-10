@@ -161,6 +161,7 @@ func main() {
 	}
 
 	// Resume builds running during restart
+	// TODO: refactor this out to ibvents pod
 	imageService := services.NewImageService(context.Background(), log.WithField("service", "image"))
 	imageService.ResumeBuilds()
 
