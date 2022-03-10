@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+
 	version "github.com/knqyf263/go-rpm-version"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -45,6 +46,7 @@ type PlatformInsightsCreateUpdateEventPayload struct {
 	Type string `json:"type"`
 	Host struct {
 		ID            string `json:"id"`
+		Name          string `json:"display_name"`
 		Account       string `json:"account"`
 		InsightsID    string `json:"insights_id"`
 		SystemProfile struct {
@@ -419,6 +421,7 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 	}
 	deviceUUID := eventData.Host.ID
 	deviceAccount := eventData.Host.Account
+	deviceName := eventData.Host.Name
 	device, err := s.GetDeviceByUUID(deviceUUID)
 	if err != nil {
 		// create a new device if it does not exist.
@@ -426,6 +429,7 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 			UUID:        deviceUUID,
 			RHCClientID: eventData.Host.InsightsID,
 			Account:     deviceAccount,
+			Name:        deviceName,
 		}
 		if result := db.DB.Create(&newDevice); result.Error != nil {
 			s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error}).Error("Error creating device")
