@@ -169,28 +169,17 @@ func (s *KafkaConsumerService) ConsumeImageBuildEvents() error {
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error": err.Error(),
-			}).Error("Error reading message from Kafka topic")
+			}).Error("Error reading message from Kafka platform.edge.fleetmgmt.image-build topic")
 			return err
 		}
-		var eventType string
-		for _, h := range m.Headers {
-			if h.Key == "event_type" {
-				eventType = string(h.Value)
-			}
-		}
-		if eventType == "imagebuild" {
-			log.WithFields(log.Fields{
-				"topic":  m.Topic,
-				"offset": m.Offset,
-				"key":    string(m.Key),
-				"value":  string(m.Value),
-			}).Debug("Read message from Kafka topic")
 
-			// Handling the image build event will be added after/with the producer.
-
-		} else {
-			log.Debug("Skipping message - not an edge image build message")
-		}
+		// temporarily logging all events to the topic
+		log.WithFields(log.Fields{
+			"topic":  m.Topic,
+			"offset": m.Offset,
+			"key":    string(m.Key),
+			"value":  string(m.Value),
+		}).Debug("Read message from Kafka platform.edge.fleetmgmt.image-build topic")
 	}
 }
 
