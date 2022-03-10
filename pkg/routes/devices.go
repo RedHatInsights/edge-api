@@ -2,7 +2,6 @@ package routes
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/url"
 
@@ -14,7 +13,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
-	log "github.com/sirupsen/logrus"
 )
 
 // MakeDevicesRouter adds support for operations on update
@@ -48,11 +46,8 @@ func DeviceCtx(next http.Handler) http.Handler {
 		var dc DeviceContext
 		dc.DeviceUUID = chi.URLParam(r, "DeviceUUID")
 		if dc.DeviceUUID == "" {
-			err := errors.NewBadRequest("DeviceUUID must be sent")
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+			contextServices := dependencies.ServicesFromContext(r.Context())
+			respondWithAPIError(w, contextServices.Log, errors.NewBadRequest("DeviceUUID must be sent"))
 			return
 		}
 		// TODO: Implement devices by tag
@@ -64,76 +59,48 @@ func DeviceCtx(next http.Handler) http.Handler {
 
 // GetUpdateAvailableForDevice returns if exists update for the current image at the device.
 func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
-	s := dependencies.ServicesFromContext(r.Context())
+	contextServices := dependencies.ServicesFromContext(r.Context())
 	dc, ok := r.Context().Value(deviceContextKey).(DeviceContext)
 	if dc.DeviceUUID == "" || !ok {
 		return // Error set by DeviceCtx method
 	}
-	result, err := s.DeviceService.GetUpdateAvailableForDeviceByUUID(dc.DeviceUUID)
-	if err == nil {
-		if err := json.NewEncoder(w).Encode(result); err != nil {
-			s.Log.WithField("error", result).Error("Error while trying to encode")
+	result, err := contextServices.DeviceService.GetUpdateAvailableForDeviceByUUID(dc.DeviceUUID)
+	if err != nil {
+		var apiError errors.APIError
+		switch err.(type) {
+		case *services.DeviceNotFoundError:
+			apiError = errors.NewNotFound("Could not find device")
+		case *services.UpdateNotFoundError:
+			apiError = errors.NewNotFound("Could not find update")
+		default:
+			apiError = errors.NewInternalServerError()
 		}
+		respondWithAPIError(w, contextServices.Log, apiError)
 		return
 	}
-	if _, ok := err.(*services.DeviceNotFoundError); ok {
-		err := errors.NewNotFound("Could not find device")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
-		return
-	}
-	if _, ok := err.(*services.UpdateNotFoundError); ok {
-		err := errors.NewNotFound("Could not find update")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
-		return
-	}
-	apierr := errors.NewInternalServerError()
-	w.WriteHeader(apierr.GetStatus())
-	s.Log.WithFields(log.Fields{
-		"statusCode": apierr.GetStatus(),
-		"error":      apierr.Error(),
-	}).Error("Error retrieving updates for device")
-	if err := json.NewEncoder(w).Encode(&err); err != nil {
-		s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-	}
+	respondWithJSONBody(w, contextServices.Log, result)
 }
 
 // GetDeviceImageInfo returns the information of a running image for a device
 func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
-	s := dependencies.ServicesFromContext(r.Context())
+	contextServices := dependencies.ServicesFromContext(r.Context())
 	dc, ok := r.Context().Value(deviceContextKey).(DeviceContext)
 	if dc.DeviceUUID == "" || !ok {
 		return // Error set by DeviceCtx method
 	}
-	result, err := s.DeviceService.GetDeviceImageInfoByUUID(dc.DeviceUUID)
-	if err == nil {
-		if err := json.NewEncoder(w).Encode(result); err != nil {
-			s.Log.WithField("error", result).Error("Error while trying to encode")
+	result, err := contextServices.DeviceService.GetDeviceImageInfoByUUID(dc.DeviceUUID)
+	if err != nil {
+		var apiError errors.APIError
+		switch err.(type) {
+		case *services.DeviceNotFoundError:
+			apiError = errors.NewNotFound("Could not find device")
+		default:
+			apiError = errors.NewInternalServerError()
 		}
+		respondWithAPIError(w, contextServices.Log, apiError)
 		return
 	}
-	if _, ok := err.(*services.DeviceNotFoundError); ok {
-		err := errors.NewNotFound("Could not find device")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
-		return
-	}
-	apierr := errors.NewInternalServerError()
-	w.WriteHeader(apierr.GetStatus())
-	s.Log.WithFields(log.Fields{
-		"statusCode": apierr.GetStatus(),
-		"error":      apierr.Error(),
-	}).Error("Error getting image info for device")
-	if err := json.NewEncoder(w).Encode(&err); err != nil {
-		s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-	}
+	respondWithJSONBody(w, contextServices.Log, result)
 }
 
 // GetDevice returns all available information that edge api has about a device
@@ -142,43 +109,26 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 // Returns updates available to a device.
 // Returns updates transactions for that device, if any.
 func GetDevice(w http.ResponseWriter, r *http.Request) {
-	s := dependencies.ServicesFromContext(r.Context())
+	contextServices := dependencies.ServicesFromContext(r.Context())
 	dc, ok := r.Context().Value(deviceContextKey).(DeviceContext)
 	if dc.DeviceUUID == "" || !ok {
 		return // Error set by DeviceCtx method
 	}
-	result, err := s.DeviceService.GetDeviceDetailsByUUID(dc.DeviceUUID)
-	if err == nil {
-		if err := json.NewEncoder(w).Encode(result); err != nil {
-			s.Log.WithField("error", result).Error("Error while trying to encode")
+	result, err := contextServices.DeviceService.GetDeviceDetailsByUUID(dc.DeviceUUID)
+	if err != nil {
+		var apiError errors.APIError
+		switch err.(type) {
+		case *services.ImageNotFoundError:
+			apiError = errors.NewNotFound("Could not find image")
+		case *services.DeviceNotFoundError:
+			apiError = errors.NewNotFound("Could not find device")
+		default:
+			apiError = errors.NewInternalServerError()
 		}
+		respondWithAPIError(w, contextServices.Log, apiError)
 		return
 	}
-	if _, ok := err.(*services.ImageNotFoundError); ok {
-		err := errors.NewNotFound("Could not find image")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
-		return
-	}
-	if _, ok := err.(*services.DeviceNotFoundError); ok {
-		err := errors.NewNotFound("Could not find device")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
-		return
-	}
-	apierr := errors.NewInternalServerError()
-	w.WriteHeader(apierr.GetStatus())
-	s.Log.WithFields(log.Fields{
-		"statusCode": apierr.GetStatus(),
-		"error":      apierr.Error(),
-	}).Error("Error retrieving updates for device")
-	if err := json.NewEncoder(w).Encode(&err); err != nil {
-		s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-	}
+	respondWithJSONBody(w, contextServices.Log, result)
 }
 
 // InventoryData represents the structure of inventory response
@@ -212,94 +162,55 @@ func deviceListFilters(v url.Values) *inventory.Params {
 
 // GetDevices return the device data both on Edge API and InventoryAPI
 func GetDevices(w http.ResponseWriter, r *http.Request) {
-	services := dependencies.ServicesFromContext(r.Context())
+	contextServices := dependencies.ServicesFromContext(r.Context())
 	params := deviceListFilters(r.URL.Query())
-	inventory, err := services.DeviceService.GetDevices(params)
+	inventory, err := contextServices.DeviceService.GetDevices(params)
 	if err != nil {
-		err := errors.NewNotFound("No devices found")
-		w.WriteHeader(err.GetStatus())
-		_ = json.NewEncoder(w).Encode(err)
+		respondWithAPIError(w, contextServices.Log, errors.NewNotFound("No devices found"))
 		return
 	}
-	if err := json.NewEncoder(w).Encode(inventory); err != nil {
-		services := dependencies.ServicesFromContext(r.Context())
-		services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.GetStatus())
-		_ = json.NewEncoder(w).Encode(err)
-	}
+	respondWithJSONBody(w, contextServices.Log, inventory)
 }
 
 // GetDBDevices return the device data on EdgeAPI DB
 func GetDBDevices(w http.ResponseWriter, r *http.Request) {
-	services := dependencies.ServicesFromContext(r.Context())
-	var devices *[]models.Device
+	contextServices := dependencies.ServicesFromContext(r.Context())
+	var devices []models.Device
 	pagination := common.GetPagination(r)
 	account, err := common.GetAccount(r)
 	if err != nil {
-		services.Log.WithField("error", err).Debug("Account not found")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		contextServices.Log.WithField("error", err).Debug("Account not found")
+		respondWithAPIError(w, contextServices.Log, errors.NewBadRequest(err.Error()))
 		return
 	}
 	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&devices)
 	if result.Error != nil {
-		services.Log.WithField("error", result.Error.Error()).Debug("Result error")
-		err := errors.NewBadRequest(result.Error.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", result.Error.Error()).Error("Error while trying to encode")
-		}
+		contextServices.Log.WithField("error", result.Error.Error()).Debug("Result error")
+		respondWithAPIError(w, contextServices.Log, errors.NewBadRequest(result.Error.Error()))
 		return
 	}
-	if err := json.NewEncoder(w).Encode(devices); err != nil {
-		services := dependencies.ServicesFromContext(r.Context())
-		services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.GetStatus())
-		_ = json.NewEncoder(w).Encode(err)
-	}
-
+	respondWithJSONBody(w, contextServices.Log, &devices)
 }
 
 // GetDeviceDBInfo return the device data on EdgeAPI DB
 func GetDeviceDBInfo(w http.ResponseWriter, r *http.Request) {
-	services := dependencies.ServicesFromContext(r.Context())
-	var devices *[]models.Device
-	// pagination := common.GetPagination(r)
+	contextServices := dependencies.ServicesFromContext(r.Context())
+	var devices []models.Device
 	dc, ok := r.Context().Value(deviceContextKey).(DeviceContext)
 	if dc.DeviceUUID == "" || !ok {
 		return // Error set by DeviceCtx method
 	}
 	account, err := common.GetAccount(r)
 	if err != nil {
-		services.Log.WithField("error", err).Debug("Account not found")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		contextServices.Log.WithField("error", err).Debug("Account not found")
+		respondWithAPIError(w, contextServices.Log, errors.NewBadRequest(err.Error()))
 		return
 	}
 	result := db.DB.Where("account = ? and UUID = ?", account, dc.DeviceUUID).Find(&devices)
 	if result.Error != nil {
-		services.Log.WithField("error", err).Debug("Result error")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		contextServices.Log.WithField("error", result.Error).Debug("Result error")
+		respondWithAPIError(w, contextServices.Log, errors.NewBadRequest(result.Error.Error()))
 		return
 	}
-	if err := json.NewEncoder(w).Encode(devices); err != nil {
-		services := dependencies.ServicesFromContext(r.Context())
-		services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.GetStatus())
-		_ = json.NewEncoder(w).Encode(err)
-	}
-
+	respondWithJSONBody(w, contextServices.Log, &devices)
 }
