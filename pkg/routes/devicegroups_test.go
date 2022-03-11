@@ -199,7 +199,9 @@ var _ = Describe("DeviceGroup routes", func() {
 		When("all is valid", func() {
 			It("should add devices to DeviceGroup", func() {
 				ctx := req.Context()
-				ctx = setContextDeviceGroup(ctx, &deviceGroup)
+				ctx = setContextDeviceGroup(ctx, &models.DeviceGroupDetails{
+					DeviceGroup: &deviceGroup,
+				})
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
@@ -229,7 +231,9 @@ var _ = Describe("DeviceGroup routes", func() {
 			Expect(err).To(BeNil())
 			It("should create DeviceGroup", func() {
 				ctx := req.Context()
-				ctx = setContextDeviceGroup(ctx, deviceGroup)
+				ctx = setContextDeviceGroup(ctx, &models.DeviceGroupDetails{
+					DeviceGroup: deviceGroup,
+				})
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
@@ -257,7 +261,9 @@ var _ = Describe("DeviceGroup routes", func() {
 			It("should return 400", func() {
 				config.Get().Auth = true // enable auth to avoid default account
 				ctx := req.Context()
-				ctx = setContextDeviceGroup(ctx, deviceGroup)
+				ctx = setContextDeviceGroup(ctx, &models.DeviceGroupDetails{
+					DeviceGroup: deviceGroup,
+				})
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
@@ -286,7 +292,9 @@ var _ = Describe("DeviceGroup routes", func() {
 		When("all is valid", func() {
 			It("should update DeviceGroup", func() {
 				ctx := req.Context()
-				ctx = setContextDeviceGroup(ctx, deviceGroupUpdated)
+				ctx = setContextDeviceGroup(ctx, &models.DeviceGroupDetails{
+					DeviceGroup: deviceGroupUpdated,
+				})
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
@@ -338,7 +346,9 @@ var _ = Describe("DeviceGroup routes", func() {
 
 			It("should return status code 200", func() {
 				ctx := req.Context()
-				ctx = setContextDeviceGroup(ctx, deviceGroup)
+				ctx = setContextDeviceGroup(ctx, &models.DeviceGroupDetails{
+					DeviceGroup: deviceGroup,
+				})
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
@@ -378,12 +388,13 @@ var _ = Describe("DeviceGroup routes", func() {
 
 			It("should return status code 400", func() {
 				ctx := req.Context()
-				ctx = setContextDeviceGroup(ctx, &models.DeviceGroup{
-					Model: models.Model{
-						ID: fakeIDUint,
-					},
-					Account: "",
-				})
+				ctx = setContextDeviceGroup(ctx, &models.DeviceGroupDetails{
+					DeviceGroup: &models.DeviceGroup{
+						Model: models.Model{
+							ID: fakeIDUint,
+						},
+						Account: "",
+					}})
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
@@ -406,11 +417,12 @@ var _ = Describe("DeviceGroup routes", func() {
 
 			It("should return status code 404", func() {
 				ctx := req.Context()
-				ctx = setContextDeviceGroup(ctx, &models.DeviceGroup{
-					Model: models.Model{
-						ID: fakeIDUint,
-					},
-				})
+				ctx = setContextDeviceGroup(ctx, &models.DeviceGroupDetails{
+					DeviceGroup: &models.DeviceGroup{
+						Model: models.Model{
+							ID: fakeIDUint,
+						},
+					}})
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
@@ -433,11 +445,12 @@ var _ = Describe("DeviceGroup routes", func() {
 
 			It("should return status code 500", func() {
 				ctx := req.Context()
-				ctx = setContextDeviceGroup(ctx, &models.DeviceGroup{
-					Model: models.Model{
-						ID: fakeIDUint,
-					},
-				})
+				ctx = setContextDeviceGroup(ctx, &models.DeviceGroupDetails{
+					DeviceGroup: &models.DeviceGroup{
+						Model: models.Model{
+							ID: fakeIDUint,
+						},
+					}})
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
@@ -500,7 +513,9 @@ var _ = Describe("DeviceGroup routes", func() {
 				Expect(err).To(BeNil())
 
 				ctx := req.Context()
-				ctx = setContextDeviceGroup(ctx, &deviceGroup)
+				ctx = setContextDeviceGroup(ctx, &models.DeviceGroupDetails{
+					DeviceGroup: &deviceGroup,
+				})
 				ctx = setContextDeviceGroupDevice(ctx, &devicesToRemove[0])
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
@@ -523,7 +538,9 @@ var _ = Describe("DeviceGroup routes", func() {
 				Expect(err).To(BeNil())
 
 				ctx := req.Context()
-				ctx = setContextDeviceGroup(ctx, &deviceGroup)
+				ctx = setContextDeviceGroup(ctx, &models.DeviceGroupDetails{
+					DeviceGroup: &deviceGroup,
+				})
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
@@ -542,7 +559,9 @@ var _ = Describe("DeviceGroup routes", func() {
 				Expect(err).To(BeNil())
 
 				ctx := req.Context()
-				ctx = setContextDeviceGroup(ctx, &deviceGroup)
+				ctx = setContextDeviceGroup(ctx, &models.DeviceGroupDetails{
+					DeviceGroup: &deviceGroup,
+				})
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()

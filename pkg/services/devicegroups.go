@@ -6,6 +6,7 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
@@ -27,7 +28,7 @@ type DeviceGroupsServiceInterface interface {
 	CreateDeviceGroup(deviceGroup *models.DeviceGroup) (*models.DeviceGroup, error)
 	GetDeviceGroups(account string, limit int, offset int, tx *gorm.DB) (*[]models.DeviceGroup, error)
 	GetDeviceGroupsCount(account string, tx *gorm.DB) (int64, error)
-	GetDeviceGroupByID(ID string) (*models.DeviceGroup, error)
+	GetDeviceGroupByID(ID string) (*models.DeviceGroupDetails, error)
 	DeleteDeviceGroupByID(ID string) error
 	UpdateDeviceGroup(deviceGroup *models.DeviceGroup, account string, ID string) error
 	GetDeviceGroupDeviceByID(account string, deviceGroupID uint, deviceID uint) (*models.Device, error)
@@ -38,12 +39,14 @@ type DeviceGroupsServiceInterface interface {
 // DeviceGroupsService is the main implementation of a DeviceGroupsServiceInterface
 type DeviceGroupsService struct {
 	Service
+	DeviceService DeviceServiceInterface
 }
 
 // NewDeviceGroupsService return an instance of the main implementation of a DeviceGroupsServiceInterface
 func NewDeviceGroupsService(ctx context.Context, log *log.Entry) DeviceGroupsServiceInterface {
 	return &DeviceGroupsService{
-		Service: Service{ctx: ctx, log: log.WithField("service", "device-groups")},
+		Service:       Service{ctx: ctx, log: log.WithField("service", "device-groups")},
+		DeviceService: NewDeviceService(ctx, log),
 	}
 }
 
@@ -141,17 +144,38 @@ func (s *DeviceGroupsService) CreateDeviceGroup(deviceGroup *models.DeviceGroup)
 }
 
 // GetDeviceGroupByID gets the device group by ID from the database
-func (s *DeviceGroupsService) GetDeviceGroupByID(ID string) (*models.DeviceGroup, error) {
-	var deviceGroup models.DeviceGroup
+func (s *DeviceGroupsService) GetDeviceGroupByID(ID string) (*models.DeviceGroupDetails, error) {
+	//var deviceGroup models.DeviceGroup
+	var deviceGroupDetails models.DeviceGroupDetails
 	account, err := common.GetAccountFromContext(s.ctx)
 	if err != nil {
-		return nil, new(AccountNotSet)
+		fmt.Printf("\n Error account %v \n", err)
 	}
-	result := db.DB.Where("account = ? and id = ?", account, ID).Preload("Devices").First(&deviceGroup)
+	result := db.DB.Where("account = ? and id = ?", account, ID).Preload("Devices").First(&deviceGroupDetails.DeviceGroup)
 	if result.Error != nil {
 		return nil, new(DeviceGroupNotFound)
 	}
-	return &deviceGroup, nil
+
+	if len(deviceGroupDetails.DeviceGroup.Devices) > 0 {
+		var devices models.DeviceDetailsList
+		for _, device := range deviceGroupDetails.DeviceGroup.Devices {
+			param := new(inventory.Params)
+			param.HostnameOrID = device.UUID
+			inventoryDevice, err := s.DeviceService.GetDevices(param)
+			if err != nil {
+				fmt.Printf("\n ERROR %v", err)
+			}
+			if len(inventoryDevice.Devices) > 0 {
+				devices.Total = devices.Total + 1
+				devices.Count = devices.Count + 1
+				devices.Devices = append(devices.Devices, inventoryDevice.Devices...)
+			}
+		}
+
+		deviceGroupDetails.DeviceDetails = &devices
+	}
+
+	return &deviceGroupDetails, nil
 }
 
 // UpdateDeviceGroup update an existent group
@@ -161,9 +185,9 @@ func (s *DeviceGroupsService) UpdateDeviceGroup(deviceGroup *models.DeviceGroup,
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error retrieving device group")
 	}
-	if groupDetails.Name != "" {
-		groupDetails.Name = deviceGroup.Name
-		deviceGroupExists, err := deviceGroupNameExists(groupDetails.Account, groupDetails.Name)
+	if groupDetails.DeviceGroup.Name != "" {
+		groupDetails.DeviceGroup.Name = deviceGroup.Name
+		deviceGroupExists, err := deviceGroupNameExists(groupDetails.DeviceGroup.Account, groupDetails.DeviceGroup.Name)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error when checking if device group exists")
 			return err

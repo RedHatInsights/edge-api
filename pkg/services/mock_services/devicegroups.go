@@ -80,10 +80,10 @@ func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) GetDeviceGroupsCount(acc
 }
 
 // GetDeviceGroupByID mocks base method
-func (m *MockDeviceGroupsServiceInterface) GetDeviceGroupByID(ID string) (*models.DeviceGroup, error) {
+func (m *MockDeviceGroupsServiceInterface) GetDeviceGroupByID(ID string) (*models.DeviceGroupDetails, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDeviceGroupByID", ID)
-	ret0, _ := ret[0].(*models.DeviceGroup)
+	ret0, _ := ret[0].(*models.DeviceGroupDetails)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
