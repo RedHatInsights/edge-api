@@ -564,4 +564,87 @@ var _ = Describe("DeviceService", func() {
 		})
 
 	})
+	Context("ProcessPlatformInventoryDeleteEvent", func() {
+		type PlatformInsightsDeleteEventPayload struct {
+			Type    string `json:"type"`
+			ID      string `json:"id"`
+			Account string `json:"account"`
+		}
+
+		It("device should be deleted", func() {
+			// create a platform inventory delete event message
+			event := new(PlatformInsightsDeleteEventPayload)
+			event.Type = services.InventoryEventTypeDelete
+			event.ID = faker.UUIDHyphenated()
+			event.Account = faker.UUIDHyphenated()
+			message, err := json.Marshal(event)
+			Expect(err).To(BeNil())
+
+			// create a device
+			device := models.Device{UUID: event.ID, Account: event.Account}
+			result := db.DB.Create(&device)
+			Expect(result.Error).To(BeNil())
+
+			// ensure device created
+			var deviceCount int64
+			db.DB.Model(&models.Device{}).Where(models.Device{UUID: event.ID, Account: event.Account}).Count(&deviceCount)
+			Expect(deviceCount == 1).To(BeTrue())
+
+			// call the platform inventory delete event processor
+			err = deviceService.ProcessPlatformInventoryDeleteEvent(message)
+			Expect(err).To(BeNil())
+
+			// ensure device does not exits
+			db.DB.Unscoped().Model(&models.Device{}).Where(models.Device{UUID: event.ID, Account: event.Account}).Count(&deviceCount)
+			Expect(deviceCount == 0).To(BeTrue())
+		})
+
+		It("device in device-groups should be removed", func() {
+			// create a platform inventory delete event message
+			event := new(PlatformInsightsDeleteEventPayload)
+			event.Type = services.InventoryEventTypeDelete
+			event.ID = faker.UUIDHyphenated()
+			event.Account = faker.UUIDHyphenated()
+			message, err := json.Marshal(event)
+			Expect(err).To(BeNil())
+
+			// create a device
+			device := models.Device{UUID: event.ID, Account: event.Account}
+			result := db.DB.Create(&device)
+			Expect(result.Error).To(BeNil())
+
+			// ensure the device exists
+			var deviceCount int64
+			result = db.DB.Model(&models.Device{}).Where(models.Device{UUID: event.ID, Account: event.Account}).Count(&deviceCount)
+			Expect(result.Error).To(BeNil())
+			Expect(deviceCount == 1).To(BeTrue())
+			// create a device group with device
+			deviceGroup := models.DeviceGroup{
+				Type: models.DeviceGroupTypeDefault, Account: event.Account, Name: faker.UUIDHyphenated(),
+				Devices: []models.Device{device},
+			}
+			result = db.DB.Create(&deviceGroup)
+			Expect(result.Error).To(BeNil())
+			// ensure device group created with device included
+			var savedDeviceGroup models.DeviceGroup
+			result = db.DB.Where(models.DeviceGroup{Account: deviceGroup.Account}).Preload("Devices").First(&savedDeviceGroup, deviceGroup.ID)
+			Expect(result.Error).To(BeNil())
+			Expect(savedDeviceGroup.Devices).NotTo(BeEmpty())
+			Expect(savedDeviceGroup.Devices[0].ID == device.ID).To(BeTrue())
+
+			// call the platform inventory delete event processor
+			err = deviceService.ProcessPlatformInventoryDeleteEvent(message)
+			Expect(err).To(BeNil())
+
+			// ensure device does not exits
+			result = db.DB.Unscoped().Model(&models.Device{}).Where(models.Device{UUID: event.ID, Account: event.Account}).Count(&deviceCount)
+			Expect(result.Error).To(BeNil())
+			Expect(deviceCount == 0).To(BeTrue())
+
+			// ensure device does not exists in device group
+			result = db.DB.Unscoped().Where(models.DeviceGroup{Account: deviceGroup.Account}).Preload("Devices").First(&savedDeviceGroup, deviceGroup.ID)
+			Expect(result.Error).To(BeNil())
+			Expect(savedDeviceGroup.Devices).To(BeEmpty())
+		})
+	})
 })

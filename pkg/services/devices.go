@@ -18,6 +18,8 @@ const (
 	InventoryEventTypeCreated = "created"
 	// InventoryEventTypeUpdated represent the Updated inventory event type
 	InventoryEventTypeUpdated = "updated"
+	// InventoryEventTypeDelete represent the "delete" inventory event type
+	InventoryEventTypeDelete = "delete"
 	// InventoryHostTypeEdge represent the inventory host_ype = "edge"
 	InventoryHostTypeEdge = "edge"
 )
@@ -39,6 +41,7 @@ type DeviceServiceInterface interface {
 	GetDeviceLastBootedDeployment(device inventory.Device) *inventory.OSTree
 	ProcessPlatformInventoryCreateEvent(message []byte) error
 	ProcessPlatformInventoryUpdatedEvent(message []byte) error
+	ProcessPlatformInventoryDeleteEvent(message []byte) error
 }
 
 // PlatformInsightsCreateUpdateEventPayload is the body of the create event found on the platform.inventory.events kafka topic.
@@ -53,6 +56,13 @@ type PlatformInsightsCreateUpdateEventPayload struct {
 			HostType string `json:"host_type"`
 		} `json:"system_profile"`
 	} `json:"host"`
+}
+
+// PlatformInsightsDeleteEventPayload is the body of the delete event found on the platform.inventory.events kafka topic.
+type PlatformInsightsDeleteEventPayload struct {
+	Type    string `json:"type"`
+	ID      string `json:"id"`
+	Account string `json:"account"`
 }
 
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
@@ -479,6 +489,38 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 			return result.Error
 		}
 		log.Debug("Skipping message - not an edge create message from platform insights")
+	}
+	return nil
+}
+
+// ProcessPlatformInventoryDeleteEvent processes messages from platform.inventory.events kafka topic with event_type="delete"
+func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) error {
+	var eventData PlatformInsightsDeleteEventPayload
+	if err := json.Unmarshal(message, &eventData); err != nil {
+		s.log.WithFields(log.Fields{"value": string(message), "error": err}).Debug(
+			"Skipping kafka message - it's not a Platform Insights Inventory message with event type: delete, as unable to unmarshal the message",
+		)
+		return err
+	}
+	if eventData.Type != InventoryEventTypeDelete || eventData.ID == "" {
+		s.log.Debug("Skipping kafka message - Platform Insights Inventory message host id is undefined or event type is not delete")
+		return nil
+	}
+
+	deviceUUID := eventData.ID
+	deviceAccount := eventData.Account
+	var device models.Device
+	if result := db.DB.Where(models.Device{Account: deviceAccount, UUID: deviceUUID}).First(&device); result.Error != nil {
+		s.log.WithFields(
+			log.Fields{"host_id": deviceUUID, "Account": deviceAccount, "error": result.Error},
+		).Error("Error retrieving the device")
+		return result.Error
+	}
+	if result := db.DB.Unscoped().Delete(&device); result.Error != nil {
+		s.log.WithFields(
+			log.Fields{"host_id": deviceUUID, "Account": deviceAccount, "error": result.Error},
+		).Error("Error when deleting device")
+		return result.Error
 	}
 	return nil
 }

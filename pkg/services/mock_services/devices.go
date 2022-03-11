@@ -212,6 +212,20 @@ func (mr *MockDeviceServiceInterfaceMockRecorder) ProcessPlatformInventoryCreate
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessPlatformInventoryCreateEvent", reflect.TypeOf((*MockDeviceServiceInterface)(nil).ProcessPlatformInventoryCreateEvent), message)
 }
 
+// ProcessPlatformInventoryDeleteEvent mocks base method.
+func (m *MockDeviceServiceInterface) ProcessPlatformInventoryDeleteEvent(message []byte) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProcessPlatformInventoryDeleteEvent", message)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ProcessPlatformInventoryDeleteEvent indicates an expected call of ProcessPlatformInventoryDeleteEvent.
+func (mr *MockDeviceServiceInterfaceMockRecorder) ProcessPlatformInventoryDeleteEvent(message interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessPlatformInventoryDeleteEvent", reflect.TypeOf((*MockDeviceServiceInterface)(nil).ProcessPlatformInventoryDeleteEvent), message)
+}
+
 // ProcessPlatformInventoryUpdatedEvent mocks base method.
 func (m *MockDeviceServiceInterface) ProcessPlatformInventoryUpdatedEvent(message []byte) error {
 	m.ctrl.T.Helper()
