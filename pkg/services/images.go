@@ -142,6 +142,7 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 	if set.Error != nil {
 		return set.Error
 	}
+	s.log.WithField("imageSetName", image.Name).Debug("Imageset created")
 
 	// create an image under the new imageset
 	image.Account = account
@@ -284,7 +285,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 }
 
 func (s *ImageService) postProcessInstaller(image *models.Image) error {
-	s.log.Debug("Post processing installer")
+	s.log.Debug("Post processing the installer for the image")
 	for {
 		i, err := s.UpdateImageStatus(image)
 		if err != nil {
@@ -300,6 +301,7 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 			if clowder.IsClowderEnabled() {
 				fmt.Printf("Public Port: %d\n", clowder.LoadedConfig.PublicPort)
 
+				// get the list of brokers from the config
 				brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
 				for i, b := range clowder.LoadedConfig.Kafka.Brokers {
 					brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
@@ -315,9 +317,12 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 					fmt.Printf("Failed to create producer: %s", err)
 					os.Exit(1)
 				}
+
+				// assemble the message to be sent
+				// TODO: formalize message formats
 				recordKey := "postProcessInstaller"
 				recordValue, _ := json.Marshal(&image)
-				fmt.Printf("Preparing to produce record: %s\t%s\n", recordKey, recordValue)
+				s.log.WithField("recordKey", recordKey).Debug("Preparing record for producer")
 				perr := p.Produce(&kafka.Message{
 					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 					Key:            []byte(recordKey),
@@ -340,6 +345,8 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 	}
 
 	if image.Installer.Status == models.ImageStatusSuccess {
+		// Post process the installer ISO
+		//	User, kickstart, checksum, etc.
 		err := s.AddUserInfo(image)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Kickstart file injection failed")
@@ -353,8 +360,9 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 	s.log.Debug("Post processing image with installer is done")
 	return nil
 }
+
 func (s *ImageService) postProcessCommit(image *models.Image) error {
-	s.log.Debug("Post processing commit")
+	s.log.Debug("Processing image build commit")
 	for {
 		i, err := s.UpdateImageStatus(image)
 		if err != nil {
@@ -368,6 +376,7 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 			if clowder.IsClowderEnabled() {
 				fmt.Printf("Public Port: %d\n", clowder.LoadedConfig.PublicPort)
 
+				// get the list of brokers from the config
 				brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
 				for i, b := range clowder.LoadedConfig.Kafka.Brokers {
 					brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
@@ -383,9 +392,13 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 					fmt.Printf("Failed to create producer: %s", err)
 					os.Exit(1)
 				}
+
+				// assemble the message to be sent
+				// TODO: formalize message formats
 				recordKey := "postProcessCommit"
 				recordValue, _ := json.Marshal(&image)
-				fmt.Printf("Preparing to produce record: %s\t%s\n", recordKey, recordValue)
+				s.log.WithField("recordKey", recordKey).Debug("Preparing record for producer")
+				// send the message
 				perr := p.Produce(&kafka.Message{
 					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 					Key:            []byte(recordKey),
@@ -415,6 +428,7 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 			return err
 		}
 
+		// Create the repo for the image
 		_, err = s.CreateRepoForImage(image)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Failed creating repo for image")
@@ -489,11 +503,13 @@ func (s *ImageService) ResumeBuilds() {
 func (s *ImageService) postProcessImage(id uint) {
 	// NOTE: Every log message in this method already has commit id and image id injected
 
-	s.log.Debug("Post processing image")
+	s.log.Debug("Processing image build")
 	// get image data from DB based on image.ID
 	var i *models.Image
 	db.DB.Debug().Joins("Commit").Joins("Installer").First(&i, id)
 
+	// Request a commit from Image Builder for the image
+	s.log.WithField("imageID", i.ID).Debug("Creating a commit for this image")
 	err := s.postProcessCommit(i)
 	if err != nil {
 		s.SetErrorStatusOnImage(err, i)
@@ -502,8 +518,16 @@ func (s *ImageService) postProcessImage(id uint) {
 
 	if i.Commit.Status == models.ImageStatusSuccess {
 		s.log.Debug("Commit is successful")
+
+		// Request an installer ISO from Image Builder for the image
 		if i.HasOutputType(models.ImageTypeInstaller) {
+			s.log.WithField("imageID", i.ID).Debug("Creating an installer for this image")
 			i, c, err := s.CreateInstallerForImage(i)
+			/* CreateInstallerForImage is also called directly from an endpoint.
+			If called from the endpoint it will not block
+				the caller returns the channel output to _
+			Here, we catch the channel with c and use it in the next if--so it blocks.
+			*/
 			if c != nil {
 				err = <-c
 			}
@@ -513,12 +537,12 @@ func (s *ImageService) postProcessImage(id uint) {
 			}
 		}
 	}
-	s.log.Debug("Post processing image is done")
+	s.log.Debug("Processing image build is done")
 }
 
 // CreateRepoForImage creates the OSTree repo to host that image
 func (s *ImageService) CreateRepoForImage(i *models.Image) (*models.Repo, error) {
-	s.log.Infof("Creating OSTree repo.")
+	s.log.Info("Creating OSTree repo for image")
 	repo := &models.Repo{
 		Status: models.RepoStatusBuilding,
 	}
@@ -590,36 +614,43 @@ func (s *ImageService) AddUserInfo(image *models.Image) error {
 	imageName := destPath + image.Name
 	kickstart := fmt.Sprintf("%sfinalKickstart-%s_%d.ks", destPath, image.Account, image.ID)
 
+	s.log.Debug("Downloading ISO...")
 	err := s.downloadISO(imageName, downloadURL)
 	if err != nil {
 		return fmt.Errorf("error downloading ISO file :: %s", err.Error())
 	}
 
+	s.log.Debug("Adding SSH Key to kickstart file...")
 	err = s.addSSHKeyToKickstart(sshKey, username, kickstart)
 	if err != nil {
 		return fmt.Errorf("error adding ssh key to kickstart file :: %s", err.Error())
 	}
 
+	s.log.Debug("Injecting the kickstart into image...")
 	err = s.exeInjectionScript(kickstart, imageName, image.ID)
 	if err != nil {
 		return fmt.Errorf("error execuiting fleetkick script :: %s", err.Error())
 	}
 
+	s.log.Debug("Calculating the checksum for the ISO image...")
 	err = s.calculateChecksum(imageName, image)
 	if err != nil {
 		return fmt.Errorf("error calculating checksum for ISO :: %s", err.Error())
 	}
 
+	s.log.Debug("Uploading the ISO...")
 	err = s.uploadISO(image, imageName)
 	if err != nil {
 		return fmt.Errorf("error uploading ISO :: %s", err.Error())
 	}
 
+	s.log.Debug("Cleaning up temporary files...")
 	err = s.cleanFiles(kickstart, imageName, image.ID)
 	if err != nil {
 		return fmt.Errorf("error cleaning files :: %s", err.Error())
 	}
 
+	s.log.Debug("Post installer ISO processing complete")
 	return nil
 }
 
