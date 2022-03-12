@@ -171,7 +171,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	services.Log.Debug("Creating image")
+	services.Log.Debug("Creating image from API request")
 	err = services.ImageService.CreateImage(image, account)
 	if err != nil {
 		services.Log.WithField("error", err.Error()).Error("Failed creating image")
@@ -183,9 +183,10 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	// TODO: this is just the quick return from the service. It is not complete yet.
 	services.Log.WithFields(log.Fields{
 		"imageId": image.ID,
-	}).Info("Image created")
+	}).Info("Image build process started from API request")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(&image); err != nil {
 		services.Log.WithField("error", image).Error("Error while trying to encode")
