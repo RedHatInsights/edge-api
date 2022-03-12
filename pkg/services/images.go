@@ -322,7 +322,7 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 				// TODO: formalize message formats
 				recordKey := "postProcessInstaller"
 				recordValue, _ := json.Marshal(&image)
-				s.log.WithField("recordKey", recordKey).Debug("Preparing record for producer")
+				s.log.WithField("message", recordValue).Debug("Preparing record for producer")
 				perr := p.Produce(&kafka.Message{
 					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 					Key:            []byte(recordKey),
@@ -357,7 +357,7 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 	// It updates the status across the image and not just the installer
 	s.log.Debug("Setting final image status")
 	s.SetFinalImageStatus(image)
-	s.log.Debug("Post processing image with installer is done")
+	s.log.WithField("status", image.Status).Debug("Processing image installer is done")
 	return nil
 }
 
@@ -397,7 +397,7 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 				// TODO: formalize message formats
 				recordKey := "postProcessCommit"
 				recordValue, _ := json.Marshal(&image)
-				s.log.WithField("recordKey", recordKey).Debug("Preparing record for producer")
+				s.log.WithField("message", recordValue).Debug("Preparing record for producer")
 				// send the message
 				perr := p.Produce(&kafka.Message{
 					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
@@ -439,9 +439,9 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 		image.Installer = nil
 		s.log.Debug("Setting final image status - no installer to create")
 		s.SetFinalImageStatus(image)
-		s.log.Debug("Post processing image is done - no installer to create")
+		s.log.Debug("Processing image is done - no installer to create")
 	}
-	s.log.Debug("Post processing commit is done")
+	s.log.Debug("Processing commit is done")
 	return nil
 }
 
@@ -484,6 +484,7 @@ func (s *ImageService) SetFinalImageStatus(i *models.Image) {
 	if tx.Error != nil {
 		s.log.WithField("error", tx.Error.Error()).Error("Couldn't set final image status")
 	}
+	s.log.WithField("status", i.Status).Debug("Setting final image status")
 }
 
 // ResumeBuilds resumes only the builds that were running when the application restarted.
@@ -537,7 +538,7 @@ func (s *ImageService) postProcessImage(id uint) {
 			}
 		}
 	}
-	s.log.Debug("Processing image build is done")
+	s.log.WithField("status", i.Status).Debug("Processing image build is done")
 }
 
 // CreateRepoForImage creates the OSTree repo to host that image

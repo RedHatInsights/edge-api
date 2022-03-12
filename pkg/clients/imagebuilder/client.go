@@ -338,12 +338,13 @@ func (c *Client) GetCommitStatus(image *models.Image) (*models.Image, error) {
 	if err != nil {
 		return nil, err
 	}
+	c.log.WithField("status", cs.ImageStatus.Status).Info("Got commit response status")
 	if cs.ImageStatus.Status == imageStatusSuccess {
-		c.log.Info("Set image status with success")
+		c.log.Info("Set image commit status with success")
 		image.Commit.Status = models.ImageStatusSuccess
 		image.Commit.ImageBuildTarURL = cs.ImageStatus.UploadStatus.Options.URL
 	} else if cs.ImageStatus.Status == imageStatusFailure {
-		c.log.Info("Set image status with error")
+		c.log.Info("Set image and image commit status with error")
 		image.Commit.Status = models.ImageStatusError
 		image.Status = models.ImageStatusError
 	}
@@ -356,11 +357,13 @@ func (c *Client) GetInstallerStatus(image *models.Image) (*models.Image, error) 
 	if err != nil {
 		return nil, err
 	}
-	c.log.WithField("status", cs.ImageStatus.Status).Info("Got installer status")
+	c.log.WithField("status", cs.ImageStatus.Status).Info("Got installer response status")
 	if cs.ImageStatus.Status == imageStatusSuccess {
+		c.log.Info("Set image installer status with success")
 		image.Installer.Status = models.ImageStatusSuccess
 		image.Installer.ImageBuildISOURL = cs.ImageStatus.UploadStatus.Options.URL
 	} else if cs.ImageStatus.Status == imageStatusFailure {
+		c.log.Info("Set image and image installer status with error")
 		image.Installer.Status = models.ImageStatusError
 		image.Status = models.ImageStatusError
 	}
