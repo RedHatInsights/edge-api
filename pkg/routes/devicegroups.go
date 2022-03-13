@@ -149,25 +149,25 @@ func DeviceGroupDeviceCtx(next http.Handler) http.Handler {
 	})
 }
 
-func respondWithAPIError(w http.ResponseWriter, log *log.Entry, apiError errors.APIError) {
+func respondWithAPIError(w http.ResponseWriter, logEntry *log.Entry, apiError errors.APIError) {
 	w.WriteHeader(apiError.GetStatus())
 	if err := json.NewEncoder(w).Encode(&apiError); err != nil {
-		log.WithField("error", err.Error()).Error("Error while trying to encode api error")
+		logEntry.WithField("error", err.Error()).Error("Error while trying to encode api error")
 	}
 }
 
-func respondWithJSONBody(w http.ResponseWriter, log *log.Entry, data interface{}) {
+func respondWithJSONBody(w http.ResponseWriter, logEntry *log.Entry, data interface{}) {
 	if err := json.NewEncoder(w).Encode(data); err != nil {
-		log.WithField("error", data).Error("Error while trying to encode")
-		respondWithAPIError(w, log, errors.NewInternalServerError())
+		logEntry.WithField("error", data).Error("Error while trying to encode")
+		respondWithAPIError(w, logEntry, errors.NewInternalServerError())
 	}
 }
 
-func readRequestJSONBody(w http.ResponseWriter, r *http.Request, log *log.Entry, dataReceiver interface{}) error {
+func readRequestJSONBody(w http.ResponseWriter, r *http.Request, logEntry *log.Entry, dataReceiver interface{}) error {
 	defer r.Body.Close()
 	if err := json.NewDecoder(r.Body).Decode(dataReceiver); err != nil {
-		log.WithField("error", err.Error()).Error("Error parsing json from device group request")
-		respondWithAPIError(w, log, errors.NewBadRequest("invalid JSON request"))
+		logEntry.WithField("error", err.Error()).Error("Error parsing json from device group request")
+		respondWithAPIError(w, logEntry, errors.NewBadRequest("invalid JSON request"))
 		return err
 	}
 	return nil

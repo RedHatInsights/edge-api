@@ -478,6 +478,7 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 				UUID:        string(e.Host.ID),
 				RHCClientID: string(e.Host.InsightsID),
 				Account:     string(e.Host.Account),
+				Name:        string(e.Host.Name),
 			}
 			result := db.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
 			if result.Error != nil {
