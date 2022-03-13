@@ -134,7 +134,7 @@ func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 				break
 			}
 		}
-		if eventType != InventoryEventTypeCreated && eventType != InventoryEventTypeUpdated {
+		if eventType != InventoryEventTypeCreated && eventType != InventoryEventTypeUpdated && eventType != InventoryEventTypeDelete {
 			log.Debug("Skipping kafka message - Insights Platform Inventory message is not a created and not an updated event type")
 			continue
 		}
@@ -150,6 +150,8 @@ func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 			err = s.DeviceService.ProcessPlatformInventoryCreateEvent(m.Value)
 		case InventoryEventTypeUpdated:
 			err = s.DeviceService.ProcessPlatformInventoryUpdatedEvent(m.Value)
+		case InventoryEventTypeDelete:
+			err = s.DeviceService.ProcessPlatformInventoryDeleteEvent(m.Value)
 		default:
 			err = nil
 		}
