@@ -35,12 +35,14 @@ type DeviceDetailsList struct {
 //	and 1 is reachable.
 type Device struct {
 	Model
-	UUID          string      `json:"UUID"`
-	AvailableHash string      `json:"AvailableHash,omitempty"`
-	RHCClientID   string      `json:"RHCClientID"`
-	Connected     bool        `gorm:"default:true" json:"Connected"`
-	Name          string      `json:"Name"`
-	LastSeen      EdgeAPITime `json:"LastSeen"`
-	CurrentHash   string      `json:"CurrentHash,omitempty"`
-	Account       string      `json:"Account"`
+	UUID            string      `json:"UUID"`
+	AvailableHash   string      `json:"AvailableHash,omitempty"`
+	RHCClientID     string      `json:"RHCClientID"`
+	Connected       bool        `gorm:"default:true" json:"Connected"`
+	Name            string      `json:"Name"`
+	LastSeen        EdgeAPITime `json:"LastSeen"`
+	CurrentHash     string      `json:"CurrentHash,omitempty"`
+	Account         string      `json:"Account"`
+	ImageID         uint        `json:"ImageID"`
+	UpdateAvailable bool        `json:"UpdateAvailable"`
 }
