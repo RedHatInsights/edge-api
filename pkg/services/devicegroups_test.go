@@ -17,6 +17,7 @@ import (
 )
 
 var _ = Describe("DeviceGroupsService basic functions", func() {
+	faker.SetRandomNumberBoundaries(1000, 100000) // set the boundaries for the random number generator - avoids collisions
 	var (
 		ctx                 context.Context
 		deviceGroupsService services.DeviceGroupsServiceInterface
@@ -145,11 +146,35 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 				Expect(err).To(BeNil())
 			})
 		})
-		When("adding emtpy devices", func() {
+		When("adding empty devices", func() {
 			It("should fail", func() {
 				_, err := deviceGroupsService.AddDeviceGroupDevices(account1, deviceGroup1.ID, []models.Device{})
 				Expect(err).NotTo(BeNil())
 				expectedErr := services.DeviceGroupDevicesNotSupplied{}
+				Expect(err.Error()).To(Equal(expectedErr.Error()))
+			})
+		})
+		When("adding multiple devices; one not exist", func() {
+			It("should fail", func() {
+				var fakeDevice models.Device
+				err := faker.FakeData(&fakeDevice)
+				Expect(err).To(BeNil())
+				devices, err := deviceGroupsService.AddDeviceGroupDevices(account1, deviceGroup1.ID, []models.Device{devices[0], fakeDevice})
+				Expect(devices).To(BeNil())
+				Expect(err).NotTo(BeNil())
+				expectedErr := services.DeviceGroupAccountDevicesNotFound{}
+				Expect(err.Error()).To(Equal(expectedErr.Error()))
+			})
+		})
+		When("adding not existing device to existing device-group", func() {
+			It("should fail", func() {
+				var fakeDevice models.Device
+				err := faker.FakeData(&fakeDevice)
+				Expect(err).To(BeNil())
+				devices, err := deviceGroupsService.AddDeviceGroupDevices(account1, deviceGroup1.ID, []models.Device{fakeDevice})
+				Expect(devices).To(BeNil())
+				Expect(err).NotTo(BeNil())
+				expectedErr := services.DeviceGroupAccountDevicesNotFound{}
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
 			})
 		})
@@ -190,6 +215,11 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 		})
 		deviceGroupName := faker.Name()
 		devices := []models.Device{
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+			},
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
@@ -256,6 +286,70 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 					}
 				}
 				Expect(deletedDevicesIDS).To(BeEmpty())
+			})
+
+			It("should not delete non exsiting device from device-group", func() {
+				var fakeDevice models.Device
+				err := faker.FakeData(&fakeDevice)
+				Expect(err).To(BeNil())
+
+				deletedDevices, delErr := deviceGroupsService.DeleteDeviceGroupDevices(account, deviceGroupID, []models.Device{fakeDevice})
+				Expect(delErr).NotTo(BeNil())
+				Expect(delErr.Error()).To(Equal(new(services.DeviceGroupDevicesNotFound).Error()))
+				Expect(deletedDevices).To(BeNil())
+			})
+
+			// delete the multiple devices at once
+			It("should remove multiple devices from device-group", func() {
+				deletedDevices, delErr := deviceGroupsService.DeleteDeviceGroupDevices(account, deviceGroupID, savedDeviceGroup.Devices[1:3])
+				Expect(delErr).To(BeNil())
+				Expect(deletedDevices).NotTo(BeNil())
+				Expect(len(*deletedDevices) > 0).To(BeTrue())
+				Expect(len(*deletedDevices)).To(Equal(len(savedDeviceGroup.Devices[1:3])))
+			})
+
+			// delete multiple devices; one of them does not exist
+			It("should not remove non existing devices from device-group", func() {
+				var fakeDevice models.Device
+				err := faker.FakeData(&fakeDevice)
+				Expect(err).To(BeNil())
+
+				deletedDevices, delErr := deviceGroupsService.DeleteDeviceGroupDevices(account, deviceGroupID, []models.Device{savedDeviceGroup.Devices[3], fakeDevice})
+				Expect(delErr).NotTo(BeNil())
+				Expect(delErr.Error()).To(Equal(new(services.DeviceGroupDevicesNotFound).Error()))
+				Expect(deletedDevices).To(BeNil())
+			})
+
+			// delete device from another device-group
+			It("should not remove non existing devices from device-group; device from another device-group", func() {
+				var fakeDeviceGroup models.DeviceGroup
+				err = faker.FakeData(&fakeDeviceGroup)
+				Expect(err).To(BeNil())
+				fakeDeviceGroup.Devices = []models.Device{savedDeviceGroup.Devices[0]}
+				Expect(db.DB.Create(&fakeDeviceGroup).Error).To(BeNil())
+
+				deletedDevices, delErr := deviceGroupsService.DeleteDeviceGroupDevices(account, deviceGroupID, fakeDeviceGroup.Devices)
+				Expect(delErr).NotTo(BeNil())
+				Expect(delErr.Error()).To(Equal(new(services.DeviceGroupDevicesNotFound).Error()))
+				Expect(deletedDevices).To(BeNil())
+			})
+
+			// delete multiple devices; one of them does not exist AND one of them does not belong to the device-group
+			It("should not remove non existing devices from device-group; one of them does not belong to the device-group", func() {
+				var fakeDevice models.Device
+				err := faker.FakeData(&fakeDevice)
+				Expect(err).To(BeNil())
+
+				var fakeDeviceGroup models.DeviceGroup
+				err = faker.FakeData(&fakeDeviceGroup)
+				Expect(err).To(BeNil())
+				fakeDeviceGroup.Devices = []models.Device{savedDeviceGroup.Devices[0], fakeDevice}
+				Expect(db.DB.Create(&fakeDeviceGroup).Error).To(BeNil())
+
+				deletedDevices, delErr := deviceGroupsService.DeleteDeviceGroupDevices(account, deviceGroupID, fakeDeviceGroup.Devices)
+				Expect(delErr).NotTo(BeNil())
+				Expect(delErr.Error()).To(Equal(new(services.DeviceGroupDevicesNotFound).Error()))
+				Expect(deletedDevices).To(BeNil())
 			})
 
 			It("should return error when device does not exist in device-group", func() {

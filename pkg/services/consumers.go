@@ -134,7 +134,7 @@ func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 				break
 			}
 		}
-		if eventType != InventoryEventTypeCreated && eventType != InventoryEventTypeUpdated {
+		if eventType != InventoryEventTypeCreated && eventType != InventoryEventTypeUpdated && eventType != InventoryEventTypeDelete {
 			log.Debug("Skipping kafka message - Insights Platform Inventory message is not a created and not an updated event type")
 			continue
 		}
@@ -150,6 +150,8 @@ func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 			err = s.DeviceService.ProcessPlatformInventoryCreateEvent(m.Value)
 		case InventoryEventTypeUpdated:
 			err = s.DeviceService.ProcessPlatformInventoryUpdatedEvent(m.Value)
+		case InventoryEventTypeDelete:
+			err = s.DeviceService.ProcessPlatformInventoryDeleteEvent(m.Value)
 		default:
 			err = nil
 		}
@@ -169,28 +171,17 @@ func (s *KafkaConsumerService) ConsumeImageBuildEvents() error {
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error": err.Error(),
-			}).Error("Error reading message from Kafka topic")
+			}).Error("Error reading message from Kafka platform.edge.fleetmgmt.image-build topic")
 			return err
 		}
-		var eventType string
-		for _, h := range m.Headers {
-			if h.Key == "event_type" {
-				eventType = string(h.Value)
-			}
-		}
-		if eventType == "imagebuild" {
-			log.WithFields(log.Fields{
-				"topic":  m.Topic,
-				"offset": m.Offset,
-				"key":    string(m.Key),
-				"value":  string(m.Value),
-			}).Debug("Read message from Kafka topic")
 
-			// Handling the image build event will be added after/with the producer.
-
-		} else {
-			log.Debug("Skipping message - not an edge image build message")
-		}
+		// temporarily logging all events to the topic
+		log.WithFields(log.Fields{
+			"topic":  m.Topic,
+			"offset": m.Offset,
+			"key":    string(m.Key),
+			"value":  string(m.Value),
+		}).Debug("Read message from Kafka platform.edge.fleetmgmt.image-build topic")
 	}
 }
 

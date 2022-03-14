@@ -4,16 +4,15 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
-	"os/signal"
 	"path/filepath"
 	"strconv"
 	"sync"
-	"syscall"
 	"text/template"
 	"time"
 
@@ -26,6 +25,9 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"gorm.io/gorm"
+
+	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
+	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 )
 
 // WaitGroup is the waitg roup for pending image builds
@@ -35,6 +37,7 @@ var WaitGroup sync.WaitGroup
 // the business logic of creating RHEL For Edge Images
 type ImageServiceInterface interface {
 	CreateImage(image *models.Image, account string) error
+	ResumeBuilds()
 	UpdateImage(image *models.Image, previousImage *models.Image) error
 	AddUserInfo(image *models.Image) error
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
@@ -98,21 +101,28 @@ func ValidateAllImageReposAreFromAccount(account string, repos []models.ThirdPar
 
 // CreateImage creates an Image for an Account on Image Builder and on our database
 func (s *ImageService) CreateImage(image *models.Image, account string) error {
-	// Check for exising ImageSet to add this Image to
+	// Check for existing ImageSet and return if exists
+	// TODO: this routine needs to become a function under imagesets
 	var imageSetExists bool
 	var imageSetModel models.ImageSet
 	var imageSet models.ImageSet
 
+	// query to check if there are more than 0 matching imagesets
+	// NOTE: see fix below, we iterate over the DB twice if one exists
+	// just use the second query and return on first match
 	err := db.DB.Model(imageSetModel).
 		Select("count(*) > 0").
 		Where("name = ? AND account = ?", image.Name, account).
 		Find(&imageSetExists).
 		Error
 
+	// gorm error check
 	if err != nil {
 		return err
 	}
 
+	// requery to get imageset details and then return
+	// FIXME: this is leftover from previous functionality. Do one query or the other.
 	if imageSetExists {
 		result := db.DB.Where("name = ? AND account = ?", image.Name, account).First(&imageSet)
 		if result.Error != nil {
@@ -122,6 +132,9 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 		s.log.WithField("imageSetName", image.Name).Error("ImageSet already exists, UpdateImage transaction expected and not CreateImage", image.Name)
 		return new(ImageSetAlreadyExists)
 	}
+
+	// Create a new imageset
+	// TODO: this should be a function under imagesets
 	imageSet.Account = account
 	imageSet.Name = image.Name
 	imageSet.Version = image.Version
@@ -129,14 +142,18 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 	if set.Error != nil {
 		return set.Error
 	}
+	s.log.WithField("imageSetName", image.Name).Debug("Imageset created")
 
+	// create an image under the new imageset
 	image.Account = account
 	image.ImageSetID = &imageSet.ID
+	// make the initial call to Image Builder
 	image, err = s.ImageBuilder.ComposeCommit(image)
 	if err != nil {
 		return err
 	}
 	image.Commit.Account = account
+	// FIXME: Status below is already set in the call to ComposeCommit()
 	image.Commit.Status = models.ImageStatusBuilding
 	image.Status = models.ImageStatusBuilding
 	// TODO: Remove code when frontend is not using ImageType on the table
@@ -268,20 +285,68 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 }
 
 func (s *ImageService) postProcessInstaller(image *models.Image) error {
-	s.log.Debug("Post processing installer")
+	s.log.Debug("Post processing the installer for the image")
 	for {
 		i, err := s.UpdateImageStatus(image)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Update image status error")
 			return err
 		}
+
+		// the Image Builder status has changed from BUILDING
 		if i.Installer.Status != models.ImageStatusBuilding {
+
+			// if clowder is enabled, send an event on Image Build completion
+			// TODO: break this out into its own function
+			if clowder.IsClowderEnabled() {
+				fmt.Printf("Public Port: %d\n", clowder.LoadedConfig.PublicPort)
+
+				// get the list of brokers from the config
+				brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
+				for i, b := range clowder.LoadedConfig.Kafka.Brokers {
+					brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
+					fmt.Println(brokers[i])
+				}
+
+				topic := "platform.edge.fleetmgmt.image-build"
+
+				// Create Producer instance
+				p, err := kafka.NewProducer(&kafka.ConfigMap{
+					"bootstrap.servers": brokers[0]})
+				if err != nil {
+					fmt.Printf("Failed to create producer: %s", err)
+					os.Exit(1)
+				}
+
+				// assemble the message to be sent
+				// TODO: formalize message formats
+				recordKey := "postProcessInstaller"
+				recordValue, _ := json.Marshal(&image)
+				s.log.WithField("message", recordValue).Debug("Preparing record for producer")
+				perr := p.Produce(&kafka.Message{
+					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+					Key:            []byte(recordKey),
+					Value:          []byte(recordValue),
+				}, nil)
+				if perr != nil {
+					fmt.Println("Error sending message")
+				}
+
+				// Wait for all messages to be delivered
+				p.Flush(15 * 1000)
+				p.Close()
+
+				fmt.Printf("postProcessInstaller message was produced to topic %s!\n", topic)
+			}
+
 			break
 		}
 		time.Sleep(1 * time.Minute)
 	}
 
 	if image.Installer.Status == models.ImageStatusSuccess {
+		// Post process the installer ISO
+		//	User, kickstart, checksum, etc.
 		err := s.AddUserInfo(image)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Kickstart file injection failed")
@@ -292,11 +357,12 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 	// It updates the status across the image and not just the installer
 	s.log.Debug("Setting final image status")
 	s.SetFinalImageStatus(image)
-	s.log.Debug("Post processing image with installer is done")
+	s.log.WithField("status", image.Status).Debug("Processing image installer is done")
 	return nil
 }
+
 func (s *ImageService) postProcessCommit(image *models.Image) error {
-	s.log.Debug("Post processing commit")
+	s.log.Debug("Processing image build commit")
 	for {
 		i, err := s.UpdateImageStatus(image)
 		if err != nil {
@@ -304,6 +370,51 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 			return err
 		}
 		if i.Commit.Status != models.ImageStatusBuilding {
+
+			// if clowder is enabled, send an event on Image Build completion
+			// TODO: break this out into its own function
+			if clowder.IsClowderEnabled() {
+				fmt.Printf("Public Port: %d\n", clowder.LoadedConfig.PublicPort)
+
+				// get the list of brokers from the config
+				brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
+				for i, b := range clowder.LoadedConfig.Kafka.Brokers {
+					brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
+					fmt.Println(brokers[i])
+				}
+
+				topic := "platform.edge.fleetmgmt.image-build"
+
+				// Create Producer instance
+				p, err := kafka.NewProducer(&kafka.ConfigMap{
+					"bootstrap.servers": brokers[0]})
+				if err != nil {
+					fmt.Printf("Failed to create producer: %s", err)
+					os.Exit(1)
+				}
+
+				// assemble the message to be sent
+				// TODO: formalize message formats
+				recordKey := "postProcessCommit"
+				recordValue, _ := json.Marshal(&image)
+				s.log.WithField("message", recordValue).Debug("Preparing record for producer")
+				// send the message
+				perr := p.Produce(&kafka.Message{
+					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+					Key:            []byte(recordKey),
+					Value:          []byte(recordValue),
+				}, nil)
+				if perr != nil {
+					fmt.Println("Error sending message")
+				}
+
+				// Wait for all messages to be delivered
+				p.Flush(15 * 1000)
+				p.Close()
+
+				fmt.Printf("postProcessCommit Message was produced to topic %s!\n", topic)
+			}
+
 			break
 		}
 		time.Sleep(1 * time.Minute)
@@ -317,6 +428,7 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 			return err
 		}
 
+		// Create the repo for the image
 		_, err = s.CreateRepoForImage(image)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Failed creating repo for image")
@@ -327,9 +439,9 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 		image.Installer = nil
 		s.log.Debug("Setting final image status - no installer to create")
 		s.SetFinalImageStatus(image)
-		s.log.Debug("Post processing image is done - no installer to create")
+		s.log.Debug("Processing image is done - no installer to create")
 	}
-	s.log.Debug("Post processing commit is done")
+	s.log.Debug("Processing commit is done")
 	return nil
 }
 
@@ -372,35 +484,33 @@ func (s *ImageService) SetFinalImageStatus(i *models.Image) {
 	if tx.Error != nil {
 		s.log.WithField("error", tx.Error.Error()).Error("Couldn't set final image status")
 	}
+	s.log.WithField("status", i.Status).Debug("Setting final image status")
 }
 
-// Every log message in this method already has commit id and image id injected
+// ResumeBuilds resumes only the builds that were running when the application restarted.
+func (s *ImageService) ResumeBuilds() {
+	// TODO: refactor this out to ibvents pod
+	s.log.Debug("Resuming builds in progress.")
+	var images []models.Image
+	db.DB.Debug().Where(&models.Image{Status: models.ImageStatusBuilding}).Find(&images)
+	// loop through the results and start up a new process for each image
+	for _, image := range images {
+		log.WithField("imageID", image.ID).Debug("Resuming build process for image")
+
+		// go s.postProcessImage(image.ID)
+	}
+}
+
 func (s *ImageService) postProcessImage(id uint) {
-	s.log.Debug("Post processing image")
+	// NOTE: Every log message in this method already has commit id and image id injected
+
+	s.log.Debug("Processing image build")
+	// get image data from DB based on image.ID
 	var i *models.Image
-	db.DB.Joins("Commit").Joins("Installer").First(&i, id)
+	db.DB.Debug().Joins("Commit").Joins("Installer").First(&i, id)
 
-	WaitGroup.Add(1) // Processing one image
-	defer func() {
-		WaitGroup.Done() // Done with one image (successfully or not)
-		s.log.Debug("Done with one image - successfully or not")
-		if err := recover(); err != nil {
-			s.log.WithField("error", err).Errorf("Error recovering post process image goroutine")
-		}
-	}()
-	go func(i *models.Image) {
-		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
-		sig := <-sigint
-		// Reload image to get updated status
-		db.DB.Joins("Commit").Joins("Installer").First(&i, i.ID)
-		if i.Status == models.ImageStatusBuilding {
-			s.log.WithField("signal", sig).Info("Captured signal marking image as error", sig)
-			s.SetErrorStatusOnImage(nil, i)
-			WaitGroup.Done()
-		}
-	}(i)
-
+	// Request a commit from Image Builder for the image
+	s.log.WithField("imageID", i.ID).Debug("Creating a commit for this image")
 	err := s.postProcessCommit(i)
 	if err != nil {
 		s.SetErrorStatusOnImage(err, i)
@@ -409,8 +519,16 @@ func (s *ImageService) postProcessImage(id uint) {
 
 	if i.Commit.Status == models.ImageStatusSuccess {
 		s.log.Debug("Commit is successful")
+
+		// Request an installer ISO from Image Builder for the image
 		if i.HasOutputType(models.ImageTypeInstaller) {
+			s.log.WithField("imageID", i.ID).Debug("Creating an installer for this image")
 			i, c, err := s.CreateInstallerForImage(i)
+			/* CreateInstallerForImage is also called directly from an endpoint.
+			If called from the endpoint it will not block
+				the caller returns the channel output to _
+			Here, we catch the channel with c and use it in the next if--so it blocks.
+			*/
 			if c != nil {
 				err = <-c
 			}
@@ -420,12 +538,12 @@ func (s *ImageService) postProcessImage(id uint) {
 			}
 		}
 	}
-	s.log.Debug("Post processing image is done")
+	s.log.WithField("status", i.Status).Debug("Processing image build is done")
 }
 
 // CreateRepoForImage creates the OSTree repo to host that image
 func (s *ImageService) CreateRepoForImage(i *models.Image) (*models.Repo, error) {
-	s.log.Infof("Creating OSTree repo.")
+	s.log.Info("Creating OSTree repo for image")
 	repo := &models.Repo{
 		Status: models.RepoStatusBuilding,
 	}
@@ -497,36 +615,43 @@ func (s *ImageService) AddUserInfo(image *models.Image) error {
 	imageName := destPath + image.Name
 	kickstart := fmt.Sprintf("%sfinalKickstart-%s_%d.ks", destPath, image.Account, image.ID)
 
+	s.log.Debug("Downloading ISO...")
 	err := s.downloadISO(imageName, downloadURL)
 	if err != nil {
 		return fmt.Errorf("error downloading ISO file :: %s", err.Error())
 	}
 
+	s.log.Debug("Adding SSH Key to kickstart file...")
 	err = s.addSSHKeyToKickstart(sshKey, username, kickstart)
 	if err != nil {
 		return fmt.Errorf("error adding ssh key to kickstart file :: %s", err.Error())
 	}
 
+	s.log.Debug("Injecting the kickstart into image...")
 	err = s.exeInjectionScript(kickstart, imageName, image.ID)
 	if err != nil {
 		return fmt.Errorf("error execuiting fleetkick script :: %s", err.Error())
 	}
 
+	s.log.Debug("Calculating the checksum for the ISO image...")
 	err = s.calculateChecksum(imageName, image)
 	if err != nil {
 		return fmt.Errorf("error calculating checksum for ISO :: %s", err.Error())
 	}
 
+	s.log.Debug("Uploading the ISO...")
 	err = s.uploadISO(image, imageName)
 	if err != nil {
 		return fmt.Errorf("error uploading ISO :: %s", err.Error())
 	}
 
+	s.log.Debug("Cleaning up temporary files...")
 	err = s.cleanFiles(kickstart, imageName, image.ID)
 	if err != nil {
 		return fmt.Errorf("error cleaning files :: %s", err.Error())
 	}
 
+	s.log.Debug("Post installer ISO processing complete")
 	return nil
 }
 
@@ -976,7 +1101,7 @@ func (s *ImageService) GetMetadata(image *models.Image) (*models.Image, error) {
 	return image, nil
 }
 
-// CreateInstallerForImage creates a installer given an existent iamge
+// CreateInstallerForImage creates a installer given an existing image
 func (s *ImageService) CreateInstallerForImage(image *models.Image) (*models.Image, chan error, error) {
 	s.log.Debug("Creating installer for image")
 	c := make(chan error)
