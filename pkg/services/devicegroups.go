@@ -164,9 +164,11 @@ func (s *DeviceGroupsService) GetDeviceGroupDetailsByID(ID string) (*models.Devi
 	account, err := common.GetAccountFromContext(s.ctx)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error account")
+		return nil, err
 	}
 	result := db.DB.Where("account = ? and id = ?", account, ID).Preload("Devices").First(&deviceGroupDetails.DeviceGroup)
 	if result.Error != nil {
+		s.log.WithField("error", err.Error()).Error("Device details query error")
 		return nil, new(DeviceGroupNotFound)
 	}
 
@@ -178,6 +180,7 @@ func (s *DeviceGroupsService) GetDeviceGroupDetailsByID(ID string) (*models.Devi
 			inventoryDevice, err := s.DeviceService.GetDevices(param)
 			if err != nil {
 				s.log.WithField("error", err.Error()).Error("Invetory error")
+				return nil, err
 			}
 			if len(inventoryDevice.Devices) > 0 {
 				devices.Total = devices.Total + 1
