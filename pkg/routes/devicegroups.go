@@ -45,6 +45,7 @@ func MakeDeviceGroupsRouter(sub chi.Router) {
 	sub.Post("/", CreateDeviceGroup)
 	sub.Route("/{ID}", func(r chi.Router) {
 		r.Use(DeviceGroupCtx)
+		r.Get("/", GetDeviceGroupByID)
 		r.Put("/", UpdateDeviceGroup)
 		r.Delete("/", DeleteDeviceGroupByID)
 		r.Post("/devices", AddDeviceGroupDevices)
