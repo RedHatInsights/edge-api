@@ -1178,66 +1178,68 @@ type RecipientNotification struct {
 
 // SendImageNotification connects to platform.notifications.ingress on image topic
 func (s *ImageService) SendImageNotification(i *models.Image) error {
-
-	fmt.Printf("\nSendImageNotification: %v\n", i.ID)
-	fmt.Printf("\n clowder.IsClowderEnabled() : %v\n", clowder.IsClowderEnabled())
 	if clowder.IsClowderEnabled() {
 		var notify ImageNotification
-		// var event []EventNotification
-		// var recipient RecipientNotification
-		brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
-		fmt.Printf("\nSendImageNotification:brokers %v\n", brokers)
-		for i, b := range clowder.LoadedConfig.Kafka.Brokers {
-			brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
-			fmt.Println(brokers[i])
-		}
+		var events []EventNotification
+		var event EventNotification
+		var recipient RecipientNotification
+		// brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
+		// fmt.Printf("\nSendImageNotification:brokers %v\n", brokers)
+		// for i, b := range clowder.LoadedConfig.Kafka.Brokers {
+		// 	brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
+		// 	fmt.Println(brokers[i])
+		// }
 
 		topic := "platform.notifications.ingress"
 		fmt.Printf("\nSendImageNotification:topic: %v\n", topic)
 		// Create Producer instance
-		p, err := kafka.NewProducer(&kafka.ConfigMap{
-			"bootstrap.servers": brokers[0]})
-		if err != nil {
-			fmt.Printf("Failed to create producer: %s", err)
-			os.Exit(1)
-		}
+		// p, err := kafka.NewProducer(&kafka.ConfigMap{
+		// 	"bootstrap.servers": brokers[0]})
+		// if err != nil {
+		// 	fmt.Printf("Failed to create producer: %s", err)
+		// 	os.Exit(1)
+		// }
 
-		// event[len(event)-1].Metadata = "{}"
+		event.Metadata = "{}"
 		// payload, _ := json.Marshal(&i)
-		// event[len(event)-1].Payload = string(payload)
-		// fmt.Printf("\nSendImageNotification:event: %v\n", event)
-		// recipient.IgnoreUserPreferences = false
-		// recipient.OnlyAdmins = false
-		// recipient.Users = "anferrei@redhat.com"
-		// fmt.Printf("\nSendImageNotification:recipient: %v\n", recipient)
+		// event.Payload = string(payload)
+		events = append(events, event)
+		fmt.Printf("\nSendImageNotification:event: %v\n", event)
+
+		recipient.IgnoreUserPreferences = false
+		recipient.OnlyAdmins = false
+		recipient.Users = "anferrei@redhat.com"
+		fmt.Printf("\nSendImageNotification:recipient: %v\n", recipient)
+
 		notify.Version = "v1.1.0"
 		notify.Bundle = "edge"
 		notify.Application = "fleet-management"
 		notify.EventType = "image-creation"
-		notify.Timestamp = time.Now().UTC().Format(common.LayoutISO)
+		notify.Timestamp = fmt.Sprintf("%v", time.Now().UnixNano())
 		notify.Account = i.Account
 		notify.Context = "{}"
-		// notify.Events = event
+		notify.Events = events
 		fmt.Printf("\n ############## notify: ############ %v\n", notify)
+		s.log.WithField("message", notify).Debug("Message to be send")
+
 		// assemble the message to be sent
 		// TODO: formalize message formats
-		recordKey := "ImageCreationStarts"
-		recordValue, _ := json.Marshal(notify)
-		s.log.WithField("message", recordValue).Debug("Preparing record for producer")
+		// recordKey := "ImageCreationStarts"
+		// recordValue, _ := json.Marshal(notify)
+		// s.log.WithField("message", recordValue).Debug("Preparing record for producer")
 		// send the message
-
-		perr := p.Produce(&kafka.Message{
-			TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-			Key:            []byte(recordKey),
-			Value:          []byte(recordValue),
-		}, nil)
-		if perr != nil {
-			fmt.Printf("\nError sending message: %v\n", perr)
-			return err
-		}
-		// Wait for all messages to be delivered
-		p.Flush(15 * 1000)
-		p.Close()
+		// perr := p.Produce(&kafka.Message{
+		// 	TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+		// 	Key:            []byte(recordKey),
+		// 	Value:          []byte(recordValue),
+		// }, nil)
+		// if perr != nil {
+		// 	fmt.Printf("\nError sending message: %v\n", perr)
+		// 	return err
+		// }
+		// // Wait for all messages to be delivered
+		// p.Flush(15 * 1000)
+		// p.Close()
 		return nil
 	}
 	return nil
