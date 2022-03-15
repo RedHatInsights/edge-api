@@ -636,6 +636,7 @@ func RetryCreateImage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//SendNotificationForImage TMP route to validate
 func SendNotificationForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		services := dependencies.ServicesFromContext(r.Context())
