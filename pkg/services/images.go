@@ -55,6 +55,7 @@ type ImageServiceInterface interface {
 	CheckIfIsLatestVersion(previousImage *models.Image) error
 	SetBuildingStatusOnImageToRetryBuild(image *models.Image) error
 	GetRollbackImage(image *models.Image) (*models.Image, error)
+	SendImageNotification(image *models.Image) error
 }
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
@@ -101,6 +102,9 @@ func ValidateAllImageReposAreFromAccount(account string, repos []models.ThirdPar
 
 // CreateImage creates an Image for an Account on Image Builder and on our database
 func (s *ImageService) CreateImage(image *models.Image, account string) error {
+
+	s.SendImageNotification(image)
+
 	// Check for existing ImageSet and return if exists
 	// TODO: this routine needs to become a function under imagesets
 	var imageSetExists bool
@@ -137,6 +141,7 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 	// TODO: this should be a function under imagesets
 	imageSet.Account = account
 	imageSet.Name = image.Name
+
 	imageSet.Version = image.Version
 	set := db.DB.Create(&imageSet)
 	if set.Error != nil {
@@ -171,6 +176,7 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 			return tx.Error
 		}
 	}
+
 	if err := ValidateAllImageReposAreFromAccount(account, image.ThirdPartyRepositories); err != nil {
 		return err
 	}
@@ -1146,4 +1152,93 @@ func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, err
 	s.log = s.log.WithField("imageID", image.ID)
 	s.log.Info("Rollback image successfully retrieved")
 	return &rollback, nil
+}
+
+// ImageNotification is the implementation of expected boddy notification
+type ImageNotification struct {
+	Version     string                 `json:"version"`
+	Bundle      string                 `json:"bundle"`
+	Application string                 `json:"application"`
+	EventType   string                 `json:"event_type"`
+	Timestamp   string                 `json:"timestamp"`
+	Account     string                 `json:"account_id"`
+	Context     string                 `json:"context"`
+	Events      []EventNotification    `json:"events"`
+	Recipients  *RecipientNotification `json:"recipients"`
+}
+type EventNotification struct {
+	Metadata string `json:"metadata"`
+	Payload  string `json:"payload"`
+}
+type RecipientNotification struct {
+	OnlyAdmins            bool   `json:"only_admins"`
+	IgnoreUserPreferences bool   `json:"ignore_user_preferences"`
+	Users                 string `json:"users"`
+}
+
+// SendImageNotification connects to platform.notifications.ingress on image topic
+func (s *ImageService) SendImageNotification(i *models.Image) error {
+
+	fmt.Printf("\nSendImageNotification: %v\n", i.ID)
+	fmt.Printf("\n clowder.IsClowderEnabled() : %v\n", clowder.IsClowderEnabled())
+	if clowder.IsClowderEnabled() {
+		var notify ImageNotification
+		// var event []EventNotification
+		// var recipient RecipientNotification
+		brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
+		fmt.Printf("\nSendImageNotification:brokers %v\n", brokers)
+		for i, b := range clowder.LoadedConfig.Kafka.Brokers {
+			brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
+			fmt.Println(brokers[i])
+		}
+
+		topic := "platform.notifications.ingress"
+		fmt.Printf("\nSendImageNotification:topic: %v\n", topic)
+		// Create Producer instance
+		p, err := kafka.NewProducer(&kafka.ConfigMap{
+			"bootstrap.servers": brokers[0]})
+		if err != nil {
+			fmt.Printf("Failed to create producer: %s", err)
+			os.Exit(1)
+		}
+
+		// event[len(event)-1].Metadata = "{}"
+		// payload, _ := json.Marshal(&i)
+		// event[len(event)-1].Payload = string(payload)
+		// fmt.Printf("\nSendImageNotification:event: %v\n", event)
+		// recipient.IgnoreUserPreferences = false
+		// recipient.OnlyAdmins = false
+		// recipient.Users = "anferrei@redhat.com"
+		// fmt.Printf("\nSendImageNotification:recipient: %v\n", recipient)
+		notify.Version = "v1.1.0"
+		notify.Bundle = "edge"
+		notify.Application = "fleet-management"
+		notify.EventType = "image-creation"
+		notify.Timestamp = time.Now().UTC().Format(common.LayoutISO)
+		notify.Account = i.Account
+		notify.Context = "{}"
+		// notify.Events = event
+		fmt.Printf("\n ############## notify: ############ %v\n", notify)
+		// assemble the message to be sent
+		// TODO: formalize message formats
+		recordKey := "ImageCreationStarts"
+		recordValue, _ := json.Marshal(notify)
+		s.log.WithField("message", recordValue).Debug("Preparing record for producer")
+		// send the message
+
+		perr := p.Produce(&kafka.Message{
+			TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+			Key:            []byte(recordKey),
+			Value:          []byte(recordValue),
+		}, nil)
+		if perr != nil {
+			fmt.Printf("\nError sending message: %v\n", perr)
+			return err
+		}
+		// Wait for all messages to be delivered
+		p.Flush(15 * 1000)
+		p.Close()
+		return nil
+	}
+	return nil
 }
