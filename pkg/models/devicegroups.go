@@ -20,7 +20,7 @@ type DeviceGroup struct {
 
 // DeviceGroupDetails is a record of Device Groups and DeviceDetails
 type DeviceGroupDetails struct {
-	DeviceGroup   *DeviceGroup       `json:"Device Group"`
+	DeviceGroup   *DeviceGroup       `json:"DeviceGroup"`
 	DeviceDetails *DeviceDetailsList `json:"Devices"`
 }
 
