@@ -1154,28 +1154,6 @@ func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, err
 	return &rollback, nil
 }
 
-// ImageNotification is the implementation of expected boddy notification
-type ImageNotification struct {
-	Version     string                 `json:"version"`
-	Bundle      string                 `json:"bundle"`
-	Application string                 `json:"application"`
-	EventType   string                 `json:"event_type"`
-	Timestamp   string                 `json:"timestamp"`
-	Account     string                 `json:"account_id"`
-	Context     string                 `json:"context"`
-	Events      []EventNotification    `json:"events"`
-	Recipients  *RecipientNotification `json:"recipients"`
-}
-type EventNotification struct {
-	Metadata string `json:"metadata"`
-	Payload  string `json:"payload"`
-}
-type RecipientNotification struct {
-	OnlyAdmins            bool   `json:"only_admins"`
-	IgnoreUserPreferences bool   `json:"ignore_user_preferences"`
-	Users                 string `json:"users"`
-}
-
 // SendImageNotification connects to platform.notifications.ingress on image topic
 func (s *ImageService) SendImageNotification(i *models.Image) error {
 	if clowder.IsClowderEnabled() {
@@ -1190,7 +1168,7 @@ func (s *ImageService) SendImageNotification(i *models.Image) error {
 		// 	fmt.Println(brokers[i])
 		// }
 
-		topic := "platform.notifications.ingress"
+		topic := NotificationTopic
 		fmt.Printf("\nSendImageNotification:topic: %v\n", topic)
 		// Create Producer instance
 		// p, err := kafka.NewProducer(&kafka.ConfigMap{
@@ -1211,10 +1189,10 @@ func (s *ImageService) SendImageNotification(i *models.Image) error {
 		recipient.Users = "anferrei@redhat.com"
 		fmt.Printf("\nSendImageNotification:recipient: %v\n", recipient)
 
-		notify.Version = "v1.1.0"
-		notify.Bundle = "edge"
-		notify.Application = "fleet-management"
-		notify.EventType = "image-creation"
+		notify.Version = NotificationConfigVersion
+		notify.Bundle = NotificationConfigBundle
+		notify.Application = NotificationConfigApplication
+		notify.EventType = NotificationConfigEventTypeImage
 		notify.Timestamp = fmt.Sprintf("%v", time.Now().UnixNano())
 		notify.Account = i.Account
 		notify.Context = "{}"

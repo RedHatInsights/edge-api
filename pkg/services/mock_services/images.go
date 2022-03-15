@@ -304,3 +304,17 @@ func (mr *MockImageServiceInterfaceMockRecorder) GetRollbackImage(image interfac
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRollbackImage", reflect.TypeOf((*MockImageServiceInterface)(nil).GetRollbackImage), image)
 }
+
+// SendImageNotification mocks base method
+func (m *MockImageServiceInterface) SendImageNotification(image *models.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendImageNotification", image)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendImageNotification indicates an expected call of SendImageNotification
+func (mr *MockImageServiceInterfaceMockRecorder) SendImageNotification(image interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendImageNotification", reflect.TypeOf((*MockImageServiceInterface)(nil).SendImageNotification), image)
+}
