@@ -2,8 +2,9 @@ package models
 
 import (
 	"errors"
-	"gorm.io/gorm"
 	"regexp"
+
+	"gorm.io/gorm"
 )
 
 // DeviceGroup is a record of Edge Devices Groups
@@ -15,6 +16,12 @@ type DeviceGroup struct {
 	Name    string   `json:"Name"`
 	Type    string   `json:"Type" gorm:"default:static;<-:create"`
 	Devices []Device `json:"Devices" gorm:"many2many:device_groups_devices;"`
+}
+
+// DeviceGroupDetails is a record of Device Groups and DeviceDetails
+type DeviceGroupDetails struct {
+	DeviceGroup   *DeviceGroup       `json:"DeviceGroup"`
+	DeviceDetails *DeviceDetailsList `json:"Devices"`
 }
 
 var (
