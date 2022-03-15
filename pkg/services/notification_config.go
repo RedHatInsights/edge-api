@@ -12,10 +12,14 @@ type ImageNotification struct {
 	Events      []EventNotification    `json:"events"`
 	Recipients  *RecipientNotification `json:"recipients"`
 }
+
+//EventNotification is used to track events to notification
 type EventNotification struct {
 	Metadata string `json:"metadata"`
 	Payload  string `json:"payload"`
 }
+
+//RecipientNotification is used to track recipients to notification
 type RecipientNotification struct {
 	OnlyAdmins            bool   `json:"only_admins"`
 	IgnoreUserPreferences bool   `json:"ignore_user_preferences"`
@@ -23,9 +27,14 @@ type RecipientNotification struct {
 }
 
 const (
-	NotificationTopic                = "platform.notifications.ingress"
-	NotificationConfigVersion        = "v1.1.0"
-	NotificationConfigBundle         = "edge"
-	NotificationConfigApplication    = "fleet-management"
+	//NotificationTopic to be used
+	NotificationTopic = "platform.notifications.ingress"
+	//NotificationConfigVersion to be used
+	NotificationConfigVersion = "v1.1.0"
+	//NotificationConfigBundle to be used
+	NotificationConfigBundle = "edge"
+	//NotificationConfigApplication to be used
+	NotificationConfigApplication = "fleet-management"
+	//NotificationConfigEventTypeImage to be used
 	NotificationConfigEventTypeImage = "image-creation"
 )
