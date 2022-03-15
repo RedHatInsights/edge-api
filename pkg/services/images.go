@@ -1179,8 +1179,8 @@ func (s *ImageService) SendImageNotification(i *models.Image) error {
 		// }
 
 		event.Metadata = "{}"
-		// payload, _ := json.Marshal(&i)
-		// event.Payload = string(payload)
+		payload, _ := json.Marshal(&i)
+		event.Payload = string(payload)
 		events = append(events, event)
 		fmt.Printf("\nSendImageNotification:event: %v\n", event)
 
@@ -1195,7 +1195,7 @@ func (s *ImageService) SendImageNotification(i *models.Image) error {
 		notify.EventType = NotificationConfigEventTypeImage
 		notify.Timestamp = fmt.Sprintf("%v", time.Now().UnixNano())
 		notify.Account = i.Account
-		notify.Context = "{}"
+		notify.Context = fmt.Sprintf("{Image.Id: %v}", &i.ID)
 		notify.Events = events
 		fmt.Printf("\n ############## notify: ############ %v\n", notify)
 		s.log.WithField("message", notify).Debug("Message to be send")
