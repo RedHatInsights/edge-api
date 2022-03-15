@@ -639,7 +639,7 @@ func RetryCreateImage(w http.ResponseWriter, r *http.Request) {
 func SendNotificationForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		services := dependencies.ServicesFromContext(r.Context())
-		err := services.ImageService.SendImageNotification(image)
+		_, err := services.ImageService.SendImageNotification(image)
 		if err != nil {
 			services.Log.WithField("error", err.Error()).Error("Failed to retry to send notification")
 			err := errors.NewInternalServerError()

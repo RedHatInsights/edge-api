@@ -55,7 +55,7 @@ type ImageServiceInterface interface {
 	CheckIfIsLatestVersion(previousImage *models.Image) error
 	SetBuildingStatusOnImageToRetryBuild(image *models.Image) error
 	GetRollbackImage(image *models.Image) (*models.Image, error)
-	SendImageNotification(image *models.Image) error
+	SendImageNotification(image *models.Image) (ImageNotification, error)
 }
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
@@ -1155,9 +1155,16 @@ func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, err
 }
 
 // SendImageNotification connects to platform.notifications.ingress on image topic
-func (s *ImageService) SendImageNotification(i *models.Image) error {
+func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification, error) {
+	var notify ImageNotification
+	notify.Version = NotificationConfigVersion
+	notify.Bundle = NotificationConfigBundle
+	notify.Application = NotificationConfigApplication
+	notify.EventType = NotificationConfigEventTypeImage
+	notify.Timestamp = fmt.Sprintf("%v", time.Now().UnixNano())
+
 	if clowder.IsClowderEnabled() {
-		var notify ImageNotification
+
 		var events []EventNotification
 		var event EventNotification
 		var recipient RecipientNotification
@@ -1189,11 +1196,6 @@ func (s *ImageService) SendImageNotification(i *models.Image) error {
 		recipient.Users = "anferrei@redhat.com"
 		fmt.Printf("\nSendImageNotification:recipient: %v\n", recipient)
 
-		notify.Version = NotificationConfigVersion
-		notify.Bundle = NotificationConfigBundle
-		notify.Application = NotificationConfigApplication
-		notify.EventType = NotificationConfigEventTypeImage
-		notify.Timestamp = fmt.Sprintf("%v", time.Now().UnixNano())
 		notify.Account = i.Account
 		notify.Context = fmt.Sprintf("{Image.Id: %v}", &i.ID)
 		notify.Events = events
@@ -1218,7 +1220,7 @@ func (s *ImageService) SendImageNotification(i *models.Image) error {
 		// // Wait for all messages to be delivered
 		// p.Flush(15 * 1000)
 		// p.Close()
-		return nil
+		return notify, nil
 	}
-	return nil
+	return notify, nil
 }
