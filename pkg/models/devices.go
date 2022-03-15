@@ -37,12 +37,14 @@ type DeviceDetailsList struct {
 // THEEDGE-1921 created 2 temporary indexes to address production issue
 type Device struct {
 	Model
-	UUID          string      `gorm:"index" json:"UUID"`
-	AvailableHash string      `json:"AvailableHash,omitempty"`
-	RHCClientID   string      `json:"RHCClientID"`
-	Connected     bool        `gorm:"default:true" json:"Connected"`
-	Name          string      `json:"Name"`
-	LastSeen      EdgeAPITime `json:"LastSeen"`
-	CurrentHash   string      `json:"CurrentHash,omitempty"`
-	Account       string      `gorm:"index" json:"Account"`
+	UUID            string      `gorm:"index" json:"UUID"`
+	AvailableHash   string      `json:"AvailableHash,omitempty"`
+	RHCClientID     string      `json:"RHCClientID"`
+	Connected       bool        `gorm:"default:true" json:"Connected"`
+	Name            string      `json:"Name"`
+	LastSeen        EdgeAPITime `json:"LastSeen"`
+	CurrentHash     string      `json:"CurrentHash,omitempty"`
+	Account         string      `gorm:"index" json:"Account"`
+	ImageID         uint        `json:"ImageID"`
+	UpdateAvailable bool        `json:"UpdateAvailable"`
 }
