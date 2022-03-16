@@ -1208,15 +1208,18 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 		// TODO: formalize message formats
 		recordKey := "ImageCreationStarts"
 		recordValue, _ := json.Marshal(notify)
-		s.log.WithField("message", recordValue).Debug("Preparing record for producer")
+		s.log.WithField("message", recordKey).Debug("Preparing record for producer")
+		s.log.WithField("message", recordValue).Debug("RecordValue")
 		// send the message
 		perr := p.Produce(&kafka.Message{
 			TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 			Key:            []byte(recordKey),
 			Value:          []byte(recordValue),
 		}, nil)
+		s.log.WithField("message", perr).Debug("after p.Produce")
 		if perr != nil {
-			s.log.WithField("message", perr).Error("Error on produce")
+			s.log.WithField("message", perr.Error()).Error("Error on produce")
+			s.log.WithField("message", perr.Error()).Debug("Error on produce")
 			fmt.Printf("\nError sending message: %v\n", perr)
 			return notify, err
 		}
