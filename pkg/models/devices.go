@@ -33,16 +33,18 @@ type DeviceDetailsList struct {
 //
 //	Connected refers to the devices Cloud Connector state, 0 is unavailable
 //	and 1 is reachable.
+//
+// THEEDGE-1921 created 2 temporary indexes to address production issue
 type Device struct {
 	Model
-	UUID            string      `json:"UUID"`
+	UUID            string      `gorm:"index" json:"UUID"`
 	AvailableHash   string      `json:"AvailableHash,omitempty"`
 	RHCClientID     string      `json:"RHCClientID"`
 	Connected       bool        `gorm:"default:true" json:"Connected"`
 	Name            string      `json:"Name"`
 	LastSeen        EdgeAPITime `json:"LastSeen"`
 	CurrentHash     string      `json:"CurrentHash,omitempty"`
-	Account         string      `json:"Account"`
+	Account         string      `gorm:"index" json:"Account"`
 	ImageID         uint        `json:"ImageID"`
 	UpdateAvailable bool        `json:"UpdateAvailable"`
 }
