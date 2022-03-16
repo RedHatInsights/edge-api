@@ -1216,6 +1216,7 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 			Value:          []byte(recordValue),
 		}, nil)
 		if perr != nil {
+			s.log.WithField("message", perr).Error("Error on produce")
 			fmt.Printf("\nError sending message: %v\n", perr)
 			return notify, err
 		}
