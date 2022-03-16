@@ -1202,7 +1202,7 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 		notify.Context = fmt.Sprintf("{Image.Name: %v}", &i.Name)
 		notify.Events = events
 		fmt.Printf("\n ############## notify: ############ %v\n", notify)
-		s.log.WithField("message", notify).Debug("Message to be send")
+		s.log.WithField("message", notify).Debug("Message to be sent")
 
 		// assemble the message to be sent
 		// TODO: formalize message formats
