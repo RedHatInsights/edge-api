@@ -1199,8 +1199,9 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 		fmt.Printf("\nSendImageNotification:recipient: %v\n", recipient)
 
 		notify.Account = i.Account
-		notify.Context = fmt.Sprintf("{Image.Name: %v}", &i.Name)
+		notify.Context = fmt.Sprintf("{ \"Image.Name: \" %v \"}", &i.Name)
 		notify.Events = events
+		notify.Recipients = &recipient
 		fmt.Printf("\n ############## notify: ############ %v\n", notify)
 		s.log.WithField("message", notify).Debug("Message to be sent")
 
@@ -1219,7 +1220,6 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 		s.log.WithField("message", perr).Debug("after p.Produce")
 		if perr != nil {
 			s.log.WithField("message", perr.Error()).Error("Error on produce")
-			s.log.WithField("message", perr.Error()).Debug("Error on produce")
 			fmt.Printf("\nError sending message: %v\n", perr)
 			return notify, err
 		}
