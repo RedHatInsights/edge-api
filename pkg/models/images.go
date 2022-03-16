@@ -35,6 +35,7 @@ type Image struct {
 	ImageSetID             *uint            `json:"ImageSetID" gorm:"index"` // TODO: Wipe staging database and set to not nullable
 	Packages               []Package        `json:"Packages,omitempty" gorm:"many2many:images_packages;"`
 	ThirdPartyRepositories []ThirdPartyRepo `json:"ThirdPartyRepositories,omitempty" gorm:"many2many:images_repos;"`
+	CustomPackages         []Package        `json:"CustomPackages,omitempty" gorm:"many2many:images_custom_packages"`
 }
 
 // ImageUpdateAvailable contains image and differences between current and available commits
@@ -184,4 +185,19 @@ func checkIfImageExist(imageName string) bool {
 		return false
 	}
 	return imageFindByName != nil
+}
+
+// GetALLPackagesList returns all the packages including custom packages containing their names
+func (i *Image) GetALLPackagesList() *[]string {
+	l := len(*i.GetPackagesList())
+	pkgs := make([]string, l+len(i.CustomPackages))
+
+	for i, packages := range *i.GetPackagesList() {
+		pkgs[i] = packages
+	}
+
+	for i, packages := range i.CustomPackages {
+		pkgs[i+l] = packages.Name
+	}
+	return &pkgs
 }
