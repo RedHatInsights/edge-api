@@ -1169,19 +1169,19 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 	var events []EventNotification
 	var event EventNotification
 	var recipient RecipientNotification
-	// brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
-	// fmt.Printf("\nSendImageNotification:brokers %v\n", brokers)
-	// for i, b := range clowder.LoadedConfig.Kafka.Brokers {
-	// 	brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
-	// 	fmt.Println(brokers[i])
-	// }
+	brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
+	fmt.Printf("\nSendImageNotification:brokers %v\n", brokers)
+	for i, b := range clowder.LoadedConfig.Kafka.Brokers {
+		brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
+		fmt.Println(brokers[i])
+	}
 
 	topic := NotificationTopic
 	fmt.Printf("\nSendImageNotification:topic: %v\n", topic)
 	// Create Producer instance
 	p, err := kafka.NewProducer(&kafka.ConfigMap{
-		"bootstrap.servers": "platform-mq-kafka-bootstrap.platform-mq-stage.svc:9092"})
-	// "bootstrap.servers": brokers[0]})
+		// "bootstrap.servers": "platform-mq-kafka-bootstrap.platform-mq-stage.svc:9092"})
+		"bootstrap.servers": brokers[0]})
 	if err != nil {
 		fmt.Printf("Failed to create producer: %s", err)
 		os.Exit(1)
