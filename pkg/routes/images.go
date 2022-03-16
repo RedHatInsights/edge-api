@@ -47,7 +47,7 @@ func MakeImagesRouter(sub chi.Router) {
 		r.Post("/kickstart", CreateKickStartForImage)
 		r.Post("/update", CreateImageUpdate)
 		r.Post("/retry", RetryCreateImage)
-		r.Get("/notify", SendNotificationForImage)
+		r.Get("/notify", SendNotificationForImage) //TMP ROUTE TO SEND THE NOTIFICATION
 	})
 }
 

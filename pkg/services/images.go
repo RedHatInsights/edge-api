@@ -103,7 +103,7 @@ func ValidateAllImageReposAreFromAccount(account string, repos []models.ThirdPar
 // CreateImage creates an Image for an Account on Image Builder and on our database
 func (s *ImageService) CreateImage(image *models.Image, account string) error {
 
-	s.SendImageNotification(image)
+	// s.SendImageNotification(image) SHOULD BE INCLUDED ONCE WE COMPLETE THE NOTIFICATION
 
 	// Check for existing ImageSet and return if exists
 	// TODO: this routine needs to become a function under imagesets
@@ -1156,6 +1156,7 @@ func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, err
 
 // SendImageNotification connects to platform.notifications.ingress on image topic
 func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification, error) {
+	//the code will be modified due to stage results
 	var notify ImageNotification
 	notify.Version = NotificationConfigVersion
 	notify.Bundle = NotificationConfigBundle
@@ -1163,64 +1164,65 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 	notify.EventType = NotificationConfigEventTypeImage
 	notify.Timestamp = fmt.Sprintf("%v", time.Now().UnixNano())
 
-	if clowder.IsClowderEnabled() {
+	// if clowder.IsClowderEnabled() {
 
-		var events []EventNotification
-		var event EventNotification
-		var recipient RecipientNotification
-		// brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
-		// fmt.Printf("\nSendImageNotification:brokers %v\n", brokers)
-		// for i, b := range clowder.LoadedConfig.Kafka.Brokers {
-		// 	brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
-		// 	fmt.Println(brokers[i])
-		// }
+	var events []EventNotification
+	var event EventNotification
+	var recipient RecipientNotification
+	// brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
+	// fmt.Printf("\nSendImageNotification:brokers %v\n", brokers)
+	// for i, b := range clowder.LoadedConfig.Kafka.Brokers {
+	// 	brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
+	// 	fmt.Println(brokers[i])
+	// }
 
-		topic := NotificationTopic
-		fmt.Printf("\nSendImageNotification:topic: %v\n", topic)
-		// Create Producer instance
-		// p, err := kafka.NewProducer(&kafka.ConfigMap{
-		// 	"bootstrap.servers": brokers[0]})
-		// if err != nil {
-		// 	fmt.Printf("Failed to create producer: %s", err)
-		// 	os.Exit(1)
-		// }
-
-		event.Metadata = "{}"
-		payload, _ := json.Marshal(&i)
-		event.Payload = string(payload)
-		events = append(events, event)
-		fmt.Printf("\nSendImageNotification:event: %v\n", event)
-
-		recipient.IgnoreUserPreferences = false
-		recipient.OnlyAdmins = false
-		recipient.Users = "anferrei@redhat.com"
-		fmt.Printf("\nSendImageNotification:recipient: %v\n", recipient)
-
-		notify.Account = i.Account
-		notify.Context = fmt.Sprintf("{Image.Id: %v}", &i.ID)
-		notify.Events = events
-		fmt.Printf("\n ############## notify: ############ %v\n", notify)
-		s.log.WithField("message", notify).Debug("Message to be send")
-
-		// assemble the message to be sent
-		// TODO: formalize message formats
-		// recordKey := "ImageCreationStarts"
-		// recordValue, _ := json.Marshal(notify)
-		// s.log.WithField("message", recordValue).Debug("Preparing record for producer")
-		// send the message
-		// perr := p.Produce(&kafka.Message{
-		// 	TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-		// 	Key:            []byte(recordKey),
-		// 	Value:          []byte(recordValue),
-		// }, nil)
-		// if perr != nil {
-		// 	fmt.Printf("\nError sending message: %v\n", perr)
-		// 	return err
-		// }
-		// // Wait for all messages to be delivered
-		// p.Flush(15 * 1000)
-		// p.Close()
-		return notify, nil
+	topic := NotificationTopic
+	fmt.Printf("\nSendImageNotification:topic: %v\n", topic)
+	// Create Producer instance
+	p, err := kafka.NewProducer(&kafka.ConfigMap{
+		"bootstrap.servers": "platform-mq-kafka-bootstrap.platform-mq-stage.svc:9092"})
+	// "bootstrap.servers": brokers[0]})
+	if err != nil {
+		fmt.Printf("Failed to create producer: %s", err)
+		os.Exit(1)
 	}
+
+	event.Metadata = "{}"
+	payload, _ := json.Marshal(&i)
+	event.Payload = string(payload)
+	events = append(events, event)
+	fmt.Printf("\nSendImageNotification:event: %v\n", event)
+
+	recipient.IgnoreUserPreferences = false
+	recipient.OnlyAdmins = false
+	recipient.Users = "anferrei@redhat.com"
+	fmt.Printf("\nSendImageNotification:recipient: %v\n", recipient)
+
+	notify.Account = i.Account
+	notify.Context = fmt.Sprintf("{Image.Id: %v}", &i.ID)
+	notify.Events = events
+	fmt.Printf("\n ############## notify: ############ %v\n", notify)
+	s.log.WithField("message", notify).Debug("Message to be send")
+
+	// assemble the message to be sent
+	// TODO: formalize message formats
+	recordKey := "ImageCreationStarts"
+	recordValue, _ := json.Marshal(notify)
+	s.log.WithField("message", recordValue).Debug("Preparing record for producer")
+	// send the message
+	perr := p.Produce(&kafka.Message{
+		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+		Key:            []byte(recordKey),
+		Value:          []byte(recordValue),
+	}, nil)
+	if perr != nil {
+		fmt.Printf("\nError sending message: %v\n", perr)
+		return notify, err
+	}
+	// Wait for all messages to be delivered
+	p.Flush(15 * 1000)
+	p.Close()
 	return notify, nil
+	// }
+	// return notify, nil
 }
