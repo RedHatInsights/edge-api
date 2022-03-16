@@ -429,6 +429,7 @@ var _ = Describe("Image Service Test", func() {
 				}
 				db.DB.Create(image)
 				image, err = service.GetImageByID(fmt.Sprint(image.ID))
+				Expect(err).ToNot(HaveOccurred())
 
 				notify, err := service.SendImageNotification(image)
 				Expect(err).ToNot(HaveOccurred())
