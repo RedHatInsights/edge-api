@@ -1167,7 +1167,7 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 	notify.Bundle = NotificationConfigBundle
 	notify.Application = NotificationConfigApplication
 	notify.EventType = NotificationConfigEventTypeImage
-	notify.Timestamp = fmt.Sprintf("%v", time.Now().UnixNano())
+	notify.Timestamp = time.Now().String()
 
 	if clowder.IsClowderEnabled() {
 		var users []string
@@ -1176,6 +1176,7 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 		var recipients []RecipientNotification
 		var recipient RecipientNotification
 		brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
+
 		fmt.Printf("\nSendImageNotification:brokers %v\n", brokers)
 		for i, b := range clowder.LoadedConfig.Kafka.Brokers {
 			brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
@@ -1195,7 +1196,7 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 
 		event.Metadata = "{}"
 		// payload, _ := json.Marshal(&i.ID)
-		event.Payload = fmt.Sprintf("{  \"ImageId:\" : \"%v\"}", &i.ID)
+		event.Payload = fmt.Sprintf("{  \"ImageId\" : \"%v\"}", &i.ID)
 		events = append(events, event)
 		// fmt.Printf("\nSendImageNotification:event: %v\n", event)
 
@@ -1207,10 +1208,10 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 		fmt.Printf("\nSendImageNotification:recipient: %v\n", recipient)
 
 		notify.Account = i.Account
-		notify.Context = fmt.Sprintf("{  \"ImageName:\" : \"%v\"}", &i.Name)
+		notify.Context = fmt.Sprintf("{  \"ImageName\" : \"%v\"}", &i.Name)
 		notify.Events = events
 		notify.Recipients = recipients
-		// fmt.Printf("\n ############## notify: ############ %v\n", notify)
+		fmt.Printf("\n ############## notify: ############ %v\n", notify)
 		s.log.WithField("message", notify).Debug("Message to be sent")
 
 		// assemble the message to be sent
