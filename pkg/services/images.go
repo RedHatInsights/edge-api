@@ -621,7 +621,6 @@ func (s *ImageService) AddUserInfo(image *models.Image) error {
 	imageName := destPath + image.Name
 	kickstart := fmt.Sprintf("%sfinalKickstart-%s_%d.ks", destPath, image.Account, image.ID)
 
-	s.log.Debug("Downloading ISO...")
 	err := s.downloadISO(imageName, downloadURL)
 	if err != nil {
 		return fmt.Errorf("error downloading ISO file :: %s", err.Error())
@@ -645,7 +644,6 @@ func (s *ImageService) AddUserInfo(image *models.Image) error {
 		return fmt.Errorf("error calculating checksum for ISO :: %s", err.Error())
 	}
 
-	s.log.Debug("Uploading the ISO...")
 	err = s.uploadISO(image, imageName)
 	if err != nil {
 		return fmt.Errorf("error uploading ISO :: %s", err.Error())
@@ -705,7 +703,7 @@ func (s *ImageService) addSSHKeyToKickstart(sshKey string, username string, kick
 // Download created ISO into the file system.
 func (s *ImageService) downloadISO(isoName string, url string) error {
 
-	s.log.WithField("isoName", isoName).Debug("Creating iso")
+	s.log.WithField("isoName", isoName).Debug("Creating ISO file")
 	iso, err := os.Create(isoName)
 	if err != nil {
 		return err
@@ -716,7 +714,7 @@ func (s *ImageService) downloadISO(isoName string, url string) error {
 		}
 	}()
 
-	s.log.WithField("url", url).Debug("Downloading iso")
+	s.log.WithField("url", url).Debug("Downloading ISO...")
 	res, err := http.Get(url) // #nosec G107
 	if err != nil {
 		return err
@@ -725,7 +723,7 @@ func (s *ImageService) downloadISO(isoName string, url string) error {
 
 	_, err = io.Copy(iso, res.Body)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Failed downloading iso")
+		s.log.WithField("error", err.Error()).Error("Failed downloading ISO")
 		return err
 	}
 
@@ -736,6 +734,7 @@ func (s *ImageService) downloadISO(isoName string, url string) error {
 func (s *ImageService) uploadISO(image *models.Image, imageName string) error {
 
 	uploadPath := fmt.Sprintf("%s/isos/%s.iso", image.Account, image.Name)
+	s.log.WithField("path", uploadPath).Debug("Uploading ISO...")
 	filesService := NewFilesService(s.log)
 	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
 
