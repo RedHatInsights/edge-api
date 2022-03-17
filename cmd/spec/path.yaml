@@ -1098,7 +1098,7 @@ paths:
                 $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
       summary: Get an device group by id.
-      delete:
+    delete:
       operationId: DeleteDeviceGroupByID
       parameters:
         - name: ID
