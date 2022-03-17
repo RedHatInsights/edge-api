@@ -1165,9 +1165,10 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 	notify.Timestamp = fmt.Sprintf("%v", time.Now().UnixNano())
 
 	if clowder.IsClowderEnabled() {
-
+		var users []string
 		var events []EventNotification
 		var event EventNotification
+		var recipients []RecipientNotification
 		var recipient RecipientNotification
 		brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
 		fmt.Printf("\nSendImageNotification:brokers %v\n", brokers)
@@ -1195,13 +1196,15 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 
 		recipient.IgnoreUserPreferences = false
 		recipient.OnlyAdmins = false
-		recipient.Users = "anferrei@redhat.com"
+		users = append(users, "anferrei@redhat.com")
+		recipient.Users = users
+		recipients = append(recipients, recipient)
 		fmt.Printf("\nSendImageNotification:recipient: %v\n", recipient)
 
 		notify.Account = i.Account
 		notify.Context = fmt.Sprintf("{  \"ImageName:\" : \"%v\"}", &i.Name)
 		notify.Events = events
-		notify.Recipients = &recipient
+		notify.Recipients = recipients
 		// fmt.Printf("\n ############## notify: ############ %v\n", notify)
 		s.log.WithField("message", notify).Debug("Message to be sent")
 
