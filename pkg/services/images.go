@@ -1202,7 +1202,7 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 
 		recipient.IgnoreUserPreferences = false
 		recipient.OnlyAdmins = false
-		users = append(users, "anferrei@redhat.com")
+		users = append(users, "anferrei")
 		recipient.Users = users
 		recipients = append(recipients, recipient)
 		fmt.Printf("\nSendImageNotification:recipient: %v\n", recipient)
