@@ -462,10 +462,6 @@ var _ = Describe("DeviceService", func() {
 		})
 	})
 	Context("ProcessPlatformInventoryCreateEvent", func() {
-		uuid := faker.UUIDHyphenated()
-		device := models.Device{
-			UUID: uuid,
-		}
 		type PlatformInsightsCreateEventPayload struct {
 			Type         string `json:"type"`
 			PlatformMeta string `json:"platform_metadata"`
@@ -496,13 +492,19 @@ var _ = Describe("DeviceService", func() {
 			} `json:"host"`
 		}
 		event := new(PlatformInsightsCreateEventPayload)
-		event.Host.ID = uuid
-		event.Host.Account = "TESTACCOUNT"
+		event.Type = services.InventoryEventTypeCreated
+		event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
+		event.Host.ID = faker.UUIDHyphenated()
+		event.Host.Account = faker.UUIDHyphenated()
 		message, _ := json.Marshal(event)
 		It("should update devices when no record is found", func() {
-			deviceService.ProcessPlatformInventoryCreateEvent(message)
-			db.DB.First(&device, device.UUID)
-			Expect(device.UUID).To(Equal(event.Host.ID))
+			var savedDevice models.Device
+			err := deviceService.ProcessPlatformInventoryCreateEvent(message)
+			Expect(err).To(BeNil())
+			result := *db.DB.Where(models.Device{UUID: event.Host.ID}).First(&savedDevice)
+			Expect(result.Error).To(BeNil())
+			Expect(savedDevice.UUID).To(Equal(event.Host.ID))
+			Expect(savedDevice.Account).To(Equal(event.Host.Account))
 		})
 	})
 	Context("ProcessPlatformInventoryUpdatedEvent", func() {
@@ -520,6 +522,7 @@ var _ = Describe("DeviceService", func() {
 
 		It("should create a device when device does not exist", func() {
 			event := new(PlatformInsightsUpdatedEventPayload)
+			event.Type = services.InventoryEventTypeUpdated
 			event.Host.ID = faker.UUIDHyphenated()
 			event.Host.InsightsID = faker.UUIDHyphenated()
 			event.Host.Account = faker.UUIDHyphenated()
@@ -547,6 +550,7 @@ var _ = Describe("DeviceService", func() {
 			Expect(res.Error).To(BeNil())
 
 			event := new(PlatformInsightsUpdatedEventPayload)
+			event.Type = services.InventoryEventTypeUpdated
 			event.Host.ID = device.UUID
 			event.Host.InsightsID = device.RHCClientID
 			event.Host.Account = faker.UUIDHyphenated()

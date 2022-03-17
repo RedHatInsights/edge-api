@@ -405,4 +405,39 @@ var _ = Describe("Image Service Test", func() {
 			})
 		})
 	})
+
+	Describe("send image starts notification", func() {
+		Context("when creating an image we should send a notification to topic", func() {
+			It("validate content", func() {
+				var image *models.Image
+				var err error
+				imageSet := &models.ImageSet{
+					Name:    "test",
+					Version: 1,
+					Account: common.DefaultAccount,
+				}
+				db.DB.Create(imageSet)
+
+				image = &models.Image{
+					Commit: &models.Commit{
+						OSTreeCommit: faker.UUIDHyphenated(),
+					},
+					Status:     models.ImageStatusSuccess,
+					ImageSetID: &imageSet.ID,
+					Version:    1,
+					Account:    common.DefaultAccount,
+				}
+				db.DB.Create(image)
+				image, err = service.GetImageByID(fmt.Sprint(image.ID))
+				Expect(err).ToNot(HaveOccurred())
+
+				notify, err := service.SendImageNotification(image)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(notify.Version).To(Equal("v1.1.0"))
+				Expect(notify.EventType).To(Equal("image-creation"))
+
+			})
+
+		})
+	})
 })
