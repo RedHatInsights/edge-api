@@ -216,3 +216,49 @@ func TestValidateRequest(t *testing.T) {
 		}
 	}
 }
+
+func TestGetALLPackagesList(t *testing.T) {
+	pkgs := []Package{
+		{
+			Name: "vim",
+		},
+		{
+			Name: "wget",
+		},
+	}
+	customPackages := []Package{
+		{
+			Name: "custompackage",
+		},
+		{
+			Name: "thirdpartypackage",
+		},
+	}
+	img := &Image{
+		Packages:       pkgs,
+		CustomPackages: customPackages,
+	}
+
+	allPackagesList := img.GetALLPackagesList()
+	if len(*allPackagesList) != len(pkgs)+len(customPackages)+len(requiredPackages) {
+		t.Errorf("two packages + custom packages + required packages expected")
+	}
+
+	packages := []string{
+		"ansible",
+		"rhc",
+		"rhc-worker-playbook",
+		"subscription-manager",
+		"subscription-manager-plugin-ostree",
+		"insights-client",
+		"vim",
+		"wget",
+		"custompackage",
+		"thirdpartypackage",
+	}
+	for i, item := range *allPackagesList {
+		if item != packages[i] {
+			t.Errorf("expected %s, got %s", packages[i], item)
+		}
+	}
+}
