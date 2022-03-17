@@ -213,10 +213,6 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device) ([]
 			s.log.WithField("error", err.Error()).Error("Could not find packages")
 			return nil, err
 		}
-		if err := db.DB.Model(&upd).Association("CustomPackages").Find(&upd.CustomPackages); err != nil {
-			s.log.WithField("error", err.Error()).Error("Could not find CustomPackages")
-			return nil, err
-		}
 		var delta models.ImageUpdateAvailable
 		diff := GetDiffOnUpdate(currentImage, upd)
 		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages

@@ -205,7 +205,7 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 	}
 	req := &ComposeRequest{
 		Customizations: &Customizations{
-			Packages:            image.GetALLPackagesList(),
+			Packages:            image.GetPackagesList(),
 			PayloadRepositories: &payloadRepos,
 		},
 		Distribution: image.Distribution,
