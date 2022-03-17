@@ -1191,7 +1191,7 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 		// payload, _ := json.Marshal(&i.ID)
 		event.Payload = fmt.Sprintf("{  \"ImageId:\" : \"%v\"}", &i.ID)
 		events = append(events, event)
-		fmt.Printf("\nSendImageNotification:event: %v\n", event)
+		// fmt.Printf("\nSendImageNotification:event: %v\n", event)
 
 		recipient.IgnoreUserPreferences = false
 		recipient.OnlyAdmins = false
@@ -1199,10 +1199,10 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 		fmt.Printf("\nSendImageNotification:recipient: %v\n", recipient)
 
 		notify.Account = i.Account
-		notify.Context = fmt.Sprintf("{ \"Image.Name: \" %v \"}", &i.Name)
+		notify.Context = fmt.Sprintf("{  \"ImageName:\" : \"%v\"}", &i.Name)
 		notify.Events = events
 		notify.Recipients = &recipient
-		fmt.Printf("\n ############## notify: ############ %v\n", notify)
+		// fmt.Printf("\n ############## notify: ############ %v\n", notify)
 		s.log.WithField("message", notify).Debug("Message to be sent")
 
 		// assemble the message to be sent
