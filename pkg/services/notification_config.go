@@ -15,7 +15,6 @@ type ImageNotification struct {
 
 //EventNotification is used to track events to notification
 type EventNotification struct {
-	// Metadata string `json:"metadata"`
 	Metadata string `json:"metadata"`
 	Payload  string `json:"payload"`
 }
