@@ -1161,6 +1161,7 @@ func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, err
 // SendImageNotification connects to platform.notifications.ingress on image topic
 func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification, error) {
 	//the code will be modified due to stage results
+	s.log.WithField("message", i).Debug("SendImageNotification::Image")
 	var notify ImageNotification
 	notify.Version = NotificationConfigVersion
 	notify.Bundle = NotificationConfigBundle
@@ -1193,7 +1194,7 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 			os.Exit(1)
 		}
 
-		event.Metadata = "{}"
+		event.Metadata = fmt.Sprint("{  \"any\" : \"thing\"}")
 		// payload, _ := json.Marshal(&i.ID)
 		event.Payload = fmt.Sprintf("{  \"ImageId\" : \"%v\"}", &i.ID)
 		events = append(events, event)
