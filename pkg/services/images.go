@@ -1161,7 +1161,7 @@ func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, err
 // SendImageNotification connects to platform.notifications.ingress on image topic
 func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification, error) {
 	//the code will be modified due to stage results
-	s.log.WithField("message", i).Debug("SendImageNotification::Image")
+	// s.log.WithField("message", i).Debug("SendImageNotification::Image")
 	var notify ImageNotification
 	notify.Version = NotificationConfigVersion
 	notify.Bundle = NotificationConfigBundle
@@ -1169,7 +1169,7 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 	notify.EventType = NotificationConfigEventTypeImage
 	notify.Timestamp = time.Now().Format(time.RFC3339)
 
-	if clowder.IsClowderEnabled() {
+	if !clowder.IsClowderEnabled() {
 		var users []string
 		var events []EventNotification
 		var event EventNotification
@@ -1194,23 +1194,22 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 			os.Exit(1)
 		}
 
-		event.Metadata = fmt.Sprint("{  \"any\" : \"thing\"}")
-		// payload, _ := json.Marshal(&i.ID)
-		event.Payload = fmt.Sprintf("{  \"ImageId\" : \"%v\"}", &i.ID)
+		asjson, _ := json.Marshal(make(map[string]string))
+		event.Metadata = string(asjson)
+		event.Payload = fmt.Sprintf("{  \"ImageId\" : \"%v\"}", i.ID)
 		events = append(events, event)
-		// fmt.Printf("\nSendImageNotification:event: %v\n", event)
 
 		recipient.IgnoreUserPreferences = false
 		recipient.OnlyAdmins = false
 		users = append(users, "anferrei")
 		recipient.Users = users
 		recipients = append(recipients, recipient)
-		fmt.Printf("\nSendImageNotification:recipient: %v\n", recipient)
 
 		notify.Account = i.Account
-		notify.Context = fmt.Sprintf("{  \"ImageName\" : \"%v\"}", &i.Name)
+		notify.Context = fmt.Sprintf("{  \"ImageName\" : \"%v\"}", i.Name)
 		notify.Events = events
 		notify.Recipients = recipients
+
 		fmt.Printf("\n ############## notify: ############ %v\n", notify)
 		s.log.WithField("message", notify).Debug("Message to be sent")
 
