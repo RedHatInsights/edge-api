@@ -1166,7 +1166,7 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 	notify.Bundle = NotificationConfigBundle
 	notify.Application = NotificationConfigApplication
 	notify.EventType = NotificationConfigEventTypeImage
-	notify.Timestamp = time.Now().String()
+	notify.Timestamp = time.Now().Format(time.RFC3339)
 
 	if clowder.IsClowderEnabled() {
 		var users []string
