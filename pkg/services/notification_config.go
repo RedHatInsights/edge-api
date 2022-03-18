@@ -37,4 +37,6 @@ const (
 	NotificationConfigApplication = "fleet-management"
 	//NotificationConfigEventTypeImage to be used
 	NotificationConfigEventTypeImage = "image-creation"
+	//NotificationConfigUser to be used
+	NotificationConfigUser = "fleet-management"
 )

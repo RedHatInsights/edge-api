@@ -47,7 +47,6 @@ func MakeImagesRouter(sub chi.Router) {
 		r.Post("/kickstart", CreateKickStartForImage)
 		r.Post("/update", CreateImageUpdate)
 		r.Post("/retry", RetryCreateImage)
-		r.Get("/notify", SendNotificationForImage) //TMP ROUTE TO SEND THE NOTIFICATION
 	})
 }
 
@@ -621,28 +620,6 @@ func RetryCreateImage(w http.ResponseWriter, r *http.Request) {
 		err := services.ImageService.RetryCreateImage(image)
 		if err != nil {
 			services.Log.WithField("error", err.Error()).Error("Failed to retry to create image")
-			err := errors.NewInternalServerError()
-			err.SetTitle("Failed creating image")
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
-			return
-		}
-		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(&image); err != nil {
-			services.Log.WithField("error", image).Error("Error while trying to encode")
-		}
-	}
-}
-
-//SendNotificationForImage TMP route to validate
-func SendNotificationForImage(w http.ResponseWriter, r *http.Request) {
-	if image := getImage(w, r); image != nil {
-		services := dependencies.ServicesFromContext(r.Context())
-		_, err := services.ImageService.SendImageNotification(image)
-		if err != nil {
-			services.Log.WithField("error", err.Error()).Error("Failed to retry to send notification")
 			err := errors.NewInternalServerError()
 			err.SetTitle("Failed creating image")
 			w.WriteHeader(err.GetStatus())
