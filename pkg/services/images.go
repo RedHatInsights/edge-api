@@ -107,11 +107,11 @@ func ValidateAllImageReposAreFromAccount(account string, repos []models.ThirdPar
 func (s *ImageService) CreateImage(image *models.Image, account string) error {
 
 	//Send Image creation to notification
-	_, errNotify := s.SendImageNotification(image)
-	if errNotify != nil {
-		s.log.WithField("message", errNotify.Error()).Error("Error to send notification")
+	// _, errNotify := s.SendImageNotification(image)
+	// if errNotify != nil {
+	// 	s.log.WithField("message", errNotify.Error()).Error("Error to send notification")
 
-	}
+	// }
 	// Check for existing ImageSet and return if exists
 	// TODO: this routine needs to become a function under imagesets
 	var imageSetExists bool
