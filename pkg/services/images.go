@@ -546,7 +546,7 @@ func (s *ImageService) postProcessImage(id uint) {
 			db.DB.Debug().First(&currentBuildImage, id)
 			if currentBuildImage.Status == models.ImageStatusBuilding {
 				s.log.WithField("imageID", id).Info("Current build interrupted. Setting to INTERRUPTED in DB")
-				s.SetErrorStatusOnImage(nil, i)
+				s.SetInterruptedStatusOnImage(nil, i)
 			}
 			interrupt()
 			return
