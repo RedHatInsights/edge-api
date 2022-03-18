@@ -15,8 +15,8 @@ type ImageNotification struct {
 
 //EventNotification is used to track events to notification
 type EventNotification struct {
-	Metadata string `json:"metadata"`
-	Payload  string `json:"payload"`
+	Metadata map[string]string `json:"metadata"`
+	Payload  string            `json:"payload"`
 }
 
 //RecipientNotification is used to track recipients to notification

@@ -1194,8 +1194,15 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 			os.Exit(1)
 		}
 
-		asjson, _ := json.Marshal(make(map[string]string))
-		event.Metadata = string(asjson)
+		type metadata struct {
+			metaMap map[string]string
+		}
+		emptyJson := metadata{
+			metaMap: make(map[string]string),
+		}
+
+		event.Metadata = emptyJson.metaMap
+
 		event.Payload = fmt.Sprintf("{  \"ImageId\" : \"%v\"}", i.ID)
 		events = append(events, event)
 
@@ -1217,8 +1224,9 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 		// TODO: formalize message formats
 		recordKey := "ImageCreationStarts"
 		recordValue, _ := json.Marshal(notify)
-		s.log.WithField("message", recordKey).Debug("Preparing record for producer")
-		s.log.WithField("message", recordValue).Debug("RecordValue")
+		fmt.Printf("\n ############## recordValue: ############ %v\n", string(recordValue))
+		// s.log.WithField("message", recordKey).Debug("Preparing record for producer")
+		s.log.WithField("message", string(recordValue)).Debug("RecordValue")
 		// send the message
 		perr := p.Produce(&kafka.Message{
 			TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
