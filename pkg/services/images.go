@@ -1216,7 +1216,7 @@ func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, err
 
 // SendImageNotification connects to platform.notifications.ingress on image topic
 func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification, error) {
-
+	s.log.WithField("message", i).Info("SendImageNotification::Starts")
 	var notify ImageNotification
 	notify.Version = NotificationConfigVersion
 	notify.Bundle = NotificationConfigBundle
@@ -1274,7 +1274,7 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 		recordKey := "ImageCreationStarts"
 		recordValue, _ := json.Marshal(notify)
 
-		s.log.WithField("message", recordValue).Debug("Preparing record for producer")
+		s.log.WithField("message", recordValue).Info("Preparing record for producer")
 
 		// send the message
 		perr := p.Produce(&kafka.Message{
@@ -1287,8 +1287,10 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 			s.log.WithField("message", perr.Error()).Error("Error on produce")
 			return notify, err
 		}
-		// Wait for all messages to be delivered
+		p.Flush(15 * 1000)
 		p.Close()
+		s.log.WithField("message", topic).Info("SendNotification message was produced to topic")
+		fmt.Printf("SendNotification message was produced to topic %s!\n", topic)
 		return notify, nil
 	}
 	return notify, nil
