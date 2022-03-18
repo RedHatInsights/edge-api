@@ -1206,7 +1206,7 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 
 		recipient.IgnoreUserPreferences = false
 		recipient.OnlyAdmins = false
-		users = append(users, NotificationConfigUseres)
+		users = append(users, NotificationConfigUser)
 		recipient.Users = users
 		recipients = append(recipients, recipient)
 
