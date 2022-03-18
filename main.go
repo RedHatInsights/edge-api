@@ -133,6 +133,8 @@ func gracefulTermination(server *http.Server, serviceName string) {
 }
 
 func main() {
+	// this only catches interrupts for main
+	// see images for image build interrupt
 	interruptSignal := make(chan os.Signal, 1)
 	signal.Notify(interruptSignal, os.Interrupt, syscall.SIGTERM)
 
@@ -160,11 +162,7 @@ func main() {
 		}
 	}
 
-	// Resume builds running during restart
-	// TODO: refactor this out to ibvents pod
-	imageService := services.NewImageService(context.Background(), log.WithField("service", "image"))
-	imageService.ResumeBuilds()
-
+	// block here and shut things down on interrupt
 	<-interruptSignal
 	log.Info("Shutting down gracefully...")
 	gracefulTermination(webServer, "web")

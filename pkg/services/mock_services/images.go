@@ -115,6 +115,18 @@ func (mr *MockImageServiceInterfaceMockRecorder) SetErrorStatusOnImage(err, i in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetErrorStatusOnImage", reflect.TypeOf((*MockImageServiceInterface)(nil).SetErrorStatusOnImage), err, i)
 }
 
+// SetInterruptedStatusOnImage mocks base method
+func (m *MockImageServiceInterface) SetInterruptedStatusOnImage(err error, i *models.Image) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetInterruptedStatusOnImage", err, i)
+}
+
+// SetInterruptedStatusOnImage indicates an expected call of SetInterruptedStatusOnImage
+func (mr *MockImageServiceInterfaceMockRecorder) SetInterruptedStatusOnImage(err, i interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetInterruptedStatusOnImage", reflect.TypeOf((*MockImageServiceInterface)(nil).SetInterruptedStatusOnImage), err, i)
+}
+
 // CreateRepoForImage mocks base method
 func (m *MockImageServiceInterface) CreateRepoForImage(i *models.Image) (*models.Repo, error) {
 	m.ctrl.T.Helper()

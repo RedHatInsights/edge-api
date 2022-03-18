@@ -10,9 +10,11 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"strconv"
 	"sync"
+	"syscall"
 	"text/template"
 	"time"
 
@@ -42,6 +44,7 @@ type ImageServiceInterface interface {
 	AddUserInfo(image *models.Image) error
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
+	SetInterruptedStatusOnImage(err error, i *models.Image)
 	CreateRepoForImage(i *models.Image) (*models.Repo, error)
 	CreateInstallerForImage(i *models.Image) (*models.Image, chan error, error)
 	GetImageByID(id string) (*models.Image, error)
@@ -513,6 +516,40 @@ func (s *ImageService) postProcessImage(id uint) {
 	s.log.Debug("Processing image build")
 	// get image data from DB based on image.ID
 	var i *models.Image
+	var currentBuildImage *models.Image
+
+	// setup a context and signal for SIGTERM
+	ctx := context.Background()
+	intctx, interrupt := context.WithCancel(ctx)
+	sigint := make(chan os.Signal, 1)
+	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
+
+	// this will run at the end of postProcessImage to tidy up signal and context
+	defer func() {
+		signal.Stop(sigint)
+		interrupt()
+	}()
+	// This runs alongside and blocks on either a signal or normal completion from defer above
+	// 	if an interrupt, set image to INTERRUPTED in database
+	go func() {
+		select {
+		case <-sigint:
+			// We caught an interrupt. Mark the image as interrupted.
+			s.log.Debug("processImage received signal. Cleaning up... ", id)
+			db.DB.Debug().First(&currentBuildImage, id)
+			if currentBuildImage.Status == models.ImageStatusBuilding {
+				s.log.WithField("imageID", id).Info("Current build interrupted. Setting to INTERRUPTED in DB")
+				s.SetErrorStatusOnImage(nil, i)
+			}
+			interrupt()
+			return
+		case <-intctx.Done():
+			// Things finished normally and reached the defer defined above.
+			s.log.WithField("imageID", id).Info("processImage deferred Done()")
+		}
+	}()
+
+	// business as usual from here to end of block
 	db.DB.Debug().Joins("Commit").Joins("Installer").First(&i, id)
 
 	// Request a commit from Image Builder for the image
@@ -603,6 +640,21 @@ func (s *ImageService) SetErrorStatusOnImage(err error, i *models.Image) {
 		}
 		if err != nil {
 			s.log.WithField("error", tx.Error.Error()).Error("Error setting image final status")
+		}
+	}
+}
+
+// SetInterruptedStatusOnImage is a helper functions that sets the interrupted status on images
+func (s *ImageService) SetInterruptedStatusOnImage(err error, i *models.Image) {
+	if i.Status != models.ImageStatusInterrupted {
+		i.Status = models.ImageStatusInterrupted
+		tx := db.DB.Save(i)
+		s.log.Debug("Image saved with interrupted status")
+		if tx.Error != nil {
+			s.log.WithField("error", tx.Error.Error()).Error("Error saving image")
+		}
+		if err != nil {
+			s.log.WithField("error", tx.Error.Error()).Error("Error setting image interrupted status")
 		}
 	}
 }
