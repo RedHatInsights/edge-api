@@ -1197,11 +1197,11 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 		type metadata struct {
 			metaMap map[string]string
 		}
-		emptyJson := metadata{
+		emptyJSON := metadata{
 			metaMap: make(map[string]string),
 		}
 
-		event.Metadata = emptyJson.metaMap
+		event.Metadata = emptyJSON.metaMap
 
 		event.Payload = fmt.Sprintf("{  \"ImageId\" : \"%v\"}", i.ID)
 		events = append(events, event)
