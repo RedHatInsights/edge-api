@@ -77,14 +77,16 @@ const (
 	// ImageTypeCommit is the installer image type on Image Builder
 	ImageTypeCommit = "rhel-edge-commit"
 
-	// ImageStatusCreated is for when a image is created
+	// ImageStatusCreated is for when an image is created
 	ImageStatusCreated = "CREATED"
-	// ImageStatusBuilding is for when a image is building
+	// ImageStatusBuilding is for when an image is building
 	ImageStatusBuilding = "BUILDING"
-	// ImageStatusError is for when a image is on a error state
+	// ImageStatusError is for when an image is on a error state
 	ImageStatusError = "ERROR"
-	// ImageStatusSuccess is for when a image is available to the user
+	// ImageStatusSuccess is for when an image is available to the user
 	ImageStatusSuccess = "SUCCESS"
+	// ImageStatusInterrupted is for when an image build is interrupted
+	ImageStatusInterrupted = "INTERRUPTED"
 
 	// MissingInstaller is the error message for not passing an installer in the request
 	MissingInstaller = "installer info must be provided"
