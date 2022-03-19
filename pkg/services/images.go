@@ -543,10 +543,18 @@ func (s *ImageService) postProcessImage(id uint) {
 		case <-sigint:
 			// We caught an interrupt. Mark the image as interrupted.
 			s.log.WithField("imageID", id).Debug("processImage case sigint received signal. Cleaning up... ")
+
+			// grab the current image from the database
 			db.DB.Debug().Joins("Commit").Joins("Installer").First(&currentBuildImage, id)
-			//s.log.WithField("status", currentBuildImage.Status).Debug("Checking if in build status with an if here...")
+
+			// update it one more time from Image Builder
+			currentBuildImage, _ = s.UpdateImageStatus(currentBuildImage)
+
+			// set build status to INTERRUPTED
 			s.log.WithField("status", currentBuildImage.Status).Info("Current build interrupted. Setting to INTERRUPTED in DB")
 			s.SetInterruptedStatusOnImage(nil, currentBuildImage)
+
+			// cancel the context
 			interrupt()
 			return
 		case <-intctx.Done():
