@@ -543,7 +543,8 @@ func (s *ImageService) postProcessImage(id uint) {
 		case <-sigint:
 			// We caught an interrupt. Mark the image as interrupted.
 			s.log.WithField("imageID", id).Debug("processImage case <-sigint received signal. Cleaning up... ")
-			db.DB.Debug().First(&currentBuildImage, id)
+			db.DB.Debug().Joins("Commit").Joins("Installer").First(&currentBuildImage, id)
+			s.log.WithField("imageID", currentBuildImage.ID).Debug("Checking if in build status with an if here...")
 			if currentBuildImage.Status == models.ImageStatusBuilding {
 				s.log.WithField("imageID", id).Info("Current build interrupted. Setting to INTERRUPTED in DB")
 				s.SetInterruptedStatusOnImage(nil, i)
@@ -653,6 +654,7 @@ func (s *ImageService) SetErrorStatusOnImage(err error, i *models.Image) {
 
 // SetInterruptedStatusOnImage is a helper functions that sets the interrupted status on images
 func (s *ImageService) SetInterruptedStatusOnImage(err error, i *models.Image) {
+	s.log.Debug("Checking interrupted status...")
 	if i.Status != models.ImageStatusInterrupted {
 		i.Status = models.ImageStatusInterrupted
 		tx := db.DB.Save(i)
