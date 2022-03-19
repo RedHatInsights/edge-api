@@ -549,12 +549,19 @@ func (s *ImageService) postProcessImage(id uint) {
 			s.log.WithField("status", currentBuildImage.Status).Info("Build status from database")
 
 			// update it one more time from Image Builder
-			currentBuildImage, _ = s.UpdateImageStatus(currentBuildImage)
+			/* currentBuildImage, _ = s.UpdateImageStatus(currentBuildImage)
 			s.log.WithField("status", currentBuildImage.Status).Info("Build status from Image Builder")
 
 			// set build status to INTERRUPTED
-			s.log.WithField("status", currentBuildImage.Status).Info("Setting to INTERRUPTED in DB")
 			s.SetInterruptedStatusOnImage(nil, currentBuildImage)
+			*/
+			currentBuildImage.Status = models.ImageStatusInterrupted
+			s.log.WithField("status", currentBuildImage.Status).Info("Setting to INTERRUPTED in DB")
+			tx := db.DB.Save(currentBuildImage)
+			s.log.Debug("Image saved with interrupted status")
+			if tx.Error != nil {
+				s.log.WithField("error", tx.Error.Error()).Error("Error saving image")
+			}
 
 			// cancel the context
 			interrupt()
