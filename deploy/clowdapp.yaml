@@ -89,7 +89,7 @@ objects:
             cpu: 500m
             memory: 512Mi
     - name: ibvents
-      minReplicas: 1
+      minReplicas: 0
       podSpec:
         image: ${IMAGE}:${IMAGE_TAG}
         command:
