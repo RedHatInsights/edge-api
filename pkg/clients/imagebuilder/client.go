@@ -153,7 +153,7 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 	c.log.WithFields(log.Fields{
 		"url":     url,
 		"payload": payloadBuf.String(),
-	}).Info("Image Builder Compose Request Started")
+	}).Debug("Image Builder Compose Request Started")
 	req, _ := http.NewRequest("POST", url, payloadBuf)
 	for key, value := range clients.GetOutgoingHeaders(c.ctx) {
 		req.Header.Add(key, value)
@@ -178,7 +178,7 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 		"statusCode":   res.StatusCode,
 		"responseBody": string(respBody),
 		"error":        err,
-	}).Info("Image Builder Compose Response")
+	}).Debug("Image Builder Compose Response")
 	if err != nil {
 		return nil, err
 	}
@@ -295,7 +295,7 @@ func (c *Client) getComposeStatus(jobID string) (*ComposeStatus, error) {
 	url := fmt.Sprintf("%s/api/image-builder/v1/composes/%s", cfg.ImageBuilderConfig.URL, jobID)
 	c.log.WithFields(log.Fields{
 		"url": url,
-	}).Info("Image Builder ComposeStatus Request Started")
+	}).Debug("Image Builder ComposeStatus Request Started")
 	req, _ := http.NewRequest("GET", url, nil)
 	for key, value := range clients.GetOutgoingHeaders(c.ctx) {
 		req.Header.Add(key, value)
@@ -315,7 +315,7 @@ func (c *Client) getComposeStatus(jobID string) (*ComposeStatus, error) {
 		"statusCode":   res.StatusCode,
 		"responseBody": string(body),
 		"error":        err,
-	}).Info("Image Builder ComposeStatus Response")
+	}).Debug("Image Builder ComposeStatus Response")
 	if err != nil {
 		return nil, err
 	}
