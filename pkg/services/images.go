@@ -542,7 +542,7 @@ func (s *ImageService) postProcessImage(id uint) {
 		select {
 		case <-sigint:
 			// We caught an interrupt. Mark the image as interrupted.
-			s.log.WithField("imageID", id).Debug("processImage case <-sigint received signal. Cleaning up... ")
+			s.log.WithField("imageID", id).Debug("processImage case sigint received signal. Cleaning up... ")
 			db.DB.Debug().Joins("Commit").Joins("Installer").First(&currentBuildImage, id)
 			s.log.WithField("imageID", currentBuildImage.ID).Debug("Checking if in build status with an if here...")
 			if currentBuildImage.Status == models.ImageStatusBuilding {
@@ -553,7 +553,7 @@ func (s *ImageService) postProcessImage(id uint) {
 			return
 		case <-intctx.Done():
 			// Things finished normally and reached the defer defined above.
-			s.log.WithField("imageID", id).Info("processImage case <-intctx.Done() deferred Done()")
+			s.log.WithField("imageID", id).Info("processImage case intctx.Done() deferred Done()")
 		}
 	}()
 
