@@ -524,7 +524,7 @@ func (s *ImageService) postProcessImage(id uint) {
 
 	// setup a context and signal for SIGTERM
 	ctx := context.Background()
-	intctx, interrupt := context.WithCancel(ctx)
+	intctx, intcancel := context.WithCancel(ctx)
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 
@@ -532,7 +532,7 @@ func (s *ImageService) postProcessImage(id uint) {
 	defer func() {
 		s.log.WithField("imageID", id).Debug("processImage defer func() tearing down...")
 		signal.Stop(sigint)
-		interrupt()
+		intcancel()
 	}()
 	// This runs alongside and blocks on either a signal or normal completion from defer above
 	// 	if an interrupt, set image to INTERRUPTED in database
@@ -542,11 +542,11 @@ func (s *ImageService) postProcessImage(id uint) {
 		select {
 		case <-sigint:
 			// we caught an interrupt. Mark the image as interrupted.
-			s.log.WithField("imageID", id).Debug("processImage case sigint received signal. Shutting context down... ")
+			s.log.WithField("imageID", id).Debug("processImage case sigint received signal")
 
 			// grab the current image from the database
-			db.DB.Debug().Joins("Commit").Joins("Installer").First(&currentBuildImage, id)
-			s.log.WithField("status", currentBuildImage.Status).Info("Build status from database")
+			//db.DB.Debug().Joins("Commit").Joins("Installer").First(&currentBuildImage, id)
+			//s.log.WithField("status", currentBuildImage.Status).Info("Build status from database")
 
 			// update it one more time from Image Builder
 			/* currentBuildImage, _ = s.UpdateImageStatus(currentBuildImage)
@@ -555,16 +555,17 @@ func (s *ImageService) postProcessImage(id uint) {
 			// set build status to INTERRUPTED
 			s.SetInterruptedStatusOnImage(nil, currentBuildImage)
 			*/
+			currentBuildImage.ID = id
 			currentBuildImage.Status = models.ImageStatusInterrupted
-			s.log.WithField("status", currentBuildImage.Status).Info("Setting to INTERRUPTED in DB")
-			tx := db.DB.Save(currentBuildImage)
-			s.log.Debug("Image saved with interrupted status")
+			s.log.WithField("status", currentBuildImage.Status).Info("Setting Image to INTERRUPTED in DB")
+			tx := db.DB.Debug().Model(&currentBuildImage).Update("Status", id)
+			s.log.WithField("status", currentBuildImage.Status).Debug("Image updated with interrupted status")
 			if tx.Error != nil {
-				s.log.WithField("error", tx.Error.Error()).Error("Error saving image")
+				s.log.WithField("error", tx.Error.Error()).Error("Error updating image")
 			}
 
 			// cancel the context
-			interrupt()
+			intcancel()
 			return
 		case <-intctx.Done():
 			// Things finished normally and reached the defer defined above.
@@ -642,21 +643,21 @@ func (s *ImageService) CreateRepoForImage(i *models.Image) (*models.Repo, error)
 func (s *ImageService) SetErrorStatusOnImage(err error, i *models.Image) {
 	if i.Status != models.ImageStatusError {
 		i.Status = models.ImageStatusError
-		tx := db.DB.Save(i)
+		tx := db.DB.Debug().Save(i)
 		s.log.Debug("Image saved with error status")
 		if tx.Error != nil {
 			s.log.WithField("error", tx.Error.Error()).Error("Error saving image")
 		}
 		if i.Commit != nil {
 			i.Commit.Status = models.ImageStatusError
-			tx := db.DB.Save(i.Commit)
+			tx := db.DB.Debug().Save(i.Commit)
 			if tx.Error != nil {
 				s.log.WithField("error", tx.Error.Error()).Error("Error saving commit")
 			}
 		}
 		if i.Installer != nil {
 			i.Installer.Status = models.ImageStatusError
-			tx := db.DB.Save(i.Installer)
+			tx := db.DB.Debug().Save(i.Installer)
 			if tx.Error != nil {
 				s.log.WithField("error", tx.Error.Error()).Error("Error saving installer")
 			}
