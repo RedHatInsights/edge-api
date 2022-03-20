@@ -138,11 +138,17 @@ func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 			log.Debug("Skipping kafka message - Insights Platform Inventory message is not a created and not an updated event type")
 			continue
 		}
-		log.WithFields(log.Fields{
+		/* log.WithFields(log.Fields{
 			"topic":  m.Topic,
 			"offset": m.Offset,
 			"key":    string(m.Key),
 			"value":  string(m.Value),
+		}).Debug("Read message from Kafka topic") */
+		// temporarily removing value to make troubleshooting interrupt easier
+		log.WithFields(log.Fields{
+			"topic":  m.Topic,
+			"offset": m.Offset,
+			"key":    string(m.Key),
 		}).Debug("Read message from Kafka topic")
 
 		switch eventType {
