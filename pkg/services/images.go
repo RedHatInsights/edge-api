@@ -520,7 +520,7 @@ func (s *ImageService) postProcessImage(id uint) {
 	s.log.Debug("Processing image build")
 	// get image data from DB based on image.ID
 	var i *models.Image
-	var currentBuildImage *models.Image
+	//var currentBuildImage *models.Image
 
 	// setup a context and signal for SIGTERM
 	ctx := context.Background()
@@ -555,11 +555,11 @@ func (s *ImageService) postProcessImage(id uint) {
 			// set build status to INTERRUPTED
 			s.SetInterruptedStatusOnImage(nil, currentBuildImage)
 			*/
-			currentBuildImage.ID = id
-			currentBuildImage.Status = models.ImageStatusInterrupted
-			s.log.WithField("status", currentBuildImage.Status).Info("Setting Image to INTERRUPTED in DB")
-			tx := db.DB.Debug().Model(&currentBuildImage).Update("Status", id)
-			s.log.WithField("status", currentBuildImage.Status).Debug("Image updated with interrupted status")
+			//currentBuildImage.ID = id
+			//currentBuildImage.Status = models.ImageStatusInterrupted
+			//s.log.WithField("status", currentBuildImage.Status).Info("Setting Image to INTERRUPTED in DB")
+			tx := db.DB.Debug().Model(&models.Image{}).Where("ID = ?", id).Update("Status", models.ImageStatusInterrupted)
+			s.log.WithField("imageID", id).Debug("Image updated with interrupted status")
 			if tx.Error != nil {
 				s.log.WithField("error", tx.Error.Error()).Error("Error updating image")
 			}
