@@ -10,7 +10,6 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
-	"sync"
 	"syscall"
 	"text/template"
 	"time"
@@ -21,10 +20,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
-
-// WaitGroup is the waitgroup for pending image updates
-// TODO: replace this with context similar to image builds
-var WaitGroup sync.WaitGroup
 
 // UpdateServiceInterface defines the interface that helps
 // handle the business logic of sending updates to a edge device
