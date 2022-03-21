@@ -13,7 +13,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
-	"sync"
 	"syscall"
 	"text/template"
 	"time"
@@ -32,19 +31,14 @@ import (
 	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 )
 
-// WaitGroup is the waitg roup for pending image builds
-var WaitGroup sync.WaitGroup
-
 // ImageServiceInterface defines the interface that helps handle
 // the business logic of creating RHEL For Edge Images
 type ImageServiceInterface interface {
 	CreateImage(image *models.Image, account string) error
-	ResumeBuilds()
 	UpdateImage(image *models.Image, previousImage *models.Image) error
 	AddUserInfo(image *models.Image) error
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
-	SetInterruptedStatusOnImage(err error, i *models.Image)
 	CreateRepoForImage(i *models.Image) (*models.Repo, error)
 	CreateInstallerForImage(i *models.Image) (*models.Image, chan error, error)
 	GetImageByID(id string) (*models.Image, error)
@@ -298,6 +292,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 }
 
 func (s *ImageService) postProcessInstaller(image *models.Image) error {
+	// TODO: rename this processInstaller or buildInstaller
 	s.log.Debug("Post processing the installer for the image")
 	for {
 		i, err := s.UpdateImageStatus(image)
@@ -310,15 +305,12 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 		if i.Installer.Status != models.ImageStatusBuilding {
 
 			// if clowder is enabled, send an event on Image Build completion
-			// TODO: break this out into its own function
+			// TODO: break this out into its own reusable function
 			if clowder.IsClowderEnabled() {
-				fmt.Printf("Public Port: %d\n", clowder.LoadedConfig.PublicPort)
-
 				// get the list of brokers from the config
 				brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
 				for i, b := range clowder.LoadedConfig.Kafka.Brokers {
 					brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
-					fmt.Println(brokers[i])
 				}
 
 				topic := "platform.edge.fleetmgmt.image-build"
@@ -327,29 +319,28 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 				p, err := kafka.NewProducer(&kafka.ConfigMap{
 					"bootstrap.servers": brokers[0]})
 				if err != nil {
-					fmt.Printf("Failed to create producer: %s", err)
-					os.Exit(1)
+					s.log.WithField("error", err).Error("Failed to create producer")
+				} else {
+					// assemble the message to be sent
+					// TODO: formalize message formats
+					recordKey := "postProcessInstaller"
+					recordValue, _ := json.Marshal(&image)
+					s.log.WithField("message", recordValue).Debug("Preparing record for producer")
+					perr := p.Produce(&kafka.Message{
+						TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+						Key:            []byte(recordKey),
+						Value:          []byte(recordValue),
+					}, nil)
+					if perr != nil {
+						s.log.Error("Error sending message")
+					}
+
+					// Wait for all messages to be delivered
+					p.Flush(15 * 1000)
+					p.Close()
+
+					s.log.WithField("topic", topic).Debug("postProcessInstaller message was produced to topic")
 				}
-
-				// assemble the message to be sent
-				// TODO: formalize message formats
-				recordKey := "postProcessInstaller"
-				recordValue, _ := json.Marshal(&image)
-				s.log.WithField("message", recordValue).Debug("Preparing record for producer")
-				perr := p.Produce(&kafka.Message{
-					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-					Key:            []byte(recordKey),
-					Value:          []byte(recordValue),
-				}, nil)
-				if perr != nil {
-					fmt.Println("Error sending message")
-				}
-
-				// Wait for all messages to be delivered
-				p.Flush(15 * 1000)
-				p.Close()
-
-				fmt.Printf("postProcessInstaller message was produced to topic %s!\n", topic)
 			}
 
 			break
@@ -375,6 +366,7 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 }
 
 func (s *ImageService) postProcessCommit(image *models.Image) error {
+	// TODO: rename this processCommit or buildCommit
 	s.log.Debug("Processing image build commit")
 	for {
 		i, err := s.UpdateImageStatus(image)
@@ -383,7 +375,6 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 			return err
 		}
 		if i.Commit.Status != models.ImageStatusBuilding {
-
 			// if clowder is enabled, send an event on Image Build completion
 			// TODO: break this out into its own function
 			if clowder.IsClowderEnabled() {
@@ -402,30 +393,29 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 				p, err := kafka.NewProducer(&kafka.ConfigMap{
 					"bootstrap.servers": brokers[0]})
 				if err != nil {
-					fmt.Printf("Failed to create producer: %s", err)
-					os.Exit(1)
+					s.log.WithField("error", err).Error("Failed to create producer")
+				} else {
+					// assemble the message to be sent
+					// TODO: formalize message formats
+					recordKey := "postProcessCommit"
+					recordValue, _ := json.Marshal(&image)
+					s.log.WithField("message", recordValue).Debug("Preparing record for producer")
+					// send the message
+					perr := p.Produce(&kafka.Message{
+						TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+						Key:            []byte(recordKey),
+						Value:          []byte(recordValue),
+					}, nil)
+					if perr != nil {
+						s.log.Error("Error sending message")
+					}
+
+					// Wait for all messages to be delivered
+					p.Flush(15 * 1000)
+					p.Close()
+
+					s.log.WithField("topic", topic).Debug("postProcessInstaller message was produced to topic")
 				}
-
-				// assemble the message to be sent
-				// TODO: formalize message formats
-				recordKey := "postProcessCommit"
-				recordValue, _ := json.Marshal(&image)
-				s.log.WithField("message", recordValue).Debug("Preparing record for producer")
-				// send the message
-				perr := p.Produce(&kafka.Message{
-					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-					Key:            []byte(recordKey),
-					Value:          []byte(recordValue),
-				}, nil)
-				if perr != nil {
-					fmt.Println("Error sending message")
-				}
-
-				// Wait for all messages to be delivered
-				p.Flush(15 * 1000)
-				p.Close()
-
-				fmt.Printf("postProcessCommit Message was produced to topic %s!\n", topic)
 			}
 
 			break
@@ -500,27 +490,11 @@ func (s *ImageService) SetFinalImageStatus(i *models.Image) {
 	s.log.WithField("status", i.Status).Debug("Setting final image status")
 }
 
-// ResumeBuilds resumes only the builds that were running when the application restarted.
-func (s *ImageService) ResumeBuilds() {
-	// TODO: refactor this out to ibvents pod
-	s.log.Debug("Resuming builds in progress.")
-	var images []models.Image
-	db.DB.Debug().Where(&models.Image{Status: models.ImageStatusBuilding}).Find(&images)
-	// loop through the results and start up a new process for each image
-	for _, image := range images {
-		log.WithField("imageID", image.ID).Debug("Resuming build process for image")
-
-		// go s.postProcessImage(image.ID)
-	}
-}
-
 func (s *ImageService) postProcessImage(id uint) {
 	// NOTE: Every log message in this method already has commit id and image id injected
-
+	// TODO: rename this buildImage() or processImage()
 	s.log.Debug("Processing image build")
-	// get image data from DB based on image.ID
 	var i *models.Image
-	//var currentBuildImage *models.Image
 
 	// setup a context and signal for SIGTERM
 	ctx := context.Background()
@@ -530,36 +504,23 @@ func (s *ImageService) postProcessImage(id uint) {
 
 	// this will run at the end of postProcessImage to tidy up signal and context
 	defer func() {
-		s.log.WithField("imageID", id).Debug("processImage defer func() tearing down...")
+		s.log.Debug("processImage defer func() tearing down...")
 		signal.Stop(sigint)
 		intcancel()
 	}()
-	// This runs alongside and blocks on either a signal or normal completion from defer above
+	// this runs alongside and blocks on either a signal or normal completion from defer above
 	// 	if an interrupt, set image to INTERRUPTED in database
 	go func() {
-		s.log.WithField("imageID", id).Debug("processImage go func() setting up...")
+		s.log.Debug("processImage go func() setting up...")
 
 		select {
+		// TODO: consider adding a timeout timer to this select to graceful end after X minutes
 		case <-sigint:
 			// we caught an interrupt. Mark the image as interrupted.
-			s.log.WithField("imageID", id).Debug("processImage case sigint received signal")
-
-			// grab the current image from the database
-			//db.DB.Debug().Joins("Commit").Joins("Installer").First(&currentBuildImage, id)
-			//s.log.WithField("status", currentBuildImage.Status).Info("Build status from database")
-
-			// update it one more time from Image Builder
-			/* currentBuildImage, _ = s.UpdateImageStatus(currentBuildImage)
-			s.log.WithField("status", currentBuildImage.Status).Info("Build status from Image Builder")
-
-			// set build status to INTERRUPTED
-			s.SetInterruptedStatusOnImage(nil, currentBuildImage)
-			*/
-			//currentBuildImage.ID = id
-			//currentBuildImage.Status = models.ImageStatusInterrupted
-			//s.log.WithField("status", currentBuildImage.Status).Info("Setting Image to INTERRUPTED in DB")
+			s.log.Debug("processImage case sigint received signal")
+			s.log.Info("Setting Image to INTERRUPTED in DB")
 			tx := db.DB.Debug().Model(&models.Image{}).Where("ID = ?", id).Update("Status", models.ImageStatusInterrupted)
-			s.log.WithField("imageID", id).Debug("Image updated with interrupted status")
+			s.log.Debug("Image updated with interrupted status")
 			if tx.Error != nil {
 				s.log.WithField("error", tx.Error.Error()).Error("Error updating image")
 			}
@@ -569,7 +530,7 @@ func (s *ImageService) postProcessImage(id uint) {
 			return
 		case <-intctx.Done():
 			// Things finished normally and reached the defer defined above.
-			s.log.WithField("imageID", id).Info("processImage case intctx.Done() deferred Done()")
+			s.log.Info("processImage case intctx.Done() deferred Done()")
 		}
 	}()
 
@@ -577,7 +538,7 @@ func (s *ImageService) postProcessImage(id uint) {
 	db.DB.Debug().Joins("Commit").Joins("Installer").First(&i, id)
 
 	// Request a commit from Image Builder for the image
-	s.log.WithField("imageID", i.ID).Debug("Creating a commit for this image")
+	s.log.Debug("Creating a commit for this image")
 	err := s.postProcessCommit(i)
 	if err != nil {
 		s.SetErrorStatusOnImage(err, i)
@@ -589,7 +550,7 @@ func (s *ImageService) postProcessImage(id uint) {
 
 		// Request an installer ISO from Image Builder for the image
 		if i.HasOutputType(models.ImageTypeInstaller) {
-			s.log.WithField("imageID", i.ID).Debug("Creating an installer for this image")
+			s.log.Debug("Creating an installer for this image")
 			i, c, err := s.CreateInstallerForImage(i)
 			/* CreateInstallerForImage is also called directly from an endpoint.
 			If called from the endpoint it will not block
@@ -668,26 +629,11 @@ func (s *ImageService) SetErrorStatusOnImage(err error, i *models.Image) {
 	}
 }
 
-// SetInterruptedStatusOnImage is a helper functions that sets the interrupted status on images
-func (s *ImageService) SetInterruptedStatusOnImage(err error, i *models.Image) {
-	s.log.Debug("Checking interrupted status...")
-	if i.Status != models.ImageStatusInterrupted {
-		i.Status = models.ImageStatusInterrupted
-		tx := db.DB.Save(i)
-		s.log.Debug("Image saved with interrupted status")
-		if tx.Error != nil {
-			s.log.WithField("error", tx.Error.Error()).Error("Error saving image")
-		}
-		if err != nil {
-			s.log.WithField("error", tx.Error.Error()).Error("Error setting image interrupted status")
-		}
-	}
-}
-
 // AddUserInfo downloads the ISO
 // injects the kickstart with username and ssh key
 // and then re-uploads the ISO into our bucket
 func (s *ImageService) AddUserInfo(image *models.Image) error {
+	// TODO: rename this PostProcessISO since specific to ISO and does more now
 	// Absolute path for manipulating ISO's
 	destPath := "/var/tmp/"
 
@@ -889,7 +835,7 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 	return image, nil
 }
 
-// CheckImageName returns false if the image doesnt exist and true if the image exists
+// CheckImageName returns false if the image doesn't exist and true if the image exists
 func (s *ImageService) CheckImageName(name, account string) (bool, error) {
 	s.log.WithField("name", name).Debug("Checking image name")
 	var imageFindByName *models.Image

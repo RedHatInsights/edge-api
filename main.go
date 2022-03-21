@@ -165,8 +165,6 @@ func main() {
 	// block here and shut things down on interrupt
 	<-interruptSignal
 	log.Info("Shutting down gracefully...")
-	// temporarily adding a sleep to help troubleshoot interrupts
-	time.Sleep(20 * time.Second)
 	gracefulTermination(webServer, "web")
 	gracefulTermination(metricsServer, "metrics")
 	log.Info("Everything has shut down, goodbye")
