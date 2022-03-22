@@ -1256,7 +1256,7 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 			s.log.WithField("message", perr.Error()).Error("Error on produce")
 			return notify, err
 		}
-		p.Flush(15 * 1000)
+		// p.Flush(15 * 1000)
 		p.Close()
 		s.log.WithField("message", topic).Info("SendNotification message was produced to topic")
 		fmt.Printf("SendNotification message was produced to topic %s!\n", topic)
