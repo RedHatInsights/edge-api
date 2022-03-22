@@ -14,11 +14,13 @@ import (
 	"text/template"
 	"time"
 
+	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 )
 
 // UpdateServiceInterface defines the interface that helps
@@ -31,6 +33,7 @@ type UpdateServiceInterface interface {
 	WriteTemplate(templateInfo TemplateRemoteInfo, account string) (string, error)
 	SetUpdateStatusBasedOnDispatchRecord(dispatchRecord models.DispatchRecord) error
 	SetUpdateStatus(update *models.UpdateTransaction) error
+	SendDeviceNotification(update *models.UpdateTransaction) (ImageNotification, error)
 }
 
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
@@ -387,4 +390,85 @@ func (s *UpdateService) SetUpdateStatus(update *models.UpdateTransaction) error 
 	// If there isn't an error and it's not all success, some updates are still happening
 	result := db.DB.Save(update)
 	return result.Error
+}
+
+// SendDeviceNotification connects to platform.notifications.ingress on image topic
+func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (ImageNotification, error) {
+	s.log.WithField("message", i).Info("SendImageNotification::Starts")
+	var notify ImageNotification
+	notify.Version = NotificationConfigVersion
+	notify.Bundle = NotificationConfigBundle
+	notify.Application = NotificationConfigApplication
+	notify.EventType = NotificationConfigEventTypeDevice
+	notify.Timestamp = time.Now().Format(time.RFC3339)
+
+	if clowder.IsClowderEnabled() {
+		var users []string
+		var events []EventNotification
+		var event EventNotification
+		var recipients []RecipientNotification
+		var recipient RecipientNotification
+		brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
+
+		for i, b := range clowder.LoadedConfig.Kafka.Brokers {
+			brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
+			fmt.Println(brokers[i])
+		}
+
+		topic := NotificationTopic
+
+		// Create Producer instance
+		p, err := kafka.NewProducer(&kafka.ConfigMap{
+			"bootstrap.servers": brokers[0]})
+		if err != nil {
+			s.log.WithField("message", err.Error()).Error("producer")
+			os.Exit(1)
+		}
+
+		type metadata struct {
+			metaMap map[string]string
+		}
+		emptyJSON := metadata{
+			metaMap: make(map[string]string),
+		}
+
+		event.Metadata = emptyJSON.metaMap
+
+		event.Payload = fmt.Sprintf("{  \"UpdateID\" : \"%v\"}", i.ID)
+		events = append(events, event)
+
+		recipient.IgnoreUserPreferences = false
+		recipient.OnlyAdmins = false
+		users = append(users, NotificationConfigUser)
+		recipient.Users = users
+		recipients = append(recipients, recipient)
+
+		notify.Account = i.Account
+		notify.Context = fmt.Sprintf("{  \"CommitID\" : \"%v\"}", i.CommitID)
+		notify.Events = events
+		notify.Recipients = recipients
+
+		// assemble the message to be sent
+		recordKey := "ImageCreationStarts"
+		recordValue, _ := json.Marshal(notify)
+
+		s.log.WithField("message", recordValue).Info("Preparing record for producer")
+
+		// send the message
+		perr := p.Produce(&kafka.Message{
+			TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+			Key:            []byte(recordKey),
+			Value:          []byte(recordValue),
+		}, nil)
+
+		if perr != nil {
+			s.log.WithField("message", perr.Error()).Error("Error on produce")
+			return notify, err
+		}
+		p.Close()
+		s.log.WithField("message", topic).Info("SendNotification message was produced to topic")
+		fmt.Printf("SendNotification message was produced to topic %s!\n", topic)
+		return notify, nil
+	}
+	return notify, nil
 }

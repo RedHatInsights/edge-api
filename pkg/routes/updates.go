@@ -27,6 +27,7 @@ func MakeUpdatesRouter(sub chi.Router) {
 		r.Use(UpdateCtx)
 		r.Get("/", GetUpdateByID)
 		r.Get("/update-playbook.yml", GetUpdatePlaybook)
+		r.Get("/notify", SendNotificationForDevice) //TMP ROUTE TO SEND THE NOTIFICATION
 	})
 	// TODO: This is for backwards compatibility with the previous route
 	// Once the frontend starts querying the device
@@ -239,6 +240,13 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	// Get the models.Commit from the Commit ID passed in via JSON
 	update.Commit, err = services.CommitService.GetCommitByID(updateJSON.CommitID)
 	services.Log.WithField("commit", update.Commit).Debug("Commit retrieved from this update")
+
+	notify, errNotify := services.UpdateService.SendDeviceNotification(&update)
+	if errNotify != nil {
+		services.Log.WithField("message", errNotify.Error()).Error("Error to send notification")
+		services.Log.WithField("message", notify).Error("Notify Error")
+
+	}
 	update.DispatchRecords = []models.DispatchRecord{}
 	if err != nil {
 		services.Log.WithFields(log.Fields{
@@ -422,4 +430,27 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction
 		return nil
 	}
 	return update
+}
+
+//SendNotificationForDevice TMP route to validate
+func SendNotificationForDevice(w http.ResponseWriter, r *http.Request) {
+	if update := getUpdate(w, r); update != nil {
+		services := dependencies.ServicesFromContext(r.Context())
+		notify, err := services.UpdateService.SendDeviceNotification(update)
+		if err != nil {
+			services.Log.WithField("error", err.Error()).Error("Failed to retry to send notification")
+			err := errors.NewInternalServerError()
+			err.SetTitle("Failed creating image")
+			w.WriteHeader(err.GetStatus())
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+			}
+			return
+		}
+		services.Log.WithField("StatusOK", http.StatusOK).Info("Writting Header")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(notify); err != nil {
+			services.Log.WithField("error", notify).Error("Error while trying to encode")
+		}
+	}
 }
