@@ -129,8 +129,8 @@ objects:
             cpu: ${{CPU_LIMIT}}
             memory: ${MEMORY_LIMIT}
           requests:
-            cpu: 500m
-            memory: 512Mi
+            cpu: 250m
+            memory: 256Mi
     objectStore:
     - ${EDGE_TARBALLS_BUCKET}
     database:
