@@ -508,19 +508,19 @@ func (s *ImageService) postProcessImage(id uint) {
 
 	// this will run at the end of postProcessImage to tidy up signal and context
 	defer func() {
-		s.log.WithField("imageID", id).Debug("processImage defer func() tearing down...")
+		s.log.WithField("imageID", id).Debug("Stopping the interrupt context and sigint signal")
 		signal.Stop(sigint)
 		intcancel()
 	}()
 	// This runs alongside and blocks on either a signal or normal completion from defer above
 	// 	if an interrupt, set image to INTERRUPTED in database
 	go func() {
-		s.log.WithField("imageID", id).Debug("processImage go func() setting up...")
+		s.log.WithField("imageID", id).Debug("Running the select go routine to handle completion and interrupts")
 
 		select {
 		case <-sigint:
 			// we caught an interrupt. Mark the image as interrupted.
-			s.log.WithField("imageID", id).Debug("processImage case sigint received signal")
+			s.log.WithField("imageID", id).Debug("Select case SIGINT interrupt has been triggered")
 
 			tx := db.DB.Debug().Model(&models.Image{}).Where("ID = ?", id).Update("Status", models.ImageStatusInterrupted)
 			s.log.WithField("imageID", id).Debug("Image updated with interrupted status")
@@ -533,7 +533,7 @@ func (s *ImageService) postProcessImage(id uint) {
 			return
 		case <-intctx.Done():
 			// Things finished normally and reached the defer defined above.
-			s.log.WithField("imageID", id).Info("processImage case intctx.Done() deferred Done()")
+			s.log.WithField("imageID", id).Info("Select case context intctx done has been triggered")
 		}
 	}()
 
