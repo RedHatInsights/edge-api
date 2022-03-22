@@ -191,15 +191,13 @@ func checkIfImageExist(imageName string) bool {
 
 // GetALLPackagesList returns all the packages including custom packages containing their names
 func (i *Image) GetALLPackagesList() *[]string {
-	l := len(*i.GetPackagesList())
-	pkgs := make([]string, l+len(i.CustomPackages))
+	initialPackages := *i.GetPackagesList()
+	packages := make([]string, 0, len(initialPackages)+len(i.CustomPackages))
 
-	for i, packages := range *i.GetPackagesList() {
-		pkgs[i] = packages
-	}
+	packages = append(packages, initialPackages...)
 
-	for i, packages := range i.CustomPackages {
-		pkgs[i+l] = packages.Name
+	for _, pkg := range i.CustomPackages {
+		packages = append(packages, pkg.Name)
 	}
-	return &pkgs
+	return &packages
 }
