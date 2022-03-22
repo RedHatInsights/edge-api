@@ -22,9 +22,10 @@ func main() {
 	log.Info("Starting up...")
 
 	var images []models.Image
-	// RecordValue represents the struct of the value in a Kafka message
-	type RecordValue struct {
-		imageID uint
+	// IBevent represents the struct of the value in a Kafka message
+	// TODO: add the original requestid
+	type IBevent struct {
+		ImageID uint `json:"image_id"`
 	}
 
 	config.Init()
@@ -53,6 +54,10 @@ func main() {
 
 	log.Info("Entering the infinite loop...")
 	for {
+		log.Debug("Sleeping...")
+		time.Sleep(5 * time.Minute)
+		// TODO: work out how to avoid resuming a build until app is up or on way up
+
 		// check the database for image builds in INTERRUPTED status
 		db.DB.Debug().Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
 		for _, image := range images {
@@ -70,8 +75,6 @@ func main() {
 			*/
 
 			if clowder.IsClowderEnabled() {
-				fmt.Printf("Public Port: %d\n", clowder.LoadedConfig.PublicPort)
-
 				// get the list of brokers from the config
 				brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
 				for i, b := range clowder.LoadedConfig.Kafka.Brokers {
@@ -91,16 +94,15 @@ func main() {
 				// assemble the message to be sent
 				// TODO: formalize message formats
 				recordKey := "resume_image"
-				data := &RecordValue{
-					imageID: image.ID,
-				}
-				recordValue, _ := json.Marshal(&data)
-				log.WithField("message", recordValue).Debug("Preparing record for producer")
+				ibvent := IBevent{}
+				ibvent.ImageID = image.ID
+				ibventMessage, _ := json.Marshal(ibvent)
+				log.WithField("message", ibventMessage).Debug("Preparing record for producer")
 				// send the message
 				perr := p.Produce(&kafka.Message{
 					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 					Key:            []byte(recordKey),
-					Value:          []byte(recordValue),
+					Value:          []byte(ibventMessage),
 				}, nil)
 				if perr != nil {
 					log.Error("Error sending message")
@@ -115,9 +117,6 @@ func main() {
 				log.WithField("topic", topic).Debug("IBvents interrupted build message was produced to topic")
 			}
 		}
-		log.Debug("Sleeping...")
-		time.Sleep(5 * time.Minute)
-		// TODO: work out how to avoid resuming a build until app is up or on way up
 	}
 
 	// TODO: catch interrupts to note a SIGTERM was sent versus a crash/panic
