@@ -105,11 +105,12 @@ func ValidateAllImageReposAreFromAccount(account string, repos []models.ThirdPar
 func (s *ImageService) CreateImage(image *models.Image, account string) error {
 
 	//Send Image creation to notification
-	// _, errNotify := s.SendImageNotification(image)
-	// if errNotify != nil {
-	// 	s.log.WithField("message", errNotify.Error()).Error("Error to send notification")
+	notify, errNotify := s.SendImageNotification(image)
+	if errNotify != nil {
+		s.log.WithField("message", errNotify.Error()).Error("Error to send notification")
+		s.log.WithField("message", notify).Error("Notify Error")
 
-	// }
+	}
 	// Check for existing ImageSet and return if exists
 	// TODO: this routine needs to become a function under imagesets
 	var imageSetExists bool
@@ -1256,7 +1257,6 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 			s.log.WithField("message", perr.Error()).Error("Error on produce")
 			return notify, err
 		}
-		// p.Flush(15 * 1000)
 		p.Close()
 		s.log.WithField("message", topic).Info("SendNotification message was produced to topic")
 		fmt.Printf("SendNotification message was produced to topic %s!\n", topic)
