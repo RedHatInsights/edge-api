@@ -97,6 +97,27 @@ var _ = Describe("UpdateService Basic functions", func() {
 				WaitForReboot: 0,
 			}
 		})
+		Context("send notification", func() {
+			uuid := faker.UUIDHyphenated()
+			device := models.Device{
+				UUID: uuid,
+			}
+			db.DB.Create(&device)
+			update = models.UpdateTransaction{
+				Devices: []models.Device{
+					device,
+				},
+				Status: models.UpdateStatusBuilding,
+			}
+			db.DB.Create(&update)
+			It("should send the notification", func() {
+				notify, err := updateService.SendDeviceNotification(&update)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(notify.Version).To(Equal("v1.1.0"))
+				Expect(notify.EventType).To(Equal("update-devices"))
+			})
+		})
+
 		Context("from the beginning", func() {
 			uuid := faker.UUIDHyphenated()
 			device := models.Device{
