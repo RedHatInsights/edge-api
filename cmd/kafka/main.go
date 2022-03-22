@@ -97,7 +97,7 @@ func main() {
 				ibvent := IBevent{}
 				ibvent.ImageID = image.ID
 				ibventMessage, _ := json.Marshal(ibvent)
-				log.WithField("message", ibventMessage).Debug("Preparing record for producer")
+				log.WithField("message", string(ibventMessage)).Debug("Preparing record for producer")
 				// send the message
 				perr := p.Produce(&kafka.Message{
 					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
