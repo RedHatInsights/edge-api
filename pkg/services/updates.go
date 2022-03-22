@@ -392,7 +392,7 @@ func (s *UpdateService) SetUpdateStatus(update *models.UpdateTransaction) error 
 	return result.Error
 }
 
-// SendImageNotification connects to platform.notifications.ingress on image topic
+// SendDeviceNotification connects to platform.notifications.ingress on image topic
 func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (ImageNotification, error) {
 	s.log.WithField("message", i).Info("SendImageNotification::Starts")
 	var notify ImageNotification
