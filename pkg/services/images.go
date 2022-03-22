@@ -312,13 +312,10 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 			// if clowder is enabled, send an event on Image Build completion
 			// TODO: break this out into its own function
 			if clowder.IsClowderEnabled() {
-				fmt.Printf("Public Port: %d\n", clowder.LoadedConfig.PublicPort)
-
 				// get the list of brokers from the config
 				brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
 				for i, b := range clowder.LoadedConfig.Kafka.Brokers {
 					brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
-					fmt.Println(brokers[i])
 				}
 
 				topic := "platform.edge.fleetmgmt.image-build"
@@ -327,7 +324,7 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 				p, err := kafka.NewProducer(&kafka.ConfigMap{
 					"bootstrap.servers": brokers[0]})
 				if err != nil {
-					fmt.Printf("Failed to create producer: %s", err)
+					s.log.WithField("error", err).Error("Failed to create producer")
 					os.Exit(1)
 				}
 
@@ -342,14 +339,14 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 					Value:          []byte(recordValue),
 				}, nil)
 				if perr != nil {
-					fmt.Println("Error sending message")
+					s.log.Error("Error sending message")
 				}
 
 				// Wait for all messages to be delivered
 				p.Flush(15 * 1000)
 				p.Close()
 
-				fmt.Printf("postProcessInstaller message was produced to topic %s!\n", topic)
+				s.log.WithField("topic", topic).Debug("postProcessInstaller message was produced to topic")
 			}
 
 			break
@@ -387,13 +384,10 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 			// if clowder is enabled, send an event on Image Build completion
 			// TODO: break this out into its own function
 			if clowder.IsClowderEnabled() {
-				fmt.Printf("Public Port: %d\n", clowder.LoadedConfig.PublicPort)
-
 				// get the list of brokers from the config
 				brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
 				for i, b := range clowder.LoadedConfig.Kafka.Brokers {
 					brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
-					fmt.Println(brokers[i])
 				}
 
 				topic := "platform.edge.fleetmgmt.image-build"
@@ -402,7 +396,7 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 				p, err := kafka.NewProducer(&kafka.ConfigMap{
 					"bootstrap.servers": brokers[0]})
 				if err != nil {
-					fmt.Printf("Failed to create producer: %s", err)
+					s.log.WithField("error", err).Error("Failed to create producer")
 					os.Exit(1)
 				}
 
@@ -418,14 +412,14 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 					Value:          []byte(recordValue),
 				}, nil)
 				if perr != nil {
-					fmt.Println("Error sending message")
+					s.log.Error("Error sending message")
 				}
 
 				// Wait for all messages to be delivered
 				p.Flush(15 * 1000)
 				p.Close()
 
-				fmt.Printf("postProcessCommit Message was produced to topic %s!\n", topic)
+				s.log.WithField("topic", topic).Debug("postProcessCommit message was produced to topic")
 			}
 
 			break
