@@ -194,9 +194,7 @@ func (i *Image) GetALLPackagesList() *[]string {
 	initialPackages := *i.GetPackagesList()
 	packages := make([]string, 0, len(initialPackages)+len(i.CustomPackages))
 
-	for _, pkg := range initialPackages {
-		packages = append(packages, pkg)
-	}
+	packages = append(packages, initialPackages...)
 
 	for _, pkg := range i.CustomPackages {
 		packages = append(packages, pkg.Name)
