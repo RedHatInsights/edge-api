@@ -39,12 +39,10 @@ var WaitGroup sync.WaitGroup
 // the business logic of creating RHEL For Edge Images
 type ImageServiceInterface interface {
 	CreateImage(image *models.Image, account string) error
-	ResumeBuilds()
 	UpdateImage(image *models.Image, previousImage *models.Image) error
 	AddUserInfo(image *models.Image) error
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
-	SetInterruptedStatusOnImage(err error, i *models.Image)
 	CreateRepoForImage(i *models.Image) (*models.Repo, error)
 	CreateInstallerForImage(i *models.Image) (*models.Image, chan error, error)
 	GetImageByID(id string) (*models.Image, error)
@@ -494,20 +492,6 @@ func (s *ImageService) SetFinalImageStatus(i *models.Image) {
 	s.log.WithField("status", i.Status).Debug("Setting final image status")
 }
 
-// ResumeBuilds resumes only the builds that were running when the application restarted.
-func (s *ImageService) ResumeBuilds() {
-	// TODO: refactor this out to ibvents pod
-	s.log.Debug("Resuming builds in progress.")
-	var images []models.Image
-	db.DB.Debug().Where(&models.Image{Status: models.ImageStatusBuilding}).Find(&images)
-	// loop through the results and start up a new process for each image
-	for _, image := range images {
-		log.WithField("imageID", image.ID).Debug("Resuming build process for image")
-
-		// go s.postProcessImage(image.ID)
-	}
-}
-
 func (s *ImageService) postProcessImage(id uint) {
 	// NOTE: Every log message in this method already has commit id and image id injected
 
@@ -538,20 +522,6 @@ func (s *ImageService) postProcessImage(id uint) {
 			// we caught an interrupt. Mark the image as interrupted.
 			s.log.WithField("imageID", id).Debug("processImage case sigint received signal")
 
-			// grab the current image from the database
-			//db.DB.Debug().Joins("Commit").Joins("Installer").First(&currentBuildImage, id)
-			//s.log.WithField("status", currentBuildImage.Status).Info("Build status from database")
-
-			// update it one more time from Image Builder
-			/* currentBuildImage, _ = s.UpdateImageStatus(currentBuildImage)
-			s.log.WithField("status", currentBuildImage.Status).Info("Build status from Image Builder")
-
-			// set build status to INTERRUPTED
-			s.SetInterruptedStatusOnImage(nil, currentBuildImage)
-			*/
-			//currentBuildImage.ID = id
-			//currentBuildImage.Status = models.ImageStatusInterrupted
-			//s.log.WithField("status", currentBuildImage.Status).Info("Setting Image to INTERRUPTED in DB")
 			tx := db.DB.Debug().Model(&models.Image{}).Where("ID = ?", id).Update("Status", models.ImageStatusInterrupted)
 			s.log.WithField("imageID", id).Debug("Image updated with interrupted status")
 			if tx.Error != nil {
@@ -658,22 +628,6 @@ func (s *ImageService) SetErrorStatusOnImage(err error, i *models.Image) {
 		}
 		if err != nil {
 			s.log.WithField("error", tx.Error.Error()).Error("Error setting image final status")
-		}
-	}
-}
-
-// SetInterruptedStatusOnImage is a helper functions that sets the interrupted status on images
-func (s *ImageService) SetInterruptedStatusOnImage(err error, i *models.Image) {
-	s.log.Debug("Checking interrupted status...")
-	if i.Status != models.ImageStatusInterrupted {
-		i.Status = models.ImageStatusInterrupted
-		tx := db.DB.Save(i)
-		s.log.Debug("Image saved with interrupted status")
-		if tx.Error != nil {
-			s.log.WithField("error", tx.Error.Error()).Error("Error saving image")
-		}
-		if err != nil {
-			s.log.WithField("error", tx.Error.Error()).Error("Error setting image interrupted status")
 		}
 	}
 }
