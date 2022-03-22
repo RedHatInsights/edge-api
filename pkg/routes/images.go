@@ -651,8 +651,8 @@ func SendNotificationForImage(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-		w.WriteHeader(http.StatusOK)
 		services.Log.WithField("StatusOK", http.StatusOK).Info("Writting Header")
+		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(notify); err != nil {
 			services.Log.WithField("error", notify).Error("Error while trying to encode")
 		}
