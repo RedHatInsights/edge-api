@@ -640,7 +640,7 @@ func RetryCreateImage(w http.ResponseWriter, r *http.Request) {
 func SendNotificationForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		services := dependencies.ServicesFromContext(r.Context())
-		_, err := services.ImageService.SendImageNotification(image)
+		notify, err := services.ImageService.SendImageNotification(image)
 		if err != nil {
 			services.Log.WithField("error", err.Error()).Error("Failed to retry to send notification")
 			err := errors.NewInternalServerError()
@@ -651,9 +651,9 @@ func SendNotificationForImage(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-		w.WriteHeader(http.StatusCreated)
-		// if err := json.NewEncoder(w).Encode(&image); err != nil {
-		// 	services.Log.WithField("error", image).Error("Error while trying to encode")
-		// }
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(notify); err != nil {
+			services.Log.WithField("error", notify).Error("Error while trying to encode")
+		}
 	}
 }
