@@ -3,73 +3,122 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"time"
 
-	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
+	"github.com/redhatinsights/edge-api/config"
+	l "github.com/redhatinsights/edge-api/logger"
+	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/models"
+	log "github.com/sirupsen/logrus"
 
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
+	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 )
 
-// RecordValue represents the struct of the value in a Kafka message
-type RecordValue struct {
-	Count int
-}
+// NOTE: this is currently designed for a single ibvents replica
 
 func main() {
-	/* I am leaving all of this in place for testing.
-	It will be replaced in a few days. */
-	if clowder.IsClowderEnabled() {
-		fmt.Printf("Public Port: %d\n", clowder.LoadedConfig.PublicPort)
+	// set things up
+	log.Info("Starting up...")
 
-		brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
-		for i, b := range clowder.LoadedConfig.Kafka.Brokers {
-			brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
-			fmt.Println(brokers[i])
-		}
+	var images []models.Image
+	// RecordValue represents the struct of the value in a Kafka message
+	type RecordValue struct {
+		imageID uint
+	}
 
-		topics := make([]string, len(clowder.LoadedConfig.Kafka.Topics))
-		for i, b := range clowder.LoadedConfig.Kafka.Topics {
-			topics[i] = fmt.Sprintf("%s (%s)", b.Name, b.RequestedName)
-			fmt.Println(topics[i])
-		}
+	config.Init()
+	l.InitLogger()
+	cfg := config.Get()
+	log.WithFields(log.Fields{
+		"Hostname":                 cfg.Hostname,
+		"Auth":                     cfg.Auth,
+		"WebPort":                  cfg.WebPort,
+		"MetricsPort":              cfg.MetricsPort,
+		"LogLevel":                 cfg.LogLevel,
+		"Debug":                    cfg.Debug,
+		"BucketName":               cfg.BucketName,
+		"BucketRegion":             cfg.BucketRegion,
+		"RepoTempPath ":            cfg.RepoTempPath,
+		"OpenAPIFilePath ":         cfg.OpenAPIFilePath,
+		"ImageBuilderURL":          cfg.ImageBuilderConfig.URL,
+		"DefaultOSTreeRef":         cfg.DefaultOSTreeRef,
+		"InventoryURL":             cfg.InventoryConfig.URL,
+		"PlaybookDispatcherConfig": cfg.PlaybookDispatcherConfig.URL,
+		"TemplatesPath":            cfg.TemplatesPath,
+		"DatabaseType":             cfg.Database.Type,
+		"DatabaseName":             cfg.Database.Name,
+	}).Info("Configuration Values:")
+	db.InitDB()
 
-		// Create Producer instance
-		p, err := kafka.NewProducer(&kafka.ConfigMap{
-			"bootstrap.servers": brokers[0]})
-		if err != nil {
-			fmt.Printf("Failed to create producer: %s", err)
-			os.Exit(1)
-		}
+	log.Info("Entering the infinite loop...")
+	for {
+		// check the database for image builds in INTERRUPTED status
+		db.DB.Debug().Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
+		for _, image := range images {
+			log.WithField("imageID", image.ID).Info("Found image with interrupted status")
 
-		topic := "platform.edge.fleetmgmt.image-build"
-		for n := 0; n < 10; n++ {
-			recordKey := "alice"
-			data := &RecordValue{
-				Count: n}
-			recordValue, _ := json.Marshal(&data)
-			fmt.Printf("Preparing to produce record: %s\t%s\n", recordKey, recordValue)
-			perr := p.Produce(&kafka.Message{
-				TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-				Key:            []byte(recordKey),
-				Value:          []byte(recordValue),
-			}, nil)
-			if perr != nil {
-				fmt.Printf("Error sending message %d\n", n)
+			/* we have a choice here...
+			1. Send an event and a consumer on Edge API calls the resume.
+			2. Send an API call to Edge API to call the resume.
+
+			Currently...
+			1. Testing a Kafka event.
+			2. Will implement a call to the API restart()
+			3. Will create an API endpoint specifically for resume()
+				so it can pick up where it left off
+			*/
+
+			if clowder.IsClowderEnabled() {
+				fmt.Printf("Public Port: %d\n", clowder.LoadedConfig.PublicPort)
+
+				// get the list of brokers from the config
+				brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
+				for i, b := range clowder.LoadedConfig.Kafka.Brokers {
+					brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
+					fmt.Println(brokers[i])
+				}
+
+				topic := "platform.edge.fleetmgmt.image-build"
+
+				// Create Producer instance
+				// TODO: do this once before loop
+				p, err := kafka.NewProducer(&kafka.ConfigMap{
+					"bootstrap.servers": brokers[0]})
+				if err != nil {
+					log.WithField("error", err).Error("Failed to create producer")
+				}
+				// assemble the message to be sent
+				// TODO: formalize message formats
+				recordKey := "resume_image"
+				data := &RecordValue{
+					imageID: image.ID,
+				}
+				recordValue, _ := json.Marshal(&data)
+				log.WithField("message", recordValue).Debug("Preparing record for producer")
+				// send the message
+				perr := p.Produce(&kafka.Message{
+					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+					Key:            []byte(recordKey),
+					Value:          []byte(recordValue),
+				}, nil)
+				if perr != nil {
+					log.Error("Error sending message")
+				}
+
+				// Wait for all messages to be delivered
+				p.Flush(15 * 1000)
+
+				// TODO: do this once at break from loop
+				p.Close()
+
+				log.WithField("topic", topic).Debug("IBvents interrupted build message was produced to topic")
 			}
 		}
-
-		// Wait for all messages to be delivered
-		p.Flush(15 * 1000)
-
-		fmt.Printf("10 messages were produced to topic %s!", topic)
-
-		p.Close()
+		log.Debug("Sleeping...")
+		time.Sleep(5 * time.Minute)
+		// TODO: work out how to avoid resuming a build until app is up or on way up
 	}
 
-	fmt.Println("Entering an infinite loop...")
-	for {
-		fmt.Println("Sleeping 300...")
-		time.Sleep(300 * time.Second)
-	}
+	// TODO: catch interrupts to note a SIGTERM was sent versus a crash/panic
 }
