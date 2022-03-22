@@ -60,6 +60,7 @@ func main() {
 
 		// check the database for image builds in INTERRUPTED status
 		db.DB.Debug().Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
+
 		for _, image := range images {
 			log.WithField("imageID", image.ID).Info("Found image with interrupted status")
 
@@ -97,12 +98,12 @@ func main() {
 				ibvent := IBevent{}
 				ibvent.ImageID = image.ID
 				ibventMessage, _ := json.Marshal(ibvent)
-				log.WithField("message", string(ibventMessage)).Debug("Preparing record for producer")
+				log.WithField("message", ibvent).Debug("Preparing record for producer")
 				// send the message
 				perr := p.Produce(&kafka.Message{
 					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 					Key:            []byte(recordKey),
-					Value:          []byte(ibventMessage),
+					Value:          ibventMessage,
 				}, nil)
 				if perr != nil {
 					log.Error("Error sending message")
