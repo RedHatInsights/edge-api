@@ -599,7 +599,7 @@ var _ = Describe("DeviceService", func() {
 			Expect(err).To(BeNil())
 
 			// ensure device does not exits
-			db.DB.Unscoped().Model(&models.Device{}).Where(models.Device{UUID: event.ID, Account: event.Account}).Count(&deviceCount)
+			db.DB.Model(&models.Device{}).Where(models.Device{UUID: event.ID, Account: event.Account}).Count(&deviceCount)
 			Expect(deviceCount == 0).To(BeTrue())
 		})
 
@@ -641,12 +641,12 @@ var _ = Describe("DeviceService", func() {
 			Expect(err).To(BeNil())
 
 			// ensure device does not exits
-			result = db.DB.Unscoped().Model(&models.Device{}).Where(models.Device{UUID: event.ID, Account: event.Account}).Count(&deviceCount)
+			result = db.DB.Model(&models.Device{}).Where(models.Device{UUID: event.ID, Account: event.Account}).Count(&deviceCount)
 			Expect(result.Error).To(BeNil())
 			Expect(deviceCount == 0).To(BeTrue())
 
 			// ensure device does not exists in device group
-			result = db.DB.Unscoped().Where(models.DeviceGroup{Account: deviceGroup.Account}).Preload("Devices").First(&savedDeviceGroup, deviceGroup.ID)
+			result = db.DB.Where(models.DeviceGroup{Account: deviceGroup.Account}).Preload("Devices").First(&savedDeviceGroup, deviceGroup.ID)
 			Expect(result.Error).To(BeNil())
 			Expect(savedDeviceGroup.Devices).To(BeEmpty())
 		})
