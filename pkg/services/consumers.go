@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"time"
 
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
@@ -197,10 +196,9 @@ func (s *KafkaConsumerService) ConsumeImageBuildEvents() error {
 		// retrieve the image ID from the message value
 		var eventMessage *IBevent
 
-		s, _ := strconv.Unquote(string(m.Value))
-		eventErr := json.Unmarshal([]byte(s), &eventMessage)
+		eventErr := json.Unmarshal([]byte(m.Value), &eventMessage)
 		if eventErr != nil {
-			log.WithField("error", eventErr).Debug("This is not the event we're looking for")
+			log.WithField("error", eventErr).Debug("Error unmarshaling event. This is not the event you're looking for")
 		} else {
 			log.WithField("imageID", eventMessage.ImageID).Debug("Retrieved an event ID from the message")
 		}
