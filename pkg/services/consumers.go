@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -171,6 +172,10 @@ func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 
 // ConsumeImageBuildEvents parses create events from platform.edge.fleetmgmt.image-build kafka topic
 func (s *KafkaConsumerService) ConsumeImageBuildEvents() error {
+	type IBevent struct {
+		ImageID uint `json:"image_id"`
+	}
+
 	log.Info("Starting to consume image build events")
 	for {
 		m, err := s.Reader.ReadMessage(context.Background())
@@ -178,20 +183,38 @@ func (s *KafkaConsumerService) ConsumeImageBuildEvents() error {
 			log.WithFields(log.Fields{
 				"error": err.Error(),
 			}).Error("Error reading message from Kafka platform.edge.fleetmgmt.image-build topic")
-			return err
 		}
 
-		// temporarily logging all events to the topic
+		// temporarily logging all events from the topic
 		log.WithFields(log.Fields{
 			"topic":  m.Topic,
 			"offset": m.Offset,
 			"key":    string(m.Key),
 			"value":  string(m.Value),
 		}).Debug("Read message from Kafka platform.edge.fleetmgmt.image-build topic")
+
+		var eventType string
+		for _, h := range m.Headers {
+			if h.Key == "event_type" {
+				eventType = string(h.Value)
+				log.WithField("eventType", eventType).Debug("Received an event with type")
+				break
+			}
+		}
+
+		// retrieve the image ID from the message value
+		// TODO: wrap this in a switch eventType == type
+		var eventMessage *IBevent
+		eventErr := json.Unmarshal(m.Value, &eventMessage)
+		if eventErr != nil {
+			log.WithField("imageID", eventMessage.ImageID).Debug("Retrieved an event ID from the message")
+		} else {
+			log.WithField("error", eventErr.Error()).Debug("This is not the event we're looking for")
+		}
 	}
 }
 
-// Close listens to os signals to wrap up reader work
+// Close wraps up reader work
 func (s *KafkaConsumerService) Close() {
 	log.Info("Closing Kafka readers...")
 	s.shuttingDown = true
