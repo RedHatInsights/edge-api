@@ -521,7 +521,7 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 		).Error("Error retrieving the device")
 		return result.Error
 	}
-	if result := db.DB.Unscoped().Delete(&device); result.Error != nil {
+	if result := db.DB.Delete(&device); result.Error != nil {
 		s.log.WithFields(
 			log.Fields{"host_id": deviceUUID, "Account": deviceAccount, "error": result.Error},
 		).Error("Error when deleting device")
