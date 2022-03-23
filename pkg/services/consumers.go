@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -195,22 +194,23 @@ func (s *KafkaConsumerService) ConsumeImageBuildEvents() error {
 
 		var eventType string
 		for _, h := range m.Headers {
-			if h.Key == "event_type" {
+			if h.Key == "resume_image" {
 				eventType = string(h.Value)
 				log.WithField("eventType", eventType).Debug("Received an event with type")
 				break
 			}
 		}
-
-		// retrieve the image ID from the message value
-		// TODO: wrap this in a switch eventType == type
-		var eventMessage *IBevent
-		eventErr := json.Unmarshal(m.Value, &eventMessage)
-		if eventErr != nil {
-			log.WithField("imageID", eventMessage.ImageID).Debug("Retrieved an event ID from the message")
-		} else {
-			log.WithField("error", eventErr.Error()).Debug("This is not the event we're looking for")
-		}
+		/*
+			// retrieve the image ID from the message value
+			// TODO: wrap this in a switch eventType == type
+			var eventMessage *IBevent
+			eventErr := json.Unmarshal(m.Value, &eventMessage)
+			if eventErr != nil {
+				log.WithField("imageID", eventMessage.ImageID).Debug("Retrieved an event ID from the message")
+			} else {
+				log.WithField("error", eventErr.Error()).Debug("This is not the event we're looking for")
+			}
+		*/
 	}
 }
 
