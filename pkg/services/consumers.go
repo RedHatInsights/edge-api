@@ -201,7 +201,7 @@ func (s *KafkaConsumerService) ConsumeImageBuildEvents() error {
 			log.WithField("error", eventErr).Debug("Error unmarshaling event. This is not the event you're looking for")
 		} else {
 			log.WithField("imageID", eventMessage.ImageID).Debug("Resuming image ID from event on " + string(m.Topic))
-			go s.ImageService.ResumeCreateImage(eventMessage.ImageID)
+			//go s.ImageService.ResumeCreateImage(eventMessage.ImageID)
 		}
 	}
 }
