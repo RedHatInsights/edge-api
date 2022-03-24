@@ -1026,13 +1026,14 @@ func (s *ImageService) ResumeCreateImage(id uint) error {
 	//db.DB.Debug().Joins("Commit").Joins("Installer").First(&image, id)
 	image, _ = s.GetImageByID(fmt.Sprint(id))
 	s.log = s.log.WithFields(log.Fields{"imageID": image.ID, "commitID": image.Commit.ID})
-	// recompose commit
+	s.log.Debug("Resuming the image build...")
+	/* // recompose commit
 	image, err := s.ImageBuilder.ComposeCommit(image)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Failed recomposing commit")
 		return err
-	}
-	err = s.SetBuildingStatusOnImageToRetryBuild(image)
+	} */
+	err := s.SetBuildingStatusOnImageToRetryBuild(image)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Failed setting image status")
 		return err
