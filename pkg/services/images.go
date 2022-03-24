@@ -1023,7 +1023,8 @@ func (s *ImageService) ResumeCreateImage(id uint) error {
 	// TODO: make this skip commit and installer if already complete
 	// get the image data from database
 	var image *models.Image
-	db.DB.Debug().Joins("Commit").Joins("Installer").First(&image, id)
+	//db.DB.Debug().Joins("Commit").Joins("Installer").First(&image, id)
+	image, _ = s.GetImageByID(fmt.Sprint(id))
 	s.log = s.log.WithFields(log.Fields{"imageID": image.ID, "commitID": image.Commit.ID})
 	// recompose commit
 	image, err := s.ImageBuilder.ComposeCommit(image)
