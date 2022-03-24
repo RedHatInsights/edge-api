@@ -33,6 +33,7 @@ import (
 )
 
 // WaitGroup is the waitg roup for pending image builds
+// FIXME: this no longer applies to images. move to devices
 var WaitGroup sync.WaitGroup
 
 // ImageServiceInterface defines the interface that helps handle
@@ -51,6 +52,7 @@ type ImageServiceInterface interface {
 	GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error)
 	CheckImageName(name, account string) (bool, error)
 	RetryCreateImage(image *models.Image) error
+	ResumeCreateImage(id uint) error
 	GetMetadata(image *models.Image) (*models.Image, error)
 	SetFinalImageStatus(i *models.Image)
 	CheckIfIsLatestVersion(previousImage *models.Image) error
@@ -497,9 +499,7 @@ func (s *ImageService) postProcessImage(id uint) {
 	// NOTE: Every log message in this method already has commit id and image id injected
 
 	s.log.Debug("Processing image build")
-	// get image data from DB based on image.ID
 	var i *models.Image
-	//var currentBuildImage *models.Image
 
 	// setup a context and signal for SIGTERM
 	ctx := context.Background()
@@ -1013,6 +1013,28 @@ func (s *ImageService) RetryCreateImage(image *models.Image) error {
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Failed setting image status")
 		return nil
+	}
+	go s.postProcessImage(image.ID)
+	return nil
+}
+
+// ResumeCreateImage retries the whole post process of the image creation
+func (s *ImageService) ResumeCreateImage(id uint) error {
+	// TODO: make this skip commit and installer if already complete
+	// get the image data from database
+	var image *models.Image
+	db.DB.Debug().Joins("Commit").Joins("Installer").First(&image, id)
+	s.log = s.log.WithFields(log.Fields{"imageID": image.ID, "commitID": image.Commit.ID})
+	// recompose commit
+	image, err := s.ImageBuilder.ComposeCommit(image)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Failed recomposing commit")
+		return err
+	}
+	err = s.SetBuildingStatusOnImageToRetryBuild(image)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Failed setting image status")
+		return err
 	}
 	go s.postProcessImage(image.ID)
 	return nil
