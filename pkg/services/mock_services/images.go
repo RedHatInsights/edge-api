@@ -48,18 +48,6 @@ func (mr *MockImageServiceInterfaceMockRecorder) CreateImage(image, account inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).CreateImage), image, account)
 }
 
-// ResumeBuilds mocks base method
-func (m *MockImageServiceInterface) ResumeBuilds() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ResumeBuilds")
-}
-
-// ResumeBuilds indicates an expected call of ResumeBuilds
-func (mr *MockImageServiceInterfaceMockRecorder) ResumeBuilds() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResumeBuilds", reflect.TypeOf((*MockImageServiceInterface)(nil).ResumeBuilds))
-}
-
 // UpdateImage mocks base method
 func (m *MockImageServiceInterface) UpdateImage(image, previousImage *models.Image) error {
 	m.ctrl.T.Helper()
@@ -113,18 +101,6 @@ func (m *MockImageServiceInterface) SetErrorStatusOnImage(err error, i *models.I
 func (mr *MockImageServiceInterfaceMockRecorder) SetErrorStatusOnImage(err, i interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetErrorStatusOnImage", reflect.TypeOf((*MockImageServiceInterface)(nil).SetErrorStatusOnImage), err, i)
-}
-
-// SetInterruptedStatusOnImage mocks base method
-func (m *MockImageServiceInterface) SetInterruptedStatusOnImage(err error, i *models.Image) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetInterruptedStatusOnImage", err, i)
-}
-
-// SetInterruptedStatusOnImage indicates an expected call of SetInterruptedStatusOnImage
-func (mr *MockImageServiceInterfaceMockRecorder) SetInterruptedStatusOnImage(err, i interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetInterruptedStatusOnImage", reflect.TypeOf((*MockImageServiceInterface)(nil).SetInterruptedStatusOnImage), err, i)
 }
 
 // CreateRepoForImage mocks base method
@@ -245,6 +221,20 @@ func (m *MockImageServiceInterface) RetryCreateImage(image *models.Image) error 
 func (mr *MockImageServiceInterfaceMockRecorder) RetryCreateImage(image interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RetryCreateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).RetryCreateImage), image)
+}
+
+// ResumeCreateImage mocks base method
+func (m *MockImageServiceInterface) ResumeCreateImage(id uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResumeCreateImage", id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResumeCreateImage indicates an expected call of ResumeCreateImage
+func (mr *MockImageServiceInterfaceMockRecorder) ResumeCreateImage(id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResumeCreateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).ResumeCreateImage), id)
 }
 
 // GetMetadata mocks base method
