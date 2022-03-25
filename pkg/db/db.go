@@ -38,11 +38,13 @@ func InitDB() {
 		logger.LogErrorAndPanic("failed to connect database", err)
 	}
 
-	var minorVersion string
-	DB.Raw("SELECT version()").Scan(&minorVersion)
-	if err != nil {
-		log.WithFields(log.Fields{"error": err.Error()}).Error("error selecting version")
-	}
+	if cfg.Database.Type == "pgsql" {
+		var minorVersion string
+		DB.Raw("SELECT version()").Scan(&minorVersion)
+		if err != nil {
+			log.WithFields(log.Fields{"error": err.Error()}).Error("error selecting version")
+		}
 
-	log.Infof("Postgres information: '%s'", minorVersion)
+		log.Infof("Postgres information: '%s'", minorVersion)
+	}
 }
