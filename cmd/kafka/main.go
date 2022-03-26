@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -74,15 +73,9 @@ func main() {
 				so it can pick up where it left off
 			*/
 
+			/* temp disable
 			// send an API request
 			url := fmt.Sprintf("%s/api/edge/v1/images/%d/retry", cfg.EdgeAPIBaseURL, image.ID)
-			/* response, err := http.Post(url, "application/json", nil)
-			if err != nil {
-				log.Error("Sending request for interrupted image /retry failed with: " + err.Error())
-			} else {
-				log.WithField("response", response).Info("Sent request for interrupted image /retry")
-			} */
-
 			req, _ := http.NewRequest("POST", url, nil)
 			req.Header.Add("Content-Type", "application/json")
 
@@ -96,8 +89,19 @@ func main() {
 				log.WithFields(log.Fields{
 					"statusCode": code,
 					"error":      err,
-				}).Error("Image Builder Compose Request Error")
+				}).Error("Edge API retry request error")
 			}
+			respBody, err := ioutil.ReadAll(res.Body)
+			log.WithFields(log.Fields{
+				"statusCode":   res.StatusCode,
+				"responseBody": string(respBody),
+				"error":        err,
+			}).Debug("Edge API retry response")
+			if err != nil {
+				log.Error("Error reading body of uninterrupted build resume response")
+			}
+			res.Body.Close()
+			*/
 
 			// this kafka code works. commenting temporarily until interface panic is resolved
 			/*
