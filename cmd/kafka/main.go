@@ -1,8 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -10,9 +10,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
-
-	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
-	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 )
 
 // NOTE: this is currently designed for a single ibvents replica
@@ -22,11 +19,11 @@ func main() {
 	log.Info("Starting up...")
 
 	var images []models.Image
-	// IBevent represents the struct of the value in a Kafka message
+	/* // IBevent represents the struct of the value in a Kafka message
 	// TODO: add the original requestid
 	type IBevent struct {
 		ImageID uint `json:"image_id"`
-	}
+	} */
 
 	config.Init()
 	l.InitLogger()
@@ -49,6 +46,7 @@ func main() {
 		"TemplatesPath":            cfg.TemplatesPath,
 		"DatabaseType":             cfg.Database.Type,
 		"DatabaseName":             cfg.Database.Name,
+		"EdgeAPIURL":               cfg.EdgeAPIBaseURL,
 	}).Info("Configuration Values:")
 	db.InitDB()
 
@@ -56,13 +54,14 @@ func main() {
 	for {
 		log.Debug("Sleeping...")
 		time.Sleep(5 * time.Minute)
-		// TODO: work out how to avoid resuming a build until app is up or on way up
+		// TODO: work out programatic method to avoid resuming a build until app is up or on way up
 
 		// check the database for image builds in INTERRUPTED status
-		db.DB.Debug().Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
+		qresult := db.DB.Debug().Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
+		log.Info("Found " + fmt.Sprint(qresult.RowsAffected) + " image(s) with interrupted status")
 
 		for _, image := range images {
-			log.WithField("imageID", image.ID).Info("Found image with interrupted status")
+			log.WithField("imageID", image.ID).Info("Processing interrupted image: " + fmt.Sprint(image.ID))
 
 			/* we have a choice here...
 			1. Send an event and a consumer on Edge API calls the resume.
@@ -70,53 +69,81 @@ func main() {
 
 			Currently...
 			1. Testing a Kafka event.
-			2. Will implement a call to the API restart()
+			2. Will implement a call to the API /retry
 			3. Will create an API endpoint specifically for resume()
 				so it can pick up where it left off
 			*/
 
-			if clowder.IsClowderEnabled() {
-				// get the list of brokers from the config
-				brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
-				for i, b := range clowder.LoadedConfig.Kafka.Brokers {
-					brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
-					fmt.Println(brokers[i])
+			// send an API request
+			url := fmt.Sprintf("%s/api/edge/v1/images/%d/retry", cfg.EdgeAPIBaseURL, image.ID)
+			/* response, err := http.Post(url, "application/json", nil)
+			if err != nil {
+				log.Error("Sending request for interrupted image /retry failed with: " + err.Error())
+			} else {
+				log.WithField("response", response).Info("Sent request for interrupted image /retry")
+			} */
+
+			req, _ := http.NewRequest("POST", url, nil)
+			req.Header.Add("Content-Type", "application/json")
+
+			client := &http.Client{}
+			res, err := client.Do(req)
+			if err != nil {
+				var code int
+				if res != nil {
+					code = res.StatusCode
 				}
-
-				topic := "platform.edge.fleetmgmt.image-build"
-
-				// Create Producer instance
-				// TODO: do this once before loop
-				p, err := kafka.NewProducer(&kafka.ConfigMap{
-					"bootstrap.servers": brokers[0]})
-				if err != nil {
-					log.WithField("error", err).Error("Failed to create producer")
-				}
-				// assemble the message to be sent
-				// TODO: formalize message formats
-				recordKey := "resume_image"
-				ibvent := IBevent{}
-				ibvent.ImageID = image.ID
-				ibventMessage, _ := json.Marshal(ibvent)
-				log.WithField("message", ibvent).Debug("Preparing record for producer")
-				// send the message
-				perr := p.Produce(&kafka.Message{
-					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-					Key:            []byte(recordKey),
-					Value:          ibventMessage,
-				}, nil)
-				if perr != nil {
-					log.Error("Error sending message")
-				}
-
-				// Wait for all messages to be delivered
-				p.Flush(15 * 1000)
-
-				// TODO: do this once at break from loop
-				p.Close()
-
-				log.WithField("topic", topic).Debug("IBvents interrupted build message was produced to topic")
+				log.WithFields(log.Fields{
+					"statusCode": code,
+					"error":      err,
+				}).Error("Image Builder Compose Request Error")
 			}
+
+			// this kafka code works. commenting temporarily until interface panic is resolved
+			/*
+				// send a kafka event on image-build topic
+				if clowder.IsClowderEnabled() {
+					// get the list of brokers from the config
+					brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
+					for i, b := range clowder.LoadedConfig.Kafka.Brokers {
+						brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
+						fmt.Println(brokers[i])
+					}
+
+					topic := "platform.edge.fleetmgmt.image-build"
+
+					// Create Producer instance
+					// TODO: do this once before loop
+					p, err := kafka.NewProducer(&kafka.ConfigMap{
+						"bootstrap.servers": brokers[0]})
+					if err != nil {
+						log.WithField("error", err).Error("Failed to create producer")
+					}
+					// assemble the message to be sent
+					// TODO: formalize message formats
+					recordKey := "resume_image"
+					ibvent := IBevent{}
+					ibvent.ImageID = image.ID
+					ibventMessage, _ := json.Marshal(ibvent)
+					log.WithField("message", ibvent).Debug("Preparing record for producer")
+					// send the message
+					perr := p.Produce(&kafka.Message{
+						TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+						Key:            []byte(recordKey),
+						Value:          ibventMessage,
+					}, nil)
+					if perr != nil {
+						log.Error("Error sending message")
+					}
+
+					// Wait for all messages to be delivered
+					p.Flush(15 * 1000)
+
+					// TODO: do this once at break from loop
+					p.Close()
+
+					log.WithField("topic", topic).Debug("IBvents interrupted build message was produced to topic")
+				} */
 		}
 	}
 
