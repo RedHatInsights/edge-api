@@ -71,12 +71,22 @@ func main() {
 		}
 	*/
 	// Automigration
-	err := db.DB.AutoMigrate(&models.ImageSet{},
-		&models.Commit{}, &models.UpdateTransaction{},
-		&models.Package{}, &models.Image{}, &models.Repo{},
-		&models.DispatchRecord{}, &models.ThirdPartyRepo{},
-		&models.FDODevice{}, &models.OwnershipVoucherData{},
-		&models.FDOUser{}, &models.SSHKey{}, &models.DeviceGroup{})
+	// Order should match Deleting of models in cmd/db/wipe.go
+	// Order is not strictly alphabetical due to dependencies (e.g. Image needs ImageSet)
+	err := db.DB.AutoMigrate(&models.Commit{},
+		&models.DeviceGroup{},
+		&models.DispatchRecord{},
+		&models.FDODevice{},
+		&models.FDOUser{},
+		&models.ImageSet{},
+		&models.Image{},
+		&models.Installer{},
+		&models.OwnershipVoucherData{},
+		&models.Package{},
+		&models.Repo{},
+		&models.SSHKey{},
+		&models.ThirdPartyRepo{},
+		&models.UpdateTransaction{})
 	if err != nil {
 		l.LogErrorAndPanic("database automigrate failure", err)
 	}
