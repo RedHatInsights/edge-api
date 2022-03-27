@@ -24,10 +24,8 @@ func getStaleBuilds(status string, age int) []models.Image {
 	// check the database for image builds in INTERRUPTED status
 	//qresult := db.DB.Debug().Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
 	//SELECT * from profiles WHERE to_timestamp(last_login) < NOW() - INTERVAL '30 days'
-	qresult := db.DB.Debug().
-		Raw("SELECT id, status, updated_at FROM images WHERE status = ? AND updated_at < NOW() - INTERVAL '? hours'", status, age).
-		Scan(&images)
-	log.Info("Found " + fmt.Sprint(qresult.RowsAffected) + " image(s) with interrupted status and older than 6 hours")
+	qresult := db.DB.Debug().Raw("SELECT id, status, updated_at FROM images WHERE status = ? AND to_timestamp(updated_at) < NOW() - INTERVAL '? hours'", status, age).Scan(&images)
+	log.Info("Found " + fmt.Sprint(qresult.RowsAffected) + " image(s) with " + status + " status older than 6 hours")
 
 	return images
 }
