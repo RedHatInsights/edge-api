@@ -1,32 +1,63 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/redhatinsights/edge-api/config"
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
+
+	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
+	//"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 )
 
 // NOTE: this is currently designed for a single ibvents replica
+
+func getStaleBuilds(status string, age int) []models.Image {
+	var images []models.Image
+
+	// check the database for image builds in INTERRUPTED status
+	//qresult := db.DB.Debug().Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
+	//SELECT * from profiles WHERE to_timestamp(last_login) < NOW() - INTERVAL '30 days'
+	qresult := db.DB.Debug().
+		Raw("SELECT id, status, last_updated FROM images WHERE status = ? AND updated_at < NOW() - INTERVAL '? hours'", status, age).
+		Scan(&images)
+	log.Info("Found " + fmt.Sprint(qresult.RowsAffected) + " image(s) with interrupted status and older than 6 hours")
+
+	return images
+}
+
+func setImageStatus(id uint, status string) error {
+	/*tx := db.DB.Debug().Model(&models.Image{}).Where("ID = ?", id).Update("Status", status)
+	log.WithField("imageID", id).Debug("Image updated with " + fmt.Sprint(status) + " status")
+	if tx.Error != nil {
+		log.WithField("error", tx.Error.Error()).Error("Error updating image status")
+		return tx.Error
+	}
+	*/
+	return nil
+}
 
 func main() {
 	// set things up
 	log.Info("Starting up...")
 
 	var images []models.Image
-	/* // IBevent represents the struct of the value in a Kafka message
+	// IBevent represents the struct of the value in a Kafka message
 	// TODO: add the original requestid
 	type IBevent struct {
 		ImageID uint `json:"image_id"`
-	} */
+	}
 
 	config.Init()
 	l.InitLogger()
 	cfg := config.Get()
+	// FIXME: EdgeAPIURL is the external URL, not internal svc
 	log.WithFields(log.Fields{
 		"Hostname":                 cfg.Hostname,
 		"Auth":                     cfg.Auth,
@@ -55,7 +86,31 @@ func main() {
 		time.Sleep(5 * time.Minute)
 		// TODO: work out programatic method to avoid resuming a build until app is up or on way up
 
-		// check the database for image builds in INTERRUPTED status
+		// handle stale interrupted builds not complete after x hours
+		staleInterruptedImages := getStaleBuilds(models.ImageStatusInterrupted, 48)
+		for _, staleImage := range staleInterruptedImages {
+			log.WithField("updatedAt", staleImage.UpdatedAt.Time.Local().String()).Info("Processing stale interrupted image: " + fmt.Sprint(staleImage.ID))
+
+			// FIXME: holding off on db update until we see the query work in stage
+			statusUpdateError := setImageStatus(staleImage.ID, models.ImageStatusError)
+			if statusUpdateError != nil {
+				log.Error("Failed to update stale interrupted image build status")
+			}
+		}
+
+		// handle stale builds not complete after x hours
+		staleBuildingImages := getStaleBuilds(models.ImageStatusBuilding, 3)
+		for _, staleImage := range staleBuildingImages {
+			log.WithField("updatedAt", staleImage.UpdatedAt.Time.Local().String()).Info("Processing stale building image: " + fmt.Sprint(staleImage.ID))
+
+			// FIXME: holding off on db update until we see the query work in stage
+			statusUpdateError := setImageStatus(staleImage.ID, models.ImageStatusError)
+			if statusUpdateError != nil {
+				log.Error("Failed to update stale building image build status")
+			}
+		}
+
+		// handle image builds in INTERRUPTED status
 		qresult := db.DB.Debug().Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
 		log.Info("Found " + fmt.Sprint(qresult.RowsAffected) + " image(s) with interrupted status")
 
@@ -73,7 +128,7 @@ func main() {
 				so it can pick up where it left off
 			*/
 
-			/* temp disable
+			/* temp disable until auth can be resolved
 			// send an API request
 			url := fmt.Sprintf("%s/api/edge/v1/images/%d/retry", cfg.EdgeAPIBaseURL, image.ID)
 			req, _ := http.NewRequest("POST", url, nil)
@@ -103,53 +158,49 @@ func main() {
 			res.Body.Close()
 			*/
 
-			// this kafka code works. commenting temporarily until interface panic is resolved
-			/*
-				// send a kafka event on image-build topic
-				if clowder.IsClowderEnabled() {
-					// get the list of brokers from the config
-					brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
-					for i, b := range clowder.LoadedConfig.Kafka.Brokers {
-						brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
-						fmt.Println(brokers[i])
-					}
+			// send an event on image-build topic
+			if clowder.IsClowderEnabled() {
+				// get the list of brokers from the config
+				brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
+				for i, b := range clowder.LoadedConfig.Kafka.Brokers {
+					brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
+					fmt.Println(brokers[i])
+				}
 
-					topic := "platform.edge.fleetmgmt.image-build"
+				topic := "platform.edge.fleetmgmt.image-build"
 
-					// Create Producer instance
-					// TODO: do this once before loop
-					p, err := kafka.NewProducer(&kafka.ConfigMap{
-						"bootstrap.servers": brokers[0]})
-					if err != nil {
-						log.WithField("error", err).Error("Failed to create producer")
-					}
-					// assemble the message to be sent
-					// TODO: formalize message formats
-					recordKey := "resume_image"
-					ibvent := IBevent{}
-					ibvent.ImageID = image.ID
-					ibventMessage, _ := json.Marshal(ibvent)
-					log.WithField("message", ibvent).Debug("Preparing record for producer")
-					// send the message
-					perr := p.Produce(&kafka.Message{
-						TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-						Key:            []byte(recordKey),
-						Value:          ibventMessage,
-					}, nil)
-					if perr != nil {
-						log.Error("Error sending message")
-					}
+				// Create Producer instance
+				// TODO: do this once before loop
+				p, err := kafka.NewProducer(&kafka.ConfigMap{
+					"bootstrap.servers": brokers[0]})
+				if err != nil {
+					log.WithField("error", err).Error("Failed to create producer")
+				}
+				// assemble the message to be sent
+				// TODO: formalize message formats
+				recordKey := "resume_image"
+				ibvent := IBevent{}
+				ibvent.ImageID = image.ID
+				ibventMessage, _ := json.Marshal(ibvent)
+				log.WithField("message", ibvent).Debug("Preparing record for producer")
+				// send the message
+				perr := p.Produce(&kafka.Message{
+					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+					Key:            []byte(recordKey),
+					Value:          ibventMessage,
+				}, nil)
+				if perr != nil {
+					log.Error("Error sending message")
+				}
 
-					// Wait for all messages to be delivered
-					p.Flush(15 * 1000)
+				// Wait for all messages to be delivered
+				p.Flush(15 * 1000)
 
-					// TODO: do this once at break from loop
-					p.Close()
+				// TODO: do this once at break from loop
+				p.Close()
 
-					log.WithField("topic", topic).Debug("IBvents interrupted build message was produced to topic")
-				} */
+				log.WithField("topic", topic).Debug("IBvents interrupted build message was produced to topic")
+			}
 		}
 	}
-
-	// TODO: catch interrupts to note a SIGTERM was sent versus a crash/panic
 }
