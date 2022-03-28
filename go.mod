@@ -6,7 +6,7 @@ require (
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/confluentinc/confluent-kafka-go v1.8.2 // indirect
 	github.com/fedora-iot/fido-device-onboard-rs/libfdo-data-go v0.0.0-20211210154920-5c241beb5c4e
-	github.com/getkin/kin-openapi v0.92.0
+	github.com/getkin/kin-openapi v0.93.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-openapi/runtime v0.23.3
@@ -16,7 +16,7 @@ require (
 	github.com/lib/pq v1.10.4
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/ginkgo/v2 v2.1.3
-	github.com/onsi/gomega v1.18.1
+	github.com/onsi/gomega v1.19.0
 	github.com/prometheus/client_golang v1.12.1
 	github.com/redhatinsights/app-common-go v1.6.0
 	github.com/redhatinsights/platform-go-middlewares v0.12.0
