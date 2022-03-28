@@ -35,6 +35,7 @@ type UpdateServiceInterface interface {
 	SetUpdateStatus(update *models.UpdateTransaction) error
 	SendDeviceNotification(update *models.UpdateTransaction) (ImageNotification, error)
 	UpdateDevicesFromUpdateTransaction(update models.UpdateTransaction) error
+	ValidateUpdateSelection(account string, imageIds []string) (bool, error)
 }
 
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
@@ -532,4 +533,23 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 	}
 
 	return nil
+}
+
+// ValidateUpdateSelection validate the images for update
+func (s *UpdateService) ValidateUpdateSelection(account string, imageIds []string) (bool, error) {
+	var count int64
+
+	result := db.DB.
+		Table("images").
+		Where(`id IN ? AND account = ?`,
+			imageIds, account,
+		).Group("image_set_id").Count(&count)
+	if result.Error != nil {
+		return false, result.Error
+	}
+
+	if count != 1 {
+		return false, nil
+	}
+	return true, nil
 }

@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
@@ -32,6 +33,7 @@ func MakeUpdatesRouter(sub chi.Router) {
 	// TODO: This is for backwards compatibility with the previous route
 	// Once the frontend starts querying the device
 	sub.Route("/device/", MakeDevicesRouter)
+	sub.Get("/validate/", GetValidateUpdate)
 }
 
 type updateContextKey int
@@ -452,5 +454,64 @@ func SendNotificationForDevice(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewEncoder(w).Encode(notify); err != nil {
 			services.Log.WithField("error", notify).Error("Error while trying to encode")
 		}
+	}
+}
+
+// ValidateUpdateResponse indicates whether or not the image can be updated
+type ValidateUpdateResponse struct {
+	UpdateValid bool `json:"UpdateValid"`
+}
+
+// GetValidateUpdate validate that images can be updated
+func GetValidateUpdate(w http.ResponseWriter, r *http.Request) {
+	services := dependencies.ServicesFromContext(r.Context())
+	account, err := common.GetAccount(r)
+	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error":   err.Error(),
+			"account": account,
+		}).Error("Error retrieving account")
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.GetStatus())
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
+		return
+	}
+
+	stringIds := r.URL.Query().Get("ids")
+
+	if stringIds == "" {
+		msgError := "Query param 'ids' is required"
+		services.Log.Error(msgError)
+		err := errors.NewBadRequest(msgError)
+		w.WriteHeader(err.GetStatus())
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
+		return
+	}
+
+	ids := strings.Split(stringIds, ",")
+
+	valid, err := services.UpdateService.ValidateUpdateSelection(account, ids)
+
+	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Error("Error validating the images selection")
+		err := errors.NewBadRequest(err.Error())
+		w.WriteHeader(err.GetStatus())
+		if err := json.NewEncoder(w).Encode(&err); err != nil {
+			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(ValidateUpdateResponse{
+		UpdateValid: valid,
+	}); err != nil {
+		services.Log.WithField("error", valid).Error("Error while trying to encode")
 	}
 }
