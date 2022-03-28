@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/redhatinsights/edge-api/config"
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -12,10 +13,34 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
-	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
+	//"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 )
 
 // NOTE: this is currently designed for a single ibvents replica
+
+func getStaleBuilds(status string, age int) []models.Image {
+	var images []models.Image
+
+	// check the database for image builds in INTERRUPTED status
+	//qresult := db.DB.Debug().Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
+	//SELECT * from profiles WHERE to_timestamp(last_login) < NOW() - INTERVAL '30 days'
+	//qresult := db.DB.Debug().Raw("SELECT id, status, updated_at FROM images WHERE status = ? AND updated_at < NOW() - INTERVAL '? hours'", status, age).Scan(&images)
+	qresult := db.DB.Debug().Raw("SELECT id, status, updated_at FROM images WHERE status = ?", status).Scan(&images)
+	log.Info("Found " + fmt.Sprint(qresult.RowsAffected) + " image(s) with " + status + " status older than 6 hours")
+
+	return images
+}
+
+func setImageStatus(id uint, status string) error {
+	/*tx := db.DB.Debug().Model(&models.Image{}).Where("ID = ?", id).Update("Status", status)
+	log.WithField("imageID", id).Debug("Image updated with " + fmt.Sprint(status) + " status")
+	if tx.Error != nil {
+		log.WithField("error", tx.Error.Error()).Error("Error updating image status")
+		return tx.Error
+	}
+	*/
+	return nil
+}
 
 func main() {
 	// set things up
@@ -31,6 +56,7 @@ func main() {
 	config.Init()
 	l.InitLogger()
 	cfg := config.Get()
+	// FIXME: EdgeAPIURL is the external URL, not internal svc
 	log.WithFields(log.Fields{
 		"Hostname":                 cfg.Hostname,
 		"Auth":                     cfg.Auth,
@@ -49,6 +75,7 @@ func main() {
 		"TemplatesPath":            cfg.TemplatesPath,
 		"DatabaseType":             cfg.Database.Type,
 		"DatabaseName":             cfg.Database.Name,
+		"EdgeAPIURL":               cfg.EdgeAPIBaseURL,
 	}).Info("Configuration Values:")
 	db.InitDB()
 
@@ -56,13 +83,46 @@ func main() {
 	for {
 		log.Debug("Sleeping...")
 		time.Sleep(5 * time.Minute)
-		// TODO: work out how to avoid resuming a build until app is up or on way up
+		// TODO: work out programatic method to avoid resuming a build until app is up or on way up
 
-		// check the database for image builds in INTERRUPTED status
-		db.DB.Debug().Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
+		// handle stale interrupted builds not complete after x hours
+		staleInterruptedImages := getStaleBuilds(models.ImageStatusInterrupted, 48)
+		for _, staleImage := range staleInterruptedImages {
+			log.WithFields(log.Fields{
+				"UpdatedAt": staleImage.UpdatedAt.Time.Local().String(),
+				"ID":        staleImage.ID,
+				"WebPort":   staleImage.Status,
+			}).Info("Processing stale interrupted image")
+
+			// FIXME: holding off on db update until we see the query work in stage
+			statusUpdateError := setImageStatus(staleImage.ID, models.ImageStatusError)
+			if statusUpdateError != nil {
+				log.Error("Failed to update stale interrupted image build status")
+			}
+		}
+
+		// handle stale builds not complete after x hours
+		staleBuildingImages := getStaleBuilds(models.ImageStatusBuilding, 3)
+		for _, staleImage := range staleBuildingImages {
+			log.WithFields(log.Fields{
+				"UpdatedAt": staleImage.UpdatedAt.Time.Local().String(),
+				"ID":        staleImage.ID,
+				"WebPort":   staleImage.Status,
+			}).Info("Processing stale building image")
+
+			// FIXME: holding off on db update until we see the query work in stage
+			statusUpdateError := setImageStatus(staleImage.ID, models.ImageStatusError)
+			if statusUpdateError != nil {
+				log.Error("Failed to update stale building image build status")
+			}
+		}
+
+		// handle image builds in INTERRUPTED status
+		qresult := db.DB.Debug().Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
+		log.Info("Found " + fmt.Sprint(qresult.RowsAffected) + " image(s) with interrupted status")
 
 		for _, image := range images {
-			log.WithField("imageID", image.ID).Info("Found image with interrupted status")
+			log.WithField("imageID", image.ID).Info("Processing interrupted image: " + fmt.Sprint(image.ID))
 
 			/* we have a choice here...
 			1. Send an event and a consumer on Edge API calls the resume.
@@ -70,11 +130,42 @@ func main() {
 
 			Currently...
 			1. Testing a Kafka event.
-			2. Will implement a call to the API restart()
+			2. Will implement a call to the API /retry
 			3. Will create an API endpoint specifically for resume()
 				so it can pick up where it left off
 			*/
 
+			/* temp disable until auth can be resolved
+			// send an API request
+			url := fmt.Sprintf("%s/api/edge/v1/images/%d/retry", cfg.EdgeAPIBaseURL, image.ID)
+			req, _ := http.NewRequest("POST", url, nil)
+			req.Header.Add("Content-Type", "application/json")
+
+			client := &http.Client{}
+			res, err := client.Do(req)
+			if err != nil {
+				var code int
+				if res != nil {
+					code = res.StatusCode
+				}
+				log.WithFields(log.Fields{
+					"statusCode": code,
+					"error":      err,
+				}).Error("Edge API retry request error")
+			}
+			respBody, err := ioutil.ReadAll(res.Body)
+			log.WithFields(log.Fields{
+				"statusCode":   res.StatusCode,
+				"responseBody": string(respBody),
+				"error":        err,
+			}).Debug("Edge API retry response")
+			if err != nil {
+				log.Error("Error reading body of uninterrupted build resume response")
+			}
+			res.Body.Close()
+			*/
+
+			// send an event on image-build topic
 			if clowder.IsClowderEnabled() {
 				// get the list of brokers from the config
 				brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
@@ -119,6 +210,4 @@ func main() {
 			}
 		}
 	}
-
-	// TODO: catch interrupts to note a SIGTERM was sent versus a crash/panic
 }
