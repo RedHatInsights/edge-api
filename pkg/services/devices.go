@@ -44,6 +44,12 @@ type DeviceServiceInterface interface {
 	ProcessPlatformInventoryDeleteEvent(message []byte) error
 }
 
+// RpmOSTreeDeployment is the member of PlatformInsightsCreateUpdateEventPayload host system profile rpm ostree deployments list
+type RpmOSTreeDeployment struct {
+	Booted   bool   `json:"booted"`
+	Checksum string `json:"checksum"`
+}
+
 // PlatformInsightsCreateUpdateEventPayload is the body of the create event found on the platform.inventory.events kafka topic.
 type PlatformInsightsCreateUpdateEventPayload struct {
 	Type string `json:"type"`
@@ -53,7 +59,8 @@ type PlatformInsightsCreateUpdateEventPayload struct {
 		Account       string `json:"account"`
 		InsightsID    string `json:"insights_id"`
 		SystemProfile struct {
-			HostType string `json:"host_type"`
+			HostType             string                `json:"host_type"`
+			RpmOSTreeDeployments []RpmOSTreeDeployment `json:"rpm_ostree_deployments"`
 		} `json:"system_profile"`
 	} `json:"host"`
 }
@@ -421,6 +428,70 @@ func (s *DeviceService) GetDeviceLastDeployment(device inventory.Device) *invent
 	return nil
 }
 
+// SetDeviceUpdateAvailability set whether there is a device Updates available ot not.
+func (s *DeviceService) SetDeviceUpdateAvailability(account string, deviceID uint) error {
+
+	var device models.Device
+	if result := db.DB.Where(models.Device{Account: account}).First(&device, deviceID); result.Error != nil {
+		return result.Error
+	}
+	if device.ImageID == 0 {
+		return new(DeviceHasImageUndefined)
+	}
+
+	// get the device image
+	var deviceImage models.Image
+	if result := db.DB.Where(models.Image{Account: account}).First(&deviceImage, device.ImageID); result.Error != nil {
+		return result.Error
+	}
+
+	// check for updates , find if any later images exists
+	var updateImages []models.Image
+	if result := db.DB.Select("id").Where("account = ? AND image_set_id = ? AND status = ? AND created_at > ?",
+		deviceImage.Account, deviceImage.ImageSetID, models.ImageStatusSuccess, deviceImage.CreatedAt).Find(&updateImages); result.Error != nil {
+		return result.Error
+	}
+
+	device.UpdateAvailable = len(updateImages) > 0
+
+	if result := db.DB.Save(device); result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
+// processPlatformInventoryEventUpdateDevice update device image id and set update availability
+func (s *DeviceService) processPlatformInventoryEventUpdateDevice(eventData PlatformInsightsCreateUpdateEventPayload) error {
+
+	// Get the event db device
+	device, err := s.GetDeviceByUUID(eventData.Host.ID)
+	if err != nil {
+		return new(DeviceNotFoundError)
+	}
+
+	// Get the last rpmOSTree deployment commit checksum
+	deployments := eventData.Host.SystemProfile.RpmOSTreeDeployments
+	if len(deployments) == 0 {
+		return new(ImageNotFoundError)
+	}
+	CommitCheck := deployments[0].Checksum
+	// Get the related commit image
+	var deviceImage models.Image
+	if result := db.DB.Select("images.id").Joins("JOIN commits ON commits.id = images.commit_id").Where(
+		"images.account = ? AND commits.os_tree_commit = ? ", device.Account, CommitCheck).First(&deviceImage); result.Error != nil {
+		return result.Error
+	}
+
+	device.ImageID = deviceImage.ID
+
+	if result := db.DB.Save(device); result.Error != nil {
+		return result.Error
+	}
+
+	return s.SetDeviceUpdateAvailability(device.Account, device.ID)
+}
+
 // ProcessPlatformInventoryUpdatedEvent processes messages from platform.inventory.events kafka topic with event_type="updated"
 func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) error {
 	var eventData PlatformInsightsCreateUpdateEventPayload
@@ -450,7 +521,7 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 			return result.Error
 		}
 		s.log.WithFields(log.Fields{"host_id": deviceUUID}).Debug("Device account created")
-		return nil
+		return s.processPlatformInventoryEventUpdateDevice(eventData)
 	}
 	if device.Account == "" {
 		// Update account if undefined
@@ -461,7 +532,8 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 		}
 		s.log.WithFields(log.Fields{"host_id": deviceUUID}).Debug("Device account updated")
 	}
-	return nil
+
+	return s.processPlatformInventoryEventUpdateDevice(eventData)
 }
 
 // ProcessPlatformInventoryCreateEvent is a method to processes messages from platform.inventory.events kafka topic and save them as devices in the DB
@@ -490,8 +562,10 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 					"host_id": string(e.Host.ID),
 					"error":   result.Error,
 				}).Error("Error writing Kafka message to DB")
+				return result.Error
 			}
-			return result.Error
+
+			return s.processPlatformInventoryEventUpdateDevice(*e)
 		}
 		log.Debug("Skipping message - not an edge create message from platform insights")
 	}

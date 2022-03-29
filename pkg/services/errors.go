@@ -112,3 +112,10 @@ type DeviceGroupAccountOrNameUndefined struct{}
 func (e *DeviceGroupAccountOrNameUndefined) Error() string {
 	return "device group account or name are undefined"
 }
+
+// DeviceHasImageUndefined indicates that device record has image not defined
+type DeviceHasImageUndefined struct{}
+
+func (e *DeviceHasImageUndefined) Error() string {
+	return "device has image undefined"
+}
