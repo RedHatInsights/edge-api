@@ -23,10 +23,13 @@ func getStaleBuilds(status string, age int) []models.Image {
 
 	// check the database for image builds in INTERRUPTED status
 	//qresult := db.DB.Debug().Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
-	//SELECT * from profiles WHERE to_timestamp(last_login) < NOW() - INTERVAL '30 days'
 	//qresult := db.DB.Debug().Raw("SELECT id, status, updated_at FROM images WHERE status = ? AND updated_at < NOW() - INTERVAL '? hours'", status, age).Scan(&images)
-	qresult := db.DB.Debug().Raw("SELECT id, status, updated_at FROM images WHERE status = ?", status).Scan(&images)
-	log.Info("Found " + fmt.Sprint(qresult.RowsAffected) + " image(s) with " + status + " status older than 6 hours")
+	qresult := db.DB.Debug().Raw("SELECT id, status, updated_at FROM images WHERE status = ? AND updated_at < NOW() - INTERVAL '48 hours'", status, age).Scan(&images)
+	//qresult := db.DB.Debug().Raw("SELECT id, status, updated_at FROM images WHERE status = ?", status).Scan(&images)
+	log.WithFields(log.Fields{
+		"numImages": qresult.RowsAffected,
+		"status":    status,
+	}).Info("Found stale image(s)")
 
 	return images
 }
@@ -89,9 +92,9 @@ func main() {
 		staleInterruptedImages := getStaleBuilds(models.ImageStatusInterrupted, 48)
 		for _, staleImage := range staleInterruptedImages {
 			log.WithFields(log.Fields{
-				"UpdatedAt": staleImage.UpdatedAt.Time.Local().String(),
+				"UpdatedAt": staleImage.UpdatedAt,
 				"ID":        staleImage.ID,
-				"WebPort":   staleImage.Status,
+				"Status":    staleImage.Status,
 			}).Info("Processing stale interrupted image")
 
 			// FIXME: holding off on db update until we see the query work in stage
@@ -107,7 +110,7 @@ func main() {
 			log.WithFields(log.Fields{
 				"UpdatedAt": staleImage.UpdatedAt.Time.Local().String(),
 				"ID":        staleImage.ID,
-				"WebPort":   staleImage.Status,
+				"Status":    staleImage.Status,
 			}).Info("Processing stale building image")
 
 			// FIXME: holding off on db update until we see the query work in stage
@@ -119,10 +122,10 @@ func main() {
 
 		// handle image builds in INTERRUPTED status
 		qresult := db.DB.Debug().Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
-		log.Info("Found " + fmt.Sprint(qresult.RowsAffected) + " image(s) with interrupted status")
+		log.WithField("numImages", qresult.RowsAffected).Info("Found image(s) with interrupted status")
 
 		for _, image := range images {
-			log.WithField("imageID", image.ID).Info("Processing interrupted image: " + fmt.Sprint(image.ID))
+			log.WithField("imageID", image.ID).Info("Processing interrupted image")
 
 			/* we have a choice here...
 			1. Send an event and a consumer on Edge API calls the resume.
