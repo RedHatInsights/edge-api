@@ -26,7 +26,7 @@ const (
 // the business logic of creating and getting device groups
 type DeviceGroupsServiceInterface interface {
 	CreateDeviceGroup(deviceGroup *models.DeviceGroup) (*models.DeviceGroup, error)
-	GetDeviceGroups(account string, limit int, offset int, tx *gorm.DB) (*[]models.DeviceGroup, error)
+	GetDeviceGroups(account string, limit int, offset int, tx *gorm.DB) (*[]models.DeviceGroupLstDetail, error)
 	GetDeviceGroupsCount(account string, tx *gorm.DB) (int64, error)
 	GetDeviceGroupByID(ID string) (*models.DeviceGroup, error)
 	GetDeviceGroupDetailsByID(ID string) (*models.DeviceGroupDetails, error)
@@ -102,7 +102,7 @@ func (s *DeviceGroupsService) DeleteDeviceGroupByID(ID string) error {
 }
 
 // GetDeviceGroups get the device groups objects from the database
-func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset int, tx *gorm.DB) (*[]models.DeviceGroup, error) {
+func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset int, tx *gorm.DB) (*[]models.DeviceGroupLstDetail, error) {
 
 	if tx == nil {
 		tx = db.DB
@@ -111,13 +111,43 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 	var deviceGroups []models.DeviceGroup
 
 	res := tx.Limit(limit).Offset(offset).Where("account = ?", account).Preload("Devices").Find(&deviceGroups)
+	var deviceGroupImages []models.DeviceGroupLstDetail
+	if len(deviceGroups) > 0 {
+		for _, group := range deviceGroups {
+			var imageNames []string
+			var availableUpd bool
 
+			for _, device := range group.Devices {
+				availableUpd = false
+
+				param := new(inventory.Params)
+				param.HostnameOrID = device.UUID
+				inventoryDevice, err := s.DeviceService.GetDevices(param)
+				if err != nil {
+					s.log.WithField("error", err.Error()).Error("Invetory error")
+					return nil, err
+				}
+
+				if len(inventoryDevice.Devices) > 0 {
+					for _, detail := range inventoryDevice.Devices {
+						imageNames = append(imageNames, detail.Image.Image.Name)
+						if detail.Image.UpdatesAvailable != nil {
+							availableUpd = true
+						}
+					}
+
+				}
+
+			}
+			deviceGroupImages = append(deviceGroupImages, models.DeviceGroupLstDetail{DeviceGroup: group, Images: imageNames, UpdateAvailable: availableUpd})
+		}
+	}
 	if res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device groups")
 		return nil, res.Error
 	}
 
-	return &deviceGroups, nil
+	return &deviceGroupImages, nil
 }
 
 //CreateDeviceGroup create a device group for an account

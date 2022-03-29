@@ -18,6 +18,12 @@ type DeviceGroup struct {
 	Devices []Device `json:"Devices" gorm:"many2many:device_groups_devices;"`
 }
 
+type DeviceGroupLstDetail struct {
+	DeviceGroup     DeviceGroup `json:"DeviceGroup"`
+	Images          []string    `json:"Images"`
+	UpdateAvailable bool        `json:"UpdateAvailable"`
+}
+
 // DeviceGroupDetails is a record of Device Groups and DeviceDetails
 type DeviceGroupDetails struct {
 	DeviceGroup   *DeviceGroup       `json:"DeviceGroup"`

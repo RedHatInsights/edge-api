@@ -50,10 +50,10 @@ func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) CreateDeviceGroup(device
 }
 
 // GetDeviceGroups mocks base method
-func (m *MockDeviceGroupsServiceInterface) GetDeviceGroups(account string, limit, offset int, tx *gorm.DB) (*[]models.DeviceGroup, error) {
+func (m *MockDeviceGroupsServiceInterface) GetDeviceGroups(account string, limit, offset int, tx *gorm.DB) (*[]models.DeviceGroupLstDetail, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDeviceGroups", account, limit, offset, tx)
-	ret0, _ := ret[0].(*[]models.DeviceGroup)
+	ret0, _ := ret[0].(*[]models.DeviceGroupLstDetail)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
