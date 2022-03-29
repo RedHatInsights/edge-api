@@ -24,8 +24,28 @@ func getStaleBuilds(status string, age int) []models.Image {
 	// check the database for image builds in INTERRUPTED status
 	//qresult := db.DB.Debug().Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
 	//qresult := db.DB.Debug().Raw("SELECT id, status, updated_at FROM images WHERE status = ? AND updated_at < NOW() - INTERVAL '? hours'", status, age).Scan(&images)
-	qresult := db.DB.Debug().Raw("SELECT id, status, updated_at FROM images WHERE status = ? AND updated_at < NOW() - INTERVAL '48 hours'", status, age).Scan(&images)
-	//qresult := db.DB.Debug().Raw("SELECT id, status, updated_at FROM images WHERE status = ?", status).Scan(&images)
+	//tresult := db.DB.Debug().Raw("SELECT id, status, updated_at FROM images WHERE status = ? AND updated_at < NOW() - INTERVAL '? hours'", status, age).Scan(&images)
+
+	// temporary query to see this thing work
+	tresult := db.DB.Debug().Find(&images, "status = ? AND updated_at < NOW() - INTERVAL '? hours'", status, age)
+	if tresult.Error != nil {
+		log.WithFields(log.Fields{
+			"numImages": tresult.RowsAffected,
+			"status":    status,
+		}).Info("Found testing image(s) with interval")
+
+		for _, staleImage := range images {
+			log.WithFields(log.Fields{
+				"UpdatedAt": staleImage.UpdatedAt,
+				"ID":        staleImage.ID,
+				"Status":    staleImage.Status,
+			}).Info("Logging test interrupted image")
+		}
+	} else {
+		log.WithField("error", tresult.Error.Error())
+	}
+
+	qresult := db.DB.Debug().Raw("SELECT id, status, updated_at FROM images WHERE status = ?", status).Scan(&images)
 	log.WithFields(log.Fields{
 		"numImages": qresult.RowsAffected,
 		"status":    status,
