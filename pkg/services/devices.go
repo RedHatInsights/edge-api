@@ -27,6 +27,7 @@ const (
 // DeviceServiceInterface defines the interface to handle the business logic of RHEL for Edge Devices
 type DeviceServiceInterface interface {
 	GetDevices(params *inventory.Params) (*models.DeviceDetailsList, error)
+	GetDeviceView() (*models.DeviceViewList, error)
 	GetDeviceByID(deviceID uint) (*models.Device, error)
 	GetDeviceByUUID(deviceUUID string) (*models.Device, error)
 	// Device by UUID methods
@@ -528,4 +529,59 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 		return result.Error
 	}
 	return nil
+}
+
+// GetDeviceView returns a list of EdgeDevices for a given account.
+func (s *DeviceService) GetDeviceView() (*models.DeviceViewList, error) {
+	account, err := common.GetAccountFromContext(s.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var storedDevices []models.Device
+	if res := db.DB.Where("account = ?", account).Find(&storedDevices); res.Error != nil {
+		return nil, res.Error
+	}
+
+	type neededImageInfo struct {
+		Name   string
+		Status string
+	}
+	// create a map of unique image id's. We dont want to look of a given image id more than once.
+	setOfImages := make(map[uint]*neededImageInfo)
+	for _, devices := range storedDevices {
+		setOfImages[devices.ImageID] = &neededImageInfo{Name: "", Status: ""}
+	}
+
+	// using the map of unique image ID's, get the corresponding image name and status.
+	for imageID := range setOfImages {
+		// get the device image
+		var deviceImage models.Image
+		if result := db.DB.Where(models.Image{Account: account}).First(&deviceImage, imageID); result.Error != nil {
+			return nil, result.Error
+		}
+		setOfImages[imageID] = &neededImageInfo{Name: deviceImage.Name, Status: deviceImage.Status}
+	}
+
+	// build the return object
+	// TODO: add device group info
+	returnDevices := []models.DeviceView{}
+	for _, device := range storedDevices {
+		currentDeviceView := models.DeviceView{
+			DeviceID:        device.ID,
+			DeviceName:      device.Name,
+			ImageID:         device.ImageID,
+			ImageName:       setOfImages[device.ImageID].Name,
+			LastSeen:        device.LastSeen.Time.String(),
+			UpdateAvailable: device.UpdateAvailable,
+			Status:          setOfImages[device.ImageID].Status,
+		}
+		returnDevices = append(returnDevices, currentDeviceView)
+	}
+
+	list := &models.DeviceViewList{
+		Devices: returnDevices,
+		Total:   len(storedDevices),
+	}
+	return list, nil
 }
