@@ -26,7 +26,7 @@ const (
 // the business logic of creating and getting device groups
 type DeviceGroupsServiceInterface interface {
 	CreateDeviceGroup(deviceGroup *models.DeviceGroup) (*models.DeviceGroup, error)
-	GetDeviceGroups(account string, limit int, offset int, tx *gorm.DB) (*[]models.DeviceGroup, error)
+	GetDeviceGroups(account string, limit int, offset int, tx *gorm.DB) (*[]models.DeviceGroupListDetail, error)
 	GetDeviceGroupsCount(account string, tx *gorm.DB) (int64, error)
 	GetDeviceGroupByID(ID string) (*models.DeviceGroup, error)
 	GetDeviceGroupDetailsByID(ID string) (*models.DeviceGroupDetails, error)
@@ -102,22 +102,63 @@ func (s *DeviceGroupsService) DeleteDeviceGroupByID(ID string) error {
 }
 
 // GetDeviceGroups get the device groups objects from the database
-func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset int, tx *gorm.DB) (*[]models.DeviceGroup, error) {
+func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset int, tx *gorm.DB) (*[]models.DeviceGroupListDetail, error) {
 
 	if tx == nil {
 		tx = db.DB
 	}
 
 	var deviceGroups []models.DeviceGroup
+	var deviceGroupListDetail []models.DeviceGroupListDetail
 
-	res := tx.Limit(limit).Offset(offset).Where("account = ?", account).Preload("Devices").Find(&deviceGroups)
+	res := tx.Limit(limit).Offset(offset).Where("account = ?", account).
+		Preload("Devices").
+		Find(&deviceGroups)
+
+	for _, group := range deviceGroups {
+
+		listImageInfo := []models.DeviceImageInfo{}
+		setOfImages := make(map[int]int)
+
+		for _, device := range group.Devices {
+			setOfImages[int(device.ImageID)] = int(device.ImageID)
+		}
+
+		for _, imageID := range setOfImages {
+			var updAvailable bool
+			var deviceImage models.Image
+			var deviceImageSet models.ImageSet
+			var CommitID uint
+			if result := db.DB.Where(models.Image{Account: account}).
+				First(&deviceImage, imageID); result.Error != nil {
+				return nil, result.Error
+			}
+			if result := db.DB.Where(models.ImageSet{Account: account}).Preload("Images").
+				First(&deviceImageSet, deviceImage.ImageSetID).Order("ID desc"); result.Error != nil {
+				return nil, result.Error
+			}
+			latestImage := &deviceImageSet.Images[len(deviceImageSet.Images)-1]
+			latestImageID := latestImage.ID
+
+			if int(latestImageID) > imageID {
+				updAvailable = true
+				CommitID = deviceImageSet.Images[len(deviceImageSet.Images)-1].CommitID
+			}
+
+			listImageInfo = append(listImageInfo, models.DeviceImageInfo{Name: deviceImage.Name,
+				UpdateAvailable: updAvailable,
+				CommitID:        CommitID})
+
+		}
+		deviceGroupListDetail = append(deviceGroupListDetail, models.DeviceGroupListDetail{DeviceGroup: group, DeviceImageInfo: &listImageInfo})
+	}
 
 	if res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device groups")
 		return nil, res.Error
 	}
 
-	return &deviceGroups, nil
+	return &deviceGroupListDetail, nil
 }
 
 //CreateDeviceGroup create a device group for an account
