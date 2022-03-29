@@ -115,15 +115,20 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 		Preload("Devices").
 		Find(&deviceGroups)
 
+	if res.Error != nil {
+		s.log.WithField("error", res.Error.Error()).Error("Error getting device groups")
+		return nil, res.Error
+	}
+
 	for _, group := range deviceGroups {
 
 		listImageInfo := []models.DeviceImageInfo{}
 		setOfImages := make(map[int]int)
-
+		//Getting imageId from devices under the group
 		for _, device := range group.Devices {
 			setOfImages[int(device.ImageID)] = int(device.ImageID)
 		}
-
+		//Getting the imageInfo and calculate the update available based on imageSet
 		for _, imageID := range setOfImages {
 			var updAvailable bool
 			var deviceImage models.Image
@@ -137,6 +142,7 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 				First(&deviceImageSet, deviceImage.ImageSetID).Order("ID desc"); result.Error != nil {
 				return nil, result.Error
 			}
+
 			latestImage := &deviceImageSet.Images[len(deviceImageSet.Images)-1]
 			latestImageID := latestImage.ID
 
@@ -150,14 +156,9 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 				CommitID:        CommitID})
 
 		}
-		deviceGroupListDetail = append(deviceGroupListDetail, models.DeviceGroupListDetail{DeviceGroup: group, DeviceImageInfo: &listImageInfo})
+		deviceGroupListDetail = append(deviceGroupListDetail,
+			models.DeviceGroupListDetail{DeviceGroup: group, DeviceImageInfo: &listImageInfo})
 	}
-
-	if res.Error != nil {
-		s.log.WithField("error", res.Error.Error()).Error("Error getting device groups")
-		return nil, res.Error
-	}
-
 	return &deviceGroupListDetail, nil
 }
 
