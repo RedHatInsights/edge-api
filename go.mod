@@ -1,10 +1,10 @@
 module github.com/redhatinsights/edge-api
 
 require (
-	github.com/aws/aws-sdk-go v1.43.26
+	github.com/aws/aws-sdk-go v1.43.27
 	github.com/bxcodec/faker/v3 v3.8.0
 	github.com/cavaliercoder/grab v2.0.0+incompatible
-	github.com/confluentinc/confluent-kafka-go v1.8.2 // indirect
+	github.com/confluentinc/confluent-kafka-go v1.8.2
 	github.com/fedora-iot/fido-device-onboard-rs/libfdo-data-go v0.0.0-20211210154920-5c241beb5c4e
 	github.com/getkin/kin-openapi v0.93.0
 	github.com/ghodss/yaml v1.0.0
