@@ -509,9 +509,9 @@ paths:
           description: There was an internal server error.
       summary: Return image running on device.
       description: Return image running on device.
-  /updates/validate/:
+  /updates/validate:
     get:
-      operationId: GetImageInfo
+      operationId: GetValidateUpdate
       parameters:
         - name: ids
           in: query
@@ -527,7 +527,7 @@ paths:
                 type: object
                 properties:
                   Image:
-                    $ref: "#/components/schemas/v1.Image"
+                    $ref: "#/components/schemas/v1.ValidateUpdateResponse"
           description: OK
         "400":
           content:
