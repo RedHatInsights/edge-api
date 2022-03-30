@@ -3,6 +3,11 @@ package routes
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/services"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -10,9 +15,12 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
+	log "github.com/sirupsen/logrus"
 )
 
 func TestGetUpdateByID(t *testing.T) {
@@ -90,3 +98,142 @@ func TestGetUpdatePlaybook(t *testing.T) {
 	}
 
 }
+
+var _ = Describe("Update routes", func() {
+	var edgeAPIServices *dependencies.EdgeAPIServices
+	BeforeSuite(func() {
+		logger := log.NewEntry(log.StandardLogger())
+		edgeAPIServices = &dependencies.EdgeAPIServices{
+			UpdateService: services.NewUpdateService(context.Background(), logger),
+			Log:           logger,
+		}
+	})
+	Context("GET GetValidateUpdate", func() {
+		var imageSameGroup1 models.Image
+		var imageSameGroup2 models.Image
+		var imageDifferentGroup models.Image
+
+		BeforeEach(func() {
+			imageSetSameGroup := &models.ImageSet{
+				Name: "image-set-same-group",
+			}
+			imageSetDifferentGroup := &models.ImageSet{
+				Name: "image-set-different-group",
+			}
+			db.DB.Create(&imageSetSameGroup)
+			db.DB.Create(&imageSetDifferentGroup)
+
+			imageSameGroup1 = models.Image{
+				Name:         "image-same-group-1",
+				Distribution: "rhel-8",
+				OutputTypes:  []string{"rhel-edge-installer"},
+				Commit: &models.Commit{
+					Arch: "x86_64",
+					InstalledPackages: []models.InstalledPackage{
+						{Name: "vim"},
+					},
+				},
+				Installer: &models.Installer{
+					Username: "root",
+					SSHKey:   "ssh-rsa d9:f158:00:abcd",
+				},
+				ImageSetID: &imageSetSameGroup.ID,
+				Account:    "0000000",
+			}
+			imageSameGroup2 = imageSameGroup1
+			imageSameGroup2.Name = "image-same-group-2"
+			imageDifferentGroup = imageSameGroup1
+			imageDifferentGroup.Name = "image-different-group"
+			imageDifferentGroup.ImageSetID = &imageSetDifferentGroup.ID
+			db.DB.Create(&imageSameGroup1)
+			db.DB.Create(&imageSameGroup2)
+			db.DB.Create(&imageDifferentGroup)
+		})
+		When("when images selection has one image", func() {
+			It("should allow to update", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/?ids=%d", imageSameGroup1.ID), nil)
+
+				Expect(err).To(BeNil())
+
+				rr := httptest.NewRecorder()
+				ctx := dependencies.ContextWithServices(req.Context(), edgeAPIServices)
+				req = req.WithContext(ctx)
+				handler := http.HandlerFunc(GetValidateUpdate)
+
+				handler.ServeHTTP(rr, req.WithContext(ctx))
+
+				jsonResponse, _ := json.Marshal(ValidateUpdateResponse{UpdateValid: true})
+
+				Expect(rr.Code).To(Equal(http.StatusOK))
+				Expect(rr.Body.String()).Should(MatchJSON(jsonResponse))
+			})
+		})
+		When("when images selection has the same image set and same account", func() {
+			It("should allow to update", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/?ids=%d,%d", imageSameGroup1.ID, imageSameGroup2.ID), nil)
+
+				Expect(err).To(BeNil())
+
+				rr := httptest.NewRecorder()
+				ctx := dependencies.ContextWithServices(req.Context(), edgeAPIServices)
+				req = req.WithContext(ctx)
+				handler := http.HandlerFunc(GetValidateUpdate)
+
+				handler.ServeHTTP(rr, req.WithContext(ctx))
+
+				jsonResponse, _ := json.Marshal(ValidateUpdateResponse{UpdateValid: true})
+
+				Expect(rr.Code).To(Equal(http.StatusOK))
+				Expect(rr.Body.String()).Should(MatchJSON(jsonResponse))
+			})
+		})
+		When("when images selection has the same image set and different account", func() {
+			BeforeEach(func() {
+				config.Get().Auth = true
+			})
+			AfterEach(func() {
+				config.Get().Auth = false
+			})
+			It("should not allow to update", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/?ids=%d,%d", imageSameGroup1.ID, imageSameGroup2.ID), nil)
+
+				Expect(err).To(BeNil())
+
+				rr := httptest.NewRecorder()
+				ctx := context.WithValue(req.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{
+					AccountNumber: "111111",
+				}})
+				req = req.WithContext(ctx)
+				ctx = dependencies.ContextWithServices(req.Context(), edgeAPIServices)
+				req = req.WithContext(ctx)
+				handler := http.HandlerFunc(GetValidateUpdate)
+
+				handler.ServeHTTP(rr, req.WithContext(ctx))
+
+				jsonResponse, _ := json.Marshal(ValidateUpdateResponse{UpdateValid: false})
+
+				Expect(rr.Code).To(Equal(http.StatusOK))
+				Expect(rr.Body.String()).Should(MatchJSON(jsonResponse))
+			})
+		})
+		When("when images selection has different image sets", func() {
+			It("should not allow to update", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/?ids=%d,%d", imageSameGroup1.ID, imageDifferentGroup.ID), nil)
+
+				Expect(err).To(BeNil())
+
+				rr := httptest.NewRecorder()
+				ctx := dependencies.ContextWithServices(req.Context(), edgeAPIServices)
+				req = req.WithContext(ctx)
+				handler := http.HandlerFunc(GetValidateUpdate)
+
+				handler.ServeHTTP(rr, req.WithContext(ctx))
+
+				jsonResponse, _ := json.Marshal(ValidateUpdateResponse{UpdateValid: false})
+
+				Expect(rr.Code).To(Equal(http.StatusOK))
+				Expect(rr.Body.String()).Should(MatchJSON(jsonResponse))
+			})
+		})
+	})
+})

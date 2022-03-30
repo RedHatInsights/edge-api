@@ -166,3 +166,18 @@ func (mr *MockUpdateServiceInterfaceMockRecorder) WriteTemplate(templateInfo, ac
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteTemplate", reflect.TypeOf((*MockUpdateServiceInterface)(nil).WriteTemplate), templateInfo, account)
 }
+
+// ValidateUpdateSelection mocks base method
+func (m *MockUpdateServiceInterface) ValidateUpdateSelection(account string, imageIds []string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidateUpdateSelection", account, imageIds)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ValidateUpdateSelection mock
+func (mr *MockUpdateServiceInterfaceMockRecorder) ValidateUpdateSelection(account string, imageIds []string) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendDeviceNotification", reflect.TypeOf((*MockUpdateServiceInterface)(nil).ValidateUpdateSelection), account, imageIds)
+}
