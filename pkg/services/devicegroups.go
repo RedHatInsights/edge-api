@@ -141,6 +141,7 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 	return &deviceGroupListDetail, nil
 }
 
+// GetDeviceImageInfo returns the image related to the groups
 func GetDeviceImageInfo(images map[int]int, account string) (*[]models.DeviceImageInfo, error) {
 	listImageInfo := []models.DeviceImageInfo{}
 	for _, imageID := range images {
