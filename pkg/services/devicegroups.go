@@ -122,44 +122,55 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 
 	for _, group := range deviceGroups {
 
-		listImageInfo := []models.DeviceImageInfo{}
+		var listImageInfo *[]models.DeviceImageInfo
+		var err error
 		setOfImages := make(map[int]int)
 		//Getting imageId from devices under the group
 		for _, device := range group.Devices {
 			setOfImages[int(device.ImageID)] = int(device.ImageID)
 		}
 		//Getting the imageInfo and calculate the update available based on imageSet
-		for _, imageID := range setOfImages {
-			var updAvailable bool
-			var deviceImage models.Image
-			var deviceImageSet models.ImageSet
-			var CommitID uint
-			if result := db.DB.Where(models.Image{Account: account}).
-				First(&deviceImage, imageID); result.Error != nil {
-				return nil, result.Error
-			}
-			if result := db.DB.Where(models.ImageSet{Account: account}).Preload("Images").
-				First(&deviceImageSet, deviceImage.ImageSetID).Order("ID desc"); result.Error != nil {
-				return nil, result.Error
-			}
-
-			latestImage := &deviceImageSet.Images[len(deviceImageSet.Images)-1]
-			latestImageID := latestImage.ID
-
-			if int(latestImageID) > imageID {
-				updAvailable = true
-				CommitID = deviceImageSet.Images[len(deviceImageSet.Images)-1].CommitID
-			}
-
-			listImageInfo = append(listImageInfo, models.DeviceImageInfo{Name: deviceImage.Name,
-				UpdateAvailable: updAvailable,
-				CommitID:        CommitID})
-
+		listImageInfo, err = GetDeviceImageInfo(setOfImages, account)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Error getting device image info")
+			return nil, res.Error
 		}
 		deviceGroupListDetail = append(deviceGroupListDetail,
-			models.DeviceGroupListDetail{DeviceGroup: group, DeviceImageInfo: &listImageInfo})
+			models.DeviceGroupListDetail{DeviceGroup: group, DeviceImageInfo: listImageInfo})
 	}
 	return &deviceGroupListDetail, nil
+}
+
+func GetDeviceImageInfo(images map[int]int, account string) (*[]models.DeviceImageInfo, error) {
+	listImageInfo := []models.DeviceImageInfo{}
+	for _, imageID := range images {
+		var updAvailable bool
+		var deviceImage models.Image
+		var deviceImageSet models.ImageSet
+		var CommitID uint
+		if result := db.DB.Where(models.Image{Account: account}).
+			First(&deviceImage, imageID); result.Error != nil {
+			return nil, result.Error
+		}
+		if result := db.DB.Where(models.ImageSet{Account: account}).Preload("Images").
+			First(&deviceImageSet, deviceImage.ImageSetID).Order("ID desc"); result.Error != nil {
+			return nil, result.Error
+		}
+
+		latestImage := &deviceImageSet.Images[len(deviceImageSet.Images)-1]
+		latestImageID := latestImage.ID
+
+		if int(latestImageID) > imageID {
+			updAvailable = true
+			CommitID = deviceImageSet.Images[len(deviceImageSet.Images)-1].CommitID
+		}
+
+		listImageInfo = append(listImageInfo, models.DeviceImageInfo{Name: deviceImage.Name,
+			UpdateAvailable: updAvailable,
+			CommitID:        CommitID})
+
+	}
+	return &listImageInfo, nil
 }
 
 //CreateDeviceGroup create a device group for an account
