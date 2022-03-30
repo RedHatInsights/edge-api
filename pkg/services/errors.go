@@ -119,3 +119,10 @@ type DeviceHasImageUndefined struct{}
 func (e *DeviceHasImageUndefined) Error() string {
 	return "device has image undefined"
 }
+
+// UpdateTransactionHasCommitUndefined indicate that the transaction has no commit defined
+type UpdateTransactionHasCommitUndefined struct{}
+
+func (e *UpdateTransactionHasCommitUndefined) Error() string {
+	return "update transaction has not no defined commit"
+}

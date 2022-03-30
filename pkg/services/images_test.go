@@ -440,4 +440,94 @@ var _ = Describe("Image Service Test", func() {
 
 		})
 	})
+	Describe("Devices update availability from image set", func() {
+		Context("should set device update availability", func() {
+			account := faker.UUIDHyphenated()
+			imageSet := models.ImageSet{Account: account, Name: faker.UUIDHyphenated()}
+			db.DB.Create(&imageSet)
+			initialImages := []models.Image{
+				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account},
+				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account},
+				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account},
+				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account},
+			}
+			images := make([]models.Image, 0, len(initialImages))
+			for _, image := range initialImages {
+				db.DB.Create(&image)
+				images = append(images, image)
+				fmt.Println("IMG >>>>", image.ID)
+			}
+
+			devices := make([]models.Device, 0, len(images))
+			for ind, image := range images {
+				device := models.Device{Account: account, ImageID: image.ID, UpdateAvailable: false}
+				if ind == len(images)-1 {
+					device.UpdateAvailable = true
+				}
+				db.DB.Create(&device)
+				devices = append(devices, device)
+			}
+			lastDevicesIndex := len(devices) - 1
+
+			OtherImageSet := models.ImageSet{Account: account, Name: faker.UUIDHyphenated()}
+			db.DB.Create(&OtherImageSet)
+
+			otherImage := models.Image{Status: models.ImageStatusSuccess, ImageSetID: &OtherImageSet.ID, Account: account}
+			db.DB.Create(&otherImage)
+			OtherDevice := models.Device{Account: account, ImageID: otherImage.ID, UpdateAvailable: true}
+			db.DB.Create(&OtherDevice)
+
+			It("No error occurred without errors when calling function", func() {
+				err := service.SetDevicesUpdateAvailabilityFromImageSet(account, imageSet.ID)
+				Expect(err).To(BeNil())
+			})
+
+			It("All devices has UpdateAvailable updated as expected", func() {
+				// reload devices fro db
+				savedDevices := make([]models.Device, 0, len(devices))
+				for _, device := range devices {
+					var savedDevice models.Device
+					db.DB.First(&savedDevice, device.ID)
+					savedDevices = append(savedDevices, savedDevice)
+				}
+				for ind, device := range savedDevices {
+					if ind == lastDevicesIndex {
+						Expect(device.UpdateAvailable).To(Equal(false))
+					} else {
+						Expect(device.UpdateAvailable).To(Equal(true))
+					}
+				}
+			})
+
+			It("Other device not updated as having an other imageSet", func() {
+				// reload other device
+				var device models.Device
+				result := db.DB.First(&device, OtherDevice.ID)
+				Expect(result.Error).To(BeNil())
+				Expect(OtherDevice.UpdateAvailable).To(Equal(true))
+			})
+
+			It("running function for Other imageSet update other device", func() {
+				err := service.SetDevicesUpdateAvailabilityFromImageSet(account, OtherImageSet.ID)
+				Expect(err).To(BeNil())
+				// reload other device
+				var device models.Device
+				result := db.DB.First(&device, OtherDevice.ID)
+				Expect(result.Error).To(BeNil())
+				Expect(device.UpdateAvailable).To(Equal(false))
+			})
+
+			It("should run without errors when no devices", func() {
+				imageSet := models.ImageSet{Account: account, Name: faker.UUIDHyphenated()}
+				result := db.DB.Create(&imageSet)
+				Expect(result.Error).To(BeNil())
+				image := models.Image{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account}
+				result = db.DB.Create(&image)
+				Expect(result.Error).To(BeNil())
+
+				err := service.SetDevicesUpdateAvailabilityFromImageSet(account, imageSet.ID)
+				Expect(err).To(BeNil())
+			})
+		})
+	})
 })
