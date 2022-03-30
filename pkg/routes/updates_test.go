@@ -101,7 +101,7 @@ func TestGetUpdatePlaybook(t *testing.T) {
 
 var _ = Describe("Update routes", func() {
 	var edgeAPIServices *dependencies.EdgeAPIServices
-	BeforeSuite(func() {
+	BeforeEach(func() {
 		logger := log.NewEntry(log.StandardLogger())
 		edgeAPIServices = &dependencies.EdgeAPIServices{
 			UpdateService: services.NewUpdateService(context.Background(), logger),
