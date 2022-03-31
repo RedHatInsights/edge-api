@@ -3,6 +3,7 @@ package dependencies
 import (
 	"context"
 	"errors"
+	"github.com/redhatinsights/edge-api/pkg/clients"
 	"net/http"
 
 	"github.com/redhatinsights/edge-api/logger"
@@ -76,6 +77,7 @@ func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		edgeAPIServices := Init(r.Context())
 		ctx := ContextWithServices(r.Context(), edgeAPIServices)
+		ctx = context.WithValue(ctx, clients.RhIdentityKey, r.Header.Get("X-Rh-Identity"))
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

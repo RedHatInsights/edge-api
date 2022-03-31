@@ -628,7 +628,7 @@ func (s *ImageService) SetErrorStatusOnImage(err error, i *models.Image) {
 			}
 		}
 		if err != nil {
-			s.log.WithField("error", tx.Error.Error()).Error("Error setting image final status")
+			s.log.WithField("error", err.Error()).Error("Error setting image final status")
 		}
 	}
 }
