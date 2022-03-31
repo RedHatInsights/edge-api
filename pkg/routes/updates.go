@@ -227,62 +227,62 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 
 	services.Log.WithField("inventoryDevice", inv).Debug("Device retrieved from inventory")
 	var updates []models.UpdateTransaction
-	// Create the models.UpdateTransaction
-	update := models.UpdateTransaction{
-		Account:  account,
-		CommitID: updateJSON.CommitID,
-		Status:   models.UpdateStatusCreated,
-		// TODO: Implement update by tag
-		// Tag:      updateJSON.Tag,
-	}
-
-	// Get the models.Commit from the Commit ID passed in via JSON
-	update.Commit, err = services.CommitService.GetCommitByID(updateJSON.CommitID)
-	services.Log.WithField("commit", update.Commit).Debug("Commit retrieved from this update")
-
-	notify, errNotify := services.UpdateService.SendDeviceNotification(&update)
-	if errNotify != nil {
-		services.Log.WithField("message", errNotify.Error()).Error("Error to send notification")
-		services.Log.WithField("message", notify).Error("Notify Error")
-
-	}
-	update.DispatchRecords = []models.DispatchRecord{}
-	if err != nil {
-		services.Log.WithFields(log.Fields{
-			"error":    err.Error(),
-			"commitID": updateJSON.CommitID,
-		}).Error("No commit found for Commit ID")
-		err := errors.NewInternalServerError()
-		err.SetTitle(fmt.Sprintf("No commit found for CommitID %d", updateJSON.CommitID))
-		w.WriteHeader(err.GetStatus())
-		return nil, err
-	}
-
-	//  Removing commit dependency to avoid overwriting the repo
-	var repo *models.Repo
-	services.Log.WithField("updateID", update.ID).Debug("Ceating new repo for update transaction")
-	repo = &models.Repo{
-		Status: models.RepoStatusBuilding,
-	}
-	result := db.DB.Create(&repo)
-	if result.Error != nil {
-		services.Log.WithField("error", result.Error.Error()).Debug("Result error")
-		err := errors.NewBadRequest(result.Error.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", result.Error.Error()).Error("Error while trying to encode")
-		}
-	}
-	update.Repo = repo
-	services.Log.WithFields(log.Fields{
-		"repoURL": repo.URL,
-		"repoID":  repo.ID,
-	}).Debug("Getting repo info")
-
-	devices := update.Devices
-	oldCommits := update.OldCommits
-
 	for _, inventory := range ii {
+		// Create the models.UpdateTransaction
+		update := models.UpdateTransaction{
+			Account:  account,
+			CommitID: updateJSON.CommitID,
+			Status:   models.UpdateStatusCreated,
+			// TODO: Implement update by tag
+			// Tag:      updateJSON.Tag,
+		}
+
+		// Get the models.Commit from the Commit ID passed in via JSON
+		update.Commit, err = services.CommitService.GetCommitByID(updateJSON.CommitID)
+		services.Log.WithField("commit", update.Commit).Debug("Commit retrieved from this update")
+
+		notify, errNotify := services.UpdateService.SendDeviceNotification(&update)
+		if errNotify != nil {
+			services.Log.WithField("message", errNotify.Error()).Error("Error to send notification")
+			services.Log.WithField("message", notify).Error("Notify Error")
+
+		}
+		update.DispatchRecords = []models.DispatchRecord{}
+		if err != nil {
+			services.Log.WithFields(log.Fields{
+				"error":    err.Error(),
+				"commitID": updateJSON.CommitID,
+			}).Error("No commit found for Commit ID")
+			err := errors.NewInternalServerError()
+			err.SetTitle(fmt.Sprintf("No commit found for CommitID %d", updateJSON.CommitID))
+			w.WriteHeader(err.GetStatus())
+			return nil, err
+		}
+
+		//  Removing commit dependency to avoid overwriting the repo
+		var repo *models.Repo
+		services.Log.WithField("updateID", update.ID).Debug("Ceating new repo for update transaction")
+		repo = &models.Repo{
+			Status: models.RepoStatusBuilding,
+		}
+		result := db.DB.Create(&repo)
+		if result.Error != nil {
+			services.Log.WithField("error", result.Error.Error()).Debug("Result error")
+			err := errors.NewBadRequest(result.Error.Error())
+			w.WriteHeader(err.GetStatus())
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				services.Log.WithField("error", result.Error.Error()).Error("Error while trying to encode")
+			}
+		}
+		update.Repo = repo
+		services.Log.WithFields(log.Fields{
+			"repoURL": repo.URL,
+			"repoID":  repo.ID,
+		}).Debug("Getting repo info")
+
+		devices := update.Devices
+		oldCommits := update.OldCommits
+
 		for _, device := range inventory.Result {
 			fmt.Printf("DeviceUUID: %v\n", device.ID)
 			//  Check for the existence of a Repo that already has this commit and don't duplicate
@@ -368,8 +368,9 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 			}
 		}
 		updates = append(updates, update)
+		services.Log.WithField("updateID", update.ID).Info("Update has been created")
+
 	}
-	services.Log.WithField("updateID", update.ID).Info("Update has been created")
 	return &updates, nil
 }
 
