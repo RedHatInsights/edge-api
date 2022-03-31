@@ -161,10 +161,10 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 }
 
 // GetDeviceImageInfo returns the image related to the groups
-func GetDeviceImageInfo(images map[int]models.Device, account string) (map[int]models.DeviceImageInfo, error) {
+func GetDeviceImageInfo(devices map[int]models.Device, account string) (map[int]models.DeviceImageInfo, error) {
 	// listImageInfo := []models.DeviceImageInfo{}
 	listImageInfo := make(map[int]models.DeviceImageInfo)
-	for _, device := range images {
+	for _, device := range devices {
 		var updAvailable bool
 		var deviceImage models.Image
 		var deviceImageSet models.ImageSet
