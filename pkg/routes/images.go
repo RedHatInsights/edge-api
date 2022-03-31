@@ -341,7 +341,7 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Preload("Commit.Repo").Preload("CustomPackages").Where("images.account = ?", account).Joins("Commit").Joins("Installer").Find(&images)
+	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Preload("Commit.Repo").Preload("CustomPackages").Preload("ThirdPartyRepositories").Where("images.account = ?", account).Joins("Commit").Joins("Installer").Find(&images)
 	if result.Error != nil {
 		services.Log.WithField("error", result.Error.Error()).Error("Error retrieving images")
 		err := errors.NewInternalServerError()
