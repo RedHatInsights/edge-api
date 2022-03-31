@@ -462,71 +462,54 @@ var _ = Describe("DeviceService", func() {
 		})
 	})
 	Context("ProcessPlatformInventoryCreateEvent", func() {
-		type PlatformInsightsCreateEventPayload struct {
-			Type         string `json:"type"`
-			PlatformMeta string `json:"platform_metadata"`
-			Metadata     struct {
-				RequestID string `json:"request_id"`
-			} `json:"metadata"`
-			Host struct {
-				ID             string `json:"id"`
-				Account        string `json:"account"`
-				DisplayName    string `json:"display_name"`
-				AnsibleHost    string `json:"ansible_host"`
-				Fqdn           string `json:"fqdn"`
-				InsightsID     string `json:"insights_id"`
-				StaleTimestamp string `json:"stale_timestamp"`
-				Reporter       string `json:"reporter"`
-				Tags           string `json:"tags"`
-				SystemProfile  struct {
-					HostType             string `json:"host_type"`
-					RPMOstreeDeployments struct {
-						ID       string `json:"id"`
-						Booted   bool   `json:"booted"`
-						Origin   string `json:"origin"`
-						Osname   string `json:"osname"`
-						Pinned   bool   `json:"pinned"`
-						Checksum string `json:"checksum"`
-					} `json:"rpm_ostree_deployments"`
-				} `json:"system_profile"`
-			} `json:"host"`
-		}
-		event := new(PlatformInsightsCreateEventPayload)
+		account := faker.UUIDHyphenated()
+		commit := models.Commit{Account: account, OSTreeCommit: faker.UUIDHyphenated()}
+		result := db.DB.Create(&commit)
+		Expect(result.Error).To(BeNil())
+		image := models.Image{Account: account, CommitID: commit.ID, Status: models.ImageStatusSuccess}
+		result = db.DB.Create(&image)
+		Expect(result.Error).To(BeNil())
+
+		event := new(services.PlatformInsightsCreateUpdateEventPayload)
 		event.Type = services.InventoryEventTypeCreated
 		event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
 		event.Host.ID = faker.UUIDHyphenated()
-		event.Host.Account = faker.UUIDHyphenated()
-		message, _ := json.Marshal(event)
-		It("should update devices when no record is found", func() {
-			var savedDevice models.Device
+		event.Host.Account = account
+		event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
+		message, err := json.Marshal(event)
+		Expect(err).To(BeNil())
+
+		It("should create devices when no record is found", func() {
 			err := deviceService.ProcessPlatformInventoryCreateEvent(message)
 			Expect(err).To(BeNil())
-			result := *db.DB.Where(models.Device{UUID: event.Host.ID}).First(&savedDevice)
+			var savedDevice models.Device
+			result := db.DB.Where(models.Device{UUID: event.Host.ID}).First(&savedDevice)
 			Expect(result.Error).To(BeNil())
 			Expect(savedDevice.UUID).To(Equal(event.Host.ID))
-			Expect(savedDevice.Account).To(Equal(event.Host.Account))
+			Expect(savedDevice.Account).To(Equal(account))
+			Expect(savedDevice.ImageID).To(Equal(image.ID))
 		})
 	})
 	Context("ProcessPlatformInventoryUpdatedEvent", func() {
-		type PlatformInsightsUpdatedEventPayload struct {
-			Type string `json:"type"`
-			Host struct {
-				ID            string `json:"id"`
-				Account       string `json:"account"`
-				InsightsID    string `json:"insights_id"`
-				SystemProfile struct {
-					HostType string `json:"host_type"`
-				} `json:"system_profile"`
-			} `json:"host"`
-		}
+		account := faker.UUIDHyphenated()
+		commit := models.Commit{Account: account, OSTreeCommit: faker.UUIDHyphenated()}
+		result := db.DB.Create(&commit)
+		Expect(result.Error).To(BeNil())
+		imageSet := models.ImageSet{Name: faker.UUIDHyphenated(), Account: account}
+		result = db.DB.Create(&imageSet)
+		Expect(result.Error).To(BeNil())
+		image := models.Image{Account: account, CommitID: commit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
+		result = db.DB.Create(&image)
+		Expect(result.Error).To(BeNil())
 
 		It("should create a device when device does not exist", func() {
-			event := new(PlatformInsightsUpdatedEventPayload)
+			event := new(services.PlatformInsightsCreateUpdateEventPayload)
 			event.Type = services.InventoryEventTypeUpdated
 			event.Host.ID = faker.UUIDHyphenated()
 			event.Host.InsightsID = faker.UUIDHyphenated()
-			event.Host.Account = faker.UUIDHyphenated()
+			event.Host.Account = account
 			event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
+			event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
 			message, err := json.Marshal(event)
 			Expect(err).To(BeNil())
 
@@ -536,25 +519,29 @@ var _ = Describe("DeviceService", func() {
 			var device models.Device
 			res := db.DB.Where("uuid = ?", event.Host.ID).First(&device)
 			Expect(res.Error).To(BeNil())
-			Expect(device.Account).To(Equal(event.Host.Account))
+			Expect(device.Account).To(Equal(account))
 			Expect(device.RHCClientID).To(Equal(event.Host.InsightsID))
+			Expect(device.ImageID).To(Equal(image.ID))
+			Expect(device.UpdateAvailable).To(Equal(false))
 		})
 
-		It("should update device account when device exists", func() {
+		It("should update device account, image_id and update availability when device already exists", func() {
 			// create a device without account
 			device := models.Device{
-				UUID:        faker.UUIDHyphenated(),
-				RHCClientID: faker.UUIDHyphenated(),
+				UUID:            faker.UUIDHyphenated(),
+				RHCClientID:     faker.UUIDHyphenated(),
+				UpdateAvailable: true,
 			}
 			res := db.DB.Create(&device)
 			Expect(res.Error).To(BeNil())
 
-			event := new(PlatformInsightsUpdatedEventPayload)
+			event := new(services.PlatformInsightsCreateUpdateEventPayload)
 			event.Type = services.InventoryEventTypeUpdated
 			event.Host.ID = device.UUID
 			event.Host.InsightsID = device.RHCClientID
-			event.Host.Account = faker.UUIDHyphenated()
+			event.Host.Account = account
 			event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
+			event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
 			message, err := json.Marshal(event)
 			Expect(err).To(BeNil())
 
@@ -564,20 +551,71 @@ var _ = Describe("DeviceService", func() {
 			var savedDevice models.Device
 			res = db.DB.Where("uuid = ?", device.UUID).First(&savedDevice)
 			Expect(res.Error).To(BeNil())
-			Expect(savedDevice.Account).To(Equal(event.Host.Account))
+			Expect(savedDevice.Account).To(Equal(account))
+			Expect(savedDevice.ImageID).To(Equal(image.ID))
+			Expect(savedDevice.UpdateAvailable).To(Equal(false))
 		})
 
+		Context("device update availability", func() {
+			device := models.Device{
+				UUID:            faker.UUIDHyphenated(),
+				RHCClientID:     faker.UUIDHyphenated(),
+				Account:         account,
+				ImageID:         image.ID,
+				UpdateAvailable: false,
+			}
+			res := db.DB.Create(&device)
+			Expect(res.Error).To(BeNil())
+
+			event := new(services.PlatformInsightsCreateUpdateEventPayload)
+			event.Type = services.InventoryEventTypeUpdated
+			event.Host.ID = device.UUID
+			event.Host.InsightsID = device.RHCClientID
+			event.Host.Account = account
+			event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
+			event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
+			message, err := json.Marshal(event)
+			Expect(err).To(BeNil())
+
+			It("should not set update available when an image update failed", func() {
+				newImage := models.Image{Account: account, ImageSetID: &imageSet.ID, Status: models.ImageStatusError}
+				result = db.DB.Create(&newImage)
+				Expect(result.Error).To(BeNil())
+
+				err = deviceService.ProcessPlatformInventoryUpdatedEvent(message)
+				Expect(err).To(BeNil())
+
+				var savedDevice models.Device
+				res = db.DB.Where("uuid = ?", device.UUID).First(&savedDevice)
+				Expect(res.Error).To(BeNil())
+				Expect(savedDevice.Account).To(Equal(account))
+				Expect(savedDevice.ImageID).To(Equal(image.ID))
+				Expect(savedDevice.UpdateAvailable).To(Equal(false))
+			})
+
+			It("should set update available when an image is updated successfully", func() {
+				newImage := models.Image{Account: account, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
+				result = db.DB.Create(&newImage)
+				Expect(result.Error).To(BeNil())
+
+				err = deviceService.ProcessPlatformInventoryUpdatedEvent(message)
+				Expect(err).To(BeNil())
+
+				var savedDevice models.Device
+				res = db.DB.Where("uuid = ?", device.UUID).First(&savedDevice)
+				Expect(res.Error).To(BeNil())
+				Expect(savedDevice.Account).To(Equal(account))
+				Expect(savedDevice.ImageID).To(Equal(image.ID))
+				Expect(savedDevice.UpdateAvailable).To(Equal(true))
+			})
+		})
 	})
+
 	Context("ProcessPlatformInventoryDeleteEvent", func() {
-		type PlatformInsightsDeleteEventPayload struct {
-			Type    string `json:"type"`
-			ID      string `json:"id"`
-			Account string `json:"account"`
-		}
 
 		It("device should be deleted", func() {
 			// create a platform inventory delete event message
-			event := new(PlatformInsightsDeleteEventPayload)
+			event := new(services.PlatformInsightsDeleteEventPayload)
 			event.Type = services.InventoryEventTypeDelete
 			event.ID = faker.UUIDHyphenated()
 			event.Account = faker.UUIDHyphenated()
@@ -605,7 +643,7 @@ var _ = Describe("DeviceService", func() {
 
 		It("device in device-groups should be removed", func() {
 			// create a platform inventory delete event message
-			event := new(PlatformInsightsDeleteEventPayload)
+			event := new(services.PlatformInsightsDeleteEventPayload)
 			event.Type = services.InventoryEventTypeDelete
 			event.ID = faker.UUIDHyphenated()
 			event.Account = faker.UUIDHyphenated()
