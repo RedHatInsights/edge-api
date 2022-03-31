@@ -4,11 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"strconv"
-	"strings"
-
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -16,6 +11,9 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	"io"
+	"net/http"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -33,7 +31,7 @@ func MakeUpdatesRouter(sub chi.Router) {
 	// TODO: This is for backwards compatibility with the previous route
 	// Once the frontend starts querying the device
 	sub.Route("/device/", MakeDevicesRouter)
-	sub.Get("/validate/", GetValidateUpdate)
+	sub.Post("/validate/", PostValidateUpdate)
 }
 
 type updateContextKey int
@@ -462,8 +460,8 @@ type ValidateUpdateResponse struct {
 	UpdateValid bool `json:"UpdateValid"`
 }
 
-// GetValidateUpdate validate that images can be updated
-func GetValidateUpdate(w http.ResponseWriter, r *http.Request) {
+// PostValidateUpdate validate that images can be updated
+func PostValidateUpdate(w http.ResponseWriter, r *http.Request) {
 	services := dependencies.ServicesFromContext(r.Context())
 	account, err := common.GetAccount(r)
 	if err != nil {
@@ -471,28 +469,22 @@ func GetValidateUpdate(w http.ResponseWriter, r *http.Request) {
 			"error":   err.Error(),
 			"account": account,
 		}).Error("Error retrieving account")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		respondWithAPIError(w, services.Log, errors.NewBadRequest(err.Error()))
 		return
 	}
 
-	stringIds := r.URL.Query().Get("ids")
-
-	if stringIds == "" {
-		msgError := "Query param 'ids' is required"
-		services.Log.Error(msgError)
-		err := errors.NewBadRequest(msgError)
+	var images []models.Image
+	err = json.NewDecoder(r.Body).Decode(&images)
+	if err != nil {
+		err := errors.NewBadRequest("Invalid JSON")
 		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
 		return
 	}
 
-	ids := strings.Split(stringIds, ",")
+	ids := make([]uint, len(images))
+	for i := 0; i < len(images); i++ {
+		ids = append(ids, images[i].ID)
+	}
 
 	valid, err := services.UpdateService.ValidateUpdateSelection(account, ids)
 
@@ -500,18 +492,10 @@ func GetValidateUpdate(w http.ResponseWriter, r *http.Request) {
 		services.Log.WithFields(log.Fields{
 			"error": err.Error(),
 		}).Error("Error validating the images selection")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		respondWithAPIError(w, services.Log, errors.NewBadRequest(err.Error()))
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(ValidateUpdateResponse{
-		UpdateValid: valid,
-	}); err != nil {
-		services.Log.WithField("error", valid).Error("Error while trying to encode")
-	}
+	respondWithJSONBody(w, services.Log, &ValidateUpdateResponse{UpdateValid: valid})
 }

@@ -510,15 +510,19 @@ paths:
       summary: Return image running on device.
       description: Return image running on device.
   /updates/validate:
-    get:
-      operationId: GetValidateUpdate
-      parameters:
-        - name: ids
-          in: query
-          required: true
-          description: image ids
-          schema:
-            type: string
+    post:
+      operationId: PostValidateUpdate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+        required: true
       responses:
         "200":
           content:

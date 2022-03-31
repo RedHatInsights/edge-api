@@ -168,7 +168,7 @@ func (mr *MockUpdateServiceInterfaceMockRecorder) WriteTemplate(templateInfo, ac
 }
 
 // ValidateUpdateSelection mocks base method
-func (m *MockUpdateServiceInterface) ValidateUpdateSelection(account string, imageIds []string) (bool, error) {
+func (m *MockUpdateServiceInterface) ValidateUpdateSelection(account string, imageIds []uint) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ValidateUpdateSelection", account, imageIds)
 	ret0, _ := ret[0].(bool)
@@ -177,7 +177,7 @@ func (m *MockUpdateServiceInterface) ValidateUpdateSelection(account string, ima
 }
 
 // ValidateUpdateSelection mock
-func (mr *MockUpdateServiceInterfaceMockRecorder) ValidateUpdateSelection(account string, imageIds []string) *gomock.Call {
+func (mr *MockUpdateServiceInterfaceMockRecorder) ValidateUpdateSelection(account string, imageIds []uint) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendDeviceNotification", reflect.TypeOf((*MockUpdateServiceInterface)(nil).ValidateUpdateSelection), account, imageIds)
 }

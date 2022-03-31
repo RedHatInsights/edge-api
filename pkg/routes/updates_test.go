@@ -1,9 +1,9 @@
 package routes
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -108,7 +108,7 @@ var _ = Describe("Update routes", func() {
 			Log:           logger,
 		}
 	})
-	Context("GET GetValidateUpdate", func() {
+	Context("POST PostValidateUpdate", func() {
 		var imageSameGroup1 models.Image
 		var imageSameGroup2 models.Image
 		var imageDifferentGroup models.Image
@@ -151,14 +151,16 @@ var _ = Describe("Update routes", func() {
 		})
 		When("when images selection has one image", func() {
 			It("should allow to update", func() {
-				req, err := http.NewRequest("GET", fmt.Sprintf("/?ids=%d", imageSameGroup1.ID), nil)
+				jsonImagesBytes, err := json.Marshal([]models.Image{imageSameGroup1})
+				Expect(err).To(BeNil())
 
+				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(jsonImagesBytes))
 				Expect(err).To(BeNil())
 
 				rr := httptest.NewRecorder()
 				ctx := dependencies.ContextWithServices(req.Context(), edgeAPIServices)
 				req = req.WithContext(ctx)
-				handler := http.HandlerFunc(GetValidateUpdate)
+				handler := http.HandlerFunc(PostValidateUpdate)
 
 				handler.ServeHTTP(rr, req.WithContext(ctx))
 
@@ -170,14 +172,16 @@ var _ = Describe("Update routes", func() {
 		})
 		When("when images selection has the same image set and same account", func() {
 			It("should allow to update", func() {
-				req, err := http.NewRequest("GET", fmt.Sprintf("/?ids=%d,%d", imageSameGroup1.ID, imageSameGroup2.ID), nil)
+				jsonImagesBytes, err := json.Marshal([]models.Image{imageSameGroup1, imageSameGroup2})
+				Expect(err).To(BeNil())
 
+				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(jsonImagesBytes))
 				Expect(err).To(BeNil())
 
 				rr := httptest.NewRecorder()
 				ctx := dependencies.ContextWithServices(req.Context(), edgeAPIServices)
 				req = req.WithContext(ctx)
-				handler := http.HandlerFunc(GetValidateUpdate)
+				handler := http.HandlerFunc(PostValidateUpdate)
 
 				handler.ServeHTTP(rr, req.WithContext(ctx))
 
@@ -195,8 +199,10 @@ var _ = Describe("Update routes", func() {
 				config.Get().Auth = false
 			})
 			It("should not allow to update", func() {
-				req, err := http.NewRequest("GET", fmt.Sprintf("/?ids=%d,%d", imageSameGroup1.ID, imageSameGroup2.ID), nil)
+				jsonImagesBytes, err := json.Marshal([]models.Image{imageSameGroup1, imageSameGroup2})
+				Expect(err).To(BeNil())
 
+				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(jsonImagesBytes))
 				Expect(err).To(BeNil())
 
 				rr := httptest.NewRecorder()
@@ -206,7 +212,7 @@ var _ = Describe("Update routes", func() {
 				req = req.WithContext(ctx)
 				ctx = dependencies.ContextWithServices(req.Context(), edgeAPIServices)
 				req = req.WithContext(ctx)
-				handler := http.HandlerFunc(GetValidateUpdate)
+				handler := http.HandlerFunc(PostValidateUpdate)
 
 				handler.ServeHTTP(rr, req.WithContext(ctx))
 
@@ -218,14 +224,16 @@ var _ = Describe("Update routes", func() {
 		})
 		When("when images selection has different image sets", func() {
 			It("should not allow to update", func() {
-				req, err := http.NewRequest("GET", fmt.Sprintf("/?ids=%d,%d", imageSameGroup1.ID, imageDifferentGroup.ID), nil)
+				jsonImagesBytes, err := json.Marshal([]models.Image{imageSameGroup1, imageDifferentGroup})
+				Expect(err).To(BeNil())
 
+				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(jsonImagesBytes))
 				Expect(err).To(BeNil())
 
 				rr := httptest.NewRecorder()
 				ctx := dependencies.ContextWithServices(req.Context(), edgeAPIServices)
 				req = req.WithContext(ctx)
-				handler := http.HandlerFunc(GetValidateUpdate)
+				handler := http.HandlerFunc(PostValidateUpdate)
 
 				handler.ServeHTTP(rr, req.WithContext(ctx))
 
