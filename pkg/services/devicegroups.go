@@ -122,11 +122,7 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 	//Getting all devices for all groups
 	setOfDevices := make(map[int][]models.Device)
 	for _, group := range deviceGroups {
-		var devices []models.Device
-		for _, device := range group.Devices {
-			devices = append(devices, device)
-		}
-		setOfDevices[int(group.ID)] = devices
+		setOfDevices[int(group.ID)] = group.Devices
 	}
 
 	//Getting all images for all devices
@@ -167,7 +163,6 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 }
 
 // GetDeviceImageInfo returns the image related to the groups
-// func GetDeviceImageInfo(images map[int]int, account string) (*[]models.DeviceImageInfo, error) {
 func GetDeviceImageInfo(images map[int]int, account string) (map[int]models.DeviceImageInfo, error) {
 
 	// listImageInfo := []models.DeviceImageInfo{}
