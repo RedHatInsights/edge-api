@@ -120,60 +120,57 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 	}
 
 	//Getting all devices for all groups
-	setOfDevices := make(map[int][]models.Device)
+	setOfDevices := make(map[int]models.Device)
 	for _, group := range deviceGroups {
-		setOfDevices[int(group.ID)] = group.Devices
-	}
-
-	//Getting all images for all devices
-	setOfImages := make(map[int]int)
-	for _, devices := range setOfDevices {
-		for _, device := range devices {
-			setOfImages[int(device.ImageID)] = int(device.ImageID)
+		for _, device := range group.Devices {
+			setOfDevices[int(device.ID)] = device
 		}
 	}
 
-	//Getting image info for all related images
-	listImageInfo, err := GetDeviceImageInfo(setOfImages, account)
+	//Getting image info to related images
+	listImageInfo, err := GetDeviceImageInfo(setOfDevices, account)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error getting device image info")
 		return nil, res.Error
 	}
 
+	//built set of imageInfo
+	setOfImages := make(map[int]models.DeviceImageInfo)
+	for _, device := range setOfDevices {
+		setOfImages[int(device.ImageID)] = listImageInfo[int(device.ImageID)]
+	}
+
 	//Concat info
 	var deviceGroupListDetail []models.DeviceGroupListDetail
 	for _, group := range deviceGroups {
-		var imgInfo []models.DeviceImageInfo
-		imgIds := make(map[int]int)
-		imgDeviceInfo := make(map[int][]models.DeviceImageInfo)
+		imgInfo := make(map[int]models.DeviceImageInfo)
 		for _, device := range group.Devices {
-			//avoid duplication
-			if imgIds[int(device.ImageID)] == 0 {
-				imgIds[int(device.ImageID)] = int(device.ImageID)
-				imgInfo = append(imgInfo, listImageInfo[int(device.ImageID)])
-				imgDeviceInfo[int(group.ID)] = imgInfo
-			}
+			imgInfo[int(device.ImageID)] = listImageInfo[int(device.ImageID)]
 		}
+		var info []models.DeviceImageInfo
+		for i := range imgInfo {
+			info = append(info, imgInfo[i])
+		}
+
 		deviceGroupListDetail = append(deviceGroupListDetail,
 			models.DeviceGroupListDetail{DeviceGroup: group,
-				DeviceImageInfo: &imgInfo})
+				DeviceImageInfo: &info})
 	}
 
 	return &deviceGroupListDetail, nil
 }
 
 // GetDeviceImageInfo returns the image related to the groups
-func GetDeviceImageInfo(images map[int]int, account string) (map[int]models.DeviceImageInfo, error) {
-
+func GetDeviceImageInfo(images map[int]models.Device, account string) (map[int]models.DeviceImageInfo, error) {
 	// listImageInfo := []models.DeviceImageInfo{}
 	listImageInfo := make(map[int]models.DeviceImageInfo)
-	for _, imageID := range images {
+	for _, device := range images {
 		var updAvailable bool
 		var deviceImage models.Image
 		var deviceImageSet models.ImageSet
 		var CommitID uint
 		if result := db.DB.Where(models.Image{Account: account}).
-			First(&deviceImage, imageID); result.Error != nil {
+			First(&deviceImage, device.ImageID); result.Error != nil {
 			return nil, result.Error
 		}
 		if result := db.DB.Where(models.ImageSet{Account: account}).Preload("Images").
@@ -184,12 +181,12 @@ func GetDeviceImageInfo(images map[int]int, account string) (map[int]models.Devi
 		latestImage := &deviceImageSet.Images[len(deviceImageSet.Images)-1]
 		latestImageID := latestImage.ID
 
-		if int(latestImageID) > imageID {
+		if int(latestImageID) > int(device.ImageID) {
 			updAvailable = true
 			CommitID = deviceImageSet.Images[len(deviceImageSet.Images)-1].CommitID
 		}
 
-		listImageInfo[int(imageID)] = models.DeviceImageInfo{Name: deviceImage.Name,
+		listImageInfo[int(device.ImageID)] = models.DeviceImageInfo{Name: deviceImage.Name,
 			UpdateAvailable: updAvailable,
 			CommitID:        CommitID}
 
