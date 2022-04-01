@@ -407,7 +407,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		services.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
-		//go services.UpdateService.CreateUpdate(update.ID)
+		go services.UpdateService.CreateUpdate(update.ID)
 	}
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(updates); err != nil {
