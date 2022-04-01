@@ -27,7 +27,10 @@ func getStaleBuilds(status string, age int) []models.Image {
 	//tresult := db.DB.Debug().Raw("SELECT id, status, updated_at FROM images WHERE status = ? AND updated_at < NOW() - INTERVAL '? hours'", status, age).Scan(&images)
 
 	// temporary query to see this thing work
-	tresult := db.DB.Debug().Where("status = '?' AND updated_at < NOW() - INTERVAL '? hours'", status, age).Find(&images)
+	// looks like we ran into a known pgx issue when using ? for parameters in certain prepared SQL statements
+	// trying out using Sprintf to predefine the query and pass to Where
+	query := fmt.Sprintf("status = '%s' AND updated_at < NOW() - INTERVAL '%d hours'", status, age)
+	tresult := db.DB.Debug().Where(query).Find(&images)
 	if tresult.Error != nil {
 		log.WithField("error", tresult.Error.Error()).Error("tresult query failed")
 	} else {
@@ -45,7 +48,7 @@ func getStaleBuilds(status string, age int) []models.Image {
 		}
 	}
 
-	qresult := db.DB.Debug().Raw("SELECT id, status, updated_at FROM images WHERE status = '?'", status).Scan(&images)
+	qresult := db.DB.Debug().Raw("SELECT id, status, updated_at FROM images WHERE status = ?", status).Scan(&images)
 	log.WithFields(log.Fields{
 		"numImages": qresult.RowsAffected,
 		"status":    status,
