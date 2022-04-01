@@ -143,7 +143,6 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 	//Concat info
 	var deviceGroupListDetail []models.DeviceGroupListDetail
 	for _, group := range deviceGroups {
-		// var imageInfo []models.DeviceImageInfo
 		imgInfo := make(map[int]models.DeviceImageInfo)
 		for _, device := range group.Devices {
 			imgInfo[int(device.ImageID)] = setOfImages[int(device.ImageID)]
