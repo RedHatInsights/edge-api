@@ -518,10 +518,7 @@ paths:
             schema:
               type: array
               items:
-                type: object
-                properties:
-                  id:
-                    type: integer
+                $ref: "#/components/schemas/v1.Image"
         required: true
       responses:
         "200":

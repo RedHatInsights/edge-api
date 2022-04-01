@@ -474,10 +474,7 @@ func PostValidateUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var images []models.Image
-	err = json.NewDecoder(r.Body).Decode(&images)
-	if err != nil {
-		err := errors.NewBadRequest("Invalid JSON")
-		w.WriteHeader(err.GetStatus())
+	if err := readRequestJSONBody(w, r, services.Log, &images); err != nil {
 		return
 	}
 

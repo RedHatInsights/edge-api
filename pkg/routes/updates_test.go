@@ -124,19 +124,7 @@ var _ = Describe("Update routes", func() {
 			db.DB.Create(&imageSetDifferentGroup)
 
 			imageSameGroup1 = models.Image{
-				Name:         "image-same-group-1",
-				Distribution: "rhel-8",
-				OutputTypes:  []string{"rhel-edge-installer"},
-				Commit: &models.Commit{
-					Arch: "x86_64",
-					InstalledPackages: []models.InstalledPackage{
-						{Name: "vim"},
-					},
-				},
-				Installer: &models.Installer{
-					Username: "root",
-					SSHKey:   "ssh-rsa d9:f158:00:abcd",
-				},
+				Name:       "image-same-group-1",
 				ImageSetID: &imageSetSameGroup.ID,
 				Account:    "0000000",
 			}
