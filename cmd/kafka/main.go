@@ -13,7 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
-	//"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 )
 
 // NOTE: this is currently designed for a single ibvents replica
@@ -121,12 +120,10 @@ func main() {
 				"Status":    staleImage.Status,
 			}).Info("Processing stale building image")
 
-			// FIXME: holding off on db update until we see the query work in stage
-			/* statusUpdateError := setImageStatus(staleImage.ID, models.ImageStatusError)
+			statusUpdateError := setImageStatus(staleImage.ID, models.ImageStatusError)
 			if statusUpdateError != nil {
 				log.Error("Failed to update stale building image build status")
 			}
-			*/
 		}
 
 		// handle image builds in INTERRUPTED status
