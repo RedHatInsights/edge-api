@@ -15,6 +15,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory/mock_inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 	log "github.com/sirupsen/logrus"
@@ -649,6 +650,62 @@ var _ = Describe("DeviceService", func() {
 			result = db.DB.Where(models.DeviceGroup{Account: deviceGroup.Account}).Preload("Devices").First(&savedDeviceGroup, deviceGroup.ID)
 			Expect(result.Error).To(BeNil())
 			Expect(savedDeviceGroup.Devices).To(BeEmpty())
+		})
+	})
+	Context("GetDeviceView", func() {
+		When("their are no devices", func() {
+			It("should return zero devices", func() {
+				devices, err := deviceService.GetDeviceView()
+				Expect(err).To(BeNil())
+				Expect(devices).ToNot(BeNil())
+				Expect(devices.Devices).To(HaveLen(0))
+				Expect(devices.Total).To(Equal(0))
+			})
+		})
+		When("devices are returned from the db", func() {
+			It("should return devices", func() {
+				// account, err := common.GetAccountFromContext(context.Background())
+				// Expect(err).To(BeNil())
+				account := common.DefaultAccount
+				var imageV1 *models.Image
+
+				imageSet := &models.ImageSet{
+					Name:    "test",
+					Version: 2,
+					Account: account,
+				}
+				result := db.DB.Create(imageSet)
+				Expect(result.Error).ToNot(HaveOccurred())
+				imageV1 = &models.Image{
+					Commit: &models.Commit{
+						OSTreeCommit: faker.UUIDHyphenated(),
+					},
+					Status:     models.ImageStatusSuccess,
+					ImageSetID: &imageSet.ID,
+					Version:    1,
+					Account:    common.DefaultAccount,
+				}
+				result = db.DB.Create(imageV1.Commit)
+				Expect(result.Error).ToNot(HaveOccurred())
+				result = db.DB.Create(imageV1)
+				Expect(result.Error).ToNot(HaveOccurred())
+
+				deviceWithImage := models.Device{Account: account, ImageID: imageV1.ID}
+
+				result = db.DB.Create(&deviceWithImage)
+				Expect(result.Error).To(BeNil())
+
+				deviceService := services.DeviceService{
+					Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+					Inventory: mockInventoryClient,
+				}
+
+				devices, err := deviceService.GetDeviceView()
+				Expect(devices).ToNot(BeNil())
+				Expect(devices.Devices).To(HaveLen(1))
+				Expect(devices.Total).To(Equal(1))
+				Expect(err).To(BeNil())
+			})
 		})
 	})
 })
