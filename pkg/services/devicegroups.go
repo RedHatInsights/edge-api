@@ -141,7 +141,6 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 	}
 
 	//Concat info
-
 	var deviceGroupListDetail []models.DeviceGroupListDetail
 	for _, group := range deviceGroups {
 		// var imageInfo []models.DeviceImageInfo
@@ -186,7 +185,7 @@ func GetDeviceImageInfo(images map[int]models.DeviceImageInfo, account string) e
 			updAvailable = true
 			CommitID = deviceImageSet.Images[len(deviceImageSet.Images)-1].CommitID
 		}
-		//
+
 		images[imageId] = models.DeviceImageInfo{
 			Name:            deviceImage.Name,
 			UpdateAvailable: updAvailable,
