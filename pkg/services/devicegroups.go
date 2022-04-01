@@ -161,13 +161,13 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 
 // GetDeviceImageInfo returns the image related to the groups
 func GetDeviceImageInfo(images map[int]models.DeviceImageInfo, account string) error {
-	for imageId := range images {
+	for imageID := range images {
 		var updAvailable bool
 		var deviceImage models.Image
 		var deviceImageSet models.ImageSet
 		var CommitID uint
 		if result := db.DB.Where(models.Image{Account: account}).
-			First(&deviceImage, imageId); result.Error != nil {
+			First(&deviceImage, imageID); result.Error != nil {
 			return result.Error
 		}
 
@@ -180,12 +180,12 @@ func GetDeviceImageInfo(images map[int]models.DeviceImageInfo, account string) e
 		latestImage := &deviceImageSet.Images[len(deviceImageSet.Images)-1]
 		latestImageID := latestImage.ID
 
-		if int(latestImageID) > imageId {
+		if int(latestImageID) > imageID {
 			updAvailable = true
 			CommitID = deviceImageSet.Images[len(deviceImageSet.Images)-1].CommitID
 		}
 
-		images[imageId] = models.DeviceImageInfo{
+		images[imageID] = models.DeviceImageInfo{
 			Name:            deviceImage.Name,
 			UpdateAvailable: updAvailable,
 			CommitID:        CommitID}
