@@ -119,3 +119,10 @@ type DeviceHasImageUndefined struct{}
 func (e *DeviceHasImageUndefined) Error() string {
 	return "device has image undefined"
 }
+
+// DeviceHasNoImage indicates that device record no image
+type DeviceHasNoImage struct{}
+
+func (e *DeviceHasNoImage) Error() string {
+	return "image not found"
+}
