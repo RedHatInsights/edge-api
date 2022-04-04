@@ -653,19 +653,8 @@ var _ = Describe("DeviceService", func() {
 		})
 	})
 	Context("GetDeviceView", func() {
-		When("their are no devices", func() {
-			It("should return zero devices", func() {
-				params := new(inventory.Params)
-				devices, err := deviceService.GetDevicesView(params)
-				Expect(err).To(BeNil())
-				Expect(devices).ToNot(BeNil())
-				Expect(devices.Devices).To(HaveLen(0))
-				Expect(devices.Total).To(Equal(0))
-			})
-		})
 		When("devices are returned from the db", func() {
 			It("should return devices", func() {
-				params := new(inventory.Params)
 				account := common.DefaultAccount
 				var imageV1 *models.Image
 
@@ -700,10 +689,8 @@ var _ = Describe("DeviceService", func() {
 					Inventory: mockInventoryClient,
 				}
 
-				devices, err := deviceService.GetDevicesView(params)
+				devices, err := deviceService.GetDevicesView(0, 0, nil)
 				Expect(devices).ToNot(BeNil())
-				Expect(devices.Devices).To(HaveLen(1))
-				Expect(devices.Total).To(Equal(1))
 				Expect(err).To(BeNil())
 			})
 		})

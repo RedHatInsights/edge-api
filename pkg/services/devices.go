@@ -10,6 +10,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -27,7 +28,8 @@ const (
 // DeviceServiceInterface defines the interface to handle the business logic of RHEL for Edge Devices
 type DeviceServiceInterface interface {
 	GetDevices(params *inventory.Params) (*models.DeviceDetailsList, error)
-	GetDevicesView(params *inventory.Params) (*models.DeviceViewList, error)
+	GetDevicesView(limit int, offset int, tx *gorm.DB) (*models.DeviceViewList, error)
+	GetDevicesCount(tx *gorm.DB) (int64, error)
 	GetDeviceByID(deviceID uint) (*models.Device, error)
 	GetDeviceByUUID(deviceUUID string) (*models.Device, error)
 	// Device by UUID methods
@@ -531,15 +533,42 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 	return nil
 }
 
+// GetDevicesCount get the device groups account records count from the database
+func (s *DeviceService) GetDevicesCount(tx *gorm.DB) (int64, error) {
+	account, err := common.GetAccountFromContext(s.ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	if tx == nil {
+		tx = db.DB
+	}
+
+	var count int64
+
+	res := tx.Model(&models.Device{}).Where("account = ?", account).Count(&count)
+
+	if res.Error != nil {
+		s.log.WithField("error", res.Error.Error()).Error("Error getting device groups count")
+		return 0, res.Error
+	}
+
+	return count, nil
+}
+
 // GetDevicesView returns a list of EdgeDevices for a given account.
-func (s *DeviceService) GetDevicesView(params *inventory.Params) (*models.DeviceViewList, error) {
+func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*models.DeviceViewList, error) {
 	account, err := common.GetAccountFromContext(s.ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	if tx == nil {
+		tx = db.DB
+	}
+
 	var storedDevices []models.Device
-	if res := db.DB.Where("account = ?", account).Find(&storedDevices); res.Error != nil {
+	if res := tx.Limit(limit).Offset(offset).Where("account = ?", account).Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
 	}
 
