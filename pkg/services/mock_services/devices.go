@@ -49,19 +49,19 @@ func (mr *MockDeviceServiceInterfaceMockRecorder) GetDevices(params interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDevices", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetDevices), params)
 }
 
-// GetDeviceView mocks base method
-func (m *MockDeviceServiceInterface) GetDeviceView() (*models.DeviceViewList, error) {
+// GetDevicesView mocks base method
+func (m *MockDeviceServiceInterface) GetDevicesView(params *inventory.Params) (*models.DeviceViewList, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDeviceView")
+	ret := m.ctrl.Call(m, "GetDevicesView", params)
 	ret0, _ := ret[0].(*models.DeviceViewList)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetDeviceView indicates an expected call of GetDeviceView
-func (mr *MockDeviceServiceInterfaceMockRecorder) GetDeviceView() *gomock.Call {
+// GetDevicesView indicates an expected call of GetDevicesView
+func (mr *MockDeviceServiceInterfaceMockRecorder) GetDevicesView(params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceView", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetDeviceView))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDevicesView", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetDevicesView), params)
 }
 
 // GetDeviceByID mocks base method

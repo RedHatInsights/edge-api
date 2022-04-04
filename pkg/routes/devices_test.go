@@ -13,6 +13,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes"
@@ -140,13 +141,14 @@ var _ = Describe("Devices View Router", func() {
 
 		When("when devices are not found", func() {
 			It("should return 200", func() {
-				mockDeviceService.EXPECT().GetDeviceView().Return(&models.DeviceViewList{}, nil)
+				params := new(inventory.Params)
+				mockDeviceService.EXPECT().GetDevicesView(params).Return(&models.DeviceViewList{}, nil)
 				req, err := http.NewRequest("GET", "/", nil)
 				if err != nil {
 					Expect(err).ToNot(HaveOccurred())
 				}
 				rr := httptest.NewRecorder()
-				handler := http.HandlerFunc(routes.GetDeviceView)
+				handler := http.HandlerFunc(routes.GetDevicesView)
 
 				ctx := dependencies.ContextWithServices(req.Context(), mockServices)
 				req = req.WithContext(ctx)

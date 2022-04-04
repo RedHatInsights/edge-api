@@ -655,7 +655,8 @@ var _ = Describe("DeviceService", func() {
 	Context("GetDeviceView", func() {
 		When("their are no devices", func() {
 			It("should return zero devices", func() {
-				devices, err := deviceService.GetDeviceView()
+				params := new(inventory.Params)
+				devices, err := deviceService.GetDevicesView(params)
 				Expect(err).To(BeNil())
 				Expect(devices).ToNot(BeNil())
 				Expect(devices.Devices).To(HaveLen(0))
@@ -664,8 +665,7 @@ var _ = Describe("DeviceService", func() {
 		})
 		When("devices are returned from the db", func() {
 			It("should return devices", func() {
-				// account, err := common.GetAccountFromContext(context.Background())
-				// Expect(err).To(BeNil())
+				params := new(inventory.Params)
 				account := common.DefaultAccount
 				var imageV1 *models.Image
 
@@ -700,7 +700,7 @@ var _ = Describe("DeviceService", func() {
 					Inventory: mockInventoryClient,
 				}
 
-				devices, err := deviceService.GetDeviceView()
+				devices, err := deviceService.GetDevicesView(params)
 				Expect(devices).ToNot(BeNil())
 				Expect(devices.Devices).To(HaveLen(1))
 				Expect(devices.Total).To(Equal(1))

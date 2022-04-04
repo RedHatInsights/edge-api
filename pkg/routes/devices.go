@@ -18,7 +18,7 @@ import (
 // MakeDevicesRouter adds support for operations on update
 func MakeDevicesRouter(sub chi.Router) {
 	sub.Get("/", GetDevices)
-	sub.Get("/devicesview", GetDeviceView)
+	sub.Get("/devicesview", GetDevicesView)
 	sub.With(common.Paginate).Get("/db", GetDBDevices)
 	sub.Route("/{DeviceUUID}", func(r chi.Router) {
 		r.Use(DeviceCtx)
@@ -216,10 +216,11 @@ func GetDeviceDBInfo(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, contextServices.Log, &devices)
 }
 
-// GetDeviceView returns all data needed to display customers devices
-func GetDeviceView(w http.ResponseWriter, r *http.Request) {
+// GetDevicesView returns all data needed to display customers devices
+func GetDevicesView(w http.ResponseWriter, r *http.Request) {
 	contextServices := dependencies.ServicesFromContext(r.Context())
-	devicesViewList, err := contextServices.DeviceService.GetDeviceView()
+	params := deviceListFilters(r.URL.Query())
+	devicesViewList, err := contextServices.DeviceService.GetDevicesView(params)
 	if err != nil {
 		respondWithAPIError(w, contextServices.Log, errors.NewNotFound("No devices found"))
 		return

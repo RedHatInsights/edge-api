@@ -27,7 +27,7 @@ const (
 // DeviceServiceInterface defines the interface to handle the business logic of RHEL for Edge Devices
 type DeviceServiceInterface interface {
 	GetDevices(params *inventory.Params) (*models.DeviceDetailsList, error)
-	GetDeviceView() (*models.DeviceViewList, error)
+	GetDevicesView(params *inventory.Params) (*models.DeviceViewList, error)
 	GetDeviceByID(deviceID uint) (*models.Device, error)
 	GetDeviceByUUID(deviceUUID string) (*models.Device, error)
 	// Device by UUID methods
@@ -531,8 +531,8 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 	return nil
 }
 
-// GetDeviceView returns a list of EdgeDevices for a given account.
-func (s *DeviceService) GetDeviceView() (*models.DeviceViewList, error) {
+// GetDevicesView returns a list of EdgeDevices for a given account.
+func (s *DeviceService) GetDevicesView(params *inventory.Params) (*models.DeviceViewList, error) {
 	account, err := common.GetAccountFromContext(s.ctx)
 	if err != nil {
 		return nil, err
@@ -550,31 +550,44 @@ func (s *DeviceService) GetDeviceView() (*models.DeviceViewList, error) {
 	// create a map of unique image id's. We dont want to look of a given image id more than once.
 	setOfImages := make(map[uint]*neededImageInfo)
 	for _, devices := range storedDevices {
-		setOfImages[devices.ImageID] = &neededImageInfo{Name: "", Status: ""}
+		if devices.ImageID != 0 {
+			setOfImages[devices.ImageID] = &neededImageInfo{Name: "", Status: ""}
+		}
 	}
 
 	// using the map of unique image ID's, get the corresponding image name and status.
-	for imageID := range setOfImages {
-		// get the device image
-		var deviceImage models.Image
-		if result := db.DB.Where(models.Image{Account: account}).First(&deviceImage, imageID); result.Error != nil {
-			return nil, result.Error
-		}
-		setOfImages[imageID] = &neededImageInfo{Name: deviceImage.Name, Status: deviceImage.Status}
+	imagesIDS := []uint{}
+	for key := range setOfImages {
+		imagesIDS = append(imagesIDS, key)
+	}
+
+	var images []models.Image
+	if result := db.DB.Where("account = ? AND id IN (?)", account, imagesIDS).Find(&images); result.Error != nil {
+		return nil, result.Error
+	}
+
+	for _, image := range images {
+		setOfImages[image.ID] = &neededImageInfo{Name: image.Name, Status: image.Status}
 	}
 
 	// build the return object
 	// TODO: add device group info
 	returnDevices := []models.DeviceView{}
 	for _, device := range storedDevices {
+		var imageName string
+		var imageStatus string
+		if _, ok := setOfImages[device.ImageID]; ok {
+			imageName = setOfImages[device.ImageID].Name
+			imageStatus = setOfImages[device.ImageID].Status
+		}
 		currentDeviceView := models.DeviceView{
 			DeviceID:        device.ID,
 			DeviceName:      device.Name,
 			ImageID:         device.ImageID,
-			ImageName:       setOfImages[device.ImageID].Name,
+			ImageName:       imageName,
 			LastSeen:        device.LastSeen.Time.String(),
 			UpdateAvailable: device.UpdateAvailable,
-			Status:          setOfImages[device.ImageID].Status,
+			Status:          imageStatus,
 		}
 		returnDevices = append(returnDevices, currentDeviceView)
 	}
