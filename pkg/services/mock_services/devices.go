@@ -239,3 +239,18 @@ func (mr *MockDeviceServiceInterfaceMockRecorder) ProcessPlatformInventoryUpdate
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessPlatformInventoryUpdatedEvent", reflect.TypeOf((*MockDeviceServiceInterface)(nil).ProcessPlatformInventoryUpdatedEvent), message)
 }
+
+// GetUpdateCommitFromDevice mocks base method
+func (m *MockDeviceServiceInterface) GetUpdateCommitFromDevice(account, deviceUUID string) (uint, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUpdateCommitFromDevice", account, deviceUUID)
+	ret0, _ := ret[0].(uint)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUpdateCommitFromDevice indicates an expected call of GetUpdateCommitFromDevice
+func (mr *MockDeviceServiceInterfaceMockRecorder) GetUpdateCommitFromDevice(account, deviceUUID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUpdateCommitFromDevice", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetUpdateCommitFromDevice), account, deviceUUID)
+}
