@@ -130,7 +130,9 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 	//built set of imageInfo
 	setOfImages := make(map[int]models.DeviceImageInfo)
 	for _, device := range setOfDevices {
-		setOfImages[int(device.ImageID)] = models.DeviceImageInfo{}
+		if int(device.ImageID) > 0 {
+			setOfImages[int(device.ImageID)] = models.DeviceImageInfo{}
+		}
 	}
 
 	//Getting image info to related images
@@ -145,7 +147,9 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 	for _, group := range deviceGroups {
 		imgInfo := make(map[int]models.DeviceImageInfo)
 		for _, device := range group.Devices {
-			imgInfo[int(device.ImageID)] = setOfImages[int(device.ImageID)]
+			if int(device.ImageID) > 0 {
+				imgInfo[int(device.ImageID)] = setOfImages[int(device.ImageID)]
+			}
 		}
 		var info []models.DeviceImageInfo
 		for i := range imgInfo {
@@ -162,34 +166,36 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 // GetDeviceImageInfo returns the image related to the groups
 func GetDeviceImageInfo(images map[int]models.DeviceImageInfo, account string) error {
 	for imageID := range images {
-		var updAvailable bool
-		var deviceImage models.Image
-		var deviceImageSet models.ImageSet
-		var CommitID uint
-		if result := db.DB.Where(models.Image{Account: account}).
-			First(&deviceImage, imageID); result.Error != nil {
-			return result.Error
+		if imageID > 0 {
+
+			var updAvailable bool
+			var deviceImage models.Image
+			var deviceImageSet models.ImageSet
+			var CommitID uint
+			if result := db.DB.Where(models.Image{Account: account}).
+				First(&deviceImage, imageID); result.Error != nil {
+				return result.Error
+			}
+
+			//should be changed to get the deviceInfo once we have the data correctly on DB
+			if result := db.DB.Where(models.ImageSet{Account: account}).Preload("Images").
+				First(&deviceImageSet, deviceImage.ImageSetID).Order("ID desc"); result.Error != nil {
+				return result.Error
+			}
+
+			latestImage := &deviceImageSet.Images[len(deviceImageSet.Images)-1]
+			latestImageID := latestImage.ID
+
+			if int(latestImageID) > imageID {
+				updAvailable = true
+				CommitID = deviceImageSet.Images[len(deviceImageSet.Images)-1].CommitID
+			}
+
+			images[imageID] = models.DeviceImageInfo{
+				Name:            deviceImage.Name,
+				UpdateAvailable: updAvailable,
+				CommitID:        CommitID}
 		}
-
-		//should be changed to get the deviceInfo once we have the data correctly on DB
-		if result := db.DB.Where(models.ImageSet{Account: account}).Preload("Images").
-			First(&deviceImageSet, deviceImage.ImageSetID).Order("ID desc"); result.Error != nil {
-			return result.Error
-		}
-
-		latestImage := &deviceImageSet.Images[len(deviceImageSet.Images)-1]
-		latestImageID := latestImage.ID
-
-		if int(latestImageID) > imageID {
-			updAvailable = true
-			CommitID = deviceImageSet.Images[len(deviceImageSet.Images)-1].CommitID
-		}
-
-		images[imageID] = models.DeviceImageInfo{
-			Name:            deviceImage.Name,
-			UpdateAvailable: updAvailable,
-			CommitID:        CommitID}
-
 	}
 	return nil
 }
