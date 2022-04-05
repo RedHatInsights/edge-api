@@ -13,6 +13,9 @@ export IQE_CJI_TIMEOUT="30m"  # This is the time to wait for smoke test to compl
 CICD_URL=https://raw.githubusercontent.com/RedHatInsights/bonfire/master/cicd
 curl -s $CICD_URL/bootstrap.sh > ${WORKSPACE}/cicd_bootstrap.sh && source ${WORKSPACE}/cicd_bootstrap.sh
 
+#temporary build to clear the layer cache
+podman build --no-cache -f "${APP_ROOT}/${DOCKERFILE}" -t "${IMAGE}:${IMAGE_TAG}" $APP_ROOT
+
 # Build the image and push to quay
 source $CICD_ROOT/build.sh
 
