@@ -690,13 +690,17 @@ var _ = Describe("DeviceService", func() {
 		})
 	})
 	Context("Get CommitID from Device Image", func() {
-		When("device Image doest not exists", func() {
+		When("device Image does not exists", func() {
 			It("should return zero images", func() {
 				account := faker.UUIDHyphenated()
 				device := models.Device{
 					Account: account,
 					UUID:    faker.UUIDHyphenated(),
 				}
+				updateImageCommitID, err := deviceService.GetUpdateCommitFromDevice(account, device.UUID)
+				Expect(updateImageCommitID == 0).To(BeTrue())
+				Expect(err).To(MatchError("record not found"))
+
 				result := db.DB.Where(models.Device{Account: device.Account, UUID: device.UUID}).First(&device)
 				Expect(result.Error).To(MatchError("record not found"))
 				Expect(device.ImageID == 0).To(BeTrue())
@@ -713,6 +717,14 @@ var _ = Describe("DeviceService", func() {
 					ImageSetID: &imageSet.ID,
 					Status:     models.ImageStatusSuccess,
 				}
+				device := models.Device{
+					UUID: faker.UUIDHyphenated(),
+				}
+				updateImageCommitID, err := deviceService.GetUpdateCommitFromDevice(updateImage.Account, device.UUID)
+				Expect(updateImageCommitID == 0).To(BeTrue())
+				Expect(err).ToNot(BeNil())
+				Expect(err).To(MatchError("record not found"))
+
 				var countUpdateImages int64
 				result := db.DB.Where("account = ? AND image_set_id = ? AND status = ? AND created_at > ?", updateImage.Account, updateImage.ImageSetID, models.ImageStatusSuccess, updateImage.CreatedAt).Order("version desc").First(&updateImage).Count(&countUpdateImages)
 				Expect(result.Error).ToNot(BeNil())
