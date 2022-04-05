@@ -6,7 +6,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
-	"gorm.io/gorm/logger"
 )
 
 func main() {
@@ -33,7 +32,6 @@ func main() {
 		"DatabaseName":             cfg.Database.Name,
 	}).Info("Configuration Values:")
 	db.InitDB()
-	db.DB.Logger.LogMode(logger.Info)
 
 	/*
 		// FIXME: this can create issues when only one out of many replicas evicts
