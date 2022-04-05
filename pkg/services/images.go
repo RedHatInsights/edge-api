@@ -59,6 +59,7 @@ type ImageServiceInterface interface {
 	SetBuildingStatusOnImageToRetryBuild(image *models.Image) error
 	GetRollbackImage(image *models.Image) (*models.Image, error)
 	SendImageNotification(image *models.Image) (ImageNotification, error)
+	SetDevicesUpdateAvailabilityFromImageSet(account string, ImageSetID uint) error
 }
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
@@ -493,6 +494,12 @@ func (s *ImageService) SetFinalImageStatus(i *models.Image) {
 		s.log.WithField("error", tx.Error.Error()).Error("Couldn't set final image status")
 	}
 	s.log.WithField("status", i.Status).Debug("Setting final image status")
+
+	if i.ImageSetID != nil && i.Status == models.ImageStatusSuccess {
+		if err := s.SetDevicesUpdateAvailabilityFromImageSet(i.Account, *i.ImageSetID); err != nil {
+			s.log.WithField("error", err.Error()).Error("Error while setting devices update availability flag")
+		}
+	}
 }
 
 func (s *ImageService) postProcessImage(id uint) {
@@ -628,7 +635,7 @@ func (s *ImageService) SetErrorStatusOnImage(err error, i *models.Image) {
 			}
 		}
 		if err != nil {
-			s.log.WithField("error", tx.Error.Error()).Error("Error setting image final status")
+			s.log.WithField("error", err.Error()).Error("Error setting image final status")
 		}
 	}
 }
@@ -1287,4 +1294,38 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 		return notify, nil
 	}
 	return notify, nil
+}
+
+// SetDevicesUpdateAvailabilityFromImageSet set whether updates available or not for all devices that use images of imageSet.
+func (s *ImageService) SetDevicesUpdateAvailabilityFromImageSet(account string, ImageSetID uint) error {
+	logger := s.log.WithFields(log.Fields{"account": account, "image_set": ImageSetID, "context": "SetDevicesUpdateAvailabilityFromImageSet"})
+
+	// get the last image with success status
+	var lastImage models.Image
+	if result := db.DB.Where("account = ? AND image_set_id = ? AND status = ?",
+		account, ImageSetID, models.ImageStatusSuccess).Order("created_at DESC").First(&lastImage); result.Error != nil {
+		return result.Error
+	}
+
+	// update all devices with last image that has update_available=true to update_available=false
+	if result := db.DB.Model(&models.Device{}).
+		Where("account = ? AND update_available = ? AND image_id = ? ", account, true, lastImage.ID).
+		UpdateColumn("update_available", false); result.Error != nil {
+		logger.WithField("error", result.Error).Error("Error occurred while updating device update_available")
+		return result.Error
+	}
+
+	// Create priorImagesSubQuery query for all successfully created images prior to lastImage
+	priorImagesSubQuery := db.DB.Model(&models.Image{}).Select("id").Where("account = ? AND image_set_id = ? AND status = ? AND created_at < ?",
+		account, ImageSetID, models.ImageStatusSuccess, lastImage.CreatedAt)
+
+	// Update all devices with prior images that has update_available=false to update_available=true
+	if result := db.DB.Model(&models.Device{}).
+		Where("account = ? AND update_available = ? AND image_id IN (?) ", account, false, priorImagesSubQuery).
+		UpdateColumn("update_available", true); result.Error != nil {
+		logger.WithField("error", result.Error).Error("Error occurred when updating account devices update_available")
+		return result.Error
+	}
+
+	return nil
 }

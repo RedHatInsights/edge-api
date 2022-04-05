@@ -76,6 +76,7 @@ func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		edgeAPIServices := Init(r.Context())
 		ctx := ContextWithServices(r.Context(), edgeAPIServices)
+		ctx = common.SetOriginalIdentity(ctx, r.Header.Get("X-Rh-Identity"))
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
