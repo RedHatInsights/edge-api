@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 export APP_NAME="edge"  # name of app-sre "application" folder this component lives in
 export COMPONENT_NAME="edge-api"  # name of app-sre "resourceTemplate" in deploy.yaml for this component
