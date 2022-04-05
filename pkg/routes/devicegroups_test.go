@@ -144,7 +144,7 @@ var _ = Describe("DeviceGroup routes", func() {
 
 				// setup mock for DeviceGroupsService
 				mockDeviceGroupsService.EXPECT().GetDeviceGroupsCount(gomock.Any(), gomock.Any()).Return(int64(0), nil)
-				mockDeviceGroupsService.EXPECT().GetDeviceGroups(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&[]models.DeviceGroup{}, nil)
+				mockDeviceGroupsService.EXPECT().GetDeviceGroups(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&[]models.DeviceGroupListDetail{}, nil)
 
 				handler := http.HandlerFunc(GetAllDeviceGroups)
 				handler.ServeHTTP(rr, req)
