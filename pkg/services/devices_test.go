@@ -702,28 +702,22 @@ var _ = Describe("DeviceService", func() {
 				Expect(device.ImageID == 0).To(BeTrue())
 			})
 		})
-		When("device Image have update", func() {
-			It("should return image updates", func() {
-				account := faker.UUIDHyphenated()
+		When("device Image does not have update", func() {
+			It("should return no image updates", func() {
 				imageSet := &models.ImageSet{
 					Name:    "test",
 					Version: 1,
-					Account: account,
 				}
-				var image models.Image
-				result := db.DB.Where("account = ? AND image_set_id = ? AND status = ?", account, imageSet.ID, models.ImageStatusSuccess).Order("created_at desc").First(&image)
-				Expect(result.Error).To(BeNil())
-
 				updateImage := models.Image{
-					Account:    account,
+					Account:    "0000000",
 					ImageSetID: &imageSet.ID,
 					Status:     models.ImageStatusSuccess,
 				}
 				var countUpdateImages int64
-				result = db.DB.Where("account = ? AND image_set_id = ? AND status = ? AND created_at > ?", updateImage.Account, updateImage.ImageSetID, models.ImageStatusSuccess, image.CreatedAt).Order("version desc").First(&updateImage).Count(&countUpdateImages)
-				Expect(result.Error).To(BeNil())
-				Expect(countUpdateImages == 1).To(BeTrue())
-				Expect(updateImage.CommitID == 0).To(BeFalse())
+				result := db.DB.Where("account = ? AND image_set_id = ? AND status = ? AND created_at > ?", updateImage.Account, updateImage.ImageSetID, models.ImageStatusSuccess, updateImage.CreatedAt).Order("version desc").First(&updateImage).Count(&countUpdateImages)
+				Expect(result.Error).ToNot(BeNil())
+				Expect(countUpdateImages == 0).To(BeTrue())
+				Expect(updateImage.CommitID == 0).To(BeTrue())
 
 			})
 		})
