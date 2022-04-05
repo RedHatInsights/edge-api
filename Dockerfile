@@ -77,7 +77,7 @@ COPY --from=edge-builder /go/bin/edge-api-ibvents /usr/bin
 COPY --from=edge-builder ${EDGE_API_WORKSPACE}/cmd/spec/openapi.json /var/tmp
 
 # kickstart inject requirements
-COPY --from=edge-builder ${EDGE_API_WORKSPACE}/scripts/fleetkick.sh /usr/local/bin
+COPY --from=edge-builder ${EDGE_API_WORKSPACE}/scripts/fleetkick.sh /usr/local/bin/fleetkick.sh
 RUN chmod +x /usr/local/bin/fleetkick.sh
 COPY --from=edge-builder ${EDGE_API_WORKSPACE}/templates/templateKickstart.ks /usr/local/etc
 
