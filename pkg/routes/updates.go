@@ -160,10 +160,10 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// UpdatePostJSON contains the update structure for the device
-type UpdatePostJSON struct {
-	CommitID   uint     `json:"CommitID"`
-	DeviceUUID []string `json:"DeviceUUID"`
+// UpdatePostJSON DevicesUpdate contains the update structure for the device
+type DevicesUpdate struct {
+	CommitID    uint     `json:"CommitID"`
+	DevicesUUID []string `json:"DeviceUUID"`
 	// TODO: Implement updates by tag
 	// Tag        string `json:"Tag"`
 }
@@ -186,22 +186,22 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 		return nil, err
 	}
 
-	var updateJSON UpdatePostJSON
-	err = json.NewDecoder(r.Body).Decode(&updateJSON)
+	var devicesUpdate DevicesUpdate
+	err = json.NewDecoder(r.Body).Decode(&devicesUpdate)
 	if err != nil {
 		err := errors.NewBadRequest("Invalid JSON")
 		w.WriteHeader(err.GetStatus())
 		return nil, err
 	}
-	services.Log.WithField("updateJSON", updateJSON).Debug("Update JSON received")
+	services.Log.WithField("updateJSON", devicesUpdate).Debug("Update JSON received")
 
-	if updateJSON.CommitID == 0 {
+	if devicesUpdate.CommitID == 0 {
 		err := errors.NewBadRequest("Must provide a CommitID")
 		w.WriteHeader(err.GetStatus())
 		return nil, err
 	}
 	// TODO: Implement update by tag - Add validation per tag
-	if updateJSON.DeviceUUID == nil {
+	if devicesUpdate.DevicesUUID == nil {
 		err := errors.NewBadRequest("DeviceUUID required.")
 		w.WriteHeader(err.GetStatus())
 		return nil, err
@@ -209,11 +209,9 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 	client := inventory.InitClient(r.Context(), log.NewEntry(log.StandardLogger()))
 	var inv inventory.Response
 	var ii []inventory.Response
-	if len(updateJSON.DeviceUUID) > 0 {
-		for _, UUID := range updateJSON.DeviceUUID {
+	if len(devicesUpdate.DevicesUUID) > 0 {
+		for _, UUID := range devicesUpdate.DevicesUUID {
 			inv, err = client.ReturnDevicesByID(UUID)
-			fmt.Printf("\n>>>>>>>>>>>reading inventory: %v\n", UUID)
-			fmt.Printf("\n###########reading count: %v\n", inv.Count)
 			if inv.Count >= 0 {
 				ii = append(ii, inv)
 			}
@@ -231,14 +229,14 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 		// Create the models.UpdateTransaction
 		update := models.UpdateTransaction{
 			Account:  account,
-			CommitID: updateJSON.CommitID,
+			CommitID: devicesUpdate.CommitID,
 			Status:   models.UpdateStatusCreated,
 			// TODO: Implement update by tag
 			// Tag:      updateJSON.Tag,
 		}
 
 		// Get the models.Commit from the Commit ID passed in via JSON
-		update.Commit, err = services.CommitService.GetCommitByID(updateJSON.CommitID)
+		update.Commit, err = services.CommitService.GetCommitByID(devicesUpdate.CommitID)
 		services.Log.WithField("commit", update.Commit).Debug("Commit retrieved from this update")
 
 		notify, errNotify := services.UpdateService.SendDeviceNotification(&update)
@@ -251,10 +249,10 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 		if err != nil {
 			services.Log.WithFields(log.Fields{
 				"error":    err.Error(),
-				"commitID": updateJSON.CommitID,
+				"commitID": devicesUpdate.CommitID,
 			}).Error("No commit found for Commit ID")
 			err := errors.NewInternalServerError()
-			err.SetTitle(fmt.Sprintf("No commit found for CommitID %d", updateJSON.CommitID))
+			err.SetTitle(fmt.Sprintf("No commit found for CommitID %d", devicesUpdate.CommitID))
 			w.WriteHeader(err.GetStatus())
 			return nil, err
 		}
