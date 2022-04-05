@@ -395,7 +395,8 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(err.GetStatus())
 			return
 		}
-		result := db.DB.Save(&update)
+		upd := &update
+		result := db.DB.Save(upd)
 		if result.Error != nil {
 			services.Log.WithFields(log.Fields{
 				"error": err.Error(),
