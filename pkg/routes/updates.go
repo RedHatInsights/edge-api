@@ -160,7 +160,7 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// UpdatePostJSON DevicesUpdate contains the update structure for the device
+//DevicesUpdate contains the update structure for the device
 type DevicesUpdate struct {
 	CommitID    uint     `json:"CommitID"`
 	DevicesUUID []string `json:"DeviceUUID"`
