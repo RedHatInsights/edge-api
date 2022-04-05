@@ -6,6 +6,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm/logger"
 )
 
 func main() {
@@ -32,6 +33,7 @@ func main() {
 		"DatabaseName":             cfg.Database.Name,
 	}).Info("Configuration Values:")
 	db.InitDB()
+	db.DB.Logger.LogMode(logger.Info)
 
 	/*
 		// FIXME: this can create issues when only one out of many replicas evicts
@@ -73,7 +75,7 @@ func main() {
 	// Automigration
 	// Order should match Deleting of models in cmd/db/wipe.go
 	// Order is not strictly alphabetical due to dependencies (e.g. Image needs ImageSet)
-	err := db.DB.AutoMigrate(&models.Commit{},
+	err := db.DB.Debug().AutoMigrate(&models.Commit{},
 		&models.DeviceGroup{},
 		&models.DispatchRecord{},
 		&models.FDODevice{},
