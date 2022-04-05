@@ -128,5 +128,6 @@ type DeviceHasNoImageUpdate struct{}
 func (e *DeviceHasNoImageUpdate) Error() string {
 	return "device has no image update"
 }
+
 // ErrUndefinedCommit indicate that the update transaction/image or some entity  has no commit defined.
 var ErrUndefinedCommit = errors.New("entity has defined commit")
