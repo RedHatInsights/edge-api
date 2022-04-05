@@ -495,7 +495,7 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 
 	if currentUpdate.Commit == nil {
 		logger.Error("The update transaction has no commit defined")
-		return new(UpdateTransactionHasCommitUndefined)
+		return ErrUndefinedCommit
 	}
 
 	// get the update commit image

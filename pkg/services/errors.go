@@ -1,5 +1,7 @@
 package services
 
+import "errors"
+
 // DeviceNotFoundError indicates the device was not found
 type DeviceNotFoundError struct{}
 
@@ -120,9 +122,5 @@ func (e *DeviceHasImageUndefined) Error() string {
 	return "device has image undefined"
 }
 
-// UpdateTransactionHasCommitUndefined indicate that the transaction has no commit defined
-type UpdateTransactionHasCommitUndefined struct{}
-
-func (e *UpdateTransactionHasCommitUndefined) Error() string {
-	return "update transaction has not no defined commit"
-}
+// ErrUndefinedCommit indicate that the update transaction/image or some entity  has no commit defined.
+var ErrUndefinedCommit = errors.New("entity has defined commit")
