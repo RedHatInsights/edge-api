@@ -124,5 +124,5 @@ func (e *DeviceHasImageUndefined) Error() string {
 type DeviceHasNoImageUpdate struct{}
 
 func (e *DeviceHasNoImageUpdate) Error() string {
-	return "image not found"
+	return "device has no image update"
 }
