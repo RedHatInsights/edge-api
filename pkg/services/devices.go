@@ -485,7 +485,7 @@ func (s *DeviceService) GetUpdateCommitFromDevice(account string, deviceID strin
 	}
 
 	if len(updateImages) == 0 {
-		return 0, new(DeviceHasNoImage)
+		return 0, new(DeviceHasNoImageUpdate)
 	}
 
 	return updateImages[0].CommitID, nil

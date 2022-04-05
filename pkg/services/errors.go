@@ -120,9 +120,9 @@ func (e *DeviceHasImageUndefined) Error() string {
 	return "device has image undefined"
 }
 
-// DeviceHasNoImage indicates that device record no image
-type DeviceHasNoImage struct{}
+// DeviceHasNoImageUpdate indicates that device record no image
+type DeviceHasNoImageUpdate struct{}
 
-func (e *DeviceHasNoImage) Error() string {
+func (e *DeviceHasNoImageUpdate) Error() string {
 	return "image not found"
 }
