@@ -385,6 +385,8 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(err.GetStatus())
 		return
 	}
+	var upd []models.UpdateTransaction
+
 	for _, update := range *updates {
 		update.Account, err = common.GetAccount(r)
 		if err != nil {
@@ -395,18 +397,18 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(err.GetStatus())
 			return
 		}
-		upd := &update
-		result := db.DB.Save(upd)
-		if result.Error != nil {
-			services.Log.WithFields(log.Fields{
-				"error": err.Error(),
-			}).Error("Error saving update")
-			err := errors.NewInternalServerError()
-			w.WriteHeader(err.GetStatus())
-			return
-		}
+		upd = append(upd, update)
 		services.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
 		go services.UpdateService.CreateUpdate(update.ID)
+	}
+	result := db.DB.Save(upd)
+	if result.Error != nil {
+		services.Log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Error("Error saving update")
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.GetStatus())
+		return
 	}
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(updates); err != nil {
