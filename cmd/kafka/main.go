@@ -13,55 +13,42 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
-	//"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 )
 
 // NOTE: this is currently designed for a single ibvents replica
 
+// get images with a build of x status and older than y hours
 func getStaleBuilds(status string, age int) []models.Image {
 	var images []models.Image
 
-	// check the database for image builds in INTERRUPTED status
-	//qresult := db.DB.Debug().Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
-	//qresult := db.DB.Debug().Raw("SELECT id, status, updated_at FROM images WHERE status = ? AND updated_at < NOW() - INTERVAL '? hours'", status, age).Scan(&images)
-	//tresult := db.DB.Debug().Raw("SELECT id, status, updated_at FROM images WHERE status = ? AND updated_at < NOW() - INTERVAL '? hours'", status, age).Scan(&images)
-
-	// temporary query to see this thing work
-	tresult := db.DB.Debug().Find(&images, "status = ? AND updated_at < NOW() - INTERVAL '? hours'", status, age)
-	if tresult.Error != nil {
-		log.WithFields(log.Fields{
-			"numImages": tresult.RowsAffected,
-			"status":    status,
-		}).Info("Found testing image(s) with interval")
-
-		for _, staleImage := range images {
-			log.WithFields(log.Fields{
-				"UpdatedAt": staleImage.UpdatedAt,
-				"ID":        staleImage.ID,
-				"Status":    staleImage.Status,
-			}).Info("Logging test interrupted image")
-		}
-	} else {
-		log.WithField("error", tresult.Error.Error())
+	// looks like we ran into a known pgx issue when using ? for parameters in certain prepared SQL statements
+	// 		using Sprintf to predefine the query and pass to Where
+	query := fmt.Sprintf("status = '%s' AND updated_at < NOW() - INTERVAL '%d hours'", status, age)
+	qresult := db.DB.Debug().Where(query).Find(&images)
+	if qresult.Error != nil {
+		log.WithField("error", qresult.Error.Error()).Error("Stale builds query failed")
+		return nil
 	}
 
-	qresult := db.DB.Debug().Raw("SELECT id, status, updated_at FROM images WHERE status = ?", status).Scan(&images)
 	log.WithFields(log.Fields{
 		"numImages": qresult.RowsAffected,
 		"status":    status,
-	}).Info("Found stale image(s)")
+		"interval":  age,
+	}).Debug("Found stale image(s) with interval")
 
 	return images
 }
 
+// set the status for a specific image
 func setImageStatus(id uint, status string) error {
-	/*tx := db.DB.Debug().Model(&models.Image{}).Where("ID = ?", id).Update("Status", status)
-	log.WithField("imageID", id).Debug("Image updated with " + fmt.Sprint(status) + " status")
+	tx := db.DB.Debug().Model(&models.Image{}).Where("ID = ?", id).Update("Status", status)
 	if tx.Error != nil {
 		log.WithField("error", tx.Error.Error()).Error("Error updating image status")
 		return tx.Error
 	}
-	*/
+
+	log.WithField("imageID", id).Debug("Image updated with " + fmt.Sprint(status) + " status")
+
 	return nil
 }
 
@@ -109,6 +96,7 @@ func main() {
 		// TODO: work out programatic method to avoid resuming a build until app is up or on way up
 
 		// handle stale interrupted builds not complete after x hours
+		// FIXME: change 48 hours to something closer to stale builds (6?)
 		staleInterruptedImages := getStaleBuilds(models.ImageStatusInterrupted, 48)
 		for _, staleImage := range staleInterruptedImages {
 			log.WithFields(log.Fields{
@@ -117,7 +105,6 @@ func main() {
 				"Status":    staleImage.Status,
 			}).Info("Processing stale interrupted image")
 
-			// FIXME: holding off on db update until we see the query work in stage
 			statusUpdateError := setImageStatus(staleImage.ID, models.ImageStatusError)
 			if statusUpdateError != nil {
 				log.Error("Failed to update stale interrupted image build status")
@@ -133,7 +120,6 @@ func main() {
 				"Status":    staleImage.Status,
 			}).Info("Processing stale building image")
 
-			// FIXME: holding off on db update until we see the query work in stage
 			statusUpdateError := setImageStatus(staleImage.ID, models.ImageStatusError)
 			if statusUpdateError != nil {
 				log.Error("Failed to update stale building image build status")
@@ -141,6 +127,8 @@ func main() {
 		}
 
 		// handle image builds in INTERRUPTED status
+		//	this is meant to handle builds that are interrupted when they are interrupted
+		// 	the stale interrupted build routine should never actually find anything while this is running
 		qresult := db.DB.Debug().Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
 		log.WithField("numImages", qresult.RowsAffected).Info("Found image(s) with interrupted status")
 
