@@ -25,7 +25,7 @@ podman login -u="${QUAY_USER}" -p="${QUAY_TOKEN}" quay.io
 podman login -u="${RH_REGISTRY_USER}" -p="${RH_REGISTRY_TOKEN}" registry.redhat.io
 
 # Build image
-podman build -f Dockerfile -t "${IMAGE}:${IMAGE_TAG}" .
+podman build --no-cache -f Dockerfile -t "${IMAGE}:${IMAGE_TAG}" .
 
 # Push image to remote repository
 podman push "${IMAGE}:${IMAGE_TAG}"
