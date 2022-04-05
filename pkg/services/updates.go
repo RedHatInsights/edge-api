@@ -34,6 +34,7 @@ type UpdateServiceInterface interface {
 	SetUpdateStatusBasedOnDispatchRecord(dispatchRecord models.DispatchRecord) error
 	SetUpdateStatus(update *models.UpdateTransaction) error
 	SendDeviceNotification(update *models.UpdateTransaction) (ImageNotification, error)
+	UpdateDevicesFromUpdateTransaction(update models.UpdateTransaction) error
 }
 
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
@@ -367,8 +368,11 @@ func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord mode
 		return result.Error
 	}
 
-	return s.SetUpdateStatus(&update)
+	if err := s.SetUpdateStatus(&update); err != nil {
+		return err
+	}
 
+	return s.UpdateDevicesFromUpdateTransaction(update)
 }
 
 // SetUpdateStatus is the function to set the update status from an UpdateTransaction
@@ -471,4 +475,61 @@ func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (Ima
 		return notify, nil
 	}
 	return notify, nil
+}
+
+// UpdateDevicesFromUpdateTransaction update device with new image and update availability
+func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateTransaction) error {
+	logger := s.log.WithFields(log.Fields{"account": update.Account, "context": "UpdateDevicesFromUpdateTransaction"})
+	if update.Status != models.UpdateStatusSuccess {
+		// update only when update is successful
+		// do nothing
+		logger.Debug("ignore device update when update is not successful")
+		return nil
+	}
+
+	// reload update transaction from db
+	var currentUpdate models.UpdateTransaction
+	if result := db.DB.Where("account = ?", update.Account).Preload("Devices").Preload("Commit").First(&currentUpdate, update.ID); result.Error != nil {
+		return result.Error
+	}
+
+	if currentUpdate.Commit == nil {
+		logger.Error("The update transaction has no commit defined")
+		return ErrUndefinedCommit
+	}
+
+	// get the update commit image
+	var deviceImage models.Image
+	if result := db.DB.Joins("JOIN commits ON commits.id = images.commit_id").
+		Where("images.account = ? AND commits.os_tree_commit = ? ", currentUpdate.Account, currentUpdate.Commit.OSTreeCommit).
+		First(&deviceImage); result.Error != nil {
+		logger.WithField("error", result.Error).Error("Error while getting device image")
+		return result.Error
+	}
+
+	// get image update availability, by finding if there is later images updates
+	// consider only those with ImageStatusSuccess
+	var updateImages []models.Image
+	if result := db.DB.Select("id").Where("account = ? AND image_set_id = ? AND status = ? AND created_at > ?",
+		deviceImage.Account, deviceImage.ImageSetID, models.ImageStatusSuccess, deviceImage.CreatedAt).Find(&updateImages); result.Error != nil {
+		logger.WithField("error", result.Error).Error("Error while getting update images")
+		return result.Error
+	}
+	updateAvailable := len(updateImages) > 0
+
+	// create a slice of devices ids
+	devicesIDS := make([]uint, 0, len(currentUpdate.Devices))
+	for _, device := range currentUpdate.Devices {
+		devicesIDS = append(devicesIDS, device.ID)
+	}
+
+	// update devices with image and update availability
+	if result := db.DB.Model(&models.Device{}).
+		Where("account = ? AND id IN (?) ", deviceImage.Account, devicesIDS).
+		Updates(map[string]interface{}{"image_id": deviceImage.ID, "update_available": updateAvailable}); result.Error != nil {
+		logger.WithField("error", result.Error).Error("Error occurred while updating device image and update_available")
+		return result.Error
+	}
+
+	return nil
 }
