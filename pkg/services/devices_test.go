@@ -700,20 +700,18 @@ var _ = Describe("DeviceService", func() {
 				updateImageCommitID, err := deviceService.GetUpdateCommitFromDevice(account, device.UUID)
 				Expect(updateImageCommitID == 0).To(BeTrue())
 				Expect(err).To(MatchError("record not found"))
-
-				result := db.DB.Where(models.Device{Account: device.Account, UUID: device.UUID}).First(&device)
-				Expect(result.Error).To(MatchError("record not found"))
-				Expect(device.ImageID == 0).To(BeTrue())
+				Expect(err).ToNot(BeNil())
 			})
 		})
 		When("device Image does not have update", func() {
 			It("should return no image updates", func() {
+				account := faker.HyphenatedID
 				imageSet := &models.ImageSet{
 					Name:    "test",
 					Version: 1,
 				}
 				updateImage := models.Image{
-					Account:    "0000000",
+					Account:    account,
 					ImageSetID: &imageSet.ID,
 					Status:     models.ImageStatusSuccess,
 				}
@@ -724,13 +722,50 @@ var _ = Describe("DeviceService", func() {
 				Expect(updateImageCommitID == 0).To(BeTrue())
 				Expect(err).ToNot(BeNil())
 				Expect(err).To(MatchError("record not found"))
+			})
+		})
+		When("device Image have update", func() {
+			It("should return commitID", func() {
+				account := faker.HyphenatedID
+				imageSet := models.ImageSet{
+					Account: account,
+				}
+				db.DB.Create(&imageSet)
 
-				var countUpdateImages int64
-				result := db.DB.Where("account = ? AND image_set_id = ? AND status = ? AND created_at > ?", updateImage.Account, updateImage.ImageSetID, models.ImageStatusSuccess, updateImage.CreatedAt).Order("version desc").First(&updateImage).Count(&countUpdateImages)
-				Expect(result.Error).ToNot(BeNil())
-				Expect(countUpdateImages == 0).To(BeTrue())
-				Expect(updateImage.CommitID == 0).To(BeTrue())
+				firstCommit := models.Commit{
+					Account: account,
+				}
+				db.DB.Create(&firstCommit)
 
+				firstImage := models.Image{
+					Account:    account,
+					CommitID:   firstCommit.ID,
+					Status:     models.ImageStatusSuccess,
+					Version:    1,
+					ImageSetID: &imageSet.ID,
+				}
+				db.DB.Create(&firstImage)
+				device := models.Device{
+					Account: account,
+					ImageID: firstImage.ID,
+				}
+				db.DB.Create(&device)
+				secondCommit := models.Commit{
+					Account: account,
+				}
+				db.DB.Create(&secondCommit)
+
+				secondImage := models.Image{
+					Account:    account,
+					CommitID:   secondCommit.ID,
+					Status:     models.ImageStatusSuccess,
+					Version:    2,
+					ImageSetID: &imageSet.ID,
+				}
+				db.DB.Create(&secondImage)
+				updateImageCommitID, err := deviceService.GetUpdateCommitFromDevice(device.Account, device.UUID)
+				Expect(err).To(BeNil())
+				Expect(updateImageCommitID).To(Equal(secondCommit.ID))
 			})
 		})
 	})
