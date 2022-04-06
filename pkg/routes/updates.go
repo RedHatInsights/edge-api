@@ -282,7 +282,6 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 		oldCommits := update.OldCommits
 
 		for _, device := range inventory.Result {
-			fmt.Printf("DeviceUUID: %v\n", device.ID)
 			//  Check for the existence of a Repo that already has this commit and don't duplicate
 			var updateDevice *models.Device
 			updateDevice, err = services.DeviceService.GetDeviceByUUID(device.ID)
