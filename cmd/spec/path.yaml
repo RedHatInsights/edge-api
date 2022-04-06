@@ -451,7 +451,7 @@ paths:
           in: query
           description: "query the latest or all updates"
           schema:
-            type: boolean
+            type: string
       responses:
         "200":
           content:
