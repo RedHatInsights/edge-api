@@ -24,7 +24,6 @@ func MakeDevicesRouter(sub chi.Router) {
 		r.Get("/dbinfo", GetDeviceDBInfo)
 		r.Get("/", GetDevice)
 		r.Get("/updates", GetUpdateAvailableForDevice)
-		r.Get("/discover-update", GetUpdateAvailableForDevice)
 		r.Get("/image", GetDeviceImageInfo)
 	})
 }
@@ -65,9 +64,9 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	if dc.DeviceUUID == "" || !ok {
 		return // Error set by DeviceCtx method
 	}
-	// check if request uri ends with /discover-update, this will return only latest update available for the device
-	latest := false // default, get it all
-	if r.URL.Path[len(r.URL.Path)-len("/discover-update"):] == "/discover-update" {
+	// if 'latest' set in query, return the latest update available, aka latest = true
+	latest := false
+	if r.URL.Query().Get("latest") == "true" {
 		latest = true
 	}
 	result, err := contextServices.DeviceService.GetUpdateAvailableForDeviceByUUID(dc.DeviceUUID, latest)
