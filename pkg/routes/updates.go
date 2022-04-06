@@ -163,7 +163,7 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 //DevicesUpdate contains the update structure for the device
 type DevicesUpdate struct {
 	CommitID    uint     `json:"commit_id"`
-	DevicesUUID []string `json:"device_uuid"`
+	DevicesUUID []string `json:"devices_uuid"`
 	// TODO: Implement updates by tag
 	// Tag        string `json:"Tag"`
 }
