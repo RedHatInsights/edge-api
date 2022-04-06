@@ -122,10 +122,17 @@ var _ = Describe("DeviceService", func() {
 	})
 	Context("GetUpdateAvailableForDeviceByUUID", func() {
 		When("error on InventoryAPI", func() {
-			It("should return error and no updates available", func() {
+			It("should return error and no updates available - for all updates", func() {
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(inventory.Response{}, errors.New("error on inventory api"))
 
 				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
+				Expect(updatesAvailable).To(BeNil())
+				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
+			})
+			It("should return error and no updates available - for latest update", func() {
+				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(inventory.Response{}, errors.New("error on inventory api"))
+
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true)
 				Expect(updatesAvailable).To(BeNil())
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 			})
@@ -140,6 +147,18 @@ var _ = Describe("DeviceService", func() {
 				}
 
 				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
+				Expect(updatesAvailable).To(BeNil())
+				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
+			})
+			It("should return error and nil on latest update available", func() {
+				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(inventory.Response{}, nil)
+
+				deviceService := services.DeviceService{
+					Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+					Inventory: mockInventoryClient,
+				}
+
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true)
 				Expect(updatesAvailable).To(BeNil())
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 			})
@@ -163,6 +182,27 @@ var _ = Describe("DeviceService", func() {
 				}
 
 				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
+				Expect(updatesAvailable).To(BeNil())
+				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
+			})
+			It("should return error and nil on latest update available", func() {
+				checksum := "fake-checksum"
+				resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
+					{ID: uuid, Ostree: inventory.SystemProfile{
+						RHCClientID: faker.UUIDHyphenated(),
+						RpmOstreeDeployments: []inventory.OSTree{
+							{Checksum: checksum, Booted: false},
+						},
+					}},
+				}}
+				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
+
+				deviceService := services.DeviceService{
+					Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+					Inventory: mockInventoryClient,
+				}
+
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true)
 				Expect(updatesAvailable).To(BeNil())
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 			})
@@ -230,6 +270,91 @@ var _ = Describe("DeviceService", func() {
 				Expect(updatesAvailable).To(HaveLen(1))
 				newUpdate := updatesAvailable[0]
 				Expect(newUpdate.Image.ID).To(Equal(newImage.ID))
+				Expect(newUpdate.PackageDiff.Upgraded).To(HaveLen(1))
+				Expect(newUpdate.PackageDiff.Added).To(HaveLen(1))
+				Expect(newUpdate.PackageDiff.Removed).To(HaveLen(1))
+			})
+			It("should return updates", func() {
+				checksum := faker.UUIDHyphenated()
+				resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
+					{ID: uuid, Ostree: inventory.SystemProfile{
+						RHCClientID: faker.UUIDHyphenated(),
+						RpmOstreeDeployments: []inventory.OSTree{
+							{Checksum: checksum, Booted: true},
+						},
+					}},
+				}}
+				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
+
+				imageSet := &models.ImageSet{
+					Name:    faker.Name(),
+					Version: 1,
+				}
+				db.DB.Create(imageSet)
+				oldImage := &models.Image{
+					Commit: &models.Commit{
+						OSTreeCommit: checksum,
+						InstalledPackages: []models.InstalledPackage{
+							{
+								Name:    "ansible",
+								Version: "1.0.0",
+							},
+							{
+								Name:    "yum",
+								Version: "2:6.0-1",
+							},
+						},
+					},
+					Status:     models.ImageStatusSuccess,
+					ImageSetID: &imageSet.ID,
+				}
+				db.DB.Create(oldImage.Commit)
+				db.DB.Create(oldImage)
+				newImage := &models.Image{
+					Commit: &models.Commit{
+						OSTreeCommit: fmt.Sprintf("a-new-%s", checksum),
+						InstalledPackages: []models.InstalledPackage{
+							{
+								Name:    "yum",
+								Version: "3:6.0-1",
+							},
+							{
+								Name:    "vim",
+								Version: "2.0.0",
+							},
+						},
+					},
+					Status:     models.ImageStatusSuccess,
+					ImageSetID: &imageSet.ID,
+				}
+				db.DB.Create(newImage.Commit)
+				db.DB.Create(newImage)
+				thirdImage := &models.Image{
+					Commit: &models.Commit{
+						OSTreeCommit: fmt.Sprintf("a-third-%s", checksum),
+						InstalledPackages: []models.InstalledPackage{
+							{
+								Name:    "yum",
+								Version: "3:6.0-1",
+							},
+							{
+								Name:    "puppet",
+								Version: "2.0.0",
+							},
+						},
+					},
+					Status:     models.ImageStatusSuccess,
+					ImageSetID: &imageSet.ID,
+				}
+				db.DB.Create(thirdImage.Commit)
+				db.DB.Create(thirdImage)
+
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true)
+
+				Expect(err).To(BeNil())
+				Expect(updatesAvailable).To(HaveLen(1))
+				newUpdate := updatesAvailable[0]
+				Expect(newUpdate.Image.ID).To(Equal(thirdImage.ID))
 				Expect(newUpdate.PackageDiff.Upgraded).To(HaveLen(1))
 				Expect(newUpdate.PackageDiff.Added).To(HaveLen(1))
 				Expect(newUpdate.PackageDiff.Removed).To(HaveLen(1))
