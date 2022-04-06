@@ -18,6 +18,19 @@ type DeviceGroup struct {
 	Devices []Device `json:"Devices" gorm:"many2many:device_groups_devices;"`
 }
 
+//DeviceGroupListDetail is a record of Edge Devices Groups with images and status information
+type DeviceGroupListDetail struct {
+	DeviceGroup     DeviceGroup        `json:"DeviceGroup"`
+	DeviceImageInfo *[]DeviceImageInfo `json:"DevicesImageInfo"`
+}
+
+//DeviceImageInfo is a record of group with the current images running on the device
+type DeviceImageInfo struct {
+	Name            string
+	UpdateAvailable bool
+	CommitID        uint
+}
+
 // DeviceGroupDetails is a record of Device Groups and DeviceDetails
 type DeviceGroupDetails struct {
 	DeviceGroup   *DeviceGroup       `json:"DeviceGroup"`

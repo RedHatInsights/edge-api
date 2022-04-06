@@ -153,3 +153,50 @@ var _ = Describe("Devices Router", func() {
 		})
 	})
 })
+var _ = Describe("Devices View Router", func() {
+	var mockDeviceService *mock_services.MockDeviceServiceInterface
+	var router chi.Router
+	var mockServices *dependencies.EdgeAPIServices
+
+	BeforeEach(func() {
+		// Given
+		ctrl := gomock.NewController(GinkgoT())
+		defer ctrl.Finish()
+
+		mockDeviceService = mock_services.NewMockDeviceServiceInterface(ctrl)
+		mockServices = &dependencies.EdgeAPIServices{
+			DeviceService: mockDeviceService,
+			Log:           log.NewEntry(log.StandardLogger()),
+		}
+		router = chi.NewRouter()
+		router.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				fmt.Println(mockServices)
+				ctx := dependencies.ContextWithServices(r.Context(), mockServices)
+				next.ServeHTTP(w, r.WithContext(ctx))
+			})
+		})
+		router.Route("/devicesview", routes.MakeDevicesRouter)
+	})
+	Context("get devicesview", func() {
+
+		When("when devices are not found", func() {
+			It("should return 200", func() {
+				mockDeviceService.EXPECT().GetDevicesCount(gomock.Any()).Return(int64(0), nil)
+				mockDeviceService.EXPECT().GetDevicesView(gomock.Any(), gomock.Any(), gomock.Any()).Return(&models.DeviceViewList{}, nil)
+				req, err := http.NewRequest("GET", "/", nil)
+				if err != nil {
+					Expect(err).ToNot(HaveOccurred())
+				}
+				rr := httptest.NewRecorder()
+				handler := http.HandlerFunc(routes.GetDevicesView)
+
+				ctx := dependencies.ContextWithServices(req.Context(), mockServices)
+				req = req.WithContext(ctx)
+				handler.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusOK))
+
+			})
+		})
+	})
+})

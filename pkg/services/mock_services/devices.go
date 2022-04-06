@@ -10,6 +10,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	inventory "github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	models "github.com/redhatinsights/edge-api/pkg/models"
+	gorm "gorm.io/gorm"
 )
 
 // MockDeviceServiceInterface is a mock of DeviceServiceInterface interface.
@@ -166,6 +167,36 @@ func (m *MockDeviceServiceInterface) GetDevices(params *inventory.Params) (*mode
 func (mr *MockDeviceServiceInterfaceMockRecorder) GetDevices(params interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDevices", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetDevices), params)
+}
+
+// GetDevicesCount mocks base method.
+func (m *MockDeviceServiceInterface) GetDevicesCount(tx *gorm.DB) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDevicesCount", tx)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDevicesCount indicates an expected call of GetDevicesCount.
+func (mr *MockDeviceServiceInterfaceMockRecorder) GetDevicesCount(tx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDevicesCount", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetDevicesCount), tx)
+}
+
+// GetDevicesView mocks base method.
+func (m *MockDeviceServiceInterface) GetDevicesView(limit, offset int, tx *gorm.DB) (*models.DeviceViewList, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDevicesView", limit, offset, tx)
+	ret0, _ := ret[0].(*models.DeviceViewList)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDevicesView indicates an expected call of GetDevicesView.
+func (mr *MockDeviceServiceInterfaceMockRecorder) GetDevicesView(limit, offset, tx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDevicesView", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetDevicesView), limit, offset, tx)
 }
 
 // GetUpdateAvailableForDevice mocks base method.
