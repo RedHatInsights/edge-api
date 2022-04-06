@@ -618,6 +618,7 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 		currentDeviceView := models.DeviceView{
 			DeviceID:        device.ID,
 			DeviceName:      device.Name,
+			DeviceUUID:      device.UUID,
 			ImageID:         device.ImageID,
 			ImageName:       imageName,
 			LastSeen:        device.LastSeen.Time.String(),
