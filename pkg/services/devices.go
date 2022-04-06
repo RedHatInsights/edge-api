@@ -31,11 +31,11 @@ type DeviceServiceInterface interface {
 	GetDeviceByUUID(deviceUUID string) (*models.Device, error)
 	// Device by UUID methods
 	GetDeviceDetailsByUUID(deviceUUID string) (*models.DeviceDetails, error)
-	GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]models.ImageUpdateAvailable, error)
+	GetUpdateAvailableForDeviceByUUID(deviceUUID string, latest bool) ([]models.ImageUpdateAvailable, error)
 	GetDeviceImageInfoByUUID(deviceUUID string) (*models.ImageInfo, error)
 	// Device Object Methods
 	GetDeviceDetails(device inventory.Device) (*models.DeviceDetails, error)
-	GetUpdateAvailableForDevice(device inventory.Device) ([]models.ImageUpdateAvailable, error)
+	GetUpdateAvailableForDevice(device inventory.Device, latest bool) ([]models.ImageUpdateAvailable, error)
 	GetDeviceImageInfo(device inventory.Device) (*models.ImageInfo, error)
 	GetDeviceLastDeployment(device inventory.Device) *inventory.OSTree
 	GetDeviceLastBootedDeployment(device inventory.Device) *inventory.OSTree
@@ -171,23 +171,23 @@ func (s *DeviceService) GetDeviceDetailsByUUID(deviceUUID string) (*models.Devic
 }
 
 // GetUpdateAvailableForDeviceByUUID returns if it exists an update for the current image at the device given its UUID.
-func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]models.ImageUpdateAvailable, error) {
+func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string, latest bool) ([]models.ImageUpdateAvailable, error) {
 	s.log = s.log.WithField("deviceUUID", deviceUUID)
 	resp, err := s.Inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || resp.Total != 1 {
 		return nil, new(DeviceNotFoundError)
 	}
-	return s.GetUpdateAvailableForDevice(resp.Result[len(resp.Result)-1])
+	return s.GetUpdateAvailableForDevice(resp.Result[len(resp.Result)-1], latest)
 }
 
 // GetUpdateAvailableForDevice returns if it exists an update for the current image at the device.
-func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device) ([]models.ImageUpdateAvailable, error) {
+func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, latest bool) ([]models.ImageUpdateAvailable, error) {
 	var imageDiff []models.ImageUpdateAvailable
 	lastDeployment := s.GetDeviceLastBootedDeployment(device)
 	if lastDeployment == nil {
 		return nil, new(DeviceNotFoundError)
 	}
-	var images []models.Image
+
 	var currentImage models.Image
 	result := db.DB.Model(&models.Image{}).Joins("Commit").Where("OS_Tree_Commit = ?", lastDeployment.Checksum).First(&currentImage)
 	if result.Error != nil || result.RowsAffected == 0 {
@@ -201,7 +201,10 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device) ([]
 		return nil, new(DeviceNotFoundError)
 	}
 
-	updates := db.DB.Where("Image_set_id = ? and Images.Status = ? and Images.Id > ?", currentImage.ImageSetID, models.ImageStatusSuccess, currentImage.ID).Joins("Commit").Order("Images.updated_at desc").Find(&images)
+	var images []models.Image
+	updates := db.DB.Where("Image_set_id = ? and Images.Status = ? and Images.Id > ?",
+		currentImage.ImageSetID, models.ImageStatusSuccess, currentImage.ID,
+	).Joins("Commit").Order("Images.updated_at desc").Find(&images)
 	if updates.Error != nil {
 		return nil, new(UpdateNotFoundError)
 	}
@@ -317,7 +320,7 @@ func (s *DeviceService) GetDeviceImageInfo(device inventory.Device) (*models.Ima
 		}
 	}
 
-	updateAvailable, err := s.GetUpdateAvailableForDevice(device)
+	updateAvailable, err := s.GetUpdateAvailableForDevice(device, false) // false = get all updates
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Could not find updates available to get image info")
 		return nil, err
