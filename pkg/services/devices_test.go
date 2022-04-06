@@ -125,7 +125,7 @@ var _ = Describe("DeviceService", func() {
 			It("should return error and no updates available", func() {
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(inventory.Response{}, errors.New("error on inventory api"))
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
 				Expect(updatesAvailable).To(BeNil())
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 			})
@@ -139,7 +139,7 @@ var _ = Describe("DeviceService", func() {
 					Inventory: mockInventoryClient,
 				}
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
 				Expect(updatesAvailable).To(BeNil())
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 			})
@@ -162,7 +162,7 @@ var _ = Describe("DeviceService", func() {
 					Inventory: mockInventoryClient,
 				}
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
 				Expect(updatesAvailable).To(BeNil())
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 			})
@@ -224,7 +224,7 @@ var _ = Describe("DeviceService", func() {
 				db.DB.Create(newImage.Commit)
 				db.DB.Create(newImage)
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
 
 				Expect(err).To(BeNil())
 				Expect(updatesAvailable).To(HaveLen(1))
@@ -266,7 +266,7 @@ var _ = Describe("DeviceService", func() {
 				}
 				db.DB.Create(oldImage)
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
 				Expect(updatesAvailable).To(BeNil())
 				Expect(err).To(BeNil())
 			})
@@ -284,7 +284,7 @@ var _ = Describe("DeviceService", func() {
 				}}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
 				Expect(updatesAvailable).To(BeNil())
 				Expect(err).ToNot(BeNil())
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))

@@ -169,33 +169,33 @@ func (mr *MockDeviceServiceInterfaceMockRecorder) GetDevices(params interface{})
 }
 
 // GetUpdateAvailableForDevice mocks base method.
-func (m *MockDeviceServiceInterface) GetUpdateAvailableForDevice(device inventory.Device) ([]models.ImageUpdateAvailable, error) {
+func (m *MockDeviceServiceInterface) GetUpdateAvailableForDevice(device inventory.Device, latest bool) ([]models.ImageUpdateAvailable, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUpdateAvailableForDevice", device)
+	ret := m.ctrl.Call(m, "GetUpdateAvailableForDevice", device, latest)
 	ret0, _ := ret[0].([]models.ImageUpdateAvailable)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetUpdateAvailableForDevice indicates an expected call of GetUpdateAvailableForDevice.
-func (mr *MockDeviceServiceInterfaceMockRecorder) GetUpdateAvailableForDevice(device interface{}) *gomock.Call {
+func (mr *MockDeviceServiceInterfaceMockRecorder) GetUpdateAvailableForDevice(device, latest interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUpdateAvailableForDevice", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetUpdateAvailableForDevice), device)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUpdateAvailableForDevice", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetUpdateAvailableForDevice), device, latest)
 }
 
 // GetUpdateAvailableForDeviceByUUID mocks base method.
-func (m *MockDeviceServiceInterface) GetUpdateAvailableForDeviceByUUID(deviceUUID string) ([]models.ImageUpdateAvailable, error) {
+func (m *MockDeviceServiceInterface) GetUpdateAvailableForDeviceByUUID(deviceUUID string, latest bool) ([]models.ImageUpdateAvailable, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUpdateAvailableForDeviceByUUID", deviceUUID)
+	ret := m.ctrl.Call(m, "GetUpdateAvailableForDeviceByUUID", deviceUUID, latest)
 	ret0, _ := ret[0].([]models.ImageUpdateAvailable)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetUpdateAvailableForDeviceByUUID indicates an expected call of GetUpdateAvailableForDeviceByUUID.
-func (mr *MockDeviceServiceInterfaceMockRecorder) GetUpdateAvailableForDeviceByUUID(deviceUUID interface{}) *gomock.Call {
+func (mr *MockDeviceServiceInterfaceMockRecorder) GetUpdateAvailableForDeviceByUUID(deviceUUID, latest interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUpdateAvailableForDeviceByUUID", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetUpdateAvailableForDeviceByUUID), deviceUUID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUpdateAvailableForDeviceByUUID", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetUpdateAvailableForDeviceByUUID), deviceUUID, latest)
 }
 
 // ProcessPlatformInventoryCreateEvent mocks base method.

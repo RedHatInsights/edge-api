@@ -56,7 +56,7 @@ var _ = Describe("Devices Router", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("should give an error", func() {
-				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID)).Return(nil, new(services.DeviceNotFoundError))
+				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), false).Return(nil, new(services.DeviceNotFoundError))
 				recorder := httptest.NewRecorder()
 				router.ServeHTTP(recorder, req)
 				Expect(recorder.Code).To(Equal(http.StatusBadRequest))
@@ -69,20 +69,20 @@ var _ = Describe("Devices Router", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("should fail when device is not found", func() {
-				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID)).Return(nil, new(services.DeviceNotFoundError))
+				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), false).Return(nil, new(services.DeviceNotFoundError))
 				recorder := httptest.NewRecorder()
 				router.ServeHTTP(recorder, req)
 				Expect(recorder.Code).To(Equal(http.StatusNotFound))
 			})
 			It("should fail when unexpected error happens", func() {
-				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID)).Return(nil, errors.New("random error"))
+				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), false).Return(nil, errors.New("random error"))
 				recorder := httptest.NewRecorder()
 				router.ServeHTTP(recorder, req)
 				Expect(recorder.Code).To(Equal(http.StatusInternalServerError))
 			})
 			It("should return when everything is okay", func() {
 				updates := make([]models.ImageUpdateAvailable, 0)
-				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID)).Return(updates, nil)
+				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), false).Return(updates, nil)
 				recorder := httptest.NewRecorder()
 				router.ServeHTTP(recorder, req)
 				Expect(recorder.Code).To(Equal(http.StatusOK))
