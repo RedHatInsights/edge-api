@@ -89,46 +89,6 @@ var _ = Describe("Devices Router", func() {
 			})
 		})
 	})
-	Context("discover latest update", func() {
-		var req *http.Request
-
-		When("device UUID is empty", func() {
-			It("should give an error", func() {
-				req, err := http.NewRequest("GET", "/devices//discover-update", nil)
-				Expect(err).ToNot(HaveOccurred())
-				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), true).Return(nil, new(services.DeviceNotFoundError))
-				recorder := httptest.NewRecorder()
-				router.ServeHTTP(recorder, req)
-				Expect(recorder.Code).To(Equal(http.StatusBadRequest))
-			})
-		})
-		When("device UUID is passed", func() {
-			BeforeEach(func() {
-				var err error
-				req, err = http.NewRequest("GET", fmt.Sprintf("/devices/%s/discover-update", deviceUUID), nil)
-				Expect(err).ToNot(HaveOccurred())
-			})
-			It("should fail when device is not found", func() {
-				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), true).Return(nil, new(services.DeviceNotFoundError))
-				recorder := httptest.NewRecorder()
-				router.ServeHTTP(recorder, req)
-				Expect(recorder.Code).To(Equal(http.StatusNotFound))
-			})
-			It("should fail when unexpected error happens", func() {
-				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), true).Return(nil, errors.New("random error"))
-				recorder := httptest.NewRecorder()
-				router.ServeHTTP(recorder, req)
-				Expect(recorder.Code).To(Equal(http.StatusInternalServerError))
-			})
-			It("should return when everything is okay", func() {
-				updates := make([]models.ImageUpdateAvailable, 0)
-				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), true).Return(updates, nil)
-				recorder := httptest.NewRecorder()
-				router.ServeHTTP(recorder, req)
-				Expect(recorder.Code).To(Equal(http.StatusOK))
-			})
-		})
-	})
 	Context("get list of device", func() {
 
 		When("when device is not found", func() {

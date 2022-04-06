@@ -206,7 +206,7 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 	query := db.DB.Where("Image_set_id = ? and Images.Status = ? and Images.Id > ?",
 		currentImage.ImageSetID, models.ImageStatusSuccess, currentImage.ID,
 	).Joins("Commit").Order("Images.updated_at desc")
-
+	
 	var updates *gorm.DB
 	if latest {
 		updates = query.First(&images)
