@@ -18,6 +18,7 @@ import (
 // MakeDevicesRouter adds support for operations on update
 func MakeDevicesRouter(sub chi.Router) {
 	sub.Get("/", GetDevices)
+	sub.With(common.Paginate).Get("/devicesview", GetDevicesView)
 	sub.With(common.Paginate).Get("/db", GetDBDevices)
 	sub.Route("/{DeviceUUID}", func(r chi.Router) {
 		r.Use(DeviceCtx)
@@ -56,6 +57,22 @@ func DeviceCtx(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
+
+var devicesFilters = common.ComposeFilters(
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "name",
+		DBField:    "devices.name",
+	}),
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "uuid",
+		DBField:    "devices.uuid",
+	}),
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "update_available",
+		DBField:    "devices.update_available",
+	}),
+	common.SortFilterHandler("devices", "name", "ASC"),
+)
 
 // GetUpdateAvailableForDevice returns if exists update for the current image at the device.
 func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
@@ -213,4 +230,24 @@ func GetDeviceDBInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondWithJSONBody(w, contextServices.Log, &devices)
+}
+
+// GetDevicesView returns all data needed to display customers devices
+func GetDevicesView(w http.ResponseWriter, r *http.Request) {
+	contextServices := dependencies.ServicesFromContext(r.Context())
+	tx := devicesFilters(r, db.DB)
+	pagination := common.GetPagination(r)
+
+	devicesCount, err := contextServices.DeviceService.GetDevicesCount(tx)
+	if err != nil {
+		respondWithAPIError(w, contextServices.Log, errors.NewNotFound("No devices found"))
+		return
+	}
+
+	devicesViewList, err := contextServices.DeviceService.GetDevicesView(pagination.Limit, pagination.Offset, tx)
+	if err != nil {
+		respondWithAPIError(w, contextServices.Log, errors.NewNotFound("No devices found"))
+		return
+	}
+	respondWithJSONBody(w, contextServices.Log, map[string]interface{}{"data": devicesViewList, "count": devicesCount})
 }
