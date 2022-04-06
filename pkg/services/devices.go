@@ -10,6 +10,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -202,9 +203,17 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 	}
 
 	var images []models.Image
-	updates := db.DB.Where("Image_set_id = ? and Images.Status = ? and Images.Id > ?",
+	query := db.DB.Where("Image_set_id = ? and Images.Status = ? and Images.Id > ?",
 		currentImage.ImageSetID, models.ImageStatusSuccess, currentImage.ID,
-	).Joins("Commit").Order("Images.updated_at desc").Find(&images)
+	).Joins("Commit").Order("Images.updated_at desc")
+	
+	var updates *gorm.DB
+	if latest {
+		updates = query.First(&images)
+	} else {
+		updates = query.Find(&images)
+	}
+
 	if updates.Error != nil {
 		return nil, new(UpdateNotFoundError)
 	}
