@@ -10,6 +10,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -28,6 +29,8 @@ const (
 type DeviceServiceInterface interface {
 	GetDevices(params *inventory.Params) (*models.DeviceDetailsList, error)
 	GetDeviceByID(deviceID uint) (*models.Device, error)
+	GetDevicesView(limit int, offset int, tx *gorm.DB) (*models.DeviceViewList, error)
+	GetDevicesCount(tx *gorm.DB) (int64, error)
 	GetDeviceByUUID(deviceUUID string) (*models.Device, error)
 	// Device by UUID methods
 	GetDeviceDetailsByUUID(deviceUUID string) (*models.DeviceDetails, error)
@@ -565,6 +568,102 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 	}
 
 	return s.processPlatformInventoryEventUpdateDevice(eventData)
+}
+
+// GetDevicesCount get the device groups account records count from the database
+func (s *DeviceService) GetDevicesCount(tx *gorm.DB) (int64, error) {
+	account, err := common.GetAccountFromContext(s.ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	if tx == nil {
+		tx = db.DB
+	}
+
+	var count int64
+
+	res := tx.Model(&models.Device{}).Where("account = ?", account).Count(&count)
+
+	if res.Error != nil {
+		s.log.WithField("error", res.Error.Error()).Error("Error getting device groups count")
+		return 0, res.Error
+	}
+
+	return count, nil
+}
+
+// GetDevicesView returns a list of EdgeDevices for a given account.
+func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*models.DeviceViewList, error) {
+	account, err := common.GetAccountFromContext(s.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if tx == nil {
+		tx = db.DB
+	}
+
+	var storedDevices []models.Device
+	if res := tx.Limit(limit).Offset(offset).Where("account = ?", account).Find(&storedDevices); res.Error != nil {
+		return nil, res.Error
+	}
+
+	type neededImageInfo struct {
+		Name   string
+		Status string
+	}
+	// create a map of unique image id's. We dont want to look of a given image id more than once.
+	setOfImages := make(map[uint]*neededImageInfo)
+	for _, devices := range storedDevices {
+		if devices.ImageID != 0 {
+			setOfImages[devices.ImageID] = &neededImageInfo{Name: "", Status: ""}
+		}
+	}
+
+	// using the map of unique image ID's, get the corresponding image name and status.
+	imagesIDS := []uint{}
+	for key := range setOfImages {
+		imagesIDS = append(imagesIDS, key)
+	}
+
+	var images []models.Image
+	if result := db.DB.Where("account = ? AND id IN (?)", account, imagesIDS).Find(&images); result.Error != nil {
+		return nil, result.Error
+	}
+
+	for _, image := range images {
+		setOfImages[image.ID] = &neededImageInfo{Name: image.Name, Status: image.Status}
+	}
+
+	// build the return object
+	// TODO: add device group info
+	returnDevices := []models.DeviceView{}
+	for _, device := range storedDevices {
+		var imageName string
+		var imageStatus string
+		if _, ok := setOfImages[device.ImageID]; ok {
+			imageName = setOfImages[device.ImageID].Name
+			imageStatus = setOfImages[device.ImageID].Status
+		}
+		currentDeviceView := models.DeviceView{
+			DeviceID:        device.ID,
+			DeviceName:      device.Name,
+			DeviceUUID:      device.UUID,
+			ImageID:         device.ImageID,
+			ImageName:       imageName,
+			LastSeen:        device.LastSeen.Time.String(),
+			UpdateAvailable: device.UpdateAvailable,
+			Status:          imageStatus,
+		}
+		returnDevices = append(returnDevices, currentDeviceView)
+	}
+
+	list := &models.DeviceViewList{
+		Devices: returnDevices,
+		Total:   len(storedDevices),
+	}
+	return list, nil
 }
 
 // ProcessPlatformInventoryCreateEvent is a method to processes messages from platform.inventory.events kafka topic and save them as devices in the DB

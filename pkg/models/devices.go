@@ -28,6 +28,26 @@ type DeviceDetailsList struct {
 	Devices []DeviceDetails `json:"data"`
 }
 
+// DeviceViewList is the list of devices for a given account, formatted for the UI
+type DeviceViewList struct {
+	Total   int          `json:"total"`
+	Devices []DeviceView `json:"devices"`
+}
+
+// DeviceView is the device information needed for the UI
+type DeviceView struct {
+	DeviceID        uint   `json:"DeviceID"`
+	DeviceName      string `json:"DeviceName"`
+	DeviceUUID      string `json:"DeviceUUID"`
+	DeviceGroupID   uint   `json:"DeviceGroupID"`
+	DeviceGroupName string `json:"DeviceGroupName"`
+	ImageID         uint   `json:"ImageID"`
+	ImageName       string `json:"ImageName"`
+	LastSeen        string `json:"LastSeen"`
+	UpdateAvailable bool   `json:"UpdateAvailable"`
+	Status          string `json:"Status"`
+}
+
 // Device is a record of Edge Devices referenced by their UUID as per the
 // cloud.redhat.com Inventory.
 //

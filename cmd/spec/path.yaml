@@ -1026,7 +1026,7 @@ paths:
                    data:
                      type: array
                      items:
-                       $ref: '#/components/schemas/v1.DeviceGroup'
+                       $ref: '#/components/schemas/v1.DeviceGroupListDetail'
            description: OK
          "400":
            content:

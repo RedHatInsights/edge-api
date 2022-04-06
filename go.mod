@@ -1,7 +1,7 @@
 module github.com/redhatinsights/edge-api
 
 require (
-	github.com/aws/aws-sdk-go v1.43.32
+	github.com/aws/aws-sdk-go v1.43.33
 	github.com/bxcodec/faker/v3 v3.8.0
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/confluentinc/confluent-kafka-go v1.8.2
@@ -25,7 +25,7 @@ require (
 	github.com/spf13/viper v1.10.1
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3 // indirect
 	gopkg.in/confluentinc/confluent-kafka-go.v1 v1.8.2
-	gorm.io/driver/postgres v1.3.3
+	gorm.io/driver/postgres v1.3.1
 	gorm.io/driver/sqlite v1.3.1
 	gorm.io/gorm v1.23.1
 )
