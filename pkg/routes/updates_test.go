@@ -99,7 +99,7 @@ func TestGetUpdatePlaybook(t *testing.T) {
 
 }
 
-var _ = Describe("Update routes", func() {
+var _ = FDescribe("Update routes", func() {
 	var edgeAPIServices *dependencies.EdgeAPIServices
 	BeforeEach(func() {
 		logger := log.NewEntry(log.StandardLogger())
@@ -136,6 +136,24 @@ var _ = Describe("Update routes", func() {
 			db.DB.Create(&imageSameGroup1)
 			db.DB.Create(&imageSameGroup2)
 			db.DB.Create(&imageDifferentGroup)
+		})
+		When("when images selection has no image", func() {
+			It("should return bad request", func() {
+				jsonImagesBytes, err := json.Marshal([]models.Image{})
+				Expect(err).To(BeNil())
+
+				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(jsonImagesBytes))
+				Expect(err).To(BeNil())
+
+				rr := httptest.NewRecorder()
+				ctx := dependencies.ContextWithServices(req.Context(), edgeAPIServices)
+				req = req.WithContext(ctx)
+				handler := http.HandlerFunc(PostValidateUpdate)
+
+				handler.ServeHTTP(rr, req.WithContext(ctx))
+
+				Expect(rr.Code).To(Equal(http.StatusBadRequest))
+			})
 		})
 		When("when images selection has one image", func() {
 			It("should allow to update", func() {

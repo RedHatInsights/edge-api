@@ -478,7 +478,12 @@ func PostValidateUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ids := make([]uint, len(images))
+	if len(images) == 0 {
+		respondWithAPIError(w, services.Log, errors.NewBadRequest("It's expected at least one image"))
+		return
+	}
+
+	ids := make([]uint, 0, len(images))
 	for i := 0; i < len(images); i++ {
 		ids = append(ids, images[i].ID)
 	}

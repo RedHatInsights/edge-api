@@ -48,7 +48,6 @@ func main() {
 	gen.addSchema("v1.ImageSet", &models.ImageSet{})
 	gen.addSchema("v1.Device", &models.Device{})
 	gen.addSchema("v1.CheckImageResponse", &routes.CheckImageNameResponse{})
-	gen.addSchema("v1.ValidateUpdateResponse", &routes.ValidateUpdateResponse{})
 	var booleanResponse bool
 	gen.addSchema("v1.bool", booleanResponse)
 	gen.addSchema("v1.InternalServerError", &errors.InternalServerError{})
@@ -58,6 +57,7 @@ func main() {
 	gen.addSchema("v1.DeviceDetailsList", &models.DeviceDetailsList{})
 	gen.addSchema("v1.DeviceGroup", &models.DeviceGroup{})
 	gen.addSchema("v1.DeviceGroupDetails", &models.DeviceGroupDetails{})
+	gen.addSchema("v1.ValidateUpdateResponse", &routes.ValidateUpdateResponse{})
 
 	type Swagger struct {
 		Components openapi3.Components `json:"components,omitempty" yaml:"components,omitempty"`
