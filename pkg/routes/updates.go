@@ -22,6 +22,7 @@ import (
 func MakeUpdatesRouter(sub chi.Router) {
 	sub.With(common.Paginate).Get("/", GetUpdates)
 	sub.Post("/", AddUpdate)
+	sub.Post("/validate", PostValidateUpdate)
 	sub.Route("/{updateID}", func(r chi.Router) {
 		r.Use(UpdateCtx)
 		r.Get("/", GetUpdateByID)
@@ -31,7 +32,6 @@ func MakeUpdatesRouter(sub chi.Router) {
 	// TODO: This is for backwards compatibility with the previous route
 	// Once the frontend starts querying the device
 	sub.Route("/device/", MakeDevicesRouter)
-	sub.Post("/validate/", PostValidateUpdate)
 }
 
 type updateContextKey int
