@@ -99,7 +99,7 @@ func TestGetUpdatePlaybook(t *testing.T) {
 
 }
 
-var _ = FDescribe("Update routes", func() {
+var _ = Describe("Update routes", func() {
 	var edgeAPIServices *dependencies.EdgeAPIServices
 	BeforeEach(func() {
 		logger := log.NewEntry(log.StandardLogger())
