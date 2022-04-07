@@ -551,7 +551,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
-    /devicesview:
+  /devicesview:
     get:
       operationId: getDevicesView
       parameters:
