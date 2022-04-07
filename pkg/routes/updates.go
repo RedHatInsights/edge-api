@@ -162,6 +162,7 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 
 // UpdatePostJSON contains the update structure for the device
 type UpdatePostJSON struct {
+	CommitID   uint   `json:"CommitID"`
 	DeviceUUID string `json:"DeviceUUID"`
 	// TODO: Implement updates by tag
 	// Tag        string `json:"Tag"`
@@ -194,6 +195,11 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	}
 	services.Log.WithField("updateJSON", updateJSON).Debug("Update JSON received")
 
+	if updateJSON.CommitID == 0 {
+		err := errors.NewBadRequest("Must provide a CommitID")
+		w.WriteHeader(err.GetStatus())
+		return nil, err
+	}
 	// TODO: Implement update by tag - Add validation per tag
 	if updateJSON.DeviceUUID == "" {
 		err := errors.NewBadRequest("DeviceUUID required.")
@@ -221,21 +227,18 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	}
 
 	services.Log.WithField("inventoryDevice", inventory).Debug("Device retrieved from inventory")
-	updateImageCommitID, err := services.DeviceService.GetUpdateCommitFromDevice(account, updateJSON.DeviceUUID)
-	if err != nil {
-		return nil, err
-	}
+
 	// Create the models.UpdateTransaction
 	update := models.UpdateTransaction{
 		Account:  account,
-		CommitID: updateImageCommitID,
+		CommitID: updateJSON.CommitID,
 		Status:   models.UpdateStatusCreated,
 		// TODO: Implement update by tag
 		// Tag:      updateJSON.Tag,
 	}
 
 	// Get the models.Commit from the Commit ID passed in via JSON
-	update.Commit, err = services.CommitService.GetCommitByID(updateImageCommitID)
+	update.Commit, err = services.CommitService.GetCommitByID(updateJSON.CommitID)
 	services.Log.WithField("commit", update.Commit).Debug("Commit retrieved from this update")
 
 	notify, errNotify := services.UpdateService.SendDeviceNotification(&update)
@@ -248,10 +251,10 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 	if err != nil {
 		services.Log.WithFields(log.Fields{
 			"error":    err.Error(),
-			"commitID": updateImageCommitID,
+			"commitID": updateJSON.CommitID,
 		}).Error("No commit found for Commit ID")
 		err := errors.NewInternalServerError()
-		err.SetTitle(fmt.Sprintf("No commit found for CommitID %d", updateImageCommitID))
+		err.SetTitle(fmt.Sprintf("No commit found for CommitID %d", updateJSON.CommitID))
 		w.WriteHeader(err.GetStatus())
 		return &models.UpdateTransaction{}, err
 	}
