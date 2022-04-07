@@ -81,7 +81,12 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	if dc.DeviceUUID == "" || !ok {
 		return // Error set by DeviceCtx method
 	}
-	result, err := contextServices.DeviceService.GetUpdateAvailableForDeviceByUUID(dc.DeviceUUID)
+	// if 'latest' set in query, return the latest update available, aka latest = true
+	latest := false
+	if r.URL.Query().Get("latest") == "true" {
+		latest = true
+	}
+	result, err := contextServices.DeviceService.GetUpdateAvailableForDeviceByUUID(dc.DeviceUUID, latest)
 	if err != nil {
 		var apiError errors.APIError
 		switch err.(type) {

@@ -447,6 +447,11 @@ paths:
           description: DeviceUUID
           schema:
             type: string
+        - name: latest
+          in: query
+          description: "query the latest or all updates"
+          schema:
+            type: string
       responses:
         "200":
           content:
