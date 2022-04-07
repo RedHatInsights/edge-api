@@ -509,7 +509,7 @@ paths:
           description: There was an internal server error.
       summary: Return image running on device.
       description: Return image running on device.
-  /updates/validate:
+  /updates/validate/:
     post:
       operationId: PostValidateUpdate
       requestBody:
