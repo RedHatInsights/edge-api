@@ -136,7 +136,7 @@ func main() {
 		// err := db.DB.Debug().AutoMigrate( modelsInterface )
 		err := db.DB.AutoMigrate(modelsInterface)
 		if err != nil {
-			log.Warningf("database automigrate failure", err)
+			log.Warningf("database automigrate failure %s", err)
 			errorOccurred = true
 		}
 	}
