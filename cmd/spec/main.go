@@ -55,6 +55,7 @@ func main() {
 	gen.addSchema("v1.NotFound", &errors.NotFound{})
 	gen.addSchema("v1.ThirdPartyRepo", &models.ThirdPartyRepo{})
 	gen.addSchema("v1.DeviceDetailsList", &models.DeviceDetailsList{})
+	gen.addSchema("v1.DeviceViewList", &models.DeviceViewList{})
 	gen.addSchema("v1.DeviceGroup", &models.DeviceGroup{})
 	gen.addSchema("v1.DeviceGroupListDetail", &models.DeviceGroupListDetail{})
 	gen.addSchema("v1.DeviceGroupDetails", &models.DeviceGroupDetails{})

@@ -551,6 +551,43 @@ paths:
               schema:
                 $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
+    /devicesview:
+    get:
+      operationId: getDevicesView
+      parameters:
+        - name: per_page
+          in: query
+          description: "field: maximum devices per page"
+          schema:
+            type: integer
+        - name: page
+          in: query
+          description: "field: which page to query from"
+          schema:
+            type: integer
+        - name: order_by
+          in: query
+          description: "field: choose which filter to order"
+          schema:
+            type: string
+        - name: order_how
+          in: query
+          description: "field: choose to order asc or desc"
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.DeviceViewList"
+          description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.InternalServerError"
+          description: There was an internal server error.
   /devices/{DeviceUUID}:
     get:
       operationId: getDevice
