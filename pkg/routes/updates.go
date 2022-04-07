@@ -160,15 +160,15 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// UpdatePostJSON contains the update structure for the device
-type UpdatePostJSON struct {
-	CommitID   uint   `json:"CommitID"`
-	DeviceUUID string `json:"DeviceUUID"`
+//DevicesUpdate contains the update structure for the device
+type DevicesUpdate struct {
+	CommitID    uint     `json:"commit_id"`
+	DevicesUUID []string `json:"devices_uuid"`
 	// TODO: Implement updates by tag
 	// Tag        string `json:"Tag"`
 }
 
-func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTransaction, error) {
+func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTransaction, error) {
 	services := dependencies.ServicesFromContext(r.Context())
 	services.Log.Info("Update is being created")
 
@@ -186,194 +186,196 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*models.UpdateTrans
 		return nil, err
 	}
 
-	var updateJSON UpdatePostJSON
-	err = json.NewDecoder(r.Body).Decode(&updateJSON)
+	var devicesUpdate DevicesUpdate
+	err = json.NewDecoder(r.Body).Decode(&devicesUpdate)
 	if err != nil {
 		err := errors.NewBadRequest("Invalid JSON")
 		w.WriteHeader(err.GetStatus())
 		return nil, err
 	}
-	services.Log.WithField("updateJSON", updateJSON).Debug("Update JSON received")
+	services.Log.WithField("updateJSON", devicesUpdate).Debug("Update JSON received")
 
-	if updateJSON.CommitID == 0 {
+	if devicesUpdate.CommitID == 0 {
 		err := errors.NewBadRequest("Must provide a CommitID")
 		w.WriteHeader(err.GetStatus())
 		return nil, err
 	}
 	// TODO: Implement update by tag - Add validation per tag
-	if updateJSON.DeviceUUID == "" {
+	if devicesUpdate.DevicesUUID == nil {
 		err := errors.NewBadRequest("DeviceUUID required.")
 		w.WriteHeader(err.GetStatus())
 		return nil, err
 	}
 	client := inventory.InitClient(r.Context(), log.NewEntry(log.StandardLogger()))
-	var inventory inventory.Response
-	// TODO: Implement update by tag
-	// if updateJSON.Tag != "" {
-	// 	inventory, err = client.ReturnDevicesByTag(updateJSON.Tag)
-	// 	if err != nil || inventory.Count == 0 {
-	// 		err := errors.NewNotFound(fmt.Sprintf("No devices found for Tag %s", updateJSON.Tag))
-	// 		w.WriteHeader(err.GetStatus())
-	// 		return nil, err
-	// 	}
-	// }
-	if updateJSON.DeviceUUID != "" {
-		inventory, err = client.ReturnDevicesByID(updateJSON.DeviceUUID)
-		if err != nil || inventory.Count == 0 {
-			err := errors.NewNotFound(fmt.Sprintf("No devices found for UUID %s", updateJSON.DeviceUUID))
+	var inv inventory.Response
+	var ii []inventory.Response
+	if len(devicesUpdate.DevicesUUID) > 0 {
+		for _, UUID := range devicesUpdate.DevicesUUID {
+			inv, err = client.ReturnDevicesByID(UUID)
+			if inv.Count >= 0 {
+				ii = append(ii, inv)
+			}
+			if err != nil {
+				err := errors.NewNotFound(fmt.Sprintf("No devices found for UUID %s", UUID))
+				w.WriteHeader(err.GetStatus())
+				return nil, err
+			}
+		}
+	}
+
+	services.Log.WithField("inventoryDevice", inv).Debug("Device retrieved from inventory")
+	var updates []models.UpdateTransaction
+	for _, inventory := range ii {
+		// Create the models.UpdateTransaction
+		update := models.UpdateTransaction{
+			Account:  account,
+			CommitID: devicesUpdate.CommitID,
+			Status:   models.UpdateStatusCreated,
+			// TODO: Implement update by tag
+			// Tag:      updateJSON.Tag,
+		}
+
+		// Get the models.Commit from the Commit ID passed in via JSON
+		update.Commit, err = services.CommitService.GetCommitByID(devicesUpdate.CommitID)
+		services.Log.WithField("commit", update.Commit).Debug("Commit retrieved from this update")
+
+		notify, errNotify := services.UpdateService.SendDeviceNotification(&update)
+		if errNotify != nil {
+			services.Log.WithField("message", errNotify.Error()).Error("Error to send notification")
+			services.Log.WithField("message", notify).Error("Notify Error")
+
+		}
+		update.DispatchRecords = []models.DispatchRecord{}
+		if err != nil {
+			services.Log.WithFields(log.Fields{
+				"error":    err.Error(),
+				"commitID": devicesUpdate.CommitID,
+			}).Error("No commit found for Commit ID")
+			err := errors.NewInternalServerError()
+			err.SetTitle(fmt.Sprintf("No commit found for CommitID %d", devicesUpdate.CommitID))
 			w.WriteHeader(err.GetStatus())
 			return nil, err
 		}
-	}
 
-	services.Log.WithField("inventoryDevice", inventory).Debug("Device retrieved from inventory")
-
-	// Create the models.UpdateTransaction
-	update := models.UpdateTransaction{
-		Account:  account,
-		CommitID: updateJSON.CommitID,
-		Status:   models.UpdateStatusCreated,
-		// TODO: Implement update by tag
-		// Tag:      updateJSON.Tag,
-	}
-
-	// Get the models.Commit from the Commit ID passed in via JSON
-	update.Commit, err = services.CommitService.GetCommitByID(updateJSON.CommitID)
-	services.Log.WithField("commit", update.Commit).Debug("Commit retrieved from this update")
-
-	notify, errNotify := services.UpdateService.SendDeviceNotification(&update)
-	if errNotify != nil {
-		services.Log.WithField("message", errNotify.Error()).Error("Error to send notification")
-		services.Log.WithField("message", notify).Error("Notify Error")
-
-	}
-	update.DispatchRecords = []models.DispatchRecord{}
-	if err != nil {
-		services.Log.WithFields(log.Fields{
-			"error":    err.Error(),
-			"commitID": updateJSON.CommitID,
-		}).Error("No commit found for Commit ID")
-		err := errors.NewInternalServerError()
-		err.SetTitle(fmt.Sprintf("No commit found for CommitID %d", updateJSON.CommitID))
-		w.WriteHeader(err.GetStatus())
-		return &models.UpdateTransaction{}, err
-	}
-
-	//  Removing commit dependency to avoid overwriting the repo
-	var repo *models.Repo
-	services.Log.WithField("updateID", update.ID).Debug("Ceating new repo for update transaction")
-	repo = &models.Repo{
-		Status: models.RepoStatusBuilding,
-	}
-	result := db.DB.Create(&repo)
-	if result.Error != nil {
-		services.Log.WithField("error", result.Error.Error()).Debug("Result error")
-		err := errors.NewBadRequest(result.Error.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", result.Error.Error()).Error("Error while trying to encode")
+		//  Removing commit dependency to avoid overwriting the repo
+		var repo *models.Repo
+		services.Log.WithField("updateID", update.ID).Debug("Ceating new repo for update transaction")
+		repo = &models.Repo{
+			Status: models.RepoStatusBuilding,
 		}
-	}
-	update.Repo = repo
-	services.Log.WithFields(log.Fields{
-		"repoURL": repo.URL,
-		"repoID":  repo.ID,
-	}).Debug("Getting repo info")
+		result := db.DB.Create(&repo)
+		if result.Error != nil {
+			services.Log.WithField("error", result.Error.Error()).Debug("Result error")
+			err := errors.NewBadRequest(result.Error.Error())
+			w.WriteHeader(err.GetStatus())
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				services.Log.WithField("error", result.Error.Error()).Error("Error while trying to encode")
+			}
+		}
+		update.Repo = repo
+		services.Log.WithFields(log.Fields{
+			"repoURL": repo.URL,
+			"repoID":  repo.ID,
+		}).Debug("Getting repo info")
 
-	devices := update.Devices
-	oldCommits := update.OldCommits
+		devices := update.Devices
+		oldCommits := update.OldCommits
 
-	for _, device := range inventory.Result {
-		//  Check for the existence of a Repo that already has this commit and don't duplicate
-		var updateDevice *models.Device
-		updateDevice, err = services.DeviceService.GetDeviceByUUID(device.ID)
-		if err != nil {
-			if !(err.Error() == "Device was not found") {
-				services.Log.WithField("error", err.Error()).Error("Device was not found in our database")
+		for _, device := range inventory.Result {
+			//  Check for the existence of a Repo that already has this commit and don't duplicate
+			var updateDevice *models.Device
+			updateDevice, err = services.DeviceService.GetDeviceByUUID(device.ID)
+			if err != nil {
+				if !(err.Error() == "Device was not found") {
+					services.Log.WithField("error", err.Error()).Error("Device was not found in our database")
+					err := errors.NewBadRequest(err.Error())
+					w.WriteHeader(err.GetStatus())
+					if err := json.NewEncoder(w).Encode(&err); err != nil {
+						services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+					}
+					return nil, err
+				}
+				services.Log.WithFields(log.Fields{
+					"error":      err.Error(),
+					"deviceUUID": device.ID,
+				}).Info("Creating a new device on the database")
+				updateDevice = &models.Device{
+					UUID:    device.ID,
+					Account: account,
+				}
+				if result := db.DB.Create(&updateDevice); result.Error != nil {
+					return nil, result.Error
+				}
+			}
+			updateDevice.RHCClientID = device.Ostree.RHCClientID
+			updateDevice.AvailableHash = update.Commit.OSTreeCommit
+			// update the device account if undefined
+			if updateDevice.Account == "" {
+				updateDevice.Account = account
+			}
+			result := db.DB.Save(&updateDevice)
+			if result.Error != nil {
+				return nil, result.Error
+			}
+
+			services.Log.WithFields(log.Fields{
+				"updateDevice": updateDevice,
+			}).Debug("Saved updated device")
+
+			devices = append(devices, *updateDevice)
+			update.Devices = devices
+
+			for _, deployment := range device.Ostree.RpmOstreeDeployments {
+				services.Log.WithFields(log.Fields{
+					"ostreeDeployment": deployment,
+				}).Debug("Got ostree deployment for device")
+				if deployment.Booted {
+					services.Log.WithFields(log.Fields{
+						"booted": deployment.Booted,
+					}).Debug("device has been booted")
+					var oldCommit models.Commit
+					result := db.DB.Where("os_tree_commit = ?", deployment.Checksum).First(&oldCommit)
+					if result.Error != nil {
+						if result.Error.Error() != "record not found" {
+							services.Log.WithField("error", err.Error()).Error("Error returning old commit for this ostree checksum")
+							err := errors.NewBadRequest(err.Error())
+							w.WriteHeader(err.GetStatus())
+							if err := json.NewEncoder(w).Encode(&err); err != nil {
+								services.Log.WithField("error", err.Error()).Error("Error encoding error")
+							}
+							return nil, err
+						}
+					}
+					if result.RowsAffected == 0 {
+						services.Log.Debug("No old commits found")
+					} else {
+						oldCommits = append(oldCommits, oldCommit)
+					}
+				}
+			}
+
+			update.OldCommits = oldCommits
+			if err := db.DB.Save(&update).Error; err != nil {
 				err := errors.NewBadRequest(err.Error())
 				w.WriteHeader(err.GetStatus())
 				if err := json.NewEncoder(w).Encode(&err); err != nil {
-					services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+					services.Log.WithField("error", err.Error()).Error("Error encoding error")
 				}
-				return &models.UpdateTransaction{}, err
-			}
-			services.Log.WithFields(log.Fields{
-				"error":      err.Error(),
-				"deviceUUID": device.ID,
-			}).Info("Creating a new device on the database")
-			updateDevice = &models.Device{
-				UUID:    device.ID,
-				Account: account,
-			}
-			if result := db.DB.Create(&updateDevice); result.Error != nil {
-				return nil, result.Error
+				return nil, err
 			}
 		}
-		updateDevice.RHCClientID = device.Ostree.RHCClientID
-		updateDevice.AvailableHash = update.Commit.OSTreeCommit
-		// update the device account if undefined
-		if updateDevice.Account == "" {
-			updateDevice.Account = account
-		}
-		result := db.DB.Save(&updateDevice)
-		if result.Error != nil {
-			return nil, result.Error
-		}
+		updates = append(updates, update)
+		services.Log.WithField("updateID", update.ID).Info("Update has been created")
 
-		services.Log.WithFields(log.Fields{
-			"updateDevice": updateDevice,
-		}).Debug("Saved updated device")
-
-		devices = append(devices, *updateDevice)
-		update.Devices = devices
-
-		for _, deployment := range device.Ostree.RpmOstreeDeployments {
-			services.Log.WithFields(log.Fields{
-				"ostreeDeployment": deployment,
-			}).Debug("Got ostree deployment for device")
-			if deployment.Booted {
-				services.Log.WithFields(log.Fields{
-					"booted": deployment.Booted,
-				}).Debug("device has been booted")
-				var oldCommit models.Commit
-				result := db.DB.Where("os_tree_commit = ?", deployment.Checksum).First(&oldCommit)
-				if result.Error != nil {
-					if result.Error.Error() != "record not found" {
-						services.Log.WithField("error", err.Error()).Error("Error returning old commit for this ostree checksum")
-						err := errors.NewBadRequest(err.Error())
-						w.WriteHeader(err.GetStatus())
-						if err := json.NewEncoder(w).Encode(&err); err != nil {
-							services.Log.WithField("error", err.Error()).Error("Error encoding error")
-						}
-						return &models.UpdateTransaction{}, err
-					}
-				}
-				if result.RowsAffected == 0 {
-					services.Log.Debug("No old commits found")
-				} else {
-					oldCommits = append(oldCommits, oldCommit)
-				}
-			}
-		}
 	}
-	update.OldCommits = oldCommits
-	if err := db.DB.Save(&update).Error; err != nil {
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error encoding error")
-		}
-		return nil, err
-	}
-	services.Log.WithField("updateID", update.ID).Info("Update has been created")
-	return &update, nil
+	return &updates, nil
 }
 
 // AddUpdate updates a device
 func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	services := dependencies.ServicesFromContext(r.Context())
 	services.Log.Info("Starting update")
-	update, err := updateFromHTTP(w, r)
+	updates, err := updateFromHTTP(w, r)
 	if err != nil {
 		services.Log.WithFields(log.Fields{
 			"error": err.Error(),
@@ -382,16 +384,23 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(err.GetStatus())
 		return
 	}
-	update.Account, err = common.GetAccount(r)
-	if err != nil {
-		services.Log.WithFields(log.Fields{
-			"error": err.Error(),
-		}).Error("Error retrieving account")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		return
+	var upd []models.UpdateTransaction
+
+	for _, update := range *updates {
+		update.Account, err = common.GetAccount(r)
+		if err != nil {
+			services.Log.WithFields(log.Fields{
+				"error": err.Error(),
+			}).Error("Error retrieving account")
+			err := errors.NewBadRequest(err.Error())
+			w.WriteHeader(err.GetStatus())
+			return
+		}
+		upd = append(upd, update)
+		services.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
+		go services.UpdateService.CreateUpdate(update.ID)
 	}
-	result := db.DB.Save(&update)
+	result := db.DB.Save(upd)
 	if result.Error != nil {
 		services.Log.WithFields(log.Fields{
 			"error": err.Error(),
@@ -400,11 +409,9 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(err.GetStatus())
 		return
 	}
-	services.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
-	go services.UpdateService.CreateUpdate(update.ID)
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(update); err != nil {
-		services.Log.WithField("error", update).Error("Error while trying to encode")
+	if err := json.NewEncoder(w).Encode(updates); err != nil {
+		services.Log.WithField("error", updates).Error("Error while trying to encode")
 	}
 
 }
