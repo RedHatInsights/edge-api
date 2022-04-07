@@ -4,10 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
-	"strconv"
-
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -15,6 +11,9 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	"io"
+	"net/http"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -32,6 +31,7 @@ func MakeUpdatesRouter(sub chi.Router) {
 	// TODO: This is for backwards compatibility with the previous route
 	// Once the frontend starts querying the device
 	sub.Route("/device/", MakeDevicesRouter)
+	sub.Post("/validate/", PostValidateUpdate)
 }
 
 type updateContextKey int
@@ -450,4 +450,51 @@ func SendNotificationForDevice(w http.ResponseWriter, r *http.Request) {
 			services.Log.WithField("error", notify).Error("Error while trying to encode")
 		}
 	}
+}
+
+// ValidateUpdateResponse indicates whether or not the image can be updated
+type ValidateUpdateResponse struct {
+	UpdateValid bool `json:"UpdateValid"`
+}
+
+// PostValidateUpdate validate that images can be updated
+func PostValidateUpdate(w http.ResponseWriter, r *http.Request) {
+	services := dependencies.ServicesFromContext(r.Context())
+	account, err := common.GetAccount(r)
+	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error":   err.Error(),
+			"account": account,
+		}).Error("Error retrieving account")
+		respondWithAPIError(w, services.Log, errors.NewBadRequest(err.Error()))
+		return
+	}
+
+	var images []models.Image
+	if err := readRequestJSONBody(w, r, services.Log, &images); err != nil {
+		return
+	}
+
+	if len(images) == 0 {
+		respondWithAPIError(w, services.Log, errors.NewBadRequest("It's expected at least one image"))
+		return
+	}
+
+	ids := make([]uint, 0, len(images))
+	for i := 0; i < len(images); i++ {
+		ids = append(ids, images[i].ID)
+	}
+
+	valid, err := services.UpdateService.ValidateUpdateSelection(account, ids)
+
+	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Error("Error validating the images selection")
+		respondWithAPIError(w, services.Log, errors.NewBadRequest(err.Error()))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	respondWithJSONBody(w, services.Log, &ValidateUpdateResponse{UpdateValid: valid})
 }
