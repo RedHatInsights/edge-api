@@ -514,6 +514,41 @@ paths:
           description: There was an internal server error.
       summary: Return image running on device.
       description: Return image running on device.
+  /updates/validate:
+    post:
+      operationId: PostValidateUpdate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/v1.Image"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Image:
+                    $ref: "#/components/schemas/v1.ValidateUpdateResponse"
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.BadRequest"
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.InternalServerError"
+          description: There was an internal server error.
+      summary: Validate if the images selection could be updated.
+      description: Validate if the images selection could be updated.
   /devices:
     get:
       operationId: getDevices
@@ -549,6 +584,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.DeviceDetailsList"
+          description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.InternalServerError"
+          description: There was an internal server error.
+  /devicesview:
+    get:
+      operationId: getDevicesView
+      parameters:
+        - name: per_page
+          in: query
+          description: "field: maximum devices per page"
+          schema:
+            type: integer
+        - name: page
+          in: query
+          description: "field: which page to query from"
+          schema:
+            type: integer
+        - name: order_by
+          in: query
+          description: "field: choose which filter to order"
+          schema:
+            type: string
+        - name: order_how
+          in: query
+          description: "field: choose to order asc or desc"
+          schema:
+            type: string
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.DeviceViewList"
           description: OK
         "500":
           content:
