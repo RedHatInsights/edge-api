@@ -85,56 +85,87 @@ func main() {
 
 	// Order should match model deletions in cmd/db/wipe.go
 	// Order is not strictly alphabetical due to dependencies (e.g. Image needs ImageSet)
-	var modelsInterfaces = make([]interface{}, 0)
-	var modelsLabels = make([]string, 0)
+	type ModelInterface struct {
+		label             string
+		interfaceInstance interface{}
+	}
+	var modelsInterfaces = make([]ModelInterface, 0)
 
-	modelsInterfaces = append(modelsInterfaces, &models.Commit{})
-	modelsLabels = append(modelsLabels, "Commit")
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "Commit",
+			interfaceInstance: &models.Commit{}})
 
-	modelsInterfaces = append(modelsInterfaces, &models.DeviceGroup{})
-	modelsLabels = append(modelsLabels, "DeviceGroup")
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "DeviceGroup",
+			interfaceInstance: &models.DeviceGroup{}})
 
-	modelsInterfaces = append(modelsInterfaces, &models.DispatchRecord{})
-	modelsLabels = append(modelsLabels, "DispatchRecord")
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "DispatchRecord",
+			interfaceInstance: &models.DispatchRecord{}})
 
-	modelsInterfaces = append(modelsInterfaces, &models.FDODevice{})
-	modelsLabels = append(modelsLabels, "FDODevice")
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "FDODevice",
+			interfaceInstance: &models.FDODevice{}})
 
-	modelsInterfaces = append(modelsInterfaces, &models.FDOUser{})
-	modelsLabels = append(modelsLabels, "FDOUser")
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "FDOUser",
+			interfaceInstance: &models.FDOUser{}})
 
-	modelsInterfaces = append(modelsInterfaces, &models.ImageSet{})
-	modelsLabels = append(modelsLabels, "ImageSet")
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "ImageSet",
+			interfaceInstance: &models.ImageSet{}})
 
-	modelsInterfaces = append(modelsInterfaces, &models.Image{})
-	modelsLabels = append(modelsLabels, "Image")
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "Image",
+			interfaceInstance: &models.Image{}})
 
-	modelsInterfaces = append(modelsInterfaces, &models.Installer{})
-	modelsLabels = append(modelsLabels, "Installer")
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "Installer",
+			interfaceInstance: &models.Installer{}})
 
-	modelsInterfaces = append(modelsInterfaces, &models.OwnershipVoucherData{})
-	modelsLabels = append(modelsLabels, "OwnershipVoucherData")
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "OwnershipVoucherData",
+			interfaceInstance: &models.OwnershipVoucherData{}})
 
-	modelsInterfaces = append(modelsInterfaces, &models.Package{})
-	modelsLabels = append(modelsLabels, "Package")
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "Package",
+			interfaceInstance: &models.Package{}})
 
-	modelsInterfaces = append(modelsInterfaces, &models.Repo{})
-	modelsLabels = append(modelsLabels, "Repo")
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "Repo",
+			interfaceInstance: &models.Repo{}})
 
-	modelsInterfaces = append(modelsInterfaces, &models.SSHKey{})
-	modelsLabels = append(modelsLabels, "SSHKey")
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "SSHKey",
+			interfaceInstance: &models.SSHKey{}})
 
-	modelsInterfaces = append(modelsInterfaces, &models.ThirdPartyRepo{})
-	modelsLabels = append(modelsLabels, "ThirdPartyRepo")
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "ThirdPartyRepo",
+			interfaceInstance: &models.ThirdPartyRepo{}})
 
-	modelsInterfaces = append(modelsInterfaces, &models.UpdateTransaction{})
-	modelsLabels = append(modelsLabels, "UpdateTransaction")
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "UpdateTransaction",
+			interfaceInstance: &models.UpdateTransaction{}})
 
 	for modelsIndex, modelsInterface := range modelsInterfaces {
-		log.Debugf("Migrating Model %s", modelsLabels[modelsIndex])
+		log.Debugf("Migrating Model %d: %s", modelsIndex, modelsInterface.label)
 
-		// err := db.DB.Debug().AutoMigrate( modelsInterface )
-		err := db.DB.AutoMigrate(modelsInterface)
+		// err := db.DB.Debug().AutoMigrate( modelsInterface.interface )
+		err := db.DB.AutoMigrate(modelsInterface.interfaceInstance)
 		if err != nil {
 			log.Warningf("database automigrate failure %s", err)
 			errorOccurred = true
