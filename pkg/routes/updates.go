@@ -4,6 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"strconv"
+
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -11,9 +15,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
-	"io"
-	"net/http"
-	"strconv"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -162,8 +163,8 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 
 //DevicesUpdate contains the update structure for the device
 type DevicesUpdate struct {
-	CommitID    uint     `json:"commit_id"`
-	DevicesUUID []string `json:"devices_uuid"`
+	CommitID    uint     `json:"CommitID"`
+	DevicesUUID []string `json:"DevicesUUID"`
 	// TODO: Implement updates by tag
 	// Tag        string `json:"Tag"`
 }
