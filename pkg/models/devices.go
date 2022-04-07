@@ -38,6 +38,7 @@ type DeviceViewList struct {
 type DeviceView struct {
 	DeviceID        uint   `json:"DeviceID"`
 	DeviceName      string `json:"DeviceName"`
+	DeviceUUID      string `json:"DeviceUUID"`
 	DeviceGroupID   uint   `json:"DeviceGroupID"`
 	DeviceGroupName string `json:"DeviceGroupName"`
 	ImageID         uint   `json:"ImageID"`
