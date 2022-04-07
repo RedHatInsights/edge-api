@@ -10,6 +10,7 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-openapi/runtime v0.23.3
+	github.com/go-openapi/strfmt v0.21.2 // indirect
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.0
 	github.com/jinzhu/now v1.1.5 // indirect
