@@ -187,32 +187,22 @@ func GetDeviceImageInfo(images map[int]models.DeviceImageInfo, account string) e
 			latestImage := &deviceImageSet.Images[len(deviceImageSet.Images)-1]
 			latestImageID := latestImage.ID
 
-			if int(latestImageID) > imageID {
-				fmt.Printf(" 1- Calc diff \n")
+			if int(latestImageID) > imageID && latestImage.CommitID > 0 {
+
 				updAvailable = true
 				CommitID = deviceImageSet.Images[len(deviceImageSet.Images)-1].CommitID
 
-				if result := db.DB.Where(models.Image{Account: account}).
-					First(&deviceImage, imageID).Preload("Commit"); result.Error != nil {
-					return result.Error
-				}
-				if result := db.DB.Where(models.Image{Account: account}).
-					First(&latestImage, latestImage.ID).Preload("Commit"); result.Error != nil {
-					return result.Error
-				}
 				db.DB.First(&deviceImage.Commit, deviceImage.CommitID)
 				if err := db.DB.Model(&deviceImage.Commit).Association("InstalledPackages").Find(&deviceImage.Commit.InstalledPackages); err != nil {
-					fmt.Printf("ERROR: %v\n", err.Error())
+					return err
 				}
 
 				db.DB.First(&latestImage.Commit, latestImage.CommitID)
 				if err := db.DB.Model(&latestImage.Commit).Association("InstalledPackages").Find(&latestImage.Commit.InstalledPackages); err != nil {
-					fmt.Printf("ERROR: %v\n", err.Error())
+					return err
 				}
 
-				if int(latestImage.CommitID) > 0 {
-					imagePackageDiff = GetDiffOnUpdate(deviceImage, *latestImage)
-				}
+				imagePackageDiff = GetDiffOnUpdate(deviceImage, *latestImage)
 
 			}
 
