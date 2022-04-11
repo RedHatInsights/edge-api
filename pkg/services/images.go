@@ -980,7 +980,7 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 		s.log.WithField("error", err).Debug("Request related error - ID is not integer")
 		return nil, new(IDMustBeInteger)
 	}
-	result := db.DB.Preload("Commit.Repo").Preload("Commit.InstalledPackages").Preload("CustomPackages").Where("images.account = ?", account).Joins("Commit").First(&image, id)
+	result := db.DB.Preload("Commit.Repo").Preload("Commit.InstalledPackages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Where("images.account = ?", account).Joins("Commit").First(&image, id)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Debug("Request related error - image is not found")
 		return nil, new(ImageNotFoundError)
@@ -1205,7 +1205,7 @@ func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, err
 		s.log.Error("Error retreving account")
 		return nil, new(AccountNotSet)
 	}
-	result := db.DB.Joins("Commit").Joins("Installer").Preload("Packages").Preload("CustomPackages").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where(&models.Image{ImageSetID: image.ImageSetID, Account: account}).Last(&rollback, "images.id < ?", image.ID)
+	result := db.DB.Joins("Commit").Joins("Installer").Preload("Packages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where(&models.Image{ImageSetID: image.ImageSetID, Account: account}).Last(&rollback, "images.id < ?", image.ID)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error).Error("Error retrieving rollback image")
 		return nil, new(ImageNotFoundError)
