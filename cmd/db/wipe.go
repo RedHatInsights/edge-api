@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/redhatinsights/edge-api/config"
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -9,6 +11,12 @@ import (
 	"gorm.io/gorm"
 )
 
+func handlePanic(errorOccurred *bool) {
+	if err := recover(); err != nil {
+		log.Error("Database deletion failure")
+		os.Exit(1)
+	}
+}
 func main() {
 	config.Init()
 	l.InitLogger()
@@ -35,31 +43,129 @@ func main() {
 	db.InitDB()
 
 	log.Info("Cleaning up relations and old tables (which may not exist)...")
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec("DELETE FROM commit_packages")
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec("DELETE FROM commit_installed_packages")
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec("DELETE FROM device_groups_devices")
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec("DELETE FROM images_packages")
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec("DELETE FROM updatetransaction_devices")
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec("DROP TABLE updaterecord_commits")
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec("DROP TABLE updaterecord_devices")
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec("DROP TABLE update_records")
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec("ALTER TABLE commits DROP CONSTRAINT fk_commits_repo")
+	errorOccurred := false
+	defer handlePanic(&errorOccurred)
+
+	var sqlStatements = make([]string, 0)
+	sqlStatements = append(sqlStatements, "DELETE FROM commit_packages")
+
+	sqlStatements = append(sqlStatements, "DELETE FROM commit_installed_packages")
+
+	sqlStatements = append(sqlStatements, "DELETE FROM device_groups_devices")
+
+	sqlStatements = append(sqlStatements, "DELETE FROM images_packages")
+
+	sqlStatements = append(sqlStatements, "DELETE FROM updatetransaction_devices")
+
+	sqlStatements = append(sqlStatements, "DROP TABLE updaterecord_commits")
+
+	sqlStatements = append(sqlStatements, "DROP TABLE updaterecord_devices")
+
+	sqlStatements = append(sqlStatements, "DROP TABLE update_records")
+
+	sqlStatements = append(sqlStatements, "ALTER TABLE commits DROP CONSTRAINT fk_commits_repo")
+
+	for sqlIndex, sqlStatement := range sqlStatements {
+		log.Debugf("Running SQL statement %d: %s", sqlIndex, sqlStatement)
+		sqlResult := db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Exec(sqlStatement)
+		if sqlResult.Error != nil {
+			log.Warningf("SQL statement failure %s", sqlResult.Error)
+			errorOccurred = true
+		}
+	}
 
 	log.Info("Starting deleting of models...")
-	// Order should match Automigration cmd/migrate/main.go
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Commit{})
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.DeviceGroup{})
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.DispatchRecord{})
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.FDODevice{})
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.FDOUser{})
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Image{})
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.ImageSet{})
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Installer{})
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.OwnershipVoucherData{})
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Package{})
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.Repo{})
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.SSHKey{})
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.ThirdPartyRepo{})
-	db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(&models.UpdateTransaction{})
-	log.Info("Wipe Completed")
+	// Order is empircally determine and should be inverse of Automigration cmd/migrate/main.go
+	type ModelInterface struct {
+		label             string
+		interfaceInstance interface{}
+	}
+	var modelsInterfaces = make([]ModelInterface, 0)
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "Commit",
+			interfaceInstance: &models.Commit{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "DeviceGroup",
+			interfaceInstance: &models.DeviceGroup{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "DispatchRecord",
+			interfaceInstance: &models.DispatchRecord{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "FDODevice",
+			interfaceInstance: &models.FDODevice{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "FDOUser",
+			interfaceInstance: &models.FDOUser{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "ImageSet",
+			interfaceInstance: &models.ImageSet{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "Image",
+			interfaceInstance: &models.Image{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "Installer",
+			interfaceInstance: &models.Installer{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "OwnershipVoucherData",
+			interfaceInstance: &models.OwnershipVoucherData{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "Package",
+			interfaceInstance: &models.Package{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "Repo",
+			interfaceInstance: &models.Repo{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "SSHKey",
+			interfaceInstance: &models.SSHKey{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "ThirdPartyRepo",
+			interfaceInstance: &models.ThirdPartyRepo{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "UpdateTransaction",
+			interfaceInstance: &models.UpdateTransaction{}})
+
+	for modelsIndex, modelsInterface := range modelsInterfaces {
+		log.Debugf("Removing Model %d: %s", modelsIndex, modelsInterface.label)
+
+		result := db.DB.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(modelsInterface.interfaceInstance)
+		if result.Error != nil {
+			log.Warningf("database delete failure %s", result.Error)
+			errorOccurred = true
+		}
+	}
+
+	if !errorOccurred {
+		log.Info("Database wipe completed")
+	} else {
+		log.Error("Database wipe completed with errors")
+		os.Exit(2)
+	}
 }
