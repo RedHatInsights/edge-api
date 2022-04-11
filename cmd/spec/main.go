@@ -41,7 +41,7 @@ func main() {
 	gen.addSchema("v1.ImageSetImagePackages", &routes.ImageSetImagePackages{})
 	gen.addSchema("v1.ImageSetInstallerURL", &routes.ImageSetInstallerURL{})
 	gen.addSchema("v1.Repo", &models.Repo{})
-	gen.addSchema("v1.AddUpdate", &routes.UpdatePostJSON{})
+	gen.addSchema("v1.AddUpdate", &routes.DevicesUpdate{})
 	gen.addSchema("v1.UpdateTransaction", &models.UpdateTransaction{})
 	gen.addSchema("v1.DeviceDetails", &models.DeviceDetails{})
 	gen.addSchema("v1.Device", &models.Device{})
@@ -55,9 +55,11 @@ func main() {
 	gen.addSchema("v1.NotFound", &errors.NotFound{})
 	gen.addSchema("v1.ThirdPartyRepo", &models.ThirdPartyRepo{})
 	gen.addSchema("v1.DeviceDetailsList", &models.DeviceDetailsList{})
+	gen.addSchema("v1.DeviceViewList", &models.DeviceViewList{})
 	gen.addSchema("v1.DeviceGroup", &models.DeviceGroup{})
 	gen.addSchema("v1.DeviceGroupListDetail", &models.DeviceGroupListDetail{})
 	gen.addSchema("v1.DeviceGroupDetails", &models.DeviceGroupDetails{})
+	gen.addSchema("v1.ValidateUpdateResponse", &routes.ValidateUpdateResponse{})
 
 	type Swagger struct {
 		Components openapi3.Components `json:"components,omitempty" yaml:"components,omitempty"`
