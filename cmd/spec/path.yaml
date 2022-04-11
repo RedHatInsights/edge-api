@@ -621,8 +621,14 @@ paths:
         "200":
           content:
             application/json:
-              schema:
-                $ref: "#/components/schemas/v1.DeviceViewList"
+               schema:
+                properties:
+                  count:
+                    example: 100
+                    type: integer
+                  data:
+                    $ref: '#/components/schemas/v1.DeviceViewList'
+                type: object
           description: OK
         "500":
           content:
