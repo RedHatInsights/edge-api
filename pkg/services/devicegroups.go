@@ -207,13 +207,13 @@ func GetDeviceImageInfo(images map[int]models.DeviceImageInfo, account string) e
 			}
 
 			images[imageID] = models.DeviceImageInfo{
-				Name:             deviceImage.Name,
-				Vesrion:          deviceImage.Version,
-				Distribution:     deviceImage.Distribution,
-				CreatedAt:        deviceImage.CreatedAt,
-				UpdateAvailable:  updAvailable,
-				CommitID:         CommitID,
-				ImagePackageDiff: imagePackageDiff,
+				Name:            deviceImage.Name,
+				Vesrion:         deviceImage.Version,
+				Distribution:    deviceImage.Distribution,
+				CreatedAt:       deviceImage.CreatedAt,
+				UpdateAvailable: updAvailable,
+				CommitID:        CommitID,
+				PackageDiff:     imagePackageDiff,
 			}
 		}
 	}
