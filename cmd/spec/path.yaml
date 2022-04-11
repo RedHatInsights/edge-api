@@ -532,10 +532,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  Image:
-                    $ref: "#/components/schemas/v1.ValidateUpdateResponse"
+                $ref: "#/components/schemas/v1.ValidateUpdateResponse"
           description: OK
         "400":
           content:
