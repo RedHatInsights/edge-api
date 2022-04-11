@@ -193,24 +193,23 @@ func (s *DeviceGroupsService) GetDeviceImageInfo(images map[int]models.DeviceIma
 				updAvailable = true
 				CommitID = deviceImageSet.Images[len(deviceImageSet.Images)-1].CommitID
 
+				//loading commit and packages to calculate the diff
 				if current_commit := db.DB.First(&deviceImage.Commit, deviceImage.CommitID); current_commit.Error != nil {
 					s.log.WithField("error", current_commit).Error("Error when getting Commit for CurrentImage")
 					return current_commit.Error
-				} else {
-					if err := db.DB.Model(&deviceImage.Commit).Association("InstalledPackages").Find(&deviceImage.Commit.InstalledPackages); err != nil {
-						s.log.WithField("error", err.Error()).Error("Error when getting InstalledPackages to CurrentImage")
-						return err
-					}
+				}
+				if err := db.DB.Model(&deviceImage.Commit).Association("InstalledPackages").Find(&deviceImage.Commit.InstalledPackages); err != nil {
+					s.log.WithField("error", err.Error()).Error("Error when getting InstalledPackages to CurrentImage")
+					return err
 				}
 
 				if latest_commit := db.DB.First(&latestImage.Commit, latestImage.CommitID); latest_commit.Error != nil {
 					s.log.WithField("error", latest_commit).Error("Error when getting Commit for LatestImage")
 					return latest_commit.Error
-				} else {
-					if err := db.DB.Model(&latestImage.Commit).Association("InstalledPackages").Find(&latestImage.Commit.InstalledPackages); err != nil {
-						s.log.WithField("error", err.Error()).Error("Error when getting InstalledPackages to LatestImage")
-						return err
-					}
+				}
+				if err := db.DB.Model(&latestImage.Commit).Association("InstalledPackages").Find(&latestImage.Commit.InstalledPackages); err != nil {
+					s.log.WithField("error", err.Error()).Error("Error when getting InstalledPackages to LatestImage")
+					return err
 				}
 
 				imagePackageDiff = GetDiffOnUpdate(deviceImage, *latestImage)
