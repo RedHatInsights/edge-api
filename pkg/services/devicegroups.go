@@ -35,6 +35,7 @@ type DeviceGroupsServiceInterface interface {
 	GetDeviceGroupDeviceByID(account string, deviceGroupID uint, deviceID uint) (*models.Device, error)
 	AddDeviceGroupDevices(account string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error)
 	DeleteDeviceGroupDevices(account string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error)
+	GetDeviceImageInfo(setOfImages map[int]models.DeviceImageInfo, account string) error
 }
 
 // DeviceGroupsService is the main implementation of a DeviceGroupsServiceInterface
@@ -136,7 +137,7 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 	}
 
 	//Getting image info to related images
-	err := GetDeviceImageInfo(setOfImages, account)
+	err := s.GetDeviceImageInfo(setOfImages, account)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error getting device image info")
 		return nil, res.Error
@@ -164,13 +165,14 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 }
 
 // GetDeviceImageInfo returns the image related to the groups
-func GetDeviceImageInfo(images map[int]models.DeviceImageInfo, account string) error {
+func (s *DeviceGroupsService) GetDeviceImageInfo(images map[int]models.DeviceImageInfo, account string) error {
 	for imageID := range images {
 		if imageID > 0 {
 
 			var updAvailable bool
 			var deviceImage models.Image
 			var deviceImageSet models.ImageSet
+			var imagePackageDiff models.PackageDiff
 			var CommitID uint
 			if result := db.DB.Where(models.Image{Account: account}).
 				First(&deviceImage, imageID); result.Error != nil {
@@ -186,15 +188,43 @@ func GetDeviceImageInfo(images map[int]models.DeviceImageInfo, account string) e
 			latestImage := &deviceImageSet.Images[len(deviceImageSet.Images)-1]
 			latestImageID := latestImage.ID
 
-			if int(latestImageID) > imageID {
+			if int(latestImageID) > imageID && latestImage.CommitID > 0 {
+
 				updAvailable = true
 				CommitID = deviceImageSet.Images[len(deviceImageSet.Images)-1].CommitID
+
+				// loading commit and packages to calculate diff
+				if currentCommit := db.DB.First(&deviceImage.Commit, deviceImage.CommitID); currentCommit.Error != nil {
+					s.log.WithField("error", currentCommit).Error("Error when getting Commit for CurrentImage")
+					return currentCommit.Error
+				}
+				if err := db.DB.Model(&deviceImage.Commit).Association("InstalledPackages").Find(&deviceImage.Commit.InstalledPackages); err != nil {
+					s.log.WithField("error", err.Error()).Error("Error when getting InstalledPackages to CurrentImage")
+					return err
+				}
+
+				if latestCommit := db.DB.First(&latestImage.Commit, latestImage.CommitID); latestCommit.Error != nil {
+					s.log.WithField("error", latestCommit).Error("Error when getting Commit for LatestImage")
+					return latestCommit.Error
+				}
+				if err := db.DB.Model(&latestImage.Commit).Association("InstalledPackages").Find(&latestImage.Commit.InstalledPackages); err != nil {
+					s.log.WithField("error", err.Error()).Error("Error when getting InstalledPackages to LatestImage")
+					return err
+				}
+
+				imagePackageDiff = GetDiffOnUpdate(deviceImage, *latestImage)
+
 			}
 
 			images[imageID] = models.DeviceImageInfo{
 				Name:            deviceImage.Name,
+				Version:         deviceImage.Version,
+				Distribution:    deviceImage.Distribution,
+				CreatedAt:       deviceImage.CreatedAt,
 				UpdateAvailable: updAvailable,
-				CommitID:        CommitID}
+				CommitID:        CommitID,
+				PackageDiff:     imagePackageDiff,
+			}
 		}
 	}
 	return nil
