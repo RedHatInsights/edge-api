@@ -35,6 +35,7 @@ type DeviceGroupsServiceInterface interface {
 	GetDeviceGroupDeviceByID(account string, deviceGroupID uint, deviceID uint) (*models.Device, error)
 	AddDeviceGroupDevices(account string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error)
 	DeleteDeviceGroupDevices(account string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error)
+	GetDeviceImageInfo(setOfImages map[int]models.DeviceImageInfo, account string) error
 }
 
 // DeviceGroupsService is the main implementation of a DeviceGroupsServiceInterface
@@ -136,7 +137,7 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 	}
 
 	//Getting image info to related images
-	err := GetDeviceImageInfo(setOfImages, account)
+	err := s.GetDeviceImageInfo(setOfImages, account)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error getting device image info")
 		return nil, res.Error
@@ -164,7 +165,7 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 }
 
 // GetDeviceImageInfo returns the image related to the groups
-func GetDeviceImageInfo(images map[int]models.DeviceImageInfo, account string) error {
+func (s *DeviceGroupsService) GetDeviceImageInfo(images map[int]models.DeviceImageInfo, account string) error {
 	for imageID := range images {
 		if imageID > 0 {
 
@@ -194,11 +195,13 @@ func GetDeviceImageInfo(images map[int]models.DeviceImageInfo, account string) e
 
 				db.DB.First(&deviceImage.Commit, deviceImage.CommitID)
 				if err := db.DB.Model(&deviceImage.Commit).Association("InstalledPackages").Find(&deviceImage.Commit.InstalledPackages); err != nil {
+					s.log.WithField("error", err.Error()).Error("Error when getting InstalledPackafes to CurrentImage")
 					return err
 				}
 
 				db.DB.First(&latestImage.Commit, latestImage.CommitID)
 				if err := db.DB.Model(&latestImage.Commit).Association("InstalledPackages").Find(&latestImage.Commit.InstalledPackages); err != nil {
+					s.log.WithField("error", err.Error()).Error("Error when getting InstalledPackafes to LatestImage")
 					return err
 				}
 
