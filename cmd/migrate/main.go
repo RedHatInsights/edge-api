@@ -1,12 +1,21 @@
 package main
 
 import (
+	"os"
+
 	"github.com/redhatinsights/edge-api/config"
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
+
+func handlePanic(errorOccurred *bool) {
+	if err := recover(); err != nil {
+		log.Error("Database automigrate failure")
+		os.Exit(1)
+	}
+}
 
 func main() {
 	config.Init()
@@ -71,25 +80,102 @@ func main() {
 		}
 	*/
 	// Automigration
-	// Order should match Deleting of models in cmd/db/wipe.go
+	errorOccurred := false
+	defer handlePanic(&errorOccurred)
+
+	// Order should match model deletions in cmd/db/wipe.go
 	// Order is not strictly alphabetical due to dependencies (e.g. Image needs ImageSet)
-	err := db.DB.Debug().AutoMigrate(&models.Commit{},
-		&models.DeviceGroup{},
-		&models.DispatchRecord{},
-		&models.FDODevice{},
-		&models.FDOUser{},
-		&models.ImageSet{},
-		&models.Image{},
-		&models.Installer{},
-		&models.OwnershipVoucherData{},
-		&models.Package{},
-		&models.Repo{},
-		&models.SSHKey{},
-		&models.ThirdPartyRepo{},
-		&models.UpdateTransaction{})
-	if err != nil {
-		l.LogErrorAndPanic("database automigrate failure", err)
+	type ModelInterface struct {
+		label             string
+		interfaceInstance interface{}
+	}
+	var modelsInterfaces = make([]ModelInterface, 0)
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "Commit",
+			interfaceInstance: &models.Commit{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "DeviceGroup",
+			interfaceInstance: &models.DeviceGroup{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "DispatchRecord",
+			interfaceInstance: &models.DispatchRecord{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "FDODevice",
+			interfaceInstance: &models.FDODevice{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "FDOUser",
+			interfaceInstance: &models.FDOUser{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "ImageSet",
+			interfaceInstance: &models.ImageSet{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "Image",
+			interfaceInstance: &models.Image{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "Installer",
+			interfaceInstance: &models.Installer{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "OwnershipVoucherData",
+			interfaceInstance: &models.OwnershipVoucherData{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "Package",
+			interfaceInstance: &models.Package{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "Repo",
+			interfaceInstance: &models.Repo{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "SSHKey",
+			interfaceInstance: &models.SSHKey{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "ThirdPartyRepo",
+			interfaceInstance: &models.ThirdPartyRepo{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
+			label:             "UpdateTransaction",
+			interfaceInstance: &models.UpdateTransaction{}})
+
+	for modelsIndex, modelsInterface := range modelsInterfaces {
+		log.Debugf("Migrating Model %d: %s", modelsIndex, modelsInterface.label)
+
+		// err := db.DB.Debug().AutoMigrate( modelsInterface.interfaceInstance )
+		err := db.DB.AutoMigrate(modelsInterface.interfaceInstance)
+		if err != nil {
+			log.Warningf("database automigrate failure %s", err)
+			errorOccurred = true
+		}
 	}
 
-	log.Info("Migration Completed")
+	if !errorOccurred {
+		log.Info("Migration completed successfully")
+	} else {
+		log.Error("Migration completed with errors")
+		os.Exit(2)
+	}
 }
