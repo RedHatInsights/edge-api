@@ -1,7 +1,7 @@
 module github.com/redhatinsights/edge-api
 
 require (
-	github.com/aws/aws-sdk-go v1.43.34
+	github.com/aws/aws-sdk-go v1.43.36
 	github.com/bxcodec/faker/v3 v3.8.0
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/confluentinc/confluent-kafka-go v1.8.2
@@ -13,7 +13,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.0
 	github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936
-	github.com/lib/pq v1.10.4
+	github.com/lib/pq v1.10.5
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/ginkgo/v2 v2.1.3
 	github.com/onsi/gomega v1.19.0
