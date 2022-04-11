@@ -219,7 +219,7 @@ func (s *DeviceGroupsService) GetDeviceImageInfo(images map[int]models.DeviceIma
 
 			images[imageID] = models.DeviceImageInfo{
 				Name:            deviceImage.Name,
-				Vesrion:         deviceImage.Version,
+				Version:         deviceImage.Version,
 				Distribution:    deviceImage.Distribution,
 				CreatedAt:       deviceImage.CreatedAt,
 				UpdateAvailable: updAvailable,

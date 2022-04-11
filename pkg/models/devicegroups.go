@@ -27,7 +27,7 @@ type DeviceGroupListDetail struct {
 //DeviceImageInfo is a record of group with the current images running on the device
 type DeviceImageInfo struct {
 	Name            string
-	Vesrion         int
+	Version         int
 	Distribution    string
 	CreatedAt       EdgeAPITime
 	PackageDiff     PackageDiff
