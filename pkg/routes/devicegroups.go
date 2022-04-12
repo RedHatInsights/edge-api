@@ -570,6 +570,7 @@ func DeleteDeviceGroupOneDevice(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, ctxServices.Log, contextDeviceGroupDevice)
 }
 
+// CheckGroupName validates if a group name exists on an account
 func CheckGroupName(w http.ResponseWriter, r *http.Request) {
 	services := dependencies.ServicesFromContext(r.Context())
 	var name = chi.URLParam(r, "name")

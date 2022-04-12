@@ -53,7 +53,7 @@ func NewDeviceGroupsService(ctx context.Context, log *log.Entry) DeviceGroupsSer
 	}
 }
 
-// deviceGroupNameExists check if a device group exists by account and name
+// DeviceGroupNameExists check if a device group exists by account and name
 func (s *DeviceGroupsService) DeviceGroupNameExists(account string, name string) (bool, error) {
 	if account == "" || name == "" {
 		return false, new(DeviceGroupAccountOrNameUndefined)
