@@ -597,26 +597,26 @@ paths:
     get:
       operationId: getDevicesView
       parameters:
-        - name: per_page
+        - name: sort_by
           in: query
-          description: "field: maximum devices per page"
-          schema:
-            type: integer
-        - name: page
-          in: query
-          description: "field: which page to query from"
-          schema:
-            type: integer
-        - name: order_by
-          in: query
-          description: "field: choose which filter to order"
+          description: "fields: name, uuid, update_available, image_id. To sort DESC use - before the fields."
           schema:
             type: string
-        - name: order_how
+        - name: name
           in: query
-          description: "field: choose to order asc or desc"
+          description: "field: filter by name"
           schema:
             type: string
+        - name: limit
+          in: query
+          description: "field: return number of devices until limit is reached. Default is 100."
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          description: "field: return number of devices begining at the offset."
+          schema:
+            type: integer
       responses:
         "200":
           content:
