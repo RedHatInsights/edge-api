@@ -40,7 +40,6 @@ func setContextDeviceGroupDevice(ctx context.Context, deviceGroupDevice *models.
 }
 
 // MakeDeviceGroupsRouter adds support for device groups operations
-/* /device-groups */
 func MakeDeviceGroupsRouter(sub chi.Router) {
 	sub.With(validateGetAllDeviceGroupsFilterParams).With(common.Paginate).Get("/", GetAllDeviceGroups)
 	sub.Post("/", CreateDeviceGroup)
