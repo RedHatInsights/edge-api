@@ -181,3 +181,17 @@ func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) DeleteDeviceGroupDevices
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDeviceGroupDevices", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).DeleteDeviceGroupDevices), account, deviceGroupID, devices)
 }
+
+// GetDeviceImageInfo mocks base method
+func (m *MockDeviceGroupsServiceInterface) GetDeviceImageInfo(setOfImages map[int]models.DeviceImageInfo, account string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDeviceImageInfo", setOfImages, account)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// GetDeviceImageInfo indicates an expected call of GetDeviceImageInfo
+func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) GetDeviceImageInfo(setOfImages, account interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceImageInfo", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).GetDeviceImageInfo), setOfImages, account)
+}
