@@ -46,6 +46,7 @@ type DeviceView struct {
 	LastSeen        string `json:"LastSeen"`
 	UpdateAvailable bool   `json:"UpdateAvailable"`
 	Status          string `json:"Status"`
+	ImageSetID      uint   `json:"ImageSetID"`
 }
 
 // Device is a record of Edge Devices referenced by their UUID as per the
