@@ -240,6 +240,17 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 		update.Commit, err = services.CommitService.GetCommitByID(devicesUpdate.CommitID)
 		services.Log.WithField("commit", update.Commit).Debug("Commit retrieved from this update")
 
+		if err != nil {
+			services.Log.WithFields(log.Fields{
+				"error":    err.Error(),
+				"commitID": devicesUpdate.CommitID,
+			}).Error("No commit found for Commit ID")
+			err := errors.NewNotFound(err.Error())
+			err.SetTitle(fmt.Sprintf("No commit found for CommitID %d", devicesUpdate.CommitID))
+			w.WriteHeader(err.GetStatus())
+			return nil, err
+		}
+
 		notify, errNotify := services.UpdateService.SendDeviceNotification(&update)
 		if errNotify != nil {
 			services.Log.WithField("message", errNotify.Error()).Error("Error to send notification")
@@ -247,16 +258,6 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 
 		}
 		update.DispatchRecords = []models.DispatchRecord{}
-		if err != nil {
-			services.Log.WithFields(log.Fields{
-				"error":    err.Error(),
-				"commitID": devicesUpdate.CommitID,
-			}).Error("No commit found for Commit ID")
-			err := errors.NewInternalServerError()
-			err.SetTitle(fmt.Sprintf("No commit found for CommitID %d", devicesUpdate.CommitID))
-			w.WriteHeader(err.GetStatus())
-			return nil, err
-		}
 
 		//  Removing commit dependency to avoid overwriting the repo
 		var repo *models.Repo
