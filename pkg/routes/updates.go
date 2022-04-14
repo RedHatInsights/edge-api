@@ -203,8 +203,6 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 	}
 	//validate if commit is valid before continue process
 	commit, err := services.CommitService.GetCommitByID(devicesUpdate.CommitID)
-	services.Log.WithField("commit", commit.ID).Debug("Commit retrieved from this update")
-
 	if err != nil {
 		services.Log.WithFields(log.Fields{
 			"error":    err.Error(),
@@ -215,6 +213,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 		w.WriteHeader(err.GetStatus())
 		return nil, err
 	}
+	services.Log.WithField("commit", commit.ID).Debug("Commit retrieved from this update")
 
 	// TODO: Implement update by tag - Add validation per tag
 	if devicesUpdate.DevicesUUID == nil {
