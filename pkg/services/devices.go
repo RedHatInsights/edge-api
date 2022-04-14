@@ -585,7 +585,7 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	}
 
 	var storedDevices []models.Device
-	if res := tx.Limit(limit).Offset(offset).Where("account = ?", account).Find(&storedDevices); res.Error != nil {
+	if res := tx.Limit(limit).Offset(offset).Where("account = ? AND image_id IS NOT NULL", account).Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
 	}
 
@@ -598,7 +598,7 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	setOfImages := make(map[uint]*neededImageInfo)
 	for _, devices := range storedDevices {
 		if devices.ImageID != 0 {
-			setOfImages[devices.ImageID] = &neededImageInfo{Name: "", Status: ""}
+			setOfImages[devices.ImageID] = &neededImageInfo{Name: "", Status: "", ImageSetID: 0}
 		}
 	}
 
