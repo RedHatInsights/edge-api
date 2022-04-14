@@ -242,6 +242,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 	services.Log.WithField("inventoryDevice", inv).Debug("Device retrieved from inventory")
 	var updates []models.UpdateTransaction
 	for _, inventory := range ii {
+
 		// Create the models.UpdateTransaction
 		update := models.UpdateTransaction{
 			Account:  account,
@@ -338,6 +339,9 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 					services.Log.WithFields(log.Fields{
 						"booted": deployment.Booted,
 					}).Debug("device has been booted")
+					if commit.OSTreeCommit == deployment.Checksum {
+						break
+					}
 					var oldCommit models.Commit
 					result := db.DB.Where("os_tree_commit = ?", deployment.Checksum).First(&oldCommit)
 					if result.Error != nil {
