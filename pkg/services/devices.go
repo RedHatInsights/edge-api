@@ -103,8 +103,14 @@ func (s *DeviceService) GetDeviceByID(deviceID uint) (*models.Device, error) {
 		s.log.WithField("error", result.Error.Error()).Error("Error finding device")
 		return nil, new(DeviceNotFoundError)
 	}
+
 	//Load from device DB the groups info and add to the new struct
-	db.DB.Model(&device).Association("DevicesGroups").Find(&device.DevicesGroups)
+	err := db.DB.Model(&device).Association("DevicesGroups").Find(&device.DevicesGroups)
+	if err != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error finding associated devicegroups for device")
+		return nil, new(DeviceGroupNotFound)
+	}
+
 	return &device, nil
 }
 
@@ -118,8 +124,13 @@ func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, erro
 		s.log.WithField("error", result.Error.Error()).Error("Error finding device")
 		return nil, new(DeviceNotFoundError)
 	}
+
 	//Load from device DB the groups info and add to the new struct
-	db.DB.Model(&device).Association("DevicesGroups").Find(&device.DevicesGroups)
+	err := db.DB.Model(&device).Association("DevicesGroups").Find(&device.DevicesGroups)
+	if err != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error finding associated devicegroups for device")
+		return nil, new(DeviceGroupNotFound)
+	}
 	return &device, nil
 }
 
@@ -231,7 +242,11 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 
 	for _, upd := range images {
 		upd := upd // this will prevent implicit memory aliasing in the loop
-		db.DB.First(&upd.Commit, upd.CommitID)
+		if err := db.DB.First(&upd.Commit, upd.CommitID); err != nil {
+			s.log.WithField("error", err).Error("Could not find commit")
+			return nil, new(CommitNotFound)
+		}
+
 		if err := db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages); err != nil {
 			s.log.WithField("error", err.Error()).Error("Could not find installed packages")
 			return nil, err
@@ -394,8 +409,17 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 
 		//Load from device DB the groups info and add to the new struct
 		var storeDevice models.Device
-		db.DB.Where("id=?", dbDeviceID).First(&storeDevice)
-		db.DB.Model(&storeDevice).Association("DevicesGroups").Find(&storeDevice.DevicesGroups)
+		result := db.DB.Where("id=?", dbDeviceID).First(&storeDevice)
+		if result.Error != nil {
+			s.log.WithField("error", result.Error.Error()).Error("Error finding device")
+			return nil, new(DeviceNotFoundError)
+		}
+
+		err := db.DB.Model(&storeDevice).Association("DevicesGroups").Find(&storeDevice.DevicesGroups)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Error finding associated devicegroups for device")
+			return nil, new(DeviceGroupNotFound)
+		}
 
 		dd := models.DeviceDetails{}
 		dd.Device = models.EdgeDevice{
