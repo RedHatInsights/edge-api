@@ -103,6 +103,8 @@ func (s *DeviceService) GetDeviceByID(deviceID uint) (*models.Device, error) {
 		s.log.WithField("error", result.Error.Error()).Error("Error finding device")
 		return nil, new(DeviceNotFoundError)
 	}
+	//Load from device DB the groups info and add to the new struct
+	db.DB.Model(&device).Association("DevicesGroups").Find(&device.DevicesGroups)
 	return &device, nil
 }
 
@@ -116,6 +118,8 @@ func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, erro
 		s.log.WithField("error", result.Error.Error()).Error("Error finding device")
 		return nil, new(DeviceNotFoundError)
 	}
+	//Load from device DB the groups info and add to the new struct
+	db.DB.Model(&device).Association("DevicesGroups").Find(&device.DevicesGroups)
 	return &device, nil
 }
 
@@ -159,6 +163,8 @@ func (s *DeviceService) GetDeviceDetails(device inventory.Device) (*models.Devic
 		},
 		Image:              imageInfo,
 		UpdateTransactions: updates,
+		//Given we are concat the info from inventory with our db, we need to add this field to the struct to be able to see the result
+		DevicesGroups: &databaseDevice.DevicesGroups,
 	}
 	return details, nil
 }
@@ -373,6 +379,7 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 	if res := db.DB.Where("account = ? AND uuid IN ?", account, devicesUUIDs).Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
 	}
+
 	mapDevicesUUIDToID := make(map[string]uint, len(devicesUUIDs))
 	for _, device := range storedDevices {
 		mapDevicesUUIDToID[device.UUID] = device.ID
@@ -384,13 +391,20 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		if !ok {
 			dbDeviceID = 0
 		}
+
+		//Load from device DB the groups info and add to the new struct
+		var storeDevice models.Device
+		db.DB.Where("id=?", dbDeviceID).First(&storeDevice)
+		db.DB.Model(&storeDevice).Association("DevicesGroups").Find(&storeDevice.DevicesGroups)
+
 		dd := models.DeviceDetails{}
 		dd.Device = models.EdgeDevice{
 			Device: &models.Device{
-				Model:       models.Model{ID: dbDeviceID},
-				UUID:        device.ID,
-				RHCClientID: device.Ostree.RHCClientID,
-				Account:     device.Account,
+				Model:         models.Model{ID: dbDeviceID},
+				UUID:          device.ID,
+				RHCClientID:   device.Ostree.RHCClientID,
+				Account:       device.Account,
+				DevicesGroups: storeDevice.DevicesGroups,
 			},
 			Account:    device.Account,
 			DeviceName: device.DisplayName,
