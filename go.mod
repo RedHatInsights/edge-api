@@ -22,8 +22,7 @@ require (
 	github.com/redhatinsights/platform-go-middlewares v0.12.0
 	github.com/segmentio/kafka-go v0.4.31
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/viper v1.10.1
-	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3 // indirect
+	github.com/spf13/viper v1.11.0
 	gopkg.in/confluentinc/confluent-kafka-go.v1 v1.8.2
 	gorm.io/driver/postgres v1.3.4
 	gorm.io/driver/sqlite v1.3.1
