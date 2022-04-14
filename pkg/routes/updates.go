@@ -210,6 +210,20 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 			}
 		}
 	}
+	//validate if commit is valid before continue process
+	commit, err := services.CommitService.GetCommitByID(devicesUpdate.CommitID)
+	services.Log.WithField("commit", commit.ID).Debug("Commit retrieved from this update")
+
+	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error":    err.Error(),
+			"commitID": devicesUpdate.CommitID,
+		}).Error("No commit found for Commit ID")
+		err := errors.NewNotFound(err.Error())
+		err.SetTitle(fmt.Sprintf("No commit found for CommitID %d", devicesUpdate.CommitID))
+		w.WriteHeader(err.GetStatus())
+		return nil, err
+	}
 
 	client := inventory.InitClient(r.Context(), log.NewEntry(log.StandardLogger()))
 	var inv inventory.Response
@@ -241,8 +255,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 		}
 
 		// Get the models.Commit from the Commit ID passed in via JSON
-		update.Commit, err = services.CommitService.GetCommitByID(devicesUpdate.CommitID)
-		services.Log.WithField("commit", update.Commit).Debug("Commit retrieved from this update")
+		update.Commit = commit
 
 		notify, errNotify := services.UpdateService.SendDeviceNotification(&update)
 		if errNotify != nil {
@@ -251,16 +264,6 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 
 		}
 		update.DispatchRecords = []models.DispatchRecord{}
-		if err != nil {
-			services.Log.WithFields(log.Fields{
-				"error":    err.Error(),
-				"commitID": devicesUpdate.CommitID,
-			}).Error("No commit found for Commit ID")
-			err := errors.NewInternalServerError()
-			err.SetTitle(fmt.Sprintf("No commit found for CommitID %d", devicesUpdate.CommitID))
-			w.WriteHeader(err.GetStatus())
-			return nil, err
-		}
 
 		//  Removing commit dependency to avoid overwriting the repo
 		var repo *models.Repo
