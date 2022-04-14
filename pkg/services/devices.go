@@ -36,6 +36,7 @@ type DeviceServiceInterface interface {
 	GetDeviceDetailsByUUID(deviceUUID string) (*models.DeviceDetails, error)
 	GetUpdateAvailableForDeviceByUUID(deviceUUID string, latest bool) ([]models.ImageUpdateAvailable, error)
 	GetDeviceImageInfoByUUID(deviceUUID string) (*models.ImageInfo, error)
+	GetUpdateCommitFromDevice(account string, deviceID string) (uint, error)
 	// Device Object Methods
 	GetDeviceDetails(device inventory.Device) (*models.DeviceDetails, error)
 	GetUpdateAvailableForDevice(device inventory.Device, latest bool) ([]models.ImageUpdateAvailable, error)
@@ -644,6 +645,36 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 		Total:   len(storedDevices),
 	}
 	return list, nil
+}
+
+// GetUpdateCommitFromDevice fetches the commitID from the latest Device Image
+func (s *DeviceService) GetUpdateCommitFromDevice(account string, deviceID string) (uint, error) {
+	var device models.Device
+	if result := db.DB.Where(models.Device{Account: account, UUID: deviceID}).First(&device); result.Error != nil {
+		return 0, result.Error
+	}
+
+	if device.ImageID == 0 {
+		return 0, new(DeviceHasImageUndefined)
+	}
+
+	// get the device image
+	var deviceImage models.Image
+	if result := db.DB.Where(models.Image{Account: account}).First(&deviceImage, device.ImageID); result.Error != nil {
+		return 0, result.Error
+	}
+
+	// check for updates , find if any later images exists to get the commitID
+	var updateImages []models.Image
+	if result := db.DB.Where("account = ? AND image_set_id = ? AND status = ? AND created_at > ?", deviceImage.Account, deviceImage.ImageSetID, models.ImageStatusSuccess, deviceImage.CreatedAt).Order("version desc").Find(&updateImages); result.Error != nil {
+		return 0, result.Error
+	}
+
+	if len(updateImages) == 0 {
+		return 0, new(DeviceHasNoImageUpdate)
+	}
+
+	return updateImages[0].CommitID, nil
 }
 
 // ProcessPlatformInventoryCreateEvent is a method to processes messages from platform.inventory.events kafka topic and save them as devices in the DB

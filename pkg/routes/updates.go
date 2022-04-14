@@ -163,7 +163,7 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 
 //DevicesUpdate contains the update structure for the device
 type DevicesUpdate struct {
-	CommitID    uint     `json:"CommitID"`
+	CommitID    uint     `json:"CommitID,omitempty"`
 	DevicesUUID []string `json:"DevicesUUID"`
 	// TODO: Implement updates by tag
 	// Tag        string `json:"Tag"`
@@ -196,17 +196,21 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 	}
 	services.Log.WithField("updateJSON", devicesUpdate).Debug("Update JSON received")
 
-	if devicesUpdate.CommitID == 0 {
-		err := errors.NewBadRequest("Must provide a CommitID")
-		w.WriteHeader(err.GetStatus())
-		return nil, err
-	}
 	// TODO: Implement update by tag - Add validation per tag
 	if devicesUpdate.DevicesUUID == nil {
 		err := errors.NewBadRequest("DeviceUUID required.")
 		w.WriteHeader(err.GetStatus())
 		return nil, err
 	}
+	if devicesUpdate.CommitID == 0 {
+		for _, UUID := range devicesUpdate.DevicesUUID {
+			devicesUpdate.CommitID, err = services.DeviceService.GetUpdateCommitFromDevice(account, UUID)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	client := inventory.InitClient(r.Context(), log.NewEntry(log.StandardLogger()))
 	var inv inventory.Response
 	var ii []inventory.Response
