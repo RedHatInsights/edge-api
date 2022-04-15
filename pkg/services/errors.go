@@ -51,6 +51,20 @@ func (e *ImageVersionAlreadyExists) Error() string {
 	return "updated image version already exists"
 }
 
+// ImageSetUnDefined indicates the image has no imageSetDefined
+type ImageSetUnDefined struct{}
+
+func (e *ImageSetUnDefined) Error() string {
+	return "image-set is undefined"
+}
+
+// ImageUnDefined indicates the image is undefined in the db
+type ImageUnDefined struct{}
+
+func (e *ImageUnDefined) Error() string {
+	return "image-set is undefined"
+}
+
 // DeviceGroupNotFound indicates the Third Party Repository was not found
 type DeviceGroupNotFound struct{}
 
