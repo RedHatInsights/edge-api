@@ -406,7 +406,8 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 
 		//Load from device DB the groups info and add to the new struct
 		var storeDevice models.Device
-		result := db.DB.Where("id=?", dbDeviceID).First(&storeDevice)
+		// Don't throw error if device not found
+		db.DB.Where("id=?", dbDeviceID).First(&storeDevice)
 
 		err := db.DB.Model(&storeDevice).Association("DevicesGroups").Find(&storeDevice.DevicesGroups)
 		if err != nil {
