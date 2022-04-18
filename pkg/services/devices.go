@@ -242,10 +242,7 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 
 	for _, upd := range images {
 		upd := upd // this will prevent implicit memory aliasing in the loop
-		if err := db.DB.First(&upd.Commit, upd.CommitID); err != nil {
-			s.log.WithField("error", err).Error("Could not find commit")
-			return nil, new(CommitNotFound)
-		}
+		db.DB.First(&upd.Commit, upd.CommitID)
 
 		if err := db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages); err != nil {
 			s.log.WithField("error", err.Error()).Error("Could not find installed packages")
