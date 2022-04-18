@@ -69,5 +69,5 @@ type Device struct {
 	Account         string        `gorm:"index" json:"Account"`
 	ImageID         uint          `json:"ImageID"`
 	UpdateAvailable bool          `json:"UpdateAvailable"`
-	DevicesGroups   []DeviceGroup `json:"DevicesGroups" gorm:"many2many:device_groups_devices;"`
+	DevicesGroups   []DeviceGroup `faker:"-" gorm:"many2many:device_groups_devices;" json:"DevicesGroups"`
 }
