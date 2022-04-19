@@ -204,7 +204,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 	}
 	if devicesUpdate.CommitID == 0 {
 
-		devicesUpdate.CommitID, err = services.DeviceService.GetLatestCommitFromDevice(account, devicesUpdate.DevicesUUID)
+		devicesUpdate.CommitID, err = services.DeviceService.GetLatestCommitFromDevices(account, devicesUpdate.DevicesUUID)
 		if err != nil {
 			return nil, err
 		}

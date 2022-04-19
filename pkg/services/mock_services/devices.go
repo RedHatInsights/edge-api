@@ -271,17 +271,17 @@ func (mr *MockDeviceServiceInterfaceMockRecorder) ProcessPlatformInventoryUpdate
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessPlatformInventoryUpdatedEvent", reflect.TypeOf((*MockDeviceServiceInterface)(nil).ProcessPlatformInventoryUpdatedEvent), message)
 }
 
-// GetLatestCommitFromDevice mocks base method
-func (m *MockDeviceServiceInterface) GetLatestCommitFromDevice(account string, deviceUUID []string) (uint, error) {
+// GetLatestCommitFromDevices mocks base method
+func (m *MockDeviceServiceInterface) GetLatestCommitFromDevices(account string, deviceUUID []string) (uint, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLatestCommitFromDevice", account, deviceUUID)
+	ret := m.ctrl.Call(m, "GetLatestCommitFromDevices", account, deviceUUID)
 	ret0, _ := ret[0].(uint)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetLatestCommitFromDevice indicates an expected call of GetLatestCommitFromDevice
-func (mr *MockDeviceServiceInterfaceMockRecorder) GetLatestCommitFromDevice(account string, deviceUUID interface{}) *gomock.Call {
+// GetLatestCommitFromDevices indicates an expected call of GetLatestCommitFromDevices
+func (mr *MockDeviceServiceInterfaceMockRecorder) GetLatestCommitFromDevices(account string, deviceUUID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestCommitFromDevice", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetLatestCommitFromDevice), account, deviceUUID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestCommitFromDevices", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetLatestCommitFromDevices), account, deviceUUID)
 }

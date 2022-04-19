@@ -867,7 +867,7 @@ var _ = Describe("DeviceService", func() {
 			}
 			db.DB.Create(&device)
 			devicesUUID := []string{device.UUID}
-			updateImageCommitID, err := deviceService.GetLatestCommitFromDevice(account, devicesUUID)
+			updateImageCommitID, err := deviceService.GetLatestCommitFromDevices(account, devicesUUID)
 			Expect(updateImageCommitID == 0).To(BeTrue())
 			Expect(err).To(MatchError(new(services.DeviceHasImageUndefined)))
 			Expect(err).ToNot(BeNil())
@@ -889,7 +889,7 @@ var _ = Describe("DeviceService", func() {
 				UUID: faker.UUIDHyphenated(),
 			}
 			devicesUUID := []string{device.UUID}
-			updateImageCommitID, err := deviceService.GetLatestCommitFromDevice(updateImage.Account, devicesUUID)
+			updateImageCommitID, err := deviceService.GetLatestCommitFromDevices(updateImage.Account, devicesUUID)
 			Expect(updateImageCommitID == 0).To(BeTrue())
 			Expect(err).ToNot(BeNil())
 			Expect(err).To(MatchError(new(services.DeviceHasNoImageUpdate)))
@@ -936,7 +936,7 @@ var _ = Describe("DeviceService", func() {
 			devicesUUID := []string{device.UUID}
 
 			db.DB.Create(&secondImage)
-			updateImageCommitID, err := deviceService.GetLatestCommitFromDevice(device.Account, devicesUUID)
+			updateImageCommitID, err := deviceService.GetLatestCommitFromDevices(device.Account, devicesUUID)
 			Expect(err).To(BeNil())
 			Expect(updateImageCommitID).To(Equal(secondCommit.ID))
 		})
