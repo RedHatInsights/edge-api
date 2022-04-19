@@ -591,8 +591,9 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	}
 
 	type neededImageInfo struct {
-		Name   string
-		Status string
+		Name       string
+		Status     string
+		ImageSetID uint
 	}
 	// create a map of unique image id's. We dont want to look of a given image id more than once.
 	setOfImages := make(map[uint]*neededImageInfo)
@@ -614,7 +615,7 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	}
 
 	for _, image := range images {
-		setOfImages[image.ID] = &neededImageInfo{Name: image.Name, Status: image.Status}
+		setOfImages[image.ID] = &neededImageInfo{Name: image.Name, Status: image.Status, ImageSetID: *image.ImageSetID}
 	}
 
 	// build the return object
@@ -623,9 +624,11 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	for _, device := range storedDevices {
 		var imageName string
 		var imageStatus string
+		var imageSetID uint
 		if _, ok := setOfImages[device.ImageID]; ok {
 			imageName = setOfImages[device.ImageID].Name
 			imageStatus = setOfImages[device.ImageID].Status
+			imageSetID = setOfImages[device.ImageID].ImageSetID
 		}
 		currentDeviceView := models.DeviceView{
 			DeviceID:        device.ID,
@@ -636,6 +639,7 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 			LastSeen:        device.LastSeen.Time.String(),
 			UpdateAvailable: device.UpdateAvailable,
 			Status:          imageStatus,
+			ImageSetID:      imageSetID,
 		}
 		returnDevices = append(returnDevices, currentDeviceView)
 	}
