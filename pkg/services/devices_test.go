@@ -865,9 +865,11 @@ var _ = Describe("DeviceService", func() {
 				Account: account,
 				UUID:    faker.UUIDHyphenated(),
 			}
-			updateImageCommitID, err := deviceService.GetUpdateCommitFromDevice(account, device.UUID)
+			db.DB.Create(&device)
+			devicesUUID := []string{device.UUID}
+			updateImageCommitID, err := deviceService.GetLatestCommitFromDevice(account, devicesUUID)
 			Expect(updateImageCommitID == 0).To(BeTrue())
-			Expect(err).To(MatchError("record not found"))
+			Expect(err).To(MatchError(new(services.DeviceHasImageUndefined)))
 			Expect(err).ToNot(BeNil())
 		})
 	})
@@ -886,10 +888,11 @@ var _ = Describe("DeviceService", func() {
 			device := models.Device{
 				UUID: faker.UUIDHyphenated(),
 			}
-			updateImageCommitID, err := deviceService.GetUpdateCommitFromDevice(updateImage.Account, device.UUID)
+			devicesUUID := []string{device.UUID}
+			updateImageCommitID, err := deviceService.GetLatestCommitFromDevice(updateImage.Account, devicesUUID)
 			Expect(updateImageCommitID == 0).To(BeTrue())
 			Expect(err).ToNot(BeNil())
-			Expect(err).To(MatchError("record not found"))
+			Expect(err).To(MatchError(new(services.DeviceHasNoImageUpdate)))
 		})
 	})
 	When("device Image have update", func() {
@@ -930,8 +933,10 @@ var _ = Describe("DeviceService", func() {
 				Version:    2,
 				ImageSetID: &imageSet.ID,
 			}
+			devicesUUID := []string{device.UUID}
+
 			db.DB.Create(&secondImage)
-			updateImageCommitID, err := deviceService.GetUpdateCommitFromDevice(device.Account, device.UUID)
+			updateImageCommitID, err := deviceService.GetLatestCommitFromDevice(device.Account, devicesUUID)
 			Expect(err).To(BeNil())
 			Expect(updateImageCommitID).To(Equal(secondCommit.ID))
 		})

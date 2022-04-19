@@ -129,5 +129,12 @@ func (e *DeviceHasNoImageUpdate) Error() string {
 	return "device has no image update"
 }
 
+// DeviceHasMoreThanOneImageSet indicates that device record no image
+type DeviceHasMoreThanOneImageSet struct{}
+
+func (e *DeviceHasMoreThanOneImageSet) Error() string {
+	return "device has more than one imageset"
+}
+
 // ErrUndefinedCommit indicate that the update transaction/image or some entity  has no commit defined.
 var ErrUndefinedCommit = errors.New("entity has defined commit")

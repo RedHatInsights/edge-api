@@ -203,12 +203,25 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 		return nil, err
 	}
 	if devicesUpdate.CommitID == 0 {
-		for _, UUID := range devicesUpdate.DevicesUUID {
-			devicesUpdate.CommitID, err = services.DeviceService.GetUpdateCommitFromDevice(account, UUID)
-			if err != nil {
-				return nil, err
-			}
+
+		devicesUpdate.CommitID, err = services.DeviceService.GetLatestCommitFromDevice(account, devicesUpdate.DevicesUUID)
+		if err != nil {
+			return nil, err
 		}
+	}
+	//validate if commit is valid before continue process
+	commit, err := services.CommitService.GetCommitByID(devicesUpdate.CommitID)
+	services.Log.WithField("commit", commit.ID).Debug("Commit retrieved from this update")
+
+	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error":    err.Error(),
+			"commitID": devicesUpdate.CommitID,
+		}).Error("No commit found for Commit ID")
+		err := errors.NewNotFound(err.Error())
+		err.SetTitle(fmt.Sprintf("No commit found for CommitID %d", devicesUpdate.CommitID))
+		w.WriteHeader(err.GetStatus())
+		return nil, err
 	}
 
 	client := inventory.InitClient(r.Context(), log.NewEntry(log.StandardLogger()))

@@ -36,7 +36,7 @@ type DeviceServiceInterface interface {
 	GetDeviceDetailsByUUID(deviceUUID string) (*models.DeviceDetails, error)
 	GetUpdateAvailableForDeviceByUUID(deviceUUID string, latest bool) ([]models.ImageUpdateAvailable, error)
 	GetDeviceImageInfoByUUID(deviceUUID string) (*models.ImageInfo, error)
-	GetUpdateCommitFromDevice(account string, deviceID string) (uint, error)
+	GetLatestCommitFromDevice(account string, devicesUUID []string) (uint, error)
 	// Device Object Methods
 	GetDeviceDetails(device inventory.Device) (*models.DeviceDetails, error)
 	GetUpdateAvailableForDevice(device inventory.Device, latest bool) ([]models.ImageUpdateAvailable, error)
@@ -647,26 +647,40 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	return list, nil
 }
 
-// GetUpdateCommitFromDevice fetches the commitID from the latest Device Image
-func (s *DeviceService) GetUpdateCommitFromDevice(account string, deviceID string) (uint, error) {
-	var device models.Device
-	if result := db.DB.Where(models.Device{Account: account, UUID: deviceID}).First(&device); result.Error != nil {
+// GetLatestCommitFromDevice fetches the commitID from the latest Device Image
+func (s *DeviceService) GetLatestCommitFromDevice(account string, devicesUUID []string) (uint, error) {
+	var devices []models.Device
+
+	if result := db.DB.Where("account = ? AND uuid IN ?", account, devicesUUID).Find(&devices); result.Error != nil {
 		return 0, result.Error
 	}
 
-	if device.ImageID == 0 {
-		return 0, new(DeviceHasImageUndefined)
+	devicesImageID := make([]int, len(devices))
+
+	for _, device := range devices {
+		devicesImageID = append(devicesImageID, int(device.ImageID))
+		if int(device.ImageID) == 0 {
+			return 0, new(DeviceHasImageUndefined)
+		}
+	}
+	var devicesImage []models.Image
+	if result := db.DB.Where(models.Image{Account: account}).Find(&devicesImage, devicesImageID); result.Error != nil {
+		return 0, result.Error
 	}
 
-	// get the device image
-	var deviceImage models.Image
-	if result := db.DB.Where(models.Image{Account: account}).First(&deviceImage, device.ImageID); result.Error != nil {
-		return 0, result.Error
+	devicesImageSetID := make([]int, 0, len(devicesImage))
+	devicesImageCreatedAt := make([]models.EdgeAPITime, 0, len(devicesImage))
+	for _, image := range devicesImage {
+		devicesImageSetID = append(devicesImageSetID, int(*image.ImageSetID))
+		devicesImageCreatedAt = append(devicesImageCreatedAt, image.CreatedAt)
+	}
+	if len(devicesImageSetID) > 1 {
+		return 0, new(DeviceHasMoreThanOneImageSet)
 	}
 
 	// check for updates , find if any later images exists to get the commitID
 	var updateImages []models.Image
-	if result := db.DB.Where("account = ? AND image_set_id = ? AND status = ? AND created_at > ?", deviceImage.Account, deviceImage.ImageSetID, models.ImageStatusSuccess, deviceImage.CreatedAt).Order("version desc").Find(&updateImages); result.Error != nil {
+	if result := db.DB.Model(&models.Image{}).Where("account = ? AND image_set_id = ? AND status = ? AND created_at > ?", account, devicesImageSetID, models.ImageStatusSuccess, devicesImageCreatedAt).Order("version desc").Find(&updateImages); result.Error != nil {
 		return 0, result.Error
 	}
 
