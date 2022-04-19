@@ -19,6 +19,7 @@ type DeviceDetails struct {
 	Device             EdgeDevice           `json:"Device,omitempty"`
 	Image              *ImageInfo           `json:"ImageInfo"`
 	UpdateTransactions *[]UpdateTransaction `json:"UpdateTransactions,omitempty"`
+	DevicesGroups      *[]DeviceGroup       `json:"DevicesGroups,omitempty"`
 }
 
 // DeviceDetailsList is the list of devices with details from Inventory and Edge API
@@ -58,14 +59,15 @@ type DeviceView struct {
 // THEEDGE-1921 created 2 temporary indexes to address production issue
 type Device struct {
 	Model
-	UUID            string      `gorm:"index" json:"UUID"`
-	AvailableHash   string      `json:"AvailableHash,omitempty"`
-	RHCClientID     string      `json:"RHCClientID"`
-	Connected       bool        `gorm:"default:true" json:"Connected"`
-	Name            string      `json:"Name"`
-	LastSeen        EdgeAPITime `json:"LastSeen"`
-	CurrentHash     string      `json:"CurrentHash,omitempty"`
-	Account         string      `gorm:"index" json:"Account"`
-	ImageID         uint        `json:"ImageID"`
-	UpdateAvailable bool        `json:"UpdateAvailable"`
+	UUID            string        `gorm:"index" json:"UUID"`
+	AvailableHash   string        `json:"AvailableHash,omitempty"`
+	RHCClientID     string        `json:"RHCClientID"`
+	Connected       bool          `gorm:"default:true" json:"Connected"`
+	Name            string        `json:"Name"`
+	LastSeen        EdgeAPITime   `json:"LastSeen"`
+	CurrentHash     string        `json:"CurrentHash,omitempty"`
+	Account         string        `gorm:"index" json:"Account"`
+	ImageID         uint          `json:"ImageID"`
+	UpdateAvailable bool          `json:"UpdateAvailable"`
+	DevicesGroups   []DeviceGroup `faker:"-" gorm:"many2many:device_groups_devices;" json:"DevicesGroups"`
 }

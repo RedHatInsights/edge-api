@@ -195,3 +195,18 @@ func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) GetDeviceImageInfo(setOf
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceImageInfo", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).GetDeviceImageInfo), setOfImages, account)
 }
+
+// DeviceGroupNameExists mocks base method
+func (m *MockDeviceGroupsServiceInterface) DeviceGroupNameExists(account, name string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeviceGroupNameExists", account, name)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeviceGroupNameExists indicates an expected call of DeviceGroupNameExists
+func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) DeviceGroupNameExists(account, name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeviceGroupNameExists", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).DeviceGroupNameExists), account, name)
+}

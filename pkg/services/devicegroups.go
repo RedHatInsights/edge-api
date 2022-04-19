@@ -36,6 +36,7 @@ type DeviceGroupsServiceInterface interface {
 	AddDeviceGroupDevices(account string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error)
 	DeleteDeviceGroupDevices(account string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error)
 	GetDeviceImageInfo(setOfImages map[int]models.DeviceImageInfo, account string) error
+	DeviceGroupNameExists(account string, name string) (bool, error)
 }
 
 // DeviceGroupsService is the main implementation of a DeviceGroupsServiceInterface
@@ -52,8 +53,8 @@ func NewDeviceGroupsService(ctx context.Context, log *log.Entry) DeviceGroupsSer
 	}
 }
 
-// deviceGroupNameExists check if a device group exists by account and name
-func deviceGroupNameExists(account string, name string) (bool, error) {
+// DeviceGroupNameExists check if a device group exists by account and name
+func (s *DeviceGroupsService) DeviceGroupNameExists(account string, name string) (bool, error) {
 	if account == "" || name == "" {
 		return false, new(DeviceGroupAccountOrNameUndefined)
 	}
@@ -232,7 +233,7 @@ func (s *DeviceGroupsService) GetDeviceImageInfo(images map[int]models.DeviceIma
 
 //CreateDeviceGroup create a device group for an account
 func (s *DeviceGroupsService) CreateDeviceGroup(deviceGroup *models.DeviceGroup) (*models.DeviceGroup, error) {
-	deviceGroupExists, err := deviceGroupNameExists(deviceGroup.Account, deviceGroup.Name)
+	deviceGroupExists, err := s.DeviceGroupNameExists(deviceGroup.Account, deviceGroup.Name)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error when checking if device group exists")
 		return nil, err
@@ -314,7 +315,7 @@ func (s *DeviceGroupsService) UpdateDeviceGroup(deviceGroup *models.DeviceGroup,
 	}
 	if groupDetails.Name != "" {
 		groupDetails.Name = deviceGroup.Name
-		deviceGroupExists, err := deviceGroupNameExists(groupDetails.Account, groupDetails.Name)
+		deviceGroupExists, err := s.DeviceGroupNameExists(groupDetails.Account, groupDetails.Name)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error when checking if device group exists")
 			return err
