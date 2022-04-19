@@ -71,6 +71,10 @@ var devicesFilters = common.ComposeFilters(
 		QueryParam: "update_available",
 		DBField:    "devices.update_available",
 	}),
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "image_id",
+		DBField:    "devices.image_id",
+	}),
 	common.SortFilterHandler("devices", "name", "ASC"),
 )
 
