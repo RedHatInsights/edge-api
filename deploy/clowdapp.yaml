@@ -81,6 +81,8 @@ objects:
           value: ${EDGEAPIBASEURL}
         - name: UPLOADWORKERS
           value: ${UPLOADWORKERS}
+        - name: LOG_LEVEL
+          value: ${LOG_LEVEL}
         resources:
           limits:
             cpu: ${{CPU_LIMIT}}
@@ -222,3 +224,7 @@ parameters:
   name: FDO_API_VERSION
   required: false
   value: "v1"
+- description: Log level
+  name: LOG_LEVEL
+  required: false
+  value: "debug"
