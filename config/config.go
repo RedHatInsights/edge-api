@@ -91,7 +91,7 @@ func Init() {
 	options.SetDefault("OpenAPIFilePath", "./cmd/spec/openapi.json")
 	options.SetDefault("Database", "sqlite")
 	options.SetDefault("DatabaseFile", "test.db")
-	options.SetDefault("DefaultOSTreeRef", "rhel/8/x86_64/edge")
+	options.SetDefault("DefaultOSTreeRef", "rhel/9/x86_64/edge")
 	options.SetDefault("TemplatesPath", "/usr/local/etc/")
 	options.SetDefault("EdgeAPIBaseURL", "http://localhost:3000")
 	options.SetDefault("UploadWorkers", 100)

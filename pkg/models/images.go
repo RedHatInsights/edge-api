@@ -73,9 +73,9 @@ const (
 	NoOutputTypes = "an output type is required"
 
 	// ImageTypeInstaller is the installer image type on Image Builder
-	ImageTypeInstaller = "rhel-edge-installer"
+	ImageTypeInstaller = "edge-installer"
 	// ImageTypeCommit is the installer image type on Image Builder
-	ImageTypeCommit = "rhel-edge-commit"
+	ImageTypeCommit = "edge-commit"
 
 	// ImageStatusCreated is for when an image is created
 	ImageStatusCreated = "CREATED"
@@ -100,7 +100,7 @@ const (
 
 // Required Packages to send to image builder that will go into the base image
 var requiredPackages = [6]string{
-	"ansible",
+	"ansible-core",
 	"rhc",
 	"rhc-worker-playbook",
 	"subscription-manager",

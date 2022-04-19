@@ -19,8 +19,8 @@ echo PRE
 # Auto-detect a dir at that location and inject it into the command list for install
 # Default to prior ostree/repo location in 8.4
 [[ -d /run/install/repo/ostree ]] \
-	&& echo "ostreesetup --nogpg --osname=rhel-edge --remote=rhel-edge --url=file:///run/install/repo/ostree/repo --ref=rhel/8/x86_64/edge" > /tmp/ostreesetup \
-	|| echo "ostreesetup --nogpg --osname=rhel-edge --remote=rhel-edge --url=file:///ostree/repo --ref=rhel/8/x86_64/edge" > /tmp/ostreesetup
+	&& echo "ostreesetup --nogpg --osname=rhel-edge --remote=rhel-edge --url=file:///run/install/repo/ostree/repo --ref=rhel/9/x86_64/edge" > /tmp/ostreesetup \
+	|| echo "ostreesetup --nogpg --osname=rhel-edge --remote=rhel-edge --url=file:///ostree/repo --ref=rhel/9/x86_64/edge" > /tmp/ostreesetup
 
 # Handle include for custom post section if a post file exists
 [[ -e /run/install/repo/fleet_kspost.txt ]] && cp /run/install/repo/fleet_kspost.txt /tmp \
