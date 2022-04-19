@@ -138,3 +138,10 @@ func (e *DeviceHasImageUndefined) Error() string {
 
 // ErrUndefinedCommit indicate that the update transaction/image or some entity  has no commit defined.
 var ErrUndefinedCommit = errors.New("entity has defined commit")
+
+// CommitNotFound indicates commit matching the given id was not found
+type CommitNotFound struct{}
+
+func (e *CommitNotFound) Error() string {
+	return "commit not found"
+}
