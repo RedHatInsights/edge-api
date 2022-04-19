@@ -43,6 +43,7 @@ func setContextDeviceGroupDevice(ctx context.Context, deviceGroupDevice *models.
 func MakeDeviceGroupsRouter(sub chi.Router) {
 	sub.With(validateGetAllDeviceGroupsFilterParams).With(common.Paginate).Get("/", GetAllDeviceGroups)
 	sub.Post("/", CreateDeviceGroup)
+	sub.Get("/checkName/{name}", CheckGroupName)
 	sub.Route("/{ID}", func(r chi.Router) {
 		r.Use(DeviceGroupCtx)
 		r.Get("/", GetDeviceGroupByID)
@@ -567,4 +568,28 @@ func DeleteDeviceGroupOneDevice(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSONBody(w, ctxServices.Log, contextDeviceGroupDevice)
+}
+
+// CheckGroupName validates if a group name exists on an account
+func CheckGroupName(w http.ResponseWriter, r *http.Request) {
+	services := dependencies.ServicesFromContext(r.Context())
+	var name = chi.URLParam(r, "name")
+
+	account, err := common.GetAccount(r)
+	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error":   err.Error(),
+			"account": account,
+		}).Error("Error retrieving account")
+		respondWithAPIError(w, services.Log, errors.NewBadRequest(err.Error()))
+		return
+	}
+
+	value, err := services.DeviceGroupsService.DeviceGroupNameExists(account, name)
+
+	if err != nil {
+		respondWithAPIError(w, services.Log, errors.NewBadRequest(err.Error()))
+	}
+
+	respondWithJSONBody(w, services.Log, map[string]interface{}{"data": map[string]interface{}{"isValid": value}})
 }
