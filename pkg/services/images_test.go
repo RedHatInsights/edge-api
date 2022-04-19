@@ -173,10 +173,12 @@ var _ = Describe("Image Service Test", func() {
 			It("should have an error returned by image builder", func() {
 				id, _ := faker.RandomInt(1)
 				uid := uint(id[0])
-				imageSet := &models.ImageSet{}
+				account := faker.UUIDHyphenated()
+				imageSet := &models.ImageSet{Account: account}
 				result := db.DB.Save(imageSet)
 				Expect(result.Error).To(Not(HaveOccurred()))
 				previousImage := &models.Image{
+					Account:    account,
 					Status:     models.ImageStatusSuccess,
 					Commit:     &models.Commit{RepoID: &uid},
 					Version:    1,
@@ -184,6 +186,7 @@ var _ = Describe("Image Service Test", func() {
 					ImageSetID: &imageSet.ID,
 				}
 				image := &models.Image{
+					Account:     account,
 					Commit:      &models.Commit{},
 					OutputTypes: []string{models.ImageTypeCommit},
 					Version:     2,
@@ -204,10 +207,12 @@ var _ = Describe("Image Service Test", func() {
 			It("should have the parent image repo url set as parent commit url", func() {
 				id, _ := faker.RandomInt(1)
 				uid := uint(id[0])
-				imageSet := &models.ImageSet{}
+				account := faker.UUIDHyphenated()
+				imageSet := &models.ImageSet{Account: account}
 				result := db.DB.Save(imageSet)
 				Expect(result.Error).To(Not(HaveOccurred()))
 				previousImage := &models.Image{
+					Account:    account,
 					Status:     models.ImageStatusSuccess,
 					Commit:     &models.Commit{RepoID: &uid},
 					Version:    1,
@@ -215,6 +220,7 @@ var _ = Describe("Image Service Test", func() {
 					ImageSetID: &imageSet.ID,
 				}
 				image := &models.Image{
+					Account:     account,
 					Commit:      &models.Commit{},
 					OutputTypes: []string{models.ImageTypeCommit},
 					Version:     2,
@@ -375,15 +381,69 @@ var _ = Describe("Image Service Test", func() {
 				Expect(image.Installer.Status).To(Equal(models.ImageStatusCreated))
 			})
 		})
-		Context("when checking if the image version we are trying to create is duplicate", func() {
-			It("shouldnt be able to", func() {
-				image := &models.Image{Version: 1, Name: "image-same-name"}
-				db.DB.Save(image)
-				db.DB.Save(&models.Image{Version: 2, Name: "image-same-name"})
-				err := service.CheckIfIsLatestVersion(image)
+		Context("when checking if the image version we are trying to update is latest", func() {
+			account := faker.UUIDHyphenated()
+			imageSet := models.ImageSet{Account: account}
+			db.DB.Save(&imageSet)
+			image := models.Image{Account: account, ImageSetID: &imageSet.ID, Version: 1, Name: "image-same-name"}
+			db.DB.Save(&image)
+			image2 := models.Image{Account: account, ImageSetID: &imageSet.ID, Version: 2, Name: "image-same-name"}
+			db.DB.Save(&image2)
+			image3 := models.Image{Account: account, ImageSetID: &imageSet.ID, Version: 3, Name: "image-same-name"}
+			db.DB.Save(&image3)
+			// foreign image without account
+			image4 := models.Image{ImageSetID: &imageSet.ID, Version: 4, Name: "image-same-name"}
+			db.DB.Save(&image4)
+			// foreign image without image-set
+			image5 := models.Image{Account: account, Version: 4, Name: "image-same-name"}
+			db.DB.Save(&image5)
 
+			// foreign image from another account and image-set, is here to ensure we are analysing the correct collection
+			account2 := faker.UUIDHyphenated()
+			account2ImageSet := models.ImageSet{Account: account}
+			db.DB.Save(&account2ImageSet)
+			image6 := models.Image{Account: account2, ImageSetID: &account2ImageSet.ID, Version: 4, Name: "image-same-name"}
+			db.DB.Save(&image6)
+			// foreign image from another image-set, is here to ensure we are analysing the correct collection
+			imageSet2 := models.ImageSet{Account: account}
+			db.DB.Save(&imageSet2)
+			image7 := models.Image{Account: account, ImageSetID: &imageSet2.ID, Version: 4, Name: "image-same-name"}
+			db.DB.Save(&image7)
+
+			It("the image has to be defined", func() {
+				err := service.CheckIfIsLatestVersion(&models.Image{Account: account, ImageSetID: &imageSet.ID, Version: 5, Name: "image-same-name"})
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(new(services.ImageUnDefined)))
+			})
+
+			It("the image account must be be defined", func() {
+
+				err := service.CheckIfIsLatestVersion(&image4)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(new(services.AccountNotSet)))
+			})
+
+			It("the image image-set must be be defined", func() {
+				err := service.CheckIfIsLatestVersion(&image5)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(new(services.ImageSetUnDefined)))
+			})
+
+			It("other latest version already exists", func() {
+				err := service.CheckIfIsLatestVersion(&image)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(new(services.ImageVersionAlreadyExists)))
+			})
+
+			It("nearest latest version already exists", func() {
+				err := service.CheckIfIsLatestVersion(&image2)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(new(services.ImageVersionAlreadyExists)))
+			})
+
+			It("Latest version is checked without errors", func() {
+				err := service.CheckIfIsLatestVersion(&image3)
+				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 	})
