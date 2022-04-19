@@ -103,6 +103,14 @@ func (s *DeviceService) GetDeviceByID(deviceID uint) (*models.Device, error) {
 		s.log.WithField("error", result.Error.Error()).Error("Error finding device")
 		return nil, new(DeviceNotFoundError)
 	}
+
+	//Load from device DB the groups info and add to the new struct
+	err := db.DB.Model(&device).Association("DevicesGroups").Find(&device.DevicesGroups)
+	if err != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error finding associated devicegroups for device")
+		return nil, new(DeviceGroupNotFound)
+	}
+
 	return &device, nil
 }
 
@@ -115,6 +123,13 @@ func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, erro
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error finding device")
 		return nil, new(DeviceNotFoundError)
+	}
+
+	//Load from device DB the groups info and add to the new struct
+	err := db.DB.Model(&device).Association("DevicesGroups").Find(&device.DevicesGroups)
+	if err != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error finding associated devicegroups for device")
+		return nil, new(DeviceGroupNotFound)
 	}
 	return &device, nil
 }
@@ -159,6 +174,8 @@ func (s *DeviceService) GetDeviceDetails(device inventory.Device) (*models.Devic
 		},
 		Image:              imageInfo,
 		UpdateTransactions: updates,
+		//Given we are concat the info from inventory with our db, we need to add this field to the struct to be able to see the result
+		DevicesGroups: &databaseDevice.DevicesGroups,
 	}
 	return details, nil
 }
@@ -226,6 +243,7 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 	for _, upd := range images {
 		upd := upd // this will prevent implicit memory aliasing in the loop
 		db.DB.First(&upd.Commit, upd.CommitID)
+
 		if err := db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages); err != nil {
 			s.log.WithField("error", err.Error()).Error("Could not find installed packages")
 			return nil, err
@@ -373,6 +391,7 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 	if res := db.DB.Where("account = ? AND uuid IN ?", account, devicesUUIDs).Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
 	}
+
 	mapDevicesUUIDToID := make(map[string]uint, len(devicesUUIDs))
 	for _, device := range storedDevices {
 		mapDevicesUUIDToID[device.UUID] = device.ID
@@ -384,13 +403,26 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		if !ok {
 			dbDeviceID = 0
 		}
+
+		//Load from device DB the groups info and add to the new struct
+		var storeDevice models.Device
+		// Don't throw error if device not found
+		db.DB.Where("id=?", dbDeviceID).First(&storeDevice)
+
+		err := db.DB.Model(&storeDevice).Association("DevicesGroups").Find(&storeDevice.DevicesGroups)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Error finding associated devicegroups for device")
+			return nil, new(DeviceGroupNotFound)
+		}
+
 		dd := models.DeviceDetails{}
 		dd.Device = models.EdgeDevice{
 			Device: &models.Device{
-				Model:       models.Model{ID: dbDeviceID},
-				UUID:        device.ID,
-				RHCClientID: device.Ostree.RHCClientID,
-				Account:     device.Account,
+				Model:         models.Model{ID: dbDeviceID},
+				UUID:          device.ID,
+				RHCClientID:   device.Ostree.RHCClientID,
+				Account:       device.Account,
+				DevicesGroups: storeDevice.DevicesGroups,
 			},
 			Account:    device.Account,
 			DeviceName: device.DisplayName,
@@ -585,7 +617,7 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	}
 
 	var storedDevices []models.Device
-	if res := tx.Limit(limit).Offset(offset).Where("account = ?", account).Find(&storedDevices); res.Error != nil {
+	if res := tx.Limit(limit).Offset(offset).Where("account = ? AND image_id IS NOT NULL", account).Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
 	}
 
@@ -598,7 +630,7 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	setOfImages := make(map[uint]*neededImageInfo)
 	for _, devices := range storedDevices {
 		if devices.ImageID != 0 {
-			setOfImages[devices.ImageID] = &neededImageInfo{Name: "", Status: ""}
+			setOfImages[devices.ImageID] = &neededImageInfo{Name: "", Status: "", ImageSetID: 0}
 		}
 	}
 
