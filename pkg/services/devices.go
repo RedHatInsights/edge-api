@@ -548,7 +548,7 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 		return err
 	}
 	if eventData.Type != InventoryEventTypeUpdated || eventData.Host.SystemProfile.HostType != InventoryHostTypeEdge {
-		s.log.Debug("Skipping kafka message - Platform Insights Inventory message host type is not edge and event type is not updated")
+		//s.log.Debug("Skipping kafka message - Platform Insights Inventory message host type is not edge and event type is not updated")
 		return nil
 	}
 	deviceUUID := eventData.Host.ID
