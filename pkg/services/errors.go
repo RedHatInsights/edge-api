@@ -136,6 +136,27 @@ func (e *DeviceHasImageUndefined) Error() string {
 	return "device has image undefined"
 }
 
+// DeviceHasNoImageUpdate indicates that device record no image
+type DeviceHasNoImageUpdate struct{}
+
+func (e *DeviceHasNoImageUpdate) Error() string {
+	return "device has no image update"
+}
+
+// DeviceHasMoreThanOneImageSet indicates that device record no image
+type DeviceHasMoreThanOneImageSet struct{}
+
+func (e *DeviceHasMoreThanOneImageSet) Error() string {
+	return "device has more than one imageset"
+}
+
+// ImageHasNoImageSet indicates that device record no image
+type ImageHasNoImageSet struct{}
+
+func (e *ImageHasNoImageSet) Error() string {
+	return "Image has no imageset"
+}
+
 // ErrUndefinedCommit indicate that the update transaction/image or some entity  has no commit defined.
 var ErrUndefinedCommit = errors.New("entity has defined commit")
 
