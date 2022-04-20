@@ -1087,30 +1087,32 @@ func (s *ImageService) SetBuildingStatusOnImageToRetryBuild(image *models.Image)
 // CheckIfIsLatestVersion make sure that there is no same image version present
 func (s *ImageService) CheckIfIsLatestVersion(previousImage *models.Image) error {
 	/*
-		nowImage is the version of current Image which we are updating i.e if we are updating image1 to image 2 then image1 is the nowImage.
-		currentHighestImageVersion is the latest version present in the DB of image we're updating.
-		nextImageVersion is the next version of current image to which we are updating the image i.e if image3 is the next version of image2.
+		previousImage is the latest version image,
+		if when searching the latest version image in the context of the same account and imageSet,
+		we found an image that is equal to previousImage
 	*/
-	var nowImage *models.Image
-	var currentHighestImageVersion *models.Image
-	var nextImageVersion *models.Image
 
-	nowVersionImage := db.DB.Where("version = ?", previousImage.Version).First(&nowImage)
-	if nowVersionImage.Error != nil {
-		return nowVersionImage.Error
+	if previousImage.ID == 0 {
+		return new(ImageUnDefined)
 	}
-	currentVersionImage := db.DB.Select("version").Where("name = ? ", previousImage.Name).Order("version desc").First(&currentHighestImageVersion)
-	if currentVersionImage.Error != nil {
-		return currentVersionImage.Error
+
+	if previousImage.Account == "" {
+		return new(AccountNotSet)
 	}
-	var compareImageVersion = nowImage.Version + 1
-	newImageVersion := db.DB.Select("version").Where("version = ? and name = ? ", compareImageVersion, previousImage.Name).Find(&nextImageVersion)
-	if newImageVersion.Error != nil {
-		return newImageVersion.Error
+	if previousImage.ImageSetID == nil {
+		return new(ImageSetUnDefined)
 	}
-	if currentHighestImageVersion.Version == compareImageVersion || nextImageVersion.Version == compareImageVersion {
+
+	var latestImageVersion models.Image
+	if result := db.DB.Where(models.Image{Account: previousImage.Account, ImageSetID: previousImage.ImageSetID}).
+		Order("version DESC").First(&latestImageVersion); result.Error != nil {
+		return result.Error
+	}
+
+	if latestImageVersion.ID != previousImage.ID {
 		return new(ImageVersionAlreadyExists)
 	}
+
 	return nil
 }
 

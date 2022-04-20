@@ -36,7 +36,7 @@ func main() {
 	gen.init()
 	gen.addSchema("v1.OwnershipVoucherData", &[]models.OwnershipVoucherData{})
 	gen.addSchema("v1.Image", &models.Image{})
-	gen.addSchema("v1.PackageDiff", &models.Image{})
+	gen.addSchema("v1.PackageDiff", &models.PackageDiff{})
 	gen.addSchema("v1.ImageDetail", &routes.ImageDetail{})
 	gen.addSchema("v1.ImageSetImagePackages", &routes.ImageSetImagePackages{})
 	gen.addSchema("v1.ImageSetInstallerURL", &routes.ImageSetInstallerURL{})

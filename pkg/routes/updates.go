@@ -163,7 +163,7 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 
 //DevicesUpdate contains the update structure for the device
 type DevicesUpdate struct {
-	CommitID    uint     `json:"CommitID"`
+	CommitID    uint     `json:"CommitID,omitempty"`
 	DevicesUUID []string `json:"DevicesUUID"`
 	// TODO: Implement updates by tag
 	// Tag        string `json:"Tag"`
@@ -196,10 +196,18 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 	}
 	services.Log.WithField("updateJSON", devicesUpdate).Debug("Update JSON received")
 
-	if devicesUpdate.CommitID == 0 {
-		err := errors.NewBadRequest("Must provide a CommitID")
+	// TODO: Implement update by tag - Add validation per tag
+	if devicesUpdate.DevicesUUID == nil {
+		err := errors.NewBadRequest("DeviceUUID required.")
 		w.WriteHeader(err.GetStatus())
 		return nil, err
+	}
+	if devicesUpdate.CommitID == 0 {
+
+		devicesUpdate.CommitID, err = services.DeviceService.GetLatestCommitFromDevices(account, devicesUpdate.DevicesUUID)
+		if err != nil {
+			return nil, err
+		}
 	}
 	//validate if commit is valid before continue process
 	commit, err := services.CommitService.GetCommitByID(devicesUpdate.CommitID)
@@ -215,12 +223,6 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 	}
 	services.Log.WithField("commit", commit.ID).Debug("Commit retrieved from this update")
 
-	// TODO: Implement update by tag - Add validation per tag
-	if devicesUpdate.DevicesUUID == nil {
-		err := errors.NewBadRequest("DeviceUUID required.")
-		w.WriteHeader(err.GetStatus())
-		return nil, err
-	}
 	client := inventory.InitClient(r.Context(), log.NewEntry(log.StandardLogger()))
 	var inv inventory.Response
 	var ii []inventory.Response
@@ -241,6 +243,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 	services.Log.WithField("inventoryDevice", inv).Debug("Device retrieved from inventory")
 	var updates []models.UpdateTransaction
 	for _, inventory := range ii {
+
 		// Create the models.UpdateTransaction
 		update := models.UpdateTransaction{
 			Account:  account,
@@ -337,6 +340,9 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 					services.Log.WithFields(log.Fields{
 						"booted": deployment.Booted,
 					}).Debug("device has been booted")
+					if commit.OSTreeCommit == deployment.Checksum {
+						break
+					}
 					var oldCommit models.Commit
 					result := db.DB.Where("os_tree_commit = ?", deployment.Checksum).First(&oldCommit)
 					if result.Error != nil {
