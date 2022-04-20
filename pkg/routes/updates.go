@@ -43,53 +43,41 @@ const UpdateContextKey updateContextKey = iota
 // UpdateCtx is a handler for Update requests
 func UpdateCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		services := dependencies.ServicesFromContext(r.Context())
-		var update models.UpdateTransaction
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		var updates []models.UpdateTransaction
 		account, err := common.GetAccount(r)
 		if err != nil {
-			services.Log.WithFields(log.Fields{
+			ctxServices.Log.WithFields(log.Fields{
 				"error":   err.Error(),
 				"account": account,
 			}).Error("Error retrieving account")
-			err := errors.NewBadRequest(err.Error())
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 			return
 		}
 		updateID := chi.URLParam(r, "updateID")
-		services.Log = services.Log.WithField("updateID", updateID)
+		ctxServices.Log = ctxServices.Log.WithField("updateID", updateID)
 		if updateID == "" {
-			err := errors.NewBadRequest("UpdateTransactionID can't be empty")
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("UpdateTransactionID can't be empty"))
 			return
 		}
 		id, err := strconv.Atoi(updateID)
 		if err != nil {
-			err := errors.NewBadRequest(err.Error())
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 			return
 		}
-		result := db.DB.Preload("DispatchRecords").Preload("Devices").Where("update_transactions.account = ?", account).Joins("Commit").Joins("Repo").Find(&update, id)
+		result := db.DB.Preload("DispatchRecords").Preload("Devices").Where("update_transactions.account = ?", account).Joins("Commit").Joins("Repo").Find(&updates, id)
 		if result.Error != nil {
-			services.Log.WithFields(log.Fields{
+			ctxServices.Log.WithFields(log.Fields{
 				"error": result.Error.Error(),
-			}).Error("Error retrieving update")
-			err := errors.NewInternalServerError()
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+			}).Error("Error retrieving updates")
+			respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 			return
 		}
-		ctx := context.WithValue(r.Context(), UpdateContextKey, &update)
+		if len(updates) == 0 {
+			respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("update not found"))
+			return
+		}
+		ctx := context.WithValue(r.Context(), UpdateContextKey, &updates[0])
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
