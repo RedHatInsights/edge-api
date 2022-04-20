@@ -410,25 +410,42 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		// Don't throw error if device not found
 		db.DB.Where("id=?", dbDeviceID).First(&storeDevice)
 
-		err := db.DB.Model(&storeDevice).Association("DevicesGroups").Find(&storeDevice.DevicesGroups)
+		err := db.DB.Model(&storeDevice).Association("UpdateTransaction").Find(&storeDevice.UpdateTransaction)
+
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Error finding associated updates for device")
+			return nil, new(DeviceGroupNotFound)
+		}
+
+		err = db.DB.Model(&storeDevice).Association("DevicesGroups").Find(&storeDevice.DevicesGroups)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error finding associated devicegroups for device")
 			return nil, new(DeviceGroupNotFound)
 		}
 
+		deviceUpdating := false
+
+		if len(storeDevice.UpdateTransaction) > 0 {
+			last := storeDevice.UpdateTransaction[len(storeDevice.UpdateTransaction)-1]
+			if last.Status == models.UpdateStatusCreated || last.Status == models.UpdateStatusBuilding {
+				deviceUpdating = true
+			}
+		}
 		dd := models.DeviceDetails{}
 		dd.Device = models.EdgeDevice{
 			Device: &models.Device{
-				Model:         models.Model{ID: dbDeviceID},
-				UUID:          device.ID,
-				RHCClientID:   device.Ostree.RHCClientID,
-				Account:       device.Account,
-				DevicesGroups: storeDevice.DevicesGroups,
+				Model:             models.Model{ID: dbDeviceID},
+				UUID:              device.ID,
+				RHCClientID:       device.Ostree.RHCClientID,
+				Account:           device.Account,
+				DevicesGroups:     storeDevice.DevicesGroups,
+				UpdateTransaction: storeDevice.UpdateTransaction,
 			},
 			Account:    device.Account,
 			DeviceName: device.DisplayName,
 			LastSeen:   device.LastSeen,
 		}
+		dd.Updating = &deviceUpdating
 		lastDeployment := s.GetDeviceLastDeployment(device)
 		if lastDeployment != nil {
 			dd.Device.Booted = lastDeployment.Booted
