@@ -244,7 +244,7 @@ func GetDeviceDBInfo(w http.ResponseWriter, r *http.Request) {
 // GetDevicesView returns all data needed to display customers devices
 func GetDevicesView(w http.ResponseWriter, r *http.Request) {
 	contextServices := dependencies.ServicesFromContext(r.Context())
-	tx := devicesFilters(r, db.DB).Where("image_id IS NOT NULL")
+	tx := devicesFilters(r, db.DB).Where("image_id IS NOT NULL AND image_id != 0")
 	pagination := common.GetPagination(r)
 
 	devicesCount, err := contextServices.DeviceService.GetDevicesCount(tx)
