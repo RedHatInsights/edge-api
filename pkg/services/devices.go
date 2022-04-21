@@ -618,8 +618,22 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	}
 
 	var storedDevices []models.Device
-	if res := tx.Limit(limit).Offset(offset).Where("account = ?", account).Preload("UpdateTransaction").Find(&storedDevices); res.Error != nil {
+	if res := tx.Limit(limit).Offset(offset).Where("account = ? AND image_id IS NOT NULL", account).Preload("UpdateTransaction").Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
+	}
+
+	type deviceGroupInfo struct {
+		deviceGroupIDs   []uint
+		deviceGroupNames []string
+	}
+	deviceToGroupMap := make(map[uint]*deviceGroupInfo)
+	for _, device := range storedDevices {
+		for _, deviceGroups := range device.DevicesGroups {
+			if _, ok := deviceToGroupMap[device.ID]; ok {
+				deviceToGroupMap[device.ID].deviceGroupIDs = append(deviceToGroupMap[device.ID].deviceGroupIDs, deviceGroups.ID)
+				deviceToGroupMap[device.ID].deviceGroupNames = append(deviceToGroupMap[device.ID].deviceGroupNames, deviceGroups.Name)
+			}
+		}
 	}
 
 	type neededImageInfo struct {
@@ -668,15 +682,23 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 		var imageName string
 		var imageStatus string
 		var imageSetID uint
+		var deviceGroupIDs []uint
+		var deviceGroupNames []string
 		if _, ok := setOfImages[device.ImageID]; ok {
 			imageName = setOfImages[device.ImageID].Name
 			imageStatus = setOfImages[device.ImageID].Status
 			imageSetID = setOfImages[device.ImageID].ImageSetID
 		}
+		if _, ok := deviceToGroupMap[device.ID]; ok {
+			deviceGroupIDs = deviceToGroupMap[device.ID].deviceGroupIDs
+			deviceGroupNames = deviceToGroupMap[device.ID].deviceGroupNames
+		}
 		currentDeviceView := models.DeviceView{
 			DeviceID:        device.ID,
 			DeviceName:      device.Name,
 			DeviceUUID:      device.UUID,
+			DeviceGroupID:   deviceGroupIDs,
+			DeviceGroupName: deviceGroupNames,
 			ImageID:         device.ImageID,
 			ImageName:       imageName,
 			LastSeen:        device.LastSeen.Time.String(),

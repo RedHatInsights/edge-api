@@ -37,17 +37,17 @@ type DeviceViewList struct {
 
 // DeviceView is the device information needed for the UI
 type DeviceView struct {
-	DeviceID        uint   `json:"DeviceID"`
-	DeviceName      string `json:"DeviceName"`
-	DeviceUUID      string `json:"DeviceUUID"`
-	DeviceGroupID   uint   `json:"DeviceGroupID"`
-	DeviceGroupName string `json:"DeviceGroupName"`
-	ImageID         uint   `json:"ImageID"`
-	ImageName       string `json:"ImageName"`
-	LastSeen        string `json:"LastSeen"`
-	UpdateAvailable bool   `json:"UpdateAvailable"`
-	Status          string `json:"Status"`
-	ImageSetID      uint   `json:"ImageSetID"`
+	DeviceID        uint     `json:"DeviceID"`
+	DeviceName      string   `json:"DeviceName"`
+	DeviceUUID      string   `json:"DeviceUUID"`
+	DeviceGroupID   []uint   `json:"DeviceGroupID"`
+	DeviceGroupName []string `json:"DeviceGroupName"`
+	ImageID         uint     `json:"ImageID"`
+	ImageName       string   `json:"ImageName"`
+	LastSeen        string   `json:"LastSeen"`
+	UpdateAvailable bool     `json:"UpdateAvailable"`
+	Status          string   `json:"Status"`
+	ImageSetID      uint     `json:"ImageSetID"`
 }
 
 const (
