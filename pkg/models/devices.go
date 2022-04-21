@@ -50,6 +50,15 @@ type DeviceView struct {
 	ImageSetID      uint   `json:"ImageSetID"`
 }
 
+const (
+	// DeviceViewStatusRunning is for when a device is in a normal state
+	DeviceViewStatusRunning = "RUNNING"
+	// DeviceViewStatusUpdating is for when a update is sent to a device
+	DeviceViewStatusUpdating = "UPDATING"
+	// DeviceViewStatusUpdateAvail is for when a update available for a device
+	DeviceViewStatusUpdateAvail = "UPDATE AVAILABLE"
+)
+
 // Device is a record of Edge Devices referenced by their UUID as per the
 // cloud.redhat.com Inventory.
 //
@@ -59,15 +68,16 @@ type DeviceView struct {
 // THEEDGE-1921 created 2 temporary indexes to address production issue
 type Device struct {
 	Model
-	UUID            string        `gorm:"index" json:"UUID"`
-	AvailableHash   string        `json:"AvailableHash,omitempty"`
-	RHCClientID     string        `json:"RHCClientID"`
-	Connected       bool          `gorm:"default:true" json:"Connected"`
-	Name            string        `json:"Name"`
-	LastSeen        EdgeAPITime   `json:"LastSeen"`
-	CurrentHash     string        `json:"CurrentHash,omitempty"`
-	Account         string        `gorm:"index" json:"Account"`
-	ImageID         uint          `json:"ImageID"`
-	UpdateAvailable bool          `json:"UpdateAvailable"`
-	DevicesGroups   []DeviceGroup `faker:"-" gorm:"many2many:device_groups_devices;" json:"DevicesGroups"`
+	UUID              string               `gorm:"index" json:"UUID"`
+	AvailableHash     string               `json:"AvailableHash,omitempty"`
+	RHCClientID       string               `json:"RHCClientID"`
+	Connected         bool                 `gorm:"default:true" json:"Connected"`
+	Name              string               `json:"Name"`
+	LastSeen          EdgeAPITime          `json:"LastSeen"`
+	CurrentHash       string               `json:"CurrentHash,omitempty"`
+	Account           string               `gorm:"index" json:"Account"`
+	ImageID           uint                 `json:"ImageID"`
+	UpdateAvailable   bool                 `json:"UpdateAvailable"`
+	DevicesGroups     []DeviceGroup        `faker:"-" gorm:"many2many:device_groups_devices;" json:"DevicesGroups"`
+	UpdateTransaction *[]UpdateTransaction `faker:"-" gorm:"many2many:updatetransaction_devices;" json:"UpdateTransaction"`
 }
