@@ -71,6 +71,10 @@ var devicesFilters = common.ComposeFilters(
 		QueryParam: "update_available",
 		DBField:    "devices.update_available",
 	}),
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "image_id",
+		DBField:    "devices.image_id",
+	}),
 	common.SortFilterHandler("devices", "name", "ASC"),
 )
 
@@ -240,7 +244,7 @@ func GetDeviceDBInfo(w http.ResponseWriter, r *http.Request) {
 // GetDevicesView returns all data needed to display customers devices
 func GetDevicesView(w http.ResponseWriter, r *http.Request) {
 	contextServices := dependencies.ServicesFromContext(r.Context())
-	tx := devicesFilters(r, db.DB)
+	tx := devicesFilters(r, db.DB).Where("image_id IS NOT NULL AND image_id != 0")
 	pagination := common.GetPagination(r)
 
 	devicesCount, err := contextServices.DeviceService.GetDevicesCount(tx)

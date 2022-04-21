@@ -127,15 +127,15 @@ var _ = Describe("DeviceService", func() {
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(inventory.Response{}, errors.New("error on inventory api"))
 
 				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
-				Expect(updatesAvailable).To(BeNil())
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
+				Expect(updatesAvailable).To(BeNil())
 			})
 			It("should return error and no updates available - for latest update", func() {
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(inventory.Response{}, errors.New("error on inventory api"))
 
 				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true)
-				Expect(updatesAvailable).To(BeNil())
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
+				Expect(updatesAvailable).To(BeNil())
 			})
 		})
 		When("device is not found on InventoryAPI", func() {
@@ -148,8 +148,8 @@ var _ = Describe("DeviceService", func() {
 				}
 
 				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
-				Expect(updatesAvailable).To(BeNil())
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
+				Expect(updatesAvailable).To(BeNil())
 			})
 			It("should return error and nil on latest update available", func() {
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(inventory.Response{}, nil)
@@ -160,8 +160,8 @@ var _ = Describe("DeviceService", func() {
 				}
 
 				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true)
-				Expect(updatesAvailable).To(BeNil())
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
+				Expect(updatesAvailable).To(BeNil())
 			})
 		})
 		When("there are no booted deployments", func() {
@@ -183,8 +183,8 @@ var _ = Describe("DeviceService", func() {
 				}
 
 				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
-				Expect(updatesAvailable).To(BeNil())
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
+				Expect(updatesAvailable).To(BeNil())
 			})
 			It("should return error and nil on latest update available", func() {
 				checksum := "fake-checksum"
@@ -204,8 +204,8 @@ var _ = Describe("DeviceService", func() {
 				}
 
 				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true)
-				Expect(updatesAvailable).To(BeNil())
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
+				Expect(updatesAvailable).To(BeNil())
 			})
 		})
 		When("everything is okay", func() {
@@ -393,8 +393,8 @@ var _ = Describe("DeviceService", func() {
 				db.DB.Create(oldImage)
 
 				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
-				Expect(updatesAvailable).To(BeNil())
 				Expect(err).To(BeNil())
+				Expect(updatesAvailable).To(BeNil())
 			})
 		})
 		When("no checksum is found", func() {
@@ -411,9 +411,9 @@ var _ = Describe("DeviceService", func() {
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
 				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
-				Expect(updatesAvailable).To(BeNil())
 				Expect(err).ToNot(BeNil())
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
+				Expect(updatesAvailable).To(BeNil())
 			})
 		})
 	})
@@ -545,11 +545,11 @@ var _ = Describe("DeviceService", func() {
 				}
 				mockInventoryClient.EXPECT().ReturnDevices(gomock.Any()).Return(resp, nil)
 				devices, err := deviceService.GetDevices(params)
+				Expect(err).To(BeNil())
 				Expect(devices).ToNot(BeNil())
 				Expect(devices.Devices).To(HaveLen(0))
 				Expect(devices.Count).To(Equal(0))
 				Expect(devices.Total).To(Equal(0))
-				Expect(err).To(BeNil())
 			})
 		})
 		When("devices are returned from InventoryAPI", func() {
@@ -579,11 +579,11 @@ var _ = Describe("DeviceService", func() {
 				}
 
 				devices, err := deviceService.GetDevices(params)
+				Expect(err).To(BeNil())
 				Expect(devices).ToNot(BeNil())
 				Expect(devices.Devices).To(HaveLen(2))
 				Expect(devices.Count).To(Equal(2))
 				Expect(devices.Total).To(Equal(2))
-				Expect(err).To(BeNil())
 			})
 		})
 	})
@@ -853,9 +853,92 @@ var _ = Describe("DeviceService", func() {
 				}
 
 				devices, err := deviceService.GetDevicesView(0, 0, nil)
-				Expect(devices).ToNot(BeNil())
 				Expect(err).To(BeNil())
+				Expect(devices).ToNot(BeNil())
 			})
+		})
+	})
+	Context("Get CommitID from Device Image", func() {
+		It("should return zero images", func() {
+			account := faker.UUIDHyphenated()
+			device := models.Device{
+				Account: account,
+				UUID:    faker.UUIDHyphenated(),
+			}
+			db.DB.Create(&device)
+			devicesUUID := []string{device.UUID}
+			updateImageCommitID, err := deviceService.GetLatestCommitFromDevices(account, devicesUUID)
+			Expect(updateImageCommitID == 0).To(BeTrue())
+			Expect(err).To(MatchError(new(services.DeviceHasImageUndefined)))
+			Expect(err).ToNot(BeNil())
+		})
+	})
+	When("device Image does not have update", func() {
+		It("should return no image updates", func() {
+			account := faker.HyphenatedID
+			imageSet := &models.ImageSet{
+				Name:    "test",
+				Version: 1,
+			}
+			updateImage := models.Image{
+				Account:    account,
+				ImageSetID: &imageSet.ID,
+				Status:     models.ImageStatusSuccess,
+			}
+			device := models.Device{
+				UUID: faker.UUIDHyphenated(),
+			}
+			devicesUUID := []string{device.UUID}
+			updateImageCommitID, err := deviceService.GetLatestCommitFromDevices(updateImage.Account, devicesUUID)
+			Expect(updateImageCommitID == 0).To(BeTrue())
+			Expect(err).ToNot(BeNil())
+			Expect(err).To(MatchError(new(services.DeviceHasNoImageUpdate)))
+		})
+	})
+	When("device Image have update", func() {
+		It("should return commitID", func() {
+			account := faker.HyphenatedID
+			imageSet := models.ImageSet{
+				Account: account,
+			}
+			db.DB.Create(&imageSet)
+
+			firstCommit := models.Commit{
+				Account: account,
+			}
+			db.DB.Create(&firstCommit)
+
+			firstImage := models.Image{
+				Account:    account,
+				CommitID:   firstCommit.ID,
+				Status:     models.ImageStatusSuccess,
+				Version:    1,
+				ImageSetID: &imageSet.ID,
+			}
+			db.DB.Create(&firstImage)
+			device := models.Device{
+				Account: account,
+				ImageID: firstImage.ID,
+			}
+			db.DB.Create(&device)
+			secondCommit := models.Commit{
+				Account: account,
+			}
+			db.DB.Create(&secondCommit)
+
+			secondImage := models.Image{
+				Account:    account,
+				CommitID:   secondCommit.ID,
+				Status:     models.ImageStatusSuccess,
+				Version:    2,
+				ImageSetID: &imageSet.ID,
+			}
+			devicesUUID := []string{device.UUID}
+
+			db.DB.Create(&secondImage)
+			updateImageCommitID, err := deviceService.GetLatestCommitFromDevices(device.Account, devicesUUID)
+			Expect(err).To(BeNil())
+			Expect(updateImageCommitID).To(Equal(secondCommit.ID))
 		})
 	})
 })

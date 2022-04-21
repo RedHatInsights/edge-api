@@ -43,53 +43,41 @@ const UpdateContextKey updateContextKey = iota
 // UpdateCtx is a handler for Update requests
 func UpdateCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		services := dependencies.ServicesFromContext(r.Context())
-		var update models.UpdateTransaction
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		var updates []models.UpdateTransaction
 		account, err := common.GetAccount(r)
 		if err != nil {
-			services.Log.WithFields(log.Fields{
+			ctxServices.Log.WithFields(log.Fields{
 				"error":   err.Error(),
 				"account": account,
 			}).Error("Error retrieving account")
-			err := errors.NewBadRequest(err.Error())
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 			return
 		}
 		updateID := chi.URLParam(r, "updateID")
-		services.Log = services.Log.WithField("updateID", updateID)
+		ctxServices.Log = ctxServices.Log.WithField("updateID", updateID)
 		if updateID == "" {
-			err := errors.NewBadRequest("UpdateTransactionID can't be empty")
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("UpdateTransactionID can't be empty"))
 			return
 		}
 		id, err := strconv.Atoi(updateID)
 		if err != nil {
-			err := errors.NewBadRequest(err.Error())
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 			return
 		}
-		result := db.DB.Preload("DispatchRecords").Preload("Devices").Where("update_transactions.account = ?", account).Joins("Commit").Joins("Repo").Find(&update, id)
+		result := db.DB.Preload("DispatchRecords").Preload("Devices").Where("update_transactions.account = ?", account).Joins("Commit").Joins("Repo").Find(&updates, id)
 		if result.Error != nil {
-			services.Log.WithFields(log.Fields{
+			ctxServices.Log.WithFields(log.Fields{
 				"error": result.Error.Error(),
-			}).Error("Error retrieving update")
-			err := errors.NewInternalServerError()
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+			}).Error("Error retrieving updates")
+			respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 			return
 		}
-		ctx := context.WithValue(r.Context(), UpdateContextKey, &update)
+		if len(updates) == 0 {
+			respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("update not found"))
+			return
+		}
+		ctx := context.WithValue(r.Context(), UpdateContextKey, &updates[0])
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -163,7 +151,7 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 
 //DevicesUpdate contains the update structure for the device
 type DevicesUpdate struct {
-	CommitID    uint     `json:"CommitID"`
+	CommitID    uint     `json:"CommitID,omitempty"`
 	DevicesUUID []string `json:"DevicesUUID"`
 	// TODO: Implement updates by tag
 	// Tag        string `json:"Tag"`
@@ -196,17 +184,33 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 	}
 	services.Log.WithField("updateJSON", devicesUpdate).Debug("Update JSON received")
 
-	if devicesUpdate.CommitID == 0 {
-		err := errors.NewBadRequest("Must provide a CommitID")
-		w.WriteHeader(err.GetStatus())
-		return nil, err
-	}
 	// TODO: Implement update by tag - Add validation per tag
 	if devicesUpdate.DevicesUUID == nil {
 		err := errors.NewBadRequest("DeviceUUID required.")
 		w.WriteHeader(err.GetStatus())
 		return nil, err
 	}
+	if devicesUpdate.CommitID == 0 {
+
+		devicesUpdate.CommitID, err = services.DeviceService.GetLatestCommitFromDevices(account, devicesUpdate.DevicesUUID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	//validate if commit is valid before continue process
+	commit, err := services.CommitService.GetCommitByID(devicesUpdate.CommitID)
+	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error":    err.Error(),
+			"commitID": devicesUpdate.CommitID,
+		}).Error("No commit found for Commit ID")
+		err := errors.NewNotFound(err.Error())
+		err.SetTitle(fmt.Sprintf("No commit found for CommitID %d", devicesUpdate.CommitID))
+		w.WriteHeader(err.GetStatus())
+		return nil, err
+	}
+	services.Log.WithField("commit", commit.ID).Debug("Commit retrieved from this update")
+
 	client := inventory.InitClient(r.Context(), log.NewEntry(log.StandardLogger()))
 	var inv inventory.Response
 	var ii []inventory.Response
@@ -227,6 +231,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 	services.Log.WithField("inventoryDevice", inv).Debug("Device retrieved from inventory")
 	var updates []models.UpdateTransaction
 	for _, inventory := range ii {
+
 		// Create the models.UpdateTransaction
 		update := models.UpdateTransaction{
 			Account:  account,
@@ -237,8 +242,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 		}
 
 		// Get the models.Commit from the Commit ID passed in via JSON
-		update.Commit, err = services.CommitService.GetCommitByID(devicesUpdate.CommitID)
-		services.Log.WithField("commit", update.Commit).Debug("Commit retrieved from this update")
+		update.Commit = commit
 
 		notify, errNotify := services.UpdateService.SendDeviceNotification(&update)
 		if errNotify != nil {
@@ -247,16 +251,6 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 
 		}
 		update.DispatchRecords = []models.DispatchRecord{}
-		if err != nil {
-			services.Log.WithFields(log.Fields{
-				"error":    err.Error(),
-				"commitID": devicesUpdate.CommitID,
-			}).Error("No commit found for Commit ID")
-			err := errors.NewInternalServerError()
-			err.SetTitle(fmt.Sprintf("No commit found for CommitID %d", devicesUpdate.CommitID))
-			w.WriteHeader(err.GetStatus())
-			return nil, err
-		}
 
 		//  Removing commit dependency to avoid overwriting the repo
 		var repo *models.Repo
@@ -334,6 +328,9 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 					services.Log.WithFields(log.Fields{
 						"booted": deployment.Booted,
 					}).Debug("device has been booted")
+					if commit.OSTreeCommit == deployment.Checksum {
+						break
+					}
 					var oldCommit models.Commit
 					result := db.DB.Where("os_tree_commit = ?", deployment.Checksum).First(&oldCommit)
 					if result.Error != nil {

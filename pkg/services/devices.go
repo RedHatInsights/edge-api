@@ -36,6 +36,7 @@ type DeviceServiceInterface interface {
 	GetDeviceDetailsByUUID(deviceUUID string) (*models.DeviceDetails, error)
 	GetUpdateAvailableForDeviceByUUID(deviceUUID string, latest bool) ([]models.ImageUpdateAvailable, error)
 	GetDeviceImageInfoByUUID(deviceUUID string) (*models.ImageInfo, error)
+	GetLatestCommitFromDevices(account string, devicesUUID []string) (uint, error)
 	// Device Object Methods
 	GetDeviceDetails(device inventory.Device) (*models.DeviceDetails, error)
 	GetUpdateAvailableForDevice(device inventory.Device, latest bool) ([]models.ImageUpdateAvailable, error)
@@ -103,6 +104,14 @@ func (s *DeviceService) GetDeviceByID(deviceID uint) (*models.Device, error) {
 		s.log.WithField("error", result.Error.Error()).Error("Error finding device")
 		return nil, new(DeviceNotFoundError)
 	}
+
+	//Load from device DB the groups info and add to the new struct
+	err := db.DB.Model(&device).Association("DevicesGroups").Find(&device.DevicesGroups)
+	if err != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error finding associated devicegroups for device")
+		return nil, new(DeviceGroupNotFound)
+	}
+
 	return &device, nil
 }
 
@@ -115,6 +124,13 @@ func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, erro
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error finding device")
 		return nil, new(DeviceNotFoundError)
+	}
+
+	//Load from device DB the groups info and add to the new struct
+	err := db.DB.Model(&device).Association("DevicesGroups").Find(&device.DevicesGroups)
+	if err != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error finding associated devicegroups for device")
+		return nil, new(DeviceGroupNotFound)
 	}
 	return &device, nil
 }
@@ -159,6 +175,8 @@ func (s *DeviceService) GetDeviceDetails(device inventory.Device) (*models.Devic
 		},
 		Image:              imageInfo,
 		UpdateTransactions: updates,
+		//Given we are concat the info from inventory with our db, we need to add this field to the struct to be able to see the result
+		DevicesGroups: &databaseDevice.DevicesGroups,
 	}
 	return details, nil
 }
@@ -226,6 +244,7 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 	for _, upd := range images {
 		upd := upd // this will prevent implicit memory aliasing in the loop
 		db.DB.First(&upd.Commit, upd.CommitID)
+
 		if err := db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages); err != nil {
 			s.log.WithField("error", err.Error()).Error("Could not find installed packages")
 			return nil, err
@@ -373,6 +392,7 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 	if res := db.DB.Where("account = ? AND uuid IN ?", account, devicesUUIDs).Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
 	}
+
 	mapDevicesUUIDToID := make(map[string]uint, len(devicesUUIDs))
 	for _, device := range storedDevices {
 		mapDevicesUUIDToID[device.UUID] = device.ID
@@ -384,13 +404,26 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		if !ok {
 			dbDeviceID = 0
 		}
+
+		//Load from device DB the groups info and add to the new struct
+		var storeDevice models.Device
+		// Don't throw error if device not found
+		db.DB.Where("id=?", dbDeviceID).First(&storeDevice)
+
+		err := db.DB.Model(&storeDevice).Association("DevicesGroups").Find(&storeDevice.DevicesGroups)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Error finding associated devicegroups for device")
+			return nil, new(DeviceGroupNotFound)
+		}
+
 		dd := models.DeviceDetails{}
 		dd.Device = models.EdgeDevice{
 			Device: &models.Device{
-				Model:       models.Model{ID: dbDeviceID},
-				UUID:        device.ID,
-				RHCClientID: device.Ostree.RHCClientID,
-				Account:     device.Account,
+				Model:         models.Model{ID: dbDeviceID},
+				UUID:          device.ID,
+				RHCClientID:   device.Ostree.RHCClientID,
+				Account:       device.Account,
+				DevicesGroups: storeDevice.DevicesGroups,
 			},
 			Account:    device.Account,
 			DeviceName: device.DisplayName,
@@ -515,7 +548,7 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 		return err
 	}
 	if eventData.Type != InventoryEventTypeUpdated || eventData.Host.SystemProfile.HostType != InventoryHostTypeEdge {
-		s.log.Debug("Skipping kafka message - Platform Insights Inventory message host type is not edge and event type is not updated")
+		//s.log.Debug("Skipping kafka message - Platform Insights Inventory message host type is not edge and event type is not updated")
 		return nil
 	}
 	deviceUUID := eventData.Host.ID
@@ -585,19 +618,27 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	}
 
 	var storedDevices []models.Device
-	if res := tx.Limit(limit).Offset(offset).Where("account = ?", account).Find(&storedDevices); res.Error != nil {
+	if res := tx.Limit(limit).Offset(offset).Where("account = ?", account).Preload("UpdateTransaction").Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
 	}
 
 	type neededImageInfo struct {
-		Name   string
-		Status string
+		Name       string
+		Status     string
+		ImageSetID uint
 	}
 	// create a map of unique image id's. We dont want to look of a given image id more than once.
 	setOfImages := make(map[uint]*neededImageInfo)
 	for _, devices := range storedDevices {
+		var status = models.DeviceViewStatusRunning
+		if devices.UpdateTransaction != nil && len(*devices.UpdateTransaction) > 0 {
+			updateStatus := (*devices.UpdateTransaction)[len(*devices.UpdateTransaction)-1].Status
+			if updateStatus == models.UpdateStatusBuilding {
+				status = models.DeviceViewStatusUpdating
+			}
+		}
 		if devices.ImageID != 0 {
-			setOfImages[devices.ImageID] = &neededImageInfo{Name: "", Status: ""}
+			setOfImages[devices.ImageID] = &neededImageInfo{Name: "", Status: status, ImageSetID: 0}
 		}
 	}
 
@@ -608,12 +649,16 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	}
 
 	var images []models.Image
-	if result := db.DB.Where("account = ? AND id IN (?)", account, imagesIDS).Find(&images); result.Error != nil {
+	if result := db.DB.Where("account = ? AND id IN (?) AND image_set_id IS NOT NULL", account, imagesIDS).Find(&images); result.Error != nil {
 		return nil, result.Error
 	}
 
 	for _, image := range images {
-		setOfImages[image.ID] = &neededImageInfo{Name: image.Name, Status: image.Status}
+		status := models.DeviceViewStatusRunning
+		if setOfImages[image.ID] != nil {
+			status = setOfImages[image.ID].Status
+		}
+		setOfImages[image.ID] = &neededImageInfo{Name: image.Name, Status: status, ImageSetID: *image.ImageSetID}
 	}
 
 	// build the return object
@@ -622,9 +667,11 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	for _, device := range storedDevices {
 		var imageName string
 		var imageStatus string
+		var imageSetID uint
 		if _, ok := setOfImages[device.ImageID]; ok {
 			imageName = setOfImages[device.ImageID].Name
 			imageStatus = setOfImages[device.ImageID].Status
+			imageSetID = setOfImages[device.ImageID].ImageSetID
 		}
 		currentDeviceView := models.DeviceView{
 			DeviceID:        device.ID,
@@ -635,6 +682,7 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 			LastSeen:        device.LastSeen.Time.String(),
 			UpdateAvailable: device.UpdateAvailable,
 			Status:          imageStatus,
+			ImageSetID:      imageSetID,
 		}
 		returnDevices = append(returnDevices, currentDeviceView)
 	}
@@ -644,6 +692,54 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 		Total:   len(storedDevices),
 	}
 	return list, nil
+}
+
+// GetLatestCommitFromDevices fetches the commitID from the latest Device Image
+func (s *DeviceService) GetLatestCommitFromDevices(account string, devicesUUID []string) (uint, error) {
+	var devices []models.Device
+
+	if result := db.DB.Where("account = ? AND uuid IN ?", account, devicesUUID).Find(&devices); result.Error != nil {
+		return 0, result.Error
+	}
+
+	devicesImageID := make([]uint, 0, len(devices))
+
+	for _, device := range devices {
+		if int(device.ImageID) == 0 {
+			return 0, new(DeviceHasImageUndefined)
+		}
+		devicesImageID = append(devicesImageID, device.ImageID)
+	}
+	var devicesImage []models.Image
+	if result := db.DB.Where(models.Image{Account: account}).Find(&devicesImage, devicesImageID); result.Error != nil {
+		return 0, result.Error
+	}
+	// finding unique ImageSetID for device Image
+	devicesImageSetID := make(map[uint]bool, len(devicesImage))
+	var imageSetID uint
+	for _, image := range devicesImage {
+		if image.ImageSetID == nil {
+			return 0, new(ImageHasNoImageSet)
+		}
+		imageSetID = *image.ImageSetID
+		devicesImageSetID[*image.ImageSetID] = true
+
+	}
+	if len(devicesImageSetID) > 1 {
+		return 0, new(DeviceHasMoreThanOneImageSet)
+	}
+
+	// check for updates , find if any later images exists to get the commitID
+	var updateImages []models.Image
+	if result := db.DB.Model(&models.Image{}).Where("account = ? AND image_set_id = ? AND status = ?", account, imageSetID, models.ImageStatusSuccess).Order("version desc").Find(&updateImages); result.Error != nil {
+		return 0, result.Error
+	}
+
+	if len(updateImages) == 0 {
+		return 0, new(DeviceHasNoImageUpdate)
+	}
+
+	return updateImages[0].CommitID, nil
 }
 
 // ProcessPlatformInventoryCreateEvent is a method to processes messages from platform.inventory.events kafka topic and save them as devices in the DB

@@ -32,3 +32,5 @@ source $CICD_ROOT/deploy_ephemeral_env.sh
 
 # Run smoke tests with ClowdJobInvocation
 source $CICD_ROOT/cji_smoke_test.sh
+# Upload test results to ibutusu
+source $CICD_ROOT/post_test_results.sh
