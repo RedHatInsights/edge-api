@@ -425,8 +425,8 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 
 		deviceUpdating := false
 
-		if len(storeDevice.UpdateTransaction) > 0 {
-			last := storeDevice.UpdateTransaction[len(storeDevice.UpdateTransaction)-1]
+		if len(*storeDevice.UpdateTransaction) > 0 {
+			last := (*storeDevice.UpdateTransaction)[len(*storeDevice.UpdateTransaction)-1]
 			if last.Status == models.UpdateStatusCreated || last.Status == models.UpdateStatusBuilding {
 				deviceUpdating = true
 			}
