@@ -635,8 +635,21 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	}
 
 	var storedDevices []models.Device
-	if res := tx.Limit(limit).Offset(offset).Where("account = ? AND image_id IS NOT NULL", account).Find(&storedDevices); res.Error != nil {
+	if res := tx.Limit(limit).Offset(offset).Where("account = ?", account).Preload("UpdateTransaction").Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
+	}
+
+	type deviceGroupInfo struct {
+		info []models.DeviceDeviceGroup
+	}
+	deviceToGroupMap := make(map[uint]*deviceGroupInfo)
+	for _, device := range storedDevices {
+		for _, deviceGroups := range device.DevicesGroups {
+			if _, ok := deviceToGroupMap[device.ID]; ok {
+				temp := models.DeviceDeviceGroup{ID: deviceGroups.ID, Name: deviceGroups.Name}
+				deviceToGroupMap[device.ID].info = append(deviceToGroupMap[device.ID].info, temp)
+			}
+		}
 	}
 
 	type neededImageInfo struct {
@@ -647,8 +660,15 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	// create a map of unique image id's. We dont want to look of a given image id more than once.
 	setOfImages := make(map[uint]*neededImageInfo)
 	for _, devices := range storedDevices {
+		var status = models.DeviceViewStatusRunning
+		if devices.UpdateTransaction != nil && len(*devices.UpdateTransaction) > 0 {
+			updateStatus := (*devices.UpdateTransaction)[len(*devices.UpdateTransaction)-1].Status
+			if updateStatus == models.UpdateStatusBuilding {
+				status = models.DeviceViewStatusUpdating
+			}
+		}
 		if devices.ImageID != 0 {
-			setOfImages[devices.ImageID] = &neededImageInfo{Name: "", Status: "", ImageSetID: 0}
+			setOfImages[devices.ImageID] = &neededImageInfo{Name: "", Status: status, ImageSetID: 0}
 		}
 	}
 
@@ -659,12 +679,16 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	}
 
 	var images []models.Image
-	if result := db.DB.Where("account = ? AND id IN (?)", account, imagesIDS).Find(&images); result.Error != nil {
+	if result := db.DB.Where("account = ? AND id IN (?) AND image_set_id IS NOT NULL", account, imagesIDS).Find(&images); result.Error != nil {
 		return nil, result.Error
 	}
 
 	for _, image := range images {
-		setOfImages[image.ID] = &neededImageInfo{Name: image.Name, Status: image.Status, ImageSetID: *image.ImageSetID}
+		status := models.DeviceViewStatusRunning
+		if setOfImages[image.ID] != nil {
+			status = setOfImages[image.ID].Status
+		}
+		setOfImages[image.ID] = &neededImageInfo{Name: image.Name, Status: status, ImageSetID: *image.ImageSetID}
 	}
 
 	// build the return object
@@ -674,10 +698,14 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 		var imageName string
 		var imageStatus string
 		var imageSetID uint
+		var deviceGroups []models.DeviceDeviceGroup
 		if _, ok := setOfImages[device.ImageID]; ok {
 			imageName = setOfImages[device.ImageID].Name
 			imageStatus = setOfImages[device.ImageID].Status
 			imageSetID = setOfImages[device.ImageID].ImageSetID
+		}
+		if _, ok := deviceToGroupMap[device.ID]; ok {
+			deviceGroups = deviceToGroupMap[device.ID].info
 		}
 		currentDeviceView := models.DeviceView{
 			DeviceID:        device.ID,
@@ -689,6 +717,7 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 			UpdateAvailable: device.UpdateAvailable,
 			Status:          imageStatus,
 			ImageSetID:      imageSetID,
+			DeviceGroups:    deviceGroups,
 		}
 		returnDevices = append(returnDevices, currentDeviceView)
 	}

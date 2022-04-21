@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
@@ -27,6 +28,7 @@ type KafkaConsumerService struct {
 	RetryMinutes  uint
 	config        *clowder.KafkaConfig
 	shuttingDown  bool
+	mutex         sync.RWMutex
 	topic         string
 	consumer      func() error
 }
@@ -114,12 +116,16 @@ func (s *KafkaConsumerService) ConsumePlaybookDispatcherRuns() error {
 		} else {
 			log.Debug("Skipping message - it is not from edge service")
 		}
+		if s.isShuttingDown() {
+			log.Info("ShootingDown, exiting playbook dispatcher's runs consumer")
+			return nil
+		}
 	}
 }
 
 // ConsumePlatformInventoryEvents parses create events from platform.inventory.events kafka topic and save them as devices in the DB
 func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
-	log.Info("Starting to consume platform inventory create events")
+	log.Info("Starting to consume platform inventory events")
 	for {
 		m, err := s.Reader.ReadMessage(context.Background())
 		if err != nil {
@@ -161,6 +167,10 @@ func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 				"error": err,
 			}).Error("Error writing Kafka message to DB")
 		}
+		if s.isShuttingDown() {
+			log.Info("ShootingDown, exiting platform inventory events consumer")
+			return nil
+		}
 	}
 }
 
@@ -177,6 +187,7 @@ func (s *KafkaConsumerService) ConsumeImageBuildEvents() error {
 			log.WithFields(log.Fields{
 				"error": err.Error(),
 			}).Error("Error reading message from Kafka platform.edge.fleetmgmt.image-build topic")
+			return err
 		}
 
 		// temporarily logging all events from the topic
@@ -197,13 +208,31 @@ func (s *KafkaConsumerService) ConsumeImageBuildEvents() error {
 			log.WithField("imageID", eventMessage.ImageID).Debug("Resuming image ID from event on " + string(m.Topic))
 			//go s.ImageService.ResumeCreateImage(eventMessage.ImageID)
 		}
+		if s.isShuttingDown() {
+			log.Info("ShootingDown, exiting image build events consumer")
+			return nil
+		}
 	}
+}
+
+func (s *KafkaConsumerService) isShuttingDown() bool {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+	return s.shuttingDown
+}
+
+func (s *KafkaConsumerService) setShuttingDown() {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.shuttingDown = true
 }
 
 // Close wraps up reader work
 func (s *KafkaConsumerService) Close() {
 	log.Info("Closing Kafka readers...")
-	s.shuttingDown = true
+
+	s.setShuttingDown()
+
 	if err := s.Reader.Close(); err != nil {
 		log.WithFields(log.Fields{
 			"error": err.Error(),
@@ -218,16 +247,22 @@ func (s *KafkaConsumerService) Start() {
 		// The only way to actually exit this for is sending an exit signal to the app
 		// Due to this call, this is also a method that can't be unit tested (see comment in the method above)
 		err := s.consumer()
-		if s.shuttingDown {
-			log.WithFields(log.Fields{
-				"error": err.Error(),
-			}).Error("There was en error connecting to the broker. Reader was intentionally closed.")
+		if s.isShuttingDown() {
+			if err != nil {
+				log.WithFields(log.Fields{
+					"error": err.Error(),
+				}).Error("There was en error connecting to the broker. Reader was intentionally closed.")
+			}
+			log.Info("ShootingDown, exiting main consumer loop")
 			break
 		}
-		log.WithFields(log.Fields{
-			"error":          err.Error(),
-			"minutesToRetry": s.RetryMinutes,
-		}).Error("There was en error connecting to the broker. Retry in a few minutes.")
+
+		if err != nil {
+			log.WithFields(log.Fields{
+				"error":          err.Error(),
+				"minutesToRetry": s.RetryMinutes,
+			}).Error("There was en error connecting to the broker. Retry in a few minutes.")
+		}
 		time.Sleep(time.Minute * time.Duration(s.RetryMinutes))
 		s.Reader = s.initReader()
 	}
