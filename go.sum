@@ -547,6 +547,8 @@ github.com/redhatinsights/app-common-go v1.6.0 h1:7ZW7dIVY3n9UImfoduG9wR7Tgiw3zy
 github.com/redhatinsights/app-common-go v1.6.0/go.mod h1:SqgG5JkX/RNlk2d+sXamIFxhOIvWLgCBr8uK6q70ESk=
 github.com/redhatinsights/platform-go-middlewares v0.13.0 h1:xbEyoAvalSi7rt84IT2cHIchuCrztV9s0+mglhxmKcQ=
 github.com/redhatinsights/platform-go-middlewares v0.13.0/go.mod h1:i5gVDZJ/quCQhs5AW5CwkRPXlz1HfDBvyNtXHnlXZfM=
+github.com/redhatinsights/platform-go-middlewares v0.14.0 h1:J7D/4ScOVknr74bfZaeN8zbNWfDhqdJw0IYAyG9xJhc=
+github.com/redhatinsights/platform-go-middlewares v0.14.0/go.mod h1:i5gVDZJ/quCQhs5AW5CwkRPXlz1HfDBvyNtXHnlXZfM=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rogpeppe/go-internal v1.1.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.2.2/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
