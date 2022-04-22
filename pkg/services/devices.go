@@ -622,17 +622,14 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 		return nil, res.Error
 	}
 
-	type deviceGroupInfo struct {
-		info []models.DeviceDeviceGroup
-	}
-	deviceToGroupMap := make(map[uint]*deviceGroupInfo)
+	// create a map of device group info and map it to given devices
+	deviceToGroupMap := make(map[uint][]models.DeviceDeviceGroup)
 	for _, device := range storedDevices {
+		var tempArr []models.DeviceDeviceGroup
 		for _, deviceGroups := range device.DevicesGroups {
-			if _, ok := deviceToGroupMap[device.ID]; ok {
-				temp := models.DeviceDeviceGroup{ID: deviceGroups.ID, Name: deviceGroups.Name}
-				deviceToGroupMap[device.ID].info = append(deviceToGroupMap[device.ID].info, temp)
-			}
+			tempArr = append(tempArr, models.DeviceDeviceGroup{ID: deviceGroups.ID, Name: deviceGroups.Name})
 		}
+		deviceToGroupMap[device.ID] = tempArr
 	}
 
 	type neededImageInfo struct {
@@ -688,7 +685,7 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 			imageSetID = setOfImages[device.ImageID].ImageSetID
 		}
 		if _, ok := deviceToGroupMap[device.ID]; ok {
-			deviceGroups = deviceToGroupMap[device.ID].info
+			deviceGroups = deviceToGroupMap[device.ID]
 		}
 		currentDeviceView := models.DeviceView{
 			DeviceID:        device.ID,

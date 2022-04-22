@@ -545,8 +545,8 @@ github.com/prometheus/procfs v0.7.3 h1:4jVXhlkAyzOScmCkXBTOLRLTz8EeU+eyjrwB/EPq0
 github.com/prometheus/procfs v0.7.3/go.mod h1:cz+aTbrPOrUb4q7XlbU9ygM+/jj0fzG6c1xBZuNvfVA=
 github.com/redhatinsights/app-common-go v1.6.0 h1:7ZW7dIVY3n9UImfoduG9wR7Tgiw3zywDJ50Qyvpi480=
 github.com/redhatinsights/app-common-go v1.6.0/go.mod h1:SqgG5JkX/RNlk2d+sXamIFxhOIvWLgCBr8uK6q70ESk=
-github.com/redhatinsights/platform-go-middlewares v0.12.0 h1:gLFgsqupumRqAKDuYtvrYVNQr53iqfhQYc98VJ/cRUs=
-github.com/redhatinsights/platform-go-middlewares v0.12.0/go.mod h1:i5gVDZJ/quCQhs5AW5CwkRPXlz1HfDBvyNtXHnlXZfM=
+github.com/redhatinsights/platform-go-middlewares v0.13.0 h1:xbEyoAvalSi7rt84IT2cHIchuCrztV9s0+mglhxmKcQ=
+github.com/redhatinsights/platform-go-middlewares v0.13.0/go.mod h1:i5gVDZJ/quCQhs5AW5CwkRPXlz1HfDBvyNtXHnlXZfM=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rogpeppe/go-internal v1.1.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.2.2/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=

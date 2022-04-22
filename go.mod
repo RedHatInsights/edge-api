@@ -19,7 +19,7 @@ require (
 	github.com/onsi/gomega v1.19.0
 	github.com/prometheus/client_golang v1.12.1
 	github.com/redhatinsights/app-common-go v1.6.0
-	github.com/redhatinsights/platform-go-middlewares v0.12.0
+	github.com/redhatinsights/platform-go-middlewares v0.13.0
 	github.com/segmentio/kafka-go v0.4.31
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.11.0
