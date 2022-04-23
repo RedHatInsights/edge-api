@@ -331,85 +331,12 @@ func (s *DeviceGroupsService) GetDeviceGroupDetailsByIDView(ID string, limit int
 		return nil, res.Error
 	}
 
-	//must be refactored to use same methods from DeviceService.GetDevicesView
+	//MUST be refactored to avoid duplication with DeviceService.GetDevicesView
 	if len(storedDevices) > 0 {
-		// create a map of device group info and map it to given devices
-		deviceToGroupMap := make(map[uint][]models.DeviceDeviceGroup)
-		for _, device := range storedDevices {
-			var tempArr []models.DeviceDeviceGroup
-			for _, deviceGroups := range device.DevicesGroups {
-				tempArr = append(tempArr, models.DeviceDeviceGroup{ID: deviceGroups.ID, Name: deviceGroups.Name})
-			}
-			deviceToGroupMap[device.ID] = tempArr
-		}
-
-		type neededImageInfo struct {
-			Name       string
-			Status     string
-			ImageSetID uint
-		}
-		// create a map of unique image id's. We dont want to look of a given image id more than once.
-		setOfImages := make(map[uint]*neededImageInfo)
-		for _, devices := range storedDevices {
-			var status = models.DeviceViewStatusRunning
-			if devices.UpdateTransaction != nil && len(*devices.UpdateTransaction) > 0 {
-				updateStatus := (*devices.UpdateTransaction)[len(*devices.UpdateTransaction)-1].Status
-				if updateStatus == models.UpdateStatusBuilding {
-					status = models.DeviceViewStatusUpdating
-				}
-			}
-			if devices.ImageID != 0 {
-				setOfImages[devices.ImageID] = &neededImageInfo{Name: "", Status: status, ImageSetID: 0}
-			}
-		}
-
-		// using the map of unique image ID's, get the corresponding image name and status.
-		imagesIDS := []uint{}
-		for key := range setOfImages {
-			imagesIDS = append(imagesIDS, key)
-		}
-
-		var images []models.Image
-		if result := db.DB.Where("account = ? AND id IN (?) AND image_set_id IS NOT NULL", account, imagesIDS).Find(&images); result.Error != nil {
-			return nil, result.Error
-		}
-
-		for _, image := range images {
-			status := models.DeviceViewStatusRunning
-			if setOfImages[image.ID] != nil {
-				status = setOfImages[image.ID].Status
-			}
-			setOfImages[image.ID] = &neededImageInfo{Name: image.Name, Status: status, ImageSetID: *image.ImageSetID}
-		}
-
 		var devices []models.DeviceView
-		for _, device := range storedDevices {
-			var imageName string
-			var imageStatus string
-			var imageSetID uint
-			var deviceGroups []models.DeviceDeviceGroup
-			if _, ok := setOfImages[device.ImageID]; ok {
-				imageName = setOfImages[device.ImageID].Name
-				imageStatus = setOfImages[device.ImageID].Status
-				imageSetID = setOfImages[device.ImageID].ImageSetID
-			}
-			if _, ok := deviceToGroupMap[device.ID]; ok {
-				deviceGroups = deviceToGroupMap[device.ID]
-			}
-
-			currentDeviceView := models.DeviceView{
-				DeviceID:        device.ID,
-				DeviceName:      device.Name,
-				DeviceUUID:      device.UUID,
-				ImageID:         device.ImageID,
-				ImageName:       imageName,
-				LastSeen:        device.LastSeen.Time.String(),
-				UpdateAvailable: device.UpdateAvailable,
-				Status:          imageStatus,
-				ImageSetID:      imageSetID,
-				DeviceGroups:    deviceGroups,
-			}
-			devices = append(devices, currentDeviceView)
+		devices, err = ReturnDevicesView(storedDevices, account)
+		if err != nil {
+			return nil, err
 		}
 		deviceGroupDetails.DeviceDetails.Devices = devices
 		deviceGroupDetails.DeviceDetails.Total = len(storedDevices)

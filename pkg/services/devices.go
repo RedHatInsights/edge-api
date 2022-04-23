@@ -623,6 +623,22 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	}
 
 	// create a map of device group info and map it to given devices
+
+	returnDevices := []models.DeviceView{}
+	returnDevices, err = ReturnDevicesView(storedDevices, account)
+	if err != nil {
+		return nil, err
+	}
+	list := &models.DeviceViewList{
+		Devices: returnDevices,
+		Total:   len(storedDevices),
+	}
+	return list, nil
+}
+
+// ReturnDevicesView returns the devices association and status properly
+func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.DeviceView, error) {
+
 	deviceToGroupMap := make(map[uint][]models.DeviceDeviceGroup)
 	for _, device := range storedDevices {
 		var tempArr []models.DeviceDeviceGroup
@@ -701,12 +717,7 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 		}
 		returnDevices = append(returnDevices, currentDeviceView)
 	}
-
-	list := &models.DeviceViewList{
-		Devices: returnDevices,
-		Total:   len(storedDevices),
-	}
-	return list, nil
+	return returnDevices, nil
 }
 
 // GetLatestCommitFromDevices fetches the commitID from the latest Device Image
