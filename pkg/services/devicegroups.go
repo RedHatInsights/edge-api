@@ -30,6 +30,7 @@ type DeviceGroupsServiceInterface interface {
 	GetDeviceGroupsCount(account string, tx *gorm.DB) (int64, error)
 	GetDeviceGroupByID(ID string) (*models.DeviceGroup, error)
 	GetDeviceGroupDetailsByID(ID string) (*models.DeviceGroupDetails, error)
+	GetDeviceGroupDetailsByIDView(ID string, limit int, offset int, tx *gorm.DB) (*models.DeviceGroupDetailsView, error)
 	DeleteDeviceGroupByID(ID string) error
 	UpdateDeviceGroup(deviceGroup *models.DeviceGroup, account string, ID string) error
 	GetDeviceGroupDeviceByID(account string, deviceGroupID uint, deviceID uint) (*models.Device, error)
@@ -301,6 +302,117 @@ func (s *DeviceGroupsService) GetDeviceGroupDetailsByID(ID string) (*models.Devi
 		}
 
 		deviceGroupDetails.DeviceDetails = &devices
+	}
+
+	return &deviceGroupDetails, nil
+}
+
+// GetDeviceGroupDetailsByID gets the device group details by ID from the database
+func (s *DeviceGroupsService) GetDeviceGroupDetailsByIDView(ID string, limit int, offset int, tx *gorm.DB) (*models.DeviceGroupDetailsView, error) {
+	var deviceGroupDetails models.DeviceGroupDetailsView
+	account, err := common.GetAccountFromContext(s.ctx)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error account")
+		return nil, err
+	}
+	result := db.DB.Where("account = ? and id = ?", account, ID).Preload("Devices").First(&deviceGroupDetails.DeviceGroup)
+	if result.Error != nil {
+		s.log.WithField("error", err.Error()).Error("Device details query error")
+		return nil, new(DeviceGroupNotFound)
+	}
+
+	var devicesIds []int
+	for _, device := range deviceGroupDetails.DeviceGroup.Devices {
+		devicesIds = append(devicesIds, int(device.ID))
+	}
+	var storedDevices []models.Device
+	if res := tx.Limit(limit).Offset(offset).Where("account = ? and ID in ?", account, devicesIds).
+		Preload("UpdateTransaction").Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
+		return nil, res.Error
+	}
+
+	//must be refactored to use same methods from DeviceService.GetDevicesView
+	if len(storedDevices) > 0 {
+		// create a map of device group info and map it to given devices
+		deviceToGroupMap := make(map[uint][]models.DeviceDeviceGroup)
+		for _, device := range storedDevices {
+			var tempArr []models.DeviceDeviceGroup
+			for _, deviceGroups := range device.DevicesGroups {
+				tempArr = append(tempArr, models.DeviceDeviceGroup{ID: deviceGroups.ID, Name: deviceGroups.Name})
+			}
+			deviceToGroupMap[device.ID] = tempArr
+		}
+
+		type neededImageInfo struct {
+			Name       string
+			Status     string
+			ImageSetID uint
+		}
+		// create a map of unique image id's. We dont want to look of a given image id more than once.
+		setOfImages := make(map[uint]*neededImageInfo)
+		for _, devices := range storedDevices {
+			var status = models.DeviceViewStatusRunning
+			if devices.UpdateTransaction != nil && len(*devices.UpdateTransaction) > 0 {
+				updateStatus := (*devices.UpdateTransaction)[len(*devices.UpdateTransaction)-1].Status
+				if updateStatus == models.UpdateStatusBuilding {
+					status = models.DeviceViewStatusUpdating
+				}
+			}
+			if devices.ImageID != 0 {
+				setOfImages[devices.ImageID] = &neededImageInfo{Name: "", Status: status, ImageSetID: 0}
+			}
+		}
+
+		// using the map of unique image ID's, get the corresponding image name and status.
+		imagesIDS := []uint{}
+		for key := range setOfImages {
+			imagesIDS = append(imagesIDS, key)
+		}
+
+		var images []models.Image
+		if result := db.DB.Where("account = ? AND id IN (?) AND image_set_id IS NOT NULL", account, imagesIDS).Find(&images); result.Error != nil {
+			return nil, result.Error
+		}
+
+		for _, image := range images {
+			status := models.DeviceViewStatusRunning
+			if setOfImages[image.ID] != nil {
+				status = setOfImages[image.ID].Status
+			}
+			setOfImages[image.ID] = &neededImageInfo{Name: image.Name, Status: status, ImageSetID: *image.ImageSetID}
+		}
+
+		var devices []models.DeviceView
+		for _, device := range storedDevices {
+			var imageName string
+			var imageStatus string
+			var imageSetID uint
+			var deviceGroups []models.DeviceDeviceGroup
+			if _, ok := setOfImages[device.ImageID]; ok {
+				imageName = setOfImages[device.ImageID].Name
+				imageStatus = setOfImages[device.ImageID].Status
+				imageSetID = setOfImages[device.ImageID].ImageSetID
+			}
+			if _, ok := deviceToGroupMap[device.ID]; ok {
+				deviceGroups = deviceToGroupMap[device.ID]
+			}
+
+			currentDeviceView := models.DeviceView{
+				DeviceID:        device.ID,
+				DeviceName:      device.Name,
+				DeviceUUID:      device.UUID,
+				ImageID:         device.ImageID,
+				ImageName:       imageName,
+				LastSeen:        device.LastSeen.Time.String(),
+				UpdateAvailable: device.UpdateAvailable,
+				Status:          imageStatus,
+				ImageSetID:      imageSetID,
+				DeviceGroups:    deviceGroups,
+			}
+			devices = append(devices, currentDeviceView)
+		}
+		deviceGroupDetails.DeviceDetails.Devices = devices
+		deviceGroupDetails.DeviceDetails.Total = len(storedDevices)
 	}
 
 	return &deviceGroupDetails, nil
