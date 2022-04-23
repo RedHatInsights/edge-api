@@ -307,7 +307,7 @@ func (s *DeviceGroupsService) GetDeviceGroupDetailsByID(ID string) (*models.Devi
 	return &deviceGroupDetails, nil
 }
 
-// GetDeviceGroupDetailsByID gets the device group details by ID from the database
+// GetDeviceGroupDetailsByIDView gets the device group details view by ID from the database
 func (s *DeviceGroupsService) GetDeviceGroupDetailsByIDView(ID string, limit int, offset int, tx *gorm.DB) (*models.DeviceGroupDetailsView, error) {
 	var deviceGroupDetails models.DeviceGroupDetailsView
 	account, err := common.GetAccountFromContext(s.ctx)

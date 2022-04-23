@@ -41,6 +41,7 @@ type DeviceGroupDetails struct {
 	DeviceDetails *DeviceDetailsList `json:"Devices"`
 }
 
+// DeviceGroupDetailsView is a record of Device Groups and DeviceView
 type DeviceGroupDetailsView struct {
 	DeviceGroup   *DeviceGroup   `json:"DeviceGroup"`
 	DeviceDetails DeviceViewList `json:"DevicesView"`

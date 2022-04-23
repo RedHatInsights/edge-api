@@ -116,7 +116,7 @@ func DeviceGroupDetailsCtx(next http.Handler) http.Handler {
 	})
 }
 
-// DeviceGroupDetailsCtx is a handler to Device Group Details requests
+// DeviceGroupDetailsCtxView is a handler to Device Group Details requests
 func DeviceGroupDetailsCtxView(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctxServices := dependencies.ServicesFromContext(r.Context())
