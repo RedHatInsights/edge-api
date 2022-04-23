@@ -624,8 +624,7 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 
 	// create a map of device group info and map it to given devices
 
-	returnDevices := []models.DeviceView{}
-	returnDevices, err = ReturnDevicesView(storedDevices, account)
+	returnDevices, err := ReturnDevicesView(storedDevices, account)
 	if err != nil {
 		return nil, err
 	}
