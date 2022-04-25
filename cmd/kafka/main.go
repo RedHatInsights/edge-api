@@ -98,8 +98,7 @@ func main() {
 		// TODO: work out programatic method to avoid resuming a build until app is up or on way up
 
 		// handle stale interrupted builds not complete after x hours
-		// FIXME: change 48 hours to something closer to stale builds (6?)
-		staleInterruptedImages := getStaleBuilds(models.ImageStatusInterrupted, 48)
+		staleInterruptedImages := getStaleBuilds(models.ImageStatusInterrupted, 6)
 		for _, staleImage := range staleInterruptedImages {
 			log.WithFields(log.Fields{
 				"UpdatedAt": staleImage.UpdatedAt,
