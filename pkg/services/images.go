@@ -107,6 +107,22 @@ func ValidateAllImageReposAreFromAccount(account string, repos []models.ThirdPar
 // CreateImage creates an Image for an Account on Image Builder and on our database
 func (s *ImageService) CreateImage(image *models.Image, account string) error {
 
+	if account == "" {
+		return new(AccountNotSet)
+	}
+	if image.Name == "" {
+		return new(ImageNameUndefined)
+	}
+	imageNameExists, err := s.CheckImageName(image.Name, account)
+	if err != nil {
+		return err
+	}
+	if imageNameExists {
+		return new(ImageNameAlreadyExists)
+	}
+	if image.Version == 0 {
+		image.Version = 1
+	}
 	//Send Image creation to notification
 	notify, errNotify := s.SendImageNotification(image)
 	if errNotify != nil {
@@ -114,51 +130,25 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 		s.log.WithField("message", notify).Error("Notify Error")
 
 	}
-	// Check for existing ImageSet and return if exists
-	// TODO: this routine needs to become a function under imagesets
-	var imageSetExists bool
-	var imageSetModel models.ImageSet
-	var imageSet models.ImageSet
-
-	// query to check if there are more than 0 matching imagesets
-	// NOTE: see fix below, we iterate over the DB twice if one exists
-	// just use the second query and return on first match
-	err := db.DB.Model(imageSetModel).
-		Select("count(*) > 0").
-		Where("name = ? AND account = ?", image.Name, account).
-		Find(&imageSetExists).
-		Error
-
-	// gorm error check
-	if err != nil {
-		return err
+	// Check for existing ImageSet and return error if exists
+	var imageSetsCount int64
+	if result := db.DB.Model(&models.ImageSet{}).Where("name = ? AND account = ?", image.Name, account).Count(&imageSetsCount); result.Error != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error checking for previous image set existence")
+		return result.Error
 	}
-
-	// requery to get imageset details and then return
-	// FIXME: this is leftover from previous functionality. Do one query or the other.
-	if imageSetExists {
-		result := db.DB.Where("name = ? AND account = ?", image.Name, account).First(&imageSet)
-		if result.Error != nil {
-			s.log.WithField("error", result.Error.Error()).Error("Error checking for previous image set existence")
-			return result.Error
-		}
+	if imageSetsCount > 0 {
 		s.log.WithField("imageSetName", image.Name).Error("ImageSet already exists, UpdateImage transaction expected and not CreateImage", image.Name)
 		return new(ImageSetAlreadyExists)
 	}
 
-	// Create a new imageset
-	// TODO: this should be a function under imagesets
-	imageSet.Account = account
-	imageSet.Name = image.Name
-
-	imageSet.Version = image.Version
-	set := db.DB.Create(&imageSet)
-	if set.Error != nil {
-		return set.Error
+	// Create a new imageSet
+	imageSet := models.ImageSet{Account: account, Name: image.Name, Version: image.Version}
+	if result := db.DB.Create(&imageSet); result.Error != nil {
+		return result.Error
 	}
-	s.log.WithField("imageSetName", image.Name).Debug("Imageset created")
+	s.log.WithField("imageSetName", image.Name).Debug("ImageSet created")
 
-	// create an image under the new imageset
+	// create an image under the new imageSet
 	image.Account = account
 	image.ImageSetID = &imageSet.ID
 	// make the initial call to Image Builder

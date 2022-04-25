@@ -155,8 +155,7 @@ type CreateImageRequest struct {
 // It always creates a commit on Image Builder.
 // Then we create our repo with the ostree commit and if needed, create the installer.
 func CreateImage(w http.ResponseWriter, r *http.Request) {
-	services := dependencies.ServicesFromContext(r.Context())
-	defer r.Body.Close()
+	ctxServices := dependencies.ServicesFromContext(r.Context())
 	image, err := initImageCreateRequest(w, r)
 	if err != nil {
 		// initImageCreateRequest() already writes the response
@@ -164,91 +163,65 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	}
 	account, err := common.GetAccount(r)
 	if err != nil {
-		services.Log.WithField("error", err.Error()).Error("Failed retrieving account from request")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving account from request")
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 		return
 	}
-	services.Log.Debug("Creating image from API request")
-	err = services.ImageService.CreateImage(image, account)
+	ctxServices.Log.Debug("Creating image from API request")
+	err = ctxServices.ImageService.CreateImage(image, account)
 	if err != nil {
-		services.Log.WithField("error", err.Error()).Error("Failed creating image")
+		ctxServices.Log.WithField("error", err.Error()).Error("Failed creating image")
 		err := errors.NewInternalServerError()
 		err.SetTitle("Failed creating image")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		respondWithAPIError(w, ctxServices.Log, err)
 		return
 	}
-	// TODO: this is just the quick return from the service. It is not complete yet.
-	services.Log.WithFields(log.Fields{
+	ctxServices.Log.WithFields(log.Fields{
 		"imageId": image.ID,
 	}).Info("Image build process started from API request")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(&image); err != nil {
-		services.Log.WithField("error", image).Error("Error while trying to encode")
-	}
+	respondWithJSONBody(w, ctxServices.Log, image)
 }
 
 // CreateImageUpdate creates an update for an exitent image on hosted image builder.
 func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
-	services := dependencies.ServicesFromContext(r.Context())
-	defer r.Body.Close()
+	ctxServices := dependencies.ServicesFromContext(r.Context())
 	image, err := initImageCreateRequest(w, r)
 	if err != nil {
 		// initImageCreateRequest() already writes the response
 		return
 	}
 	previousImage := getImage(w, r)
-	if image == nil {
+	if previousImage == nil {
 		// getImage already writes the response
 		return
 	}
-	err = services.ImageService.UpdateImage(image, previousImage)
+	err = ctxServices.ImageService.UpdateImage(image, previousImage)
 	if err != nil {
-		services.Log.WithField("error", err.Error()).Error("Failed creating an update to an image")
+		ctxServices.Log.WithField("error", err.Error()).Error("Failed creating an update to an image")
 		err := errors.NewInternalServerError()
 		err.SetTitle("Failed creating image")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		respondWithAPIError(w, ctxServices.Log, err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(&image); err != nil {
-		services.Log.WithField("error", image).Error("Error while trying to encode")
-	}
+	respondWithJSONBody(w, ctxServices.Log, image)
 }
 
 // initImageCreateRequest validates request to create/update an image.
 func initImageCreateRequest(w http.ResponseWriter, r *http.Request) (*models.Image, error) {
-	services := dependencies.ServicesFromContext(r.Context())
-	var image *models.Image
-	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
-		services.Log.WithField("error", err.Error()).Error("Error decoding image json")
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	var image models.Image
+	if err := readRequestJSONBody(w, r, ctxServices.Log, &image); err != nil {
 		return nil, err
 	}
 	if err := image.ValidateRequest(); err != nil {
-		services.Log.WithField("error", err.Error()).Info("Error validating image")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		ctxServices.Log.WithField("error", err.Error()).Info("Error validating image")
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 		return nil, err
 	}
-	services.Log = services.Log.WithField("imageName", image.Name)
-	return image, nil
+	ctxServices.Log = ctxServices.Log.WithField("imageName", image.Name)
+	return &image, nil
 }
 
 var imageFilters = common.ComposeFilters(

@@ -5,7 +5,6 @@ import (
 	"regexp"
 
 	"github.com/lib/pq"
-	"github.com/redhatinsights/edge-api/pkg/db"
 )
 
 // ImageSet represents a collection of images
@@ -133,10 +132,6 @@ func (i *Image) ValidateRequest() error {
 			return errors.New(ImageTypeNotAccepted)
 		}
 	}
-	if i.Version == 1 && checkIfImageExist(i.Name) {
-		return errors.New(ImageNameAlreadyExists)
-	}
-
 	// Installer checks
 	if i.HasOutputType(ImageTypeInstaller) {
 		if i.Installer == nil {
@@ -177,16 +172,6 @@ func (i *Image) GetPackagesList() *[]string {
 		pkgs[i+l] = p.Name
 	}
 	return &pkgs
-}
-
-//checkIfImageExist checks if name to image is already in use
-func checkIfImageExist(imageName string) bool {
-	var imageFindByName *Image
-	result := db.DB.Where("Name = ?", imageName).First(&imageFindByName)
-	if result.Error != nil {
-		return false
-	}
-	return imageFindByName != nil
 }
 
 // GetALLPackagesList returns all the packages including custom packages containing their names
