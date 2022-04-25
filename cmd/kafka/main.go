@@ -30,11 +30,13 @@ func getStaleBuilds(status string, age int) []models.Image {
 		return nil
 	}
 
-	log.WithFields(log.Fields{
-		"numImages": qresult.RowsAffected,
-		"status":    status,
-		"interval":  age,
-	}).Debug("Found stale image(s) with interval")
+	if qresult.RowsAffected > 0 {
+		log.WithFields(log.Fields{
+			"numImages": qresult.RowsAffected,
+			"status":    status,
+			"interval":  age,
+		}).Debug("Found stale image(s) with interval")
+	}
 
 	return images
 }
@@ -130,7 +132,9 @@ func main() {
 		//	this is meant to handle builds that are interrupted when they are interrupted
 		// 	the stale interrupted build routine should never actually find anything while this is running
 		qresult := db.DB.Debug().Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
-		log.WithField("numImages", qresult.RowsAffected).Info("Found image(s) with interrupted status")
+		if qresult.RowsAffected > 0 {
+			log.WithField("numImages", qresult.RowsAffected).Info("Found image(s) with interrupted status")
+		}
 
 		for _, image := range images {
 			log.WithField("imageID", image.ID).Info("Processing interrupted image")
