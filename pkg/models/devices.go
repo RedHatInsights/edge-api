@@ -20,6 +20,7 @@ type DeviceDetails struct {
 	Image              *ImageInfo           `json:"ImageInfo"`
 	UpdateTransactions *[]UpdateTransaction `json:"UpdateTransactions,omitempty"`
 	DevicesGroups      *[]DeviceGroup       `json:"DevicesGroups,omitempty"`
+	Updating           *bool                `json:"DeviceUpdating,omitempty"`
 }
 
 // DeviceDetailsList is the list of devices with details from Inventory and Edge API
