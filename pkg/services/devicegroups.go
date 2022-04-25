@@ -30,7 +30,6 @@ type DeviceGroupsServiceInterface interface {
 	GetDeviceGroupsCount(account string, tx *gorm.DB) (int64, error)
 	GetDeviceGroupByID(ID string) (*models.DeviceGroup, error)
 	GetDeviceGroupDetailsByID(ID string) (*models.DeviceGroupDetails, error)
-	GetDeviceGroupDetailsByIDView(ID string, limit int, offset int, tx *gorm.DB) (*models.DeviceGroupDetailsView, error)
 	DeleteDeviceGroupByID(ID string) error
 	UpdateDeviceGroup(deviceGroup *models.DeviceGroup, account string, ID string) error
 	GetDeviceGroupDeviceByID(account string, deviceGroupID uint, deviceID uint) (*models.Device, error)
@@ -302,44 +301,6 @@ func (s *DeviceGroupsService) GetDeviceGroupDetailsByID(ID string) (*models.Devi
 		}
 
 		deviceGroupDetails.DeviceDetails = &devices
-	}
-
-	return &deviceGroupDetails, nil
-}
-
-// GetDeviceGroupDetailsByIDView gets the device group details view by ID from the database
-func (s *DeviceGroupsService) GetDeviceGroupDetailsByIDView(ID string, limit int, offset int, tx *gorm.DB) (*models.DeviceGroupDetailsView, error) {
-	var deviceGroupDetails models.DeviceGroupDetailsView
-	account, err := common.GetAccountFromContext(s.ctx)
-	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Error account")
-		return nil, err
-	}
-	result := db.DB.Where("account = ? and id = ?", account, ID).Preload("Devices").First(&deviceGroupDetails.DeviceGroup)
-	if result.Error != nil {
-		s.log.WithField("error", err.Error()).Error("Device details query error")
-		return nil, new(DeviceGroupNotFound)
-	}
-
-	var devicesIds []int
-	for _, device := range deviceGroupDetails.DeviceGroup.Devices {
-		devicesIds = append(devicesIds, int(device.ID))
-	}
-	var storedDevices []models.Device
-	if res := tx.Limit(limit).Offset(offset).Where("account = ? and ID in ?", account, devicesIds).
-		Preload("UpdateTransaction").Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
-		return nil, res.Error
-	}
-
-	//MUST be refactored to avoid duplication with DeviceService.GetDevicesView
-	if len(storedDevices) > 0 {
-		var devices []models.DeviceView
-		devices, err = ReturnDevicesView(storedDevices, account)
-		if err != nil {
-			return nil, err
-		}
-		deviceGroupDetails.DeviceDetails.Devices = devices
-		deviceGroupDetails.DeviceDetails.Total = len(storedDevices)
 	}
 
 	return &deviceGroupDetails, nil

@@ -131,11 +131,14 @@ func DeviceGroupDetailsCtxView(next http.Handler) http.Handler {
 				return
 			}
 
+			var deviceGroup *models.DeviceGroup
+			result := db.DB.Where("ID = ?", ID).First(&deviceGroup)
+			if result.Error != nil {
+				return
+			}
 			tx := devicesFilters(r, db.DB).Where("image_id IS NOT NULL AND image_id != 0")
 			pagination := common.GetPagination(r)
-
-			fmt.Printf("\n ID >>> %v\n", ID)
-			deviceGroup, err := ctxServices.DeviceGroupsService.GetDeviceGroupDetailsByIDView(ID, pagination.Limit, pagination.Offset, tx)
+			deviceGroupDevices, err := ctxServices.DeviceService.GetDevicesView(pagination.Limit, pagination.Offset, tx)
 			if err != nil {
 				var responseErr errors.APIError
 				switch err.(type) {
@@ -143,21 +146,16 @@ func DeviceGroupDetailsCtxView(next http.Handler) http.Handler {
 					responseErr = errors.NewNotFound(err.Error())
 				default:
 					responseErr = errors.NewInternalServerError()
-					responseErr.SetTitle("failed getting third device group")
+					responseErr.SetTitle("failed getting device group")
 				}
 				respondWithAPIError(w, ctxServices.Log, responseErr)
 				return
 			}
-			account, err := common.GetAccount(r)
-			if err != nil || deviceGroup.DeviceGroup.Account != account {
-				ctxServices.Log.WithFields(log.Fields{
-					"error":   err.Error(),
-					"account": account,
-				}).Error("Error retrieving account or device group doesn't belong to account")
-				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-				return
-			}
-			ctx := setContextDeviceGroupDetailsView(r.Context(), deviceGroup)
+			var deviceGroupDetails models.DeviceGroupDetailsView
+			deviceGroupDetails.DeviceGroup = deviceGroup
+			deviceGroupDetails.DeviceDetails.Devices = deviceGroupDevices.Devices
+			deviceGroupDetails.DeviceDetails.Total = len(deviceGroupDevices.Devices)
+			ctx := setContextDeviceGroupDetailsView(r.Context(), &deviceGroupDetails)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
 			ctxServices.Log.Debug("deviceGroup ID was not passed to the request or it was empty")
@@ -189,7 +187,7 @@ func DeviceGroupCtx(next http.Handler) http.Handler {
 					responseErr = errors.NewNotFound(err.Error())
 				default:
 					responseErr = errors.NewInternalServerError()
-					responseErr.SetTitle("failed getting third device group")
+					responseErr.SetTitle("failed getting device group")
 				}
 				respondWithAPIError(w, ctxServices.Log, responseErr)
 				return
