@@ -78,7 +78,7 @@ func Init() {
 	options := viper.New()
 	options.SetDefault("WebPort", 3000)
 	options.SetDefault("MetricsPort", 8080)
-	options.SetDefault("LogLevel", "DEBUG")
+	options.SetDefault("LogLevel", "INFO")
 	options.SetDefault("Auth", false)
 	options.SetDefault("Debug", false)
 	options.SetDefault("EdgeTarballsBucket", "rh-edge-tarballs")

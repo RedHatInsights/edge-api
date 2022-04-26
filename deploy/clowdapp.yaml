@@ -227,4 +227,4 @@ parameters:
 - description: Log level
   name: LOG_LEVEL
   required: false
-  value: "debug"
+  value: "INFO"
