@@ -35,7 +35,7 @@ func TestCreateWasCalledWithWrongBody(t *testing.T) {
 
 	handler.ServeHTTP(rr, req)
 
-	if status := rr.Code; status != http.StatusInternalServerError {
+	if status := rr.Code; status != http.StatusBadRequest {
 		t.Errorf("handler returned wrong status code: got %v want %v",
 			status, http.StatusInternalServerError)
 	}
