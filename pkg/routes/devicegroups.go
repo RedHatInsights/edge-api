@@ -60,7 +60,6 @@ func MakeDeviceGroupsRouter(sub chi.Router) {
 			d.Get("/", GetDeviceGroupDetailsByID)
 		})
 		r.Route("/view", func(d chi.Router) {
-			d.Use(DeviceGroupDetailsCtxView)
 			d.Get("/", GetDeviceGroupDetailsByIDView)
 		})
 		r.Route("/devices/{DEVICE_ID}", func(d chi.Router) {
@@ -92,7 +91,7 @@ func DeviceGroupDetailsCtx(next http.Handler) http.Handler {
 					responseErr = errors.NewNotFound(err.Error())
 				default:
 					responseErr = errors.NewInternalServerError()
-					responseErr.SetTitle("failed getting third device group")
+					responseErr.SetTitle("failed getting device group")
 				}
 				respondWithAPIError(w, ctxServices.Log, responseErr)
 				return
@@ -107,55 +106,6 @@ func DeviceGroupDetailsCtx(next http.Handler) http.Handler {
 				return
 			}
 			ctx := setContextDeviceGroupDetails(r.Context(), deviceGroup)
-			next.ServeHTTP(w, r.WithContext(ctx))
-		} else {
-			ctxServices.Log.Debug("deviceGroup ID was not passed to the request or it was empty")
-			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("deviceGroup ID required"))
-			return
-		}
-	})
-}
-
-// DeviceGroupDetailsCtxView is a handler to Device Group Details requests
-func DeviceGroupDetailsCtxView(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctxServices := dependencies.ServicesFromContext(r.Context())
-
-		if ID := chi.URLParam(r, "ID"); ID != "" {
-			_, err := strconv.Atoi(ID)
-			ctxServices.Log = ctxServices.Log.WithField("deviceGroupID", ID)
-			ctxServices.Log.Debug("Retrieving device group")
-			if err != nil {
-				ctxServices.Log.Debug("ID is not an integer")
-				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-				return
-			}
-
-			var deviceGroup *models.DeviceGroup
-			result := db.DB.Where("ID = ?", ID).First(&deviceGroup)
-			if result.Error != nil {
-				return
-			}
-			tx := devicesFilters(r, db.DB).Where("image_id IS NOT NULL AND image_id != 0")
-			pagination := common.GetPagination(r)
-			deviceGroupDevices, err := ctxServices.DeviceService.GetDevicesView(pagination.Limit, pagination.Offset, tx)
-			if err != nil {
-				var responseErr errors.APIError
-				switch err.(type) {
-				case *services.DeviceGroupNotFound:
-					responseErr = errors.NewNotFound(err.Error())
-				default:
-					responseErr = errors.NewInternalServerError()
-					responseErr.SetTitle("failed getting device group")
-				}
-				respondWithAPIError(w, ctxServices.Log, responseErr)
-				return
-			}
-			var deviceGroupDetails models.DeviceGroupDetailsView
-			deviceGroupDetails.DeviceGroup = deviceGroup
-			deviceGroupDetails.DeviceDetails.Devices = deviceGroupDevices.Devices
-			deviceGroupDetails.DeviceDetails.Total = len(deviceGroupDevices.Devices)
-			ctx := setContextDeviceGroupDetailsView(r.Context(), &deviceGroupDetails)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
 			ctxServices.Log.Debug("deviceGroup ID was not passed to the request or it was empty")
@@ -245,7 +195,7 @@ func DeviceGroupDeviceCtx(next http.Handler) http.Handler {
 					responseErr = errors.NewBadRequest("Device group device not supplied")
 				default:
 					responseErr = errors.NewInternalServerError()
-					responseErr.SetTitle("failed getting third device group")
+					responseErr.SetTitle("failed getting device group")
 				}
 				respondWithAPIError(w, ctxServices.Log, responseErr)
 				return
@@ -399,10 +349,40 @@ func GetDeviceGroupDetailsByID(w http.ResponseWriter, r *http.Request) {
 
 // GetDeviceGroupDetailsByIDView return devices groups details for an account and Id
 func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
-	if deviceGroup := getContextDeviceGroupDetailsView(w, r); deviceGroup != nil {
-		ctxServices := dependencies.ServicesFromContext(r.Context())
-		respondWithJSONBody(w, ctxServices.Log, deviceGroup)
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	deviceGroup := getContextDeviceGroup(w, r)
+	if deviceGroup == nil {
+		return
 	}
+
+	devicesIDS := make([]uint, 0, len(deviceGroup.Devices))
+	for _, device := range deviceGroup.Devices {
+		devicesIDS = append(devicesIDS, device.ID)
+	}
+	tx := devicesFilters(r, db.DB).
+		Where("image_id IS NOT NULL AND image_id != 0 AND ID IN (?)", devicesIDS)
+	pagination := common.GetPagination(r)
+
+	deviceGroupDevices, err := ctxServices.DeviceService.GetDevicesView(pagination.Limit, pagination.Offset, tx)
+
+	if err != nil {
+		var responseErr errors.APIError
+		switch err.(type) {
+		case *services.DeviceGroupNotFound:
+			responseErr = errors.NewNotFound(err.Error())
+		default:
+			responseErr = errors.NewInternalServerError()
+			responseErr.SetTitle("failed getting device group")
+		}
+		respondWithAPIError(w, ctxServices.Log, responseErr)
+		return
+	}
+	var deviceGroupDetails models.DeviceGroupDetailsView
+	deviceGroupDetails.DeviceGroup = deviceGroup
+	deviceGroupDetails.DeviceDetails.Devices = deviceGroupDevices.Devices
+	deviceGroupDetails.DeviceDetails.Total = len(deviceGroupDevices.Devices)
+
+	respondWithJSONBody(w, ctxServices.Log, &deviceGroupDetails)
 }
 
 // GetDeviceGroupByID return devices groups for an account and Id
