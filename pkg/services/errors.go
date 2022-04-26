@@ -51,6 +51,20 @@ func (e *ImageVersionAlreadyExists) Error() string {
 	return "updated image version already exists"
 }
 
+// ImageNameAlreadyExists indicates the image with supplied name already exists
+type ImageNameAlreadyExists struct{}
+
+func (e *ImageNameAlreadyExists) Error() string {
+	return "image with supplied name already exists"
+}
+
+// ImageNameUndefined indicates the image name is not defined
+type ImageNameUndefined struct{}
+
+func (e *ImageNameUndefined) Error() string {
+	return "image name is not defined"
+}
+
 // ImageSetUnDefined indicates the image has no imageSetDefined
 type ImageSetUnDefined struct{}
 
