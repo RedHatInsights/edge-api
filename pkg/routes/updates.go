@@ -275,8 +275,9 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 
 		devices := update.Devices
 		oldCommits := update.OldCommits
-
+		toUpdate := true
 		for _, device := range inventory.Result {
+
 			//  Check for the existence of a Repo that already has this commit and don't duplicate
 			var updateDevice *models.Device
 			updateDevice, err = services.DeviceService.GetDeviceByUUID(device.ID)
@@ -329,6 +330,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 						"booted": deployment.Booted,
 					}).Debug("device has been booted")
 					if commit.OSTreeCommit == deployment.Checksum {
+						toUpdate = false
 						break
 					}
 					var oldCommit models.Commit
@@ -362,7 +364,9 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 				return nil, err
 			}
 		}
-		updates = append(updates, update)
+		if toUpdate {
+			updates = append(updates, update)
+		}
 		services.Log.WithField("updateID", update.ID).Info("Update has been created")
 
 	}
