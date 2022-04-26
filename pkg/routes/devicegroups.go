@@ -351,10 +351,15 @@ func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if int(len(deviceGroup.Devices)) == 0 {
+		return
+	}
+
 	devicesIDS := make([]uint, 0, len(deviceGroup.Devices))
 	for _, device := range deviceGroup.Devices {
 		devicesIDS = append(devicesIDS, device.ID)
 	}
+
 	tx := devicesFilters(r, db.DB).
 		Where("image_id IS NOT NULL AND image_id != 0 AND ID IN (?)", devicesIDS)
 	pagination := common.GetPagination(r)
@@ -373,6 +378,7 @@ func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, ctxServices.Log, responseErr)
 		return
 	}
+
 	var deviceGroupDetails models.DeviceGroupDetailsView
 	deviceGroupDetails.DeviceGroup = deviceGroup
 	deviceGroupDetails.DeviceDetails.Devices = deviceGroupDevices.Devices
