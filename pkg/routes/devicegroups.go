@@ -31,10 +31,6 @@ func setContextDeviceGroupDetails(ctx context.Context, deviceGroup *models.Devic
 	return context.WithValue(ctx, deviceGroupKey, deviceGroup)
 }
 
-func setContextDeviceGroupDetailsView(ctx context.Context, deviceGroup *models.DeviceGroupDetailsView) context.Context {
-	return context.WithValue(ctx, deviceGroupKey, deviceGroup)
-}
-
 type deviceGroupDeviceKeyType string
 
 const deviceGroupDeviceKey = deviceGroupDeviceKeyType("device_group_device_key")
@@ -396,18 +392,6 @@ func GetDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
 func getContextDeviceGroupDetails(w http.ResponseWriter, r *http.Request) *models.DeviceGroupDetails {
 	ctx := r.Context()
 	deviceGroupDetails, ok := ctx.Value(deviceGroupKey).(*models.DeviceGroupDetails)
-
-	if !ok {
-		ctxServices := dependencies.ServicesFromContext(ctx)
-		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("Failed getting device group from context"))
-		return nil
-	}
-	return deviceGroupDetails
-}
-
-func getContextDeviceGroupDetailsView(w http.ResponseWriter, r *http.Request) *models.DeviceGroupDetailsView {
-	ctx := r.Context()
-	deviceGroupDetails, ok := ctx.Value(deviceGroupKey).(*models.DeviceGroupDetailsView)
 
 	if !ok {
 		ctxServices := dependencies.ServicesFromContext(ctx)
