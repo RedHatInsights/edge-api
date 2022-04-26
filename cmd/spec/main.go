@@ -58,6 +58,7 @@ func main() {
 	gen.addSchema("v1.DeviceViewList", &models.DeviceViewList{})
 	gen.addSchema("v1.DeviceGroup", &models.DeviceGroup{})
 	gen.addSchema("v1.DeviceGroupListDetail", &models.DeviceGroupListDetail{})
+	gen.addSchema("v1.DeviceGroupDetailsView", &models.DeviceGroupDetailsView{})
 	gen.addSchema("v1.DeviceGroupDetails", &models.DeviceGroupDetails{})
 	gen.addSchema("v1.ValidateUpdateResponse", &routes.ValidateUpdateResponse{})
 
