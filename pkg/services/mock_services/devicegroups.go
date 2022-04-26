@@ -109,6 +109,21 @@ func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) GetDeviceGroupDetailsByI
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceGroupDetailsByID", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).GetDeviceGroupDetailsByID), ID)
 }
 
+// GetDeviceGroupDetailsByIDView mocks base method
+func (m *MockDeviceGroupsServiceInterface) GetDeviceGroupDetailsByIDView(ID string, limit, offset int, tx *gorm.DB) (*models.DeviceGroupDetailsView, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDeviceGroupDetailsByIDView", ID, limit, offset, tx)
+	ret0, _ := ret[0].(*models.DeviceGroupDetailsView)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDeviceGroupDetailsByIDView indicates an expected call of GetDeviceGroupDetailsByIDView
+func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) GetDeviceGroupDetailsByIDView(ID, limit, offset, tx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceGroupDetailsByIDView", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).GetDeviceGroupDetailsByIDView), ID, limit, offset, tx)
+}
+
 // DeleteDeviceGroupByID mocks base method
 func (m *MockDeviceGroupsServiceInterface) DeleteDeviceGroupByID(ID string) error {
 	m.ctrl.T.Helper()

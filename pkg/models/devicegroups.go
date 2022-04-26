@@ -41,6 +41,12 @@ type DeviceGroupDetails struct {
 	DeviceDetails *DeviceDetailsList `json:"Devices"`
 }
 
+// DeviceGroupDetailsView is a record of Device Groups and DeviceView
+type DeviceGroupDetailsView struct {
+	DeviceGroup   *DeviceGroup   `json:"DeviceGroup"`
+	DeviceDetails DeviceViewList `json:"DevicesView"`
+}
+
 var (
 	validGroupNameRegex = regexp.MustCompile(`^[A-Za-z0-9]+[A-Za-z0-9\s_-]*$`)
 )
