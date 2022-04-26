@@ -351,7 +351,10 @@ func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var deviceGroupDetails models.DeviceGroupDetailsView
+	deviceGroupDetails.DeviceGroup = deviceGroup
 	if int(len(deviceGroup.Devices)) == 0 {
+		respondWithJSONBody(w, ctxServices.Log, &deviceGroupDetails)
 		return
 	}
 
@@ -379,8 +382,6 @@ func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var deviceGroupDetails models.DeviceGroupDetailsView
-	deviceGroupDetails.DeviceGroup = deviceGroup
 	deviceGroupDetails.DeviceDetails.Devices = deviceGroupDevices.Devices
 	deviceGroupDetails.DeviceDetails.Total = len(deviceGroupDevices.Devices)
 
