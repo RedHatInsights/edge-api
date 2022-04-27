@@ -56,7 +56,7 @@ func MakeDeviceGroupsRouter(sub chi.Router) {
 			d.Get("/", GetDeviceGroupDetailsByID)
 		})
 		r.Route("/view", func(d chi.Router) {
-			d.Get("/", GetDeviceGroupDetailsByIDView)
+			d.With(common.Paginate).Get("/", GetDeviceGroupDetailsByIDView)
 		})
 		r.Route("/devices/{DEVICE_ID}", func(d chi.Router) {
 			d.Use(DeviceGroupDeviceCtx)
