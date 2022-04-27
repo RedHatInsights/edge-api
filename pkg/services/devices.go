@@ -58,10 +58,11 @@ type RpmOSTreeDeployment struct {
 type PlatformInsightsCreateUpdateEventPayload struct {
 	Type string `json:"type"`
 	Host struct {
-		ID            string `json:"id"`
-		Name          string `json:"display_name"`
-		Account       string `json:"account"`
-		InsightsID    string `json:"insights_id"`
+		ID            string             `json:"id"`
+		Name          string             `json:"display_name"`
+		Account       string             `json:"account"`
+		InsightsID    string             `json:"insights_id"`
+		Updated       models.EdgeAPITime `json:"updated"`
 		SystemProfile struct {
 			HostType             string                `json:"host_type"`
 			RpmOSTreeDeployments []RpmOSTreeDeployment `json:"rpm_ostree_deployments"`
@@ -579,6 +580,7 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 			RHCClientID: eventData.Host.InsightsID,
 			Account:     deviceAccount,
 			Name:        deviceName,
+			LastSeen:    eventData.Host.Updated,
 		}
 		if result := db.DB.Create(&newDevice); result.Error != nil {
 			s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error}).Error("Error creating device")
@@ -590,12 +592,16 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 	if device.Account == "" {
 		// Update account if undefined
 		device.Account = deviceAccount
-		if result := db.DB.Save(device); result.Error != nil {
-			s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error}).Error("Error updating device account")
-			return result.Error
-		}
-		s.log.WithFields(log.Fields{"host_id": deviceUUID}).Debug("Device account updated")
 	}
+	// always update device name and last seen datetime
+	device.LastSeen = eventData.Host.Updated
+	device.Name = deviceName
+
+	if result := db.DB.Save(device); result.Error != nil {
+		s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error}).Error("Error updating device account")
+		return result.Error
+	}
+	s.log.WithFields(log.Fields{"host_id": deviceUUID}).Debug("Device account updated")
 
 	return s.processPlatformInventoryEventUpdateDevice(eventData)
 }
@@ -803,6 +809,7 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 				RHCClientID: string(e.Host.InsightsID),
 				Account:     string(e.Host.Account),
 				Name:        string(e.Host.Name),
+				LastSeen:    e.Host.Updated,
 			}
 			result := db.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
 			if result.Error != nil {

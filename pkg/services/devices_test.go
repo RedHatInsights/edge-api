@@ -2,9 +2,11 @@ package services_test
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -601,6 +603,8 @@ var _ = Describe("DeviceService", func() {
 		event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
 		event.Host.ID = faker.UUIDHyphenated()
 		event.Host.Account = account
+		event.Host.Name = faker.UUIDHyphenated()
+		event.Host.Updated = models.EdgeAPITime(sql.NullTime{Time: time.Now().UTC(), Valid: true})
 		event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
 		message, err := json.Marshal(event)
 		Expect(err).To(BeNil())
@@ -614,6 +618,8 @@ var _ = Describe("DeviceService", func() {
 			Expect(savedDevice.UUID).To(Equal(event.Host.ID))
 			Expect(savedDevice.Account).To(Equal(account))
 			Expect(savedDevice.ImageID).To(Equal(image.ID))
+			Expect(savedDevice.LastSeen.Time).To(Equal(event.Host.Updated.Time))
+			Expect(savedDevice.Name).To(Equal(event.Host.Name))
 		})
 	})
 	Context("ProcessPlatformInventoryUpdatedEvent", func() {
@@ -634,6 +640,8 @@ var _ = Describe("DeviceService", func() {
 			event.Host.ID = faker.UUIDHyphenated()
 			event.Host.InsightsID = faker.UUIDHyphenated()
 			event.Host.Account = account
+			event.Host.Name = faker.UUIDHyphenated()
+			event.Host.Updated = models.EdgeAPITime(sql.NullTime{Time: time.Now().UTC(), Valid: true})
 			event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
 			event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
 			message, err := json.Marshal(event)
@@ -649,9 +657,11 @@ var _ = Describe("DeviceService", func() {
 			Expect(device.RHCClientID).To(Equal(event.Host.InsightsID))
 			Expect(device.ImageID).To(Equal(image.ID))
 			Expect(device.UpdateAvailable).To(Equal(false))
+			Expect(device.LastSeen.Time).To(Equal(event.Host.Updated.Time))
+			Expect(device.Name).To(Equal(event.Host.Name))
 		})
 
-		It("should update device account, image_id and update availability when device already exists", func() {
+		It("should update device account, name, lastSeen, image_id and update availability when device already exists", func() {
 			// create a device without account
 			device := models.Device{
 				UUID:            faker.UUIDHyphenated(),
@@ -666,6 +676,8 @@ var _ = Describe("DeviceService", func() {
 			event.Host.ID = device.UUID
 			event.Host.InsightsID = device.RHCClientID
 			event.Host.Account = account
+			event.Host.Name = faker.UUIDHyphenated()
+			event.Host.Updated = models.EdgeAPITime(sql.NullTime{Time: time.Now().UTC(), Valid: true})
 			event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
 			event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
 			message, err := json.Marshal(event)
@@ -680,6 +692,8 @@ var _ = Describe("DeviceService", func() {
 			Expect(savedDevice.Account).To(Equal(account))
 			Expect(savedDevice.ImageID).To(Equal(image.ID))
 			Expect(savedDevice.UpdateAvailable).To(Equal(false))
+			Expect(savedDevice.LastSeen.Time).To(Equal(event.Host.Updated.Time))
+			Expect(savedDevice.Name).To(Equal(event.Host.Name))
 		})
 
 		Context("device update availability", func() {
@@ -698,6 +712,8 @@ var _ = Describe("DeviceService", func() {
 			event.Host.ID = device.UUID
 			event.Host.InsightsID = device.RHCClientID
 			event.Host.Account = account
+			event.Host.Name = faker.UUIDHyphenated()
+			event.Host.Updated = models.EdgeAPITime(sql.NullTime{Time: time.Now().UTC(), Valid: true})
 			event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
 			event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
 			message, err := json.Marshal(event)
