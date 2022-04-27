@@ -30,6 +30,13 @@ func (e *AccountNotSet) Error() string {
 	return "Account is not set"
 }
 
+// OrgIDNotSet indicates the account was nil
+type OrgIDNotSet struct{}
+
+func (e *OrgIDNotSet) Error() string {
+	return "Org ID is not set"
+}
+
 // IDMustBeInteger indicates the ID is required to be an integer value
 type IDMustBeInteger struct{}
 

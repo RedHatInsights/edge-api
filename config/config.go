@@ -28,6 +28,8 @@ type EdgeConfig struct {
 	PlaybookDispatcherConfig *playbookDispatcherConfig `json:"playbook_dispatcher,omitempty"`
 	TemplatesPath            string                    `json:"templates_path,omitempty"`
 	EdgeAPIBaseURL           string                    `json:"edge_api_base_url,omitempty"`
+	EdgeAPIServiceHost       string                    `json:"edge_api_service_host,omitempty"`
+	EdgeAPIServicePort       int                       `json:"edge_api_service_port,omitempty"`
 	UploadWorkers            int                       `json:"upload_workers,omitempty"`
 	KafkaConfig              *clowder.KafkaConfig      `json:"kafka,omitempty"`
 	FDO                      *fdoConfig                `json:"fdo,omitempty"`
@@ -94,6 +96,8 @@ func Init() {
 	options.SetDefault("DefaultOSTreeRef", "rhel/8/x86_64/edge")
 	options.SetDefault("TemplatesPath", "/usr/local/etc/")
 	options.SetDefault("EdgeAPIBaseURL", "http://localhost:3000")
+	options.SetDefault("EdgeAPIServiceHost", "localhost")
+	options.SetDefault("EdgeAPIServicePort", "3000")
 	options.SetDefault("UploadWorkers", 100)
 	options.SetDefault("FDOHostURL", "https://fdo.redhat.com")
 	options.SetDefault("FDOApiVersion", "v1")
@@ -130,9 +134,11 @@ func Init() {
 			PSK:    options.GetString("PlaybookDispatcherPSK"),
 			Status: options.GetString("PlaybookDispatcherStatusURL"),
 		},
-		TemplatesPath:  options.GetString("TemplatesPath"),
-		EdgeAPIBaseURL: options.GetString("EdgeAPIBaseURL"),
-		UploadWorkers:  options.GetInt("UploadWorkers"),
+		TemplatesPath:      options.GetString("TemplatesPath"),
+		EdgeAPIBaseURL:     options.GetString("EdgeAPIBaseURL"),
+		EdgeAPIServiceHost: options.GetString("EDGE_API_SERVICE_HOST"),
+		EdgeAPIServicePort: options.GetInt("EDGE_API_SERVICE_PORT"),
+		UploadWorkers:      options.GetInt("UploadWorkers"),
 		FDO: &fdoConfig{
 			URL:                 options.GetString("FDOHostURL"),
 			APIVersion:          options.GetString("FDOApiVersion"),

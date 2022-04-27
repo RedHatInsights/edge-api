@@ -30,9 +30,11 @@ type EdgeAPIServices struct {
 // Context is the environment for a request (think Bash environment variables)
 func Init(ctx context.Context) *EdgeAPIServices {
 	account, _ := common.GetAccountFromContext(ctx)
+	orgID, _ := common.GetOrgIDFromContext(ctx)
 	log := log.WithFields(log.Fields{
 		"requestId": request_id.GetReqID(ctx),
 		"accountId": account,
+		"org_id":    orgID,
 	})
 	return &EdgeAPIServices{
 		CommitService:           services.NewCommitService(ctx, log),

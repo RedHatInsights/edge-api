@@ -2,6 +2,7 @@ package routes
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -47,6 +49,7 @@ func MakeImagesRouter(sub chi.Router) {
 		r.Post("/kickstart", CreateKickStartForImage)
 		r.Post("/update", CreateImageUpdate)
 		r.Post("/retry", RetryCreateImage)
+		r.Post("/resume", ResumeCreateImage)       // temporary to be replaced with EDA
 		r.Get("/notify", SendNotificationForImage) //TMP ROUTE TO SEND THE NOTIFICATION
 	})
 }
@@ -167,8 +170,15 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 		return
 	}
+	orgID, err := common.GetOrgID(r)
+	if err != nil {
+		ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving org_id from request")
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+		return
+	}
+	reqID := request_id.GetReqID(r.Context())
 	ctxServices.Log.Debug("Creating image from API request")
-	err = ctxServices.ImageService.CreateImage(image, account)
+	err = ctxServices.ImageService.CreateImage(image, account, orgID, reqID)
 	if err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Failed creating image")
 		err := errors.NewInternalServerError()
@@ -605,6 +615,61 @@ func RetryCreateImage(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(&image); err != nil {
 			services.Log.WithField("error", image).Error("Error while trying to encode")
+		}
+	}
+}
+
+// ResumeCreateImage retries the image creation
+func ResumeCreateImage(w http.ResponseWriter, r *http.Request) {
+	/* This endpoint rebuilds context from the stored image.
+	Unlike the other routes (e.g., /retry), the request r is
+	used to get the image number and request id and for the return.
+	A new context is created and the image to be resumed is
+	retrieved from the database.
+	*/
+	if tempimage := getImage(w, r); tempimage != nil {
+		// TODO: move this to its own context function
+		//ctx := context.Background()
+		ctx := r.Context()
+		// using the Middleware() steps to be similar to the front door
+		edgeAPIServices := dependencies.Init(ctx)
+		ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+
+		// re-grab the image from the database
+		var image *models.Image
+		db.DB.Debug().Joins("Commit").Joins("Installer").First(&image, tempimage.ID)
+
+		resumelog := edgeAPIServices.Log.WithField("originalRequestId", image.RequestID)
+		resumelog.Info("Resuming image build")
+
+		// recreate a stripped down identity header
+		strippedIdentity := `{ "identity": {"account_number": ` + image.Account + `, "type": "User", "internal": {"org_id": ` + image.OrgID + `, }, }, }`
+		resumelog.WithField("identity_text", strippedIdentity).Debug("Creating a new stripped identity")
+		base64Identity := base64.StdEncoding.EncodeToString([]byte(strippedIdentity))
+		resumelog.WithField("identity_base64", base64Identity).Debug("Using a base64encoded stripped identity")
+
+		// add the new identity to the context and create services with that context
+		ctx = common.SetOriginalIdentity(ctx, base64Identity)
+		services := dependencies.ServicesFromContext(ctx)
+		// TODO: consider a bitwise& param to only add needed services
+
+		// use the new services w/ context to make the imageservice.ResumeCreateImage call
+		err := services.ImageService.ResumeCreateImage(image)
+
+		// finish out the original API call
+		if err != nil {
+			edgeAPIServices.Log.WithField("error", err.Error()).Error("Failed to retry to create image")
+			err := errors.NewInternalServerError()
+			err.SetTitle("Failed creating image")
+			w.WriteHeader(err.GetStatus())
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				edgeAPIServices.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+			}
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		if err := json.NewEncoder(w).Encode(&image); err != nil {
+			edgeAPIServices.Log.WithField("error", image).Error("Error while trying to encode")
 		}
 	}
 }

@@ -39,7 +39,7 @@ var WaitGroup sync.WaitGroup
 // ImageServiceInterface defines the interface that helps handle
 // the business logic of creating RHEL For Edge Images
 type ImageServiceInterface interface {
-	CreateImage(image *models.Image, account string) error
+	CreateImage(image *models.Image, account string, orgID string, requestID string) error
 	UpdateImage(image *models.Image, previousImage *models.Image) error
 	AddUserInfo(image *models.Image) error
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
@@ -52,7 +52,7 @@ type ImageServiceInterface interface {
 	GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error)
 	CheckImageName(name, account string) (bool, error)
 	RetryCreateImage(image *models.Image) error
-	ResumeCreateImage(id uint) error
+	ResumeCreateImage(image *models.Image) error
 	GetMetadata(image *models.Image) (*models.Image, error)
 	SetFinalImageStatus(i *models.Image)
 	CheckIfIsLatestVersion(previousImage *models.Image) error
@@ -105,10 +105,13 @@ func ValidateAllImageReposAreFromAccount(account string, repos []models.ThirdPar
 }
 
 // CreateImage creates an Image for an Account on Image Builder and on our database
-func (s *ImageService) CreateImage(image *models.Image, account string) error {
+func (s *ImageService) CreateImage(image *models.Image, account string, orgID string, requestID string) error {
 
 	if account == "" {
 		return new(AccountNotSet)
+	}
+	if orgID == "" {
+		return new(OrgIDNotSet)
 	}
 	if image.Name == "" {
 		return new(ImageNameUndefined)
@@ -150,6 +153,8 @@ func (s *ImageService) CreateImage(image *models.Image, account string) error {
 
 	// create an image under the new imageSet
 	image.Account = account
+	image.OrgID = orgID
+	image.RequestID = requestID
 	image.ImageSetID = &imageSet.ID
 	// make the initial call to Image Builder
 	image, err = s.ImageBuilder.ComposeCommit(image)
@@ -1016,26 +1021,29 @@ func (s *ImageService) RetryCreateImage(image *models.Image) error {
 }
 
 // ResumeCreateImage retries the whole post process of the image creation
-func (s *ImageService) ResumeCreateImage(id uint) error {
+func (s *ImageService) ResumeCreateImage(image *models.Image) error {
 	// TODO: make this skip commit and installer if already complete
-	// get the image data from database
-	var image *models.Image
-	db.DB.Debug().Joins("Commit").Joins("Installer").First(&image, id)
-	//image, _ = s.GetImageByID(fmt.Sprint(id))
-	s.log = s.log.WithFields(log.Fields{"imageID": image.ID, "commitID": image.Commit.ID})
-	s.log.Debug("Resuming the image build...")
-	/* // recompose commit
+
+	// REFACTOR: logging is set for ImageBuilder and other services early at startup
+	//		and not per image transaction--preventing the addition of image and
+	//		resume type info to the log entries
+	// originalRequestId is the requestID from the first attempt
+	s.log = s.log.WithField("originalRequestId", image.RequestID)
+	s.log = s.log.WithField("imageID", image.ID)
+
+	// start at the beginning and recompose the commit (see TODO above)
 	image, err := s.ImageBuilder.ComposeCommit(image)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Failed recomposing commit")
 		return err
-	} */
-	err := s.SetBuildingStatusOnImageToRetryBuild(image)
+	}
+	err = s.SetBuildingStatusOnImageToRetryBuild(image)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Failed setting image status")
 		return err
 	}
 	go s.postProcessImage(image.ID)
+
 	return nil
 }
 
