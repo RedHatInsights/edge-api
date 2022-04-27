@@ -353,15 +353,17 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 					}
 				}
 			}
-
-			update.OldCommits = oldCommits
-			if err := db.DB.Save(&update).Error; err != nil {
-				err := errors.NewBadRequest(err.Error())
-				w.WriteHeader(err.GetStatus())
-				if err := json.NewEncoder(w).Encode(&err); err != nil {
-					services.Log.WithField("error", err.Error()).Error("Error encoding error")
+			if toUpdate {
+				//Should not create a transaction to device already updated
+				update.OldCommits = oldCommits
+				if err := db.DB.Save(&update).Error; err != nil {
+					err := errors.NewBadRequest(err.Error())
+					w.WriteHeader(err.GetStatus())
+					if err := json.NewEncoder(w).Encode(&err); err != nil {
+						services.Log.WithField("error", err.Error()).Error("Error encoding error")
+					}
+					return nil, err
 				}
-				return nil, err
 			}
 		}
 		if toUpdate {
