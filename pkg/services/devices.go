@@ -451,13 +451,13 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		if lastDeployment != nil {
 			dd.Device.Booted = lastDeployment.Booted
 		}
-		s.log.WithField("deviceID", device.ID).Info("Getting image info for device...")
-		imageInfo, err := s.GetDeviceImageInfo(device)
-		if err != nil {
-			dd.Image = nil
-		} else if imageInfo != nil {
-			dd.Image = imageInfo
-		}
+		// s.log.WithField("deviceID", device.ID).Info("Getting image info for device...")
+		// imageInfo, err := s.GetDeviceImageInfo(device)
+		// if err != nil {
+		// 	dd.Image = nil
+		// } else if imageInfo != nil {
+		// 	dd.Image = imageInfo
+		// }
 		// TODO: Add back the ability to filter by status when we figure out how to do pagination
 		// if params != nil && imageInfo != nil {
 		// 	if params.DeviceStatus == "update_available" && imageInfo.UpdatesAvailable != nil {
