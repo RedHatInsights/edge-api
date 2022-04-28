@@ -43,7 +43,7 @@ type DeviceView struct {
 	DeviceUUID      string              `json:"DeviceUUID"`
 	ImageID         uint                `json:"ImageID"`
 	ImageName       string              `json:"ImageName"`
-	LastSeen        string              `json:"LastSeen"`
+	LastSeen        EdgeAPITime         `json:"LastSeen"`
 	UpdateAvailable bool                `json:"UpdateAvailable"`
 	Status          string              `json:"Status"`
 	ImageSetID      uint                `json:"ImageSetID"`

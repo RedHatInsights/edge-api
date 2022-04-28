@@ -731,7 +731,7 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 			DeviceUUID:      device.UUID,
 			ImageID:         device.ImageID,
 			ImageName:       imageName,
-			LastSeen:        device.LastSeen.Time.String(),
+			LastSeen:        device.LastSeen,
 			UpdateAvailable: device.UpdateAvailable,
 			Status:          imageStatus,
 			ImageSetID:      imageSetID,
