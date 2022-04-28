@@ -660,7 +660,6 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 
 // ReturnDevicesView returns the devices association and status properly
 func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.DeviceView, error) {
-
 	deviceToGroupMap := make(map[uint][]models.DeviceDeviceGroup)
 	for _, device := range storedDevices {
 		var tempArr []models.DeviceDeviceGroup
@@ -680,18 +679,28 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 	setOfImages := make(map[uint]*neededImageInfo)
 	for index, devices := range storedDevices {
 		var status = models.DeviceViewStatusRunning
-		if devices.UpdateTransaction != nil && len(*devices.UpdateTransaction) > 0 {
+		crtDevice := storedDevices[index]
+
+		log.WithFields(log.Fields{
+			"value": crtDevice,
+		}).Debug("Len Transaction: %v", len(*crtDevice.UpdateTransaction))
+
+		if crtDevice.UpdateTransaction != nil && len(*crtDevice.UpdateTransaction) > 0 {
 			// updateStatus := (*devices.UpdateTransaction)[len(*devices.UpdateTransaction)-1].Status
-			crtDevice := storedDevices[index]
 			crtUpdateStatus := *crtDevice.UpdateTransaction
 			updateStatus := crtUpdateStatus[len(crtUpdateStatus)-1].Status
+
+			log.WithFields(log.Fields{
+				"updateStatus": updateStatus,
+			}).Debug("updateStatus: %v", updateStatus)
+
 			if updateStatus == models.UpdateStatusBuilding {
 				status = models.DeviceViewStatusUpdating
 			}
 		}
 
-		deviceStatusSet[devices.ID] = status
-
+		// deviceStatusSet[devices.ID] = status
+		deviceStatusSet[crtDevice.ID] = status
 		if devices.ImageID != 0 {
 			setOfImages[devices.ImageID] = &neededImageInfo{}
 		}
