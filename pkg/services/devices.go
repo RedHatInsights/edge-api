@@ -672,11 +672,11 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 
 	type neededImageInfo struct {
 		Name       string
-		Status     string
 		ImageSetID uint
 	}
+
 	// create a map of unique image id's. We dont want to look of a given image id more than once.
-	setOfImages := make(map[uint]*neededImageInfo)
+	deviceStatusSet := make(map[uint]string)
 	for _, devices := range storedDevices {
 		var status = models.DeviceViewStatusRunning
 		if devices.UpdateTransaction != nil && len(*devices.UpdateTransaction) > 0 {
@@ -685,12 +685,11 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 				status = models.DeviceViewStatusUpdating
 			}
 		}
-		if devices.ImageID != 0 {
-			setOfImages[devices.ImageID] = &neededImageInfo{Name: "", Status: status, ImageSetID: 0}
-		}
+		deviceStatusSet[devices.ID] = status
 	}
 
 	// using the map of unique image ID's, get the corresponding image name and status.
+	setOfImages := make(map[uint]*neededImageInfo)
 	imagesIDS := []uint{}
 	for key := range setOfImages {
 		imagesIDS = append(imagesIDS, key)
@@ -702,11 +701,7 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 	}
 
 	for _, image := range images {
-		status := models.DeviceViewStatusRunning
-		if setOfImages[image.ID] != nil {
-			status = setOfImages[image.ID].Status
-		}
-		setOfImages[image.ID] = &neededImageInfo{Name: image.Name, Status: status, ImageSetID: *image.ImageSetID}
+		setOfImages[image.ID] = &neededImageInfo{Name: image.Name, ImageSetID: *image.ImageSetID}
 	}
 
 	// build the return object
@@ -719,11 +714,13 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 		var deviceGroups []models.DeviceDeviceGroup
 		if _, ok := setOfImages[device.ImageID]; ok {
 			imageName = setOfImages[device.ImageID].Name
-			imageStatus = setOfImages[device.ImageID].Status
 			imageSetID = setOfImages[device.ImageID].ImageSetID
 		}
 		if _, ok := deviceToGroupMap[device.ID]; ok {
 			deviceGroups = deviceToGroupMap[device.ID]
+		}
+		if _, ok := deviceStatusSet[device.ID]; ok {
+			imageStatus = deviceStatusSet[device.ID]
 		}
 		currentDeviceView := models.DeviceView{
 			DeviceID:        device.ID,
