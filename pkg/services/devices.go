@@ -678,10 +678,13 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 	// create a map of unique image id's. We dont want to look of a given image id more than once.
 	deviceStatusSet := make(map[uint]string)
 	setOfImages := make(map[uint]*neededImageInfo)
-	for _, devices := range storedDevices {
+	for index, devices := range storedDevices {
 		var status = models.DeviceViewStatusRunning
 		if devices.UpdateTransaction != nil && len(*devices.UpdateTransaction) > 0 {
-			updateStatus := (*devices.UpdateTransaction)[len(*devices.UpdateTransaction)-1].Status
+			// updateStatus := (*devices.UpdateTransaction)[len(*devices.UpdateTransaction)-1].Status
+			crtDevice := storedDevices[index]
+			crtUpdateStatus := *crtDevice.UpdateTransaction
+			updateStatus := crtUpdateStatus[len(crtUpdateStatus)-1].Status
 			if updateStatus == models.UpdateStatusBuilding {
 				status = models.DeviceViewStatusUpdating
 			}
