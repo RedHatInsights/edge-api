@@ -683,16 +683,17 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 
 		log.WithFields(log.Fields{
 			"value": crtDevice,
-		}).Debug("Len Transaction: %v", len(*crtDevice.UpdateTransaction))
+		}).Debug("Len Transaction:", len(*crtDevice.UpdateTransaction))
 
 		if crtDevice.UpdateTransaction != nil && len(*crtDevice.UpdateTransaction) > 0 {
+			// if devices.UpdateTransaction != nil && len(*devices.UpdateTransaction) > 0 {
 			// updateStatus := (*devices.UpdateTransaction)[len(*devices.UpdateTransaction)-1].Status
 			crtUpdateStatus := *crtDevice.UpdateTransaction
 			updateStatus := crtUpdateStatus[len(crtUpdateStatus)-1].Status
 
 			log.WithFields(log.Fields{
 				"updateStatus": updateStatus,
-			}).Debug("updateStatus: %v", updateStatus)
+			}).Debug("updateStatus:", updateStatus)
 
 			if updateStatus == models.UpdateStatusBuilding {
 				status = models.DeviceViewStatusUpdating
