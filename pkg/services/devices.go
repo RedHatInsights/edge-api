@@ -677,6 +677,7 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 
 	// create a map of unique image id's. We dont want to look of a given image id more than once.
 	deviceStatusSet := make(map[uint]string)
+	setOfImages := make(map[uint]*neededImageInfo)
 	for _, devices := range storedDevices {
 		var status = models.DeviceViewStatusRunning
 		if devices.UpdateTransaction != nil && len(*devices.UpdateTransaction) > 0 {
@@ -685,11 +686,15 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 				status = models.DeviceViewStatusUpdating
 			}
 		}
+
 		deviceStatusSet[devices.ID] = status
+
+		if devices.ImageID != 0 {
+			setOfImages[devices.ImageID] = &neededImageInfo{}
+		}
 	}
 
 	// using the map of unique image ID's, get the corresponding image name and status.
-	setOfImages := make(map[uint]*neededImageInfo)
 	imagesIDS := []uint{}
 	for key := range setOfImages {
 		imagesIDS = append(imagesIDS, key)
@@ -709,7 +714,7 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 	returnDevices := []models.DeviceView{}
 	for _, device := range storedDevices {
 		var imageName string
-		var imageStatus string
+		var deviceStatus string
 		var imageSetID uint
 		var deviceGroups []models.DeviceDeviceGroup
 		if _, ok := setOfImages[device.ImageID]; ok {
@@ -720,7 +725,7 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 			deviceGroups = deviceToGroupMap[device.ID]
 		}
 		if _, ok := deviceStatusSet[device.ID]; ok {
-			imageStatus = deviceStatusSet[device.ID]
+			deviceStatus = deviceStatusSet[device.ID]
 		}
 		currentDeviceView := models.DeviceView{
 			DeviceID:        device.ID,
@@ -730,7 +735,7 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 			ImageName:       imageName,
 			LastSeen:        device.LastSeen,
 			UpdateAvailable: device.UpdateAvailable,
-			Status:          imageStatus,
+			Status:          deviceStatus,
 			ImageSetID:      imageSetID,
 			DeviceGroups:    deviceGroups,
 		}
