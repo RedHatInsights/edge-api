@@ -606,6 +606,7 @@ var _ = Describe("DeviceService", func() {
 		event.Host.Name = faker.UUIDHyphenated()
 		event.Host.Updated = models.EdgeAPITime(sql.NullTime{Time: time.Now().UTC(), Valid: true})
 		event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
+		event.Host.SystemProfile.RHCClientID = faker.UUIDHyphenated()
 		message, err := json.Marshal(event)
 		Expect(err).To(BeNil())
 
@@ -620,6 +621,7 @@ var _ = Describe("DeviceService", func() {
 			Expect(savedDevice.ImageID).To(Equal(image.ID))
 			Expect(savedDevice.LastSeen.Time).To(Equal(event.Host.Updated.Time))
 			Expect(savedDevice.Name).To(Equal(event.Host.Name))
+			Expect(savedDevice.RHCClientID).To(Equal(event.Host.SystemProfile.RHCClientID))
 		})
 	})
 	Context("ProcessPlatformInventoryUpdatedEvent", func() {
@@ -644,6 +646,7 @@ var _ = Describe("DeviceService", func() {
 			event.Host.Updated = models.EdgeAPITime(sql.NullTime{Time: time.Now().UTC(), Valid: true})
 			event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
 			event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
+			event.Host.SystemProfile.RHCClientID = faker.UUIDHyphenated()
 			message, err := json.Marshal(event)
 			Expect(err).To(BeNil())
 
@@ -654,7 +657,7 @@ var _ = Describe("DeviceService", func() {
 			res := db.DB.Where("uuid = ?", event.Host.ID).First(&device)
 			Expect(res.Error).To(BeNil())
 			Expect(device.Account).To(Equal(account))
-			Expect(device.RHCClientID).To(Equal(event.Host.InsightsID))
+			Expect(device.RHCClientID).To(Equal(event.Host.SystemProfile.RHCClientID))
 			Expect(device.ImageID).To(Equal(image.ID))
 			Expect(device.UpdateAvailable).To(Equal(false))
 			Expect(device.LastSeen.Time).To(Equal(event.Host.Updated.Time))
@@ -679,6 +682,7 @@ var _ = Describe("DeviceService", func() {
 			event.Host.Updated = models.EdgeAPITime(sql.NullTime{Time: time.Now().UTC(), Valid: true})
 			event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
 			event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
+			event.Host.SystemProfile.RHCClientID = faker.UUIDHyphenated()
 			message, err := json.Marshal(event)
 			Expect(err).To(BeNil())
 
@@ -691,7 +695,7 @@ var _ = Describe("DeviceService", func() {
 			Expect(savedDevice.Account).To(Equal(account))
 			Expect(savedDevice.ImageID).To(Equal(image.ID))
 			Expect(savedDevice.UpdateAvailable).To(Equal(false))
-			Expect(savedDevice.RHCClientID).To(Equal(event.Host.InsightsID))
+			Expect(savedDevice.RHCClientID).To(Equal(event.Host.SystemProfile.RHCClientID))
 			Expect(savedDevice.LastSeen.Time).To(Equal(event.Host.Updated.Time))
 			Expect(savedDevice.Name).To(Equal(event.Host.Name))
 		})
