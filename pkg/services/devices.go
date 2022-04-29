@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"sort"
 
 	version "github.com/knqyf263/go-rpm-version"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
@@ -451,13 +452,13 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		if lastDeployment != nil {
 			dd.Device.Booted = lastDeployment.Booted
 		}
-		s.log.WithField("deviceID", device.ID).Info("Getting image info for device...")
-		imageInfo, err := s.GetDeviceImageInfo(device)
-		if err != nil {
-			dd.Image = nil
-		} else if imageInfo != nil {
-			dd.Image = imageInfo
-		}
+		// s.log.WithField("deviceID", device.ID).Info("Getting image info for device...")
+		// imageInfo, err := s.GetDeviceImageInfo(device)
+		// if err != nil {
+		// 	dd.Image = nil
+		// } else if imageInfo != nil {
+		// 	dd.Image = imageInfo
+		// }
 		// TODO: Add back the ability to filter by status when we figure out how to do pagination
 		// if params != nil && imageInfo != nil {
 		// 	if params.DeviceStatus == "update_available" && imageInfo.UpdatesAvailable != nil {
@@ -640,6 +641,10 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 		tx = db.DB
 	}
 
+	log.WithFields(log.Fields{
+		"limit": limit,
+	}).Debug("limit:", limit)
+
 	var storedDevices []models.Device
 	if res := tx.Limit(limit).Offset(offset).Where("account = ?", account).Preload("UpdateTransaction").Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
@@ -660,7 +665,6 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 
 // ReturnDevicesView returns the devices association and status properly
 func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.DeviceView, error) {
-
 	deviceToGroupMap := make(map[uint][]models.DeviceDeviceGroup)
 	for _, device := range storedDevices {
 		var tempArr []models.DeviceDeviceGroup
@@ -672,21 +676,40 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 
 	type neededImageInfo struct {
 		Name       string
-		Status     string
 		ImageSetID uint
 	}
+
 	// create a map of unique image id's. We dont want to look of a given image id more than once.
+	deviceStatusSet := make(map[uint]string)
 	setOfImages := make(map[uint]*neededImageInfo)
-	for _, devices := range storedDevices {
+	for index, devices := range storedDevices {
 		var status = models.DeviceViewStatusRunning
-		if devices.UpdateTransaction != nil && len(*devices.UpdateTransaction) > 0 {
-			updateStatus := (*devices.UpdateTransaction)[len(*devices.UpdateTransaction)-1].Status
+		crtDevice := storedDevices[index]
+
+		if crtDevice.UpdateTransaction != nil && len(*crtDevice.UpdateTransaction) > 0 {
+			updateTransactions := *crtDevice.UpdateTransaction
+			sort.SliceStable(updateTransactions, func(i, j int) bool {
+				return updateTransactions[i].ID < updateTransactions[j].ID
+			})
+			log.WithFields(log.Fields{
+				"updateTransactions": updateTransactions,
+			}).Debug("updateTransactions:", updateTransactions)
+
+			updateStatus := updateTransactions[len(updateTransactions)-1].Status
+
+			log.WithFields(log.Fields{
+				"updateStatus": updateStatus,
+			}).Debug("updateStatus:", updateStatus)
+
 			if updateStatus == models.UpdateStatusBuilding {
 				status = models.DeviceViewStatusUpdating
 			}
 		}
+
+		// deviceStatusSet[devices.ID] = status
+		deviceStatusSet[crtDevice.ID] = status
 		if devices.ImageID != 0 {
-			setOfImages[devices.ImageID] = &neededImageInfo{Name: "", Status: status, ImageSetID: 0}
+			setOfImages[devices.ImageID] = &neededImageInfo{}
 		}
 	}
 
@@ -702,11 +725,7 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 	}
 
 	for _, image := range images {
-		status := models.DeviceViewStatusRunning
-		if setOfImages[image.ID] != nil {
-			status = setOfImages[image.ID].Status
-		}
-		setOfImages[image.ID] = &neededImageInfo{Name: image.Name, Status: status, ImageSetID: *image.ImageSetID}
+		setOfImages[image.ID] = &neededImageInfo{Name: image.Name, ImageSetID: *image.ImageSetID}
 	}
 
 	// build the return object
@@ -714,16 +733,18 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 	returnDevices := []models.DeviceView{}
 	for _, device := range storedDevices {
 		var imageName string
-		var imageStatus string
+		var deviceStatus string
 		var imageSetID uint
 		var deviceGroups []models.DeviceDeviceGroup
 		if _, ok := setOfImages[device.ImageID]; ok {
 			imageName = setOfImages[device.ImageID].Name
-			imageStatus = setOfImages[device.ImageID].Status
 			imageSetID = setOfImages[device.ImageID].ImageSetID
 		}
 		if _, ok := deviceToGroupMap[device.ID]; ok {
 			deviceGroups = deviceToGroupMap[device.ID]
+		}
+		if _, ok := deviceStatusSet[device.ID]; ok {
+			deviceStatus = deviceStatusSet[device.ID]
 		}
 		currentDeviceView := models.DeviceView{
 			DeviceID:        device.ID,
@@ -731,9 +752,9 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 			DeviceUUID:      device.UUID,
 			ImageID:         device.ImageID,
 			ImageName:       imageName,
-			LastSeen:        device.LastSeen.Time.String(),
+			LastSeen:        device.LastSeen,
 			UpdateAvailable: device.UpdateAvailable,
-			Status:          imageStatus,
+			Status:          deviceStatus,
 			ImageSetID:      imageSetID,
 			DeviceGroups:    deviceGroups,
 		}
