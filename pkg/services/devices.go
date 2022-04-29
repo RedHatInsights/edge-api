@@ -594,6 +594,10 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 		// Update account if undefined
 		device.Account = deviceAccount
 	}
+	// update rhc client id if undefined
+	if device.RHCClientID == "" {
+		device.RHCClientID = eventData.Host.InsightsID
+	}
 	// always update device name and last seen datetime
 	device.LastSeen = eventData.Host.Updated
 	device.Name = deviceName

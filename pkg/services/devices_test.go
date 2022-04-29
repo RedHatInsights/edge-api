@@ -665,7 +665,6 @@ var _ = Describe("DeviceService", func() {
 			// create a device without account
 			device := models.Device{
 				UUID:            faker.UUIDHyphenated(),
-				RHCClientID:     faker.UUIDHyphenated(),
 				UpdateAvailable: true,
 			}
 			res := db.DB.Create(&device)
@@ -674,7 +673,7 @@ var _ = Describe("DeviceService", func() {
 			event := new(services.PlatformInsightsCreateUpdateEventPayload)
 			event.Type = services.InventoryEventTypeUpdated
 			event.Host.ID = device.UUID
-			event.Host.InsightsID = device.RHCClientID
+			event.Host.InsightsID = faker.UUIDHyphenated()
 			event.Host.Account = account
 			event.Host.Name = faker.UUIDHyphenated()
 			event.Host.Updated = models.EdgeAPITime(sql.NullTime{Time: time.Now().UTC(), Valid: true})
@@ -692,6 +691,7 @@ var _ = Describe("DeviceService", func() {
 			Expect(savedDevice.Account).To(Equal(account))
 			Expect(savedDevice.ImageID).To(Equal(image.ID))
 			Expect(savedDevice.UpdateAvailable).To(Equal(false))
+			Expect(savedDevice.RHCClientID).To(Equal(event.Host.InsightsID))
 			Expect(savedDevice.LastSeen.Time).To(Equal(event.Host.Updated.Time))
 			Expect(savedDevice.Name).To(Equal(event.Host.Name))
 		})
