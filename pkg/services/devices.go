@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"sort"
 
 	version "github.com/knqyf263/go-rpm-version"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
@@ -649,10 +650,6 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 		return nil, res.Error
 	}
 
-	log.WithFields(log.Fields{
-		"storedDevices": storedDevices,
-	}).Debug("storedDevices:", storedDevices)
-
 	// create a map of device group info and map it to given devices
 
 	returnDevices, err := ReturnDevicesView(storedDevices, account)
@@ -689,23 +686,16 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 		var status = models.DeviceViewStatusRunning
 		crtDevice := storedDevices[index]
 
-		log.WithFields(log.Fields{
-			"index": index,
-		}).Debug("index:", index)
-
-		log.WithFields(log.Fields{
-			"devices": devices,
-		}).Debug("devices:", devices)
-
-		log.WithFields(log.Fields{
-			"crtDevice": crtDevice.UpdateTransaction,
-		}).Debug("crtDevice:", crtDevice.UpdateTransaction)
-
 		if crtDevice.UpdateTransaction != nil && len(*crtDevice.UpdateTransaction) > 0 {
-			// if devices.UpdateTransaction != nil && len(*devices.UpdateTransaction) > 0 {
-			// updateStatus := (*devices.UpdateTransaction)[len(*devices.UpdateTransaction)-1].Status
-			crtUpdateStatus := *crtDevice.UpdateTransaction
-			updateStatus := crtUpdateStatus[len(crtUpdateStatus)-1].Status
+			updateTransactions := *crtDevice.UpdateTransaction
+			sort.SliceStable(updateTransactions, func(i, j int) bool {
+				return updateTransactions[i].ID < updateTransactions[j].ID
+			})
+			log.WithFields(log.Fields{
+				"updateTransactions": updateTransactions,
+			}).Debug("updateTransactions:", updateTransactions)
+
+			updateStatus := updateTransactions[len(updateTransactions)-1].Status
 
 			log.WithFields(log.Fields{
 				"updateStatus": updateStatus,
