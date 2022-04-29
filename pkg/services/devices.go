@@ -640,10 +640,18 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 		tx = db.DB
 	}
 
+	log.WithFields(log.Fields{
+		"limit": limit,
+	}).Debug("limit:", limit)
+
 	var storedDevices []models.Device
 	if res := tx.Limit(limit).Offset(offset).Where("account = ?", account).Preload("UpdateTransaction").Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
 	}
+
+	log.WithFields(log.Fields{
+		"storedDevices": storedDevices,
+	}).Debug("storedDevices:", storedDevices)
 
 	// create a map of device group info and map it to given devices
 
@@ -682,8 +690,16 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 		crtDevice := storedDevices[index]
 
 		log.WithFields(log.Fields{
-			"value": crtDevice,
-		}).Debug("Len Transaction:", len(*crtDevice.UpdateTransaction))
+			"index": index,
+		}).Debug("index:", index)
+
+		log.WithFields(log.Fields{
+			"devices": devices,
+		}).Debug("devices:", devices)
+
+		log.WithFields(log.Fields{
+			"crtDevice": crtDevice.UpdateTransaction,
+		}).Debug("crtDevice:", crtDevice.UpdateTransaction)
 
 		if crtDevice.UpdateTransaction != nil && len(*crtDevice.UpdateTransaction) > 0 {
 			// if devices.UpdateTransaction != nil && len(*devices.UpdateTransaction) > 0 {
