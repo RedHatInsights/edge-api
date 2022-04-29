@@ -67,7 +67,7 @@ var _ = Describe("Image Service Test", func() {
 			})
 		})
 		When("image exists", func() {
-			var imageV1, imageV2 *models.Image
+			var imageV1, imageV2, imageV3 *models.Image
 			var imageSet *models.ImageSet
 
 			BeforeEach(func() {
@@ -95,13 +95,25 @@ var _ = Describe("Image Service Test", func() {
 					Commit: &models.Commit{
 						OSTreeCommit: faker.UUIDHyphenated(),
 					},
-					Status:     models.ImageStatusSuccess,
+					Status:     models.ImageStatusError,
 					ImageSetID: &imageSet.ID,
 					Version:    2,
 					Account:    common.DefaultAccount,
 				}
 				db.DB.Create(imageV2.Commit)
 				db.DB.Create(imageV2)
+				imageV3 = &models.Image{
+					Commit: &models.Commit{
+						OSTreeCommit: faker.UUIDHyphenated(),
+					},
+					Status:     models.ImageStatusSuccess,
+					ImageSetID: &imageSet.ID,
+					Version:    3,
+					Account:    common.DefaultAccount,
+				}
+				db.DB.Create(imageV3.Commit)
+				db.DB.Create(imageV3)
+
 			})
 			Context("by ID", func() {
 				var image *models.Image
@@ -133,7 +145,7 @@ var _ = Describe("Image Service Test", func() {
 				var image *models.Image
 				var err error
 				BeforeEach(func() {
-					image, err = service.GetRollbackImage(imageV2)
+					image, err = service.GetRollbackImage(imageV3)
 				})
 				It("should have an error", func() {
 					Expect(err).ToNot(HaveOccurred())
