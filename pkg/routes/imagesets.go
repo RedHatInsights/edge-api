@@ -83,38 +83,54 @@ var imageStatusFilters = common.ComposeFilters(
 func ImageSetCtx(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctxServices := dependencies.ServicesFromContext(r.Context())
+		s := dependencies.ServicesFromContext(r.Context())
 		var imageSet models.ImageSet
 		account, err := common.GetAccount(r)
 		if err != nil {
-			ctxServices.Log.WithFields(log.Fields{
+			s.Log.WithFields(log.Fields{
 				"error":   err.Error(),
 				"account": account,
 			}).Error("Error retrieving account")
-			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+			err := errors.NewBadRequest(err.Error())
+			w.WriteHeader(err.GetStatus())
+			if err := json.NewEncoder(w).Encode(&err); err != nil {
+				s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+			}
 			return
 		}
 		if imageSetID := chi.URLParam(r, "imageSetID"); imageSetID != "" {
-			ctxServices.Log = ctxServices.Log.WithField("imageSetID", imageSetID)
+			s.Log = s.Log.WithField("imageSetID", imageSetID)
 			_, err := strconv.Atoi(imageSetID)
 			if err != nil {
-				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-				return
-			}
-			if result := db.DB.Where("account = ? and id = ?", account, imageSetID).
-				Preload("Images").Preload("Images.Installer").
-				Preload("Images.Commit").Preload("Images.Commit.Repo").
-				First(&imageSet); result.Error != nil {
-				if result.Error == gorm.ErrRecordNotFound {
-					respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("image set not found"))
-				} else {
-					ctxServices.Log.WithFields(log.Fields{
-						"error":   result.Error.Error(),
-						"account": account,
-					}).Error("Error retrieving image-set")
-					respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
+				err := errors.NewBadRequest(err.Error())
+				w.WriteHeader(err.GetStatus())
+				if err := json.NewEncoder(w).Encode(&err); err != nil {
+					s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 				}
 				return
+			}
+			result := db.DB.Where("account = ? and Image_sets.id = ?", account, imageSetID).First(&imageSet)
+
+			if result.Error != nil {
+				err := errors.NewNotFound(result.Error.Error())
+				w.WriteHeader(err.GetStatus())
+				if err := json.NewEncoder(w).Encode(&err); err != nil {
+					s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+				}
+				return
+			}
+			if imageSet.Images != nil {
+				result := db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
+				if result.Error != nil {
+					s.Log.WithField("error", result.Error.Error()).Debug("Result error")
+					err := errors.NewBadRequest(result.Error.Error())
+					w.WriteHeader(err.GetStatus())
+					if err := json.NewEncoder(w).Encode(&err); err != nil {
+						s.Log.WithField("error", result.Error.Error()).Error("Error while trying to encode")
+					}
+					return
+				}
+				db.DB.Where("id = ?", &imageSet.Images[len(imageSet.Images)-1].InstallerID).Find(&imageSet.Images[len(imageSet.Images)-1].Installer)
 			}
 			ctx := context.WithValue(r.Context(), imageSetKey, &imageSet)
 			next.ServeHTTP(w, r.WithContext(ctx))
