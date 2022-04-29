@@ -67,6 +67,7 @@ type PlatformInsightsCreateUpdateEventPayload struct {
 		SystemProfile struct {
 			HostType             string                `json:"host_type"`
 			RpmOSTreeDeployments []RpmOSTreeDeployment `json:"rpm_ostree_deployments"`
+			RHCClientID          string                `json:"rhc_client_id"`
 		} `json:"system_profile"`
 	} `json:"host"`
 }
@@ -578,7 +579,7 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 		// create a new device if it does not exist.
 		var newDevice = models.Device{
 			UUID:        deviceUUID,
-			RHCClientID: eventData.Host.InsightsID,
+			RHCClientID: eventData.Host.SystemProfile.RHCClientID,
 			Account:     deviceAccount,
 			Name:        deviceName,
 			LastSeen:    eventData.Host.Updated,
@@ -595,8 +596,8 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 		device.Account = deviceAccount
 	}
 	// update rhc client id if undefined
-	if device.RHCClientID == "" {
-		device.RHCClientID = eventData.Host.InsightsID
+	if device.RHCClientID != eventData.Host.SystemProfile.RHCClientID {
+		device.RHCClientID = eventData.Host.SystemProfile.RHCClientID
 	}
 	// always update device name and last seen datetime
 	device.LastSeen = eventData.Host.Updated
@@ -830,10 +831,10 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 				"value":   string(message),
 			}).Debug("Saving newly created edge device")
 			var newDevice = models.Device{
-				UUID:        string(e.Host.ID),
-				RHCClientID: string(e.Host.InsightsID),
-				Account:     string(e.Host.Account),
-				Name:        string(e.Host.Name),
+				UUID:        e.Host.ID,
+				RHCClientID: e.Host.SystemProfile.RHCClientID,
+				Account:     e.Host.Account,
+				Name:        e.Host.Name,
 				LastSeen:    e.Host.Updated,
 			}
 			result := db.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
