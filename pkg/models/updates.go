@@ -50,6 +50,8 @@ const (
 	UpdateStatusError = "ERROR"
 	// UpdateStatusSuccess is for when a update is available to the user
 	UpdateStatusSuccess = "SUCCESS"
+	// UpdateStatusDeviceDisconnected is for when a update is UpdateStatusDeviceDisconnected
+	UpdateStatusDeviceDisconnected = "DISCONNECTED"
 )
 
 const (

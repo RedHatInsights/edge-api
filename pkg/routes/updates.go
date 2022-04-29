@@ -303,66 +303,70 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 					return nil, result.Error
 				}
 			}
-			updateDevice.RHCClientID = device.Ostree.RHCClientID
-			updateDevice.AvailableHash = update.Commit.OSTreeCommit
-			// update the device account if undefined
-			if updateDevice.Account == "" {
-				updateDevice.Account = account
-			}
-			result := db.DB.Save(&updateDevice)
-			if result.Error != nil {
-				return nil, result.Error
-			}
+			if device.Ostree.RHCClientID == "" {
+				update.Status = models.UpdateStatusDeviceDisconnected
+			} else {
+				updateDevice.RHCClientID = device.Ostree.RHCClientID
+				updateDevice.AvailableHash = update.Commit.OSTreeCommit
+				// update the device account if undefined
+				if updateDevice.Account == "" {
+					updateDevice.Account = account
+				}
+				result := db.DB.Save(&updateDevice)
+				if result.Error != nil {
+					return nil, result.Error
+				}
 
-			services.Log.WithFields(log.Fields{
-				"updateDevice": updateDevice,
-			}).Debug("Saved updated device")
-
-			devices = append(devices, *updateDevice)
-			update.Devices = devices
-
-			for _, deployment := range device.Ostree.RpmOstreeDeployments {
 				services.Log.WithFields(log.Fields{
-					"ostreeDeployment": deployment,
-				}).Debug("Got ostree deployment for device")
-				if deployment.Booted {
+					"updateDevice": updateDevice,
+				}).Debug("Saved updated device")
+
+				devices = append(devices, *updateDevice)
+				update.Devices = devices
+
+				for _, deployment := range device.Ostree.RpmOstreeDeployments {
 					services.Log.WithFields(log.Fields{
-						"booted": deployment.Booted,
-					}).Debug("device has been booted")
-					if commit.OSTreeCommit == deployment.Checksum {
-						toUpdate = false
-						break
-					}
-					var oldCommit models.Commit
-					result := db.DB.Where("os_tree_commit = ?", deployment.Checksum).First(&oldCommit)
-					if result.Error != nil {
-						if result.Error.Error() != "record not found" {
-							services.Log.WithField("error", err.Error()).Error("Error returning old commit for this ostree checksum")
-							err := errors.NewBadRequest(err.Error())
-							w.WriteHeader(err.GetStatus())
-							if err := json.NewEncoder(w).Encode(&err); err != nil {
-								services.Log.WithField("error", err.Error()).Error("Error encoding error")
+						"ostreeDeployment": deployment,
+					}).Debug("Got ostree deployment for device")
+					if deployment.Booted {
+						services.Log.WithFields(log.Fields{
+							"booted": deployment.Booted,
+						}).Debug("device has been booted")
+						if commit.OSTreeCommit == deployment.Checksum {
+							toUpdate = false
+							break
+						}
+						var oldCommit models.Commit
+						result := db.DB.Where("os_tree_commit = ?", deployment.Checksum).First(&oldCommit)
+						if result.Error != nil {
+							if result.Error.Error() != "record not found" {
+								services.Log.WithField("error", err.Error()).Error("Error returning old commit for this ostree checksum")
+								err := errors.NewBadRequest(err.Error())
+								w.WriteHeader(err.GetStatus())
+								if err := json.NewEncoder(w).Encode(&err); err != nil {
+									services.Log.WithField("error", err.Error()).Error("Error encoding error")
+								}
+								return nil, err
 							}
-							return nil, err
+						}
+						if result.RowsAffected == 0 {
+							services.Log.Debug("No old commits found")
+						} else {
+							oldCommits = append(oldCommits, oldCommit)
 						}
 					}
-					if result.RowsAffected == 0 {
-						services.Log.Debug("No old commits found")
-					} else {
-						oldCommits = append(oldCommits, oldCommit)
-					}
 				}
-			}
-			if toUpdate {
-				//Should not create a transaction to device already updated
-				update.OldCommits = oldCommits
-				if err := db.DB.Save(&update).Error; err != nil {
-					err := errors.NewBadRequest(err.Error())
-					w.WriteHeader(err.GetStatus())
-					if err := json.NewEncoder(w).Encode(&err); err != nil {
-						services.Log.WithField("error", err.Error()).Error("Error encoding error")
+				if toUpdate {
+					//Should not create a transaction to device already updated
+					update.OldCommits = oldCommits
+					if err := db.DB.Save(&update).Error; err != nil {
+						err := errors.NewBadRequest(err.Error())
+						w.WriteHeader(err.GetStatus())
+						if err := json.NewEncoder(w).Encode(&err); err != nil {
+							services.Log.WithField("error", err.Error()).Error("Error encoding error")
+						}
+						return nil, err
 					}
-					return nil, err
 				}
 			}
 		}
