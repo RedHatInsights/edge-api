@@ -94,7 +94,7 @@ func TestCreate(t *testing.T) {
 			},
 		},
 		Installer: &models.Installer{
-			Username: "root",
+			Username: "test",
 			SSHKey:   "ssh-rsa d9:f158:00:abcd",
 		},
 	}
