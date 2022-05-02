@@ -67,7 +67,7 @@ type PlatformInsightsCreateUpdateEventPayload struct {
 		SystemProfile struct {
 			HostType             string                `json:"host_type"`
 			RpmOSTreeDeployments []RpmOSTreeDeployment `json:"rpm_ostree_deployments"`
-			RHCClientID          string                `json:"rhc_client_id"`
+			RHCClientID          string                `json:"rhc_client_id,omitempty"`
 		} `json:"system_profile"`
 	} `json:"host"`
 }
@@ -596,7 +596,7 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 		device.Account = deviceAccount
 	}
 	// update rhc client id if undefined
-	if device.RHCClientID != eventData.Host.SystemProfile.RHCClientID {
+	if eventData.Host.SystemProfile.RHCClientID != "" && device.RHCClientID != eventData.Host.SystemProfile.RHCClientID {
 		device.RHCClientID = eventData.Host.SystemProfile.RHCClientID
 	}
 	// always update device name and last seen datetime
@@ -871,6 +871,10 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 	deviceAccount := eventData.Account
 	var device models.Device
 	if result := db.DB.Where(models.Device{Account: deviceAccount, UUID: deviceUUID}).First(&device); result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			// the record does not exit, not need to continue
+			return nil
+		}
 		s.log.WithFields(
 			log.Fields{"host_id": deviceUUID, "Account": deviceAccount, "error": result.Error},
 		).Error("Error retrieving the device")
