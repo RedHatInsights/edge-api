@@ -136,8 +136,8 @@ func Init() {
 		},
 		TemplatesPath:      options.GetString("TemplatesPath"),
 		EdgeAPIBaseURL:     options.GetString("EdgeAPIBaseURL"),
-		EdgeAPIServiceHost: options.GetString("EDGE_API_SERVICE_HOST"),
-		EdgeAPIServicePort: options.GetInt("EDGE_API_SERVICE_PORT"),
+		EdgeAPIServiceHost: options.GetString("EDGE_API_SERVICE_SERVICE_HOST"),
+		EdgeAPIServicePort: options.GetInt("EDGE_API_SERVICE_SERVICE_PORT"),
 		UploadWorkers:      options.GetInt("UploadWorkers"),
 		FDO: &fdoConfig{
 			URL:                 options.GetString("FDOHostURL"),
