@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"sort"
 
 	version "github.com/knqyf263/go-rpm-version"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
@@ -58,13 +59,15 @@ type RpmOSTreeDeployment struct {
 type PlatformInsightsCreateUpdateEventPayload struct {
 	Type string `json:"type"`
 	Host struct {
-		ID            string `json:"id"`
-		Name          string `json:"display_name"`
-		Account       string `json:"account"`
-		InsightsID    string `json:"insights_id"`
+		ID            string             `json:"id"`
+		Name          string             `json:"display_name"`
+		Account       string             `json:"account"`
+		InsightsID    string             `json:"insights_id"`
+		Updated       models.EdgeAPITime `json:"updated"`
 		SystemProfile struct {
 			HostType             string                `json:"host_type"`
 			RpmOSTreeDeployments []RpmOSTreeDeployment `json:"rpm_ostree_deployments"`
+			RHCClientID          string                `json:"rhc_client_id,omitempty"`
 		} `json:"system_profile"`
 	} `json:"host"`
 }
@@ -450,13 +453,13 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		if lastDeployment != nil {
 			dd.Device.Booted = lastDeployment.Booted
 		}
-		s.log.WithField("deviceID", device.ID).Info("Getting image info for device...")
-		imageInfo, err := s.GetDeviceImageInfo(device)
-		if err != nil {
-			dd.Image = nil
-		} else if imageInfo != nil {
-			dd.Image = imageInfo
-		}
+		// s.log.WithField("deviceID", device.ID).Info("Getting image info for device...")
+		// imageInfo, err := s.GetDeviceImageInfo(device)
+		// if err != nil {
+		// 	dd.Image = nil
+		// } else if imageInfo != nil {
+		// 	dd.Image = imageInfo
+		// }
 		// TODO: Add back the ability to filter by status when we figure out how to do pagination
 		// if params != nil && imageInfo != nil {
 		// 	if params.DeviceStatus == "update_available" && imageInfo.UpdatesAvailable != nil {
@@ -576,9 +579,10 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 		// create a new device if it does not exist.
 		var newDevice = models.Device{
 			UUID:        deviceUUID,
-			RHCClientID: eventData.Host.InsightsID,
+			RHCClientID: eventData.Host.SystemProfile.RHCClientID,
 			Account:     deviceAccount,
 			Name:        deviceName,
+			LastSeen:    eventData.Host.Updated,
 		}
 		if result := db.DB.Create(&newDevice); result.Error != nil {
 			s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error}).Error("Error creating device")
@@ -590,12 +594,20 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 	if device.Account == "" {
 		// Update account if undefined
 		device.Account = deviceAccount
-		if result := db.DB.Save(device); result.Error != nil {
-			s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error}).Error("Error updating device account")
-			return result.Error
-		}
-		s.log.WithFields(log.Fields{"host_id": deviceUUID}).Debug("Device account updated")
 	}
+	// update rhc client id if undefined
+	if eventData.Host.SystemProfile.RHCClientID != "" && device.RHCClientID != eventData.Host.SystemProfile.RHCClientID {
+		device.RHCClientID = eventData.Host.SystemProfile.RHCClientID
+	}
+	// always update device name and last seen datetime
+	device.LastSeen = eventData.Host.Updated
+	device.Name = deviceName
+
+	if result := db.DB.Save(device); result.Error != nil {
+		s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error}).Error("Error updating device account")
+		return result.Error
+	}
+	s.log.WithFields(log.Fields{"host_id": deviceUUID}).Debug("Device account updated")
 
 	return s.processPlatformInventoryEventUpdateDevice(eventData)
 }
@@ -634,6 +646,10 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 		tx = db.DB
 	}
 
+	log.WithFields(log.Fields{
+		"limit": limit,
+	}).Debug("limit:", limit)
+
 	var storedDevices []models.Device
 	if res := tx.Limit(limit).Offset(offset).Where("account = ?", account).Preload("UpdateTransaction").Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
@@ -654,7 +670,6 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 
 // ReturnDevicesView returns the devices association and status properly
 func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.DeviceView, error) {
-
 	deviceToGroupMap := make(map[uint][]models.DeviceDeviceGroup)
 	for _, device := range storedDevices {
 		var tempArr []models.DeviceDeviceGroup
@@ -666,21 +681,40 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 
 	type neededImageInfo struct {
 		Name       string
-		Status     string
 		ImageSetID uint
 	}
+
 	// create a map of unique image id's. We dont want to look of a given image id more than once.
+	deviceStatusSet := make(map[uint]string)
 	setOfImages := make(map[uint]*neededImageInfo)
-	for _, devices := range storedDevices {
+	for index, devices := range storedDevices {
 		var status = models.DeviceViewStatusRunning
-		if devices.UpdateTransaction != nil && len(*devices.UpdateTransaction) > 0 {
-			updateStatus := (*devices.UpdateTransaction)[len(*devices.UpdateTransaction)-1].Status
+		crtDevice := storedDevices[index]
+
+		if crtDevice.UpdateTransaction != nil && len(*crtDevice.UpdateTransaction) > 0 {
+			updateTransactions := *crtDevice.UpdateTransaction
+			sort.SliceStable(updateTransactions, func(i, j int) bool {
+				return updateTransactions[i].ID < updateTransactions[j].ID
+			})
+			log.WithFields(log.Fields{
+				"updateTransactions": updateTransactions,
+			}).Debug("updateTransactions:", updateTransactions)
+
+			updateStatus := updateTransactions[len(updateTransactions)-1].Status
+
+			log.WithFields(log.Fields{
+				"updateStatus": updateStatus,
+			}).Debug("updateStatus:", updateStatus)
+
 			if updateStatus == models.UpdateStatusBuilding {
 				status = models.DeviceViewStatusUpdating
 			}
 		}
+
+		// deviceStatusSet[devices.ID] = status
+		deviceStatusSet[crtDevice.ID] = status
 		if devices.ImageID != 0 {
-			setOfImages[devices.ImageID] = &neededImageInfo{Name: "", Status: status, ImageSetID: 0}
+			setOfImages[devices.ImageID] = &neededImageInfo{}
 		}
 	}
 
@@ -696,11 +730,7 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 	}
 
 	for _, image := range images {
-		status := models.DeviceViewStatusRunning
-		if setOfImages[image.ID] != nil {
-			status = setOfImages[image.ID].Status
-		}
-		setOfImages[image.ID] = &neededImageInfo{Name: image.Name, Status: status, ImageSetID: *image.ImageSetID}
+		setOfImages[image.ID] = &neededImageInfo{Name: image.Name, ImageSetID: *image.ImageSetID}
 	}
 
 	// build the return object
@@ -708,16 +738,18 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 	returnDevices := []models.DeviceView{}
 	for _, device := range storedDevices {
 		var imageName string
-		var imageStatus string
+		var deviceStatus string
 		var imageSetID uint
 		var deviceGroups []models.DeviceDeviceGroup
 		if _, ok := setOfImages[device.ImageID]; ok {
 			imageName = setOfImages[device.ImageID].Name
-			imageStatus = setOfImages[device.ImageID].Status
 			imageSetID = setOfImages[device.ImageID].ImageSetID
 		}
 		if _, ok := deviceToGroupMap[device.ID]; ok {
 			deviceGroups = deviceToGroupMap[device.ID]
+		}
+		if _, ok := deviceStatusSet[device.ID]; ok {
+			deviceStatus = deviceStatusSet[device.ID]
 		}
 		currentDeviceView := models.DeviceView{
 			DeviceID:        device.ID,
@@ -725,9 +757,9 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 			DeviceUUID:      device.UUID,
 			ImageID:         device.ImageID,
 			ImageName:       imageName,
-			LastSeen:        device.LastSeen.Time.String(),
+			LastSeen:        device.LastSeen,
 			UpdateAvailable: device.UpdateAvailable,
-			Status:          imageStatus,
+			Status:          deviceStatus,
 			ImageSetID:      imageSetID,
 			DeviceGroups:    deviceGroups,
 		}
@@ -799,10 +831,11 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 				"value":   string(message),
 			}).Debug("Saving newly created edge device")
 			var newDevice = models.Device{
-				UUID:        string(e.Host.ID),
-				RHCClientID: string(e.Host.InsightsID),
-				Account:     string(e.Host.Account),
-				Name:        string(e.Host.Name),
+				UUID:        e.Host.ID,
+				RHCClientID: e.Host.SystemProfile.RHCClientID,
+				Account:     e.Host.Account,
+				Name:        e.Host.Name,
+				LastSeen:    e.Host.Updated,
 			}
 			result := db.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
 			if result.Error != nil {
@@ -838,6 +871,10 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 	deviceAccount := eventData.Account
 	var device models.Device
 	if result := db.DB.Where(models.Device{Account: deviceAccount, UUID: deviceUUID}).First(&device); result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			// the record does not exit, not need to continue
+			return nil
+		}
 		s.log.WithFields(
 			log.Fields{"host_id": deviceUUID, "Account": deviceAccount, "error": result.Error},
 		).Error("Error retrieving the device")

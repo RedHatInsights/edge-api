@@ -80,7 +80,7 @@ func Init() {
 	options := viper.New()
 	options.SetDefault("WebPort", 3000)
 	options.SetDefault("MetricsPort", 8080)
-	options.SetDefault("LogLevel", "INFO")
+	options.SetDefault("LogLevel", "DEBUG")
 	options.SetDefault("Auth", false)
 	options.SetDefault("Debug", false)
 	options.SetDefault("EdgeTarballsBucket", "rh-edge-tarballs")
@@ -106,7 +106,7 @@ func Init() {
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
-		options.Set("LogLevel", "DEBUG")
+		options.Set("LOG_LEVEL", "DEBUG")
 	}
 
 	kubenv := viper.New()
@@ -118,7 +118,7 @@ func Init() {
 		WebPort:          options.GetInt("WebPort"),
 		MetricsPort:      options.GetInt("MetricsPort"),
 		Debug:            options.GetBool("Debug"),
-		LogLevel:         options.GetString("LogLevel"),
+		LogLevel:         options.GetString("LOG_LEVEL"),
 		BucketName:       options.GetString("EdgeTarballsBucket"),
 		RepoTempPath:     options.GetString("RepoTempPath"),
 		OpenAPIFilePath:  options.GetString("OpenAPIFilePath"),

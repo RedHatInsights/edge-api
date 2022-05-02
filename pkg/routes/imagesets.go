@@ -109,7 +109,7 @@ func ImageSetCtx(next http.Handler) http.Handler {
 				}
 				return
 			}
-			result := db.DB.Where("account = ? and Image_sets.id = ?", account, imageSetID).Find(&imageSet)
+			result := db.DB.Where("account = ? and Image_sets.id = ?", account, imageSetID).First(&imageSet)
 
 			if result.Error != nil {
 				err := errors.NewNotFound(result.Error.Error())
