@@ -34,7 +34,7 @@ func Init(ctx context.Context) *EdgeAPIServices {
 	log := log.WithFields(log.Fields{
 		"requestId": request_id.GetReqID(ctx),
 		"accountId": account,
-		"org_id":    orgID,
+		"orgID":     orgID,
 	})
 	return &EdgeAPIServices{
 		CommitService:           services.NewCommitService(ctx, log),

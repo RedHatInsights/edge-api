@@ -141,10 +141,10 @@ func main() {
 
 		for _, image := range images {
 			log.WithFields(log.Fields{
-				"imageID":    image.ID,
-				"Account":    image.Account,
-				"org_id":     image.OrgID,
-				"request_id": image.RequestID,
+				"imageID":   image.ID,
+				"Account":   image.Account,
+				"OrgID":     image.OrgID,
+				"RequestID": image.RequestID,
 			}).Info("Processing interrupted image")
 
 			/* we have a choice here...
@@ -159,7 +159,7 @@ func main() {
 			url := fmt.Sprintf("http://%s:%d/api/edge/v1/images/%d/resume", cfg.EdgeAPIServiceHost, cfg.EdgeAPIServicePort, image.ID)
 			req, _ := http.NewRequest("POST", url, nil)
 			req.Header.Add("Content-Type", "application/json")
-			log.WithField("api_url", url).Debug("Created the api url string")
+			log.WithField("apiURL", url).Debug("Created the api url string")
 
 			// create a client and send a request against the Edge API
 			client := &http.Client{}
