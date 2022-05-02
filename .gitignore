@@ -45,3 +45,6 @@ sonarqube/
 
 openapi.json
 openapi.yaml
+
+go/pkg/mod/*
+.cache

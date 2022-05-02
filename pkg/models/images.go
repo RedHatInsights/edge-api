@@ -22,6 +22,7 @@ type Image struct {
 	Model
 	Name                   string           `json:"Name"`
 	Account                string           `json:"Account"`
+	OrgID                  string           `json:"org_id"`
 	Distribution           string           `json:"Distribution"`
 	Description            string           `json:"Description"`
 	Status                 string           `json:"Status"`
@@ -36,6 +37,7 @@ type Image struct {
 	Packages               []Package        `json:"Packages,omitempty" gorm:"many2many:images_packages;"`
 	ThirdPartyRepositories []ThirdPartyRepo `json:"ThirdPartyRepositories,omitempty" gorm:"many2many:images_repos;"`
 	CustomPackages         []Package        `json:"CustomPackages,omitempty" gorm:"many2many:images_custom_packages"`
+	RequestID              string           `json:"request_id"` // storing for logging reference on resume
 }
 
 // ImageUpdateAvailable contains image and differences between current and available commits

@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -68,7 +70,6 @@ func main() {
 	config.Init()
 	l.InitLogger()
 	cfg := config.Get()
-	// FIXME: EdgeAPIURL is the external URL, not internal svc
 	log.WithFields(log.Fields{
 		"Hostname":                 cfg.Hostname,
 		"Auth":                     cfg.Auth,
@@ -88,14 +89,17 @@ func main() {
 		"DatabaseType":             cfg.Database.Type,
 		"DatabaseName":             cfg.Database.Name,
 		"EdgeAPIURL":               cfg.EdgeAPIBaseURL,
+		"EdgeAPIServiceHost":       cfg.EdgeAPIServiceHost,
+		"EdgeAPIServicePort":       cfg.EdgeAPIServicePort,
 	}).Info("Configuration Values:")
 	db.InitDB()
 
 	log.Info("Entering the infinite loop...")
 	for {
 		log.Debug("Sleeping...")
+		// TODO: make this configurable
 		time.Sleep(5 * time.Minute)
-		// TODO: work out programatic method to avoid resuming a build until app is up or on way up
+		// TODO: programatic method to avoid resuming a build until app is up or on way up???
 
 		// handle stale interrupted builds not complete after x hours
 		staleInterruptedImages := getStaleBuilds(models.ImageStatusInterrupted, 6)
@@ -129,32 +133,35 @@ func main() {
 
 		// handle image builds in INTERRUPTED status
 		//	this is meant to handle builds that are interrupted when they are interrupted
-		// 	the stale interrupted build routine should never actually find anything while this is running
+		// 	the stale interrupted build routine (above) should never actually find anything while this is running
 		qresult := db.DB.Debug().Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
 		if qresult.RowsAffected > 0 {
 			log.WithField("numImages", qresult.RowsAffected).Info("Found image(s) with interrupted status")
 		}
 
 		for _, image := range images {
-			log.WithField("imageID", image.ID).Info("Processing interrupted image")
+			log.WithFields(log.Fields{
+				"imageID":    image.ID,
+				"Account":    image.Account,
+				"org_id":     image.OrgID,
+				"request_id": image.RequestID,
+			}).Info("Processing interrupted image")
 
 			/* we have a choice here...
 			1. Send an event and a consumer on Edge API calls the resume.
 			2. Send an API call to Edge API to call the resume.
 
-			Currently...
-			1. Testing a Kafka event.
-			2. Will implement a call to the API /retry
-			3. Will create an API endpoint specifically for resume()
-				so it can pick up where it left off
+			Currently using the API call.
 			*/
 
-			/* temp disable until auth can be resolved
 			// send an API request
-			url := fmt.Sprintf("%s/api/edge/v1/images/%d/retry", cfg.EdgeAPIBaseURL, image.ID)
+			// form the internal API call from env vars and add the original requestid
+			url := fmt.Sprintf("http://%s:%d/api/edge/v1/images/%d/resume", cfg.EdgeAPIServiceHost, cfg.EdgeAPIServicePort, image.ID)
 			req, _ := http.NewRequest("POST", url, nil)
 			req.Header.Add("Content-Type", "application/json")
+			log.WithField("api_url", url).Debug("Created the api url string")
 
+			// create a client and send a request against the Edge API
 			client := &http.Client{}
 			res, err := client.Do(req)
 			if err != nil {
@@ -165,21 +172,24 @@ func main() {
 				log.WithFields(log.Fields{
 					"statusCode": code,
 					"error":      err,
-				}).Error("Edge API retry request error")
+				}).Error("Edge API resume request error")
 			}
 			respBody, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				log.Error("Error reading body of uninterrupted build resume response")
+			}
 			log.WithFields(log.Fields{
 				"statusCode":   res.StatusCode,
 				"responseBody": string(respBody),
 				"error":        err,
-			}).Debug("Edge API retry response")
+			}).Debug("Edge API resume response")
+			err = res.Body.Close()
 			if err != nil {
-				log.Error("Error reading body of uninterrupted build resume response")
+				log.Error("Error closing body")
 			}
-			res.Body.Close()
-			*/
 
 			// send an event on image-build topic
+			// currently using the API call for the resume on the edge-api side
 			if clowder.IsClowderEnabled() {
 				// get the list of brokers from the config
 				brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
