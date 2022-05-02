@@ -3,6 +3,7 @@ package models
 import (
 	"errors"
 	"regexp"
+	"strings"
 
 	"github.com/lib/pq"
 )
@@ -91,6 +92,8 @@ const (
 	MissingInstaller = "installer info must be provided"
 	// MissingUsernameError is the error message for not passing username in the request
 	MissingUsernameError = "username must be provided"
+	// ReservedUsernameError is the error message for passing a reserved username in the request
+	ReservedUsernameError = "username is reserved"
 	// MissingSSHKeyError is the error message when SSH Key is not given
 	MissingSSHKeyError = "SSH key must be provided"
 	// InvalidSSHKeyError is the error message for not supported or invalid ssh key format
@@ -112,6 +115,37 @@ var (
 	validImageName     = regexp.MustCompile(`^[A-Za-z0-9]+[A-Za-z0-9\s_-]*$`)
 	acceptedImageTypes = map[string]interface{}{ImageTypeCommit: nil, ImageTypeInstaller: nil}
 )
+
+var reservedImageUsernames = []string{
+	"root", "bin", "daemon", "sys", "adm", "tty", "disk", "lp", "mem", "kmem", "wheel", "cdrom", "sync",
+	"shutdown", "halt", "mail", "news", "uucp", "operator", "games", "gopher", "ftp", "man", "oprofile", "pkiuser",
+	"dialout", "floppy", "games", "slocate", "utmp", "squid", "pvm", "named", "postgres", "mysql", "nscd",
+	"rpcuser", "console", "rpc", "amandabackup", "tape", "netdump", "utempter", "vdsm", "kvm", "rpm", "ntp",
+	"video", "dip", "mailman", "gdm", "xfs", "pppusers", "popusers", "slipusers", "mailnull", "apache", "wnn",
+	"smmsp", "puppet", "tomcat", "lock", "ldap", "frontpage", "nut", "beagleindex", "tss", "piranha", "prelude-manager",
+	"snortd", "audio", "condor", "nslcd", "wine", "pegasus", "webalizer", "haldaemon", "vcsa", "avahi",
+	"realtime", "tcpdump", "privoxy", "sshd", "radvd", "cyrus", "saslauth", "arpwatch", "fax", "nocpulse", "desktop",
+	"dbus", "jonas", "clamav", "screen", "quaggavt", "sabayon", "polkituser", "wbpriv", "postfix", "postdrop",
+	"majordomo", "quagga", "exim", "distcache", "radiusd", "hsqldb", "dovecot", "ident", "users", "qemu",
+	"ovirt", "rhevm", "jetty", "saned", "vhostmd", "usbmuxd", "bacula", "cimsrvr", "mock", "ricci",
+	"luci", "activemq", "cassandra", "stap-server", "stapusr", "stapsys", "stapdev", "swift", "glance", "nova",
+	"keystone", "quantum", "cinder", "ceilometer", "ceph", "avahi-autoipd", "pulse", "rtkit", "abrt",
+	"retrace", "ovirtagent", "ats", "dhcpd", "myproxy", "sanlock", "aeolus", "wallaby", "katello", "elasticsearch",
+	"mongodb", "wildfly", "jbosson-agent", "jbosson", "heat", "haproxy", "hacluster", "haclient", "systemd-journal",
+	"systemd-network", "systemd-resolve", "gnats", "listar", "nobody",
+}
+
+func validateImageUserName(username string) error {
+	if username == "" {
+		return errors.New(MissingUsernameError)
+	}
+	for _, reservedName := range reservedImageUsernames {
+		if strings.ToLower(username) == reservedName {
+			return errors.New(ReservedUsernameError)
+		}
+	}
+	return nil
+}
 
 // ValidateRequest validates an Image Request
 func (i *Image) ValidateRequest() error {
@@ -137,8 +171,8 @@ func (i *Image) ValidateRequest() error {
 		if i.Installer == nil {
 			return errors.New(MissingInstaller)
 		}
-		if i.Installer.Username == "" {
-			return errors.New(MissingUsernameError)
+		if err := validateImageUserName(i.Installer.Username); err != nil {
+			return err
 		}
 		if i.Installer.SSHKey == "" {
 			return errors.New(MissingSSHKeyError)
