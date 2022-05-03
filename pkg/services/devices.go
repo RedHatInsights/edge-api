@@ -873,7 +873,7 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 	if result := db.DB.Where(models.Device{Account: deviceAccount, UUID: deviceUUID}).Find(&devices); result.Error != nil {
 		s.log.WithFields(
 			log.Fields{"host_id": deviceUUID, "Account": deviceAccount, "error": result.Error},
-		).Error("Error retrieving the devices")
+		).Debug("Error retrieving the devices")
 		return result.Error
 	}
 	if len(devices) == 0 {
