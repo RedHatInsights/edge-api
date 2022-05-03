@@ -869,21 +869,20 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 
 	deviceUUID := eventData.ID
 	deviceAccount := eventData.Account
-	var device models.Device
-	if result := db.DB.Where(models.Device{Account: deviceAccount, UUID: deviceUUID}).First(&device); result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			// the record does not exit, not need to continue
-			return nil
-		}
+	var devices []models.Device
+	if result := db.DB.Where(models.Device{Account: deviceAccount, UUID: deviceUUID}).Find(&devices); result.Error != nil {
 		s.log.WithFields(
 			log.Fields{"host_id": deviceUUID, "Account": deviceAccount, "error": result.Error},
-		).Error("Error retrieving the device")
+		).Error("Error retrieving the devices")
 		return result.Error
 	}
-	if result := db.DB.Delete(&device); result.Error != nil {
+	if len(devices) == 0 {
+		return nil
+	}
+	if result := db.DB.Delete(&devices[0]); result.Error != nil {
 		s.log.WithFields(
 			log.Fields{"host_id": deviceUUID, "Account": deviceAccount, "error": result.Error},
-		).Error("Error when deleting device")
+		).Error("Error when deleting devices")
 		return result.Error
 	}
 	return nil
