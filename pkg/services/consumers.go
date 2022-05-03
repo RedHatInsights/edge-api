@@ -164,7 +164,12 @@ func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 		}
 		if err != nil {
 			log.WithFields(log.Fields{
-				"error": err,
+				"error":     err,
+				"topic":     m.Topic,
+				"offset":    m.Offset,
+				"key":       string(m.Key),
+				"value":     string(m.Value),
+				"eventType": eventType,
 			}).Error("Error writing Kafka message to DB")
 		}
 		if s.isShuttingDown() {
