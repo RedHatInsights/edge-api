@@ -150,7 +150,7 @@ func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 			"offset": m.Offset,
 			"key":    string(m.Key),
 			"value":  string(m.Value),
-		}).Debug("Read message from Kafka topic")
+		}).Info("Read message from Kafka topic")
 
 		switch eventType {
 		case InventoryEventTypeCreated:
