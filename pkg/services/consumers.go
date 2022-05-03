@@ -99,7 +99,7 @@ func (s *KafkaConsumerService) ConsumePlaybookDispatcherRuns() error {
 			"offset": m.Offset,
 			"key":    string(m.Key),
 			"value":  string(m.Value),
-		}).Debug("Read message from Kafka topic")
+		}).Info("Read message from Kafka topic")
 		var service string
 		for _, h := range m.Headers {
 			if h.Key == "service" {
@@ -150,7 +150,7 @@ func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 			"offset": m.Offset,
 			"key":    string(m.Key),
 			"value":  string(m.Value),
-		}).Debug("Read message from Kafka topic")
+		}).Info("Read message from Kafka topic")
 
 		switch eventType {
 		case InventoryEventTypeCreated:
