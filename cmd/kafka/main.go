@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -157,9 +158,16 @@ func main() {
 			// send an API request
 			// form the internal API call from env vars and add the original requestid
 			url := fmt.Sprintf("http://%s:%d/api/edge/v1/images/%d/resume", cfg.EdgeAPIServiceHost, cfg.EdgeAPIServicePort, image.ID)
+			log.WithField("apiURL", url).Debug("Created the api url string")
 			req, _ := http.NewRequest("POST", url, nil)
 			req.Header.Add("Content-Type", "application/json")
-			log.WithField("apiURL", url).Debug("Created the api url string")
+
+			// recreate a stripped down identity header
+			strippedIdentity := fmt.Sprintf(`{ "identity": {"account_number": "%s", "org_id": "%s", "type": "User", "internal": {"org_id": "%s"} } }`, image.Account, image.OrgID, image.OrgID)
+			log.WithField("identity_text", strippedIdentity).Debug("Creating a new stripped identity")
+			base64Identity := base64.StdEncoding.EncodeToString([]byte(strippedIdentity))
+			log.WithField("identity_base64", base64Identity).Debug("Using a base64encoded stripped identity")
+			req.Header.Add("x-rh-identity", base64Identity)
 
 			// create a client and send a request against the Edge API
 			client := &http.Client{}
@@ -173,19 +181,20 @@ func main() {
 					"statusCode": code,
 					"error":      err,
 				}).Error("Edge API resume request error")
-			}
-			respBody, err := ioutil.ReadAll(res.Body)
-			if err != nil {
-				log.Error("Error reading body of uninterrupted build resume response")
-			}
-			log.WithFields(log.Fields{
-				"statusCode":   res.StatusCode,
-				"responseBody": string(respBody),
-				"error":        err,
-			}).Debug("Edge API resume response")
-			err = res.Body.Close()
-			if err != nil {
-				log.Error("Error closing body")
+			} else {
+				respBody, err := ioutil.ReadAll(res.Body)
+				if err != nil {
+					log.Error("Error reading body of uninterrupted build resume response")
+				}
+				log.WithFields(log.Fields{
+					"statusCode":   res.StatusCode,
+					"responseBody": string(respBody),
+					"error":        err,
+				}).Debug("Edge API resume response")
+				err = res.Body.Close()
+				if err != nil {
+					log.Error("Error closing body")
+				}
 			}
 
 			// send an event on image-build topic
