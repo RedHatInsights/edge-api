@@ -137,7 +137,7 @@ func (s *ThirdPartyRepoService) DeleteThirdPartyRepoByID(ID string) (*models.Thi
 	}
 	repoDetails, err := s.GetThirdPartyRepoByID(ID)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Error retieving third party repository")
+		s.log.WithField("error", err.Error()).Error("Error retrieving third party repository")
 	}
 	if repoDetails.Name == "" {
 		return nil, errors.NewInternalServerError()
