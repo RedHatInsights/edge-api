@@ -278,7 +278,7 @@ func (s *KafkaConsumerService) Start() {
 
 		// closing the reader if there was a connection issue
 		if err := s.Reader.Close(); err != nil {
-			failCounter += 1
+			failCounter++
 			log.WithFields(log.Fields{
 				"topic":        s.topic,
 				"fail-counter": failCounter,
