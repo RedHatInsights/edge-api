@@ -36,6 +36,24 @@ func ContainFilterHandler(filter *Filter) FilterFunc {
 	})
 }
 
+// BoolFilterHandler handles boolean values filters
+func BoolFilterHandler(filter *Filter) FilterFunc {
+	sqlQuery := fmt.Sprintf("%s = ", filter.DBField)
+	return FilterFunc(func(r *http.Request, tx *gorm.DB) *gorm.DB {
+		value := r.URL.Query().Get(filter.QueryParam)
+		if value == "" {
+			return tx
+		}
+		var sqlValue string
+		if value == "true" {
+			sqlValue = "TRUE"
+		} else {
+			sqlValue = "FALSE"
+		}
+		return tx.Where(sqlQuery + sqlValue)
+	})
+}
+
 // OneOfFilterHandler handles multiple values filters
 func OneOfFilterHandler(filter *Filter) FilterFunc {
 	sqlQuery := fmt.Sprintf("%s IN ?", filter.DBField)

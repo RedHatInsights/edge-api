@@ -94,7 +94,7 @@ func TestCreate(t *testing.T) {
 			},
 		},
 		Installer: &models.Installer{
-			Username: "root",
+			Username: "test",
 			SSHKey:   "ssh-rsa d9:f158:00:abcd",
 		},
 	}
@@ -112,7 +112,7 @@ func TestCreate(t *testing.T) {
 
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any()).Return(nil)
+	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),

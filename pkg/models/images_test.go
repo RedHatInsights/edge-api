@@ -129,6 +129,19 @@ func TestValidateRequest(t *testing.T) {
 			expected: errors.New(MissingUsernameError),
 		},
 		{
+			name: "reserved username when image type is installer",
+			image: &Image{
+				Distribution: "rhel-8",
+				Name:         "image_name",
+				Commit:       &Commit{Arch: "x86_64"},
+				OutputTypes:  []string{ImageTypeInstaller},
+				Installer: &Installer{
+					Username: "rpcuser",
+				},
+			},
+			expected: errors.New(ReservedUsernameError),
+		},
+		{
 			name: "empty ssh key when image type is installer",
 			image: &Image{
 				Distribution: "rhel-8",
@@ -136,7 +149,7 @@ func TestValidateRequest(t *testing.T) {
 				Commit:       &Commit{Arch: "x86_64"},
 				OutputTypes:  []string{ImageTypeInstaller},
 				Installer: &Installer{
-					Username: "root",
+					Username: "test",
 				},
 			},
 			expected: errors.New(MissingSSHKeyError),
@@ -149,7 +162,7 @@ func TestValidateRequest(t *testing.T) {
 				Commit:       &Commit{Arch: "x86_64"},
 				OutputTypes:  []string{ImageTypeInstaller},
 				Installer: &Installer{
-					Username: "root",
+					Username: "test",
 					SSHKey:   "dd:00:eeff:10",
 				},
 			},
@@ -163,7 +176,7 @@ func TestValidateRequest(t *testing.T) {
 				Commit:       &Commit{Arch: "x86_64"},
 				OutputTypes:  []string{ImageTypeInstaller},
 				Installer: &Installer{
-					Username: "root",
+					Username: "test",
 					SSHKey:   "ssh-rsa dd:00:eeff:10",
 				},
 			},

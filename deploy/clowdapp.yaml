@@ -126,6 +126,8 @@ objects:
           value: ${EDGEAPIBASEURL}
         - name: UPLOADWORKERS
           value: ${UPLOADWORKERS}
+        - name: LOG_LEVEL
+          value: ${LOG_LEVEL}
         resources:
           limits:
             cpu: ${{CPU_LIMIT}}
@@ -161,7 +163,7 @@ parameters:
 - description: Memory limit of service
   name: MEMORY_LIMIT
   required: false
-  value: 1Gi
+  value: 2Gi
 - description: Minimum number of edge-api pods to deploy
   name: MIN_REPLICAS
   required: false
@@ -215,7 +217,7 @@ parameters:
 - description: Number of workers for uploading to a backing object storage bucket
   name: UPLOADWORKERS
   required: false
-  value: "100"
+  value: "50"
 - description: FDO service URL
   name: FDO_HOST_URL
   required: false

@@ -164,7 +164,12 @@ func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 		}
 		if err != nil {
 			log.WithFields(log.Fields{
-				"error": err,
+				"error":     err,
+				"topic":     m.Topic,
+				"offset":    m.Offset,
+				"key":       string(m.Key),
+				"value":     string(m.Value),
+				"eventType": eventType,
 			}).Error("Error writing Kafka message to DB")
 		}
 		if s.isShuttingDown() {
@@ -201,15 +206,16 @@ func (s *KafkaConsumerService) ConsumeImageBuildEvents() error {
 		// retrieve the image ID from the message value
 		var eventMessage *IBevent
 
+		// currently only logging events while resume is handled via API
 		eventErr := json.Unmarshal([]byte(m.Value), &eventMessage)
 		if eventErr != nil {
 			log.WithField("error", eventErr).Debug("Error unmarshaling event. This is not the event you're looking for")
 		} else {
 			log.WithField("imageID", eventMessage.ImageID).Debug("Resuming image ID from event on " + string(m.Topic))
-			//go s.ImageService.ResumeCreateImage(eventMessage.ImageID)
 		}
+
 		if s.isShuttingDown() {
-			log.Info("ShootingDown, exiting image build events consumer")
+			log.Info("ShuttingDown, exiting image build events consumer")
 			return nil
 		}
 	}

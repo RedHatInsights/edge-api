@@ -67,7 +67,7 @@ type PlatformInsightsCreateUpdateEventPayload struct {
 		SystemProfile struct {
 			HostType             string                `json:"host_type"`
 			RpmOSTreeDeployments []RpmOSTreeDeployment `json:"rpm_ostree_deployments"`
-			RHCClientID          string                `json:"rhc_client_id"`
+			RHCClientID          string                `json:"rhc_client_id,omitempty"`
 		} `json:"system_profile"`
 	} `json:"host"`
 }
@@ -596,7 +596,7 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 		device.Account = deviceAccount
 	}
 	// update rhc client id if undefined
-	if device.RHCClientID != eventData.Host.SystemProfile.RHCClientID {
+	if eventData.Host.SystemProfile.RHCClientID != "" && device.RHCClientID != eventData.Host.SystemProfile.RHCClientID {
 		device.RHCClientID = eventData.Host.SystemProfile.RHCClientID
 	}
 	// always update device name and last seen datetime
@@ -869,17 +869,20 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 
 	deviceUUID := eventData.ID
 	deviceAccount := eventData.Account
-	var device models.Device
-	if result := db.DB.Where(models.Device{Account: deviceAccount, UUID: deviceUUID}).First(&device); result.Error != nil {
+	var devices []models.Device
+	if result := db.DB.Where(models.Device{Account: deviceAccount, UUID: deviceUUID}).Find(&devices); result.Error != nil {
 		s.log.WithFields(
 			log.Fields{"host_id": deviceUUID, "Account": deviceAccount, "error": result.Error},
-		).Error("Error retrieving the device")
+		).Debug("Error retrieving the devices")
 		return result.Error
 	}
-	if result := db.DB.Delete(&device); result.Error != nil {
+	if len(devices) == 0 {
+		return nil
+	}
+	if result := db.DB.Delete(&devices[0]); result.Error != nil {
 		s.log.WithFields(
 			log.Fields{"host_id": deviceUUID, "Account": deviceAccount, "error": result.Error},
-		).Error("Error when deleting device")
+		).Error("Error when deleting devices")
 		return result.Error
 	}
 	return nil
