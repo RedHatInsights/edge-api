@@ -47,10 +47,10 @@ test:
 test-no-fdo:
 	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS)
 
-coverage: 
+coverage:
 	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /test/) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
 
-coverage-no-fdo: 
+coverage-no-fdo:
 	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
 
 coverage-html:
@@ -63,7 +63,7 @@ vet-no-fdo:
 	go vet $$(go list ./... | grep -v /vendor/)
 
 lint:
-	golint $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
+	golint -set_exit_status $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
 
 build:
 	$(OCI_TOOL) build . -t $(CONTAINER_TAG)

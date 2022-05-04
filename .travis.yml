@@ -61,4 +61,4 @@ jobs:
     - name: "Code Linting"
       script:
         - go get -u golang.org/x/lint/golint
-        - "[ $(make -s lint | wc -l) -eq 0 ]"
+        - "[ $(make lint) -eq 0 ]"
