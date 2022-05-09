@@ -499,7 +499,7 @@ var _ = Describe("Image Service Test", func() {
 				Expect(result.Error).ToNot(HaveOccurred())
 				err := services.ValidateAllImageReposAreFromAccount(account1, []models.ThirdPartyRepo{repo1, repo2})
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("some repos was not found"))
+				Expect(err).To(MatchError("some repositories were not found"))
 			})
 		})
 	})
