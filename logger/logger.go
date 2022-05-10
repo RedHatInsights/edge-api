@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/getsentry/sentry-go"
 	"github.com/redhatinsights/edge-api/config"
 	lc "github.com/redhatinsights/platform-go-middlewares/logging/cloudwatch"
 	log "github.com/sirupsen/logrus"
@@ -74,6 +76,8 @@ func FlushLogger() {
 // LogErrorAndPanic Records the error, flushes the buffer, then panics the container
 func LogErrorAndPanic(msg string, err error) {
 	log.WithFields(log.Fields{"error": err}).Error(msg)
+	sentry.CaptureException(errors.New(msg))
+	sentry.Flush(time.Second * 5)
 	FlushLogger()
 	panic(err)
 }

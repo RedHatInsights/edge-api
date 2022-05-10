@@ -72,6 +72,8 @@ objects:
           value: ${FDO_HOST_URL}
         - name: FDO_API_VERSION
           value: ${FDO_API_VERSION}
+        - name: SENTRY_URL
+          value: ${SENTRY_URL}
         - name: PLAYBOOKDISPATCHERPSK
           valueFrom:
             secretKeyRef:
@@ -117,6 +119,8 @@ objects:
           value: ${FDO_HOST_URL}
         - name: FDO_API_VERSION
           value: ${FDO_API_VERSION}
+        - name: SENTRY_URL
+           value: ${SENTRY_URL}
         - name: PLAYBOOKDISPATCHERPSK
           valueFrom:
             secretKeyRef:
@@ -230,3 +234,8 @@ parameters:
   name: LOG_LEVEL
   required: false
   value: "DEBUG"
+- description: Sentry service UR:
+  name: SENTRY_URL
+  required: false
+  value: "edge-api@sentry.io"
+

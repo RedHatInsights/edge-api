@@ -21,6 +21,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes"
 	"github.com/redhatinsights/edge-api/pkg/services"
 
+	sentry "github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -161,6 +162,11 @@ func main() {
 			}
 		}
 	}
+
+	sentry.Init(sentry.ClientOptions{
+		Dsn: config.Get().SentryURL,
+	})
+	sentry.Flush(time.Second * 5)
 
 	// block here and shut things down on interrupt
 	<-interruptSignal

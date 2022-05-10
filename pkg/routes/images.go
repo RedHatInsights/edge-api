@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
@@ -308,6 +309,8 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		services.Log.WithField("error", err).Debug("Account not found")
 		err := errors.NewBadRequest(err.Error())
+		sentry.CaptureException(err)
+		sentry.Flush(time.Second * 5)
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
 			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
@@ -318,6 +321,8 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	if countResult.Error != nil {
 		services.Log.WithField("error", countResult.Error.Error()).Error("Error retrieving images")
 		countErr := errors.NewInternalServerError()
+		sentry.CaptureException(countErr)
+		sentry.Flush(time.Second * 5)
 		w.WriteHeader(countErr.GetStatus())
 		if err := json.NewEncoder(w).Encode(&countErr); err != nil {
 			services.Log.WithField("error", countErr).Error("Error while trying to encode")
@@ -328,6 +333,8 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	if result.Error != nil {
 		services.Log.WithField("error", result.Error.Error()).Error("Error retrieving images")
 		err := errors.NewInternalServerError()
+		sentry.CaptureException(err)
+		sentry.Flush(time.Second * 5)
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
 			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
@@ -335,6 +342,7 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := json.NewEncoder(w).Encode(map[string]interface{}{"data": &images, "count": count}); err != nil {
+
 		services.Log.WithField("error", map[string]interface{}{"data": &images, "count": count}).Error("Error while trying to encode")
 	}
 }
@@ -344,6 +352,8 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 	image, ok := ctx.Value(imageKey).(*models.Image)
 	if !ok {
 		err := errors.NewBadRequest("Must pass image identifier")
+		sentry.CaptureException(err)
+		sentry.Flush(time.Second * 5)
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
 			services := dependencies.ServicesFromContext(r.Context())
@@ -368,6 +378,8 @@ func GetImageStatusByID(w http.ResponseWriter, r *http.Request) {
 		}); err != nil {
 			services := dependencies.ServicesFromContext(r.Context())
 			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 		}
 	}
 }
@@ -388,6 +400,8 @@ func GetImageByID(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewEncoder(w).Encode(image); err != nil {
 			services := dependencies.ServicesFromContext(r.Context())
 			services.Log.WithField("error", image).Error("Error while trying to encode")
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 		}
 	}
 }
@@ -404,6 +418,8 @@ func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 		upd, err := services.ImageService.GetUpdateInfo(*image)
 		if err != nil {
 			services.Log.WithField("error", err.Error()).Error("Error getting update info")
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 		}
 		if upd != nil {
 			imgDetail.UpdateAdded = len(upd[len(upd)-1].PackageDiff.Removed)
@@ -416,6 +432,8 @@ func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 		}
 		if err := json.NewEncoder(w).Encode(imgDetail); err != nil {
 			services.Log.WithField("error", imgDetail).Error("Error while trying to encode")
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 		}
 	}
 }
@@ -426,6 +444,8 @@ func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 		if err := json.NewEncoder(w).Encode(&image); err != nil {
 			services := dependencies.ServicesFromContext(r.Context())
 			services.Log.WithField("error", image).Error("Error while trying to encode")
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 		}
 	}
 }
@@ -438,6 +458,8 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&image.Installer); err != nil {
 		services.Log.WithField("error", err).Error("Failed to decode installer")
 		err := errors.NewInternalServerError()
+		sentry.CaptureException(err)
+		sentry.Flush(time.Second * 5)
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
 			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
@@ -449,6 +471,8 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		services.Log.WithField("error", err).Error("Failed to create installer")
 		err := errors.NewInternalServerError()
 		err.SetTitle("Failed to create installer")
+		sentry.CaptureException(err)
+		sentry.Flush(time.Second * 5)
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
 			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
@@ -472,6 +496,8 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 		if result.Error != nil {
 			services.Log.WithField("error", result.Error.Error()).Debug("Query error")
 			err := errors.NewBadRequest(result.Error.Error())
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 			w.WriteHeader(err.GetStatus())
 			if err := json.NewEncoder(w).Encode(&err); err != nil {
 				services.Log.WithField("error", result.Error.Error()).Error("Error while trying to encode")
@@ -481,6 +507,8 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 		db.DB.First(&i.Commit, i.CommitID)
 		if _, err := services.ImageService.CreateRepoForImage(i); err != nil {
 			services.Log.WithField("error", err).Error("Failed to create repo")
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 		}
 	}(image.ID, r.Context())
 
@@ -495,6 +523,8 @@ func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 		repo, err := services.RepoService.GetRepoByID(image.Commit.RepoID)
 		if err != nil {
 			err := errors.NewNotFound(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.CommitID))
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 			w.WriteHeader(err.GetStatus())
 			if err := json.NewEncoder(w).Encode(&err); err != nil {
 				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
@@ -503,6 +533,8 @@ func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 		}
 		if err := json.NewEncoder(w).Encode(repo); err != nil {
 			services.Log.WithField("error", repo).Error("Error while trying to encode")
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 		}
 	}
 }
@@ -514,14 +546,20 @@ func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 		meta, err := services.ImageService.GetMetadata(image)
 		if err != nil {
 			err := errors.NewInternalServerError()
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 			w.WriteHeader(err.GetStatus())
 			if err := json.NewEncoder(w).Encode(&err); err != nil {
 				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+				sentry.CaptureException(err)
+				sentry.Flush(time.Second * 5)
 			}
 			return
 		}
 		if err := json.NewEncoder(w).Encode(meta); err != nil {
 			services.Log.WithField("error", meta).Error("Error while trying to encode")
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 		}
 	}
 }
@@ -535,9 +573,13 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 			// TODO: Temporary. Handle error better.
 			services.Log.Errorf("Kickstart file injection failed %s", err.Error())
 			err := errors.NewInternalServerError()
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 			w.WriteHeader(err.GetStatus())
 			if err := json.NewEncoder(w).Encode(&err); err != nil {
 				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+				sentry.CaptureException(err)
+				sentry.Flush(time.Second * 5)
 			}
 			return
 		}
@@ -556,36 +598,52 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
 		services.Log.WithField("error", err.Error()).Debug("Bad request")
 		err := errors.NewBadRequest(err.Error())
+		sentry.CaptureException(err)
+		sentry.Flush(time.Second * 5)
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
 			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 		}
 	}
 	account, err := common.GetAccount(r)
 	if err != nil {
 		services.Log.WithField("error", err.Error()).Debug("Bad request")
 		err := errors.NewBadRequest(err.Error())
+		sentry.CaptureException(err)
+		sentry.Flush(time.Second * 5)
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
 			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 		}
 		return
 	}
 	if image == nil {
 		err := errors.NewInternalServerError()
 		services.Log.WithField("error", err.Error()).Error("Internal Server Error")
+		sentry.CaptureException(err)
+		sentry.Flush(time.Second * 5)
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
 			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 		}
 	}
 	imageExists, err := services.ImageService.CheckImageName(image.Name, account)
 	if err != nil {
 		services.Log.WithField("error", err.Error()).Error("Internal Server Error")
 		err := errors.NewInternalServerError()
+		sentry.CaptureException(err)
+		sentry.Flush(time.Second * 5)
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
 			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 		}
 		return
 	}
@@ -594,6 +652,8 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 		ImageExists: imageExists,
 	}); err != nil {
 		services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		sentry.CaptureException(err)
+		sentry.Flush(time.Second * 5)
 	}
 }
 
@@ -606,15 +666,21 @@ func RetryCreateImage(w http.ResponseWriter, r *http.Request) {
 			services.Log.WithField("error", err.Error()).Error("Failed to retry to create image")
 			err := errors.NewInternalServerError()
 			err.SetTitle("Failed creating image")
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 			w.WriteHeader(err.GetStatus())
 			if err := json.NewEncoder(w).Encode(&err); err != nil {
 				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+				sentry.CaptureException(err)
+				sentry.Flush(time.Second * 5)
 			}
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(&image); err != nil {
 			services.Log.WithField("error", image).Error("Error while trying to encode")
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 		}
 	}
 }
@@ -661,15 +727,21 @@ func ResumeCreateImage(w http.ResponseWriter, r *http.Request) {
 			edgeAPIServices.Log.WithField("error", err.Error()).Error("Failed to retry to create image")
 			err := errors.NewInternalServerError()
 			err.SetTitle("Failed creating image")
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 			w.WriteHeader(err.GetStatus())
 			if err := json.NewEncoder(w).Encode(&err); err != nil {
 				edgeAPIServices.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+				sentry.CaptureException(err)
+				sentry.Flush(time.Second * 5)
 			}
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(&image); err != nil {
 			edgeAPIServices.Log.WithField("error", image).Error("Error while trying to encode")
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 		}
 	}
 }
@@ -683,9 +755,13 @@ func SendNotificationForImage(w http.ResponseWriter, r *http.Request) {
 			services.Log.WithField("error", err.Error()).Error("Failed to retry to send notification")
 			err := errors.NewInternalServerError()
 			err.SetTitle("Failed creating image")
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 			w.WriteHeader(err.GetStatus())
 			if err := json.NewEncoder(w).Encode(&err); err != nil {
 				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+				sentry.CaptureException(err)
+				sentry.Flush(time.Second * 5)
 			}
 			return
 		}
@@ -693,6 +769,8 @@ func SendNotificationForImage(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(notify); err != nil {
 			services.Log.WithField("error", notify).Error("Error while trying to encode")
+			sentry.CaptureException(err)
+			sentry.Flush(time.Second * 5)
 		}
 	}
 }

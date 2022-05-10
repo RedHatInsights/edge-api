@@ -34,6 +34,7 @@ type EdgeConfig struct {
 	KafkaConfig              *clowder.KafkaConfig      `json:"kafka,omitempty"`
 	FDO                      *fdoConfig                `json:"fdo,omitempty"`
 	Local                    bool                      `json:"local,omitempty"`
+	SentryURL                string                    `json:"sentry_url"`
 }
 
 type dbConfig struct {
@@ -103,6 +104,7 @@ func Init() {
 	options.SetDefault("FDOApiVersion", "v1")
 	options.SetDefault("FDOAuthorizationBearer", "lorum-ipsum")
 	options.SetDefault("Local", false)
+	options.SetDefault("SentryURL", "edge-api@sentry.stage.devshift.net/34")
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
@@ -144,7 +146,8 @@ func Init() {
 			APIVersion:          options.GetString("FDOApiVersion"),
 			AuthorizationBearer: options.GetString("FDOAuthorizationBearer"),
 		},
-		Local: options.GetBool("Local"),
+		Local:     options.GetBool("Local"),
+		SentryURL: options.GetString("SENTRY_URL"),
 	}
 
 	database := options.GetString("database")
