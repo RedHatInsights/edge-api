@@ -163,9 +163,12 @@ func main() {
 		}
 	}
 
-	sentry.Init(sentry.ClientOptions{
+	err := sentry.Init(sentry.ClientOptions{
 		Dsn: config.Get().SentryURL,
 	})
+	if err != nil {
+		log.WithField("error", err.Error()).Error("Error to push sentry")
+	}
 	sentry.Flush(time.Second * 5)
 
 	// block here and shut things down on interrupt
