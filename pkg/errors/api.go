@@ -33,7 +33,7 @@ type InternalServerError struct {
 
 // NewInternalServerError creates a new InternalServerError
 func NewInternalServerError() APIError {
-	sentry.CaptureException(errors.New("Something went wrong."))
+	sentry.CaptureException(errors.New("NewInternalServerError"))
 	err := new(InternalServerError)
 	err.Code = "ERROR"
 	err.Title = "Something went wrong."
