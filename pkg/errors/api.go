@@ -1,7 +1,10 @@
 package errors
 
 import (
+	"errors"
 	"net/http"
+
+	"github.com/getsentry/sentry-go"
 )
 
 // APIError defines a type for all errors returned by edge api
@@ -30,6 +33,7 @@ type InternalServerError struct {
 
 // NewInternalServerError creates a new InternalServerError
 func NewInternalServerError() APIError {
+	sentry.CaptureException(errors.New("Something went wrong."))
 	err := new(InternalServerError)
 	err.Code = "ERROR"
 	err.Title = "Something went wrong."
@@ -44,10 +48,12 @@ type BadRequest struct {
 
 // NewBadRequest creates a new BadRequest
 func NewBadRequest(message string) APIError {
+	sentry.CaptureException(errors.New(message))
 	err := new(BadRequest)
 	err.Code = "BAD_REQUEST"
 	err.Title = message
 	err.Status = http.StatusBadRequest
+
 	return err
 }
 
@@ -58,6 +64,7 @@ type NotFound struct {
 
 // NewNotFound creates a new NotFound
 func NewNotFound(message string) APIError {
+	sentry.CaptureException(errors.New(message))
 	err := new(NotFound)
 	err.Code = "NOT_FOUND"
 	err.Title = message
