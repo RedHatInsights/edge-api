@@ -120,7 +120,7 @@ objects:
         - name: FDO_API_VERSION
           value: ${FDO_API_VERSION}
         - name: SENTRY_URL
-           value: ${SENTRY_URL}
+          value: ${SENTRY_URL}
         - name: PLAYBOOKDISPATCHERPSK
           valueFrom:
             secretKeyRef:
