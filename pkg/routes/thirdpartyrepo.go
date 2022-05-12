@@ -72,67 +72,50 @@ func getThirdPartyRepo(w http.ResponseWriter, r *http.Request) *models.ThirdPart
 
 // CreateThirdPartyRepo creates Third Party Repository
 func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
-	services := dependencies.ServicesFromContext(r.Context())
-	defer r.Body.Close()
+	ctxServices := dependencies.ServicesFromContext(r.Context())
 	thirdPartyRepo, err := createRequest(w, r)
 	if err != nil {
 		// error handled by createRequest already
 		return
 	}
-	services.Log.Info("Creating third party repository")
+	ctxServices.Log.Info("Creating third party repository")
 
 	account, err := common.GetAccount(r)
 	if err != nil {
-		services.Log.WithField("error", err.Error()).Error("Account was not set")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		ctxServices.Log.WithField("error", err.Error()).Error("Account was not set")
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 		return
 	}
 
-	thirdPartyRepo, err = services.ThirdPartyRepoService.CreateThirdPartyRepo(thirdPartyRepo, account)
+	thirdPartyRepo, err = ctxServices.ThirdPartyRepoService.CreateThirdPartyRepo(thirdPartyRepo, account)
 	if err != nil {
-		services.Log.WithField("error", err.Error()).Error("Error creating third party repository")
-		err := errors.NewInternalServerError()
-		err.SetTitle("failed creating third party repository")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		var apiError errors.APIError
+		switch err.(type) {
+		case *services.ThirdPartyRepositoryNameIsEmpty, *services.ThirdPartyRepositoryURLIsEmpty, *services.ThirdPartyRepositoryAlreadyExists:
+			apiError = errors.NewBadRequest(err.Error())
+		default:
+			apiError := errors.NewInternalServerError()
+			apiError.SetTitle("failed creating third party repository")
 		}
+		respondWithAPIError(w, ctxServices.Log, apiError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(&thirdPartyRepo); err != nil {
-		services.Log.WithField("error", thirdPartyRepo).Error("Error while trying to encode")
-	}
-
+	respondWithJSONBody(w, ctxServices.Log, &thirdPartyRepo)
 }
 
 // createRequest validates request to create ThirdPartyRepo.
 func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRepo, error) {
-	services := dependencies.ServicesFromContext(r.Context())
+	ctxServices := dependencies.ServicesFromContext(r.Context())
 
 	var tprepo *models.ThirdPartyRepo
-	if err := json.NewDecoder(r.Body).Decode(&tprepo); err != nil {
-		services.Log.WithField("error", err.Error()).Error("Error parsing json from third party repo")
-		err := errors.NewBadRequest("invalid JSON request")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+	if err := readRequestJSONBody(w, r, ctxServices.Log, &tprepo); err != nil {
 		return nil, err
 	}
-	services.Log = services.Log.WithFields(log.Fields{
-		"URL":  tprepo.URL,
-		"name": tprepo.Name,
-	})
 
 	if err := tprepo.ValidateRequest(); err != nil {
-		services.Log.WithField("error", err.Error()).Info("Error validation request from third party repo")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
+		ctxServices.Log.WithField("error", err.Error()).Info("Error validation request from third party repo")
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 		return nil, err
 	}
 	return tprepo, nil
@@ -291,34 +274,39 @@ func GetThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 
 // UpdateThirdPartyRepo updates the existing third party repository
 func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
-	if oldtprepo := getThirdPartyRepo(w, r); oldtprepo != nil {
-		services := dependencies.ServicesFromContext(r.Context())
-		defer r.Body.Close()
-		tprepo, err := createRequest(w, r)
-		if err != nil {
-			// error handled by createRequest already
-			return
-		}
-		err = services.ThirdPartyRepoService.UpdateThirdPartyRepo(tprepo, oldtprepo.Account, fmt.Sprint(oldtprepo.ID))
-		if err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error updating third party repository")
-			err := errors.NewInternalServerError()
-			err.SetTitle("failed updating third party repository")
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		repoDetails, err := services.ThirdPartyRepoService.GetThirdPartyRepoByID(fmt.Sprint(oldtprepo.ID))
-		if err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error getting third party repository")
-		}
-		if err := json.NewEncoder(w).Encode(repoDetails); err != nil {
-			services.Log.WithField("error", repoDetails).Error("Error while trying to encode")
-		}
+	oldtprepo := getThirdPartyRepo(w, r)
+	if oldtprepo == nil {
+		// error is handled by getThirdPartyRepo
+		return
 	}
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	tprepo, err := createRequest(w, r)
+	if err != nil {
+		// error handled by createRequest already
+		return
+	}
+	err = ctxServices.ThirdPartyRepoService.UpdateThirdPartyRepo(tprepo, oldtprepo.Account, fmt.Sprint(oldtprepo.ID))
+	if err != nil {
+		var apiError errors.APIError
+		switch err.(type) {
+		case *services.ThirdPartyRepositoryAlreadyExists:
+			apiError = errors.NewBadRequest(err.Error())
+		default:
+			apiError := errors.NewInternalServerError()
+			apiError.SetTitle("failed updating third party repository")
+		}
+		respondWithAPIError(w, ctxServices.Log, apiError)
+		return
+	}
+
+	repoDetails, err := ctxServices.ThirdPartyRepoService.GetThirdPartyRepoByID(fmt.Sprint(oldtprepo.ID))
+	if err != nil {
+		ctxServices.Log.WithField("error", err.Error()).Error("Error getting third party repository")
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	respondWithJSONBody(w, ctxServices.Log, repoDetails)
 }
 
 // DeleteThirdPartyRepoByID deletes the third party repository using ID

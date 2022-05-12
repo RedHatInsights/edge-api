@@ -14,6 +14,7 @@ type Commit struct {
 	Model
 	Name                 string
 	Account              string             `json:"Account"`
+	OrgID                string             `json:"org_id"`
 	ImageBuildHash       string             `json:"ImageBuildHash"`
 	ImageBuildParentHash string             `json:"ImageBuildParentHash"`
 	ImageBuildTarURL     string             `json:"ImageBuildTarURL"`

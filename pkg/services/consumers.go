@@ -249,25 +249,43 @@ func (s *KafkaConsumerService) Close() {
 // Start consumers for this application
 func (s *KafkaConsumerService) Start() {
 	log.Info("Starting consumers...")
+
+	// keeping track of fails for logging reference
+	failCounter := 0
 	for {
-		// The only way to actually exit this for is sending an exit signal to the app
+		// The only way to currently exit this for is sending an exit signal to the app
 		// Due to this call, this is also a method that can't be unit tested (see comment in the method above)
 		err := s.consumer()
+
+		// break out of loop if application is gracefully shutting down with -SIGTERM
 		if s.isShuttingDown() {
 			if err != nil {
 				log.WithFields(log.Fields{
 					"error": err.Error(),
 				}).Error("There was en error connecting to the broker. Reader was intentionally closed.")
 			}
-			log.Info("ShootingDown, exiting main consumer loop")
+			log.Info("ShuttingDown, exiting main consumer loop")
 			break
 		}
 
+		// just logging that we'll retry here
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error":          err.Error(),
 				"minutesToRetry": s.RetryMinutes,
 			}).Error("There was en error connecting to the broker. Retry in a few minutes.")
+		}
+
+		// closing the reader if there was a connection issue
+		if err := s.Reader.Close(); err != nil {
+			failCounter++
+			log.WithFields(log.Fields{
+				"topic":        s.topic,
+				"fail-counter": failCounter,
+				"error":        err.Error(),
+			}).Error("Error closing Kafka reader")
+		} else {
+			failCounter = 0
 		}
 		time.Sleep(time.Minute * time.Duration(s.RetryMinutes))
 		s.Reader = s.initReader()

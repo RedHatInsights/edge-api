@@ -83,6 +83,26 @@ func main() {
 	errorOccurred := false
 	defer handlePanic(&errorOccurred)
 
+	// Delete indexes first, before models AutoMigrate
+	indexesToDelete := []struct {
+		model     interface{}
+		label     string
+		indexName string
+	}{
+		{model: &models.ThirdPartyRepo{}, label: "ThirdPartyRepo", indexName: "idx_third_party_repos_name"},
+	}
+	for _, indexToDelete := range indexesToDelete {
+		if db.DB.Migrator().HasIndex(indexToDelete.model, indexToDelete.indexName) {
+			log.Debugf(`Model index %s "%s" exists deleting ...`, indexToDelete.label, indexToDelete.indexName)
+			if err := db.DB.Migrator().DropIndex(indexToDelete.model, indexToDelete.indexName); err != nil {
+				log.Warningf(`Model index %s "%s" deletion failure %s`, indexToDelete.label, indexToDelete.indexName, err)
+				errorOccurred = true
+			}
+		} else {
+			log.Debugf(`Model index %s "%s"  does not exist`, indexToDelete.label, indexToDelete.indexName)
+		}
+	}
+
 	// Order should match model deletions in cmd/db/wipe.go
 	// Order is not strictly alphabetical due to dependencies (e.g. Image needs ImageSet)
 	type ModelInterface struct {
