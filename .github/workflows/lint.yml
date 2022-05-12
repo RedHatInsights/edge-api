@@ -33,7 +33,7 @@ jobs:
 
       - name: Lint
         run: |
-          [ $(make lint) -eq 0 ]
+          [ $(make -s lint | wc -l) -eq 0 ]
 
       - name: Vet
         uses: addnab/docker-run-action@v3
