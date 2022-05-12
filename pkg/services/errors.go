@@ -72,6 +72,13 @@ func (e *ThirdPartyRepositoryURLIsEmpty) Error() string {
 	return "custom repository URL cannot be empty"
 }
 
+// ThirdPartyRepositoryImagesExists indicates the Third Party Repository has been used in some images
+type ThirdPartyRepositoryImagesExists struct{}
+
+func (e *ThirdPartyRepositoryImagesExists) Error() string {
+	return "custom repository is used by some images"
+}
+
 // ImageVersionAlreadyExists indicates the updated image version was already present
 type ImageVersionAlreadyExists struct{}
 
