@@ -4,6 +4,7 @@ package models
 type Installer struct {
 	Model
 	Account          string `json:"Account"`
+	OrgID            string `json:"org_id"`
 	ImageBuildISOURL string `json:"ImageBuildISOURL"`
 	ComposeJobID     string `json:"ComposeJobID"`
 	Status           string `json:"Status"`
