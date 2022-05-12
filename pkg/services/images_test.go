@@ -461,7 +461,7 @@ var _ = Describe("Image Service Test", func() {
 	})
 	Describe("validate images packages account", func() {
 		Context("when creating an image using third party repository", func() {
-			It("should validate the images packages from account", func() {
+			It("should validate the images with empty repos", func() {
 				var repos []models.ThirdPartyRepo
 				account := "00000"
 				err := services.ValidateAllImageReposAreFromAccount(account, repos)
@@ -474,6 +474,32 @@ var _ = Describe("Image Service Test", func() {
 				err := services.ValidateAllImageReposAreFromAccount(account, repos)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError("repository information is not valid"))
+			})
+
+			It("should validate the images with repos within same account", func() {
+				account := "00000"
+				repo1 := models.ThirdPartyRepo{Account: account, Name: faker.UUIDHyphenated(), URL: "https://repo1.simple.com"}
+				result := db.DB.Create(&repo1)
+				Expect(result.Error).ToNot(HaveOccurred())
+				repo2 := models.ThirdPartyRepo{Account: account, Name: faker.UUIDHyphenated(), URL: "https://repo2.simple.com"}
+				result = db.DB.Create(&repo2)
+				Expect(result.Error).ToNot(HaveOccurred())
+				err := services.ValidateAllImageReposAreFromAccount(account, []models.ThirdPartyRepo{repo1, repo2})
+				Expect(err).ToNot(HaveOccurred())
+
+			})
+			It("should not validate the images with repos from different accounts", func() {
+				account1 := "1111111"
+				account2 := "2222222"
+				repo1 := models.ThirdPartyRepo{Account: account1, Name: faker.UUIDHyphenated(), URL: "https://repo1.simple.com"}
+				result := db.DB.Create(&repo1)
+				Expect(result.Error).ToNot(HaveOccurred())
+				repo2 := models.ThirdPartyRepo{Account: account2, Name: faker.UUIDHyphenated(), URL: "https://repo2.simple.com"}
+				result = db.DB.Create(&repo2)
+				Expect(result.Error).ToNot(HaveOccurred())
+				err := services.ValidateAllImageReposAreFromAccount(account1, []models.ThirdPartyRepo{repo1, repo2})
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError("some repositories were not found"))
 			})
 		})
 	})

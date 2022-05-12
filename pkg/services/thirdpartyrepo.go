@@ -31,23 +31,47 @@ type ThirdPartyRepoService struct {
 	Service
 }
 
+// thirdPartyRepoNameExists check if a repo with the requested name exists
+func (s *ThirdPartyRepoService) thirdPartyRepoNameExists(account string, name string) (bool, error) {
+	var reposCount int64
+	if result := db.DB.Model(&models.ThirdPartyRepo{}).Where("account = ? AND name = ?", account, name).Count(&reposCount); result.Error != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error checking third party repository existence")
+		return false, result.Error
+	}
+
+	return reposCount > 0, nil
+}
+
 // CreateThirdPartyRepo creates the ThirdPartyRepo for an Account on our database
 func (s *ThirdPartyRepoService) CreateThirdPartyRepo(thirdPartyRepo *models.ThirdPartyRepo, account string) (*models.ThirdPartyRepo, error) {
-	if thirdPartyRepo.URL != "" && thirdPartyRepo.Name != "" {
-		thirdPartyRepo = &models.ThirdPartyRepo{
-			Name:        thirdPartyRepo.Name,
-			URL:         thirdPartyRepo.URL,
-			Description: thirdPartyRepo.Description,
-			Account:     account,
-		}
-		result := db.DB.Create(&thirdPartyRepo)
-		if result.Error != nil {
-			s.log.WithField("error", result.Error.Error()).Error("Error creating third party repository")
-			return nil, result.Error
-		}
-
+	if account == "" {
+		return nil, new(AccountNotSet)
 	}
-	return thirdPartyRepo, nil
+	if thirdPartyRepo.Name == "" {
+		return nil, new(ThirdPartyRepositoryNameIsEmpty)
+	}
+	if thirdPartyRepo.URL == "" {
+		return nil, new(ThirdPartyRepositoryURLIsEmpty)
+	}
+	repoExists, err := s.thirdPartyRepoNameExists(account, thirdPartyRepo.Name)
+	if err != nil {
+		return nil, err
+	}
+	if repoExists {
+		return nil, new(ThirdPartyRepositoryAlreadyExists)
+	}
+	createdThirdPartyRepo := &models.ThirdPartyRepo{
+		Name:        thirdPartyRepo.Name,
+		URL:         thirdPartyRepo.URL,
+		Description: thirdPartyRepo.Description,
+		Account:     account,
+	}
+	if result := db.DB.Create(&createdThirdPartyRepo); result.Error != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error creating third party repository")
+		return nil, result.Error
+	}
+
+	return createdThirdPartyRepo, nil
 }
 
 // GetThirdPartyRepoByID gets the Third Party Repository by ID from the database
@@ -70,12 +94,21 @@ func (s *ThirdPartyRepoService) UpdateThirdPartyRepo(tprepo *models.ThirdPartyRe
 	tprepo.Account = account
 	repoDetails, err := s.GetThirdPartyRepoByID(ID)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Error retieving third party repository")
+		s.log.WithField("error", err.Error()).Error("Error retrieving third party repository")
 	}
 	if tprepo.Name != "" {
+		if tprepo.Name != repoDetails.Name {
+			// check if a repository with the new name already exists
+			repoExists, err := s.thirdPartyRepoNameExists(account, tprepo.Name)
+			if err != nil {
+				return err
+			}
+			if repoExists {
+				return new(ThirdPartyRepositoryAlreadyExists)
+			}
+		}
 		repoDetails.Name = tprepo.Name
 	}
-
 	if tprepo.URL != "" {
 		repoDetails.URL = tprepo.URL
 	}
@@ -83,7 +116,7 @@ func (s *ThirdPartyRepoService) UpdateThirdPartyRepo(tprepo *models.ThirdPartyRe
 	if tprepo.Description != "" {
 		repoDetails.Description = tprepo.Description
 	}
-	result := db.DB.Save(&repoDetails)
+	result := db.DB.Save(repoDetails)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -104,7 +137,7 @@ func (s *ThirdPartyRepoService) DeleteThirdPartyRepoByID(ID string) (*models.Thi
 	}
 	repoDetails, err := s.GetThirdPartyRepoByID(ID)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Error retieving third party repository")
+		s.log.WithField("error", err.Error()).Error("Error retrieving third party repository")
 	}
 	if repoDetails.Name == "" {
 		return nil, errors.NewInternalServerError()

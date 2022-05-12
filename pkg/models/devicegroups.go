@@ -13,6 +13,7 @@ import (
 type DeviceGroup struct {
 	Model
 	Account string   `json:"Account" gorm:"index;<-:create"`
+	OrgID   string   `json:"org_id"`
 	Name    string   `json:"Name"`
 	Type    string   `json:"Type" gorm:"default:static;<-:create"`
 	Devices []Device `json:"Devices" gorm:"many2many:device_groups_devices;"`

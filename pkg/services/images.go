@@ -97,8 +97,12 @@ func ValidateAllImageReposAreFromAccount(account string, repos []models.ThirdPar
 
 	var existingRepos []models.ThirdPartyRepo
 
-	if res := db.DB.Where(models.ThirdPartyRepo{Account: account}).Find(&existingRepos, ids); res.Error != nil {
+	if res := db.DB.Select("id").Where(models.ThirdPartyRepo{Account: account}).Find(&existingRepos, ids); res.Error != nil {
 		return res.Error
+	}
+
+	if len(existingRepos) != len(ids) {
+		return errors.NewNotFound("some repositories were not found")
 	}
 
 	return nil
@@ -126,10 +130,13 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 	if image.Version == 0 {
 		image.Version = 1
 	}
+	if err := ValidateAllImageReposAreFromAccount(account, image.ThirdPartyRepositories); err != nil {
+		return err
+	}
 	//Send Image creation to notification
 	notify, errNotify := s.SendImageNotification(image)
 	if errNotify != nil {
-		s.log.WithField("message", errNotify.Error()).Error("Error to send notification")
+		s.log.WithField("message", errNotify.Error()).Error("Error sending notification")
 		s.log.WithField("message", notify).Error("Notify Error")
 
 	}
@@ -181,9 +188,6 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 		}
 	}
 
-	if err := ValidateAllImageReposAreFromAccount(account, image.ThirdPartyRepositories); err != nil {
-		return err
-	}
 	tx := db.DB.Create(&image.Commit)
 	if tx.Error != nil {
 		return tx.Error
@@ -207,6 +211,9 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	err := s.CheckIfIsLatestVersion(previousImage)
 	if err != nil {
 		return errors.NewBadRequest("only the latest updated image can be modified")
+	}
+	if err := ValidateAllImageReposAreFromAccount(previousImage.Account, image.ThirdPartyRepositories); err != nil {
+		return err
 	}
 
 	// important: update the image imageSet for any previous image build status,
@@ -232,7 +239,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		repo, err := s.RepoService.GetRepoByID(previousImage.Commit.RepoID)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Commit repo wasn't found on the database")
-			err := errors.NewBadRequest(fmt.Sprintf("Commit Repo wasn't found in the database: #%v", image.Commit.ID))
+			err := errors.NewBadRequest(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.Commit.ID))
 			return err
 		}
 
@@ -270,9 +277,6 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 			s.log.WithField("error", tx.Error.Error()).Error("Error creating installer")
 			return tx.Error
 		}
-	}
-	if err := ValidateAllImageReposAreFromAccount(image.Account, image.ThirdPartyRepositories); err != nil {
-		return err
 	}
 	tx := db.DB.Create(&image.Commit)
 	if tx.Error != nil {
