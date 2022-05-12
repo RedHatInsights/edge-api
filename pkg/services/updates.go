@@ -28,6 +28,7 @@ import (
 // UpdateServiceInterface defines the interface that helps
 // handle the business logic of sending updates to a edge device
 type UpdateServiceInterface interface {
+	BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate, account string, commit *models.Commit) (*[]models.UpdateTransaction, error)
 	CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error)
 	GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error)
@@ -555,14 +556,9 @@ func (s *UpdateService) ValidateUpdateSelection(account string, imageIds []uint)
 	return count == 1, nil
 }
 
-//DevicesUpdate is a struct
-type DevicesUpdate struct {
-	CommitID    uint     `json:"CommitID,omitempty"`
-	DevicesUUID []string `json:"DevicesUUID"`
-}
-
-func (s *UpdateService) buildUpdateTransaction(devicesUpdate DevicesUpdate,
-	account string, commit models.Commit) (*[]models.UpdateTransaction, error) {
+// BuildUpdateTransactions build records
+func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate,
+	account string, commit *models.Commit) (*[]models.UpdateTransaction, error) {
 
 	client := inventory.InitClient(s.ctx, log.NewEntry(log.StandardLogger()))
 	var inv inventory.Response
@@ -594,7 +590,7 @@ func (s *UpdateService) buildUpdateTransaction(devicesUpdate DevicesUpdate,
 		}
 
 		// Get the models.Commit from the Commit ID passed in via JSON
-		update.Commit = &commit
+		update.Commit = commit
 
 		notify, errNotify := s.SendDeviceNotification(&update)
 		if errNotify != nil {
