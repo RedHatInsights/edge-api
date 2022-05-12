@@ -27,7 +27,6 @@ jobs:
       - name: fmt
         run: |
           [ $(go fmt ./... | wc -l) -eq 0 ]
-          # [ $(RESULT=$(go fmt ./...); if [ "${RESULT}" != "" ]; then echo ${RESULT}; fi | wc -l <<< "${RESULT}" ) -eq 0 ]
 
       - name: Get dependencies
         run: go get -u golang.org/x/lint/golint
