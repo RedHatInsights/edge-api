@@ -59,7 +59,7 @@ type Repository struct {
 	IgnoreSSL  *bool   `json:"ignore_ssl,omitempty"`
 	MetaLink   *string `json:"metalink,omitempty"`
 	MirrorList *string `json:"mirrorlist,omitempty"`
-	RHSM       bool    `json:"rhsm,omitempty"`
+	RHSM       bool    `json:"rhsm"`
 }
 
 // UploadRequest is the upload options accepted by Image Builder API
