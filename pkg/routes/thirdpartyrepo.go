@@ -94,7 +94,7 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		case *services.ThirdPartyRepositoryNameIsEmpty, *services.ThirdPartyRepositoryURLIsEmpty, *services.ThirdPartyRepositoryAlreadyExists:
 			apiError = errors.NewBadRequest(err.Error())
 		default:
-			apiError := errors.NewInternalServerError()
+			apiError = errors.NewInternalServerError()
 			apiError.SetTitle("failed creating third party repository")
 		}
 		respondWithAPIError(w, ctxServices.Log, apiError)
@@ -289,10 +289,12 @@ func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var apiError errors.APIError
 		switch err.(type) {
-		case *services.ThirdPartyRepositoryAlreadyExists:
+		case *services.ThirdPartyRepositoryAlreadyExists, *services.ThirdPartyRepositoryImagesExists:
 			apiError = errors.NewBadRequest(err.Error())
+		case *services.ThirdPartyRepositoryNotFound:
+			apiError = errors.NewNotFound(err.Error())
 		default:
-			apiError := errors.NewInternalServerError()
+			apiError = errors.NewInternalServerError()
 			apiError.SetTitle("failed updating third party repository")
 		}
 		respondWithAPIError(w, ctxServices.Log, apiError)
@@ -320,6 +322,8 @@ func DeleteThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 			switch err.(type) {
 			case *services.ThirdPartyRepositoryNotFound:
 				responseErr = errors.NewNotFound(err.Error())
+			case *services.ThirdPartyRepositoryImagesExists:
+				responseErr = errors.NewBadRequest(err.Error())
 			default:
 				responseErr = errors.NewInternalServerError()
 				responseErr.SetTitle("failed deleting third party repository")
