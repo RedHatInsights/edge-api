@@ -2,11 +2,9 @@ package routes
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -58,13 +56,10 @@ type CreateTPRepoRequest struct {
 
 func getThirdPartyRepo(w http.ResponseWriter, r *http.Request) *models.ThirdPartyRepo {
 	ctx := r.Context()
+	ctxServices := dependencies.ServicesFromContext(ctx)
 	tprepo, ok := ctx.Value(tprepoKey).(*models.ThirdPartyRepo)
 	if !ok {
-		err := errors.NewBadRequest("Failed getting third party repo from context")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("Failed getting custom repository from context"))
 		return nil
 	}
 	return tprepo
@@ -78,7 +73,7 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		// error handled by createRequest already
 		return
 	}
-	ctxServices.Log.Info("Creating third party repository")
+	ctxServices.Log.Info("Creating custom repository")
 
 	account, err := common.GetAccount(r)
 	if err != nil {
@@ -95,7 +90,7 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 			apiError = errors.NewBadRequest(err.Error())
 		default:
 			apiError = errors.NewInternalServerError()
-			apiError.SetTitle("failed creating third party repository")
+			apiError.SetTitle("failed creating custom repository")
 		}
 		respondWithAPIError(w, ctxServices.Log, apiError)
 		return
@@ -114,7 +109,7 @@ func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRe
 	}
 
 	if err := tprepo.ValidateRequest(); err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Info("Error validation request from third party repo")
+		ctxServices.Log.WithField("error", err.Error()).Info("custom repository validation error")
 		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 		return nil, err
 	}
@@ -123,103 +118,49 @@ func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRe
 
 // GetAllThirdPartyRepo return all the ThirdPartyRepo
 func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
-	services := dependencies.ServicesFromContext(r.Context())
-	var tprepo *[]models.ThirdPartyRepo
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	var tprepo []models.ThirdPartyRepo
 	var count int64
-	result := thirdPartyRepoFilters(r, db.DB)
-	if result.Error != nil {
-		services.Log.WithField("error", result.Error.Error()).Debug("Result error")
-		err := errors.NewBadRequest(result.Error.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", result.Error.Error()).Error("Error while trying to encode")
-		}
-		return
-	}
+
 	account, err := common.GetAccount(r)
 	if err != nil {
-		services.Log.WithField("error", err.Error()).Error("Error retrieving account from the request")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		ctxServices.Log.WithField("error", err.Error()).Error("Error retrieving account from the request")
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 		return
 	}
+	ctx := thirdPartyRepoFilters(r, db.DB).Model(&models.ThirdPartyRepo{}).Where("account = ?", account)
 	pagination := common.GetPagination(r)
-	countResult := thirdPartyRepoFilters(r, db.DB.Model(&models.ThirdPartyRepo{})).Where("account = ?", account).Count(&count)
-	if countResult.Error != nil {
-		services.Log.WithField("error", err.Error()).Error("Error counting results")
-		countErr := errors.NewInternalServerError()
-		w.WriteHeader(countErr.GetStatus())
-		if err := json.NewEncoder(w).Encode(&countErr); err != nil {
-			services.Log.WithField("error", countErr.Error()).Error("Error while trying to encode")
-		}
-		return
-	}
-	services.Log.WithField("sortBy", r.URL.Query().Get("sort_by")).Debug("Sorting third party repos by ...")
-	if r.URL.Query().Get("sort_by") != "name" && r.URL.Query().Get("sort_by") != "-name" {
-		result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&tprepo)
-	}
-	filter := r.URL.Query().Get("filter")
-	filterMap := map[string]string{}
-	if filter != "" {
-		filterMap, err = validateFilterMap(filter)
-		if err != nil {
-			err := errors.NewBadRequest(err.Error())
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
-			return
-		}
-	}
-	if err := result.Where(filterMap).Limit(pagination.Limit).Offset(pagination.Offset).Find(&tprepo).Error; err != nil {
-		services.Log.WithField("error", err.Error()).Debug("Error parsing pagination filters")
-		err := errors.NewBadRequest("this is not a valid filter. filter must be in name.value")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+
+	if result := ctx.Count(&count); result.Error != nil {
+		ctxServices.Log.WithField("error", err.Error()).Error("Error counting results")
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
 
-	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Where("account = ?", account).Find(&tprepo)
-	if result.Error != nil {
-		services.Log.WithField("error", err.Error()).Error("Error returning results")
-		err := errors.NewBadRequest("Not Found")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+	if result := ctx.Limit(pagination.Limit).Offset(pagination.Offset).Find(&tprepo); result.Error != nil {
+		ctxServices.Log.WithField("error", err.Error()).Error("Error returning results")
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
+		return
 	}
 
-	if err := json.NewEncoder(w).Encode(map[string]interface{}{"data": &tprepo, "count": count}); err != nil {
-		services.Log.WithField("error", map[string]interface{}{"data": &tprepo, "count": count}).Error("Error while trying to encode")
-	}
-
+	respondWithJSONBody(w, ctxServices.Log, map[string]interface{}{"data": &tprepo, "count": count})
 }
 
 // ThirdPartyRepoCtx is a handler to Third Party Repository requests
 func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		s := dependencies.ServicesFromContext(r.Context())
+		ctxServices := dependencies.ServicesFromContext(r.Context())
 		if ID := chi.URLParam(r, "ID"); ID != "" {
 			_, err := strconv.Atoi(ID)
-			s.Log = s.Log.WithField("thirdPartyRepoID", ID)
-			s.Log.Debug("Retrieving third party repo")
+			ctxServices.Log = ctxServices.Log.WithField("thirdPartyRepoID", ID)
+			ctxServices.Log.Debug("Retrieving custom repository")
 			if err != nil {
-				s.Log.Debug("ID is not an integer")
-				err := errors.NewBadRequest(err.Error())
-				w.WriteHeader(err.GetStatus())
-				if err := json.NewEncoder(w).Encode(&err); err != nil {
-					services := dependencies.ServicesFromContext(r.Context())
-					services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-				}
+				ctxServices.Log.Debug("ID is not an integer")
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 				return
 			}
 
-			tprepo, err := s.ThirdPartyRepoService.GetThirdPartyRepoByID(ID)
+			tprepo, err := ctxServices.ThirdPartyRepoService.GetThirdPartyRepoByID(ID)
 			if err != nil {
 				var responseErr errors.APIError
 				switch err.(type) {
@@ -227,36 +168,25 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 					responseErr = errors.NewNotFound(err.Error())
 				default:
 					responseErr = errors.NewInternalServerError()
-					responseErr.SetTitle("failed getting third party repository")
+					responseErr.SetTitle("failed getting custom repository")
 				}
-				w.WriteHeader(responseErr.GetStatus())
-				if err := json.NewEncoder(w).Encode(&responseErr); err != nil {
-					s.Log.WithField("error", responseErr.Error()).Error("Error while trying to encode")
-				}
+				respondWithAPIError(w, ctxServices.Log, responseErr)
 				return
 			}
 			account, err := common.GetAccount(r)
 			if err != nil || tprepo.Account != account {
-				s.Log.WithFields(log.Fields{
+				ctxServices.Log.WithFields(log.Fields{
 					"error":   err.Error(),
 					"account": account,
-				}).Error("Error retrieving account or third party repo doesn't belong to account")
-				err := errors.NewBadRequest(err.Error())
-				w.WriteHeader(err.GetStatus())
-				if err := json.NewEncoder(w).Encode(&err); err != nil {
-					s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-				}
+				}).Error("Error retrieving account or custom repository doesn't belong to account")
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 				return
 			}
 			ctx := context.WithValue(r.Context(), tprepoKey, tprepo)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
-			s.Log.Debug("Third Party Repo ID was not passed to the request or it was empty")
-			err := errors.NewBadRequest("Third Party Repo ID required")
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+			ctxServices.Log.Debug("custom repository ID was not passed to the request or it was empty")
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("Custom repository ID is required"))
 			return
 		}
 	})
@@ -265,10 +195,8 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 // GetThirdPartyRepoByID gets the Third Party repository by ID from the database
 func GetThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 	if tprepo := getThirdPartyRepo(w, r); tprepo != nil {
-		if err := json.NewEncoder(w).Encode(tprepo); err != nil {
-			services := dependencies.ServicesFromContext(r.Context())
-			services.Log.WithField("error", tprepo).Error("Error while trying to encode")
-		}
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		respondWithJSONBody(w, ctxServices.Log, tprepo)
 	}
 }
 
@@ -295,7 +223,7 @@ func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 			apiError = errors.NewNotFound(err.Error())
 		default:
 			apiError = errors.NewInternalServerError()
-			apiError.SetTitle("failed updating third party repository")
+			apiError.SetTitle("failed to update custom repository")
 		}
 		respondWithAPIError(w, ctxServices.Log, apiError)
 		return
@@ -303,7 +231,7 @@ func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 
 	repoDetails, err := ctxServices.ThirdPartyRepoService.GetThirdPartyRepoByID(fmt.Sprint(oldtprepo.ID))
 	if err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Error getting third party repository")
+		ctxServices.Log.WithField("error", err.Error()).Error("Error getting custom repository")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
@@ -313,38 +241,35 @@ func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 
 // DeleteThirdPartyRepoByID deletes the third party repository using ID
 func DeleteThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
-	if tprepo := getThirdPartyRepo(w, r); tprepo != nil {
-		s := dependencies.ServicesFromContext(r.Context())
-
-		tprepo, err := s.ThirdPartyRepoService.DeleteThirdPartyRepoByID(fmt.Sprint(tprepo.ID))
-		if err != nil {
-			var responseErr errors.APIError
-			switch err.(type) {
-			case *services.ThirdPartyRepositoryNotFound:
-				responseErr = errors.NewNotFound(err.Error())
-			case *services.ThirdPartyRepositoryImagesExists:
-				responseErr = errors.NewBadRequest(err.Error())
-			default:
-				responseErr = errors.NewInternalServerError()
-				responseErr.SetTitle("failed deleting third party repository")
-			}
-			s.Log.WithField("error", err.Error()).Error("Error deleting third party repository")
-			w.WriteHeader(responseErr.GetStatus())
-			if err := json.NewEncoder(w).Encode(&responseErr); err != nil {
-				s.Log.WithField("error", responseErr.Error()).Error("Error while trying to encode")
-			}
-			return
-		}
-		_ = tprepo
-		if err := json.NewEncoder(w).Encode(&tprepo); err != nil {
-			s.Log.WithField("error", tprepo).Error("Error while trying to encode")
-		}
+	tprepo := getThirdPartyRepo(w, r)
+	if tprepo == nil {
+		// error response handled by getThirdPartyRepo
+		return
 	}
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	tprepo, err := ctxServices.ThirdPartyRepoService.DeleteThirdPartyRepoByID(fmt.Sprint(tprepo.ID))
+	if err != nil {
+		var responseErr errors.APIError
+		switch err.(type) {
+		case *services.ThirdPartyRepositoryNotFound:
+			responseErr = errors.NewNotFound(err.Error())
+		case *services.ThirdPartyRepositoryImagesExists:
+			responseErr = errors.NewBadRequest(err.Error())
+		default:
+			responseErr = errors.NewInternalServerError()
+			responseErr.SetTitle("failed to delete custom repository")
+		}
+		ctxServices.Log.WithField("error", err.Error()).Error("Error when deleting custom repository")
+		respondWithAPIError(w, ctxServices.Log, responseErr)
+		return
+	}
+	respondWithJSONBody(w, ctxServices.Log, tprepo)
 }
 
 func validateGetAllThirdPartyRepoFilterParams(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errs := []validationError{}
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		var errs []validationError
 		if val := r.URL.Query().Get("created_at"); val != "" {
 			if _, err := time.Parse(common.LayoutISO, val); err != nil {
 				errs = append(errs, validationError{Key: "created_at", Reason: err.Error()})
@@ -365,19 +290,6 @@ func validateGetAllThirdPartyRepoFilterParams(next http.Handler) http.Handler {
 			return
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(&errs); err != nil {
-			services := dependencies.ServicesFromContext(r.Context())
-			services.Log.WithField("error", errs).Error("Error while trying to encode")
-		}
+		respondWithJSONBody(w, ctxServices.Log, &errs)
 	})
-}
-
-func validateFilterMap(filter string) (map[string]string, error) {
-	splits := strings.Split(filter, ".")
-	if len(splits) != 2 {
-		return nil, errors.NewBadRequest("this is not a valid filter. filter must be name")
-	}
-	field, value := splits[0], splits[1]
-	return map[string]string{field: value}, nil
-
 }
