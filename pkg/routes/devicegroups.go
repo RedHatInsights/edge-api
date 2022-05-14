@@ -62,6 +62,9 @@ func MakeDeviceGroupsRouter(sub chi.Router) {
 			d.Use(DeviceGroupDeviceCtx)
 			d.Delete("/", DeleteDeviceGroupOneDevice)
 		})
+
+		r.Post("/updateDevices", UpdateAllDevicesFromGroup)
+
 	})
 }
 
@@ -640,4 +643,14 @@ func CheckGroupName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSONBody(w, services.Log, map[string]interface{}{"data": map[string]interface{}{"isValid": value}})
+}
+
+func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	deviceGroup := getContextDeviceGroup(w, r)
+	if deviceGroup == nil {
+		return // error handled by getContextDeviceGroup already
+	}
+	ctxLog := ctxServices.Log.WithField("device_group_id", deviceGroup.ID)
+	ctxLog.Info("Updading all devices from group %v", deviceGroup.ID)
 }

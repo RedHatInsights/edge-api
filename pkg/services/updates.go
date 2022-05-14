@@ -48,7 +48,7 @@ func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterfac
 		FilesService:  NewFilesService(log),
 		RepoBuilder:   NewRepoBuilder(ctx, log),
 		WaitForReboot: time.Minute * 5,
-		DeviceService: NewDeviceService(ctx, log),
+		// DeviceService: NewDeviceService(ctx, log),
 	}
 }
 
@@ -556,7 +556,7 @@ func (s *UpdateService) ValidateUpdateSelection(account string, imageIds []uint)
 	return count == 1, nil
 }
 
-// BuildUpdateTransactions build records
+//BuildUpdateTransactions build records
 func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate,
 	account string, commit *models.Commit) (*[]models.UpdateTransaction, error) {
 
