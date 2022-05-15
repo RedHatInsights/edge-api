@@ -176,7 +176,78 @@ Keep in mind that if you change the models you might need to run the migrations 
      PGSQL_PORT=5432
      PGSQL_DATABASE=db
      ```
+### Setup with Podman/Docker
+If you prefer to run the edge-app using containers, then you can use the following steps.You should have podman or docker already installed in your machine and a valid account account on quay.io
 
+1. Clone the project.
+
+     ```bash
+     git clone git@github.com:RedHatInsights/edge-api.git
+     ```
+2. Create an authentication json file, replacing the word token with the generated password provided by quay.io
+
+     ```bash
+     ${HOME}/.config/containers/auth.json
+     "auths": {
+          "quay.io": {
+ 	          "auth": "token..."
+               }
+          }
+     }
+     ```
+3.  Login on quay.io
+Please note that you can use either podman or docker for the example below.
+     ```bash
+     podman login  registry.redhat.io
+     to validate: podman login --get-login registry.redhat.io
+     ```
+4. Create a new folder outside the cloned edge-api repository where you can store all database artifacts. This will allow you to keep a database that can be reused multiple times. For example, you might want to keep your database under a special backup folder inside your $HOME directory
+5. Change into the directory where you've cloned the edge-api repository
+     ```bash
+     cd edge-api
+     ```
+6. Launch a containerized instance of a PostgreSQL database
+Please note that you can use either podman or docker for the example below
+     ```bash
+     podman run  --detach   --env POSTGRESQL_DATABASE='edge'  --env POSTGRESQL_PASSWORD=pass  --env POSTGRESQL_USER=user  --name podmandb   --publish 5432:5432  --pull=always  --volume PATH_TO_YOUR_LOCAL_FOLDER:/var/lib/pgsql/data:Z registry.redhat.io/rhel8/postgresql-12:latest
+     ```
+     The example above uses PostgreSQL 12, but you can try a newer version. The important part is to remember what values you use for all the environment variables, such as POSTGRESQL_DATABASE, POSTGRESQL_PASSWORD, and POSTGRESQL_USER, as they will be required later on
+    You can also use environment variables instead of passing them inline
+7. Execute the project migrations
+     ```bash
+     podman run --rm -ti -p 3000:3000 -v $(pwd):/edge-api:Z --env DATABASE=pgsql   --env PGSQL_DATABASE=edge   --env PGSQL_HOSTNAME=YOUR_IP    --env PGSQL_PASSWORD=pass  --env PGSQL_PORT=5432 --env PGSQL_USER=user  --name edge-api --pull=always   quay.io/cloudservices/edge-api:latest /usr/bin/edge-api-migrate
+     ```
+     You can test that your containerized database is working by using the following command
+     ```bash
+     psql --host localhost --user user edge
+     ```
+
+     If you don't have the psql command available locally, you can use the containerized instance itself to check the database:
+    ```bash
+    docker exec -it postgres  --host localhost --user user edge
+    ```
+    Type \c edge to connect to the edge database and \dt to list all available tables. Type \q to exit.
+
+    Note: You won't have any tables until you have run the migration scripts, as explained further down.
+8. Start up the edge-api service
+     ```bash
+     podman run --rm -ti -p 3000:3000 -v $(pwd):/edge-api:Z --env DATABASE=pgsql   --env PGSQL_DATABASE=edge   --env PGSQL_HOSTNAME=YOUR_IP    --env PGSQL_PASSWORD=pass  --env PGSQL_PORT=5432 --env PGSQL_USER=user  IMAGEBUILDERURL=imagebuilder_url--env INVENTORYURL=inventory_url --env HTTP_PROXY=proxy --env HTTPS_PROXY=proxy  --name edge-api --pull=always   quay.io/cloudservices/edge-api:latest
+     ```
+     You can also use environment variables instead of passing them inline
+     The values for the DB should be the same as you created on DB setup (step 6)
+9. In another terminal or tab, test your local environment
+     get
+     ```bash
+     curl -v http://localhost:3000/
+     ```
+     curl post
+     ```bash
+     curl --request POST --url localhost:3000/api/edge/v1/device-groups/ --header 'Content-Type: application/json' --data '{"Account": "0000000","Name":"test", "Type":"static"}'
+     ```
+     docs
+     ```bash
+     localhost:3000/docs
+     ```    
 ### Setup with Kubernetes
 
 Following the information above you should have Docker or Podman, a minikube cluster running with Clowder installed, and a Python environment with `bonfire` installed. Now move on to running the `edge-api` application.
