@@ -44,21 +44,21 @@ type UpdateServiceInterface interface {
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
 func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterface {
 	return &UpdateService{
-		Service:       Service{ctx: ctx, log: log.WithField("service", "update")},
-		FilesService:  NewFilesService(log),
-		RepoBuilder:   NewRepoBuilder(ctx, log),
-		WaitForReboot: time.Minute * 5,
+		Service:      Service{ctx: ctx, log: log.WithField("service", "update")},
+		FilesService: NewFilesService(log),
+		RepoBuilder:  NewRepoBuilder(ctx, log),
 		// DeviceService: NewDeviceService(ctx, log),
+		WaitForReboot: time.Minute * 5,
 	}
 }
 
 // UpdateService is the main implementation of a UpdateServiceInterface
 type UpdateService struct {
 	Service
-	RepoBuilder   RepoBuilderInterface
-	FilesService  FilesService
+	RepoBuilder  RepoBuilderInterface
+	FilesService FilesService
+	// DeviceService DeviceServiceInterface
 	WaitForReboot time.Duration
-	DeviceService DeviceServiceInterface
 }
 
 type playbooks struct {
@@ -622,18 +622,20 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 		devices := update.Devices
 		oldCommits := update.OldCommits
 		toUpdate := true
-		fmt.Print(devices)
-		fmt.Print(oldCommits)
-		fmt.Print(toUpdate)
 
 		for _, device := range inventory.Result {
-			fmt.Print(device)
+			fmt.Printf("\n>>> device <<< %v\n", device.ID)
 
 			//  Check for the existence of a Repo that already has this commit and don't duplicate
 			var updateDevice *models.Device
-			updateDevice, err = s.DeviceService.GetDeviceByUUID(device.ID)
+			dbDevice := db.DB.Where("uuid = ?", device.ID).First(&updateDevice)
+			if dbDevice.Error != nil {
+				s.log.WithField("error", result.Error.Error()).Error("Error finding device")
+				return nil, new(DeviceNotFoundError)
+			}
 
 			if err != nil {
+				fmt.Printf("\nerr: %v\n", err)
 				if !(err.Error() == "Device was not found") {
 					s.log.WithField("error", err.Error()).Error("Device was not found in our database")
 					err := errors.NewBadRequest(err.Error())
@@ -700,18 +702,20 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					}
 				}
 			}
+			fmt.Printf("\ntoUpdate: %v\n", toUpdate)
 			if toUpdate {
 				//Should not create a transaction to device already updated
 				update.OldCommits = oldCommits
 				if err := db.DB.Save(&update).Error; err != nil {
 					err := errors.NewBadRequest(err.Error())
 
-					s.log.WithField("error", err.Error()).Error("Error Saving data")
+					s.log.WithField("error", err.Error()).Error("Error encoding error")
+					return nil, err
 				}
-				return nil, err
 			}
 
 		}
+		fmt.Printf("\ntoUpdate: %v\n", toUpdate)
 		if toUpdate {
 			updates = append(updates, update)
 		}

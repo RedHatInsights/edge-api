@@ -646,6 +646,7 @@ func CheckGroupName(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
+	services := dependencies.ServicesFromContext(r.Context())
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	deviceGroup := getContextDeviceGroup(w, r)
 	if deviceGroup == nil {
@@ -653,4 +654,61 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	}
 	ctxLog := ctxServices.Log.WithField("device_group_id", deviceGroup.ID)
 	ctxLog.Info("Updading all devices from group %v", deviceGroup.ID)
+
+	account, err := common.GetAccount(r)
+	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error":   err.Error(),
+			"account": account,
+		}).Error("Error retrieving account")
+		// respondWithAPIError(w, services.Log, errors.NewBadRequest(err.Error()))
+		return
+	}
+	devices := deviceGroup.Devices
+
+	var setOfDeviceUUIDS []string
+	for _, device := range devices {
+		setOfDeviceUUIDS = append(setOfDeviceUUIDS, device.UUID)
+	}
+	fmt.Printf("\nsetOfDeviceUUIDS %v\n", setOfDeviceUUIDS)
+	var devicesUpdate models.DevicesUpdate
+	devicesUpdate.DevicesUUID = setOfDeviceUUIDS
+
+	commitID, err := services.DeviceService.GetLatestCommitFromDevices(account, setOfDeviceUUIDS)
+	fmt.Printf("\nsetOfDeviceUUIDS %v\n", commitID)
+
+	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error":   err.Error(),
+			"account": account,
+		}).Error("Error Getting the commit to update a device")
+		return
+	}
+
+	devicesUpdate.CommitID = commitID
+	//validate if commit is valid before continue process
+	commit, err := services.CommitService.GetCommitByID(devicesUpdate.CommitID)
+	updates, err := services.UpdateService.BuildUpdateTransactions(&devicesUpdate, account, commit)
+	fmt.Printf(">>>>> updateTransactions: %v\n", updates)
+	var upd []models.UpdateTransaction
+
+	for _, update := range *updates {
+		update.Account = account
+		upd = append(upd, update)
+		services.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
+		go services.UpdateService.CreateUpdate(update.ID)
+	}
+	result := db.DB.Save(upd)
+	if result.Error != nil {
+		services.Log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Error("Error saving update")
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.GetStatus())
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(updates); err != nil {
+		services.Log.WithField("error", updates).Error("Error while trying to encode")
+	}
 }
