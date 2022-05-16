@@ -177,7 +177,7 @@ Keep in mind that if you change the models you might need to run the migrations 
      PGSQL_DATABASE=db
      ```
 ### Setup with Podman/Docker
-If you prefer to run the edge-app using containers, then you can use the following steps.You should have podman or docker already installed in your machine and a valid account account on quay.io
+If you prefer to run the edge-api using containers, then you can use the following steps.You should have podman or docker already installed in your machine and a valid account account on quay.io
 
 1. Clone the project.
 
@@ -199,9 +199,16 @@ If you prefer to run the edge-app using containers, then you can use the followi
 Please note that you can use either podman or docker for the example below.
      ```bash
      podman login  registry.redhat.io
-     to validate: podman login --get-login registry.redhat.io
+     ```
+
+     to validate:
+     ```bash
+       podman login --get-login registry.redhat.io
      ```
 4. Create a new folder outside the cloned edge-api repository where you can store all database artifacts. This will allow you to keep a database that can be reused multiple times. For example, you might want to keep your database under a special backup folder inside your $HOME directory
+     ```bash
+     mkdir $HOME/db_backups
+     ```
 5. Change into the directory where you've cloned the edge-api repository
      ```bash
      cd edge-api
@@ -209,7 +216,7 @@ Please note that you can use either podman or docker for the example below.
 6. Launch a containerized instance of a PostgreSQL database
 Please note that you can use either podman or docker for the example below
      ```bash
-     podman run  --detach   --env POSTGRESQL_DATABASE='edge'  --env POSTGRESQL_PASSWORD=pass  --env POSTGRESQL_USER=user  --name podmandb   --publish 5432:5432  --pull=always  --volume PATH_TO_YOUR_LOCAL_FOLDER:/var/lib/pgsql/data:Z registry.redhat.io/rhel8/postgresql-12:latest
+     podman run  --detach   --env POSTGRESQL_DATABASE='edge'  --env POSTGRESQL_PASSWORD=pass  --env POSTGRESQL_USER=user  --name podmandb   --publish 5432:5432  --pull=always  --volume PATH_TO_YOUR_DATABASE_BACK_FOLDER:/var/lib/pgsql/data:Z registry.redhat.io/rhel8/postgresql-12:latest
      ```
      The example above uses PostgreSQL 12, but you can try a newer version. The important part is to remember what values you use for all the environment variables, such as POSTGRESQL_DATABASE, POSTGRESQL_PASSWORD, and POSTGRESQL_USER, as they will be required later on
     You can also use environment variables instead of passing them inline
