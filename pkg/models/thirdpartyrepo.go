@@ -18,7 +18,7 @@ type ThirdPartyRepo struct {
 	URL         string `json:"URL"`
 	Description string `json:"Description,omitempty"`
 	Account     string
-	OrgID       string `json:"org_id"`
+	OrgID       string `json:"org_id" gorm:"index"`
 }
 
 const (
