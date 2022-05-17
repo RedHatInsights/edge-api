@@ -1,5 +1,5 @@
 arch: amd64   # Full VM on AWS or GCE
-dist: xenial  # Ubuntu Xenial 16.04
+dist: bionic  # Ubuntu Bionic 18.04
 services: docker
 language: go
 go: 1.16
