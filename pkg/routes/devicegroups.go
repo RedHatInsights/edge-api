@@ -645,15 +645,16 @@ func CheckGroupName(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, services.Log, map[string]interface{}{"data": map[string]interface{}{"isValid": value}})
 }
 
+//UpdateAllDevicesFromGroup will be resposible to update all devices that belongs to a group
 func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	services := dependencies.ServicesFromContext(r.Context())
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	deviceGroup := getContextDeviceGroup(w, r)
 	if deviceGroup == nil {
-		return // error handled by getContextDeviceGroup already
+		return
 	}
 	ctxLog := ctxServices.Log.WithField("device_group_id", deviceGroup.ID)
-	ctxLog.Info("Updading all devices from group %v", deviceGroup.ID)
+	ctxLog.Info("Updading all devices from group", deviceGroup.ID)
 
 	account, err := common.GetAccount(r)
 	if err != nil {
@@ -661,7 +662,6 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 			"error":   err.Error(),
 			"account": account,
 		}).Error("Error retrieving account")
-		// respondWithAPIError(w, services.Log, errors.NewBadRequest(err.Error()))
 		return
 	}
 	devices := deviceGroup.Devices
@@ -670,13 +670,11 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	for _, device := range devices {
 		setOfDeviceUUIDS = append(setOfDeviceUUIDS, device.UUID)
 	}
-	fmt.Printf("\nsetOfDeviceUUIDS %v\n", setOfDeviceUUIDS)
+
 	var devicesUpdate models.DevicesUpdate
 	devicesUpdate.DevicesUUID = setOfDeviceUUIDS
 
 	commitID, err := services.DeviceService.GetLatestCommitFromDevices(account, setOfDeviceUUIDS)
-	fmt.Printf("\nsetOfDeviceUUIDS %v\n", commitID)
-
 	if err != nil {
 		services.Log.WithFields(log.Fields{
 			"error":   err.Error(),
@@ -689,9 +687,8 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	//validate if commit is valid before continue process
 	commit, err := services.CommitService.GetCommitByID(devicesUpdate.CommitID)
 	updates, err := services.UpdateService.BuildUpdateTransactions(&devicesUpdate, account, commit)
-	fmt.Printf(">>>>> updateTransactions: %v\n", updates)
-	var upd []models.UpdateTransaction
 
+	var upd []models.UpdateTransaction
 	for _, update := range *updates {
 		update.Account = account
 		upd = append(upd, update)

@@ -581,7 +581,6 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 	s.log.WithField("inventoryDevice", inv).Debug("Device retrieved from inventory")
 	var updates []models.UpdateTransaction
 	for _, inventory := range ii {
-		fmt.Print(inventory)
 		// Create the models.UpdateTransaction
 		update := models.UpdateTransaction{
 			Account:  account,
@@ -624,8 +623,6 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 		toUpdate := true
 
 		for _, device := range inventory.Result {
-			fmt.Printf("\n>>> device <<< %v\n", device.ID)
-
 			//  Check for the existence of a Repo that already has this commit and don't duplicate
 			var updateDevice *models.Device
 			dbDevice := db.DB.Where("uuid = ?", device.ID).First(&updateDevice)
@@ -635,7 +632,6 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 			}
 
 			if err != nil {
-				fmt.Printf("\nerr: %v\n", err)
 				if !(err.Error() == "Device was not found") {
 					s.log.WithField("error", err.Error()).Error("Device was not found in our database")
 					err := errors.NewBadRequest(err.Error())
@@ -702,20 +698,18 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					}
 				}
 			}
-			fmt.Printf("\ntoUpdate: %v\n", toUpdate)
+
 			if toUpdate {
 				//Should not create a transaction to device already updated
 				update.OldCommits = oldCommits
 				if err := db.DB.Save(&update).Error; err != nil {
 					err := errors.NewBadRequest(err.Error())
-
 					s.log.WithField("error", err.Error()).Error("Error encoding error")
 					return nil, err
 				}
 			}
 
 		}
-		fmt.Printf("\ntoUpdate: %v\n", toUpdate)
 		if toUpdate {
 			updates = append(updates, update)
 		}
