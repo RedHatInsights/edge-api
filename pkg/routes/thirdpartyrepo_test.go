@@ -131,6 +131,17 @@ func TestGetAllThirdPartyRepoFilterParams(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+
+		mockThirdPartyRepoService := mock_services.NewMockThirdPartyRepoServiceInterface(ctrl)
+		ctx := req.Context()
+		ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+			ThirdPartyRepoService: mockThirdPartyRepoService,
+			Log:                   log.NewEntry(log.StandardLogger()),
+		})
+		req = req.WithContext(ctx)
 		w := httptest.NewRecorder()
 		validateGetAllThirdPartyRepoFilterParams(next).ServeHTTP(w, req)
 
