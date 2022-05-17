@@ -14,6 +14,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936
 	github.com/lib/pq v1.10.6
+	github.com/mattn/go-sqlite3 v1.14.13 // indirect
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/onsi/gomega v1.19.0
@@ -25,8 +26,8 @@ require (
 	github.com/spf13/viper v1.11.0
 	gopkg.in/confluentinc/confluent-kafka-go.v1 v1.8.2
 	gorm.io/driver/postgres v1.3.4
-	gorm.io/driver/sqlite v1.3.1
-	gorm.io/gorm v1.23.1
+	gorm.io/driver/sqlite v1.3.2
+	gorm.io/gorm v1.23.4
 )
 
 go 1.16
