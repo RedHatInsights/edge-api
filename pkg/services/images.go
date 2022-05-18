@@ -221,40 +221,39 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	image.ImageSetID = previousImage.ImageSetID
 	image.Account = previousImage.Account
 
-	if previousImage.Status == models.ImageStatusSuccess {
-		// Previous image was built successfully
-		var currentImageSet models.ImageSet
-		result := db.DB.Where("Id = ?", previousImage.ImageSetID).First(&currentImageSet)
-
-		if result.Error != nil {
-			s.log.WithField("error", result.Error.Error()).Error("Error retrieving the image set from parent image")
-			return result.Error
-		}
-		currentImageSet.Version = currentImageSet.Version + 1
-		if err := db.DB.Save(currentImageSet).Error; err != nil {
-			return result.Error
-		}
-
-		// Always get the repo URL from the previous Image's commit
-		repo, err := s.RepoService.GetRepoByID(previousImage.Commit.RepoID)
-		if err != nil {
-			s.log.WithField("error", err.Error()).Error("Commit repo wasn't found on the database")
-			err := errors.NewBadRequest(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.Commit.ID))
-			return err
-		}
-
-		image.Commit.OSTreeParentCommit = repo.URL
-		if image.Commit.OSTreeRef == "" {
-			if previousImage.Commit.OSTreeRef != "" {
-				image.Commit.OSTreeRef = previousImage.Commit.OSTreeRef
-			} else {
-				image.Commit.OSTreeRef = config.Get().DefaultOSTreeRef
-			}
-		}
-	} else {
-		// Previous image was not built sucessfully
+	if previousImage.Status == models.ImageStatusError {
+		// Previous image was not built successfully
 		s.log.WithField("previousImageID", previousImage.ID).Info("Creating an update based on a image with a status that is not success")
 	}
+	var currentImageSet models.ImageSet
+	result := db.DB.Where("Id = ?", previousImage.ImageSetID).First(&currentImageSet)
+
+	if result.Error != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error retrieving the image set from parent image")
+		return result.Error
+	}
+	currentImageSet.Version = currentImageSet.Version + 1
+	if err := db.DB.Save(currentImageSet).Error; err != nil {
+		return result.Error
+	}
+
+	// Always get the repo URL from the previous Image's commit
+	repo, err := s.RepoService.GetRepoByID(previousImage.Commit.RepoID)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Commit repo wasn't found on the database")
+		err := errors.NewBadRequest(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.Commit.ID))
+		return err
+	}
+
+	image.Commit.OSTreeParentCommit = repo.URL
+	if image.Commit.OSTreeRef == "" {
+		if previousImage.Commit.OSTreeRef != "" {
+			image.Commit.OSTreeRef = previousImage.Commit.OSTreeRef
+		} else {
+			image.Commit.OSTreeRef = config.Get().DefaultOSTreeRef
+		}
+	}
+
 	image, err = s.ImageBuilder.ComposeCommit(image)
 	if err != nil {
 		return err
