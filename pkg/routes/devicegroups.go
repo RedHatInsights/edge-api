@@ -695,6 +695,13 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 		services.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
 		go services.UpdateService.CreateUpdate(update.ID)
 	}
+	if len(upd) == 0 {
+		w.WriteHeader(http.StatusNotFound)
+		if err := json.NewEncoder(w).Encode(upd); err != nil {
+			services.Log.WithField("error", upd).Error("No devices fouds")
+		}
+		return
+	}
 	result := db.DB.Save(upd)
 	if result.Error != nil {
 		services.Log.WithFields(log.Fields{
@@ -704,6 +711,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(err.GetStatus())
 		return
 	}
+
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(updates); err != nil {
 		services.Log.WithField("error", updates).Error("Error while trying to encode")
