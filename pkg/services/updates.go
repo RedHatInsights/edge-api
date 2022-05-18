@@ -592,7 +592,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 
 		notify, errNotify := s.SendDeviceNotification(&update)
 		if errNotify != nil {
-			s.log.WithField("message", errNotify.Error()).Error("Error to send notification")
+			s.log.WithField("message", errNotify.Error()).Error("Error to send device notification")
 			s.log.WithField("message", notify).Error("Notify Error")
 
 		}
@@ -633,7 +633,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 			if err != nil {
 				if !(err.Error() == "Device was not found") {
 					s.log.WithField("error", err.Error()).Error("Device was not found in our database")
-					err := errors.NewBadRequest(err.Error())
+					err = errors.NewBadRequest(err.Error())
 					return nil, err
 				}
 				s.log.WithFields(log.Fields{
@@ -702,7 +702,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 				//Should not create a transaction to device already updated
 				update.OldCommits = oldCommits
 				if err := db.DB.Save(&update).Error; err != nil {
-					err := errors.NewBadRequest(err.Error())
+					err = errors.NewBadRequest(err.Error())
 					s.log.WithField("error", err.Error()).Error("Error encoding error")
 					return nil, err
 				}

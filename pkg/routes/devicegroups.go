@@ -654,7 +654,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctxLog := ctxServices.Log.WithField("device_group_id", deviceGroup.ID)
-	ctxLog.Info("Updading all devices from group", deviceGroup.ID)
+	ctxLog.Info("Updating all devices from group", deviceGroup.ID)
 
 	account, err := common.GetAccount(r)
 	if err != nil {
@@ -700,7 +700,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(stterr.GetStatus())
 		return
 	}
-	// should be refatored to avoid performance issue with large volume
+	// should be refactored to avoid performance issue with large volume
 	updates, err := services.UpdateService.BuildUpdateTransactions(&devicesUpdate, account, commit)
 	if err != nil {
 		services.Log.WithFields(log.Fields{
@@ -711,7 +711,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(stterr.GetStatus())
 		return
 	}
-	// should be refatored to avoid performance issue with large volume
+	// should be refactored to avoid performance issue with large volume
 	var upd []models.UpdateTransaction
 	for _, update := range *updates {
 		update.Account = account
@@ -722,7 +722,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	if len(upd) == 0 {
 		w.WriteHeader(http.StatusNotFound)
 		if err := json.NewEncoder(w).Encode(upd); err != nil {
-			services.Log.WithField("error", upd).Error("No devices fouds")
+			services.Log.WithField("error", upd).Error("No devices found")
 		}
 		return
 	}
