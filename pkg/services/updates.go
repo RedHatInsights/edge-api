@@ -55,9 +55,9 @@ func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterfac
 // UpdateService is the main implementation of a UpdateServiceInterface
 type UpdateService struct {
 	Service
-	RepoBuilder  RepoBuilderInterface
-	FilesService FilesService
-	// DeviceService DeviceServiceInterface
+	RepoBuilder   RepoBuilderInterface
+	FilesService  FilesService
+	DeviceService DeviceServiceInterface
 	WaitForReboot time.Duration
 }
 
@@ -559,7 +559,6 @@ func (s *UpdateService) ValidateUpdateSelection(account string, imageIds []uint)
 //BuildUpdateTransactions build records
 func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate,
 	account string, commit *models.Commit) (*[]models.UpdateTransaction, error) {
-
 	client := inventory.InitClient(s.ctx, log.NewEntry(log.StandardLogger()))
 	var inv inventory.Response
 	var ii []inventory.Response
