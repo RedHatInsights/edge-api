@@ -662,6 +662,8 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 			"error":   err.Error(),
 			"account": account,
 		}).Error("Error retrieving account")
+		stterr := errors.NewInternalServerError()
+		w.WriteHeader(stterr.GetStatus())
 		return
 	}
 	devices := deviceGroup.Devices
@@ -673,21 +675,43 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 
 	var devicesUpdate models.DevicesUpdate
 	devicesUpdate.DevicesUUID = setOfDeviceUUIDS
-
+	//validate if commit is valid before continue process
+	//should be created a new method to return the latest commit by imageId and be able to update regardless of imageset
 	commitID, err := services.DeviceService.GetLatestCommitFromDevices(account, setOfDeviceUUIDS)
 	if err != nil {
 		services.Log.WithFields(log.Fields{
 			"error":   err.Error(),
 			"account": account,
-		}).Error("Error Getting the commit to update a device")
+		}).Error("Error Getting the latest commit to update a device")
+		stterr := errors.NewInternalServerError()
+		w.WriteHeader(stterr.GetStatus())
 		return
 	}
 
 	devicesUpdate.CommitID = commitID
-	//validate if commit is valid before continue process
+	//get commit info to build update repo
 	commit, err := services.CommitService.GetCommitByID(devicesUpdate.CommitID)
+	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error":   err.Error(),
+			"account": account,
+		}).Error("Error Getting the commit info to update a device")
+		stterr := errors.NewInternalServerError()
+		w.WriteHeader(stterr.GetStatus())
+		return
+	}
+	// should be refatored to avoid performance issue with large volume
 	updates, err := services.UpdateService.BuildUpdateTransactions(&devicesUpdate, account, commit)
-
+	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error":   err.Error(),
+			"account": account,
+		}).Error("Error building update transaction")
+		stterr := errors.NewInternalServerError()
+		w.WriteHeader(stterr.GetStatus())
+		return
+	}
+	// should be refatored to avoid performance issue with large volume
 	var upd []models.UpdateTransaction
 	for _, update := range *updates {
 		update.Account = account

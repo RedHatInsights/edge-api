@@ -202,6 +202,15 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTra
 	}
 	services.Log.WithField("commit", commit.ID).Debug("Commit retrieved from this update")
 	updates, err := services.UpdateService.BuildUpdateTransactions(&devicesUpdate, account, commit)
+	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error":   err.Error(),
+			"account": account,
+		}).Error("Error building update transaction")
+		stterr := errors.NewInternalServerError()
+		w.WriteHeader(stterr.GetStatus())
+		return nil, err
+	}
 	return updates, nil
 }
 
