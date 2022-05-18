@@ -1497,12 +1497,6 @@ paths:
         - name: ID
           in: path
           required: true
-          description: Update devices from group
-          schema:
-            type: integer
-        - name: ID
-          in: path
-          required: true
           description: Device Group Id
           schema:
             type: integer
