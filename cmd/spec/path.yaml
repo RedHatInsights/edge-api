@@ -1490,3 +1490,45 @@ paths:
                 $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
       summary: Remove device from device-group.
+  /device-groups/{ID}/updateDevices:
+    post:
+      operationId: UpdateAllDevicesFromGroup
+      parameters:
+        - name: ID
+          in: path
+          required: true
+          description: Update devices from group
+          schema:
+            type: integer
+        - name: ID
+          in: path
+          required: true
+          description: Device Group Id
+          schema:
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.UpdateTransaction"
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.BadRequest"
+          description: The request sent couldn't be processed.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.NotFound"
+          description: devices not found.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.InternalServerError"
+          description: There was an internal server error.
+      summary: Update devices from group.  
