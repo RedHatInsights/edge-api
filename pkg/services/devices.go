@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"sort"
 
 	version "github.com/knqyf263/go-rpm-version"
@@ -121,7 +120,6 @@ func (s *DeviceService) GetDeviceByID(deviceID uint) (*models.Device, error) {
 
 // GetDeviceByUUID receives UUID string and get a *models.Device back
 func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, error) {
-	fmt.Printf("\nGetDeviceByUUID %v\n", deviceUUID)
 	s.log = s.log.WithField("deviceUUID", deviceUUID)
 	s.log.Info("Get device by uuid")
 	var device models.Device
