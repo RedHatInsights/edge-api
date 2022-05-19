@@ -11,6 +11,7 @@ type EdgeDevice struct {
 	// TODO: Needs to be rethinked when we get to the greenbot epic
 	Booted  bool
 	Account string
+	OrgID   string
 }
 
 // DeviceDetails is a Device with Image and Update transactions
@@ -82,6 +83,7 @@ type Device struct {
 	LastSeen          EdgeAPITime          `json:"LastSeen"`
 	CurrentHash       string               `json:"CurrentHash,omitempty"`
 	Account           string               `gorm:"index" json:"Account"`
+	OrgID             string               `json:"org_id" gorm:"index"`
 	ImageID           uint                 `json:"ImageID"`
 	UpdateAvailable   bool                 `json:"UpdateAvailable"`
 	DevicesGroups     []DeviceGroup        `faker:"-" gorm:"many2many:device_groups_devices;" json:"DevicesGroups"`

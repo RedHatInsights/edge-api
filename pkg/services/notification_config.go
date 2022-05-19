@@ -32,9 +32,9 @@ const (
 	//NotificationConfigVersion to be used
 	NotificationConfigVersion = "v1.1.0"
 	//NotificationConfigBundle to be used
-	NotificationConfigBundle = "edge"
+	NotificationConfigBundle = "rhel"
 	//NotificationConfigApplication to be used
-	NotificationConfigApplication = "fleet-management"
+	NotificationConfigApplication = "edge-management"
 	//NotificationConfigEventTypeImage to be used
 	NotificationConfigEventTypeImage = "image-creation"
 	//NotificationConfigEventTypeDevice to be used

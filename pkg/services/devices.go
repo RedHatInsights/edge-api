@@ -435,11 +435,13 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 			}
 		}
 		dd := models.DeviceDetails{}
+
 		dd.Device = models.EdgeDevice{
 			Device: &models.Device{
 				Model:             models.Model{ID: dbDeviceID},
 				UUID:              device.ID,
 				RHCClientID:       device.Ostree.RHCClientID,
+				Name:              device.DisplayName,
 				Account:           device.Account,
 				DevicesGroups:     storeDevice.DevicesGroups,
 				UpdateTransaction: storeDevice.UpdateTransaction,
