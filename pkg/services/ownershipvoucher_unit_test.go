@@ -123,7 +123,8 @@ var _ = Describe("Ownershipvoucher unit tests", func() {
 			err = device.BeforeDelete(db.DB)
 			Expect(err).To(BeNil())
 			// device should exist after `BeforeDelete`
-			result := db.DB.Find(&models.FDODevice{}, "uuid = ?", device.UUID).First(&device)
+			result := db.DB.Unscoped().Joins("OwnershipVoucherData").Joins("InitialUser").Find(&models.FDODevice{},
+				"uuid = ?", device.UUID).First(&device)
 			Expect(device).ToNot(BeNil())
 			Expect(result.Error).To(BeNil())
 			Expect(device.DeletedAt.Valid).To(BeFalse())                     // not deleted
