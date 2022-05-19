@@ -1,9 +1,19 @@
+---
+#
+# Merge queue rules https://docs.mergify.com/actions/queue/#queue-rules
 queue_rules:
+  #
+  # Add this PR to the merge queue
   - name: edge-api
     conditions:
       - base=main
       - "#approved-reviews-by>=1"
+#
+# Pull request rules https://docs.mergify.com/configuration/#pull-request-rules
+# N.B. Evaluated in order defined
 pull_request_rules:
+  #
+  # Dependabot PR merge rule
   - name: Automatic merge for Dependabot pull requests
     conditions:
       - author~=^dependabot(|-preview)\[bot\]$
@@ -15,6 +25,28 @@ pull_request_rules:
         name: edge-api
         method: merge
         rebase_fallback: none
+  #
+  # If PR check fails, request resolution (prevent stalling the merge queue)
+  - name: Request PR check re-run
+    conditions:
+      - and:
+          - base=main
+          - "#changes-requested-reviews-by=0"
+          - "#approved-reviews-by>=1"
+          - label!=work in progress
+          - label!=do not merge
+          - or:
+              - -check-success=ci.int.devshift.net PR build
+              - -check-success=Lint
+              - -check-success=Travis CI - Pull Request
+    actions:
+      comment:
+        message: "This pull request needs all pr-checks to run successfully. Could you fix it @{{author}}? 🙏"
+      label:
+        add:
+          - invalid
+  #
+  # Non-dependabot Merge PR rule
   - name: Automatic merge on approval
     conditions:
       - base=main
@@ -30,6 +62,8 @@ pull_request_rules:
         name: edge-api
         method: merge
         rebase_fallback: none
+  #
+  # Detect when PR conflicts and add label
   - name: warn on conflicts
     conditions:
       - conflict
@@ -39,6 +73,8 @@ pull_request_rules:
       label:
         add:
           - conflict
+  #
+  # Detect when PR conflict is cleared and remove label
   - name: remove conflict label if not needed
     conditions:
       - -conflict
@@ -46,6 +82,8 @@ pull_request_rules:
       label:
         remove:
           - conflict
+  #
+  # Automatically close PR after 14 days
   - name: close stale pull request
     conditions:
       - base=main
@@ -55,6 +93,8 @@ pull_request_rules:
       close:
         message: |
           This pull request looks stale. Feel free to reopen it if you think it's a mistake.
+  #
+  # Detect when PR is awaiting review and add label
   - name: waiting for review
     conditions:
       - "#commented-reviews-by<1"
@@ -64,6 +104,8 @@ pull_request_rules:
       label:
         add:
           - waiting for review
+  #
+  # Detect when PR received review and remove label
   - name: remove waiting for review label if not needed
     conditions:
       - "#commented-reviews-by>=1"
@@ -72,6 +114,8 @@ pull_request_rules:
       label:
         remove:
           - waiting for review
+  #
+  # Detect when PR includes a bug fix and add label
   - name: add bug fix label
     conditions:
       - body~=(?m)^\[X\] Bug fix (non-breaking change which fixes an issue)
@@ -79,6 +123,8 @@ pull_request_rules:
       label:
         add:
           - bug fix
+  #
+  # Detect when PR includes new feature and add label
   - name: add new feature label
     conditions:
       - body~=(?m)^\[X\] New feature (non-breaking change which adds functionality)
@@ -86,6 +132,8 @@ pull_request_rules:
       label:
         add:
           - new feature
+  #
+  # Detect when PR includes documentation updates and add label
   - name: add documentation label
     conditions:
       - body~=(?m)^\[X\] Documentation update
@@ -93,6 +141,8 @@ pull_request_rules:
       label:
         add:
           - documentation
+  #
+  # Detect when PR includes tests update and add label
   - name: add test update label
     conditions:
       - body~=(?m)^\[X\] Tests update
@@ -100,6 +150,8 @@ pull_request_rules:
       label:
         add:
           - test update
+  #
+  # Detect when PR no longer includes bug fix and remove label
   - name: remove bug fix label
     conditions:
       - body~=(?m)^\[ \] Bug fix (non-breaking change which fixes an issue)
@@ -107,6 +159,8 @@ pull_request_rules:
       label:
         remove:
           - bug fix
+  #
+  # Detect when PR no longer includes new feature and remove label
   - name: remove new feature label
     conditions:
       - body~=(?m)^\[ \] New feature (non-breaking change which adds functionality)
@@ -114,6 +168,8 @@ pull_request_rules:
       label:
         remove:
           - new feature
+  #
+  # Detect when PR no longer includes documentation updates and remove label
   - name: remove documentation label
     conditions:
       - body~=(?m)^\[ \] Documentation update
@@ -121,6 +177,8 @@ pull_request_rules:
       label:
         remove:
           - documentation
+  #
+  # Detect when PR no longer includes tests update and remove label
   - name: remove test update label
     conditions:
       - body~=(?m)^\[ \] Tests update
@@ -128,6 +186,8 @@ pull_request_rules:
       label:
         remove:
           - test update
+  #
+  # Detect when PR is ready and add label
   - name: add ready label
     conditions:
       - body~=(?m)^\[X\] I have commented my code, particularly in hard-to-understand areas
