@@ -177,6 +177,6 @@ func (ovs *OwnershipVoucherService) createFDOClient() *fdo.Client {
 // help function to Join Preload association data using inner join
 // this will load OwnershipVoucherData & FDOUser with FDODevices
 func preloadFDODevices(guid string) *gorm.DB {
-	return db.DB.Joins("OwnershipVoucherData").Joins("InitialUser").Find(&models.FDODevice{},
+	return db.DB.Unscoped().Joins("OwnershipVoucherData").Joins("InitialUser").Find(&models.FDODevice{},
 		"guid = ?", guid)
 }
