@@ -39,6 +39,14 @@ type DispatchRecord struct {
 	PlaybookDispatcherID string  `json:"PlaybookDispatcherID"`
 }
 
+//DevicesUpdate contains the update structure for the device
+type DevicesUpdate struct {
+	CommitID    uint     `json:"CommitID,omitempty"`
+	DevicesUUID []string `json:"DevicesUUID"`
+	// TODO: Implement updates by tag
+	// Tag        string `json:"Tag"`
+}
+
 const (
 	// DevicesCantBeEmptyMessage is the error message when the hosts are empty
 	DevicesCantBeEmptyMessage = "devices can not be empty"

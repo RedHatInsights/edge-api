@@ -41,7 +41,7 @@ func main() {
 	gen.addSchema("v1.ImageSetImagePackages", &routes.ImageSetImagePackages{})
 	gen.addSchema("v1.ImageSetInstallerURL", &routes.ImageSetInstallerURL{})
 	gen.addSchema("v1.Repo", &models.Repo{})
-	gen.addSchema("v1.AddUpdate", &routes.DevicesUpdate{})
+	gen.addSchema("v1.AddUpdate", &models.DevicesUpdate{})
 	gen.addSchema("v1.UpdateTransaction", &models.UpdateTransaction{})
 	gen.addSchema("v1.DeviceDetails", &models.DeviceDetails{})
 	gen.addSchema("v1.Device", &models.Device{})

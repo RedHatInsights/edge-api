@@ -30,14 +30,23 @@ var _ = Describe("DeviceGroup routes", func() {
 	var (
 		ctrl                    *gomock.Controller
 		mockDeviceGroupsService *mock_services.MockDeviceGroupsServiceInterface
+		mockUpdateService       *mock_services.MockUpdateServiceInterface
+		mockCommitService       *mock_services.MockCommitServiceInterface
+		mockDeviceService       *mock_services.MockDeviceServiceInterface
 		edgeAPIServices         *dependencies.EdgeAPIServices
 		deviceGroupName         = "test-device-group"
 	)
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 		mockDeviceGroupsService = mock_services.NewMockDeviceGroupsServiceInterface(ctrl)
+		mockUpdateService = mock_services.NewMockUpdateServiceInterface(ctrl)
+		mockCommitService = mock_services.NewMockCommitServiceInterface(ctrl)
+		mockDeviceService = mock_services.NewMockDeviceServiceInterface(ctrl)
 		edgeAPIServices = &dependencies.EdgeAPIServices{
 			DeviceGroupsService: mockDeviceGroupsService,
+			UpdateService:       mockUpdateService,
+			DeviceService:       mockDeviceService,
+			CommitService:       mockCommitService,
 			Log:                 log.NewEntry(log.StandardLogger()),
 		}
 		Expect(ctrl).ToNot(BeNil())
@@ -552,6 +561,91 @@ var _ = Describe("DeviceGroup routes", func() {
 				handler := http.HandlerFunc(DeleteDeviceGroupManyDevices)
 				handler.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(http.StatusBadRequest))
+			})
+		})
+	})
+	Context("Updating devices from DeviceGroup", func() {
+		account := "0000000"
+		deviceGroupName := faker.Name()
+		devices := []models.Device{
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+			},
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+			},
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+			},
+		}
+		deviceGroup := models.DeviceGroup{
+			Name:    deviceGroupName,
+			Account: account,
+			Type:    models.DeviceGroupTypeDefault,
+			Devices: devices,
+		}
+
+		commit := models.Commit{
+			Arch: "x86_64",
+		}
+
+		When("all is valid", func() {
+
+			It("should update Devices from Group", func() {
+				res := db.DB.Create(&deviceGroup)
+				Expect(res.Error).To(BeNil())
+				Expect(deviceGroup.ID).NotTo(Equal(0))
+				db.DB.Create(&commit)
+				updTransactions := []models.UpdateTransaction{
+					{
+						Commit:   &commit,
+						CommitID: commit.ID,
+						Account:  account,
+						Devices:  devices,
+					},
+				}
+				url := fmt.Sprintf("/%d/updateDevices", deviceGroup.ID)
+
+				req, err := http.NewRequest(http.MethodPost, url, nil)
+				Expect(err).To(BeNil())
+				ctx := req.Context()
+				ctx = setContextDeviceGroup(ctx, &deviceGroup)
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+				rr := httptest.NewRecorder()
+
+				account, err := common.GetAccount(req)
+				Expect(err).To(BeNil())
+
+				var setOfDeviceUUIDS []string
+				for _, device := range devices {
+					setOfDeviceUUIDS = append(setOfDeviceUUIDS, device.UUID)
+				}
+
+				var devicesUpdate models.DevicesUpdate
+				devicesUpdate.DevicesUUID = setOfDeviceUUIDS
+
+				var commitID uint
+				// setup mock for update
+				mockDeviceService.EXPECT().GetLatestCommitFromDevices(account, setOfDeviceUUIDS).
+					Return(commitID, nil)
+				mockCommitService.EXPECT().GetCommitByID(commitID).
+					Return(&commit, nil)
+				mockUpdateService.EXPECT().BuildUpdateTransactions(&devicesUpdate, account, &commit).
+					Return(&updTransactions, nil)
+				for _, trans := range updTransactions {
+					mockUpdateService.EXPECT().CreateUpdate(trans.ID).Return(&trans, nil)
+				}
+				handler := http.HandlerFunc(UpdateAllDevicesFromGroup)
+				handler.ServeHTTP(rr, req)
+				// Check the status code is what we expect.
+				Expect(rr.Code).To(Equal(http.StatusOK))
 			})
 		})
 	})

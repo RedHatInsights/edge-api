@@ -16,8 +16,10 @@ import (
 
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
@@ -26,6 +28,7 @@ import (
 // UpdateServiceInterface defines the interface that helps
 // handle the business logic of sending updates to a edge device
 type UpdateServiceInterface interface {
+	BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate, account string, commit *models.Commit) (*[]models.UpdateTransaction, error)
 	CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error)
 	GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error)
@@ -41,9 +44,10 @@ type UpdateServiceInterface interface {
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
 func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterface {
 	return &UpdateService{
-		Service:       Service{ctx: ctx, log: log.WithField("service", "update")},
-		FilesService:  NewFilesService(log),
-		RepoBuilder:   NewRepoBuilder(ctx, log),
+		Service:      Service{ctx: ctx, log: log.WithField("service", "update")},
+		FilesService: NewFilesService(log),
+		RepoBuilder:  NewRepoBuilder(ctx, log),
+		// DeviceService: NewDeviceService(ctx, log),
 		WaitForReboot: time.Minute * 5,
 	}
 }
@@ -53,6 +57,7 @@ type UpdateService struct {
 	Service
 	RepoBuilder   RepoBuilderInterface
 	FilesService  FilesService
+	DeviceService DeviceServiceInterface
 	WaitForReboot time.Duration
 }
 
@@ -549,4 +554,165 @@ func (s *UpdateService) ValidateUpdateSelection(account string, imageIds []uint)
 	}
 
 	return count == 1, nil
+}
+
+//BuildUpdateTransactions build records
+func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate,
+	account string, commit *models.Commit) (*[]models.UpdateTransaction, error) {
+	client := inventory.InitClient(s.ctx, log.NewEntry(log.StandardLogger()))
+	var inv inventory.Response
+	var ii []inventory.Response
+	var err error
+
+	if len(devicesUpdate.DevicesUUID) > 0 {
+		for _, UUID := range devicesUpdate.DevicesUUID {
+			inv, err = client.ReturnDevicesByID(UUID)
+			if inv.Count >= 0 {
+				ii = append(ii, inv)
+			}
+			if err != nil {
+				err := errors.NewNotFound(fmt.Sprintf("No devices found for UUID %s", UUID))
+				return nil, err
+			}
+		}
+	}
+
+	s.log.WithField("inventoryDevice", inv).Debug("Device retrieved from inventory")
+	var updates []models.UpdateTransaction
+	for _, inventory := range ii {
+		// Create the models.UpdateTransaction
+		update := models.UpdateTransaction{
+			Account:  account,
+			CommitID: devicesUpdate.CommitID,
+			Status:   models.UpdateStatusCreated,
+		}
+
+		// Get the models.Commit from the Commit ID passed in via JSON
+		update.Commit = commit
+
+		notify, errNotify := s.SendDeviceNotification(&update)
+		if errNotify != nil {
+			s.log.WithField("message", errNotify.Error()).Error("Error to send device notification")
+			s.log.WithField("message", notify).Error("Notify Error")
+
+		}
+
+		update.DispatchRecords = []models.DispatchRecord{}
+
+		//  Removing commit dependency to avoid overwriting the repo
+		var repo *models.Repo
+		s.log.WithField("updateID", update.ID).Debug("Ceating new repo for update transaction")
+		repo = &models.Repo{
+			Status: models.RepoStatusBuilding,
+		}
+		result := db.DB.Create(&repo)
+		if result.Error != nil {
+			s.log.WithField("error", result.Error.Error()).Debug("Result error")
+
+		}
+
+		update.Repo = repo
+		s.log.WithFields(log.Fields{
+			"repoURL": repo.URL,
+			"repoID":  repo.ID,
+		}).Debug("Getting repo info")
+
+		devices := update.Devices
+		oldCommits := update.OldCommits
+		toUpdate := true
+
+		for _, device := range inventory.Result {
+			//  Check for the existence of a Repo that already has this commit and don't duplicate
+			var updateDevice *models.Device
+			dbDevice := db.DB.Where("uuid = ?", device.ID).First(&updateDevice)
+			if dbDevice.Error != nil {
+				s.log.WithField("error", result.Error.Error()).Error("Error finding device")
+				return nil, new(DeviceNotFoundError)
+			}
+
+			if err != nil {
+				if !(err.Error() == "Device was not found") {
+					s.log.WithField("error", err.Error()).Error("Device was not found in our database")
+					err = errors.NewBadRequest(err.Error())
+					return nil, err
+				}
+				s.log.WithFields(log.Fields{
+					"error":      err.Error(),
+					"deviceUUID": device.ID,
+				}).Info("Creating a new device on the database")
+				updateDevice = &models.Device{
+					UUID:    device.ID,
+					Account: account,
+				}
+				if result := db.DB.Create(&updateDevice); result.Error != nil {
+					return nil, result.Error
+				}
+			}
+
+			updateDevice.RHCClientID = device.Ostree.RHCClientID
+			updateDevice.AvailableHash = update.Commit.OSTreeCommit
+			// update the device account if undefined
+			if updateDevice.Account == "" {
+				updateDevice.Account = account
+			}
+			result := db.DB.Save(&updateDevice)
+			if result.Error != nil {
+				return nil, result.Error
+			}
+
+			s.log.WithFields(log.Fields{
+				"updateDevice": updateDevice,
+			}).Debug("Saved updated device")
+
+			devices = append(devices, *updateDevice)
+			update.Devices = devices
+
+			for _, deployment := range device.Ostree.RpmOstreeDeployments {
+				s.log.WithFields(log.Fields{
+					"ostreeDeployment": deployment,
+				}).Debug("Got ostree deployment for device")
+
+				if deployment.Booted {
+					s.log.WithFields(log.Fields{
+						"booted": deployment.Booted,
+					}).Debug("device has been booted")
+					if commit.OSTreeCommit == deployment.Checksum {
+						toUpdate = false
+						break
+					}
+					var oldCommit models.Commit
+					result := db.DB.Where("os_tree_commit = ?", deployment.Checksum).First(&oldCommit)
+					if result.Error != nil {
+						if result.Error.Error() != "record not found" {
+							s.log.WithField("error", err.Error()).Error("Error returning old commit for this ostree checksum")
+							err := errors.NewBadRequest(err.Error())
+
+							return nil, err
+						}
+					}
+					if result.RowsAffected == 0 {
+						s.log.Debug("No old commits found")
+					} else {
+						oldCommits = append(oldCommits, oldCommit)
+					}
+				}
+			}
+
+			if toUpdate {
+				//Should not create a transaction to device already updated
+				update.OldCommits = oldCommits
+				if err := db.DB.Save(&update).Error; err != nil {
+					err = errors.NewBadRequest(err.Error())
+					s.log.WithField("error", err.Error()).Error("Error encoding error")
+					return nil, err
+				}
+			}
+
+		}
+		if toUpdate {
+			updates = append(updates, update)
+		}
+		s.log.WithField("updateID", update.ID).Info("Update has been created")
+	}
+	return &updates, nil
 }

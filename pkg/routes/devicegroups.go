@@ -62,6 +62,9 @@ func MakeDeviceGroupsRouter(sub chi.Router) {
 			d.Use(DeviceGroupDeviceCtx)
 			d.Delete("/", DeleteDeviceGroupOneDevice)
 		})
+
+		r.Post("/updateDevices", UpdateAllDevicesFromGroup)
+
 	})
 }
 
@@ -640,4 +643,101 @@ func CheckGroupName(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSONBody(w, services.Log, map[string]interface{}{"data": map[string]interface{}{"isValid": value}})
+}
+
+//UpdateAllDevicesFromGroup will be resposible to update all devices that belongs to a group
+func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
+	services := dependencies.ServicesFromContext(r.Context())
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	deviceGroup := getContextDeviceGroup(w, r)
+	if deviceGroup == nil {
+		return
+	}
+	ctxLog := ctxServices.Log.WithField("device_group_id", deviceGroup.ID)
+	ctxLog.Info("Updating all devices from group", deviceGroup.ID)
+
+	account, err := common.GetAccount(r)
+	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error":   err.Error(),
+			"account": account,
+		}).Error("Error retrieving account")
+		stterr := errors.NewInternalServerError()
+		w.WriteHeader(stterr.GetStatus())
+		return
+	}
+	devices := deviceGroup.Devices
+
+	var setOfDeviceUUIDS []string
+	for _, device := range devices {
+		setOfDeviceUUIDS = append(setOfDeviceUUIDS, device.UUID)
+	}
+
+	var devicesUpdate models.DevicesUpdate
+	devicesUpdate.DevicesUUID = setOfDeviceUUIDS
+	//validate if commit is valid before continue process
+	//should be created a new method to return the latest commit by imageId and be able to update regardless of imageset
+	commitID, err := services.DeviceService.GetLatestCommitFromDevices(account, setOfDeviceUUIDS)
+	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error":   err.Error(),
+			"account": account,
+		}).Error("Error Getting the latest commit to update a device")
+		stterr := errors.NewInternalServerError()
+		w.WriteHeader(stterr.GetStatus())
+		return
+	}
+
+	devicesUpdate.CommitID = commitID
+	//get commit info to build update repo
+	commit, err := services.CommitService.GetCommitByID(devicesUpdate.CommitID)
+	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error":   err.Error(),
+			"account": account,
+		}).Error("Error Getting the commit info to update a device")
+		stterr := errors.NewInternalServerError()
+		w.WriteHeader(stterr.GetStatus())
+		return
+	}
+	// should be refactored to avoid performance issue with large volume
+	updates, err := services.UpdateService.BuildUpdateTransactions(&devicesUpdate, account, commit)
+	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error":   err.Error(),
+			"account": account,
+		}).Error("Error building update transaction")
+		stterr := errors.NewInternalServerError()
+		w.WriteHeader(stterr.GetStatus())
+		return
+	}
+	// should be refactored to avoid performance issue with large volume
+	var upd []models.UpdateTransaction
+	for _, update := range *updates {
+		update.Account = account
+		upd = append(upd, update)
+		services.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
+		go services.UpdateService.CreateUpdate(update.ID)
+	}
+	if len(upd) == 0 {
+		w.WriteHeader(http.StatusNotFound)
+		if err := json.NewEncoder(w).Encode(upd); err != nil {
+			services.Log.WithField("error", upd).Error("No devices found")
+		}
+		return
+	}
+	result := db.DB.Save(upd)
+	if result.Error != nil {
+		services.Log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Error("Error saving update")
+		err := errors.NewInternalServerError()
+		w.WriteHeader(err.GetStatus())
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(updates); err != nil {
+		services.Log.WithField("error", updates).Error("Error while trying to encode")
+	}
 }
