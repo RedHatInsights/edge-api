@@ -1,5 +1,5 @@
 arch: amd64   # Full VM on AWS or GCE
-dist: bionic  # Ubuntu Bionic 18.04
+dist: focal  # Ubuntu Focal 20.04
 services: docker
 language: go
 go: 1.16
