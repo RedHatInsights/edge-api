@@ -14,6 +14,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	"github.com/redhatinsights/edge-api/pkg/services"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -148,115 +149,125 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func updateFromHTTP(w http.ResponseWriter, r *http.Request) (*[]models.UpdateTransaction, error) {
-	services := dependencies.ServicesFromContext(r.Context())
-	services.Log.Info("Update is being created")
-
-	account, err := common.GetAccount(r)
-	if err != nil {
-		services.Log.WithFields(log.Fields{
-			"error":   err.Error(),
-			"account": account,
-		}).Error("Error retrieving account")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
-		return nil, err
+func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTransaction {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	ctxServices.Log.Info("Update is being created")
+	account := readAccount(w, r, ctxServices.Log)
+	if account == "" {
+		// errors handled by readAccount
+		return nil
 	}
 
 	var devicesUpdate models.DevicesUpdate
-	err = json.NewDecoder(r.Body).Decode(&devicesUpdate)
-	if err != nil {
-		err := errors.NewBadRequest("Invalid JSON")
-		w.WriteHeader(err.GetStatus())
-		return nil, err
+	if err := readRequestJSONBody(w, r, ctxServices.Log, &devicesUpdate); err != nil {
+		return nil
 	}
-	services.Log.WithField("updateJSON", devicesUpdate).Debug("Update JSON received")
+	ctxServices.Log.WithField("updateJSON", devicesUpdate).Debug("Update JSON received")
 
 	// TODO: Implement update by tag - Add validation per tag
 	if devicesUpdate.DevicesUUID == nil {
-		err := errors.NewBadRequest("DeviceUUID required.")
-		w.WriteHeader(err.GetStatus())
-		return nil, err
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("DeviceUUID required."))
+		return nil
 	}
-	if devicesUpdate.CommitID == 0 {
-
-		devicesUpdate.CommitID, err = services.DeviceService.GetLatestCommitFromDevices(account, devicesUpdate.DevicesUUID)
-		if err != nil {
-			return nil, err
+	// remove any duplicates
+	devicesUUID := make([]string, 0, len(devicesUpdate.DevicesUUID))
+	devicesUUIDSMap := make(map[string]bool, len(devicesUpdate.DevicesUUID))
+	for _, deviceUUID := range devicesUpdate.DevicesUUID {
+		if _, ok := devicesUUIDSMap[deviceUUID]; !ok {
+			devicesUUID = append(devicesUUID, deviceUUID)
+			devicesUUIDSMap[deviceUUID] = true
 		}
 	}
+	// check that all submitted devices exists
+	var devicesCount int64
+	if result := db.DB.Debug().Model(&models.Device{}).Where("account = ? AND uuid IN (?)", account, devicesUUID).Count(&devicesCount); result.Error != nil {
+		ctxServices.Log.WithFields(log.Fields{
+			"error": result.Error.Error(),
+		}).Error("failed to get devices count")
+		apiError := errors.NewInternalServerError()
+		apiError.SetTitle("failed to get devices count")
+		respondWithAPIError(w, ctxServices.Log, apiError)
+		return nil
+	}
+	if int64(len(devicesUUID)) != devicesCount {
+		respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("some devices where not found"))
+		return nil
+	}
+	if devicesUpdate.CommitID == 0 {
+		commitID, err := ctxServices.DeviceService.GetLatestCommitFromDevices(account, devicesUUID)
+		if err != nil {
+			ctxServices.Log.WithFields(log.Fields{
+				"error": err.Error(),
+			}).Error("error when getting latest commit for devices")
+			var apiError errors.APIError
+			switch err.(type) {
+			case *services.DeviceHasImageUndefined, *services.ImageHasNoImageSet, *services.DeviceHasMoreThanOneImageSet, *services.DeviceHasNoImageUpdate:
+				apiError = errors.NewBadRequest(err.Error())
+			default:
+				apiError = errors.NewInternalServerError()
+				apiError.SetTitle("failed to get latest commit for devices")
+			}
+			respondWithAPIError(w, ctxServices.Log, apiError)
+			return nil
+		}
+		devicesUpdate.CommitID = commitID
+	}
 	//validate if commit is valid before continue process
-	commit, err := services.CommitService.GetCommitByID(devicesUpdate.CommitID)
+	commit, err := ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID)
 	if err != nil {
-		services.Log.WithFields(log.Fields{
+		ctxServices.Log.WithFields(log.Fields{
 			"error":    err.Error(),
 			"commitID": devicesUpdate.CommitID,
 		}).Error("No commit found for Commit ID")
-		err := errors.NewNotFound(err.Error())
-		err.SetTitle(fmt.Sprintf("No commit found for CommitID %d", devicesUpdate.CommitID))
-		w.WriteHeader(err.GetStatus())
-		return nil, err
+		respondWithAPIError(w, ctxServices.Log, errors.NewNotFound(fmt.Sprintf("No commit found for CommitID %d", devicesUpdate.CommitID)))
+		return nil
 	}
-	services.Log.WithField("commit", commit.ID).Debug("Commit retrieved from this update")
-	updates, err := services.UpdateService.BuildUpdateTransactions(&devicesUpdate, account, commit)
+	ctxServices.Log.WithField("commit", commit.ID).Debug("Commit retrieved from this update")
+	updates, err := ctxServices.UpdateService.BuildUpdateTransactions(&devicesUpdate, account, commit)
 	if err != nil {
-		services.Log.WithFields(log.Fields{
+		ctxServices.Log.WithFields(log.Fields{
 			"error":   err.Error(),
 			"account": account,
 		}).Error("Error building update transaction")
-		stterr := errors.NewInternalServerError()
-		w.WriteHeader(stterr.GetStatus())
-		return nil, err
+		apiError := errors.NewInternalServerError()
+		apiError.SetTitle("Error building update transaction")
+		respondWithAPIError(w, ctxServices.Log, apiError)
+		return nil
 	}
-	return updates, nil
+	return updates
 }
 
 // AddUpdate updates a device
 func AddUpdate(w http.ResponseWriter, r *http.Request) {
-	services := dependencies.ServicesFromContext(r.Context())
-	services.Log.Info("Starting update")
-	updates, err := updateFromHTTP(w, r)
-	if err != nil {
-		services.Log.WithFields(log.Fields{
-			"error": err.Error(),
-		}).Error("Error building update from request")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	ctxServices.Log.Info("Starting update")
+	account := readAccount(w, r, ctxServices.Log)
+	if account == "" {
+		// errors handled by readAccount
+		return
+	}
+	updates := updateFromHTTP(w, r)
+	if updates == nil {
+		// errors handled by updateFromHTTP
 		return
 	}
 	var upd []models.UpdateTransaction
 
 	for _, update := range *updates {
-		update.Account, err = common.GetAccount(r)
-		if err != nil {
-			services.Log.WithFields(log.Fields{
-				"error": err.Error(),
-			}).Error("Error retrieving account")
-			err := errors.NewBadRequest(err.Error())
-			w.WriteHeader(err.GetStatus())
-			return
-		}
+		update.Account = account
 		upd = append(upd, update)
-		services.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
-		go services.UpdateService.CreateUpdate(update.ID)
+		ctxServices.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
+		go ctxServices.UpdateService.CreateUpdate(update.ID)
 	}
-	result := db.DB.Save(upd)
-	if result.Error != nil {
-		services.Log.WithFields(log.Fields{
-			"error": err.Error(),
+	if result := db.DB.Save(upd); result.Error != nil {
+		ctxServices.Log.WithFields(log.Fields{
+			"error": result.Error.Error(),
 		}).Error("Error saving update")
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.GetStatus())
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(updates); err != nil {
-		services.Log.WithField("error", updates).Error("Error while trying to encode")
-	}
-
+	respondWithJSONBody(w, ctxServices.Log, updates)
 }
 
 // GetUpdateByID obtains an update from the database for an account

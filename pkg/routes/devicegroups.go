@@ -210,30 +210,6 @@ func DeviceGroupDeviceCtx(next http.Handler) http.Handler {
 	})
 }
 
-func respondWithAPIError(w http.ResponseWriter, logEntry *log.Entry, apiError errors.APIError) {
-	w.WriteHeader(apiError.GetStatus())
-	if err := json.NewEncoder(w).Encode(&apiError); err != nil {
-		logEntry.WithField("error", err.Error()).Error("Error while trying to encode api error")
-	}
-}
-
-func respondWithJSONBody(w http.ResponseWriter, logEntry *log.Entry, data interface{}) {
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		logEntry.WithField("error", data).Error("Error while trying to encode")
-		respondWithAPIError(w, logEntry, errors.NewInternalServerError())
-	}
-}
-
-func readRequestJSONBody(w http.ResponseWriter, r *http.Request, logEntry *log.Entry, dataReceiver interface{}) error {
-	defer r.Body.Close()
-	if err := json.NewDecoder(r.Body).Decode(dataReceiver); err != nil {
-		logEntry.WithField("error", err.Error()).Error("Error parsing json from device group request")
-		respondWithAPIError(w, logEntry, errors.NewBadRequest("invalid JSON request"))
-		return err
-	}
-	return nil
-}
-
 var deviceGroupsFilters = common.ComposeFilters(
 	common.ContainFilterHandler(&common.Filter{
 		QueryParam: "name",
