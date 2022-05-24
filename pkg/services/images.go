@@ -227,9 +227,9 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		s.log.WithField("error", result.Error.Error()).Error("Error retrieving the image set from parent image")
 		return result.Error
 	}
-	currentImageSet.Version = currentImageSet.Version + 1
+	currentImageSet.Version = previousImage.Version + 1
 	if err := db.DB.Save(currentImageSet).Error; err != nil {
-		return result.Error
+		return err
 	}
 
 	if previousImage.Status == models.ImageStatusSuccess {
@@ -289,7 +289,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 
 	s.log = s.log.WithFields(log.Fields{"updatedImageID": image.ID, "updatedCommitID": image.Commit.ID})
 
-	s.log.Info("Image Updated successfully - starting bulding processs")
+	s.log.Info("Image Updated successfully - starting bulding process")
 
 	go s.postProcessImage(image.ID)
 
