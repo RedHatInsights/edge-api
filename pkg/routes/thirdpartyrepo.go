@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Unleash/unleash-client-go/v3"
+	unleashCTX "github.com/Unleash/unleash-client-go/v3/context"
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
@@ -118,6 +120,7 @@ func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRe
 
 // GetAllThirdPartyRepo return all the ThirdPartyRepo
 func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
+
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	var tprepo []models.ThirdPartyRepo
 	var count int64
@@ -129,6 +132,16 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := thirdPartyRepoFilters(r, db.DB).Model(&models.ThirdPartyRepo{}).Where("account = ?", account)
+
+	// Check to see if feature is enabled
+	unleashCtx := unleashCTX.Context{
+		UserId: account,
+	}
+	enabled := unleash.IsEnabled("fleet-management.custom-repos", unleash.WithContext(unleashCtx))
+	if !enabled {
+		respondWithJSONBody(w, ctxServices.Log, "Feature not available")
+	}
+
 	pagination := common.GetPagination(r)
 
 	if result := ctx.Count(&count); result.Error != nil {

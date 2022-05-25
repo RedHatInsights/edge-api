@@ -6,9 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Unleash/unleash-client-go/v3"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	mockUnleash "github.com/redhatinsights/edge-api/unleash"
 )
 
 var (
@@ -47,8 +49,7 @@ var dbName string
 func setUp() {
 	config.Init()
 	config.Get().Debug = true
-	time := time.Now().UnixNano()
-	dbName = fmt.Sprintf("%d-routes.db", time)
+	dbName = fmt.Sprintf("%d-routes.db", time.Now().UnixNano())
 	config.Get().Database.Name = dbName
 	db.InitDB()
 	err := db.DB.AutoMigrate(
@@ -81,6 +82,18 @@ func setUp() {
 	}
 	db.DB.Create(&testRepo)
 	db.DB.Create(&testUpdates)
+
+	faker := mockUnleash.NewFakeUnleash()
+
+	unleash.Initialize(
+		unleash.WithListener(&unleash.DebugListener{}),
+		unleash.WithAppName("my-application"),
+		unleash.WithUrl(faker.URL()),
+		unleash.WithRefreshInterval(1*time.Millisecond),
+	)
+	unleash.WaitForReady()
+	faker.Enable("fleet-management.custom-repos")
+	<-time.After(5 * time.Millisecond) // wait until client refreshes
 
 }
 
