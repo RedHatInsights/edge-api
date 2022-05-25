@@ -1,5 +1,5 @@
 arch: amd64   # Full VM on AWS or GCE
-dist: bionic  # Ubuntu Bionic 18.04
+dist: focal  # Ubuntu Focal 20.04
 services: docker
 language: go
 go: 1.16
@@ -13,33 +13,33 @@ branches:
     - api-snake
 before_install:
   - |
-    if [ "$TRAVIS_PULL_REQUEST" != false ]; then
-      export TAG="pr-${TRAVIS_PULL_REQUEST}"
-      export LIBFDO_IMAGE="${FLEET_MANAGEMENT_ORG}/pr-checks:${TAG}-libfdo"
-      export EDGE_API_IMAGE="${FLEET_MANAGEMENT_ORG}/pr-checks:${TAG}-edge-api"
-    else
-      export TAG="latest"
-      export LIBFDO_IMAGE="${FLEET_MANAGEMENT_ORG}/libfdo-data:${TAG}"
-      export EDGE_API_IMAGE="${FLEET_MANAGEMENT_ORG}/edge-api:${TAG}"
-    fi
+    # if [ "$TRAVIS_PULL_REQUEST" != false ]; then
+    #  export TAG="pr-${TRAVIS_PULL_REQUEST}"
+    #  export LIBFDO_IMAGE="${FLEET_MANAGEMENT_ORG}/pr-checks:${TAG}-libfdo"
+    #  export EDGE_API_IMAGE="${FLEET_MANAGEMENT_ORG}/pr-checks:${TAG}-edge-api"
+    # else
+    export TAG="latest"
+    export LIBFDO_IMAGE="${FLEET_MANAGEMENT_ORG}/libfdo-data:${TAG}"
+    export EDGE_API_IMAGE="${FLEET_MANAGEMENT_ORG}/edge-api:${TAG}"
+    # fi
 jobs:
   include:
-    - stage: "Build libfdo-data"
-      script:
-        - if [ "$TRAVIS_PULL_REQUEST" != false ]; then echo "LABEL quay.expires-after=2d" >> ./test-container/Dockerfile; fi
-        - docker build -t ${LIBFDO_IMAGE} -f ./test-container/Dockerfile .
-        - docker login quay.io -u ${FLEETER_BOT:-${FLEETER_BOT_PR}} -p ${FLEETER_PASS:-${FLEETER_PASS_PR}} >/dev/null 2>&1
-        - docker push ${LIBFDO_IMAGE}
+    # - stage: "Build libfdo-data"
+    #   script:
+    #     - if [ "$TRAVIS_PULL_REQUEST" != false ]; then echo "LABEL quay.expires-after=2d" >> ./test-container/Dockerfile; fi
+    #     - docker build -t ${LIBFDO_IMAGE} -f ./test-container/Dockerfile .
+    #     - docker login quay.io -u ${FLEETER_BOT:-${FLEETER_BOT_PR}} -p ${FLEETER_PASS:-${FLEETER_PASS_PR}} >/dev/null 2>&1
+    #     - docker push ${LIBFDO_IMAGE}
     - stage: "Build & Test"
-      name: "Build edge-api"
-      script:
-        - if [ "$TRAVIS_PULL_REQUEST" != false ]; then echo "LABEL quay.expires-after=2d" >> ./Dockerfile; fi
-        - sed -i 's|registry.access.redhat.com/ubi8/ubi|quay.io/centos/centos:stream8|' ./Dockerfile
-        - sed -i 's|.*ubi-micro-build.*ubi.repo||' ./Dockerfile
-        - sed -i "s|${FLEET_MANAGEMENT_ORG}/libfdo-data|${LIBFDO_IMAGE}|" ./Dockerfile
-        - docker build -t ${EDGE_API_IMAGE} -f ./Dockerfile .
-        - docker login quay.io -u ${FLEETER_BOT:-${FLEETER_BOT_PR}} -p ${FLEETER_PASS:-${FLEETER_PASS_PR}} >/dev/null 2>&1
-        - docker push ${EDGE_API_IMAGE}
+    # name: "Build edge-api"
+    # script:
+    #   - if [ "$TRAVIS_PULL_REQUEST" != false ]; then echo "LABEL quay.expires-after=2d" >> ./Dockerfile; fi
+    #   - sed -i 's|registry.access.redhat.com/ubi8/ubi|quay.io/centos/centos:stream8|' ./Dockerfile
+    #   - sed -i 's|.*ubi-micro-build.*ubi.repo||' ./Dockerfile
+    #   - sed -i "s|${FLEET_MANAGEMENT_ORG}/libfdo-data|${LIBFDO_IMAGE}|" ./Dockerfile
+    #   - docker build -t ${EDGE_API_IMAGE} -f ./Dockerfile .
+    #   - docker login quay.io -u ${FLEETER_BOT:-${FLEETER_BOT_PR}} -p ${FLEETER_PASS:-${FLEETER_PASS_PR}} >/dev/null 2>&1
+    #   - docker push ${EDGE_API_IMAGE}
     - name: "Static Code Analysis"
       script:
         - docker run --rm -w /edge-api -v $(pwd):/edge-api ${LIBFDO_IMAGE} /bin/sh -c "staticcheck -go 1.15 -f stylish ./..."
