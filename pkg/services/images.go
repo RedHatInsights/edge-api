@@ -38,8 +38,8 @@ import (
 var WaitGroup sync.WaitGroup
 
 var (
-	OSTreeRefDistribution = regexp.MustCompile(`[a-zA-Z]+`)
-	OSTreeRefVersion      = regexp.MustCompile(`(\d{1})`)
+	oSTreeRefDistribution = regexp.MustCompile(`[a-zA-Z]+`)
+	oSTreeRefVersion      = regexp.MustCompile(`(\d{1})`)
 )
 
 // ImageServiceInterface defines the interface that helps handle
@@ -248,11 +248,14 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		}
 
 		image.Commit.OSTreeParentCommit = repo.URL
-		fmt.Printf("\n >>>>>>>>>>>>> image.Distribution: %v\n", image.Distribution)
-		os_tree_distribution := OSTreeRefDistribution.FindStringSubmatch(image.Distribution)[0]
-		fmt.Printf("\n >>>>>>>>>>>>> os_tree_distribution: %v\n", os_tree_distribution)
-		os_tree_version := OSTreeRefVersion.FindStringSubmatch(image.Distribution)[0]
-		defaultOstree := fmt.Sprintf("%s/%s/x86_64/edge", os_tree_distribution, os_tree_version)
+
+		osTreeDistribution := oSTreeRefDistribution.FindStringSubmatch(image.Distribution)[0]
+		osTreeVersion := oSTreeRefVersion.FindStringSubmatch(image.Distribution)[0]
+		if osTreeDistribution == "" || osTreeVersion == "" {
+			s.log.WithField("error", err.Error()).Error("No OSTREE found to this distribution")
+			return &OstreeNotFound{}
+		}
+		defaultOstree := fmt.Sprintf("%s/%s/x86_64/edge", osTreeDistribution, osTreeVersion)
 
 		if image.Commit.OSTreeRef == "" {
 			image.Commit.OSTreeRef = defaultOstree

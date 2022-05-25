@@ -119,7 +119,7 @@ var requiredPackages = []string{
 var (
 	validSSHPrefix     = regexp.MustCompile(`^(ssh-(rsa|dss|ed25519)|ecdsa-sha2-nistp(256|384|521)) \S+`)
 	validImageName     = regexp.MustCompile(`^[A-Za-z0-9]+[A-Za-z0-9\s_-]*$`)
-	OSTreeRefVersion   = regexp.MustCompile(`(\d{1})`)
+	oSTreeRefVersion   = regexp.MustCompile(`(\d{1})`)
 	acceptedImageTypes = map[string]interface{}{ImageTypeCommit: nil, ImageTypeInstaller: nil}
 )
 
@@ -204,8 +204,11 @@ func (i *Image) HasOutputType(imageType string) bool {
 
 // GetPackagesList returns the packages in a user-friendly list containing their names
 func (i *Image) GetPackagesList() *[]string {
-	os_tree_version := OSTreeRefVersion.FindStringSubmatch(i.Distribution)[0]
-	if os_tree_version == "8" {
+	if i.Distribution == "" {
+		return nil
+	}
+	osTreeVersion := oSTreeRefVersion.FindStringSubmatch(i.Distribution)[0]
+	if osTreeVersion == "8" {
 		if !contains(requiredPackages, rhel8ansible) {
 			requiredPackages = append(requiredPackages, rhel8ansible)
 		}
