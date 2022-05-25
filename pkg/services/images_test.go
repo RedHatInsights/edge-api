@@ -190,19 +190,21 @@ var _ = Describe("Image Service Test", func() {
 				result := db.DB.Save(imageSet)
 				Expect(result.Error).To(Not(HaveOccurred()))
 				previousImage := &models.Image{
-					Account:    account,
-					Status:     models.ImageStatusSuccess,
-					Commit:     &models.Commit{RepoID: &uid},
-					Version:    1,
-					Name:       faker.Name(),
-					ImageSetID: &imageSet.ID,
+					Account:      account,
+					Status:       models.ImageStatusSuccess,
+					Commit:       &models.Commit{RepoID: &uid},
+					Version:      1,
+					Distribution: "rhel-8",
+					Name:         faker.Name(),
+					ImageSetID:   &imageSet.ID,
 				}
 				image := &models.Image{
-					Account:     account,
-					Commit:      &models.Commit{},
-					OutputTypes: []string{models.ImageTypeCommit},
-					Version:     2,
-					Name:        previousImage.Name,
+					Account:      account,
+					Commit:       &models.Commit{},
+					Distribution: "rhel-8",
+					OutputTypes:  []string{models.ImageTypeCommit},
+					Version:      2,
+					Name:         previousImage.Name,
 				}
 				result = db.DB.Save(previousImage)
 				Expect(result.Error).To(Not(HaveOccurred()))
@@ -224,19 +226,21 @@ var _ = Describe("Image Service Test", func() {
 				result := db.DB.Save(imageSet)
 				Expect(result.Error).To(Not(HaveOccurred()))
 				previousImage := &models.Image{
-					Account:    account,
-					Status:     models.ImageStatusSuccess,
-					Commit:     &models.Commit{RepoID: &uid},
-					Version:    1,
-					Name:       faker.Name(),
-					ImageSetID: &imageSet.ID,
+					Account:      account,
+					Status:       models.ImageStatusSuccess,
+					Commit:       &models.Commit{RepoID: &uid},
+					Version:      1,
+					Distribution: "rhel-8",
+					Name:         faker.Name(),
+					ImageSetID:   &imageSet.ID,
 				}
 				image := &models.Image{
-					Account:     account,
-					Commit:      &models.Commit{},
-					OutputTypes: []string{models.ImageTypeCommit},
-					Version:     2,
-					Name:        previousImage.Name,
+					Account:      account,
+					Commit:       &models.Commit{},
+					OutputTypes:  []string{models.ImageTypeCommit},
+					Version:      2,
+					Distribution: "rhel-8",
+					Name:         previousImage.Name,
 				}
 				result = db.DB.Save(previousImage)
 				Expect(result.Error).To(Not(HaveOccurred()))

@@ -103,9 +103,12 @@ const (
 	InvalidSSHKeyError = "SSH Key supports RSA or DSS or ED25519 or ECDSA-SHA2 algorithms"
 )
 
+//
+var rhel8ansible = "ansible"
+var rhel9ansible = "ansible-core"
+
 // Required Packages to send to image builder that will go into the base image
-var requiredPackages = [6]string{
-	"ansible",
+var requiredPackages = []string{
 	"rhc",
 	"rhc-worker-playbook",
 	"subscription-manager",
@@ -116,6 +119,7 @@ var requiredPackages = [6]string{
 var (
 	validSSHPrefix     = regexp.MustCompile(`^(ssh-(rsa|dss|ed25519)|ecdsa-sha2-nistp(256|384|521)) \S+`)
 	validImageName     = regexp.MustCompile(`^[A-Za-z0-9]+[A-Za-z0-9\s_-]*$`)
+	OSTreeRefVersion   = regexp.MustCompile(`(\d{1})`)
 	acceptedImageTypes = map[string]interface{}{ImageTypeCommit: nil, ImageTypeInstaller: nil}
 )
 
@@ -200,6 +204,16 @@ func (i *Image) HasOutputType(imageType string) bool {
 
 // GetPackagesList returns the packages in a user-friendly list containing their names
 func (i *Image) GetPackagesList() *[]string {
+	os_tree_version := OSTreeRefVersion.FindStringSubmatch(i.Distribution)[0]
+	if os_tree_version == "8" {
+		if !contains(requiredPackages, rhel8ansible) {
+			requiredPackages = append(requiredPackages, rhel8ansible)
+		}
+	} else {
+		if !contains(requiredPackages, rhel9ansible) {
+			requiredPackages = append(requiredPackages, rhel9ansible)
+		}
+	}
 	l := len(requiredPackages)
 	pkgs := make([]string, len(i.Packages)+l)
 	for i, p := range requiredPackages {
@@ -215,11 +229,20 @@ func (i *Image) GetPackagesList() *[]string {
 func (i *Image) GetALLPackagesList() *[]string {
 	initialPackages := *i.GetPackagesList()
 	packages := make([]string, 0, len(initialPackages)+len(i.CustomPackages))
-
 	packages = append(packages, initialPackages...)
 
 	for _, pkg := range i.CustomPackages {
 		packages = append(packages, pkg.Name)
 	}
 	return &packages
+}
+
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
 }

@@ -15,7 +15,8 @@ func TestGetPackagesList(t *testing.T) {
 		},
 	}
 	img := &Image{
-		Packages: pkgs,
+		Distribution: "rhel-9",
+		Packages:     pkgs,
 	}
 
 	packageList := img.GetPackagesList()
@@ -23,12 +24,12 @@ func TestGetPackagesList(t *testing.T) {
 		t.Errorf("two packages + required packages expected")
 	}
 	packages := []string{
-		"ansible",
 		"rhc",
 		"rhc-worker-playbook",
 		"subscription-manager",
 		"subscription-manager-plugin-ostree",
 		"insights-client",
+		"ansible-core",
 		"vim",
 		"wget",
 	}
@@ -226,6 +227,7 @@ func TestGetALLPackagesList(t *testing.T) {
 		},
 	}
 	img := &Image{
+		Distribution:   "rhel-9",
 		Packages:       pkgs,
 		CustomPackages: customPackages,
 	}
@@ -236,17 +238,18 @@ func TestGetALLPackagesList(t *testing.T) {
 	}
 
 	packages := []string{
-		"ansible",
 		"rhc",
 		"rhc-worker-playbook",
 		"subscription-manager",
 		"subscription-manager-plugin-ostree",
 		"insights-client",
+		"ansible-core",
 		"vim",
 		"wget",
 		"custompackage",
 		"thirdpartypackage",
 	}
+
 	for i, item := range *allPackagesList {
 		if item != packages[i] {
 			t.Errorf("expected %s, got %s", packages[i], item)
