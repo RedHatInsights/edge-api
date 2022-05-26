@@ -221,20 +221,18 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	image.ImageSetID = previousImage.ImageSetID
 	image.Account = previousImage.Account
 
+	var currentImageSet models.ImageSet
+	result := db.DB.Where("Id = ?", previousImage.ImageSetID).First(&currentImageSet)
+	if result.Error != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error retrieving the image set from parent image")
+		return result.Error
+	}
+	currentImageSet.Version = previousImage.Version + 1
+	if err := db.DB.Save(currentImageSet).Error; err != nil {
+		return err
+	}
+
 	if previousImage.Status == models.ImageStatusSuccess {
-		// Previous image was built successfully
-		var currentImageSet models.ImageSet
-		result := db.DB.Where("Id = ?", previousImage.ImageSetID).First(&currentImageSet)
-
-		if result.Error != nil {
-			s.log.WithField("error", result.Error.Error()).Error("Error retrieving the image set from parent image")
-			return result.Error
-		}
-		currentImageSet.Version = currentImageSet.Version + 1
-		if err := db.DB.Save(currentImageSet).Error; err != nil {
-			return result.Error
-		}
-
 		// Always get the repo URL from the previous Image's commit
 		repo, err := s.RepoService.GetRepoByID(previousImage.Commit.RepoID)
 		if err != nil {
@@ -252,7 +250,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 			}
 		}
 	} else {
-		// Previous image was not built sucessfully
+		// Previous image was not built successfully
 		s.log.WithField("previousImageID", previousImage.ID).Info("Creating an update based on a image with a status that is not success")
 	}
 	image, err = s.ImageBuilder.ComposeCommit(image)
@@ -291,7 +289,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 
 	s.log = s.log.WithFields(log.Fields{"updatedImageID": image.ID, "updatedCommitID": image.Commit.ID})
 
-	s.log.Info("Image Updated successfully - starting bulding processs")
+	s.log.Info("Image Updated successfully - starting bulding process")
 
 	go s.postProcessImage(image.ID)
 
