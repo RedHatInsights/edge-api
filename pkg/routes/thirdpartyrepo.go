@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Unleash/unleash-client-go/v3"
-	unleashCTX "github.com/Unleash/unleash-client-go/v3/context"
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
@@ -16,6 +14,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -134,10 +133,7 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	ctx := thirdPartyRepoFilters(r, db.DB).Model(&models.ThirdPartyRepo{}).Where("account = ?", account)
 
 	// Check to see if feature is enabled
-	unleashCtx := unleashCTX.Context{
-		UserId: account,
-	}
-	enabled := unleash.IsEnabled("fleet-management.custom-repos", unleash.WithContext(unleashCtx))
+	enabled := feature.CheckFeatureWithAccount(account, feature.FeatureCustomRepos)
 	if !enabled {
 		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable("Feature not available"))
 	}

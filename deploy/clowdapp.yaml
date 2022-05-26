@@ -84,7 +84,7 @@ objects:
         - name: LOG_LEVEL
           value: ${LOG_LEVEL}
         - name: UNLEASH_URL
-            value: ${UNLEASH_URL}
+          value: ${UNLEASH_URL}
         - name: UNLEASH_TOKEN
           valueFrom:
             secretKeyRef:
@@ -136,7 +136,7 @@ objects:
         - name: LOG_LEVEL
           value: ${LOG_LEVEL}
         - name: UNLEASH_URL
-            value: ${UNLEASH_URL}
+          value: ${UNLEASH_URL}
         - name: UNLEASH_TOKEN
           valueFrom:
             secretKeyRef:

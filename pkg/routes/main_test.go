@@ -11,6 +11,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	mockUnleash "github.com/redhatinsights/edge-api/unleash"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 )
 
 var (
@@ -92,7 +93,8 @@ func setUp() {
 		unleash.WithRefreshInterval(1*time.Millisecond),
 	)
 	unleash.WaitForReady()
-	faker.Enable("fleet-management.custom-repos")
+	faker.Enable(feature.FeatureCustomRepos)
+
 	<-time.After(5 * time.Millisecond) // wait until client refreshes
 
 }
