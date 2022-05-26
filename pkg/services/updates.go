@@ -626,18 +626,13 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 			var updateDevice *models.Device
 			dbDevice := db.DB.Where("uuid = ?", device.ID).First(&updateDevice)
 			if dbDevice.Error != nil {
-				s.log.WithField("error", result.Error.Error()).Error("Error finding device")
-				return nil, new(DeviceNotFoundError)
-			}
-
-			if err != nil {
-				if !(err.Error() == "Device was not found") {
-					s.log.WithField("error", err.Error()).Error("Device was not found in our database")
+				if !(dbDevice.Error.Error() == "Device was not found") {
+					s.log.WithField("error", dbDevice.Error.Error()).Error("Device was not found in our database")
 					err = errors.NewBadRequest(err.Error())
 					return nil, err
 				}
 				s.log.WithFields(log.Fields{
-					"error":      err.Error(),
+					"error":      dbDevice.Error.Error(),
 					"deviceUUID": device.ID,
 				}).Info("Creating a new device on the database")
 				updateDevice = &models.Device{
