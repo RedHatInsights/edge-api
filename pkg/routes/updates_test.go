@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/bxcodec/faker/v3"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"io/ioutil"
@@ -247,6 +249,158 @@ var _ = Describe("Update routes", func() {
 
 				Expect(rr.Code).To(Equal(http.StatusOK))
 				Expect(rr.Body.String()).Should(MatchJSON(jsonResponse))
+			})
+		})
+	})
+
+	Context("Devices update", func() {
+		var edgeAPIServices *dependencies.EdgeAPIServices
+		var mockUpdateService *mock_services.MockUpdateServiceInterface
+		var ctrl *gomock.Controller
+
+		account := common.DefaultAccount
+		account2 := faker.UUIDHyphenated()
+
+		imageSet := models.ImageSet{
+			Account: account,
+		}
+		db.DB.Create(&imageSet)
+
+		commit := models.Commit{
+			Account: account,
+		}
+		db.DB.Create(&commit)
+
+		image := models.Image{
+			Account:    account,
+			CommitID:   commit.ID,
+			Status:     models.ImageStatusSuccess,
+			Version:    1,
+			ImageSetID: &imageSet.ID,
+		}
+		db.DB.Create(&image)
+
+		device := models.Device{
+			Account: account,
+			UUID:    faker.UUIDHyphenated(),
+			ImageID: image.ID,
+		}
+		db.DB.Create(&device)
+
+		updateCommit := models.Commit{
+			Account: account,
+		}
+		db.DB.Create(&updateCommit)
+
+		updateImage := models.Image{
+			Account:    account,
+			CommitID:   updateCommit.ID,
+			Status:     models.ImageStatusSuccess,
+			Version:    2,
+			ImageSetID: &imageSet.ID,
+		}
+		db.DB.Create(&updateImage)
+
+		// a device from another account
+		device2 := models.Device{Account: account2, UUID: faker.UUIDHyphenated()}
+		db.DB.Create(&device2)
+
+		BeforeEach(func() {
+			ctrl = gomock.NewController(GinkgoT())
+			mockUpdateService = mock_services.NewMockUpdateServiceInterface(ctrl)
+			ctx := context.Background()
+			logger := log.NewEntry(log.StandardLogger())
+
+			edgeAPIServices = &dependencies.EdgeAPIServices{
+				DeviceService: services.NewDeviceService(ctx, logger),
+				CommitService: services.NewCommitService(ctx, logger),
+				UpdateService: mockUpdateService,
+				Log:           logger,
+			}
+		})
+		AfterEach(func() {
+			ctrl.Finish()
+		})
+
+		When("when devices does not exists", func() {
+
+			It("should not allow to update", func() {
+				updateData, err := json.Marshal(models.DevicesUpdate{DevicesUUID: []string{device.UUID, "does-not-exists"}})
+				Expect(err).To(BeNil())
+				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(updateData))
+				Expect(err).To(BeNil())
+
+				ctx := dependencies.ContextWithServices(req.Context(), edgeAPIServices)
+				req = req.WithContext(ctx)
+
+				responseRecorder := httptest.NewRecorder()
+				handler := http.HandlerFunc(AddUpdate)
+				handler.ServeHTTP(responseRecorder, req)
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusNotFound))
+			})
+
+			It("should not allow to update when devices from different accounts", func() {
+				updateData, err := json.Marshal(models.DevicesUpdate{DevicesUUID: []string{device.UUID, device2.UUID}})
+				Expect(err).To(BeNil())
+				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(updateData))
+				Expect(err).To(BeNil())
+
+				ctx := dependencies.ContextWithServices(req.Context(), edgeAPIServices)
+				req = req.WithContext(ctx)
+
+				responseRecorder := httptest.NewRecorder()
+				handler := http.HandlerFunc(AddUpdate)
+				handler.ServeHTTP(responseRecorder, req)
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusNotFound))
+			})
+		})
+
+		When("when devices exists and update commit exists", func() {
+			updateTransactions := []models.UpdateTransaction{
+				{Account: account, CommitID: updateCommit.ID, Devices: []models.Device{device}, Status: models.UpdateStatusBuilding},
+			}
+			db.DB.Create(updateTransactions)
+
+			It("should allow to update without commitID", func() {
+				updateData, err := json.Marshal(models.DevicesUpdate{DevicesUUID: []string{device.UUID}})
+				Expect(err).To(BeNil())
+				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(updateData))
+				Expect(err).To(BeNil())
+
+				ctx := req.Context()
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+
+				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), account, gomock.Any()).Return(&updateTransactions, nil)
+				mockUpdateService.EXPECT().CreateUpdate(updateTransactions[0].ID)
+
+				responseRecorder := httptest.NewRecorder()
+				handler := http.HandlerFunc(AddUpdate)
+				handler.ServeHTTP(responseRecorder, req)
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+			})
+
+			It("should allow to update with commitID", func() {
+				updateData, err := json.Marshal(models.DevicesUpdate{CommitID: commit.ID, DevicesUUID: []string{device.UUID}})
+				Expect(err).To(BeNil())
+				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(updateData))
+				Expect(err).To(BeNil())
+
+				ctx := req.Context()
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+
+				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), account, gomock.Any()).Return(&updateTransactions, nil)
+				mockUpdateService.EXPECT().CreateUpdate(updateTransactions[0].ID)
+
+				responseRecorder := httptest.NewRecorder()
+				handler := http.HandlerFunc(AddUpdate)
+				handler.ServeHTTP(responseRecorder, req)
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
 			})
 		})
 	})
