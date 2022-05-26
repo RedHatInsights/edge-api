@@ -64,3 +64,17 @@ func NewNotFound(message string) APIError {
 	err.Status = http.StatusNotFound
 	return err
 }
+
+// FeatureNotAvailable defines a error when the feature is toggled off via feature flags
+type FeatureNotAvailable struct {
+	apiError
+}
+
+// NewFeatureNotAvailable creates a new NewFeatureNotAvailable
+func NewFeatureNotAvailable(message string) APIError {
+	err := new(FeatureNotAvailable)
+	err.Code = "FEATURE_NOT_AVAILABLE"
+	err.Title = message
+	err.Status = http.StatusNotImplemented
+	return err
+}

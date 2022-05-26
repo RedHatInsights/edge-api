@@ -139,7 +139,7 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	}
 	enabled := unleash.IsEnabled("fleet-management.custom-repos", unleash.WithContext(unleashCtx))
 	if !enabled {
-		respondWithJSONBody(w, ctxServices.Log, "Feature not available")
+		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable("Feature not available"))
 	}
 
 	pagination := common.GetPagination(r)
