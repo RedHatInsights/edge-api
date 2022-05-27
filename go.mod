@@ -22,7 +22,7 @@ require (
 	github.com/redhatinsights/platform-go-middlewares v0.17.0
 	github.com/segmentio/kafka-go v0.4.31
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/viper v1.11.0
+	github.com/spf13/viper v1.12.0
 	gopkg.in/confluentinc/confluent-kafka-go.v1 v1.8.2
 	gorm.io/driver/postgres v1.3.6
 	gorm.io/driver/sqlite v1.3.2
