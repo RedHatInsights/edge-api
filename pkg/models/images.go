@@ -1,8 +1,13 @@
 package models
 
 import (
+	"encoding/json"
 	"errors"
+	"io/ioutil"
+	"os"
+	"path"
 	"regexp"
+	"runtime"
 	"strings"
 
 	"github.com/lib/pq"
@@ -104,17 +109,9 @@ const (
 )
 
 //
-var rhel8ansible = "ansible"
-var rhel9ansible = "ansible-core"
 
 // Required Packages to send to image builder that will go into the base image
-var requiredPackages = []string{
-	"rhc",
-	"rhc-worker-playbook",
-	"subscription-manager",
-	"subscription-manager-plugin-ostree",
-	"insights-client",
-}
+var requiredPackages = []string{}
 
 var (
 	validSSHPrefix     = regexp.MustCompile(`^(ssh-(rsa|dss|ed25519)|ecdsa-sha2-nistp(256|384|521)) \S+`)
@@ -204,20 +201,29 @@ func (i *Image) HasOutputType(imageType string) bool {
 
 // GetPackagesList returns the packages in a user-friendly list containing their names
 func (i *Image) GetPackagesList() *[]string {
+	result, err := getInitialPackages()
+	if err != nil {
+		return nil
+	}
+	requiredPackages := result["required"]
+
 	if i.Distribution == "" {
 		return nil
 	}
 	osTreeVersion := oSTreeRefVersion.FindStringSubmatch(i.Distribution)[0]
 	if osTreeVersion == "8" {
+		rhel8ansible := result["8"][0]
 		if !contains(requiredPackages, rhel8ansible) {
 			requiredPackages = append(requiredPackages, rhel8ansible)
 		}
 	} else {
+		rhel9ansible := result["9"][0]
 		if !contains(requiredPackages, rhel9ansible) {
 			requiredPackages = append(requiredPackages, rhel9ansible)
 		}
 	}
 	l := len(requiredPackages)
+
 	pkgs := make([]string, len(i.Packages)+l)
 	for i, p := range requiredPackages {
 		pkgs[i] = p
@@ -248,4 +254,18 @@ func contains(s []string, str string) bool {
 	}
 
 	return false
+}
+
+func getInitialPackages() (map[string][]string, error) {
+	_, caller, _, _ := runtime.Caller(0)
+	requiredList := path.Join(path.Dir(caller), "required_image_packages.json")
+	pkgFile, err := os.Open(requiredList)
+	if err != nil {
+		return nil, err
+	}
+	defer pkgFile.Close()
+	byteValue, _ := ioutil.ReadAll(pkgFile)
+	var result map[string][]string
+	json.Unmarshal([]byte(byteValue), &result)
+	return result, nil
 }

@@ -20,8 +20,9 @@ func TestGetPackagesList(t *testing.T) {
 	}
 
 	packageList := img.GetPackagesList()
-	if len(*packageList) != len(pkgs)+len(requiredPackages) {
-		t.Errorf("two packages + required packages expected")
+
+	if len(*packageList) == 0 {
+		t.Errorf("error to load required packages")
 	}
 	packages := []string{
 		"rhc",
@@ -233,8 +234,8 @@ func TestGetALLPackagesList(t *testing.T) {
 	}
 
 	allPackagesList := img.GetALLPackagesList()
-	if len(*allPackagesList) != len(pkgs)+len(customPackages)+len(requiredPackages) {
-		t.Errorf("two packages + custom packages + required packages expected")
+	if len(*allPackagesList) == 0 {
+		t.Errorf("error to load required packages")
 	}
 
 	packages := []string{

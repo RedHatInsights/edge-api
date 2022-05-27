@@ -1,0 +1,10 @@
+{   "8":["ansible"],
+    "9": ["ansible-core"],
+    "required":[
+        "rhc", 
+        "rhc-worker-playbook",
+        "subscription-manager",
+        "subscription-manager-plugin-ostree",
+        "insights-client" ]
+    
+}
