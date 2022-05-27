@@ -94,6 +94,7 @@ func Init() {
 	options.SetDefault("Database", "sqlite")
 	options.SetDefault("DatabaseFile", "test.db")
 	options.SetDefault("TemplatesPath", "/usr/local/etc/")
+	options.SetDefault("DefaultOSTreeRef", "rhel/8/x86_64/edge")
 	options.SetDefault("EdgeAPIBaseURL", "http://localhost:3000")
 	options.SetDefault("EdgeAPIServiceHost", "localhost")
 	options.SetDefault("EdgeAPIServicePort", "3000")

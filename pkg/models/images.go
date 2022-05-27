@@ -257,8 +257,8 @@ func contains(s []string, str string) bool {
 }
 
 func getInitialPackages() (map[string][]string, error) {
-	_, caller, _, _ := runtime.Caller(0)
-	requiredList := path.Join(path.Dir(caller), "required_image_packages.json")
+	_, packages, _, _ := runtime.Caller(0)
+	requiredList := path.Join(path.Dir(packages), "required_image_packages.json")
 	pkgFile, err := os.Open(requiredList)
 	if err != nil {
 		return nil, err

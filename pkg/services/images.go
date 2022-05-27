@@ -38,8 +38,8 @@ import (
 var WaitGroup sync.WaitGroup
 
 var (
-	oSTreeRefDistribution = regexp.MustCompile(`[a-zA-Z]+`)
-	oSTreeRefVersion      = regexp.MustCompile(`(\d{1})`)
+	osTreeRefDistribution = regexp.MustCompile(`[a-zA-Z]+`)
+	osTreeRefVersion      = regexp.MustCompile(`(\d{1})`)
 )
 
 // ImageServiceInterface defines the interface that helps handle
@@ -249,8 +249,8 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 
 		image.Commit.OSTreeParentCommit = repo.URL
 
-		osTreeDistribution := oSTreeRefDistribution.FindStringSubmatch(image.Distribution)[0]
-		osTreeVersion := oSTreeRefVersion.FindStringSubmatch(image.Distribution)[0]
+		osTreeDistribution := osTreeRefDistribution.FindStringSubmatch(image.Distribution)[0]
+		osTreeVersion := osTreeRefVersion.FindStringSubmatch(image.Distribution)[0]
 		if osTreeDistribution == "" || osTreeVersion == "" {
 			s.log.WithField("error", err.Error()).Error("No OSTREE found to this distribution")
 			return &OstreeNotFound{}
