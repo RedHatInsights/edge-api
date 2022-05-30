@@ -24,7 +24,6 @@ type EdgeConfig struct {
 	OpenAPIFilePath          string                    `json:"openapi_file_path,omitempty"`
 	ImageBuilderConfig       *imageBuilderConfig       `json:"image_builder,omitempty"`
 	InventoryConfig          *inventoryConfig          `json:"inventory,omitempty"`
-	DefaultOSTreeRef         string                    `json:"default_ostree_ref,omitempty"`
 	PlaybookDispatcherConfig *playbookDispatcherConfig `json:"playbook_dispatcher,omitempty"`
 	TemplatesPath            string                    `json:"templates_path,omitempty"`
 	EdgeAPIBaseURL           string                    `json:"edge_api_base_url,omitempty"`
@@ -94,7 +93,6 @@ func Init() {
 	options.SetDefault("Database", "sqlite")
 	options.SetDefault("DatabaseFile", "test.db")
 	options.SetDefault("TemplatesPath", "/usr/local/etc/")
-	options.SetDefault("DefaultOSTreeRef", "rhel/8/x86_64/edge")
 	options.SetDefault("EdgeAPIBaseURL", "http://localhost:3000")
 	options.SetDefault("EdgeAPIServiceHost", "localhost")
 	options.SetDefault("EdgeAPIServicePort", "3000")
@@ -113,16 +111,15 @@ func Init() {
 	kubenv.AutomaticEnv()
 
 	config = &EdgeConfig{
-		Hostname:         kubenv.GetString("Hostname"),
-		Auth:             options.GetBool("Auth"),
-		WebPort:          options.GetInt("WebPort"),
-		MetricsPort:      options.GetInt("MetricsPort"),
-		Debug:            options.GetBool("Debug"),
-		LogLevel:         options.GetString("LOG_LEVEL"),
-		BucketName:       options.GetString("EdgeTarballsBucket"),
-		RepoTempPath:     options.GetString("RepoTempPath"),
-		OpenAPIFilePath:  options.GetString("OpenAPIFilePath"),
-		DefaultOSTreeRef: options.GetString("DefaultOSTreeRef"),
+		Hostname:        kubenv.GetString("Hostname"),
+		Auth:            options.GetBool("Auth"),
+		WebPort:         options.GetInt("WebPort"),
+		MetricsPort:     options.GetInt("MetricsPort"),
+		Debug:           options.GetBool("Debug"),
+		LogLevel:        options.GetString("LOG_LEVEL"),
+		BucketName:      options.GetString("EdgeTarballsBucket"),
+		RepoTempPath:    options.GetString("RepoTempPath"),
+		OpenAPIFilePath: options.GetString("OpenAPIFilePath"),
 		ImageBuilderConfig: &imageBuilderConfig{
 			URL: options.GetString("ImageBuilderUrl"),
 		},
