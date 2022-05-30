@@ -12,7 +12,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"sync"
 	"syscall"
@@ -36,11 +35,6 @@ import (
 // WaitGroup is the waitg roup for pending image builds
 // FIXME: this no longer applies to images. move to devices
 var WaitGroup sync.WaitGroup
-
-var (
-	osTreeRefDistribution = regexp.MustCompile(`[a-zA-Z]+`)
-	osTreeRefVersion      = regexp.MustCompile(`(\d{1})`)
-)
 
 // ImageServiceInterface defines the interface that helps handle
 // the business logic of creating RHEL For Edge Images
@@ -248,17 +242,10 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		}
 
 		image.Commit.OSTreeParentCommit = repo.URL
-
-		osTreeDistribution := osTreeRefDistribution.FindStringSubmatch(image.Distribution)[0]
-		osTreeVersion := osTreeRefVersion.FindStringSubmatch(image.Distribution)[0]
-		if osTreeDistribution == "" || osTreeVersion == "" {
-			s.log.WithField("error", err.Error()).Error("No OSTREE found to this distribution")
-			return &OstreeNotFound{}
-		}
-		defaultOstree := fmt.Sprintf("%s/%s/x86_64/edge", osTreeDistribution, osTreeVersion)
+		refs := config.DistributionsRefs[image.Distribution]
 
 		if image.Commit.OSTreeRef == "" {
-			image.Commit.OSTreeRef = defaultOstree
+			image.Commit.OSTreeRef = refs
 		}
 	} else {
 		// Previous image was not built successfully

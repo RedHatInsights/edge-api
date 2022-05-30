@@ -1,16 +1,12 @@
 package models
 
 import (
-	"encoding/json"
 	"errors"
-	"io/ioutil"
-	"os"
-	"path"
 	"regexp"
-	"runtime"
 	"strings"
 
 	"github.com/lib/pq"
+	"github.com/redhatinsights/edge-api/config"
 )
 
 // ImageSet represents a collection of images
@@ -116,7 +112,6 @@ var requiredPackages = []string{}
 var (
 	validSSHPrefix     = regexp.MustCompile(`^(ssh-(rsa|dss|ed25519)|ecdsa-sha2-nistp(256|384|521)) \S+`)
 	validImageName     = regexp.MustCompile(`^[A-Za-z0-9]+[A-Za-z0-9\s_-]*$`)
-	oSTreeRefVersion   = regexp.MustCompile(`(\d{1})`)
 	acceptedImageTypes = map[string]interface{}{ImageTypeCommit: nil, ImageTypeInstaller: nil}
 )
 
@@ -201,27 +196,18 @@ func (i *Image) HasOutputType(imageType string) bool {
 
 // GetPackagesList returns the packages in a user-friendly list containing their names
 func (i *Image) GetPackagesList() *[]string {
-	result, err := getInitialPackages()
-	if err != nil {
-		return nil
-	}
-	requiredPackages := result["required"]
+
+	distributionPackage := config.DistributionsPackages[i.Distribution]
+	requiredPackages := config.RequiredPackages
 
 	if i.Distribution == "" {
 		return nil
 	}
-	osTreeVersion := oSTreeRefVersion.FindStringSubmatch(i.Distribution)[0]
-	if osTreeVersion == "8" {
-		rhel8ansible := result["8"][0]
-		if !contains(requiredPackages, rhel8ansible) {
-			requiredPackages = append(requiredPackages, rhel8ansible)
-		}
-	} else {
-		rhel9ansible := result["9"][0]
-		if !contains(requiredPackages, rhel9ansible) {
-			requiredPackages = append(requiredPackages, rhel9ansible)
-		}
+
+	for _, x := range distributionPackage {
+		requiredPackages = append(requiredPackages, x)
 	}
+
 	l := len(requiredPackages)
 
 	pkgs := make([]string, len(i.Packages)+l)
@@ -244,28 +230,4 @@ func (i *Image) GetALLPackagesList() *[]string {
 		packages = append(packages, pkg.Name)
 	}
 	return &packages
-}
-
-func contains(s []string, str string) bool {
-	for _, v := range s {
-		if v == str {
-			return true
-		}
-	}
-
-	return false
-}
-
-func getInitialPackages() (map[string][]string, error) {
-	_, packages, _, _ := runtime.Caller(0)
-	requiredList := path.Join(path.Dir(packages), "required_image_packages.json")
-	pkgFile, err := os.Open(requiredList)
-	if err != nil {
-		return nil, err
-	}
-	defer pkgFile.Close()
-	byteValue, _ := ioutil.ReadAll(pkgFile)
-	var result map[string][]string
-	json.Unmarshal([]byte(byteValue), &result)
-	return result, nil
 }
