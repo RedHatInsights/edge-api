@@ -75,8 +75,6 @@ const (
 	ImageNameAlreadyExists = "this image name is already in use"
 	// NoOutputTypes is the error message when the output types list is empty
 	NoOutputTypes = "an output type is required"
-	// InvalidPackageName is the error message when the package name doesn't exist at packages list
-	InvalidPackageName = "this package name doesn't exist at package list"
 
 	// ImageTypeInstaller is the installer image type on Image Builder
 	ImageTypeInstaller = "rhel-edge-installer"
@@ -148,15 +146,6 @@ func validateImageUserName(username string) error {
 	return nil
 }
 
-func strInSlice(slice []string, str string) bool {
-	for _, item := range slice {
-		if item == str {
-			return true
-		}
-	}
-	return false
-}
-
 // ValidateRequest validates an Image Request
 func (i *Image) ValidateRequest() error {
 	if i.Distribution == "" {
@@ -165,29 +154,6 @@ func (i *Image) ValidateRequest() error {
 	if !validImageName.MatchString(i.Name) {
 		return errors.New(NameCantBeInvalidMessage)
 	}
-	pkgs := make([]string, len(i.Packages))
-	for i, p := range i.Packages {
-		pkgs[i] = p.Name
-	}
-	existingpackages := []string{
-		"ansible",
-		"rhc",
-		"rhc-worker-playbook",
-		"subscription-manager",
-		"subscription-manager-plugin-ostree",
-		"insights-client",
-		"vim",
-		"wget",
-		"custompackage",
-		"thirdpartypackage",
-	}
-
-	for _, pkg := range pkgs {
-		if !strInSlice(existingpackages, pkg) {
-			return errors.New(InvalidPackageName)
-		}
-	}
-
 	if i.Commit == nil || i.Commit.Arch == "" {
 		return errors.New(ArchitectureCantBeEmptyMessage)
 	}

@@ -55,15 +55,6 @@ func TestValidateRequest(t *testing.T) {
 			expected: errors.New(DistributionCantBeNilMessage),
 		},
 		{
-			name: "invalid package name",
-			image: &Image{
-				Distribution: "rhel-8",
-				Name:         "image_name",
-				Packages:     []Package{{Name: "badrpm"}},
-			},
-			expected: errors.New(InvalidPackageName),
-		},
-		{
 			name:     "empty name",
 			image:    &Image{Distribution: "rhel-84"},
 			expected: errors.New(NameCantBeInvalidMessage),
