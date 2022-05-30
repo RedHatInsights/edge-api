@@ -647,6 +647,10 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 				}
 			}
 
+			if device.Ostree.RHCClientID == "" {
+				update.Status = models.UpdateStatusDeviceDisconnected
+				continue
+			}
 			updateDevice.RHCClientID = device.Ostree.RHCClientID
 			updateDevice.AvailableHash = update.Commit.OSTreeCommit
 			// update the device account if undefined
