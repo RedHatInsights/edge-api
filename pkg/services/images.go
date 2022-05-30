@@ -165,6 +165,20 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 	if image.Version == 0 {
 		image.Version = 1
 	}
+	packages := image.Packages
+	arch := image.Commit.Arch
+	dist := image.Distribution
+	ib := imagebuilder.Client{}
+	// we now need to loop this request for each package
+	for _, p := range packages {
+		res, err := ib.SearchPackage(p.Name, arch, dist)
+		if err != nil {
+			return fmt.Errorf("unknown validation error occurred")
+		}
+		if res.Meta.Count == 0 {
+			return new(PackageNameDoesntExists)
+		}
+	}
 	if err := ValidateAllImageReposAreFromAccount(account, image.ThirdPartyRepositories); err != nil {
 		return err
 	}
