@@ -257,7 +257,7 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 				Architecture: image.Commit.Arch,
 				ImageType:    models.ImageTypeInstaller,
 				Ostree: &OSTree{
-					Ref: "rhel/8/x86_64/edge", //image.Commit.OSTreeRef,
+					Ref: image.Commit.OSTreeRef,
 					URL: image.Commit.Repo.URL,
 				},
 				UploadRequest: &UploadRequest{

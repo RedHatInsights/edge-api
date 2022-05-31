@@ -338,11 +338,11 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 
 	var cmd *exec.Cmd
 	if c.OSTreeRef == "" {
-		cfg := config.Get()
+		refs := config.DistributionsRefs[config.DefaultDistribution]
 		cmd = &exec.Cmd{
 			Path: "/usr/bin/ostree",
 			Args: []string{
-				"--repo", "./repo", "commit", cfg.DefaultOSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber),
+				"--repo", "./repo", "commit", refs, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber),
 			},
 		}
 	} else {

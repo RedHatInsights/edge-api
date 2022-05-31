@@ -215,3 +215,10 @@ type CommitNotFound struct{}
 func (e *CommitNotFound) Error() string {
 	return "commit not found"
 }
+
+// OstreeNotFound was not found
+type OstreeNotFound struct{}
+
+func (e *OstreeNotFound) Error() string {
+	return "Ostree not found"
+}
