@@ -158,9 +158,7 @@ func (c *Client) ReturnDevices(parameters *Params) (Response, error) {
 // ReturnDevicesByID will return the list of devices by uuid
 func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
 	if _, err := uuid.Parse(deviceID); err != nil {
-		c.log.WithFields(log.Fields{
-			"error": err,
-		}).Error("invalid device ID, ", deviceID)
+		c.log.WithFields(log.Fields{"error": err, "deviceID": deviceID}).Error("invalid device ID")
 		return Response{}, err
 	}
 	url := fmt.Sprintf("%s/%s%s&hostname_or_id=%s", config.Get().InventoryConfig.URL, inventoryAPI, FilterParams, deviceID)
@@ -197,7 +195,7 @@ func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
 	}
 	var inventory Response
 	if err := json.Unmarshal([]byte(body), &inventory); err != nil {
-		c.log.Error("Error while trying to unmarshal ", &inventory)
+		c.log.WithField("response", &inventory).Error("Error while trying to unmarshal InventoryResponse")
 		return Response{}, err
 	}
 	return inventory, nil
@@ -241,7 +239,7 @@ func (c *Client) ReturnDevicesByTag(tag string) (Response, error) {
 	}
 	var inventory Response
 	if err := json.Unmarshal([]byte(body), &inventory); err != nil {
-		c.log.Error("Error while trying to unmarshal ", &inventory)
+		c.log.WithField("response", &inventory).Error("Error while trying to unmarshal InventoryResponse")
 		return Response{}, err
 	}
 	return inventory, nil

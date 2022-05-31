@@ -257,7 +257,7 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 			return nil, err
 		}
 		if err := db.DB.Model(&upd).Association("CustomPackages").Find(&upd.CustomPackages); err != nil {
-			s.log.WithField("error", err.Error()).Error("Could not find CustomPackages")
+			s.log.WithField("error", err.Error()).Error("Could not find custom packages")
 			return nil, err
 		}
 		var delta models.ImageUpdateAvailable
@@ -590,7 +590,7 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 			s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error}).Error("Error creating device")
 			return result.Error
 		}
-		s.log.WithFields(log.Fields{"host_id": deviceUUID}).Debug("Device account created")
+		s.log.WithField("host_id", deviceUUID).Debug("Device account created")
 		return s.processPlatformInventoryEventUpdateDevice(eventData)
 	}
 	if device.Account == "" {
@@ -606,10 +606,10 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 	device.Name = deviceName
 
 	if result := db.DB.Save(device); result.Error != nil {
-		s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error}).Error("Error updating device account")
+		s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error}).Error("Error updating device")
 		return result.Error
 	}
-	s.log.WithFields(log.Fields{"host_id": deviceUUID}).Debug("Device account updated")
+	s.log.WithField("host_id", deviceUUID).Debug("Device account updated")
 
 	return s.processPlatformInventoryEventUpdateDevice(eventData)
 }
@@ -648,9 +648,7 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 		tx = db.DB
 	}
 
-	log.WithFields(log.Fields{
-		"limit": limit,
-	}).Debug("limit:", limit)
+	s.log.WithField("limit", limit).Debug("GetDevicesView called with limit")
 
 	var storedDevices []models.Device
 	if res := tx.Limit(limit).Offset(offset).Where("account = ?", account).Preload("UpdateTransaction").Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
@@ -686,7 +684,7 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 		ImageSetID uint
 	}
 
-	// create a map of unique image id's. We dont want to look of a given image id more than once.
+	// create a map of unique image id's. We don't want to look at a given image id more than once.
 	deviceStatusSet := make(map[uint]string)
 	setOfImages := make(map[uint]*neededImageInfo)
 	for index, devices := range storedDevices {
@@ -699,14 +697,16 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 				return updateTransactions[i].ID < updateTransactions[j].ID
 			})
 			log.WithFields(log.Fields{
+				"deviceID":           crtDevice.ID,
 				"updateTransactions": updateTransactions,
-			}).Debug("updateTransactions:", updateTransactions)
+			}).Debug("Found update transactions for device")
 
 			updateStatus := updateTransactions[len(updateTransactions)-1].Status
 
 			log.WithFields(log.Fields{
+				"deviceID":     crtDevice.ID,
 				"updateStatus": updateStatus,
-			}).Debug("updateStatus:", updateStatus)
+			}).Debug("Found update status for device")
 
 			if updateStatus == models.UpdateStatusBuilding {
 				status = models.DeviceViewStatusUpdating
@@ -823,12 +823,13 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 	var e *PlatformInsightsCreateUpdateEventPayload
 	err := json.Unmarshal(message, &e)
 	if err != nil {
-		log.WithFields(log.Fields{
+		s.log.WithFields(log.Fields{
 			"value": string(message),
-		}).Debug("Skipping message - it is not a create message" + err.Error())
+			"error": err.Error(),
+		}).Debug("Skipping message - it is not a create message")
 	} else {
 		if e.Type == InventoryEventTypeCreated && e.Host.SystemProfile.HostType == InventoryHostTypeEdge {
-			log.WithFields(log.Fields{
+			s.log.WithFields(log.Fields{
 				"host_id": string(e.Host.ID),
 				"value":   string(message),
 			}).Debug("Saving newly created edge device")
@@ -841,16 +842,16 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 			}
 			result := db.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
 			if result.Error != nil {
-				log.WithFields(log.Fields{
+				s.log.WithFields(log.Fields{
 					"host_id": string(e.Host.ID),
 					"error":   result.Error,
-				}).Error("Error writing Kafka message to DB")
+				}).Error("Error creating device")
 				return result.Error
 			}
 
 			return s.processPlatformInventoryEventUpdateDevice(*e)
 		}
-		log.Debug("Skipping message - not an edge create message from platform insights")
+		s.log.Debug("Skipping message - not an edge create message from platform insights")
 	}
 	return nil
 }

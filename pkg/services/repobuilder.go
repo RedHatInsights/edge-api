@@ -115,7 +115,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 			}
 			err = rb.ExtractVersionRepo(update.Commit, tarFileName, path)
 			if err != nil {
-				rb.log.WithField("error", err.Error()).Error("Error extracing repo")
+				rb.log.WithField("error", err.Error()).Error("Error extracting repo")
 				return nil, err
 			}
 			// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
@@ -170,7 +170,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 	rb.log.WithField("path", path).Debug("Importing repo...")
 	err := os.MkdirAll(path, os.FileMode(int(0755)))
 	if err != nil {
-		log.Error(err)
+		rb.log.Error(err)
 		return nil, err
 	}
 	err = os.Chdir(path)
@@ -251,14 +251,14 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string) (strin
 		tarFileName = strings.Join([]string{c.ImageBuildHash, "tar"}, ".")
 	}
 	tarFileName = filepath.Clean(filepath.Join(dest, tarFileName))
-	log.WithField("tarFileName", tarFileName).Debug("Grabbing tar file")
+	rb.log.WithFields(log.Fields{"filepath": tarFileName, "imageBuildTarURL": c.ImageBuildTarURL}).Debug("Grabbing tar file")
 	_, err = grab.Get(tarFileName, c.ImageBuildTarURL)
 
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error grabbing tar file")
 		return "", err
 	}
-	log.Info("Download finished")
+	rb.log.Info("Download finished")
 
 	return tarFileName, nil
 }
@@ -289,7 +289,7 @@ func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string) e
 		return errors.New("invalid Commit Provided: nil pointer")
 	}
 	repoID := int(*c.RepoID)
-	rb.log = rb.log.WithFields(log.Fields{"commitID": c.ID, "tarFileName": tarFileName, "repoID": repoID})
+	rb.log = rb.log.WithFields(log.Fields{"commitID": c.ID, "filepath": tarFileName, "repoID": repoID})
 	rb.log.Info("Uploading repo")
 	repoTarURL, err := rb.uploadTarRepo(c.Account, tarFileName, repoID)
 	if err != nil {
@@ -302,7 +302,7 @@ func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string) e
 		rb.log.WithField("error", result.Error.Error()).Error("Error saving tar file")
 		return result.Error
 	}
-	log.Info("Repo uploaded")
+	rb.log.Info("Repo uploaded")
 	return nil
 }
 
@@ -328,7 +328,7 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 		return err
 	}
 
-	log.Debugf("Unpacking tarball finished::tarFileName: %#v", tarFileName)
+	rb.log.WithField("filepath", tarFileName).Debug("Unpacking tarball finished")
 
 	err = os.Remove(tarFileName)
 	if err != nil {
@@ -358,7 +358,7 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 		rb.log.WithFields(log.Fields{
 			"error":   err.Error(),
 			"command": fmt.Sprintf("%s %s %s %s %s %s %s", "ostree", "--repo", "./repo", "commit", c.OSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber)),
-		}).Error("'ostree --repo ./ commit --add-metadata-string' command failed")
+		}).Error("OSTree command failed")
 	}
 	return nil
 }

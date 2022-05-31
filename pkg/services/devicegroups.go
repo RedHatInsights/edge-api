@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 
 	"gorm.io/gorm"
 
@@ -78,7 +77,7 @@ func (s *DeviceGroupsService) GetDeviceGroupsCount(account string, tx *gorm.DB) 
 	res := tx.Model(&models.DeviceGroup{}).Where("account = ?", account).Count(&count)
 
 	if res.Error != nil {
-		s.log.WithField("error", res.Error.Error()).Error("Error getting device groups count")
+		s.log.WithField("error", res.Error.Error()).Error("Error getting device group count")
 		return 0, res.Error
 	}
 
@@ -200,7 +199,7 @@ func (s *DeviceGroupsService) GetDeviceImageInfo(images map[int]models.DeviceIma
 					return currentCommit.Error
 				}
 				if err := db.DB.Model(&deviceImage.Commit).Association("InstalledPackages").Find(&deviceImage.Commit.InstalledPackages); err != nil {
-					s.log.WithField("error", err.Error()).Error("Error when getting InstalledPackages to CurrentImage")
+					s.log.WithField("error", err.Error()).Error("Error when getting InstalledPackages for CurrentImage")
 					return err
 				}
 
@@ -209,7 +208,7 @@ func (s *DeviceGroupsService) GetDeviceImageInfo(images map[int]models.DeviceIma
 					return latestCommit.Error
 				}
 				if err := db.DB.Model(&latestImage.Commit).Association("InstalledPackages").Find(&latestImage.Commit.InstalledPackages); err != nil {
-					s.log.WithField("error", err.Error()).Error("Error when getting InstalledPackages to LatestImage")
+					s.log.WithField("error", err.Error()).Error("Error when getting InstalledPackages for LatestImage")
 					return err
 				}
 
@@ -290,7 +289,7 @@ func (s *DeviceGroupsService) GetDeviceGroupDetailsByID(ID string) (*models.Devi
 			param.HostnameOrID = device.UUID
 			inventoryDevice, err := s.DeviceService.GetDevices(param)
 			if err != nil {
-				s.log.WithField("error", err.Error()).Error("Invetory error")
+				s.log.WithField("error", err.Error()).Error("Inventory error")
 				return nil, err
 			}
 			if len(inventoryDevice.Devices) > 0 {
@@ -394,11 +393,11 @@ func (s *DeviceGroupsService) AddDeviceGroupDevices(account string, deviceGroupI
 
 	missingDevicesCount := len(devicesIDsToAdd) - len(devicesToAdd)
 	if missingDevicesCount != 0 {
-		s.log.Debug(fmt.Sprintf("devices where not found among the device group account: %d", missingDevicesCount))
+		s.log.WithField("missingDevicesCount", missingDevicesCount).Debug("Some devices were not found on the account")
 		return nil, new(DeviceGroupAccountDevicesNotFound)
 	}
 
-	s.log.Debug(fmt.Sprintf("adding %d devices to device group id: %d", len(devicesToAdd), deviceGroup.ID))
+	s.log.WithFields(log.Fields{"deviceCount": len(devicesToAdd), "deviceGroupID": deviceGroup.ID}).Debug("Adding devices to device group")
 	if err := db.DB.Model(&deviceGroup).Association("Devices").Append(devicesToAdd); err != nil {
 		return nil, err
 	}
@@ -441,11 +440,11 @@ func (s *DeviceGroupsService) DeleteDeviceGroupDevices(account string, deviceGro
 
 	missingDevicesCount := len(devicesIDsToRemove) - len(devicesToRemove)
 	if len(devicesToRemove) == 0 || missingDevicesCount != 0 {
-		s.log.Debug(fmt.Sprintf("devices not found in the device group: %d", missingDevicesCount))
+		s.log.WithField("missingDevicesCount", missingDevicesCount).Debug("Some devices not found in the device group")
 		return nil, new(DeviceGroupDevicesNotFound)
 	}
 
-	s.log.Debug(fmt.Sprintf("removing %d devices from device group id: %d", len(devicesToRemove), deviceGroup.ID))
+	s.log.WithFields(log.Fields{"deviceCount": len(devicesToRemove), "deviceGroupID": deviceGroup.ID}).Debug("Removing devices from device group")
 	if err := db.DB.Model(&deviceGroup).Association("Devices").Delete(devicesToRemove); err != nil {
 		return nil, err
 	}

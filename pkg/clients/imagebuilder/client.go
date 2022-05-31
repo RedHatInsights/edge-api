@@ -372,7 +372,7 @@ func (c *Client) GetInstallerStatus(image *models.Image) (*models.Image, error) 
 
 // GetMetadata returns the metadata on image builder for a particular image based on the ComposeJobID
 func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
-	c.log.Infof("Getting metadata for image")
+	c.log.Info("Getting metadata for image")
 	composeJobID := image.Commit.ComposeJobID
 	cfg := config.Get()
 	url := fmt.Sprintf("%s/api/image-builder/v1/composes/%s/metadata", cfg.ImageBuilderConfig.URL, composeJobID)
@@ -412,7 +412,7 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 
 	var metadata Metadata
 	if err := json.Unmarshal(respBody, &metadata); err != nil {
-		c.log.Error("Error while trying to unmarshal ", metadata)
+		c.log.WithField("response", metadata).Error("Error while trying to unmarshal Image Builder GetMetadata Response")
 		return nil, err
 	}
 	for n := range metadata.InstalledPackages {
@@ -425,7 +425,7 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 		image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
 	}
 	image.Commit.OSTreeCommit = metadata.OstreeCommit
-	c.log.Infof("Done with metadata for image")
+	c.log.Info("Done with metadata for image")
 	return image, nil
 }
 
@@ -447,7 +447,7 @@ func (c *Client) GetImageThirdPartyRepos(image *models.Image) ([]Repository, err
 	var count int64
 	result := db.DB.Where("account = ?", image.Account).Find(&thirdpartyrepos, thirdpartyrepoIDS).Count(&count)
 	if result.Error != nil {
-		log.Error(result.Error)
+		c.log.WithField("error", result.Error).Error("Error finding custom repositories")
 		return nil, result.Error
 	}
 
