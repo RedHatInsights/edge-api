@@ -1,8 +1,7 @@
 module github.com/redhatinsights/edge-api
 
 require (
-	github.com/PuerkitoBio/purell v1.1.1 // indirect
-	github.com/aws/aws-sdk-go v1.44.24
+	github.com/aws/aws-sdk-go v1.44.25
 	github.com/bxcodec/faker/v3 v3.8.0
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/confluentinc/confluent-kafka-go v1.8.2
