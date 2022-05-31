@@ -1,12 +1,12 @@
 module github.com/redhatinsights/edge-api
 
 require (
-	github.com/aws/aws-sdk-go v1.44.23
+	github.com/aws/aws-sdk-go v1.44.24
 	github.com/bxcodec/faker/v3 v3.8.0
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/confluentinc/confluent-kafka-go v1.8.2
 	github.com/fedora-iot/fido-device-onboard-rs/libfdo-data-go v0.0.0-20211210154920-5c241beb5c4e
-	github.com/getkin/kin-openapi v0.94.0
+	github.com/getkin/kin-openapi v0.95.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-openapi/runtime v0.24.1
@@ -24,7 +24,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.12.0
 	gopkg.in/confluentinc/confluent-kafka-go.v1 v1.8.2
-	gorm.io/driver/postgres v1.3.6
+	gorm.io/driver/postgres v1.3.7
 	gorm.io/driver/sqlite v1.3.2
 	gorm.io/gorm v1.23.4
 )
