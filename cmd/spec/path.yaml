@@ -705,6 +705,16 @@ paths:
           description: "field: filter by status"
           schema:
             type: string
+        - name: limit
+          in: query
+          description: "field: return number of image-sets until limit is reached. Default is 100."
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          description: "field: return number of image-sets begining at the offset."
+          schema:
+            type: integer
       responses:
         "200":
           content:
@@ -764,6 +774,16 @@ paths:
           description: "field: filter by status"
           schema:
             type: string
+        - name: limit
+          in: query
+          description: "field: return number of images until limit is reached. Default is 100."
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          description: "field: return number of images begining at the offset."
+          schema:
+            type: integer
       responses:
         "200":
           content:
