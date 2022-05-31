@@ -622,8 +622,8 @@ func RetryCreateImage(w http.ResponseWriter, r *http.Request) {
 // ResumeCreateImage retries the image creation
 func ResumeCreateImage(w http.ResponseWriter, r *http.Request) {
 	/* This endpoint rebuilds context from the stored image.
-	Unlike the other routes (e.g., /retry), the request r is
-	used to get the image number and request id and for the return.
+	Unlike the other routes (e.g., /retry), the request r is only
+	used to get the image number and request id and then for the return.
 	A new context is created and the image to be resumed is
 	retrieved from the database.
 	*/
@@ -637,7 +637,7 @@ func ResumeCreateImage(w http.ResponseWriter, r *http.Request) {
 
 		// re-grab the image from the database
 		var image *models.Image
-		db.DB.Debug().Joins("Commit").Joins("Installer").First(&image, tempimage.ID)
+		db.DB.Debug().Preload("Commit.Repo").Joins("Commit").Joins("Installer").First(&image, tempimage.ID)
 
 		resumelog := edgeAPIServices.Log.WithField("originalRequestId", image.RequestID)
 		resumelog.Info("Resuming image build")
