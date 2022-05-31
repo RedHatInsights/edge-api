@@ -136,6 +136,7 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	enabled := feature.CheckFeatureWithAccount(account, feature.FeatureCustomRepos)
 	if !enabled {
 		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable("Feature not available"))
+		return
 	}
 
 	pagination := common.GetPagination(r)
