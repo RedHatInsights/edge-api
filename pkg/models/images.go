@@ -197,16 +197,15 @@ func (i *Image) HasOutputType(imageType string) bool {
 // GetPackagesList returns the packages in a user-friendly list containing their names
 func (i *Image) GetPackagesList() *[]string {
 
-	distributionPackage := config.DistributionsPackages[i.Distribution]
-	requiredPackages := config.RequiredPackages
-
 	if i.Distribution == "" {
 		return nil
 	}
 
-	for _, x := range distributionPackage {
-		requiredPackages = append(requiredPackages, x)
-	}
+	distributionPackage := config.DistributionsPackages[i.Distribution]
+
+	requiredPackages := make([]string, 0, len(distributionPackage)+len(config.RequiredPackages))
+	requiredPackages = append(requiredPackages, config.RequiredPackages...)
+	requiredPackages = append(requiredPackages, distributionPackage...)
 
 	l := len(requiredPackages)
 
