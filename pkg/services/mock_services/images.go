@@ -35,17 +35,17 @@ func (m *MockImageServiceInterface) EXPECT() *MockImageServiceInterfaceMockRecor
 }
 
 // CreateImage mocks base method
-func (m *MockImageServiceInterface) CreateImage(image *models.Image, requestID, account, orgID string) error {
+func (m *MockImageServiceInterface) CreateImage(image *models.Image, account, orgID, requestID string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateImage", image, requestID, account, orgID)
+	ret := m.ctrl.Call(m, "CreateImage", image, account, orgID, requestID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateImage indicates an expected call of CreateImage
-func (mr *MockImageServiceInterfaceMockRecorder) CreateImage(image, requestID, account, orgID interface{}) *gomock.Call {
+func (mr *MockImageServiceInterfaceMockRecorder) CreateImage(image, account, orgID, requestID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).CreateImage), image, requestID, account, orgID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).CreateImage), image, account, orgID, requestID)
 }
 
 // UpdateImage mocks base method
