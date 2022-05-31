@@ -248,6 +248,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		} else {
 			refs = config.DistributionsRefs[image.Distribution]
 		}
+
 		if image.Commit.OSTreeRef == "" {
 			image.Commit.OSTreeRef = refs
 		}
