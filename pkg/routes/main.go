@@ -22,12 +22,14 @@ func readAccount(w http.ResponseWriter, r *http.Request, logEntry *log.Entry) st
 
 func respondWithAPIError(w http.ResponseWriter, logEntry *log.Entry, apiError errors.APIError) {
 	w.WriteHeader(apiError.GetStatus())
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	if err := json.NewEncoder(w).Encode(&apiError); err != nil {
 		logEntry.WithField("error", err.Error()).Error("Error while trying to encode api error")
 	}
 }
 
 func respondWithJSONBody(w http.ResponseWriter, logEntry *log.Entry, data interface{}) {
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		logEntry.WithField("error", data).Error("Error while trying to encode data")
 		respondWithAPIError(w, logEntry, errors.NewInternalServerError())
