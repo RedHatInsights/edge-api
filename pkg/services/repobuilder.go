@@ -338,7 +338,7 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 
 	var cmd *exec.Cmd
 	if c.OSTreeRef == "" {
-		refs := config.DistributionsRefs["RHEL-85"]
+		refs := config.DistributionsRefs[config.DefaultDistribution]
 		cmd = &exec.Cmd{
 			Path: "/usr/bin/ostree",
 			Args: []string{

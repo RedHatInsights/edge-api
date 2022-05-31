@@ -194,14 +194,14 @@ var _ = Describe("Image Service Test", func() {
 					Status:       models.ImageStatusSuccess,
 					Commit:       &models.Commit{RepoID: &uid},
 					Version:      1,
-					Distribution: "rhel-8",
+					Distribution: "rhel-85",
 					Name:         faker.Name(),
 					ImageSetID:   &imageSet.ID,
 				}
 				image := &models.Image{
 					Account:      account,
 					Commit:       &models.Commit{},
-					Distribution: "rhel-8",
+					Distribution: "rhel-85",
 					OutputTypes:  []string{models.ImageTypeCommit},
 					Version:      2,
 					Name:         previousImage.Name,
@@ -230,7 +230,7 @@ var _ = Describe("Image Service Test", func() {
 					Status:       models.ImageStatusSuccess,
 					Commit:       &models.Commit{RepoID: &uid},
 					Version:      1,
-					Distribution: "rhel-8",
+					Distribution: "rhel-85",
 					Name:         faker.Name(),
 					ImageSetID:   &imageSet.ID,
 				}
@@ -239,7 +239,7 @@ var _ = Describe("Image Service Test", func() {
 					Commit:       &models.Commit{},
 					OutputTypes:  []string{models.ImageTypeCommit},
 					Version:      2,
-					Distribution: "rhel-8",
+					Distribution: "rhel-85",
 					Name:         previousImage.Name,
 				}
 				result = db.DB.Save(previousImage)

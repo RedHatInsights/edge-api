@@ -1,5 +1,8 @@
 package config
 
+// DefaultDistribution set the default image distribution in case miss it
+const DefaultDistribution = "rhel-85"
+
 // RequiredPackages contains minimun list of packages to build an image
 var RequiredPackages = []string{"rhc",
 	"rhc-worker-playbook",
@@ -28,5 +31,6 @@ var DistributionsPackages = map[string][]string{
 var DistributionsRefs = map[string]string{
 	"rhel-84": "rhel/8/x86_64/edge",
 	"rhel-85": "rhel/8/x86_64/edge",
+	"rhel-86": "rhel/8/x86_64/edge",
 	"rhel-90": "rhel/9/x86_64/edge",
 }
