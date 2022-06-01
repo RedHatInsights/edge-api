@@ -166,16 +166,13 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 		image.Version = 1
 	}
 	packages := image.Packages
-	arch := image.Commit.Arch
-	dist := image.Distribution
-	ib := imagebuilder.Client{}
 	// we now need to loop this request for each package
 	for _, p := range packages {
-		res, err := ib.SearchPackage(p.Name, arch, dist)
-		if err != nil {
-			return fmt.Errorf("unknown validation error occurred")
+		count, er := validateImagePackage(p.Name, image)
+		if er != nil {
+			return er
 		}
-		if res.Meta.Count == 0 {
+		if (*count).Meta.Count != 1 {
 			return new(PackageNameDoesntExists)
 		}
 	}
@@ -237,6 +234,15 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 	go s.postProcessImage(image.ID)
 
 	return nil
+}
+
+// validateImagePackage validate package name on Image Builder
+func validateImagePackage(pack string, image *models.Image) (**imagebuilder.SearchPackageResult, error) {
+	arch := image.Commit.Arch
+	dist := image.Distribution
+	ib := imagebuilder.Client{}
+	res, err := ib.SearchPackage(pack, arch, dist)
+	return &res, err
 }
 
 // UpdateImage updates an image, adding a new version of this image to an imageset

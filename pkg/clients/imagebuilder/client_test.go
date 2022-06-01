@@ -78,8 +78,8 @@ var _ = Describe("Image Builder Client Test", func() {
 		defer ts.Close()
 		config.Get().ImageBuilderConfig.URL = ts.URL
 		res, err := client.SearchPackage("badrpm", "x86_64", "rhel-85")
-		Expect(err.Error()).To(Equal("package name is wrong"))
-		Expect(res).To(BeNil())
+		Expect(err).To(BeNil())
+		Expect(res.Meta.Count).To(Equal(0))
 	})
 	It("test validation of empty package name", func() {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +89,7 @@ var _ = Describe("Image Builder Client Test", func() {
 		defer ts.Close()
 		config.Get().ImageBuilderConfig.URL = ts.URL
 		res, err := client.SearchPackage("", "x86_64", "rhel-85")
-		Expect(err.Error()).To(Equal("mandatory field should not be empty"))
+		Expect(err.Error()).To(Equal("mandatory fields should not be empty"))
 		Expect(res).To(BeNil())
 	})
 	It("test compose image", func() {

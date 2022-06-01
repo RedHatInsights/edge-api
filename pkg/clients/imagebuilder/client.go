@@ -518,8 +518,8 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*S
 		return nil, err
 	}
 
-	if searchResult.Meta.Count == 0 {
-		return nil, errors.New("package name is wrong")
+	if searchResult.Meta.Count != 1 {
+		return &searchResult, nil
 	}
 	return &searchResult, nil
 }
