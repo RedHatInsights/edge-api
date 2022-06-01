@@ -632,4 +632,59 @@ var _ = Describe("Image Service Test", func() {
 			})
 		})
 	})
+	Describe("Create image when using getImageSetForNewImage", func() {
+		account := faker.UUIDHyphenated()
+		orgID := faker.UUIDHyphenated()
+		requestID := faker.UUIDHyphenated()
+		imageName := faker.UUIDHyphenated()
+		image := models.Image{Distribution: "rhel-85", Name: imageName}
+		expectedErr := fmt.Errorf("failed to create commit for image")
+		When("When image-builder ComposeCommit fail", func() {
+			It("imageSet is created", func() {
+				mockImageBuilderClient.EXPECT().ComposeCommit(&image).Return(&image, expectedErr)
+				err := service.CreateImage(&image, account, orgID, requestID)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal(expectedErr.Error()))
+				// image is not created
+				Expect(image.ID).To(Equal(uint(0)))
+				// But imageSet is Created
+				Expect(image.ImageSetID).ToNot(BeNil())
+				Expect(*image.ImageSetID > 0).To(BeTrue())
+			})
+
+			It("imageSet is reused when no images linked", func() {
+				// ensure image imageSetID is not nil and store it
+				Expect(image.ImageSetID).ToNot(BeNil())
+				imageSetID := *image.ImageSetID
+				// set image imageSet to nil
+				image.ImageSetID = nil
+				mockImageBuilderClient.EXPECT().ComposeCommit(&image).Return(&image, expectedErr)
+				err := service.CreateImage(&image, account, orgID, requestID)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal(expectedErr.Error()))
+				// image is not created
+				Expect(image.ID).To(Equal(uint(0)))
+				// But imageSet is reused
+				Expect(image.ImageSetID).ToNot(BeNil())
+				Expect(*image.ImageSetID).To(Equal(imageSetID))
+			})
+
+			It("imageSet is not reused if images already linked to imageSet", func() {
+				// ensure image imageSetID is not nil and store it
+				Expect(image.ImageSetID).ToNot(BeNil())
+				imageSetID := *image.ImageSetID
+				// set image imageSet to nil
+				image.ImageSetID = nil
+				// create a new image linked with the known imageSet
+				result := db.DB.Create(&models.Image{Account: account, Distribution: "rhel-85", Name: faker.UUIDHyphenated(), ImageSetID: &imageSetID})
+				Expect(result.Error).ToNot(HaveOccurred())
+				err := service.CreateImage(&image, account, orgID, requestID)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("image set already exists"))
+				// image is not created
+				Expect(image.ID).To(Equal(uint(0)))
+				Expect(image.ImageSetID).To(BeNil())
+			})
+		})
+	})
 })
