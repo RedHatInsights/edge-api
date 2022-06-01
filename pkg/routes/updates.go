@@ -257,7 +257,9 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 		update.Account = account
 		upd = append(upd, update)
 		ctxServices.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
-		go ctxServices.UpdateService.CreateUpdate(update.ID)
+		if update.Status != models.UpdateStatusDeviceDisconnected {
+			go ctxServices.UpdateService.CreateUpdate(update.ID)
+		}
 	}
 	if result := db.DB.Save(upd); result.Error != nil {
 		ctxServices.Log.WithFields(log.Fields{

@@ -50,7 +50,6 @@ type DevicesUpdate struct {
 const (
 	// DevicesCantBeEmptyMessage is the error message when the hosts are empty
 	DevicesCantBeEmptyMessage = "devices can not be empty"
-
 	// UpdateStatusCreated is for when a update is created
 	UpdateStatusCreated = "CREATED"
 	// UpdateStatusBuilding is for when a update is building
@@ -59,6 +58,8 @@ const (
 	UpdateStatusError = "ERROR"
 	// UpdateStatusSuccess is for when a update is available to the user
 	UpdateStatusSuccess = "SUCCESS"
+	// UpdateStatusDeviceDisconnected is for when a update is UpdateStatusDeviceDisconnected
+	UpdateStatusDeviceDisconnected = "DISCONNECTED"
 )
 
 const (

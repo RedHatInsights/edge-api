@@ -15,20 +15,22 @@ func TestGetPackagesList(t *testing.T) {
 		},
 	}
 	img := &Image{
-		Packages: pkgs,
+		Distribution: "rhel-90",
+		Packages:     pkgs,
 	}
 
 	packageList := img.GetPackagesList()
-	if len(*packageList) != len(pkgs)+len(requiredPackages) {
-		t.Errorf("two packages + required packages expected")
+
+	if len(*packageList) == 0 {
+		t.Errorf("error to load required packages")
 	}
 	packages := []string{
-		"ansible",
 		"rhc",
 		"rhc-worker-playbook",
 		"subscription-manager",
 		"subscription-manager-plugin-ostree",
 		"insights-client",
+		"ansible-core",
 		"vim",
 		"wget",
 	}
@@ -52,18 +54,18 @@ func TestValidateRequest(t *testing.T) {
 		},
 		{
 			name:     "empty name",
-			image:    &Image{Distribution: "rhel-8"},
+			image:    &Image{Distribution: "rhel-84"},
 			expected: errors.New(NameCantBeInvalidMessage),
 		},
 		{
 			name:     "invalid characters in name",
-			image:    &Image{Distribution: "rhel-8", Name: "image?"},
+			image:    &Image{Distribution: "rhel-85", Name: "image?"},
 			expected: errors.New(NameCantBeInvalidMessage),
 		},
 		{
 			name: "no commit in image",
 			image: &Image{
-				Distribution: "rhel-8",
+				Distribution: "rhel-85",
 				Name:         "image_name",
 			},
 			expected: errors.New(ArchitectureCantBeEmptyMessage),
@@ -171,7 +173,7 @@ func TestValidateRequest(t *testing.T) {
 		{
 			name: "valid image request",
 			image: &Image{
-				Distribution: "rhel-8",
+				Distribution: "rhel-85",
 				Name:         "image_name",
 				Commit:       &Commit{Arch: "x86_64"},
 				OutputTypes:  []string{ImageTypeInstaller},
@@ -185,7 +187,7 @@ func TestValidateRequest(t *testing.T) {
 		{
 			name: "valid image request for commit",
 			image: &Image{
-				Distribution: "rhel-8",
+				Distribution: "rhel-86",
 				Name:         "image_name",
 				Commit:       &Commit{Arch: "x86_64"},
 				OutputTypes:  []string{ImageTypeCommit},
@@ -226,27 +228,30 @@ func TestGetALLPackagesList(t *testing.T) {
 		},
 	}
 	img := &Image{
+		Distribution:   "rhel-90",
 		Packages:       pkgs,
 		CustomPackages: customPackages,
 	}
 
 	allPackagesList := img.GetALLPackagesList()
-	if len(*allPackagesList) != len(pkgs)+len(customPackages)+len(requiredPackages) {
-		t.Errorf("two packages + custom packages + required packages expected")
+
+	if len(*allPackagesList) == 0 {
+		t.Errorf("error to load required packages")
 	}
 
 	packages := []string{
-		"ansible",
 		"rhc",
 		"rhc-worker-playbook",
 		"subscription-manager",
 		"subscription-manager-plugin-ostree",
 		"insights-client",
+		"ansible-core",
 		"vim",
 		"wget",
 		"custompackage",
 		"thirdpartypackage",
 	}
+
 	for i, item := range *allPackagesList {
 		if item != packages[i] {
 			t.Errorf("expected %s, got %s", packages[i], item)

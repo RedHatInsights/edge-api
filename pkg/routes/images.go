@@ -193,7 +193,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, ctxServices.Log, image)
 }
 
-// CreateImageUpdate creates an update for an exitent image on hosted image builder.
+// CreateImageUpdate creates an update for an existing image on hosted image builder.
 func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	image, err := initImageCreateRequest(w, r)
@@ -206,6 +206,21 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 		// getImage already writes the response
 		return
 	}
+
+	image.Account, err = common.GetAccount(r)
+	if err != nil {
+		ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving account from request")
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+		return
+	}
+	image.OrgID, err = common.GetOrgID(r)
+	if err != nil {
+		ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving org_id from request")
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+		return
+	}
+	image.RequestID = request_id.GetReqID(r.Context())
+	ctxServices.Log.Debug("Updating an image from API request")
 	err = ctxServices.ImageService.UpdateImage(image, previousImage)
 	if err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Failed creating an update to an image")

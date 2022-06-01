@@ -24,7 +24,6 @@ func main() {
 		"RepoTempPath ":            cfg.RepoTempPath,
 		"OpenAPIFilePath ":         cfg.OpenAPIFilePath,
 		"ImageBuilderURL":          cfg.ImageBuilderConfig.URL,
-		"DefaultOSTreeRef":         cfg.DefaultOSTreeRef,
 		"InventoryURL":             cfg.InventoryConfig.URL,
 		"PlaybookDispatcherConfig": cfg.PlaybookDispatcherConfig.URL,
 		"TemplatesPath":            cfg.TemplatesPath,

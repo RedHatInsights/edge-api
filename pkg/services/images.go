@@ -242,12 +242,15 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		}
 
 		image.Commit.OSTreeParentCommit = repo.URL
+		var refs string
+		if image.Distribution == "" {
+			refs = config.DistributionsRefs[config.DefaultDistribution]
+		} else {
+			refs = config.DistributionsRefs[image.Distribution]
+		}
+
 		if image.Commit.OSTreeRef == "" {
-			if previousImage.Commit.OSTreeRef != "" {
-				image.Commit.OSTreeRef = previousImage.Commit.OSTreeRef
-			} else {
-				image.Commit.OSTreeRef = config.Get().DefaultOSTreeRef
-			}
+			image.Commit.OSTreeRef = refs
 		}
 	} else {
 		// Previous image was not built successfully

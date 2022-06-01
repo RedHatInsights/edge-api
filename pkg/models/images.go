@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/lib/pq"
+	"github.com/redhatinsights/edge-api/config"
 )
 
 // ImageSet represents a collection of images
@@ -103,15 +104,10 @@ const (
 	InvalidSSHKeyError = "SSH Key supports RSA or DSS or ED25519 or ECDSA-SHA2 algorithms"
 )
 
+//
+
 // Required Packages to send to image builder that will go into the base image
-var requiredPackages = [6]string{
-	"ansible",
-	"rhc",
-	"rhc-worker-playbook",
-	"subscription-manager",
-	"subscription-manager-plugin-ostree",
-	"insights-client",
-}
+var requiredPackages = []string{}
 
 var (
 	validSSHPrefix     = regexp.MustCompile(`^(ssh-(rsa|dss|ed25519)|ecdsa-sha2-nistp(256|384|521)) \S+`)
@@ -200,7 +196,19 @@ func (i *Image) HasOutputType(imageType string) bool {
 
 // GetPackagesList returns the packages in a user-friendly list containing their names
 func (i *Image) GetPackagesList() *[]string {
+
+	if i.Distribution == "" {
+		return nil
+	}
+
+	distributionPackage := config.DistributionsPackages[i.Distribution]
+
+	requiredPackages := make([]string, 0, len(distributionPackage)+len(config.RequiredPackages))
+	requiredPackages = append(requiredPackages, config.RequiredPackages...)
+	requiredPackages = append(requiredPackages, distributionPackage...)
+
 	l := len(requiredPackages)
+
 	pkgs := make([]string, len(i.Packages)+l)
 	for i, p := range requiredPackages {
 		pkgs[i] = p
@@ -215,7 +223,6 @@ func (i *Image) GetPackagesList() *[]string {
 func (i *Image) GetALLPackagesList() *[]string {
 	initialPackages := *i.GetPackagesList()
 	packages := make([]string, 0, len(initialPackages)+len(i.CustomPackages))
-
 	packages = append(packages, initialPackages...)
 
 	for _, pkg := range i.CustomPackages {
