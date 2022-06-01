@@ -16,11 +16,11 @@ network --bootproto=dhcp --device=link --activate --onboot=on
 echo PRE
 
 # RHEL for Edge 8.5 moves the ostree dir to the root of the image
+# RHEL for Edge 8.4 and 9.0 install from /run/install/repo
 # Auto-detect a dir at that location and inject it into the command list for install
-# Default to prior ostree/repo location in 8.4
-[[ -d /run/install/repo/ostree ]] \
-	&& echo "ostreesetup --nogpg --osname=rhel-edge --remote=rhel-edge --url=file:///run/install/repo/ostree/repo --ref=rhel/8/x86_64/edge" > /tmp/ostreesetup \
-	|| echo "ostreesetup --nogpg --osname=rhel-edge --remote=rhel-edge --url=file:///ostree/repo --ref=rhel/8/x86_64/edge" > /tmp/ostreesetup
+[[ -d /run/install/repo/ostree ]] && repodir='/run/install/repo/ostree/repo' || repodir='/ostree/repo'
+ref=$(ostree refs --repo=${repodir})
+echo "ostreesetup --nogpg --osname=rhel-edge --remote=rhel-edge --url=file://${repodir} --ref=${ref}" > /tmp/ostreesetup
 
 # Handle include for custom post section if a post file exists
 [[ -e /run/install/repo/fleet_kspost.txt ]] && cp /run/install/repo/fleet_kspost.txt /tmp \
