@@ -547,8 +547,7 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 		services := dependencies.ServicesFromContext(r.Context())
 		err := services.ImageService.AddUserInfo(image)
 		if err != nil {
-			// TODO: Temporary. Handle error better.
-			services.Log.Errorf("Kickstart file injection failed %s", err.Error())
+			services.Log.WithField("error", err.Error()).Error("Kickstart file injection failed")
 			err := errors.NewInternalServerError()
 			w.WriteHeader(err.GetStatus())
 			if err := json.NewEncoder(w).Encode(&err); err != nil {

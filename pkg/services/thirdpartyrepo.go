@@ -36,7 +36,7 @@ type ThirdPartyRepoService struct {
 func (s *ThirdPartyRepoService) thirdPartyRepoNameExists(account string, name string) (bool, error) {
 	var reposCount int64
 	if result := db.DB.Model(&models.ThirdPartyRepo{}).Where("account = ? AND name = ?", account, name).Count(&reposCount); result.Error != nil {
-		s.log.WithField("error", result.Error.Error()).Error("Error checking third party repository existence")
+		s.log.WithField("error", result.Error.Error()).Error("Error checking custom repository existence")
 		return false, result.Error
 	}
 
@@ -57,7 +57,7 @@ func (s *ThirdPartyRepoService) thirdPartyRepoImagesExists(id string, imageStatu
 		tx = tx.Where("images.status IN (?)", imageStatuses)
 	}
 	if result := tx.Debug().Count(&imagesCount); result.Error != nil {
-		s.log.WithField("error", result.Error.Error()).Error("Error checking third party repository existence")
+		s.log.WithField("error", result.Error.Error()).Error("Error checking custom repository existence")
 		return false, result.Error
 	}
 
@@ -89,7 +89,7 @@ func (s *ThirdPartyRepoService) CreateThirdPartyRepo(thirdPartyRepo *models.Thir
 		Account:     account,
 	}
 	if result := db.DB.Create(&createdThirdPartyRepo); result.Error != nil {
-		s.log.WithField("error", result.Error.Error()).Error("Error creating third party repository")
+		s.log.WithField("error", result.Error.Error()).Error("Error creating custom repository")
 		return nil, result.Error
 	}
 
@@ -118,7 +118,7 @@ func (s *ThirdPartyRepoService) UpdateThirdPartyRepo(tprepo *models.ThirdPartyRe
 	tprepo.Account = account
 	repoDetails, err := s.GetThirdPartyRepoByID(ID)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Error retrieving third party repository")
+		s.log.WithField("error", err.Error()).Error("Error retrieving custom repository")
 		return err
 	}
 	if tprepo.Name != "" {
@@ -170,7 +170,7 @@ func (s *ThirdPartyRepoService) DeleteThirdPartyRepoByID(ID string) (*models.Thi
 	}
 	repoDetails, err := s.GetThirdPartyRepoByID(ID)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Error retrieving third party repository")
+		s.log.WithField("error", err.Error()).Error("Error retrieving custom repository")
 		return nil, err
 	}
 	// fail to delete if any image exists (with any status)
@@ -182,7 +182,7 @@ func (s *ThirdPartyRepoService) DeleteThirdPartyRepoByID(ID string) (*models.Thi
 		return nil, new(ThirdPartyRepositoryImagesExists)
 	}
 	if result := db.DB.Where("account = ? and id = ?", account, ID).Delete(&repoDetails); result.Error != nil {
-		s.log.WithField("error", result.Error.Error()).Error("Error deleting third party repository")
+		s.log.WithField("error", result.Error.Error()).Error("Error deleting custom repository")
 		return nil, result.Error
 	}
 	return repoDetails, nil

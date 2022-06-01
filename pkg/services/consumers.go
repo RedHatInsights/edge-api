@@ -56,7 +56,7 @@ func NewKafkaConsumerService(config *clowder.KafkaConfig, topic string) Consumer
 	case "platform.edge.fleetmgmt.image-build":
 		s.consumer = s.ConsumeImageBuildEvents
 	default:
-		log.Errorf("No consumer for topic: %s", topic)
+		log.WithField("topic", topic).Error("No consumer for topic")
 		return nil
 	}
 	s.Reader = s.initReader()
@@ -117,7 +117,7 @@ func (s *KafkaConsumerService) ConsumePlaybookDispatcherRuns() error {
 			log.Debug("Skipping message - it is not from edge service")
 		}
 		if s.isShuttingDown() {
-			log.Info("ShootingDown, exiting playbook dispatcher's runs consumer")
+			log.Info("Shutting down, exiting playbook dispatcher's runs consumer")
 			return nil
 		}
 	}
@@ -173,7 +173,7 @@ func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 			}).Error("Error writing Kafka message to DB")
 		}
 		if s.isShuttingDown() {
-			log.Info("ShootingDown, exiting platform inventory events consumer")
+			log.Info("Shutting down, exiting platform inventory events consumer")
 			return nil
 		}
 	}
@@ -209,13 +209,13 @@ func (s *KafkaConsumerService) ConsumeImageBuildEvents() error {
 		// currently only logging events while resume is handled via API
 		eventErr := json.Unmarshal([]byte(m.Value), &eventMessage)
 		if eventErr != nil {
-			log.WithField("error", eventErr).Debug("Error unmarshaling event. This is not the event you're looking for")
+			log.WithField("error", eventErr).Debug("Error unmarshalling event. This is not the event you're looking for")
 		} else {
-			log.WithField("imageID", eventMessage.ImageID).Debug("Resuming image ID from event on " + string(m.Topic))
+			log.WithFields(log.Fields{"imageID": eventMessage.ImageID, "topic": m.Topic}).Debug("Resuming image ID from event")
 		}
 
 		if s.isShuttingDown() {
-			log.Info("ShuttingDown, exiting image build events consumer")
+			log.Info("Shutting down, exiting image build events consumer")
 			return nil
 		}
 	}
@@ -264,7 +264,7 @@ func (s *KafkaConsumerService) Start() {
 					"error": err.Error(),
 				}).Error("There was en error connecting to the broker. Reader was intentionally closed.")
 			}
-			log.Info("ShuttingDown, exiting main consumer loop")
+			log.Info("Shutting down, exiting main consumer loop")
 			break
 		}
 

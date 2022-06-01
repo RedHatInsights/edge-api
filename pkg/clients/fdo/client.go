@@ -47,7 +47,7 @@ func (c *Client) BatchUpload(ovs []byte, numOfOVs uint) (interface{}, error) {
 	res, err := c.httpClient.Do(req)
 	// handle response
 	if err != nil {
-		c.log.WithField("method", "fdo.BatchUpload").Error("Failed to perform api call to upload vouchers ", err)
+		c.log.WithFields(log.Fields{"method": "fdo.BatchUpload", "error": err}).Error("Failed to perform api call to upload vouchers")
 		return nil, err
 	}
 	return resUploadHandler(c, res)
@@ -64,7 +64,7 @@ func (c *Client) BatchDelete(fdoUUIDList []string) (interface{}, error) {
 	res, err := c.httpClient.Do(req)
 	// handle response
 	if err != nil {
-		c.log.WithField("method", "fdo.BatchDelete").Error("Failed to perform api call to remove vouchers ", err)
+		c.log.WithFields(log.Fields{"method": "fdo.BatchDelete", "error": err}).Error("Failed to perform api call to remove vouchers")
 		return nil, err
 	}
 	return resDeleteHandler(c, res)
@@ -113,7 +113,7 @@ func resUploadHandler(c *Client, res *http.Response) (interface{}, error) {
 		c.log.WithField("method", "fdo.resUploadHandler").Error("Ownershipvouchers couldn't be created, bad request")
 	default:
 		err = errors.New(fmt.Sprint("unknown error with status code: ", res.StatusCode))
-		c.log.WithField("method", "fdo.resUploadHandler").Error("Ownershipvouchers couldn't be created, unknown error with status code: ", res.StatusCode)
+		c.log.WithFields(log.Fields{"method": "fdo.resUploadHandler", "statusCode": res.StatusCode}).Error("Ownershipvouchers couldn't be created, unknown error")
 	}
 	return decodeResBody(&res.Body), err
 }
@@ -150,7 +150,7 @@ func resDeleteHandler(c *Client, res *http.Response) (interface{}, error) {
 		c.log.WithField("method", "fdo.resDeleteHandler").Error("Ownershipvouchers couldn't be removed, bad request")
 	default:
 		err = errors.New(fmt.Sprint("unknown error with status code: ", res.StatusCode))
-		c.log.WithField("method", "fdo.resDeleteHandler").Error("Ownershipvouchers couldn't be removed, unknown error with status code: ", res.StatusCode)
+		c.log.WithFields(log.Fields{"method": "fdo.resDeleteHandler", "statusCode": res.StatusCode}).Error("Ownershipvouchers couldn't be removed, unknown error")
 	}
 	return decodeResBody(&res.Body), err
 }

@@ -236,7 +236,7 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, account s
 	templateName := "template_playbook_dispatcher_ostree_upgrade_payload.yml"
 	templateContents, err := template.New(templateName).Delims("@@", "@@").ParseFiles(filePath + templateName)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Errorf("Error parsing playbook template")
+		s.log.WithField("error", err.Error()).Error("Error parsing playbook template")
 		return "", err
 	}
 	var envName string
@@ -257,19 +257,19 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, account s
 	tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
 	f, err := os.Create(tmpfilepath)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Errorf("Error creating file")
+		s.log.WithField("error", err.Error()).Error("Error creating file")
 		return "", err
 	}
 	err = templateContents.Execute(f, templateData)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Errorf("Error executing template")
+		s.log.WithField("error", err.Error()).Error("Error executing template")
 		return "", err
 	}
 
 	uploadPath := fmt.Sprintf("%s/playbooks/%s", account, fname)
 	playbookURL, err := s.FilesService.GetUploader().UploadFile(tmpfilepath, uploadPath)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Errorf("Error uploading file to S3")
+		s.log.WithField("error", err.Error()).Error("Error uploading file to S3")
 		return "", err
 	}
 	s.log.WithField("playbookURL", playbookURL).Info("Template file uploaded to S3")
@@ -281,7 +281,7 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, account s
 	}
 	playbookURL = s.getPlaybookURL(templateInfo.UpdateTransactionID)
 	s.log.WithField("playbookURL", playbookURL).Info("Proxied playbook URL")
-	s.log.Infof("Update was finished")
+	s.log.Info("Update was finished")
 	return playbookURL, nil
 }
 
@@ -431,7 +431,7 @@ func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (Ima
 		p, err := kafka.NewProducer(&kafka.ConfigMap{
 			"bootstrap.servers": brokers[0]})
 		if err != nil {
-			s.log.WithField("message", err.Error()).Error("producer")
+			s.log.WithField("message", err.Error()).Error("Error creating Kafka producer")
 			os.Exit(1)
 		}
 

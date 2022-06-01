@@ -606,7 +606,7 @@ func (s *ImageService) CreateRepoForImage(i *models.Image) (*models.Repo, error)
 	if err != nil {
 		return nil, err
 	}
-	s.log.Infof("OSTree repo is ready")
+	s.log.Info("OSTree repo is ready")
 
 	return repo, nil
 }

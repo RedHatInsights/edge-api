@@ -77,7 +77,7 @@ func (ovs *OwnershipVoucherService) ConnectDevices(fdoUUIDList []string) (resp [
 	for _, guid := range fdoUUIDList {
 		fdoDevice, err := ovs.GetFDODeviceByGUID(guid)
 		if err != nil {
-			ovs.log.WithFields(logFields).Warn("Couldn't find OwnershipVoucher ", guid, err)
+			ovs.log.WithFields(logFields).WithFields(log.Fields{"guid": guid, "error": err}).Warn("Couldn't find OwnershipVoucher")
 			errList = append(errList, errors.New(guid))
 		} else {
 			fdoDevice.Connected = true
@@ -108,7 +108,7 @@ func (ovs *OwnershipVoucherService) GetFDODeviceByGUID(ownershipVoucherGUID stri
 	var fdoDevice models.FDODevice
 	result := preloadFDODevices(ownershipVoucherGUID).First(&fdoDevice)
 	if result.Error != nil {
-		ovs.log.WithFields(logFields).Error("Failed to get FDO device by GUID ", result.Error)
+		ovs.log.WithFields(logFields).WithField("error", result.Error).Error("Failed to get FDO device by GUID")
 		return nil, result.Error
 	}
 	return &fdoDevice, nil
@@ -125,7 +125,7 @@ func (ovs *OwnershipVoucherService) storeFDODevices(data []models.OwnershipVouch
 		}
 		result := preloadFDODevices(voucherData.GUID).FirstOrCreate(&fdoDevice)
 		if result.Error != nil {
-			ovs.log.WithFields(logFields).Error("Failed to store FDO device ", result.Error)
+			ovs.log.WithFields(logFields).WithField("error", result.Error).Error("Failed to store FDO device")
 		}
 	}
 }
@@ -137,7 +137,7 @@ func (ovs *OwnershipVoucherService) removeFDODevices(fdoUUIDList []string) {
 		var fdoDevice models.FDODevice
 		result := preloadFDODevices(guid).First(&fdoDevice)
 		if result.Error != nil {
-			ovs.log.WithFields(logFields).Error("Failed to remove FDO device ", result.Error)
+			ovs.log.WithFields(logFields).WithField("error", result.Error).Error("Failed to remove FDO device")
 		}
 		db.DB.Delete(&fdoDevice)
 	}
@@ -148,7 +148,7 @@ func (ovs *OwnershipVoucherService) parseVouchers(voucherBytes []byte) ([]models
 	logFields := log.Fields{"method": "services.parseVouchers"}
 	vouchers, err := libfdo.ParseManyOwnershipVouchers(voucherBytes)
 	if err != nil {
-		ovs.log.WithFields(logFields).Error("Failed to parse vouchers ", err)
+		ovs.log.WithFields(logFields).WithField("error", err).Error("Failed to parse vouchers")
 		return nil, err
 	}
 	defer vouchers.Free()
@@ -157,7 +157,7 @@ func (ovs *OwnershipVoucherService) parseVouchers(voucherBytes []byte) ([]models
 	for i := 0; i < vouchers.Len(); i++ {
 		voucher, err := vouchers.GetVoucher(i)
 		if err != nil {
-			ovs.log.WithFields(logFields).Error("Failed to get voucher ", err)
+			ovs.log.WithFields(logFields).WithField("error", err).Error("Failed to get voucher")
 			return nil, err
 		}
 		data[i] = models.OwnershipVoucherData{
