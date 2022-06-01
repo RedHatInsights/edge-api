@@ -20,6 +20,9 @@ import (
 
 // NOTE: this is currently designed for a single ibvents replica
 
+// LoopTime interrupt query loop sleep time in minutes
+const LoopTime = 5
+
 // get images with a build of x status and older than y hours
 func getStaleBuilds(status string, age int) []models.Image {
 	var images []models.Image
@@ -98,7 +101,7 @@ func main() {
 	for {
 		log.Debug("Sleeping...")
 		// TODO: make this configurable
-		time.Sleep(5 * time.Minute)
+		time.Sleep(LoopTime * time.Minute)
 		// TODO: programatic method to avoid resuming a build until app is up or on way up???
 
 		// handle stale interrupted builds not complete after x hours
