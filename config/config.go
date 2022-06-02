@@ -33,6 +33,8 @@ type EdgeConfig struct {
 	KafkaConfig              *clowder.KafkaConfig      `json:"kafka,omitempty"`
 	FDO                      *fdoConfig                `json:"fdo,omitempty"`
 	Local                    bool                      `json:"local,omitempty"`
+	UnleashURL               string                    `json:"unleash_url,omitempty"`
+	UnleashSecretName        string                    `json:"unleash_secret_name,omitempty"`
 }
 
 type dbConfig struct {
@@ -141,7 +143,9 @@ func Init() {
 			APIVersion:          options.GetString("FDOApiVersion"),
 			AuthorizationBearer: options.GetString("FDOAuthorizationBearer"),
 		},
-		Local: options.GetBool("Local"),
+		Local:             options.GetBool("Local"),
+		UnleashURL:        options.GetString("UnleashURL"),
+		UnleashSecretName: options.GetString("UnleashSecretName"),
 	}
 
 	database := options.GetString("database")

@@ -83,6 +83,13 @@ objects:
           value: ${UPLOADWORKERS}
         - name: LOG_LEVEL
           value: ${LOG_LEVEL}
+        - name: UNLEASH_URL
+          value: ${UNLEASH_URL}
+        - name: UNLEASH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: ${UNLEASH_SECRET_NAME}
+              key: CLIENT_ACCESS_TOKEN
         resources:
           limits:
             cpu: ${{CPU_LIMIT}}
@@ -128,6 +135,13 @@ objects:
           value: ${UPLOADWORKERS}
         - name: LOG_LEVEL
           value: ${LOG_LEVEL}
+        - name: UNLEASH_URL
+          value: ${UNLEASH_URL}
+        - name: UNLEASH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: ${UNLEASH_SECRET_NAME}
+              key: CLIENT_ACCESS_TOKEN
         resources:
           limits:
             cpu: ${{CPU_LIMIT}}
@@ -230,3 +244,9 @@ parameters:
   name: LOG_LEVEL
   required: false
   value: "DEBUG"
+- description: Unleash API url
+  name: UNLEASH_URL
+  value: ''
+- description: Unleash secret name
+  name: UNLEASH_SECRET_NAME
+  value: unleash-ephemeral

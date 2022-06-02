@@ -14,6 +14,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -118,6 +119,7 @@ func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRe
 
 // GetAllThirdPartyRepo return all the ThirdPartyRepo
 func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
+
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	var tprepo []models.ThirdPartyRepo
 	var count int64
@@ -129,6 +131,14 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := thirdPartyRepoFilters(r, db.DB).Model(&models.ThirdPartyRepo{}).Where("account = ?", account)
+
+	// Check to see if feature is enabled
+	enabled := feature.CheckFeatureWithAccount(account, feature.FeatureCustomRepos)
+	if !enabled {
+		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable("Feature not available"))
+		return
+	}
+
 	pagination := common.GetPagination(r)
 
 	if result := ctx.Count(&count); result.Error != nil {
