@@ -168,12 +168,9 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 	packages := image.Packages
 	// we now need to loop this request for each package
 	for _, p := range packages {
-		count, er := validateImagePackage(p.Name, image)
+		er := validateImagePackage(p.Name, image)
 		if er != nil {
 			return er
-		}
-		if (*count).Meta.Count != 1 {
-			return new(PackageNameDoesntExists)
 		}
 	}
 	if err := ValidateAllImageReposAreFromAccount(account, image.ThirdPartyRepositories); err != nil {
@@ -237,13 +234,28 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 }
 
 // validateImagePackage validate package name on Image Builder
-func validateImagePackage(pack string, image *models.Image) (**imagebuilder.SearchPackageResult, error) {
+func validateImagePackage(pack string, image *models.Image) error {
+	if pack == "" {
+		return new(PackageNameDoesNotExist)
+	}
 	arch := image.Commit.Arch
 	dist := image.Distribution
 	ib := imagebuilder.Client{}
 	res, err := ib.SearchPackage(pack, arch, dist)
-	return &res, err
+	if err != nil{
+		return err
+	}
+	if res.Meta.Count == 0 {
+		return new(PackageNameDoesNotExist)
+	}
+	for _,pkg := range res.Data {
+		if pkg.Name == pack {
+			return nil
+		}
+	}
+	return new(PackageNameDoesNotExist)
 }
+
 
 // UpdateImage updates an image, adding a new version of this image to an imageset
 func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Image) error {

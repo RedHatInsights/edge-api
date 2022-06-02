@@ -131,9 +131,22 @@ type MetaCount struct {
 	Count int `json:"count"`
 }
 
+// SearchPackage contains Name of package
+type SearchPackage struct {
+	Name string `json:"name"`
+}
+
 // SearchPackageResult contains Meta of a MetaCount
 type SearchPackageResult struct {
-	Meta MetaCount `json:"meta"`
+	Meta MetaCount       `json:"meta"`
+	Data []SearchPackage `json:"data"`
+}
+
+// PackageRequestError indicates request search packages from Image Builder
+type PackageRequestError struct{}
+
+func (e *PackageRequestError) Error() string {
+	return "image builder search packages request error"
 }
 
 // Metadata struct to get the metadata response
@@ -496,7 +509,7 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*S
 		c.log.WithFields(log.Fields{
 			"statusCode": res.StatusCode,
 			"error":      err,
-		}).Error("Image Builder Search Packages Request Error")
+		}).Error(new(PackageRequestError))
 		return nil, err
 	}
 	respBody, err := ioutil.ReadAll(res.Body)
@@ -509,17 +522,14 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*S
 		c.log.WithFields(log.Fields{
 			"statusCode": res.StatusCode,
 			"error":      err.Error(),
-		}).Error("Image Builder Search Packages Request Error")
+		}).Error(new(PackageRequestError))
+		return nil, new(PackageRequestError)
 	}
 	var searchResult SearchPackageResult
 	err = json.Unmarshal(respBody, &searchResult)
 	if err != nil {
-		c.log.WithField("error", err.Error()).Error("Error when searching package")
+		c.log.WithField("error", err.Error()).Error(new(PackageRequestError))
 		return nil, err
-	}
-
-	if searchResult.Meta.Count != 1 {
-		return &searchResult, nil
 	}
 	return &searchResult, nil
 }
