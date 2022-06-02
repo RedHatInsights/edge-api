@@ -93,10 +93,10 @@ func (e *ImageNameAlreadyExists) Error() string {
 	return "image with supplied name already exists"
 }
 
-// PackageNameDoesntExists indicates that package name doesn't exist
-type PackageNameDoesntExists struct{}
+// PackageNameDoesNotExist indicates that package name doesn't exist
+type PackageNameDoesNotExist struct{}
 
-func (e *PackageNameDoesntExists) Error() string {
+func (e *PackageNameDoesNotExist) Error() string {
 	return "package name doesn't exist"
 }
 
