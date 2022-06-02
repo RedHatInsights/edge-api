@@ -152,8 +152,8 @@ var _ = Describe("DeviceGroup routes", func() {
 				rr := httptest.NewRecorder()
 
 				// setup mock for DeviceGroupsService
-				mockDeviceGroupsService.EXPECT().GetDeviceGroupsCount(gomock.Any(), gomock.Any()).Return(int64(0), nil)
-				mockDeviceGroupsService.EXPECT().GetDeviceGroups(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&[]models.DeviceGroupListDetail{}, nil)
+				mockDeviceGroupsService.EXPECT().GetDeviceGroupsCount(gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(0), nil)
+				mockDeviceGroupsService.EXPECT().GetDeviceGroups(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&[]models.DeviceGroupListDetail{}, nil)
 
 				handler := http.HandlerFunc(GetAllDeviceGroups)
 				handler.ServeHTTP(rr, req)
@@ -164,25 +164,29 @@ var _ = Describe("DeviceGroup routes", func() {
 	})
 	Context("adding devices to DeviceGroup", func() {
 		account := faker.UUIDHyphenated()
+		orgID := faker.UUIDHyphenated()
 		deviceGroupName := faker.Name()
 		devices := []models.Device{
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
+				OrgID:   orgID,
 			},
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
+				OrgID:   orgID,
 			},
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
+				OrgID:   orgID,
 			},
 		}
-		deviceGroup := models.DeviceGroup{Name: deviceGroupName, Account: account, Type: models.DeviceGroupTypeDefault}
+		deviceGroup := models.DeviceGroup{Name: deviceGroupName, Account: account, OrgID: orgID, Type: models.DeviceGroupTypeDefault}
 		Context("adding Devices & DeviceGroup to DB", func() {
 			for _, device := range devices {
 				dbResult := db.DB.Create(&device).Error
@@ -193,9 +197,9 @@ var _ = Describe("DeviceGroup routes", func() {
 		})
 
 		Context("get DeviceGroup from DB", func() {
-			dbResult := db.DB.Where(models.DeviceGroup{Account: account}).First(&deviceGroup).Error
+			dbResult := db.DB.Where("account = ? OR org_id = ?", account, orgID).First(&deviceGroup).Error
 			Expect(dbResult).To(BeNil())
-			dbResult = db.DB.Where(models.Device{Account: account}).Find(&devices).Error
+			dbResult = db.DB.Where("account = ? OR org_id = ?", account, orgID).Find(&devices).Error
 			Expect(dbResult).To(BeNil())
 		})
 		jsonDeviceBytes, err := json.Marshal(models.DeviceGroup{Devices: devices})
@@ -214,7 +218,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				rr := httptest.NewRecorder()
 
 				// setup mock for DeviceGroupsService
-				mockDeviceGroupsService.EXPECT().AddDeviceGroupDevices(account, deviceGroup.ID, gomock.Any()).Return(&devices, nil)
+				mockDeviceGroupsService.EXPECT().AddDeviceGroupDevices(account, orgID, deviceGroup.ID, gomock.Any()).Return(&devices, nil)
 
 				handler := http.HandlerFunc(AddDeviceGroupDevices)
 				handler.ServeHTTP(rr, req)
@@ -229,6 +233,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				Name:    deviceGroupName,
 				Type:    models.DeviceGroupTypeDefault,
 				Account: common.DefaultAccount,
+				OrgID:   common.DefaultOrgID,
 			}
 			jsonDeviceBytes, err := json.Marshal(deviceGroup)
 			Expect(err).To(BeNil())
@@ -284,6 +289,7 @@ var _ = Describe("DeviceGroup routes", func() {
 			Name:    deviceGroupName,
 			Type:    models.DeviceGroupTypeDefault,
 			Account: common.DefaultAccount,
+			OrgID:   common.DefaultOrgID,
 		}
 		jsonDeviceBytes, err := json.Marshal(deviceGroupUpdated)
 		Expect(err).To(BeNil())
@@ -302,7 +308,7 @@ var _ = Describe("DeviceGroup routes", func() {
 
 				// setup mock for DeviceGroupsService
 				mockDeviceGroupsService.EXPECT().GetDeviceGroupByID(fmt.Sprintf("%d", deviceGroupUpdated.ID)).Return(deviceGroupUpdated, nil)
-				mockDeviceGroupsService.EXPECT().UpdateDeviceGroup(deviceGroupUpdated, common.DefaultAccount, fmt.Sprintf("%d", deviceGroupUpdated.ID)).Return(nil)
+				mockDeviceGroupsService.EXPECT().UpdateDeviceGroup(deviceGroupUpdated, common.DefaultAccount, common.DefaultOrgID, fmt.Sprintf("%d", deviceGroupUpdated.ID)).Return(nil)
 
 				handler := http.HandlerFunc(UpdateDeviceGroup)
 				handler.ServeHTTP(rr, req)
@@ -313,23 +319,27 @@ var _ = Describe("DeviceGroup routes", func() {
 	})
 	Context("delete DeviceGroup", func() {
 		account := common.DefaultAccount
+		orgID := common.DefaultOrgID
 		deviceGroupName := faker.Name()
 		devices := []models.Device{
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
+				OrgID:   orgID,
 			},
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
+				OrgID:   orgID,
 			},
 		}
 		deviceGroup := &models.DeviceGroup{
 			Name:    deviceGroupName,
 			Type:    models.DeviceGroupTypeDefault,
 			Account: account,
+			OrgID:   orgID,
 			Devices: devices,
 		}
 		Context("saving DeviceGroup", func() {
@@ -337,7 +347,7 @@ var _ = Describe("DeviceGroup routes", func() {
 			Expect(dbResult).To(BeNil())
 		})
 		Context("getting DeviceGroup", func() {
-			dbResult := db.DB.Where(models.DeviceGroup{Name: deviceGroupName, Account: account}).First(&deviceGroup).Error
+			dbResult := db.DB.Where("account = ? OR org_id = ?", account, orgID).First(&deviceGroup).Error
 			Expect(dbResult).To(BeNil())
 		})
 		When("all is valid", func() {
@@ -392,6 +402,7 @@ var _ = Describe("DeviceGroup routes", func() {
 						ID: fakeIDUint,
 					},
 					Account: "",
+					OrgID:   orgID,
 				})
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
@@ -463,27 +474,32 @@ var _ = Describe("DeviceGroup routes", func() {
 	})
 	Context("delete device from DeviceGroup", func() {
 		account := faker.UUIDHyphenated()
+		orgID := faker.UUIDHyphenated()
 		deviceGroupName := faker.Name()
 		devices := []models.Device{
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
+				OrgID:   orgID,
 			},
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
+				OrgID:   orgID,
 			},
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
+				OrgID:   orgID,
 			},
 		}
 		deviceGroup := models.DeviceGroup{
 			Name:    deviceGroupName,
 			Account: account,
+			OrgID:   orgID,
 			Type:    models.DeviceGroupTypeDefault,
 			Devices: devices,
 		}
@@ -515,7 +531,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
 
-				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupDevices(account, deviceGroup.ID, devicesToRemove).Return(&devicesToRemove, nil)
+				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupDevices(account, orgID, deviceGroup.ID, devicesToRemove).Return(&devicesToRemove, nil)
 				handler := http.HandlerFunc(DeleteDeviceGroupOneDevice)
 				handler.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(http.StatusOK))
@@ -537,7 +553,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
 
-				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupDevices(account, deviceGroup.ID, gomock.Any()).Return(&devicesToRemove, nil)
+				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupDevices(account, orgID, deviceGroup.ID, gomock.Any()).Return(&devicesToRemove, nil)
 				handler := http.HandlerFunc(DeleteDeviceGroupManyDevices)
 				handler.ServeHTTP(rr, req)
 
@@ -557,7 +573,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				rr := httptest.NewRecorder()
 
 				var devicesToRemove []models.Device
-				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupDevices(account, deviceGroup.ID, devicesToRemove).Return(nil, new(services.DeviceGroupDevicesNotSupplied))
+				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupDevices(account, orgID, deviceGroup.ID, devicesToRemove).Return(nil, new(services.DeviceGroupDevicesNotSupplied))
 				handler := http.HandlerFunc(DeleteDeviceGroupManyDevices)
 				handler.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(http.StatusBadRequest))
@@ -566,27 +582,32 @@ var _ = Describe("DeviceGroup routes", func() {
 	})
 	Context("Updating devices from DeviceGroup", func() {
 		account := "0000000"
+		orgID := "0000000"
 		deviceGroupName := faker.Name()
 		devices := []models.Device{
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
+				OrgID:   orgID,
 			},
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
+				OrgID:   orgID,
 			},
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
+				OrgID:   orgID,
 			},
 		}
 		deviceGroup := models.DeviceGroup{
 			Name:    deviceGroupName,
 			Account: account,
+			OrgID:   orgID,
 			Type:    models.DeviceGroupTypeDefault,
 			Devices: devices,
 		}
@@ -607,6 +628,7 @@ var _ = Describe("DeviceGroup routes", func() {
 						Commit:   &commit,
 						CommitID: commit.ID,
 						Account:  account,
+						OrgID:    orgID,
 						Devices:  devices,
 					},
 				}

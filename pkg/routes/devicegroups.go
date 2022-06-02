@@ -104,6 +104,15 @@ func DeviceGroupDetailsCtx(next http.Handler) http.Handler {
 				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 				return
 			}
+			orgID, err := common.GetOrgID(r)
+			if err != nil || deviceGroup.DeviceGroup.OrgID != orgID {
+				ctxServices.Log.WithFields(log.Fields{
+					"error": err.Error(),
+					"orgID": orgID,
+				}).Error("Error retrieving orgID or device group doesn't belong to orgID")
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+				return
+			}
 			ctx := setContextDeviceGroupDetails(r.Context(), deviceGroup)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
@@ -150,6 +159,15 @@ func DeviceGroupCtx(next http.Handler) http.Handler {
 				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 				return
 			}
+			orgID, err := common.GetOrgID(r)
+			if err != nil || deviceGroup.OrgID != orgID {
+				ctxServices.Log.WithFields(log.Fields{
+					"error": err.Error(),
+					"orgID": orgID,
+				}).Error("Error retrieving orgID or device group doesn't belong to orgID")
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+				return
+			}
 			ctx := setContextDeviceGroup(r.Context(), deviceGroup)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
@@ -184,7 +202,13 @@ func DeviceGroupDeviceCtx(next http.Handler) http.Handler {
 				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 				return
 			}
-			deviceGroupDevice, err := ctxServices.DeviceGroupsService.GetDeviceGroupDeviceByID(account, deviceGroup.ID, uint(deviceID))
+			orgID, err := common.GetOrgID(r)
+			if err != nil {
+				ctxServices.Log.WithFields(log.Fields{"error": err.Error()}).Error("Error retrieving orgID or device group doesn't belong to orgID")
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+				return
+			}
+			deviceGroupDevice, err := ctxServices.DeviceGroupsService.GetDeviceGroupDeviceByID(account, orgID, deviceGroup.ID, uint(deviceID))
 			if err != nil {
 				var responseErr errors.APIError
 				switch err.(type) {
@@ -256,7 +280,7 @@ func validateGetAllDeviceGroupsFilterParams(next http.Handler) http.Handler {
 	})
 }
 
-// GetAllDeviceGroups return devices groups for an account
+// GetAllDeviceGroups return devices groups for an account and orgID
 func GetAllDeviceGroups(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	deviceGroupService := ctxServices.DeviceGroupsService
@@ -268,16 +292,22 @@ func GetAllDeviceGroups(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 		return
 	}
+	orgID, err := common.GetOrgID(r)
+	if err != nil {
+		ctxServices.Log.WithField("error", err.Error()).Error("Error retrieving orgID from the request")
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+		return
+	}
 
 	pagination := common.GetPagination(r)
 
-	deviceGroupsCount, err := deviceGroupService.GetDeviceGroupsCount(account, tx)
+	deviceGroupsCount, err := deviceGroupService.GetDeviceGroupsCount(account, orgID, tx)
 	if err != nil {
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
 
-	deviceGroups, err := deviceGroupService.GetDeviceGroups(account, pagination.Limit, pagination.Offset, tx)
+	deviceGroups, err := deviceGroupService.GetDeviceGroups(account, orgID, pagination.Limit, pagination.Offset, tx)
 	if err != nil {
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
@@ -414,7 +444,7 @@ func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 			// error handled by createRequest already
 			return
 		}
-		err = ctxServices.DeviceGroupsService.UpdateDeviceGroup(deviceGroup, oldDeviceGroup.Account, fmt.Sprint(oldDeviceGroup.ID))
+		err = ctxServices.DeviceGroupsService.UpdateDeviceGroup(deviceGroup, oldDeviceGroup.Account, oldDeviceGroup.OrgID, fmt.Sprint(oldDeviceGroup.ID))
 		if err != nil {
 			ctxServices.Log.WithField("error", err.Error()).Error("Error updating device group")
 			var apiError errors.APIError
@@ -483,11 +513,19 @@ func createDeviceRequest(w http.ResponseWriter, r *http.Request) (*models.Device
 		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 		return nil, err
 	}
+	orgID, err := common.GetOrgID(r)
+	if err != nil {
+		ctxServices.Log.WithField("error", err.Error()).Error("OrgID was not set")
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+		return nil, err
+	}
 	ctxServices.Log = ctxServices.Log.WithFields(log.Fields{
 		"name":    deviceGroup.Name,
 		"account": deviceGroup.Account,
+		"orgID":   deviceGroup.OrgID,
 	})
 	deviceGroup.Account = account
+	deviceGroup.OrgID = orgID
 
 	if err := deviceGroup.ValidateRequest(); err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Info("Error validation request from device group")
@@ -521,7 +559,7 @@ func AddDeviceGroupDevices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	devicesAdded, err := ctxServices.DeviceGroupsService.AddDeviceGroupDevices(contextDeviceGroup.Account, contextDeviceGroup.ID, requestDeviceGroup.Devices)
+	devicesAdded, err := ctxServices.DeviceGroupsService.AddDeviceGroupDevices(contextDeviceGroup.Account, contextDeviceGroup.OrgID, contextDeviceGroup.ID, requestDeviceGroup.Devices)
 	if err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Error when adding deviceGroup devices")
 		var apiError errors.APIError
@@ -553,7 +591,7 @@ func DeleteDeviceGroupManyDevices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deletedDevices, err := ctxServices.DeviceGroupsService.DeleteDeviceGroupDevices(contextDeviceGroup.Account, contextDeviceGroup.ID, requestDeviceGroup.Devices)
+	deletedDevices, err := ctxServices.DeviceGroupsService.DeleteDeviceGroupDevices(contextDeviceGroup.Account, contextDeviceGroup.OrgID, contextDeviceGroup.ID, requestDeviceGroup.Devices)
 	if err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Error when removing deviceGroup devices")
 		var apiError errors.APIError
@@ -582,7 +620,7 @@ func DeleteDeviceGroupOneDevice(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err := ctxServices.DeviceGroupsService.DeleteDeviceGroupDevices(
-		contextDeviceGroup.Account, contextDeviceGroup.ID, []models.Device{*contextDeviceGroupDevice},
+		contextDeviceGroup.Account, contextDeviceGroup.OrgID, contextDeviceGroup.ID, []models.Device{*contextDeviceGroupDevice},
 	)
 
 	if err != nil {
@@ -617,8 +655,17 @@ func CheckGroupName(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, services.Log, errors.NewBadRequest(err.Error()))
 		return
 	}
+	orgID, err := common.GetOrgID(r)
+	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error": err.Error(),
+			"orgID": orgID,
+		}).Error("Error retrieving orgID")
+		respondWithAPIError(w, services.Log, errors.NewBadRequest(err.Error()))
+		return
+	}
 
-	value, err := services.DeviceGroupsService.DeviceGroupNameExists(account, name)
+	value, err := services.DeviceGroupsService.DeviceGroupNameExists(account, orgID, name)
 
 	if err != nil {
 		respondWithAPIError(w, services.Log, errors.NewBadRequest(err.Error()))
@@ -639,6 +686,16 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
 	if account == "" && orgID == "" {
 		// logs and response handled by readAccountOrOrgID
+		return
+	}
+	orgID, err := common.GetOrgID(r)
+	if err != nil {
+		services.Log.WithFields(log.Fields{
+			"error": err.Error(),
+			"orgID": orgID,
+		}).Error("Error retrieving orgID")
+		stterr := errors.NewInternalServerError()
+		w.WriteHeader(stterr.GetStatus())
 		return
 	}
 	devices := deviceGroup.Devices
