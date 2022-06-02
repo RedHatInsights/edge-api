@@ -146,6 +146,10 @@ func main() {
 	cfgBytes, _ := json.Marshal(cfg)
 	_ = json.Unmarshal(cfgBytes, &configValues)
 	log.WithFields(configValues).Info("Configuration Values")
+	log.WithFields(log.Fields{
+		"UnleashURL":   cfg.UnleashURL,
+		"UnleashToken": cfg.UnleashSecretName,
+	}).Info("Unleash Config details")
 
 	err := unleash.Initialize(
 		unleash.WithListener(&unleash.DebugListener{}),
