@@ -144,8 +144,8 @@ func Init() {
 			AuthorizationBearer: options.GetString("FDOAuthorizationBearer"),
 		},
 		Local:             options.GetBool("Local"),
-		UnleashURL:        options.GetString("UnleashURL"),
-		UnleashSecretName: options.GetString("UnleashSecretName"),
+		UnleashURL:        options.GetString("UNLEASH_URL"),
+		UnleashSecretName: options.GetString("UNLEASH_TOKEN"),
 	}
 
 	database := options.GetString("database")
