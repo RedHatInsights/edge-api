@@ -157,7 +157,7 @@ func main() {
 		unleash.WithUrl(cfg.UnleashURL),
 		unleash.WithRefreshInterval(5*time.Second),
 		unleash.WithMetricsInterval(5*time.Second),
-		unleash.WithCustomHeaders(http.Header{"Authorization": {cfg.UnleashSecretName}}),
+		unleash.WithCustomHeaders(http.Header{"Authorization": {"Bearer " + cfg.UnleashSecretName}}),
 	)
 	if err != nil {
 		l.LogErrorAndPanic("Unleash client failed to initialized", err)
