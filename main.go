@@ -21,6 +21,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes"
 	"github.com/redhatinsights/edge-api/pkg/services"
 
+	"github.com/Unleash/unleash-client-go/v3"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -124,7 +125,7 @@ func serveWeb(cfg *config.EdgeConfig, consumers []services.ConsumerService) *htt
 
 func gracefulTermination(server *http.Server, serviceName string) {
 	log.Infof("%s service stopped", serviceName)
-	//unleash.Close()
+	unleash.Close()
 	ctxShutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second) // 5 seconds for graceful shutdown
 	defer cancel()
 	if err := server.Shutdown(ctxShutdown); err != nil {
