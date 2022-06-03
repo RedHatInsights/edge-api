@@ -1,8 +1,10 @@
 package config
 
 import (
-	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
+	"fmt"
+	"os"
 
+	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/spf13/viper"
 )
 
@@ -35,6 +37,11 @@ type EdgeConfig struct {
 	Local                    bool                      `json:"local,omitempty"`
 	UnleashURL               string                    `json:"unleash_url,omitempty"`
 	UnleashSecretName        string                    `json:"unleash_secret_name,omitempty"`
+	FeatureFlagsEnvironment  string                    `json:"featureflags_environment,omitempty"`
+	FeatureFlagsURL          string                    `json:"featureflags_url,omitempty"`
+	FeatureFlagsAPIToken     string                    `json:"featureflags_api_token,omitempty"`
+	FeatureFlagsService      string                    `json:"featureflags_service,omitempty"`
+	FeatureFlagsBearerToken  string                    `json:"featureflags_bearer_token,omitempty"`
 }
 
 type dbConfig struct {
@@ -112,6 +119,38 @@ func Init() {
 	kubenv := viper.New()
 	kubenv.AutomaticEnv()
 
+	if clowder.IsClowderEnabled() {
+		// FUTURE: refactor config to follow common CRC config code
+		// 		see https://github.com/RedHatInsights/sources-api-go/blob/main/config/config.go
+		cfg := clowder.LoadedConfig
+
+		if cfg.FeatureFlags != nil {
+			UnleashURL := ""
+			if cfg.FeatureFlags.Hostname != "" && cfg.FeatureFlags.Port != 0 && cfg.FeatureFlags.Scheme != "" {
+				UnleashURL = fmt.Sprintf("%s://%s:%d/api", cfg.FeatureFlags.Scheme, cfg.FeatureFlags.Hostname, cfg.FeatureFlags.Port)
+			}
+
+			options.SetDefault("FeatureFlagsUrl", UnleashURL)
+
+			clientAccessToken := ""
+			if cfg.FeatureFlags.ClientAccessToken != nil {
+				clientAccessToken = *cfg.FeatureFlags.ClientAccessToken
+			}
+			options.SetDefault("FeatureFlagsBearerToken", clientAccessToken)
+		}
+	} else {
+		options.SetDefault("FeatureFlagsUrl", os.Getenv("UNLEASH_URL"))
+		options.SetDefault("FeatureFlagsAPIToken", os.Getenv("UNLEASH_TOKEN"))
+	}
+
+	options.SetDefault("FeatureFlagsService", os.Getenv("FEATURE_FLAGS_SERVICE"))
+
+	if os.Getenv("SOURCES_ENV") == "prod" {
+		options.SetDefault("FeatureFlagsEnvironment", "production")
+	} else {
+		options.SetDefault("FeatureFlagsEnvironment", "development")
+	}
+
 	config = &EdgeConfig{
 		Hostname:        kubenv.GetString("Hostname"),
 		Auth:            options.GetBool("Auth"),
@@ -143,9 +182,14 @@ func Init() {
 			APIVersion:          options.GetString("FDOApiVersion"),
 			AuthorizationBearer: options.GetString("FDOAuthorizationBearer"),
 		},
-		Local:             options.GetBool("Local"),
-		UnleashURL:        options.GetString("UNLEASH_URL"),
-		UnleashSecretName: options.GetString("UNLEASH_TOKEN"),
+		Local:                   options.GetBool("Local"),
+		UnleashURL:              options.GetString("FeatureFlagsUrl"),
+		UnleashSecretName:       options.GetString("FeatureFlagsAPIToken"),
+		FeatureFlagsEnvironment: options.GetString("FeatureFlagsEnvironment"),
+		FeatureFlagsURL:         options.GetString("FeatureFlagsUrl"),
+		FeatureFlagsAPIToken:    options.GetString("FeatureFlagsAPIToken"),
+		FeatureFlagsBearerToken: options.GetString("FeatureFlagsBearerToken"),
+		FeatureFlagsService:     options.GetString("FeatureFlagsService"),
 	}
 
 	database := options.GetString("database")
@@ -196,7 +240,6 @@ func Init() {
 
 		config.KafkaConfig = cfg.Kafka
 	}
-
 }
 
 // Get returns an initialized EdgeConfig
