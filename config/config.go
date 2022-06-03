@@ -103,6 +103,7 @@ func Init() {
 	options.SetDefault("FDOApiVersion", "v1")
 	options.SetDefault("FDOAuthorizationBearer", "lorum-ipsum")
 	options.SetDefault("Local", false)
+	options.SetDefault("UNLEASH_URL", "https://insights-stage.unleash.devshift.net/")
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
