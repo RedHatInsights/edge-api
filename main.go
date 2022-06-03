@@ -171,6 +171,8 @@ func main() {
 		if err != nil {
 			//l.LogErrorAndPanic("Unleash client failed to initialized", err)
 			log.WithField("Error", err).Error("Unleash client failed to initialize")
+		} else {
+			log.WithField("FeatureFlagURL", cfg.UnleashURL).Info("Unleash client initialized successfully")
 		}
 	} else {
 		log.WithField("FeatureFlagURL", cfg.UnleashURL).Warning("FeatureFlag service initialization was skipped.")
