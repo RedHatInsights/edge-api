@@ -125,7 +125,7 @@ func serveWeb(cfg *config.EdgeConfig, consumers []services.ConsumerService) *htt
 
 func gracefulTermination(server *http.Server, serviceName string) {
 	log.Infof("%s service stopped", serviceName)
-	if featureFlagsServiceUnleash() && featureFlagsConfigPresent() {
+	if featureFlagsConfigPresent() {
 		unleash.Close()
 	}
 	ctxShutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second) // 5 seconds for graceful shutdown
@@ -159,7 +159,7 @@ func main() {
 	_ = json.Unmarshal(cfgBytes, &configValues)
 	log.WithFields(configValues).Info("Configuration Values")
 
-	if featureFlagsServiceUnleash() && featureFlagsConfigPresent() {
+	if featureFlagsConfigPresent() {
 		err := unleash.Initialize(
 			unleash.WithListener(&unleash.DebugListener{}),
 			unleash.WithAppName("edge-api"),
