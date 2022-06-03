@@ -103,7 +103,7 @@ func Init() {
 	options.SetDefault("FDOApiVersion", "v1")
 	options.SetDefault("FDOAuthorizationBearer", "lorum-ipsum")
 	options.SetDefault("Local", false)
-	options.SetDefault("UNLEASH_URL", "http://unleash-proxy:8000/api")
+	options.SetDefault("UNLEASH_URL", "http://unleash-proxy-api:8080/api")
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
