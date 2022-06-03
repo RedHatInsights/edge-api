@@ -88,7 +88,7 @@ func newS3Uploader(log *log.Entry) *S3Uploader {
 	} else {
 		var err error
 		sess, err = session.NewSession(&aws.Config{
-			Region:      cfg.BucketRegion,
+			Region:      &cfg.BucketRegion,
 			Credentials: credentials.NewStaticCredentials(cfg.AccessKey, cfg.SecretKey, ""),
 		})
 		if err != nil {

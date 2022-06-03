@@ -19,7 +19,7 @@ type EdgeConfig struct {
 	Debug                    bool                      `json:"debug,omitempty"`
 	Database                 *dbConfig                 `json:"database,omitempty"`
 	BucketName               string                    `json:"bucket_name,omitempty"`
-	BucketRegion             *string                   `json:"bucket_region,omitempty"`
+	BucketRegion             string                    `json:"bucket_region,omitempty"`
 	AccessKey                string                    `json:"-"`
 	SecretKey                string                    `json:"-"`
 	RepoTempPath             string                    `json:"repo_temp_path,omitempty"`
@@ -92,6 +92,7 @@ func Init() {
 	options.SetDefault("Auth", false)
 	options.SetDefault("Debug", false)
 	options.SetDefault("EdgeTarballsBucket", "rh-edge-tarballs")
+	options.SetDefault("BucketRegion", "us-east-1")
 	options.SetDefault("ImageBuilderUrl", "http://image-builder:8080")
 	options.SetDefault("InventoryUrl", "http://host-inventory-service:8080/")
 	options.SetDefault("PlaybookDispatcherURL", "http://playbook-dispatcher:8080/")
@@ -159,6 +160,7 @@ func Init() {
 		Debug:           options.GetBool("Debug"),
 		LogLevel:        options.GetString("LOG_LEVEL"),
 		BucketName:      options.GetString("EdgeTarballsBucket"),
+		BucketRegion:    options.GetString("BucketRegion"),
 		RepoTempPath:    options.GetString("RepoTempPath"),
 		OpenAPIFilePath: options.GetString("OpenAPIFilePath"),
 		ImageBuilderConfig: &imageBuilderConfig{
@@ -228,7 +230,9 @@ func Init() {
 		bucket := clowder.ObjectBuckets[config.BucketName]
 
 		config.BucketName = bucket.RequestedName
-		config.BucketRegion = bucket.Region
+		if bucket.Region != nil {
+			config.BucketRegion = *bucket.Region
+		}
 		config.AccessKey = *bucket.AccessKey
 		config.SecretKey = *bucket.SecretKey
 		config.Logging = &loggingConfig{
