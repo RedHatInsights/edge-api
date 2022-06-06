@@ -10,7 +10,7 @@ RUN curl -L https://github.com/dominikh/go-tools/releases/download/2021.1.2/stat
 # Download specific version of gosec
 RUN curl -L https://github.com/securego/gosec/releases/download/v2.9.5/gosec_2.9.5_linux_amd64.tar.gz | tar xz
 
-# Install RHEL 8 utilties to /mnt/rootfs
+# Install RHEL 8 utilities to /mnt/rootfs
 RUN yum install --installroot /mnt/rootfs \
     coreutils-single glibc-minimal-langpack \
     make go git-core \
@@ -33,7 +33,7 @@ FROM scratch
 # Add desired Stage 2 container labels
 # Author field for generated container images
 LABEL maintainer="Red Hat, Inc."
-# RedHat Bugzilla component naem to file bugs against this container
+# RedHat Bugzilla component name to file bugs against this container
 LABEL com.redhat.component="ubi8-micro-container"
 
 # label for EULA
@@ -46,9 +46,9 @@ LABEL description="The edge-api project is an API server for fleet edge manageme
 # Label for container name displayed in Kubernetes/OpenShift for Stage 2 container
 LABEL io.k8s.display-name="edge-api-micro-testing"
 
-# Copy /mnt/rootfs contents over to Stage 2 container
+# Copy /mnt/rootfs contents over from Stage 1 to Stage 2 container
 COPY --from=builder /mnt/rootfs/ /
-# Copy ubi repository over to Stage 2 container
+# Copy ubi repository over from Stage 1 to Stage 2 container
 COPY --from=builder /etc/yum.repos.d/ubi.repo /etc/yum.repos.d/ubi.repo
 
 # If edge-api directory doesn't exist, clone it to Stage 2 container
