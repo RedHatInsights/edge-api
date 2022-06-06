@@ -160,7 +160,7 @@ func DeviceGroupCtx(next http.Handler) http.Handler {
 				return
 			}
 			orgID, err := common.GetOrgID(r)
-			if err != nil || deviceGroup.OrgID != orgID {
+			if err != nil || (deviceGroup.Account != account && deviceGroup.OrgID != orgID) {
 				ctxServices.Log.WithFields(log.Fields{
 					"error": err.Error(),
 					"orgID": orgID,
