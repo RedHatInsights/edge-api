@@ -172,7 +172,6 @@ func main() {
 			log.WithField("Error", err).Error("Unleash client failed to initialize")
 		} else {
 			log.WithField("FeatureFlagURL", cfg.UnleashURL).Info("Unleash client initialized successfully")
-			log.WithField("FeatureFlagToken", cfg.UnleashSecretName).Info("Unleash client initialized successfully")
 		}
 	} else {
 		log.WithField("FeatureFlagURL", cfg.UnleashURL).Warning("FeatureFlag service initialization was skipped.")
