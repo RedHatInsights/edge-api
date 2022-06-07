@@ -23,3 +23,4 @@ What is it?
 - [ ] I run `go fmt ./...` to check that my code is properly formatted
 - [ ] I run `go vet ./...` to check that my code is free of common Go style mistakes
 - [ ] I run `make lint` to prints out coding style mistakes and fix them
+- [ ] I run `make test-no-fdo` to check all tests passed (beside fdo)
