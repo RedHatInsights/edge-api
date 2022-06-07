@@ -8,12 +8,14 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -131,12 +133,15 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := thirdPartyRepoFilters(r, db.DB).Model(&models.ThirdPartyRepo{}).Where("account = ?", account)
 
-	// Check to see if feature is enabled
-	// enabled := feature.CheckFeatureWithAccount(account, feature.FeatureCustomRepos)
-	// if !enabled {
-	// 	respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable("Feature not available"))
-	// 	return
-	// }
+	// Check to see if feature is enabled and not in ephemeral
+	cfg := config.Get()
+	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
+		enabled := feature.CheckFeatureWithAccount(account, feature.FeatureCustomRepos)
+		if !enabled {
+			respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable("Feature not available"))
+			return
+		}
+	}
 
 	pagination := common.GetPagination(r)
 

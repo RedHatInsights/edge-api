@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/spf13/viper"
@@ -142,6 +143,9 @@ func Init() {
 	} else {
 		options.SetDefault("FeatureFlagsUrl", os.Getenv("UNLEASH_URL"))
 		options.SetDefault("FeatureFlagsAPIToken", os.Getenv("UNLEASH_TOKEN"))
+		token := fmt.Sprintf("Bearer %s", options.GetString("UNLEASH_TOKEN"))
+		options.SetDefault("FeatureFlagsBearerToken", token)
+
 	}
 
 	options.SetDefault("FeatureFlagsService", os.Getenv("FEATURE_FLAGS_SERVICE"))
@@ -150,6 +154,11 @@ func Init() {
 		options.SetDefault("FeatureFlagsEnvironment", "production")
 	} else {
 		options.SetDefault("FeatureFlagsEnvironment", "development")
+	}
+
+	// check to see if you are running in ephemeral, the unleash server in ephemeral is empty
+	if strings.Contains(options.GetString("FeatureFlagsUrl"), "ephemeral") {
+		options.SetDefault("FeatureFlagsEnvironment", "ephemeral")
 	}
 
 	config = &EdgeConfig{
@@ -186,7 +195,7 @@ func Init() {
 		},
 		Local:                   options.GetBool("Local"),
 		UnleashURL:              options.GetString("FeatureFlagsUrl"),
-		UnleashSecretName:       options.GetString("FeatureFlagsAPIToken"),
+		UnleashSecretName:       options.GetString("FeatureFlagsBearerToken"),
 		FeatureFlagsEnvironment: options.GetString("FeatureFlagsEnvironment"),
 		FeatureFlagsURL:         options.GetString("FeatureFlagsUrl"),
 		FeatureFlagsAPIToken:    options.GetString("FeatureFlagsAPIToken"),
