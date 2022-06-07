@@ -3,7 +3,6 @@ package services_test
 import (
 	"context"
 	"fmt"
-
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -684,6 +683,34 @@ var _ = Describe("Image Service Test", func() {
 				// image is not created
 				Expect(image.ID).To(Equal(uint(0)))
 				Expect(image.ImageSetID).To(BeNil())
+			})
+		})
+	})
+	Describe("Create image when using validateImagePackage", func() {
+		account := faker.UUIDHyphenated()
+		orgID := faker.UUIDHyphenated()
+		requestID := faker.UUIDHyphenated()
+		imageName := faker.UUIDHyphenated()
+		arch := &models.Commit{Arch: "x86_64"}
+		dist := "rhel-85"
+		pkgs := []models.Package{
+			{
+				Name: "vim",
+			},
+		}
+		image := models.Image{Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
+		expectedErr := fmt.Errorf("failed to validate package for image")
+		When("When image-builder validateImagePackage fail", func() {
+			It("imageSet is created", func() {
+				//	mockImageBuilderClient.EXPECT().SearchPackage(image.Packages[0].Name, image.Commit.Arch, image.Distribution).Return(imagebuilder.SearchPackageResult{} , expectedErr)
+				err := service.CreateImage(&image, account, orgID, requestID)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal(expectedErr.Error()))
+				// image is not created
+				Expect(image.ID).To(Equal(uint(0)))
+				// But imageSet is Created
+				Expect(image.ImageSetID).ToNot(BeNil())
+				Expect(*image.ImageSetID > 0).To(BeTrue())
 			})
 		})
 	})

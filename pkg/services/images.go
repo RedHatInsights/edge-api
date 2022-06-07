@@ -60,6 +60,7 @@ type ImageServiceInterface interface {
 	GetRollbackImage(image *models.Image) (*models.Image, error)
 	SendImageNotification(image *models.Image) (ImageNotification, error)
 	SetDevicesUpdateAvailabilityFromImageSet(account string, ImageSetID uint) error
+	ValidateImagePackage(pack string, image *models.Image) error
 }
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
@@ -168,7 +169,7 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 	packages := image.Packages
 	// we now need to loop this request for each package
 	for _, p := range packages {
-		er := validateImagePackage(p.Name, image)
+		er := s.ValidateImagePackage(p.Name, image)
 		if er != nil {
 			return er
 		}
@@ -233,15 +234,12 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 	return nil
 }
 
-// validateImagePackage validate package name on Image Builder
-func validateImagePackage(pack string, image *models.Image) error {
-	if pack == "" {
-		return new(PackageNameDoesNotExist)
-	}
+// ValidateImagePackage validate package name on Image Builder
+func (s *ImageService) ValidateImagePackage(pack string, image *models.Image) error {
 	arch := image.Commit.Arch
 	dist := image.Distribution
-	ib := imagebuilder.Client{}
-	res, err := ib.SearchPackage(pack, arch, dist)
+	d := imagebuilder.Client{}
+	res, err := d.SearchPackage(pack, arch, dist)
 	if err != nil {
 		return err
 	}
