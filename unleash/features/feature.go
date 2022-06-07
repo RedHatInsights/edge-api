@@ -13,5 +13,5 @@ func CheckFeatureWithAccount(account string, feature string) bool {
 	unleashCtx := unleashCTX.Context{
 		UserId: account,
 	}
-	return unleash.IsEnabled("fleet-management.custom-repos", unleash.WithContext(unleashCtx))
+	return unleash.IsEnabled(feature, unleash.WithContext(unleashCtx))
 }

@@ -1,14 +1,13 @@
 module github.com/redhatinsights/edge-api
 
 require (
-	github.com/PuerkitoBio/purell v1.1.1 // indirect
-	github.com/Unleash/unleash-client-go/v3 v3.5.0 // indirect
-	github.com/aws/aws-sdk-go v1.44.24
+	github.com/Unleash/unleash-client-go/v3 v3.5.0
+	github.com/aws/aws-sdk-go v1.44.27
 	github.com/bxcodec/faker/v3 v3.8.0
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/confluentinc/confluent-kafka-go v1.8.2
 	github.com/fedora-iot/fido-device-onboard-rs/libfdo-data-go v0.0.0-20211210154920-5c241beb5c4e
-	github.com/getkin/kin-openapi v0.95.0
+	github.com/getkin/kin-openapi v0.96.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-openapi/runtime v0.24.1
@@ -22,7 +21,7 @@ require (
 	github.com/prometheus/client_golang v1.12.2
 	github.com/redhatinsights/app-common-go v1.6.2
 	github.com/redhatinsights/platform-go-middlewares v0.17.0
-	github.com/segmentio/kafka-go v0.4.31
+	github.com/segmentio/kafka-go v0.4.32
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.12.0
 	gopkg.in/confluentinc/confluent-kafka-go.v1 v1.8.2

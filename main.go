@@ -125,13 +125,25 @@ func serveWeb(cfg *config.EdgeConfig, consumers []services.ConsumerService) *htt
 
 func gracefulTermination(server *http.Server, serviceName string) {
 	log.Infof("%s service stopped", serviceName)
-	unleash.Close()
+	if featureFlagsConfigPresent() {
+		unleash.Close()
+	}
 	ctxShutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second) // 5 seconds for graceful shutdown
 	defer cancel()
 	if err := server.Shutdown(ctxShutdown); err != nil {
 		l.LogErrorAndPanic(fmt.Sprintf("%s service shutdown failed", serviceName), err)
 	}
 	log.Infof("%s service shutdown complete", serviceName)
+}
+
+func featureFlagsConfigPresent() bool {
+	conf := config.Get()
+	return conf.FeatureFlagsURL != ""
+}
+
+func featureFlagsServiceUnleash() bool {
+	conf := config.Get()
+	return conf.FeatureFlagsService == "unleash"
 }
 
 func main() {
@@ -147,16 +159,23 @@ func main() {
 	_ = json.Unmarshal(cfgBytes, &configValues)
 	log.WithFields(configValues).Info("Configuration Values")
 
-	err := unleash.Initialize(
-		unleash.WithListener(&unleash.DebugListener{}),
-		unleash.WithAppName("edge-api"),
-		unleash.WithUrl(cfg.UnleashURL),
-		unleash.WithRefreshInterval(5*time.Second),
-		unleash.WithMetricsInterval(5*time.Second),
-		unleash.WithCustomHeaders(http.Header{"Authorization": {"Bearer " + cfg.UnleashSecretName}}),
-	)
-	if err != nil {
-		l.LogErrorAndPanic("Unleash client failed to initialized", err)
+	if featureFlagsConfigPresent() {
+		err := unleash.Initialize(
+			unleash.WithListener(&unleash.DebugListener{}),
+			unleash.WithAppName("edge-api"),
+			unleash.WithUrl(cfg.UnleashURL),
+			unleash.WithRefreshInterval(5*time.Second),
+			unleash.WithMetricsInterval(5*time.Second),
+			unleash.WithCustomHeaders(http.Header{"Authorization": {"Bearer " + cfg.UnleashSecretName}}),
+		)
+		if err != nil {
+			//l.LogErrorAndPanic("Unleash client failed to initialized", err)
+			log.WithField("Error", err).Error("Unleash client failed to initialize")
+		} else {
+			log.WithField("FeatureFlagURL", cfg.UnleashURL).Info("Unleash client initialized successfully")
+		}
+	} else {
+		log.WithField("FeatureFlagURL", cfg.UnleashURL).Warning("FeatureFlag service initialization was skipped.")
 	}
 
 	consumers := []services.ConsumerService{

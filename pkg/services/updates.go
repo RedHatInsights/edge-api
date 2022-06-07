@@ -70,6 +70,7 @@ type playbooks struct {
 	FleetInfraEnv        string
 	UpdateNumber         string
 	RepoURL              string
+	BucketRegion         string
 }
 
 // TemplateRemoteInfo the values to playbook
@@ -246,11 +247,13 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, account s
 	} else {
 		envName = "dev"
 	}
+
 	templateData := playbooks{
 		GoTemplateRemoteName: templateInfo.RemoteName,
 		FleetInfraEnv:        envName,
+		BucketRegion:         cfg.BucketRegion,
 		UpdateNumber:         strconv.FormatUint(uint64(templateInfo.UpdateTransactionID), 10),
-		RepoURL:              "https://{{ s3_buckets[fleet_infra_env] | default('rh-edge-tarballs-prod') }}.s3.us-east-1.amazonaws.com/{{ update_number }}/upd/{{ update_number }}/repo",
+		RepoURL:              "https://{{ s3_buckets[fleet_infra_env] | default('rh-edge-tarballs-stage') }}.s3.{{ s3_region | default('us-east-1') }}.amazonaws.com/{{ update_number }}/upd/{{ update_number }}/repo",
 	}
 
 	fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", account, templateInfo.UpdateTransactionID)
