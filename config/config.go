@@ -143,8 +143,7 @@ func Init() {
 	} else {
 		options.SetDefault("FeatureFlagsUrl", os.Getenv("UNLEASH_URL"))
 		options.SetDefault("FeatureFlagsAPIToken", os.Getenv("UNLEASH_TOKEN"))
-		token := fmt.Sprintf("Bearer %s", options.GetString("UNLEASH_TOKEN"))
-		options.SetDefault("FeatureFlagsBearerToken", token)
+		options.SetDefault("FeatureFlagsBearerToken", options.GetString("UNLEASH_TOKEN"))
 
 	}
 
