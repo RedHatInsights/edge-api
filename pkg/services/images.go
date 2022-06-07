@@ -242,20 +242,19 @@ func validateImagePackage(pack string, image *models.Image) error {
 	dist := image.Distribution
 	ib := imagebuilder.Client{}
 	res, err := ib.SearchPackage(pack, arch, dist)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	if res.Meta.Count == 0 {
 		return new(PackageNameDoesNotExist)
 	}
-	for _,pkg := range res.Data {
+	for _, pkg := range res.Data {
 		if pkg.Name == pack {
 			return nil
 		}
 	}
 	return new(PackageNameDoesNotExist)
 }
-
 
 // UpdateImage updates an image, adding a new version of this image to an imageset
 func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Image) error {
