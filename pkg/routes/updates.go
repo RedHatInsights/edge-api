@@ -157,7 +157,11 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 		// errors handled by readAccount
 		return nil
 	}
-
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		// logs and response handled by read orgID
+		return nil
+	}
 	var devicesUpdate models.DevicesUpdate
 	if err := readRequestJSONBody(w, r, ctxServices.Log, &devicesUpdate); err != nil {
 		return nil
@@ -194,7 +198,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 		return nil
 	}
 	if devicesUpdate.CommitID == 0 {
-		commitID, err := ctxServices.DeviceService.GetLatestCommitFromDevices(account, devicesUUID)
+		commitID, err := ctxServices.DeviceService.GetLatestCommitFromDevices(account, orgID, devicesUUID)
 		if err != nil {
 			ctxServices.Log.WithFields(log.Fields{
 				"error": err.Error(),
