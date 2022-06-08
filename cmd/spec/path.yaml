@@ -1525,7 +1525,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/v1.UpdateTransaction"
+                type: array
+                items:
+                  $ref: '#/components/schemas/v1.UpdateTransaction'
           description: OK
         "400":
           content:
