@@ -663,7 +663,7 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	}
 	list := &models.DeviceViewList{
 		Devices: returnDevices,
-		Total:   len(storedDevices),
+		Total:   int64(len(storedDevices)),
 	}
 	return list, nil
 }

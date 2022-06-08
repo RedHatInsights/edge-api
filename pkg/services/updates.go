@@ -40,6 +40,7 @@ type UpdateServiceInterface interface {
 	SendDeviceNotification(update *models.UpdateTransaction) (ImageNotification, error)
 	UpdateDevicesFromUpdateTransaction(update models.UpdateTransaction) error
 	ValidateUpdateSelection(account string, imageIds []uint) (bool, error)
+	ValidateUpdateDeviceGroup(account string, deviceGroupID uint) (bool, error)
 }
 
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
@@ -558,6 +559,27 @@ func (s *UpdateService) ValidateUpdateSelection(account string, imageIds []uint)
 		Where(`id IN ? AND account = ?`,
 			imageIds, account,
 		).Group("image_set_id").Count(&count)
+	if result.Error != nil {
+		return false, result.Error
+	}
+
+	return count == 1, nil
+}
+
+// ValidateUpdateDeviceGroup validate the devices on device group for update
+func (s *UpdateService) ValidateUpdateDeviceGroup(account string, deviceGroupID uint) (bool, error) {
+	var count int64
+
+	result := db.DB.
+		Model(&models.DeviceGroup{}).
+		Where(`Device_Groups.id IN ? AND account = ?`,
+			deviceGroupID, account,
+		).
+		Joins(`JOIN Device_Groups_Devices ON Device_Groups.id = Device_Groups_Devices.device_group_id`).
+		Joins(`JOIN Devices ON Device_Groups_Devices.device_id = Devices.id`).
+		Where("Devices.image_id IS NOT NULL AND Devices.image_id != 0").
+		Joins(`JOIN Images ON Devices.image_id = Images.id`).
+		Group("Images.image_set_id").Count(&count)
 	if result.Error != nil {
 		return false, result.Error
 	}
