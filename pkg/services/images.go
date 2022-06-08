@@ -238,23 +238,22 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 func (s *ImageService) ValidateImagePackage(pack string, image *models.Image) error {
 	arch := image.Commit.Arch
 	dist := image.Distribution
-	res, err := s.ImageBuilder.SearchPackage(pack, arch, dist)
-	if err != nil {
-		return err
+	if arch == "" {
+		return errors.NewBadRequest("value is not one of the allowed values")
 	}
-	if res.Meta.Count == 0 {
+	res, err := s.ImageBuilder.SearchPackage(pack, arch, dist)
+	if res.Meta.Count != 1 {
 		return new(PackageNameDoesNotExist)
 	}
+	for _, pkg := range res.Data {
+		if pkg.Name != pack {
+			return new(PackageNameDoesNotExist)
+		}
+	}
 	if err != nil {
 		return err
 	}
-
-	for _, pkg := range res.Data {
-		if pkg.Name == pack {
-			return nil
-		}
-	}
-	return new(PackageNameDoesNotExist)
+	return nil
 }
 
 // UpdateImage updates an image, adding a new version of this image to an imageset
