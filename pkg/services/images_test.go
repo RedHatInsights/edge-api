@@ -7,6 +7,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	imageBuilderClient "github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder/mock_imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -695,22 +696,21 @@ var _ = Describe("Image Service Test", func() {
 		dist := "rhel-85"
 		pkgs := []models.Package{
 			{
-				Name: "vim",
+				Name: "badrpm",
 			},
 		}
 		image := models.Image{Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
 		expectedErr := fmt.Errorf("failed to validate package for image")
 		When("When image-builder validateImagePackage fail", func() {
 			It("imageSet is created", func() {
-				//	mockImageBuilderClient.EXPECT().SearchPackage(image.Packages[0].Name, image.Commit.Arch, image.Distribution).Return(imagebuilder.SearchPackageResult{} , expectedErr)
-				err := service.CreateImage(&image, account, orgID, requestID)
+				mockImageBuilderClient.EXPECT().SearchPackage("badrpm","x86_64", "rhel-85").Return(&imageBuilderClient.SearchPackageResult{} , expectedErr)
+				err := service.CreateImage(&image,account, orgID, requestID)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
 				// image is not created
 				Expect(image.ID).To(Equal(uint(0)))
-				// But imageSet is Created
-				Expect(image.ImageSetID).ToNot(BeNil())
-				Expect(*image.ImageSetID > 0).To(BeTrue())
+				// But imageSet is not Created
+				Expect(image.ImageSetID).To(BeNil())
 			})
 		})
 	})

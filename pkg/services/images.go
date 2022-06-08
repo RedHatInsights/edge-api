@@ -238,14 +238,17 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 func (s *ImageService) ValidateImagePackage(pack string, image *models.Image) error {
 	arch := image.Commit.Arch
 	dist := image.Distribution
-	d := imagebuilder.Client{}
-	res, err := d.SearchPackage(pack, arch, dist)
+	res, err := s.ImageBuilder.SearchPackage(pack, arch, dist)
 	if err != nil {
 		return err
 	}
 	if res.Meta.Count == 0 {
 		return new(PackageNameDoesNotExist)
 	}
+	if err != nil {
+		return err
+	}
+
 	for _, pkg := range res.Data {
 		if pkg.Name == pack {
 			return nil
