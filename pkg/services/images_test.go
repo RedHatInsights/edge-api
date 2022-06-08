@@ -687,7 +687,7 @@ var _ = Describe("Image Service Test", func() {
 			})
 		})
 	})
-	Describe("Create image when using validateImagePackage", func() {
+	Describe("Try to create image when using invalid package name", func() {
 		account := faker.UUIDHyphenated()
 		orgID := faker.UUIDHyphenated()
 		requestID := faker.UUIDHyphenated()
@@ -700,10 +700,41 @@ var _ = Describe("Image Service Test", func() {
 			},
 		}
 		image := models.Image{Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
-		expectedErr := fmt.Errorf("failed to validate package for image")
-		When("When image-builder validateImagePackage fail", func() {
-			It("imageSet is created", func() {
-				mockImageBuilderClient.EXPECT().SearchPackage("badrpm","x86_64", "rhel-85").Return(&imageBuilderClient.SearchPackageResult{} , expectedErr)
+		expectedErr := fmt.Errorf("package name doesn't exist")
+		imageBuilder := &imageBuilderClient.SearchPackageResult{}
+		imageBuilder.Meta.Count = 0
+		When("When image-builder SearchPackage fail", func() {
+			It("image does not create because invalid package name", func() {
+				mockImageBuilderClient.EXPECT().SearchPackage("badrpm","x86_64", "rhel-85").Return(imageBuilder , expectedErr)
+				err := service.CreateImage(&image,account, orgID, requestID)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal(expectedErr.Error()))
+				// image is not created
+				Expect(image.ID).To(Equal(uint(0)))
+				// But imageSet is not Created
+				Expect(image.ImageSetID).To(BeNil())
+			})
+		})
+	})
+	Describe("Try to create image when using empty architecture", func() {
+		account := faker.UUIDHyphenated()
+		orgID := faker.UUIDHyphenated()
+		requestID := faker.UUIDHyphenated()
+		imageName := faker.UUIDHyphenated()
+		arch := &models.Commit{Arch: ""}
+		dist := "rhel-85"
+		pkgs := []models.Package{
+			{
+				Name: "vim-common",
+			},
+		}
+		image := models.Image{Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
+		expectedErr := fmt.Errorf("value is not one of the allowed values")
+		imageBuilder := &imageBuilderClient.SearchPackageResult{}
+		imageBuilder.Meta.Count = 0
+		When("When image-builder SearchPackage fail", func() {
+			It("image does not create because empty architecture", func() {
+				mockImageBuilderClient.EXPECT().SearchPackage("vim-common","", "rhel-85").Return(imageBuilder , expectedErr)
 				err := service.CreateImage(&image,account, orgID, requestID)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
