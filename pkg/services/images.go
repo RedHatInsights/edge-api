@@ -235,25 +235,25 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 }
 
 // ValidateImagePackage validate package name on Image Builder
-func (s *ImageService) ValidateImagePackage(pack string, image *models.Image) error {
+func (s *ImageService) ValidateImagePackage(packageName string, image *models.Image) error {
 	arch := image.Commit.Arch
 	dist := image.Distribution
-	if arch == "" {
+	if arch == "" || dist == "" {
 		return errors.NewBadRequest("value is not one of the allowed values")
 	}
-	res, err := s.ImageBuilder.SearchPackage(pack, arch, dist)
-	if res.Meta.Count != 1 {
-		return new(PackageNameDoesNotExist)
-	}
-	for _, pkg := range res.Data {
-		if pkg.Name != pack {
-			return new(PackageNameDoesNotExist)
-		}
-	}
+	res, err := s.ImageBuilder.SearchPackage(packageName, arch, dist)
 	if err != nil {
 		return err
 	}
-	return nil
+	if res.Meta.Count == 0 {
+		return new(PackageNameDoesNotExist)
+	}
+	for _, pkg := range res.Data {
+		if pkg.Name == packageName {
+			return nil
+		}
+	}
+	return new(PackageNameDoesNotExist)
 }
 
 // UpdateImage updates an image, adding a new version of this image to an imageset
