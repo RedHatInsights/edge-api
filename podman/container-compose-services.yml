@@ -1,0 +1,33 @@
+version: '2'
+
+# For local dev use during microservice dev
+# before use (from edge-api root)...
+#   export DEVDIR=$PWD
+#
+# to use (from edge-api root)...
+#   podman-compose -f podman/container-compose-services.yml up -d
+#   podman ps
+#   podman logs -f edge-api_edge-api-images-build_1
+#   podman-compose -f podman/container-compose-services.yml down
+#
+services:
+    edge-api-images-build:
+      image: localhost/edge-api:localdev
+      restart: unless-stopped
+      volumes:
+        - $DEVDIR:/opt/app-root/src:z
+      command: go run /opt/app-root/src/pkg/services/images_build/main.go
+
+    edge-api-images-iso:
+      image: localhost/edge-api:localdev
+      restart: unless-stopped
+      volumes:
+        - $DEVDIR:/opt/app-root/src:z
+      command: go run /opt/app-root/src/pkg/services/images_iso/main.go
+
+    edge-api-images-status:
+      image: localhost/edge-api:localdev
+      restart: unless-stopped
+      volumes:
+        - $DEVDIR:/opt/app-root/src:z
+      command: go run /opt/app-root/src/pkg/services/images_status/main.go
