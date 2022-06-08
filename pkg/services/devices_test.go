@@ -591,10 +591,11 @@ var _ = Describe("DeviceService", func() {
 	})
 	Context("ProcessPlatformInventoryCreateEvent", func() {
 		account := faker.UUIDHyphenated()
-		commit := models.Commit{Account: account, OSTreeCommit: faker.UUIDHyphenated()}
+		orgID := faker.UUIDHyphenated()
+		commit := models.Commit{Account: account, OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}
 		result := db.DB.Create(&commit)
 		Expect(result.Error).To(BeNil())
-		image := models.Image{Account: account, CommitID: commit.ID, Status: models.ImageStatusSuccess}
+		image := models.Image{Account: account, OrgID: orgID, CommitID: commit.ID, Status: models.ImageStatusSuccess}
 		result = db.DB.Create(&image)
 		Expect(result.Error).To(BeNil())
 
@@ -603,6 +604,7 @@ var _ = Describe("DeviceService", func() {
 		event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
 		event.Host.ID = faker.UUIDHyphenated()
 		event.Host.Account = account
+		event.Host.OrgID = orgID
 		event.Host.Name = faker.UUIDHyphenated()
 		event.Host.Updated = models.EdgeAPITime(sql.NullTime{Time: time.Now().UTC(), Valid: true})
 		event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
@@ -618,6 +620,7 @@ var _ = Describe("DeviceService", func() {
 			Expect(result.Error).To(BeNil())
 			Expect(savedDevice.UUID).To(Equal(event.Host.ID))
 			Expect(savedDevice.Account).To(Equal(account))
+			Expect(savedDevice.OrgID).To(Equal(orgID))
 			Expect(savedDevice.ImageID).To(Equal(image.ID))
 			Expect(savedDevice.LastSeen.Time).To(Equal(event.Host.Updated.Time))
 			Expect(savedDevice.Name).To(Equal(event.Host.Name))
@@ -626,13 +629,14 @@ var _ = Describe("DeviceService", func() {
 	})
 	Context("ProcessPlatformInventoryUpdatedEvent", func() {
 		account := faker.UUIDHyphenated()
-		commit := models.Commit{Account: account, OSTreeCommit: faker.UUIDHyphenated()}
+		orgID := faker.UUIDHyphenated()
+		commit := models.Commit{Account: account, OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}
 		result := db.DB.Create(&commit)
 		Expect(result.Error).To(BeNil())
-		imageSet := models.ImageSet{Name: faker.UUIDHyphenated(), Account: account}
+		imageSet := models.ImageSet{Name: faker.UUIDHyphenated(), Account: account, OrgID: orgID}
 		result = db.DB.Create(&imageSet)
 		Expect(result.Error).To(BeNil())
-		image := models.Image{Account: account, CommitID: commit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
+		image := models.Image{Account: account, OrgID: orgID, CommitID: commit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
 		result = db.DB.Create(&image)
 		Expect(result.Error).To(BeNil())
 
@@ -642,6 +646,7 @@ var _ = Describe("DeviceService", func() {
 			event.Host.ID = faker.UUIDHyphenated()
 			event.Host.InsightsID = faker.UUIDHyphenated()
 			event.Host.Account = account
+			event.Host.OrgID = orgID
 			event.Host.Name = faker.UUIDHyphenated()
 			event.Host.Updated = models.EdgeAPITime(sql.NullTime{Time: time.Now().UTC(), Valid: true})
 			event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
@@ -657,6 +662,7 @@ var _ = Describe("DeviceService", func() {
 			res := db.DB.Where("uuid = ?", event.Host.ID).First(&device)
 			Expect(res.Error).To(BeNil())
 			Expect(device.Account).To(Equal(account))
+			Expect(device.OrgID).To(Equal(orgID))
 			Expect(device.RHCClientID).To(Equal(event.Host.SystemProfile.RHCClientID))
 			Expect(device.ImageID).To(Equal(image.ID))
 			Expect(device.UpdateAvailable).To(Equal(false))
@@ -665,7 +671,7 @@ var _ = Describe("DeviceService", func() {
 		})
 
 		It("should update device account, name, lastSeen, image_id and update availability when device already exists", func() {
-			// create a device without account
+			// create a device without account/org
 			device := models.Device{
 				UUID:            faker.UUIDHyphenated(),
 				UpdateAvailable: true,
@@ -678,6 +684,7 @@ var _ = Describe("DeviceService", func() {
 			event.Host.ID = device.UUID
 			event.Host.InsightsID = faker.UUIDHyphenated()
 			event.Host.Account = account
+			event.Host.OrgID = orgID
 			event.Host.Name = faker.UUIDHyphenated()
 			event.Host.Updated = models.EdgeAPITime(sql.NullTime{Time: time.Now().UTC(), Valid: true})
 			event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
@@ -693,6 +700,7 @@ var _ = Describe("DeviceService", func() {
 			res = db.DB.Where("uuid = ?", device.UUID).First(&savedDevice)
 			Expect(res.Error).To(BeNil())
 			Expect(savedDevice.Account).To(Equal(account))
+			Expect(savedDevice.OrgID).To(Equal(orgID))
 			Expect(savedDevice.ImageID).To(Equal(image.ID))
 			Expect(savedDevice.UpdateAvailable).To(Equal(false))
 			Expect(savedDevice.RHCClientID).To(Equal(event.Host.SystemProfile.RHCClientID))
@@ -705,6 +713,7 @@ var _ = Describe("DeviceService", func() {
 				UUID:            faker.UUIDHyphenated(),
 				RHCClientID:     faker.UUIDHyphenated(),
 				Account:         account,
+				OrgID:           orgID,
 				ImageID:         image.ID,
 				UpdateAvailable: false,
 			}
@@ -716,6 +725,7 @@ var _ = Describe("DeviceService", func() {
 			event.Host.ID = device.UUID
 			event.Host.InsightsID = device.RHCClientID
 			event.Host.Account = account
+			event.Host.OrgID = orgID
 			event.Host.Name = faker.UUIDHyphenated()
 			event.Host.Updated = models.EdgeAPITime(sql.NullTime{Time: time.Now().UTC(), Valid: true})
 			event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
@@ -724,7 +734,7 @@ var _ = Describe("DeviceService", func() {
 			Expect(err).To(BeNil())
 
 			It("should not set update available when an image update failed", func() {
-				newImage := models.Image{Account: account, ImageSetID: &imageSet.ID, Status: models.ImageStatusError}
+				newImage := models.Image{Account: account, OrgID: orgID, ImageSetID: &imageSet.ID, Status: models.ImageStatusError}
 				result = db.DB.Create(&newImage)
 				Expect(result.Error).To(BeNil())
 
@@ -735,12 +745,13 @@ var _ = Describe("DeviceService", func() {
 				res = db.DB.Where("uuid = ?", device.UUID).First(&savedDevice)
 				Expect(res.Error).To(BeNil())
 				Expect(savedDevice.Account).To(Equal(account))
+				Expect(savedDevice.OrgID).To(Equal(orgID))
 				Expect(savedDevice.ImageID).To(Equal(image.ID))
 				Expect(savedDevice.UpdateAvailable).To(Equal(false))
 			})
 
 			It("should set update available when an image is updated successfully", func() {
-				newImage := models.Image{Account: account, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
+				newImage := models.Image{Account: account, OrgID: orgID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
 				result = db.DB.Create(&newImage)
 				Expect(result.Error).To(BeNil())
 
@@ -751,6 +762,7 @@ var _ = Describe("DeviceService", func() {
 				res = db.DB.Where("uuid = ?", device.UUID).First(&savedDevice)
 				Expect(res.Error).To(BeNil())
 				Expect(savedDevice.Account).To(Equal(account))
+				Expect(savedDevice.OrgID).To(Equal(orgID))
 				Expect(savedDevice.ImageID).To(Equal(image.ID))
 				Expect(savedDevice.UpdateAvailable).To(Equal(true))
 			})
@@ -765,17 +777,18 @@ var _ = Describe("DeviceService", func() {
 			event.Type = services.InventoryEventTypeDelete
 			event.ID = faker.UUIDHyphenated()
 			event.Account = faker.UUIDHyphenated()
+			event.OrgID = faker.UUIDHyphenated()
 			message, err := json.Marshal(event)
 			Expect(err).To(BeNil())
 
 			// create a device
-			device := models.Device{UUID: event.ID, Account: event.Account}
+			device := models.Device{UUID: event.ID, Account: event.Account, OrgID: event.OrgID}
 			result := db.DB.Create(&device)
 			Expect(result.Error).To(BeNil())
 
 			// ensure device created
 			var deviceCount int64
-			db.DB.Model(&models.Device{}).Where(models.Device{UUID: event.ID, Account: event.Account}).Count(&deviceCount)
+			db.DB.Model(&models.Device{}).Where("uuid = ? AND (account = ? OR org_id = ?)", event.ID, event.Account, event.OrgID).Count(&deviceCount)
 			Expect(deviceCount == 1).To(BeTrue())
 
 			// call the platform inventory delete event processor
@@ -783,7 +796,7 @@ var _ = Describe("DeviceService", func() {
 			Expect(err).To(BeNil())
 
 			// ensure device does not exits
-			db.DB.Model(&models.Device{}).Where(models.Device{UUID: event.ID, Account: event.Account}).Count(&deviceCount)
+			db.DB.Model(&models.Device{}).Where("uuid = ? AND (account = ? OR org_id = ?)", event.ID, event.Account, event.OrgID).Count(&deviceCount)
 			Expect(deviceCount == 0).To(BeTrue())
 		})
 
@@ -793,29 +806,30 @@ var _ = Describe("DeviceService", func() {
 			event.Type = services.InventoryEventTypeDelete
 			event.ID = faker.UUIDHyphenated()
 			event.Account = faker.UUIDHyphenated()
+			event.OrgID = faker.UUIDHyphenated()
 			message, err := json.Marshal(event)
 			Expect(err).To(BeNil())
 
 			// create a device
-			device := models.Device{UUID: event.ID, Account: event.Account}
+			device := models.Device{UUID: event.ID, Account: event.Account, OrgID: event.OrgID}
 			result := db.DB.Create(&device)
 			Expect(result.Error).To(BeNil())
 
 			// ensure the device exists
 			var deviceCount int64
-			result = db.DB.Model(&models.Device{}).Where(models.Device{UUID: event.ID, Account: event.Account}).Count(&deviceCount)
+			result = db.DB.Model(&models.Device{}).Where("uuid = ? AND (account = ? OR org_id = ?)", event.ID, event.Account, event.OrgID).Count(&deviceCount)
 			Expect(result.Error).To(BeNil())
 			Expect(deviceCount == 1).To(BeTrue())
 			// create a device group with device
 			deviceGroup := models.DeviceGroup{
-				Type: models.DeviceGroupTypeDefault, Account: event.Account, Name: faker.UUIDHyphenated(),
+				Type: models.DeviceGroupTypeDefault, Account: event.Account, OrgID: event.OrgID, Name: faker.UUIDHyphenated(),
 				Devices: []models.Device{device},
 			}
 			result = db.DB.Create(&deviceGroup)
 			Expect(result.Error).To(BeNil())
 			// ensure device group created with device included
 			var savedDeviceGroup models.DeviceGroup
-			result = db.DB.Where(models.DeviceGroup{Account: deviceGroup.Account}).Preload("Devices").First(&savedDeviceGroup, deviceGroup.ID)
+			result = db.DB.Where("(account = ? OR org_id = ?)", deviceGroup.Account, deviceGroup.OrgID).Preload("Devices").First(&savedDeviceGroup, deviceGroup.ID)
 			Expect(result.Error).To(BeNil())
 			Expect(savedDeviceGroup.Devices).NotTo(BeEmpty())
 			Expect(savedDeviceGroup.Devices[0].ID == device.ID).To(BeTrue())
@@ -825,12 +839,12 @@ var _ = Describe("DeviceService", func() {
 			Expect(err).To(BeNil())
 
 			// ensure device does not exits
-			result = db.DB.Model(&models.Device{}).Where(models.Device{UUID: event.ID, Account: event.Account}).Count(&deviceCount)
+			result = db.DB.Model(&models.Device{}).Where("(account = ? OR org_id = ?) AND uuid = ?", event.Account, event.OrgID, event.ID).Count(&deviceCount)
 			Expect(result.Error).To(BeNil())
 			Expect(deviceCount == 0).To(BeTrue())
 
 			// ensure device does not exists in device group
-			result = db.DB.Where(models.DeviceGroup{Account: deviceGroup.Account}).Preload("Devices").First(&savedDeviceGroup, deviceGroup.ID)
+			result = db.DB.Where("(account = ? OR org_id = ?)", event.Account, event.OrgID).Preload("Devices").First(&savedDeviceGroup, deviceGroup.ID)
 			Expect(result.Error).To(BeNil())
 			Expect(savedDeviceGroup.Devices).To(BeEmpty())
 		})
@@ -839,12 +853,14 @@ var _ = Describe("DeviceService", func() {
 		When("devices are returned from the db", func() {
 			It("should return devices", func() {
 				account := common.DefaultAccount
+				orgID := common.DefaultOrgID
 				var imageV1 *models.Image
 
 				imageSet := &models.ImageSet{
 					Name:    "test",
 					Version: 2,
 					Account: account,
+					OrgID:   orgID,
 				}
 				result := db.DB.Create(imageSet)
 				Expect(result.Error).ToNot(HaveOccurred())
@@ -856,13 +872,14 @@ var _ = Describe("DeviceService", func() {
 					ImageSetID: &imageSet.ID,
 					Version:    1,
 					Account:    common.DefaultAccount,
+					OrgID:      common.DefaultOrgID,
 				}
 				result = db.DB.Create(imageV1.Commit)
 				Expect(result.Error).ToNot(HaveOccurred())
 				result = db.DB.Create(imageV1)
 				Expect(result.Error).ToNot(HaveOccurred())
 
-				deviceWithImage := models.Device{Account: account, ImageID: imageV1.ID}
+				deviceWithImage := models.Device{Account: account, OrgID: orgID, ImageID: imageV1.ID}
 
 				result = db.DB.Create(&deviceWithImage)
 				Expect(result.Error).To(BeNil())
@@ -881,13 +898,15 @@ var _ = Describe("DeviceService", func() {
 	Context("Get CommitID from Device Image", func() {
 		It("should return zero images", func() {
 			account := faker.UUIDHyphenated()
+			orgID := faker.UUIDHyphenated()
 			device := models.Device{
 				Account: account,
+				OrgID:   orgID,
 				UUID:    faker.UUIDHyphenated(),
 			}
 			db.DB.Create(&device)
 			devicesUUID := []string{device.UUID}
-			updateImageCommitID, err := deviceService.GetLatestCommitFromDevices(account, devicesUUID)
+			updateImageCommitID, err := deviceService.GetLatestCommitFromDevices(account, orgID, devicesUUID)
 			Expect(updateImageCommitID == 0).To(BeTrue())
 			Expect(err).To(MatchError(new(services.DeviceHasImageUndefined)))
 			Expect(err).ToNot(BeNil())
@@ -896,12 +915,14 @@ var _ = Describe("DeviceService", func() {
 	When("device Image does not have update", func() {
 		It("should return no image updates", func() {
 			account := faker.HyphenatedID
+			orgID := faker.HyphenatedID
 			imageSet := &models.ImageSet{
 				Name:    "test",
 				Version: 1,
 			}
 			updateImage := models.Image{
 				Account:    account,
+				OrgID:      orgID,
 				ImageSetID: &imageSet.ID,
 				Status:     models.ImageStatusSuccess,
 			}
@@ -909,7 +930,7 @@ var _ = Describe("DeviceService", func() {
 				UUID: faker.UUIDHyphenated(),
 			}
 			devicesUUID := []string{device.UUID}
-			updateImageCommitID, err := deviceService.GetLatestCommitFromDevices(updateImage.Account, devicesUUID)
+			updateImageCommitID, err := deviceService.GetLatestCommitFromDevices(updateImage.Account, orgID, devicesUUID)
 			Expect(updateImageCommitID == 0).To(BeTrue())
 			Expect(err).ToNot(BeNil())
 			Expect(err).To(MatchError(new(services.DeviceHasNoImageUpdate)))
@@ -918,18 +939,22 @@ var _ = Describe("DeviceService", func() {
 	When("device Image have update", func() {
 		It("should return commitID", func() {
 			account := faker.HyphenatedID
+			orgID := faker.HyphenatedID
 			imageSet := models.ImageSet{
 				Account: account,
+				OrgID:   orgID,
 			}
 			db.DB.Create(&imageSet)
 
 			firstCommit := models.Commit{
 				Account: account,
+				OrgID:   orgID,
 			}
 			db.DB.Create(&firstCommit)
 
 			firstImage := models.Image{
 				Account:    account,
+				OrgID:      orgID,
 				CommitID:   firstCommit.ID,
 				Status:     models.ImageStatusSuccess,
 				Version:    1,
@@ -938,16 +963,19 @@ var _ = Describe("DeviceService", func() {
 			db.DB.Create(&firstImage)
 			device := models.Device{
 				Account: account,
+				OrgID:   orgID,
 				ImageID: firstImage.ID,
 			}
 			db.DB.Create(&device)
 			secondCommit := models.Commit{
+				OrgID:   orgID,
 				Account: account,
 			}
 			db.DB.Create(&secondCommit)
 
 			secondImage := models.Image{
 				Account:    account,
+				OrgID:      orgID,
 				CommitID:   secondCommit.ID,
 				Status:     models.ImageStatusSuccess,
 				Version:    2,
@@ -956,7 +984,7 @@ var _ = Describe("DeviceService", func() {
 			devicesUUID := []string{device.UUID}
 
 			db.DB.Create(&secondImage)
-			updateImageCommitID, err := deviceService.GetLatestCommitFromDevices(device.Account, devicesUUID)
+			updateImageCommitID, err := deviceService.GetLatestCommitFromDevices(device.Account, orgID, devicesUUID)
 			Expect(err).To(BeNil())
 			Expect(updateImageCommitID).To(Equal(secondCommit.ID))
 		})

@@ -631,15 +631,14 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	}
 	ctxLog := ctxServices.Log.WithField("device_group_id", deviceGroup.ID)
 	ctxLog.Info("Updating all devices from group", deviceGroup.ID)
-
-	account, err := common.GetAccount(r)
-	if err != nil {
-		services.Log.WithFields(log.Fields{
-			"error":   err.Error(),
-			"account": account,
-		}).Error("Error retrieving account")
-		stterr := errors.NewInternalServerError()
-		w.WriteHeader(stterr.GetStatus())
+	account := readAccount(w, r, services.Log)
+	if account == "" {
+		// logs and response handled by read account
+		return
+	}
+	orgID := readOrgID(w, r, services.Log)
+	if orgID == "" {
+		// logs and response handled by read orgID
 		return
 	}
 	devices := deviceGroup.Devices
@@ -653,7 +652,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	devicesUpdate.DevicesUUID = setOfDeviceUUIDS
 	//validate if commit is valid before continue process
 	//should be created a new method to return the latest commit by imageId and be able to update regardless of imageset
-	commitID, err := services.DeviceService.GetLatestCommitFromDevices(account, setOfDeviceUUIDS)
+	commitID, err := services.DeviceService.GetLatestCommitFromDevices(account, orgID, setOfDeviceUUIDS)
 	if err != nil {
 		services.Log.WithFields(log.Fields{
 			"error":   err.Error(),

@@ -20,6 +20,16 @@ func readAccount(w http.ResponseWriter, r *http.Request, logEntry *log.Entry) st
 	return account
 }
 
+func readOrgID(w http.ResponseWriter, r *http.Request, logEntry *log.Entry) string {
+	orgID, err := common.GetOrgID(r)
+	if err != nil {
+		logEntry.WithField("error", err.Error()).Error("Error retrieving org_id")
+		respondWithAPIError(w, logEntry, errors.NewBadRequest(err.Error()))
+		return ""
+	}
+	return orgID
+}
+
 func respondWithAPIError(w http.ResponseWriter, logEntry *log.Entry, apiError errors.APIError) {
 	w.WriteHeader(apiError.GetStatus())
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
