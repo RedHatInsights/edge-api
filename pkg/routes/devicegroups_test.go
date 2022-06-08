@@ -610,6 +610,7 @@ var _ = Describe("DeviceGroup routes", func() {
 						Devices:  devices,
 					},
 				}
+				db.DB.Create(&updTransactions)
 				url := fmt.Sprintf("/%d/updateDevices", deviceGroup.ID)
 
 				req, err := http.NewRequest(http.MethodPost, url, nil)
