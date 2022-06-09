@@ -266,6 +266,13 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	if err != nil {
 		return errors.NewBadRequest("only the latest updated image can be modified")
 	}
+	packages := image.Packages
+	for _, p := range packages {
+		er := s.ValidateImagePackage(p.Name, image)
+		if er != nil {
+			return er
+		}
+	}
 	if err := ValidateAllImageReposAreFromAccount(previousImage.Account, image.ThirdPartyRepositories); err != nil {
 		return err
 	}
