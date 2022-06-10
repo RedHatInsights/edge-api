@@ -17,7 +17,7 @@ type DeviceGroup struct {
 	Name        string   `json:"Name"`
 	Type        string   `json:"Type" gorm:"default:static;<-:create"`
 	Devices     []Device `json:"Devices" gorm:"many2many:device_groups_devices;"`
-	ValidUpdate bool     `json:"ValidUpdate"`
+	ValidUpdate bool     `json:"ValidUpdate" gorm:"-:all"`
 }
 
 //DeviceGroupListDetail is a record of Edge Devices Groups with images and status information

@@ -572,7 +572,7 @@ func (s *UpdateService) ValidateUpdateDeviceGroup(account string, deviceGroupID 
 
 	result := db.DB.
 		Model(&models.DeviceGroup{}).
-		Where(`Device_Groups.id IN ? AND account = ?`,
+		Where(`Device_Groups.id = ? AND Device_Groups.account = ?`,
 			deviceGroupID, account,
 		).
 		Joins(`JOIN Device_Groups_Devices ON Device_Groups.id = Device_Groups_Devices.device_group_id`).
