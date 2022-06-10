@@ -344,8 +344,14 @@ func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 
 	tx := devicesFilters(r, db.DB).
 		Where("image_id IS NOT NULL AND image_id != 0 AND ID IN (?)", devicesIDS)
-	pagination := common.GetPagination(r)
 
+	devicesCount, err := ctxServices.DeviceService.GetDevicesCount(tx)
+	if err != nil {
+		respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("No devices found"))
+		return
+	}
+
+	pagination := common.GetPagination(r)
 	deviceGroupDevices, err := ctxServices.DeviceService.GetDevicesView(pagination.Limit, pagination.Offset, tx)
 
 	if err != nil {
@@ -362,7 +368,7 @@ func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 	}
 
 	deviceGroupDetails.DeviceDetails.Devices = deviceGroupDevices.Devices
-	deviceGroupDetails.DeviceDetails.Total = len(deviceGroupDevices.Devices)
+	deviceGroupDetails.DeviceDetails.Total = devicesCount
 
 	respondWithJSONBody(w, ctxServices.Log, &deviceGroupDetails)
 }

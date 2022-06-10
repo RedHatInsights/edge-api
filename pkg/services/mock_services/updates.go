@@ -208,3 +208,18 @@ func (mr *MockUpdateServiceInterfaceMockRecorder) WriteTemplate(templateInfo, ac
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteTemplate", reflect.TypeOf((*MockUpdateServiceInterface)(nil).WriteTemplate), templateInfo, account)
 }
+
+// ValidateUpdateDeviceGroup mocks base method
+func (m *MockUpdateServiceInterface) ValidateUpdateDeviceGroup(account string, deviceGroupID uint) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidateUpdateDeviceGroup", account, deviceGroupID)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ValidateUpdateDeviceGroup indicates an expected call of ValidateUpdateDeviceGroup
+func (mr *MockUpdateServiceInterfaceMockRecorder) ValidateUpdateDeviceGroup(account, deviceGroupID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateUpdateDeviceGroup", reflect.TypeOf((*MockUpdateServiceInterface)(nil).ValidateUpdateDeviceGroup), account, deviceGroupID)
+}
