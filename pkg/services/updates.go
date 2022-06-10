@@ -30,6 +30,7 @@ import (
 type UpdateServiceInterface interface {
 	BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate, account string, commit *models.Commit) (*[]models.UpdateTransaction, error)
 	CreateUpdate(id uint) (*models.UpdateTransaction, error)
+	CreateUpdateAsync(id uint)
 	GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error)
 	GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error)
 	ProcessPlaybookDispatcherRunEvent(message []byte) error
@@ -104,6 +105,11 @@ type PlaybookDispatcherEventPayload struct {
 type PlaybookDispatcherEvent struct {
 	EventType string                         `json:"event_type"`
 	Payload   PlaybookDispatcherEventPayload `json:"payload"`
+}
+
+// CreateUpdateAsync is the function that creates an update transaction asynchronously
+func (s *UpdateService) CreateUpdateAsync(id uint) {
+	go s.CreateUpdate(id)
 }
 
 // CreateUpdate is the function that creates an update transaction
