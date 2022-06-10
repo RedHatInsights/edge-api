@@ -3,6 +3,8 @@ package models
 import (
 	"errors"
 	"testing"
+
+	"github.com/bxcodec/faker/v3"
 )
 
 func TestGetPackagesList(t *testing.T) {
@@ -210,36 +212,25 @@ func TestValidateRequest(t *testing.T) {
 	}
 }
 
-func TestGetALLPackagesList(t *testing.T) {
-	pkgs := []Package{
-		{
-			Name: "vim",
-		},
-		{
-			Name: "wget",
-		},
-	}
-	customPackages := []Package{
-		{
-			Name: "custompackage",
-		},
-		{
-			Name: "thirdpartypackage",
-		},
-	}
-	img := &Image{
+func TestGetALLPackagesListWithCustomRepos(t *testing.T) {
+	packages := []Package{{Name: "vim"}, {Name: "wget"}}
+	customPackages := []Package{{Name: "custom-package"}, {Name: "third-party-package"}}
+	image := &Image{
 		Distribution:   "rhel-90",
-		Packages:       pkgs,
+		Packages:       packages,
 		CustomPackages: customPackages,
+		ThirdPartyRepositories: []ThirdPartyRepo{
+			{Name: faker.UUIDHyphenated(), URL: faker.URL()},
+		},
 	}
 
-	allPackagesList := img.GetALLPackagesList()
+	allPackagesList := image.GetALLPackagesList()
 
-	if len(*allPackagesList) == 0 {
-		t.Errorf("error to load required packages")
+	if allPackagesList == nil {
+		t.Errorf("error to load required expectedPackages")
 	}
 
-	packages := []string{
+	expectedPackages := []string{
 		"rhc",
 		"rhc-worker-playbook",
 		"subscription-manager",
@@ -248,13 +239,54 @@ func TestGetALLPackagesList(t *testing.T) {
 		"ansible-core",
 		"vim",
 		"wget",
-		"custompackage",
-		"thirdpartypackage",
+		customPackages[0].Name,
+		customPackages[1].Name,
+	}
+	if len(expectedPackages) != len(*allPackagesList) {
+		t.Errorf("Expected to have %d expectedPackages, but got %d", len(expectedPackages), len(*allPackagesList))
+	}
+
+	for i, packageName := range *allPackagesList {
+		if packageName != expectedPackages[i] {
+			t.Errorf("expected %s, got %s", expectedPackages[i], packageName)
+		}
+	}
+}
+
+func TestGetALLPackagesListWithoutCustomRepos(t *testing.T) {
+	packages := []Package{{Name: "vim"}, {Name: "wget"}}
+	customPackages := []Package{{Name: "custom-package"}, {Name: "third-party-package"}}
+	image := &Image{
+		Distribution:   "rhel-90",
+		Packages:       packages,
+		CustomPackages: customPackages,
+	}
+
+	allPackagesList := image.GetALLPackagesList()
+
+	if allPackagesList == nil {
+		t.Errorf("error to load required expectedPackages")
+	}
+
+	// we expect that custom packages are ignored
+	expectedPackages := []string{
+		"rhc",
+		"rhc-worker-playbook",
+		"subscription-manager",
+		"subscription-manager-plugin-ostree",
+		"insights-client",
+		"ansible-core",
+		"vim",
+		"wget",
+	}
+
+	if len(expectedPackages) != len(*allPackagesList) {
+		t.Errorf("Expected to have %d expectedPackages, but got %d", len(expectedPackages), len(*allPackagesList))
 	}
 
 	for i, item := range *allPackagesList {
-		if item != packages[i] {
-			t.Errorf("expected %s, got %s", packages[i], item)
+		if item != expectedPackages[i] {
+			t.Errorf("expected %s, got %s", expectedPackages[i], item)
 		}
 	}
 }

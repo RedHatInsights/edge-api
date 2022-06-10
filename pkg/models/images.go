@@ -221,7 +221,16 @@ func (i *Image) GetPackagesList() *[]string {
 
 // GetALLPackagesList returns all the packages including custom packages containing their names
 func (i *Image) GetALLPackagesList() *[]string {
-	initialPackages := *i.GetPackagesList()
+	packagesList := i.GetPackagesList()
+	if len(i.ThirdPartyRepositories) == 0 {
+		// ignore custom packages when custom repositories list is empty
+		return packagesList
+	}
+	var initialPackages []string
+	if packagesList != nil {
+		initialPackages = *packagesList
+	}
+
 	packages := make([]string, 0, len(initialPackages)+len(i.CustomPackages))
 	packages = append(packages, initialPackages...)
 

@@ -621,9 +621,8 @@ func CheckGroupName(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, services.Log, map[string]interface{}{"data": map[string]interface{}{"isValid": value}})
 }
 
-//UpdateAllDevicesFromGroup will be resposible to update all devices that belongs to a group
+//UpdateAllDevicesFromGroup will be responsible to update all devices that belong to a group
 func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
-	services := dependencies.ServicesFromContext(r.Context())
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	deviceGroup := getContextDeviceGroup(w, r)
 	if deviceGroup == nil {
@@ -634,12 +633,11 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 
 	account, err := common.GetAccount(r)
 	if err != nil {
-		services.Log.WithFields(log.Fields{
+		ctxServices.Log.WithFields(log.Fields{
 			"error":   err.Error(),
 			"account": account,
 		}).Error("Error retrieving account")
-		stterr := errors.NewInternalServerError()
-		w.WriteHeader(stterr.GetStatus())
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
 	devices := deviceGroup.Devices
@@ -653,38 +651,35 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	devicesUpdate.DevicesUUID = setOfDeviceUUIDS
 	//validate if commit is valid before continue process
 	//should be created a new method to return the latest commit by imageId and be able to update regardless of imageset
-	commitID, err := services.DeviceService.GetLatestCommitFromDevices(account, setOfDeviceUUIDS)
+	commitID, err := ctxServices.DeviceService.GetLatestCommitFromDevices(account, setOfDeviceUUIDS)
 	if err != nil {
-		services.Log.WithFields(log.Fields{
+		ctxServices.Log.WithFields(log.Fields{
 			"error":   err.Error(),
 			"account": account,
 		}).Error("Error Getting the latest commit to update a device")
-		stterr := errors.NewInternalServerError()
-		w.WriteHeader(stterr.GetStatus())
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
 
 	devicesUpdate.CommitID = commitID
 	//get commit info to build update repo
-	commit, err := services.CommitService.GetCommitByID(devicesUpdate.CommitID)
+	commit, err := ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID)
 	if err != nil {
-		services.Log.WithFields(log.Fields{
+		ctxServices.Log.WithFields(log.Fields{
 			"error":   err.Error(),
 			"account": account,
 		}).Error("Error Getting the commit info to update a device")
-		stterr := errors.NewInternalServerError()
-		w.WriteHeader(stterr.GetStatus())
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
 	// should be refactored to avoid performance issue with large volume
-	updates, err := services.UpdateService.BuildUpdateTransactions(&devicesUpdate, account, commit)
+	updates, err := ctxServices.UpdateService.BuildUpdateTransactions(&devicesUpdate, account, commit)
 	if err != nil {
-		services.Log.WithFields(log.Fields{
+		ctxServices.Log.WithFields(log.Fields{
 			"error":   err.Error(),
 			"account": account,
 		}).Error("Error building update transaction")
-		stterr := errors.NewInternalServerError()
-		w.WriteHeader(stterr.GetStatus())
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
 	// should be refactored to avoid performance issue with large volume
@@ -692,28 +687,22 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	for _, update := range *updates {
 		update.Account = account
 		upd = append(upd, update)
-		services.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
-		go services.UpdateService.CreateUpdate(update.ID)
+		ctxServices.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
+		ctxServices.UpdateService.CreateUpdateAsync(update.ID)
 	}
 	if len(upd) == 0 {
-		w.WriteHeader(http.StatusNotFound)
-		if err := json.NewEncoder(w).Encode(upd); err != nil {
-			services.Log.WithField("error", upd).Error("No devices found")
-		}
+		respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("devices not found"))
 		return
 	}
 	result := db.DB.Save(upd)
 	if result.Error != nil {
-		services.Log.WithFields(log.Fields{
+		ctxServices.Log.WithFields(log.Fields{
 			"error": err.Error(),
 		}).Error("Error saving update")
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.GetStatus())
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(updates); err != nil {
-		services.Log.WithField("error", updates).Error("Error while trying to encode")
-	}
+	respondWithJSONBody(w, ctxServices.Log, updates)
 }
