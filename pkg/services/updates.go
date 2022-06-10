@@ -658,6 +658,9 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 
 			if device.Ostree.RHCClientID == "" {
 				update.Status = models.UpdateStatusDeviceDisconnected
+				if result := db.DB.Create(&update); result.Error != nil {
+					return nil, result.Error
+				}
 				continue
 			}
 			updateDevice.RHCClientID = device.Ostree.RHCClientID
