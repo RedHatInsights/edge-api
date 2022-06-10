@@ -688,7 +688,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 		update.Account = account
 		upd = append(upd, update)
 		ctxServices.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
-		go ctxServices.UpdateService.CreateUpdate(update.ID)
+		ctxServices.UpdateService.CreateUpdateAsync(update.ID)
 	}
 	if len(upd) == 0 {
 		respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("devices not found"))
