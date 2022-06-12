@@ -785,4 +785,47 @@ var _ = Describe("Image Service Test", func() {
 			})
 		})
 	})
+	Context("update image with invalid package name", func() {
+		It("should have an error returned by image builder", func() {
+			id, _ := faker.RandomInt(1)
+			uid := uint(id[0])
+			account := faker.UUIDHyphenated()
+			imageSet := &models.ImageSet{Account: account}
+			result := db.DB.Save(imageSet)
+			arch := &models.Commit{Arch: "x86_64"}
+			pkgs := []models.Package{
+				{
+					Name: "badrpm",
+				},
+			}
+			Expect(result.Error).To(Not(HaveOccurred()))
+			previousImage := &models.Image{
+				Account:      account,
+				Status:       models.ImageStatusSuccess,
+				Commit:       &models.Commit{RepoID: &uid},
+				Version:      1,
+				Distribution: "rhel-85",
+				Name:         faker.Name(),
+				ImageSetID:   &imageSet.ID,
+			}
+			image := &models.Image{
+				Account:      account,
+				Commit:       arch,
+				Distribution: "rhel-85",
+				OutputTypes:  []string{models.ImageTypeCommit},
+				Version:      2,
+				Name:         previousImage.Name,
+				Packages:     pkgs,
+			}
+			result = db.DB.Save(previousImage)
+			Expect(result.Error).To(Not(HaveOccurred()))
+			expectedErr := fmt.Errorf("package name doesn't exist")
+			imageBuilder := &imageBuilderClient.SearchPackageResult{}
+			imageBuilder.Meta.Count = 0
+			mockImageBuilderClient.EXPECT().SearchPackage("badrpm", "x86_64", "rhel-85").Return(imageBuilder, expectedErr)
+			actualErr := service.UpdateImage(image, previousImage)
+			Expect(actualErr).To(HaveOccurred())
+			Expect(actualErr).To(MatchError(expectedErr))
+		})
+	})
 })
