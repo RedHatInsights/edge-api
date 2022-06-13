@@ -152,14 +152,9 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTransaction {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	ctxServices.Log.Info("Update is being created")
-	account := readAccount(w, r, ctxServices.Log)
-	if account == "" {
-		// errors handled by readAccount
-		return nil
-	}
-	orgID := readOrgID(w, r, ctxServices.Log)
-	if orgID == "" {
-		// logs and response handled by read orgID
+	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
+	if account == "" && orgID == "" {
+		// logs and response handled by readAccountOrOrgID
 		return nil
 	}
 	var devicesUpdate models.DevicesUpdate

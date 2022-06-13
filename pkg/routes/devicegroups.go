@@ -636,14 +636,9 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	}
 	ctxLog := ctxServices.Log.WithField("device_group_id", deviceGroup.ID)
 	ctxLog.Info("Updating all devices from group", deviceGroup.ID)
-	account := readAccount(w, r, ctxServices.Log)
-	if account == "" {
-		// logs and response handled by read account
-		return
-	}
-	orgID := readOrgID(w, r, ctxServices.Log)
-	if orgID == "" {
-		// logs and response handled by read orgID
+	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
+	if account == "" && orgID == "" {
+		// logs and response handled by readAccountOrOrgID
 		return
 	}
 	devices := deviceGroup.Devices

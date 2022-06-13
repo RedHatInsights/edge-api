@@ -30,6 +30,18 @@ func readOrgID(w http.ResponseWriter, r *http.Request, logEntry *log.Entry) stri
 	return orgID
 }
 
+func readAccountOrOrgID(w http.ResponseWriter, r *http.Request, logEntry *log.Entry) (string, string) {
+	account, accountErr := common.GetAccount(r)
+	orgID, orgIDError := common.GetOrgID(r)
+	if accountErr != nil && orgIDError != nil {
+		logEntry.WithField(
+			"error", "cannot retrieve account and orgID from request context").Error("Error retrieving account and orgID")
+		respondWithAPIError(w, logEntry, errors.NewBadRequest("Error retrieving account and orgID"))
+		return "", ""
+	}
+	return account, orgID
+}
+
 func respondWithAPIError(w http.ResponseWriter, logEntry *log.Entry, apiError errors.APIError) {
 	w.WriteHeader(apiError.GetStatus())
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
