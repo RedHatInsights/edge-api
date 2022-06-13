@@ -93,6 +93,13 @@ func (e *ImageNameAlreadyExists) Error() string {
 	return "image with supplied name already exists"
 }
 
+// PackageNameDoesNotExist indicates that package name doesn't exist
+type PackageNameDoesNotExist struct{}
+
+func (e *PackageNameDoesNotExist) Error() string {
+	return "package name doesn't exist"
+}
+
 // ImageNameUndefined indicates the image name is not defined
 type ImageNameUndefined struct{}
 

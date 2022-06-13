@@ -60,6 +60,7 @@ type ImageServiceInterface interface {
 	GetRollbackImage(image *models.Image) (*models.Image, error)
 	SendImageNotification(image *models.Image) (ImageNotification, error)
 	SetDevicesUpdateAvailabilityFromImageSet(account string, ImageSetID uint) error
+	ValidateImagePackage(pack string, image *models.Image) error
 }
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
@@ -165,6 +166,14 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 	if image.Version == 0 {
 		image.Version = 1
 	}
+	packages := image.Packages
+	// we now need to loop this request for each package
+	for _, p := range packages {
+		er := s.ValidateImagePackage(p.Name, image)
+		if er != nil {
+			return er
+		}
+	}
 	if err := ValidateAllImageReposAreFromAccount(account, image.ThirdPartyRepositories); err != nil {
 		return err
 	}
@@ -225,6 +234,28 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 	return nil
 }
 
+// ValidateImagePackage validate package name on Image Builder
+func (s *ImageService) ValidateImagePackage(packageName string, image *models.Image) error {
+	arch := image.Commit.Arch
+	dist := image.Distribution
+	if arch == "" || dist == "" {
+		return errors.NewBadRequest("value is not one of the allowed values")
+	}
+	res, err := s.ImageBuilder.SearchPackage(packageName, arch, dist)
+	if err != nil {
+		return err
+	}
+	if res.Meta.Count == 0 {
+		return new(PackageNameDoesNotExist)
+	}
+	for _, pkg := range res.Data {
+		if pkg.Name == packageName {
+			return nil
+		}
+	}
+	return new(PackageNameDoesNotExist)
+}
+
 // UpdateImage updates an image, adding a new version of this image to an imageset
 func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Image) error {
 	s.log.Info("Updating image...")
@@ -234,6 +265,13 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	err := s.CheckIfIsLatestVersion(previousImage)
 	if err != nil {
 		return errors.NewBadRequest("only the latest updated image can be modified")
+	}
+	packages := image.Packages
+	for _, p := range packages {
+		er := s.ValidateImagePackage(p.Name, image)
+		if er != nil {
+			return er
+		}
 	}
 	if err := ValidateAllImageReposAreFromAccount(previousImage.Account, image.ThirdPartyRepositories); err != nil {
 		return err

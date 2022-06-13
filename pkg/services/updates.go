@@ -30,6 +30,7 @@ import (
 type UpdateServiceInterface interface {
 	BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate, account string, commit *models.Commit) (*[]models.UpdateTransaction, error)
 	CreateUpdate(id uint) (*models.UpdateTransaction, error)
+	CreateUpdateAsync(id uint)
 	GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error)
 	GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error)
 	ProcessPlaybookDispatcherRunEvent(message []byte) error
@@ -39,6 +40,7 @@ type UpdateServiceInterface interface {
 	SendDeviceNotification(update *models.UpdateTransaction) (ImageNotification, error)
 	UpdateDevicesFromUpdateTransaction(update models.UpdateTransaction) error
 	ValidateUpdateSelection(account string, imageIds []uint) (bool, error)
+	ValidateUpdateDeviceGroup(account string, deviceGroupID uint) (bool, error)
 }
 
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
@@ -104,6 +106,11 @@ type PlaybookDispatcherEventPayload struct {
 type PlaybookDispatcherEvent struct {
 	EventType string                         `json:"event_type"`
 	Payload   PlaybookDispatcherEventPayload `json:"payload"`
+}
+
+// CreateUpdateAsync is the function that creates an update transaction asynchronously
+func (s *UpdateService) CreateUpdateAsync(id uint) {
+	go s.CreateUpdate(id)
 }
 
 // CreateUpdate is the function that creates an update transaction
@@ -559,6 +566,27 @@ func (s *UpdateService) ValidateUpdateSelection(account string, imageIds []uint)
 	return count == 1, nil
 }
 
+// ValidateUpdateDeviceGroup validate the devices on device group for update
+func (s *UpdateService) ValidateUpdateDeviceGroup(account string, deviceGroupID uint) (bool, error) {
+	var count int64
+
+	result := db.DB.
+		Model(&models.DeviceGroup{}).
+		Where(`Device_Groups.id = ? AND Device_Groups.account = ?`,
+			deviceGroupID, account,
+		).
+		Joins(`JOIN Device_Groups_Devices ON Device_Groups.id = Device_Groups_Devices.device_group_id`).
+		Joins(`JOIN Devices ON Device_Groups_Devices.device_id = Devices.id`).
+		Where("Devices.image_id IS NOT NULL AND Devices.image_id != 0").
+		Joins(`JOIN Images ON Devices.image_id = Images.id`).
+		Group("Images.image_set_id").Count(&count)
+	if result.Error != nil {
+		return false, result.Error
+	}
+
+	return count == 1, nil
+}
+
 //BuildUpdateTransactions build records
 func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate,
 	account string, commit *models.Commit) (*[]models.UpdateTransaction, error) {
@@ -652,6 +680,9 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 
 			if device.Ostree.RHCClientID == "" {
 				update.Status = models.UpdateStatusDeviceDisconnected
+				if result := db.DB.Create(&update); result.Error != nil {
+					return nil, result.Error
+				}
 				continue
 			}
 			updateDevice.RHCClientID = device.Ostree.RHCClientID

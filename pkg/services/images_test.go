@@ -3,11 +3,11 @@ package services_test
 import (
 	"context"
 	"fmt"
-
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	imageBuilderClient "github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder/mock_imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -683,6 +683,104 @@ var _ = Describe("Image Service Test", func() {
 				Expect(err.Error()).To(Equal("image set already exists"))
 				// image is not created
 				Expect(image.ID).To(Equal(uint(0)))
+				Expect(image.ImageSetID).To(BeNil())
+			})
+		})
+	})
+	Describe("Create image when ValidateImagePackage", func() {
+		account := faker.UUIDHyphenated()
+		orgID := faker.UUIDHyphenated()
+		requestID := faker.UUIDHyphenated()
+		imageName := faker.UUIDHyphenated()
+		When("When image-builder SearchPackage succeed", func() {
+			It("image create with valid package name", func() {
+				arch := &models.Commit{Arch: "x86_64"}
+				dist := "rhel-85"
+				pkgs := []models.Package{
+					{
+						Name: "vim-common",
+					},
+				}
+				image := models.Image{Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
+				expectedErr := fmt.Errorf("failed to create commit for image")
+				imageBuilder := &imageBuilderClient.SearchPackageResult{}
+				var s imageBuilderClient.SearchPackage
+				s.Name = "vim-common"
+				imageBuilder.Data = append(imageBuilder.Data, s)
+				imageBuilder.Meta.Count = 1
+				mockImageBuilderClient.EXPECT().SearchPackage("vim-common", "x86_64", "rhel-85").Return(imageBuilder, nil)
+				mockImageBuilderClient.EXPECT().ComposeCommit(&image).Return(&image, expectedErr)
+				err := service.CreateImage(&image, account, orgID, requestID)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal(expectedErr.Error()))
+				// image is not created
+				Expect(image.ID).To(Equal(uint(0)))
+			})
+		})
+		When("When image-builder SearchPackage fail", func() {
+			It("image does not create because invalid package name", func() {
+				arch := &models.Commit{Arch: "x86_64"}
+				dist := "rhel-85"
+				pkgs := []models.Package{
+					{
+						Name: "badrpm",
+					},
+				}
+				image := models.Image{Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
+				expectedErr := fmt.Errorf("package name doesn't exist")
+				imageBuilder := &imageBuilderClient.SearchPackageResult{}
+				imageBuilder.Meta.Count = 0
+				mockImageBuilderClient.EXPECT().SearchPackage("badrpm", "x86_64", "rhel-85").Return(imageBuilder, expectedErr)
+				err := service.CreateImage(&image, account, orgID, requestID)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal(expectedErr.Error()))
+				// image is not created
+				Expect(image.ID).To(Equal(uint(0)))
+				// But imageSet is not Created
+				Expect(image.ImageSetID).To(BeNil())
+			})
+		})
+		When("When image-builder SearchPackage fail", func() {
+			It("image does not create because empty architecture", func() {
+				arch := &models.Commit{Arch: ""}
+				dist := "rhel-85"
+				pkgs := []models.Package{
+					{
+						Name: "vim-common",
+					},
+				}
+				image := models.Image{Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
+				expectedErr := fmt.Errorf("value is not one of the allowed values")
+				imageBuilder := &imageBuilderClient.SearchPackageResult{}
+				mockImageBuilderClient.EXPECT().SearchPackage("vim-common", "", "rhel-85").Return(imageBuilder, expectedErr)
+				err := service.CreateImage(&image, account, orgID, requestID)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal(expectedErr.Error()))
+				// image is not created
+				Expect(image.ID).To(Equal(uint(0)))
+				// But imageSet is not Created
+				Expect(image.ImageSetID).To(BeNil())
+			})
+		})
+		When("When image-builder SearchPackage fail", func() {
+			It("image does not create because empty distribution", func() {
+				arch := &models.Commit{Arch: "x86_64"}
+				dist := ""
+				pkgs := []models.Package{
+					{
+						Name: "vim-common",
+					},
+				}
+				image := models.Image{Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
+				expectedErr := fmt.Errorf("value is not one of the allowed values")
+				imageBuilder := &imageBuilderClient.SearchPackageResult{}
+				mockImageBuilderClient.EXPECT().SearchPackage("vim-common", "x86_64", "").Return(imageBuilder, expectedErr)
+				err := service.CreateImage(&image, account, orgID, requestID)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal(expectedErr.Error()))
+				// image is not created
+				Expect(image.ID).To(Equal(uint(0)))
+				// But imageSet is not Created
 				Expect(image.ImageSetID).To(BeNil())
 			})
 		})
