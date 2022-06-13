@@ -3,6 +3,7 @@ package services_test
 import (
 	"context"
 	"fmt"
+
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -75,6 +76,7 @@ var _ = Describe("Image Service Test", func() {
 					Name:    "test",
 					Version: 2,
 					Account: common.DefaultAccount,
+					OrgID:   common.DefaultOrgID,
 				}
 				result := db.DB.Create(imageSet)
 				Expect(result.Error).ToNot(HaveOccurred())
@@ -86,6 +88,7 @@ var _ = Describe("Image Service Test", func() {
 					ImageSetID: &imageSet.ID,
 					Version:    1,
 					Account:    common.DefaultAccount,
+					OrgID:      common.DefaultOrgID,
 				}
 				result = db.DB.Create(imageV1.Commit)
 				Expect(result.Error).ToNot(HaveOccurred())
@@ -99,6 +102,7 @@ var _ = Describe("Image Service Test", func() {
 					ImageSetID: &imageSet.ID,
 					Version:    2,
 					Account:    common.DefaultAccount,
+					OrgID:      common.DefaultOrgID,
 				}
 				db.DB.Create(imageV2.Commit)
 				db.DB.Create(imageV2)
@@ -110,6 +114,7 @@ var _ = Describe("Image Service Test", func() {
 					ImageSetID: &imageSet.ID,
 					Version:    3,
 					Account:    common.DefaultAccount,
+					OrgID:      common.DefaultOrgID,
 				}
 				db.DB.Create(imageV3.Commit)
 				db.DB.Create(imageV3)
@@ -399,40 +404,42 @@ var _ = Describe("Image Service Test", func() {
 		})
 		Context("when checking if the image version we are trying to update is latest", func() {
 			account := faker.UUIDHyphenated()
-			imageSet := models.ImageSet{Account: account}
+			orgID1 := faker.UUIDHyphenated()
+			imageSet := models.ImageSet{Account: account, OrgID: orgID1}
 			db.DB.Save(&imageSet)
-			image := models.Image{Account: account, ImageSetID: &imageSet.ID, Version: 1, Name: "image-same-name"}
+			image := models.Image{Account: account, OrgID: orgID1, ImageSetID: &imageSet.ID, Version: 1, Name: "image-same-name"}
 			db.DB.Save(&image)
-			image2 := models.Image{Account: account, ImageSetID: &imageSet.ID, Version: 2, Name: "image-same-name"}
+			image2 := models.Image{Account: account, OrgID: orgID1, ImageSetID: &imageSet.ID, Version: 2, Name: "image-same-name"}
 			db.DB.Save(&image2)
-			image3 := models.Image{Account: account, ImageSetID: &imageSet.ID, Version: 3, Name: "image-same-name"}
+			image3 := models.Image{Account: account, OrgID: orgID1, ImageSetID: &imageSet.ID, Version: 3, Name: "image-same-name"}
 			db.DB.Save(&image3)
 			// foreign image without account
 			image4 := models.Image{ImageSetID: &imageSet.ID, Version: 4, Name: "image-same-name"}
 			db.DB.Save(&image4)
 			// foreign image without image-set
-			image5 := models.Image{Account: account, Version: 4, Name: "image-same-name"}
+			image5 := models.Image{Account: account, OrgID: orgID1, Version: 4, Name: "image-same-name"}
 			db.DB.Save(&image5)
 
 			// foreign image from another account and image-set, is here to ensure we are analysing the correct collection
 			account2 := faker.UUIDHyphenated()
-			account2ImageSet := models.ImageSet{Account: account}
+			orgID2 := faker.UUIDHyphenated()
+			account2ImageSet := models.ImageSet{Account: account, OrgID: orgID1}
 			db.DB.Save(&account2ImageSet)
-			image6 := models.Image{Account: account2, ImageSetID: &account2ImageSet.ID, Version: 4, Name: "image-same-name"}
+			image6 := models.Image{Account: account2, OrgID: orgID2, ImageSetID: &account2ImageSet.ID, Version: 4, Name: "image-same-name"}
 			db.DB.Save(&image6)
 			// foreign image from another image-set, is here to ensure we are analysing the correct collection
-			imageSet2 := models.ImageSet{Account: account}
+			imageSet2 := models.ImageSet{Account: account, OrgID: orgID2}
 			db.DB.Save(&imageSet2)
-			image7 := models.Image{Account: account, ImageSetID: &imageSet2.ID, Version: 4, Name: "image-same-name"}
+			image7 := models.Image{Account: account, OrgID: orgID2, ImageSetID: &imageSet2.ID, Version: 4, Name: "image-same-name"}
 			db.DB.Save(&image7)
 
 			It("the image has to be defined", func() {
-				err := service.CheckIfIsLatestVersion(&models.Image{Account: account, ImageSetID: &imageSet.ID, Version: 5, Name: "image-same-name"})
+				err := service.CheckIfIsLatestVersion(&models.Image{Account: account, OrgID: orgID1, ImageSetID: &imageSet.ID, Version: 5, Name: "image-same-name"})
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(new(services.ImageUnDefined)))
 			})
 
-			It("the image account must be be defined", func() {
+			It("the image account must be defined", func() {
 
 				err := service.CheckIfIsLatestVersion(&image4)
 				Expect(err).To(HaveOccurred())
@@ -468,40 +475,71 @@ var _ = Describe("Image Service Test", func() {
 			It("should validate the images with empty repos", func() {
 				var repos []models.ThirdPartyRepo
 				account := "00000"
-				err := services.ValidateAllImageReposAreFromAccount(account, repos)
+				orgID := "11111"
+				err := services.ValidateAllImageReposAreFromAccount(account, orgID, repos)
 				Expect(err).ToNot(HaveOccurred())
 
 			})
 			It("should give an error", func() {
 				var repos []models.ThirdPartyRepo
 				account := ""
-				err := services.ValidateAllImageReposAreFromAccount(account, repos)
+				orgID := ""
+				err := services.ValidateAllImageReposAreFromAccount(account, orgID, repos)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError("repository information is not valid"))
 			})
 
 			It("should validate the images with repos within same account", func() {
 				account := "00000"
+				orgID := ""
 				repo1 := models.ThirdPartyRepo{Account: account, Name: faker.UUIDHyphenated(), URL: "https://repo1.simple.com"}
 				result := db.DB.Create(&repo1)
 				Expect(result.Error).ToNot(HaveOccurred())
 				repo2 := models.ThirdPartyRepo{Account: account, Name: faker.UUIDHyphenated(), URL: "https://repo2.simple.com"}
 				result = db.DB.Create(&repo2)
 				Expect(result.Error).ToNot(HaveOccurred())
-				err := services.ValidateAllImageReposAreFromAccount(account, []models.ThirdPartyRepo{repo1, repo2})
+				err := services.ValidateAllImageReposAreFromAccount(account, orgID, []models.ThirdPartyRepo{repo1, repo2})
+				Expect(err).ToNot(HaveOccurred())
+
+			})
+			It("should validate the images with repos within same org_id", func() {
+				orgID := "00000"
+				account := ""
+				repo1 := models.ThirdPartyRepo{OrgID: orgID, Name: faker.UUIDHyphenated(), URL: "https://repo1.simple.com"}
+				result := db.DB.Create(&repo1)
+				Expect(result.Error).ToNot(HaveOccurred())
+				repo2 := models.ThirdPartyRepo{OrgID: orgID, Name: faker.UUIDHyphenated(), URL: "https://repo2.simple.com"}
+				result = db.DB.Create(&repo2)
+				Expect(result.Error).ToNot(HaveOccurred())
+				err := services.ValidateAllImageReposAreFromAccount(account, orgID, []models.ThirdPartyRepo{repo1, repo2})
 				Expect(err).ToNot(HaveOccurred())
 
 			})
 			It("should not validate the images with repos from different accounts", func() {
 				account1 := "1111111"
 				account2 := "2222222"
+				orgID := ""
 				repo1 := models.ThirdPartyRepo{Account: account1, Name: faker.UUIDHyphenated(), URL: "https://repo1.simple.com"}
 				result := db.DB.Create(&repo1)
 				Expect(result.Error).ToNot(HaveOccurred())
 				repo2 := models.ThirdPartyRepo{Account: account2, Name: faker.UUIDHyphenated(), URL: "https://repo2.simple.com"}
 				result = db.DB.Create(&repo2)
 				Expect(result.Error).ToNot(HaveOccurred())
-				err := services.ValidateAllImageReposAreFromAccount(account1, []models.ThirdPartyRepo{repo1, repo2})
+				err := services.ValidateAllImageReposAreFromAccount(account1, orgID, []models.ThirdPartyRepo{repo1, repo2})
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError("some repositories were not found"))
+			})
+			It("should not validate the images with repos from different org_id", func() {
+				orgID1 := "1111111"
+				orgID2 := "2222222"
+				account := ""
+				repo1 := models.ThirdPartyRepo{Account: account, OrgID: orgID1, Name: faker.UUIDHyphenated(), URL: "https://repo1.simple.com"}
+				result := db.DB.Create(&repo1)
+				Expect(result.Error).ToNot(HaveOccurred())
+				repo2 := models.ThirdPartyRepo{Account: account, OrgID: orgID2, Name: faker.UUIDHyphenated(), URL: "https://repo2.simple.com"}
+				result = db.DB.Create(&repo2)
+				Expect(result.Error).ToNot(HaveOccurred())
+				err := services.ValidateAllImageReposAreFromAccount(account, orgID1, []models.ThirdPartyRepo{repo1, repo2})
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError("some repositories were not found"))
 			})
@@ -545,13 +583,14 @@ var _ = Describe("Image Service Test", func() {
 	Describe("Devices update availability from image set", func() {
 		Context("should set device update availability", func() {
 			account := faker.UUIDHyphenated()
-			imageSet := models.ImageSet{Account: account, Name: faker.UUIDHyphenated()}
+			orgID := faker.UUIDHyphenated()
+			imageSet := models.ImageSet{Account: account, OrgID: orgID, Name: faker.UUIDHyphenated()}
 			db.DB.Create(&imageSet)
 			initialImages := []models.Image{
-				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account},
-				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account},
-				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account},
-				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account},
+				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account, OrgID: orgID},
+				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account, OrgID: orgID},
+				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account, OrgID: orgID},
+				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account, OrgID: orgID},
 			}
 			images := make([]models.Image, 0, len(initialImages))
 			for _, image := range initialImages {
@@ -562,7 +601,7 @@ var _ = Describe("Image Service Test", func() {
 
 			devices := make([]models.Device, 0, len(images))
 			for ind, image := range images {
-				device := models.Device{Account: account, ImageID: image.ID, UpdateAvailable: false}
+				device := models.Device{Account: account, OrgID: orgID, ImageID: image.ID, UpdateAvailable: false}
 				if ind == len(images)-1 {
 					device.UpdateAvailable = true
 				}
@@ -571,16 +610,16 @@ var _ = Describe("Image Service Test", func() {
 			}
 			lastDevicesIndex := len(devices) - 1
 
-			OtherImageSet := models.ImageSet{Account: account, Name: faker.UUIDHyphenated()}
+			OtherImageSet := models.ImageSet{Account: account, OrgID: orgID, Name: faker.UUIDHyphenated()}
 			db.DB.Create(&OtherImageSet)
 
-			otherImage := models.Image{Status: models.ImageStatusSuccess, ImageSetID: &OtherImageSet.ID, Account: account}
+			otherImage := models.Image{Status: models.ImageStatusSuccess, ImageSetID: &OtherImageSet.ID, Account: account, OrgID: orgID}
 			db.DB.Create(&otherImage)
-			OtherDevice := models.Device{Account: account, ImageID: otherImage.ID, UpdateAvailable: true}
+			OtherDevice := models.Device{Account: account, OrgID: orgID, ImageID: otherImage.ID, UpdateAvailable: true}
 			db.DB.Create(&OtherDevice)
 
 			It("No error occurred without errors when calling function", func() {
-				err := service.SetDevicesUpdateAvailabilityFromImageSet(account, imageSet.ID)
+				err := service.SetDevicesUpdateAvailabilityFromImageSet(account, orgID, imageSet.ID)
 				Expect(err).To(BeNil())
 			})
 
@@ -610,7 +649,7 @@ var _ = Describe("Image Service Test", func() {
 			})
 
 			It("running function for Other imageSet update other device", func() {
-				err := service.SetDevicesUpdateAvailabilityFromImageSet(account, OtherImageSet.ID)
+				err := service.SetDevicesUpdateAvailabilityFromImageSet(account, orgID, OtherImageSet.ID)
 				Expect(err).To(BeNil())
 				// reload other device
 				var device models.Device
@@ -620,14 +659,14 @@ var _ = Describe("Image Service Test", func() {
 			})
 
 			It("should run without errors when no devices", func() {
-				imageSet := models.ImageSet{Account: account, Name: faker.UUIDHyphenated()}
+				imageSet := models.ImageSet{Account: account, OrgID: orgID, Name: faker.UUIDHyphenated()}
 				result := db.DB.Create(&imageSet)
 				Expect(result.Error).To(BeNil())
-				image := models.Image{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account}
+				image := models.Image{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account, OrgID: orgID}
 				result = db.DB.Create(&image)
 				Expect(result.Error).To(BeNil())
 
-				err := service.SetDevicesUpdateAvailabilityFromImageSet(account, imageSet.ID)
+				err := service.SetDevicesUpdateAvailabilityFromImageSet(account, orgID, imageSet.ID)
 				Expect(err).To(BeNil())
 			})
 		})
@@ -676,7 +715,7 @@ var _ = Describe("Image Service Test", func() {
 				// set image imageSet to nil
 				image.ImageSetID = nil
 				// create a new image linked with the known imageSet
-				result := db.DB.Create(&models.Image{Account: account, Distribution: "rhel-85", Name: faker.UUIDHyphenated(), ImageSetID: &imageSetID})
+				result := db.DB.Create(&models.Image{Account: account, OrgID: orgID, Distribution: "rhel-85", Name: faker.UUIDHyphenated(), ImageSetID: &imageSetID})
 				Expect(result.Error).ToNot(HaveOccurred())
 				err := service.CreateImage(&image, account, orgID, requestID)
 				Expect(err).To(HaveOccurred())

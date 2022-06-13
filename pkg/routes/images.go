@@ -324,14 +324,9 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	var images []models.Image
 	result := imageFilters(r, db.DB)
 	pagination := common.GetPagination(r)
-	account := readAccount(w, r, services.Log)
-	if account == "" {
-		// logs and response handled by read account
-		return
-	}
-	orgID := readOrgID(w, r, services.Log)
-	if orgID == "" {
-		// logs and response handled by read orgID
+	account, orgID := readAccountOrOrgID(w, r, services.Log)
+	if account == "" && orgID == "" {
+		// logs and response handled by readAccountOrOrgID
 		return
 	}
 	countResult := imageFilters(r, db.DB.Model(&models.Image{})).Where("(images.account = ? OR images.org_id = ?)", account, orgID).Count(&count)
@@ -580,14 +575,9 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 	}
-	account := readAccount(w, r, services.Log)
-	if account == "" {
-		// logs and response handled by read account
-		return
-	}
-	orgID := readOrgID(w, r, services.Log)
-	if orgID == "" {
-		// logs and response handled by read orgID
+	account, orgID := readAccountOrOrgID(w, r, services.Log)
+	if account == "" && orgID == "" {
+		// logs and response handled by readAccountOrOrgID
 		return
 	}
 	if image == nil {
