@@ -487,6 +487,8 @@ func DeleteDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
 		switch err.(type) {
 		case *services.AccountNotSet:
 			apiError = errors.NewBadRequest(err.Error())
+		case *services.OrgIDNotSet:
+			apiError = errors.NewBadRequest(err.Error())
 		case *services.DeviceGroupNotFound:
 			apiError = errors.NewNotFound(err.Error())
 		default:
@@ -690,7 +692,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	}
 	orgID, err := common.GetOrgID(r)
 	if err != nil {
-		services.Log.WithFields(log.Fields{
+		ctxServices.Log.WithFields(log.Fields{
 			"error": err.Error(),
 			"orgID": orgID,
 		}).Error("Error retrieving orgID")

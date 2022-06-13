@@ -183,13 +183,13 @@ func (s *DeviceGroupsService) GetDeviceImageInfo(images map[int]models.DeviceIma
 			var deviceImageSet models.ImageSet
 			var imagePackageDiff models.PackageDiff
 			var CommitID uint
-			if result := db.DB.Where("account = ? OR org_id = ?", account, orgID).
+			if result := db.DB.Where("(account = ? OR org_id = ?)", account, orgID).
 				First(&deviceImage, imageID); result.Error != nil {
 				return result.Error
 			}
 
 			//should be changed to get the deviceInfo once we have the data correctly on DB
-			if result := db.DB.Where("account = ? OR org_id = ?", account, orgID).Preload("Images").
+			if result := db.DB.Where("(account = ? OR org_id = ?)", account, orgID).Preload("Images").
 				First(&deviceImageSet, deviceImage.ImageSetID).Order("ID desc"); result.Error != nil {
 				return result.Error
 			}
@@ -373,7 +373,7 @@ func (s *DeviceGroupsService) GetDeviceGroupDeviceByID(account string, orgID str
 
 	// get the device group
 	var deviceGroup models.DeviceGroup
-	if res := db.DB.Where("account = ? OR org_id = ?", account, orgID).First(&deviceGroup, deviceGroupID); res.Error != nil {
+	if res := db.DB.Where("(account = ? OR org_id = ?)", account, orgID).First(&deviceGroup, deviceGroupID); res.Error != nil {
 		return nil, res.Error
 	}
 
@@ -401,7 +401,7 @@ func (s *DeviceGroupsService) AddDeviceGroupDevices(account string, orgID string
 
 	// get the device group
 	var deviceGroup models.DeviceGroup
-	if res := db.DB.Where("account = ? OR org_id = ?", account, orgID).First(&deviceGroup, deviceGroupID); res.Error != nil {
+	if res := db.DB.Where("(account = ? OR org_id = ?)", account, orgID).First(&deviceGroup, deviceGroupID); res.Error != nil {
 		return nil, res.Error
 	}
 
@@ -417,7 +417,7 @@ func (s *DeviceGroupsService) AddDeviceGroupDevices(account string, orgID string
 
 	// we need to be sure that all the devices we want to add already exists and have the same account as the current device group account
 	var devicesToAdd []models.Device
-	if res := db.DB.Where("account = ? OR org_id = ?", account, orgID).Find(&devicesToAdd, devicesIDsToAdd); res.Error != nil {
+	if res := db.DB.Where("(account = ? OR org_id = ?)", account, orgID).Find(&devicesToAdd, devicesIDsToAdd); res.Error != nil {
 		return nil, res.Error
 	}
 
@@ -450,7 +450,7 @@ func (s *DeviceGroupsService) DeleteDeviceGroupDevices(account string, orgID str
 
 	// get the device group
 	var deviceGroup models.DeviceGroup
-	if res := db.DB.Where("account = ? OR org_id = ?", account, orgID).First(&deviceGroup, deviceGroupID); res.Error != nil {
+	if res := db.DB.Where("(account = ? OR org_id = ?)", account, orgID).First(&deviceGroup, deviceGroupID); res.Error != nil {
 		return nil, res.Error
 	}
 

@@ -197,9 +197,9 @@ var _ = Describe("DeviceGroup routes", func() {
 		})
 
 		Context("get DeviceGroup from DB", func() {
-			dbResult := db.DB.Where("account = ? OR org_id = ?", account, orgID).First(&deviceGroup).Error
+			dbResult := db.DB.Where("(account = ? OR org_id = ?)", account, orgID).First(&deviceGroup).Error
 			Expect(dbResult).To(BeNil())
-			dbResult = db.DB.Where("account = ? OR org_id = ?", account, orgID).Find(&devices).Error
+			dbResult = db.DB.Where("(account = ? OR org_id = ?)", account, orgID).Find(&devices).Error
 			Expect(dbResult).To(BeNil())
 		})
 		jsonDeviceBytes, err := json.Marshal(models.DeviceGroup{Devices: devices})
@@ -410,6 +410,35 @@ var _ = Describe("DeviceGroup routes", func() {
 
 				// setup mock for DeviceGroupsService
 				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupByID(fmt.Sprint(fakeIDUint)).Return(new(services.AccountNotSet))
+
+				handler := http.HandlerFunc(DeleteDeviceGroupByID)
+				handler.ServeHTTP(rr, req)
+				// Check the status code is what we expect.
+				Expect(rr.Code).To(Equal(http.StatusBadRequest))
+			})
+		})
+		When("no orgID", func() {
+			fakeID, _ := faker.RandomInt(1000, 2000, 1)
+			fakeIDUint := uint(fakeID[0])
+			url := fmt.Sprintf("/%d", fakeIDUint)
+			req, err := http.NewRequest(http.MethodDelete, url, nil)
+			Expect(err).To(BeNil())
+
+			It("should return status code 400", func() {
+				ctx := req.Context()
+				ctx = setContextDeviceGroup(ctx, &models.DeviceGroup{
+					Model: models.Model{
+						ID: fakeIDUint,
+					},
+					Account: account,
+					OrgID:   "",
+				})
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+				rr := httptest.NewRecorder()
+
+				// setup mock for DeviceGroupsService
+				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupByID(fmt.Sprint(fakeIDUint)).Return(new(services.OrgIDNotSet))
 
 				handler := http.HandlerFunc(DeleteDeviceGroupByID)
 				handler.ServeHTTP(rr, req)
@@ -632,7 +661,6 @@ var _ = Describe("DeviceGroup routes", func() {
 						Devices:  devices,
 					},
 				}
-				db.DB.Create(&updTransactions)
 				url := fmt.Sprintf("/%d/updateDevices", deviceGroup.ID)
 
 				req, err := http.NewRequest(http.MethodPost, url, nil)
@@ -665,7 +693,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				mockUpdateService.EXPECT().BuildUpdateTransactions(&devicesUpdate, account, &commit).
 					Return(&updTransactions, nil)
 				for _, trans := range updTransactions {
-					mockUpdateService.EXPECT().CreateUpdateAsync(trans.ID)
+					mockUpdateService.EXPECT().CreateUpdate(trans.ID).Return(&trans, nil)
 				}
 				handler := http.HandlerFunc(UpdateAllDevicesFromGroup)
 				handler.ServeHTTP(rr, req)
