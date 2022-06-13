@@ -2,12 +2,11 @@ package services_test
 
 import (
 	"context"
-	"strconv"
-
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	"strconv"
 
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo"
@@ -69,6 +68,22 @@ var _ = Describe("ThirdPartyRepos basic functions", func() {
 			_, err = customReposService.CreateThirdPartyRepo(&repo2, account)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("custom repository already exists"))
+		})
+	})
+	Context("Custom repos creation with validation of URL", func() {
+		It("Custom repo should not be created with invalid URL", func() {
+			account := faker.UUIDHyphenated()
+			repo := models.ThirdPartyRepo{Name: faker.UUIDHyphenated(), URL: "http//google.com"}
+			_, err := customReposService.CreateThirdPartyRepo(&repo, account)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("invalid URL"))
+		})
+
+		It("Custom repo should be created with valid URL", func() {
+			account := faker.UUIDHyphenated()
+			repo := models.ThirdPartyRepo{Name: faker.UUIDHyphenated(), URL: "https://google.com/"}
+			_, err := customReposService.CreateThirdPartyRepo(&repo, account)
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 
