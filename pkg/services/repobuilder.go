@@ -263,9 +263,9 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string) (strin
 	return tarFileName, nil
 }
 
-func (rb *RepoBuilder) uploadTarRepo(account, imageName string, repoID int) (string, error) {
+func (rb *RepoBuilder) uploadTarRepo(account, orgID, imageName string, repoID int) (string, error) {
 	rb.log.Info("Start upload tar repo")
-	uploadPath := fmt.Sprintf("%s/tar/%v/%s", account, repoID, imageName)
+	uploadPath := fmt.Sprintf("%s/%s/tar/%v/%s", account, orgID, repoID, imageName)
 	uploadPath = filepath.Clean(uploadPath)
 	filesService := NewFilesService(rb.log)
 	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
@@ -291,7 +291,7 @@ func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string) e
 	repoID := int(*c.RepoID)
 	rb.log = rb.log.WithFields(log.Fields{"commitID": c.ID, "filepath": tarFileName, "repoID": repoID})
 	rb.log.Info("Uploading repo")
-	repoTarURL, err := rb.uploadTarRepo(c.Account, tarFileName, repoID)
+	repoTarURL, err := rb.uploadTarRepo(c.Account, c.OrgID, tarFileName, repoID)
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Failed to upload repo")
 		return err
