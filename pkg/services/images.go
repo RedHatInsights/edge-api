@@ -1430,7 +1430,7 @@ func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, err
 		s.log.Error("Error retreving org_id")
 		return nil, new(OrgIDNotSet)
 	}
-	result := db.DB.Joins("Commit").Joins("Installer").Preload("Packages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where(&models.Image{ImageSetID: image.ImageSetID, Account: account, OrgID: orgID, Status: models.ImageStatusSuccess}).Last(&rollback, "images.id < ?", image.ID)
+	result := db.DB.Joins("Commit").Joins("Installer").Preload("Packages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where("(account = ? OR org_id) AND image_set_id = ? AND status = ?", account, orgID, image.ImageSetID, models.ImageStatusSuccess).Last(&rollback, "images.id < ?", image.ID)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error).Error("Error retrieving rollback image")
 		return nil, new(ImageNotFoundError)
