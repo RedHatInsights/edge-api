@@ -59,12 +59,8 @@ type ImageServiceInterface interface {
 	SetBuildingStatusOnImageToRetryBuild(image *models.Image) error
 	GetRollbackImage(image *models.Image) (*models.Image, error)
 	SendImageNotification(image *models.Image) (ImageNotification, error)
-<<<<<<< Updated upstream
-	SetDevicesUpdateAvailabilityFromImageSet(account string, ImageSetID uint) error
-	ValidateImagePackage(pack string, image *models.Image) error
-=======
 	SetDevicesUpdateAvailabilityFromImageSet(account string, orgID string, ImageSetID uint) error
->>>>>>> Stashed changes
+	ValidateImagePackage(pack string, image *models.Image) error
 }
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
@@ -89,7 +85,7 @@ type ImageService struct {
 // ValidateAllImageReposAreFromAccount validates the account for Third Party Repositories
 func ValidateAllImageReposAreFromAccount(account string, orgID string, repos []models.ThirdPartyRepo) error {
 
-	if account == "" || orgID == "" {
+	if account == "" && orgID == "" {
 		return errors.NewBadRequest("repository information is not valid")
 	}
 	if len(repos) == 0 {
@@ -170,7 +166,6 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 	if image.Version == 0 {
 		image.Version = 1
 	}
-<<<<<<< Updated upstream
 	packages := image.Packages
 	// we now need to loop this request for each package
 	for _, p := range packages {
@@ -179,10 +174,8 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 			return er
 		}
 	}
-	if err := ValidateAllImageReposAreFromAccount(account, image.ThirdPartyRepositories); err != nil {
-=======
 	if err := ValidateAllImageReposAreFromAccount(account, orgID, image.ThirdPartyRepositories); err != nil {
->>>>>>> Stashed changes
+
 		return err
 	}
 	//Send Image creation to notification
@@ -276,7 +269,6 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	if err != nil {
 		return errors.NewBadRequest("only the latest updated image can be modified")
 	}
-<<<<<<< Updated upstream
 	packages := image.Packages
 	for _, p := range packages {
 		er := s.ValidateImagePackage(p.Name, image)
@@ -284,10 +276,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 			return er
 		}
 	}
-	if err := ValidateAllImageReposAreFromAccount(previousImage.Account, image.ThirdPartyRepositories); err != nil {
-=======
 	if err := ValidateAllImageReposAreFromAccount(previousImage.Account, previousImage.OrgID, image.ThirdPartyRepositories); err != nil {
->>>>>>> Stashed changes
 		return err
 	}
 
@@ -722,7 +711,9 @@ func (s *ImageService) AddUserInfo(image *models.Image) error {
 	username := image.Installer.Username
 	// Files that will be used to modify the ISO and will be cleaned
 	imageName := destPath + image.Name
-	kickstart := fmt.Sprintf("%sfinalKickstart-%s_%s_%d.ks", destPath, image.Account, image.OrgID, image.ID)
+	kickstart := fmt.Sprintf("%sfinalKickstart-%s_%d.ks", destPath, image.Account, image.ID)
+	// in the future, org_id will be used as seen below:
+	// kickstart := fmt.Sprintf("%sfinalKickstart-%s_%d.ks", destPath, image.OrgID, image.ID)
 
 	err := s.downloadISO(imageName, downloadURL)
 	if err != nil {
