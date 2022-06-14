@@ -75,8 +75,7 @@ func (s *DeviceGroupsService) GetDeviceGroupsCount(account string, orgID string,
 	}
 
 	var count int64
-
-	res := tx.Model(&models.DeviceGroup{}).Where("account = ? OR org_id = ?", account, orgID).Count(&count)
+	res := tx.Model(&models.DeviceGroup{}).Where("(account = ? OR org_id = ?)", account, orgID).Count(&count)
 
 	if res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device group count")
@@ -113,7 +112,7 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, orgID string, limi
 
 	var deviceGroups []models.DeviceGroup
 
-	res := tx.Limit(limit).Offset(offset).Where("account = ? OR org_id = ?", account, orgID).
+	res := tx.Limit(limit).Offset(offset).Where("(account = ? OR org_id = ?)", account, orgID).
 		Preload("Devices").
 		Find(&deviceGroups)
 
