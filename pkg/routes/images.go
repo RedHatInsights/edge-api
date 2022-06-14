@@ -122,18 +122,17 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 				}
 				return
 			}
-			account, err := common.GetAccount(r)
-			orgID, err := common.GetOrgID(r)
-			if err != nil || image.Account != account || image.OrgID != orgID {
+			account, orgID := readAccountOrOrgID(w, r, s.Log)
+			if account == "" && orgID == "" {
+				return
+			}
+			if image.Account != account || image.OrgID != orgID {
 				s.Log.WithFields(log.Fields{
 					"error":   err.Error(),
 					"account": account,
-				}).Error("Error retrieving account or image doesn't belong to account/orgID")
-				err := errors.NewBadRequest(err.Error())
-				w.WriteHeader(err.GetStatus())
-				if err := json.NewEncoder(w).Encode(&err); err != nil {
-					s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-				}
+					"org_id":  orgID,
+				}).Error("image doesn't belong to account or org_id")
+				respondWithAPIError(w, s.Log, errors.NewBadRequest("image doesn't belong to account or org_id"))
 				return
 			}
 			ctx := context.WithValue(r.Context(), imageKey, image)
