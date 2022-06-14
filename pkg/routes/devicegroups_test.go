@@ -693,7 +693,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				mockUpdateService.EXPECT().BuildUpdateTransactions(&devicesUpdate, account, &commit).
 					Return(&updTransactions, nil)
 				for _, trans := range updTransactions {
-					mockUpdateService.EXPECT().CreateUpdate(trans.ID).Return(&trans, nil)
+					mockUpdateService.EXPECT().CreateUpdateAsync(trans.ID)
 				}
 				handler := http.HandlerFunc(UpdateAllDevicesFromGroup)
 				handler.ServeHTTP(rr, req)

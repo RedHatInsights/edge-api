@@ -188,19 +188,11 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
 			})
 		})
-		When("adding with empty account", func() {
-			It("should fail", func() {
-				_, err := deviceGroupsService.AddDeviceGroupDevices("", orgID1, deviceGroup1.ID, devices)
-				Expect(err).NotTo(BeNil())
-				expectedErr := services.DeviceGroupAccountOrIDUndefined{}
-				Expect(err.Error()).To(Equal(expectedErr.Error()))
-			})
-		})
 		When("adding with empty account and empty orgID", func() {
 			It("should fail", func() {
 				_, err := deviceGroupsService.AddDeviceGroupDevices("", "", deviceGroup1.ID, devices)
 				Expect(err).NotTo(BeNil())
-				expectedErr := services.DeviceGroupAccountOrIDUndefined{}
+				expectedErr := services.DeviceGroupMandatoryFieldsUndefined{}
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
 			})
 		})
@@ -208,7 +200,7 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 			It("should fail", func() {
 				_, err := deviceGroupsService.AddDeviceGroupDevices(account1, orgID1, 0, devices)
 				Expect(err).NotTo(BeNil())
-				expectedErr := services.DeviceGroupAccountOrIDUndefined{}
+				expectedErr := services.DeviceGroupMandatoryFieldsUndefined{}
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
 			})
 		})
@@ -399,13 +391,13 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 			It("should return error when account is undefined", func() {
 				_, err := deviceGroupsService.DeleteDeviceGroupDevices("", orgID, deviceGroupID, []models.Device{savedDeviceGroup.Devices[0]})
 				Expect(err).ToNot(BeNil())
-				Expect(err.Error()).To(Equal("account or deviceGroupID undefined"))
+				Expect(err.Error()).To(Equal("device group mandatory field are undefined"))
 			})
 
 			It("should return error when deviceGroupId is undefined", func() {
 				_, err := deviceGroupsService.DeleteDeviceGroupDevices(account, orgID, 0, []models.Device{savedDeviceGroup.Devices[0]})
 				Expect(err).ToNot(BeNil())
-				Expect(err.Error()).To(Equal("account or deviceGroupID undefined"))
+				Expect(err.Error()).To(Equal("device group mandatory field are undefined"))
 
 			})
 
