@@ -33,7 +33,7 @@ type DeviceDetailsList struct {
 
 // DeviceViewList is the list of devices for a given account, formatted for the UI
 type DeviceViewList struct {
-	Total   int          `json:"total"`
+	Total   int64        `json:"total"`
 	Devices []DeviceView `json:"devices"`
 }
 

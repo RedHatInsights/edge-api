@@ -8,6 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	imagebuilder "github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	models "github.com/redhatinsights/edge-api/pkg/models"
 )
 
@@ -107,4 +108,19 @@ func (m *MockClientInterface) GetMetadata(image *models.Image) (*models.Image, e
 func (mr *MockClientInterfaceMockRecorder) GetMetadata(image interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetadata", reflect.TypeOf((*MockClientInterface)(nil).GetMetadata), image)
+}
+
+// SearchPackage mocks base method.
+func (m *MockClientInterface) SearchPackage(packageName, arch, dist string) (*imagebuilder.SearchPackageResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchPackage", packageName, arch, dist)
+	ret0, _ := ret[0].(*imagebuilder.SearchPackageResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchPackage indicates an expected call of SearchPackage.
+func (mr *MockClientInterfaceMockRecorder) SearchPackage(packageName, arch, dist interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchPackage", reflect.TypeOf((*MockClientInterface)(nil).SearchPackage), packageName, arch, dist)
 }

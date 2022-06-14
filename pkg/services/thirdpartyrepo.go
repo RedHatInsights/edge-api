@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"gorm.io/gorm"
+	"net/url"
 	"strconv"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -74,6 +75,9 @@ func (s *ThirdPartyRepoService) CreateThirdPartyRepo(thirdPartyRepo *models.Thir
 	}
 	if thirdPartyRepo.URL == "" {
 		return nil, new(ThirdPartyRepositoryURLIsEmpty)
+	}
+	if _, err := url.ParseRequestURI(thirdPartyRepo.URL); err != nil {
+		return nil, new(InvalidURLForCustomRepo)
 	}
 	repoExists, err := s.thirdPartyRepoNameExists(account, thirdPartyRepo.Name)
 	if err != nil {

@@ -623,6 +623,8 @@ var _ = Describe("DeviceGroup routes", func() {
 
 				account, err := common.GetAccount(req)
 				Expect(err).To(BeNil())
+				orgID, err := common.GetOrgID(req)
+				Expect(err).To(BeNil())
 
 				var setOfDeviceUUIDS []string
 				for _, device := range devices {
@@ -634,14 +636,14 @@ var _ = Describe("DeviceGroup routes", func() {
 
 				var commitID uint
 				// setup mock for update
-				mockDeviceService.EXPECT().GetLatestCommitFromDevices(account, setOfDeviceUUIDS).
+				mockDeviceService.EXPECT().GetLatestCommitFromDevices(account, orgID, setOfDeviceUUIDS).
 					Return(commitID, nil)
 				mockCommitService.EXPECT().GetCommitByID(commitID).
 					Return(&commit, nil)
 				mockUpdateService.EXPECT().BuildUpdateTransactions(&devicesUpdate, account, &commit).
 					Return(&updTransactions, nil)
 				for _, trans := range updTransactions {
-					mockUpdateService.EXPECT().CreateUpdate(trans.ID).Return(&trans, nil)
+					mockUpdateService.EXPECT().CreateUpdateAsync(trans.ID)
 				}
 				handler := http.HandlerFunc(UpdateAllDevicesFromGroup)
 				handler.ServeHTTP(rr, req)

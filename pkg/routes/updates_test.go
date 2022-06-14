@@ -374,7 +374,7 @@ var _ = Describe("Update routes", func() {
 				req = req.WithContext(ctx)
 
 				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), account, gomock.Any()).Return(&updateTransactions, nil)
-				mockUpdateService.EXPECT().CreateUpdate(updateTransactions[0].ID)
+				mockUpdateService.EXPECT().CreateUpdateAsync(updateTransactions[0].ID)
 
 				responseRecorder := httptest.NewRecorder()
 				handler := http.HandlerFunc(AddUpdate)
@@ -394,7 +394,7 @@ var _ = Describe("Update routes", func() {
 				req = req.WithContext(ctx)
 
 				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), account, gomock.Any()).Return(&updateTransactions, nil)
-				mockUpdateService.EXPECT().CreateUpdate(updateTransactions[0].ID)
+				mockUpdateService.EXPECT().CreateUpdateAsync(updateTransactions[0].ID)
 
 				responseRecorder := httptest.NewRecorder()
 				handler := http.HandlerFunc(AddUpdate)

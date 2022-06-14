@@ -42,6 +42,7 @@ type DeviceGroupsServiceInterface interface {
 type DeviceGroupsService struct {
 	Service
 	DeviceService DeviceServiceInterface
+	UpdateService UpdateServiceInterface
 }
 
 // NewDeviceGroupsService return an instance of the main implementation of a DeviceGroupsServiceInterface
@@ -49,6 +50,7 @@ func NewDeviceGroupsService(ctx context.Context, log *log.Entry) DeviceGroupsSer
 	return &DeviceGroupsService{
 		Service:       Service{ctx: ctx, log: log.WithField("service", "device-groups")},
 		DeviceService: NewDeviceService(ctx, log),
+		UpdateService: NewUpdateService(ctx, log),
 	}
 }
 
@@ -155,6 +157,10 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, limit int, offset 
 		var info []models.DeviceImageInfo
 		for i := range imgInfo {
 			info = append(info, imgInfo[i])
+		}
+		group.ValidUpdate, err = s.UpdateService.ValidateUpdateDeviceGroup(account, group.ID)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Error validating device group update")
 		}
 		deviceGroupListDetail = append(deviceGroupListDetail,
 			models.DeviceGroupListDetail{DeviceGroup: group,
@@ -265,6 +271,12 @@ func (s *DeviceGroupsService) GetDeviceGroupByID(ID string) (*models.DeviceGroup
 	if result.Error != nil {
 		return nil, new(DeviceGroupNotFound)
 	}
+
+	deviceGroup.ValidUpdate, err = s.UpdateService.ValidateUpdateDeviceGroup(account, deviceGroup.ID)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error validating device group update")
+	}
+
 	return &deviceGroup, nil
 }
 

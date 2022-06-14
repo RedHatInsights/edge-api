@@ -2,6 +2,8 @@ package models
 
 import (
 	"errors"
+	"fmt"
+	"net/url"
 	"regexp"
 )
 
@@ -28,6 +30,8 @@ const (
 	RepoURLCantBeNilMessage = "repository URL can't be empty"
 	// RepoNameCantBeNilMessage is the error when Repository name is nil
 	RepoNameCantBeNilMessage = "repository name can't be empty"
+	// InvalidURL is the error when type invalid URL
+	InvalidURL = "invalid URL; %w"
 )
 
 var (
@@ -44,6 +48,9 @@ func (t *ThirdPartyRepo) ValidateRequest() error {
 	}
 	if !validRepoName.MatchString(t.Name) {
 		return errors.New(RepoNameCantBeInvalidMessage)
+	}
+	if _, err := url.ParseRequestURI(t.URL); err != nil {
+		return fmt.Errorf(InvalidURL, err)
 	}
 	return nil
 }
