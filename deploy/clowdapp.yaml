@@ -4,12 +4,6 @@ kind: Template
 metadata:
   name: edge-api
 objects:
-- apiVersion: v1
-  kind: Secret
-  metadata:
-    name: psk-playbook-dispatcher
-  stringData:
-    key: ${PSK_DISPATCHER}
 - apiVersion: cloud.redhat.com/v1alpha1
   kind: ClowdApp
   metadata:
