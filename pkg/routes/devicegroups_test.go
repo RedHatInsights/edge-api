@@ -347,7 +347,7 @@ var _ = Describe("DeviceGroup routes", func() {
 			Expect(dbResult).To(BeNil())
 		})
 		Context("getting DeviceGroup", func() {
-			dbResult := db.DB.Where("account = ? OR org_id = ?", account, orgID).First(&deviceGroup).Error
+			dbResult := db.DB.Where("(account = ? OR org_id = ?)", account, orgID).First(&deviceGroup).Error
 			Expect(dbResult).To(BeNil())
 		})
 		When("all is valid", func() {
