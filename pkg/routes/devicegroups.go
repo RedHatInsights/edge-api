@@ -520,7 +520,7 @@ func AddDeviceGroupDevices(w http.ResponseWriter, r *http.Request) {
 		ctxServices.Log.WithField("error", err.Error()).Error("Error when adding deviceGroup devices")
 		var apiError errors.APIError
 		switch err.(type) {
-		case *services.DeviceGroupDevicesNotSupplied, *services.DeviceGroupAccountOrIDUndefined:
+		case *services.DeviceGroupDevicesNotSupplied, *services.DeviceGroupMandatoryFieldsUndefined:
 			apiError = errors.NewBadRequest(err.Error())
 		case *services.DeviceGroupAccountDevicesNotFound:
 			apiError = errors.NewNotFound(err.Error())
@@ -552,7 +552,7 @@ func DeleteDeviceGroupManyDevices(w http.ResponseWriter, r *http.Request) {
 		ctxServices.Log.WithField("error", err.Error()).Error("Error when removing deviceGroup devices")
 		var apiError errors.APIError
 		switch err.(type) {
-		case *services.DeviceGroupDevicesNotSupplied, *services.DeviceGroupAccountOrIDUndefined:
+		case *services.DeviceGroupDevicesNotSupplied, *services.DeviceGroupMandatoryFieldsUndefined:
 			apiError = errors.NewBadRequest(err.Error())
 		case *services.DeviceGroupDevicesNotFound:
 			apiError = errors.NewNotFound(err.Error())
@@ -583,7 +583,7 @@ func DeleteDeviceGroupOneDevice(w http.ResponseWriter, r *http.Request) {
 		ctxServices.Log.WithField("error", err.Error()).Error("Error when removing deviceGroup devices")
 		var apiError errors.APIError
 		switch err.(type) {
-		case *services.DeviceGroupDevicesNotSupplied, *services.DeviceGroupAccountOrIDUndefined:
+		case *services.DeviceGroupDevicesNotSupplied, *services.DeviceGroupMandatoryFieldsUndefined:
 			apiError = errors.NewBadRequest(err.Error())
 		case *services.DeviceGroupDevicesNotFound:
 			apiError = errors.NewNotFound(err.Error())
