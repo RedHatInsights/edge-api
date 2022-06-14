@@ -192,6 +192,13 @@ func (e *DeviceGroupAccountOrNameUndefined) Error() string {
 	return "device group account or name are undefined"
 }
 
+// DeviceGroupMandatoryFieldsUndefined indicates that device group mandatory field are undefined
+type DeviceGroupMandatoryFieldsUndefined struct{}
+
+func (e *DeviceGroupMandatoryFieldsUndefined) Error() string {
+	return "device group mandatory field are undefined"
+}
+
 // DeviceHasImageUndefined indicates that device record has image not defined
 type DeviceHasImageUndefined struct{}
 
