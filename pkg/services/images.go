@@ -82,7 +82,7 @@ type ImageService struct {
 	RepoService  RepoServiceInterface
 }
 
-// ValidateAllImageReposAreFromAccount validates the account for Third Party Repositories
+// ValidateAllImageReposAreFromAccountOrOrgID validates the account for Third Party Repositories
 func ValidateAllImageReposAreFromAccountOrOrgID(account string, orgID string, repos []models.ThirdPartyRepo) error {
 
 	if account == "" && orgID == "" {
