@@ -70,6 +70,8 @@ func ImageByOSTreeHashCtx(next http.Handler) http.Handler {
 					responseErr = errors.NewNotFound(err.Error())
 				case *services.AccountNotSet:
 					responseErr = errors.NewBadRequest(err.Error())
+				case *services.OrgIDNotSet:
+					responseErr = errors.NewBadRequest(err.Error())
 				default:
 					responseErr = errors.NewInternalServerError()
 				}
@@ -107,6 +109,8 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 					responseErr = errors.NewNotFound(err.Error())
 				case *services.AccountNotSet:
 					responseErr = errors.NewBadRequest(err.Error())
+				case *services.OrgIDNotSet:
+					responseErr = errors.NewBadRequest(err.Error())
 				case *services.IDMustBeInteger:
 					responseErr = errors.NewBadRequest(err.Error())
 				default:
@@ -119,11 +123,12 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 				return
 			}
 			account, err := common.GetAccount(r)
-			if err != nil || image.Account != account {
+			orgID, err := common.GetOrgID(r)
+			if err != nil || image.Account != account || image.OrgID != orgID {
 				s.Log.WithFields(log.Fields{
 					"error":   err.Error(),
 					"account": account,
-				}).Error("Error retrieving account or image doesn't belong to account")
+				}).Error("Error retrieving account or image doesn't belong to account/orgID")
 				err := errors.NewBadRequest(err.Error())
 				w.WriteHeader(err.GetStatus())
 				if err := json.NewEncoder(w).Encode(&err); err != nil {
@@ -311,7 +316,7 @@ func validateGetAllImagesSearchParams(next http.Handler) http.Handler {
 	})
 }
 
-// GetAllImages image objects from the database for an account
+// GetAllImages image objects from the database for an account/orgID
 func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	services := dependencies.ServicesFromContext(r.Context())
 	services.Log.Debug("Getting all images")
@@ -319,17 +324,12 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	var images []models.Image
 	result := imageFilters(r, db.DB)
 	pagination := common.GetPagination(r)
-	account, err := common.GetAccount(r)
-	if err != nil {
-		services.Log.WithField("error", err).Debug("Account not found")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+	account, orgID := readAccountOrOrgID(w, r, services.Log)
+	if account == "" && orgID == "" {
+		// logs and response handled by readAccountOrOrgID
 		return
 	}
-	countResult := imageFilters(r, db.DB.Model(&models.Image{})).Where("images.account = ?", account).Count(&count)
+	countResult := imageFilters(r, db.DB.Model(&models.Image{})).Where("(images.account = ? OR images.org_id = ?)", account, orgID).Count(&count)
 	if countResult.Error != nil {
 		services.Log.WithField("error", countResult.Error.Error()).Error("Error retrieving images")
 		countErr := errors.NewInternalServerError()
@@ -339,7 +339,7 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Preload("Commit.Repo").Preload("CustomPackages").Preload("ThirdPartyRepositories").Where("images.account = ?", account).Joins("Commit").Joins("Installer").Find(&images)
+	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Preload("Commit.Repo").Preload("CustomPackages").Preload("ThirdPartyRepositories").Where("(images.account = ? OR images.org_id = ?)", account, orgID).Joins("Commit").Joins("Installer").Find(&images)
 	if result.Error != nil {
 		services.Log.WithField("error", result.Error.Error()).Error("Error retrieving images")
 		err := errors.NewInternalServerError()
@@ -397,7 +397,7 @@ type ImageDetail struct {
 	UpdateUpdated      int           `json:"update_updated"`
 }
 
-// GetImageByID obtains a image from the database for an account
+// GetImageByID obtains a image from the database for an account/orgID
 func GetImageByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		if err := json.NewEncoder(w).Encode(image); err != nil {
@@ -407,7 +407,7 @@ func GetImageByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetImageDetailsByID obtains a image from the database for an account
+// GetImageDetailsByID obtains a image from the database for an account/orgID
 func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		services := dependencies.ServicesFromContext(r.Context())
@@ -435,7 +435,7 @@ func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetImageByOstree obtains a image from the database for an account based on Commit Ostree
+// GetImageByOstree obtains a image from the database for an account/orgID based on Commit Ostree
 func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		if err := json.NewEncoder(w).Encode(&image); err != nil {
@@ -575,14 +575,9 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 	}
-	account, err := common.GetAccount(r)
-	if err != nil {
-		services.Log.WithField("error", err.Error()).Debug("Bad request")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+	account, orgID := readAccountOrOrgID(w, r, services.Log)
+	if account == "" && orgID == "" {
+		// logs and response handled by readAccountOrOrgID
 		return
 	}
 	if image == nil {
@@ -593,7 +588,7 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 	}
-	imageExists, err := services.ImageService.CheckImageName(image.Name, account)
+	imageExists, err := services.ImageService.CheckImageName(image.Name, account, orgID)
 	if err != nil {
 		services.Log.WithField("error", err.Error()).Error("Internal Server Error")
 		err := errors.NewInternalServerError()

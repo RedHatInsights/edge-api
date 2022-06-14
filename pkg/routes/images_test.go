@@ -437,7 +437,7 @@ func TestPostCheckImageNameAlreadyExist(t *testing.T) {
 
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any()).Return(true, nil)
+	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),
@@ -486,7 +486,7 @@ func TestPostCheckImageNameDoesNotExist(t *testing.T) {
 
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any()).Return(false, nil)
+	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil)
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),

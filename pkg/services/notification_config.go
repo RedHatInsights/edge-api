@@ -8,6 +8,7 @@ type ImageNotification struct {
 	EventType   string                  `json:"event_type"`
 	Timestamp   string                  `json:"timestamp"`
 	Account     string                  `json:"account_id"`
+	OrgID       string                  `json:"org_id" gorm:"index"`
 	Context     string                  `json:"context"`
 	Events      []EventNotification     `json:"events"`
 	Recipients  []RecipientNotification `json:"recipients"`
