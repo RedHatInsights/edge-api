@@ -476,7 +476,7 @@ var _ = Describe("Image Service Test", func() {
 				var repos []models.ThirdPartyRepo
 				account := "00000"
 				orgID := "11111"
-				err := services.ValidateAllImageReposAreFromAccount(account, orgID, repos)
+				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account, orgID, repos)
 				Expect(err).ToNot(HaveOccurred())
 
 			})
@@ -484,7 +484,7 @@ var _ = Describe("Image Service Test", func() {
 				var repos []models.ThirdPartyRepo
 				account := ""
 				orgID := ""
-				err := services.ValidateAllImageReposAreFromAccount(account, orgID, repos)
+				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account, orgID, repos)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError("repository information is not valid"))
 			})
@@ -498,7 +498,7 @@ var _ = Describe("Image Service Test", func() {
 				repo2 := models.ThirdPartyRepo{Account: account, Name: faker.UUIDHyphenated(), URL: "https://repo2.simple.com"}
 				result = db.DB.Create(&repo2)
 				Expect(result.Error).ToNot(HaveOccurred())
-				err := services.ValidateAllImageReposAreFromAccount(account, orgID, []models.ThirdPartyRepo{repo1, repo2})
+				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account, orgID, []models.ThirdPartyRepo{repo1, repo2})
 				Expect(err).ToNot(HaveOccurred())
 
 			})
@@ -511,7 +511,7 @@ var _ = Describe("Image Service Test", func() {
 				repo2 := models.ThirdPartyRepo{OrgID: orgID, Name: faker.UUIDHyphenated(), URL: "https://repo2.simple.com"}
 				result = db.DB.Create(&repo2)
 				Expect(result.Error).ToNot(HaveOccurred())
-				err := services.ValidateAllImageReposAreFromAccount(account, orgID, []models.ThirdPartyRepo{repo1, repo2})
+				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account, orgID, []models.ThirdPartyRepo{repo1, repo2})
 				Expect(err).ToNot(HaveOccurred())
 
 			})
@@ -525,7 +525,7 @@ var _ = Describe("Image Service Test", func() {
 				repo2 := models.ThirdPartyRepo{Account: account2, Name: faker.UUIDHyphenated(), URL: "https://repo2.simple.com"}
 				result = db.DB.Create(&repo2)
 				Expect(result.Error).ToNot(HaveOccurred())
-				err := services.ValidateAllImageReposAreFromAccount(account1, orgID, []models.ThirdPartyRepo{repo1, repo2})
+				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account1, orgID, []models.ThirdPartyRepo{repo1, repo2})
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError("some repositories were not found"))
 			})
@@ -533,13 +533,13 @@ var _ = Describe("Image Service Test", func() {
 				orgID1 := "1111111"
 				orgID2 := "2222222"
 				account := ""
-				repo1 := models.ThirdPartyRepo{Account: account, OrgID: orgID1, Name: faker.UUIDHyphenated(), URL: "https://repo1.simple.com"}
+				repo1 := models.ThirdPartyRepo{OrgID: orgID1, Name: faker.UUIDHyphenated(), URL: "https://repo1.simple.com"}
 				result := db.DB.Create(&repo1)
 				Expect(result.Error).ToNot(HaveOccurred())
-				repo2 := models.ThirdPartyRepo{Account: account, OrgID: orgID2, Name: faker.UUIDHyphenated(), URL: "https://repo2.simple.com"}
+				repo2 := models.ThirdPartyRepo{OrgID: orgID2, Name: faker.UUIDHyphenated(), URL: "https://repo2.simple.com"}
 				result = db.DB.Create(&repo2)
 				Expect(result.Error).ToNot(HaveOccurred())
-				err := services.ValidateAllImageReposAreFromAccount(account, orgID1, []models.ThirdPartyRepo{repo1, repo2})
+				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account, orgID1, []models.ThirdPartyRepo{repo1, repo2})
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError("some repositories were not found"))
 			})

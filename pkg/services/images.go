@@ -83,7 +83,7 @@ type ImageService struct {
 }
 
 // ValidateAllImageReposAreFromAccount validates the account for Third Party Repositories
-func ValidateAllImageReposAreFromAccount(account string, orgID string, repos []models.ThirdPartyRepo) error {
+func ValidateAllImageReposAreFromAccountOrOrgID(account string, orgID string, repos []models.ThirdPartyRepo) error {
 
 	if account == "" && orgID == "" {
 		return errors.NewBadRequest("repository information is not valid")
@@ -98,8 +98,14 @@ func ValidateAllImageReposAreFromAccount(account string, orgID string, repos []m
 
 	var existingRepos []models.ThirdPartyRepo
 
-	if res := db.DB.Select("id").Where("(account = ? OR org_id = ?)", account, orgID).Find(&existingRepos, ids); res.Error != nil {
-		return res.Error
+	if orgID == "" {
+		if res := db.DB.Select("id").Where(models.ThirdPartyRepo{Account: account}).Find(&existingRepos, ids); res.Error != nil {
+			return res.Error
+		}
+	} else {
+		if res := db.DB.Select("id").Where(models.ThirdPartyRepo{OrgID: orgID}).Find(&existingRepos, ids); res.Error != nil {
+			return res.Error
+		}
 	}
 
 	if len(existingRepos) != len(ids) {
@@ -174,7 +180,7 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 			return er
 		}
 	}
-	if err := ValidateAllImageReposAreFromAccount(account, orgID, image.ThirdPartyRepositories); err != nil {
+	if err := ValidateAllImageReposAreFromAccountOrOrgID(account, orgID, image.ThirdPartyRepositories); err != nil {
 
 		return err
 	}
@@ -276,7 +282,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 			return er
 		}
 	}
-	if err := ValidateAllImageReposAreFromAccount(previousImage.Account, previousImage.OrgID, image.ThirdPartyRepositories); err != nil {
+	if err := ValidateAllImageReposAreFromAccountOrOrgID(previousImage.Account, previousImage.OrgID, image.ThirdPartyRepositories); err != nil {
 		return err
 	}
 
@@ -1425,15 +1431,23 @@ func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, err
 		s.log.Error("Error retreving account")
 		return nil, new(AccountNotSet)
 	}
-	orgID, err := common.GetAccountFromContext(s.ctx)
+	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {
 		s.log.Error("Error retreving org_id")
 		return nil, new(OrgIDNotSet)
 	}
-	result := db.DB.Joins("Commit").Joins("Installer").Preload("Packages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where("(account = ? OR org_id) AND image_set_id = ? AND status = ?", account, orgID, image.ImageSetID, models.ImageStatusSuccess).Last(&rollback, "images.id < ?", image.ID)
-	if result.Error != nil {
-		s.log.WithField("error", result.Error).Error("Error retrieving rollback image")
-		return nil, new(ImageNotFoundError)
+	if orgID != "" {
+		result := db.DB.Joins("Commit").Joins("Installer").Preload("Packages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where(&models.Image{ImageSetID: image.ImageSetID, OrgID: orgID, Status: models.ImageStatusSuccess}).Last(&rollback, "images.id < ?", image.ID)
+		if result.Error != nil {
+			s.log.WithField("error", result.Error).Error("Error retrieving rollback image")
+			return nil, new(ImageNotFoundError)
+		}
+	} else if account != "" {
+		result := db.DB.Joins("Commit").Joins("Installer").Preload("Packages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where(&models.Image{ImageSetID: image.ImageSetID, Account: account, Status: models.ImageStatusSuccess}).Last(&rollback, "images.id < ?", image.ID)
+		if result.Error != nil {
+			s.log.WithField("error", result.Error).Error("Error retrieving rollback image")
+			return nil, new(ImageNotFoundError)
+		}
 	}
 	s.log = s.log.WithField("imageID", image.ID)
 	s.log.Info("Rollback image successfully retrieved")
