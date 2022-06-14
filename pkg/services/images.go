@@ -1042,11 +1042,6 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 		s.log.WithField("error", err).Error("Error retrieving org_id or account")
 		return nil, new(OrgIDNotSet)
 	}
-	orgID, err := common.GetOrgIDFromContext(s.ctx)
-	if err != nil {
-		s.log.WithField("error", err).Error("Error retrieving org_id")
-		return nil, new(OrgIDNotSet)
-	}
 	id, err := strconv.Atoi(imageID)
 	if err != nil {
 		s.log.WithField("error", err).Debug("Request related error - ID is not integer")
