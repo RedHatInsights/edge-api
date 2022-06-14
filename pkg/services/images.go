@@ -718,7 +718,7 @@ func (s *ImageService) AddUserInfo(image *models.Image) error {
 	// Files that will be used to modify the ISO and will be cleaned
 	imageName := destPath + image.Name
 	kickstart := fmt.Sprintf("%sfinalKickstart-%s_%d.ks", destPath, image.Account, image.ID)
-	// in the future, org_id will be used as seen below:
+	// TODO: in the future, org_id will be used as seen below:
 	// kickstart := fmt.Sprintf("%sfinalKickstart-%s_%d.ks", destPath, image.OrgID, image.ID)
 
 	err := s.downloadISO(imageName, downloadURL)
@@ -1037,14 +1037,9 @@ func (s *ImageService) addImageExtraData(image *models.Image) (*models.Image, er
 // GetImageByID retrieves an image by its identifier
 func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 	var image models.Image
-	account, err := common.GetAccountFromContext(s.ctx)
+	account, orgID, err := common.GetAccountOrOrgIDFromContext(s.ctx)
 	if err != nil {
-		s.log.WithField("error", err).Error("Error retrieving account")
-		return nil, new(AccountNotSet)
-	}
-	orgID, err := common.GetOrgIDFromContext(s.ctx)
-	if err != nil {
-		s.log.WithField("error", err).Error("Error retrieving org_id")
+		s.log.WithField("error", err).Error("Error retrieving org_id or account")
 		return nil, new(OrgIDNotSet)
 	}
 	id, err := strconv.Atoi(imageID)
@@ -1064,15 +1059,10 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error) {
 	s.log.WithField("ostreeHash", commitHash).Info("Getting image by OSTreeHash")
 	var image models.Image
-	account, err := common.GetAccountFromContext(s.ctx)
+	account, orgID, err := common.GetAccountOrOrgIDFromContext(s.ctx)
 	if err != nil {
-		s.log.Error("Error retreving account")
+		s.log.Error("Error retreving account or org_id")
 		return nil, new(AccountNotSet)
-	}
-	orgID, err := common.GetOrgIDFromContext(s.ctx)
-	if err != nil {
-		s.log.WithField("error", err).Error("Error retrieving org_id")
-		return nil, new(OrgIDNotSet)
 	}
 	result := db.DB.Where("(images.account = ? OR images.org_id)", account, orgID).Joins("JOIN commits ON commits.id = images.commit_id AND commits.os_tree_commit = ?", commitHash).Joins("Installer").Preload("Packages").Preload("Commit.InstalledPackages").Preload("Commit.Repo").First(&image)
 	if result.Error != nil {
@@ -1314,7 +1304,7 @@ func (s *ImageService) CheckIfIsLatestVersion(previousImage *models.Image) error
 	}
 
 	if previousImage.Account == "" && previousImage.OrgID == "" {
-		return new(AccountNotSet)
+		return new(AccountOrOrgIDNotSet)
 	}
 	if previousImage.ImageSetID == nil {
 		return new(ImageSetUnDefined)

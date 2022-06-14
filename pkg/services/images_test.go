@@ -443,7 +443,7 @@ var _ = Describe("Image Service Test", func() {
 
 				err := service.CheckIfIsLatestVersion(&image4)
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(new(services.AccountNotSet)))
+				Expect(err).To(MatchError(new(services.AccountOrOrgIDNotSet)))
 			})
 
 			It("the image image-set must be be defined", func() {
