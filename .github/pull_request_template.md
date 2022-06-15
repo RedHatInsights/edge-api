@@ -20,6 +20,4 @@ What is it?
 - [ ] I have made corresponding changes to the documentation
 - [ ] I have added tests that prove my fix is effective or that my feature works
 - [ ] New and existing unit tests pass locally with my changes
-- [ ] I run `go fmt ./...` to check that my code is properly formatted
-- [ ] I run `go vet ./...` to check that my code is free of common Go style mistakes
-- [ ] I run `make lint` to prints out coding style mistakes and fix them
+- [ ] I run `make pre-commit` to check fmt/vet/lint/test-no-fdo

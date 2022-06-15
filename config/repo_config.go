@@ -1,7 +1,7 @@
 package config
 
 // DefaultDistribution set the default image distribution in case miss it
-const DefaultDistribution = "rhel-85"
+const DefaultDistribution = "rhel-90"
 
 // RequiredPackages contains minimun list of packages to build an image
 var RequiredPackages = []string{"rhc",

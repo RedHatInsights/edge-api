@@ -198,8 +198,7 @@ pull_request_rules:
       - body~=(?m)^\[X\] I have made corresponding changes to the documentation
       - body~=(?m)^\[X\] I have added tests that prove my fix is effective or that my feature works
       - body~=(?m)^\[X\] New and existing unit tests pass locally with my changes
-      - body~=(?m)^\[X\] I run `go fmt ./...` to check that my code is properly formatted
-      - body~=(?m)^\[X\] I run `go vet ./...` to check that my code is free of common Go style mistakes
+      - body~=(?m)^\[X\]  I run make pre-commit to check fmt/vet/lint/test-no-fdo
     actions:
       label:
         add:

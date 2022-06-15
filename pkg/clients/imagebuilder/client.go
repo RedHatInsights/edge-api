@@ -24,6 +24,7 @@ type ClientInterface interface {
 	GetCommitStatus(image *models.Image) (*models.Image, error)
 	GetInstallerStatus(image *models.Image) (*models.Image, error)
 	GetMetadata(image *models.Image) (*models.Image, error)
+	SearchPackage(packageName string, arch string, dist string) (*SearchPackageResult, error)
 }
 
 // Client is the implementation of an ClientInterface
@@ -123,6 +124,29 @@ type ComposeResult struct {
 // S3UploadStatus contains the URL to the S3 Bucket
 type S3UploadStatus struct {
 	URL string `json:"url"`
+}
+
+// MetaCount contains Count of a SearchPackageResult
+type MetaCount struct {
+	Count int `json:"count"`
+}
+
+// SearchPackage contains Name of package
+type SearchPackage struct {
+	Name string `json:"name"`
+}
+
+// SearchPackageResult contains Meta of a MetaCount
+type SearchPackageResult struct {
+	Meta MetaCount       `json:"meta"`
+	Data []SearchPackage `json:"data"`
+}
+
+// PackageRequestError indicates request search packages from Image Builder
+type PackageRequestError struct{}
+
+func (e *PackageRequestError) Error() string {
+	return "image builder search packages request error"
 }
 
 // Metadata struct to get the metadata response
@@ -461,4 +485,51 @@ func (c *Client) GetImageThirdPartyRepos(image *models.Image) ([]Repository, err
 	}
 
 	return repos, nil
+}
+
+// SearchPackage validate package name with Image Builder API
+func (c *Client) SearchPackage(packageName string, arch string, dist string) (*SearchPackageResult, error) {
+	c.log.Infof("Searching rhel package")
+	cfg := config.Get()
+	if packageName == "" || arch == "" || dist == "" {
+		return nil, errors.New("mandatory fields should not be empty")
+	}
+	//build the correct URL using the package name
+	url := fmt.Sprintf("%s/api/image-builder/v1/packages?distribution=%s&architecture=%s&search=%s", cfg.ImageBuilderConfig.URL, dist, arch, packageName)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range clients.GetOutgoingHeaders(c.ctx) {
+		req.Header.Add(key, value)
+	}
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		c.log.WithFields(log.Fields{
+			"statusCode": res.StatusCode,
+			"error":      err,
+		}).Error(new(PackageRequestError))
+		return nil, err
+	}
+	respBody, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		c.log.WithFields(log.Fields{
+			"statusCode": res.StatusCode,
+			"error":      err.Error(),
+		}).Error(new(PackageRequestError))
+		return nil, new(PackageRequestError)
+	}
+	var searchResult SearchPackageResult
+	err = json.Unmarshal(respBody, &searchResult)
+	if err != nil {
+		c.log.WithField("error", err.Error()).Error(new(PackageRequestError))
+		return nil, err
+	}
+	return &searchResult, nil
 }

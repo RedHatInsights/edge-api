@@ -60,6 +60,7 @@ type ImageServiceInterface interface {
 	GetRollbackImage(image *models.Image) (*models.Image, error)
 	SendImageNotification(image *models.Image) (ImageNotification, error)
 	SetDevicesUpdateAvailabilityFromImageSet(account string, ImageSetID uint) error
+	ValidateImagePackage(pack string, image *models.Image) error
 }
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
@@ -108,6 +109,41 @@ func ValidateAllImageReposAreFromAccount(account string, repos []models.ThirdPar
 	return nil
 }
 
+func (s *ImageService) getImageSetForNewImage(account string, image *models.Image) (*models.ImageSet, error) {
+	// Check for ImageSet existence, if imageSet does not exist create one,
+	// if it exists and is not linked to any images reuse it,
+	// if it exists and linked to any images return error
+	var imageSet models.ImageSet
+	if result := db.DB.Preload("Images").Where("account = ? AND name = ?", account, image.Name).First(&imageSet); result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			// Create a new imageSet
+			imageSet = models.ImageSet{Account: account, Name: image.Name, Version: image.Version}
+			if result := db.DB.Create(&imageSet); result.Error != nil {
+				s.log.WithFields(log.Fields{
+					"imageSetName": image.Name,
+					"error":        result.Error.Error(),
+				}).Error("error when creating a new imageSet")
+				return nil, result.Error
+			}
+			s.log.WithField("imageSetName", image.Name).Debug("imageSet created")
+			// return immediately
+			return &imageSet, nil
+		}
+		s.log.WithFields(log.Fields{
+			"imageSetName": image.Name,
+			"error":        result.Error.Error(),
+		}).Error("error when checking for previous imageSet existence")
+		return nil, result.Error
+	}
+	// imageSet exists, check images existence
+	if len(imageSet.Images) != 0 {
+		s.log.WithField("imageSetName", image.Name).Error("imageSet already exists and linked to existing images")
+		return nil, new(ImageSetAlreadyExists)
+	}
+	s.log.WithField("imageSetName", image.Name).Debug("imageSet already exists, with no images linked, imageSet will be reused")
+	return &imageSet, nil
+}
+
 // CreateImage creates an Image for an Account on Image Builder and on our database
 func (s *ImageService) CreateImage(image *models.Image, account string, orgID string, requestID string) error {
 
@@ -130,6 +166,14 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 	if image.Version == 0 {
 		image.Version = 1
 	}
+	packages := image.Packages
+	// we now need to loop this request for each package
+	for _, p := range packages {
+		er := s.ValidateImagePackage(p.Name, image)
+		if er != nil {
+			return er
+		}
+	}
 	if err := ValidateAllImageReposAreFromAccount(account, image.ThirdPartyRepositories); err != nil {
 		return err
 	}
@@ -138,25 +182,13 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 	if errNotify != nil {
 		s.log.WithField("message", errNotify.Error()).Error("Error sending notification")
 		s.log.WithField("message", notify).Error("Notify Error")
-
-	}
-	// Check for existing ImageSet and return error if exists
-	var imageSetsCount int64
-	if result := db.DB.Model(&models.ImageSet{}).Where("name = ? AND account = ?", image.Name, account).Count(&imageSetsCount); result.Error != nil {
-		s.log.WithField("error", result.Error.Error()).Error("Error checking for previous image set existence")
-		return result.Error
-	}
-	if imageSetsCount > 0 {
-		s.log.WithField("imageSetName", image.Name).Error("ImageSet already exists, UpdateImage transaction expected and not CreateImage", image.Name)
-		return new(ImageSetAlreadyExists)
 	}
 
-	// Create a new imageSet
-	imageSet := models.ImageSet{Account: account, Name: image.Name, Version: image.Version}
-	if result := db.DB.Create(&imageSet); result.Error != nil {
-		return result.Error
+	imageSet, err := s.getImageSetForNewImage(account, image)
+	if err != nil {
+		// all logs are handled in getImageSetForNewImage
+		return err
 	}
-	s.log.WithField("imageSetName", image.Name).Debug("ImageSet created")
 
 	// create an image under the new imageSet
 	image.Account = account
@@ -202,6 +234,28 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 	return nil
 }
 
+// ValidateImagePackage validate package name on Image Builder
+func (s *ImageService) ValidateImagePackage(packageName string, image *models.Image) error {
+	arch := image.Commit.Arch
+	dist := image.Distribution
+	if arch == "" || dist == "" {
+		return errors.NewBadRequest("value is not one of the allowed values")
+	}
+	res, err := s.ImageBuilder.SearchPackage(packageName, arch, dist)
+	if err != nil {
+		return err
+	}
+	if res.Meta.Count == 0 {
+		return new(PackageNameDoesNotExist)
+	}
+	for _, pkg := range res.Data {
+		if pkg.Name == packageName {
+			return nil
+		}
+	}
+	return new(PackageNameDoesNotExist)
+}
+
 // UpdateImage updates an image, adding a new version of this image to an imageset
 func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Image) error {
 	s.log.Info("Updating image...")
@@ -211,6 +265,13 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	err := s.CheckIfIsLatestVersion(previousImage)
 	if err != nil {
 		return errors.NewBadRequest("only the latest updated image can be modified")
+	}
+	packages := image.Packages
+	for _, p := range packages {
+		er := s.ValidateImagePackage(p.Name, image)
+		if er != nil {
+			return er
+		}
 	}
 	if err := ValidateAllImageReposAreFromAccount(previousImage.Account, image.ThirdPartyRepositories); err != nil {
 		return err

@@ -57,6 +57,41 @@ var _ = Describe("Image Builder Client Test", func() {
 	It("should init client", func() {
 		Expect(client).ToNot(BeNil())
 	})
+	It("test validation of correct package name", func() {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintln(w, `{"meta":{"count":5}}`)
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+		res, err := client.SearchPackage("vim", "x86_64", "rhel-85")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res.Meta.Count).To(Equal(5))
+	})
+	It("test validation of wrong package name", func() {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintln(w, `{"meta":{"count":0}}`)
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+		res, err := client.SearchPackage("badrpm", "x86_64", "rhel-85")
+		Expect(err).To(BeNil())
+		Expect(res.Meta.Count).To(Equal(0))
+	})
+	It("test validation of empty package name", func() {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+		res, err := client.SearchPackage("", "x86_64", "rhel-85")
+		Expect(err.Error()).To(Equal("mandatory fields should not be empty"))
+		Expect(res).To(BeNil())
+	})
 	It("test compose image", func() {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")

@@ -47,6 +47,9 @@ test:
 test-no-fdo:
 	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS)
 
+test-clean-no-fdo:
+	go test -count=1 $$(go list ./... | grep -v /test/) $(TEST_OPTIONS)
+
 coverage: 
 	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /test/) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
 
@@ -58,6 +61,9 @@ coverage-html:
 
 vet:
 	go vet $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
+
+fmt:
+	go fmt $$(go list ./... | grep -v /vendor/)
 
 vet-no-fdo:
 	go vet $$(go list ./... | grep -v /vendor/)
@@ -97,6 +103,12 @@ restart-app:
 	$(MAKE) scale-down NAMESPACE=$(NAMESPACE)
 	sleep 5
 	$(MAKE) scale-up NAMESPACE=$(NAMESPACE)
+
+pre-commit:
+	$(MAKE) fmt
+	$(MAKE) vet-no-fdo
+	$(MAKE) lint
+	$(MAKE) test-clean-no-fdo
 
 generate-docs:
 	go run cmd/spec/main.go

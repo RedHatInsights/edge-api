@@ -36,7 +36,7 @@ config.yaml
 
 # env variables file
 .env
-
+.env_test
 # mac specific
 .DS_Store
 

@@ -48,3 +48,24 @@ func InitDB() {
 		log.Infof("Postgres information: '%s'", minorVersion)
 	}
 }
+
+// AccountOrOrg returns a gorm db transaction with account or orgID filter
+func AccountOrOrg(account string, orgID string, table string) *gorm.DB {
+	return AccountOrOrgTx(account, orgID, DB, table)
+}
+
+// AccountOrOrgTx returns a gorm db with account or orgID filter from a known gorm db transaction
+func AccountOrOrgTx(account string, orgID string, tx *gorm.DB, table string) *gorm.DB {
+	accountName := "account"
+	orgIDName := "org_id"
+	if table != "" {
+		accountName = fmt.Sprintf("%s.%s", table, accountName)
+		orgIDName = fmt.Sprintf("%s.%s", table, orgIDName)
+	}
+	sqlText := fmt.Sprintf(
+		"((%s = ? AND (%s != '' AND %s IS NOT NULL)) OR (%s = ? AND (%s != '' AND %s IS NOT NULL)))",
+		accountName, accountName, accountName,
+		orgIDName, orgIDName, orgIDName,
+	)
+	return tx.Where(sqlText, account, orgID)
+}

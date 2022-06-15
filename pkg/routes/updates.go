@@ -152,12 +152,11 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTransaction {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	ctxServices.Log.Info("Update is being created")
-	account := readAccount(w, r, ctxServices.Log)
-	if account == "" {
-		// errors handled by readAccount
+	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
+	if account == "" && orgID == "" {
+		// logs and response handled by readAccountOrOrgID
 		return nil
 	}
-
 	var devicesUpdate models.DevicesUpdate
 	if err := readRequestJSONBody(w, r, ctxServices.Log, &devicesUpdate); err != nil {
 		return nil
@@ -194,7 +193,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 		return nil
 	}
 	if devicesUpdate.CommitID == 0 {
-		commitID, err := ctxServices.DeviceService.GetLatestCommitFromDevices(account, devicesUUID)
+		commitID, err := ctxServices.DeviceService.GetLatestCommitFromDevices(account, orgID, devicesUUID)
 		if err != nil {
 			ctxServices.Log.WithFields(log.Fields{
 				"error": err.Error(),
@@ -258,7 +257,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 		upd = append(upd, update)
 		ctxServices.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
 		if update.Status != models.UpdateStatusDeviceDisconnected {
-			go ctxServices.UpdateService.CreateUpdate(update.ID)
+			ctxServices.UpdateService.CreateUpdateAsync(update.ID)
 		}
 	}
 	if result := db.DB.Save(upd); result.Error != nil {

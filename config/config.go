@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/spf13/viper"
@@ -19,7 +20,7 @@ type EdgeConfig struct {
 	Debug                    bool                      `json:"debug,omitempty"`
 	Database                 *dbConfig                 `json:"database,omitempty"`
 	BucketName               string                    `json:"bucket_name,omitempty"`
-	BucketRegion             *string                   `json:"bucket_region,omitempty"`
+	BucketRegion             string                    `json:"bucket_region,omitempty"`
 	AccessKey                string                    `json:"-"`
 	SecretKey                string                    `json:"-"`
 	RepoTempPath             string                    `json:"repo_temp_path,omitempty"`
@@ -92,6 +93,7 @@ func Init() {
 	options.SetDefault("Auth", false)
 	options.SetDefault("Debug", false)
 	options.SetDefault("EdgeTarballsBucket", "rh-edge-tarballs")
+	options.SetDefault("BucketRegion", "us-east-1")
 	options.SetDefault("ImageBuilderUrl", "http://image-builder:8080")
 	options.SetDefault("InventoryUrl", "http://host-inventory-service:8080/")
 	options.SetDefault("PlaybookDispatcherURL", "http://playbook-dispatcher:8080/")
@@ -141,6 +143,8 @@ func Init() {
 	} else {
 		options.SetDefault("FeatureFlagsUrl", os.Getenv("UNLEASH_URL"))
 		options.SetDefault("FeatureFlagsAPIToken", os.Getenv("UNLEASH_TOKEN"))
+		options.SetDefault("FeatureFlagsBearerToken", options.GetString("UNLEASH_TOKEN"))
+
 	}
 
 	options.SetDefault("FeatureFlagsService", os.Getenv("FEATURE_FLAGS_SERVICE"))
@@ -151,6 +155,11 @@ func Init() {
 		options.SetDefault("FeatureFlagsEnvironment", "development")
 	}
 
+	// check to see if you are running in ephemeral, the unleash server in ephemeral is empty
+	if strings.Contains(options.GetString("FeatureFlagsUrl"), "ephemeral") {
+		options.SetDefault("FeatureFlagsEnvironment", "ephemeral")
+	}
+
 	config = &EdgeConfig{
 		Hostname:        kubenv.GetString("Hostname"),
 		Auth:            options.GetBool("Auth"),
@@ -159,6 +168,7 @@ func Init() {
 		Debug:           options.GetBool("Debug"),
 		LogLevel:        options.GetString("LOG_LEVEL"),
 		BucketName:      options.GetString("EdgeTarballsBucket"),
+		BucketRegion:    options.GetString("BucketRegion"),
 		RepoTempPath:    options.GetString("RepoTempPath"),
 		OpenAPIFilePath: options.GetString("OpenAPIFilePath"),
 		ImageBuilderConfig: &imageBuilderConfig{
@@ -184,7 +194,7 @@ func Init() {
 		},
 		Local:                   options.GetBool("Local"),
 		UnleashURL:              options.GetString("FeatureFlagsUrl"),
-		UnleashSecretName:       options.GetString("FeatureFlagsAPIToken"),
+		UnleashSecretName:       options.GetString("FeatureFlagsBearerToken"),
 		FeatureFlagsEnvironment: options.GetString("FeatureFlagsEnvironment"),
 		FeatureFlagsURL:         options.GetString("FeatureFlagsUrl"),
 		FeatureFlagsAPIToken:    options.GetString("FeatureFlagsAPIToken"),
@@ -228,7 +238,9 @@ func Init() {
 		bucket := clowder.ObjectBuckets[config.BucketName]
 
 		config.BucketName = bucket.RequestedName
-		config.BucketRegion = bucket.Region
+		if bucket.Region != nil {
+			config.BucketRegion = *bucket.Region
+		}
 		config.AccessKey = *bucket.AccessKey
 		config.SecretKey = *bucket.SecretKey
 		config.Logging = &loggingConfig{

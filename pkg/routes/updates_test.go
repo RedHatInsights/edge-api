@@ -374,7 +374,7 @@ var _ = Describe("Update routes", func() {
 				req = req.WithContext(ctx)
 
 				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), account, gomock.Any()).Return(&updateTransactions, nil)
-				mockUpdateService.EXPECT().CreateUpdate(updateTransactions[0].ID)
+				mockUpdateService.EXPECT().CreateUpdateAsync(updateTransactions[0].ID)
 
 				responseRecorder := httptest.NewRecorder()
 				handler := http.HandlerFunc(AddUpdate)
@@ -384,7 +384,7 @@ var _ = Describe("Update routes", func() {
 			})
 
 			It("should allow to update with commitID", func() {
-				updateData, err := json.Marshal(models.DevicesUpdate{CommitID: commit.ID, DevicesUUID: []string{device.UUID}})
+				updateData, err := json.Marshal(models.DevicesUpdate{CommitID: updateCommit.ID, DevicesUUID: []string{device.UUID}})
 				Expect(err).To(BeNil())
 				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(updateData))
 				Expect(err).To(BeNil())
@@ -394,7 +394,7 @@ var _ = Describe("Update routes", func() {
 				req = req.WithContext(ctx)
 
 				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), account, gomock.Any()).Return(&updateTransactions, nil)
-				mockUpdateService.EXPECT().CreateUpdate(updateTransactions[0].ID)
+				mockUpdateService.EXPECT().CreateUpdateAsync(updateTransactions[0].ID)
 
 				responseRecorder := httptest.NewRecorder()
 				handler := http.HandlerFunc(AddUpdate)

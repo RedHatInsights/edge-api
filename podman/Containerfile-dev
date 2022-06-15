@@ -1,0 +1,99 @@
+############################################
+# STEP 1: build executable edge-api binaries
+############################################
+FROM registry.access.redhat.com/ubi8/go-toolset:latest
+#WORKDIR $GOPATH/src/github.com/RedHatInsights/edge-api/
+COPY . .
+# Use go mod
+ENV GO111MODULE=on
+# Fetch dependencies.
+# Using go get requires root.
+USER root
+RUN go get -d -v
+
+# interim FDO requirements
+ENV LD_LIBRARY_PATH /usr/local/lib
+RUN mkdir -p /usr/local/include/libfdo-data
+COPY --from=quay.io/fleet-management/libfdo-data ${LD_LIBRARY_PATH}/ ${LD_LIBRARY_PATH}/
+COPY --from=quay.io/fleet-management/libfdo-data /usr/local/include/libfdo-data/fdo_data.h /usr/local/include/libfdo-data/fdo_data.h
+
+# Build the binary.
+RUN go build -tags=fdo -o /usr/bin/edge-api
+
+# Build the migration binary.
+RUN go build -o /usr/bin/edge-api-migrate cmd/migrate/main.go
+RUN go build -o /usr/bin/edge-api-wipe cmd/db/wipe.go
+RUN go build -o /usr/bin/edge-api-migrate-device cmd/db/updDb/set_account_on_device.go
+
+# Run the doc binary
+RUN go run cmd/spec/main.go
+
+# Build the microservices
+#RUN go build -o /usr/local/bin/edge-api-ibvents cmd/kafka/main.go
+RUN go build -o /usr/local/bin/edge-api-utility pkg/services/utility/main.go
+RUN go build -o /usr/local/bin/edge-api-images-build pkg/services/images_build/main.go
+RUN go build -o /usr/local/bin/edge-api-images-iso pkg/services/images_iso/main.go
+RUN go build -o /usr/local/bin/edge-api-images-status pkg/services/images_status/main.go
+
+######################################
+# STEP 2: build the dependencies image
+######################################
+#FROM registry.redhat.io/codeready-workspaces/stacks-golang-rhel8:latest AS ubi-micro-build
+#RUN mkdir -p /mnt/rootfs
+# This step is needed for subscription-manager refresh.
+#RUN yum install coreutils-single -y
+#RUN yum install \
+#    coreutils-single glibc-minimal-langpack \
+#    pykickstart mtools xorriso genisoimage \
+#    syslinux isomd5sum file ostree \
+#    --releasever 8 --setopt \
+#    install_weak_deps=false --nodocs -y; \
+#    yum --installroot /mnt/rootfs clean all
+#RUN rm -rf /var/cache/* /var/log/dnf* /var/log/yum.*
+
+####################################
+# STEP 3: build edge-api micro image
+####################################
+#FROM scratch
+#LABEL maintainer="Red Hat, Inc."
+#LABEL com.redhat.component="ubi8-micro-container"
+
+# label for EULA
+#LABEL com.redhat.license_terms="https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI"
+
+# labels for container catalog
+#LABEL summary="edge-api micro image"
+#LABEL description="The edge-api project is an API server for fleet edge management capabilities."
+#LABEL io.k8s.display-name="edge-api-micro"
+
+#COPY --from=ubi-micro-build /mnt/rootfs/ /
+#COPY --from=ubi-micro-build /etc/yum.repos.d/ubi.repo /etc/yum.repos.d/ubi.repo
+
+ENV MTOOLS_SKIP_CHECK=1
+#ENV EDGE_API_WORKSPACE /src/github.com/RedHatInsights/edge-api
+
+# Copy the edge-api binaries into the image.
+#COPY /usr/bin/edge-api /usr/bin
+#COPY  /usr/bin/edge-api-migrate /usr/bin
+#COPY  /usr/bin/edge-api-wipe /usr/bin
+#COPY /usr/bin/edge-api-migrate-device /usr/bin
+#COPY  /usr/bin/edge-api-ibvents /usr/bin
+#COPY cmd/spec/openapi.json /var/tmp
+
+# kickstart inject requirements
+COPY scripts/fleetkick.sh /usr/local/bin
+RUN chmod +x /usr/local/bin/fleetkick.sh
+COPY templates/templateKickstart.ks /usr/local/etc
+
+# template to playbook dispatcher
+
+COPY templates/template_playbook_dispatcher_ostree_upgrade_payload.yml /usr/local/etc
+
+# interim FDO requirements
+#ENV LD_LIBRARY_PATH /usr/local/lib
+#RUN mkdir -p /usr/local/include/libfdo-data
+#COPY ${LD_LIBRARY_PATH}/ ${LD_LIBRARY_PATH}/
+#COPY /usr/local/include/libfdo-data/fdo_data.h /usr/local/include/libfdo-data/fdo_data.h
+
+USER 1001
+CMD ["edge-api"]

@@ -5,6 +5,7 @@
   vars:
     fleet_infra_env: "@@ .FleetInfraEnv @@"
     update_number: "@@ .UpdateNumber @@"
+    s3_region: "@@ .BucketRegion @@"
     s3_buckets:
       prod: "rh-edge-tarballs-prod"
       stage: "rh-edge-tarballs-stage"

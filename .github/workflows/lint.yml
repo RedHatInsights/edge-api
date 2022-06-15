@@ -55,3 +55,6 @@ jobs:
      
       - name: Validate spec-file
         run: python3 -m openapi_spec_validator ${{ github.workspace }}/cmd/spec/openapi.json
+
+      - name: Run unit tests without fdo
+        run: make test-clean-no-fdo
