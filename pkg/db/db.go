@@ -56,9 +56,16 @@ func AccountOrOrg(account string, orgID string, table string) *gorm.DB {
 
 // AccountOrOrgTx returns a gorm db with account or orgID filter from a known gorm db transaction
 func AccountOrOrgTx(account string, orgID string, tx *gorm.DB, table string) *gorm.DB {
+	accountName := "account"
+	orgIDName := "org_id"
 	if table != "" {
-		account = fmt.Sprintf("%s.%s", table, account)
-		orgID = fmt.Sprintf("%s.%s", table, orgID)
+		accountName = fmt.Sprintf("%s.%s", table, accountName)
+		orgIDName = fmt.Sprintf("%s.%s", table, orgIDName)
 	}
-	return tx.Where("((account = ? AND (account != '' AND account IS NOT NULL)) OR (org_id = ? AND (org_id != '' AND org_id IS NOT NULL)))", account, orgID)
+	sqlText := fmt.Sprintf(
+		"((%s = ? AND (%s != '' AND %s IS NOT NULL)) OR (%s = ? AND (%s != '' AND %s IS NOT NULL)))",
+		accountName, accountName, accountName,
+		orgIDName, orgIDName, orgIDName,
+	)
+	return tx.Where(sqlText, account, orgID)
 }
