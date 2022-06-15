@@ -10,6 +10,7 @@ import (
 
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	log "github.com/sirupsen/logrus"
 )
@@ -71,13 +72,19 @@ var _ = Describe("ThirdPartyRepos basic functions", func() {
 		})
 	})
 	Context("Custom repos creation with validation of URL", func() {
-		It("Custom repo should not be created with invalid URL", func() {
+		DescribeTable("Custom repos creation with invalid URL", func(url string) {
 			account := faker.UUIDHyphenated()
-			repo := models.ThirdPartyRepo{Name: faker.UUIDHyphenated(), URL: "http//google.com"}
+			repo := models.ThirdPartyRepo{Name: faker.UUIDHyphenated(), URL: url}
 			_, err := customReposService.CreateThirdPartyRepo(&repo, account)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("invalid URL"))
-		})
+		},
+			Entry("validate invalid URL with : missing", "http//google.com"),
+			Entry("validate invalid URL with https:// missing", "google.com"),
+			Entry("validate invalid URL without https:// and . missing", "foo/bar"),
+			Entry("validate invalid URL with number", "5432/bar"),
+			Entry("validate invalid URL with symbols", "http://valid-internet-host-com/llll"),
+		)
 
 		It("Custom repo should be created with valid URL", func() {
 			account := faker.UUIDHyphenated()
