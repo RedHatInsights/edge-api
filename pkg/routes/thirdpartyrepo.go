@@ -77,14 +77,14 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	}
 	ctxServices.Log.Info("Creating custom repository")
 
-	account, err := common.GetAccount(r)
+	account, orgID, err := common.GetAccountOrOrgIDFromContext(r.Context())
 	if err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Account was not set")
+		ctxServices.Log.WithField("error", err.Error()).Error("Account or Org ID were not set")
 		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 		return
 	}
 
-	thirdPartyRepo, err = ctxServices.ThirdPartyRepoService.CreateThirdPartyRepo(thirdPartyRepo, account)
+	thirdPartyRepo, err = ctxServices.ThirdPartyRepoService.CreateThirdPartyRepo(thirdPartyRepo, account, orgID)
 	if err != nil {
 		var apiError errors.APIError
 		switch err.(type) {
@@ -125,13 +125,13 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	var tprepo []models.ThirdPartyRepo
 	var count int64
 
-	account, err := common.GetAccount(r)
+	account, orgID, err := common.GetAccountOrOrgIDFromContext(r.Context())
 	if err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Error retrieving account from the request")
+		ctxServices.Log.WithField("error", err.Error()).Error("Error retrieving account or Org ID from the request")
 		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 		return
 	}
-	ctx := thirdPartyRepoFilters(r, db.DB).Model(&models.ThirdPartyRepo{}).Where("account = ?", account)
+	ctx := thirdPartyRepoFilters(r, db.DB).Model(&models.ThirdPartyRepo{}).Where("(account = ? OR org_id = ?)", account, orgID)
 
 	// Check to see if feature is enabled and not in ephemeral
 	cfg := config.Get()
@@ -187,12 +187,13 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 				respondWithAPIError(w, ctxServices.Log, responseErr)
 				return
 			}
-			account, err := common.GetAccount(r)
-			if err != nil || tprepo.Account != account {
+			account, orgID, err := common.GetAccountOrOrgIDFromContext(r.Context())
+			if err != nil || (tprepo.Account != account || tprepo.OrgID != orgID) {
 				ctxServices.Log.WithFields(log.Fields{
 					"error":   err.Error(),
 					"account": account,
-				}).Error("Error retrieving account or custom repository doesn't belong to account")
+					"orgID":   orgID,
+				}).Error("Error retrieving account (or orgID) or custom repository doesn't belong to account (or orgID")
 				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 				return
 			}
@@ -227,7 +228,7 @@ func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		// error handled by createRequest already
 		return
 	}
-	err = ctxServices.ThirdPartyRepoService.UpdateThirdPartyRepo(tprepo, oldtprepo.Account, fmt.Sprint(oldtprepo.ID))
+	err = ctxServices.ThirdPartyRepoService.UpdateThirdPartyRepo(tprepo, oldtprepo.Account, oldtprepo.OrgID, fmt.Sprint(oldtprepo.ID))
 	if err != nil {
 		var apiError errors.APIError
 		switch err.(type) {
