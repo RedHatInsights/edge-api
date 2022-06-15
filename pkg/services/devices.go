@@ -385,11 +385,7 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		return list, nil
 	}
 	// Build a map from the received devices UUIDs and the already saved db devices IDs
-	account, err := common.GetAccountFromContext(s.ctx)
-	if err != nil {
-		return nil, err
-	}
-	orgID, err := common.GetOrgIDFromContext(s.ctx)
+	account, orgID, err := common.GetAccountOrOrgIDFromContext(s.ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -631,11 +627,7 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 
 // GetDevicesCount get the device groups account records count from the database
 func (s *DeviceService) GetDevicesCount(tx *gorm.DB) (int64, error) {
-	account, err := common.GetAccountFromContext(s.ctx)
-	if err != nil {
-		return 0, err
-	}
-	orgID, err := common.GetOrgIDFromContext(s.ctx)
+	account, orgID, err := common.GetAccountOrOrgIDFromContext(s.ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -658,11 +650,7 @@ func (s *DeviceService) GetDevicesCount(tx *gorm.DB) (int64, error) {
 
 // GetDevicesView returns a list of EdgeDevices for a given account or org.
 func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*models.DeviceViewList, error) {
-	account, err := common.GetAccountFromContext(s.ctx)
-	if err != nil {
-		return nil, err
-	}
-	orgID, err := common.GetOrgIDFromContext(s.ctx)
+	account, orgID, err := common.GetAccountOrOrgIDFromContext(s.ctx)
 	if err != nil {
 		return nil, err
 	}
