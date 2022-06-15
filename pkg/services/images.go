@@ -97,17 +97,9 @@ func ValidateAllImageReposAreFromAccountOrOrgID(account string, orgID string, re
 	}
 
 	var existingRepos []models.ThirdPartyRepo
-
-	if orgID == "" {
-		if res := db.DB.Select("id").Where(models.ThirdPartyRepo{Account: account}).Find(&existingRepos, ids); res.Error != nil {
-			return res.Error
-		}
-	} else {
-		if res := db.DB.Select("id").Where(models.ThirdPartyRepo{OrgID: orgID}).Find(&existingRepos, ids); res.Error != nil {
-			return res.Error
-		}
+	if result := db.AccountOrOrg(account, orgID, "").Select("id").Find(&existingRepos, ids); result.Error != nil {
+		return result.Error
 	}
-
 	if len(existingRepos) != len(ids) {
 		return errors.NewNotFound("some repositories were not found")
 	}
@@ -120,7 +112,7 @@ func (s *ImageService) getImageSetForNewImage(account string, orgID string, imag
 	// if it exists and is not linked to any images reuse it,
 	// if it exists and linked to any images return error
 	var imageSet models.ImageSet
-	if result := db.DB.Preload("Images").Where("(account = ? OR org_id = ?) AND name = ?", account, orgID, image.Name).First(&imageSet); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").Preload("Images").Where("(name = ?)", image.Name).First(&imageSet); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			// Create a new imageSet
 			imageSet = models.ImageSet{Account: account, OrgID: orgID, Name: image.Name, Version: image.Version}
@@ -916,7 +908,7 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 func (s *ImageService) CheckImageName(name, account string, orgID string) (bool, error) {
 	s.log.WithField("name", name).Debug("Checking image name")
 	var imageFindByName *models.Image
-	result := db.DB.Where("name = ? AND (account = ? OR org_id = ?)", name, account, orgID).First(&imageFindByName)
+	result := db.AccountOrOrg(account, orgID, "").Where("(name = ?)", name).First(&imageFindByName)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return false, nil
@@ -1047,7 +1039,7 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 		s.log.WithField("error", err).Debug("Request related error - ID is not integer")
 		return nil, new(IDMustBeInteger)
 	}
-	result := db.DB.Debug().Preload("Commit.Repo").Preload("Commit.InstalledPackages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Where("(images.account = ? OR images.org_id = ?)", account, orgID).Joins("Commit").First(&image, id)
+	result := db.AccountOrOrg(account, orgID, "images").Debug().Preload("Commit.Repo").Preload("Commit.InstalledPackages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Joins("Commit").First(&image, id)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Debug("Request related error - image is not found")
 		return nil, new(ImageNotFoundError)
@@ -1311,16 +1303,8 @@ func (s *ImageService) CheckIfIsLatestVersion(previousImage *models.Image) error
 	}
 
 	var latestImageVersion models.Image
-	if previousImage.OrgID != "" {
-		if result := db.DB.Where(models.Image{OrgID: previousImage.OrgID, ImageSetID: previousImage.ImageSetID}).
-			Order("version DESC").First(&latestImageVersion); result.Error != nil {
-			return result.Error
-		}
-	} else { //we can only get here if we have account and not an orgID
-		if result := db.DB.Where(models.Image{Account: previousImage.Account, ImageSetID: previousImage.ImageSetID}).
-			Order("version DESC").First(&latestImageVersion); result.Error != nil {
-			return result.Error
-		}
+	if result := db.AccountOrOrg(previousImage.Account, previousImage.OrgID, "").Where(models.Image{ImageSetID: previousImage.ImageSetID}).Order("version DESC").First(&latestImageVersion); result.Error != nil {
+		return result.Error
 	}
 
 	if latestImageVersion.ID != previousImage.ID {
@@ -1416,28 +1400,15 @@ func (s *ImageService) CreateInstallerForImage(image *models.Image) (*models.Ima
 func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, error) {
 	s.log.Info("Getting rollback image")
 	var rollback models.Image
-	account, err := common.GetAccountFromContext(s.ctx)
+	account, orgID, err := common.GetAccountOrOrgIDFromContext(s.ctx)
 	if err != nil {
-		s.log.Error("Error retreving account")
+		s.log.Error("Error retreving account or org_id")
 		return nil, new(AccountNotSet)
 	}
-	orgID, err := common.GetOrgIDFromContext(s.ctx)
-	if err != nil {
-		s.log.Error("Error retreving org_id")
-		return nil, new(OrgIDNotSet)
-	}
-	if orgID != "" {
-		result := db.DB.Joins("Commit").Joins("Installer").Preload("Packages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where(&models.Image{ImageSetID: image.ImageSetID, OrgID: orgID, Status: models.ImageStatusSuccess}).Last(&rollback, "images.id < ?", image.ID)
-		if result.Error != nil {
-			s.log.WithField("error", result.Error).Error("Error retrieving rollback image")
-			return nil, new(ImageNotFoundError)
-		}
-	} else if account != "" {
-		result := db.DB.Joins("Commit").Joins("Installer").Preload("Packages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where(&models.Image{ImageSetID: image.ImageSetID, Account: account, Status: models.ImageStatusSuccess}).Last(&rollback, "images.id < ?", image.ID)
-		if result.Error != nil {
-			s.log.WithField("error", result.Error).Error("Error retrieving rollback image")
-			return nil, new(ImageNotFoundError)
-		}
+	result := db.AccountOrOrg(account, orgID, "images").Debug().Joins("Commit").Joins("Installer").Preload("Packages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where(&models.Image{ImageSetID: image.ImageSetID, Status: models.ImageStatusSuccess}).Last(&rollback, "images.id < ?", image.ID)
+	if result.Error != nil {
+		s.log.WithField("error", result.Error).Error("Error retrieving rollback image")
+		return nil, new(ImageNotFoundError)
 	}
 	s.log = s.log.WithField("imageID", image.ID)
 	s.log.Info("Rollback image successfully retrieved")
@@ -1532,26 +1503,25 @@ func (s *ImageService) SetDevicesUpdateAvailabilityFromImageSet(account string, 
 
 	// get the last image with success status
 	var lastImage models.Image
-	if result := db.DB.Where("(account = ? OR org_id = ?) AND image_set_id = ? AND status = ?",
-		account, orgID, ImageSetID, models.ImageStatusSuccess).Order("created_at DESC").First(&lastImage); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").Where("(image_set_id = ? AND status = ?)", ImageSetID, models.ImageStatusSuccess).Order("created_at DESC").First(&lastImage); result.Error != nil {
 		return result.Error
 	}
 
 	// update all devices with last image that has update_available=true to update_available=false
-	if result := db.DB.Model(&models.Device{}).
-		Where("(account = ? OR org_id = ?) AND update_available = ? AND image_id = ? ", account, orgID, true, lastImage.ID).
+	if result := db.AccountOrOrg(account, orgID, "").Model(&models.Device{}).
+		Where("(update_available = ? AND image_id = ?)", true, lastImage.ID).
 		UpdateColumn("update_available", false); result.Error != nil {
 		logger.WithField("error", result.Error).Error("Error occurred while updating device update_available")
 		return result.Error
 	}
 
 	// Create priorImagesSubQuery query for all successfully created images prior to lastImage
-	priorImagesSubQuery := db.DB.Model(&models.Image{}).Select("id").Where("(account = ? OR org_id = ?) AND image_set_id = ? AND status = ? AND created_at < ?",
-		account, orgID, ImageSetID, models.ImageStatusSuccess, lastImage.CreatedAt)
+	priorImagesSubQuery := db.AccountOrOrg(account, orgID, "").Model(&models.Image{}).Select("id").Where("image_set_id = ? AND status = ? AND created_at < ?",
+		ImageSetID, models.ImageStatusSuccess, lastImage.CreatedAt)
 
 	// Update all devices with prior images that has update_available=false to update_available=true
-	if result := db.DB.Model(&models.Device{}).
-		Where("(account = ? OR org_id = ?) AND update_available = ? AND image_id IN (?) ", account, orgID, false, priorImagesSubQuery).
+	if result := db.AccountOrOrg(account, orgID, "").Model(&models.Device{}).
+		Where("(update_available = ? AND image_id IN (?))", false, priorImagesSubQuery).
 		UpdateColumn("update_available", true); result.Error != nil {
 		logger.WithField("error", result.Error).Error("Error occurred when updating account/org_id devices update_available")
 		return result.Error
