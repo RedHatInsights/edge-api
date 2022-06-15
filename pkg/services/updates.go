@@ -575,11 +575,11 @@ func (s *UpdateService) ValidateUpdateDeviceGroup(account string, deviceGroupID 
 		Where(`Device_Groups.id = ? AND Device_Groups.account = ?`,
 			deviceGroupID, account,
 		).
-		Joins(`JOIN Device_Groups_Devices ON Device_Groups.id = Device_Groups_Devices.device_group_id`).
-		Joins(`JOIN Devices ON Device_Groups_Devices.device_id = Devices.id`).
+		Joins(`JOIN Device_Groups_Devices  ON Device_Groups.id = Device_Groups_Devices.device_group_id`).
+		Joins(`JOIN Devices  ON Device_Groups_Devices.device_id = Devices.id`).
 		Where("Devices.image_id IS NOT NULL AND Devices.image_id != 0").
-		Joins(`JOIN Images ON Devices.image_id = Images.id`).
-		Group("Images.image_set_id").Count(&count)
+		Joins(`JOIN Images  ON Devices.image_id = Images.id`).
+		Group("image_set_id").Count(&count)
 	if result.Error != nil {
 		return false, result.Error
 	}
