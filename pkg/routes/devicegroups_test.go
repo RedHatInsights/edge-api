@@ -197,9 +197,9 @@ var _ = Describe("DeviceGroup routes", func() {
 		})
 
 		Context("get DeviceGroup from DB", func() {
-			dbResult := db.DB.Where("(account = ? OR org_id = ?)", account, orgID).First(&deviceGroup).Error
+			dbResult := db.AccountOrOrg(account, orgID, "").First(&deviceGroup).Error
 			Expect(dbResult).To(BeNil())
-			dbResult = db.DB.Where("(account = ? OR org_id = ?)", account, orgID).Find(&devices).Error
+			dbResult = db.AccountOrOrg(account, orgID, "").Find(&devices).Error
 			Expect(dbResult).To(BeNil())
 		})
 		jsonDeviceBytes, err := json.Marshal(models.DeviceGroup{Devices: devices})
@@ -347,7 +347,7 @@ var _ = Describe("DeviceGroup routes", func() {
 			Expect(dbResult).To(BeNil())
 		})
 		Context("getting DeviceGroup", func() {
-			dbResult := db.DB.Where("(account = ? OR org_id = ?)", account, orgID).First(&deviceGroup).Error
+			dbResult := db.AccountOrOrg(account, orgID, "").First(&deviceGroup).Error
 			Expect(dbResult).To(BeNil())
 		})
 		When("all is valid", func() {

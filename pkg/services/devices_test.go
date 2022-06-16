@@ -788,7 +788,7 @@ var _ = Describe("DeviceService", func() {
 
 			// ensure device created
 			var deviceCount int64
-			db.DB.Model(&models.Device{}).Where("uuid = ? AND (account = ? OR org_id = ?)", event.ID, event.Account, event.OrgID).Count(&deviceCount)
+			db.AccountOrOrg(event.Account, event.OrgID, "").Model(&models.Device{}).Where("uuid = ?", event.ID).Count(&deviceCount)
 			Expect(deviceCount == 1).To(BeTrue())
 
 			// call the platform inventory delete event processor
@@ -796,7 +796,7 @@ var _ = Describe("DeviceService", func() {
 			Expect(err).To(BeNil())
 
 			// ensure device does not exits
-			db.DB.Model(&models.Device{}).Where("uuid = ? AND (account = ? OR org_id = ?)", event.ID, event.Account, event.OrgID).Count(&deviceCount)
+			db.AccountOrOrg(event.Account, event.OrgID, "").Model(&models.Device{}).Where("uuid = ?", event.ID).Count(&deviceCount)
 			Expect(deviceCount == 0).To(BeTrue())
 		})
 
@@ -817,7 +817,7 @@ var _ = Describe("DeviceService", func() {
 
 			// ensure the device exists
 			var deviceCount int64
-			result = db.DB.Model(&models.Device{}).Where("uuid = ? AND (account = ? OR org_id = ?)", event.ID, event.Account, event.OrgID).Count(&deviceCount)
+			result = db.AccountOrOrg(event.Account, event.OrgID, "").Model(&models.Device{}).Where("uuid = ?", event.ID).Count(&deviceCount)
 			Expect(result.Error).To(BeNil())
 			Expect(deviceCount == 1).To(BeTrue())
 			// create a device group with device
@@ -829,7 +829,7 @@ var _ = Describe("DeviceService", func() {
 			Expect(result.Error).To(BeNil())
 			// ensure device group created with device included
 			var savedDeviceGroup models.DeviceGroup
-			result = db.DB.Where("(account = ? OR org_id = ?)", deviceGroup.Account, deviceGroup.OrgID).Preload("Devices").First(&savedDeviceGroup, deviceGroup.ID)
+			result = db.AccountOrOrg(deviceGroup.Account, deviceGroup.OrgID, "").Preload("Devices").First(&savedDeviceGroup, deviceGroup.ID)
 			Expect(result.Error).To(BeNil())
 			Expect(savedDeviceGroup.Devices).NotTo(BeEmpty())
 			Expect(savedDeviceGroup.Devices[0].ID == device.ID).To(BeTrue())
@@ -839,12 +839,12 @@ var _ = Describe("DeviceService", func() {
 			Expect(err).To(BeNil())
 
 			// ensure device does not exits
-			result = db.DB.Model(&models.Device{}).Where("(account = ? OR org_id = ?) AND uuid = ?", event.Account, event.OrgID, event.ID).Count(&deviceCount)
+			result = db.AccountOrOrg(event.Account, event.OrgID, "").Model(&models.Device{}).Where("uuid = ?", event.ID).Count(&deviceCount)
 			Expect(result.Error).To(BeNil())
 			Expect(deviceCount == 0).To(BeTrue())
 
 			// ensure device does not exists in device group
-			result = db.DB.Where("(account = ? OR org_id = ?)", event.Account, event.OrgID).Preload("Devices").First(&savedDeviceGroup, deviceGroup.ID)
+			result = db.AccountOrOrg(event.Account, event.OrgID, "").Preload("Devices").First(&savedDeviceGroup, deviceGroup.ID)
 			Expect(result.Error).To(BeNil())
 			Expect(savedDeviceGroup.Devices).To(BeEmpty())
 		})
