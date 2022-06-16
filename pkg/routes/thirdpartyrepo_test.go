@@ -65,7 +65,7 @@ func TestCreateThirdPartyRepo(t *testing.T) {
 
 	defer ctrl.Finish()
 	mockThirdPartyRepoService := mock_services.NewMockThirdPartyRepoServiceInterface(ctrl)
-	mockThirdPartyRepoService.EXPECT().CreateThirdPartyRepo(gomock.Any(), gomock.Any()).Return(&tprepo, nil)
+	mockThirdPartyRepoService.EXPECT().CreateThirdPartyRepo(gomock.Any(), gomock.Any(), gomock.Any()).Return(&tprepo, nil)
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ThirdPartyRepoService: mockThirdPartyRepoService,
 		Log:                   log.NewEntry(log.StandardLogger()),
