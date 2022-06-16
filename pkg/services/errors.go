@@ -55,7 +55,7 @@ func (e *IDMustBeInteger) Error() string {
 type ThirdPartyRepositoryNotFound struct{}
 
 func (e *ThirdPartyRepositoryNotFound) Error() string {
-	return "third party repository was not found"
+	return "custom repository not found"
 }
 
 // ThirdPartyRepositoryAlreadyExists indicates the Third Party Repository already exists
@@ -77,6 +77,13 @@ type ThirdPartyRepositoryURLIsEmpty struct{}
 
 func (e *ThirdPartyRepositoryURLIsEmpty) Error() string {
 	return "custom repository URL cannot be empty"
+}
+
+// ThirdPartyRepositoryInfoIsInvalid indicates the Third Party Repository info is not valid
+type ThirdPartyRepositoryInfoIsInvalid struct{}
+
+func (e *ThirdPartyRepositoryInfoIsInvalid) Error() string {
+	return "custom repository info is invalid"
 }
 
 // InvalidURLForCustomRepo indicates the Third Party Repository url is invalid
