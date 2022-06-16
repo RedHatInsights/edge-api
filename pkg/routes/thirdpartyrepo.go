@@ -131,7 +131,7 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 		return
 	}
-	ctx := thirdPartyRepoFilters(r, db.DB).Model(&models.ThirdPartyRepo{}).Where("(account = ? OR org_id = ?)", account, orgID)
+	ctx := db.AccountOrOrgTx(account, orgID, thirdPartyRepoFilters(r, db.DB), "").Model(&models.ThirdPartyRepo{})
 
 	// Check to see if feature is enabled and not in ephemeral
 	cfg := config.Get()

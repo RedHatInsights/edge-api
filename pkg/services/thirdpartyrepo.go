@@ -36,7 +36,7 @@ type ThirdPartyRepoService struct {
 // thirdPartyRepoNameExists check if a repo with the requested name exists
 func (s *ThirdPartyRepoService) thirdPartyRepoNameExists(account string, orgID string, name string) (bool, error) {
 	var reposCount int64
-	if result := db.DB.Model(&models.ThirdPartyRepo{}).Where("(account = ? OR org_id = ?)AND name = ?", account, orgID, name).Count(&reposCount); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").Debug().Model(&models.ThirdPartyRepo{}).Where("name = ?", name).Count(&reposCount); result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error checking custom repository existence")
 		return false, result.Error
 	}
@@ -110,7 +110,7 @@ func (s *ThirdPartyRepoService) GetThirdPartyRepoByID(ID string) (*models.ThirdP
 		s.log.WithField("error", err.Error()).Error("Error account or orgID")
 		return nil, err
 	}
-	if result := db.DB.Where("(account = ? or org_id = ?) and id = ?", account, orgID, ID).First(&tprepo); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").Where("id = ?", ID).First(&tprepo); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, new(ThirdPartyRepositoryNotFound)
 		}
@@ -190,7 +190,7 @@ func (s *ThirdPartyRepoService) DeleteThirdPartyRepoByID(ID string) (*models.Thi
 	if imagesExists {
 		return nil, new(ThirdPartyRepositoryImagesExists)
 	}
-	if result := db.DB.Where("(account = ? or org_id = ?) and id = ?", account, orgID, ID).Delete(&repoDetails); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").Delete(&repoDetails); result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error deleting custom repository")
 		return nil, result.Error
 	}
