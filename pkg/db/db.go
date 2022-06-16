@@ -56,6 +56,9 @@ func AccountOrOrg(account string, orgID string, table string) *gorm.DB {
 
 // AccountOrOrgTx returns a gorm db with account or orgID filter from a known gorm db transaction
 func AccountOrOrgTx(account string, orgID string, tx *gorm.DB, table string) *gorm.DB {
+	if tx == nil {
+		return nil
+	}
 	accountName := "account"
 	orgIDName := "org_id"
 	if table != "" {

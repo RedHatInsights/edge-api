@@ -208,7 +208,7 @@ func GetDBDevices(w http.ResponseWriter, r *http.Request) {
 		// logs and response handled by readAccountOrOrgID
 		return
 	}
-	result := db.DB.Limit(pagination.Limit).Offset(pagination.Offset).Where("(account = ? OR org_id = ?)", account, orgID).Find(&devices)
+	result := db.AccountOrOrg(account, orgID, "").Limit(pagination.Limit).Offset(pagination.Offset).Find(&devices)
 	if result.Error != nil {
 		contextServices.Log.WithField("error", result.Error.Error()).Debug("Result error")
 		respondWithAPIError(w, contextServices.Log, errors.NewBadRequest(result.Error.Error()))
@@ -230,7 +230,7 @@ func GetDeviceDBInfo(w http.ResponseWriter, r *http.Request) {
 		// logs and response handled by readAccountOrOrgID
 		return
 	}
-	if result := db.DB.Where("(account = ? OR org_id = ?) AND UUID = ?", account, orgID, dc.DeviceUUID).Find(&devices); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").Where("UUID = ?", dc.DeviceUUID).Find(&devices); result.Error != nil {
 		contextServices.Log.WithField("error", result.Error).Debug("Result error")
 		respondWithAPIError(w, contextServices.Log, errors.NewBadRequest(result.Error.Error()))
 		return
