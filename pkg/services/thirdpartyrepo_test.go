@@ -2,15 +2,15 @@ package services_test
 
 import (
 	"context"
-	"strconv"
-
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	"strconv"
 
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	log "github.com/sirupsen/logrus"
 )
@@ -69,6 +69,28 @@ var _ = Describe("ThirdPartyRepos basic functions", func() {
 			_, err = customReposService.CreateThirdPartyRepo(&repo2, account)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("custom repository already exists"))
+		})
+	})
+	Context("Custom repos creation with validation of URL", func() {
+		DescribeTable("Custom repos creation with invalid URL", func(url string) {
+			account := faker.UUIDHyphenated()
+			repo := models.ThirdPartyRepo{Name: faker.UUIDHyphenated(), URL: url}
+			_, err := customReposService.CreateThirdPartyRepo(&repo, account)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("invalid URL"))
+		},
+			Entry("validate invalid URL with : missing", "http//google.com"),
+			Entry("validate invalid URL with https:// missing", "google.com"),
+			Entry("validate invalid URL without https:// and . missing", "foo/bar"),
+			Entry("validate invalid URL with number", "5432/bar"),
+			Entry("validate invalid URL with symbols", "http://valid-internet-host-com/llll"),
+		)
+
+		It("Custom repo should be created with valid URL", func() {
+			account := faker.UUIDHyphenated()
+			repo := models.ThirdPartyRepo{Name: faker.UUIDHyphenated(), URL: "https://google.com/"}
+			_, err := customReposService.CreateThirdPartyRepo(&repo, account)
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 

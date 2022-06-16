@@ -37,7 +37,7 @@ type DeviceServiceInterface interface {
 	GetDeviceDetailsByUUID(deviceUUID string) (*models.DeviceDetails, error)
 	GetUpdateAvailableForDeviceByUUID(deviceUUID string, latest bool) ([]models.ImageUpdateAvailable, error)
 	GetDeviceImageInfoByUUID(deviceUUID string) (*models.ImageInfo, error)
-	GetLatestCommitFromDevices(account string, devicesUUID []string) (uint, error)
+	GetLatestCommitFromDevices(account string, orgID string, devicesUUID []string) (uint, error)
 	// Device Object Methods
 	GetDeviceDetails(device inventory.Device) (*models.DeviceDetails, error)
 	GetUpdateAvailableForDevice(device inventory.Device, latest bool) ([]models.ImageUpdateAvailable, error)
@@ -62,6 +62,7 @@ type PlatformInsightsCreateUpdateEventPayload struct {
 		ID            string             `json:"id"`
 		Name          string             `json:"display_name"`
 		Account       string             `json:"account"`
+		OrgID         string             `json:"org_id"`
 		InsightsID    string             `json:"insights_id"`
 		Updated       models.EdgeAPITime `json:"updated"`
 		SystemProfile struct {
@@ -77,6 +78,7 @@ type PlatformInsightsDeleteEventPayload struct {
 	Type    string `json:"type"`
 	ID      string `json:"id"`
 	Account string `json:"account"`
+	OrgID   string `json:"org_id"`
 }
 
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
@@ -175,7 +177,7 @@ func (s *DeviceService) GetDeviceDetails(device inventory.Device) (*models.Devic
 			DeviceName: device.DisplayName,
 			LastSeen:   device.LastSeen,
 			Account:    device.Account,
-		},
+			OrgID:      device.OrgID},
 		Image:              imageInfo,
 		UpdateTransactions: updates,
 		//Given we are concat the info from inventory with our db, we need to add this field to the struct to be able to see the result
@@ -383,7 +385,7 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		return list, nil
 	}
 	// Build a map from the received devices UUIDs and the already saved db devices IDs
-	account, err := common.GetAccountFromContext(s.ctx)
+	account, orgID, err := common.GetAccountOrOrgIDFromContext(s.ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -392,7 +394,7 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		devicesUUIDs = append(devicesUUIDs, device.ID)
 	}
 	var storedDevices []models.Device
-	if res := db.DB.Where("account = ? AND uuid IN ?", account, devicesUUIDs).Find(&storedDevices); res.Error != nil {
+	if res := db.AccountOrOrg(account, orgID, "").Where("uuid IN ?", devicesUUIDs).Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
 	}
 
@@ -443,10 +445,12 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 				RHCClientID:       device.Ostree.RHCClientID,
 				Name:              device.DisplayName,
 				Account:           device.Account,
+				OrgID:             device.OrgID,
 				DevicesGroups:     storeDevice.DevicesGroups,
 				UpdateTransaction: storeDevice.UpdateTransaction,
 			},
 			Account:    device.Account,
+			OrgID:      device.OrgID,
 			DeviceName: device.DisplayName,
 			LastSeen:   device.LastSeen,
 		}
@@ -498,10 +502,10 @@ func (s *DeviceService) GetDeviceLastDeployment(device inventory.Device) *invent
 }
 
 // SetDeviceUpdateAvailability set whether there is a device Updates available ot not.
-func (s *DeviceService) SetDeviceUpdateAvailability(account string, deviceID uint) error {
+func (s *DeviceService) SetDeviceUpdateAvailability(account string, orgID string, deviceID uint) error {
 
 	var device models.Device
-	if result := db.DB.Where(models.Device{Account: account}).First(&device, deviceID); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").First(&device, deviceID); result.Error != nil {
 		return result.Error
 	}
 	if device.ImageID == 0 {
@@ -510,14 +514,14 @@ func (s *DeviceService) SetDeviceUpdateAvailability(account string, deviceID uin
 
 	// get the device image
 	var deviceImage models.Image
-	if result := db.DB.Where(models.Image{Account: account}).First(&deviceImage, device.ImageID); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").First(&deviceImage, device.ImageID); result.Error != nil {
 		return result.Error
 	}
 
 	// check for updates , find if any later images exists
 	var updateImages []models.Image
-	if result := db.DB.Select("id").Where("account = ? AND image_set_id = ? AND status = ? AND created_at > ?",
-		deviceImage.Account, deviceImage.ImageSetID, models.ImageStatusSuccess, deviceImage.CreatedAt).Find(&updateImages); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").Select("id").Where("image_set_id = ? AND status = ? AND created_at > ?",
+		deviceImage.ImageSetID, models.ImageStatusSuccess, deviceImage.CreatedAt).Find(&updateImages); result.Error != nil {
 		return result.Error
 	}
 
@@ -547,8 +551,9 @@ func (s *DeviceService) processPlatformInventoryEventUpdateDevice(eventData Plat
 	CommitCheck := deployments[0].Checksum
 	// Get the related commit image
 	var deviceImage models.Image
-	if result := db.DB.Select("images.id").Joins("JOIN commits ON commits.id = images.commit_id").Where(
-		"images.account = ? AND commits.os_tree_commit = ? ", device.Account, CommitCheck).First(&deviceImage); result.Error != nil {
+	if result := db.AccountOrOrg(device.Account, device.OrgID, "images").Select("images.id").
+		Joins("JOIN commits ON commits.id = images.commit_id").Where("commits.os_tree_commit = ? ", CommitCheck).
+		First(&deviceImage); result.Error != nil {
 		return result.Error
 	}
 
@@ -558,7 +563,7 @@ func (s *DeviceService) processPlatformInventoryEventUpdateDevice(eventData Plat
 		return result.Error
 	}
 
-	return s.SetDeviceUpdateAvailability(device.Account, device.ID)
+	return s.SetDeviceUpdateAvailability(device.Account, device.OrgID, device.ID)
 }
 
 // ProcessPlatformInventoryUpdatedEvent processes messages from platform.inventory.events kafka topic with event_type="updated"
@@ -575,6 +580,7 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 	}
 	deviceUUID := eventData.Host.ID
 	deviceAccount := eventData.Host.Account
+	deviceOrgID := eventData.Host.OrgID
 	deviceName := eventData.Host.Name
 	device, err := s.GetDeviceByUUID(deviceUUID)
 	if err != nil {
@@ -583,6 +589,7 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 			UUID:        deviceUUID,
 			RHCClientID: eventData.Host.SystemProfile.RHCClientID,
 			Account:     deviceAccount,
+			OrgID:       deviceOrgID,
 			Name:        deviceName,
 			LastSeen:    eventData.Host.Updated,
 		}
@@ -590,12 +597,16 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 			s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error}).Error("Error creating device")
 			return result.Error
 		}
-		s.log.WithField("host_id", deviceUUID).Debug("Device account created")
+		s.log.WithField("host_id", deviceUUID).Debug("Device account/Org created")
 		return s.processPlatformInventoryEventUpdateDevice(eventData)
 	}
 	if device.Account == "" {
 		// Update account if undefined
 		device.Account = deviceAccount
+	}
+	if device.OrgID == "" {
+		// Update orgID if undefined
+		device.OrgID = deviceOrgID
 	}
 	// update rhc client id if undefined
 	if eventData.Host.SystemProfile.RHCClientID != "" && device.RHCClientID != eventData.Host.SystemProfile.RHCClientID {
@@ -609,14 +620,14 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 		s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error}).Error("Error updating device")
 		return result.Error
 	}
-	s.log.WithField("host_id", deviceUUID).Debug("Device account updated")
+	s.log.WithField("host_id", deviceUUID).Debug("Device account/Org updated")
 
 	return s.processPlatformInventoryEventUpdateDevice(eventData)
 }
 
 // GetDevicesCount get the device groups account records count from the database
 func (s *DeviceService) GetDevicesCount(tx *gorm.DB) (int64, error) {
-	account, err := common.GetAccountFromContext(s.ctx)
+	account, orgID, err := common.GetAccountOrOrgIDFromContext(s.ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -627,7 +638,7 @@ func (s *DeviceService) GetDevicesCount(tx *gorm.DB) (int64, error) {
 
 	var count int64
 
-	res := tx.Model(&models.Device{}).Where("account = ?", account).Count(&count)
+	res := db.AccountOrOrgTx(account, orgID, tx, "").Model(&models.Device{}).Count(&count)
 
 	if res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device groups count")
@@ -637,9 +648,9 @@ func (s *DeviceService) GetDevicesCount(tx *gorm.DB) (int64, error) {
 	return count, nil
 }
 
-// GetDevicesView returns a list of EdgeDevices for a given account.
+// GetDevicesView returns a list of EdgeDevices for a given account or org.
 func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*models.DeviceViewList, error) {
-	account, err := common.GetAccountFromContext(s.ctx)
+	account, orgID, err := common.GetAccountOrOrgIDFromContext(s.ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -651,13 +662,13 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	s.log.WithField("limit", limit).Debug("GetDevicesView called with limit")
 
 	var storedDevices []models.Device
-	if res := tx.Limit(limit).Offset(offset).Where("account = ?", account).Preload("UpdateTransaction").Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
+	if res := db.AccountOrOrgTx(account, orgID, tx, "").Limit(limit).Offset(offset).Preload("UpdateTransaction").Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
 	}
 
 	// create a map of device group info and map it to given devices
 
-	returnDevices, err := ReturnDevicesView(storedDevices, account)
+	returnDevices, err := ReturnDevicesView(storedDevices, account, orgID)
 	if err != nil {
 		return nil, err
 	}
@@ -669,7 +680,7 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 }
 
 // ReturnDevicesView returns the devices association and status properly
-func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.DeviceView, error) {
+func ReturnDevicesView(storedDevices []models.Device, account string, orgID string) ([]models.DeviceView, error) {
 	deviceToGroupMap := make(map[uint][]models.DeviceDeviceGroup)
 	for _, device := range storedDevices {
 		var tempArr []models.DeviceDeviceGroup
@@ -727,7 +738,7 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 	}
 
 	var images []models.Image
-	if result := db.DB.Where("account = ? AND id IN (?) AND image_set_id IS NOT NULL", account, imagesIDS).Find(&images); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").Where("id IN (?) AND image_set_id IS NOT NULL", imagesIDS).Find(&images); result.Error != nil {
 		return nil, result.Error
 	}
 
@@ -771,10 +782,10 @@ func ReturnDevicesView(storedDevices []models.Device, account string) ([]models.
 }
 
 // GetLatestCommitFromDevices fetches the commitID from the latest Device Image
-func (s *DeviceService) GetLatestCommitFromDevices(account string, devicesUUID []string) (uint, error) {
+func (s *DeviceService) GetLatestCommitFromDevices(account string, orgID string, devicesUUID []string) (uint, error) {
 	var devices []models.Device
 
-	if result := db.DB.Where("account = ? AND uuid IN ?", account, devicesUUID).Find(&devices); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").Where("uuid IN ?", devicesUUID).Find(&devices); result.Error != nil {
 		return 0, result.Error
 	}
 
@@ -787,7 +798,7 @@ func (s *DeviceService) GetLatestCommitFromDevices(account string, devicesUUID [
 		devicesImageID = append(devicesImageID, device.ImageID)
 	}
 	var devicesImage []models.Image
-	if result := db.DB.Where(models.Image{Account: account}).Find(&devicesImage, devicesImageID); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").Find(&devicesImage, devicesImageID); result.Error != nil {
 		return 0, result.Error
 	}
 	// finding unique ImageSetID for device Image
@@ -807,7 +818,7 @@ func (s *DeviceService) GetLatestCommitFromDevices(account string, devicesUUID [
 
 	// check for updates , find if any later images exists to get the commitID
 	var updateImages []models.Image
-	if result := db.DB.Model(&models.Image{}).Where("account = ? AND image_set_id = ? AND status = ?", account, imageSetID, models.ImageStatusSuccess).Order("version desc").Find(&updateImages); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").Model(&models.Image{}).Where("image_set_id = ? AND status = ?", imageSetID, models.ImageStatusSuccess).Order("version desc").Find(&updateImages); result.Error != nil {
 		return 0, result.Error
 	}
 
@@ -837,6 +848,7 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 				UUID:        e.Host.ID,
 				RHCClientID: e.Host.SystemProfile.RHCClientID,
 				Account:     e.Host.Account,
+				OrgID:       e.Host.OrgID,
 				Name:        e.Host.Name,
 				LastSeen:    e.Host.Updated,
 			}
@@ -872,10 +884,11 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 
 	deviceUUID := eventData.ID
 	deviceAccount := eventData.Account
+	deviceOrgID := eventData.OrgID
 	var devices []models.Device
-	if result := db.DB.Where(models.Device{Account: deviceAccount, UUID: deviceUUID}).Find(&devices); result.Error != nil {
+	if result := db.DB.Where("(account = ? OR org_id =?) AND uuid = ?", deviceAccount, deviceOrgID, deviceUUID).Find(&devices); result.Error != nil {
 		s.log.WithFields(
-			log.Fields{"host_id": deviceUUID, "Account": deviceAccount, "error": result.Error},
+			log.Fields{"host_id": deviceUUID, "Account": deviceAccount, "OrgID": deviceOrgID, "error": result.Error},
 		).Debug("Error retrieving the devices")
 		return result.Error
 	}
@@ -884,7 +897,7 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 	}
 	if result := db.DB.Delete(&devices[0]); result.Error != nil {
 		s.log.WithFields(
-			log.Fields{"host_id": deviceUUID, "Account": deviceAccount, "error": result.Error},
+			log.Fields{"host_id": deviceUUID, "Account": deviceAccount, "OrgID": deviceOrgID, "error": result.Error},
 		).Error("Error when deleting devices")
 		return result.Error
 	}

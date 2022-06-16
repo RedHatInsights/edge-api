@@ -37,6 +37,13 @@ func (e *OrgIDNotSet) Error() string {
 	return "Org ID is not set"
 }
 
+// AccountOrOrgIDNotSet indicates the account or org_id was nil
+type AccountOrOrgIDNotSet struct{}
+
+func (e *AccountOrOrgIDNotSet) Error() string {
+	return "Account or org_id is not set"
+}
+
 // IDMustBeInteger indicates the ID is required to be an integer value
 type IDMustBeInteger struct{}
 
@@ -70,6 +77,13 @@ type ThirdPartyRepositoryURLIsEmpty struct{}
 
 func (e *ThirdPartyRepositoryURLIsEmpty) Error() string {
 	return "custom repository URL cannot be empty"
+}
+
+// InvalidURLForCustomRepo indicates the Third Party Repository url is invalid
+type InvalidURLForCustomRepo struct{}
+
+func (e *InvalidURLForCustomRepo) Error() string {
+	return "invalid URL"
 }
 
 // ThirdPartyRepositoryImagesExists indicates the Third Party Repository has been used in some images
@@ -183,6 +197,13 @@ type DeviceGroupAccountOrNameUndefined struct{}
 
 func (e *DeviceGroupAccountOrNameUndefined) Error() string {
 	return "device group account or name are undefined"
+}
+
+// DeviceGroupMandatoryFieldsUndefined indicates that device group mandatory field are undefined
+type DeviceGroupMandatoryFieldsUndefined struct{}
+
+func (e *DeviceGroupMandatoryFieldsUndefined) Error() string {
+	return "device group mandatory field are undefined"
 }
 
 // DeviceHasImageUndefined indicates that device record has image not defined

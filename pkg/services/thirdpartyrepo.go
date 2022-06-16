@@ -75,6 +75,10 @@ func (s *ThirdPartyRepoService) CreateThirdPartyRepo(thirdPartyRepo *models.Thir
 	if thirdPartyRepo.URL == "" {
 		return nil, new(ThirdPartyRepositoryURLIsEmpty)
 	}
+	if !models.ValidateRepoURL(thirdPartyRepo.URL) {
+		return nil, new(InvalidURLForCustomRepo)
+	}
+
 	repoExists, err := s.thirdPartyRepoNameExists(account, thirdPartyRepo.Name)
 	if err != nil {
 		return nil, err
