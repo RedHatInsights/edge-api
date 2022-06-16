@@ -328,7 +328,7 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 		// logs and response handled by readAccountOrOrgID
 		return
 	}
-	countResult := imageFilters(r, db.DB.Model(&models.Image{})).Where("(images.account = ? OR images.org_id = ?)", account, orgID).Count(&count)
+	countResult := db.AccountOrOrgTx(account, orgID, imageFilters(r, db.DB.Model(&models.Image{})), "images").Count(&count)
 	if countResult.Error != nil {
 		services.Log.WithField("error", countResult.Error.Error()).Error("Error retrieving images")
 		countErr := errors.NewInternalServerError()
@@ -338,7 +338,7 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Preload("Commit.Repo").Preload("CustomPackages").Preload("ThirdPartyRepositories").Where("(images.account = ? OR images.org_id = ?)", account, orgID).Joins("Commit").Joins("Installer").Find(&images)
+	result = db.AccountOrOrgTx(account, orgID, result, "images").Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Preload("Commit.Repo").Preload("CustomPackages").Preload("ThirdPartyRepositories").Joins("Commit").Joins("Installer").Find(&images)
 	if result.Error != nil {
 		services.Log.WithField("error", result.Error.Error()).Error("Error retrieving images")
 		err := errors.NewInternalServerError()
