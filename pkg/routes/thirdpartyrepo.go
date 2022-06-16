@@ -16,7 +16,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
-	log "github.com/sirupsen/logrus"
 )
 
 type tprepoTypeKey int
@@ -77,10 +76,9 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	}
 	ctxServices.Log.Info("Creating custom repository")
 
-	account, orgID, err := common.GetAccountOrOrgIDFromContext(r.Context())
-	if err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Account or Org ID were not set")
-		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
+	if account == "" && orgID == "" {
+		// logs and response handled by readAccountOrOrgID
 		return
 	}
 
@@ -125,10 +123,9 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	var tprepo []models.ThirdPartyRepo
 	var count int64
 
-	account, orgID, err := common.GetAccountOrOrgIDFromContext(r.Context())
-	if err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Error retrieving account or Org ID from the request")
-		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
+	if account == "" && orgID == "" {
+		// logs and response handled by readAccountOrOrgID
 		return
 	}
 	ctx := db.AccountOrOrgTx(account, orgID, thirdPartyRepoFilters(r, db.DB), "").Model(&models.ThirdPartyRepo{})
@@ -146,13 +143,13 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	pagination := common.GetPagination(r)
 
 	if result := ctx.Count(&count); result.Error != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Error counting results")
+		ctxServices.Log.WithField("error", result.Error).Error("Error counting results")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
 
 	if result := ctx.Limit(pagination.Limit).Offset(pagination.Offset).Find(&tprepo); result.Error != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Error returning results")
+		ctxServices.Log.WithField("error", result.Error).Error("Error returning results")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
@@ -187,14 +184,9 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 				respondWithAPIError(w, ctxServices.Log, responseErr)
 				return
 			}
-			account, orgID, err := common.GetAccountOrOrgIDFromContext(r.Context())
-			if err != nil || (tprepo.Account != account || tprepo.OrgID != orgID) {
-				ctxServices.Log.WithFields(log.Fields{
-					"error":   err.Error(),
-					"account": account,
-					"orgID":   orgID,
-				}).Error("Error retrieving account (or orgID) or custom repository doesn't belong to account (or orgID")
-				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+			account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
+			if account == "" && orgID == "" {
+				// logs and response handled by readAccountOrOrgID
 				return
 			}
 			ctx := context.WithValue(r.Context(), tprepoKey, tprepo)
