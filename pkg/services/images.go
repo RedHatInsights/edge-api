@@ -1056,7 +1056,7 @@ func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Im
 		s.log.Error("Error retreving account or org_id")
 		return nil, new(AccountNotSet)
 	}
-	result := db.DB.Where("(images.account = ? OR images.org_id)", account, orgID).Joins("JOIN commits ON commits.id = images.commit_id AND commits.os_tree_commit = ?", commitHash).Joins("Installer").Preload("Packages").Preload("Commit.InstalledPackages").Preload("Commit.Repo").First(&image)
+	result := db.AccountOrOrg(account, orgID, "images").Joins("JOIN commits ON commits.id = images.commit_id AND commits.os_tree_commit = ?", commitHash).Joins("Installer").Preload("Packages").Preload("Commit.InstalledPackages").Preload("Commit.Repo").First(&image)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error).Error("Error retrieving image by OSTreeHash")
 		return nil, new(ImageNotFoundError)
