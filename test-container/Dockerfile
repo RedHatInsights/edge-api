@@ -15,7 +15,7 @@ RUN curl -L https://github.com/dominikh/go-tools/releases/download/2021.1.2/stat
 # Download specific version of gosec
 RUN curl -L https://github.com/securego/gosec/releases/download/v2.9.5/gosec_2.9.5_linux_amd64.tar.gz | tar xz
 
-# Install RHEL utilities to install root
+# Install minimum RHEL utilities needed by test container into install root
 ENV INSTALL_ROOT=/mnt/rootfs
 ARG RHEL_VERSION=8
 RUN yum install --installroot ${INSTALL_ROOT} \
