@@ -394,7 +394,7 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		devicesUUIDs = append(devicesUUIDs, device.ID)
 	}
 	var storedDevices []models.Device
-	if res := db.DB.Where("(account = ? OR org_id = ?) AND uuid IN ?", account, orgID, devicesUUIDs).Find(&storedDevices); res.Error != nil {
+	if res := db.AccountOrOrg(account, orgID, "").Where("uuid IN ?", devicesUUIDs).Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
 	}
 
@@ -505,7 +505,7 @@ func (s *DeviceService) GetDeviceLastDeployment(device inventory.Device) *invent
 func (s *DeviceService) SetDeviceUpdateAvailability(account string, orgID string, deviceID uint) error {
 
 	var device models.Device
-	if result := db.DB.Where("(account = ? OR org_id = ?)", account, orgID).First(&device, deviceID); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").First(&device, deviceID); result.Error != nil {
 		return result.Error
 	}
 	if device.ImageID == 0 {
@@ -514,14 +514,14 @@ func (s *DeviceService) SetDeviceUpdateAvailability(account string, orgID string
 
 	// get the device image
 	var deviceImage models.Image
-	if result := db.DB.Where("(account = ? OR org_id = ?)", account, orgID).First(&deviceImage, device.ImageID); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").First(&deviceImage, device.ImageID); result.Error != nil {
 		return result.Error
 	}
 
 	// check for updates , find if any later images exists
 	var updateImages []models.Image
-	if result := db.DB.Select("id").Where("(account = ? OR org_id = ?) AND image_set_id = ? AND status = ? AND created_at > ?",
-		deviceImage.Account, deviceImage.OrgID, deviceImage.ImageSetID, models.ImageStatusSuccess, deviceImage.CreatedAt).Find(&updateImages); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").Select("id").Where("image_set_id = ? AND status = ? AND created_at > ?",
+		deviceImage.ImageSetID, models.ImageStatusSuccess, deviceImage.CreatedAt).Find(&updateImages); result.Error != nil {
 		return result.Error
 	}
 
@@ -551,8 +551,8 @@ func (s *DeviceService) processPlatformInventoryEventUpdateDevice(eventData Plat
 	CommitCheck := deployments[0].Checksum
 	// Get the related commit image
 	var deviceImage models.Image
-	if result := db.DB.Select("images.id").Joins("JOIN commits ON commits.id = images.commit_id").Where(
-		"(images.account = ? OR images.org_id = ?) AND commits.os_tree_commit = ? ", device.Account, device.OrgID, CommitCheck).
+	if result := db.AccountOrOrg(device.Account, device.OrgID, "images").Select("images.id").
+		Joins("JOIN commits ON commits.id = images.commit_id").Where("commits.os_tree_commit = ? ", CommitCheck).
 		First(&deviceImage); result.Error != nil {
 		return result.Error
 	}
@@ -638,7 +638,7 @@ func (s *DeviceService) GetDevicesCount(tx *gorm.DB) (int64, error) {
 
 	var count int64
 
-	res := tx.Model(&models.Device{}).Where("(account = ? OR org_id = ?)", account, orgID).Count(&count)
+	res := db.AccountOrOrgTx(account, orgID, tx, "").Model(&models.Device{}).Count(&count)
 
 	if res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device groups count")
@@ -662,7 +662,7 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	s.log.WithField("limit", limit).Debug("GetDevicesView called with limit")
 
 	var storedDevices []models.Device
-	if res := tx.Limit(limit).Offset(offset).Where("(account = ? OR org_id = ?)", account, orgID).Preload("UpdateTransaction").Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
+	if res := db.AccountOrOrgTx(account, orgID, tx, "").Limit(limit).Offset(offset).Preload("UpdateTransaction").Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
 	}
 
@@ -738,7 +738,7 @@ func ReturnDevicesView(storedDevices []models.Device, account string, orgID stri
 	}
 
 	var images []models.Image
-	if result := db.DB.Where("(account = ? OR org_id = ?) AND id IN (?) AND image_set_id IS NOT NULL", account, orgID, imagesIDS).Find(&images); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").Where("id IN (?) AND image_set_id IS NOT NULL", imagesIDS).Find(&images); result.Error != nil {
 		return nil, result.Error
 	}
 
@@ -785,7 +785,7 @@ func ReturnDevicesView(storedDevices []models.Device, account string, orgID stri
 func (s *DeviceService) GetLatestCommitFromDevices(account string, orgID string, devicesUUID []string) (uint, error) {
 	var devices []models.Device
 
-	if result := db.DB.Where("(account = ? OR org_id = ?) AND uuid IN ?", account, orgID, devicesUUID).Find(&devices); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").Where("uuid IN ?", devicesUUID).Find(&devices); result.Error != nil {
 		return 0, result.Error
 	}
 
@@ -798,7 +798,7 @@ func (s *DeviceService) GetLatestCommitFromDevices(account string, orgID string,
 		devicesImageID = append(devicesImageID, device.ImageID)
 	}
 	var devicesImage []models.Image
-	if result := db.DB.Where("(account = ? OR org_id = ?)", account, orgID).Find(&devicesImage, devicesImageID); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").Find(&devicesImage, devicesImageID); result.Error != nil {
 		return 0, result.Error
 	}
 	// finding unique ImageSetID for device Image
@@ -818,7 +818,7 @@ func (s *DeviceService) GetLatestCommitFromDevices(account string, orgID string,
 
 	// check for updates , find if any later images exists to get the commitID
 	var updateImages []models.Image
-	if result := db.DB.Model(&models.Image{}).Where("(account = ? OR org_id = ?) AND image_set_id = ? AND status = ?", account, orgID, imageSetID, models.ImageStatusSuccess).Order("version desc").Find(&updateImages); result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").Model(&models.Image{}).Where("image_set_id = ? AND status = ?", imageSetID, models.ImageStatusSuccess).Order("version desc").Find(&updateImages); result.Error != nil {
 		return 0, result.Error
 	}
 

@@ -23,6 +23,13 @@ func (e *ImageNotFoundError) Error() string {
 	return "image is not found"
 }
 
+// AccountOrOrgIDNotSet indicates the account or orgID was nil
+type AccountOrOrgIDNotSet struct{}
+
+func (e *AccountOrOrgIDNotSet) Error() string {
+	return "Account or orgID is not set"
+}
+
 // AccountNotSet indicates the account was nil
 type AccountNotSet struct{}
 

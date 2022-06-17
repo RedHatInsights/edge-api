@@ -60,7 +60,7 @@ func (s *DeviceGroupsService) DeviceGroupNameExists(account string, orgID string
 		return false, new(DeviceGroupMandatoryFieldsUndefined)
 	}
 	var deviceGroupsCount int64
-	result := db.DB.Model(&models.DeviceGroup{}).Where("(account = ? OR org_id = ?) AND name = ?", account, orgID, name).Count(&deviceGroupsCount)
+	result := db.AccountOrOrg(account, orgID, "").Model(&models.DeviceGroup{}).Where("name = ?", name).Count(&deviceGroupsCount)
 	if result.Error != nil {
 		return false, result.Error
 	}
@@ -75,7 +75,7 @@ func (s *DeviceGroupsService) GetDeviceGroupsCount(account string, orgID string,
 	}
 
 	var count int64
-	res := tx.Model(&models.DeviceGroup{}).Where("(account = ? OR org_id = ?)", account, orgID).Count(&count)
+	res := db.AccountOrOrgTx(account, orgID, tx, "").Model(&models.DeviceGroup{}).Count(&count)
 
 	if res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device group count")
@@ -112,7 +112,7 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, orgID string, limi
 
 	var deviceGroups []models.DeviceGroup
 
-	res := tx.Limit(limit).Offset(offset).Where("(account = ? OR org_id = ?)", account, orgID).
+	res := db.AccountOrOrgTx(account, orgID, tx, "").Limit(limit).Offset(offset).
 		Preload("Devices").
 		Find(&deviceGroups)
 
@@ -179,13 +179,12 @@ func (s *DeviceGroupsService) GetDeviceImageInfo(images map[int]models.DeviceIma
 			var deviceImageSet models.ImageSet
 			var imagePackageDiff models.PackageDiff
 			var CommitID uint
-			if result := db.DB.Where("(account = ? OR org_id = ?)", account, orgID).
-				First(&deviceImage, imageID); result.Error != nil {
+			if result := db.AccountOrOrg(account, orgID, "").First(&deviceImage, imageID); result.Error != nil {
 				return result.Error
 			}
 
 			//should be changed to get the deviceInfo once we have the data correctly on DB
-			if result := db.DB.Where("(account = ? OR org_id = ?)", account, orgID).Preload("Images").
+			if result := db.AccountOrOrg(account, orgID, "").Preload("Images").
 				First(&deviceImageSet, deviceImage.ImageSetID).Order("ID desc"); result.Error != nil {
 				return result.Error
 			}
@@ -270,7 +269,7 @@ func (s *DeviceGroupsService) GetDeviceGroupByID(ID string) (*models.DeviceGroup
 		return nil, err
 	}
 
-	result := db.DB.Where("(account = ? OR org_id = ?) AND id = ?", account, orgID, ID).Preload("Devices").First(&deviceGroup)
+	result := db.AccountOrOrg(account, orgID, "").Where("id = ?", ID).Preload("Devices").First(&deviceGroup)
 	if result.Error != nil {
 		return nil, new(DeviceGroupNotFound)
 	}
@@ -293,7 +292,7 @@ func (s *DeviceGroupsService) GetDeviceGroupDetailsByID(ID string) (*models.Devi
 		return nil, err
 	}
 
-	result := db.DB.Where("(account = ? OR org_id = ?) AND id = ?", account, orgID, ID).Preload("Devices").First(&deviceGroupDetails.DeviceGroup)
+	result := db.AccountOrOrg(account, orgID, "").Where("id = ?", ID).Preload("Devices").First(&deviceGroupDetails.DeviceGroup)
 	if result.Error != nil {
 		s.log.WithField("error", err.Error()).Error("Device details query error")
 		return nil, new(DeviceGroupNotFound)
@@ -363,7 +362,7 @@ func (s *DeviceGroupsService) GetDeviceGroupDeviceByID(account string, orgID str
 
 	// get the device group
 	var deviceGroup models.DeviceGroup
-	if res := db.DB.Where("(account = ? OR org_id = ?)", account, orgID).First(&deviceGroup, deviceGroupID); res.Error != nil {
+	if res := db.AccountOrOrg(account, orgID, "").First(&deviceGroup, deviceGroupID); res.Error != nil {
 		return nil, res.Error
 	}
 
@@ -389,7 +388,7 @@ func (s *DeviceGroupsService) AddDeviceGroupDevices(account string, orgID string
 
 	// get the device group
 	var deviceGroup models.DeviceGroup
-	if res := db.DB.Where("(account = ? OR org_id = ?)", account, orgID).First(&deviceGroup, deviceGroupID); res.Error != nil {
+	if res := db.AccountOrOrg(account, orgID, "").First(&deviceGroup, deviceGroupID); res.Error != nil {
 		return nil, res.Error
 	}
 
@@ -405,7 +404,7 @@ func (s *DeviceGroupsService) AddDeviceGroupDevices(account string, orgID string
 
 	// we need to be sure that all the devices we want to add already exists and have the same account as the current device group account
 	var devicesToAdd []models.Device
-	if res := db.DB.Where("(account = ? OR org_id = ?)", account, orgID).Find(&devicesToAdd, devicesIDsToAdd); res.Error != nil {
+	if res := db.AccountOrOrg(account, orgID, "").Find(&devicesToAdd, devicesIDsToAdd); res.Error != nil {
 		return nil, res.Error
 	}
 
@@ -436,7 +435,7 @@ func (s *DeviceGroupsService) DeleteDeviceGroupDevices(account string, orgID str
 
 	// get the device group
 	var deviceGroup models.DeviceGroup
-	if res := db.DB.Where("(account = ? OR org_id = ?)", account, orgID).First(&deviceGroup, deviceGroupID); res.Error != nil {
+	if res := db.AccountOrOrg(account, orgID, "").First(&deviceGroup, deviceGroupID); res.Error != nil {
 		return nil, res.Error
 	}
 
