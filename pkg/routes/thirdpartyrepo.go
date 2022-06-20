@@ -120,7 +120,6 @@ func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRe
 
 // GetAllThirdPartyRepo return all the ThirdPartyRepo
 func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
-
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	var tprepo []models.ThirdPartyRepo
 	var count int64
@@ -131,8 +130,14 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 		return
 	}
-	ctx := thirdPartyRepoFilters(r, db.DB).Model(&models.ThirdPartyRepo{}).Where("account = ?", account)
+	imageID := r.URL.Query().Get("imageID")
 
+	ctx := thirdPartyRepoFilters(r, db.DB).Model(&models.ThirdPartyRepo{}).
+		Where("account = ?", account)
+	if imageID != "" {
+		ctx.Preload("Images").Joins("left join images_repos on third_party_repo_id = id and image_id = ?", imageID).Order("image_id desc")
+		fmt.Printf("\n Params: %v\n", imageID)
+	}
 	// Check to see if feature is enabled and not in ephemeral
 	cfg := config.Get()
 	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
