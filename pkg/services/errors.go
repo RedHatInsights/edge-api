@@ -55,7 +55,7 @@ func (e *IDMustBeInteger) Error() string {
 type ThirdPartyRepositoryNotFound struct{}
 
 func (e *ThirdPartyRepositoryNotFound) Error() string {
-	return "custom repository not found"
+	return "third party repository was not found"
 }
 
 // ThirdPartyRepositoryAlreadyExists indicates the Third Party Repository already exists
