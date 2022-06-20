@@ -79,6 +79,13 @@ func (e *ThirdPartyRepositoryURLIsEmpty) Error() string {
 	return "custom repository URL cannot be empty"
 }
 
+// ThirdPartyRepositoryInfoIsInvalid indicates the Third Party Repository info is not valid
+type ThirdPartyRepositoryInfoIsInvalid struct{}
+
+func (e *ThirdPartyRepositoryInfoIsInvalid) Error() string {
+	return "custom repository info is invalid"
+}
+
 // InvalidURLForCustomRepo indicates the Third Party Repository url is invalid
 type InvalidURLForCustomRepo struct{}
 

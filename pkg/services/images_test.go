@@ -486,7 +486,7 @@ var _ = Describe("Image Service Test", func() {
 				orgID := ""
 				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account, orgID, repos)
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("repository information is not valid"))
+				Expect(err).To(MatchError(new(services.ThirdPartyRepositoryInfoIsInvalid).Error()))
 			})
 
 			It("should validate the images with repos within same account", func() {
@@ -527,7 +527,7 @@ var _ = Describe("Image Service Test", func() {
 				Expect(result.Error).ToNot(HaveOccurred())
 				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account1, orgID, []models.ThirdPartyRepo{repo1, repo2})
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("some repositories were not found"))
+				Expect(err).To(MatchError(new(services.ThirdPartyRepositoryNotFound).Error()))
 			})
 			It("should not validate the images with repos from different org_id", func() {
 				orgID1 := "1111111"
@@ -541,7 +541,7 @@ var _ = Describe("Image Service Test", func() {
 				Expect(result.Error).ToNot(HaveOccurred())
 				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account, orgID1, []models.ThirdPartyRepo{repo1, repo2})
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError("some repositories were not found"))
+				Expect(err).To(MatchError(new(services.ThirdPartyRepositoryNotFound).Error()))
 			})
 		})
 	})

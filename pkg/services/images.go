@@ -86,7 +86,7 @@ type ImageService struct {
 func ValidateAllImageReposAreFromAccountOrOrgID(account string, orgID string, repos []models.ThirdPartyRepo) error {
 
 	if account == "" && orgID == "" {
-		return errors.NewBadRequest("repository information is not valid")
+		return new(ThirdPartyRepositoryInfoIsInvalid)
 	}
 	if len(repos) == 0 {
 		return nil
@@ -101,7 +101,7 @@ func ValidateAllImageReposAreFromAccountOrOrgID(account string, orgID string, re
 		return result.Error
 	}
 	if len(existingRepos) != len(ids) {
-		return errors.NewNotFound("some repositories were not found")
+		return new(ThirdPartyRepositoryNotFound)
 	}
 
 	return nil
