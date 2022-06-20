@@ -5,79 +5,51 @@
 package mock_services
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	models "github.com/redhatinsights/edge-api/pkg/models"
-	reflect "reflect"
 )
 
-// MockThirdPartyRepoServiceInterface is a mock of ThirdPartyRepoServiceInterface interface
+// MockThirdPartyRepoServiceInterface is a mock of ThirdPartyRepoServiceInterface interface.
 type MockThirdPartyRepoServiceInterface struct {
 	ctrl     *gomock.Controller
 	recorder *MockThirdPartyRepoServiceInterfaceMockRecorder
 }
 
-// MockThirdPartyRepoServiceInterfaceMockRecorder is the mock recorder for MockThirdPartyRepoServiceInterface
+// MockThirdPartyRepoServiceInterfaceMockRecorder is the mock recorder for MockThirdPartyRepoServiceInterface.
 type MockThirdPartyRepoServiceInterfaceMockRecorder struct {
 	mock *MockThirdPartyRepoServiceInterface
 }
 
-// NewMockThirdPartyRepoServiceInterface creates a new mock instance
+// NewMockThirdPartyRepoServiceInterface creates a new mock instance.
 func NewMockThirdPartyRepoServiceInterface(ctrl *gomock.Controller) *MockThirdPartyRepoServiceInterface {
 	mock := &MockThirdPartyRepoServiceInterface{ctrl: ctrl}
 	mock.recorder = &MockThirdPartyRepoServiceInterfaceMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockThirdPartyRepoServiceInterface) EXPECT() *MockThirdPartyRepoServiceInterfaceMockRecorder {
 	return m.recorder
 }
 
-// CreateThirdPartyRepo mocks base method
-func (m *MockThirdPartyRepoServiceInterface) CreateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string) (*models.ThirdPartyRepo, error) {
+// CreateThirdPartyRepo mocks base method.
+func (m *MockThirdPartyRepoServiceInterface) CreateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account, orgID string) (*models.ThirdPartyRepo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateThirdPartyRepo", tprepo, account)
+	ret := m.ctrl.Call(m, "CreateThirdPartyRepo", tprepo, account, orgID)
 	ret0, _ := ret[0].(*models.ThirdPartyRepo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// CreateThirdPartyRepo indicates an expected call of CreateThirdPartyRepo
-func (mr *MockThirdPartyRepoServiceInterfaceMockRecorder) CreateThirdPartyRepo(tprepo, account interface{}) *gomock.Call {
+// CreateThirdPartyRepo indicates an expected call of CreateThirdPartyRepo.
+func (mr *MockThirdPartyRepoServiceInterfaceMockRecorder) CreateThirdPartyRepo(tprepo, account, orgID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateThirdPartyRepo", reflect.TypeOf((*MockThirdPartyRepoServiceInterface)(nil).CreateThirdPartyRepo), tprepo, account)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateThirdPartyRepo", reflect.TypeOf((*MockThirdPartyRepoServiceInterface)(nil).CreateThirdPartyRepo), tprepo, account, orgID)
 }
 
-// GetThirdPartyRepoByID mocks base method
-func (m *MockThirdPartyRepoServiceInterface) GetThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetThirdPartyRepoByID", ID)
-	ret0, _ := ret[0].(*models.ThirdPartyRepo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetThirdPartyRepoByID indicates an expected call of GetThirdPartyRepoByID
-func (mr *MockThirdPartyRepoServiceInterfaceMockRecorder) GetThirdPartyRepoByID(ID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetThirdPartyRepoByID", reflect.TypeOf((*MockThirdPartyRepoServiceInterface)(nil).GetThirdPartyRepoByID), ID)
-}
-
-// UpdateThirdPartyRepo mocks base method
-func (m *MockThirdPartyRepoServiceInterface) UpdateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account, ID string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateThirdPartyRepo", tprepo, account, ID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateThirdPartyRepo indicates an expected call of UpdateThirdPartyRepo
-func (mr *MockThirdPartyRepoServiceInterfaceMockRecorder) UpdateThirdPartyRepo(tprepo, account, ID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateThirdPartyRepo", reflect.TypeOf((*MockThirdPartyRepoServiceInterface)(nil).UpdateThirdPartyRepo), tprepo, account, ID)
-}
-
-// DeleteThirdPartyRepoByID mocks base method
+// DeleteThirdPartyRepoByID mocks base method.
 func (m *MockThirdPartyRepoServiceInterface) DeleteThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteThirdPartyRepoByID", ID)
@@ -86,8 +58,37 @@ func (m *MockThirdPartyRepoServiceInterface) DeleteThirdPartyRepoByID(ID string)
 	return ret0, ret1
 }
 
-// DeleteThirdPartyRepoByID indicates an expected call of DeleteThirdPartyRepoByID
+// DeleteThirdPartyRepoByID indicates an expected call of DeleteThirdPartyRepoByID.
 func (mr *MockThirdPartyRepoServiceInterfaceMockRecorder) DeleteThirdPartyRepoByID(ID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteThirdPartyRepoByID", reflect.TypeOf((*MockThirdPartyRepoServiceInterface)(nil).DeleteThirdPartyRepoByID), ID)
+}
+
+// GetThirdPartyRepoByID mocks base method.
+func (m *MockThirdPartyRepoServiceInterface) GetThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetThirdPartyRepoByID", ID)
+	ret0, _ := ret[0].(*models.ThirdPartyRepo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetThirdPartyRepoByID indicates an expected call of GetThirdPartyRepoByID.
+func (mr *MockThirdPartyRepoServiceInterfaceMockRecorder) GetThirdPartyRepoByID(ID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetThirdPartyRepoByID", reflect.TypeOf((*MockThirdPartyRepoServiceInterface)(nil).GetThirdPartyRepoByID), ID)
+}
+
+// UpdateThirdPartyRepo mocks base method.
+func (m *MockThirdPartyRepoServiceInterface) UpdateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account, orgID, ID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateThirdPartyRepo", tprepo, account, orgID, ID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateThirdPartyRepo indicates an expected call of UpdateThirdPartyRepo.
+func (mr *MockThirdPartyRepoServiceInterfaceMockRecorder) UpdateThirdPartyRepo(tprepo, account, orgID, ID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateThirdPartyRepo", reflect.TypeOf((*MockThirdPartyRepoServiceInterface)(nil).UpdateThirdPartyRepo), tprepo, account, orgID, ID)
 }
