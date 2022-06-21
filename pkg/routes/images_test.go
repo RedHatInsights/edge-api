@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/redhatinsights/edge-api/pkg/services"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -127,6 +128,141 @@ func TestCreate(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v, want %v",
 			status, http.StatusOK)
 
+	}
+}
+func TestCreateWithInvalidPackageName(t *testing.T) {
+	jsonImage := &models.Image{
+		Name:         "image2",
+		Distribution: "rhel-85",
+		OutputTypes:  []string{"rhel-edge-installer"},
+		Commit: &models.Commit{
+			Arch: "x86_64",
+		},
+		Packages: []models.Package{
+			{Name: "vanilla"},
+		},
+		Installer: &models.Installer{
+			Username: "test",
+			SSHKey:   "ssh-rsa d9:f158:00:abcd",
+		},
+	}
+	var buf bytes.Buffer
+	err := json.NewEncoder(&buf).Encode(jsonImage)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	req, err := http.NewRequest("POST", "/", &buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := req.Context()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(new(services.PackageNameDoesNotExist))
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
+	})
+
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(CreateImage)
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusBadRequest)
+	}
+}
+func TestCreateWithThirdPartyRepositoryInfoInvalid(t *testing.T) {
+	jsonImage := &models.Image{
+		Name:         "image2",
+		Distribution: "rhel-85",
+		OutputTypes:  []string{"rhel-edge-installer"},
+		Commit: &models.Commit{
+			Arch: "x86_64",
+		},
+		Packages: []models.Package{
+			{Name: "vim-common"},
+		},
+		Installer: &models.Installer{
+			Username: "test",
+			SSHKey:   "ssh-rsa d9:f158:00:abcd",
+		},
+	}
+	var buf bytes.Buffer
+	err := json.NewEncoder(&buf).Encode(jsonImage)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	req, err := http.NewRequest("POST", "/", &buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := req.Context()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(new(services.ThirdPartyRepositoryInfoIsInvalid))
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
+	})
+
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(CreateImage)
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusBadRequest)
+	}
+}
+func TestCreateWithImageNameAlreadyExist(t *testing.T) {
+	jsonImage := &models.Image{
+		Name:         "ImageNameAlreadyExist",
+		Distribution: "rhel-85",
+		OutputTypes:  []string{"rhel-edge-installer"},
+		Commit: &models.Commit{
+			Arch: "x86_64",
+		},
+		Packages: []models.Package{
+			{Name: "vim-common"},
+		},
+		Installer: &models.Installer{
+			Username: "test",
+			SSHKey:   "ssh-rsa d9:f158:00:abcd",
+		},
+	}
+	var buf bytes.Buffer
+	err := json.NewEncoder(&buf).Encode(jsonImage)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	req, err := http.NewRequest("POST", "/", &buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := req.Context()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(new(services.ImageNameAlreadyExists))
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
+	})
+
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(CreateImage)
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusBadRequest)
 	}
 }
 func TestGetStatus(t *testing.T) {
