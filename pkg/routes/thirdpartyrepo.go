@@ -16,7 +16,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
-	log "github.com/sirupsen/logrus"
 )
 
 type tprepoTypeKey int
@@ -77,14 +76,13 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	}
 	ctxServices.Log.Info("Creating custom repository")
 
-	account, err := common.GetAccount(r)
-	if err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Account was not set")
-		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
+	if account == "" && orgID == "" {
+		// logs and response handled by readAccountOrOrgID
 		return
 	}
 
-	thirdPartyRepo, err = ctxServices.ThirdPartyRepoService.CreateThirdPartyRepo(thirdPartyRepo, account)
+	thirdPartyRepo, err = ctxServices.ThirdPartyRepoService.CreateThirdPartyRepo(thirdPartyRepo, account, orgID)
 	if err != nil {
 		var apiError errors.APIError
 		switch err.(type) {
@@ -124,16 +122,15 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	var tprepo []models.ThirdPartyRepo
 	var count int64
 
-	account, err := common.GetAccount(r)
-	if err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Error retrieving account from the request")
-		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+	imageID := r.URL.Query().Get("imageID")
+	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
+	if account == "" && orgID == "" {
+		// logs and response handled by readAccountOrOrgID
 		return
 	}
-	imageID := r.URL.Query().Get("imageID")
 
-	ctx := thirdPartyRepoFilters(r, db.DB).Model(&models.ThirdPartyRepo{}).
-		Where("account = ?", account)
+	ctx := db.AccountOrOrgTx(account, orgID, thirdPartyRepoFilters(r, db.DB), "").Model(&models.ThirdPartyRepo{})
+
 	if imageID != "" {
 		ctx.Preload("Images").Joins("left join images_repos on third_party_repo_id = id and image_id = ?", imageID).Order("image_id desc")
 		fmt.Printf("\n Params: %v\n", imageID)
@@ -151,13 +148,13 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	pagination := common.GetPagination(r)
 
 	if result := ctx.Count(&count); result.Error != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Error counting results")
+		ctxServices.Log.WithField("error", result.Error).Error("Error counting results")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
 
 	if result := ctx.Limit(pagination.Limit).Offset(pagination.Offset).Find(&tprepo); result.Error != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Error returning results")
+		ctxServices.Log.WithField("error", result.Error).Error("Error returning results")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
@@ -192,13 +189,9 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 				respondWithAPIError(w, ctxServices.Log, responseErr)
 				return
 			}
-			account, err := common.GetAccount(r)
-			if err != nil || tprepo.Account != account {
-				ctxServices.Log.WithFields(log.Fields{
-					"error":   err.Error(),
-					"account": account,
-				}).Error("Error retrieving account or custom repository doesn't belong to account")
-				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+			account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
+			if account == "" && orgID == "" {
+				// logs and response handled by readAccountOrOrgID
 				return
 			}
 			ctx := context.WithValue(r.Context(), tprepoKey, tprepo)
@@ -232,7 +225,7 @@ func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		// error handled by createRequest already
 		return
 	}
-	err = ctxServices.ThirdPartyRepoService.UpdateThirdPartyRepo(tprepo, oldtprepo.Account, fmt.Sprint(oldtprepo.ID))
+	err = ctxServices.ThirdPartyRepoService.UpdateThirdPartyRepo(tprepo, oldtprepo.Account, oldtprepo.OrgID, fmt.Sprint(oldtprepo.ID))
 	if err != nil {
 		var apiError errors.APIError
 		switch err.(type) {

@@ -134,8 +134,15 @@ func TestGetStatus(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
+	})
 	rr := httptest.NewRecorder()
-	ctx := context.WithValue(req.Context(), imageKey, &testImage)
+	ctx = context.WithValue(ctx, imageKey, &testImage)
 	handler := http.HandlerFunc(GetImageStatusByID)
 	handler.ServeHTTP(rr, req.WithContext(ctx))
 
@@ -278,6 +285,15 @@ func TestValidateGetAllSearchParams(t *testing.T) {
 			t.Fatal(err)
 		}
 		w := httptest.NewRecorder()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+		ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{
+			ImageService: mockImageService,
+			Log:          log.NewEntry(log.StandardLogger()),
+		})
+		req = req.WithContext(ctx)
+
 		validateGetAllImagesSearchParams(next).ServeHTTP(w, req)
 
 		resp := w.Result()
@@ -379,8 +395,14 @@ func TestGetImageByOstree(t *testing.T) {
 		t.Fatal(err)
 	}
 	rr := httptest.NewRecorder()
-
-	ctx := context.WithValue(req.Context(), imageKey, &testImage)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
+	})
+	ctx = context.WithValue(ctx, imageKey, &testImage)
 	handler := http.HandlerFunc(GetImageByOstree)
 	handler.ServeHTTP(rr, req.WithContext(ctx))
 
@@ -437,7 +459,7 @@ func TestPostCheckImageNameAlreadyExist(t *testing.T) {
 
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any()).Return(true, nil)
+	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),
@@ -486,7 +508,7 @@ func TestPostCheckImageNameDoesNotExist(t *testing.T) {
 
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any()).Return(false, nil)
+	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil)
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),

@@ -21,7 +21,7 @@ import (
 )
 
 // This provides type safety in the context object for our "image" key.  We
-// _could_ use a string but we shouldn't just in case someone else decides that
+// _could_ use a string, but we shouldn't just in case someone else decides that
 // "image" would make the perfect key in the context object.  See the
 // documentation: https://golang.org/pkg/context/#WithValue for further
 // rationale.
@@ -70,23 +70,18 @@ func ImageByOSTreeHashCtx(next http.Handler) http.Handler {
 					responseErr = errors.NewNotFound(err.Error())
 				case *services.AccountNotSet:
 					responseErr = errors.NewBadRequest(err.Error())
+				case *services.OrgIDNotSet:
+					responseErr = errors.NewBadRequest(err.Error())
 				default:
 					responseErr = errors.NewInternalServerError()
 				}
-				w.WriteHeader(responseErr.GetStatus())
-				if err := json.NewEncoder(w).Encode(&responseErr); err != nil {
-					s.Log.WithField("error", responseErr.Error()).Error("Error while trying to encode")
-				}
+				respondWithAPIError(w, s.Log, responseErr)
 				return
 			}
 			ctx := context.WithValue(r.Context(), imageKey, image)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
-			err := errors.NewBadRequest("OSTreeCommitHash required")
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+			respondWithAPIError(w, s.Log, errors.NewBadRequest("OSTreeCommitHash required"))
 			return
 		}
 	})
@@ -107,39 +102,34 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 					responseErr = errors.NewNotFound(err.Error())
 				case *services.AccountNotSet:
 					responseErr = errors.NewBadRequest(err.Error())
+				case *services.OrgIDNotSet:
+					responseErr = errors.NewBadRequest(err.Error())
 				case *services.IDMustBeInteger:
 					responseErr = errors.NewBadRequest(err.Error())
 				default:
 					responseErr = errors.NewInternalServerError()
 				}
-				w.WriteHeader(responseErr.GetStatus())
-				if err := json.NewEncoder(w).Encode(&responseErr); err != nil {
-					s.Log.WithField("error", responseErr.Error()).Error("Error while trying to encode")
-				}
+				respondWithAPIError(w, s.Log, responseErr)
 				return
 			}
-			account, err := common.GetAccount(r)
-			if err != nil || image.Account != account {
+			account, orgID := readAccountOrOrgID(w, r, s.Log)
+			if account == "" && orgID == "" {
+				return
+			}
+			if image.Account != account || image.OrgID != orgID {
 				s.Log.WithFields(log.Fields{
 					"error":   err.Error(),
 					"account": account,
-				}).Error("Error retrieving account or image doesn't belong to account")
-				err := errors.NewBadRequest(err.Error())
-				w.WriteHeader(err.GetStatus())
-				if err := json.NewEncoder(w).Encode(&err); err != nil {
-					s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-				}
+					"org_id":  orgID,
+				}).Error("image doesn't belong to account or org_id")
+				respondWithAPIError(w, s.Log, errors.NewBadRequest("image doesn't belong to account or org_id"))
 				return
 			}
 			ctx := context.WithValue(r.Context(), imageKey, image)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		} else {
 			s.Log.Debug("Image ID was not passed to the request or it was empty")
-			err := errors.NewBadRequest("Image ID required")
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+			respondWithAPIError(w, s.Log, errors.NewBadRequest("Image ID required"))
 			return
 		}
 	})
@@ -181,9 +171,15 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	err = ctxServices.ImageService.CreateImage(image, account, orgID, reqID)
 	if err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Failed creating image")
-		err := errors.NewInternalServerError()
-		err.SetTitle("Failed creating image")
-		respondWithAPIError(w, ctxServices.Log, err)
+		var apiError errors.APIError
+		switch err.(type) {
+		case *services.PackageNameDoesNotExist, *services.ThirdPartyRepositoryInfoIsInvalid, *services.ThirdPartyRepositoryNotFound:
+			apiError = errors.NewBadRequest(err.Error())
+		default:
+			apiError := errors.NewInternalServerError()
+			apiError.SetTitle("Failed creating image")
+		}
+		respondWithAPIError(w, ctxServices.Log, apiError)
 		return
 	}
 	ctxServices.Log.WithFields(log.Fields{
@@ -224,9 +220,15 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	err = ctxServices.ImageService.UpdateImage(image, previousImage)
 	if err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Failed creating an update to an image")
-		err := errors.NewInternalServerError()
-		err.SetTitle("Failed creating image")
-		respondWithAPIError(w, ctxServices.Log, err)
+		var apiError errors.APIError
+		switch err.(type) {
+		case *services.PackageNameDoesNotExist, *services.ThirdPartyRepositoryInfoIsInvalid, *services.ThirdPartyRepositoryNotFound:
+			apiError = errors.NewBadRequest(err.Error())
+		default:
+			apiError := errors.NewInternalServerError()
+			apiError.SetTitle("Failed creating image")
+		}
+		respondWithAPIError(w, ctxServices.Log, apiError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -276,7 +278,7 @@ type validationError struct {
 
 func validateGetAllImagesSearchParams(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		errs := []validationError{}
+		var errs []validationError
 		if statuses, ok := r.URL.Query()["status"]; ok {
 			for _, status := range statuses {
 				if status != models.ImageStatusCreated && status != models.ImageStatusBuilding && status != models.ImageStatusError && status != models.ImageStatusSuccess {
@@ -303,67 +305,54 @@ func validateGetAllImagesSearchParams(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
+		ctxServices := dependencies.ServicesFromContext(r.Context())
 		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(&errs); err != nil {
-			services := dependencies.ServicesFromContext(r.Context())
-			services.Log.WithField("error", errs).Error("Error while trying to encode")
-		}
+		respondWithJSONBody(w, ctxServices.Log, &errs)
 	})
 }
 
-// GetAllImages image objects from the database for an account
+// GetAllImages image objects from the database for an account/orgID
 func GetAllImages(w http.ResponseWriter, r *http.Request) {
-	services := dependencies.ServicesFromContext(r.Context())
-	services.Log.Debug("Getting all images")
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	ctxServices.Log.Debug("Getting all images")
 	var count int64
 	var images []models.Image
 	result := imageFilters(r, db.DB)
 	pagination := common.GetPagination(r)
-	account, err := common.GetAccount(r)
-	if err != nil {
-		services.Log.WithField("error", err).Debug("Account not found")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
+	if account == "" && orgID == "" {
+		// logs and response handled by readAccountOrOrgID
 		return
 	}
-	countResult := imageFilters(r, db.DB.Model(&models.Image{})).Where("images.account = ?", account).Count(&count)
+	countResult := db.AccountOrOrgTx(account, orgID, imageFilters(r, db.DB.Model(&models.Image{})), "images").Count(&count)
 	if countResult.Error != nil {
-		services.Log.WithField("error", countResult.Error.Error()).Error("Error retrieving images")
+		ctxServices.Log.WithField("error", countResult.Error.Error()).Error("Error retrieving images")
 		countErr := errors.NewInternalServerError()
 		w.WriteHeader(countErr.GetStatus())
 		if err := json.NewEncoder(w).Encode(&countErr); err != nil {
-			services.Log.WithField("error", countErr).Error("Error while trying to encode")
+			ctxServices.Log.WithField("error", countErr).Error("Error while trying to encode")
 		}
 		return
 	}
-	result = result.Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Preload("Commit.Repo").Preload("CustomPackages").Preload("ThirdPartyRepositories").Where("images.account = ?", account).Joins("Commit").Joins("Installer").Find(&images)
+	result = db.AccountOrOrgTx(account, orgID, result, "images").Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Preload("Commit.Repo").Preload("CustomPackages").Preload("ThirdPartyRepositories").Joins("Commit").Joins("Installer").Find(&images)
 	if result.Error != nil {
-		services.Log.WithField("error", result.Error.Error()).Error("Error retrieving images")
+		ctxServices.Log.WithField("error", result.Error.Error()).Error("Error retrieving images")
 		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+			ctxServices.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 		return
 	}
-	if err := json.NewEncoder(w).Encode(map[string]interface{}{"data": &images, "count": count}); err != nil {
-		services.Log.WithField("error", map[string]interface{}{"data": &images, "count": count}).Error("Error while trying to encode")
-	}
+	respondWithJSONBody(w, ctxServices.Log, map[string]interface{}{"data": &images, "count": count})
 }
 
 func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 	ctx := r.Context()
 	image, ok := ctx.Value(imageKey).(*models.Image)
 	if !ok {
-		err := errors.NewBadRequest("Must pass image identifier")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services := dependencies.ServicesFromContext(r.Context())
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("Must pass image identifier"))
 		return nil
 	}
 	return image
@@ -372,18 +361,18 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 // GetImageStatusByID returns the image status.
 func GetImageStatusByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		if err := json.NewEncoder(w).Encode(struct {
-			Status string
-			Name   string
-			ID     uint
-		}{
-			image.Status,
-			image.Name,
-			image.ID,
-		}); err != nil {
-			services := dependencies.ServicesFromContext(r.Context())
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		respondWithJSONBody(w, ctxServices.Log,
+			struct {
+				Status string
+				Name   string
+				ID     uint
+			}{
+				image.Status,
+				image.Name,
+				image.ID,
+			},
+		)
 	}
 }
 
@@ -397,28 +386,26 @@ type ImageDetail struct {
 	UpdateUpdated      int           `json:"update_updated"`
 }
 
-// GetImageByID obtains a image from the database for an account
+// GetImageByID obtains an image from the database for an account/orgID
 func GetImageByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		if err := json.NewEncoder(w).Encode(image); err != nil {
-			services := dependencies.ServicesFromContext(r.Context())
-			services.Log.WithField("error", image).Error("Error while trying to encode")
-		}
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		respondWithJSONBody(w, ctxServices.Log, image)
 	}
 }
 
-// GetImageDetailsByID obtains a image from the database for an account
+// GetImageDetailsByID obtains an image from the database for an account/orgID
 func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		services := dependencies.ServicesFromContext(r.Context())
+		ctxServices := dependencies.ServicesFromContext(r.Context())
 		var imgDetail ImageDetail
 		imgDetail.Image = image
 		imgDetail.Packages = len(image.Commit.InstalledPackages)
 		imgDetail.AdditionalPackages = len(image.Packages)
 
-		upd, err := services.ImageService.GetUpdateInfo(*image)
+		upd, err := ctxServices.ImageService.GetUpdateInfo(*image)
 		if err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error getting update info")
+			ctxServices.Log.WithField("error", err.Error()).Error("Error getting update info")
 		}
 		if upd != nil {
 			imgDetail.UpdateAdded = len(upd[len(upd)-1].PackageDiff.Removed)
@@ -429,54 +416,43 @@ func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 			imgDetail.UpdateRemoved = 0
 			imgDetail.UpdateUpdated = 0
 		}
-		if err := json.NewEncoder(w).Encode(imgDetail); err != nil {
-			services.Log.WithField("error", imgDetail).Error("Error while trying to encode")
-		}
+		respondWithJSONBody(w, ctxServices.Log, &imgDetail)
 	}
 }
 
-// GetImageByOstree obtains a image from the database for an account based on Commit Ostree
+// GetImageByOstree obtains an image from the database for an account/orgID based on Commit Ostree
 func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		if err := json.NewEncoder(w).Encode(&image); err != nil {
-			services := dependencies.ServicesFromContext(r.Context())
-			services.Log.WithField("error", image).Error("Error while trying to encode")
-		}
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		respondWithJSONBody(w, ctxServices.Log, image)
 	}
 }
 
-// CreateInstallerForImage creates a installer for a Image
+// CreateInstallerForImage creates an installer for an Image
 // It requires a created image and a repo with a successful status
 func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
-	services := dependencies.ServicesFromContext(r.Context())
+	ctxServices := dependencies.ServicesFromContext(r.Context())
 	image := getImage(w, r)
-	if err := json.NewDecoder(r.Body).Decode(&image.Installer); err != nil {
-		services.Log.WithField("error", err).Error("Failed to decode installer")
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+	if image == nil {
 		return
 	}
-	image, _, err := services.ImageService.CreateInstallerForImage(image)
+	if err := readRequestJSONBody(w, r, ctxServices.Log, &image.Installer); err != nil {
+		return
+	}
+
+	image, _, err := ctxServices.ImageService.CreateInstallerForImage(image)
 	if err != nil {
-		services.Log.WithField("error", err).Error("Failed to create installer")
+		ctxServices.Log.WithField("error", err).Error("Failed to create installer")
 		err := errors.NewInternalServerError()
 		err.SetTitle("Failed to create installer")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		respondWithAPIError(w, ctxServices.Log, err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(&image); err != nil {
-		services.Log.WithField("error", image).Error("Error while trying to encode")
-	}
+	respondWithJSONBody(w, ctxServices.Log, image)
 }
 
-// CreateRepoForImage creates a repo for a Image
+// CreateRepoForImage creates a repo for an Image
 func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 	image := getImage(w, r)
 
@@ -502,134 +478,91 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-//GetRepoForImage gets the repository for a Image
+//GetRepoForImage gets the repository for an Image
 func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		services := dependencies.ServicesFromContext(r.Context())
-		services.Log = services.Log.WithField("repoID", image.Commit.RepoID)
-		repo, err := services.RepoService.GetRepoByID(image.Commit.RepoID)
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		ctxServices.Log = ctxServices.Log.WithField("repoID", image.Commit.RepoID)
+		repo, err := ctxServices.RepoService.GetRepoByID(image.Commit.RepoID)
 		if err != nil {
 			err := errors.NewNotFound(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.CommitID))
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+			respondWithAPIError(w, ctxServices.Log, err)
 			return
 		}
-		if err := json.NewEncoder(w).Encode(repo); err != nil {
-			services.Log.WithField("error", repo).Error("Error while trying to encode")
-		}
+		respondWithJSONBody(w, ctxServices.Log, repo)
 	}
 }
 
 //GetMetadataForImage gets the metadata from image-builder on /metadata endpoint
 func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
-	services := dependencies.ServicesFromContext(r.Context())
 	if image := getImage(w, r); image != nil {
-		meta, err := services.ImageService.GetMetadata(image)
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		meta, err := ctxServices.ImageService.GetMetadata(image)
 		if err != nil {
-			err := errors.NewInternalServerError()
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+			respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 			return
 		}
-		if err := json.NewEncoder(w).Encode(meta); err != nil {
-			services.Log.WithField("error", meta).Error("Error while trying to encode")
-		}
+		respondWithJSONBody(w, ctxServices.Log, meta)
 	}
 }
 
 // CreateKickStartForImage creates a kickstart file for an existent image
 func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		services := dependencies.ServicesFromContext(r.Context())
-		err := services.ImageService.AddUserInfo(image)
-		if err != nil {
-			services.Log.WithField("error", err.Error()).Error("Kickstart file injection failed")
-			err := errors.NewInternalServerError()
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		if err := ctxServices.ImageService.AddUserInfo(image); err != nil {
+			ctxServices.Log.WithField("error", err.Error()).Error("Kickstart file injection failed")
+			respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 			return
 		}
 	}
 }
 
-// CheckImageNameResponse indicates whether or not the image exists
+// CheckImageNameResponse indicates whether the image exists
 type CheckImageNameResponse struct {
 	ImageExists bool `json:"ImageExists"`
 }
 
 // CheckImageName verifies that ImageName exists
 func CheckImageName(w http.ResponseWriter, r *http.Request) {
-	services := dependencies.ServicesFromContext(r.Context())
+	ctxServices := dependencies.ServicesFromContext(r.Context())
 	var image *models.Image
-	if err := json.NewDecoder(r.Body).Decode(&image); err != nil {
-		services.Log.WithField("error", err.Error()).Debug("Bad request")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+	if err := readRequestJSONBody(w, r, ctxServices.Log, &image); err != nil {
+		return
 	}
-	account, err := common.GetAccount(r)
-	if err != nil {
-		services.Log.WithField("error", err.Error()).Debug("Bad request")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
+	if account == "" && orgID == "" {
+		// logs and response handled by readAccountOrOrgID
 		return
 	}
 	if image == nil {
 		err := errors.NewInternalServerError()
-		services.Log.WithField("error", err.Error()).Error("Internal Server Error")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
-	}
-	imageExists, err := services.ImageService.CheckImageName(image.Name, account)
-	if err != nil {
-		services.Log.WithField("error", err.Error()).Error("Internal Server Error")
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		ctxServices.Log.WithField("error", err.Error()).Error("Internal Server Error")
+		respondWithAPIError(w, ctxServices.Log, err)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(CheckImageNameResponse{
-		ImageExists: imageExists,
-	}); err != nil {
-		services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+	imageExists, err := ctxServices.ImageService.CheckImageName(image.Name, account, orgID)
+	if err != nil {
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
+		return
 	}
+	respondWithJSONBody(w, ctxServices.Log, &CheckImageNameResponse{ImageExists: imageExists})
 }
 
 // RetryCreateImage retries the image creation
 func RetryCreateImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		services := dependencies.ServicesFromContext(r.Context())
-		err := services.ImageService.RetryCreateImage(image)
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		err := ctxServices.ImageService.RetryCreateImage(image)
 		if err != nil {
-			services.Log.WithField("error", err.Error()).Error("Failed to retry to create image")
+			ctxServices.Log.WithField("error", err.Error()).Error("Failed to retry to create image")
 			err := errors.NewInternalServerError()
 			err.SetTitle("Failed creating image")
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+			respondWithAPIError(w, ctxServices.Log, err)
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(&image); err != nil {
-			services.Log.WithField("error", image).Error("Error while trying to encode")
-		}
+		respondWithJSONBody(w, ctxServices.Log, image)
 	}
 }
 
@@ -641,7 +574,7 @@ func ResumeCreateImage(w http.ResponseWriter, r *http.Request) {
 	A new context is created and the image to be resumed is
 	retrieved from the database.
 	*/
-	if tempimage := getImage(w, r); tempimage != nil {
+	if tempImage := getImage(w, r); tempImage != nil {
 		// TODO: move this to its own context function
 		//ctx := context.Background()
 		ctx := r.Context()
@@ -651,62 +584,52 @@ func ResumeCreateImage(w http.ResponseWriter, r *http.Request) {
 
 		// re-grab the image from the database
 		var image *models.Image
-		db.DB.Debug().Preload("Commit.Repo").Joins("Commit").Joins("Installer").First(&image, tempimage.ID)
+		db.DB.Debug().Preload("Commit.Repo").Joins("Commit").Joins("Installer").First(&image, tempImage.ID)
 
-		resumelog := edgeAPIServices.Log.WithField("originalRequestId", image.RequestID)
-		resumelog.Info("Resuming image build")
+		resumeLog := edgeAPIServices.Log.WithField("originalRequestId", image.RequestID)
+		resumeLog.Info("Resuming image build")
 
 		// recreate a stripped down identity header
 		strippedIdentity := `{ "identity": {"account_number": ` + image.Account + `, "type": "User", "internal": {"org_id": ` + image.OrgID + `, }, }, }`
-		resumelog.WithField("identity_text", strippedIdentity).Debug("Creating a new stripped identity")
+		resumeLog.WithField("identity_text", strippedIdentity).Debug("Creating a new stripped identity")
 		base64Identity := base64.StdEncoding.EncodeToString([]byte(strippedIdentity))
-		resumelog.WithField("identity_base64", base64Identity).Debug("Using a base64encoded stripped identity")
+		resumeLog.WithField("identity_base64", base64Identity).Debug("Using a base64encoded stripped identity")
 
-		// add the new identity to the context and create services with that context
+		// add the new identity to the context and create ctxServices with that context
 		ctx = common.SetOriginalIdentity(ctx, base64Identity)
-		services := dependencies.ServicesFromContext(ctx)
-		// TODO: consider a bitwise& param to only add needed services
+		ctxServices := dependencies.ServicesFromContext(ctx)
+		// TODO: consider a bitwise& param to only add needed ctxServices
 
-		// use the new services w/ context to make the imageservice.ResumeCreateImage call
-		err := services.ImageService.ResumeCreateImage(image)
+		// use the new ctxServices w/ context to make the imageService.ResumeCreateImage call
+		err := ctxServices.ImageService.ResumeCreateImage(image)
 
 		// finish out the original API call
 		if err != nil {
 			edgeAPIServices.Log.WithField("error", err.Error()).Error("Failed to retry to create image")
 			err := errors.NewInternalServerError()
 			err.SetTitle("Failed creating image")
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				edgeAPIServices.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+			respondWithAPIError(w, ctxServices.Log, err)
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(&image); err != nil {
-			edgeAPIServices.Log.WithField("error", image).Error("Error while trying to encode")
-		}
+		respondWithJSONBody(w, ctxServices.Log, image)
 	}
 }
 
 //SendNotificationForImage TMP route to validate
 func SendNotificationForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
-		services := dependencies.ServicesFromContext(r.Context())
-		notify, err := services.ImageService.SendImageNotification(image)
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		notify, err := ctxServices.ImageService.SendImageNotification(image)
 		if err != nil {
-			services.Log.WithField("error", err.Error()).Error("Failed to retry to send notification")
+			ctxServices.Log.WithField("error", err.Error()).Error("Failed to retry to send notification")
 			err := errors.NewInternalServerError()
 			err.SetTitle("Failed creating image")
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+			respondWithAPIError(w, ctxServices.Log, err)
 			return
 		}
-		services.Log.WithField("StatusOK", http.StatusOK).Info("Writting Header")
+		ctxServices.Log.WithField("StatusOK", http.StatusOK).Info("Writing Header")
 		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(notify); err != nil {
-			services.Log.WithField("error", notify).Error("Error while trying to encode")
-		}
+		respondWithJSONBody(w, ctxServices.Log, &notify)
 	}
 }
