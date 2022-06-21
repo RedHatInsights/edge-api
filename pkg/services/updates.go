@@ -28,19 +28,19 @@ import (
 // UpdateServiceInterface defines the interface that helps
 // handle the business logic of sending updates to a edge device
 type UpdateServiceInterface interface {
-	BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate, account string, commit *models.Commit) (*[]models.UpdateTransaction, error)
+	BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate, account string, orgID string, commit *models.Commit) (*[]models.UpdateTransaction, error)
 	CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	CreateUpdateAsync(id uint)
 	GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error)
 	GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error)
 	ProcessPlaybookDispatcherRunEvent(message []byte) error
-	WriteTemplate(templateInfo TemplateRemoteInfo, account string) (string, error)
+	WriteTemplate(templateInfo TemplateRemoteInfo, account string, orgID string) (string, error)
 	SetUpdateStatusBasedOnDispatchRecord(dispatchRecord models.DispatchRecord) error
 	SetUpdateStatus(update *models.UpdateTransaction) error
 	SendDeviceNotification(update *models.UpdateTransaction) (ImageNotification, error)
 	UpdateDevicesFromUpdateTransaction(update models.UpdateTransaction) error
-	ValidateUpdateSelection(account string, imageIds []uint) (bool, error)
-	ValidateUpdateDeviceGroup(account string, deviceGroupID uint) (bool, error)
+	ValidateUpdateSelection(account string, orgID string, imageIds []uint) (bool, error)
+	ValidateUpdateDeviceGroup(account string, orgID string, deviceGroupID uint) (bool, error)
 }
 
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
@@ -88,6 +88,7 @@ type TemplateRemoteInfo struct {
 type PlaybookDispatcherEventPayload struct {
 	ID            string `json:"id"`
 	Account       string `json:"account"`
+	OrgID         string `json:"org_id"`
 	Recipient     string `json:"recipient"`
 	CorrelationID string `json:"correlation_id"`
 	Service       string `json:"service"`
@@ -163,7 +164,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	remoteInfo.ContentURL = update.Repo.URL
 	remoteInfo.UpdateTransactionID = update.ID
 	remoteInfo.GpgVerify = "false"
-	playbookURL, err := s.WriteTemplate(remoteInfo, update.Account)
+	playbookURL, err := s.WriteTemplate(remoteInfo, update.Account, update.OrgID)
 	if err != nil {
 		update.Status = models.UpdateStatusError
 		db.DB.Save(update)
@@ -179,6 +180,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			Recipient:   device.RHCClientID,
 			PlaybookURL: playbookURL,
 			Account:     update.Account,
+			OrgID:       update.OrgID,
 		}
 		s.log.Debug("Calling playbook dispatcher")
 		client := playbookdispatcher.InitClient(s.ctx, s.log)
@@ -225,6 +227,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 
 // GetUpdatePlaybook is the function that returns the path to an update playbook
 func (s *UpdateService) GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error) {
+	//TODO change this path name to use org id
 	fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", update.Account, update.ID)
 	path := fmt.Sprintf("%s/playbooks/%s", update.Account, fname)
 	return s.FilesService.GetFile(path)
@@ -238,7 +241,7 @@ func (s *UpdateService) getPlaybookURL(updateID uint) string {
 }
 
 // WriteTemplate is the function that writes the template to a file
-func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, account string) (string, error) {
+func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, account string, orgID string) (string, error) {
 	cfg := config.Get()
 	filePath := cfg.TemplatesPath
 	templateName := "template_playbook_dispatcher_ostree_upgrade_payload.yml"
@@ -263,6 +266,7 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, account s
 		RepoURL:              "https://{{ s3_buckets[fleet_infra_env] | default('rh-edge-tarballs-stage') }}.s3.{{ s3_region | default('us-east-1') }}.amazonaws.com/{{ update_number }}/upd/{{ update_number }}/repo",
 	}
 
+	//TODO change the same time as line 231
 	fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", account, templateInfo.UpdateTransactionID)
 	tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
 	f, err := os.Create(tmpfilepath)
@@ -373,14 +377,11 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 // SetUpdateStatusBasedOnDispatchRecord is the function that, given a dispatch record, finds the update transaction related to and update its status if necessary
 func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord models.DispatchRecord) error {
 	var update models.UpdateTransaction
-	result := db.DB.Preload("DispatchRecords").
-		Table("update_transactions").
-		Joins(
-			`JOIN updatetransaction_dispatchrecords ON update_transactions.id = updatetransaction_dispatchrecords.update_transaction_id`).
-		Where(`updatetransaction_dispatchrecords.dispatch_record_id = ?`,
-			dispatchRecord.ID,
-		).First(&update)
+	result := db.DB.Table("update_transactions").Preload("DispatchRecords").
+		Joins(`JOIN updatetransaction_dispatchrecords ON update_transactions.id = updatetransaction_dispatchrecords.update_transaction_id`).
+		Where(`updatetransaction_dispatchrecords.dispatch_record_id = ?`, dispatchRecord.ID).First(&update)
 	if result.Error != nil {
+		fmt.Println(result.Error)
 		return result.Error
 	}
 
@@ -464,6 +465,7 @@ func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (Ima
 		recipients = append(recipients, recipient)
 
 		notify.Account = i.Account
+		notify.OrgID = i.OrgID
 		notify.Context = fmt.Sprintf("{  \"CommitID\" : \"%v\"}", i.CommitID)
 		notify.Events = events
 		notify.Recipients = recipients
@@ -495,7 +497,7 @@ func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (Ima
 
 // UpdateDevicesFromUpdateTransaction update device with new image and update availability
 func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateTransaction) error {
-	logger := s.log.WithFields(log.Fields{"account": update.Account, "context": "UpdateDevicesFromUpdateTransaction"})
+	logger := s.log.WithFields(log.Fields{"account": update.Account, "org_id": update.OrgID, "context": "UpdateDevicesFromUpdateTransaction"})
 	if update.Status != models.UpdateStatusSuccess {
 		// update only when update is successful
 		// do nothing
@@ -505,7 +507,7 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 
 	// reload update transaction from db
 	var currentUpdate models.UpdateTransaction
-	if result := db.DB.Where("account = ?", update.Account).Preload("Devices").Preload("Commit").First(&currentUpdate, update.ID); result.Error != nil {
+	if result := db.AccountOrOrg(update.Account, update.OrgID, "").Preload("Devices").Preload("Commit").First(&currentUpdate, update.ID); result.Error != nil {
 		return result.Error
 	}
 
@@ -516,8 +518,9 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 
 	// get the update commit image
 	var deviceImage models.Image
-	if result := db.DB.Joins("JOIN commits ON commits.id = images.commit_id").
-		Where("images.account = ? AND commits.os_tree_commit = ? ", currentUpdate.Account, currentUpdate.Commit.OSTreeCommit).
+	if result := db.AccountOrOrg(currentUpdate.Account, currentUpdate.OrgID, "images").
+		Joins("JOIN commits ON commits.id = images.commit_id").
+		Where("commits.os_tree_commit = ? ", currentUpdate.Commit.OSTreeCommit).
 		First(&deviceImage); result.Error != nil {
 		logger.WithField("error", result.Error).Error("Error while getting device image")
 		return result.Error
@@ -526,8 +529,8 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 	// get image update availability, by finding if there is later images updates
 	// consider only those with ImageStatusSuccess
 	var updateImages []models.Image
-	if result := db.DB.Select("id").Where("account = ? AND image_set_id = ? AND status = ? AND created_at > ?",
-		deviceImage.Account, deviceImage.ImageSetID, models.ImageStatusSuccess, deviceImage.CreatedAt).Find(&updateImages); result.Error != nil {
+	if result := db.AccountOrOrg(deviceImage.Account, deviceImage.OrgID, "").Select("id").Where("image_set_id = ? AND status = ? AND created_at > ?",
+		deviceImage.ImageSetID, models.ImageStatusSuccess, deviceImage.CreatedAt).Find(&updateImages); result.Error != nil {
 		logger.WithField("error", result.Error).Error("Error while getting update images")
 		return result.Error
 	}
@@ -540,8 +543,7 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 	}
 
 	// update devices with image and update availability
-	if result := db.DB.Model(&models.Device{}).
-		Where("account = ? AND id IN (?) ", deviceImage.Account, devicesIDS).
+	if result := db.AccountOrOrg(deviceImage.Account, deviceImage.OrgID, "").Model(&models.Device{}).Where("id IN (?) ", devicesIDS).
 		Updates(map[string]interface{}{"image_id": deviceImage.ID, "update_available": updateAvailable}); result.Error != nil {
 		logger.WithField("error", result.Error).Error("Error occurred while updating device image and update_available")
 		return result.Error
@@ -551,15 +553,9 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 }
 
 // ValidateUpdateSelection validate the images for update
-func (s *UpdateService) ValidateUpdateSelection(account string, imageIds []uint) (bool, error) {
+func (s *UpdateService) ValidateUpdateSelection(account string, orgID string, imageIds []uint) (bool, error) {
 	var count int64
-
-	result := db.DB.
-		Table("images").
-		Where(`id IN ? AND account = ?`,
-			imageIds, account,
-		).Group("image_set_id").Count(&count)
-	if result.Error != nil {
+	if result := db.AccountOrOrg(account, orgID, "").Table("images").Where(`id IN ?`, imageIds).Group("image_set_id").Count(&count); result.Error != nil {
 		return false, result.Error
 	}
 
@@ -567,20 +563,15 @@ func (s *UpdateService) ValidateUpdateSelection(account string, imageIds []uint)
 }
 
 // ValidateUpdateDeviceGroup validate the devices on device group for update
-func (s *UpdateService) ValidateUpdateDeviceGroup(account string, deviceGroupID uint) (bool, error) {
+func (s *UpdateService) ValidateUpdateDeviceGroup(account string, orgID string, deviceGroupID uint) (bool, error) {
 	var count int64
 
-	result := db.DB.
-		Model(&models.DeviceGroup{}).
-		Where(`Device_Groups.id = ? AND Device_Groups.account = ?`,
-			deviceGroupID, account,
-		).
+	if result := db.AccountOrOrg(account, orgID, "Device_Groups").Model(&models.DeviceGroup{}).Where(`Device_Groups.id = ?`, deviceGroupID).
 		Joins(`JOIN Device_Groups_Devices  ON Device_Groups.id = Device_Groups_Devices.device_group_id`).
 		Joins(`JOIN Devices  ON Device_Groups_Devices.device_id = Devices.id`).
 		Where("Devices.image_id IS NOT NULL AND Devices.image_id != 0").
 		Joins(`JOIN Images  ON Devices.image_id = Images.id`).
-		Group("image_set_id").Count(&count)
-	if result.Error != nil {
+		Group("image_set_id").Count(&count); result.Error != nil {
 		return false, result.Error
 	}
 
@@ -589,7 +580,7 @@ func (s *UpdateService) ValidateUpdateDeviceGroup(account string, deviceGroupID 
 
 //BuildUpdateTransactions build records
 func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate,
-	account string, commit *models.Commit) (*[]models.UpdateTransaction, error) {
+	account string, orgID string, commit *models.Commit) (*[]models.UpdateTransaction, error) {
 	client := inventory.InitClient(s.ctx, log.NewEntry(log.StandardLogger()))
 	var inv inventory.Response
 	var ii []inventory.Response
@@ -614,6 +605,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 		// Create the models.UpdateTransaction
 		update := models.UpdateTransaction{
 			Account:  account,
+			OrgID:    orgID,
 			CommitID: devicesUpdate.CommitID,
 			Status:   models.UpdateStatusCreated,
 		}
@@ -672,6 +664,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 				updateDevice = &models.Device{
 					UUID:    device.ID,
 					Account: account,
+					OrgID:   orgID,
 				}
 				if result := db.DB.Create(&updateDevice); result.Error != nil {
 					return nil, result.Error
@@ -690,6 +683,10 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 			// update the device account if undefined
 			if updateDevice.Account == "" {
 				updateDevice.Account = account
+			}
+			// update the device orgID if undefined
+			if updateDevice.OrgID == "" {
+				updateDevice.OrgID = orgID
 			}
 			result := db.DB.Save(&updateDevice)
 			if result.Error != nil {
