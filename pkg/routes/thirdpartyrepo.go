@@ -133,8 +133,8 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 
 	if imageID != "" {
 		ctx.Preload("Images").Joins("left join images_repos on third_party_repo_id = id and image_id = ?", imageID).Order("image_id desc")
-		fmt.Printf("\n Params: %v\n", imageID)
 	}
+
 	// Check to see if feature is enabled and not in ephemeral
 	cfg := config.Get()
 	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
