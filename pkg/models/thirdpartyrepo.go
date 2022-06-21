@@ -20,7 +20,7 @@ type ThirdPartyRepo struct {
 	Description string `json:"Description,omitempty"`
 	Account     string
 	OrgID       string  `json:"org_id" gorm:"index"`
-	Images      []Image `faker:"-"json:"Images,omitempty" gorm:"many2many:images_repos;"`
+	Images      []Image `faker:"-" json:"Images,omitempty" gorm:"many2many:images_repos;"`
 }
 
 const (
