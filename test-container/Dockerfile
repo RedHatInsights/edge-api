@@ -10,10 +10,14 @@
 # Use full ubi as builder environment
 ARG RHEL_VERSION=8
 FROM registry.access.redhat.com/ubi${RHEL_VERSION}/ubi AS builder
-# Download specific version of staticcheck
-RUN curl -L https://github.com/dominikh/go-tools/releases/download/2021.1.2/staticcheck_linux_amd64.tar.gz | tar xz
-# Download specific version of gosec
-RUN curl -L https://github.com/securego/gosec/releases/download/v2.9.5/gosec_2.9.5_linux_amd64.tar.gz | tar xz
+
+# Download latest version of staticcheck
+RUN curl --location --url https://github.com/dominikh/go-tools/releases/latest/download/staticcheck_linux_amd64.tar.gz | tar xz
+# staticcheck_linux_amd64.tar.gz.sha256
+
+# Download latest version of gosec
+RUN curl --location --silent --url $(curl --location --silent --url "https://api.github.com/repos/securego/gosec/releases/latest" | grep '"browser_download_url":' | grep '/gosec_[0-9.]*_linux_amd64.tar.gz"$' | cut -d\" -f4 ) | tar xz
+# _linux_amd64.tar.gz.sig
 
 # Install minimum RHEL utilities needed by test container into install root
 ENV INSTALL_ROOT=/mnt/rootfs
