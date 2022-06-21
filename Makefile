@@ -11,14 +11,16 @@ OCI_TOOL=$(shell command -v podman || command -v docker)
 # Match logic in build_deploy.sh
 IMAGE_TAG=$(shell git rev-parse --short=7 HEAD)
 
-EDGE_API_CONTAINER_TAG="quay.io/cloudservices/edge-api"
+EDGE_API_CONTAINER_TAG="quay.io/cloudservices/edge-api:$(IMAGE_TAG)"
 
-TEST_CONTAINER_TAG="quay.io/fleet-management/libfdo-data"
+TEST_CONTAINER_TAG="quay.io/fleet-management/libfdo-data:$(IMAGE_TAG)"
 
 KUBECTL=kubectl
 NAMESPACE=default
 TEST_OPTIONS="-race"
 BUILD_TAGS=-tags=fdo
+
+CONTAINERFILE_NAME=Dockerfile
 
 .PHONY: all build-containers clean help test
 
@@ -32,11 +34,19 @@ bonfire-config-github:
 build-containers: build-edge-api-container build-test-container
 
 build-edge-api-container:
-	$(OCI_TOOL) build . -t "$(EDGE_API_CONTAINER_TAG):${IMAGE_TAG}"
+	$(OCI_TOOL) build \
+		--file "$(CONTAINERFILE_NAME)" \
+		--no-cache \
+		--tag "$(EDGE_API_CONTAINER_TAG)" \
+		.
 
 build-test-container:
 	cd test-container;	\
-	$(OCI_TOOL) build . -t "$(TEST_CONTAINER_TAG):${IMAGE_TAG}"
+	$(OCI_TOOL) build \
+		--file "$(CONTAINERFILE_NAME)" \
+		--no-cache \
+		--tag "$(TEST_CONTAINER_TAG)" \
+		.
 
 coverage:
 	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /test/) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
