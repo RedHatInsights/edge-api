@@ -118,17 +118,22 @@ func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRe
 
 // GetAllThirdPartyRepo return all the ThirdPartyRepo
 func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
-
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	var tprepo []models.ThirdPartyRepo
 	var count int64
 
+	imageID := r.URL.Query().Get("imageID")
 	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
 	if account == "" && orgID == "" {
 		// logs and response handled by readAccountOrOrgID
 		return
 	}
+
 	ctx := db.AccountOrOrgTx(account, orgID, thirdPartyRepoFilters(r, db.DB), "").Model(&models.ThirdPartyRepo{})
+
+	if imageID != "" {
+		ctx.Preload("Images").Joins("left join images_repos on third_party_repo_id = id and image_id = ?", imageID).Order("image_id desc")
+	}
 
 	// Check to see if feature is enabled and not in ephemeral
 	cfg := config.Get()
