@@ -26,7 +26,7 @@ CONTAINERFILE_NAME=Dockerfile
 
 bonfire-config-local:
 	@cp default_config.yaml.local.example config.yaml
-	@sed -i ${OS_SED} 's|REPO|$(PWD)|g' config.yaml
+	@sed -i $(OS_SED) 's|REPO|$(PWD)|g' config.yaml
 
 bonfire-config-github:
 	@cp default_config.yaml.github.example config.yaml
