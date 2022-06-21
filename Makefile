@@ -7,7 +7,12 @@ ifeq ($(UNAME_S),Darwin)
 endif
 
 OCI_TOOL=$(shell command -v podman || command -v docker)
+
+# Match logic in build_deploy.sh
+IMAGE_TAG=$(shell git rev-parse --short=7 HEAD)
+
 EDGE_API_CONTAINER_TAG="quay.io/cloudservices/edge-api"
+
 TEST_CONTAINER_TAG="quay.io/fleet-management/libfdo-data"
 
 KUBECTL=kubectl
@@ -27,11 +32,11 @@ bonfire-config-github:
 build-containers: build-edge-api-container build-test-container
 
 build-edge-api-container:
-	$(OCI_TOOL) build . -t $(EDGE_API_CONTAINER_TAG)
+	$(OCI_TOOL) build . -t "$(EDGE_API_CONTAINER_TAG):${IMAGE_TAG}"
 
 build-test-container:
 	cd test-container;	\
-	$(OCI_TOOL) build . -t $(TEST_CONTAINER_TAG)
+	$(OCI_TOOL) build . -t "$(TEST_CONTAINER_TAG):${IMAGE_TAG}"
 
 coverage:
 	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /test/) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
