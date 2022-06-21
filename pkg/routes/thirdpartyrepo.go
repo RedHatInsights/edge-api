@@ -132,7 +132,7 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	ctx := db.AccountOrOrgTx(account, orgID, thirdPartyRepoFilters(r, db.DB), "").Model(&models.ThirdPartyRepo{})
 
 	if imageID != "" {
-		ctx.Preload("Images", "id = ?", imageID).Joins("left join images_repos on third_party_repo_id = id and image_id = ?", imageID).Order("image_id desc")
+		ctx.Preload("Images", "id = ?", imageID).Joins("left join images_repos on third_party_repo_id = id and image_id = ?", imageID).Order("images_repos.image_id desc")
 	}
 
 	// Check to see if feature is enabled and not in ephemeral
