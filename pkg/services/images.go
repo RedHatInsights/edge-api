@@ -1034,7 +1034,7 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 	account, orgID, err := common.GetAccountOrOrgIDFromContext(s.ctx)
 	if err != nil {
 		s.log.WithField("error", err).Error("Error retrieving org_id or account")
-		return nil, new(OrgIDNotSet)
+		return nil, new(AccountOrOrgIDNotSet)
 	}
 	id, err := strconv.Atoi(imageID)
 	if err != nil {

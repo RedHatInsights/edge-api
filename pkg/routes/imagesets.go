@@ -14,7 +14,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/errors"
@@ -85,17 +84,8 @@ func ImageSetCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		s := dependencies.ServicesFromContext(r.Context())
 		var imageSet models.ImageSet
-		account, err := common.GetAccount(r)
-		if err != nil {
-			s.Log.WithFields(log.Fields{
-				"error":   err.Error(),
-				"account": account,
-			}).Error("Error retrieving account")
-			err := errors.NewBadRequest(err.Error())
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+		account, orgID := readAccountOrOrgID(w, r, s.Log)
+		if account == "" && orgID == "" {
 			return
 		}
 		if imageSetID := chi.URLParam(r, "imageSetID"); imageSetID != "" {
@@ -109,7 +99,7 @@ func ImageSetCtx(next http.Handler) http.Handler {
 				}
 				return
 			}
-			result := db.DB.Where("account = ? and Image_sets.id = ?", account, imageSetID).First(&imageSet)
+			result := db.AccountOrOrg(account, orgID, "").Where("Image_sets.id = ?", imageSetID).First(&imageSet)
 
 			if result.Error != nil {
 				err := errors.NewNotFound(result.Error.Error())
@@ -153,21 +143,14 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	var count int64
 	var result *gorm.DB
 	pagination := common.GetPagination(r)
-	account, err := common.GetAccount(r)
-
-	if err != nil {
-		s.Log.WithField("error", err.Error()).Error("Error listing all image sets - bad request")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+	account, orgID := readAccountOrOrgID(w, r, s.Log)
+	if account == "" && orgID == "" {
+		// logs and response handled by readAccountOrOrgID
 		return
 	}
 
-	countResult := imageSetFilters(r, db.DB.Model(&models.ImageSet{})).
-		Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).
-		Where(`Image_Sets.account = ? `, account).Count(&count)
+	countResult := imageSetFilters(r, db.AccountOrOrgTx(account, orgID, db.DB, "Image_Sets").Model(&models.ImageSet{})).
+		Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Count(&count)
 	if countResult.Error != nil {
 		s.Log.WithField("error", countResult.Error.Error()).Error("Error counting results for image sets list")
 		countErr := errors.NewInternalServerError()
@@ -179,17 +162,17 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.URL.Query().Get("sort_by") != "-status" && r.URL.Query().Get("sort_by") != "status" {
-		result = imageSetFilters(r, db.DB.Debug().Model(&models.ImageSet{})).
+		result = imageSetFilters(r, db.AccountOrOrgTx(account, orgID, db.DB, "Image_Sets").Debug().Model(&models.ImageSet{})).
 			Limit(pagination.Limit).Offset(pagination.Offset).
 			Preload("Images").
 			Preload("Images.Commit").
 			Preload("Images.Installer").
 			Preload("Images.Commit.Repo").
 			Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).
-			Where(`Image_Sets.account = ? `, account).Find(&imageSet)
+			Find(&imageSet)
 	} else {
 		// this code is no longer run, but would be used if sorting by status is re-implemented.
-		result = imageStatusFilters(r, db.DB.Debug().Model(&models.ImageSet{})).
+		result = imageStatusFilters(r, db.AccountOrOrgTx(account, orgID, db.DB, "Image_Sets").Debug().Model(&models.ImageSet{})).
 			Limit(pagination.Limit).Offset(pagination.Offset).
 			Preload("Images", "lower(status) in (?)", strings.ToLower(r.URL.Query().Get("status"))).
 			Preload("Images.Commit").
@@ -197,7 +180,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 			Preload("Images.Commit.Repo").
 			Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).
 			Joins("Commit").Joins("Installer").
-			Where(`Image_Sets.account = ? `, account).Find(&imageSet)
+			Find(&imageSet)
 
 	}
 	if result.Error != nil {
@@ -263,17 +246,9 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	s := dependencies.ServicesFromContext(r.Context())
 
 	pagination := common.GetPagination(r)
-	account, err := common.GetAccount(r)
-	if err != nil {
-		s.Log.WithFields(log.Fields{
-			"error":   err.Error(),
-			"account": account,
-		}).Error("Error retrieving account")
-		err := errors.NewBadRequest(err.Error())
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+	account, orgID := readAccountOrOrgID(w, r, s.Log)
+	if account == "" && orgID == "" {
+		// logs and response handled by readAccountOrOrgID
 		return
 	}
 	ctx := r.Context()
@@ -285,10 +260,10 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 	}
-	result := imageDetailFilters(r, db.DB.Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
+	result := imageDetailFilters(r, db.AccountOrOrgTx(account, orgID, db.DB, "Image_Sets").Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
 		Preload("Commit.Repo").Preload("Commit.InstalledPackages").Preload("Installer").
 		Joins(`JOIN Image_Sets ON Image_Sets.id = Images.image_set_id`).
-		Where(`Image_Sets.account = ? and  Image_sets.id = ?`, account, &imageSet.ID).Find(&images)
+		Find(&images)
 
 	if result.Error != nil {
 		err := errors.NewBadRequest("Error to filter images")

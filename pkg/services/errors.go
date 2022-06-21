@@ -23,6 +23,13 @@ func (e *ImageNotFoundError) Error() string {
 	return "image is not found"
 }
 
+// ImageSetNotFoundError indicates the image-set was not found
+type ImageSetNotFoundError struct{}
+
+func (e *ImageSetNotFoundError) Error() string {
+	return "image-set was not found"
+}
+
 // AccountOrOrgIDNotSet indicates the account or orgID was nil
 type AccountOrOrgIDNotSet struct{}
 
