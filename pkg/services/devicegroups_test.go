@@ -388,12 +388,6 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 				Expect(err.Error()).To(Equal("devices not found in device group"))
 			})
 
-			It("should return error when account is undefined", func() {
-				_, err := deviceGroupsService.DeleteDeviceGroupDevices("", orgID, deviceGroupID, []models.Device{savedDeviceGroup.Devices[0]})
-				Expect(err).ToNot(BeNil())
-				Expect(err.Error()).To(Equal("device group mandatory field are undefined"))
-			})
-
 			It("should return error when deviceGroupId is undefined", func() {
 				_, err := deviceGroupsService.DeleteDeviceGroupDevices(account, orgID, 0, []models.Device{savedDeviceGroup.Devices[0]})
 				Expect(err).ToNot(BeNil())

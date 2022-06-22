@@ -56,7 +56,7 @@ func NewDeviceGroupsService(ctx context.Context, log *log.Entry) DeviceGroupsSer
 
 // DeviceGroupNameExists check if a device group exists by (account or orgID) and name
 func (s *DeviceGroupsService) DeviceGroupNameExists(account string, orgID string, name string) (bool, error) {
-	if (account == "" || orgID == "") || name == "" {
+	if (account == "" && orgID == "") || name == "" {
 		return false, new(DeviceGroupMandatoryFieldsUndefined)
 	}
 	var deviceGroupsCount int64
@@ -351,7 +351,7 @@ func (s *DeviceGroupsService) UpdateDeviceGroup(deviceGroup *models.DeviceGroup,
 
 // GetDeviceGroupDeviceByID return the device of a device group by its ID
 func (s *DeviceGroupsService) GetDeviceGroupDeviceByID(account string, orgID string, deviceGroupID uint, deviceID uint) (*models.Device, error) {
-	if (account == "" || orgID == "") || deviceGroupID == 0 {
+	if (account == "" && orgID == "") || deviceGroupID == 0 {
 		s.log.Debug("account and deviceGroupID must be defined")
 		return nil, new(DeviceGroupMandatoryFieldsUndefined)
 	}
@@ -424,7 +424,7 @@ func (s *DeviceGroupsService) AddDeviceGroupDevices(account string, orgID string
 
 // DeleteDeviceGroupDevices delete devices from device-group
 func (s *DeviceGroupsService) DeleteDeviceGroupDevices(account string, orgID string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error) {
-	if (account == "" || orgID == "") || deviceGroupID == 0 {
+	if (account == "" && orgID == "") || deviceGroupID == 0 {
 		s.log.Debug("account and deviceGroupID must be defined")
 		return nil, new(DeviceGroupMandatoryFieldsUndefined)
 	}
