@@ -129,7 +129,11 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := db.AccountOrOrgTx(account, orgID, thirdPartyRepoFilters(r, db.DB), "").Model(&models.ThirdPartyRepo{})
+	ctx := db.AccountOrOrgTx(account, orgID,
+		thirdPartyRepoFilters(r, db.DB).Debug().
+			Joins("left join images_repos on third_party_repo_id = id and image_id = ?", imageID).
+			Order("images_repos.third_party_repo_id DESC NULLS LAST"), "").
+		Model(&models.ThirdPartyRepo{})
 
 	// Check to see if feature is enabled and not in ephemeral
 	cfg := config.Get()
@@ -150,9 +154,7 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if imageID != "" {
-		if result := ctx.Preload("Images", "id = ?", imageID).
-			Joins("left join images_repos on third_party_repo_id = id and image_id = ?", imageID).
-			Order("images_repos.image_id DESC NULLS LAST").Limit(pagination.Limit).Offset(pagination.Offset).Find(&tprepo); result.Error != nil {
+		if result := ctx.Preload("Images", "id = ?", imageID).Limit(pagination.Limit).Offset(pagination.Offset).Find(&tprepo); result.Error != nil {
 			ctxServices.Log.WithField("error", result.Error).Error("Error returning results")
 			respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 			return
