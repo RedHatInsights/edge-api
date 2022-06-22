@@ -1,6 +1,7 @@
 module github.com/redhatinsights/edge-api
 
 require (
+	github.com/RedHatInsights/tenant-utils v1.0.0
 	github.com/Unleash/unleash-client-go/v3 v3.5.0
 	github.com/aws/aws-sdk-go v1.44.38
 	github.com/bxcodec/faker/v3 v3.8.0

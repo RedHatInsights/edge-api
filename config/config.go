@@ -43,6 +43,9 @@ type EdgeConfig struct {
 	FeatureFlagsAPIToken     string                    `json:"featureflags_api_token,omitempty"`
 	FeatureFlagsService      string                    `json:"featureflags_service,omitempty"`
 	FeatureFlagsBearerToken  string                    `json:"featureflags_bearer_token,omitempty"`
+	TenantTranslatorHost     string                    `json:"tenant_translator_host,omitempty"`
+	TenantTranslatorPort     string                    `json:"tenant_translator_port,omitempty"`
+	TenantTranslatorURL      string                    `json:"tenant_translator_url,omitempty"`
 }
 
 type dbConfig struct {
@@ -160,6 +163,9 @@ func Init() {
 		options.SetDefault("FeatureFlagsEnvironment", "ephemeral")
 	}
 
+	options.SetDefault("TenantTranslatorHost", os.Getenv("TENANT_TRANSLATOR_HOST"))
+	options.SetDefault("TenantTranslatorPort", os.Getenv("TENANT_TRANSLATOR_PORT"))
+
 	config = &EdgeConfig{
 		Hostname:        kubenv.GetString("Hostname"),
 		Auth:            options.GetBool("Auth"),
@@ -200,8 +206,12 @@ func Init() {
 		FeatureFlagsAPIToken:    options.GetString("FeatureFlagsAPIToken"),
 		FeatureFlagsBearerToken: options.GetString("FeatureFlagsBearerToken"),
 		FeatureFlagsService:     options.GetString("FeatureFlagsService"),
+		TenantTranslatorHost:    options.GetString("TenantTranslatorHost"),
+		TenantTranslatorPort:    options.GetString("TenantTranslatorPort"),
 	}
-
+	if config.TenantTranslatorHost != "" && config.TenantTranslatorPort != "" {
+		config.TenantTranslatorURL = fmt.Sprintf("http://%s:%s", config.TenantTranslatorHost, config.TenantTranslatorPort)
+	}
 	database := options.GetString("database")
 
 	if database == "pgsql" {
