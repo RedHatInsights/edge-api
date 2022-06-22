@@ -16,6 +16,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
+	"gorm.io/gorm"
 )
 
 type tprepoTypeKey int
@@ -122,18 +123,22 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	var tprepo []models.ThirdPartyRepo
 	var count int64
 
-	imageID := r.URL.Query().Get("imageID")
 	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
 	if account == "" && orgID == "" {
 		// logs and response handled by readAccountOrOrgID
 		return
 	}
-
-	ctx := db.AccountOrOrgTx(account, orgID,
-		thirdPartyRepoFilters(r, db.DB).Debug().
-			Joins("left join images_repos on third_party_repo_id = id and image_id = ?", imageID).
-			Order("images_repos.third_party_repo_id DESC NULLS LAST"), "").
-		Model(&models.ThirdPartyRepo{})
+	var ctx *gorm.DB
+	imageID := r.URL.Query().Get("imageID")
+	if imageID != "" {
+		ctx = db.AccountOrOrgTx(account, orgID,
+			thirdPartyRepoFilters(r, db.DB).Debug().
+				Joins("left join images_repos on third_party_repo_id = id and image_id = ?", imageID).
+				Order("images_repos.third_party_repo_id DESC NULLS LAST"), "").
+			Model(&models.ThirdPartyRepo{})
+	} else {
+		ctx = db.AccountOrOrgTx(account, orgID, thirdPartyRepoFilters(r, db.DB), "").Debug().Model(&models.ThirdPartyRepo{})
+	}
 
 	// Check to see if feature is enabled and not in ephemeral
 	cfg := config.Get()
