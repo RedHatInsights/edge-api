@@ -163,8 +163,8 @@ var _ = Describe("DeviceGroup routes", func() {
 		})
 	})
 	Context("adding devices to DeviceGroup", func() {
-		account := faker.UUIDHyphenated()
-		orgID := faker.UUIDHyphenated()
+		account := common.DefaultAccount
+		orgID := common.DefaultOrgID
 		deviceGroupName := faker.Name()
 		devices := []models.Device{
 			{
@@ -502,8 +502,8 @@ var _ = Describe("DeviceGroup routes", func() {
 		})
 	})
 	Context("delete device from DeviceGroup", func() {
-		account := faker.UUIDHyphenated()
-		orgID := faker.UUIDHyphenated()
+		account := common.DefaultAccount
+		orgID := common.DefaultOrgID
 		deviceGroupName := faker.Name()
 		devices := []models.Device{
 			{
@@ -612,6 +612,7 @@ var _ = Describe("DeviceGroup routes", func() {
 	Context("Updating devices from DeviceGroup", func() {
 		account := "0000000"
 		orgID := "0000000"
+		fakeID := uint(233)
 		deviceGroupName := faker.Name()
 		devices := []models.Device{
 			{
@@ -619,18 +620,21 @@ var _ = Describe("DeviceGroup routes", func() {
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
 				OrgID:   orgID,
+				ImageID: fakeID,
 			},
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
 				OrgID:   orgID,
+				ImageID: fakeID,
 			},
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
 				OrgID:   orgID,
+				ImageID: fakeID,
 			},
 		}
 		deviceGroup := models.DeviceGroup{
@@ -645,8 +649,7 @@ var _ = Describe("DeviceGroup routes", func() {
 			Arch: "x86_64",
 		}
 
-		When("all is valid", func() {
-
+		When("all is valid with same imageID", func() {
 			It("should update Devices from Group", func() {
 				res := db.DB.Create(&deviceGroup)
 				Expect(res.Error).To(BeNil())
@@ -699,6 +702,69 @@ var _ = Describe("DeviceGroup routes", func() {
 				handler.ServeHTTP(rr, req)
 				// Check the status code is what we expect.
 				Expect(rr.Code).To(Equal(http.StatusOK))
+			})
+		})
+	})
+	Context("Updating devices from DeviceGroup", func() {
+		account := "0000000"
+		orgID := "0000000"
+		deviceGroupName := faker.Name()
+		devices := []models.Device{
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+				OrgID:   orgID,
+				ImageID: uint(001),
+			},
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+				OrgID:   orgID,
+				ImageID: uint(002),
+			},
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				Account: account,
+				OrgID:   orgID,
+				ImageID: uint(003),
+			},
+		}
+		deviceGroup := models.DeviceGroup{
+			Name:    deviceGroupName,
+			Account: account,
+			OrgID:   orgID,
+			Type:    models.DeviceGroupTypeDefault,
+			Devices: devices,
+		}
+
+		commit := models.Commit{
+			Arch: "x86_64",
+		}
+
+		When("with different imageID", func() {
+			It("should not update Devices from Group with different imageID", func() {
+				res := db.DB.Create(&deviceGroup)
+				Expect(res.Error).To(BeNil())
+				Expect(deviceGroup.ID).NotTo(Equal(0))
+				db.DB.Create(&commit)
+
+				url := fmt.Sprintf("/%d/updateDevices", deviceGroup.ID)
+
+				req, err := http.NewRequest(http.MethodPost, url, nil)
+				Expect(err).To(BeNil())
+				ctx := req.Context()
+				ctx = setContextDeviceGroup(ctx, &deviceGroup)
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+				rr := httptest.NewRecorder()
+
+				handler := http.HandlerFunc(UpdateAllDevicesFromGroup)
+				handler.ServeHTTP(rr, req)
+				// Check the status code is what we expect.
+				Expect(rr.Code).To(Equal(http.StatusBadRequest))
 			})
 		})
 	})
