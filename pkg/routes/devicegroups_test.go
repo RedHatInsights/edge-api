@@ -163,8 +163,8 @@ var _ = Describe("DeviceGroup routes", func() {
 		})
 	})
 	Context("adding devices to DeviceGroup", func() {
-		account := faker.UUIDHyphenated()
-		orgID := faker.UUIDHyphenated()
+		account := common.DefaultAccount
+		orgID := common.DefaultOrgID
 		deviceGroupName := faker.Name()
 		devices := []models.Device{
 			{
@@ -502,8 +502,8 @@ var _ = Describe("DeviceGroup routes", func() {
 		})
 	})
 	Context("delete device from DeviceGroup", func() {
-		account := faker.UUIDHyphenated()
-		orgID := faker.UUIDHyphenated()
+		account := common.DefaultAccount
+		orgID := common.DefaultOrgID
 		deviceGroupName := faker.Name()
 		devices := []models.Device{
 			{
