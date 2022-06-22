@@ -404,7 +404,12 @@ func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 			// error handled by createRequest already
 			return
 		}
-		err = ctxServices.DeviceGroupsService.UpdateDeviceGroup(deviceGroup, oldDeviceGroup.Account, oldDeviceGroup.OrgID, fmt.Sprint(oldDeviceGroup.ID))
+		account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
+		if account == "" && orgID == "" {
+			// logs and response handled by readAccountOrOrgID
+			return
+		}
+		err = ctxServices.DeviceGroupsService.UpdateDeviceGroup(deviceGroup, account, orgID, fmt.Sprint(oldDeviceGroup.ID))
 		if err != nil {
 			ctxServices.Log.WithField("error", err.Error()).Error("Error updating device group")
 			var apiError errors.APIError
@@ -514,8 +519,12 @@ func AddDeviceGroupDevices(w http.ResponseWriter, r *http.Request) {
 	if err := readRequestJSONBody(w, r, ctxServices.Log, &requestDeviceGroup); err != nil {
 		return
 	}
-
-	devicesAdded, err := ctxServices.DeviceGroupsService.AddDeviceGroupDevices(contextDeviceGroup.Account, contextDeviceGroup.OrgID, contextDeviceGroup.ID, requestDeviceGroup.Devices)
+	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
+	if account == "" && orgID == "" {
+		// logs and response handled by readAccountOrOrgID
+		return
+	}
+	devicesAdded, err := ctxServices.DeviceGroupsService.AddDeviceGroupDevices(account, orgID, contextDeviceGroup.ID, requestDeviceGroup.Devices)
 	if err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Error when adding deviceGroup devices")
 		var apiError errors.APIError
@@ -546,8 +555,13 @@ func DeleteDeviceGroupManyDevices(w http.ResponseWriter, r *http.Request) {
 	if err := readRequestJSONBody(w, r, ctxServices.Log, &requestDeviceGroup); err != nil {
 		return
 	}
+	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
+	if account == "" && orgID == "" {
+		// logs and response handled by readAccountOrOrgID
+		return
+	}
 
-	deletedDevices, err := ctxServices.DeviceGroupsService.DeleteDeviceGroupDevices(contextDeviceGroup.Account, contextDeviceGroup.OrgID, contextDeviceGroup.ID, requestDeviceGroup.Devices)
+	deletedDevices, err := ctxServices.DeviceGroupsService.DeleteDeviceGroupDevices(account, orgID, contextDeviceGroup.ID, requestDeviceGroup.Devices)
 	if err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Error when removing deviceGroup devices")
 		var apiError errors.APIError
@@ -575,8 +589,14 @@ func DeleteDeviceGroupOneDevice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
+	if account == "" && orgID == "" {
+		// logs and response handled by readAccountOrOrgID
+		return
+	}
+
 	_, err := ctxServices.DeviceGroupsService.DeleteDeviceGroupDevices(
-		contextDeviceGroup.Account, contextDeviceGroup.OrgID, contextDeviceGroup.ID, []models.Device{*contextDeviceGroupDevice},
+		account, orgID, contextDeviceGroup.ID, []models.Device{*contextDeviceGroupDevice},
 	)
 
 	if err != nil {
