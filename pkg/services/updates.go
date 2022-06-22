@@ -381,7 +381,7 @@ func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord mode
 		Joins(`JOIN updatetransaction_dispatchrecords ON update_transactions.id = updatetransaction_dispatchrecords.update_transaction_id`).
 		Where(`updatetransaction_dispatchrecords.dispatch_record_id = ?`, dispatchRecord.ID).First(&update)
 	if result.Error != nil {
-		fmt.Println(result.Error)
+		log.WithError(result.Error)
 		return result.Error
 	}
 

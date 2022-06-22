@@ -47,11 +47,6 @@ func UpdateCtx(next http.Handler) http.Handler {
 		var updates []models.UpdateTransaction
 		account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
 		if account == "" && orgID == "" {
-			ctxServices.Log.WithFields(log.Fields{
-				"account": account,
-				"org_id":  orgID,
-			}).Error("Error retrieving user details")
-			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("Unauthorised unable to retrieve user details"))
 			return
 		}
 		updateID := chi.URLParam(r, "updateID")
@@ -119,15 +114,6 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 	var updates []models.UpdateTransaction
 	account, orgID := readAccountOrOrgID(w, r, services.Log)
 	if account == "" && orgID == "" {
-		services.Log.WithFields(log.Fields{
-			"account": account,
-			"org_id":  orgID,
-		}).Error("Error retrieving user details")
-		err := errors.NewBadRequest("Unauthorised unable to retrieve user details")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
 		return
 	}
 	if result := db.AccountOrOrg(account, orgID, "update_transactions").Preload("DispatchRecords").Preload("Devices").
@@ -135,7 +121,7 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 		services.Log.WithFields(log.Fields{
 			"error": result.Error.Error(),
 		}).Error("Error retrieving updates")
-		err := errors.NewBadRequest("Unauthorised")
+		err := errors.NewInternalServerError()
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
 			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
@@ -153,7 +139,6 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 	ctxServices.Log.Info("Update is being created")
 	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
 	if account == "" && orgID == "" {
-		// logs and response handled by readAccountOrOrgID
 		return nil
 	}
 	var devicesUpdate models.DevicesUpdate
@@ -242,11 +227,6 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	ctxServices.Log.Info("Starting update")
 	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
 	if account == "" && orgID == "" {
-		ctxServices.Log.WithFields(log.Fields{
-			"account": account,
-			"org_id":  orgID,
-		}).Error("Error retrieving user details")
-		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("Unauthorised unable to retrieve user details"))
 		return
 	}
 	updates := updateFromHTTP(w, r)
@@ -332,11 +312,6 @@ func PostValidateUpdate(w http.ResponseWriter, r *http.Request) {
 	services := dependencies.ServicesFromContext(r.Context())
 	account, orgID := readAccountOrOrgID(w, r, services.Log)
 	if account == "" && orgID == "" {
-		services.Log.WithFields(log.Fields{
-			"account": account,
-			"org_id":  orgID,
-		}).Error("Error retrieving user details")
-		respondWithAPIError(w, services.Log, errors.NewBadRequest("Unauthorised unable to retrieve user details"))
 		return
 	}
 
