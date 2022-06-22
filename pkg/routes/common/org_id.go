@@ -41,7 +41,7 @@ func GetOrgIDFromContext(ctx context.Context) (string, error) {
 // GetAccountOrOrgIDFromContext return account or org-id numbers from supplied context
 func GetAccountOrOrgIDFromContext(ctx context.Context) (string, string, error) {
 	account, AccountErr := GetAccountFromContext(ctx)
-	orgID, OrgErr := GetAccountFromContext(ctx)
+	orgID, OrgErr := GetOrgIDFromContext(ctx)
 	if AccountErr != nil && OrgErr != nil {
 		return "", "", errors.New("cannot find account and org-id")
 	}
