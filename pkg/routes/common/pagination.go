@@ -13,7 +13,7 @@ type paginationContextKey int
 const (
 	// PaginationKey is used to store pagination data in request context
 	PaginationKey paginationContextKey = 1
-	defaultLimit  int                  = 30
+	defaultLimit  int                  = 100
 	defaultOffset int                  = 0
 )
 
