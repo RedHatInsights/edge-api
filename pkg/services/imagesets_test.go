@@ -1,19 +1,43 @@
-package services
+package services_test
 
 import (
-	"context"
-	"testing"
-
-	log "github.com/sirupsen/logrus"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	"github.com/redhatinsights/edge-api/pkg/services"
 )
 
-func TestGetImageSetByID(t *testing.T) {
-	imageSetService := ImageSetsService{
-		Service{ctx: context.Background(), log: log.NewEntry(log.StandardLogger())},
-	}
-	_, err := imageSetService.GetImageSetsByID(1)
-	if err != nil {
-		t.Errorf("Expected nil image set available, got %#v", err)
-	}
+var _ = Describe("ImageSets Service Test", func() {
+	var service services.ImageSetsService
+	Describe("get image0set", func() {
+		When("image-set exists", func() {
+			var imageSet1 *models.ImageSet
 
-}
+			BeforeEach(func() {
+				imageSet1 = &models.ImageSet{
+					Name:    "test",
+					Version: 2,
+					Account: common.DefaultAccount,
+					OrgID:   common.DefaultOrgID,
+				}
+				result := db.DB.Create(imageSet1)
+				Expect(result.Error).ToNot(HaveOccurred())
+			})
+			Context("by ID", func() {
+				var imageSet *models.ImageSet
+				var err error
+				BeforeEach(func() {
+					imageSet, err = service.GetImageSetsByID(int(imageSet1.ID))
+				})
+				It("should not have an error", func() {
+					Expect(err).ToNot(HaveOccurred())
+				})
+				It("should have a v1 image", func() {
+					Expect(imageSet.ID).To(Equal(imageSet1.ID))
+				})
+			})
+		})
+	})
+})
