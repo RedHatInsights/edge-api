@@ -131,10 +131,9 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	var ctx *gorm.DB
 	imageID := r.URL.Query().Get("imageID")
 	if imageID != "" {
-		ctx = db.AccountOrOrgTx(account, orgID,
-			thirdPartyRepoFilters(r, db.DB).Debug().
-				Joins("left join images_repos on third_party_repo_id = id and image_id = ?", imageID).
-				Order("images_repos.third_party_repo_id DESC NULLS LAST"), "").
+		ctx = db.AccountOrOrg(account, orgID, "").Debug().
+			Joins("left join images_repos on third_party_repo_id = id and image_id = ?", imageID).
+			Order("images_repos.third_party_repo_id DESC NULLS LAST").
 			Model(&models.ThirdPartyRepo{})
 	} else {
 		ctx = db.AccountOrOrgTx(account, orgID, thirdPartyRepoFilters(r, db.DB), "").Debug().Model(&models.ThirdPartyRepo{})
