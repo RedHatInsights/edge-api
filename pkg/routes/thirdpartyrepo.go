@@ -135,6 +135,7 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 			Joins("left join images_repos on third_party_repo_id = id and image_id = ?", imageID).
 			Order("images_repos.third_party_repo_id DESC NULLS LAST").
 			Model(&models.ThirdPartyRepo{})
+		ctx = thirdPartyRepoFilters(r, ctx)
 	} else {
 		ctx = db.AccountOrOrgTx(account, orgID, thirdPartyRepoFilters(r, db.DB), "").Debug().Model(&models.ThirdPartyRepo{})
 	}
