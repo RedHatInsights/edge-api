@@ -114,9 +114,13 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 			}
 			account, orgID := readAccountOrOrgID(w, r, s.Log)
 			if account == "" && orgID == "" {
+				s.Log.WithFields(log.Fields{
+					"image_id": imageID,
+				}).Error("image doesn't belong to account or org_id")
+				respondWithAPIError(w, s.Log, errors.NewBadRequest("image doesn't belong to account or org_id"))
 				return
 			}
-			if image.Account != account || image.OrgID != orgID {
+			if (image.Account != "" && image.Account != account) || (image.OrgID != "" && image.OrgID != orgID) {
 				s.Log.WithFields(log.Fields{
 					"error":   err.Error(),
 					"account": account,
