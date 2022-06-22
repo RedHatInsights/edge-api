@@ -90,5 +90,9 @@ RUN mkdir -p /usr/local/include/libfdo-data
 COPY --from=edge-builder ${LD_LIBRARY_PATH}/ ${LD_LIBRARY_PATH}/
 COPY --from=edge-builder /usr/local/include/libfdo-data/fdo_data.h /usr/local/include/libfdo-data/fdo_data.h
 
+# Copy script to run database migrations before starting server
+COPY --from=edge-builder ${EDGE_API_WORKSPACE}/scripts/commands.sh /usr/local/bin
+RUN chmod +x /usr/local/bin/commands.sh
+
 USER 1001
-CMD ["edge-api"]
+ENTRYPOINT ["/scripts/commands.sh"]
