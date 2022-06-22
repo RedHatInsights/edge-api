@@ -157,7 +157,7 @@ func (s *DeviceGroupsService) GetDeviceGroups(account string, orgID string, limi
 		for i := range imgInfo {
 			info = append(info, imgInfo[i])
 		}
-		group.ValidUpdate, err = s.UpdateService.ValidateUpdateDeviceGroup(account, group.ID)
+		group.ValidUpdate, err = s.UpdateService.ValidateUpdateDeviceGroup(account, orgID, group.ID)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error validating device group update")
 		}
@@ -274,7 +274,7 @@ func (s *DeviceGroupsService) GetDeviceGroupByID(ID string) (*models.DeviceGroup
 		return nil, new(DeviceGroupNotFound)
 	}
 
-	deviceGroup.ValidUpdate, err = s.UpdateService.ValidateUpdateDeviceGroup(account, deviceGroup.ID)
+	deviceGroup.ValidUpdate, err = s.UpdateService.ValidateUpdateDeviceGroup(account, orgID, deviceGroup.ID)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error validating device group update")
 	}

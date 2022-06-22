@@ -4,17 +4,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
 	"github.com/bxcodec/faker/v3"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
-	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
-	"strings"
-	"testing"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -129,6 +130,7 @@ var _ = Describe("Update routes", func() {
 				Name:       "image-same-group-1",
 				ImageSetID: &imageSetSameGroup.ID,
 				Account:    "0000000",
+				OrgID:      "0000000",
 			}
 			imageSameGroup2 = imageSameGroup1
 			imageSameGroup2.Name = "image-same-group-2"
@@ -216,6 +218,7 @@ var _ = Describe("Update routes", func() {
 				rr := httptest.NewRecorder()
 				ctx := context.WithValue(req.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{
 					AccountNumber: "111111",
+					OrgID:         "111111",
 				}})
 				req = req.WithContext(ctx)
 				ctx = dependencies.ContextWithServices(req.Context(), edgeAPIServices)
@@ -259,20 +262,25 @@ var _ = Describe("Update routes", func() {
 		var ctrl *gomock.Controller
 
 		account := common.DefaultAccount
+		orgID := common.DefaultOrgID
 		account2 := faker.UUIDHyphenated()
+		orgID2 := faker.UUIDHyphenated()
 
 		imageSet := models.ImageSet{
 			Account: account,
+			OrgID:   orgID,
 		}
 		db.DB.Create(&imageSet)
 
 		commit := models.Commit{
 			Account: account,
+			OrgID:   orgID,
 		}
 		db.DB.Create(&commit)
 
 		image := models.Image{
 			Account:    account,
+			OrgID:      orgID,
 			CommitID:   commit.ID,
 			Status:     models.ImageStatusSuccess,
 			Version:    1,
@@ -282,6 +290,7 @@ var _ = Describe("Update routes", func() {
 
 		device := models.Device{
 			Account: account,
+			OrgID:   orgID,
 			UUID:    faker.UUIDHyphenated(),
 			ImageID: image.ID,
 		}
@@ -289,11 +298,13 @@ var _ = Describe("Update routes", func() {
 
 		updateCommit := models.Commit{
 			Account: account,
+			OrgID:   orgID,
 		}
 		db.DB.Create(&updateCommit)
 
 		updateImage := models.Image{
 			Account:    account,
+			OrgID:      orgID,
 			CommitID:   updateCommit.ID,
 			Status:     models.ImageStatusSuccess,
 			Version:    2,
@@ -302,7 +313,7 @@ var _ = Describe("Update routes", func() {
 		db.DB.Create(&updateImage)
 
 		// a device from another account
-		device2 := models.Device{Account: account2, UUID: faker.UUIDHyphenated()}
+		device2 := models.Device{Account: account2, OrgID: orgID2, UUID: faker.UUIDHyphenated()}
 		db.DB.Create(&device2)
 
 		BeforeEach(func() {
@@ -359,7 +370,7 @@ var _ = Describe("Update routes", func() {
 
 		When("when devices exists and update commit exists", func() {
 			updateTransactions := []models.UpdateTransaction{
-				{Account: account, CommitID: updateCommit.ID, Devices: []models.Device{device}, Status: models.UpdateStatusBuilding},
+				{Account: account, OrgID: orgID, CommitID: updateCommit.ID, Devices: []models.Device{device}, Status: models.UpdateStatusBuilding},
 			}
 			db.DB.Create(updateTransactions)
 
@@ -373,7 +384,7 @@ var _ = Describe("Update routes", func() {
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 
-				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), account, gomock.Any()).Return(&updateTransactions, nil)
+				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), account, orgID, gomock.Any()).Return(&updateTransactions, nil)
 				mockUpdateService.EXPECT().CreateUpdateAsync(updateTransactions[0].ID)
 
 				responseRecorder := httptest.NewRecorder()
@@ -393,7 +404,7 @@ var _ = Describe("Update routes", func() {
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 
-				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), account, gomock.Any()).Return(&updateTransactions, nil)
+				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), account, orgID, gomock.Any()).Return(&updateTransactions, nil)
 				mockUpdateService.EXPECT().CreateUpdateAsync(updateTransactions[0].ID)
 
 				responseRecorder := httptest.NewRecorder()
