@@ -249,7 +249,9 @@ var _ = Describe("UpdateService Basic functions", func() {
 					UpdateTransactionID: 1000,
 					RemoteName:          "remote-name",
 				}
+				//TODO change to org_id once migration is complete
 				account := "1005"
+				org_id := "1005"
 				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", account, t.UpdateTransactionID)
 				tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
 
@@ -270,7 +272,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				}).Return("url", nil)
 				mockFilesService.EXPECT().GetUploader().Return(mockUploader)
 
-				url, err := updateService.WriteTemplate(t, account)
+				url, err := updateService.WriteTemplate(t, account, org_id)
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(url).ToNot(BeNil())
@@ -359,22 +361,24 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 	Describe("Update Devices From Update Transaction", func() {
 		account := faker.UUIDHyphenated()
-		imageSet := models.ImageSet{Account: account, Name: faker.UUIDHyphenated()}
+		org_id := faker.UUIDHyphenated()
+		imageSet := models.ImageSet{Account: account, OrgID: org_id, Name: faker.UUIDHyphenated()}
 		db.DB.Create(&imageSet)
-		currentCommit := models.Commit{Account: account, OSTreeCommit: faker.UUIDHyphenated()}
+		currentCommit := models.Commit{Account: account, OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated()}
 		db.DB.Create(&currentCommit)
-		currentImage := models.Image{Account: account, CommitID: currentCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
+		currentImage := models.Image{Account: account, OrgID: org_id, CommitID: currentCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
 		db.DB.Create(&currentImage)
 
-		newCommit := models.Commit{Account: account, OSTreeCommit: faker.UUIDHyphenated()}
+		newCommit := models.Commit{Account: account, OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated()}
 		db.DB.Create(&newCommit)
-		newImage := models.Image{Account: account, CommitID: newCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
+		newImage := models.Image{Account: account, OrgID: org_id, CommitID: newCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
 		db.DB.Create(&newImage)
 
-		device := models.Device{Account: account, ImageID: currentImage.ID, UpdateAvailable: true}
+		device := models.Device{Account: account, OrgID: org_id, ImageID: currentImage.ID, UpdateAvailable: true}
 		db.DB.Create(&device)
 		update := models.UpdateTransaction{
 			Account:  account,
+			OrgID:    org_id,
 			Devices:  []models.Device{device},
 			CommitID: newCommit.ID,
 			Status:   models.UpdateStatusBuilding,
@@ -421,21 +425,22 @@ var _ = Describe("UpdateService Basic functions", func() {
 			})
 
 			It("should update device image_id to update one and UpdateAvailable to true  ", func() {
-				commit := models.Commit{Account: account, OSTreeCommit: faker.UUIDHyphenated()}
+				commit := models.Commit{Account: account, OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated()}
 				result := db.DB.Create(&commit)
 				Expect(result.Error).To(BeNil())
-				image := models.Image{Account: account, CommitID: commit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
+				image := models.Image{Account: account, OrgID: org_id, CommitID: commit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
 				result = db.DB.Create(&image)
 				Expect(result.Error).To(BeNil())
 
 				// create a new image,  without commit as we do not need it for the current function
-				lastImage := models.Image{Account: account, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
+				lastImage := models.Image{Account: account, OrgID: org_id, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
 				result = db.DB.Create(&lastImage)
 				Expect(result.Error).To(BeNil())
 
 				// create a new update with commit and image, knowing that we have a new image
 				update := models.UpdateTransaction{
 					Account:  account,
+					OrgID:    org_id,
 					Devices:  []models.Device{device},
 					CommitID: commit.ID,
 					Status:   models.UpdateStatusSuccess,
