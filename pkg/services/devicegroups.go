@@ -377,7 +377,7 @@ func (s *DeviceGroupsService) GetDeviceGroupDeviceByID(account string, orgID str
 
 // AddDeviceGroupDevices add devices to device group
 func (s *DeviceGroupsService) AddDeviceGroupDevices(account string, orgID string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error) {
-	if (account == "" || orgID == "") || deviceGroupID == 0 {
+	if (account == "" && orgID == "") || deviceGroupID == 0 {
 		s.log.Debug("account and deviceGroupID must be defined")
 		return nil, new(DeviceGroupMandatoryFieldsUndefined)
 	}
