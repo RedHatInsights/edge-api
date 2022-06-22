@@ -16,6 +16,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
+	"gorm.io/gorm"
 )
 
 type tprepoTypeKey int
@@ -118,7 +119,6 @@ func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRe
 
 // GetAllThirdPartyRepo return all the ThirdPartyRepo
 func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
-
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	var tprepo []models.ThirdPartyRepo
 	var count int64
@@ -128,7 +128,16 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		// logs and response handled by readAccountOrOrgID
 		return
 	}
-	ctx := db.AccountOrOrgTx(account, orgID, thirdPartyRepoFilters(r, db.DB), "").Model(&models.ThirdPartyRepo{})
+	var ctx *gorm.DB
+	imageID := r.URL.Query().Get("imageID")
+	if imageID != "" {
+		ctx = db.AccountOrOrg(account, orgID, "").Debug().
+			Joins("left join images_repos on third_party_repo_id = id and image_id = ?", imageID).
+			Order("images_repos.third_party_repo_id DESC NULLS LAST").
+			Model(&models.ThirdPartyRepo{})
+	} else {
+		ctx = db.AccountOrOrgTx(account, orgID, thirdPartyRepoFilters(r, db.DB), "").Debug().Model(&models.ThirdPartyRepo{})
+	}
 
 	// Check to see if feature is enabled and not in ephemeral
 	cfg := config.Get()
@@ -148,10 +157,18 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if result := ctx.Limit(pagination.Limit).Offset(pagination.Offset).Find(&tprepo); result.Error != nil {
-		ctxServices.Log.WithField("error", result.Error).Error("Error returning results")
-		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
-		return
+	if imageID != "" {
+		if result := ctx.Preload("Images", "id = ?", imageID).Limit(pagination.Limit).Offset(pagination.Offset).Find(&tprepo); result.Error != nil {
+			ctxServices.Log.WithField("error", result.Error).Error("Error returning results")
+			respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
+			return
+		}
+	} else {
+		if result := ctx.Limit(pagination.Limit).Offset(pagination.Offset).Find(&tprepo); result.Error != nil {
+			ctxServices.Log.WithField("error", result.Error).Error("Error returning results")
+			respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
+			return
+		}
 	}
 
 	respondWithJSONBody(w, ctxServices.Log, map[string]interface{}{"data": &tprepo, "count": count})

@@ -635,10 +635,15 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	devices := deviceGroup.Devices
 
 	var setOfDeviceUUIDS []string
+	deviceImageID := devices[0].ImageID
 	for _, device := range devices {
 		setOfDeviceUUIDS = append(setOfDeviceUUIDS, device.UUID)
-	}
+		if device.ImageID != deviceImageID {
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("can't update devices with different imageID"))
+			return
 
+		}
+	}
 	var devicesUpdate models.DevicesUpdate
 	devicesUpdate.DevicesUUID = setOfDeviceUUIDS
 	//validate if commit is valid before continue process
