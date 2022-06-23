@@ -125,18 +125,15 @@ func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, erro
 	s.log = s.log.WithField("deviceUUID", deviceUUID)
 	s.log.Info("Get device by uuid")
 	var device models.Device
-	result := db.DB.Where("uuid = ?", deviceUUID).First(&device)
-	if result.Error != nil {
-		s.log.WithField("error", result.Error.Error()).Error("Error finding device")
-		return nil, new(DeviceNotFoundError)
+	if result := db.DB.Where("uuid = ?", deviceUUID).Preload("DevicesGroups").First(&device); result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			s.log.WithField("error", result.Error.Error()).Error("device not found by UUID")
+			return nil, new(DeviceNotFoundError)
+		}
+		s.log.WithField("error", result.Error.Error()).Error("unknown db error occurred when getting device by UUID")
+		return nil, result.Error
 	}
 
-	//Load from device DB the groups info and add to the new struct
-	err := db.DB.Model(&device).Association("DevicesGroups").Find(&device.DevicesGroups)
-	if err != nil {
-		s.log.WithField("error", result.Error.Error()).Error("Error finding associated devicegroups for device")
-		return nil, new(DeviceGroupNotFound)
-	}
 	return &device, nil
 }
 
@@ -540,7 +537,7 @@ func (s *DeviceService) processPlatformInventoryEventUpdateDevice(eventData Plat
 	// Get the event db device
 	device, err := s.GetDeviceByUUID(eventData.Host.ID)
 	if err != nil {
-		return new(DeviceNotFoundError)
+		return err
 	}
 
 	// Get the last rpmOSTree deployment commit checksum
@@ -584,21 +581,25 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 	deviceName := eventData.Host.Name
 	device, err := s.GetDeviceByUUID(deviceUUID)
 	if err != nil {
-		// create a new device if it does not exist.
-		var newDevice = models.Device{
-			UUID:        deviceUUID,
-			RHCClientID: eventData.Host.SystemProfile.RHCClientID,
-			Account:     deviceAccount,
-			OrgID:       deviceOrgID,
-			Name:        deviceName,
-			LastSeen:    eventData.Host.Updated,
+		if _, ok := err.(*DeviceNotFoundError); ok {
+			// create a new device if it does not exist.
+			var newDevice = models.Device{
+				UUID:        deviceUUID,
+				RHCClientID: eventData.Host.SystemProfile.RHCClientID,
+				Account:     deviceAccount,
+				OrgID:       deviceOrgID,
+				Name:        deviceName,
+				LastSeen:    eventData.Host.Updated,
+			}
+			if result := db.DB.Create(&newDevice); result.Error != nil {
+				s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error.Error()}).Error("Error creating device")
+				return result.Error
+			}
+			s.log.WithField("host_id", deviceUUID).Debug("Device account/Org created")
+			return s.processPlatformInventoryEventUpdateDevice(eventData)
 		}
-		if result := db.DB.Create(&newDevice); result.Error != nil {
-			s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error}).Error("Error creating device")
-			return result.Error
-		}
-		s.log.WithField("host_id", deviceUUID).Debug("Device account/Org created")
-		return s.processPlatformInventoryEventUpdateDevice(eventData)
+		s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": err.Error()}).Error("unknown error when getting device by uuid")
+		return err
 	}
 	if device.Account == "" {
 		// Update account if undefined
