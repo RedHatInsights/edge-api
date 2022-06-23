@@ -263,6 +263,7 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	result := imageDetailFilters(r, db.AccountOrOrgTx(account, orgID, db.DB, "Image_Sets").Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
 		Preload("Commit.Repo").Preload("Commit.InstalledPackages").Preload("Installer").
 		Joins(`JOIN Image_Sets ON Image_Sets.id = Images.image_set_id`).
+		Where(`Image_sets.id = ?`, &imageSet.ID).
 		Find(&images)
 
 	if result.Error != nil {
