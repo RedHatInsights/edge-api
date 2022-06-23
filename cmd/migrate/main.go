@@ -202,6 +202,10 @@ func main() {
 		log.Info("Migration completed successfully")
 	} else {
 		log.Error("Migration completed with errors")
+	}
+	// flush logger before app exit
+	l.FlushLogger()
+	if errorOccurred {
 		os.Exit(2)
 	}
 }
