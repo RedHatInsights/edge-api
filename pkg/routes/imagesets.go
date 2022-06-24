@@ -140,24 +140,11 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 
 	var imageSet []models.ImageSet
 	var imageSetInfo []ImageSetInstallerURL
-	var count int64
 	var result *gorm.DB
 	pagination := common.GetPagination(r)
 	account, orgID := readAccountOrOrgID(w, r, s.Log)
 	if account == "" && orgID == "" {
 		// logs and response handled by readAccountOrOrgID
-		return
-	}
-
-	countResult := imageSetFilters(r, db.AccountOrOrgTx(account, orgID, db.DB, "Image_Sets").Model(&models.ImageSet{})).
-		Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Count(&count)
-	if countResult.Error != nil {
-		s.Log.WithField("error", countResult.Error.Error()).Error("Error counting results for image sets list")
-		countErr := errors.NewInternalServerError()
-		w.WriteHeader(countErr.GetStatus())
-		if err := json.NewEncoder(w).Encode(&countErr); err != nil {
-			s.Log.WithField("error", countErr.Error()).Error("Error while trying to encode")
-		}
 		return
 	}
 
@@ -222,11 +209,11 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(&common.EdgeAPIPaginatedResponse{
-		Count: count,
+		Count: result.RowsAffected,
 		Data:  imageSetInfo,
 	}); err != nil {
 		s.Log.WithField("error", &common.EdgeAPIPaginatedResponse{
-			Count: count,
+			Count: result.RowsAffected,
 			Data:  imageSetInfo,
 		}).Error("Error while trying to encode")
 	}
