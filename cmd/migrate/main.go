@@ -3,10 +3,12 @@ package main
 import (
 	"os"
 
+	"github.com/redhatinsights/edge-api/cmd/migrate/orgmigration"
 	"github.com/redhatinsights/edge-api/config"
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -191,10 +193,19 @@ func main() {
 		}
 	}
 
+	if err := orgmigration.MigrateAllModels(cfg); err != nil {
+		log.WithField("error", err.Error()).Error("account -> org_id Migration completed with errors")
+		errorOccurred = true
+	}
+
 	if !errorOccurred {
 		log.Info("Migration completed successfully")
 	} else {
 		log.Error("Migration completed with errors")
+	}
+	// flush logger before app exit
+	l.FlushLogger()
+	if errorOccurred {
 		os.Exit(2)
 	}
 }

@@ -23,6 +23,20 @@ func (e *ImageNotFoundError) Error() string {
 	return "image is not found"
 }
 
+// ImageSetNotFoundError indicates the image-set was not found
+type ImageSetNotFoundError struct{}
+
+func (e *ImageSetNotFoundError) Error() string {
+	return "image-set was not found"
+}
+
+// AccountOrOrgIDNotSet indicates the account or orgID was nil
+type AccountOrOrgIDNotSet struct{}
+
+func (e *AccountOrOrgIDNotSet) Error() string {
+	return "Account or orgID is not set"
+}
+
 // AccountNotSet indicates the account was nil
 type AccountNotSet struct{}
 
@@ -70,6 +84,20 @@ type ThirdPartyRepositoryURLIsEmpty struct{}
 
 func (e *ThirdPartyRepositoryURLIsEmpty) Error() string {
 	return "custom repository URL cannot be empty"
+}
+
+// ThirdPartyRepositoryInfoIsInvalid indicates the Third Party Repository info is not valid
+type ThirdPartyRepositoryInfoIsInvalid struct{}
+
+func (e *ThirdPartyRepositoryInfoIsInvalid) Error() string {
+	return "custom repository info is invalid"
+}
+
+// InvalidURLForCustomRepo indicates the Third Party Repository url is invalid
+type InvalidURLForCustomRepo struct{}
+
+func (e *InvalidURLForCustomRepo) Error() string {
+	return "invalid URL"
 }
 
 // ThirdPartyRepositoryImagesExists indicates the Third Party Repository has been used in some images
@@ -183,6 +211,13 @@ type DeviceGroupAccountOrNameUndefined struct{}
 
 func (e *DeviceGroupAccountOrNameUndefined) Error() string {
 	return "device group account or name are undefined"
+}
+
+// DeviceGroupMandatoryFieldsUndefined indicates that device group mandatory field are undefined
+type DeviceGroupMandatoryFieldsUndefined struct{}
+
+func (e *DeviceGroupMandatoryFieldsUndefined) Error() string {
+	return "device group mandatory field are undefined"
 }
 
 // DeviceHasImageUndefined indicates that device record has image not defined

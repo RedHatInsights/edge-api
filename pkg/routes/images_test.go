@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/redhatinsights/edge-api/pkg/services"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -129,13 +130,155 @@ func TestCreate(t *testing.T) {
 
 	}
 }
+func TestCreateWithInvalidPackageName(t *testing.T) {
+	jsonImage := &models.Image{
+		Name:         "image2",
+		Distribution: "rhel-85",
+		OutputTypes:  []string{"rhel-edge-installer"},
+		Commit: &models.Commit{
+			Arch: "x86_64",
+		},
+		Packages: []models.Package{
+			{Name: "vanilla"},
+		},
+		Installer: &models.Installer{
+			Username: "test",
+			SSHKey:   "ssh-rsa d9:f158:00:abcd",
+		},
+	}
+	var buf bytes.Buffer
+	err := json.NewEncoder(&buf).Encode(jsonImage)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	req, err := http.NewRequest("POST", "/", &buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := req.Context()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(new(services.PackageNameDoesNotExist))
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
+	})
+
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(CreateImage)
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusBadRequest)
+	}
+}
+func TestCreateWithThirdPartyRepositoryInfoInvalid(t *testing.T) {
+	jsonImage := &models.Image{
+		Name:         "image2",
+		Distribution: "rhel-85",
+		OutputTypes:  []string{"rhel-edge-installer"},
+		Commit: &models.Commit{
+			Arch: "x86_64",
+		},
+		Packages: []models.Package{
+			{Name: "vim-common"},
+		},
+		Installer: &models.Installer{
+			Username: "test",
+			SSHKey:   "ssh-rsa d9:f158:00:abcd",
+		},
+	}
+	var buf bytes.Buffer
+	err := json.NewEncoder(&buf).Encode(jsonImage)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	req, err := http.NewRequest("POST", "/", &buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := req.Context()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(new(services.ThirdPartyRepositoryInfoIsInvalid))
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
+	})
+
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(CreateImage)
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusBadRequest)
+	}
+}
+func TestCreateWithImageNameAlreadyExist(t *testing.T) {
+	jsonImage := &models.Image{
+		Name:         "ImageNameAlreadyExist",
+		Distribution: "rhel-85",
+		OutputTypes:  []string{"rhel-edge-installer"},
+		Commit: &models.Commit{
+			Arch: "x86_64",
+		},
+		Packages: []models.Package{
+			{Name: "vim-common"},
+		},
+		Installer: &models.Installer{
+			Username: "test",
+			SSHKey:   "ssh-rsa d9:f158:00:abcd",
+		},
+	}
+	var buf bytes.Buffer
+	err := json.NewEncoder(&buf).Encode(jsonImage)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+	req, err := http.NewRequest("POST", "/", &buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := req.Context()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(new(services.ImageNameAlreadyExists))
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
+	})
+
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(CreateImage)
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusBadRequest)
+	}
+}
 func TestGetStatus(t *testing.T) {
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
+	})
 	rr := httptest.NewRecorder()
-	ctx := context.WithValue(req.Context(), imageKey, &testImage)
+	ctx = context.WithValue(ctx, imageKey, &testImage)
 	handler := http.HandlerFunc(GetImageStatusByID)
 	handler.ServeHTTP(rr, req.WithContext(ctx))
 
@@ -278,6 +421,15 @@ func TestValidateGetAllSearchParams(t *testing.T) {
 			t.Fatal(err)
 		}
 		w := httptest.NewRecorder()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+		ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{
+			ImageService: mockImageService,
+			Log:          log.NewEntry(log.StandardLogger()),
+		})
+		req = req.WithContext(ctx)
+
 		validateGetAllImagesSearchParams(next).ServeHTTP(w, req)
 
 		resp := w.Result()
@@ -379,8 +531,14 @@ func TestGetImageByOstree(t *testing.T) {
 		t.Fatal(err)
 	}
 	rr := httptest.NewRecorder()
-
-	ctx := context.WithValue(req.Context(), imageKey, &testImage)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
+	})
+	ctx = context.WithValue(ctx, imageKey, &testImage)
 	handler := http.HandlerFunc(GetImageByOstree)
 	handler.ServeHTTP(rr, req.WithContext(ctx))
 
@@ -437,7 +595,7 @@ func TestPostCheckImageNameAlreadyExist(t *testing.T) {
 
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any()).Return(true, nil)
+	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),
@@ -486,7 +644,7 @@ func TestPostCheckImageNameDoesNotExist(t *testing.T) {
 
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any()).Return(false, nil)
+	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil)
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),

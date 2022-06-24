@@ -1,13 +1,14 @@
 module github.com/redhatinsights/edge-api
 
 require (
+	github.com/RedHatInsights/tenant-utils v1.0.0
 	github.com/Unleash/unleash-client-go/v3 v3.5.0
-	github.com/aws/aws-sdk-go v1.44.27
+	github.com/aws/aws-sdk-go v1.44.40
 	github.com/bxcodec/faker/v3 v3.8.0
 	github.com/cavaliercoder/grab v2.0.0+incompatible
-	github.com/confluentinc/confluent-kafka-go v1.8.2
+	github.com/confluentinc/confluent-kafka-go v1.9.0
 	github.com/fedora-iot/fido-device-onboard-rs/libfdo-data-go v0.0.0-20211210154920-5c241beb5c4e
-	github.com/getkin/kin-openapi v0.96.0
+	github.com/getkin/kin-openapi v0.97.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-openapi/runtime v0.24.1
@@ -20,13 +21,13 @@ require (
 	github.com/onsi/gomega v1.19.0
 	github.com/prometheus/client_golang v1.12.2
 	github.com/redhatinsights/app-common-go v1.6.2
-	github.com/redhatinsights/platform-go-middlewares v0.17.0
+	github.com/redhatinsights/platform-go-middlewares v0.18.0
 	github.com/segmentio/kafka-go v0.4.32
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.12.0
 	gopkg.in/confluentinc/confluent-kafka-go.v1 v1.8.2
 	gorm.io/driver/postgres v1.3.7
-	gorm.io/driver/sqlite v1.3.2
+	gorm.io/driver/sqlite v1.3.4
 	gorm.io/gorm v1.23.4
 )
 
