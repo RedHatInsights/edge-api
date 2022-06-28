@@ -336,30 +336,35 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 		return err
 	}
 
-	var cmd *exec.Cmd
-	if c.OSTreeRef == "" {
-		refs := config.DistributionsRefs[config.DefaultDistribution]
-		cmd = &exec.Cmd{
-			Path: "/usr/bin/ostree",
-			Args: []string{
-				"--repo", "./repo", "commit", refs, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber),
-			},
+	// Commenting this Block, as failing, and seems never was working, fixing this block will create a new commit with
+	// a new checksum that need to be recorded back to the current commit, this will also need to change the logic of
+	// the caller function of this function, this need more discussion, a bug has been created.
+	/*
+		var cmd *exec.Cmd
+		if c.OSTreeRef == "" {
+			refs := config.DistributionsRefs[config.DefaultDistribution]
+			cmd = &exec.Cmd{
+				Path: "/usr/bin/ostree",
+				Args: []string{
+					"--repo", "./repo", "commit", refs, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber),
+				},
+			}
+		} else {
+			cmd = &exec.Cmd{
+				Path: "/usr/bin/ostree",
+				Args: []string{
+					"--repo", "./repo", "commit", c.OSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber),
+				},
+			}
 		}
-	} else {
-		cmd = &exec.Cmd{
-			Path: "/usr/bin/ostree",
-			Args: []string{
-				"--repo", "./repo", "commit", c.OSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber),
-			},
+		err = cmd.Run()
+		if err != nil {
+			rb.log.WithFields(log.Fields{
+				"error":   err.Error(),
+				"command": fmt.Sprintf("%s %s %s %s %s %s %s", "ostree", "--repo", "./repo", "commit", c.OSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber)),
+			}).Error("OSTree command failed")
 		}
-	}
-	err = cmd.Run()
-	if err != nil {
-		rb.log.WithFields(log.Fields{
-			"error":   err.Error(),
-			"command": fmt.Sprintf("%s %s %s %s %s %s %s", "ostree", "--repo", "./repo", "commit", c.OSTreeRef, "--add-metadata-string", fmt.Sprintf("version=%s.%d", c.BuildDate, c.BuildNumber)),
-		}).Error("OSTree command failed")
-	}
+	*/
 	return nil
 }
 
