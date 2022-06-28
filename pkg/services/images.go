@@ -303,11 +303,6 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 			err := errors.NewBadRequest(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.Commit.ID))
 			return err
 		}
-
-		fmt.Printf("config.UpgradedAvailable %v\n", config.UpgradedAvailable[previousImage.Distribution])
-		fmt.Printf("previousImage.Distributio %v\n", previousImage.Distribution)
-		fmt.Printf("image.Distribution %v\n", image.Distribution)
-
 		if config.UpgradedAvailable[image.Distribution] != "" &&
 			config.UpgradedAvailable[image.Distribution] != previousImage.Distribution {
 			err := errors.NewBadRequest(fmt.Sprintf("Cannot update version from #%v to %v", previousImage.Distribution, image.Distribution))

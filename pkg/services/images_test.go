@@ -912,7 +912,6 @@ var _ = Describe("Image Service Test", func() {
 
 		Context("when previous is 8.6 to 9 should NOT fail", func() {
 			It("should successfully generate the update", func() {
-
 				id, _ := faker.RandomInt(1)
 				uid := uint(id[0])
 				account := faker.UUIDHyphenated()
@@ -939,11 +938,14 @@ var _ = Describe("Image Service Test", func() {
 				result = db.DB.Save(previousImage)
 				Expect(result.Error).To(Not(HaveOccurred()))
 
+				parentRepo := &models.Repo{URL: faker.URL()}
+				// expectedErr := fmt.Errorf("Cannot update version from #rhel-85 to rhel-90")
+				mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(parentRepo, nil)
+				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, nil)
 				mockImageService.EXPECT().UpdateImage(image, previousImage).Return(nil)
 				actualErr := service.UpdateImage(image, previousImage)
-
 				Expect(actualErr).NotTo(HaveOccurred())
-				Expect(actualErr).To(MatchError(nil))
+
 			})
 		})
 	})
