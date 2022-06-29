@@ -92,14 +92,14 @@ func TestSearchParams(t *testing.T) {
 			name:   "bad sort_by",
 			params: "sort_by=test",
 			expectedError: []validationError{
-				{Key: "sort_by", Reason: "test is not a valid sort_by. Sort-by must created_at or updated_at or name or status"},
+				{Key: "sort_by", Reason: "test is not a valid sort_by. Sort-by must created_at or updated_at or name"},
 			},
 		},
 		{
 			name:   "bad sort_by and status",
 			params: "sort_by=host&status=ONHOLD",
 			expectedError: []validationError{
-				{Key: "sort_by", Reason: "host is not a valid sort_by. Sort-by must created_at or updated_at or name or status"},
+				{Key: "sort_by", Reason: "host is not a valid sort_by. Sort-by must created_at or updated_at or name"},
 				{Key: "status", Reason: "ONHOLD is not a valid status. Status must be CREATED or BUILDING or ERROR or SUCCESS"},
 			},
 		},
@@ -152,14 +152,14 @@ func TestDetailSearchParams(t *testing.T) {
 			name:   "bad sort_by",
 			params: "sort_by=test",
 			expectedError: []validationError{
-				{Key: "sort_by", Reason: "test is not a valid sort_by. Sort-by must created_at or updated_at or name or status"},
+				{Key: "sort_by", Reason: "test is not a valid sort_by. Sort-by must created_at or updated_at or name"},
 			},
 		},
 		{
 			name:   "bad sort_by and status",
 			params: "sort_by=host&status=ONHOLD",
 			expectedError: []validationError{
-				{Key: "sort_by", Reason: "host is not a valid sort_by. Sort-by must created_at or updated_at or name or status"},
+				{Key: "sort_by", Reason: "host is not a valid sort_by. Sort-by must created_at or updated_at or name"},
 				{Key: "status", Reason: "ONHOLD is not a valid status. Status must be CREATED or BUILDING or ERROR or SUCCESS"},
 			},
 		},

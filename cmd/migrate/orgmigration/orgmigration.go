@@ -37,7 +37,7 @@ func getModelInterfaces() []modelInterface {
 const DefaultLimit = 1000
 
 // DefaultTranslatorTimeout the timeout passed to translator
-const DefaultTranslatorTimeout = 300 * time.Second
+const DefaultTranslatorTimeout = 120 * time.Second
 
 // DefaultMaxBadAccounts do not tolerate more than this amount of bad account
 // bad accounts are those accounts for which we cannot find an org_id
