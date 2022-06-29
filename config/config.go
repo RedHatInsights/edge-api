@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/spf13/viper"
@@ -266,5 +267,11 @@ func Init() {
 
 // Get returns an initialized EdgeConfig
 func Get() *EdgeConfig {
+	if config == nil {
+		var lock = &sync.Mutex{}
+		lock.Lock()
+		defer lock.Unlock()
+		Init()
+	}
 	return config
 }
