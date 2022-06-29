@@ -35,6 +35,7 @@ var DistributionsRefs = map[string]string{
 	"rhel-90": "rhel/9/x86_64/edge",
 }
 
+// UpgradedAvailable set from to upgrade allowed
 var UpgradedAvailable = map[string]string{
 	//to - from
 	"rhel-90": "rhel-86",

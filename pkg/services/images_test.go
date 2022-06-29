@@ -22,12 +22,10 @@ var _ = Describe("Image Service Test", func() {
 	var service services.ImageService
 	var hash string
 	var mockImageBuilderClient *mock_imagebuilder.MockClientInterface
-	var mockImageService *mock_services.MockImageServiceInterface
 	var mockRepoService *mock_services.MockRepoServiceInterface
 	BeforeEach(func() {
 		ctrl := gomock.NewController(GinkgoT())
 		defer ctrl.Finish()
-		mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
 		mockImageBuilderClient = mock_imagebuilder.NewMockClientInterface(ctrl)
 		mockRepoService = mock_services.NewMockRepoServiceInterface(ctrl)
 		service = services.ImageService{
@@ -870,191 +868,77 @@ var _ = Describe("Image Service Test", func() {
 		})
 	})
 
-	Context("update image to diff refs", func() {
+	Context("when previous is 8.5 to 9 should fail", func() {
+		It("should not successfully generate the update", func() {
+			id, _ := faker.RandomInt(1)
+			uid := uint(id[0])
+			account := faker.UUIDHyphenated()
+			imageSet := &models.ImageSet{Account: account}
+			result := db.DB.Save(imageSet)
+			Expect(result.Error).To(Not(HaveOccurred()))
+			previousImage := &models.Image{
+				Account:      account,
+				Status:       models.ImageStatusSuccess,
+				Commit:       &models.Commit{RepoID: &uid},
+				Version:      1,
+				Distribution: "rhel-85",
+				Name:         faker.Name(),
+				ImageSetID:   &imageSet.ID,
+			}
+			image := &models.Image{
+				Account:      account,
+				Commit:       &models.Commit{},
+				OutputTypes:  []string{models.ImageTypeCommit},
+				Version:      2,
+				Distribution: "rhel-90",
+				Name:         previousImage.Name,
+			}
+			result = db.DB.Save(previousImage)
+			Expect(result.Error).To(Not(HaveOccurred()))
 
-		Context("when previous is 8.5 to 9 should fail", func() {
-			It("should not successfully generate the update", func() {
-				id, _ := faker.RandomInt(1)
-				uid := uint(id[0])
-				account := faker.UUIDHyphenated()
-				imageSet := &models.ImageSet{Account: account}
-				result := db.DB.Save(imageSet)
-				Expect(result.Error).To(Not(HaveOccurred()))
-				previousImage := &models.Image{
-					Account:      account,
-					Status:       models.ImageStatusSuccess,
-					Commit:       &models.Commit{RepoID: &uid},
-					Version:      1,
-					Distribution: "rhel-85",
-					Name:         faker.Name(),
-					ImageSetID:   &imageSet.ID,
-				}
-				image := &models.Image{
-					Account:      account,
-					Commit:       &models.Commit{},
-					OutputTypes:  []string{models.ImageTypeCommit},
-					Version:      2,
-					Distribution: "rhel-90",
-					Name:         previousImage.Name,
-				}
-				result = db.DB.Save(previousImage)
-				Expect(result.Error).To(Not(HaveOccurred()))
+			parentRepo := &models.Repo{URL: faker.URL()}
+			expectedErr := fmt.Errorf("Cannot update version from #rhel-85 to rhel-90")
+			mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(parentRepo, nil)
+			actualErr := service.UpdateImage(image, previousImage)
 
-				parentRepo := &models.Repo{URL: faker.URL()}
-				expectedErr := fmt.Errorf("Cannot update version from #rhel-85 to rhel-90")
-				mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(parentRepo, nil)
-				actualErr := service.UpdateImage(image, previousImage)
-
-				Expect(actualErr).To(HaveOccurred())
-				Expect(actualErr).To(MatchError(expectedErr.Error()))
-			})
-
-			It("should not generate the update 8.4 to 9.0", func() {
-				id, _ := faker.RandomInt(1)
-				uid := uint(id[0])
-				account := faker.UUIDHyphenated()
-				imageSet := &models.ImageSet{Account: account}
-				result := db.DB.Save(imageSet)
-				Expect(result.Error).To(Not(HaveOccurred()))
-				previousImage := &models.Image{
-					Account:      account,
-					Status:       models.ImageStatusSuccess,
-					Commit:       &models.Commit{RepoID: &uid},
-					Version:      1,
-					Distribution: "rhel-84",
-					Name:         faker.Name(),
-					ImageSetID:   &imageSet.ID,
-				}
-				image := &models.Image{
-					Account:      account,
-					Commit:       &models.Commit{},
-					OutputTypes:  []string{models.ImageTypeCommit},
-					Version:      2,
-					Distribution: "rhel-90",
-					Name:         previousImage.Name,
-				}
-				result = db.DB.Save(previousImage)
-				Expect(result.Error).To(Not(HaveOccurred()))
-
-				parentRepo := &models.Repo{URL: faker.URL()}
-				expectedErr := fmt.Errorf("Cannot update version from #rhel-84 to rhel-90")
-				mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(parentRepo, nil)
-				actualErr := service.UpdateImage(image, previousImage)
-
-				Expect(actualErr).To(HaveOccurred())
-				Expect(actualErr).To(MatchError(expectedErr.Error()))
-			})
+			Expect(actualErr).To(HaveOccurred())
+			Expect(actualErr).To(MatchError(expectedErr.Error()))
 		})
 
-		Context("when previous is 8.6 to 9 should NOT fail", func() {
-			It("should successfully generate the update", func() {
-				id, _ := faker.RandomInt(1)
-				uid := uint(id[0])
-				account := faker.UUIDHyphenated()
-				imageSet := &models.ImageSet{Account: account}
-				result := db.DB.Save(imageSet)
-				Expect(result.Error).To(Not(HaveOccurred()))
-				previousImage := &models.Image{
-					Account:      account,
-					Status:       models.ImageStatusSuccess,
-					Commit:       &models.Commit{RepoID: &uid},
-					Version:      1,
-					Distribution: "rhel-86",
-					Name:         faker.Name(),
-					ImageSetID:   &imageSet.ID,
-				}
-				image := &models.Image{
-					Account:      account,
-					Commit:       &models.Commit{},
-					OutputTypes:  []string{models.ImageTypeCommit},
-					Version:      2,
-					Distribution: "rhel-90",
-					Name:         previousImage.Name,
-				}
-				result = db.DB.Save(previousImage)
-				Expect(result.Error).To(Not(HaveOccurred()))
+		It("should not generate the update 8.4 to 9.0", func() {
+			id, _ := faker.RandomInt(1)
+			uid := uint(id[0])
+			account := faker.UUIDHyphenated()
+			imageSet := &models.ImageSet{Account: account}
+			result := db.DB.Save(imageSet)
+			Expect(result.Error).To(Not(HaveOccurred()))
+			previousImage := &models.Image{
+				Account:      account,
+				Status:       models.ImageStatusSuccess,
+				Commit:       &models.Commit{RepoID: &uid},
+				Version:      1,
+				Distribution: "rhel-84",
+				Name:         faker.Name(),
+				ImageSetID:   &imageSet.ID,
+			}
+			image := &models.Image{
+				Account:      account,
+				Commit:       &models.Commit{},
+				OutputTypes:  []string{models.ImageTypeCommit},
+				Version:      2,
+				Distribution: "rhel-90",
+				Name:         previousImage.Name,
+			}
+			result = db.DB.Save(previousImage)
+			Expect(result.Error).To(Not(HaveOccurred()))
 
-				parentRepo := &models.Repo{URL: faker.URL()}
-				// expectedErr := fmt.Errorf("Cannot update version from #rhel-85 to rhel-90")
-				mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(parentRepo, nil)
-				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, nil)
-				mockImageService.EXPECT().UpdateImage(image, previousImage).Return(nil)
-				actualErr := service.UpdateImage(image, previousImage)
-				Expect(actualErr).NotTo(HaveOccurred())
+			parentRepo := &models.Repo{URL: faker.URL()}
+			expectedErr := fmt.Errorf("Cannot update version from #rhel-84 to rhel-90")
+			mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(parentRepo, nil)
+			actualErr := service.UpdateImage(image, previousImage)
 
-			})
-			It("should successfully generate the update 8.6 to 8.6", func() {
-				id, _ := faker.RandomInt(1)
-				uid := uint(id[0])
-				account := faker.UUIDHyphenated()
-				imageSet := &models.ImageSet{Account: account}
-				result := db.DB.Save(imageSet)
-				Expect(result.Error).To(Not(HaveOccurred()))
-				previousImage := &models.Image{
-					Account:      account,
-					Status:       models.ImageStatusSuccess,
-					Commit:       &models.Commit{RepoID: &uid},
-					Version:      1,
-					Distribution: "rhel-86",
-					Name:         faker.Name(),
-					ImageSetID:   &imageSet.ID,
-				}
-				image := &models.Image{
-					Account:      account,
-					Commit:       &models.Commit{},
-					OutputTypes:  []string{models.ImageTypeCommit},
-					Version:      2,
-					Distribution: "rhel-86",
-					Name:         previousImage.Name,
-				}
-				result = db.DB.Save(previousImage)
-				Expect(result.Error).To(Not(HaveOccurred()))
-
-				parentRepo := &models.Repo{URL: faker.URL()}
-				// expectedErr := fmt.Errorf("Cannot update version from #rhel-85 to rhel-90")
-				mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(parentRepo, nil)
-				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, nil)
-				mockImageService.EXPECT().UpdateImage(image, previousImage).Return(nil)
-				actualErr := service.UpdateImage(image, previousImage)
-				Expect(actualErr).NotTo(HaveOccurred())
-
-			})
-			It("should successfully generate the update 8.5 to 8.6", func() {
-				id, _ := faker.RandomInt(1)
-				uid := uint(id[0])
-				account := faker.UUIDHyphenated()
-				imageSet := &models.ImageSet{Account: account}
-				result := db.DB.Save(imageSet)
-				Expect(result.Error).To(Not(HaveOccurred()))
-				previousImage := &models.Image{
-					Account:      account,
-					Status:       models.ImageStatusSuccess,
-					Commit:       &models.Commit{RepoID: &uid},
-					Version:      1,
-					Distribution: "rhel-85",
-					Name:         faker.Name(),
-					ImageSetID:   &imageSet.ID,
-				}
-				image := &models.Image{
-					Account:      account,
-					Commit:       &models.Commit{},
-					OutputTypes:  []string{models.ImageTypeCommit},
-					Version:      2,
-					Distribution: "rhel-86",
-					Name:         previousImage.Name,
-				}
-				result = db.DB.Save(previousImage)
-				Expect(result.Error).To(Not(HaveOccurred()))
-
-				parentRepo := &models.Repo{URL: faker.URL()}
-				// expectedErr := fmt.Errorf("Cannot update version from #rhel-85 to rhel-90")
-				mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(parentRepo, nil)
-				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, nil)
-				mockImageService.EXPECT().UpdateImage(image, previousImage).Return(nil)
-				actualErr := service.UpdateImage(image, previousImage)
-				Expect(actualErr).NotTo(HaveOccurred())
-
-			})
+			Expect(actualErr).To(HaveOccurred())
+			Expect(actualErr).To(MatchError(expectedErr.Error()))
 		})
 	})
 })
