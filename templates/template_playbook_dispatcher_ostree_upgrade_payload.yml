@@ -12,7 +12,7 @@
       perf: "rh-edge-tarballs-perf"
     repo_url: "https://{{ s3_buckets[fleet_infra_env] | default('rh-edge-tarballs-prod') }}.s3.{{ s3_region | default('us-east-1') }}.amazonaws.com/{{ update_number }}/upd/{{ update_number }}/repo"
     ostree_remote_name: "@@ .GoTemplateRemoteName @@"
-    ostree_changes_refs: "@@ .OstreeUpdate @@"
+    ostree_changes_refs: "@@ .RemoteOstreeUpdate @@"
     ostree_gpg_verify: "false"
     ostree_gpg_keypath: "/etc/pki/rpm-gpg/"
     ostree_remote_template: |
