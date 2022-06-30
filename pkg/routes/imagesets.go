@@ -37,6 +37,10 @@ func MakeImageSetsRouter(sub chi.Router) {
 }
 
 var imageSetFilters = common.ComposeFilters(
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "status",
+		DBField:    "images.status",
+	}),
 
 	common.ContainFilterHandler(&common.Filter{
 		QueryParam: "name",
