@@ -250,15 +250,15 @@ var _ = Describe("Image Service Test", func() {
 				result = db.DB.Save(previousImage)
 				Expect(result.Error).To(Not(HaveOccurred()))
 
-				// parentRepo := &models.Repo{URL: faker.URL()}
+				parentRepo := &models.Repo{URL: faker.URL()}
 				expectedErr := fmt.Errorf("Failed creating commit for image")
 				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
-				// mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(parentRepo, nil)
+				mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(parentRepo, nil)
 				actualErr := service.UpdateImage(image, previousImage)
 
 				Expect(actualErr).To(HaveOccurred())
 				Expect(actualErr).To(MatchError(expectedErr))
-				Expect(image.Commit.OSTreeParentCommit).To(Equal(previousImage.Commit.OSTreeCommit))
+				Expect(image.Commit.OSTreeParentCommit).To(Equal(parentRepo.URL))
 			})
 		})
 	})
