@@ -13,6 +13,7 @@
     repo_url: "https://{{ s3_buckets[fleet_infra_env] | default('rh-edge-tarballs-prod') }}.s3.{{ s3_region | default('us-east-1') }}.amazonaws.com/{{ update_number }}/upd/{{ update_number }}/repo"
     ostree_remote_name: "@@ .GoTemplateRemoteName @@"
     ostree_changes_refs: "@@ .RemoteOstreeUpdate @@"
+    os_tree_ref: "@@ .OSTreeRef @@"
     ostree_gpg_verify: "false"
     ostree_gpg_keypath: "/etc/pki/rpm-gpg/"
     ostree_remote_template: |
@@ -49,7 +50,14 @@
         content: "{{ ostree_remote_template }}"
         dest: /etc/ostree/remotes.d/rhel-edge.conf
     - name: run rpmostree update
-      ansible.builtin.shell: "{{ ostree_changes_refs }}"
+      when: ostree_changes_refs=="false"
+      ansible.builtin.shell: rpm-ostree upgrade --allow-downgrade
+      register: rpmostree_upgrade_out
+      changed_when: '"No upgrade available" not in rpmostree_upgrade_out.stdout'
+      failed_when: 'rpmostree_upgrade_out.rc != 0'
+    - name: run rpmostree rebase
+      when: ostree_changes_refs=="true"
+      ansible.builtin.shell: rpm-ostree rebase "{{ os_tree_ref }}"
       register: rpmostree_upgrade_out
       changed_when: '"No upgrade available" not in rpmostree_upgrade_out.stdout'
       failed_when: 'rpmostree_upgrade_out.rc != 0'

@@ -248,7 +248,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 				t := services.TemplateRemoteInfo{
 					UpdateTransactionID: 1000,
 					RemoteName:          "remote-name",
-					RemoteOstreeUpdate:  "rpm-ostree upgrade --allow-downgrade",
+					RemoteOstreeUpdate:  "false",
+					OSTreeRef:           "rhel/8/x86_64/edge",
 				}
 				//TODO change to org_id once migration is complete
 				account := "1005"
