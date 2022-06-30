@@ -24,24 +24,12 @@ func main() {
 	config.Init()
 	l.InitLogger()
 	cfg := config.Get()
-	log.WithFields(log.Fields{
-		"Hostname":                 cfg.Hostname,
-		"Auth":                     cfg.Auth,
-		"WebPort":                  cfg.WebPort,
-		"MetricsPort":              cfg.MetricsPort,
-		"LogLevel":                 cfg.LogLevel,
-		"Debug":                    cfg.Debug,
-		"BucketName":               cfg.BucketName,
-		"BucketRegion":             cfg.BucketRegion,
-		"RepoTempPath ":            cfg.RepoTempPath,
-		"OpenAPIFilePath ":         cfg.OpenAPIFilePath,
-		"ImageBuilderURL":          cfg.ImageBuilderConfig.URL,
-		"InventoryURL":             cfg.InventoryConfig.URL,
-		"PlaybookDispatcherConfig": cfg.PlaybookDispatcherConfig.URL,
-		"TemplatesPath":            cfg.TemplatesPath,
-		"DatabaseType":             cfg.Database.Type,
-		"DatabaseName":             cfg.Database.Name,
-	}).Info("Configuration Values:")
+	configValues, err := config.GetConfigValues()
+	if err != nil {
+		l.LogErrorAndPanic("error when getting config values", err)
+	}
+	log.WithFields(configValues).Info("Configuration Values:")
+	log.Info("Migration started ...")
 	db.InitDB()
 
 	/*

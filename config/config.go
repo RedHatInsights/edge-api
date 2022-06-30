@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -274,4 +275,14 @@ func Get() *EdgeConfig {
 		Init()
 	}
 	return config
+}
+
+// GetConfigValues return all configuration values that may be used for logging
+func GetConfigValues() (map[string]interface{}, error) {
+	var configValues map[string]interface{}
+	cfgBytes, _ := json.Marshal(Get())
+	if err := json.Unmarshal(cfgBytes, &configValues); err != nil {
+		return configValues, err
+	}
+	return configValues, nil
 }
