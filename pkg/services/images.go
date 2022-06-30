@@ -304,9 +304,8 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 			return err
 		}
 
-		if previousImage.Distribution == image.Distribution {
-			image.Commit.OSTreeParentCommit = repo.URL
-		}
+		image.Commit.OSTreeParentCommit = repo.URL
+
 		var refs string
 		if image.Distribution == "" {
 			refs = config.DistributionsRefs[config.DefaultDistribution]
