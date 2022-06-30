@@ -297,14 +297,14 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 
 	if previousImage.Status == models.ImageStatusSuccess {
 		// Always get the repo URL from the previous Image's commit
-		// repo, err := s.RepoService.GetRepoByID(previousImage.Commit.RepoID)
+		repo, err := s.RepoService.GetRepoByID(previousImage.Commit.RepoID)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Commit repo wasn't found on the database")
 			err := errors.NewBadRequest(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.Commit.ID))
 			return err
 		}
 
-		image.Commit.OSTreeParentCommit = previousImage.Commit.OSTreeCommit
+		image.Commit.OSTreeParentCommit = repo.URL
 
 		var refs string
 		if image.Distribution == "" {
