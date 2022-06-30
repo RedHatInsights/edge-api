@@ -74,6 +74,7 @@ type playbooks struct {
 	RepoURL              string
 	BucketRegion         string
 	RemoteOstreeUpdate   string
+	OSTreeRef            string
 }
 
 // TemplateRemoteInfo the values to playbook
@@ -84,6 +85,7 @@ type TemplateRemoteInfo struct {
 	GpgVerify           string
 	UpdateTransactionID uint
 	RemoteOstreeUpdate  string
+	OSTreeRef           string
 }
 
 // PlaybookDispatcherEventPayload belongs to PlaybookDispatcherEvent
@@ -166,11 +168,9 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	remoteInfo.ContentURL = update.Repo.URL
 	remoteInfo.UpdateTransactionID = update.ID
 	remoteInfo.GpgVerify = "false"
-	if update.Commit.ChangesRefs {
-		remoteInfo.RemoteOstreeUpdate = fmt.Sprintf("rpm-ostree rebase %v", update.Commit.OSTreeRef)
-	} else {
-		remoteInfo.RemoteOstreeUpdate = "rpm-ostree upgrade --allow-downgrade"
-	}
+	remoteInfo.RemoteOstreeUpdate = fmt.Sprint(update.Commit.ChangesRefs)
+	remoteInfo.OSTreeRef = update.Commit.OSTreeRef
+
 	playbookURL, err := s.WriteTemplate(remoteInfo, update.Account, update.OrgID)
 	if err != nil {
 		update.Status = models.UpdateStatusError
@@ -272,6 +272,7 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, account s
 		UpdateNumber:         strconv.FormatUint(uint64(templateInfo.UpdateTransactionID), 10),
 		RepoURL:              "https://{{ s3_buckets[fleet_infra_env] | default('rh-edge-tarballs-stage') }}.s3.{{ s3_region | default('us-east-1') }}.amazonaws.com/{{ update_number }}/upd/{{ update_number }}/repo",
 		RemoteOstreeUpdate:   templateInfo.RemoteOstreeUpdate,
+		OSTreeRef:            templateInfo.OSTreeRef,
 	}
 
 	//TODO change the same time as line 231
