@@ -15,6 +15,7 @@ import (
 func handlePanic(errorOccurred *bool) {
 	if err := recover(); err != nil {
 		log.Error("Database automigrate failure")
+		l.FlushLogger()
 		os.Exit(1)
 	}
 }
