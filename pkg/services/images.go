@@ -28,8 +28,8 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
-	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 )
 
 // WaitGroup is the waitg roup for pending image builds
