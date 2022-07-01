@@ -290,8 +290,7 @@ var _ = Describe("DeviceService", func() {
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
 				imageSet := &models.ImageSet{
-					Name:    faker.Name(),
-					Version: 1,
+					Name: faker.Name(),
 				}
 				db.DB.Create(imageSet)
 				oldImage := &models.Image{
@@ -310,6 +309,7 @@ var _ = Describe("DeviceService", func() {
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
+					Version:    1,
 				}
 				db.DB.Create(oldImage.Commit)
 				db.DB.Create(oldImage)
@@ -329,6 +329,7 @@ var _ = Describe("DeviceService", func() {
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
+					Version:    2,
 				}
 				db.DB.Create(newImage.Commit)
 				db.DB.Create(newImage)
@@ -348,6 +349,7 @@ var _ = Describe("DeviceService", func() {
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
+					Version:    3,
 				}
 				db.DB.Create(thirdImage.Commit)
 				db.DB.Create(thirdImage)
