@@ -193,7 +193,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		case *services.PackageNameDoesNotExist, *services.ThirdPartyRepositoryInfoIsInvalid, *services.ThirdPartyRepositoryNotFound, *services.ImageNameAlreadyExists, *services.ImageSetAlreadyExists:
 			apiError = errors.NewBadRequest(err.Error())
 		default:
-			apiError := errors.NewInternalServerError()
+			apiError = errors.NewInternalServerError()
 			apiError.SetTitle("Failed creating image")
 		}
 		respondWithAPIError(w, ctxServices.Log, apiError)
@@ -253,7 +253,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 		case *services.PackageNameDoesNotExist, *services.ThirdPartyRepositoryInfoIsInvalid, *services.ThirdPartyRepositoryNotFound, *services.ImageNameAlreadyExists, *services.ImageSetAlreadyExists:
 			apiError = errors.NewBadRequest(err.Error())
 		default:
-			apiError := errors.NewInternalServerError()
+			apiError = errors.NewInternalServerError()
 			apiError.SetTitle("Failed creating image")
 		}
 		respondWithAPIError(w, ctxServices.Log, apiError)

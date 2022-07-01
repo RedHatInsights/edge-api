@@ -523,7 +523,6 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*S
 	if res.StatusCode != http.StatusOK {
 		c.log.WithFields(log.Fields{
 			"statusCode": res.StatusCode,
-			"error":      err.Error(),
 		}).Error(new(PackageRequestError))
 		return nil, new(PackageRequestError)
 	}
