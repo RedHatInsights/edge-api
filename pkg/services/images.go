@@ -316,6 +316,10 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		if image.Commit.OSTreeRef == "" {
 			image.Commit.OSTreeRef = refs
 		}
+		if previousImage.Commit.OSTreeRef == "" {
+			image.Commit.OSTreeParentRef = config.DistributionsRefs[previousImage.Distribution]
+		}
+
 	} else {
 		// Previous image was not built successfully
 		s.log.WithField("previousImageID", previousImage.ID).Info("Creating an update based on a image with a status that is not success")
