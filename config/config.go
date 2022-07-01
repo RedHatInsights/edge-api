@@ -1,9 +1,11 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/spf13/viper"
@@ -266,5 +268,21 @@ func Init() {
 
 // Get returns an initialized EdgeConfig
 func Get() *EdgeConfig {
+	if config == nil {
+		var lock = &sync.Mutex{}
+		lock.Lock()
+		defer lock.Unlock()
+		Init()
+	}
 	return config
+}
+
+// GetConfigValues return all configuration values that may be used for logging
+func GetConfigValues() (map[string]interface{}, error) {
+	var configValues map[string]interface{}
+	cfgBytes, _ := json.Marshal(Get())
+	if err := json.Unmarshal(cfgBytes, &configValues); err != nil {
+		return configValues, err
+	}
+	return configValues, nil
 }
