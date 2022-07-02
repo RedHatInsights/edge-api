@@ -57,6 +57,21 @@ type ConsoleRedhatComCloudEventsSchema struct {
 	Lasthandeltime string `json:"lasthandeltime"`
 }
 
+// GetIdentity returns the identity from an Edge event
+func (cs ConsoleRedhatComCloudEventsSchema) GetIdentity() identity.Identity {
+	return cs.Identity.Identity
+}
+
+// GetAccount returns the account from an Edge event
+func (cs ConsoleRedhatComCloudEventsSchema) GetAccount() string {
+	return cs.Identity.Identity.AccountNumber
+}
+
+// GetOrgID returns the org id from an Edge event
+func (cs ConsoleRedhatComCloudEventsSchema) GetOrgID() string {
+	return cs.Identity.Identity.OrgID
+}
+
 // Data contains optional data for an event
 type Data struct {
 	AdvisorRecommendations *AdvisorRecommendation `json:"advisor_recommendations,omitempty"`
