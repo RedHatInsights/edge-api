@@ -272,6 +272,7 @@ var _ = Describe("Image Service Test", func() {
 
 		Context("when previous image has success status", func() {
 			It("should have the parent image repo url set as parent commit url", func() {
+				orgID := faker.UUIDHyphenated()
 				id, _ := faker.RandomInt(1)
 				uid := uint(id[0])
 				account := faker.UUIDHyphenated()
@@ -286,6 +287,7 @@ var _ = Describe("Image Service Test", func() {
 					Distribution: "rhel-86",
 					Name:         faker.Name(),
 					ImageSetID:   &imageSet.ID,
+					OrgID:        orgID,
 				}
 				image := &models.Image{
 					Account:      account,
@@ -294,6 +296,7 @@ var _ = Describe("Image Service Test", func() {
 					Version:      2,
 					Distribution: "rhel-90",
 					Name:         previousImage.Name,
+					OrgID:        orgID,
 				}
 				result = db.DB.Save(previousImage)
 				Expect(result.Error).To(Not(HaveOccurred()))
