@@ -60,7 +60,7 @@ func UpdateCtx(next http.Handler) http.Handler {
 			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 			return
 		}
-		if result := db.AccountOrOrg(account, orgID, "update_transactions").Preload("DispatchRecords").Preload("Devices").
+		if result := db.AccountOrOrg(account, orgID, "update_transactions").Preload("DispatchRecords").Preload("Devices").Preload("OldCommits").
 			Joins("Commit").Joins("Repo").Find(&updates, id); result.Error != nil {
 			ctxServices.Log.WithFields(log.Fields{
 				"error": result.Error.Error(),
@@ -259,6 +259,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 // GetUpdateByID obtains an update from the database for an account
 func GetUpdateByID(w http.ResponseWriter, r *http.Request) {
 	update := getUpdate(w, r)
+	update = update
 	if update == nil {
 		// Error set by UpdateCtx already
 		return
