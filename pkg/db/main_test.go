@@ -29,7 +29,6 @@ func setupTestDB() {
 	InitDB()
 	err := DB.AutoMigrate(
 		&models.Device{},
-
 	)
 	if err != nil {
 		panic(err)
@@ -39,5 +38,3 @@ func setupTestDB() {
 func tearDownTestDB() {
 	os.Remove(dbName)
 }
-
-

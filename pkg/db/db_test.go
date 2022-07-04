@@ -7,12 +7,11 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
-	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 var _ = Describe("Db", func() {
-	Context("get orgID from device table", func() {
+	Context("get orgID from devices table", func() {
 		It("should return OrgID", func() {
 			device := []models.Device{
 				{
@@ -21,11 +20,19 @@ var _ = Describe("Db", func() {
 					OrgID: common.DefaultOrgID,
 				},
 			}
-			sql := db.DB.ToSQL(func(tx *gorm.DB) *gorm.DB {
-				return db.OrgTx("00000000", tx, "").Find(&device)
+			sql := db.DB.ToSQL(func(gormDB *gorm.DB) *gorm.DB {
+				return db.OrgDB("00000000", gormDB, "").Find(&device)
 			})
-			Expect(sql).ToNot(BeNil())
-			log.Info(">>>>", sql)
+			Expect(sql).To(ContainSubstring("(org_id = \"00000000\" AND (org_id != '' AND org_id IS NOT NULL))"))
+		})
+	})
+	Context("get orgID from images table", func() {
+		It("should return OrgID", func() {
+			var images []models.Image
+			sql := db.DB.ToSQL(func(gormDB *gorm.DB) *gorm.DB {
+				return db.OrgDB("00000000", gormDB, "images").Find(&images)
+			})
+			Expect(sql).To(ContainSubstring("(images.org_id = \"00000000\" AND (images.org_id != '' AND images.org_id IS NOT NULL))"))
 		})
 	})
 })

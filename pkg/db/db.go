@@ -73,12 +73,14 @@ func AccountOrOrgTx(account string, orgID string, tx *gorm.DB, table string) *go
 	return tx.Where(sqlText, account, orgID)
 }
 
+// Org returns a gorm db query with orgID filter
 func Org(orgID string, table string) *gorm.DB {
-	return OrgTx(orgID, DB, table)
+	return OrgDB(orgID, DB, table)
 }
 
-func OrgTx(orgID string, tx *gorm.DB, table string) *gorm.DB {
-	if tx == nil {
+// OrgDB returns a gorm db with orgID filter from a known gorm db query
+func OrgDB(orgID string, gormDB *gorm.DB, table string) *gorm.DB {
+	if gormDB == nil {
 		return nil
 	}
 	orgIDName := "org_id"
@@ -86,8 +88,8 @@ func OrgTx(orgID string, tx *gorm.DB, table string) *gorm.DB {
 		orgIDName = fmt.Sprintf("%s.%s", table, orgIDName)
 	}
 	sqlText := fmt.Sprintf(
-		"(%s = ? AND (%s != '' AND %s IS NOT NULL)",
+		"(%s = ? AND (%s != '' AND %s IS NOT NULL))",
 		orgIDName, orgIDName, orgIDName,
 	)
-	return tx.Where(sqlText, orgID)
+	return gormDB.Where(sqlText, orgID)
 }
