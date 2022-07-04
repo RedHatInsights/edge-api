@@ -265,6 +265,50 @@ var _ = Describe("Image Service Test", func() {
 				Expect(actualErr).To(HaveOccurred())
 				Expect(actualErr).To(MatchError(expectedErr))
 				Expect(image.Commit.OSTreeParentCommit).To(Equal(parentRepo.URL))
+				Expect(image.Commit.OSTreeParentRef).To(Equal("rhel/8/x86_64/edge"))
+				Expect(image.Commit.OSTreeRef).To(Equal("rhel/8/x86_64/edge"))
+			})
+		})
+
+		Context("when previous image has success status", func() {
+			It("should have the parent image repo url set as parent commit url", func() {
+				id, _ := faker.RandomInt(1)
+				uid := uint(id[0])
+				account := faker.UUIDHyphenated()
+				imageSet := &models.ImageSet{Account: account}
+				result := db.DB.Save(imageSet)
+				Expect(result.Error).To(Not(HaveOccurred()))
+				previousImage := &models.Image{
+					Account:      account,
+					Status:       models.ImageStatusSuccess,
+					Commit:       &models.Commit{RepoID: &uid},
+					Version:      1,
+					Distribution: "rhel-86",
+					Name:         faker.Name(),
+					ImageSetID:   &imageSet.ID,
+				}
+				image := &models.Image{
+					Account:      account,
+					Commit:       &models.Commit{},
+					OutputTypes:  []string{models.ImageTypeCommit},
+					Version:      2,
+					Distribution: "rhel-90",
+					Name:         previousImage.Name,
+				}
+				result = db.DB.Save(previousImage)
+				Expect(result.Error).To(Not(HaveOccurred()))
+
+				parentRepo := &models.Repo{URL: faker.URL()}
+				expectedErr := fmt.Errorf("Failed creating commit for image")
+				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
+				mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(parentRepo, nil)
+				actualErr := service.UpdateImage(image, previousImage)
+
+				Expect(actualErr).To(HaveOccurred())
+				Expect(actualErr).To(MatchError(expectedErr))
+				Expect(image.Commit.OSTreeParentCommit).To(Equal(parentRepo.URL))
+				Expect(image.Commit.OSTreeParentRef).To(Equal("rhel/8/x86_64/edge"))
+				Expect(image.Commit.OSTreeRef).To(Equal("rhel/9/x86_64/edge"))
 			})
 		})
 	})
