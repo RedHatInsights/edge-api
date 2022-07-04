@@ -259,7 +259,6 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 // GetUpdateByID obtains an update from the database for an account
 func GetUpdateByID(w http.ResponseWriter, r *http.Request) {
 	update := getUpdate(w, r)
-	update = update
 	if update == nil {
 		// Error set by UpdateCtx already
 		return
