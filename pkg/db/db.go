@@ -72,3 +72,22 @@ func AccountOrOrgTx(account string, orgID string, tx *gorm.DB, table string) *go
 	)
 	return tx.Where(sqlText, account, orgID)
 }
+
+func Org(orgID string, table string) *gorm.DB {
+	return OrgTx(orgID, DB, table)
+}
+
+func OrgTx(orgID string, tx *gorm.DB, table string) *gorm.DB {
+	if tx == nil {
+		return nil
+	}
+	orgIDName := "org_id"
+	if table != "" {
+		orgIDName = fmt.Sprintf("%s.%s", table, orgIDName)
+	}
+	sqlText := fmt.Sprintf(
+		"(%s = ? AND (%s != '' AND %s IS NOT NULL)",
+		orgIDName, orgIDName, orgIDName,
+	)
+	return tx.Where(sqlText, orgID)
+}
