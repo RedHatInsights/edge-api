@@ -149,7 +149,7 @@ func TestBeforeDelete(t *testing.T) {
 func TestBeforeCreate(t *testing.T) {
 	orgID := faker.UUIDHyphenated()
 	account := faker.UUIDHyphenated()
-	deviceGroupNameWithNoOrgID := faker.Name()
+	deviceGroupNameWithOrgID := faker.Name()
 	devices := []Device{
 		{
 			Name:    faker.Name(),
@@ -159,15 +159,15 @@ func TestBeforeCreate(t *testing.T) {
 		},
 	}
 
-	deviceGroupWithNoOrgID := &DeviceGroup{
-		Name:    deviceGroupNameWithNoOrgID,
+	deviceGroupWitOrgID := &DeviceGroup{
+		Name:    deviceGroupNameWithOrgID,
 		Type:    DeviceGroupTypeDefault,
 		OrgID:   orgID,
 		Account: account,
 		Devices: devices,
 	}
 	// BeforeCreate make sure DeviceGroup belongs to orgID
-	err := deviceGroupWithNoOrgID.BeforeCreate(db.DB)
+	err := deviceGroupWitOrgID.BeforeCreate(db.DB)
 	if err != nil {
 		t.Error("Error running BeforeCreate")
 	}

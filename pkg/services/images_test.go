@@ -191,6 +191,7 @@ var _ = Describe("Image Service Test", func() {
 				id, _ := faker.RandomInt(1)
 				uid := uint(id[0])
 				account := faker.UUIDHyphenated()
+				orgID := faker.UUIDHyphenated()
 				imageSet := &models.ImageSet{Account: account}
 				result := db.DB.Save(imageSet)
 				Expect(result.Error).To(Not(HaveOccurred()))
@@ -202,6 +203,7 @@ var _ = Describe("Image Service Test", func() {
 					Distribution: "rhel-85",
 					Name:         faker.Name(),
 					ImageSetID:   &imageSet.ID,
+					OrgID:        orgID,
 				}
 				image := &models.Image{
 					Account:      account,
@@ -210,6 +212,7 @@ var _ = Describe("Image Service Test", func() {
 					OutputTypes:  []string{models.ImageTypeCommit},
 					Version:      2,
 					Name:         previousImage.Name,
+					OrgID:        orgID,
 				}
 				result = db.DB.Save(previousImage)
 				Expect(result.Error).To(Not(HaveOccurred()))
@@ -227,6 +230,7 @@ var _ = Describe("Image Service Test", func() {
 				id, _ := faker.RandomInt(1)
 				uid := uint(id[0])
 				account := faker.UUIDHyphenated()
+				orgID := faker.UUIDHyphenated()
 				imageSet := &models.ImageSet{Account: account}
 				result := db.DB.Save(imageSet)
 				Expect(result.Error).To(Not(HaveOccurred()))
@@ -238,6 +242,7 @@ var _ = Describe("Image Service Test", func() {
 					Distribution: "rhel-85",
 					Name:         faker.Name(),
 					ImageSetID:   &imageSet.ID,
+					OrgID:        orgID,
 				}
 				image := &models.Image{
 					Account:      account,
@@ -246,6 +251,7 @@ var _ = Describe("Image Service Test", func() {
 					Version:      2,
 					Distribution: "rhel-85",
 					Name:         previousImage.Name,
+					OrgID:        orgID,
 				}
 				result = db.DB.Save(previousImage)
 				Expect(result.Error).To(Not(HaveOccurred()))
@@ -384,6 +390,7 @@ var _ = Describe("Image Service Test", func() {
 
 		Context("when setting the status to retry an image build", func() {
 			It("should set status to building", func() {
+				orgID := faker.UUIDHyphenated()
 				image := &models.Image{
 					Installer: &models.Installer{
 						Status: models.ImageStatusError,
@@ -393,6 +400,7 @@ var _ = Describe("Image Service Test", func() {
 					},
 					Status:      models.ImageStatusError,
 					OutputTypes: []string{models.ImageTypeInstaller, models.ImageTypeCommit},
+					OrgID:       orgID,
 				}
 				err := service.SetBuildingStatusOnImageToRetryBuild(image)
 
@@ -551,6 +559,7 @@ var _ = Describe("Image Service Test", func() {
 			It("validate content", func() {
 				var image *models.Image
 				var err error
+				orgID := faker.UUIDHyphenated()
 				imageSet := &models.ImageSet{
 					Name:    "test",
 					Version: 1,
@@ -566,6 +575,7 @@ var _ = Describe("Image Service Test", func() {
 					ImageSetID: &imageSet.ID,
 					Version:    1,
 					Account:    common.DefaultAccount,
+					OrgID:      orgID,
 				}
 				db.DB.Create(image)
 				image, err = service.GetImageByID(fmt.Sprint(image.ID))
@@ -829,6 +839,7 @@ var _ = Describe("Image Service Test", func() {
 			id, _ := faker.RandomInt(1)
 			uid := uint(id[0])
 			account := faker.UUIDHyphenated()
+			orgID := faker.UUIDHyphenated()
 			imageSet := &models.ImageSet{Account: account}
 			result := db.DB.Save(imageSet)
 			arch := &models.Commit{Arch: "x86_64"}
@@ -846,6 +857,7 @@ var _ = Describe("Image Service Test", func() {
 				Distribution: "rhel-85",
 				Name:         faker.Name(),
 				ImageSetID:   &imageSet.ID,
+				OrgID:        orgID,
 			}
 			image := &models.Image{
 				Account:      account,
@@ -855,6 +867,7 @@ var _ = Describe("Image Service Test", func() {
 				Version:      2,
 				Name:         previousImage.Name,
 				Packages:     pkgs,
+				OrgID:        orgID,
 			}
 			result = db.DB.Save(previousImage)
 			Expect(result.Error).To(Not(HaveOccurred()))

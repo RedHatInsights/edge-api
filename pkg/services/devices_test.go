@@ -23,7 +23,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var _ = Describe("DeviceService", func() {
+var _ = Describe("DfseviceService", func() {
 	var mockInventoryClient *mock_inventory.MockClientInterface
 	var deviceService services.DeviceService
 	var mockImageService *mock_services.MockImageServiceInterface
@@ -212,6 +212,7 @@ var _ = Describe("DeviceService", func() {
 		})
 		When("everything is okay", func() {
 			It("should return updates", func() {
+				orgID := faker.UUIDHyphenated()
 				checksum := "fake-checksum"
 				resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
 					{ID: uuid, Ostree: inventory.SystemProfile{
@@ -244,6 +245,7 @@ var _ = Describe("DeviceService", func() {
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
+					OrgID:      orgID,
 				}
 				db.DB.Create(oldImage.Commit)
 				db.DB.Create(oldImage)
@@ -263,6 +265,7 @@ var _ = Describe("DeviceService", func() {
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
+					OrgID:      orgID,
 				}
 				db.DB.Create(newImage.Commit)
 				db.DB.Create(newImage)
@@ -278,6 +281,7 @@ var _ = Describe("DeviceService", func() {
 				Expect(newUpdate.PackageDiff.Removed).To(HaveLen(1))
 			})
 			It("should return updates", func() {
+				orgID := faker.UUIDHyphenated()
 				checksum := faker.UUIDHyphenated()
 				resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
 					{ID: uuid, Ostree: inventory.SystemProfile{
@@ -310,6 +314,7 @@ var _ = Describe("DeviceService", func() {
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
+					OrgID:      orgID,
 				}
 				db.DB.Create(oldImage.Commit)
 				db.DB.Create(oldImage)
@@ -329,6 +334,7 @@ var _ = Describe("DeviceService", func() {
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
+					OrgID:      orgID,
 				}
 				db.DB.Create(newImage.Commit)
 				db.DB.Create(newImage)
@@ -348,6 +354,7 @@ var _ = Describe("DeviceService", func() {
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
+					OrgID:      orgID,
 				}
 				db.DB.Create(thirdImage.Commit)
 				db.DB.Create(thirdImage)
@@ -366,6 +373,7 @@ var _ = Describe("DeviceService", func() {
 		When("no update is available", func() {
 			It("should not return updates", func() {
 				uuid := faker.UUIDHyphenated()
+				orgID := faker.UUIDHyphenated()
 				checksum := "fake-checksum-2"
 				resp := inventory.Response{
 					Total: 1,
@@ -391,6 +399,7 @@ var _ = Describe("DeviceService", func() {
 						OSTreeCommit: checksum,
 					},
 					Status: models.ImageStatusSuccess,
+					OrgID:  orgID,
 				}
 				db.DB.Create(oldImage)
 
@@ -485,6 +494,7 @@ var _ = Describe("DeviceService", func() {
 					Version: 2,
 				}
 				db.DB.Create(imageSet)
+				orgID := faker.UUIDHyphenated()
 				oldImage := &models.Image{
 					Commit: &models.Commit{
 						OSTreeCommit: fmt.Sprintf("a-old-%s", checksum),
@@ -492,6 +502,7 @@ var _ = Describe("DeviceService", func() {
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
 					Version:    1,
+					OrgID:      orgID,
 				}
 				db.DB.Create(oldImage.Commit)
 				db.DB.Create(oldImage)
@@ -503,6 +514,7 @@ var _ = Describe("DeviceService", func() {
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
 					Version:    2,
+					OrgID:      orgID,
 				}
 				db.DB.Create(newImage.Commit)
 				db.DB.Create(newImage)
