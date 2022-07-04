@@ -96,7 +96,7 @@ func (group *DeviceGroup) BeforeDelete(tx *gorm.DB) error {
 // BeforeCreate method is called before creating device group, it make sure org_id is not empty
 func (group *DeviceGroup) BeforeCreate(tx *gorm.DB) error {
 	if group.OrgID == "" {
-		return errors.New("Device Groups doesn't belong to org_id")
+		return errors.New("org_id is required")
 	}
 
 	return nil

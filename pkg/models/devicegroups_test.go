@@ -166,7 +166,7 @@ func TestBeforeCreate(t *testing.T) {
 		Account: account,
 		Devices: devices,
 	}
-
+	// BeforeCreate make sure DeviceGroup belongs to orgID
 	err := deviceGroupWithNoOrgID.BeforeCreate(db.DB)
 	if err != nil {
 		t.Error("Error running BeforeCreate")
