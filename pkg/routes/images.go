@@ -10,12 +10,14 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	log "github.com/sirupsen/logrus"
 )
@@ -153,6 +155,17 @@ type CreateImageRequest struct {
 // Then we create our repo with the ostree commit and if needed, create the installer.
 func CreateImage(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
+
+	// Check to see if feature is enabled and not in ephemeral
+	cfg := config.Get()
+	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
+		enabled := feature.CheckFeature(feature.FeatureImageBuildMS)
+		if enabled {
+			respondWithJSONBody(w, ctxServices.Log, feature.FeatureImageBuildMS)
+			return
+		}
+	}
+
 	image, err := initImageCreateRequest(w, r)
 	if err != nil {
 		// initImageCreateRequest() already writes the response
@@ -180,7 +193,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		case *services.PackageNameDoesNotExist, *services.ThirdPartyRepositoryInfoIsInvalid, *services.ThirdPartyRepositoryNotFound, *services.ImageNameAlreadyExists, *services.ImageSetAlreadyExists:
 			apiError = errors.NewBadRequest(err.Error())
 		default:
-			apiError := errors.NewInternalServerError()
+			apiError = errors.NewInternalServerError()
 			apiError.SetTitle("Failed creating image")
 		}
 		respondWithAPIError(w, ctxServices.Log, apiError)
@@ -196,6 +209,17 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 // CreateImageUpdate creates an update for an existing image on hosted image builder.
 func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
+
+	// Check to see if feature is enabled and not in ephemeral
+	cfg := config.Get()
+	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
+		enabled := feature.CheckFeature(feature.FeatureImageBuildMS)
+		if enabled {
+			respondWithJSONBody(w, ctxServices.Log, feature.FeatureImageBuildMS)
+			return
+		}
+	}
+
 	image, err := initImageCreateRequest(w, r)
 	if err != nil {
 		// initImageCreateRequest() already writes the response
@@ -229,7 +253,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 		case *services.PackageNameDoesNotExist, *services.ThirdPartyRepositoryInfoIsInvalid, *services.ThirdPartyRepositoryNotFound, *services.ImageNameAlreadyExists, *services.ImageSetAlreadyExists:
 			apiError = errors.NewBadRequest(err.Error())
 		default:
-			apiError := errors.NewInternalServerError()
+			apiError = errors.NewInternalServerError()
 			apiError.SetTitle("Failed creating image")
 		}
 		respondWithAPIError(w, ctxServices.Log, apiError)
@@ -436,6 +460,17 @@ func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 // It requires a created image and a repo with a successful status
 func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
+
+	// Check to see if feature is enabled and not in ephemeral
+	cfg := config.Get()
+	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
+		enabled := feature.CheckFeature(feature.FeatureImageBuildMS)
+		if enabled {
+			respondWithJSONBody(w, ctxServices.Log, feature.FeatureImageBuildMS)
+			return
+		}
+	}
+
 	image := getImage(w, r)
 	if image == nil {
 		return
@@ -512,6 +547,17 @@ func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 
 // CreateKickStartForImage creates a kickstart file for an existent image
 func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	// Check to see if feature is enabled and not in ephemeral
+	cfg := config.Get()
+	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
+		enabled := feature.CheckFeature(feature.FeatureImageBuildMS)
+		if enabled {
+			respondWithJSONBody(w, ctxServices.Log, feature.FeatureImageBuildMS)
+			return
+		}
+	}
+
 	if image := getImage(w, r); image != nil {
 		ctxServices := dependencies.ServicesFromContext(r.Context())
 		if err := ctxServices.ImageService.AddUserInfo(image); err != nil {

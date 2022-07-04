@@ -21,6 +21,7 @@ type Commit struct {
 	OSTreeCommit         string             `json:"OSTreeCommit"`
 	OSTreeParentCommit   string             `json:"OSTreeParentCommit"`
 	OSTreeRef            string             `json:"OSTreeRef"`
+	OSTreeParentRef      string             `json:"OSTreeParentRef"`
 	BuildDate            string             `json:"BuildDate"`
 	BuildNumber          uint               `json:"BuildNumber"`
 	BlueprintToml        string             `json:"BlueprintToml"`
