@@ -15,16 +15,17 @@ import (
 var log = logger.WithField("migration", "accountToOrgID")
 
 type modelInterface struct {
-	Label string
-	Model interface{}
-	Table string
+	Label    string
+	Model    interface{}
+	Table    string
+	whereSQL string
 }
 
 func getModelInterfaces() []modelInterface {
 	return []modelInterface{
 		{Label: "Commit", Model: models.Commit{}, Table: "commits"},
 		{Label: "DeviceGroup", Model: models.DeviceGroup{}, Table: "device_groups"},
-		{Label: "Devices", Model: models.Device{}, Table: "devices"},
+		{Label: "Devices", Model: models.Device{}, Table: "devices", whereSQL: "(image_id != 0 AND image_id IS NOT NULL)"},
 		{Label: "Images", Model: models.Image{}, Table: "images"},
 		{Label: "ImageSet", Model: models.ImageSet{}, Table: "image_sets"},
 		{Label: "Installer", Model: models.Installer{}, Table: "installers"},
@@ -53,7 +54,12 @@ func getModelTotalAccounts(modelInterface *modelInterface) (int64, error) {
 	var accountsCount int64
 
 	// run Unscoped to migrate all accounts in db even those with deletedAt
-	if result := db.DB.Debug().Scopes(dbAccountOrgScope).Model(modelInterface.Model).Count(&accountsCount); result.Error != nil {
+	tx := db.DB.Debug().Scopes(dbAccountOrgScope).Model(modelInterface.Model)
+	if modelInterface.whereSQL != "" {
+		tx = tx.Where(modelInterface.whereSQL)
+	}
+
+	if result := tx.Count(&accountsCount); result.Error != nil {
 		log.Errorf(`model: %s, error getting accounts number : %s `, modelInterface.Label, result.Error)
 		return 0, result.Error
 	}
@@ -72,6 +78,9 @@ func getModelAccounts(modelInterface *modelInterface, limit int, excludeAccounts
 	})
 
 	tx := db.DB.Debug().Scopes(dbAccountOrgScope).Model(modelInterface.Model)
+	if modelInterface.whereSQL != "" {
+		tx = tx.Where(modelInterface.whereSQL)
+	}
 	if len(excludeAccounts) > 0 {
 		tx = tx.Where("account NOT IN (?)", excludeAccounts)
 	}
@@ -128,9 +137,12 @@ func migrateModelAccounts(translator tenantid.Translator, modelInterface modelIn
 		modelLog = modelLog.WithField("org_id", orgID)
 
 		// run Unscoped to migrate all accounts in db even those with deletedAt
-		updateResult := db.DB.Debug().Unscoped().Model(&modelInterface.Model).
-			Where("account = ?", account).
-			Updates(map[string]interface{}{"org_id": result.OrgID})
+		tx := db.DB.Debug().Unscoped().Model(&modelInterface.Model).Where("account = ?", account)
+		if modelInterface.whereSQL != "" {
+			tx = tx.Where(modelInterface.whereSQL)
+		}
+
+		updateResult := tx.Updates(map[string]interface{}{"org_id": result.OrgID})
 
 		if updateResult.Error != nil {
 			modelLog.WithField("error", updateResult.Error.Error()).Error(`error when updating org_id rows`)
