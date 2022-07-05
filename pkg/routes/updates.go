@@ -60,7 +60,7 @@ func UpdateCtx(next http.Handler) http.Handler {
 			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 			return
 		}
-		if result := db.AccountOrOrg(account, orgID, "update_transactions").Preload("DispatchRecords").Preload("Devices").Preload("OldCommits").
+		if result := db.AccountOrOrg(account, orgID, "update_transactions").Preload("DispatchRecords").Preload("Devices").
 			Joins("Commit").Joins("Repo").Find(&updates, id); result.Error != nil {
 			ctxServices.Log.WithFields(log.Fields{
 				"error": result.Error.Error(),

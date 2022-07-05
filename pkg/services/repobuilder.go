@@ -51,7 +51,7 @@ func NewRepoBuilder(ctx context.Context, log *log.Entry) RepoBuilderInterface {
 // with static deltas generated between them all
 func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, error) {
 	var update *models.UpdateTransaction
-	db.DB.Preload("DispatchRecords").Preload("Devices").Preload("OldCommits").Joins("Commit").Joins("Repo").Find(&update, id)
+	db.DB.Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").Find(&update, id)
 
 	rb.log.Info("Starts building update repo...")
 	if update == nil {
@@ -63,9 +63,8 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		return nil, errors.New("invalid models.UpdateTransaction.Commit Provided: nil pointer")
 	}
 	rb.log = rb.log.WithFields(log.Fields{
-		"commitID":   update.Commit.ID,
-		"updateID":   update.ID,
-		"OldCommits": len(update.OldCommits)})
+		"commitID": update.Commit.ID,
+		"updateID": update.ID})
 	if update.Repo == nil {
 		rb.log.Error("Repo is unavailable")
 		return nil, errors.New("repo unavailable")
@@ -373,23 +372,16 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 //  uprepo should be where the update commit lives, u is the update commit
 //  oldrepo should be where the old commit lives, o is the commit to be merged
 func (rb *RepoBuilder) repoPullLocalStaticDeltas(u *models.Commit, o *models.Commit, uprepo string, oldrepo string) error {
-
-	rb.log.WithFields(log.Fields{"Oldrepo": oldrepo,
-		"Oldcommit": o.Repo.URL,
-		"commit":    u.Repo.URL}).Debug("repoPullLocalStaticDeltas")
 	err := os.Chdir(uprepo)
 	if err != nil {
 		return err
 	}
 
 	updateRevParse, err := RepoRevParse(uprepo, u.OSTreeRef)
-	rb.log.WithFields(log.Fields{"updateRevParse": updateRevParse}).Debug("updateRevParse")
 	if err != nil {
 		return err
 	}
 	oldRevParse, err := RepoRevParse(oldrepo, o.OSTreeRef)
-	rb.log.WithFields(log.Fields{"oldRevParse": updateRevParse}).Debug("oldRevParse")
-
 	if err != nil {
 		return err
 	}
