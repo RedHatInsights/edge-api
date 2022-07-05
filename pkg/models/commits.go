@@ -31,7 +31,7 @@ type Commit struct {
 	Status               string             `json:"Status"`
 	RepoID               *uint              `json:"RepoID"`
 	Repo                 *Repo              `json:"Repo"`
-	ChangesRefs          bool               `json:"ChangesRefs,omitempty"`
+	ChangesRefs          bool               `gorm:"default:false" json:"ChangesRefs"`
 }
 
 // Repo is the delivery mechanism of a Commit over HTTP
