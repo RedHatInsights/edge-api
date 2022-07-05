@@ -305,7 +305,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		}
 
 		image.Commit.OSTreeParentCommit = repo.URL
-		if previousImage.Distribution == image.Distribution {
+		if previousImage.Distribution != image.Distribution {
 			image.Commit.ChangesRefs = true
 		}
 		var refs string
