@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -203,23 +204,32 @@ func DeviceGroupDeviceCtx(next http.Handler) http.Handler {
 
 var deviceGroupsFilters = common.ComposeFilters(
 	common.ContainFilterHandler(&common.Filter{
-		QueryParam: "name",
-		DBField:    "device_groups.name",
+		QueryParam: common.DeviceGroupsFilter(0).String(),
+		DBField:    fmt.Sprintf("device_groups.%s", common.DeviceGroupsFilter(0)),
 	}),
 	common.CreatedAtFilterHandler(&common.Filter{
-		QueryParam: "created_at",
-		DBField:    "device_groups.created_at",
+		QueryParam: common.DeviceGroupsFilter(1).String(),
+		DBField:    fmt.Sprintf("device_groups.%s", common.DeviceGroupsFilter(1)),
 	}),
 	common.CreatedAtFilterHandler(&common.Filter{
-		QueryParam: "updated_at",
-		DBField:    "device_groups.updated_at",
+		QueryParam: common.DeviceGroupsFilter(2).String(),
+		DBField:    fmt.Sprintf("device_groups.%s", common.DeviceGroupsFilter(2)),
 	}),
-	common.SortFilterHandler("device_groups", "created_at", "DESC"),
+	common.SortFilterHandler("device_groups", common.DeviceGroupsFilter(1).String(), "DESC"),
 )
 
 func validateGetAllDeviceGroupsFilterParams(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var errs []validationError
+		filtersMap := r.URL.Query()
+		queriesKeys := reflect.ValueOf(filtersMap).MapKeys()
+
+		for _, key := range queriesKeys {
+			if !(contains(common.GetArray(), key.String())) {
+				errs = append(errs, validationError{Key: key.String(), Reason: fmt.Sprintf("%s is not a valid query param", key.String())})
+			}
+		}
+
 		if val := r.URL.Query().Get("created_at"); val != "" {
 			if _, err := time.Parse(common.LayoutISO, val); err != nil {
 				errs = append(errs, validationError{Key: "created_at", Reason: err.Error()})
