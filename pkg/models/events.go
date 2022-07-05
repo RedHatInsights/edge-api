@@ -1,5 +1,9 @@
 package models
 
+import (
+	identity "github.com/redhatinsights/platform-go-middlewares/identity"
+)
+
 // AdvisorRecommendation for a system
 type AdvisorRecommendation struct {
 	PublishDate     string `json:"publish_date"`
@@ -45,6 +49,12 @@ type ConsoleRedhatComCloudEventsSchema struct {
 
 	// The type of the event.
 	Type string `json:"type"`
+
+	// The users identity
+	Identity identity.XRHID `json:"identity"`
+
+	// Timestamp of when a service interacted with this event. Must adhere to RFC 3339.
+	Lasthandeltime string `json:"lasthandeltime"`
 }
 
 // Data contains optional data for an event
@@ -85,4 +95,17 @@ type RhelSystemTag struct {
 	Key       string `json:"key"`
 	Namespace string `json:"namespace"`
 	Value     string `json:"value"`
+}
+
+// EdgeInstallerData is data needed for the ISO
+type EdgeInstallerData struct {
+	SSHKey      string `json:"ssh_key"`
+	SSHName     string `json:"ssh_name"`
+	DownloadURL string `json:"download_url"`
+}
+
+// EdgeCreateCommitEvent wraps the console event with image information
+type EdgeCreateCommitEvent struct {
+	ConsoleSchema ConsoleRedhatComCloudEventsSchema `json:"consoleschema"`
+	NewImage      Image                             `json:"newimage"`
 }
