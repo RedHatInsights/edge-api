@@ -12,7 +12,7 @@ import (
 // GetDefaultIdentity is a function to create the default identity struct. Structs can not be const in go
 func GetDefaultIdentity() identity.XRHID {
 	DefaultIdentity := identity.XRHID{}
-	DefaultIdentity.Identity.OrgID = "00000000"
+	DefaultIdentity.Identity.OrgID = DefaultOrgID
 	return DefaultIdentity
 }
 
@@ -32,5 +32,5 @@ func GetIdentityFromContext(ctx context.Context) (identity.XRHID, error) {
 			return ident, nil
 		}
 	}
-	return identity.XRHID{}, fmt.Errorf("cannot find account number")
+	return identity.XRHID{}, fmt.Errorf("cannot find identity")
 }

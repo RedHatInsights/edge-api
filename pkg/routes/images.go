@@ -532,22 +532,46 @@ func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 
-	// Check to see if feature is enabled and not in ephemeral
-	cfg := config.Get()
-	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
-		enabled := feature.CheckFeature(feature.FeatureImageBuildMS)
-		if enabled {
-			respondWithJSONBody(w, ctxServices.Log, feature.FeatureImageBuildMS)
-			return
-		}
-	}
-
 	image := getImage(w, r)
 	if image == nil {
 		return
 	}
 	if err := readRequestJSONBody(w, r, ctxServices.Log, &image.Installer); err != nil {
 		return
+	}
+
+	// Check to see if feature is enabled and not in ephemeral
+	cfg := config.Get()
+	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
+		enabled := feature.CheckFeature(feature.FeatureImageBuildMS)
+		if enabled {
+			ident, err := common.GetIdentityFromContext(r.Context())
+			if err != nil {
+				ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving identity from request")
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+				return
+			}
+			consoleEvent := CreateConsoleEvent(image.RequestID, image.OrgID, image.Name, "redhat:console:fleetmanagment:createinstallerevent", ident)
+			edgeEvent := models.EdgeCreateCommitEvent{
+				ConsoleSchema: consoleEvent,
+				NewImage:      *image,
+			}
+			producer := getInstance()
+			topic := "platform.edge.fleetmgmt.image-build"
+			recordKey := "create_installer"
+			edgeEventMessage, _ := json.Marshal(edgeEvent)
+			err = producer.Produce(&kafka.Message{
+				TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+				Key:            []byte(recordKey),
+				Value:          edgeEventMessage,
+			}, nil)
+			if err != nil {
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+				return
+			}
+			respondWithJSONBody(w, ctxServices.Log, edgeEvent)
+			return
+		}
 	}
 
 	image, _, err := ctxServices.ImageService.CreateInstallerForImage(image)
@@ -619,24 +643,51 @@ func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 // CreateKickStartForImage creates a kickstart file for an existent image
 func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
+
+	image := getImage(w, r)
+	if image == nil {
+		return
+	}
 	// Check to see if feature is enabled and not in ephemeral
 	cfg := config.Get()
 	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
 		enabled := feature.CheckFeature(feature.FeatureImageBuildMS)
 		if enabled {
-			respondWithJSONBody(w, ctxServices.Log, feature.FeatureImageBuildMS)
+			ident, err := common.GetIdentityFromContext(r.Context())
+			if err != nil {
+				ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving identity from request")
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+				return
+			}
+			consoleEvent := CreateConsoleEvent(image.RequestID, image.OrgID, image.Name, "redhat:console:fleetmanagment:createkickstartevent", ident)
+			edgeEvent := models.EdgeCreateCommitEvent{
+				ConsoleSchema: consoleEvent,
+				NewImage:      *image,
+			}
+			producer := getInstance()
+			topic := "platform.edge.fleetmgmt.image-build"
+			recordKey := "create_kickstart"
+			edgeEventMessage, _ := json.Marshal(edgeEvent)
+			err = producer.Produce(&kafka.Message{
+				TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+				Key:            []byte(recordKey),
+				Value:          edgeEventMessage,
+			}, nil)
+			if err != nil {
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+				return
+			}
+			respondWithJSONBody(w, ctxServices.Log, edgeEvent)
 			return
 		}
 	}
 
-	if image := getImage(w, r); image != nil {
-		ctxServices := dependencies.ServicesFromContext(r.Context())
-		if err := ctxServices.ImageService.AddUserInfo(image); err != nil {
-			ctxServices.Log.WithField("error", err.Error()).Error("Kickstart file injection failed")
-			respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
-			return
-		}
+	if err := ctxServices.ImageService.AddUserInfo(image); err != nil {
+		ctxServices.Log.WithField("error", err.Error()).Error("Kickstart file injection failed")
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
+		return
 	}
+
 }
 
 // CheckImageNameResponse indicates whether the image exists
