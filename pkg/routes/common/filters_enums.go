@@ -4,27 +4,31 @@ import (
 	"fmt"
 )
 
+// DeviceGroupsFilter object type int
 type DeviceGroupsFilter int
 
 const (
 	name DeviceGroupsFilter = iota
-	created_at
-	updated_at
+	createdat
+	updatedat
+	sortby
 )
 
-// GetArray gets array
-func GetArray() []string {
-	return []string{"name", "created_at", "updated_at"}
+// GetFiltersArray returns the array of the acceptable filters
+func GetFiltersArray() []string {
+	return []string{"name", "created_at", "updated_at", "sort_by"}
 }
 
 func (dgf DeviceGroupsFilter) String() string {
 	switch dgf {
 	case name:
 		return "name"
-	case created_at:
+	case createdat:
 		return "created_at"
-	case updated_at:
+	case updatedat:
 		return "updated_at"
+	case sortby:
+		return "sort_by"
 	default:
 		return fmt.Sprintf("%d", int(dgf))
 	}

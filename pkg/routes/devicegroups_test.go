@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo"
@@ -74,6 +75,27 @@ var _ = Describe("DeviceGroup routes", func() {
 				params: "sort_by=test",
 				expectedError: []validationError{
 					{Key: "sort_by", Reason: "test is not a valid sort_by. Sort-by must be name or created_at or updated_at"},
+				},
+			},
+			{
+				name:   "invalid query param",
+				params: "bla=1",
+				expectedError: []validationError{
+					{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: [%s]", strings.Join(common.GetFiltersArray(), ", "))},
+				},
+			},
+			{
+				name:   "valid query param and invalid query param",
+				params: "sort_by=created_at&bla=1",
+				expectedError: []validationError{
+					{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: [%s]", strings.Join(common.GetFiltersArray(), ", "))},
+				},
+			},
+			{
+				name:   "invalid query param and valid query param",
+				params: "bla=1&sort_by=created_at",
+				expectedError: []validationError{
+					{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: [%s]", strings.Join(common.GetFiltersArray(), ", "))},
 				},
 			},
 		}
