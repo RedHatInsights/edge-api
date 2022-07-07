@@ -11,10 +11,10 @@ const FeatureCustomRepos = "fleet-management.custom-repos"
 //FeatureImageBuildMS is the const of the ms build feature flag
 const FeatureImageBuildMS = "fleet-management.images_iso"
 
-// CheckFeatureWithAccount checks to see if a given feature is available for a given account
-func CheckFeatureWithAccount(account string, feature string) bool {
+// CheckFeatureWithOrgID checks to see if a given feature is available for a given orgID
+func CheckFeatureWithOrgID(orgID string, feature string) bool {
 	unleashCtx := unleashCTX.Context{
-		UserId: account,
+		UserId: orgID,
 	}
 	return unleash.IsEnabled(feature, unleash.WithContext(unleashCtx))
 }

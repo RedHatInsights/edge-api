@@ -77,13 +77,13 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	}
 	ctxServices.Log.Info("Creating custom repository")
 
-	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-	if account == "" && orgID == "" {
-		// logs and response handled by readAccountOrOrgID
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID
 		return
 	}
 
-	thirdPartyRepo, err = ctxServices.ThirdPartyRepoService.CreateThirdPartyRepo(thirdPartyRepo, account, orgID)
+	thirdPartyRepo, err = ctxServices.ThirdPartyRepoService.CreateThirdPartyRepo(thirdPartyRepo, orgID)
 	if err != nil {
 		var apiError errors.APIError
 		switch err.(type) {
@@ -123,27 +123,27 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	var tprepo []models.ThirdPartyRepo
 	var count int64
 
-	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-	if account == "" && orgID == "" {
-		// logs and response handled by readAccountOrOrgID
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID
 		return
 	}
 	var ctx *gorm.DB
 	imageID := r.URL.Query().Get("imageID")
 	if imageID != "" {
-		ctx = db.AccountOrOrg(account, orgID, "").Debug().
+		ctx = db.Org(orgID, "").Debug().
 			Joins("left join images_repos on third_party_repo_id = id and image_id = ?", imageID).
 			Order("images_repos.third_party_repo_id DESC NULLS LAST").
 			Model(&models.ThirdPartyRepo{})
 		ctx = thirdPartyRepoFilters(r, ctx)
 	} else {
-		ctx = db.AccountOrOrgTx(account, orgID, thirdPartyRepoFilters(r, db.DB), "").Debug().Model(&models.ThirdPartyRepo{})
+		ctx = db.OrgDB(orgID, thirdPartyRepoFilters(r, db.DB), "").Debug().Model(&models.ThirdPartyRepo{})
 	}
 
 	// Check to see if feature is enabled and not in ephemeral
 	cfg := config.Get()
 	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
-		enabled := feature.CheckFeatureWithAccount(account, feature.FeatureCustomRepos)
+		enabled := feature.CheckFeatureWithOrgID(orgID, feature.FeatureCustomRepos)
 		if !enabled {
 			respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable("Feature not available"))
 			return
@@ -202,9 +202,9 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 				respondWithAPIError(w, ctxServices.Log, responseErr)
 				return
 			}
-			account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-			if account == "" && orgID == "" {
-				// logs and response handled by readAccountOrOrgID
+			orgID := readOrgID(w, r, ctxServices.Log)
+			if orgID == "" {
+				// logs and response handled by readOrgID
 				return
 			}
 			ctx := context.WithValue(r.Context(), tprepoKey, tprepo)
@@ -238,7 +238,7 @@ func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		// error handled by createRequest already
 		return
 	}
-	err = ctxServices.ThirdPartyRepoService.UpdateThirdPartyRepo(tprepo, oldtprepo.Account, oldtprepo.OrgID, fmt.Sprint(oldtprepo.ID))
+	err = ctxServices.ThirdPartyRepoService.UpdateThirdPartyRepo(tprepo, oldtprepo.OrgID, fmt.Sprint(oldtprepo.ID))
 	if err != nil {
 		var apiError errors.APIError
 		switch err.(type) {
