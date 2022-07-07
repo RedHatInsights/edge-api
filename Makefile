@@ -19,6 +19,7 @@ KUBECTL=kubectl
 NAMESPACE=default
 TEST_OPTIONS="-race"
 BUILD_TAGS=-tags=fdo
+EXCLUDE_DIRS=-e /cmd/db -e /cmd/kafka -e /cmd/migrate/orgmigration -e /config -e /pkg/clients/imagebuilder/mock_imagebuilder -e /pkg/imagebuilder/mock_imagebuilder -e /pkg/clients/inventory -e /pkg/clients/inventory/mock_inventory -e /pkg/clients/playbookdispatcher -e /pkg/errors -e /pkg/services/mock_services -e /unleash
 
 CONTAINERFILE_NAME=Dockerfile
 
@@ -136,10 +137,10 @@ test:
 	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /test/) $(TEST_OPTIONS)
 
 test-clean-no-fdo:
-	go test -count=1 $$(go list ./... | grep -v /test/) $(TEST_OPTIONS) -cover
+	go test -count=1 -cover $$(go list ./... | grep -v -e /test/ $(EXCLUDE_DIRS)) $(TEST_OPTIONS)
 
 test-no-fdo:
-	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS) -cover
+	go test -cover $$(go list ./... | grep -v -e /test/ $(EXCLUDE_DIRS)) $(TEST_OPTIONS)
 
 vet:
 	go vet $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
