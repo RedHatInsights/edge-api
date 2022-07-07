@@ -182,7 +182,7 @@ func main() {
 		}
 	}
 
-	if err := orgmigration.MigrateAllModels(cfg); err != nil {
+	if err := orgmigration.MigrateAllModels(cfg, nil); err != nil {
 		log.WithField("error", err.Error()).Error("account -> org_id Migration completed with errors")
 		errorOccurred = true
 	}
