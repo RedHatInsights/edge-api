@@ -12,6 +12,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/config"
+	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
@@ -212,7 +213,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 				ConsoleSchema: consoleEvent,
 				NewImage:      *image,
 			}
-			producer := getInstance()
+			producer := kafkacommon.GetInstance()
 			topic := "platform.edge.fleetmgmt.image-build"
 			recordKey := "create_commit"
 			edgeEventMessage, _ := json.Marshal(edgeEvent)
@@ -293,11 +294,12 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			consoleEvent := CreateConsoleEvent(image.RequestID, image.OrgID, image.Name, "redhat:console:fleetmanagment:createimageupdateevent", ident)
-			edgeEvent := models.EdgeCreateCommitEvent{
+			edgeEvent := models.EdgeUpdateCommitEvent{
 				ConsoleSchema: consoleEvent,
 				NewImage:      *image,
+				OldImage:      *previousImage,
 			}
-			producer := getInstance()
+			producer := kafkacommon.GetInstance()
 			topic := "platform.edge.fleetmgmt.image-build"
 			recordKey := "create_image_update"
 			edgeEventMessage, _ := json.Marshal(edgeEvent)
@@ -556,7 +558,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 				ConsoleSchema: consoleEvent,
 				NewImage:      *image,
 			}
-			producer := getInstance()
+			producer := kafkacommon.GetInstance()
 			topic := "platform.edge.fleetmgmt.image-build"
 			recordKey := "create_installer"
 			edgeEventMessage, _ := json.Marshal(edgeEvent)
@@ -664,7 +666,7 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 				ConsoleSchema: consoleEvent,
 				NewImage:      *image,
 			}
-			producer := getInstance()
+			producer := kafkacommon.GetInstance()
 			topic := "platform.edge.fleetmgmt.image-build"
 			recordKey := "create_kickstart"
 			edgeEventMessage, _ := json.Marshal(edgeEvent)

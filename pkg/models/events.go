@@ -109,3 +109,10 @@ type EdgeCreateCommitEvent struct {
 	ConsoleSchema ConsoleRedhatComCloudEventsSchema `json:"consoleschema"`
 	NewImage      Image                             `json:"newimage"`
 }
+
+// EdgeUpdateCommitEvent wraps the console event with previous and new image information
+type EdgeUpdateCommitEvent struct {
+	ConsoleSchema ConsoleRedhatComCloudEventsSchema `json:"consoleschema"`
+	NewImage      Image                             `json:"newimage"`
+	OldImage      Image                             `json:"oldimage"`
+}
