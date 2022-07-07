@@ -136,10 +136,10 @@ test:
 	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /test/) $(TEST_OPTIONS)
 
 test-clean-no-fdo:
-	go test -count=1 $$(go list ./... | grep -v /test/) $(TEST_OPTIONS)
+	go test -count=1 $$(go list ./... | grep -v /test/) $(TEST_OPTIONS) -cover
 
 test-no-fdo:
-	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS)
+	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS) -cover
 
 vet:
 	go vet $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
