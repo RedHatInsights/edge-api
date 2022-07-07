@@ -1,4 +1,4 @@
-package common
+package kafkacommon
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
+	"github.com/redhatinsights/edge-api/config"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,8 +20,9 @@ func GetInstance() *kafka.Producer {
 		lock.Lock()
 		defer lock.Unlock()
 		if singleInstance == nil && clowder.IsClowderEnabled() {
-			brokers := make([]clowder.BrokerConfig, len(clowder.LoadedConfig.Kafka.Brokers))
-			for i, b := range clowder.LoadedConfig.Kafka.Brokers {
+			cfg := config.Get()
+			brokers := make([]clowder.BrokerConfig, len(cfg.KafkaConfig.Brokers))
+			for i, b := range cfg.KafkaConfig.Brokers {
 				brokers[i] = b
 			}
 			p, err := kafka.NewProducer(&kafka.ConfigMap{

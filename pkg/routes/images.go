@@ -214,7 +214,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 				NewImage:      *image,
 			}
 			producer := kafkacommon.GetInstance()
-			topic := "platform.edge.fleetmgmt.image-build"
+			topic := kafkacommon.GetTopic(kafkacommon.FleetmgntImageBuild)
 			recordKey := "create_commit"
 			edgeEventMessage, _ := json.Marshal(edgeEvent)
 			err = producer.Produce(&kafka.Message{
@@ -300,7 +300,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 				OldImage:      *previousImage,
 			}
 			producer := kafkacommon.GetInstance()
-			topic := "platform.edge.fleetmgmt.image-build"
+			topic := kafkacommon.GetTopic(kafkacommon.FleetmgntImageBuild)
 			recordKey := "create_image_update"
 			edgeEventMessage, _ := json.Marshal(edgeEvent)
 			err = producer.Produce(&kafka.Message{
@@ -559,7 +559,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 				NewImage:      *image,
 			}
 			producer := kafkacommon.GetInstance()
-			topic := "platform.edge.fleetmgmt.image-build"
+			topic := kafkacommon.GetTopic(kafkacommon.FleetmgntImageBuild)
 			recordKey := "create_installer"
 			edgeEventMessage, _ := json.Marshal(edgeEvent)
 			err = producer.Produce(&kafka.Message{
@@ -667,7 +667,7 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 				NewImage:      *image,
 			}
 			producer := kafkacommon.GetInstance()
-			topic := "platform.edge.fleetmgmt.image-build"
+			topic := kafkacommon.GetTopic(kafkacommon.FleetmgntImageBuild)
 			recordKey := "create_kickstart"
 			edgeEventMessage, _ := json.Marshal(edgeEvent)
 			err = producer.Produce(&kafka.Message{

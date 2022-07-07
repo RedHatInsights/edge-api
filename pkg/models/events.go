@@ -97,13 +97,6 @@ type RhelSystemTag struct {
 	Value     string `json:"value"`
 }
 
-// EdgeInstallerData is data needed for the ISO
-type EdgeInstallerData struct {
-	SSHKey      string `json:"ssh_key"`
-	SSHName     string `json:"ssh_name"`
-	DownloadURL string `json:"download_url"`
-}
-
 // EdgeCreateCommitEvent wraps the console event with image information
 type EdgeCreateCommitEvent struct {
 	ConsoleSchema ConsoleRedhatComCloudEventsSchema `json:"consoleschema"`
