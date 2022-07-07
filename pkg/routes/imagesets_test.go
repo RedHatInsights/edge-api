@@ -10,6 +10,8 @@ import (
 	"regexp"
 	"testing"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 
@@ -92,14 +94,14 @@ func TestSearchParams(t *testing.T) {
 			name:   "bad sort_by",
 			params: "sort_by=test",
 			expectedError: []validationError{
-				{Key: "sort_by", Reason: "test is not a valid sort_by. Sort-by must created_at or updated_at or name or status"},
+				{Key: "sort_by", Reason: "test is not a valid sort_by. Sort-by must created_at or updated_at or name"},
 			},
 		},
 		{
 			name:   "bad sort_by and status",
 			params: "sort_by=host&status=ONHOLD",
 			expectedError: []validationError{
-				{Key: "sort_by", Reason: "host is not a valid sort_by. Sort-by must created_at or updated_at or name or status"},
+				{Key: "sort_by", Reason: "host is not a valid sort_by. Sort-by must created_at or updated_at or name"},
 				{Key: "status", Reason: "ONHOLD is not a valid status. Status must be CREATED or BUILDING or ERROR or SUCCESS"},
 			},
 		},
@@ -152,14 +154,14 @@ func TestDetailSearchParams(t *testing.T) {
 			name:   "bad sort_by",
 			params: "sort_by=test",
 			expectedError: []validationError{
-				{Key: "sort_by", Reason: "test is not a valid sort_by. Sort-by must created_at or updated_at or name or status"},
+				{Key: "sort_by", Reason: "test is not a valid sort_by. Sort-by must created_at or updated_at or name"},
 			},
 		},
 		{
 			name:   "bad sort_by and status",
 			params: "sort_by=host&status=ONHOLD",
 			expectedError: []validationError{
-				{Key: "sort_by", Reason: "host is not a valid sort_by. Sort-by must created_at or updated_at or name or status"},
+				{Key: "sort_by", Reason: "host is not a valid sort_by. Sort-by must created_at or updated_at or name"},
 				{Key: "status", Reason: "ONHOLD is not a valid status. Status must be CREATED or BUILDING or ERROR or SUCCESS"},
 			},
 		},
@@ -246,3 +248,69 @@ func TestImageSetDetailFiltersParams(t *testing.T) {
 
 	}
 }
+
+var _ = Describe("ImageSets Route Test", func() {
+
+	Context("Filters", func() {
+		BeforeEach(func() {
+			imageSet1 := &models.ImageSet{
+				Name:  "image-set-1",
+				OrgID: common.DefaultOrgID,
+			}
+			imageSet2 := &models.ImageSet{
+				Name:  "image-set-2",
+				OrgID: common.DefaultOrgID,
+			}
+			db.DB.Create(&imageSet1)
+			db.DB.Create(&imageSet2)
+
+			imageSuccess := models.Image{
+				Name:       "image-success",
+				ImageSetID: &imageSet1.ID,
+				OrgID:      common.DefaultOrgID,
+				Status:     models.ImageStatusSuccess,
+			}
+			imageError := models.Image{
+				Name:       "image-error",
+				ImageSetID: &imageSet2.ID,
+				OrgID:      common.DefaultOrgID,
+				Status:     models.ImageStatusError,
+			}
+			db.DB.Create(&imageSuccess)
+			db.DB.Create(&imageError)
+		})
+		When("filter by name", func() {
+			It("should return given image-set", func() {
+				name := "image-set-1"
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets?name=%s", name), nil)
+				Expect(err).ToNot(HaveOccurred())
+				w := httptest.NewRecorder()
+				req = req.WithContext(dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{}))
+				handler := http.HandlerFunc(ListAllImageSets)
+				handler.ServeHTTP(w, req)
+				Expect(w.Code).To(Equal(http.StatusOK), fmt.Sprintf("expected status %d, but got %d", w.Code, http.StatusOK))
+				respBody, err := ioutil.ReadAll(w.Body)
+				Expect(err).To(BeNil())
+				Expect(string(respBody)).To(ContainSubstring(name))
+				Expect(string(respBody)).ToNot(ContainSubstring("image-set-2"))
+			})
+		})
+		When("filter by status", func() {
+			It("should return image-sets with ERROR status", func() {
+				status := "ERROR"
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets?status=%s", status), nil)
+				Expect(err).ToNot(HaveOccurred())
+				w := httptest.NewRecorder()
+				req = req.WithContext(dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{}))
+				handler := http.HandlerFunc(ListAllImageSets)
+				handler.ServeHTTP(w, req)
+				Expect(w.Code).To(Equal(http.StatusOK), fmt.Sprintf("expected status %d, but got %d", w.Code, http.StatusOK))
+				respBody, err := ioutil.ReadAll(w.Body)
+				Expect(err).To(BeNil())
+				Expect(string(respBody)).To(ContainSubstring("image-set-2"))
+				Expect(string(respBody)).ToNot(ContainSubstring("image-set-1"))
+			})
+		})
+	})
+
+})

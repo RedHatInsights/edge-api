@@ -42,8 +42,9 @@ func InitClient(ctx context.Context, log *log.Entry) *Client {
 
 // OSTree gives OSTree information for an image
 type OSTree struct {
-	URL string `json:"url,omitempty"`
-	Ref string `json:"ref"`
+	URL       string `json:"url,omitempty"`
+	Ref       string `json:"ref"`
+	ParentRef string `json:"parent"`
 }
 
 // Customizations is made of the packages that are baked into an image
@@ -254,6 +255,7 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 			req.ImageRequests[0].Ostree = &OSTree{}
 		}
 		req.ImageRequests[0].Ostree.URL = image.Commit.OSTreeParentCommit
+		req.ImageRequests[0].Ostree.ParentRef = image.Commit.OSTreeParentRef
 	}
 
 	cr, err := c.compose(req)
@@ -521,7 +523,6 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*S
 	if res.StatusCode != http.StatusOK {
 		c.log.WithFields(log.Fields{
 			"statusCode": res.StatusCode,
-			"error":      err.Error(),
 		}).Error(new(PackageRequestError))
 		return nil, new(PackageRequestError)
 	}

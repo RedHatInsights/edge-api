@@ -24,7 +24,7 @@ type imageSetTypeKey int
 
 const imageSetKey imageSetTypeKey = iota
 
-var sortOption = []string{"created_at", "updated_at", "name", "status"}
+var sortOption = []string{"created_at", "updated_at", "name"}
 var statusOption = []string{models.ImageStatusCreated, models.ImageStatusBuilding, models.ImageStatusError, models.ImageStatusSuccess}
 
 // MakeImageSetsRouter adds support for operations on image-sets
@@ -37,11 +37,11 @@ func MakeImageSetsRouter(sub chi.Router) {
 }
 
 var imageSetFilters = common.ComposeFilters(
-
 	common.ContainFilterHandler(&common.Filter{
 		QueryParam: "status",
 		DBField:    "images.status",
 	}),
+
 	common.ContainFilterHandler(&common.Filter{
 		QueryParam: "name",
 		DBField:    "image_sets.name",
