@@ -57,22 +57,23 @@ echo POST-COPYFILES
 %end
 
 
-%post --log=/var/log/anaconda/post-install.log --erroronfail
+%post --log=/var/log/anaconda/post-user-install.log --erroronfail
 echo POST-USER
 # Add User and SSH Key provided via UI 
 # add user and ssh key
-useradd -m -G wheel {{.Username}}
-USER_HOME=$(getent passwd {{.Username}} | awk -F: '{print $6}')
+USER_NAME={{.Username}}
+useradd -m -G wheel $USER_NAME
+USER_HOME=$(getent passwd $USER_NAME | awk -F: '{print $6}')
 
 mkdir -p ${USER_HOME}/.ssh
 chmod 755 ${USER_HOME}/.ssh
-tee ${USER_HOME}/.ssh/authorized_keys > /dev/null << STOPHERE
+cat <<'__AUTHKEYS__' >> ${USER_HOME}/.ssh/authorized_keys 
 {{.Sshkey}}
-STOPHERE
+__AUTHKEYS__
 chmod 600 ${USER_HOME}/.ssh/authorized_keys
-chown {{.Username}}:{{.Username}} ${USER_HOME}/.ssh/authorized_keys
+chown ${USER_NAME}:${USER_NAME} ${USER_HOME}/.ssh/authorized_keys
 # no sudo password for user 
-echo -e '{{.Username}}\tALL=(ALL)\tNOPASSWD: ALL' >> /etc/sudoers
+echo -e "${USER_NAME}\tALL=(ALL)\tNOPASSWD: ALL" >> /etc/sudoers
 
 %end
 
@@ -138,10 +139,17 @@ fi
 
 
 %post --log=/var/log/anaconda/post-autoregister.log
-set -x
 echo POST-AUTOREGISTER
 
 # Automatically register if credentials are provided
+[[ -e /root/fleet_env.bash ]] && source /root/fleet_env.bash
+RHC_FIRSTBOOT=${RHC_FIRSTBOOT:-false}
+
+# CREATE AUTOREGISTER SCRIPT
+# TODO: rhc firstboot registration script should be something installed with RHC (if not already)
+cat << '__RHCREGISTER__' >> /usr/local/bin/rhc_autoregister.sh
+#!/bin/bash
+
 if [ -e /root/fleet_env.bash ]
 then
 	source /root/fleet_env.bash
@@ -170,6 +178,7 @@ then
 			|| rhc connect --username $RHC_USER --password $RHC_PASS
 
 		systemctl status rhcd.service
+		systemctl status insights-client
 
 		# Set specific display name set in custom post
 		if [ -z ${INSIGHTS_DISPLAY_NAME+x} ]
@@ -191,6 +200,35 @@ then
 else
 	echo "INFO: No /root/fleet_env.bash file. Skipping registration"
 fi
+__RHCREGISTER__
+
+# need to make it executable and restore selinux context
+chmod 755 /usr/local/bin/rhc_autoregister.sh
+restorecon -rv /usr/local/bin
+
+# CREATE AUTO REGISTRATION FIRSTBOOT SERVICE
+cat << '__RHCFIRSTBOOTSERVICE__' >> /etc/systemd/system/rhc_autoregister.service
+[Unit]
+Before=systemd-user-sessions.service
+Wants=network-online.target
+After=network-online.target
+ConditionPathExists=/root/fleet_env.bash
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/rhc_autoregister.sh
+ExecStartPost=/usr/bin/rm /root/fleet_env.bash
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+
+__RHCFIRSTBOOTSERVICE__
+
+# Set up first boot registration or do it now before reboot
+[[ $RHC_FIRSTBOOT == "true" ]] \
+    && systemctl enable rhc_autoregister.service \
+    || /usr/local/bin/rhc_autoregister.sh
 
 %end
 
@@ -199,7 +237,10 @@ fi
 # Cleanup fleet-ification
 echo POST-CLEANUP
 
+[[ -e /root/fleet_env.bash ]] && source /root/fleet_env.bash
+RHC_FIRSTBOOT=${RHC_FIRSTBOOT:-false}
+
 # Clean up fleet install file(s)
-[[ -e /root/fleet_env.bash ]] && rm /root/fleet_env.bash
+[[ $RHC_FIRSTBOOT != "true"  && -e /root/fleet_env.bash ]] && rm /root/fleet_env.bash
 
 %end
