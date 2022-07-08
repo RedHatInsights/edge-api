@@ -1547,4 +1547,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
-      summary: Update devices from group.  
+      summary: Update devices from group.
+  /storage/isos/{installerID}:
+    get:
+      operationId: GetInstallerIsoStorageContent
+      parameters:
+        - name: installerID
+          in: path
+          required: true
+          description: Installer ID
+          schema:
+            type: integer
+      responses:
+        "303":
+          description: Redirect to actual stored iso file
+          content:
+            application/octet-stream: {}
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.BadRequest"
+          description: The request sent couldn't be processed.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.NotFound"
+          description: installer not found.

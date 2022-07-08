@@ -36,6 +36,10 @@ func MakeImageSetsRouter(sub chi.Router) {
 	})
 }
 
+func getStorageInstallerIsoURL(installerID uint) string {
+	return fmt.Sprintf("/api/edge/v1/storage/isos/%d", installerID)
+}
+
 var imageSetFilters = common.ComposeFilters(
 	common.ContainFilterHandler(&common.Filter{
 		QueryParam: "status",
@@ -204,7 +208,8 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 					result = db.DB.First(&i.Installer, &i.InstallerID)
 				}
 				if i.Installer.ImageBuildISOURL != "" {
-					imgSet.ImageBuildISOURL = &i.Installer.ImageBuildISOURL
+					imageSetInstallerIsoURL := getStorageInstallerIsoURL(i.Installer.ID)
+					imgSet.ImageBuildISOURL = &imageSetInstallerIsoURL
 					break
 				}
 			}
@@ -278,6 +283,13 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 
 	details.ImageSetData = *imageSet
 	details.Images = Imgs
+
+	// update image installer iso URL for all images with the internal application storage end-point
+	for _, imageDetail := range details.Images {
+		if imageDetail.Image.InstallerID != nil && imageDetail.Image.Installer.ImageBuildISOURL != "" {
+			imageDetail.Image.Installer.ImageBuildISOURL = getStorageInstallerIsoURL(imageDetail.Image.Installer.ID)
+		}
+	}
 
 	if Imgs != nil && Imgs[len(Imgs)-1].Image != nil && Imgs[len(Imgs)-1].Image.InstallerID != nil {
 		img := Imgs[len(Imgs)-1].Image
