@@ -665,9 +665,6 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 				}
 			}
 
-			s.log.WithFields(log.Fields{
-				"deviceUUID": device.ID,
-			}).Info("Device is disconnected 2")
 			if device.Ostree.RHCClientID == "" {
 				s.log.WithFields(log.Fields{
 					"deviceUUID": device.ID,
