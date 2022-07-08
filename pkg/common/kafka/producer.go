@@ -14,8 +14,8 @@ var lock = &sync.Mutex{}
 
 var singleInstance *kafka.Producer
 
-// GetInstance returns a kafka producer instance
-func GetInstance() *kafka.Producer {
+// GetProducerInstance returns a kafka producer instance
+func GetProducerInstance() *kafka.Producer {
 	if singleInstance == nil {
 		lock.Lock()
 		defer lock.Unlock()
@@ -39,4 +39,19 @@ func GetInstance() *kafka.Producer {
 		}
 	}
 	return singleInstance
+}
+
+// ProduceEvent is a helper for the kafka producer
+func ProduceEvent(requestedTopic, recordKey string, edgeEventMessage []byte) error {
+	producer := GetProducerInstance()
+	realTopic := GetTopic(requestedTopic)
+	err := producer.Produce(&kafka.Message{
+		TopicPartition: kafka.TopicPartition{Topic: &realTopic, Partition: kafka.PartitionAny},
+		Key:            []byte(recordKey),
+		Value:          edgeEventMessage,
+	}, nil)
+	if err != nil {
+		return err
+	}
+	return nil
 }

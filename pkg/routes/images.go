@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/config"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
@@ -159,7 +158,7 @@ func CreateConsoleEvent(reqID, orgID, name, subject string, ident identity.XRHID
 		Dataschema:  "v1",
 		ID:          reqID,
 		Redhatorgid: orgID,
-		Source:      "Fleet Mangment",
+		Source:      "Edge Management",
 		Specversion: "v1",
 		Subject:     subject,
 		System: &models.RhelSystem{
@@ -213,16 +212,8 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 				ConsoleSchema: consoleEvent,
 				NewImage:      *image,
 			}
-			producer := kafkacommon.GetInstance()
-			topic := kafkacommon.GetTopic(kafkacommon.FleetmgntImageBuild)
-			recordKey := "create_commit"
 			edgeEventMessage, _ := json.Marshal(edgeEvent)
-			err = producer.Produce(&kafka.Message{
-				TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-				Key:            []byte(recordKey),
-				Value:          edgeEventMessage,
-			}, nil)
-			if err != nil {
+			if err = kafkacommon.ProduceEvent(kafkacommon.FleetmgntImageBuild, kafkacommon.CreateCommit, edgeEventMessage); err != nil {
 				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 				return
 			}
@@ -299,16 +290,8 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 				NewImage:      *image,
 				OldImage:      *previousImage,
 			}
-			producer := kafkacommon.GetInstance()
-			topic := kafkacommon.GetTopic(kafkacommon.FleetmgntImageBuild)
-			recordKey := "create_image_update"
 			edgeEventMessage, _ := json.Marshal(edgeEvent)
-			err = producer.Produce(&kafka.Message{
-				TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-				Key:            []byte(recordKey),
-				Value:          edgeEventMessage,
-			}, nil)
-			if err != nil {
+			if err = kafkacommon.ProduceEvent(kafkacommon.FleetmgntImageBuild, kafkacommon.CreateImageUpdate, edgeEventMessage); err != nil {
 				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 				return
 			}
@@ -558,16 +541,8 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 				ConsoleSchema: consoleEvent,
 				NewImage:      *image,
 			}
-			producer := kafkacommon.GetInstance()
-			topic := kafkacommon.GetTopic(kafkacommon.FleetmgntImageBuild)
-			recordKey := "create_installer"
 			edgeEventMessage, _ := json.Marshal(edgeEvent)
-			err = producer.Produce(&kafka.Message{
-				TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-				Key:            []byte(recordKey),
-				Value:          edgeEventMessage,
-			}, nil)
-			if err != nil {
+			if err = kafkacommon.ProduceEvent(kafkacommon.FleetmgntImageBuild, kafkacommon.CreateInstaller, edgeEventMessage); err != nil {
 				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 				return
 			}
@@ -666,16 +641,8 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 				ConsoleSchema: consoleEvent,
 				NewImage:      *image,
 			}
-			producer := kafkacommon.GetInstance()
-			topic := kafkacommon.GetTopic(kafkacommon.FleetmgntImageBuild)
-			recordKey := "create_kickstart"
 			edgeEventMessage, _ := json.Marshal(edgeEvent)
-			err = producer.Produce(&kafka.Message{
-				TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-				Key:            []byte(recordKey),
-				Value:          edgeEventMessage,
-			}, nil)
-			if err != nil {
+			if err = kafkacommon.ProduceEvent(kafkacommon.FleetmgntImageBuild, kafkacommon.CreateKickstart, edgeEventMessage); err != nil {
 				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 				return
 			}
