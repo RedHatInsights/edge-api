@@ -43,7 +43,7 @@ func setContextDeviceGroupDevice(ctx context.Context, deviceGroupDevice *models.
 
 // MakeDeviceGroupsRouter adds support for device groups operations
 func MakeDeviceGroupsRouter(sub chi.Router) {
-	sub.With(validateGetAllDeviceGroupsFilterParams).With(common.Paginate).Get("/", GetAllDeviceGroups)
+	sub.With(ValidateGetAllDeviceGroupsFilterParams).With(common.Paginate).Get("/", GetAllDeviceGroups)
 	sub.Post("/", CreateDeviceGroup)
 	sub.Get("/checkName/{name}", CheckGroupName)
 	sub.Route("/{ID}", func(r chi.Router) {
@@ -223,15 +223,16 @@ var deviceGroupsFilters = common.ComposeFilters(
 	common.SortFilterHandler("device_groups", common.DeviceGroupsFilter(1).String(), "DESC"),
 )
 
-func validateGetAllDeviceGroupsFilterParams(next http.Handler) http.Handler {
+// ValidateGetAllDeviceGroupsFilterParams validate the query params that sent to /device-groups endpoint
+func ValidateGetAllDeviceGroupsFilterParams(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var errs []validationError
 		filtersMap := r.URL.Query()
 		queriesKeys := reflect.ValueOf(filtersMap).MapKeys()
 		// interating over the queries keys to validate we support those
 		for _, key := range queriesKeys {
-			if !(contains(common.GetFiltersArray(), key.String())) {
-				errs = append(errs, validationError{Key: key.String(), Reason: fmt.Sprintf("%s is not a valid query param, supported query params: [%s]", key.String(), strings.Join(common.GetFiltersArray(), ", "))})
+			if !(contains(common.GetDeviceGroupsFiltersArray(), key.String())) {
+				errs = append(errs, validationError{Key: key.String(), Reason: fmt.Sprintf("%s is not a valid query param, supported query params: [%s]", key.String(), strings.Join(common.GetDeviceGroupsFiltersArray(), ", "))})
 			}
 		}
 		// "created_at" validation
@@ -253,7 +254,7 @@ func validateGetAllDeviceGroupsFilterParams(next http.Handler) http.Handler {
 				name = val[1:]
 			}
 			if name != common.DeviceGroupsFilter(0).String() && name != common.DeviceGroupsFilter(1).String() && name != common.DeviceGroupsFilter(2).String() {
-				errs = append(errs, validationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must be name or created_at or updated_at", name)})
+				errs = append(errs, validationError{Key: common.DeviceGroupsFilter(3).String(), Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must be name or created_at or updated_at", name)})
 			}
 		}
 

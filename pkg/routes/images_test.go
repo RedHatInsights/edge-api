@@ -6,11 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/redhatinsights/edge-api/pkg/services"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	"github.com/redhatinsights/edge-api/pkg/services"
 
 	"github.com/golang/mock/gomock"
 	log "github.com/sirupsen/logrus"
@@ -412,6 +415,27 @@ func TestValidateGetAllSearchParams(t *testing.T) {
 				{Key: "status", Reason: "ONHOLD is not a valid status. Status must be CREATED or BUILDING or ERROR or SUCCESS"},
 			},
 		},
+		{
+			name:   "invalid query param",
+			params: "bla=1",
+			expectedError: []validationError{
+				{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: [%s]", strings.Join(common.GetImagesFiltersArray(), ", "))},
+			},
+		},
+		{
+			name:   "valid query param and invalid query param",
+			params: "sort_by=created_at&bla=1",
+			expectedError: []validationError{
+				{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: [%s]", strings.Join(common.GetImagesFiltersArray(), ", "))},
+			},
+		},
+		{
+			name:   "invalid query param and valid query param",
+			params: "bla=1&sort_by=created_at",
+			expectedError: []validationError{
+				{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: [%s]", strings.Join(common.GetImagesFiltersArray(), ", "))},
+			},
+		},
 	}
 
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
@@ -430,7 +454,7 @@ func TestValidateGetAllSearchParams(t *testing.T) {
 		})
 		req = req.WithContext(ctx)
 
-		validateGetAllImagesSearchParams(next).ServeHTTP(w, req)
+		ValidateGetAllImagesSearchParams(next).ServeHTTP(w, req)
 
 		resp := w.Result()
 		jsonBody := []validationError{}

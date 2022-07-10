@@ -2,10 +2,16 @@ package routes
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
+	"strings"
+	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/google/uuid"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
@@ -17,7 +23,7 @@ import (
 
 // MakeDevicesRouter adds support for operations on update
 func MakeDevicesRouter(sub chi.Router) {
-	sub.Get("/", GetDevices)
+	sub.With(ValidateGetAllDevicesFilterParams).Get("/", GetDevices)
 	sub.With(common.Paginate).Get("/devicesview", GetDevicesView)
 	sub.With(common.Paginate).Get("/db", GetDBDevices)
 	sub.Route("/{DeviceUUID}", func(r chi.Router) {
@@ -59,24 +65,64 @@ func DeviceCtx(next http.Handler) http.Handler {
 }
 
 var devicesFilters = common.ComposeFilters(
+	// Filter handler for "name"
 	common.ContainFilterHandler(&common.Filter{
-		QueryParam: "name",
-		DBField:    "devices.name",
+		QueryParam: common.DevicesFilter(0).String(),
+		DBField:    fmt.Sprintf("devices.%s", common.DevicesFilter(0)),
 	}),
+	// Filter handler for "uuid"
 	common.ContainFilterHandler(&common.Filter{
-		QueryParam: "uuid",
-		DBField:    "devices.uuid",
+		QueryParam: common.DevicesFilter(1).String(),
+		DBField:    fmt.Sprintf("devices.%s", common.DevicesFilter(1)),
 	}),
+	// Filter handler for "created_at"
 	common.BoolFilterHandler(&common.Filter{
-		QueryParam: "update_available",
-		DBField:    "devices.update_available",
+		QueryParam: common.DevicesFilter(2).String(),
+		DBField:    fmt.Sprintf("devices.%s", common.DevicesFilter(2)),
 	}),
+	// Filter handler for "image_id"
 	common.ContainFilterHandler(&common.Filter{
-		QueryParam: "image_id",
-		DBField:    "devices.image_id",
+		QueryParam: common.DevicesFilter(3).String(),
+		DBField:    fmt.Sprintf("devices.%s", common.DevicesFilter(3)),
 	}),
-	common.SortFilterHandler("devices", "name", "ASC"),
+	common.SortFilterHandler("devices", common.DevicesFilter(0).String(), "ASC"),
 )
+
+// ValidateGetAllDevicesFilterParams validate the query params that sent to /devices endpoint
+func ValidateGetAllDevicesFilterParams(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var errs []validationError
+		filtersMap := r.URL.Query()
+		queriesKeys := reflect.ValueOf(filtersMap).MapKeys()
+		// interating over the queries keys to validate we support those
+		for _, key := range queriesKeys {
+			if !(contains(common.GetDevicesFiltersArray(), key.String())) {
+				errs = append(errs, validationError{Key: key.String(), Reason: fmt.Sprintf("%s is not a valid query param, supported query params: [%s]", key.String(), strings.Join(common.GetDevicesFiltersArray(), ", "))})
+			}
+		}
+		// "uuid" validation
+		if val := r.URL.Query().Get(common.DevicesFilter(1).String()); val != "" {
+			if _, err := uuid.Parse(val); err != nil {
+				errs = append(errs, validationError{Key: common.DevicesFilter(1).String(), Reason: err.Error()})
+			}
+		}
+		// "created_at" validation
+		if val := r.URL.Query().Get(common.DevicesFilter(2).String()); val != "" {
+			if _, err := time.Parse(common.LayoutISO, val); err != nil {
+				errs = append(errs, validationError{Key: common.DevicesFilter(2).String(), Reason: err.Error()})
+			}
+		}
+		if len(errs) == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		if err := json.NewEncoder(w).Encode(&errs); err != nil {
+			ctxServices := dependencies.ServicesFromContext(r.Context())
+			ctxServices.Log.WithField("error", errs).Error("Error while trying to encode devices filter validation errors")
+		}
+	})
+}
 
 // GetUpdateAvailableForDevice returns if exists update for the current image at the device.
 func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {

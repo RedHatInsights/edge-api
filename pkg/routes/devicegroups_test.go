@@ -57,7 +57,7 @@ var _ = Describe("DeviceGroup routes", func() {
 	AfterEach(func() {
 		ctrl.Finish()
 	})
-	Context("get all devices with filter parameters", func() {
+	Context("get all device-groups with filter parameters", func() {
 		tt := []struct {
 			name          string
 			params        string
@@ -81,21 +81,21 @@ var _ = Describe("DeviceGroup routes", func() {
 				name:   "invalid query param",
 				params: "bla=1",
 				expectedError: []validationError{
-					{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: [%s]", strings.Join(common.GetFiltersArray(), ", "))},
+					{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: [%s]", strings.Join(common.GetDeviceGroupsFiltersArray(), ", "))},
 				},
 			},
 			{
 				name:   "valid query param and invalid query param",
 				params: "sort_by=created_at&bla=1",
 				expectedError: []validationError{
-					{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: [%s]", strings.Join(common.GetFiltersArray(), ", "))},
+					{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: [%s]", strings.Join(common.GetDeviceGroupsFiltersArray(), ", "))},
 				},
 			},
 			{
 				name:   "invalid query param and valid query param",
 				params: "bla=1&sort_by=created_at",
 				expectedError: []validationError{
-					{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: [%s]", strings.Join(common.GetFiltersArray(), ", "))},
+					{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: [%s]", strings.Join(common.GetDeviceGroupsFiltersArray(), ", "))},
 				},
 			},
 		}
@@ -105,7 +105,7 @@ var _ = Describe("DeviceGroup routes", func() {
 			req, err := http.NewRequest("GET", fmt.Sprintf("/device-groups?%s", te.params), nil)
 			Expect(err).ToNot(HaveOccurred())
 			w := httptest.NewRecorder()
-			validateGetAllDeviceGroupsFilterParams(next).ServeHTTP(w, req)
+			ValidateGetAllDeviceGroupsFilterParams(next).ServeHTTP(w, req)
 
 			resp := w.Result()
 			var jsonBody []validationError
