@@ -82,8 +82,8 @@ type ImageService struct {
 	RepoService  RepoServiceInterface
 }
 
-// ValidateAllImageReposAreFromAccountOrOrgID validates the account for Third Party Repositories
-func ValidateAllImageReposAreFromAccountOrOrgID(orgID string, repos []models.ThirdPartyRepo) error {
+// ValidateAllImageReposAreFromOrgID validates the account for Third Party Repositories
+func ValidateAllImageReposAreFromOrgID(orgID string, repos []models.ThirdPartyRepo) error {
 
 	if orgID == "" {
 		return new(OrgIDNotSet)
@@ -172,7 +172,7 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 			return er
 		}
 	}
-	if err := ValidateAllImageReposAreFromAccountOrOrgID(orgID, image.ThirdPartyRepositories); err != nil {
+	if err := ValidateAllImageReposAreFromOrgID(orgID, image.ThirdPartyRepositories); err != nil {
 
 		return err
 	}
@@ -274,7 +274,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 			return er
 		}
 	}
-	if err := ValidateAllImageReposAreFromAccountOrOrgID(previousImage.OrgID, image.ThirdPartyRepositories); err != nil {
+	if err := ValidateAllImageReposAreFromOrgID(previousImage.OrgID, image.ThirdPartyRepositories); err != nil {
 		return err
 	}
 
