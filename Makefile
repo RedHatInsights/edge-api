@@ -19,7 +19,7 @@ KUBECTL=kubectl
 NAMESPACE=default
 TEST_OPTIONS="-race"
 BUILD_TAGS=-tags=fdo
-EXCLUDE_DIRS=-e /test/ -e /cmd/db -e /cmd/kafka -e /cmd/migrate/orgmigration -e /config -e /pkg/clients/imagebuilder/mock_imagebuilder -e /pkg/imagebuilder/mock_imagebuilder -e /pkg/clients/inventory -e /pkg/clients/inventory/mock_inventory -e /pkg/clients/playbookdispatcher -e /pkg/errors -e /pkg/services/mock_services -e /unleash
+EXCLUDE_DIRS=-e /test/ -e /cmd/db -e /cmd/kafka -e /config -e /pkg/clients/imagebuilder/mock_imagebuilder -e /pkg/imagebuilder/mock_imagebuilder -e /pkg/clients/inventory/mock_inventory -e /pkg/errors -e /pkg/services/mock_services -e /unleash
 
 CONTAINERFILE_NAME=Dockerfile
 
