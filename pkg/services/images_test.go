@@ -267,6 +267,7 @@ var _ = Describe("Image Service Test", func() {
 
 				Expect(actualErr).To(HaveOccurred())
 				Expect(actualErr).To(MatchError(expectedErr))
+				Expect(image.Commit.ChangesRefs).To(BeFalse())
 				Expect(image.Commit.OSTreeParentCommit).To(Equal(parentRepo.URL))
 				Expect(image.Commit.OSTreeParentRef).To(Equal("rhel/8/x86_64/edge"))
 				Expect(image.Commit.OSTreeRef).To(Equal("rhel/8/x86_64/edge"))
@@ -312,6 +313,7 @@ var _ = Describe("Image Service Test", func() {
 
 				Expect(actualErr).To(HaveOccurred())
 				Expect(actualErr).To(MatchError(expectedErr))
+				Expect(image.Commit.ChangesRefs).To(BeTrue())
 				Expect(image.Commit.OSTreeParentCommit).To(Equal(parentRepo.URL))
 				Expect(image.Commit.OSTreeParentRef).To(Equal("rhel/8/x86_64/edge"))
 				Expect(image.Commit.OSTreeRef).To(Equal("rhel/9/x86_64/edge"))
