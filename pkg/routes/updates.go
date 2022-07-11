@@ -206,7 +206,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 		return nil
 	}
 	ctxServices.Log.WithField("commit", commit.ID).Debug("Commit retrieved from this update")
-	updates, err := ctxServices.UpdateService.BuildUpdateTransactions(&devicesUpdate, account, orgID, commit)
+	updates, err := ctxServices.UpdateService.BuildUpdateTransactions(&devicesUpdate, orgID, commit)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{
 			"error":   err.Error(),
