@@ -689,7 +689,7 @@ var _ = Describe("DeviceGroup routes", func() {
 
 				var commitID uint
 				// setup mock for update
-				mockDeviceService.EXPECT().GetLatestCommitFromDevices(account, orgID, setOfDeviceUUIDS).
+				mockDeviceService.EXPECT().GetLatestCommitFromDevices(orgID, setOfDeviceUUIDS).
 					Return(commitID, nil)
 				mockCommitService.EXPECT().GetCommitByID(commitID).
 					Return(&commit, nil)
