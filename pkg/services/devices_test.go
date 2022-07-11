@@ -220,13 +220,15 @@ var _ = Describe("DfseviceService", func() {
 						RpmOstreeDeployments: []inventory.OSTree{
 							{Checksum: checksum, Booted: true},
 						},
-					}},
+					},
+						OrgID: orgID},
 				}}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
 				imageSet := &models.ImageSet{
 					Name:    "test",
 					Version: 1,
+					OrgID:   orgID,
 				}
 				db.DB.Create(imageSet)
 				oldImage := &models.Image{
@@ -242,6 +244,7 @@ var _ = Describe("DfseviceService", func() {
 								Version: "2:6.0-1",
 							},
 						},
+						OrgID: orgID,
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
@@ -262,6 +265,7 @@ var _ = Describe("DfseviceService", func() {
 								Version: "2.0.0",
 							},
 						},
+						OrgID: orgID,
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
@@ -289,7 +293,8 @@ var _ = Describe("DfseviceService", func() {
 						RpmOstreeDeployments: []inventory.OSTree{
 							{Checksum: checksum, Booted: true},
 						},
-					}},
+					},
+						OrgID: orgID},
 				}}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
@@ -310,6 +315,7 @@ var _ = Describe("DfseviceService", func() {
 								Version: "2:6.0-1",
 							},
 						},
+						OrgID: orgID,
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
@@ -331,6 +337,7 @@ var _ = Describe("DfseviceService", func() {
 								Version: "2.0.0",
 							},
 						},
+						OrgID: orgID,
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
@@ -352,6 +359,7 @@ var _ = Describe("DfseviceService", func() {
 								Version: "2.0.0",
 							},
 						},
+						OrgID: orgID,
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
@@ -391,7 +399,8 @@ var _ = Describe("DfseviceService", func() {
 										Booted:   true,
 									},
 								},
-							}},
+							},
+							OrgID: orgID},
 					},
 				}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
@@ -399,6 +408,7 @@ var _ = Describe("DfseviceService", func() {
 				oldImage := &models.Image{
 					Commit: &models.Commit{
 						OSTreeCommit: checksum,
+						OrgID:        orgID,
 					},
 					Status: models.ImageStatusSuccess,
 					OrgID:  orgID,
@@ -685,10 +695,12 @@ var _ = Describe("DfseviceService", func() {
 		})
 
 		It("should update device account, name, lastSeen, image_id and update availability when device already exists", func() {
-			// create a device without account/org
+			// Creating a devices needs to have org_id because of BeforeCreate method applied to Devices model
+			orgID := faker.UUIDHyphenated()
 			device := models.Device{
 				UUID:            faker.UUIDHyphenated(),
 				UpdateAvailable: true,
+				OrgID:           orgID,
 			}
 			res := db.DB.Create(&device)
 			Expect(res.Error).To(BeNil())
@@ -881,6 +893,7 @@ var _ = Describe("DfseviceService", func() {
 				imageV1 = &models.Image{
 					Commit: &models.Commit{
 						OSTreeCommit: faker.UUIDHyphenated(),
+						OrgID:        orgID,
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,

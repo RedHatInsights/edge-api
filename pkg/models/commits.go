@@ -1,5 +1,11 @@
 package models
 
+import (
+	"errors"
+
+	"gorm.io/gorm"
+)
+
 const (
 	// RepoStatusBuilding is for when a image is on a error state
 	RepoStatusBuilding = "BUILDING"
@@ -57,4 +63,13 @@ type InstalledPackage struct {
 	Type      string `json:"type"`
 	Version   string `json:"version"`
 	Epoch     string `json:"epoch,omitempty"`
+}
+
+// BeforeCreate method is called before creating Commits, it make sure org_id is not empty
+func (c *Commit) BeforeCreate(tx *gorm.DB) error {
+	if c.OrgID == "" {
+		return errors.New("org_id is mandatory")
+	}
+
+	return nil
 }

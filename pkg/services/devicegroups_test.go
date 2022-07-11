@@ -257,6 +257,7 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
+				OrgID:   orgID,
 			},
 			{
 				Name:    faker.Name(),
