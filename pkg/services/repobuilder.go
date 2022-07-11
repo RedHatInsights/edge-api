@@ -51,7 +51,10 @@ func NewRepoBuilder(ctx context.Context, log *log.Entry) RepoBuilderInterface {
 // with static deltas generated between them all
 func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, error) {
 	var update *models.UpdateTransaction
-	db.DB.Preload("DispatchRecords").Preload("Devices").Preload("OldCommits").Joins("Commit").Joins("Repo").Find(&update, id)
+	db.DB.Preload("DispatchRecords").
+		Preload("Devices").
+		Preload("OldCommits").
+		Joins("Commit").Joins("Repo").Find(&update, id)
 
 	rb.log.Info("Starts building update repo...")
 	if update == nil {
@@ -93,6 +96,10 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	}
 
 	if len(update.OldCommits) > 0 {
+		rb.log.WithFields(log.Fields{
+			"updateID":   update.ID,
+			"OldCommits": len(update.OldCommits)}).
+			Info("Old commits found to this commit")
 		stagePath := filepath.Clean(filepath.Join(path, "staging"))
 		err = os.MkdirAll(stagePath, os.FileMode(int(0755)))
 		if err != nil {
@@ -109,18 +116,24 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		// into the update commit repo
 		for _, commit := range update.OldCommits {
 			commit := commit // this will prevent implicit memory aliasing in the loop
+			rb.log.WithFields(log.Fields{
+				"updateID":   update.ID,
+				"OldCommits": commit.ID}).
+				Info("Calculate diff from previous commit")
 			tarFileName, err := rb.DownloadVersionRepo(&commit, filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit)))
 			if err != nil {
 				rb.log.WithField("error", err.Error()).Error("Error downloading tar")
 				return nil, fmt.Errorf("error Upload repo repo :: %s", err.Error())
 			}
-			err = rb.ExtractVersionRepo(update.Commit, tarFileName, path)
+			err = rb.ExtractVersionRepo(&commit, tarFileName, path)
 			if err != nil {
 				rb.log.WithField("error", err.Error()).Error("Error extracting repo")
 				return nil, err
 			}
 			// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
-			err = rb.repoPullLocalStaticDeltas(update.Commit, &commit, filepath.Clean(filepath.Join(path, "repo")),
+			err = rb.repoPullLocalStaticDeltas(update.Commit,
+				&commit,
+				filepath.Clean(filepath.Join(path, "repo")),
 				filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit, "repo")))
 			if err != nil {
 				rb.log.WithField("error", err.Error()).Error("Error pulling static deltas")
