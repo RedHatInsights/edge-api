@@ -49,13 +49,12 @@ var _ = Describe("Storage Router", func() {
 	})
 
 	Context("isos url", func() {
-		account := common.DefaultAccount
 		orgID := common.DefaultOrgID
-		installer := models.Installer{Account: account, OrgID: orgID, ImageBuildISOURL: faker.URL()}
+		installer := models.Installer{OrgID: orgID, ImageBuildISOURL: faker.URL()}
 		db.DB.Create(&installer)
-		installerWithNoURL := models.Installer{Account: account, OrgID: orgID, ImageBuildISOURL: ""}
+		installerWithNoURL := models.Installer{OrgID: orgID, ImageBuildISOURL: ""}
 		db.DB.Create(&installerWithNoURL)
-		installerWithBadURL := models.Installer{Account: account, OrgID: orgID, ImageBuildISOURL: " + " + faker.URL()}
+		installerWithBadURL := models.Installer{OrgID: orgID, ImageBuildISOURL: " + " + faker.URL()}
 		db.DB.Create(&installerWithBadURL)
 
 		It("User redirected to a signed url", func() {
