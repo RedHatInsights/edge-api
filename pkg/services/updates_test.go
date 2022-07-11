@@ -242,12 +242,14 @@ var _ = Describe("UpdateService Basic functions", func() {
 	})
 	Describe("write template", func() {
 		Context("when upload works", func() {
-			It("to build the template properly", func() {
+			It("to build the template for update properly", func() {
 				cfg := config.Get()
 				cfg.TemplatesPath = "./../../templates/"
 				t := services.TemplateRemoteInfo{
 					UpdateTransactionID: 1000,
 					RemoteName:          "remote-name",
+					RemoteOstreeUpdate:  "false",
+					OSTreeRef:           "rhel/8/x86_64/edge",
 				}
 				//TODO change to org_id once migration is complete
 				account := "1005"
@@ -267,6 +269,47 @@ var _ = Describe("UpdateService Basic functions", func() {
 					actual, err := ioutil.ReadFile(x)
 					Expect(err).ToNot(HaveOccurred())
 					expected, err := ioutil.ReadFile("./../../templates/template_playbook_dispatcher_ostree_upgrade_payload.test.yml")
+					Expect(err).ToNot(HaveOccurred())
+					Expect(string(actual)).To(BeEquivalentTo(string(expected)))
+				}).Return("url", nil)
+				mockFilesService.EXPECT().GetUploader().Return(mockUploader)
+
+				url, err := updateService.WriteTemplate(t, account, org_id)
+
+				Expect(err).ToNot(HaveOccurred())
+				Expect(url).ToNot(BeNil())
+				Expect(url).To(BeEquivalentTo("http://localhost:3000/api/edge/v1/updates/1000/update-playbook.yml"))
+			})
+		})
+
+		Context("when upload works", func() {
+			It("to build the template for rebase properly", func() {
+				cfg := config.Get()
+				cfg.TemplatesPath = "./../../templates/"
+				t := services.TemplateRemoteInfo{
+					UpdateTransactionID: 1000,
+					RemoteName:          "remote-name",
+					RemoteOstreeUpdate:  "true",
+					OSTreeRef:           "rhel/9/x86_64/edge",
+				}
+				//TODO change to org_id once migration is complete
+				account := "1005"
+				org_id := "1005"
+				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", account, t.UpdateTransactionID)
+				tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
+
+				ctrl := gomock.NewController(GinkgoT())
+				defer ctrl.Finish()
+				mockFilesService := mock_services.NewMockFilesService(ctrl)
+				updateService := &services.UpdateService{
+					Service:      services.NewService(context.Background(), log.WithField("service", "update")),
+					FilesService: mockFilesService,
+				}
+				mockUploader := mock_services.NewMockUploader(ctrl)
+				mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", account, fname)).Do(func(x, y string) {
+					actual, err := ioutil.ReadFile(x)
+					Expect(err).ToNot(HaveOccurred())
+					expected, err := ioutil.ReadFile("./../../templates/template_playbook_dispatcher_ostree_rebase_payload.test.yml")
 					Expect(err).ToNot(HaveOccurred())
 					Expect(string(actual)).To(BeEquivalentTo(string(expected)))
 				}).Return("url", nil)

@@ -175,18 +175,21 @@ func removeBadAccounts(badAccountsMap map[string]bool, accounts []string) []stri
 }
 
 // MigrateAllModels fill org_id field of models by the corresponding account org_id value using translator
-func MigrateAllModels(conf *config.EdgeConfig) error {
-	if conf.TenantTranslatorURL == "" {
-		log.Info("TenantTranslatorURL not defined, nothing todo")
-		return nil
-	}
+func MigrateAllModels(conf *config.EdgeConfig, translator *tenantid.Translator) error {
+	if translator == nil {
+		if conf.TenantTranslatorURL == "" {
+			log.Info("translator and config TenantTranslatorURL not defined, nothing todo")
+			return nil
+		}
 
-	log.WithField("tenant_translator_url", conf.TenantTranslatorURL).Info("Migrating models: account -> org_id")
+		log.WithField("tenant_translator_url", conf.TenantTranslatorURL).Info("Migrating models: account -> org_id")
 
-	translatorOptions := []tenantid.TranslatorOption{
-		tenantid.WithTimeout(DefaultTranslatorTimeout),
+		translatorOptions := []tenantid.TranslatorOption{
+			tenantid.WithTimeout(DefaultTranslatorTimeout),
+		}
+		newTranslator := tenantid.NewTranslator(conf.TenantTranslatorURL, translatorOptions...)
+		translator = &newTranslator
 	}
-	translator := tenantid.NewTranslator(conf.TenantTranslatorURL, translatorOptions...)
 
 	globalBadAccountsMap := make(map[string]bool)
 	var globalBadAccounts []string
@@ -225,7 +228,7 @@ func MigrateAllModels(conf *config.EdgeConfig) error {
 				break
 			}
 
-			badAccounts, affectedRecords, err := migrateModelAccounts(translator, modelInterface, accounts)
+			badAccounts, affectedRecords, err := migrateModelAccounts(*translator, modelInterface, accounts)
 			if err != nil {
 				break
 			}
