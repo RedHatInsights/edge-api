@@ -668,7 +668,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	devicesUpdate.DevicesUUID = setOfDeviceUUIDS
 	//validate if commit is valid before continue process
 	//should be created a new method to return the latest commit by imageId and be able to update regardless of imageset
-	commitID, err := ctxServices.DeviceService.GetLatestCommitFromDevices(account, orgID, setOfDeviceUUIDS)
+	commitID, err := ctxServices.DeviceService.GetLatestCommitFromDevices(orgID, setOfDeviceUUIDS)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{
 			"error":   err.Error(),
