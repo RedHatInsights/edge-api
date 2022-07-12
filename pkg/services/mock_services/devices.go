@@ -200,18 +200,18 @@ func (mr *MockDeviceServiceInterfaceMockRecorder) GetDevicesView(limit, offset, 
 }
 
 // GetLatestCommitFromDevices mocks base method.
-func (m *MockDeviceServiceInterface) GetLatestCommitFromDevices(account, orgID string, devicesUUID []string) (uint, error) {
+func (m *MockDeviceServiceInterface) GetLatestCommitFromDevices(orgID string, devicesUUID []string) (uint, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLatestCommitFromDevices", account, orgID, devicesUUID)
+	ret := m.ctrl.Call(m, "GetLatestCommitFromDevices", orgID, devicesUUID)
 	ret0, _ := ret[0].(uint)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetLatestCommitFromDevices indicates an expected call of GetLatestCommitFromDevices.
-func (mr *MockDeviceServiceInterfaceMockRecorder) GetLatestCommitFromDevices(account, orgID, devicesUUID interface{}) *gomock.Call {
+func (mr *MockDeviceServiceInterfaceMockRecorder) GetLatestCommitFromDevices(orgID, devicesUUID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestCommitFromDevices", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetLatestCommitFromDevices), account, orgID, devicesUUID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestCommitFromDevices", reflect.TypeOf((*MockDeviceServiceInterface)(nil).GetLatestCommitFromDevices), orgID, devicesUUID)
 }
 
 // GetUpdateAvailableForDevice mocks base method.
