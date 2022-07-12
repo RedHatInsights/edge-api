@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/edge-api/cmd/migrate/orgmigration"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 func getModelInterfaceFieldValue(modelInterface interface{}, fieldName string) string {
@@ -136,7 +137,7 @@ var _ = Describe("Main", func() {
 	It("All records created successfully", func() {
 		for _, modelsData := range modelsDataMap {
 			for _, modelRecord := range modelsData {
-				result := db.DB.Debug().Create(modelRecord.modelValue)
+				result := db.DB.Session(&gorm.Session{SkipHooks: true}).Debug().Create(modelRecord.modelValue)
 				Expect(result.Error).ToNot(HaveOccurred())
 			}
 		}
