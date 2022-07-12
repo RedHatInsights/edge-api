@@ -143,7 +143,7 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	// Check to see if feature is enabled and not in ephemeral
 	cfg := config.Get()
 	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
-		enabled := feature.CheckFeatureWithOrgID(orgID, feature.FeatureCustomRepos)
+		enabled := feature.CheckFeature(feature.FeatureCustomRepos)
 		if !enabled {
 			respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable("Feature not available"))
 			return
