@@ -535,6 +535,10 @@ func (s *DeviceService) processPlatformInventoryEventUpdateDevice(eventData Plat
 		return err
 	}
 
+	logger := s.log.WithFields(log.Fields{
+		"host_id":    device.UUID,
+		"event_type": eventData.Type,
+	})
 	// Get the last rpmOSTree deployment commit checksum
 	deployments := eventData.Host.SystemProfile.RpmOSTreeDeployments
 	if len(deployments) == 0 {
@@ -546,12 +550,18 @@ func (s *DeviceService) processPlatformInventoryEventUpdateDevice(eventData Plat
 	if result := db.Org(device.OrgID, "images").Select("images.id").
 		Joins("JOIN commits ON commits.id = images.commit_id").Where("commits.os_tree_commit = ? ", CommitCheck).
 		First(&deviceImage); result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			logger.WithField("error", result.Error.Error()).Error("device image not found")
+		} else {
+			logger.WithField("error", result.Error.Error()).Error("unknown error occurred when getting device image")
+		}
 		return result.Error
 	}
 
 	device.ImageID = deviceImage.ID
 
 	if result := db.DB.Save(device); result.Error != nil {
+		logger.WithField("error", result.Error.Error()).Error("error occurred saving device image")
 		return result.Error
 	}
 
