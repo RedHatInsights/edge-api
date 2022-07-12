@@ -58,9 +58,10 @@
     - name: run rpmostree rebase
       when: ostree_changes_refs=="true"
       ansible.builtin.shell: rpm-ostree rebase "{{ os_tree_ref }}"
-      register: rpmostree_upgrade_out
-      changed_when: '"No upgrade available" not in rpmostree_upgrade_out.stdout'
-      failed_when: 'rpmostree_upgrade_out.rc != 0'
+      register: rpmostree_rebase_out
+      changed_when: '"No upgrade available" not in rpmostree_rebase_out.stdout'
+      failed_when: 'rpmostree_rebase_out.rc != 0'
     - name: schedule reboot when rpmostree upgraded
       ansible.builtin.shell: systemd-run --on-active=5 /usr/bin/systemctl reboot
-      when: '"Staging deployment...done" in rpmostree_upgrade_out.stdout'
+      when: ('rpmostree_rebase_out.changed == true and "Staging deployment...done" in rpmostree_rebase_out.out') or
+            ('rpmostree_upgrade_out.changed == true and "Staging deployment...done" in rpmostree_upgrade_out.stdout')
