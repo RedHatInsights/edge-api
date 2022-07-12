@@ -137,7 +137,7 @@ type ImageSetInstallerURL struct {
 // ListAllImageSets return the list of image sets and images
 func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	s := dependencies.ServicesFromContext(r.Context())
-
+	var count int64
 	var imageSet []models.ImageSet
 	var imageSetInfo []ImageSetInstallerURL
 	var result *gorm.DB
@@ -179,6 +179,22 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	if r.URL.Query().Get("limit") != "" {
+		count = result.RowsAffected
+	} else {
+		countResult := imageSetFilters(r, db.AccountOrOrgTx(account, orgID, db.DB, "Image_Sets").Model(&models.ImageSet{})).
+			Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Count(&count)
+		if countResult.Error != nil {
+			s.Log.WithField("error", countResult.Error.Error()).Error("Error counting results for image sets list")
+			countErr := errors.NewInternalServerError()
+			w.WriteHeader(countErr.GetStatus())
+			if err := json.NewEncoder(w).Encode(&countErr); err != nil {
+				s.Log.WithField("error", countErr.Error()).Error("Error while trying to encode")
+			}
+			return
+		}
+	}
+
 	for idx, img := range imageSet {
 		var imgSet ImageSetInstallerURL
 		imgSet.ImageSetData = imageSet[idx]
@@ -209,11 +225,11 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(&common.EdgeAPIPaginatedResponse{
-		Count: result.RowsAffected,
+		Count: count,
 		Data:  imageSetInfo,
 	}); err != nil {
 		s.Log.WithField("error", &common.EdgeAPIPaginatedResponse{
-			Count: result.RowsAffected,
+			Count: count,
 			Data:  imageSetInfo,
 		}).Error("Error while trying to encode")
 	}
