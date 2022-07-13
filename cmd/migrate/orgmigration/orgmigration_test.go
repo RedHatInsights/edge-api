@@ -66,8 +66,8 @@ var _ = Describe("Main", func() {
 		expectedAccount string
 	}
 
-	deviceImage := models.Image{Name: faker.Name(), OrgID: accountOrg}
-	db.DB.Create(&deviceImage)
+	deviceImage := models.Image{Name: faker.Name()}
+	db.DB.Session(&gorm.Session{SkipHooks: true}).Create(&deviceImage)
 
 	modelsDataMap := map[string][]modelData{
 		"commits": {
