@@ -177,7 +177,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 		return nil
 	}
 	if devicesUpdate.CommitID == 0 {
-		commitID, err := ctxServices.DeviceService.GetLatestCommitFromDevices(account, orgID, devicesUUID)
+		commitID, err := ctxServices.DeviceService.GetLatestCommitFromDevices(orgID, devicesUUID)
 		if err != nil {
 			ctxServices.Log.WithFields(log.Fields{
 				"error": err.Error(),
