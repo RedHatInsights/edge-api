@@ -689,7 +689,7 @@ var _ = Describe("DfseviceService", func() {
 		})
 
 		It("should update device OrgID, name, lastSeen, image_id and update availability when device already exists", func() {
-      // Creating a devices needs to have org_id because of BeforeCreate method applied to Devices model
+			// Creating a devices needs to have org_id because of BeforeCreate method applied to Devices model
 			orgID := faker.UUIDHyphenated()
 			device := models.Device{
 				UUID:            faker.UUIDHyphenated(),
