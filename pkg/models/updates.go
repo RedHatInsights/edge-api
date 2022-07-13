@@ -87,8 +87,8 @@ func (ur *UpdateTransaction) ValidateRequest() error {
 }
 
 // BeforeCreate method is called before creating any record with update, it make sure org_id is not empty
-func (u *UpdateTransaction) BeforeCreate(tx *gorm.DB) error {
-	if u.OrgID == "" {
+func (ur *UpdateTransaction) BeforeCreate(tx *gorm.DB) error {
+	if ur.OrgID == "" {
 		return ErrOrgIDIsMandatory
 	}
 
