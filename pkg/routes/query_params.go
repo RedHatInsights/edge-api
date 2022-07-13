@@ -16,31 +16,21 @@ func initalizeQueryParamsArray() map[string][]string {
 
 	if len(m) == 0 {
 		m = make(map[string][]string)
-		m["device-groups"] = []string{"name", "created_at", "updated_at", "sort_by"}
-		m["devices"] = []string{"name", "uuid", "update_available", "image_id"}
-		m["images"] = []string{"status", "name", "distribution", "created_at"}
+		m["device-groups"] = []string{"limit", "offset", "name", "created_at", "updated_at", "sort_by"}
+		m["devices"] = []string{"limit", "offset", "name", "uuid", "update_available", "image_id"}
+		m["images"] = []string{"limit", "offset", "status", "name", "distribution", "created_at"}
+		m["image-sets"] = []string{"limit", "offset", "status", "name", "version"}
+		m["thirdpartyrepo"] = []string{"limit", "offset", "name", "created_at", "updated_at"}
 	}
 	return m
 }
 
 // GetQueryParamsArray get the name of the service and return the supported query params
 func GetQueryParamsArray(endpoint string) []string {
-	switch endpoint {
-	case "device-groups":
-		return []string{"name", "created_at", "updated_at", "sort_by"}
-	case "devices":
-		return []string{"name", "uuid", "update_available", "image_id"}
-	case "images":
-		return []string{"status", "name", "distribution", "created_at"}
-	default:
-		return nil
-	}
-
-	//qpa := initalizeQueryParamsArray()
-	//return qpa[endpoint]
-	//paramsArray := make([]string, len(qpa[endpoint]))
-	//copy(paramsArray, qpa[endpoint])
-	//return paramsArray
+	qpa := initalizeQueryParamsArray()
+	paramsArray := make([]string, len(qpa[endpoint]))
+	copy(paramsArray, qpa[endpoint])
+	return paramsArray
 }
 
 // ValidateQueryParams validate the query params from the url are supported

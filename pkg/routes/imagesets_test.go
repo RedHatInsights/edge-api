@@ -77,6 +77,66 @@ func TestGetImageSetByID(t *testing.T) {
 	}
 }
 
+func TestGetAllImageSetsQueryParameters(t *testing.T) {
+	tt := []struct {
+		name          string
+		params        string
+		expectedError []validationError
+	}{
+		{
+			name:   "invalid query param",
+			params: "bla=1",
+			expectedError: []validationError{
+				{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: %s", GetQueryParamsArray("image-sets"))},
+			},
+		},
+		{
+			name:   "valid query param and invalid query param",
+			params: "status=SUCCESS&bla=1",
+			expectedError: []validationError{
+				{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: %s", GetQueryParamsArray("image-sets"))},
+			},
+		},
+		{
+			name:   "invalid query param and valid query param",
+			params: "bla=1&status=SUCCESS",
+			expectedError: []validationError{
+				{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: %s", GetQueryParamsArray("image-sets"))},
+			},
+		},
+	}
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	for _, te := range tt {
+		req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets?%s", te.params), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		w := httptest.NewRecorder()
+
+		ValidateQueryParams(next).ServeHTTP(w, req)
+
+		resp := w.Result()
+		jsonBody := []validationError{}
+		err = json.NewDecoder(resp.Body).Decode(&jsonBody)
+		if err != nil {
+			t.Errorf("failed decoding response body: %s", err.Error())
+		}
+		for _, exErr := range te.expectedError {
+			found := false
+			for _, jsErr := range jsonBody {
+				if jsErr.Key == exErr.Key && jsErr.Reason == exErr.Reason {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("in %q: was expected to have %v but not found in %v", te.name, exErr, jsonBody)
+			}
+		}
+	}
+}
+
 func TestSearchParams(t *testing.T) {
 	tt := []struct {
 		name          string

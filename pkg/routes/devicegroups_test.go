@@ -112,23 +112,23 @@ var _ = Describe("DeviceGroup routes", func() {
 				name:   "invalid query param",
 				params: "bla=1",
 				expectedError: []validationError{
-					{Key: "bla", Reason: "bla is not a valid query param, supported query params: [name created_at updated_at sort_by]"},
+					{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: %s", GetQueryParamsArray("device-groups"))},
 				},
 			},
-			//{
-			//	name:   "valid query param and invalid query param",
-			//	params: "sort_by=created_at&bla=1",
-			//	expectedError: []validationError{
-			//		{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: %s", GetQueryParamsArray("device-groups"))},
-			//	},
-			//},
-			//{
-			//	name:   "invalid query param and valid query param",
-			//	params: "bla=1&sort_by=created_at",
-			//	expectedError: []validationError{
-			//		{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: %s", GetQueryParamsArray("device-groups"))},
-			//	},
-			//},
+			{
+				name:   "valid query param and invalid query param",
+				params: "sort_by=created_at&bla=1",
+				expectedError: []validationError{
+					{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: %s", GetQueryParamsArray("device-groups"))},
+				},
+			},
+			{
+				name:   "invalid query param and valid query param",
+				params: "bla=1&sort_by=created_at",
+				expectedError: []validationError{
+					{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: %s", GetQueryParamsArray("device-groups"))},
+				},
+			},
 		}
 
 		next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
