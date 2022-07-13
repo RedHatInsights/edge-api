@@ -28,6 +28,7 @@ var _ = Describe("DfseviceService", func() {
 	var deviceService services.DeviceService
 	var mockImageService *mock_services.MockImageServiceInterface
 	var uuid string
+	orgID := faker.UUIDHyphenated()
 	BeforeEach(func() {
 		ctrl := gomock.NewController(GinkgoT())
 		defer ctrl.Finish()
@@ -175,7 +176,9 @@ var _ = Describe("DfseviceService", func() {
 						RpmOstreeDeployments: []inventory.OSTree{
 							{Checksum: checksum, Booted: false},
 						},
-					}},
+					},
+						OrgID: orgID,
+					},
 				}}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
@@ -196,7 +199,9 @@ var _ = Describe("DfseviceService", func() {
 						RpmOstreeDeployments: []inventory.OSTree{
 							{Checksum: checksum, Booted: false},
 						},
-					}},
+					},
+						OrgID: orgID,
+					},
 				}}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
@@ -212,7 +217,6 @@ var _ = Describe("DfseviceService", func() {
 		})
 		When("everything is okay", func() {
 			It("should return updates", func() {
-				orgID := faker.UUIDHyphenated()
 				checksum := "fake-checksum"
 				resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
 					{ID: uuid, Ostree: inventory.SystemProfile{
@@ -285,7 +289,6 @@ var _ = Describe("DfseviceService", func() {
 				Expect(newUpdate.PackageDiff.Removed).To(HaveLen(1))
 			})
 			It("should return updates", func() {
-				orgID := faker.UUIDHyphenated()
 				checksum := faker.UUIDHyphenated()
 				resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
 					{ID: uuid, Ostree: inventory.SystemProfile{
@@ -299,7 +302,8 @@ var _ = Describe("DfseviceService", func() {
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
 				imageSet := &models.ImageSet{
-					Name: faker.Name(),
+					Name:  faker.Name(),
+					OrgID: orgID,
 				}
 				db.DB.Create(imageSet)
 				oldImage := &models.Image{
@@ -383,7 +387,6 @@ var _ = Describe("DfseviceService", func() {
 		When("no update is available", func() {
 			It("should not return updates", func() {
 				uuid := faker.UUIDHyphenated()
-				orgID := faker.UUIDHyphenated()
 				checksum := "fake-checksum-2"
 				resp := inventory.Response{
 					Total: 1,
@@ -429,7 +432,9 @@ var _ = Describe("DfseviceService", func() {
 						RpmOstreeDeployments: []inventory.OSTree{
 							{Checksum: checksum, Booted: true},
 						},
-					}},
+					},
+						OrgID: orgID,
+					},
 				}}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
@@ -461,7 +466,9 @@ var _ = Describe("DfseviceService", func() {
 						Version: "2:6.0-1",
 					},
 				},
+				OrgID: orgID,
 			},
+			OrgID: orgID,
 		}
 		newImage := models.Image{
 			Commit: &models.Commit{
@@ -479,7 +486,9 @@ var _ = Describe("DfseviceService", func() {
 						Version: "2:6.0-1",
 					},
 				},
+				OrgID: orgID,
 			},
+			OrgID: orgID,
 		}
 		It("should return diff", func() {
 			deltaDiff := services.GetDiffOnUpdate(oldImage, newImage)
@@ -498,18 +507,21 @@ var _ = Describe("DfseviceService", func() {
 						RpmOstreeDeployments: []inventory.OSTree{
 							{Checksum: checksum, Booted: true},
 						},
-					}},
+					},
+						OrgID: orgID,
+					},
 				}}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(2)
 				imageSet := &models.ImageSet{
 					Name:    "test",
 					Version: 2,
+					OrgID:   orgID,
 				}
 				db.DB.Create(imageSet)
-				orgID := faker.UUIDHyphenated()
 				oldImage := &models.Image{
 					Commit: &models.Commit{
 						OSTreeCommit: fmt.Sprintf("a-old-%s", checksum),
+						OrgID:        orgID,
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
@@ -522,6 +534,7 @@ var _ = Describe("DfseviceService", func() {
 				newImage := &models.Image{
 					Commit: &models.Commit{
 						OSTreeCommit: checksum,
+						OrgID:        orgID,
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
@@ -551,7 +564,9 @@ var _ = Describe("DfseviceService", func() {
 						RpmOstreeDeployments: []inventory.OSTree{
 							{Checksum: checksum, Booted: true},
 						},
-					}},
+					},
+						OrgID: orgID,
+					},
 				}}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(nil, errors.New("Not found"))
@@ -590,11 +605,13 @@ var _ = Describe("DfseviceService", func() {
 						ID:          deviceWithImage.UUID,
 						DisplayName: "oi",
 						LastSeen:    "b",
+						OrgID:       orgID,
 						Ostree:      inventory.SystemProfile{RHCClientID: "", RpmOstreeDeployments: []inventory.OSTree{}},
 					}, {
 						ID:          deviceWithNoImage.UUID,
 						DisplayName: "oi",
 						LastSeen:    "b",
+						OrgID:       orgID,
 						Ostree:      inventory.SystemProfile{RHCClientID: "", RpmOstreeDeployments: []inventory.OSTree{}},
 					}},
 				}, nil)
@@ -614,7 +631,6 @@ var _ = Describe("DfseviceService", func() {
 		})
 	})
 	Context("ProcessPlatformInventoryCreateEvent", func() {
-		orgID := faker.UUIDHyphenated()
 		commit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}
 		result := db.DB.Create(&commit)
 		Expect(result.Error).To(BeNil())
@@ -638,7 +654,7 @@ var _ = Describe("DfseviceService", func() {
 			err := deviceService.ProcessPlatformInventoryCreateEvent(message)
 			Expect(err).To(BeNil())
 			var savedDevice models.Device
-			result := db.DB.Where(models.Device{UUID: event.Host.ID}).First(&savedDevice)
+			result := db.DB.Where(models.Device{UUID: event.Host.ID, OrgID: event.Host.OrgID}).First(&savedDevice)
 			Expect(result.Error).To(BeNil())
 			Expect(savedDevice.UUID).To(Equal(event.Host.ID))
 			Expect(savedDevice.OrgID).To(Equal(orgID))
@@ -649,7 +665,6 @@ var _ = Describe("DfseviceService", func() {
 		})
 	})
 	Context("ProcessPlatformInventoryUpdatedEvent", func() {
-		orgID := faker.UUIDHyphenated()
 		commit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}
 		result := db.DB.Create(&commit)
 		Expect(result.Error).To(BeNil())
@@ -690,7 +705,6 @@ var _ = Describe("DfseviceService", func() {
 
 		It("should update device OrgID, name, lastSeen, image_id and update availability when device already exists", func() {
 			// Creating a devices needs to have org_id because of BeforeCreate method applied to Devices model
-			orgID := faker.UUIDHyphenated()
 			device := models.Device{
 				UUID:            faker.UUIDHyphenated(),
 				UpdateAvailable: true,
@@ -907,7 +921,6 @@ var _ = Describe("DfseviceService", func() {
 	})
 	Context("Get CommitID from Device Image", func() {
 		It("should return zero images", func() {
-			orgID := faker.UUIDHyphenated()
 			device := models.Device{
 				OrgID: orgID,
 				UUID:  faker.UUIDHyphenated(),

@@ -107,7 +107,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 			uuid := faker.UUIDHyphenated()
 			org_id := faker.UUIDHyphenated()
 			device := models.Device{
-				UUID: uuid,
+				UUID:  uuid,
+				OrgID: org_id,
 			}
 			db.DB.Create(&device)
 			update = models.UpdateTransaction{
@@ -130,7 +131,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 			uuid := faker.UUIDHyphenated()
 			org_id := faker.UUIDHyphenated()
 			device := models.Device{
-				UUID: uuid,
+				UUID:  uuid,
+				OrgID: org_id,
 			}
 			db.DB.Create(&device)
 			update = models.UpdateTransaction{
