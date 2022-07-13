@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/config"
+	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
@@ -18,6 +19,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	log "github.com/sirupsen/logrus"
 )
@@ -150,21 +152,30 @@ type CreateImageRequest struct {
 	Image *models.Image
 }
 
+// CreateConsoleEvent helps to create the default console event
+func CreateConsoleEvent(reqID, orgID, name, subject string, ident identity.XRHID) models.ConsoleRedhatComCloudEventsSchema {
+	consoleEvent := models.ConsoleRedhatComCloudEventsSchema{
+		Dataschema:  "v1",
+		ID:          reqID,
+		Redhatorgid: orgID,
+		Source:      "Edge Management",
+		Specversion: "v1",
+		Subject:     subject,
+		System: &models.RhelSystem{
+			DisplayName: name,
+		},
+		Time:           time.Now().Format(time.RFC3339),
+		Identity:       ident,
+		Lasthandeltime: time.Now().Format(time.RFC3339),
+	}
+	return consoleEvent
+}
+
 // CreateImage creates an image on hosted image builder.
 // It always creates a commit on Image Builder.
 // Then we create our repo with the ostree commit and if needed, create the installer.
 func CreateImage(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
-
-	// Check to see if feature is enabled and not in ephemeral
-	cfg := config.Get()
-	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
-		enabled := feature.CheckFeature(feature.FeatureImageBuildMS)
-		if enabled {
-			respondWithJSONBody(w, ctxServices.Log, feature.FeatureImageBuildMS)
-			return
-		}
-	}
 
 	image, err := initImageCreateRequest(w, r)
 	if err != nil {
@@ -184,6 +195,33 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	reqID := request_id.GetReqID(r.Context())
+
+	// Check to see if feature is enabled and not in ephemeral
+	cfg := config.Get()
+	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
+		enabled := feature.CheckFeature(feature.FeatureImageBuildMS)
+		if enabled {
+			ident, err := common.GetIdentityFromContext(r.Context())
+			if err != nil {
+				ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving identity from request")
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+				return
+			}
+			consoleEvent := CreateConsoleEvent(reqID, orgID, image.Name, "redhat:console:fleetmanagment:createcommitevent", ident)
+			edgeEvent := models.EdgeCreateCommitEvent{
+				ConsoleSchema: consoleEvent,
+				NewImage:      *image,
+			}
+			edgeEventMessage, _ := json.Marshal(edgeEvent)
+			if err = kafkacommon.ProduceEvent(kafkacommon.FleetmgntImageBuild, kafkacommon.CreateCommit, edgeEventMessage); err != nil {
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+				return
+			}
+			respondWithJSONBody(w, ctxServices.Log, edgeEvent)
+			return
+		}
+	}
+
 	ctxServices.Log.Debug("Creating image from API request")
 	err = ctxServices.ImageService.CreateImage(image, account, orgID, reqID)
 	if err != nil {
@@ -210,16 +248,6 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 
-	// Check to see if feature is enabled and not in ephemeral
-	cfg := config.Get()
-	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
-		enabled := feature.CheckFeature(feature.FeatureImageBuildMS)
-		if enabled {
-			respondWithJSONBody(w, ctxServices.Log, feature.FeatureImageBuildMS)
-			return
-		}
-	}
-
 	image, err := initImageCreateRequest(w, r)
 	if err != nil {
 		// initImageCreateRequest() already writes the response
@@ -244,6 +272,34 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	image.RequestID = request_id.GetReqID(r.Context())
+
+	// Check to see if feature is enabled and not in ephemeral
+	cfg := config.Get()
+	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
+		enabled := feature.CheckFeature(feature.FeatureImageBuildMS)
+		if enabled {
+			ident, err := common.GetIdentityFromContext(r.Context())
+			if err != nil {
+				ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving identity from request")
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+				return
+			}
+			consoleEvent := CreateConsoleEvent(image.RequestID, image.OrgID, image.Name, "redhat:console:fleetmanagment:createimageupdateevent", ident)
+			edgeEvent := models.EdgeUpdateCommitEvent{
+				ConsoleSchema: consoleEvent,
+				NewImage:      *image,
+				OldImage:      *previousImage,
+			}
+			edgeEventMessage, _ := json.Marshal(edgeEvent)
+			if err = kafkacommon.ProduceEvent(kafkacommon.FleetmgntImageBuild, kafkacommon.CreateImageUpdate, edgeEventMessage); err != nil {
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+				return
+			}
+			respondWithJSONBody(w, ctxServices.Log, edgeEvent)
+			return
+		}
+	}
+
 	ctxServices.Log.Debug("Updating an image from API request")
 	err = ctxServices.ImageService.UpdateImage(image, previousImage)
 	if err != nil {
@@ -461,22 +517,38 @@ func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 
-	// Check to see if feature is enabled and not in ephemeral
-	cfg := config.Get()
-	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
-		enabled := feature.CheckFeature(feature.FeatureImageBuildMS)
-		if enabled {
-			respondWithJSONBody(w, ctxServices.Log, feature.FeatureImageBuildMS)
-			return
-		}
-	}
-
 	image := getImage(w, r)
 	if image == nil {
 		return
 	}
 	if err := readRequestJSONBody(w, r, ctxServices.Log, &image.Installer); err != nil {
 		return
+	}
+
+	// Check to see if feature is enabled and not in ephemeral
+	cfg := config.Get()
+	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
+		enabled := feature.CheckFeature(feature.FeatureImageBuildMS)
+		if enabled {
+			ident, err := common.GetIdentityFromContext(r.Context())
+			if err != nil {
+				ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving identity from request")
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+				return
+			}
+			consoleEvent := CreateConsoleEvent(image.RequestID, image.OrgID, image.Name, "redhat:console:fleetmanagment:createinstallerevent", ident)
+			edgeEvent := models.EdgeCreateCommitEvent{
+				ConsoleSchema: consoleEvent,
+				NewImage:      *image,
+			}
+			edgeEventMessage, _ := json.Marshal(edgeEvent)
+			if err = kafkacommon.ProduceEvent(kafkacommon.FleetmgntImageBuild, kafkacommon.CreateInstaller, edgeEventMessage); err != nil {
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+				return
+			}
+			respondWithJSONBody(w, ctxServices.Log, edgeEvent)
+			return
+		}
 	}
 
 	image, _, err := ctxServices.ImageService.CreateInstallerForImage(image)
@@ -548,24 +620,43 @@ func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 // CreateKickStartForImage creates a kickstart file for an existent image
 func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
+
+	image := getImage(w, r)
+	if image == nil {
+		return
+	}
 	// Check to see if feature is enabled and not in ephemeral
 	cfg := config.Get()
 	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
 		enabled := feature.CheckFeature(feature.FeatureImageBuildMS)
 		if enabled {
-			respondWithJSONBody(w, ctxServices.Log, feature.FeatureImageBuildMS)
+			ident, err := common.GetIdentityFromContext(r.Context())
+			if err != nil {
+				ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving identity from request")
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+				return
+			}
+			consoleEvent := CreateConsoleEvent(image.RequestID, image.OrgID, image.Name, "redhat:console:fleetmanagment:createkickstartevent", ident)
+			edgeEvent := models.EdgeCreateCommitEvent{
+				ConsoleSchema: consoleEvent,
+				NewImage:      *image,
+			}
+			edgeEventMessage, _ := json.Marshal(edgeEvent)
+			if err = kafkacommon.ProduceEvent(kafkacommon.FleetmgntImageBuild, kafkacommon.CreateKickstart, edgeEventMessage); err != nil {
+				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+				return
+			}
+			respondWithJSONBody(w, ctxServices.Log, edgeEvent)
 			return
 		}
 	}
 
-	if image := getImage(w, r); image != nil {
-		ctxServices := dependencies.ServicesFromContext(r.Context())
-		if err := ctxServices.ImageService.AddUserInfo(image); err != nil {
-			ctxServices.Log.WithField("error", err.Error()).Error("Kickstart file injection failed")
-			respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
-			return
-		}
+	if err := ctxServices.ImageService.AddUserInfo(image); err != nil {
+		ctxServices.Log.WithField("error", err.Error()).Error("Kickstart file injection failed")
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
+		return
 	}
+
 }
 
 // CheckImageNameResponse indicates whether the image exists
