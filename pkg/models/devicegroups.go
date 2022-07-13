@@ -92,3 +92,12 @@ func (group *DeviceGroup) ValidateRequest() error {
 func (group *DeviceGroup) BeforeDelete(tx *gorm.DB) error {
 	return tx.Model(group).Association("Devices").Delete(&group.Devices)
 }
+
+// BeforeCreate method is called before creating device group, it make sure org_id is not empty
+func (group *DeviceGroup) BeforeCreate(tx *gorm.DB) error {
+	if group.OrgID == "" {
+		return ErrOrgIDIsMandatory
+	}
+
+	return nil
+}

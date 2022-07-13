@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/bxcodec/faker/v3"
+	"github.com/redhatinsights/edge-api/pkg/db"
 )
 
 func TestGetPackagesList(t *testing.T) {
@@ -288,5 +289,27 @@ func TestGetALLPackagesListWithoutCustomRepos(t *testing.T) {
 		if item != expectedPackages[i] {
 			t.Errorf("expected %s, got %s", expectedPackages[i], item)
 		}
+	}
+}
+
+func TestImagesBeforeCreate(t *testing.T) {
+	orgID := faker.UUIDHyphenated()
+	image := &Image{
+
+		Distribution: "rhel-85",
+		Name:         "image_name",
+		Commit:       &Commit{Arch: "x86_64"},
+		OutputTypes:  []string{ImageTypeInstaller},
+		Installer: &Installer{
+			Username: "test",
+			SSHKey:   "ssh-rsa dd:00:eeff:10",
+		},
+		OrgID: orgID,
+	}
+
+	// BeforeCreate make sure Image has orgID
+	err := image.BeforeCreate(db.DB)
+	if err != nil {
+		t.Error("Error running BeforeCreate")
 	}
 }

@@ -36,14 +36,17 @@ var _ = Describe("UpdateService Basic functions", func() {
 			updateService = services.NewUpdateService(context.Background(), log.NewEntry(log.StandardLogger()))
 		})
 		Context("by device", func() {
+			org_id := faker.UUIDHyphenated()
 			uuid := faker.UUIDHyphenated()
 			uuid2 := faker.UUIDHyphenated()
 			device := models.Device{
-				UUID: uuid,
+				UUID:  uuid,
+				OrgID: org_id,
 			}
 			db.DB.Create(&device)
 			device2 := models.Device{
-				UUID: uuid2,
+				UUID:  uuid2,
+				OrgID: org_id,
 			}
 			db.DB.Create(&device2)
 			updates := []models.UpdateTransaction{
@@ -51,16 +54,19 @@ var _ = Describe("UpdateService Basic functions", func() {
 					Devices: []models.Device{
 						device,
 					},
+					OrgID: org_id,
 				},
 				{
 					Devices: []models.Device{
 						device,
 					},
+					OrgID: org_id,
 				},
 				{
 					Devices: []models.Device{
 						device2,
 					},
+					OrgID: org_id,
 				},
 			}
 			db.DB.Create(&updates[0])
@@ -99,14 +105,17 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 		Context("send notification", func() {
 			uuid := faker.UUIDHyphenated()
+			org_id := faker.UUIDHyphenated()
 			device := models.Device{
-				UUID: uuid,
+				UUID:  uuid,
+				OrgID: org_id,
 			}
 			db.DB.Create(&device)
 			update = models.UpdateTransaction{
 				Devices: []models.Device{
 					device,
 				},
+				OrgID:  org_id,
 				Status: models.UpdateStatusBuilding,
 			}
 			db.DB.Create(&update)
@@ -120,14 +129,17 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		Context("from the beginning", func() {
 			uuid := faker.UUIDHyphenated()
+			org_id := faker.UUIDHyphenated()
 			device := models.Device{
-				UUID: uuid,
+				UUID:  uuid,
+				OrgID: org_id,
 			}
 			db.DB.Create(&device)
 			update = models.UpdateTransaction{
 				Devices: []models.Device{
 					device,
 				},
+				OrgID:  org_id,
 				Status: models.UpdateStatusBuilding,
 			}
 			db.DB.Create(&update)
@@ -152,8 +164,10 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 		Context("when record is found and status is success", func() {
 			uuid := faker.UUIDHyphenated()
+			org_id := faker.UUIDHyphenated()
 			device := models.Device{
-				UUID: uuid,
+				UUID:  uuid,
+				OrgID: org_id,
 			}
 			db.DB.Create(&device)
 			fmt.Printf("TESTETETETETETETETE :::::: %v\n", device.ID)
@@ -165,6 +179,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			db.DB.Create(d)
 			u := &models.UpdateTransaction{
 				DispatchRecords: []models.DispatchRecord{*d},
+				OrgID:           org_id,
 			}
 			db.DB.Create(u)
 
@@ -172,6 +187,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Payload: services.PlaybookDispatcherEventPayload{
 					ID:     d.PlaybookDispatcherID,
 					Status: services.PlaybookStatusSuccess,
+					OrgID:  org_id,
 				},
 			}
 			message, _ := json.Marshal(event)
@@ -219,8 +235,10 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 		It("should give error when dispatch record is not found", func() {
 			uuid := faker.UUIDHyphenated()
+			org_id := faker.UUIDHyphenated()
 			device := models.Device{
-				UUID: uuid,
+				UUID:  uuid,
+				OrgID: org_id,
 			}
 			db.DB.Create(&device)
 			d := &models.DispatchRecord{

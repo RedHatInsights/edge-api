@@ -7,6 +7,7 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/redhatinsights/edge-api/config"
+	"gorm.io/gorm"
 )
 
 // ImageSet represents a collection of images
@@ -238,4 +239,14 @@ func (i *Image) GetALLPackagesList() *[]string {
 		packages = append(packages, pkg.Name)
 	}
 	return &packages
+}
+
+// BeforeCreate method is called before creating Images, it make sure org_id is not empty
+func (i *Image) BeforeCreate(tx *gorm.DB) error {
+	if i.OrgID == "" {
+		return ErrOrgIDIsMandatory
+
+	}
+
+	return nil
 }

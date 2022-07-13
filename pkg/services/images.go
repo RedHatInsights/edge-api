@@ -1297,14 +1297,14 @@ func (s *ImageService) CheckIfIsLatestVersion(previousImage *models.Image) error
 		if when searching the latest version image in the context of the same account and imageSet,
 		we found an image that is equal to previousImage
 	*/
+	if previousImage.Account == "" && previousImage.OrgID == "" {
+		return new(AccountOrOrgIDNotSet)
+	}
 
 	if previousImage.ID == 0 {
 		return new(ImageUnDefined)
 	}
 
-	if previousImage.Account == "" && previousImage.OrgID == "" {
-		return new(AccountOrOrgIDNotSet)
-	}
 	if previousImage.ImageSetID == nil {
 		return new(ImageSetUnDefined)
 	}

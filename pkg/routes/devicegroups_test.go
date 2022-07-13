@@ -646,7 +646,8 @@ var _ = Describe("DeviceGroup routes", func() {
 		}
 
 		commit := models.Commit{
-			Arch: "x86_64",
+			Arch:  "x86_64",
+			OrgID: orgID,
 		}
 
 		When("all is valid with same imageID", func() {

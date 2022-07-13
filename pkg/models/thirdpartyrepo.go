@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+
+	"gorm.io/gorm"
 )
 
 /*
@@ -58,5 +60,14 @@ func (t *ThirdPartyRepo) ValidateRequest() error {
 	if !ValidateRepoURL(t.URL) {
 		return fmt.Errorf(InvalidURL)
 	}
+	return nil
+}
+
+// BeforeCreate method is called before creating Third Party Tepository, it make sure org_id is not empty
+func (t *ThirdPartyRepo) BeforeCreate(tx *gorm.DB) error {
+	if t.OrgID == "" {
+		return ErrOrgIDIsMandatory
+	}
+
 	return nil
 }

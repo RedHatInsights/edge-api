@@ -2,6 +2,8 @@ package models
 
 import (
 	"errors"
+
+	"gorm.io/gorm"
 )
 
 // UpdateTransaction represents the combination of an OSTree commit and a set of Inventory
@@ -81,5 +83,14 @@ func (ur *UpdateTransaction) ValidateRequest() error {
 	if ur.Devices == nil || len(ur.Devices) == 0 {
 		return errors.New(DevicesCantBeEmptyMessage)
 	}
+	return nil
+}
+
+// BeforeCreate method is called before creating any record with update, it make sure org_id is not empty
+func (ur *UpdateTransaction) BeforeCreate(tx *gorm.DB) error {
+	if ur.OrgID == "" {
+		return ErrOrgIDIsMandatory
+	}
+
 	return nil
 }
