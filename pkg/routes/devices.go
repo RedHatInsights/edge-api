@@ -3,11 +3,8 @@ package routes
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
-	"reflect"
-	"strings"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -23,7 +20,7 @@ import (
 
 // MakeDevicesRouter adds support for operations on update
 func MakeDevicesRouter(sub chi.Router) {
-	sub.With(ValidateGetAllDevicesFilterParams).Get("/", GetDevices)
+	sub.With(ValidateQueryParams).With(ValidateGetAllDevicesFilterParams).Get("/", GetDevices)
 	sub.With(common.Paginate).Get("/devicesview", GetDevicesView)
 	sub.With(common.Paginate).Get("/db", GetDBDevices)
 	sub.Route("/{DeviceUUID}", func(r chi.Router) {
@@ -67,49 +64,41 @@ func DeviceCtx(next http.Handler) http.Handler {
 var devicesFilters = common.ComposeFilters(
 	// Filter handler for "name"
 	common.ContainFilterHandler(&common.Filter{
-		QueryParam: common.DevicesFilter(0).String(),
-		DBField:    fmt.Sprintf("devices.%s", common.DevicesFilter(0)),
+		QueryParam: "name",
+		DBField:    "devices.name",
 	}),
 	// Filter handler for "uuid"
 	common.ContainFilterHandler(&common.Filter{
-		QueryParam: common.DevicesFilter(1).String(),
-		DBField:    fmt.Sprintf("devices.%s", common.DevicesFilter(1)),
+		QueryParam: "uuid",
+		DBField:    "devices.uuid",
 	}),
 	// Filter handler for "created_at"
 	common.BoolFilterHandler(&common.Filter{
-		QueryParam: common.DevicesFilter(2).String(),
-		DBField:    fmt.Sprintf("devices.%s", common.DevicesFilter(2)),
+		QueryParam: "created_at",
+		DBField:    "devices.created_at",
 	}),
 	// Filter handler for "image_id"
 	common.ContainFilterHandler(&common.Filter{
-		QueryParam: common.DevicesFilter(3).String(),
-		DBField:    fmt.Sprintf("devices.%s", common.DevicesFilter(3)),
+		QueryParam: "image_id",
+		DBField:    "devices.image_id",
 	}),
-	common.SortFilterHandler("devices", common.DevicesFilter(0).String(), "ASC"),
+	common.SortFilterHandler("devices", "name", "ASC"),
 )
 
 // ValidateGetAllDevicesFilterParams validate the query params that sent to /devices endpoint
 func ValidateGetAllDevicesFilterParams(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var errs []validationError
-		filtersMap := r.URL.Query()
-		queriesKeys := reflect.ValueOf(filtersMap).MapKeys()
-		// interating over the queries keys to validate we support those
-		for _, key := range queriesKeys {
-			if !(contains(common.GetDevicesFiltersArray(), key.String())) {
-				errs = append(errs, validationError{Key: key.String(), Reason: fmt.Sprintf("%s is not a valid query param, supported query params: [%s]", key.String(), strings.Join(common.GetDevicesFiltersArray(), ", "))})
-			}
-		}
 		// "uuid" validation
-		if val := r.URL.Query().Get(common.DevicesFilter(1).String()); val != "" {
+		if val := r.URL.Query().Get("uuid"); val != "" {
 			if _, err := uuid.Parse(val); err != nil {
-				errs = append(errs, validationError{Key: common.DevicesFilter(1).String(), Reason: err.Error()})
+				errs = append(errs, validationError{Key: "uuid", Reason: err.Error()})
 			}
 		}
 		// "created_at" validation
-		if val := r.URL.Query().Get(common.DevicesFilter(2).String()); val != "" {
+		if val := r.URL.Query().Get("created_at"); val != "" {
 			if _, err := time.Parse(common.LayoutISO, val); err != nil {
-				errs = append(errs, validationError{Key: common.DevicesFilter(2).String(), Reason: err.Error()})
+				errs = append(errs, validationError{Key: "created_at", Reason: err.Error()})
 			}
 		}
 		if len(errs) == 0 {

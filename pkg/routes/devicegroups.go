@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"reflect"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -43,7 +41,7 @@ func setContextDeviceGroupDevice(ctx context.Context, deviceGroupDevice *models.
 
 // MakeDeviceGroupsRouter adds support for device groups operations
 func MakeDeviceGroupsRouter(sub chi.Router) {
-	sub.With(ValidateGetAllDeviceGroupsFilterParams).With(common.Paginate).Get("/", GetAllDeviceGroups)
+	sub.With(ValidateQueryParams).With(ValidateGetAllDeviceGroupsFilterParams).With(common.Paginate).Get("/", GetAllDeviceGroups)
 	sub.Post("/", CreateDeviceGroup)
 	sub.Get("/checkName/{name}", CheckGroupName)
 	sub.Route("/{ID}", func(r chi.Router) {
@@ -206,55 +204,48 @@ func DeviceGroupDeviceCtx(next http.Handler) http.Handler {
 var deviceGroupsFilters = common.ComposeFilters(
 	// Filter handler for "name"
 	common.ContainFilterHandler(&common.Filter{
-		QueryParam: common.DeviceGroupsFilter(0).String(),
-		DBField:    fmt.Sprintf("device_groups.%s", common.DeviceGroupsFilter(0)),
+		QueryParam: "name",
+		DBField:    "device_groups.name",
 	}),
 	//Filter handler for "created_at"
 	common.CreatedAtFilterHandler(&common.Filter{
-		QueryParam: common.DeviceGroupsFilter(1).String(),
-		DBField:    fmt.Sprintf("device_groups.%s", common.DeviceGroupsFilter(1)),
+		QueryParam: "created_at",
+		DBField:    "device_groups.created_at",
 	}),
 	//Filter handler for "updated_at"
 	common.CreatedAtFilterHandler(&common.Filter{
-		QueryParam: common.DeviceGroupsFilter(2).String(),
-		DBField:    fmt.Sprintf("device_groups.%s", common.DeviceGroupsFilter(2)),
+		QueryParam: "updated_at",
+		DBField:    "device_groups.updated_at",
 	}),
 	//Filter handler for sorting "created_at"
-	common.SortFilterHandler("device_groups", common.DeviceGroupsFilter(1).String(), "DESC"),
+	common.SortFilterHandler("device_groups", "created_at", "DESC"),
 )
 
 // ValidateGetAllDeviceGroupsFilterParams validate the query params that sent to /device-groups endpoint
 func ValidateGetAllDeviceGroupsFilterParams(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var errs []validationError
-		filtersMap := r.URL.Query()
-		queriesKeys := reflect.ValueOf(filtersMap).MapKeys()
-		// interating over the queries keys to validate we support those
-		for _, key := range queriesKeys {
-			if !(contains(common.GetDeviceGroupsFiltersArray(), key.String())) {
-				errs = append(errs, validationError{Key: key.String(), Reason: fmt.Sprintf("%s is not a valid query param, supported query params: [%s]", key.String(), strings.Join(common.GetDeviceGroupsFiltersArray(), ", "))})
-			}
-		}
+
 		// "created_at" validation
-		if val := r.URL.Query().Get(common.DeviceGroupsFilter(1).String()); val != "" {
+		if val := r.URL.Query().Get("created_at"); val != "" {
 			if _, err := time.Parse(common.LayoutISO, val); err != nil {
-				errs = append(errs, validationError{Key: common.DeviceGroupsFilter(1).String(), Reason: err.Error()})
+				errs = append(errs, validationError{Key: "created_at", Reason: err.Error()})
 			}
 		}
 		// "updated_at" validation
-		if val := r.URL.Query().Get(common.DeviceGroupsFilter(2).String()); val != "" {
+		if val := r.URL.Query().Get("updated_at"); val != "" {
 			if _, err := time.Parse(common.LayoutISO, val); err != nil {
-				errs = append(errs, validationError{Key: common.DeviceGroupsFilter(2).String(), Reason: err.Error()})
+				errs = append(errs, validationError{Key: "updated_at", Reason: err.Error()})
 			}
 		}
 		// "sort_by" validation for "name", "created_at", "updated_at"
-		if val := r.URL.Query().Get(common.DeviceGroupsFilter(3).String()); val != "" {
+		if val := r.URL.Query().Get("sort_by"); val != "" {
 			name := val
 			if string(val[0]) == "-" {
 				name = val[1:]
 			}
-			if name != common.DeviceGroupsFilter(0).String() && name != common.DeviceGroupsFilter(1).String() && name != common.DeviceGroupsFilter(2).String() {
-				errs = append(errs, validationError{Key: common.DeviceGroupsFilter(3).String(), Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must be name or created_at or updated_at", name)})
+			if name != "name" && name != "created_at" && name != "updated_at" {
+				errs = append(errs, validationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must be name or created_at or updated_at", name)})
 			}
 		}
 

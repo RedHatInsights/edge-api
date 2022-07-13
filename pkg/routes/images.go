@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"reflect"
 	"strings"
 	"time"
 
@@ -36,7 +35,7 @@ const imageKey imageTypeKey = iota
 
 // MakeImagesRouter adds support for operations on images
 func MakeImagesRouter(sub chi.Router) {
-	sub.With(ValidateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetAllImages)
+	sub.With(ValidateQueryParams).With(ValidateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetAllImages)
 	sub.Post("/", CreateImage)
 	sub.Post("/checkImageName", CheckImageName)
 	sub.Route("/{ostreeCommitHash}/info", func(r chi.Router) {
@@ -339,25 +338,25 @@ func initImageCreateRequest(w http.ResponseWriter, r *http.Request) (*models.Ima
 var imageFilters = common.ComposeFilters(
 	// Filter handler for "status"
 	common.OneOfFilterHandler(&common.Filter{
-		QueryParam: common.ImagesFilter(0).String(),
-		DBField:    fmt.Sprintf("images.%s", common.ImagesFilter(0)),
+		QueryParam: "status",
+		DBField:    "images.status",
 	}),
 	// Filter handler for "name"
 	common.ContainFilterHandler(&common.Filter{
-		QueryParam: common.ImagesFilter(1).String(),
-		DBField:    fmt.Sprintf("images.%s", common.ImagesFilter(1)),
+		QueryParam: "name",
+		DBField:    "images.name",
 	}),
 	// Filter handler for "distribution"
 	common.ContainFilterHandler(&common.Filter{
-		QueryParam: common.ImagesFilter(2).String(),
-		DBField:    fmt.Sprintf("images.%s", common.ImagesFilter(2)),
+		QueryParam: "distribution",
+		DBField:    "images.distribution",
 	}),
 	// Filter handler for "created_at"
 	common.CreatedAtFilterHandler(&common.Filter{
-		QueryParam: common.ImagesFilter(3).String(),
-		DBField:    fmt.Sprintf("images.%s", common.ImagesFilter(3)),
+		QueryParam: "created_at",
+		DBField:    "images.created_at",
 	}),
-	common.SortFilterHandler("images", common.ImagesFilter(3).String(), "DESC"),
+	common.SortFilterHandler("images", "created_at", "DESC"),
 )
 
 type validationError struct {
@@ -369,36 +368,28 @@ type validationError struct {
 func ValidateGetAllImagesSearchParams(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var errs []validationError
-		filtersMap := r.URL.Query()
-		queriesKeys := reflect.ValueOf(filtersMap).MapKeys()
-		// interating over the queries keys to validate we support those
-		for _, key := range queriesKeys {
-			if !(contains(common.GetImagesFiltersArray(), key.String())) {
-				errs = append(errs, validationError{Key: key.String(), Reason: fmt.Sprintf("%s is not a valid query param, supported query params: [%s]", key.String(), strings.Join(common.GetImagesFiltersArray(), ", "))})
-			}
-		}
 		// "status" validation
-		if statuses, ok := r.URL.Query()[common.ImagesFilter(0).String()]; ok {
+		if statuses, ok := r.URL.Query()["status"]; ok {
 			for _, status := range statuses {
 				if status != models.ImageStatusCreated && status != models.ImageStatusBuilding && status != models.ImageStatusError && status != models.ImageStatusSuccess {
-					errs = append(errs, validationError{Key: common.ImagesFilter(0).String(), Reason: fmt.Sprintf("%s is not a valid status. Status must be %s", status, strings.Join(validStatuses, " or "))})
+					errs = append(errs, validationError{Key: "status", Reason: fmt.Sprintf("%s is not a valid status. Status must be %s", status, strings.Join(validStatuses, " or "))})
 				}
 			}
 		}
 		// "created_at" validation
-		if val := r.URL.Query().Get(common.ImagesFilter(3).String()); val != "" {
+		if val := r.URL.Query().Get("created_at"); val != "" {
 			if _, err := time.Parse(common.LayoutISO, val); err != nil {
-				errs = append(errs, validationError{Key: common.ImagesFilter(3).String(), Reason: err.Error()})
+				errs = append(errs, validationError{Key: "created_at", Reason: err.Error()})
 			}
 		}
 		// "sort_by" validation for "status", "name", "distribution", "created_at"
-		if val := r.URL.Query().Get(common.ImagesFilter(4).String()); val != "" {
+		if val := r.URL.Query().Get("sort_by"); val != "" {
 			name := val
 			if string(val[0]) == "-" {
 				name = val[1:]
 			}
-			if name != common.ImagesFilter(0).String() && name != common.ImagesFilter(1).String() && name != common.ImagesFilter(2).String() && name != common.ImagesFilter(3).String() {
-				errs = append(errs, validationError{Key: common.ImagesFilter(4).String(), Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must be status or name or distribution or created_at", name)})
+			if name != "status" && name != "name" && name != "distribution" && name != "created_at" {
+				errs = append(errs, validationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must be status or name or distribution or created_at", name)})
 			}
 		}
 
