@@ -5,12 +5,11 @@
 package mock_services
 
 import (
-	io "io"
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	models "github.com/redhatinsights/edge-api/pkg/models"
 	services "github.com/redhatinsights/edge-api/pkg/services"
+	io "io"
+	reflect "reflect"
 )
 
 // MockUpdateServiceInterface is a mock of UpdateServiceInterface interface.
