@@ -50,18 +50,18 @@
         content: "{{ ostree_remote_template }}"
         dest: /etc/ostree/remotes.d/rhel-edge.conf
     - name: run rpmostree update
-      when: ostree_changes_refs=="false"
+      when: not ostree_changes_refs|bool
       ansible.builtin.shell: rpm-ostree upgrade --allow-downgrade
       register: rpmostree_upgrade_out
       changed_when: '"No upgrade available" not in rpmostree_upgrade_out.stdout'
       failed_when: 'rpmostree_upgrade_out.rc != 0'
     - name: run rpmostree rebase
-      when: ostree_changes_refs=="true"
+      when: ostree_changes_refs|bool
       ansible.builtin.shell: rpm-ostree rebase "{{ os_tree_ref }}"
       register: rpmostree_rebase_out
       changed_when: '"No upgrade available" not in rpmostree_rebase_out.stdout'
       failed_when: 'rpmostree_rebase_out.rc != 0'
     - name: schedule reboot when rpmostree upgraded
       ansible.builtin.shell: systemd-run --on-active=5 /usr/bin/systemctl reboot
-      when: ('rpmostree_rebase_out.changed == true and "Staging deployment...done" in rpmostree_rebase_out.out') or
-            ('rpmostree_upgrade_out.changed == true and "Staging deployment...done" in rpmostree_upgrade_out.stdout')
+      when: ('rpmostree_rebase_out.changed | "Staging deployment...done" in rpmostree_rebase_out.out') or
+            ('rpmostree_upgrade_out.changed | "Staging deployment...done" in rpmostree_upgrade_out.stdout')
