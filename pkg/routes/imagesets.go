@@ -88,8 +88,8 @@ func ImageSetCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		s := dependencies.ServicesFromContext(r.Context())
 		var imageSet models.ImageSet
-		account, orgID := readAccountOrOrgID(w, r, s.Log)
-		if account == "" && orgID == "" {
+		orgID := readOrgID(w, r, s.Log)
+		if orgID == "" {
 			return
 		}
 		if imageSetID := chi.URLParam(r, "imageSetID"); imageSetID != "" {
@@ -103,7 +103,7 @@ func ImageSetCtx(next http.Handler) http.Handler {
 				}
 				return
 			}
-			result := db.AccountOrOrg(account, orgID, "").Where("Image_sets.id = ?", imageSetID).First(&imageSet)
+			result := db.Org(orgID, "").Where("Image_sets.id = ?", imageSetID).First(&imageSet)
 
 			if result.Error != nil {
 				err := errors.NewNotFound(result.Error.Error())
@@ -147,13 +147,13 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	var count int64
 	var result *gorm.DB
 	pagination := common.GetPagination(r)
-	account, orgID := readAccountOrOrgID(w, r, s.Log)
-	if account == "" && orgID == "" {
-		// logs and response handled by readAccountOrOrgID
+	orgID := readOrgID(w, r, s.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID
 		return
 	}
 
-	countResult := imageSetFilters(r, db.AccountOrOrgTx(account, orgID, db.DB, "Image_Sets").Model(&models.ImageSet{})).
+	countResult := imageSetFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Model(&models.ImageSet{})).
 		Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.id = (Select Max(id) from Images where Images.image_set_id = Image_Sets.id)`).Count(&count)
 	if countResult.Error != nil {
 		s.Log.WithField("error", countResult.Error.Error()).Error("Error counting results for image sets list")
@@ -166,7 +166,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.URL.Query().Get("sort_by") != "-status" && r.URL.Query().Get("sort_by") != "status" {
-		result = imageSetFilters(r, db.AccountOrOrgTx(account, orgID, db.DB, "Image_Sets").Debug().Model(&models.ImageSet{})).
+		result = imageSetFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Debug().Model(&models.ImageSet{})).
 			Limit(pagination.Limit).Offset(pagination.Offset).
 			Preload("Images").
 			Preload("Images.Commit").
@@ -176,7 +176,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 			Find(&imageSet)
 	} else {
 		// this code is no longer run, but would be used if sorting by status is re-implemented.
-		result = imageStatusFilters(r, db.AccountOrOrgTx(account, orgID, db.DB, "Image_Sets").Debug().Model(&models.ImageSet{})).
+		result = imageStatusFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Debug().Model(&models.ImageSet{})).
 			Limit(pagination.Limit).Offset(pagination.Offset).
 			Preload("Images", "lower(status) in (?)", strings.ToLower(r.URL.Query().Get("status"))).
 			Preload("Images.Commit").
@@ -258,9 +258,9 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	s := dependencies.ServicesFromContext(r.Context())
 
 	pagination := common.GetPagination(r)
-	account, orgID := readAccountOrOrgID(w, r, s.Log)
-	if account == "" && orgID == "" {
-		// logs and response handled by readAccountOrOrgID
+	orgID := readOrgID(w, r, s.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID
 		return
 	}
 	ctx := r.Context()
@@ -272,7 +272,7 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 	}
-	result := imageDetailFilters(r, db.AccountOrOrgTx(account, orgID, db.DB, "Image_Sets").Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
+	result := imageDetailFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
 		Preload("Commit.Repo").Preload("Commit.InstalledPackages").Preload("Installer").
 		Joins(`JOIN Image_Sets ON Image_Sets.id = Images.image_set_id`).
 		Where(`Image_sets.id = ?`, &imageSet.ID).
