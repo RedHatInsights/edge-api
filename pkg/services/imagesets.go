@@ -30,17 +30,17 @@ type ImageSetsService struct {
 // GetImageSetsByID to get image set by id
 func (s *ImageSetsService) GetImageSetsByID(imageSetID int) (*models.ImageSet, error) {
 	var imageSet models.ImageSet
-	account, orgID, err := common.GetAccountOrOrgIDFromContext(s.ctx)
+	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {
-		s.log.WithField("error", err).Error("Error retrieving org_id or account")
-		return nil, new(AccountOrOrgIDNotSet)
+		s.log.WithField("error", err).Error("Error retrieving org_id")
+		return nil, new(OrgIDNotSet)
 	}
-	result := db.AccountOrOrg(account, orgID, "image_sets").Debug().First(&imageSet, imageSetID)
+	result := db.Org(orgID, "image_sets").Debug().First(&imageSet, imageSetID)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error getting image set by id")
 		return nil, new(ImageSetNotFoundError)
 	}
-	result = db.AccountOrOrg(account, orgID, "").Debug().Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
+	result = db.Org(orgID, "").Debug().Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error getting image set's images")
 		return nil, new(ImageNotFoundError)
