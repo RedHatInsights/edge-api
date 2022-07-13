@@ -11,7 +11,7 @@ import (
 
 var _ = Describe("ImageSets Service Test", func() {
 	var service services.ImageSetsService
-	Describe("get image0set", func() {
+	Describe("get imageSet", func() {
 		When("image-set exists", func() {
 			var imageSet1 *models.ImageSet
 
@@ -19,7 +19,6 @@ var _ = Describe("ImageSets Service Test", func() {
 				imageSet1 = &models.ImageSet{
 					Name:    "test",
 					Version: 2,
-					Account: common.DefaultAccount,
 					OrgID:   common.DefaultOrgID,
 				}
 				result := db.DB.Create(imageSet1)
