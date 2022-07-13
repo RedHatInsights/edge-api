@@ -244,7 +244,8 @@ func (i *Image) GetALLPackagesList() *[]string {
 // BeforeCreate method is called before creating Images, it make sure org_id is not empty
 func (i *Image) BeforeCreate(tx *gorm.DB) error {
 	if i.OrgID == "" {
-		return errors.New("org_id is mandatory")
+		return ErrOrgIDIsMandatory
+
 	}
 
 	return nil

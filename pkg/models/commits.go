@@ -6,6 +6,11 @@ import (
 	"gorm.io/gorm"
 )
 
+var (
+	// ErrOrgIDIsMandatory is for when orgID is not set
+	ErrOrgIDIsMandatory = errors.New("org_id is mandatory")
+)
+
 const (
 	// RepoStatusBuilding is for when a image is on a error state
 	RepoStatusBuilding = "BUILDING"
@@ -69,7 +74,7 @@ type InstalledPackage struct {
 // BeforeCreate method is called before creating Commits, it make sure org_id is not empty
 func (c *Commit) BeforeCreate(tx *gorm.DB) error {
 	if c.OrgID == "" {
-		return errors.New("org_id is mandatory")
+		return ErrOrgIDIsMandatory
 	}
 
 	return nil
