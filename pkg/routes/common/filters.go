@@ -77,7 +77,7 @@ func CreatedAtFilterHandler(filter *Filter) FilterFunc {
 				return tx
 			}
 			nextDay := currentDay.Add(time.Hour * 24)
-			tx = tx.Where("%s BETWEEN ? AND ?", filter.DBField, currentDay.Format(LayoutISO), nextDay.Format(LayoutISO))
+			tx = tx.Where(fmt.Sprintf("%s BETWEEN ? AND ?", filter.DBField), currentDay.Format(LayoutISO), nextDay.Format(LayoutISO))
 		}
 		return tx
 	})

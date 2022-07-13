@@ -151,6 +151,9 @@ func TestCreatedAtFilterHandler(t *testing.T) {
 	result := filter(req, db.DB)
 	images := []models.Image{}
 	result.Find(&images)
+	if len(images) == 0 {
+		t.Fatalf("No images were found with created_at value: %s", nowStr)
+	}
 	for _, image := range images {
 		if image.CreatedAt.Time.Format(LayoutISO) != nowStr {
 			t.Errorf("Expected image created at will be %s but %s", nowStr, image.CreatedAt.Time.Format(LayoutISO))

@@ -203,12 +203,12 @@ func GetDBDevices(w http.ResponseWriter, r *http.Request) {
 	contextServices := dependencies.ServicesFromContext(r.Context())
 	var devices []models.Device
 	pagination := common.GetPagination(r)
-	account, orgID := readAccountOrOrgID(w, r, contextServices.Log)
-	if account == "" && orgID == "" {
-		// logs and response handled by readAccountOrOrgID
+	orgID := readOrgID(w, r, contextServices.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID
 		return
 	}
-	result := db.AccountOrOrg(account, orgID, "").Limit(pagination.Limit).Offset(pagination.Offset).Find(&devices)
+	result := db.Org(orgID, "").Limit(pagination.Limit).Offset(pagination.Offset).Find(&devices)
 	if result.Error != nil {
 		contextServices.Log.WithField("error", result.Error.Error()).Debug("Result error")
 		respondWithAPIError(w, contextServices.Log, errors.NewBadRequest(result.Error.Error()))
@@ -225,12 +225,12 @@ func GetDeviceDBInfo(w http.ResponseWriter, r *http.Request) {
 	if dc.DeviceUUID == "" || !ok {
 		return // Error set by DeviceCtx method
 	}
-	account, orgID := readAccountOrOrgID(w, r, contextServices.Log)
-	if account == "" && orgID == "" {
-		// logs and response handled by readAccountOrOrgID
+	orgID := readOrgID(w, r, contextServices.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID
 		return
 	}
-	if result := db.AccountOrOrg(account, orgID, "").Where("UUID = ?", dc.DeviceUUID).Find(&devices); result.Error != nil {
+	if result := db.Org(orgID, "").Where("UUID = ?", dc.DeviceUUID).Find(&devices); result.Error != nil {
 		contextServices.Log.WithField("error", result.Error).Debug("Result error")
 		respondWithAPIError(w, contextServices.Log, errors.NewBadRequest(result.Error.Error()))
 		return
