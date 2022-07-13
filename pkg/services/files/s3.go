@@ -2,11 +2,11 @@ package files
 
 import (
 	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/logger"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/redhatinsights/edge-api/logger"
 )
 
 // GetNewS3Session return a new aws s3 session
