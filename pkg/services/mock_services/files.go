@@ -78,6 +78,21 @@ func (mr *MockFilesServiceMockRecorder) GetFile(path interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFile", reflect.TypeOf((*MockFilesService)(nil).GetFile), path)
 }
 
+// GetSignedURL mocks base method.
+func (m *MockFilesService) GetSignedURL(path string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSignedURL", path)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSignedURL indicates an expected call of GetSignedURL.
+func (mr *MockFilesServiceMockRecorder) GetSignedURL(path interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignedURL", reflect.TypeOf((*MockFilesService)(nil).GetSignedURL), path)
+}
+
 // GetUploader mocks base method.
 func (m *MockFilesService) GetUploader() files.Uploader {
 	m.ctrl.T.Helper()

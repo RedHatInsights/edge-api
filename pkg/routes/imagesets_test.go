@@ -4,6 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/bxcodec/faker/v3"
+	"github.com/go-chi/chi"
+	"github.com/redhatinsights/edge-api/pkg/services"
+	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -309,6 +314,120 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(err).To(BeNil())
 				Expect(string(respBody)).To(ContainSubstring("image-set-2"))
 				Expect(string(respBody)).ToNot(ContainSubstring("image-set-1"))
+			})
+		})
+	})
+
+	Context("Installer ISO url", func() {
+		var ctrl *gomock.Controller
+		var router chi.Router
+		var mockImageService *mock_services.MockImageServiceInterface
+		var edgeAPIServices *dependencies.EdgeAPIServices
+
+		BeforeEach(func() {
+			ctrl = gomock.NewController(GinkgoT())
+			mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
+			edgeAPIServices = &dependencies.EdgeAPIServices{
+				ImageService: mockImageService,
+				Log:          log.NewEntry(log.StandardLogger()),
+			}
+			router = chi.NewRouter()
+			router.Use(func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					ctx := dependencies.ContextWithServices(r.Context(), edgeAPIServices)
+					next.ServeHTTP(w, r.WithContext(ctx))
+				})
+			})
+			router.Route("/image-sets", MakeImageSetsRouter)
+		})
+
+		It("getStorageInstallerIsoURL return the right iso path", func() {
+			isoPath := getStorageInstallerIsoURL(120)
+			Expect(isoPath).To(Equal("/api/edge/v1/storage/isos/120"))
+		})
+
+		When("getting imageSets", func() {
+			orgID := common.DefaultOrgID
+			imageName := faker.Name()
+			installer1 := models.Installer{OrgID: orgID, ImageBuildISOURL: faker.URL()}
+			db.DB.Create(&installer1)
+			installer2 := models.Installer{OrgID: orgID, ImageBuildISOURL: faker.URL()}
+			db.DB.Create(&installer2)
+
+			imageSet := models.ImageSet{Name: imageName, OrgID: orgID}
+			db.DB.Create(&imageSet)
+			image1 := models.Image{Name: imageName, OrgID: orgID, ImageSetID: &imageSet.ID, Installer: &installer1}
+			db.DB.Create(&image1)
+			image2 := models.Image{Name: imageName, OrgID: orgID, ImageSetID: &imageSet.ID, Installer: &installer2}
+			db.DB.Create(&image2)
+
+			isoPathTemplate := "/api/edge/v1/storage/isos/%d"
+
+			type AllImageSetsResponse struct {
+				Count int                    `json:"Count"`
+				Data  []ImageSetInstallerURL `json:"Data"`
+			}
+			type ImageSetDetailsResponse struct {
+				Count int                   `json:"Count"`
+				Data  ImageSetImagePackages `json:"Data"`
+			}
+
+			It("The app internal iso urls are used when getting all imageSets", func() {
+				req, err := http.NewRequest("GET", "/image-sets/", nil)
+				Expect(err).ToNot(HaveOccurred())
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
+
+				Expect(rr.Code).To(Equal(http.StatusOK))
+
+				var allImageSetsResponse AllImageSetsResponse
+				respBody, err := ioutil.ReadAll(rr.Body)
+				err = json.Unmarshal(respBody, &allImageSetsResponse)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(allImageSetsResponse.Data) > 0).To(BeTrue())
+				testImageFound := false
+				for _, imageSetResponse := range allImageSetsResponse.Data {
+					if imageSetResponse.ImageSetData.Name == imageName {
+						testImageFound = true
+						// the url should be the path of latest install
+						Expect(*imageSetResponse.ImageBuildISOURL).To(Equal(fmt.Sprintf(isoPathTemplate, installer2.ID)))
+						// it must have 2 images
+						images := imageSetResponse.ImageSetData.Images
+						Expect(len(images)).To(Equal(2))
+						// the images are listed by latest first e.g. createdAtr Desc
+						// and accordingly the latest installer must be first
+						for ind, expectedImage := range []models.Image{image2, image1} {
+							Expect(images[ind].ID).To(Equal(expectedImage.ID))
+							Expect(images[ind].Installer.ImageBuildISOURL).To(Equal(fmt.Sprintf(isoPathTemplate, expectedImage.Installer.ID)))
+						}
+					}
+				}
+				// ensure the imageSet has been found and tested
+				Expect(testImageFound).To(BeTrue())
+			})
+			It("The app internal iso urls are used when getting imageSet details", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/%d", imageSet.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImageService.EXPECT().AddPackageInfo(gomock.Any()).Return(services.ImageDetail{Image: &image1}, nil)
+				mockImageService.EXPECT().AddPackageInfo(gomock.Any()).Return(services.ImageDetail{Image: &image2}, nil)
+
+				rr := httptest.NewRecorder()
+
+				router.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusOK))
+				var imageSetDetailsResponse ImageSetDetailsResponse
+				respBody, err := ioutil.ReadAll(rr.Body)
+				err = json.Unmarshal(respBody, &imageSetDetailsResponse)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(imageSetDetailsResponse.Count).To(Equal(2))
+				Expect(imageSetDetailsResponse.Data.ImageBuildISOURL).To(Equal(fmt.Sprintf(isoPathTemplate, installer2.ID)))
+				imageDetails := imageSetDetailsResponse.Data.Images
+				Expect(len(imageDetails)).To(Equal(2))
+
+				for ind, expectedImage := range []models.Image{image1, image2} {
+					Expect(imageDetails[ind].Image.Installer.ImageBuildISOURL).To(Equal(fmt.Sprintf(isoPathTemplate, expectedImage.Installer.ID)))
+				}
 			})
 		})
 	})

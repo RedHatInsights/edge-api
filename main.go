@@ -96,6 +96,7 @@ func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 		s.Route("/thirdpartyrepo", routes.MakeThirdPartyRepoRouter)
 		s.Route("/fdo", routes.MakeFDORouter)
 		s.Route("/device-groups", routes.MakeDeviceGroupsRouter)
+		s.Route("/storage", routes.MakeStorageRouter)
 	})
 	return route
 }
