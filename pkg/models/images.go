@@ -250,3 +250,13 @@ func (i *Image) BeforeCreate(tx *gorm.DB) error {
 
 	return nil
 }
+
+// BeforeCreate method is called before creating ImageSet, it make sure org_id is not empty
+func (imgset *ImageSet) BeforeCreate(tx *gorm.DB) error {
+	if imgset.OrgID == "" {
+		return ErrOrgIDIsMandatory
+
+	}
+
+	return nil
+}

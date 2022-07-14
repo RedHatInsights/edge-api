@@ -313,3 +313,18 @@ func TestImagesBeforeCreate(t *testing.T) {
 		t.Error("Error running BeforeCreate")
 	}
 }
+
+func TestImageSetBeforeCreate(t *testing.T) {
+	orgID := faker.UUIDHyphenated()
+	imageSet1 := ImageSet{
+		Name:    "image-set-1",
+		Version: 1,
+		OrgID:   orgID,
+	}
+
+	// BeforeCreate make sure ImageSet has orgID
+	err := imageSet1.BeforeCreate(db.DB)
+	if err != nil {
+		t.Error("Error running BeforeCreate")
+	}
+}

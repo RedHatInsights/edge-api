@@ -195,7 +195,7 @@ var _ = Describe("Image Service Test", func() {
 				uid := uint(id[0])
 				account := faker.UUIDHyphenated()
 				orgID := faker.UUIDHyphenated()
-				imageSet := &models.ImageSet{Account: account}
+				imageSet := &models.ImageSet{Account: account, OrgID: orgID}
 				result := db.DB.Save(imageSet)
 				Expect(result.Error).To(Not(HaveOccurred()))
 				previousImage := &models.Image{
