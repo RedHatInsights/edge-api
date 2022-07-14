@@ -29,7 +29,7 @@ var statusOption = []string{models.ImageStatusCreated, models.ImageStatusBuildin
 
 // MakeImageSetsRouter adds support for operations on image-sets
 func MakeImageSetsRouter(sub chi.Router) {
-	sub.With(validateFilterParams).With(common.Paginate).Get("/", ListAllImageSets)
+	sub.With(ValidateQueryParams).With(validateFilterParams).With(common.Paginate).Get("/", ListAllImageSets)
 	sub.Route("/{imageSetID}", func(r chi.Router) {
 		r.Use(ImageSetCtx)
 		r.With(validateFilterParams).With(common.Paginate).Get("/", GetImageSetsByID)
