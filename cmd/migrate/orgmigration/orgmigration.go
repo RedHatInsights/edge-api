@@ -3,13 +3,14 @@ package orgmigration
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/RedHatInsights/tenant-utils/pkg/tenantid"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	logger "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"time"
 )
 
 var log = logger.WithField("migration", "accountToOrgID")

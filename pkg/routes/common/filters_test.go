@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bxcodec/faker/v3"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -16,6 +17,7 @@ import (
 var dbName string
 
 func setUp() {
+	orgID := faker.UUIDHyphenated()
 	config.Init()
 	config.Get().Debug = true
 	time := time.Now().UnixNano()
@@ -28,25 +30,29 @@ func setUp() {
 			Name:         "Motion Sensor 1",
 			Distribution: "rhel-8",
 			Status:       models.ImageStatusError,
-			Commit:       &models.Commit{Arch: "arm7"},
+			Commit:       &models.Commit{Arch: "arm7", OrgID: orgID},
+			OrgID:        orgID,
 		},
 		{
 			Name:         "Pressure Sensor 1",
 			Distribution: "fedora-33",
 			Status:       models.ImageStatusSuccess,
-			Commit:       &models.Commit{Arch: "x86_64"},
+			Commit:       &models.Commit{Arch: "x86_64", OrgID: orgID},
+			OrgID:        orgID,
 		},
 		{
 			Name:         "Pressure Sensor 2",
 			Distribution: "rhel-8",
 			Status:       models.ImageStatusCreated,
-			Commit:       &models.Commit{Arch: "x86_64"},
+			Commit:       &models.Commit{Arch: "x86_64", OrgID: orgID},
+			OrgID:        orgID,
 		},
 		{
 			Name:         "Motion Sensor 2",
 			Distribution: "rhel-8",
 			Status:       models.ImageStatusBuilding,
-			Commit:       &models.Commit{Arch: "arm7"},
+			Commit:       &models.Commit{Arch: "arm7", OrgID: orgID},
+			OrgID:        orgID,
 		},
 	}
 	db.DB.Create(&images)

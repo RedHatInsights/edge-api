@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/edge-api/config"
@@ -54,6 +55,14 @@ var _ = Describe("File Service Test", func() {
 				b, err := io.ReadAll(file)
 				Expect(err).To(BeNil())
 				Expect(string(b)).To(Equal(data))
+			})
+		})
+		When("GetSignedURL", func() {
+			It("return the same URL", func() {
+				url := faker.URL()
+				signedURL, err := service.GetSignedURL(url)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(signedURL).To(Equal(url))
 			})
 		})
 	})

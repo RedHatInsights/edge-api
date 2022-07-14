@@ -83,6 +83,7 @@ var _ = Describe("Image Service Test", func() {
 				imageV1 = &models.Image{
 					Commit: &models.Commit{
 						OSTreeCommit: faker.UUIDHyphenated(),
+						OrgID:        common.DefaultOrgID,
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
@@ -97,6 +98,7 @@ var _ = Describe("Image Service Test", func() {
 				imageV2 = &models.Image{
 					Commit: &models.Commit{
 						OSTreeCommit: faker.UUIDHyphenated(),
+						OrgID:        common.DefaultOrgID,
 					},
 					Status:     models.ImageStatusError,
 					ImageSetID: &imageSet.ID,
@@ -109,6 +111,7 @@ var _ = Describe("Image Service Test", func() {
 				imageV3 = &models.Image{
 					Commit: &models.Commit{
 						OSTreeCommit: faker.UUIDHyphenated(),
+						OrgID:        common.DefaultOrgID,
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
@@ -190,21 +193,21 @@ var _ = Describe("Image Service Test", func() {
 			It("should have an error returned by image builder", func() {
 				id, _ := faker.RandomInt(1)
 				uid := uint(id[0])
-				account := faker.UUIDHyphenated()
-				imageSet := &models.ImageSet{Account: account}
+				orgID := faker.UUIDHyphenated()
+				imageSet := &models.ImageSet{OrgID: orgID}
 				result := db.DB.Save(imageSet)
 				Expect(result.Error).To(Not(HaveOccurred()))
 				previousImage := &models.Image{
-					Account:      account,
+					OrgID:        orgID,
 					Status:       models.ImageStatusSuccess,
-					Commit:       &models.Commit{RepoID: &uid},
+					Commit:       &models.Commit{RepoID: &uid, OrgID: orgID},
 					Version:      1,
 					Distribution: "rhel-85",
 					Name:         faker.Name(),
 					ImageSetID:   &imageSet.ID,
 				}
 				image := &models.Image{
-					Account:      account,
+					OrgID:        orgID,
 					Commit:       &models.Commit{},
 					Distribution: "rhel-85",
 					OutputTypes:  []string{models.ImageTypeCommit},
@@ -226,21 +229,21 @@ var _ = Describe("Image Service Test", func() {
 			It("should have the parent image repo url set as parent commit url", func() {
 				id, _ := faker.RandomInt(1)
 				uid := uint(id[0])
-				account := faker.UUIDHyphenated()
-				imageSet := &models.ImageSet{Account: account}
+				orgID := faker.UUIDHyphenated()
+				imageSet := &models.ImageSet{OrgID: orgID}
 				result := db.DB.Save(imageSet)
 				Expect(result.Error).To(Not(HaveOccurred()))
 				previousImage := &models.Image{
-					Account:      account,
+					OrgID:        orgID,
 					Status:       models.ImageStatusSuccess,
-					Commit:       &models.Commit{RepoID: &uid},
+					Commit:       &models.Commit{RepoID: &uid, OrgID: orgID},
 					Version:      1,
 					Distribution: "rhel-85",
 					Name:         faker.Name(),
 					ImageSetID:   &imageSet.ID,
 				}
 				image := &models.Image{
-					Account:      account,
+					OrgID:        orgID,
 					Commit:       &models.Commit{},
 					OutputTypes:  []string{models.ImageTypeCommit},
 					Version:      2,
@@ -267,23 +270,23 @@ var _ = Describe("Image Service Test", func() {
 
 		Context("when previous image has success status", func() {
 			It("should have the parent image repo url set as parent commit url", func() {
+				orgID := faker.UUIDHyphenated()
 				id, _ := faker.RandomInt(1)
 				uid := uint(id[0])
-				account := faker.UUIDHyphenated()
-				imageSet := &models.ImageSet{Account: account}
+				imageSet := &models.ImageSet{OrgID: orgID}
 				result := db.DB.Save(imageSet)
 				Expect(result.Error).To(Not(HaveOccurred()))
 				previousImage := &models.Image{
-					Account:      account,
+					OrgID:        orgID,
 					Status:       models.ImageStatusSuccess,
-					Commit:       &models.Commit{RepoID: &uid},
+					Commit:       &models.Commit{RepoID: &uid, OrgID: orgID},
 					Version:      1,
 					Distribution: "rhel-86",
 					Name:         faker.Name(),
 					ImageSetID:   &imageSet.ID,
 				}
 				image := &models.Image{
-					Account:      account,
+					OrgID:        orgID,
 					Commit:       &models.Commit{},
 					OutputTypes:  []string{models.ImageTypeCommit},
 					Version:      2,
@@ -430,15 +433,19 @@ var _ = Describe("Image Service Test", func() {
 
 		Context("when setting the status to retry an image build", func() {
 			It("should set status to building", func() {
+				orgID := faker.UUIDHyphenated()
 				image := &models.Image{
 					Installer: &models.Installer{
 						Status: models.ImageStatusError,
+						OrgID:  orgID,
 					},
 					Commit: &models.Commit{
 						Status: models.ImageStatusError,
+						OrgID:  orgID,
 					},
 					Status:      models.ImageStatusError,
 					OutputTypes: []string{models.ImageTypeInstaller, models.ImageTypeCommit},
+					OrgID:       orgID,
 				}
 				err := service.SetBuildingStatusOnImageToRetryBuild(image)
 
@@ -520,72 +527,40 @@ var _ = Describe("Image Service Test", func() {
 		Context("when creating an image using third party repository", func() {
 			It("should validate the images with empty repos", func() {
 				var repos []models.ThirdPartyRepo
-				account := "00000"
 				orgID := "11111"
-				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account, orgID, repos)
+				err := services.ValidateAllImageReposAreFromOrgID(orgID, repos)
 				Expect(err).ToNot(HaveOccurred())
 
 			})
 			It("should give an error", func() {
 				var repos []models.ThirdPartyRepo
-				account := ""
 				orgID := ""
-				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account, orgID, repos)
+				err := services.ValidateAllImageReposAreFromOrgID(orgID, repos)
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(new(services.ThirdPartyRepositoryInfoIsInvalid).Error()))
-			})
-
-			It("should validate the images with repos within same account", func() {
-				account := "00000"
-				orgID := ""
-				repo1 := models.ThirdPartyRepo{Account: account, Name: faker.UUIDHyphenated(), URL: "https://repo1.simple.com"}
-				result := db.DB.Create(&repo1)
-				Expect(result.Error).ToNot(HaveOccurred())
-				repo2 := models.ThirdPartyRepo{Account: account, Name: faker.UUIDHyphenated(), URL: "https://repo2.simple.com"}
-				result = db.DB.Create(&repo2)
-				Expect(result.Error).ToNot(HaveOccurred())
-				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account, orgID, []models.ThirdPartyRepo{repo1, repo2})
-				Expect(err).ToNot(HaveOccurred())
-
+				Expect(err).To(MatchError(new(services.OrgIDNotSet).Error()))
 			})
 			It("should validate the images with repos within same org_id", func() {
 				orgID := "00000"
-				account := ""
 				repo1 := models.ThirdPartyRepo{OrgID: orgID, Name: faker.UUIDHyphenated(), URL: "https://repo1.simple.com"}
 				result := db.DB.Create(&repo1)
 				Expect(result.Error).ToNot(HaveOccurred())
 				repo2 := models.ThirdPartyRepo{OrgID: orgID, Name: faker.UUIDHyphenated(), URL: "https://repo2.simple.com"}
 				result = db.DB.Create(&repo2)
 				Expect(result.Error).ToNot(HaveOccurred())
-				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account, orgID, []models.ThirdPartyRepo{repo1, repo2})
+				err := services.ValidateAllImageReposAreFromOrgID(orgID, []models.ThirdPartyRepo{repo1, repo2})
 				Expect(err).ToNot(HaveOccurred())
 
-			})
-			It("should not validate the images with repos from different accounts", func() {
-				account1 := "1111111"
-				account2 := "2222222"
-				orgID := ""
-				repo1 := models.ThirdPartyRepo{Account: account1, Name: faker.UUIDHyphenated(), URL: "https://repo1.simple.com"}
-				result := db.DB.Create(&repo1)
-				Expect(result.Error).ToNot(HaveOccurred())
-				repo2 := models.ThirdPartyRepo{Account: account2, Name: faker.UUIDHyphenated(), URL: "https://repo2.simple.com"}
-				result = db.DB.Create(&repo2)
-				Expect(result.Error).ToNot(HaveOccurred())
-				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account1, orgID, []models.ThirdPartyRepo{repo1, repo2})
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(new(services.ThirdPartyRepositoryNotFound).Error()))
 			})
 			It("should not validate the images with repos from different org_id", func() {
 				orgID1 := "1111111"
 				orgID2 := "2222222"
-				account := ""
 				repo1 := models.ThirdPartyRepo{OrgID: orgID1, Name: faker.UUIDHyphenated(), URL: "https://repo1.simple.com"}
 				result := db.DB.Create(&repo1)
 				Expect(result.Error).ToNot(HaveOccurred())
 				repo2 := models.ThirdPartyRepo{OrgID: orgID2, Name: faker.UUIDHyphenated(), URL: "https://repo2.simple.com"}
 				result = db.DB.Create(&repo2)
 				Expect(result.Error).ToNot(HaveOccurred())
-				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account, orgID1, []models.ThirdPartyRepo{repo1, repo2})
+				err := services.ValidateAllImageReposAreFromOrgID(orgID1, []models.ThirdPartyRepo{repo1, repo2})
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(new(services.ThirdPartyRepositoryNotFound).Error()))
 			})
@@ -597,21 +572,25 @@ var _ = Describe("Image Service Test", func() {
 			It("validate content", func() {
 				var image *models.Image
 				var err error
+				orgID := faker.UUIDHyphenated()
 				imageSet := &models.ImageSet{
 					Name:    "test",
 					Version: 1,
 					Account: common.DefaultAccount,
+					OrgID:   orgID,
 				}
 				db.DB.Create(imageSet)
 
 				image = &models.Image{
 					Commit: &models.Commit{
 						OSTreeCommit: faker.UUIDHyphenated(),
+						OrgID:        orgID,
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
 					Version:    1,
 					Account:    common.DefaultAccount,
+					OrgID:      orgID,
 				}
 				db.DB.Create(image)
 				image, err = service.GetImageByID(fmt.Sprint(image.ID))
@@ -875,9 +854,10 @@ var _ = Describe("Image Service Test", func() {
 			id, _ := faker.RandomInt(1)
 			uid := uint(id[0])
 			account := faker.UUIDHyphenated()
-			imageSet := &models.ImageSet{Account: account}
+			orgID := faker.UUIDHyphenated()
+			imageSet := &models.ImageSet{Account: account, OrgID: orgID}
 			result := db.DB.Save(imageSet)
-			arch := &models.Commit{Arch: "x86_64"}
+			arch := &models.Commit{Arch: "x86_64", OrgID: orgID}
 			pkgs := []models.Package{
 				{
 					Name: "badrpm",
@@ -887,11 +867,12 @@ var _ = Describe("Image Service Test", func() {
 			previousImage := &models.Image{
 				Account:      account,
 				Status:       models.ImageStatusSuccess,
-				Commit:       &models.Commit{RepoID: &uid},
+				Commit:       &models.Commit{RepoID: &uid, OrgID: orgID},
 				Version:      1,
 				Distribution: "rhel-85",
 				Name:         faker.Name(),
 				ImageSetID:   &imageSet.ID,
+				OrgID:        orgID,
 			}
 			image := &models.Image{
 				Account:      account,
@@ -901,6 +882,7 @@ var _ = Describe("Image Service Test", func() {
 				Version:      2,
 				Name:         previousImage.Name,
 				Packages:     pkgs,
+				OrgID:        orgID,
 			}
 			result = db.DB.Save(previousImage)
 			Expect(result.Error).To(Not(HaveOccurred()))

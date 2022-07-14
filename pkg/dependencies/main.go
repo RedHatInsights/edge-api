@@ -23,6 +23,7 @@ type EdgeAPIServices struct {
 	ThirdPartyRepoService   services.ThirdPartyRepoServiceInterface
 	OwnershipVoucherService services.OwnershipVoucherServiceInterface
 	DeviceGroupsService     services.DeviceGroupsServiceInterface
+	FilesService            services.FilesService
 	Log                     *log.Entry
 }
 
@@ -46,6 +47,7 @@ func Init(ctx context.Context) *EdgeAPIServices {
 		DeviceService:           services.NewDeviceService(ctx, log),
 		OwnershipVoucherService: services.NewOwnershipVoucherService(ctx, log),
 		DeviceGroupsService:     services.NewDeviceGroupsService(ctx, log),
+		FilesService:            services.NewFilesService(log),
 		Log:                     log,
 	}
 }

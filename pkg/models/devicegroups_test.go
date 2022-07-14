@@ -2,9 +2,9 @@ package models
 
 import (
 	"errors"
-	"github.com/bxcodec/faker/v3"
 	"testing"
 
+	"github.com/bxcodec/faker/v3"
 	"github.com/redhatinsights/edge-api/pkg/db"
 )
 
@@ -14,11 +14,11 @@ func TestGroupValidateRequest(t *testing.T) {
 		group    *DeviceGroup
 		expected error
 	}{
-		{name: "Empty name", group: &DeviceGroup{Account: "111111", Type: "static"}, expected: errors.New(DeviceGroupNameEmptyErrorMessage)},
-		{name: "Invalid type", group: &DeviceGroup{Name: "test_group", Account: "111111", Type: "invalid type"}, expected: errors.New(DeviceGroupTypeInvalidErrorMessage)},
-		{name: "Invalid name", group: &DeviceGroup{Name: "** test group", Account: "111111", Type: DeviceGroupTypeDefault}, expected: errors.New(DeviceGroupNameInvalidErrorMessage)},
-		{name: "Empty account", group: &DeviceGroup{Name: "test_group", Type: "static"}, expected: errors.New(DeviceGroupAccountEmptyErrorMessage)},
-		{name: "Valid DeviceGroup", group: &DeviceGroup{Name: "test_group", Account: "111111", Type: DeviceGroupTypeDefault}, expected: nil},
+		{name: "Empty name", group: &DeviceGroup{OrgID: "222222", Account: "111111", Type: "static"}, expected: errors.New(DeviceGroupNameEmptyErrorMessage)},
+		{name: "Invalid type", group: &DeviceGroup{Name: "test_group", OrgID: "222222", Account: "111111", Type: "invalid type"}, expected: errors.New(DeviceGroupTypeInvalidErrorMessage)},
+		{name: "Invalid name", group: &DeviceGroup{Name: "** test group", OrgID: "222222", Account: "111111", Type: DeviceGroupTypeDefault}, expected: errors.New(DeviceGroupNameInvalidErrorMessage)},
+		{name: "Empty account", group: &DeviceGroup{Name: "test_group", Type: "static", OrgID: "222222"}, expected: errors.New(DeviceGroupAccountEmptyErrorMessage)},
+		{name: "Valid DeviceGroup", group: &DeviceGroup{Name: "test_group", Account: "111111", OrgID: "222222", Type: DeviceGroupTypeDefault}, expected: nil},
 	}
 
 	for _, testScenario := range testScenarios {
@@ -39,12 +39,14 @@ func TestGroupCreateUpdateConstraint(t *testing.T) {
 	groupInitialAccount := "111111"
 	groupInitialName := "test_group"
 	groupInitialType := DeviceGroupTypeDynamic
-
+	groupInitialOrgID := "333333"
 	groupNewAccount := "222222"
+	groupNewOrgID := "444444"
+
 	groupNewType := DeviceGroupTypeStatic
 	groupNewName := "new_test_group"
 
-	group := DeviceGroup{Name: groupInitialName, Account: groupInitialAccount, Type: groupInitialType}
+	group := DeviceGroup{Name: groupInitialName, OrgID: groupInitialOrgID, Account: groupInitialAccount, Type: groupInitialType}
 
 	err := group.ValidateRequest()
 	if err != nil {
@@ -63,6 +65,7 @@ func TestGroupCreateUpdateConstraint(t *testing.T) {
 	}
 
 	savedGroup.Account = groupNewAccount
+	savedGroup.OrgID = groupNewOrgID
 	savedGroup.Type = groupNewType
 	savedGroup.Name = groupNewName
 
@@ -91,6 +94,7 @@ func TestGroupCreateUpdateConstraint(t *testing.T) {
 }
 
 func TestBeforeDelete(t *testing.T) {
+	orgID := faker.UUIDHyphenated()
 	account := faker.UUIDHyphenated()
 	deviceGroupName := faker.Name()
 	devices := []Device{
@@ -98,17 +102,20 @@ func TestBeforeDelete(t *testing.T) {
 			Name:    faker.Name(),
 			UUID:    faker.UUIDHyphenated(),
 			Account: account,
+			OrgID:   orgID,
 		},
 		{
 			Name:    faker.Name(),
 			UUID:    faker.UUIDHyphenated(),
 			Account: account,
+			OrgID:   orgID,
 		},
 	}
 	deviceGroup := &DeviceGroup{
 		Name:    deviceGroupName,
 		Type:    DeviceGroupTypeDefault,
 		Account: account,
+		OrgID:   orgID,
 		Devices: devices,
 	}
 	// Create the DeviceGroup
@@ -136,5 +143,32 @@ func TestBeforeDelete(t *testing.T) {
 	}
 	if len(deviceGroup.Devices) != 0 {
 		t.Errorf("Expected 0 devices but found %d: %v", len(deviceGroup.Devices), deviceGroup.Devices)
+	}
+}
+
+func TestDeviceGroupsBeforeCreate(t *testing.T) {
+	orgID := faker.UUIDHyphenated()
+	account := faker.UUIDHyphenated()
+	deviceGroupNameWithOrgID := faker.Name()
+	devices := []Device{
+		{
+			Name:    faker.Name(),
+			UUID:    faker.UUIDHyphenated(),
+			OrgID:   orgID,
+			Account: account,
+		},
+	}
+
+	deviceGroupWitOrgID := &DeviceGroup{
+		Name:    deviceGroupNameWithOrgID,
+		Type:    DeviceGroupTypeDefault,
+		OrgID:   orgID,
+		Account: account,
+		Devices: devices,
+	}
+	// BeforeCreate make sure DeviceGroup has to orgID
+	err := deviceGroupWitOrgID.BeforeCreate(db.DB)
+	if err != nil {
+		t.Error("Error running BeforeCreate")
 	}
 }

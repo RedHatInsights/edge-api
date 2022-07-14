@@ -8,12 +8,9 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/logger"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -79,22 +76,7 @@ func (u *LocalUploader) UploadFile(fname string, uploadPath string) (string, err
 
 func newS3Uploader(log *log.Entry) *S3Uploader {
 	cfg := config.Get()
-	var sess *session.Session
-	if cfg.Debug {
-		sess = session.Must(session.NewSessionWithOptions(session.Options{
-			// Force enable Shared Config support
-			SharedConfigState: session.SharedConfigEnable,
-		}))
-	} else {
-		var err error
-		sess, err = session.NewSession(&aws.Config{
-			Region:      &cfg.BucketRegion,
-			Credentials: credentials.NewStaticCredentials(cfg.AccessKey, cfg.SecretKey, ""),
-		})
-		if err != nil {
-			logger.LogErrorAndPanic("Fatal error creating HTTP session", err)
-		}
-	}
+	sess := GetNewS3Session()
 	client := s3.New(sess)
 	uploader := s3manager.NewUploader(sess, func(u *s3manager.Uploader) {
 		u.Concurrency = 1
@@ -118,7 +100,7 @@ type uploadDetails struct {
 
 func (u *S3Uploader) worker(uploadQueue chan *uploadDetails) {
 	for p := range uploadQueue {
-		fname, err := p.uploader.UploadFile(p.fileName, p.uploadPath)
+		fname, err := p.uploader.uploadFileWithACL(p.fileName, p.uploadPath, "public-read")
 		if err != nil {
 			u.log.WithFields(log.Fields{"fname": fname, "count": p.count, "error": err.Error()}).Error("Error uploading file")
 		}
@@ -187,19 +169,23 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 	return s3URL, nil
 }
 
-// UploadFile takes a Filename path as a string and then uploads that to
-// the supplied location in s3
-func (u *S3Uploader) UploadFile(fname string, uploadPath string) (string, error) {
+// uploadFile takes a Filename path as a string and then uploads that to
+// uploadFileWithACL  upload a file from local file system to remote s3 bucket location using the acl supplied.
+func (u *S3Uploader) uploadFileWithACL(fname string, uploadPath string, acl string) (string, error) {
 	f, err := os.Open(filepath.Clean(fname))
 	if err != nil {
 		return "", fmt.Errorf("failed to open file %q, %v", fname, err)
 	}
+	if acl == "" {
+		acl = "private"
+	}
+
 	// Upload the file to S3.
 	_, err = u.Client.PutObject(&s3.PutObjectInput{
 		Bucket: aws.String(u.Bucket),
 		Key:    aws.String(uploadPath),
 		Body:   f,
-		ACL:    aws.String("public-read"),
+		ACL:    aws.String(acl),
 	})
 
 	if err != nil {
@@ -213,4 +199,9 @@ func (u *S3Uploader) UploadFile(fname string, uploadPath string) (string, error)
 	region := *u.Client.Config.Region
 	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", u.Bucket, region, uploadPath)
 	return s3URL, nil
+}
+
+// UploadFile takes a Filename path as a string and then uploads that to the supplied location in s3
+func (u *S3Uploader) UploadFile(fname string, uploadPath string) (string, error) {
+	return u.uploadFileWithACL(fname, uploadPath, "private")
 }

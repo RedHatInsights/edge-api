@@ -4,12 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+
+	"gorm.io/gorm"
 )
 
 /*
-ThirdPartyRepo is a record of Third Party Repository or we can call it as Custom Repository provided by customers per account.
+ThirdPartyRepo is a record of Third Party Repository or we can call it as Custom Repository provided by customers per OrgID.
 
-	Here, URL refers to the url of the third party repository, Account refers to the account attached to the third party
+	Here, URL refers to the url of the third party repository, OrgID refers to the OrgID attached to the third party
 	repository.
 
 */
@@ -58,5 +60,14 @@ func (t *ThirdPartyRepo) ValidateRequest() error {
 	if !ValidateRepoURL(t.URL) {
 		return fmt.Errorf(InvalidURL)
 	}
+	return nil
+}
+
+// BeforeCreate method is called before creating Third Party Tepository, it make sure org_id is not empty
+func (t *ThirdPartyRepo) BeforeCreate(tx *gorm.DB) error {
+	if t.OrgID == "" {
+		return ErrOrgIDIsMandatory
+	}
+
 	return nil
 }

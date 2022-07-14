@@ -1,5 +1,9 @@
 package models
 
+import (
+	"gorm.io/gorm"
+)
+
 // EdgeDevice is the entity that represents and Edge Device
 // It is a combination of the data of a Device owned by Inventory API
 // and the Device data saved on Edge API
@@ -88,4 +92,13 @@ type Device struct {
 	UpdateAvailable   bool                 `json:"UpdateAvailable"`
 	DevicesGroups     []DeviceGroup        `faker:"-" gorm:"many2many:device_groups_devices;" json:"DevicesGroups"`
 	UpdateTransaction *[]UpdateTransaction `faker:"-" gorm:"many2many:updatetransaction_devices;" json:"UpdateTransaction"`
+}
+
+// BeforeCreate method is called before creating devices, it make sure org_id is not empty
+func (d *Device) BeforeCreate(tx *gorm.DB) error {
+	if d.OrgID == "" {
+		return ErrOrgIDIsMandatory
+	}
+
+	return nil
 }
