@@ -273,7 +273,6 @@ var _ = Describe("Image Service Test", func() {
 				orgID := faker.UUIDHyphenated()
 				id, _ := faker.RandomInt(1)
 				uid := uint(id[0])
-				orgID := faker.UUIDHyphenated()
 				imageSet := &models.ImageSet{OrgID: orgID}
 				result := db.DB.Save(imageSet)
 				Expect(result.Error).To(Not(HaveOccurred()))
@@ -285,7 +284,6 @@ var _ = Describe("Image Service Test", func() {
 					Distribution: "rhel-86",
 					Name:         faker.Name(),
 					ImageSetID:   &imageSet.ID,
-					OrgID:        orgID,
 				}
 				image := &models.Image{
 					OrgID:        orgID,
