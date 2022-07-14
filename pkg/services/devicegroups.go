@@ -423,7 +423,7 @@ func (s *DeviceGroupsService) AddDeviceGroupDevices(orgID string, deviceGroupID 
 // DeleteDeviceGroupDevices delete devices from device-group
 func (s *DeviceGroupsService) DeleteDeviceGroupDevices(orgID string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error) {
 	if (orgID == "") || deviceGroupID == 0 {
-		s.log.Debug("deviceGroupID must be defined")
+		s.log.Debug("org_id and deviceGroupID must be defined")
 		return nil, new(DeviceGroupMandatoryFieldsUndefined)
 	}
 

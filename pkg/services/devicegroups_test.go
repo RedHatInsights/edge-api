@@ -384,8 +384,7 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 			})
 
 			It("should return error when device does not exist in device-group", func() {
-				_, err := deviceGroupsService.DeleteDeviceGroupDevices(
-					orgID, deviceGroupID, []models.Device{savedDeviceGroup.Devices[0]})
+				_, err := deviceGroupsService.DeleteDeviceGroupDevices(orgID, deviceGroupID, []models.Device{savedDeviceGroup.Devices[0]})
 				Expect(err).ToNot(BeNil())
 				Expect(err.Error()).To(Equal("devices not found in device group"))
 			})

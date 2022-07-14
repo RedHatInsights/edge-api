@@ -684,7 +684,8 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	commitID, err := ctxServices.DeviceService.GetLatestCommitFromDevices(orgID, setOfDeviceUUIDS)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{
-			"error": err.Error(),
+			"error":  err.Error(),
+			"org_id": orgID,
 		}).Error("Error Getting the latest commit to update a device")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
@@ -695,7 +696,8 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	commit, err := ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{
-			"error": err.Error(),
+			"error":  err.Error(),
+			"org_id": orgID,
 		}).Error("Error Getting the commit info to update a device")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
@@ -704,7 +706,8 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	updates, err := ctxServices.UpdateService.BuildUpdateTransactions(&devicesUpdate, orgID, commit)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{
-			"error": err.Error(),
+			"error":  err.Error(),
+			"org_id": orgID,
 		}).Error("Error building update transaction")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
@@ -712,6 +715,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	// should be refactored to avoid performance issue with large volume
 	var upd []models.UpdateTransaction
 	for _, update := range *updates {
+		update.OrgID = orgID
 		upd = append(upd, update)
 		ctxServices.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
 		ctxServices.UpdateService.CreateUpdateAsync(update.ID)

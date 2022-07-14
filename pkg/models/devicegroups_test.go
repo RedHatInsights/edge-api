@@ -14,7 +14,6 @@ func TestGroupValidateRequest(t *testing.T) {
 		group    *DeviceGroup
 		expected error
 	}{
-
 		{name: "Empty name", group: &DeviceGroup{OrgID: "111111", Type: "static"}, expected: errors.New(DeviceGroupNameEmptyErrorMessage)},
 		{name: "Invalid type", group: &DeviceGroup{Name: "test_group", OrgID: "111111", Type: "invalid type"}, expected: errors.New(DeviceGroupTypeInvalidErrorMessage)},
 		{name: "Invalid name", group: &DeviceGroup{Name: "** test group", OrgID: "111111", Type: DeviceGroupTypeDefault}, expected: errors.New(DeviceGroupNameInvalidErrorMessage)},
