@@ -194,21 +194,21 @@ var _ = Describe("Image Service Test", func() {
 				result := db.DB.Save(imageSet)
 				Expect(result.Error).To(Not(HaveOccurred()))
 				previousImage := &models.Image{
+					OrgID:        orgID,
 					Status:       models.ImageStatusSuccess,
 					Commit:       &models.Commit{RepoID: &uid, OrgID: orgID},
 					Version:      1,
 					Distribution: "rhel-85",
 					Name:         faker.Name(),
 					ImageSetID:   &imageSet.ID,
-					OrgID:        orgID,
 				}
 				image := &models.Image{
-					Commit:       &models.Commit{OrgID: orgID},
+					OrgID:        orgID,
+					Commit:       &models.Commit{},
 					Distribution: "rhel-85",
 					OutputTypes:  []string{models.ImageTypeCommit},
 					Version:      2,
 					Name:         previousImage.Name,
-					OrgID:        orgID,
 				}
 				result = db.DB.Save(previousImage)
 				Expect(result.Error).To(Not(HaveOccurred()))
@@ -230,21 +230,21 @@ var _ = Describe("Image Service Test", func() {
 				result := db.DB.Save(imageSet)
 				Expect(result.Error).To(Not(HaveOccurred()))
 				previousImage := &models.Image{
+					OrgID:        orgID,
 					Status:       models.ImageStatusSuccess,
 					Commit:       &models.Commit{RepoID: &uid, OrgID: orgID},
 					Version:      1,
 					Distribution: "rhel-85",
 					Name:         faker.Name(),
 					ImageSetID:   &imageSet.ID,
-					OrgID:        orgID,
 				}
 				image := &models.Image{
-					Commit:       &models.Commit{OrgID: orgID},
+					OrgID:        orgID,
+					Commit:       &models.Commit{},
 					OutputTypes:  []string{models.ImageTypeCommit},
 					Version:      2,
 					Distribution: "rhel-85",
 					Name:         previousImage.Name,
-					OrgID:        orgID,
 				}
 				result = db.DB.Save(previousImage)
 				Expect(result.Error).To(Not(HaveOccurred()))
@@ -273,21 +273,21 @@ var _ = Describe("Image Service Test", func() {
 				result := db.DB.Save(imageSet)
 				Expect(result.Error).To(Not(HaveOccurred()))
 				previousImage := &models.Image{
+					OrgID:        orgID,
 					Status:       models.ImageStatusSuccess,
 					Commit:       &models.Commit{RepoID: &uid, OrgID: orgID},
 					Version:      1,
 					Distribution: "rhel-86",
 					Name:         faker.Name(),
 					ImageSetID:   &imageSet.ID,
-					OrgID:        orgID,
 				}
 				image := &models.Image{
-					Commit:       &models.Commit{OrgID: orgID},
+					OrgID:        orgID,
+					Commit:       &models.Commit{},
 					OutputTypes:  []string{models.ImageTypeCommit},
 					Version:      2,
 					Distribution: "rhel-90",
 					Name:         previousImage.Name,
-					OrgID:        orgID,
 				}
 				result = db.DB.Save(previousImage)
 				Expect(result.Error).To(Not(HaveOccurred()))
@@ -531,7 +531,7 @@ var _ = Describe("Image Service Test", func() {
 				orgID := ""
 				err := services.ValidateAllImageReposAreFromOrgID(orgID, repos)
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(new(services.ThirdPartyRepositoryInfoIsInvalid).Error()))
+				Expect(err).To(MatchError(new(services.OrgIDNotSet).Error()))
 			})
 			It("should validate the images with repos within same org_id", func() {
 				orgID := "00000"

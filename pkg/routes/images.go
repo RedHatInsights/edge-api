@@ -35,7 +35,7 @@ const imageKey imageTypeKey = iota
 
 // MakeImagesRouter adds support for operations on images
 func MakeImagesRouter(sub chi.Router) {
-	sub.With(validateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetAllImages)
+	sub.With(ValidateQueryParams).With(ValidateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetAllImages)
 	sub.Post("/", CreateImage)
 	sub.Post("/checkImageName", CheckImageName)
 	sub.Route("/{ostreeCommitHash}/info", func(r chi.Router) {
@@ -318,18 +318,22 @@ func initImageCreateRequest(w http.ResponseWriter, r *http.Request) (*models.Ima
 }
 
 var imageFilters = common.ComposeFilters(
+	// Filter handler for "status"
 	common.OneOfFilterHandler(&common.Filter{
 		QueryParam: "status",
 		DBField:    "images.status",
 	}),
+	// Filter handler for "name"
 	common.ContainFilterHandler(&common.Filter{
 		QueryParam: "name",
 		DBField:    "images.name",
 	}),
+	// Filter handler for "distribution"
 	common.ContainFilterHandler(&common.Filter{
 		QueryParam: "distribution",
 		DBField:    "images.distribution",
 	}),
+	// Filter handler for "created_at"
 	common.CreatedAtFilterHandler(&common.Filter{
 		QueryParam: "created_at",
 		DBField:    "images.created_at",
@@ -342,9 +346,11 @@ type validationError struct {
 	Reason string
 }
 
-func validateGetAllImagesSearchParams(next http.Handler) http.Handler {
+// ValidateGetAllImagesSearchParams validate the query params that sent to /images endpoint
+func ValidateGetAllImagesSearchParams(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var errs []validationError
+		// "status" validation
 		if statuses, ok := r.URL.Query()["status"]; ok {
 			for _, status := range statuses {
 				if status != models.ImageStatusCreated && status != models.ImageStatusBuilding && status != models.ImageStatusError && status != models.ImageStatusSuccess {
@@ -352,11 +358,13 @@ func validateGetAllImagesSearchParams(next http.Handler) http.Handler {
 				}
 			}
 		}
+		// "created_at" validation
 		if val := r.URL.Query().Get("created_at"); val != "" {
 			if _, err := time.Parse(common.LayoutISO, val); err != nil {
 				errs = append(errs, validationError{Key: "created_at", Reason: err.Error()})
 			}
 		}
+		// "sort_by" validation for "status", "name", "distribution", "created_at"
 		if val := r.URL.Query().Get("sort_by"); val != "" {
 			name := val
 			if string(val[0]) == "-" {

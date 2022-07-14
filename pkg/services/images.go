@@ -82,11 +82,11 @@ type ImageService struct {
 	RepoService  RepoServiceInterface
 }
 
-// ValidateAllImageReposAreFromOrgID validates the OrgID for Third Party Repositories
+// ValidateAllImageReposAreFromOrgID validates the account for Third Party Repositories
 func ValidateAllImageReposAreFromOrgID(orgID string, repos []models.ThirdPartyRepo) error {
 
 	if orgID == "" {
-		return new(ThirdPartyRepositoryInfoIsInvalid)
+		return new(OrgIDNotSet)
 	}
 	if len(repos) == 0 {
 		return nil
