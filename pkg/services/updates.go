@@ -592,16 +592,13 @@ func (s *UpdateService) ValidateUpdateDeviceGroup(account string, orgID string, 
 //BuildUpdateTransactions build records
 func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate,
 	account string, orgID string, commit *models.Commit) (*[]models.UpdateTransaction, error) {
-	// client := s.Inventory.InitClient(s.ctx, log.NewEntry(log.StandardLogger()))
 	var inv inventory.Response
 	var ii []inventory.Response
 	var err error
 
 	if len(devicesUpdate.DevicesUUID) > 0 {
 		for _, UUID := range devicesUpdate.DevicesUUID {
-			fmt.Printf("\nUUID: %v\n", UUID)
 			inv, err = s.Inventory.ReturnDevicesByID(UUID)
-			fmt.Printf("\ninv.Count: %v\n", inv.Count)
 
 			if inv.Count >= 0 {
 				ii = append(ii, inv)
@@ -743,7 +740,6 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					} else {
 						oldCommits = append(oldCommits, oldCommit)
 					}
-					fmt.Printf("\ndeployment.Checksum: %v\n", deployment.Checksum)
 					currentImage, cError := s.ImageService.GetImageByOSTreeCommitHash(deployment.Checksum)
 					if cError != nil {
 						s.log.WithField("error", err.Error()).Error("Error returning current image ostree checksum")
