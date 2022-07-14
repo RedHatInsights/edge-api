@@ -48,7 +48,9 @@ func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterfac
 	return &UpdateService{
 		Service:      Service{ctx: ctx, log: log.WithField("service", "update")},
 		FilesService: NewFilesService(log),
+		ImageService: NewImageService(ctx, log),
 		RepoBuilder:  NewRepoBuilder(ctx, log),
+		Inventory:    inventory.InitClient(ctx, log),
 		// DeviceService: NewDeviceService(ctx, log),
 		WaitForReboot: time.Minute * 5,
 	}
@@ -57,9 +59,11 @@ func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterfac
 // UpdateService is the main implementation of a UpdateServiceInterface
 type UpdateService struct {
 	Service
+	ImageService  ImageServiceInterface
 	RepoBuilder   RepoBuilderInterface
 	FilesService  FilesService
 	DeviceService DeviceServiceInterface
+	Inventory     inventory.ClientInterface
 	WaitForReboot time.Duration
 }
 
@@ -152,7 +156,6 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			WaitGroup.Done()
 		}
 	}(update)
-
 	update, err := s.RepoBuilder.BuildUpdateRepo(id)
 	if err != nil {
 		db.DB.First(&update, id)
@@ -161,15 +164,14 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		s.log.WithField("error", err.Error()).Error("Error building update repo")
 		return nil, err
 	}
-
 	var remoteInfo TemplateRemoteInfo
 	remoteInfo.RemoteURL = update.Repo.URL
 	remoteInfo.RemoteName = "rhel-edge"
 	remoteInfo.ContentURL = update.Repo.URL
 	remoteInfo.UpdateTransactionID = update.ID
 	remoteInfo.GpgVerify = "false"
-	remoteInfo.RemoteOstreeUpdate = fmt.Sprint(update.Commit.ChangesRefs)
 	remoteInfo.OSTreeRef = update.Commit.OSTreeRef
+	remoteInfo.RemoteOstreeUpdate = fmt.Sprint(update.ChangesRefs)
 
 	playbookURL, err := s.WriteTemplate(remoteInfo, update.Account, update.OrgID)
 	if err != nil {
@@ -590,14 +592,17 @@ func (s *UpdateService) ValidateUpdateDeviceGroup(account string, orgID string, 
 //BuildUpdateTransactions build records
 func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate,
 	account string, orgID string, commit *models.Commit) (*[]models.UpdateTransaction, error) {
-	client := inventory.InitClient(s.ctx, log.NewEntry(log.StandardLogger()))
+	// client := s.Inventory.InitClient(s.ctx, log.NewEntry(log.StandardLogger()))
 	var inv inventory.Response
 	var ii []inventory.Response
 	var err error
 
 	if len(devicesUpdate.DevicesUUID) > 0 {
 		for _, UUID := range devicesUpdate.DevicesUUID {
-			inv, err = client.ReturnDevicesByID(UUID)
+			fmt.Printf("\nUUID: %v\n", UUID)
+			inv, err = s.Inventory.ReturnDevicesByID(UUID)
+			fmt.Printf("\ninv.Count: %v\n", inv.Count)
+
 			if inv.Count >= 0 {
 				ii = append(ii, inv)
 			}
@@ -718,6 +723,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					s.log.WithFields(log.Fields{
 						"booted": deployment.Booted,
 					}).Debug("device has been booted")
+
 					if commit.OSTreeCommit == deployment.Checksum {
 						toUpdate = false
 						break
@@ -736,6 +742,19 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 						s.log.Debug("No old commits found")
 					} else {
 						oldCommits = append(oldCommits, oldCommit)
+					}
+					fmt.Printf("\ndeployment.Checksum: %v\n", deployment.Checksum)
+					currentImage, cError := s.ImageService.GetImageByOSTreeCommitHash(deployment.Checksum)
+					if cError != nil {
+						s.log.WithField("error", err.Error()).Error("Error returning current image ostree checksum")
+
+					}
+					updatedImage, uError := s.ImageService.GetImageByOSTreeCommitHash(commit.OSTreeCommit)
+					if uError != nil {
+						s.log.WithField("error", err.Error()).Error("Error returning current image ostree checksum")
+					}
+					if currentImage.Distribution != updatedImage.Distribution {
+						update.ChangesRefs = true
 					}
 				}
 			}
