@@ -721,7 +721,7 @@ func ResumeCreateImage(w http.ResponseWriter, r *http.Request) {
 		resumeLog.Info("Resuming image build")
 
 		// recreate a stripped down identity header
-		strippedIdentity := `{ "identity": {"type": "User", "internal": {"org_id": ` + image.OrgID + `, }, }, }`
+		strippedIdentity := `{ "identity": {"account_number": ` + image.Account + `, "type": "User", "internal": {"org_id": ` + image.OrgID + `, }, }, }`
 		resumeLog.WithField("identity_text", strippedIdentity).Debug("Creating a new stripped identity")
 		base64Identity := base64.StdEncoding.EncodeToString([]byte(strippedIdentity))
 		resumeLog.WithField("identity_base64", base64Identity).Debug("Using a base64encoded stripped identity")
