@@ -7,6 +7,7 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/redhatinsights/edge-api/config"
+	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -243,7 +244,10 @@ func (i *Image) GetALLPackagesList() *[]string {
 
 // BeforeCreate method is called before creating Images, it make sure org_id is not empty
 func (i *Image) BeforeCreate(tx *gorm.DB) error {
-	if i.OrgID == "" {
+	log.WithFields(log.Fields{
+		"image_orgID": i.OrgID,
+	}).Error("image dosent have an org_id")
+	if len(i.OrgID) == 0 {
 		return ErrOrgIDIsMandatory
 
 	}
@@ -253,7 +257,10 @@ func (i *Image) BeforeCreate(tx *gorm.DB) error {
 
 // BeforeCreate method is called before creating ImageSet, it make sure org_id is not empty
 func (imgset *ImageSet) BeforeCreate(tx *gorm.DB) error {
-	if imgset.OrgID == "" {
+	log.WithFields(log.Fields{
+		"imageset_orgID": imgset.OrgID,
+	}).Error("imageset dosent have an org_id")
+	if len(imgset.OrgID) == 0 {
 		return ErrOrgIDIsMandatory
 
 	}
