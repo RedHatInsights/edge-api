@@ -193,29 +193,26 @@ var _ = Describe("Image Service Test", func() {
 			It("should have an error returned by image builder", func() {
 				id, _ := faker.RandomInt(1)
 				uid := uint(id[0])
-				account := faker.UUIDHyphenated()
 				orgID := faker.UUIDHyphenated()
-				imageSet := &models.ImageSet{Account: account, OrgID: orgID}
+				imageSet := &models.ImageSet{OrgID: orgID}
 				result := db.DB.Save(imageSet)
 				Expect(result.Error).To(Not(HaveOccurred()))
 				previousImage := &models.Image{
-					Account:      account,
+					OrgID:        orgID,
 					Status:       models.ImageStatusSuccess,
 					Commit:       &models.Commit{RepoID: &uid, OrgID: orgID},
 					Version:      1,
 					Distribution: "rhel-85",
 					Name:         faker.Name(),
 					ImageSetID:   &imageSet.ID,
-					OrgID:        orgID,
 				}
 				image := &models.Image{
-					Account:      account,
-					Commit:       &models.Commit{OrgID: orgID},
+					OrgID:        orgID,
+					Commit:       &models.Commit{},
 					Distribution: "rhel-85",
 					OutputTypes:  []string{models.ImageTypeCommit},
 					Version:      2,
 					Name:         previousImage.Name,
-					OrgID:        orgID,
 				}
 				result = db.DB.Save(previousImage)
 				Expect(result.Error).To(Not(HaveOccurred()))
@@ -232,29 +229,26 @@ var _ = Describe("Image Service Test", func() {
 			It("should have the parent image repo url set as parent commit url", func() {
 				id, _ := faker.RandomInt(1)
 				uid := uint(id[0])
-				account := faker.UUIDHyphenated()
 				orgID := faker.UUIDHyphenated()
-				imageSet := &models.ImageSet{Account: account, OrgID: orgID}
+				imageSet := &models.ImageSet{OrgID: orgID}
 				result := db.DB.Save(imageSet)
 				Expect(result.Error).To(Not(HaveOccurred()))
 				previousImage := &models.Image{
-					Account:      account,
+					OrgID:        orgID,
 					Status:       models.ImageStatusSuccess,
 					Commit:       &models.Commit{RepoID: &uid, OrgID: orgID},
 					Version:      1,
 					Distribution: "rhel-85",
 					Name:         faker.Name(),
 					ImageSetID:   &imageSet.ID,
-					OrgID:        orgID,
 				}
 				image := &models.Image{
-					Account:      account,
-					Commit:       &models.Commit{OrgID: orgID},
+					OrgID:        orgID,
+					Commit:       &models.Commit{},
 					OutputTypes:  []string{models.ImageTypeCommit},
 					Version:      2,
 					Distribution: "rhel-85",
 					Name:         previousImage.Name,
-					OrgID:        orgID,
 				}
 				result = db.DB.Save(previousImage)
 				Expect(result.Error).To(Not(HaveOccurred()))
@@ -279,28 +273,25 @@ var _ = Describe("Image Service Test", func() {
 				orgID := faker.UUIDHyphenated()
 				id, _ := faker.RandomInt(1)
 				uid := uint(id[0])
-				account := faker.UUIDHyphenated()
-				imageSet := &models.ImageSet{Account: account, OrgID: orgID}
+				imageSet := &models.ImageSet{OrgID: orgID}
 				result := db.DB.Save(imageSet)
 				Expect(result.Error).To(Not(HaveOccurred()))
 				previousImage := &models.Image{
-					Account:      account,
+					OrgID:        orgID,
 					Status:       models.ImageStatusSuccess,
 					Commit:       &models.Commit{RepoID: &uid, OrgID: orgID},
 					Version:      1,
 					Distribution: "rhel-86",
 					Name:         faker.Name(),
 					ImageSetID:   &imageSet.ID,
-					OrgID:        orgID,
 				}
 				image := &models.Image{
-					Account:      account,
-					Commit:       &models.Commit{OrgID: orgID},
+					OrgID:        orgID,
+					Commit:       &models.Commit{},
 					OutputTypes:  []string{models.ImageTypeCommit},
 					Version:      2,
 					Distribution: "rhel-90",
 					Name:         previousImage.Name,
-					OrgID:        orgID,
 				}
 				result = db.DB.Save(previousImage)
 				Expect(result.Error).To(Not(HaveOccurred()))
@@ -536,73 +527,40 @@ var _ = Describe("Image Service Test", func() {
 		Context("when creating an image using third party repository", func() {
 			It("should validate the images with empty repos", func() {
 				var repos []models.ThirdPartyRepo
-				account := "00000"
 				orgID := "11111"
-				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account, orgID, repos)
+				err := services.ValidateAllImageReposAreFromOrgID(orgID, repos)
 				Expect(err).ToNot(HaveOccurred())
 
 			})
 			It("should give an error", func() {
 				var repos []models.ThirdPartyRepo
-				account := ""
 				orgID := ""
-				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account, orgID, repos)
+				err := services.ValidateAllImageReposAreFromOrgID(orgID, repos)
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(new(services.ThirdPartyRepositoryInfoIsInvalid).Error()))
-			})
-
-			It("should validate the images with repos within same account", func() {
-				account := "00000"
-				orgID := faker.UUIDHyphenated()
-				repo1 := models.ThirdPartyRepo{Account: account, OrgID: orgID, Name: faker.UUIDHyphenated(), URL: "https://repo1.simple.com"}
-				result := db.DB.Create(&repo1)
-				Expect(result.Error).ToNot(HaveOccurred())
-				repo2 := models.ThirdPartyRepo{Account: account, OrgID: orgID, Name: faker.UUIDHyphenated(), URL: "https://repo2.simple.com"}
-				result = db.DB.Create(&repo2)
-				Expect(result.Error).ToNot(HaveOccurred())
-				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account, orgID, []models.ThirdPartyRepo{repo1, repo2})
-				Expect(err).ToNot(HaveOccurred())
-
+				Expect(err).To(MatchError(new(services.OrgIDNotSet).Error()))
 			})
 			It("should validate the images with repos within same org_id", func() {
 				orgID := "00000"
-				account := ""
 				repo1 := models.ThirdPartyRepo{OrgID: orgID, Name: faker.UUIDHyphenated(), URL: "https://repo1.simple.com"}
 				result := db.DB.Create(&repo1)
 				Expect(result.Error).ToNot(HaveOccurred())
 				repo2 := models.ThirdPartyRepo{OrgID: orgID, Name: faker.UUIDHyphenated(), URL: "https://repo2.simple.com"}
 				result = db.DB.Create(&repo2)
 				Expect(result.Error).ToNot(HaveOccurred())
-				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account, orgID, []models.ThirdPartyRepo{repo1, repo2})
+				err := services.ValidateAllImageReposAreFromOrgID(orgID, []models.ThirdPartyRepo{repo1, repo2})
 				Expect(err).ToNot(HaveOccurred())
 
-			})
-			It("should not validate the images with repos from different accounts", func() {
-				account1 := "1111111"
-				account2 := "2222222"
-				orgID := "00000"
-				orgID1 := ""
-				repo1 := models.ThirdPartyRepo{Account: account1, OrgID: orgID, Name: faker.UUIDHyphenated(), URL: "https://repo1.simple.com"}
-				result := db.DB.Create(&repo1)
-				Expect(result.Error).ToNot(HaveOccurred())
-				repo2 := models.ThirdPartyRepo{Account: account2, OrgID: orgID, Name: faker.UUIDHyphenated(), URL: "https://repo2.simple.com"}
-				result = db.DB.Create(&repo2)
-				Expect(result.Error).ToNot(HaveOccurred())
-				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account1, orgID1, []models.ThirdPartyRepo{repo1, repo2})
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(new(services.ThirdPartyRepositoryNotFound).Error()))
 			})
 			It("should not validate the images with repos from different org_id", func() {
 				orgID1 := "1111111"
 				orgID2 := "2222222"
-				account := ""
 				repo1 := models.ThirdPartyRepo{OrgID: orgID1, Name: faker.UUIDHyphenated(), URL: "https://repo1.simple.com"}
 				result := db.DB.Create(&repo1)
 				Expect(result.Error).ToNot(HaveOccurred())
 				repo2 := models.ThirdPartyRepo{OrgID: orgID2, Name: faker.UUIDHyphenated(), URL: "https://repo2.simple.com"}
 				result = db.DB.Create(&repo2)
 				Expect(result.Error).ToNot(HaveOccurred())
-				err := services.ValidateAllImageReposAreFromAccountOrOrgID(account, orgID1, []models.ThirdPartyRepo{repo1, repo2})
+				err := services.ValidateAllImageReposAreFromOrgID(orgID1, []models.ThirdPartyRepo{repo1, repo2})
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(new(services.ThirdPartyRepositoryNotFound).Error()))
 			})

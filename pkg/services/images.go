@@ -82,11 +82,11 @@ type ImageService struct {
 	RepoService  RepoServiceInterface
 }
 
-// ValidateAllImageReposAreFromAccountOrOrgID validates the account for Third Party Repositories
-func ValidateAllImageReposAreFromAccountOrOrgID(account string, orgID string, repos []models.ThirdPartyRepo) error {
+// ValidateAllImageReposAreFromOrgID validates the account for Third Party Repositories
+func ValidateAllImageReposAreFromOrgID(orgID string, repos []models.ThirdPartyRepo) error {
 
-	if account == "" && orgID == "" {
-		return new(ThirdPartyRepositoryInfoIsInvalid)
+	if orgID == "" {
+		return new(OrgIDNotSet)
 	}
 	if len(repos) == 0 {
 		return nil
@@ -97,7 +97,7 @@ func ValidateAllImageReposAreFromAccountOrOrgID(account string, orgID string, re
 	}
 
 	var existingRepos []models.ThirdPartyRepo
-	if result := db.AccountOrOrg(account, orgID, "").Select("id").Find(&existingRepos, ids); result.Error != nil {
+	if result := db.Org(orgID, "").Select("id").Find(&existingRepos, ids); result.Error != nil {
 		return result.Error
 	}
 	if len(existingRepos) != len(ids) {
@@ -172,7 +172,7 @@ func (s *ImageService) CreateImage(image *models.Image, account string, orgID st
 			return er
 		}
 	}
-	if err := ValidateAllImageReposAreFromAccountOrOrgID(account, orgID, image.ThirdPartyRepositories); err != nil {
+	if err := ValidateAllImageReposAreFromOrgID(orgID, image.ThirdPartyRepositories); err != nil {
 
 		return err
 	}
@@ -274,7 +274,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 			return er
 		}
 	}
-	if err := ValidateAllImageReposAreFromAccountOrOrgID(previousImage.Account, previousImage.OrgID, image.ThirdPartyRepositories); err != nil {
+	if err := ValidateAllImageReposAreFromOrgID(previousImage.OrgID, image.ThirdPartyRepositories); err != nil {
 		return err
 	}
 
