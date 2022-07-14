@@ -72,8 +72,6 @@ func ImageByOSTreeHashCtx(next http.Handler) http.Handler {
 				switch err.(type) {
 				case *services.ImageNotFoundError:
 					responseErr = errors.NewNotFound(err.Error())
-				case *services.AccountNotSet:
-					responseErr = errors.NewBadRequest(err.Error())
 				case *services.OrgIDNotSet:
 					responseErr = errors.NewBadRequest(err.Error())
 				default:
@@ -104,8 +102,6 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 				switch err.(type) {
 				case *services.ImageNotFoundError:
 					responseErr = errors.NewNotFound(err.Error())
-				case *services.AccountNotSet:
-					responseErr = errors.NewBadRequest(err.Error())
 				case *services.OrgIDNotSet:
 					responseErr = errors.NewBadRequest(err.Error())
 				case *services.IDMustBeInteger:
@@ -116,21 +112,20 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 				respondWithAPIError(w, s.Log, responseErr)
 				return
 			}
-			account, orgID := readAccountOrOrgID(w, r, s.Log)
-			if account == "" && orgID == "" {
+			orgID := readOrgID(w, r, s.Log)
+			if orgID == "" {
 				s.Log.WithFields(log.Fields{
 					"image_id": imageID,
-				}).Error("image doesn't belong to account or org_id")
-				respondWithAPIError(w, s.Log, errors.NewBadRequest("image doesn't belong to account or org_id"))
+				}).Error("image doesn't belong to org_id")
+				respondWithAPIError(w, s.Log, errors.NewBadRequest("image doesn't belong to org_id"))
 				return
 			}
-			if (image.Account != "" && image.Account != account) || (image.OrgID != "" && image.OrgID != orgID) {
+			if image.OrgID != "" && image.OrgID != orgID {
 				s.Log.WithFields(log.Fields{
-					"error":   err.Error(),
-					"account": account,
-					"org_id":  orgID,
-				}).Error("image doesn't belong to account or org_id")
-				respondWithAPIError(w, s.Log, errors.NewBadRequest("image doesn't belong to account or org_id"))
+					"error":  err.Error(),
+					"org_id": orgID,
+				}).Error("image doesn't belong to org_id")
+				respondWithAPIError(w, s.Log, errors.NewBadRequest("image doesn't belong to org_id"))
 				return
 			}
 			ctx := context.WithValue(r.Context(), imageKey, image)
@@ -182,12 +177,6 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		// initImageCreateRequest() already writes the response
 		return
 	}
-	account, err := common.GetAccount(r)
-	if err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving account from request")
-		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-		return
-	}
 	orgID, err := common.GetOrgID(r)
 	if err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving org_id from request")
@@ -223,7 +212,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctxServices.Log.Debug("Creating image from API request")
-	err = ctxServices.ImageService.CreateImage(image, account, orgID, reqID)
+	err = ctxServices.ImageService.CreateImage(image, orgID, reqID)
 	if err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Failed creating image")
 		var apiError errors.APIError
@@ -256,13 +245,6 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	previousImage := getImage(w, r)
 	if previousImage == nil {
 		// getImage already writes the response
-		return
-	}
-
-	image.Account, err = common.GetAccount(r)
-	if err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving account from request")
-		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 		return
 	}
 	image.OrgID, err = common.GetOrgID(r)
@@ -395,7 +377,7 @@ func validateGetAllImagesSearchParams(next http.Handler) http.Handler {
 	})
 }
 
-// GetAllImages image objects from the database for an account/orgID
+// GetAllImages image objects from the database for an orgID
 func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	ctxServices.Log.Debug("Getting all images")
@@ -403,12 +385,12 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	var images []models.Image
 	result := imageFilters(r, db.DB)
 	pagination := common.GetPagination(r)
-	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-	if account == "" && orgID == "" {
-		// logs and response handled by readAccountOrOrgID
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID
 		return
 	}
-	countResult := db.AccountOrOrgTx(account, orgID, imageFilters(r, db.DB.Model(&models.Image{})), "images").Count(&count)
+	countResult := db.OrgDB(orgID, imageFilters(r, db.DB.Model(&models.Image{})), "images").Count(&count)
 	if countResult.Error != nil {
 		ctxServices.Log.WithField("error", countResult.Error.Error()).Error("Error retrieving images")
 		countErr := errors.NewInternalServerError()
@@ -418,7 +400,7 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	result = db.AccountOrOrgTx(account, orgID, result, "images").Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Preload("Commit.Repo").Preload("CustomPackages").Preload("ThirdPartyRepositories").Joins("Commit").Joins("Installer").Find(&images)
+	result = db.OrgDB(orgID, result, "images").Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Preload("Commit.Repo").Preload("CustomPackages").Preload("ThirdPartyRepositories").Joins("Commit").Joins("Installer").Find(&images)
 	if result.Error != nil {
 		ctxServices.Log.WithField("error", result.Error.Error()).Error("Error retrieving images")
 		err := errors.NewInternalServerError()
@@ -470,7 +452,7 @@ type ImageDetail struct {
 	UpdateUpdated      int           `json:"update_updated"`
 }
 
-// GetImageByID obtains an image from the database for an account/orgID
+// GetImageByID obtains an image from the database for an orgID
 func GetImageByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -478,7 +460,7 @@ func GetImageByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetImageDetailsByID obtains an image from the database for an account/orgID
+// GetImageDetailsByID obtains an image from the database for an orgID
 func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -504,7 +486,7 @@ func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetImageByOstree obtains an image from the database for an account/orgID based on Commit Ostree
+// GetImageByOstree obtains an image from the database for an orgID based on Commit Ostree
 func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -671,9 +653,9 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 	if err := readRequestJSONBody(w, r, ctxServices.Log, &image); err != nil {
 		return
 	}
-	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-	if account == "" && orgID == "" {
-		// logs and response handled by readAccountOrOrgID
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID
 		return
 	}
 	if image == nil {
@@ -682,7 +664,7 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, ctxServices.Log, err)
 		return
 	}
-	imageExists, err := ctxServices.ImageService.CheckImageName(image.Name, account, orgID)
+	imageExists, err := ctxServices.ImageService.CheckImageName(image.Name, orgID)
 	if err != nil {
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
@@ -731,7 +713,7 @@ func ResumeCreateImage(w http.ResponseWriter, r *http.Request) {
 		resumeLog.Info("Resuming image build")
 
 		// recreate a stripped down identity header
-		strippedIdentity := `{ "identity": {"account_number": ` + image.Account + `, "type": "User", "internal": {"org_id": ` + image.OrgID + `, }, }, }`
+		strippedIdentity := `{ "identity": {"type": "User", "internal": {"org_id": ` + image.OrgID + `, }, }, }`
 		resumeLog.WithField("identity_text", strippedIdentity).Debug("Creating a new stripped identity")
 		base64Identity := base64.StdEncoding.EncodeToString([]byte(strippedIdentity))
 		resumeLog.WithField("identity_base64", base64Identity).Debug("Using a base64encoded stripped identity")
