@@ -26,6 +26,7 @@ type UpdateTransaction struct {
 	Status          string           `json:"Status"`
 	RepoID          uint             `json:"RepoID"`
 	Repo            *Repo            `json:"Repo"`
+	ChangesRefs     bool             `gorm:"default:false" json:"ChangesRefs"`
 	DispatchRecords []DispatchRecord `gorm:"many2many:updatetransaction_dispatchrecords;" json:"DispatchRecords"`
 }
 
