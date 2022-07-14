@@ -104,6 +104,7 @@ func TestGetUpdatePlaybook(t *testing.T) {
 
 var _ = Describe("Update routes", func() {
 	var edgeAPIServices *dependencies.EdgeAPIServices
+	orgID := faker.UUIDHyphenated()
 	BeforeEach(func() {
 		logger := log.NewEntry(log.StandardLogger())
 		edgeAPIServices = &dependencies.EdgeAPIServices{
@@ -118,10 +119,12 @@ var _ = Describe("Update routes", func() {
 
 		BeforeEach(func() {
 			imageSetSameGroup := &models.ImageSet{
-				Name: "image-set-same-group",
+				Name:  "image-set-same-group",
+				OrgID: orgID,
 			}
 			imageSetDifferentGroup := &models.ImageSet{
-				Name: "image-set-different-group",
+				Name:  "image-set-different-group",
+				OrgID: orgID,
 			}
 			db.DB.Create(&imageSetSameGroup)
 			db.DB.Create(&imageSetDifferentGroup)
