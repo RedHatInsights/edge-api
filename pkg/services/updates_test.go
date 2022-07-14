@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
-	"github.com/redhatinsights/edge-api/pkg/clients/inventory/mock_inventory"
 	apiError "github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"io/ioutil"
