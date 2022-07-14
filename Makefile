@@ -50,7 +50,7 @@ build-test-container:
 		.
 
 coverage:
-	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /test/) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
+	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v $(EXCLUDE_DIRS)) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
 
 coverage-html:
 	go tool cover -html=coverage.txt -o coverage.html
@@ -137,10 +137,10 @@ test:
 	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /test/) $(TEST_OPTIONS)
 
 test-clean-no-fdo:
-	go test -count=1 -cover $$(go list ./... | grep -v $(EXCLUDE_DIRS)) $(TEST_OPTIONS)
+	go test -count=1 -cover $$(go list ./... | grep -v /test/) $(TEST_OPTIONS)
 
 test-no-fdo:
-	go test -cover $$(go list ./... | grep -v $(EXCLUDE_DIRS)) $(TEST_OPTIONS)
+	go test -cover $$(go list ./... | grep -v /test/) $(TEST_OPTIONS)
 
 vet:
 	go vet $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
