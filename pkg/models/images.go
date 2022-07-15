@@ -93,6 +93,8 @@ const (
 	ImageStatusSuccess = "SUCCESS"
 	// ImageStatusInterrupted is for when an image build is interrupted
 	ImageStatusInterrupted = "INTERRUPTED"
+	// ImageStatusPending is for when an image or installer is waiting to be built
+	ImageStatusPending = "PENDING"
 
 	// MissingInstaller is the error message for not passing an installer in the request
 	MissingInstaller = "installer info must be provided"
@@ -244,10 +246,8 @@ func (i *Image) GetALLPackagesList() *[]string {
 
 // BeforeCreate method is called before creating Images, it make sure org_id is not empty
 func (i *Image) BeforeCreate(tx *gorm.DB) error {
-	log.WithFields(log.Fields{
-		"image_orgID": i.OrgID,
-	}).Error("image dosent have an org_id")
-	if len(i.OrgID) == 0 {
+	if i.OrgID == "" {
+		log.Error("image do not have an org_id")
 		return ErrOrgIDIsMandatory
 
 	}
@@ -257,12 +257,9 @@ func (i *Image) BeforeCreate(tx *gorm.DB) error {
 
 // BeforeCreate method is called before creating ImageSet, it make sure org_id is not empty
 func (imgset *ImageSet) BeforeCreate(tx *gorm.DB) error {
-	log.WithFields(log.Fields{
-		"imageset_orgID": imgset.OrgID,
-	}).Error("imageset dosent have an org_id")
-	if len(imgset.OrgID) == 0 {
+	if imgset.OrgID == "" {
+		log.Error("imageSet do have an org_id")
 		return ErrOrgIDIsMandatory
-
 	}
 
 	return nil
