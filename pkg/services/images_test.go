@@ -75,7 +75,6 @@ var _ = Describe("Image Service Test", func() {
 				imageSet = &models.ImageSet{
 					Name:    "test",
 					Version: 2,
-					Account: common.DefaultAccount,
 					OrgID:   common.DefaultOrgID,
 				}
 				result := db.DB.Create(imageSet)
@@ -88,7 +87,6 @@ var _ = Describe("Image Service Test", func() {
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
 					Version:    1,
-					Account:    common.DefaultAccount,
 					OrgID:      common.DefaultOrgID,
 				}
 				result = db.DB.Create(imageV1.Commit)
@@ -103,7 +101,6 @@ var _ = Describe("Image Service Test", func() {
 					Status:     models.ImageStatusError,
 					ImageSetID: &imageSet.ID,
 					Version:    2,
-					Account:    common.DefaultAccount,
 					OrgID:      common.DefaultOrgID,
 				}
 				db.DB.Create(imageV2.Commit)
@@ -116,7 +113,6 @@ var _ = Describe("Image Service Test", func() {
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
 					Version:    3,
-					Account:    common.DefaultAccount,
 					OrgID:      common.DefaultOrgID,
 				}
 				db.DB.Create(imageV3.Commit)
@@ -456,47 +452,45 @@ var _ = Describe("Image Service Test", func() {
 			})
 		})
 		Context("when checking if the image version we are trying to update is latest", func() {
-			account := faker.UUIDHyphenated()
 			orgID1 := faker.UUIDHyphenated()
-			imageSet := models.ImageSet{Account: account, OrgID: orgID1}
+			imageSet := models.ImageSet{OrgID: orgID1}
 			db.DB.Save(&imageSet)
-			image := models.Image{Account: account, OrgID: orgID1, ImageSetID: &imageSet.ID, Version: 1, Name: "image-same-name"}
+			image := models.Image{OrgID: orgID1, ImageSetID: &imageSet.ID, Version: 1, Name: "image-same-name"}
 			db.DB.Save(&image)
-			image2 := models.Image{Account: account, OrgID: orgID1, ImageSetID: &imageSet.ID, Version: 2, Name: "image-same-name"}
+			image2 := models.Image{OrgID: orgID1, ImageSetID: &imageSet.ID, Version: 2, Name: "image-same-name"}
 			db.DB.Save(&image2)
-			image3 := models.Image{Account: account, OrgID: orgID1, ImageSetID: &imageSet.ID, Version: 3, Name: "image-same-name"}
+			image3 := models.Image{OrgID: orgID1, ImageSetID: &imageSet.ID, Version: 3, Name: "image-same-name"}
 			db.DB.Save(&image3)
-			// foreign image without account
+			// foreign image without org_id
 			image4 := models.Image{ImageSetID: &imageSet.ID, Version: 4, Name: "image-same-name"}
 			db.DB.Save(&image4)
 			// foreign image without image-set
-			image5 := models.Image{Account: account, OrgID: orgID1, Version: 4, Name: "image-same-name"}
+			image5 := models.Image{OrgID: orgID1, Version: 4, Name: "image-same-name"}
 			db.DB.Save(&image5)
 
-			// foreign image from another account and image-set, is here to ensure we are analysing the correct collection
-			account2 := faker.UUIDHyphenated()
+			// foreign image from another org_id and image-set, is here to ensure we are analysing the correct collection
 			orgID2 := faker.UUIDHyphenated()
-			account2ImageSet := models.ImageSet{Account: account, OrgID: orgID1}
-			db.DB.Save(&account2ImageSet)
-			image6 := models.Image{Account: account2, OrgID: orgID2, ImageSetID: &account2ImageSet.ID, Version: 4, Name: "image-same-name"}
+			orgID2ImageSet := models.ImageSet{OrgID: orgID1}
+			db.DB.Save(&orgID2ImageSet)
+			image6 := models.Image{OrgID: orgID2, ImageSetID: &orgID2ImageSet.ID, Version: 4, Name: "image-same-name"}
 			db.DB.Save(&image6)
 			// foreign image from another image-set, is here to ensure we are analysing the correct collection
-			imageSet2 := models.ImageSet{Account: account, OrgID: orgID2}
+			imageSet2 := models.ImageSet{OrgID: orgID2}
 			db.DB.Save(&imageSet2)
-			image7 := models.Image{Account: account, OrgID: orgID2, ImageSetID: &imageSet2.ID, Version: 4, Name: "image-same-name"}
+			image7 := models.Image{OrgID: orgID2, ImageSetID: &imageSet2.ID, Version: 4, Name: "image-same-name"}
 			db.DB.Save(&image7)
 
 			It("the image has to be defined", func() {
-				err := service.CheckIfIsLatestVersion(&models.Image{Account: account, OrgID: orgID1, ImageSetID: &imageSet.ID, Version: 5, Name: "image-same-name"})
+				err := service.CheckIfIsLatestVersion(&models.Image{OrgID: orgID1, ImageSetID: &imageSet.ID, Version: 5, Name: "image-same-name"})
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(new(services.ImageUnDefined)))
 			})
 
-			It("the image account must be defined", func() {
+			It("the image orgID must be defined", func() {
 
 				err := service.CheckIfIsLatestVersion(&image4)
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(new(services.AccountOrOrgIDNotSet)))
+				Expect(err).To(MatchError(new(services.OrgIDNotSet)))
 			})
 
 			It("the image image-set must be be defined", func() {
@@ -523,7 +517,7 @@ var _ = Describe("Image Service Test", func() {
 			})
 		})
 	})
-	Describe("validate images packages account", func() {
+	Describe("validate images packages orgID", func() {
 		Context("when creating an image using third party repository", func() {
 			It("should validate the images with empty repos", func() {
 				var repos []models.ThirdPartyRepo
@@ -572,25 +566,22 @@ var _ = Describe("Image Service Test", func() {
 			It("validate content", func() {
 				var image *models.Image
 				var err error
-				orgID := faker.UUIDHyphenated()
 				imageSet := &models.ImageSet{
 					Name:    "test",
 					Version: 1,
-					Account: common.DefaultAccount,
-					OrgID:   orgID,
+					OrgID:   common.DefaultOrgID,
 				}
 				db.DB.Create(imageSet)
 
 				image = &models.Image{
 					Commit: &models.Commit{
 						OSTreeCommit: faker.UUIDHyphenated(),
-						OrgID:        orgID,
+						OrgID:        common.DefaultOrgID,
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
 					Version:    1,
-					Account:    common.DefaultAccount,
-					OrgID:      orgID,
+					OrgID:      common.DefaultOrgID,
 				}
 				db.DB.Create(image)
 				image, err = service.GetImageByID(fmt.Sprint(image.ID))
@@ -607,15 +598,14 @@ var _ = Describe("Image Service Test", func() {
 	})
 	Describe("Devices update availability from image set", func() {
 		Context("should set device update availability", func() {
-			account := faker.UUIDHyphenated()
 			orgID := faker.UUIDHyphenated()
-			imageSet := models.ImageSet{Account: account, OrgID: orgID, Name: faker.UUIDHyphenated()}
+			imageSet := models.ImageSet{OrgID: orgID, Name: faker.UUIDHyphenated()}
 			db.DB.Create(&imageSet)
 			initialImages := []models.Image{
-				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account, OrgID: orgID},
-				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account, OrgID: orgID},
-				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account, OrgID: orgID},
-				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account, OrgID: orgID},
+				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, OrgID: orgID},
+				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, OrgID: orgID},
+				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, OrgID: orgID},
+				{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, OrgID: orgID},
 			}
 			images := make([]models.Image, 0, len(initialImages))
 			for _, image := range initialImages {
@@ -626,7 +616,7 @@ var _ = Describe("Image Service Test", func() {
 
 			devices := make([]models.Device, 0, len(images))
 			for ind, image := range images {
-				device := models.Device{Account: account, OrgID: orgID, ImageID: image.ID, UpdateAvailable: false}
+				device := models.Device{OrgID: orgID, ImageID: image.ID, UpdateAvailable: false}
 				if ind == len(images)-1 {
 					device.UpdateAvailable = true
 				}
@@ -635,16 +625,16 @@ var _ = Describe("Image Service Test", func() {
 			}
 			lastDevicesIndex := len(devices) - 1
 
-			OtherImageSet := models.ImageSet{Account: account, OrgID: orgID, Name: faker.UUIDHyphenated()}
+			OtherImageSet := models.ImageSet{OrgID: orgID, Name: faker.UUIDHyphenated()}
 			db.DB.Create(&OtherImageSet)
 
-			otherImage := models.Image{Status: models.ImageStatusSuccess, ImageSetID: &OtherImageSet.ID, Account: account, OrgID: orgID}
+			otherImage := models.Image{Status: models.ImageStatusSuccess, ImageSetID: &OtherImageSet.ID, OrgID: orgID}
 			db.DB.Create(&otherImage)
-			OtherDevice := models.Device{Account: account, OrgID: orgID, ImageID: otherImage.ID, UpdateAvailable: true}
+			OtherDevice := models.Device{OrgID: orgID, ImageID: otherImage.ID, UpdateAvailable: true}
 			db.DB.Create(&OtherDevice)
 
 			It("No error occurred without errors when calling function", func() {
-				err := service.SetDevicesUpdateAvailabilityFromImageSet(account, orgID, imageSet.ID)
+				err := service.SetDevicesUpdateAvailabilityFromImageSet(orgID, imageSet.ID)
 				Expect(err).To(BeNil())
 			})
 
@@ -674,7 +664,7 @@ var _ = Describe("Image Service Test", func() {
 			})
 
 			It("running function for Other imageSet update other device", func() {
-				err := service.SetDevicesUpdateAvailabilityFromImageSet(account, orgID, OtherImageSet.ID)
+				err := service.SetDevicesUpdateAvailabilityFromImageSet(orgID, OtherImageSet.ID)
 				Expect(err).To(BeNil())
 				// reload other device
 				var device models.Device
@@ -684,20 +674,19 @@ var _ = Describe("Image Service Test", func() {
 			})
 
 			It("should run without errors when no devices", func() {
-				imageSet := models.ImageSet{Account: account, OrgID: orgID, Name: faker.UUIDHyphenated()}
+				imageSet := models.ImageSet{OrgID: orgID, Name: faker.UUIDHyphenated()}
 				result := db.DB.Create(&imageSet)
 				Expect(result.Error).To(BeNil())
-				image := models.Image{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, Account: account, OrgID: orgID}
+				image := models.Image{Status: models.ImageStatusSuccess, ImageSetID: &imageSet.ID, OrgID: orgID}
 				result = db.DB.Create(&image)
 				Expect(result.Error).To(BeNil())
 
-				err := service.SetDevicesUpdateAvailabilityFromImageSet(account, orgID, imageSet.ID)
+				err := service.SetDevicesUpdateAvailabilityFromImageSet(orgID, imageSet.ID)
 				Expect(err).To(BeNil())
 			})
 		})
 	})
 	Describe("Create image when using getImageSetForNewImage", func() {
-		account := faker.UUIDHyphenated()
 		orgID := faker.UUIDHyphenated()
 		requestID := faker.UUIDHyphenated()
 		imageName := faker.UUIDHyphenated()
@@ -706,7 +695,7 @@ var _ = Describe("Image Service Test", func() {
 		When("When image-builder ComposeCommit fail", func() {
 			It("imageSet is created", func() {
 				mockImageBuilderClient.EXPECT().ComposeCommit(&image).Return(&image, expectedErr)
-				err := service.CreateImage(&image, account, orgID, requestID)
+				err := service.CreateImage(&image, orgID, requestID)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
 				// image is not created
@@ -723,7 +712,7 @@ var _ = Describe("Image Service Test", func() {
 				// set image imageSet to nil
 				image.ImageSetID = nil
 				mockImageBuilderClient.EXPECT().ComposeCommit(&image).Return(&image, expectedErr)
-				err := service.CreateImage(&image, account, orgID, requestID)
+				err := service.CreateImage(&image, orgID, requestID)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
 				// image is not created
@@ -740,9 +729,9 @@ var _ = Describe("Image Service Test", func() {
 				// set image imageSet to nil
 				image.ImageSetID = nil
 				// create a new image linked with the known imageSet
-				result := db.DB.Create(&models.Image{Account: account, OrgID: orgID, Distribution: "rhel-85", Name: faker.UUIDHyphenated(), ImageSetID: &imageSetID})
+				result := db.DB.Create(&models.Image{OrgID: orgID, Distribution: "rhel-85", Name: faker.UUIDHyphenated(), ImageSetID: &imageSetID})
 				Expect(result.Error).ToNot(HaveOccurred())
-				err := service.CreateImage(&image, account, orgID, requestID)
+				err := service.CreateImage(&image, orgID, requestID)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal("image set already exists"))
 				// image is not created
@@ -752,7 +741,6 @@ var _ = Describe("Image Service Test", func() {
 		})
 	})
 	Describe("Create image when ValidateImagePackage", func() {
-		account := faker.UUIDHyphenated()
 		orgID := faker.UUIDHyphenated()
 		requestID := faker.UUIDHyphenated()
 		imageName := faker.UUIDHyphenated()
@@ -774,7 +762,7 @@ var _ = Describe("Image Service Test", func() {
 				imageBuilder.Meta.Count = 1
 				mockImageBuilderClient.EXPECT().SearchPackage("vim-common", "x86_64", "rhel-85").Return(imageBuilder, nil)
 				mockImageBuilderClient.EXPECT().ComposeCommit(&image).Return(&image, expectedErr)
-				err := service.CreateImage(&image, account, orgID, requestID)
+				err := service.CreateImage(&image, orgID, requestID)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
 				// image is not created
@@ -795,7 +783,7 @@ var _ = Describe("Image Service Test", func() {
 				imageBuilder := &imageBuilderClient.SearchPackageResult{}
 				imageBuilder.Meta.Count = 0
 				mockImageBuilderClient.EXPECT().SearchPackage("badrpm", "x86_64", "rhel-85").Return(imageBuilder, expectedErr)
-				err := service.CreateImage(&image, account, orgID, requestID)
+				err := service.CreateImage(&image, orgID, requestID)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
 				// image is not created
@@ -817,7 +805,7 @@ var _ = Describe("Image Service Test", func() {
 				expectedErr := fmt.Errorf("value is not one of the allowed values")
 				imageBuilder := &imageBuilderClient.SearchPackageResult{}
 				mockImageBuilderClient.EXPECT().SearchPackage("vim-common", "", "rhel-85").Return(imageBuilder, expectedErr)
-				err := service.CreateImage(&image, account, orgID, requestID)
+				err := service.CreateImage(&image, orgID, requestID)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
 				// image is not created
@@ -839,7 +827,7 @@ var _ = Describe("Image Service Test", func() {
 				expectedErr := fmt.Errorf("value is not one of the allowed values")
 				imageBuilder := &imageBuilderClient.SearchPackageResult{}
 				mockImageBuilderClient.EXPECT().SearchPackage("vim-common", "x86_64", "").Return(imageBuilder, expectedErr)
-				err := service.CreateImage(&image, account, orgID, requestID)
+				err := service.CreateImage(&image, orgID, requestID)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
 				// image is not created
@@ -853,9 +841,8 @@ var _ = Describe("Image Service Test", func() {
 		It("should have an error returned by image builder", func() {
 			id, _ := faker.RandomInt(1)
 			uid := uint(id[0])
-			account := faker.UUIDHyphenated()
 			orgID := faker.UUIDHyphenated()
-			imageSet := &models.ImageSet{Account: account, OrgID: orgID}
+			imageSet := &models.ImageSet{OrgID: orgID}
 			result := db.DB.Save(imageSet)
 			arch := &models.Commit{Arch: "x86_64", OrgID: orgID}
 			pkgs := []models.Package{
@@ -865,7 +852,6 @@ var _ = Describe("Image Service Test", func() {
 			}
 			Expect(result.Error).To(Not(HaveOccurred()))
 			previousImage := &models.Image{
-				Account:      account,
 				Status:       models.ImageStatusSuccess,
 				Commit:       &models.Commit{RepoID: &uid, OrgID: orgID},
 				Version:      1,
@@ -875,7 +861,6 @@ var _ = Describe("Image Service Test", func() {
 				OrgID:        orgID,
 			}
 			image := &models.Image{
-				Account:      account,
 				Commit:       arch,
 				Distribution: "rhel-85",
 				OutputTypes:  []string{models.ImageTypeCommit},
