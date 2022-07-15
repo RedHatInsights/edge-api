@@ -599,8 +599,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 	if len(devicesUpdate.DevicesUUID) > 0 {
 		for _, UUID := range devicesUpdate.DevicesUUID {
 			inv, err = s.Inventory.ReturnDevicesByID(UUID)
-
-			if inv.Count >= 0 {
+			if inv.Count > 0 {
 				ii = append(ii, inv)
 			}
 			if err != nil {
@@ -633,27 +632,11 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 
 		update.DispatchRecords = []models.DispatchRecord{}
 
-		//  Removing commit dependency to avoid overwriting the repo
-		var repo *models.Repo
-		s.log.WithField("updateID", update.ID).Debug("Ceating new repo for update transaction")
-		repo = &models.Repo{
-			Status: models.RepoStatusBuilding,
-		}
-		result := db.DB.Create(&repo)
-		if result.Error != nil {
-			s.log.WithField("error", result.Error.Error()).Debug("Result error")
-
-		}
-
-		update.Repo = repo
-		s.log.WithFields(log.Fields{
-			"repoURL": repo.URL,
-			"repoID":  repo.ID,
-		}).Debug("Getting repo info")
-
 		devices := update.Devices
 		oldCommits := update.OldCommits
 		toUpdate := true
+
+		var repo *models.Repo
 
 		for _, device := range inventory.Result {
 			//  Check for the existence of a Repo that already has this commit and don't duplicate
@@ -683,6 +666,9 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 			}
 
 			if device.Ostree.RHCClientID == "" {
+				s.log.WithFields(log.Fields{
+					"deviceUUID": device.ID,
+				}).Info("Device is disconnected")
 				update.Status = models.UpdateStatusDeviceDisconnected
 				if result := db.DB.Create(&update); result.Error != nil {
 					return nil, result.Error
@@ -756,8 +742,27 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 			}
 
 			if toUpdate {
+				if repo == nil {
+					//  Removing commit dependency to avoid overwriting the repo
+					s.log.WithField("updateID", update.ID).Debug("Creating new repo for update transaction")
+					repo = &models.Repo{
+						Status: models.RepoStatusBuilding,
+					}
+					result := db.DB.Create(&repo)
+					if result.Error != nil {
+						s.log.WithField("error", result.Error.Error()).Debug("Result error")
+					}
+					s.log.WithFields(log.Fields{
+						"repoURL": repo.URL,
+						"repoID":  repo.ID,
+					}).Debug("Getting repo info")
+				}
+
+				update.Repo = repo
+
 				//Should not create a transaction to device already updated
 				update.OldCommits = oldCommits
+				update.RepoID = repo.ID
 				if err := db.DB.Save(&update).Error; err != nil {
 					err = errors.NewBadRequest(err.Error())
 					s.log.WithField("error", err.Error()).Error("Error encoding error")
