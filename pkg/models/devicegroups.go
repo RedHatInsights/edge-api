@@ -4,6 +4,7 @@ import (
 	"errors"
 	"regexp"
 
+	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -96,6 +97,7 @@ func (group *DeviceGroup) BeforeDelete(tx *gorm.DB) error {
 // BeforeCreate method is called before creating device group, it make sure org_id is not empty
 func (group *DeviceGroup) BeforeCreate(tx *gorm.DB) error {
 	if group.OrgID == "" {
+		log.Error("device-group do not have an org_id")
 		return ErrOrgIDIsMandatory
 	}
 
