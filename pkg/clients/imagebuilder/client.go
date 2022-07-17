@@ -460,7 +460,7 @@ func (c *Client) GetImageThirdPartyRepos(image *models.Image) ([]Repository, err
 	if len(image.ThirdPartyRepositories) == 0 {
 		return []Repository{}, nil
 	}
-	if image.Account == "" {
+	if image.OrgID == "" {
 		return nil, errors.New("error retrieving account information, image account undefined")
 	}
 	repos := make([]Repository, len(image.ThirdPartyRepositories))
