@@ -461,7 +461,7 @@ func (c *Client) GetImageThirdPartyRepos(image *models.Image) ([]Repository, err
 		return []Repository{}, nil
 	}
 	if image.OrgID == "" {
-		return nil, errors.New("error retrieving account information, image account undefined")
+		return nil, errors.New("error retrieving orgID  information, image orgID undefined")
 	}
 	repos := make([]Repository, len(image.ThirdPartyRepositories))
 	thirdpartyrepos := make([]models.ThirdPartyRepo, len(image.ThirdPartyRepositories))
@@ -471,7 +471,7 @@ func (c *Client) GetImageThirdPartyRepos(image *models.Image) ([]Repository, err
 		thirdpartyrepoIDS[repo] = int(image.ThirdPartyRepositories[repo].ID)
 	}
 	var count int64
-	result := db.DB.Where("account = ?", image.Account).Find(&thirdpartyrepos, thirdpartyrepoIDS).Count(&count)
+	result := db.Org(image.OrgID, "").Find(&thirdpartyrepos, thirdpartyrepoIDS).Count(&count)
 	if result.Error != nil {
 		c.log.WithField("error", result.Error).Error("Error finding custom repositories")
 		return nil, result.Error
