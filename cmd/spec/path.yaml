@@ -52,6 +52,16 @@ paths:
           description: "field: filter by status"
           schema:
             type: string
+        - name: distribution
+          in: query
+          description: 'field: filter by distribution'
+          schema:
+            type: string
+        - name: created_at
+          in: query
+          description: 'field: filter by createion date'
+          schema:
+            type: string
       responses:
         "200":
           content:
@@ -584,9 +594,29 @@ paths:
           description: "field: choose to order asc or desc"
           schema:
             type: string
-        - name: hostname_or_id
+        - name: name
           in: query
-          description: "field: filter by hostname_or_id"
+          description: 'field: filter by name'
+          schema:
+            type: string
+        - name: uuid
+          in: query
+           description: 'field: filter by uuid'
+          schema:
+            type: string
+        - name: created_at
+          in: query
+          description: 'field: filter by creation date'
+          schema:
+            type: string
+        - name: image_id
+          in: query
+          description: 'field: filter by image id'
+          schema:
+            type: string
+        - name: update_available
+          in: query
+          description: 'field: filter by upadte available'
           schema:
             type: string
       responses:
@@ -774,6 +804,11 @@ paths:
           description: "field: filter by status"
           schema:
             type: string
+        - name: version
+          in: query
+          description: 'field: filter by version'
+          schema:
+            type: string
         - name: limit
           in: query
           description: "field: return number of images until limit is reached. Default is 100."
@@ -866,6 +901,16 @@ paths:
         - name: name
           in: query
           description: "field: filter by name"
+          schema:
+            type: string
+        - name: created_at
+          in: query
+          description: 'field: filter by creation date'
+          schema:
+            type: string
+        - name: updated_at
+          in: query
+          description: 'field: filter by update date'
           schema:
             type: string
       responses:
@@ -1132,6 +1177,16 @@ paths:
            description: "field: filter by name"
            schema:
              type: string
+        - name: created_at
+          in: query
+          description: 'field: filter by creation date'
+          schema:
+            type: string
+        - name: updated_at
+          in: query
+          description: 'field: filter by update date'
+          schema:
+            type: string
        responses:
          "200":
            content:
