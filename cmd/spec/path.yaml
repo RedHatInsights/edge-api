@@ -601,7 +601,7 @@ paths:
             type: string
         - name: uuid
           in: query
-           description: 'field: filter by uuid'
+          description: 'field: filter by uuid'
           schema:
             type: string
         - name: created_at
@@ -1177,16 +1177,16 @@ paths:
            description: "field: filter by name"
            schema:
              type: string
-        - name: created_at
-          in: query
-          description: 'field: filter by creation date'
-          schema:
-            type: string
-        - name: updated_at
-          in: query
-          description: 'field: filter by update date'
-          schema:
-            type: string
+         - name: created_at
+           in: query
+           description: "field: filter by create date"
+           schema:
+             type: string
+         - name: updated_at
+           in: query
+           description: "field: filter by update date"
+           schema:
+             type: string
        responses:
          "200":
            content:
