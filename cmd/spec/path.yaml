@@ -59,7 +59,7 @@ paths:
             type: string
         - name: created_at
           in: query
-          description: 'field: filter by createion date'
+          description: 'field: filter by creation date'
           schema:
             type: string
       responses:
@@ -616,7 +616,7 @@ paths:
             type: string
         - name: update_available
           in: query
-          description: 'field: filter by upadte available'
+          description: 'field: filter by update available'
           schema:
             type: string
       responses:
