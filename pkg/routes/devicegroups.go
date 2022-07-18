@@ -95,9 +95,9 @@ func DeviceGroupDetailsCtx(next http.Handler) http.Handler {
 				respondWithAPIError(w, ctxServices.Log, responseErr)
 				return
 			}
-			account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-			if account == "" && orgID == "" {
-				// logs and response handled by readAccountOrOrgID
+			orgID := readOrgID(w, r, ctxServices.Log)
+			if orgID == "" {
+				// logs and response handled by readOrgID
 				return
 			}
 			ctx := setContextDeviceGroupDetails(r.Context(), deviceGroup)
@@ -137,9 +137,9 @@ func DeviceGroupCtx(next http.Handler) http.Handler {
 				respondWithAPIError(w, ctxServices.Log, responseErr)
 				return
 			}
-			account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-			if account == "" && orgID == "" {
-				// logs and response handled by readAccountOrOrgID
+			orgID := readOrgID(w, r, ctxServices.Log)
+			if orgID == "" {
+				// logs and response handled by readOrgID
 				return
 			}
 			ctx := setContextDeviceGroup(r.Context(), deviceGroup)
@@ -170,12 +170,12 @@ func DeviceGroupDeviceCtx(next http.Handler) http.Handler {
 				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 				return
 			}
-			account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-			if account == "" && orgID == "" {
-				// logs and response handled by readAccountOrOrgID
+			orgID := readOrgID(w, r, ctxServices.Log)
+			if orgID == "" {
+				// logs and response handled by readOrgID
 				return
 			}
-			deviceGroupDevice, err := ctxServices.DeviceGroupsService.GetDeviceGroupDeviceByID(account, orgID, deviceGroup.ID, uint(deviceID))
+			deviceGroupDevice, err := ctxServices.DeviceGroupsService.GetDeviceGroupDeviceByID(orgID, deviceGroup.ID, uint(deviceID))
 			if err != nil {
 				var responseErr errors.APIError
 				switch err.(type) {
@@ -261,27 +261,27 @@ func ValidateGetAllDeviceGroupsFilterParams(next http.Handler) http.Handler {
 	})
 }
 
-// GetAllDeviceGroups return devices groups for an account and orgID
+// GetAllDeviceGroups return devices groups for an orgID
 func GetAllDeviceGroups(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	deviceGroupService := ctxServices.DeviceGroupsService
 	tx := deviceGroupsFilters(r, db.DB)
 
-	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-	if account == "" && orgID == "" {
-		// logs and response handled by readAccountOrOrgID
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID
 		return
 	}
 
 	pagination := common.GetPagination(r)
 
-	deviceGroupsCount, err := deviceGroupService.GetDeviceGroupsCount(account, orgID, tx)
+	deviceGroupsCount, err := deviceGroupService.GetDeviceGroupsCount(orgID, tx)
 	if err != nil {
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
 
-	deviceGroups, err := deviceGroupService.GetDeviceGroups(account, orgID, pagination.Limit, pagination.Offset, tx)
+	deviceGroups, err := deviceGroupService.GetDeviceGroups(orgID, pagination.Limit, pagination.Offset, tx)
 	if err != nil {
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
@@ -318,7 +318,7 @@ func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, ctxServices.Log, &deviceGroup)
 }
 
-// GetDeviceGroupDetailsByID return devices groups details for an account and Id
+// GetDeviceGroupDetailsByID return devices groups details for an Id
 func GetDeviceGroupDetailsByID(w http.ResponseWriter, r *http.Request) {
 	if deviceGroup := getContextDeviceGroupDetails(w, r); deviceGroup != nil {
 		ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -326,7 +326,7 @@ func GetDeviceGroupDetailsByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetDeviceGroupDetailsByIDView return devices groups details for an account and Id
+// GetDeviceGroupDetailsByIDView return devices groups details for an ID
 func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	deviceGroup := getContextDeviceGroup(w, r)
@@ -377,7 +377,7 @@ func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, ctxServices.Log, &deviceGroupDetails)
 }
 
-// GetDeviceGroupByID return devices groups for an account and Id
+// GetDeviceGroupByID return devices groups for an ID
 func GetDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
 	if deviceGroup := getContextDeviceGroup(w, r); deviceGroup != nil {
 		ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -418,12 +418,12 @@ func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 			// error handled by createRequest already
 			return
 		}
-		account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-		if account == "" && orgID == "" {
-			// logs and response handled by readAccountOrOrgID
+		orgID := readOrgID(w, r, ctxServices.Log)
+		if orgID == "" {
+			// logs and response handled by readOrgID
 			return
 		}
-		err = ctxServices.DeviceGroupsService.UpdateDeviceGroup(deviceGroup, account, orgID, fmt.Sprint(oldDeviceGroup.ID))
+		err = ctxServices.DeviceGroupsService.UpdateDeviceGroup(deviceGroup, orgID, fmt.Sprint(oldDeviceGroup.ID))
 		if err != nil {
 			ctxServices.Log.WithField("error", err.Error()).Error("Error updating device group")
 			var apiError errors.APIError
@@ -488,10 +488,10 @@ func createDeviceRequest(w http.ResponseWriter, r *http.Request) (*models.Device
 		return nil, err
 	}
 
-	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-	if account == "" && orgID == "" {
-		// logs and response handled by readAccountOrOrgID
-		return nil, errors.NewBadRequest("couldn not read account or org id")
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID
+		return nil, errors.NewBadRequest("could not read org id")
 	}
 
 	ctxServices.Log = ctxServices.Log.WithFields(log.Fields{
@@ -499,7 +499,6 @@ func createDeviceRequest(w http.ResponseWriter, r *http.Request) (*models.Device
 		"account": deviceGroup.Account,
 		"orgID":   deviceGroup.OrgID,
 	})
-	deviceGroup.Account = account
 	deviceGroup.OrgID = orgID
 
 	if err := deviceGroup.ValidateRequest(); err != nil {
@@ -533,19 +532,19 @@ func AddDeviceGroupDevices(w http.ResponseWriter, r *http.Request) {
 	if err := readRequestJSONBody(w, r, ctxServices.Log, &requestDeviceGroup); err != nil {
 		return
 	}
-	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-	if account == "" && orgID == "" {
-		// logs and response handled by readAccountOrOrgID
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID
 		return
 	}
-	devicesAdded, err := ctxServices.DeviceGroupsService.AddDeviceGroupDevices(account, orgID, contextDeviceGroup.ID, requestDeviceGroup.Devices)
+	devicesAdded, err := ctxServices.DeviceGroupsService.AddDeviceGroupDevices(orgID, contextDeviceGroup.ID, requestDeviceGroup.Devices)
 	if err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Error when adding deviceGroup devices")
 		var apiError errors.APIError
 		switch err.(type) {
 		case *services.DeviceGroupDevicesNotSupplied, *services.DeviceGroupMandatoryFieldsUndefined:
 			apiError = errors.NewBadRequest(err.Error())
-		case *services.DeviceGroupAccountDevicesNotFound:
+		case *services.DeviceGroupOrgIDDevicesNotFound:
 			apiError = errors.NewNotFound(err.Error())
 		default:
 			apiError = errors.NewInternalServerError()
@@ -569,13 +568,13 @@ func DeleteDeviceGroupManyDevices(w http.ResponseWriter, r *http.Request) {
 	if err := readRequestJSONBody(w, r, ctxServices.Log, &requestDeviceGroup); err != nil {
 		return
 	}
-	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-	if account == "" && orgID == "" {
-		// logs and response handled by readAccountOrOrgID
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID
 		return
 	}
 
-	deletedDevices, err := ctxServices.DeviceGroupsService.DeleteDeviceGroupDevices(account, orgID, contextDeviceGroup.ID, requestDeviceGroup.Devices)
+	deletedDevices, err := ctxServices.DeviceGroupsService.DeleteDeviceGroupDevices(orgID, contextDeviceGroup.ID, requestDeviceGroup.Devices)
 	if err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Error when removing deviceGroup devices")
 		var apiError errors.APIError
@@ -603,14 +602,14 @@ func DeleteDeviceGroupOneDevice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-	if account == "" && orgID == "" {
-		// logs and response handled by readAccountOrOrgID
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID
 		return
 	}
 
 	_, err := ctxServices.DeviceGroupsService.DeleteDeviceGroupDevices(
-		account, orgID, contextDeviceGroup.ID, []models.Device{*contextDeviceGroupDevice},
+		orgID, contextDeviceGroup.ID, []models.Device{*contextDeviceGroupDevice},
 	)
 
 	if err != nil {
@@ -631,18 +630,18 @@ func DeleteDeviceGroupOneDevice(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, ctxServices.Log, contextDeviceGroupDevice)
 }
 
-// CheckGroupName validates if a group name exists on an account
+// CheckGroupName validates if a group name exists on an ID
 func CheckGroupName(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	var name = chi.URLParam(r, "name")
 
-	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-	if account == "" && orgID == "" {
-		// logs and response handled by readAccountOrOrgID
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID
 		return
 	}
 
-	value, err := ctxServices.DeviceGroupsService.DeviceGroupNameExists(account, orgID, name)
+	value, err := ctxServices.DeviceGroupsService.DeviceGroupNameExists(orgID, name)
 
 	if err != nil {
 		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
@@ -660,9 +659,9 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	}
 	ctxLog := ctxServices.Log.WithField("device_group_id", deviceGroup.ID)
 	ctxLog.Info("Updating all devices from group", deviceGroup.ID)
-	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-	if account == "" && orgID == "" {
-		// logs and response handled by readAccountOrOrgID
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID
 		return
 	}
 
@@ -685,8 +684,8 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	commitID, err := ctxServices.DeviceService.GetLatestCommitFromDevices(orgID, setOfDeviceUUIDS)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{
-			"error":   err.Error(),
-			"account": account,
+			"error":  err.Error(),
+			"org_id": orgID,
 		}).Error("Error Getting the latest commit to update a device")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
@@ -697,18 +696,18 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	commit, err := ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{
-			"error":   err.Error(),
-			"account": account,
+			"error":  err.Error(),
+			"org_id": orgID,
 		}).Error("Error Getting the commit info to update a device")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
 	// should be refactored to avoid performance issue with large volume
-	updates, err := ctxServices.UpdateService.BuildUpdateTransactions(&devicesUpdate, account, orgID, commit)
+	updates, err := ctxServices.UpdateService.BuildUpdateTransactions(&devicesUpdate, orgID, commit)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{
-			"error":   err.Error(),
-			"account": account,
+			"error":  err.Error(),
+			"org_id": orgID,
 		}).Error("Error building update transaction")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
@@ -716,7 +715,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	// should be refactored to avoid performance issue with large volume
 	var upd []models.UpdateTransaction
 	for _, update := range *updates {
-		update.Account = account
+		update.OrgID = orgID
 		upd = append(upd, update)
 		ctxServices.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
 		ctxServices.UpdateService.CreateUpdateAsync(update.ID)
