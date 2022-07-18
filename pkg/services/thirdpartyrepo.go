@@ -15,9 +15,9 @@ import (
 // ThirdPartyRepoServiceInterface defines the interface that helps handles
 // the business logic of creating Third Party Repository
 type ThirdPartyRepoServiceInterface interface {
-	CreateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string, orgID string) (*models.ThirdPartyRepo, error)
+	CreateThirdPartyRepo(tprepo *models.ThirdPartyRepo, orgID string) (*models.ThirdPartyRepo, error)
 	GetThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error)
-	UpdateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string, orgID string, ID string) error
+	UpdateThirdPartyRepo(tprepo *models.ThirdPartyRepo, orgID string, ID string) error
 	DeleteThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error)
 }
 
@@ -34,9 +34,12 @@ type ThirdPartyRepoService struct {
 }
 
 // thirdPartyRepoNameExists check if a repo with the requested name exists
-func (s *ThirdPartyRepoService) thirdPartyRepoNameExists(account string, orgID string, name string) (bool, error) {
+func (s *ThirdPartyRepoService) thirdPartyRepoNameExists(orgID string, name string) (bool, error) {
+	if orgID == "" {
+		return false, new(OrgIDNotSet)
+	}
 	var reposCount int64
-	if result := db.AccountOrOrg(account, orgID, "").Debug().Model(&models.ThirdPartyRepo{}).Where("name = ?", name).Count(&reposCount); result.Error != nil {
+	if result := db.Org(orgID, "").Debug().Model(&models.ThirdPartyRepo{}).Where("name = ?", name).Count(&reposCount); result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error checking custom repository existence")
 		return false, result.Error
 	}
@@ -65,10 +68,10 @@ func (s *ThirdPartyRepoService) thirdPartyRepoImagesExists(id string, imageStatu
 	return imagesCount > 0, nil
 }
 
-// CreateThirdPartyRepo creates the ThirdPartyRepo for an Account on our database
-func (s *ThirdPartyRepoService) CreateThirdPartyRepo(thirdPartyRepo *models.ThirdPartyRepo, account string, orgID string) (*models.ThirdPartyRepo, error) {
-	if account == "" || orgID == "" {
-		return nil, new(AccountOrOrgIDNotSet)
+// CreateThirdPartyRepo creates the ThirdPartyRepo for an Org on our database
+func (s *ThirdPartyRepoService) CreateThirdPartyRepo(thirdPartyRepo *models.ThirdPartyRepo, orgID string) (*models.ThirdPartyRepo, error) {
+	if orgID == "" {
+		return nil, new(OrgIDNotSet)
 	}
 	if thirdPartyRepo.Name == "" {
 		return nil, new(ThirdPartyRepositoryNameIsEmpty)
@@ -80,7 +83,7 @@ func (s *ThirdPartyRepoService) CreateThirdPartyRepo(thirdPartyRepo *models.Thir
 		return nil, new(InvalidURLForCustomRepo)
 	}
 
-	repoExists, err := s.thirdPartyRepoNameExists(account, orgID, thirdPartyRepo.Name)
+	repoExists, err := s.thirdPartyRepoNameExists(orgID, thirdPartyRepo.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +94,6 @@ func (s *ThirdPartyRepoService) CreateThirdPartyRepo(thirdPartyRepo *models.Thir
 		Name:        thirdPartyRepo.Name,
 		URL:         thirdPartyRepo.URL,
 		Description: thirdPartyRepo.Description,
-		Account:     account,
 		OrgID:       orgID,
 	}
 	if result := db.DB.Create(&createdThirdPartyRepo); result.Error != nil {
@@ -105,12 +107,12 @@ func (s *ThirdPartyRepoService) CreateThirdPartyRepo(thirdPartyRepo *models.Thir
 // GetThirdPartyRepoByID gets the Third Party Repository by ID from the database
 func (s *ThirdPartyRepoService) GetThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error) {
 	var tprepo models.ThirdPartyRepo
-	account, orgID, err := common.GetAccountOrOrgIDFromContext(s.ctx)
+	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Error account or orgID")
+		s.log.WithField("error", err.Error()).Error("Error getting orgID from context")
 		return nil, err
 	}
-	if result := db.AccountOrOrg(account, orgID, "").Where("id = ?", ID).First(&tprepo); result.Error != nil {
+	if result := db.Org(orgID, "").Where("id = ?", ID).First(&tprepo); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, new(ThirdPartyRepositoryNotFound)
 		}
@@ -120,9 +122,8 @@ func (s *ThirdPartyRepoService) GetThirdPartyRepoByID(ID string) (*models.ThirdP
 }
 
 // UpdateThirdPartyRepo updates the existing third party repository
-func (s *ThirdPartyRepoService) UpdateThirdPartyRepo(tprepo *models.ThirdPartyRepo, account string, orgID string, ID string) error {
+func (s *ThirdPartyRepoService) UpdateThirdPartyRepo(tprepo *models.ThirdPartyRepo, orgID string, ID string) error {
 
-	tprepo.Account = account
 	tprepo.OrgID = orgID
 	repoDetails, err := s.GetThirdPartyRepoByID(ID)
 	if err != nil {
@@ -132,7 +133,7 @@ func (s *ThirdPartyRepoService) UpdateThirdPartyRepo(tprepo *models.ThirdPartyRe
 	if tprepo.Name != "" {
 		if tprepo.Name != repoDetails.Name {
 			// check if a repository with the new name already exists
-			repoExists, err := s.thirdPartyRepoNameExists(account, orgID, tprepo.Name)
+			repoExists, err := s.thirdPartyRepoNameExists(orgID, tprepo.Name)
 			if err != nil {
 				return err
 			}
@@ -172,9 +173,9 @@ func (s *ThirdPartyRepoService) UpdateThirdPartyRepo(tprepo *models.ThirdPartyRe
 
 // DeleteThirdPartyRepoByID deletes the third party repository using ID
 func (s *ThirdPartyRepoService) DeleteThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error) {
-	account, orgID, err := common.GetAccountOrOrgIDFromContext(s.ctx)
+	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Error account or orgID")
+		s.log.WithField("error", err.Error()).Error("Error getting orgID from context")
 		return nil, err
 	}
 	repoDetails, err := s.GetThirdPartyRepoByID(ID)
@@ -190,7 +191,7 @@ func (s *ThirdPartyRepoService) DeleteThirdPartyRepoByID(ID string) (*models.Thi
 	if imagesExists {
 		return nil, new(ThirdPartyRepositoryImagesExists)
 	}
-	if result := db.AccountOrOrg(account, orgID, "").Delete(&repoDetails); result.Error != nil {
+	if result := db.Org(orgID, "").Delete(&repoDetails); result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error deleting custom repository")
 		return nil, result.Error
 	}

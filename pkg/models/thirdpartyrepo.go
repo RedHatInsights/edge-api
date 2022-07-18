@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"regexp"
 
+	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 /*
-ThirdPartyRepo is a record of Third Party Repository or we can call it as Custom Repository provided by customers per account.
+ThirdPartyRepo is a record of Third Party Repository or we can call it as Custom Repository provided by customers per OrgID.
 
-	Here, URL refers to the url of the third party repository, Account refers to the account attached to the third party
+	Here, URL refers to the url of the third party repository, OrgID refers to the OrgID attached to the third party
 	repository.
 
 */
@@ -66,6 +67,7 @@ func (t *ThirdPartyRepo) ValidateRequest() error {
 // BeforeCreate method is called before creating Third Party Tepository, it make sure org_id is not empty
 func (t *ThirdPartyRepo) BeforeCreate(tx *gorm.DB) error {
 	if t.OrgID == "" {
+		log.Error("custom-repository do not have an org_id")
 		return ErrOrgIDIsMandatory
 	}
 

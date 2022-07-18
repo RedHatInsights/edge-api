@@ -6,11 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/redhatinsights/edge-api/pkg/services"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/redhatinsights/edge-api/pkg/services"
 
 	"github.com/golang/mock/gomock"
 	log "github.com/sirupsen/logrus"
@@ -113,7 +114,7 @@ func TestCreate(t *testing.T) {
 
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),
@@ -159,7 +160,7 @@ func TestCreateWithInvalidPackageName(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(new(services.PackageNameDoesNotExist))
+	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any(), gomock.Any()).Return(new(services.PackageNameDoesNotExist))
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),
@@ -204,7 +205,7 @@ func TestCreateWithThirdPartyRepositoryInfoInvalid(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(new(services.ThirdPartyRepositoryInfoIsInvalid))
+	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any(), gomock.Any()).Return(new(services.ThirdPartyRepositoryInfoIsInvalid))
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),
@@ -249,7 +250,7 @@ func TestCreateWithImageNameAlreadyExist(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(new(services.ImageNameAlreadyExists))
+	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any(), gomock.Any()).Return(new(services.ImageNameAlreadyExists))
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),
@@ -377,7 +378,7 @@ func TestGetImageDetailsById(t *testing.T) {
 	}
 }
 
-func TestValidateGetAllSearchParams(t *testing.T) {
+func TestValidateGetAllFilterParameters(t *testing.T) {
 	tt := []struct {
 		name          string
 		params        string
@@ -430,7 +431,75 @@ func TestValidateGetAllSearchParams(t *testing.T) {
 		})
 		req = req.WithContext(ctx)
 
-		validateGetAllImagesSearchParams(next).ServeHTTP(w, req)
+		ValidateGetAllImagesSearchParams(next).ServeHTTP(w, req)
+
+		resp := w.Result()
+		jsonBody := []validationError{}
+		err = json.NewDecoder(resp.Body).Decode(&jsonBody)
+		if err != nil {
+			t.Errorf("failed decoding response body: %s", err.Error())
+		}
+		for _, exErr := range te.expectedError {
+			found := false
+			for _, jsErr := range jsonBody {
+				if jsErr.Key == exErr.Key && jsErr.Reason == exErr.Reason {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("in %q: was expected to have %v but not found in %v", te.name, exErr, jsonBody)
+			}
+		}
+	}
+}
+
+func TestValidateGetAllQueryParameters(t *testing.T) {
+	tt := []struct {
+		name          string
+		params        string
+		expectedError []validationError
+	}{
+		{
+			name:   "invalid query param",
+			params: "bla=1",
+			expectedError: []validationError{
+				{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: %s", GetQueryParamsArray("images"))},
+			},
+		},
+		{
+			name:   "valid query param and invalid query param",
+			params: "sort_by=created_at&bla=1",
+			expectedError: []validationError{
+				{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: %s", GetQueryParamsArray("images"))},
+			},
+		},
+		{
+			name:   "invalid query param and valid query param",
+			params: "bla=1&sort_by=created_at",
+			expectedError: []validationError{
+				{Key: "bla", Reason: fmt.Sprintf("bla is not a valid query param, supported query params: %s", GetQueryParamsArray("images"))},
+			},
+		},
+	}
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	for _, te := range tt {
+		req, err := http.NewRequest("GET", fmt.Sprintf("/images?%s", te.params), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		w := httptest.NewRecorder()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+		ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{
+			ImageService: mockImageService,
+			Log:          log.NewEntry(log.StandardLogger()),
+		})
+		req = req.WithContext(ctx)
+
+		ValidateQueryParams(next).ServeHTTP(w, req)
 
 		resp := w.Result()
 		jsonBody := []validationError{}
@@ -595,7 +664,7 @@ func TestPostCheckImageNameAlreadyExist(t *testing.T) {
 
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any(), gomock.Any()).Return(true, nil)
+	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any()).Return(true, nil)
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),
@@ -644,7 +713,7 @@ func TestPostCheckImageNameDoesNotExist(t *testing.T) {
 
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any(), gomock.Any()).Return(false, nil)
+	mockImageService.EXPECT().CheckImageName(gomock.Any(), gomock.Any()).Return(false, nil)
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),

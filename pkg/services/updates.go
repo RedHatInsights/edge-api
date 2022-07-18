@@ -48,7 +48,9 @@ func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterfac
 	return &UpdateService{
 		Service:      Service{ctx: ctx, log: log.WithField("service", "update")},
 		FilesService: NewFilesService(log),
+		ImageService: NewImageService(ctx, log),
 		RepoBuilder:  NewRepoBuilder(ctx, log),
+		Inventory:    inventory.InitClient(ctx, log),
 		// DeviceService: NewDeviceService(ctx, log),
 		WaitForReboot: time.Minute * 5,
 	}
@@ -57,9 +59,11 @@ func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterfac
 // UpdateService is the main implementation of a UpdateServiceInterface
 type UpdateService struct {
 	Service
+	ImageService  ImageServiceInterface
 	RepoBuilder   RepoBuilderInterface
 	FilesService  FilesService
 	DeviceService DeviceServiceInterface
+	Inventory     inventory.ClientInterface
 	WaitForReboot time.Duration
 }
 
@@ -152,7 +156,6 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			WaitGroup.Done()
 		}
 	}(update)
-
 	update, err := s.RepoBuilder.BuildUpdateRepo(id)
 	if err != nil {
 		db.DB.First(&update, id)
@@ -161,15 +164,14 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		s.log.WithField("error", err.Error()).Error("Error building update repo")
 		return nil, err
 	}
-
 	var remoteInfo TemplateRemoteInfo
 	remoteInfo.RemoteURL = update.Repo.URL
 	remoteInfo.RemoteName = "rhel-edge"
 	remoteInfo.ContentURL = update.Repo.URL
 	remoteInfo.UpdateTransactionID = update.ID
 	remoteInfo.GpgVerify = "false"
-	remoteInfo.RemoteOstreeUpdate = fmt.Sprint(update.Commit.ChangesRefs)
 	remoteInfo.OSTreeRef = update.Commit.OSTreeRef
+	remoteInfo.RemoteOstreeUpdate = fmt.Sprint(update.ChangesRefs)
 
 	playbookURL, err := s.WriteTemplate(remoteInfo, update.Account, update.OrgID)
 	if err != nil {
@@ -590,15 +592,14 @@ func (s *UpdateService) ValidateUpdateDeviceGroup(account string, orgID string, 
 //BuildUpdateTransactions build records
 func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate,
 	account string, orgID string, commit *models.Commit) (*[]models.UpdateTransaction, error) {
-	client := inventory.InitClient(s.ctx, log.NewEntry(log.StandardLogger()))
 	var inv inventory.Response
 	var ii []inventory.Response
 	var err error
 
 	if len(devicesUpdate.DevicesUUID) > 0 {
 		for _, UUID := range devicesUpdate.DevicesUUID {
-			inv, err = client.ReturnDevicesByID(UUID)
-			if inv.Count >= 0 {
+			inv, err = s.Inventory.ReturnDevicesByID(UUID)
+			if inv.Count > 0 {
 				ii = append(ii, inv)
 			}
 			if err != nil {
@@ -631,27 +632,11 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 
 		update.DispatchRecords = []models.DispatchRecord{}
 
-		//  Removing commit dependency to avoid overwriting the repo
-		var repo *models.Repo
-		s.log.WithField("updateID", update.ID).Debug("Ceating new repo for update transaction")
-		repo = &models.Repo{
-			Status: models.RepoStatusBuilding,
-		}
-		result := db.DB.Create(&repo)
-		if result.Error != nil {
-			s.log.WithField("error", result.Error.Error()).Debug("Result error")
-
-		}
-
-		update.Repo = repo
-		s.log.WithFields(log.Fields{
-			"repoURL": repo.URL,
-			"repoID":  repo.ID,
-		}).Debug("Getting repo info")
-
 		devices := update.Devices
 		oldCommits := update.OldCommits
 		toUpdate := true
+
+		var repo *models.Repo
 
 		for _, device := range inventory.Result {
 			//  Check for the existence of a Repo that already has this commit and don't duplicate
@@ -681,6 +666,9 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 			}
 
 			if device.Ostree.RHCClientID == "" {
+				s.log.WithFields(log.Fields{
+					"deviceUUID": device.ID,
+				}).Info("Device is disconnected")
 				update.Status = models.UpdateStatusDeviceDisconnected
 				if result := db.DB.Create(&update); result.Error != nil {
 					return nil, result.Error
@@ -718,6 +706,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					s.log.WithFields(log.Fields{
 						"booted": deployment.Booted,
 					}).Debug("device has been booted")
+
 					if commit.OSTreeCommit == deployment.Checksum {
 						toUpdate = false
 						break
@@ -737,12 +726,43 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					} else {
 						oldCommits = append(oldCommits, oldCommit)
 					}
+					currentImage, cError := s.ImageService.GetImageByOSTreeCommitHash(deployment.Checksum)
+					if cError != nil {
+						s.log.WithField("error", err.Error()).Error("Error returning current image ostree checksum")
+
+					}
+					updatedImage, uError := s.ImageService.GetImageByOSTreeCommitHash(commit.OSTreeCommit)
+					if uError != nil {
+						s.log.WithField("error", err.Error()).Error("Error returning current image ostree checksum")
+					}
+					if currentImage.Distribution != updatedImage.Distribution {
+						update.ChangesRefs = true
+					}
 				}
 			}
 
 			if toUpdate {
+				if repo == nil {
+					//  Removing commit dependency to avoid overwriting the repo
+					s.log.WithField("updateID", update.ID).Debug("Creating new repo for update transaction")
+					repo = &models.Repo{
+						Status: models.RepoStatusBuilding,
+					}
+					result := db.DB.Create(&repo)
+					if result.Error != nil {
+						s.log.WithField("error", result.Error.Error()).Debug("Result error")
+					}
+					s.log.WithFields(log.Fields{
+						"repoURL": repo.URL,
+						"repoID":  repo.ID,
+					}).Debug("Getting repo info")
+				}
+
+				update.Repo = repo
+
 				//Should not create a transaction to device already updated
 				update.OldCommits = oldCommits
+				update.RepoID = repo.ID
 				if err := db.DB.Save(&update).Error; err != nil {
 					err = errors.NewBadRequest(err.Error())
 					s.log.WithField("error", err.Error()).Error("Error encoding error")

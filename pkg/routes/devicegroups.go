@@ -41,7 +41,7 @@ func setContextDeviceGroupDevice(ctx context.Context, deviceGroupDevice *models.
 
 // MakeDeviceGroupsRouter adds support for device groups operations
 func MakeDeviceGroupsRouter(sub chi.Router) {
-	sub.With(validateGetAllDeviceGroupsFilterParams).With(common.Paginate).Get("/", GetAllDeviceGroups)
+	sub.With(ValidateQueryParams).With(ValidateGetAllDeviceGroupsFilterParams).With(common.Paginate).Get("/", GetAllDeviceGroups)
 	sub.Post("/", CreateDeviceGroup)
 	sub.Get("/checkName/{name}", CheckGroupName)
 	sub.Route("/{ID}", func(r chi.Router) {
@@ -202,29 +202,43 @@ func DeviceGroupDeviceCtx(next http.Handler) http.Handler {
 }
 
 var deviceGroupsFilters = common.ComposeFilters(
+	// Filter handler for "name"
 	common.ContainFilterHandler(&common.Filter{
 		QueryParam: "name",
 		DBField:    "device_groups.name",
 	}),
+	//Filter handler for "created_at"
 	common.CreatedAtFilterHandler(&common.Filter{
 		QueryParam: "created_at",
 		DBField:    "device_groups.created_at",
 	}),
+	//Filter handler for "updated_at"
 	common.CreatedAtFilterHandler(&common.Filter{
 		QueryParam: "updated_at",
 		DBField:    "device_groups.updated_at",
 	}),
+	//Filter handler for sorting "created_at"
 	common.SortFilterHandler("device_groups", "created_at", "DESC"),
 )
 
-func validateGetAllDeviceGroupsFilterParams(next http.Handler) http.Handler {
+// ValidateGetAllDeviceGroupsFilterParams validate the query params that sent to /device-groups endpoint
+func ValidateGetAllDeviceGroupsFilterParams(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var errs []validationError
+
+		// "created_at" validation
 		if val := r.URL.Query().Get("created_at"); val != "" {
 			if _, err := time.Parse(common.LayoutISO, val); err != nil {
 				errs = append(errs, validationError{Key: "created_at", Reason: err.Error()})
 			}
 		}
+		// "updated_at" validation
+		if val := r.URL.Query().Get("updated_at"); val != "" {
+			if _, err := time.Parse(common.LayoutISO, val); err != nil {
+				errs = append(errs, validationError{Key: "updated_at", Reason: err.Error()})
+			}
+		}
+		// "sort_by" validation for "name", "created_at", "updated_at"
 		if val := r.URL.Query().Get("sort_by"); val != "" {
 			name := val
 			if string(val[0]) == "-" {

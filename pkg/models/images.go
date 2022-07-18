@@ -7,6 +7,7 @@ import (
 
 	"github.com/lib/pq"
 	"github.com/redhatinsights/edge-api/config"
+	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -92,6 +93,8 @@ const (
 	ImageStatusSuccess = "SUCCESS"
 	// ImageStatusInterrupted is for when an image build is interrupted
 	ImageStatusInterrupted = "INTERRUPTED"
+	// ImageStatusPending is for when an image or installer is waiting to be built
+	ImageStatusPending = "PENDING"
 
 	// MissingInstaller is the error message for not passing an installer in the request
 	MissingInstaller = "installer info must be provided"
@@ -244,6 +247,7 @@ func (i *Image) GetALLPackagesList() *[]string {
 // BeforeCreate method is called before creating Images, it make sure org_id is not empty
 func (i *Image) BeforeCreate(tx *gorm.DB) error {
 	if i.OrgID == "" {
+		log.Error("image do not have an org_id")
 		return ErrOrgIDIsMandatory
 
 	}
@@ -254,8 +258,8 @@ func (i *Image) BeforeCreate(tx *gorm.DB) error {
 // BeforeCreate method is called before creating ImageSet, it make sure org_id is not empty
 func (imgset *ImageSet) BeforeCreate(tx *gorm.DB) error {
 	if imgset.OrgID == "" {
+		log.Error("imageSet do have an org_id")
 		return ErrOrgIDIsMandatory
-
 	}
 
 	return nil

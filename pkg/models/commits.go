@@ -3,6 +3,7 @@ package models
 import (
 	"errors"
 
+	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -74,6 +75,7 @@ type InstalledPackage struct {
 // BeforeCreate method is called before creating Commits, it make sure org_id is not empty
 func (c *Commit) BeforeCreate(tx *gorm.DB) error {
 	if c.OrgID == "" {
+		log.Error("commit do not have an org_id")
 		return ErrOrgIDIsMandatory
 	}
 

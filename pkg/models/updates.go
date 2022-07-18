@@ -3,6 +3,7 @@ package models
 import (
 	"errors"
 
+	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -26,6 +27,7 @@ type UpdateTransaction struct {
 	Status          string           `json:"Status"`
 	RepoID          uint             `json:"RepoID"`
 	Repo            *Repo            `json:"Repo"`
+	ChangesRefs     bool             `gorm:"default:false" json:"ChangesRefs"`
 	DispatchRecords []DispatchRecord `gorm:"many2many:updatetransaction_dispatchrecords;" json:"DispatchRecords"`
 }
 
@@ -89,6 +91,7 @@ func (ur *UpdateTransaction) ValidateRequest() error {
 // BeforeCreate method is called before creating any record with update, it make sure org_id is not empty
 func (ur *UpdateTransaction) BeforeCreate(tx *gorm.DB) error {
 	if ur.OrgID == "" {
+		log.Error("update-transaction do not have an org_id")
 		return ErrOrgIDIsMandatory
 	}
 

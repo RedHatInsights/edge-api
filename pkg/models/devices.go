@@ -1,6 +1,7 @@
 package models
 
 import (
+	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -97,6 +98,7 @@ type Device struct {
 // BeforeCreate method is called before creating devices, it make sure org_id is not empty
 func (d *Device) BeforeCreate(tx *gorm.DB) error {
 	if d.OrgID == "" {
+		log.Error("device do not have an org_id")
 		return ErrOrgIDIsMandatory
 	}
 
