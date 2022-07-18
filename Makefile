@@ -19,6 +19,7 @@ KUBECTL=kubectl
 NAMESPACE=default
 TEST_OPTIONS="-race"
 BUILD_TAGS=-tags=fdo
+EXCLUDE_DIRS=-e /test/ -e /cmd/db -e /cmd/kafka -e /config -e /pkg/clients/imagebuilder/mock_imagebuilder -e /pkg/imagebuilder/mock_imagebuilder -e /pkg/clients/inventory/mock_inventory -e /pkg/errors -e /pkg/services/mock_services -e /unleash
 
 CONTAINERFILE_NAME=Dockerfile
 
@@ -49,13 +50,13 @@ build-test-container:
 		.
 
 coverage:
-	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /test/) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
+	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v $(EXCLUDE_DIRS)) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
 
 coverage-html:
 	go tool cover -html=coverage.txt -o coverage.html
 
 coverage-no-fdo:
-	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
+	go test $$(go list ./... | grep -v $(EXCLUDE_DIRS)) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
 
 create-ns:
 	$(KUBECTL) create ns $(NAMESPACE)
