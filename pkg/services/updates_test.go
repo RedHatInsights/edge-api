@@ -898,7 +898,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 
 		Context("when has two devices, one with rhc_client_id and another without", func() {
-			It("should create an update transaction with a repo", func() {
+			It("should create two update transactions, one with a repo and another without", func() {
 				var devicesUpdate models.DevicesUpdate
 				devicesUpdate.DevicesUUID = []string{device.UUID, device2.UUID}
 
