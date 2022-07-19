@@ -264,3 +264,13 @@ func (imgset *ImageSet) BeforeCreate(tx *gorm.DB) error {
 
 	return nil
 }
+
+// ImageSetView is the image set row returned for ui image-sets display
+type ImageSetView struct {
+	ID               uint        `json:"ID"`
+	Name             string      `json:"Name"`
+	Version          int         `json:"Version"`
+	UpdatedAt        EdgeAPITime `json:"UpdatedAt"`
+	Status           string      `json:"Status"`
+	ImageBuildIsoURL string      `json:"ImageBuildIsoURL"`
+}

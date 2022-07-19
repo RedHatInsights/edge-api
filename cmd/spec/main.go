@@ -46,6 +46,7 @@ func main() {
 	gen.addSchema("v1.DeviceDetails", &models.DeviceDetails{})
 	gen.addSchema("v1.Device", &models.Device{})
 	gen.addSchema("v1.ImageSet", &models.ImageSet{})
+	gen.addSchema("v1.ImageSetView", &models.ImageSetView{})
 	gen.addSchema("v1.Device", &models.Device{})
 	gen.addSchema("v1.CheckImageResponse", &routes.CheckImageNameResponse{})
 	var booleanResponse bool
