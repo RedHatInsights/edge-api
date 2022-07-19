@@ -757,7 +757,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 
 				//Should not create a transaction to device already updated
 				update.OldCommits = oldCommits
-				update.RepoID = repo.ID
+				update.RepoID = &repo.ID
 				if err := db.DB.Save(&update).Error; err != nil {
 					err = errors.NewBadRequest(err.Error())
 					s.log.WithField("error", err.Error()).Error("Error encoding error")
