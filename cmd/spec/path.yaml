@@ -594,29 +594,9 @@ paths:
           description: "field: choose to order asc or desc"
           schema:
             type: string
-        - name: name
+        - name: hostname_or_id
           in: query
-          description: 'field: filter by name'
-          schema:
-            type: string
-        - name: uuid
-          in: query
-          description: 'field: filter by uuid'
-          schema:
-            type: string
-        - name: created_at
-          in: query
-          description: 'field: filter by creation date'
-          schema:
-            type: string
-        - name: image_id
-          in: query
-          description: 'field: filter by image id'
-          schema:
-            type: string
-        - name: update_available
-          in: query
-          description: 'field: filter by update available'
+          description: 'field: filter by hostname_or_id'
           schema:
             type: string
       responses:
