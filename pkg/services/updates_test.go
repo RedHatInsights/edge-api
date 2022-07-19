@@ -858,7 +858,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Expect(len(*updates)).Should(Equal(1))
 				Expect((*updates)[0].ID).Should(BeNumerically(">", 0))
 				Expect((*updates)[0].RepoID).ToNot(BeNil())
-				Expect((*updates)[0].Account).Should(Equal(common.DefaultAccount))
 				Expect((*updates)[0].OrgID).Should(Equal(common.DefaultOrgID))
 				Expect((*updates)[0].Status).Should(Equal(models.UpdateStatusCreated))
 				Expect((*updates)[0].Repo.ID).Should(BeNumerically(">", 0))
@@ -888,7 +887,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Expect(len(*updates)).Should(Equal(1))
 				Expect((*updates)[0].ID).Should(BeNumerically(">", 0))
 				Expect((*updates)[0].RepoID).Should(BeNil())
-				Expect((*updates)[0].Account).Should(Equal(common.DefaultAccount))
 				Expect((*updates)[0].OrgID).Should(Equal(common.DefaultOrgID))
 				Expect((*updates)[0].Status).Should(Equal(models.UpdateStatusDeviceDisconnected))
 				Expect((*updates)[0].Repo).Should(BeNil())
@@ -916,13 +914,12 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockInventory.EXPECT().ReturnDevicesByID(device2.UUID).
 					Return(responseInventory2, nil)
 
-				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultAccount, common.DefaultOrgID, &newCommit)
+				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultOrgID, &newCommit)
 
 				Expect(err).To(BeNil())
 				Expect(len(*updates)).Should(Equal(2))
 				Expect((*updates)[0].ID).Should(BeNumerically(">", 0))
 				Expect((*updates)[0].RepoID).ToNot(BeNil())
-				Expect((*updates)[0].Account).Should(Equal(common.DefaultAccount))
 				Expect((*updates)[0].OrgID).Should(Equal(common.DefaultOrgID))
 				Expect((*updates)[0].Status).Should(Equal(models.UpdateStatusCreated))
 				Expect((*updates)[0].Repo.ID).Should(BeNumerically(">", 0))
@@ -935,7 +932,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 				Expect((*updates)[1].ID).Should(BeNumerically(">", 0))
 				Expect((*updates)[1].RepoID).Should(BeNil())
-				Expect((*updates)[1].Account).Should(Equal(common.DefaultAccount))
 				Expect((*updates)[1].OrgID).Should(Equal(common.DefaultOrgID))
 				Expect((*updates)[1].Status).Should(Equal(models.UpdateStatusDeviceDisconnected))
 				Expect((*updates)[1].Repo).Should(BeNil())
