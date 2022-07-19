@@ -28,7 +28,7 @@ import (
 // UpdateServiceInterface defines the interface that helps
 // handle the business logic of sending updates to a edge device
 type UpdateServiceInterface interface {
-	BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate, account string, orgID string, commit *models.Commit) (*[]models.UpdateTransaction, error)
+	BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate, orgID string, commit *models.Commit) (*[]models.UpdateTransaction, error)
 	CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	CreateUpdateAsync(id uint)
 	GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error)
@@ -40,7 +40,7 @@ type UpdateServiceInterface interface {
 	SendDeviceNotification(update *models.UpdateTransaction) (ImageNotification, error)
 	UpdateDevicesFromUpdateTransaction(update models.UpdateTransaction) error
 	ValidateUpdateSelection(account string, orgID string, imageIds []uint) (bool, error)
-	ValidateUpdateDeviceGroup(account string, orgID string, deviceGroupID uint) (bool, error)
+	ValidateUpdateDeviceGroup(orgID string, deviceGroupID uint) (bool, error)
 }
 
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
@@ -574,10 +574,10 @@ func (s *UpdateService) ValidateUpdateSelection(account string, orgID string, im
 }
 
 // ValidateUpdateDeviceGroup validate the devices on device group for update
-func (s *UpdateService) ValidateUpdateDeviceGroup(account string, orgID string, deviceGroupID uint) (bool, error) {
+func (s *UpdateService) ValidateUpdateDeviceGroup(orgID string, deviceGroupID uint) (bool, error) {
 	var count int64
 
-	if result := db.AccountOrOrg(account, orgID, "Device_Groups").Model(&models.DeviceGroup{}).Where(`Device_Groups.id = ?`, deviceGroupID).
+	if result := db.Org(orgID, "Device_Groups").Model(&models.DeviceGroup{}).Where(`Device_Groups.id = ?`, deviceGroupID).
 		Joins(`JOIN Device_Groups_Devices  ON Device_Groups.id = Device_Groups_Devices.device_group_id`).
 		Joins(`JOIN Devices  ON Device_Groups_Devices.device_id = Devices.id`).
 		Where("Devices.image_id IS NOT NULL AND Devices.image_id != 0").
@@ -591,7 +591,7 @@ func (s *UpdateService) ValidateUpdateDeviceGroup(account string, orgID string, 
 
 //BuildUpdateTransactions build records
 func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate,
-	account string, orgID string, commit *models.Commit) (*[]models.UpdateTransaction, error) {
+	orgID string, commit *models.Commit) (*[]models.UpdateTransaction, error) {
 	var inv inventory.Response
 	var ii []inventory.Response
 	var err error
@@ -599,8 +599,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 	if len(devicesUpdate.DevicesUUID) > 0 {
 		for _, UUID := range devicesUpdate.DevicesUUID {
 			inv, err = s.Inventory.ReturnDevicesByID(UUID)
-
-			if inv.Count >= 0 {
+			if inv.Count > 0 {
 				ii = append(ii, inv)
 			}
 			if err != nil {
@@ -615,7 +614,6 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 	for _, inventory := range ii {
 		// Create the models.UpdateTransaction
 		update := models.UpdateTransaction{
-			Account:  account,
 			OrgID:    orgID,
 			CommitID: devicesUpdate.CommitID,
 			Status:   models.UpdateStatusCreated,
@@ -633,27 +631,11 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 
 		update.DispatchRecords = []models.DispatchRecord{}
 
-		//  Removing commit dependency to avoid overwriting the repo
-		var repo *models.Repo
-		s.log.WithField("updateID", update.ID).Debug("Ceating new repo for update transaction")
-		repo = &models.Repo{
-			Status: models.RepoStatusBuilding,
-		}
-		result := db.DB.Create(&repo)
-		if result.Error != nil {
-			s.log.WithField("error", result.Error.Error()).Debug("Result error")
-
-		}
-
-		update.Repo = repo
-		s.log.WithFields(log.Fields{
-			"repoURL": repo.URL,
-			"repoID":  repo.ID,
-		}).Debug("Getting repo info")
-
 		devices := update.Devices
 		oldCommits := update.OldCommits
 		toUpdate := true
+
+		var repo *models.Repo
 
 		for _, device := range inventory.Result {
 			//  Check for the existence of a Repo that already has this commit and don't duplicate
@@ -673,9 +655,8 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					"deviceUUID": device.ID,
 				}).Info("Creating a new device on the database")
 				updateDevice = &models.Device{
-					UUID:    device.ID,
-					Account: account,
-					OrgID:   orgID,
+					UUID:  device.ID,
+					OrgID: orgID,
 				}
 				if result := db.DB.Create(&updateDevice); result.Error != nil {
 					return nil, result.Error
@@ -683,6 +664,9 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 			}
 
 			if device.Ostree.RHCClientID == "" {
+				s.log.WithFields(log.Fields{
+					"deviceUUID": device.ID,
+				}).Info("Device is disconnected")
 				update.Status = models.UpdateStatusDeviceDisconnected
 				if result := db.DB.Create(&update); result.Error != nil {
 					return nil, result.Error
@@ -691,10 +675,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 			}
 			updateDevice.RHCClientID = device.Ostree.RHCClientID
 			updateDevice.AvailableHash = update.Commit.OSTreeCommit
-			// update the device account if undefined
-			if updateDevice.Account == "" {
-				updateDevice.Account = account
-			}
+
 			// update the device orgID if undefined
 			if updateDevice.OrgID == "" {
 				updateDevice.OrgID = orgID
@@ -756,8 +737,27 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 			}
 
 			if toUpdate {
+				if repo == nil {
+					//  Removing commit dependency to avoid overwriting the repo
+					s.log.WithField("updateID", update.ID).Debug("Creating new repo for update transaction")
+					repo = &models.Repo{
+						Status: models.RepoStatusBuilding,
+					}
+					result := db.DB.Create(&repo)
+					if result.Error != nil {
+						s.log.WithField("error", result.Error.Error()).Debug("Result error")
+					}
+					s.log.WithFields(log.Fields{
+						"repoURL": repo.URL,
+						"repoID":  repo.ID,
+					}).Debug("Getting repo info")
+				}
+
+				update.Repo = repo
+
 				//Should not create a transaction to device already updated
 				update.OldCommits = oldCommits
+				update.RepoID = repo.ID
 				if err := db.DB.Save(&update).Error; err != nil {
 					err = errors.NewBadRequest(err.Error())
 					s.log.WithField("error", err.Error()).Error("Error encoding error")

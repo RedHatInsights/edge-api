@@ -4,6 +4,7 @@ import (
 	"errors"
 	"regexp"
 
+	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -58,8 +59,8 @@ const (
 	DeviceGroupNameInvalidErrorMessage = "group name must start with alphanumeric characters and can contain underscore and hyphen characters"
 	// DeviceGroupNameEmptyErrorMessage is the error message returned when device group Name is empty.
 	DeviceGroupNameEmptyErrorMessage = "group name cannot be empty"
-	// DeviceGroupAccountEmptyErrorMessage is the error message returned when device group account is empty.
-	DeviceGroupAccountEmptyErrorMessage = "group account can't be empty"
+	// DeviceGroupOrgIDEmptyErrorMessage is the error message returned when device group orgID is empty.
+	DeviceGroupOrgIDEmptyErrorMessage = "group orgID can't be empty"
 	// DeviceGroupTypeStatic correspond to the device group type value "static".
 	DeviceGroupTypeStatic = "static"
 	// DeviceGroupTypeDynamic correspond to the device group type value "dynamic".
@@ -75,8 +76,8 @@ func (group *DeviceGroup) ValidateRequest() error {
 	if group.Name == "" {
 		return errors.New(DeviceGroupNameEmptyErrorMessage)
 	}
-	if group.Account == "" {
-		return errors.New(DeviceGroupAccountEmptyErrorMessage)
+	if group.OrgID == "" {
+		return errors.New(DeviceGroupOrgIDEmptyErrorMessage)
 	}
 	if !validGroupNameRegex.MatchString(group.Name) {
 		return errors.New(DeviceGroupNameInvalidErrorMessage)
@@ -96,6 +97,7 @@ func (group *DeviceGroup) BeforeDelete(tx *gorm.DB) error {
 // BeforeCreate method is called before creating device group, it make sure org_id is not empty
 func (group *DeviceGroup) BeforeCreate(tx *gorm.DB) error {
 	if group.OrgID == "" {
+		log.Error("device-group do not have an org_id")
 		return ErrOrgIDIsMandatory
 	}
 

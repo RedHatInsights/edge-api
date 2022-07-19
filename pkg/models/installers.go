@@ -1,6 +1,7 @@
 package models
 
 import (
+	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -20,6 +21,7 @@ type Installer struct {
 // BeforeCreate method is called before create a record on installer, it make sure org_id is not empty
 func (i *Installer) BeforeCreate(tx *gorm.DB) error {
 	if i.OrgID == "" {
+		log.Error("installer do not have an org_id")
 		return ErrOrgIDIsMandatory
 	}
 

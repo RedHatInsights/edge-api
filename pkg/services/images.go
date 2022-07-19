@@ -205,23 +205,19 @@ func (s *ImageService) CreateImage(image *models.Image, orgID string, requestID 
 	} else {
 		image.ImageType = models.ImageTypeCommit
 	}
-	// TODO: End of remove block
-	if image.HasOutputType(models.ImageTypeInstaller) {
-		image.Installer.Status = models.ImageStatusCreated
+
+	if image.Installer != nil {
 		image.Installer.OrgID = orgID
-		tx := db.DB.Create(&image.Installer)
-		if tx.Error != nil {
-			return tx.Error
-		}
 	}
 
-	tx := db.DB.Create(&image.Commit)
-	if tx.Error != nil {
-		return tx.Error
+	// TODO: End of remove block
+	if image.HasOutputType(models.ImageTypeInstaller) {
+		image.Installer.Status = models.ImageStatusPending
+		image.Installer.OrgID = orgID
 	}
-	tx = db.DB.Create(&image)
-	if tx.Error != nil {
-		return tx.Error
+
+	if result := db.DB.Create(&image); result.Error != nil {
+		return result.Error
 	}
 
 	go s.postProcessImage(image.ID)
@@ -332,25 +328,20 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	} else {
 		image.ImageType = models.ImageTypeCommit
 	}
+
+	if image.Installer != nil {
+		image.Installer.OrgID = previousImage.OrgID
+	}
+
 	// TODO: End of remove block
 	if image.HasOutputType(models.ImageTypeInstaller) {
-		image.Installer.Status = models.ImageStatusCreated
+		image.Installer.Status = models.ImageStatusPending
 		image.Installer.OrgID = image.OrgID
-		tx := db.DB.Create(&image.Installer)
-		if tx.Error != nil {
-			s.log.WithField("error", tx.Error.Error()).Error("Error creating installer")
-			return tx.Error
-		}
 	}
-	tx := db.DB.Create(&image.Commit)
-	if tx.Error != nil {
-		s.log.WithField("error", tx.Error.Error()).Error("Error creating commit")
-		return tx.Error
-	}
-	tx = db.DB.Create(&image)
-	if tx.Error != nil {
-		s.log.WithField("error", tx.Error.Error()).Error("Error creating image")
-		return tx.Error
+
+	if result := db.DB.Create(&image); result.Error != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error creating image")
+		return result.Error
 	}
 
 	s.log = s.log.WithFields(log.Fields{"updatedImageID": image.ID, "updatedCommitID": image.Commit.ID})

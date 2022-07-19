@@ -3,7 +3,7 @@ module github.com/redhatinsights/edge-api
 require (
 	github.com/RedHatInsights/tenant-utils v1.0.0
 	github.com/Unleash/unleash-client-go/v3 v3.6.0
-	github.com/aws/aws-sdk-go v1.44.55
+	github.com/aws/aws-sdk-go v1.44.57
 	github.com/bxcodec/faker/v3 v3.8.0
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/confluentinc/confluent-kafka-go v1.9.1
@@ -23,7 +23,7 @@ require (
 	github.com/redhatinsights/app-common-go v1.6.3
 	github.com/redhatinsights/platform-go-middlewares v0.18.0
 	github.com/segmentio/kafka-go v0.4.32
-	github.com/sirupsen/logrus v1.8.1
+	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/viper v1.12.0
 	gorm.io/driver/postgres v1.3.7
 	gorm.io/driver/sqlite v1.3.6
