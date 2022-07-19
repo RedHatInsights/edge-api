@@ -608,7 +608,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(commit.OSTreeCommit).Return(&image, nil)
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(latestCommit.OSTreeCommit).Return(&latestImage, nil)
 
-				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, account, org_id, &commit)
+				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, org_id, &commit)
 				Expect(err).To(BeNil())
 				for _, u := range *upd {
 					Expect(u.ChangesRefs).To(BeTrue())
@@ -700,7 +700,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(commit.OSTreeCommit).Return(&image, nil)
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(latestCommit.OSTreeCommit).Return(&latestImage, nil)
 
-				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, account, org_id, &commit)
+				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, org_id, &commit)
 				Expect(err).To(BeNil())
 				for _, u := range *upd {
 					Expect(u.ChangesRefs).To(BeFalse())
@@ -786,7 +786,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(currentCommit.OSTreeCommit).Return(&currentImage, nil)
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(commit.OSTreeCommit).Return(&image, nil)
 
-				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, account, org_id, &commit)
+				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, org_id, &commit)
 				Expect(err).To(BeNil())
 				for _, u := range *upd {
 					Expect(u.ChangesRefs).To(BeTrue())
@@ -849,13 +849,12 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockInventory.EXPECT().ReturnDevicesByID(device.UUID).
 					Return(responseInventory, nil)
 
-				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultAccount, common.DefaultOrgID, &newCommit)
+				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultOrgID, &newCommit)
 
 				Expect(err).To(BeNil())
 				Expect(len(*updates)).Should(Equal(1))
 				Expect((*updates)[0].ID).Should(BeNumerically(">", 0))
 				Expect((*updates)[0].RepoID).Should(BeNumerically(">", 0))
-				Expect((*updates)[0].Account).Should(Equal(common.DefaultAccount))
 				Expect((*updates)[0].OrgID).Should(Equal(common.DefaultOrgID))
 				Expect((*updates)[0].Status).Should(Equal(models.UpdateStatusCreated))
 				Expect((*updates)[0].Repo.ID).Should(BeNumerically(">", 0))
@@ -879,13 +878,12 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockInventory.EXPECT().ReturnDevicesByID(device.UUID).
 					Return(responseInventory, nil)
 
-				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultAccount, common.DefaultOrgID, &newCommit)
+				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultOrgID, &newCommit)
 
 				Expect(err).To(BeNil())
 				Expect(len(*updates)).Should(Equal(1))
 				Expect((*updates)[0].ID).Should(BeNumerically(">", 0))
 				Expect((*updates)[0].RepoID).Should(Equal(uint(0)))
-				Expect((*updates)[0].Account).Should(Equal(common.DefaultAccount))
 				Expect((*updates)[0].OrgID).Should(Equal(common.DefaultOrgID))
 				Expect((*updates)[0].Status).Should(Equal(models.UpdateStatusDeviceDisconnected))
 				Expect((*updates)[0].Repo).Should(BeNil())
@@ -903,7 +901,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockInventory.EXPECT().ReturnDevicesByID(device.UUID).
 					Return(responseInventory, nil)
 
-				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultAccount, common.DefaultOrgID, &newCommit)
+				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultOrgID, &newCommit)
 
 				Expect(err).To(BeNil())
 				Expect(len(*updates)).Should(Equal(0))
@@ -919,7 +917,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockInventory.EXPECT().ReturnDevicesByID(device.UUID).
 					Return(responseInventory, errors.New(""))
 
-				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultAccount, common.DefaultOrgID, &newCommit)
+				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultOrgID, &newCommit)
 
 				Expect(err.(apiError.APIError).GetStatus()).To(Equal(404))
 				Expect(updates).Should(BeNil())

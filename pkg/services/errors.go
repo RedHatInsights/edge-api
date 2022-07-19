@@ -163,11 +163,11 @@ func (e *ImageSetAlreadyExists) Error() string {
 	return "image set already exists"
 }
 
-// DeviceGroupAccountDevicesNotFound indicates that devices not found amonf the device group account
-type DeviceGroupAccountDevicesNotFound struct{}
+// DeviceGroupOrgIDDevicesNotFound indicates that devices not found among the device group OrgID
+type DeviceGroupOrgIDDevicesNotFound struct{}
 
-func (e *DeviceGroupAccountDevicesNotFound) Error() string {
-	return "devices not found among the device group account"
+func (e *DeviceGroupOrgIDDevicesNotFound) Error() string {
+	return "devices not found among the device group orgID"
 
 }
 

@@ -36,18 +36,18 @@ func (m *MockDeviceGroupsServiceInterface) EXPECT() *MockDeviceGroupsServiceInte
 }
 
 // AddDeviceGroupDevices mocks base method.
-func (m *MockDeviceGroupsServiceInterface) AddDeviceGroupDevices(account, orgID string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error) {
+func (m *MockDeviceGroupsServiceInterface) AddDeviceGroupDevices(orgID string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddDeviceGroupDevices", account, orgID, deviceGroupID, devices)
+	ret := m.ctrl.Call(m, "AddDeviceGroupDevices", orgID, deviceGroupID, devices)
 	ret0, _ := ret[0].(*[]models.Device)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AddDeviceGroupDevices indicates an expected call of AddDeviceGroupDevices.
-func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) AddDeviceGroupDevices(account, orgID, deviceGroupID, devices interface{}) *gomock.Call {
+func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) AddDeviceGroupDevices(orgID, deviceGroupID, devices interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddDeviceGroupDevices", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).AddDeviceGroupDevices), account, orgID, deviceGroupID, devices)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddDeviceGroupDevices", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).AddDeviceGroupDevices), orgID, deviceGroupID, devices)
 }
 
 // CreateDeviceGroup mocks base method.
@@ -80,33 +80,33 @@ func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) DeleteDeviceGroupByID(ID
 }
 
 // DeleteDeviceGroupDevices mocks base method.
-func (m *MockDeviceGroupsServiceInterface) DeleteDeviceGroupDevices(account, orgID string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error) {
+func (m *MockDeviceGroupsServiceInterface) DeleteDeviceGroupDevices(orgID string, deviceGroupID uint, devices []models.Device) (*[]models.Device, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteDeviceGroupDevices", account, orgID, deviceGroupID, devices)
+	ret := m.ctrl.Call(m, "DeleteDeviceGroupDevices", orgID, deviceGroupID, devices)
 	ret0, _ := ret[0].(*[]models.Device)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DeleteDeviceGroupDevices indicates an expected call of DeleteDeviceGroupDevices.
-func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) DeleteDeviceGroupDevices(account, orgID, deviceGroupID, devices interface{}) *gomock.Call {
+func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) DeleteDeviceGroupDevices(orgID, deviceGroupID, devices interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDeviceGroupDevices", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).DeleteDeviceGroupDevices), account, orgID, deviceGroupID, devices)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDeviceGroupDevices", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).DeleteDeviceGroupDevices), orgID, deviceGroupID, devices)
 }
 
 // DeviceGroupNameExists mocks base method.
-func (m *MockDeviceGroupsServiceInterface) DeviceGroupNameExists(account, orgID, name string) (bool, error) {
+func (m *MockDeviceGroupsServiceInterface) DeviceGroupNameExists(orgID, name string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeviceGroupNameExists", account, orgID, name)
+	ret := m.ctrl.Call(m, "DeviceGroupNameExists", orgID, name)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // DeviceGroupNameExists indicates an expected call of DeviceGroupNameExists.
-func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) DeviceGroupNameExists(account, orgID, name interface{}) *gomock.Call {
+func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) DeviceGroupNameExists(orgID, name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeviceGroupNameExists", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).DeviceGroupNameExists), account, orgID, name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeviceGroupNameExists", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).DeviceGroupNameExists), orgID, name)
 }
 
 // GetDeviceGroupByID mocks base method.
@@ -140,74 +140,74 @@ func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) GetDeviceGroupDetailsByI
 }
 
 // GetDeviceGroupDeviceByID mocks base method.
-func (m *MockDeviceGroupsServiceInterface) GetDeviceGroupDeviceByID(account, orgID string, deviceGroupID, deviceID uint) (*models.Device, error) {
+func (m *MockDeviceGroupsServiceInterface) GetDeviceGroupDeviceByID(orgID string, deviceGroupID, deviceID uint) (*models.Device, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDeviceGroupDeviceByID", account, orgID, deviceGroupID, deviceID)
+	ret := m.ctrl.Call(m, "GetDeviceGroupDeviceByID", orgID, deviceGroupID, deviceID)
 	ret0, _ := ret[0].(*models.Device)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetDeviceGroupDeviceByID indicates an expected call of GetDeviceGroupDeviceByID.
-func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) GetDeviceGroupDeviceByID(account, orgID, deviceGroupID, deviceID interface{}) *gomock.Call {
+func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) GetDeviceGroupDeviceByID(orgID, deviceGroupID, deviceID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceGroupDeviceByID", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).GetDeviceGroupDeviceByID), account, orgID, deviceGroupID, deviceID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceGroupDeviceByID", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).GetDeviceGroupDeviceByID), orgID, deviceGroupID, deviceID)
 }
 
 // GetDeviceGroups mocks base method.
-func (m *MockDeviceGroupsServiceInterface) GetDeviceGroups(account, orgID string, limit, offset int, tx *gorm.DB) (*[]models.DeviceGroupListDetail, error) {
+func (m *MockDeviceGroupsServiceInterface) GetDeviceGroups(orgID string, limit, offset int, tx *gorm.DB) (*[]models.DeviceGroupListDetail, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDeviceGroups", account, orgID, limit, offset, tx)
+	ret := m.ctrl.Call(m, "GetDeviceGroups", orgID, limit, offset, tx)
 	ret0, _ := ret[0].(*[]models.DeviceGroupListDetail)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetDeviceGroups indicates an expected call of GetDeviceGroups.
-func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) GetDeviceGroups(account, orgID, limit, offset, tx interface{}) *gomock.Call {
+func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) GetDeviceGroups(orgID, limit, offset, tx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceGroups", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).GetDeviceGroups), account, orgID, limit, offset, tx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceGroups", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).GetDeviceGroups), orgID, limit, offset, tx)
 }
 
 // GetDeviceGroupsCount mocks base method.
-func (m *MockDeviceGroupsServiceInterface) GetDeviceGroupsCount(account, orgID string, tx *gorm.DB) (int64, error) {
+func (m *MockDeviceGroupsServiceInterface) GetDeviceGroupsCount(orgID string, tx *gorm.DB) (int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDeviceGroupsCount", account, orgID, tx)
+	ret := m.ctrl.Call(m, "GetDeviceGroupsCount", orgID, tx)
 	ret0, _ := ret[0].(int64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetDeviceGroupsCount indicates an expected call of GetDeviceGroupsCount.
-func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) GetDeviceGroupsCount(account, orgID, tx interface{}) *gomock.Call {
+func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) GetDeviceGroupsCount(orgID, tx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceGroupsCount", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).GetDeviceGroupsCount), account, orgID, tx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceGroupsCount", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).GetDeviceGroupsCount), orgID, tx)
 }
 
 // GetDeviceImageInfo mocks base method.
-func (m *MockDeviceGroupsServiceInterface) GetDeviceImageInfo(setOfImages map[int]models.DeviceImageInfo, account, orgID string) error {
+func (m *MockDeviceGroupsServiceInterface) GetDeviceImageInfo(setOfImages map[int]models.DeviceImageInfo, orgID string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDeviceImageInfo", setOfImages, account, orgID)
+	ret := m.ctrl.Call(m, "GetDeviceImageInfo", setOfImages, orgID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // GetDeviceImageInfo indicates an expected call of GetDeviceImageInfo.
-func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) GetDeviceImageInfo(setOfImages, account, orgID interface{}) *gomock.Call {
+func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) GetDeviceImageInfo(setOfImages, orgID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceImageInfo", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).GetDeviceImageInfo), setOfImages, account, orgID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeviceImageInfo", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).GetDeviceImageInfo), setOfImages, orgID)
 }
 
 // UpdateDeviceGroup mocks base method.
-func (m *MockDeviceGroupsServiceInterface) UpdateDeviceGroup(deviceGroup *models.DeviceGroup, account, orgID, ID string) error {
+func (m *MockDeviceGroupsServiceInterface) UpdateDeviceGroup(deviceGroup *models.DeviceGroup, orgID, ID string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateDeviceGroup", deviceGroup, account, orgID, ID)
+	ret := m.ctrl.Call(m, "UpdateDeviceGroup", deviceGroup, orgID, ID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateDeviceGroup indicates an expected call of UpdateDeviceGroup.
-func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) UpdateDeviceGroup(deviceGroup, account, orgID, ID interface{}) *gomock.Call {
+func (mr *MockDeviceGroupsServiceInterfaceMockRecorder) UpdateDeviceGroup(deviceGroup, orgID, ID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeviceGroup", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).UpdateDeviceGroup), deviceGroup, account, orgID, ID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDeviceGroup", reflect.TypeOf((*MockDeviceGroupsServiceInterface)(nil).UpdateDeviceGroup), deviceGroup, orgID, ID)
 }

@@ -9,15 +9,16 @@ import (
 	"strconv"
 	"strings"
 
-	"gorm.io/gorm"
-
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type imageSetTypeKey int
@@ -30,6 +31,7 @@ var statusOption = []string{models.ImageStatusCreated, models.ImageStatusBuildin
 // MakeImageSetsRouter adds support for operations on image-sets
 func MakeImageSetsRouter(sub chi.Router) {
 	sub.With(ValidateQueryParams).With(validateFilterParams).With(common.Paginate).Get("/", ListAllImageSets)
+	sub.With(validateFilterParams).With(common.Paginate).Get("/view", GetImageSetsView)
 	sub.Route("/{imageSetID}", func(r chi.Router) {
 		r.Use(ImageSetCtx)
 		r.With(validateFilterParams).With(common.Paginate).Get("/", GetImageSetsByID)
@@ -37,7 +39,7 @@ func MakeImageSetsRouter(sub chi.Router) {
 }
 
 func getStorageInstallerIsoURL(installerID uint) string {
-	return fmt.Sprintf("/api/edge/v1/storage/isos/%d", installerID)
+	return services.GetStorageInstallerIsoURL(installerID)
 }
 
 var imageSetFilters = common.ComposeFilters(
@@ -372,4 +374,31 @@ func returnImageDetails(images []models.Image, s *dependencies.EdgeAPIServices) 
 	}
 
 	return Imgs
+}
+
+// GetImageSetsView return a list of image-sets view
+func GetImageSetsView(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID
+		return
+	}
+
+	pagination := common.GetPagination(r)
+
+	imageSetsCount, err := ctxServices.ImageSetService.GetImageSetsViewCount(imageSetFilters(r, db.DB))
+	if err != nil {
+		ctxServices.Log.WithFields(log.Fields{"error": err.Error(), "orgID": orgID}).Error("error getting image-sets view count")
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
+		return
+	}
+
+	imageSetsViewList, err := ctxServices.ImageSetService.GetImageSetsView(pagination.Limit, pagination.Offset, imageSetFilters(r, db.DB))
+	if err != nil {
+		ctxServices.Log.WithFields(log.Fields{"error": err.Error(), "orgID": orgID}).Error("error getting image-sets view")
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
+		return
+	}
+	respondWithJSONBody(w, ctxServices.Log, map[string]interface{}{"data": imageSetsViewList, "count": imageSetsCount})
 }

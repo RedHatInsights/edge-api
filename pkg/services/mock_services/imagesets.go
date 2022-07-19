@@ -9,6 +9,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	models "github.com/redhatinsights/edge-api/pkg/models"
+	gorm "gorm.io/gorm"
 )
 
 // MockImageSetsServiceInterface is a mock of ImageSetsServiceInterface interface.
@@ -47,4 +48,34 @@ func (m *MockImageSetsServiceInterface) GetImageSetsByID(imageSetID int) (*model
 func (mr *MockImageSetsServiceInterfaceMockRecorder) GetImageSetsByID(imageSetID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageSetsByID", reflect.TypeOf((*MockImageSetsServiceInterface)(nil).GetImageSetsByID), imageSetID)
+}
+
+// GetImageSetsCount mocks base method.
+func (m *MockImageSetsServiceInterface) GetImageSetsViewCount(tx *gorm.DB) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImageSetsViewCount", tx)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetImageSetsCount indicates an expected call of GetImageSetsCount.
+func (mr *MockImageSetsServiceInterfaceMockRecorder) GetImageSetsCount(tx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageSetsViewCount", reflect.TypeOf((*MockImageSetsServiceInterface)(nil).GetImageSetsViewCount), tx)
+}
+
+// GetImageSetsView mocks base method.
+func (m *MockImageSetsServiceInterface) GetImageSetsView(limit, offset int, tx *gorm.DB) (*[]models.ImageSetView, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImageSetsView", limit, offset, tx)
+	ret0, _ := ret[0].(*[]models.ImageSetView)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetImageSetsView indicates an expected call of GetImageSetsView.
+func (mr *MockImageSetsServiceInterfaceMockRecorder) GetImageSetsView(limit, offset, tx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageSetsView", reflect.TypeOf((*MockImageSetsServiceInterface)(nil).GetImageSetsView), limit, offset, tx)
 }

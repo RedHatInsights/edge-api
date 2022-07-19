@@ -387,7 +387,7 @@ var _ = Describe("Update routes", func() {
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 
-				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), account, orgID, gomock.Any()).Return(&updateTransactions, nil)
+				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), orgID, gomock.Any()).Return(&updateTransactions, nil)
 				mockUpdateService.EXPECT().CreateUpdateAsync(updateTransactions[0].ID)
 
 				responseRecorder := httptest.NewRecorder()
@@ -407,7 +407,7 @@ var _ = Describe("Update routes", func() {
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 
-				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), account, orgID, gomock.Any()).Return(&updateTransactions, nil)
+				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), orgID, gomock.Any()).Return(&updateTransactions, nil)
 				mockUpdateService.EXPECT().CreateUpdateAsync(updateTransactions[0].ID)
 
 				responseRecorder := httptest.NewRecorder()
