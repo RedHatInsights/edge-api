@@ -39,8 +39,6 @@ func ValidateQueryParams(endpoint string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var errs []validationError
-			// path := strings.Split(r.URL.Path, "/")
-			// endpoint := path[len(path)-1]
 			filtersMap := r.URL.Query()
 			queriesKeys := reflect.ValueOf(filtersMap).MapKeys()
 			qparamsArray := GetQueryParamsArray(endpoint)
