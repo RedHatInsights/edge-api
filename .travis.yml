@@ -57,8 +57,11 @@ jobs:
     #     - docker run --rm -v $(pwd):/edge-api ${LIBFDO_IMAGE}
     #     - bash <(curl -s https://codecov.io/bash)
     - name: "Code Formatting"
-      script: "[ $(go fmt ./... | wc -l) -eq 0 ]"
+      script:
+        - go fmt ./...
+        - "[ $(go fmt ./... | wc -l) -eq 0 ]"
     - name: "Code Linting"
       script:
         - go get -u golang.org/x/lint/golint
+        - make -s lint
         - "[ $(make -s lint | wc -l) -eq 0 ]"

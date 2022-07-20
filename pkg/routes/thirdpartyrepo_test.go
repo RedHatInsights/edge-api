@@ -151,7 +151,7 @@ func TestGetAllThirdPartyRepoQueryParams(t *testing.T) {
 		req = req.WithContext(ctx)
 		w := httptest.NewRecorder()
 
-		ValidateQueryParams(next).ServeHTTP(w, req)
+		ValidateQueryParams("thirdpartyrepo")(next).ServeHTTP(w, req)
 
 		resp := w.Result()
 		jsonBody := []validationError{}

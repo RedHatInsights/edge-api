@@ -354,6 +354,31 @@ var _ = Describe("Update routes", func() {
 				Expect(responseRecorder.Code).To(Equal(http.StatusNotFound))
 			})
 
+			It("should respond http status ok when build transaction is empty", func() {
+				updateData, err := json.Marshal(models.DevicesUpdate{DevicesUUID: []string{device.UUID}})
+				Expect(err).To(BeNil())
+				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(updateData))
+				Expect(err).To(BeNil())
+
+				ctx := req.Context()
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+
+				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), orgID, gomock.Any()).Return(&[]models.UpdateTransaction{}, nil)
+
+				rr := httptest.NewRecorder()
+				handler := http.HandlerFunc(AddUpdate)
+				handler.ServeHTTP(rr, req)
+
+				var response common.APIResponse
+				respBody, err := ioutil.ReadAll(rr.Body)
+				err = json.Unmarshal(respBody, &response)
+
+				Expect(rr.Code).To(Equal(http.StatusOK))
+				Expect(err).Should(BeNil())
+				Expect(response.Message).To(Equal("There are no updates to perform"))
+			})
+
 			It("should not allow to update when devices from different accounts", func() {
 				updateData, err := json.Marshal(models.DevicesUpdate{DevicesUUID: []string{device.UUID, device2.UUID}})
 				Expect(err).To(BeNil())
