@@ -78,6 +78,9 @@ func TestContainFilterHandler(t *testing.T) {
 	result := filter(req, db.DB)
 	images := []models.Image{}
 	result.Find(&images)
+	if len(images) == 0 {
+		t.Fatalf("No images were found with name=Motion")
+	}
 	for _, image := range images {
 		if !strings.Contains(image.Name, "Motion") {
 			t.Errorf("Expected image will have Motion in it but got %s", image.Name)
@@ -92,13 +95,16 @@ func TestContainFilterHandlerWithMultiple(t *testing.T) {
 		QueryParam: "status",
 		DBField:    "images.status",
 	}))
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/images?status=%sstatus=%s", testStatusOne, testStatusTwo), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/images?status=%s&status=%s", testStatusOne, testStatusTwo), nil)
 	if err != nil {
 		t.Fatalf("Failed to create request: %s", err)
 	}
 	result := filter(req, db.DB)
 	images := []models.Image{}
 	result.Find(&images)
+	if len(images) == 0 {
+		t.Fatalf("No images were found with status=%s and status=%s", testStatusOne, testStatusTwo)
+	}
 	hasBothStatus := 0
 	for _, image := range images {
 		if image.Status == testStatusOne {
@@ -126,6 +132,9 @@ func TestOneOfFilterHandler(t *testing.T) {
 	result := filter(req, db.DB)
 	images := []models.Image{}
 	result.Find(&images)
+	if len(images) == 0 {
+		t.Fatalf("No images were found with status=CREATED and status=BUILDING")
+	}
 	created := false
 	building := false
 	for _, image := range images {
@@ -188,6 +197,9 @@ func TestSortFilterHandler(t *testing.T) {
 		result := filter(req, db.DB)
 		images := []models.Image{}
 		result.Find(&images)
+		if len(images) == 0 {
+			t.Fatalf("No images were found with url: %s", te.url)
+		}
 		if !te.asc && images[0].Name < images[1].Name {
 			t.Errorf("Expected first result name %s will be higher than second result %s", images[0].Name, images[1].Name)
 		}

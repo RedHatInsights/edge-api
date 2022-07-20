@@ -82,29 +82,27 @@ type ImageService struct {
 	RepoService  RepoServiceInterface
 }
 
-// ValidateAllImageReposAreFromOrgID validates the account for Third Party Repositories
-func ValidateAllImageReposAreFromOrgID(orgID string, repos []models.ThirdPartyRepo) error {
+// GetImageReposFromDB return ThirdParty repo of image by OrgID
+func GetImageReposFromDB(orgID string, repos []models.ThirdPartyRepo) (*[]models.ThirdPartyRepo, error) {
 
 	if orgID == "" {
-		return new(OrgIDNotSet)
+		return nil, new(OrgIDNotSet)
 	}
-	if len(repos) == 0 {
-		return nil
+	var imagesRepos []models.ThirdPartyRepo
+	for _, custRepo := range repos {
+		var repo models.ThirdPartyRepo
+		if custRepo.ID == 0 {
+			return nil, new(ThirdPartyRepositoryNotFound)
+		}
+		if result := db.Org(orgID, "").First(&repo, custRepo.ID); result.Error != nil {
+			if result.Error == gorm.ErrRecordNotFound {
+				return nil, new(ThirdPartyRepositoryNotFound)
+			}
+			return nil, result.Error
+		}
+		imagesRepos = append(imagesRepos, repo)
 	}
-	var ids []uint
-	for _, repo := range repos {
-		ids = append(ids, repo.ID)
-	}
-
-	var existingRepos []models.ThirdPartyRepo
-	if result := db.Org(orgID, "").Select("id").Find(&existingRepos, ids); result.Error != nil {
-		return result.Error
-	}
-	if len(existingRepos) != len(ids) {
-		return new(ThirdPartyRepositoryNotFound)
-	}
-
-	return nil
+	return &imagesRepos, nil
 }
 
 func (s *ImageService) getImageSetForNewImage(orgID string, image *models.Image) (*models.ImageSet, error) {
@@ -169,10 +167,11 @@ func (s *ImageService) CreateImage(image *models.Image, orgID string, requestID 
 			return er
 		}
 	}
-	if err := ValidateAllImageReposAreFromOrgID(orgID, image.ThirdPartyRepositories); err != nil {
-
+	imagesrepos, err := GetImageReposFromDB(orgID, image.ThirdPartyRepositories)
+	if err != nil {
 		return err
 	}
+	image.ThirdPartyRepositories = *imagesrepos
 	//Send Image creation to notification
 	notify, errNotify := s.SendImageNotification(image)
 	if errNotify != nil {
@@ -264,9 +263,11 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 			return er
 		}
 	}
-	if err := ValidateAllImageReposAreFromOrgID(previousImage.OrgID, image.ThirdPartyRepositories); err != nil {
+	imagesrepos, err := GetImageReposFromDB(previousImage.OrgID, image.ThirdPartyRepositories)
+	if err != nil {
 		return err
 	}
+	image.ThirdPartyRepositories = *imagesrepos
 
 	// important: update the image imageSet for any previous image build status,
 	// otherwise image will be orphaned from its imageSet if previous build failed

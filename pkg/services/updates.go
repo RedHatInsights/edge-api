@@ -719,7 +719,9 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					if result.RowsAffected == 0 {
 						s.log.Debug("No old commits found")
 					} else {
-						oldCommits = append(oldCommits, oldCommit)
+						if !contains(oldCommits, oldCommit) {
+							oldCommits = append(oldCommits, oldCommit)
+						}
 					}
 					currentImage, cError := s.ImageService.GetImageByOSTreeCommitHash(deployment.Checksum)
 					if cError != nil {
@@ -757,7 +759,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 
 				//Should not create a transaction to device already updated
 				update.OldCommits = oldCommits
-				update.RepoID = repo.ID
+				update.RepoID = &repo.ID
 				if err := db.DB.Save(&update).Error; err != nil {
 					err = errors.NewBadRequest(err.Error())
 					s.log.WithField("error", err.Error()).Error("Error encoding error")
@@ -772,4 +774,13 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 		s.log.WithField("updateID", update.ID).Info("Update has been created")
 	}
 	return &updates, nil
+}
+
+func contains(oldCommits []models.Commit, searchCommit models.Commit) bool {
+	for _, commit := range oldCommits {
+		if commit.ID == searchCommit.ID {
+			return true
+		}
+	}
+	return false
 }
