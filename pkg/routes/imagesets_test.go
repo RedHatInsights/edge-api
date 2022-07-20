@@ -4,16 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/bxcodec/faker/v3"
-	"github.com/go-chi/chi"
-	"github.com/redhatinsights/edge-api/pkg/services"
-	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
 	"testing"
+
+	"github.com/bxcodec/faker/v3"
+	"github.com/go-chi/chi"
+	"github.com/redhatinsights/edge-api/pkg/services"
+	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
+	log "github.com/sirupsen/logrus"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -119,7 +120,7 @@ func TestGetAllImageSetsQueryParameters(t *testing.T) {
 		}
 		w := httptest.NewRecorder()
 
-		ValidateQueryParams(next).ServeHTTP(w, req)
+		ValidateQueryParams("image-sets")(next).ServeHTTP(w, req)
 
 		resp := w.Result()
 		jsonBody := []validationError{}
