@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"sort"
+	"time"
 
 	version "github.com/knqyf263/go-rpm-version"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
@@ -30,7 +31,7 @@ const (
 type DeviceServiceInterface interface {
 	GetDevices(params *inventory.Params) (*models.DeviceDetailsList, error)
 	GetDeviceByID(deviceID uint) (*models.Device, error)
-	GetDevicesView(limit int, offset int, tx *gorm.DB) (*models.DeviceViewList, error)
+	GetDevicesView(limit int, offset int, tx *gorm.DB, params *inventory.Params) (*models.DeviceViewList, error)
 	GetDevicesCount(tx *gorm.DB) (int64, error)
 	GetDeviceByUUID(deviceUUID string) (*models.Device, error)
 	// Device by UUID methods
@@ -58,18 +59,22 @@ type RpmOSTreeDeployment struct {
 // PlatformInsightsCreateUpdateEventPayload is the body of the create event found on the platform.inventory.events kafka topic.
 type PlatformInsightsCreateUpdateEventPayload struct {
 	Type string `json:"type"`
-	Host struct {
-		ID            string             `json:"id"`
-		Name          string             `json:"display_name"`
-		OrgID         string             `json:"org_id"`
-		InsightsID    string             `json:"insights_id"`
-		Updated       models.EdgeAPITime `json:"updated"`
-		SystemProfile struct {
-			HostType             string                `json:"host_type"`
-			RpmOSTreeDeployments []RpmOSTreeDeployment `json:"rpm_ostree_deployments"`
-			RHCClientID          string                `json:"rhc_client_id,omitempty"`
-		} `json:"system_profile"`
-	} `json:"host"`
+	Host host   `json:"host"`
+}
+
+type systemProfile struct {
+	HostType             string                `json:"host_type"`
+	RpmOSTreeDeployments []RpmOSTreeDeployment `json:"rpm_ostree_deployments"`
+	RHCClientID          string                `json:"rhc_client_id,omitempty"`
+}
+
+type host struct {
+	ID            string             `json:"id"`
+	Name          string             `json:"display_name"`
+	OrgID         string             `json:"org_id"`
+	InsightsID    string             `json:"insights_id"`
+	Updated       models.EdgeAPITime `json:"updated"`
+	SystemProfile systemProfile      `json:"system_profile"`
 }
 
 // PlatformInsightsDeleteEventPayload is the body of the delete event found on the platform.inventory.events kafka topic.
@@ -649,7 +654,7 @@ func (s *DeviceService) GetDevicesCount(tx *gorm.DB) (int64, error) {
 }
 
 // GetDevicesView returns a list of EdgeDevices for a given org.
-func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*models.DeviceViewList, error) {
+func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB, params *inventory.Params) (*models.DeviceViewList, error) {
 	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {
 		return nil, err
@@ -659,14 +664,29 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 		tx = db.DB
 	}
 
-	s.log.WithField("limit", limit).Debug("GetDevicesView called with limit")
+	// Sync our db with inventory
+	go s.syncDevicesWithInventory(params, orgID)
 
-	var storedDevices []models.Device
-	if res := db.OrgDB(orgID, tx, "").Limit(limit).Offset(offset).Preload("UpdateTransaction").Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
-		return nil, res.Error
+	// Get all inventory devices for this org_id
+	inventoryDevices, err := s.Inventory.ReturnDevices(params)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error retrieving devices from inventory")
+		return nil, err
+	}
+	if inventoryDevices.Count == 0 {
+		return nil, nil
+	}
+	// Build a map from the received devices UUIDs and the already saved db devices IDs
+	devicesUUIDs := make([]string, 0, len(inventoryDevices.Result))
+	for _, device := range inventoryDevices.Result {
+		devicesUUIDs = append(devicesUUIDs, device.ID)
 	}
 
-	// create a map of device group info and map it to given devices
+	var storedDevices []models.Device
+	// search for all stored devices that are also in inventory
+	if res := db.OrgDB(orgID, tx, "").Where("UUID IN (?)", devicesUUIDs).Limit(limit).Offset(offset).Preload("UpdateTransaction").Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
+		return nil, res.Error
+	}
 
 	returnDevices, err := ReturnDevicesView(storedDevices, orgID)
 	if err != nil {
@@ -840,31 +860,35 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 		}).Debug("Skipping message - it is not a create message")
 	} else {
 		if e.Type == InventoryEventTypeCreated && e.Host.SystemProfile.HostType == InventoryHostTypeEdge {
-			s.log.WithFields(log.Fields{
-				"host_id": string(e.Host.ID),
-				"value":   string(message),
-			}).Debug("Saving newly created edge device")
-			var newDevice = models.Device{
-				UUID:        e.Host.ID,
-				RHCClientID: e.Host.SystemProfile.RHCClientID,
-				OrgID:       e.Host.OrgID,
-				Name:        e.Host.Name,
-				LastSeen:    e.Host.Updated,
-			}
-			result := db.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
-			if result.Error != nil {
-				s.log.WithFields(log.Fields{
-					"host_id": string(e.Host.ID),
-					"error":   result.Error,
-				}).Error("Error creating device")
-				return result.Error
-			}
-
-			return s.processPlatformInventoryEventUpdateDevice(*e)
+			return s.platformInventoryCreateEventHelper(*e)
 		}
 		s.log.Debug("Skipping message - not an edge create message from platform insights")
 	}
 	return nil
+}
+
+func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCreateUpdateEventPayload) error {
+	s.log.WithFields(log.Fields{
+		"host_id": string(e.Host.ID),
+		"name":    string(e.Host.Name),
+	}).Debug("Saving newly created edge device")
+	var newDevice = models.Device{
+		UUID:        e.Host.ID,
+		RHCClientID: e.Host.SystemProfile.RHCClientID,
+		OrgID:       e.Host.OrgID,
+		Name:        e.Host.Name,
+		LastSeen:    e.Host.Updated,
+	}
+	result := db.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
+	if result.Error != nil {
+		s.log.WithFields(log.Fields{
+			"host_id": string(e.Host.ID),
+			"error":   result.Error,
+		}).Error("Error creating device")
+		return result.Error
+	}
+
+	return s.processPlatformInventoryEventUpdateDevice(e)
 }
 
 // ProcessPlatformInventoryDeleteEvent processes messages from platform.inventory.events kafka topic with event_type="delete"
@@ -900,4 +924,82 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 		return result.Error
 	}
 	return nil
+}
+
+func (s *DeviceService) syncDevicesWithInventory(params *inventory.Params, orgID string) {
+	// Get all inventory devices
+	inventoryDevices, err := s.Inventory.ReturnDevices(params)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error retrieving devices from inventory for sync")
+		return
+	}
+
+	// Build a map from the received devices UUIDs and the already saved db devices IDs
+	type visitedInventoryDevices struct {
+		visited         bool
+		inventoryDevice *inventory.Device
+	}
+	inventoryDevicesUUIDs := make(map[string]visitedInventoryDevices)
+	for _, device := range inventoryDevices.Result {
+		inventoryDevicesUUIDs[device.ID] = visitedInventoryDevices{visited: false, inventoryDevice: &device}
+	}
+
+	// Get all saved devices
+	var storedDevices []models.Device
+	if res := db.Org(orgID, "").Find(&storedDevices); res.Error != nil {
+		s.log.WithField("error", err.Error()).Error("Error retrieving devices from db for sync")
+		return
+	}
+
+	// now compare the two slices.
+	// If a device is only in storedDevices it must be "deleted"
+	// If a device is only in inventory is must be added to our DB
+	// If a device is in both, do nothing.
+	var devicesToBeDeleted []models.Device
+	for _, device := range storedDevices {
+		if _, ok := inventoryDevicesUUIDs[device.UUID]; ok {
+			inventoryDevicesUUIDs[device.UUID] = visitedInventoryDevices{visited: true, inventoryDevice: inventoryDevicesUUIDs[device.UUID].inventoryDevice}
+		} else {
+			devicesToBeDeleted = append(devicesToBeDeleted, device)
+		}
+	}
+
+	// Delete invalid devices
+	for _, device := range devicesToBeDeleted {
+		if result := db.DB.Delete(&device); result.Error != nil {
+			s.log.WithFields(
+				log.Fields{"host_id": device.UUID, "OrgID": device.OrgID, "error": result.Error},
+			).Error("Error when deleting device in device sync")
+		}
+	}
+
+	for _, inventoryDevices := range inventoryDevicesUUIDs {
+		if !inventoryDevices.visited {
+			var deps []RpmOSTreeDeployment
+			for _, dep := range inventoryDevices.inventoryDevice.Ostree.RpmOstreeDeployments {
+				idep := RpmOSTreeDeployment{
+					Booted:   dep.Booted,
+					Checksum: dep.Checksum,
+				}
+				deps = append(deps, idep)
+			}
+			profile := systemProfile{
+				HostType:             "edge",
+				RpmOSTreeDeployments: deps,
+				RHCClientID:          inventoryDevices.inventoryDevice.Ostree.RHCClientID,
+			}
+			iHost := host{
+				ID:            inventoryDevices.inventoryDevice.ID,
+				Name:          inventoryDevices.inventoryDevice.DisplayName,
+				OrgID:         inventoryDevices.inventoryDevice.OrgID,
+				Updated:       models.EdgeAPITime{Time: time.Now(), Valid: true},
+				SystemProfile: profile,
+			}
+			createEvent := PlatformInsightsCreateUpdateEventPayload{
+				Type: InventoryEventTypeCreated,
+				Host: iHost,
+			}
+			go s.platformInventoryCreateEventHelper(createEvent)
+		}
+	}
 }
