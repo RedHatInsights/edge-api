@@ -1,26 +1,38 @@
 package kafkacommon
 
 import (
-	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/redhatinsights/edge-api/config"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
-	// FleetmgntImageBuild topic name
-	FleetmgntImageBuild string = "platform.edge.fleetmgmt.image-build"
+	// TopicFleetmgmtImageBuild topic name
+	TopicFleetmgmtImageBuild string = "platform.edge.fleetmgmt.image-build"
 )
 
+// TopicNotFoundError indicates the account was nil
+type TopicNotFoundError struct{}
+
+func (e *TopicNotFoundError) Error() string {
+	return "Topic is not found in config"
+}
+
 // GetTopic takes the requested kafka topic and returns the topic actually created
-func GetTopic(requested string) string {
-	ret := ""
-	if clowder.IsClowderEnabled() {
-		cfg := config.Get()
+func GetTopic(requested string) (string, error) {
+	cfg := config.Get()
+	if cfg.KafkaConfig != nil {
+		log.Debug("looking up actual topic")
 		topics := cfg.KafkaConfig.Topics
 		for _, topic := range topics {
 			if topic.RequestedName == requested {
-				ret = topic.Name
+				log.WithField("Name", topic.Name).Debug("Found the actual topic name")
+
+				return topic.Name, nil
 			}
 		}
 	}
-	return ret
+	err := new(TopicNotFoundError)
+	log.WithFields(log.Fields{"requested_name": requested, "error": err}).Error("Actual topic not found. Returning the requested topic name")
+
+	return requested, err
 }

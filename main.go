@@ -181,7 +181,7 @@ func main() {
 	consumers := []services.ConsumerService{
 		services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.playbook-dispatcher.runs"),
 		services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.inventory.events"),
-		services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.edge.fleetmgmt.image-build"),
+		//		services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.edge.fleetmgmt.image-build"),
 	}
 	webServer := serveWeb(cfg, consumers)
 	metricsServer := serveMetrics(cfg.MetricsPort)

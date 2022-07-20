@@ -1,0 +1,15 @@
+version: '2'
+services:
+    edge-ui:
+        image: localhost/edge-frontend:podmandevx
+#        image: quay.io/loadtheaccumulator/edge-frontend:podmandev
+        restart: unless-stopped
+        ports:
+          - 1337:1337
+        env_file:
+        - env/edge-api.env
+        depends-on: edge-api-service
+#        volumes:
+#          - ~/home/jhollowa/dev/git/RedHatInsights/edge-frontend:/opt/app-root:Z
+        working_dir: /opt/app-root
+        command: npm run start:proxy
