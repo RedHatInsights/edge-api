@@ -137,7 +137,7 @@ var _ = Describe("DeviceGroup routes", func() {
 			Expect(err).ToNot(HaveOccurred())
 			w := httptest.NewRecorder()
 
-			ValidateQueryParams(next).ServeHTTP(w, req)
+			ValidateQueryParams("device-groups")(next).ServeHTTP(w, req)
 
 			resp := w.Result()
 			var jsonBody []validationError

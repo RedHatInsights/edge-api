@@ -218,6 +218,16 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 		respondWithAPIError(w, ctxServices.Log, apiError)
 		return nil
 	}
+
+	if len(*updates) == 0 {
+		ctxServices.Log.WithFields(log.Fields{
+			"account": account,
+			"org_id":  orgID,
+		}).Info("There are no updates to perform")
+		respondWithJSONBody(w, ctxServices.Log, common.APIResponse{Message: "There are no updates to perform"})
+		return nil
+	}
+
 	return updates
 }
 

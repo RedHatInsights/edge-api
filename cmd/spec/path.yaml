@@ -320,9 +320,11 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/v1.UpdateTransaction"
+                oneOf:
+                  - type: array
+                    items:
+                      $ref: "#/components/schemas/v1.UpdateTransaction"
+                  - $ref: "#/components/schemas/v1.APIResponse"
           description: OK
         "400":
           content:
