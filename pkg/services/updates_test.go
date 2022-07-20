@@ -579,7 +579,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			Devices:  []models.Device{device},
 			CommitID: latestCommit.ID,
 			Commit:   &latestCommit,
-			RepoID:   repo.ID,
+			RepoID:   &repo.ID,
 			Repo:     &repo,
 			Status:   models.UpdateStatusBuilding,
 		}
@@ -671,7 +671,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			Devices:  []models.Device{device},
 			CommitID: latestCommit.ID,
 			Commit:   &latestCommit,
-			RepoID:   repo.ID,
+			RepoID:   &repo.ID,
 			Repo:     &repo,
 			Status:   models.UpdateStatusBuilding,
 		}
@@ -758,7 +758,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			Devices:  []models.Device{device},
 			CommitID: commit.ID,
 			Commit:   &commit,
-			RepoID:   repo.ID,
+			RepoID:   &repo.ID,
 			Repo:     &repo,
 			Status:   models.UpdateStatusBuilding,
 		}
@@ -805,6 +805,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		var newCommit models.Commit
 		var newImage models.Image
 		var device models.Device
+		var device2 models.Device
 
 		var updateService services.UpdateServiceInterface
 		var mockRepoBuilder *mock_services.MockRepoBuilderInterface
@@ -834,6 +835,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 			db.DB.Create(&newImage)
 			device = models.Device{Account: account, OrgID: orgId, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated(), RHCClientID: rhcClientId}
 			db.DB.Create(&device)
+			device2 = models.Device{Account: account, OrgID: orgId, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated()}
+			db.DB.Create(&device2)
 		})
 
 		Context("when device has rhc_client_id", func() {
@@ -854,7 +857,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Expect(err).To(BeNil())
 				Expect(len(*updates)).Should(Equal(1))
 				Expect((*updates)[0].ID).Should(BeNumerically(">", 0))
-				Expect((*updates)[0].RepoID).Should(BeNumerically(">", 0))
+				Expect((*updates)[0].RepoID).ToNot(BeNil())
 				Expect((*updates)[0].OrgID).Should(Equal(common.DefaultOrgID))
 				Expect((*updates)[0].Status).Should(Equal(models.UpdateStatusCreated))
 				Expect((*updates)[0].Repo.ID).Should(BeNumerically(">", 0))
@@ -883,12 +886,55 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Expect(err).To(BeNil())
 				Expect(len(*updates)).Should(Equal(1))
 				Expect((*updates)[0].ID).Should(BeNumerically(">", 0))
-				Expect((*updates)[0].RepoID).Should(Equal(uint(0)))
+				Expect((*updates)[0].RepoID).Should(BeNil())
 				Expect((*updates)[0].OrgID).Should(Equal(common.DefaultOrgID))
 				Expect((*updates)[0].Status).Should(Equal(models.UpdateStatusDeviceDisconnected))
 				Expect((*updates)[0].Repo).Should(BeNil())
 
 				Expect(len((*updates)[0].Devices)).Should(Equal(0))
+			})
+		})
+
+		Context("when has two devices, one with rhc_client_id and another without", func() {
+			It("should create two update transactions, one with a repo and another without", func() {
+				var devicesUpdate models.DevicesUpdate
+				devicesUpdate.DevicesUUID = []string{device.UUID, device2.UUID}
+
+				responseInventory := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
+					{ID: device.UUID, Ostree: inventory.SystemProfile{
+						RHCClientID: rhcClientId,
+					}},
+				}}
+				mockInventory.EXPECT().ReturnDevicesByID(device.UUID).
+					Return(responseInventory, nil)
+
+				responseInventory2 := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
+					{ID: device2.UUID, Ostree: inventory.SystemProfile{}},
+				}}
+				mockInventory.EXPECT().ReturnDevicesByID(device2.UUID).
+					Return(responseInventory2, nil)
+
+				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultOrgID, &newCommit)
+
+				Expect(err).To(BeNil())
+				Expect(len(*updates)).Should(Equal(2))
+				Expect((*updates)[0].ID).Should(BeNumerically(">", 0))
+				Expect((*updates)[0].RepoID).ToNot(BeNil())
+				Expect((*updates)[0].OrgID).Should(Equal(common.DefaultOrgID))
+				Expect((*updates)[0].Status).Should(Equal(models.UpdateStatusCreated))
+				Expect((*updates)[0].Repo.ID).Should(BeNumerically(">", 0))
+				Expect((*updates)[0].Repo.URL).Should(BeEmpty())
+				Expect((*updates)[0].Repo.Status).Should(Equal(models.RepoStatusBuilding))
+
+				Expect(len((*updates)[0].Devices)).Should(Equal(1))
+				Expect((*updates)[0].Devices[0].UUID).Should(Equal(device.UUID))
+				Expect((*updates)[0].Devices[0].RHCClientID).Should(Equal(device.RHCClientID))
+
+				Expect((*updates)[1].ID).Should(BeNumerically(">", 0))
+				Expect((*updates)[1].RepoID).Should(BeNil())
+				Expect((*updates)[1].OrgID).Should(Equal(common.DefaultOrgID))
+				Expect((*updates)[1].Status).Should(Equal(models.UpdateStatusDeviceDisconnected))
+				Expect((*updates)[1].Repo).Should(BeNil())
 			})
 		})
 

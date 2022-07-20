@@ -37,7 +37,7 @@ const imageKey imageTypeKey = iota
 
 // MakeImagesRouter adds support for operations on images
 func MakeImagesRouter(sub chi.Router) {
-	sub.With(ValidateQueryParams).With(ValidateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetAllImages)
+	sub.With(ValidateQueryParams("images")).With(ValidateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetAllImages)
 	sub.Post("/", CreateImage)
 	sub.Post("/checkImageName", CheckImageName)
 	sub.Route("/{ostreeCommitHash}/info", func(r chi.Router) {

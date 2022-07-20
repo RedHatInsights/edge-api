@@ -4,16 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/bxcodec/faker/v3"
-	"github.com/go-chi/chi"
-	"github.com/redhatinsights/edge-api/pkg/services"
-	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
 	"testing"
+
+	"github.com/bxcodec/faker/v3"
+	"github.com/go-chi/chi"
+	"github.com/redhatinsights/edge-api/pkg/services"
+	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
+	log "github.com/sirupsen/logrus"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -119,7 +120,7 @@ func TestGetAllImageSetsQueryParameters(t *testing.T) {
 		}
 		w := httptest.NewRecorder()
 
-		ValidateQueryParams(next).ServeHTTP(w, req)
+		ValidateQueryParams("image-sets")(next).ServeHTTP(w, req)
 
 		resp := w.Result()
 		jsonBody := []validationError{}
@@ -492,4 +493,104 @@ var _ = Describe("ImageSets Route Test", func() {
 		})
 	})
 
+	Context("GetImageSetsView", func() {
+		OrgID := common.DefaultOrgID
+		CommonName := faker.UUIDHyphenated()
+
+		imageSet1 := models.ImageSet{OrgID: OrgID, Name: CommonName + "-" + faker.Name(), Version: 3}
+		db.DB.Create(&imageSet1)
+		image1 := models.Image{OrgID: OrgID, Name: imageSet1.Name, ImageSetID: &imageSet1.ID, Version: 1, Status: models.ImageStatusSuccess}
+		image1.Installer = &models.Installer{OrgID: OrgID, ImageBuildISOURL: faker.URL(), Status: models.ImageStatusSuccess}
+		db.DB.Create(&image1)
+		image2 := models.Image{OrgID: OrgID, Name: imageSet1.Name, ImageSetID: &imageSet1.ID, Version: 2, Status: models.ImageStatusSuccess}
+		image2.Installer = &models.Installer{OrgID: OrgID, ImageBuildISOURL: faker.URL(), Status: models.ImageStatusSuccess}
+		db.DB.Create(&image2)
+		// image 3 Is with empty url and error status
+		image3 := models.Image{OrgID: OrgID, Name: imageSet1.Name, ImageSetID: &imageSet1.ID, Version: 3, Status: models.ImageStatusError}
+		image3.Installer = &models.Installer{OrgID: OrgID, Status: models.ImageStatusError}
+		db.DB.Create(&image3)
+
+		// other image set
+		otherImageSet1 := models.ImageSet{OrgID: OrgID, Name: CommonName + "-" + faker.Name(), Version: 1}
+		db.DB.Create(&otherImageSet1)
+		otherImage1 := models.Image{OrgID: OrgID, Name: otherImageSet1.Name, ImageSetID: &otherImageSet1.ID, Version: 1, Status: models.ImageStatusSuccess}
+		otherImage1.Installer = &models.Installer{OrgID: OrgID, ImageBuildISOURL: faker.URL(), Status: models.ImageStatusSuccess}
+		db.DB.Create(&otherImage1)
+
+		var ctrl *gomock.Controller
+		var router chi.Router
+		// var mockImageService *mock_services.MockImageServiceInterface
+		var mockImageSetService *mock_services.MockImageSetsServiceInterface
+		var edgeAPIServices *dependencies.EdgeAPIServices
+
+		type ImageSetsViewResponse struct {
+			Count int                   `json:"count"`
+			Data  []models.ImageSetView `json:"data"`
+		}
+
+		BeforeEach(func() {
+			ctrl = gomock.NewController(GinkgoT())
+			// mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
+			mockImageSetService = mock_services.NewMockImageSetsServiceInterface(ctrl)
+			edgeAPIServices = &dependencies.EdgeAPIServices{
+				// ImageService: mockImageService,
+				ImageSetService: mockImageSetService,
+				Log:             log.NewEntry(log.StandardLogger()),
+			}
+			router = chi.NewRouter()
+			router.Use(func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					ctx := dependencies.ContextWithServices(r.Context(), edgeAPIServices)
+					next.ServeHTTP(w, r.WithContext(ctx))
+				})
+			})
+			router.Route("/image-sets", MakeImageSetsRouter)
+		})
+
+		It("The imageSetView end point is working as expected", func() {
+			req, err := http.NewRequest("GET", "/image-sets/view?limit=30&offset=0", nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			imageSetsView := []models.ImageSetView{
+				{
+					ID:               imageSet1.ID,
+					Name:             imageSet1.Name,
+					Version:          image3.Version,
+					Status:           image3.Status,
+					ImageBuildIsoURL: fmt.Sprintf("/api/edge/v1/storage/isos/%d", image2.Installer.ID),
+				},
+				{
+					ID:               otherImageSet1.ID,
+					Name:             otherImage1.Name,
+					Version:          otherImage1.Version,
+					Status:           otherImage1.Status,
+					ImageBuildIsoURL: fmt.Sprintf("/api/edge/v1/storage/isos/%d", otherImage1.Installer.ID),
+				},
+			}
+
+			mockImageSetService.EXPECT().GetImageSetsCount(gomock.Any()).Return(int64(2), nil)
+			mockImageSetService.EXPECT().GetImageSetsView(30, 0, gomock.Any()).Return(&imageSetsView, nil)
+
+			rr := httptest.NewRecorder()
+
+			router.ServeHTTP(rr, req)
+			Expect(rr.Code).To(Equal(http.StatusOK))
+
+			var imageSetsViewResponse ImageSetsViewResponse
+			respBody, err := ioutil.ReadAll(rr.Body)
+			err = json.Unmarshal(respBody, &imageSetsViewResponse)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(imageSetsViewResponse.Count).To(Equal(2))
+			Expect(len(imageSetsViewResponse.Data)).To(Equal(2))
+
+			for ind, dataRow := range imageSetsViewResponse.Data {
+				expectedDataRow := imageSetsView[ind]
+				Expect(dataRow.ID).To(Equal(expectedDataRow.ID))
+				Expect(dataRow.Name).To(Equal(expectedDataRow.Name))
+				Expect(dataRow.Version).To(Equal(expectedDataRow.Version))
+				Expect(dataRow.Status).To(Equal(expectedDataRow.Status))
+				Expect(dataRow.ImageBuildIsoURL).To(Equal(expectedDataRow.ImageBuildIsoURL))
+			}
+		})
+	})
 })
