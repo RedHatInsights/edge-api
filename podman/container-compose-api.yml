@@ -1,0 +1,47 @@
+version: '2'
+secrets:
+  edgemgmt_config:
+    file: $DEVDIR/podman/env/edgemgmt_config.json
+services:
+    edge-api-service:
+      image: localhost/edge-api:localdev
+      restart: always
+      privileged: true
+      ports:
+        - 3000:3000
+      env_file:
+        - env/edge-api.env
+#      depends-on: postgresql
+      volumes:
+        - $DEVDIR:/opt/app-root/src:z
+      working_dir: /opt/app-root/src
+      command: ["go", "run", "main.go"]
+      secrets:
+        - source: edgemgmt_config
+          target: /tmp/edgemgmt_config.json
+
+#    edge-api-utility:
+#      image: localhost/edge-api:localdev
+#      restart: unless-stopped
+#      privileged: true
+#      env_file:
+#        - edge-api-utility.env
+#      depends-on: postgresql
+#      volumes:
+#        - ~/dev/git/RedHatInsights/edge-api:/opt/app-root/src:Z
+#      working_dir: /opt/app-root/src
+#      command: go run cmd/kafka/main.go
+
+#    edge-ui:
+#        image: localhost/edge-frontend:podmandev2
+#        image: quay.io/loadtheaccumulator/edge-frontend:podmandev
+#        restart: unless-stopped
+#        ports:
+#          - 1337:1337
+#        env_file:
+#          - edge-ui.env
+#        depends-on: edge-api-service
+#        volumes:
+#          - ~/dev/git/RedHatInsights/edge-frontend:/opt/app-root:Z
+#        working_dir: /opt/app-root
+#        command: npm run start:proxy

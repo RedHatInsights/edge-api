@@ -36,6 +36,8 @@ type EdgeConfig struct {
 	EdgeAPIServicePort       int                       `json:"edge_api_service_port,omitempty"`
 	UploadWorkers            int                       `json:"upload_workers,omitempty"`
 	KafkaConfig              *clowder.KafkaConfig      `json:"kafka,omitempty"`
+	KafkaBrokers             []clowder.BrokerConfig    `json:"kafka_brokers,omitempty"`
+	KafkaTopics              map[string]string         `json:"kafka_topics,omitempty"`
 	FDO                      *fdoConfig                `json:"fdo,omitempty"`
 	Local                    bool                      `json:"local,omitempty"`
 	UnleashURL               string                    `json:"unleash_url,omitempty"`
@@ -117,12 +119,14 @@ func Init() {
 	options.SetDefault("FDOApiVersion", "v1")
 	options.SetDefault("FDOAuthorizationBearer", "lorum-ipsum")
 	options.SetDefault("Local", false)
+	options.SetDefault("EDGEMGMT_CONFIGPATH", "/tmp/edgemgmt_config.json")
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
 		options.Set("LOG_LEVEL", "DEBUG")
 	}
 
+	// FIXME: why both options and kubenv
 	kubenv := viper.New()
 	kubenv.AutomaticEnv()
 
@@ -149,7 +153,6 @@ func Init() {
 		options.SetDefault("FeatureFlagsUrl", os.Getenv("UNLEASH_URL"))
 		options.SetDefault("FeatureFlagsAPIToken", os.Getenv("UNLEASH_TOKEN"))
 		options.SetDefault("FeatureFlagsBearerToken", options.GetString("UNLEASH_TOKEN"))
-
 	}
 
 	options.SetDefault("FeatureFlagsService", os.Getenv("FEATURE_FLAGS_SERVICE"))
@@ -263,6 +266,32 @@ func Init() {
 		}
 
 		config.KafkaConfig = cfg.Kafka
+	}
+	// get config from file if running local
+	if config.Local {
+		configFile := os.Getenv("EDGEMGMT_CONFIG")
+		options.SetConfigFile(configFile)
+
+		if configfileErr := options.MergeInConfig(); configfileErr != nil {
+			fmt.Println("Error reading config file")
+			fmt.Println(configfileErr.Error())
+		}
+		kafkaJSON, err := json.Marshal(options.Get("kafka"))
+		if err != nil {
+			fmt.Println("KafkaConfig marshal error")
+		}
+		kafkaConfig := clowder.KafkaConfig{}
+		if err := json.Unmarshal(kafkaJSON, &kafkaConfig); err != nil {
+			fmt.Println("KafkaConfig unmarshal error")
+		}
+		config.KafkaConfig = &kafkaConfig
+	}
+
+	if config.KafkaConfig != nil {
+		config.KafkaBrokers = make([]clowder.BrokerConfig, len(config.KafkaConfig.Brokers))
+		for i, b := range config.KafkaConfig.Brokers {
+			config.KafkaBrokers[i] = b
+		}
 	}
 }
 

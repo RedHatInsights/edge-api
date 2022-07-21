@@ -1,0 +1,18 @@
+{
+    "kafka": {
+        "brokers": [
+            {
+                "hostname": "kafka",
+                "port": 9092
+            }
+        ],
+        "topics": [
+            {
+                "requestedName": "platform.edge.fleetmgmt.image-build",
+                "name": "platform.edge.fleetmgmt.image-build",
+                "consumerGroupName": "edgemgmt-image-build"
+            }
+        ]
+    }
+}
+

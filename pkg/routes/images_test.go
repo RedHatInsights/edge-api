@@ -499,7 +499,7 @@ func TestValidateGetAllQueryParameters(t *testing.T) {
 		})
 		req = req.WithContext(ctx)
 
-		ValidateQueryParams(next).ServeHTTP(w, req)
+		ValidateQueryParams("images")(next).ServeHTTP(w, req)
 
 		resp := w.Result()
 		jsonBody := []validationError{}

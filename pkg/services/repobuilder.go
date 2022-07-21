@@ -91,6 +91,10 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	}
 
 	if len(update.OldCommits) > 0 {
+		rb.log.WithFields(log.Fields{
+			"updateID":   update.ID,
+			"OldCommits": len(update.OldCommits)}).
+			Info("Old commits found to this commit")
 		stagePath := filepath.Clean(filepath.Join(path, "staging"))
 		err = os.MkdirAll(stagePath, os.FileMode(int(0755)))
 		if err != nil {
@@ -106,6 +110,11 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		// If there are any old commits, we need to download them all to be merged
 		// into the update commit repo
 		for _, commit := range update.OldCommits {
+			rb.log.WithFields(log.Fields{
+				"updateID":            update.ID,
+				"commit.OSTreeCommit": commit.OSTreeCommit,
+				"OldCommits":          commit.ID}).
+				Info("Calculate diff from previous commit")
 			commit := commit // this will prevent implicit memory aliasing in the loop
 			tarFileName, err := rb.DownloadVersionRepo(&commit, filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit)), false)
 			if err != nil {
