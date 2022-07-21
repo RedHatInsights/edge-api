@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+
 	apiError "github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
-	"io/ioutil"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
@@ -273,10 +274,10 @@ var _ = Describe("UpdateService Basic functions", func() {
 					OSTreeRef:           "rhel/8/x86_64/edge",
 				}
 				//TODO change to org_id once migration is complete
-				account := "1005"
+				account := "1006"
 				org_id := "1005"
-				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", account, t.UpdateTransactionID)
-				tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
+				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", org_id, t.UpdateTransactionID)
+				tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", org_id, fname)
 
 				ctrl := gomock.NewController(GinkgoT())
 				defer ctrl.Finish()
@@ -297,6 +298,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 				url, err := updateService.WriteTemplate(t, account, org_id)
 
+				//Expect(err.Error()).To(Equal(0))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(url).ToNot(BeNil())
 				Expect(url).To(BeEquivalentTo("http://localhost:3000/api/edge/v1/updates/1000/update-playbook.yml"))
@@ -314,11 +316,10 @@ var _ = Describe("UpdateService Basic functions", func() {
 					OSTreeRef:           "rhel/9/x86_64/edge",
 				}
 				//TODO change to org_id once migration is complete
-				account := "1005"
+				account := "1006"
 				org_id := "1005"
-				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", account, t.UpdateTransactionID)
-				tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
-
+				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", org_id, t.UpdateTransactionID)
+				tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", org_id, fname)
 				ctrl := gomock.NewController(GinkgoT())
 				defer ctrl.Finish()
 				mockFilesService := mock_services.NewMockFilesService(ctrl)
