@@ -37,6 +37,16 @@ paths:
     get:
       operationId: listImages
       parameters:
+        - name: limit
+          in: query
+          description: "field: return number of images until limit is reached."
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          description: "field: return number of images beginning at the offset."
+          schema:
+            type: integer
         - name: sort_by
           in: query
           description: "fields: created_at, distribution, name, status. To sort DESC use - before the fields."
