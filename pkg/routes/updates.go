@@ -45,8 +45,8 @@ func UpdateCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctxServices := dependencies.ServicesFromContext(r.Context())
 		var updates []models.UpdateTransaction
-		account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-		if account == "" && orgID == "" {
+		orgID := readOrgID(w, r, ctxServices.Log)
+		if orgID == "" {
 			return
 		}
 		updateID := chi.URLParam(r, "updateID")
@@ -60,7 +60,7 @@ func UpdateCtx(next http.Handler) http.Handler {
 			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 			return
 		}
-		if result := db.AccountOrOrg(account, orgID, "update_transactions").Preload("DispatchRecords").Preload("Devices").
+		if result := db.Org(orgID, "update_transactions").Preload("DispatchRecords").Preload("Devices").
 			Joins("Commit").Joins("Repo").Find(&updates, id); result.Error != nil {
 			ctxServices.Log.WithFields(log.Fields{
 				"error": result.Error.Error(),
@@ -112,11 +112,11 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 func GetUpdates(w http.ResponseWriter, r *http.Request) {
 	services := dependencies.ServicesFromContext(r.Context())
 	var updates []models.UpdateTransaction
-	account, orgID := readAccountOrOrgID(w, r, services.Log)
-	if account == "" && orgID == "" {
+	orgID := readOrgID(w, r, services.Log)
+	if orgID == "" {
 		return
 	}
-	if result := db.AccountOrOrg(account, orgID, "update_transactions").Preload("DispatchRecords").Preload("Devices").
+	if result := db.Org(orgID, "update_transactions").Preload("DispatchRecords").Preload("Devices").
 		Joins("Commit").Joins("Repo").Find(&updates); result.Error != nil {
 		services.Log.WithFields(log.Fields{
 			"error": result.Error.Error(),
@@ -137,8 +137,8 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTransaction {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	ctxServices.Log.Info("Update is being created")
-	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-	if account == "" && orgID == "" {
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
 		return nil
 	}
 	var devicesUpdate models.DevicesUpdate
@@ -163,7 +163,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 	}
 	// check that all submitted devices exists
 	var devicesCount int64
-	if result := db.AccountOrOrg(account, orgID, "").Model(&models.Device{}).Where("uuid IN (?)", devicesUUID).Count(&devicesCount); result.Error != nil {
+	if result := db.Org(orgID, "").Model(&models.Device{}).Where("uuid IN (?)", devicesUUID).Count(&devicesCount); result.Error != nil {
 		ctxServices.Log.WithFields(log.Fields{
 			"error": result.Error.Error(),
 		}).Error("failed to get devices count")
@@ -209,9 +209,8 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 	updates, err := ctxServices.UpdateService.BuildUpdateTransactions(&devicesUpdate, orgID, commit)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{
-			"error":   err.Error(),
-			"account": account,
-			"org_id":  orgID,
+			"error":  err.Error(),
+			"org_id": orgID,
 		}).Error("Error building update transaction")
 		apiError := errors.NewInternalServerError()
 		apiError.SetTitle("Error building update transaction")
@@ -221,8 +220,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 
 	if len(*updates) == 0 {
 		ctxServices.Log.WithFields(log.Fields{
-			"account": account,
-			"org_id":  orgID,
+			"org_id": orgID,
 		}).Info("There are no updates to perform")
 		respondWithJSONBody(w, ctxServices.Log, common.APIResponse{Message: "There are no updates to perform"})
 		return nil
@@ -235,8 +233,8 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	ctxServices.Log.Info("Starting update")
-	account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-	if account == "" && orgID == "" {
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
 		return
 	}
 	updates := updateFromHTTP(w, r)
@@ -247,7 +245,6 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	var upd []models.UpdateTransaction
 
 	for _, update := range *updates {
-		update.Account = account
 		update.OrgID = orgID
 		upd = append(upd, update)
 		ctxServices.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
@@ -266,7 +263,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, ctxServices.Log, updates)
 }
 
-// GetUpdateByID obtains an update from the database for an account
+// GetUpdateByID obtains an update from the database for an orgID
 func GetUpdateByID(w http.ResponseWriter, r *http.Request) {
 	update := getUpdate(w, r)
 	if update == nil {
@@ -320,8 +317,8 @@ type ValidateUpdateResponse struct {
 // PostValidateUpdate validate that images can be updated
 func PostValidateUpdate(w http.ResponseWriter, r *http.Request) {
 	services := dependencies.ServicesFromContext(r.Context())
-	account, orgID := readAccountOrOrgID(w, r, services.Log)
-	if account == "" && orgID == "" {
+	orgID := readOrgID(w, r, services.Log)
+	if orgID == "" {
 		return
 	}
 
@@ -340,7 +337,7 @@ func PostValidateUpdate(w http.ResponseWriter, r *http.Request) {
 		ids = append(ids, images[i].ID)
 	}
 
-	valid, err := services.UpdateService.ValidateUpdateSelection(account, orgID, ids)
+	valid, err := services.UpdateService.ValidateUpdateSelection(orgID, ids)
 
 	if err != nil {
 		services.Log.WithFields(log.Fields{
