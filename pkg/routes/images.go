@@ -292,8 +292,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	// Check to see if feature is enabled and not in ephemeral
 	cfg := config.Get()
 	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
-		//enabled := feature.CheckFeature(feature.FeatureImageBuildMS)
-		enabled := true
+		enabled := feature.CheckFeature(feature.FeatureImageBuildMS)
 		if enabled {
 			ident, err := common.GetIdentityFromContext(r.Context())
 			if err != nil {
