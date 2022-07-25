@@ -10,6 +10,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	models "github.com/redhatinsights/edge-api/pkg/models"
 	services "github.com/redhatinsights/edge-api/pkg/services"
+	gorm "gorm.io/gorm"
 )
 
 // MockImageServiceInterface is a mock of ImageServiceInterface interface.
@@ -166,6 +167,36 @@ func (m *MockImageServiceInterface) GetImageByOSTreeCommitHash(commitHash string
 func (mr *MockImageServiceInterfaceMockRecorder) GetImageByOSTreeCommitHash(commitHash interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageByOSTreeCommitHash", reflect.TypeOf((*MockImageServiceInterface)(nil).GetImageByOSTreeCommitHash), commitHash)
+}
+
+// GetImagesView mocks base method.
+func (m *MockImageServiceInterface) GetImagesView(limit, offset int, tx *gorm.DB) (*[]models.ImageView, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImagesView", limit, offset, tx)
+	ret0, _ := ret[0].(*[]models.ImageView)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetImagesView indicates an expected call of GetImagesView.
+func (mr *MockImageServiceInterfaceMockRecorder) GetImagesView(limit, offset, tx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImagesView", reflect.TypeOf((*MockImageServiceInterface)(nil).GetImagesView), limit, offset, tx)
+}
+
+// GetImagesViewCount mocks base method.
+func (m *MockImageServiceInterface) GetImagesViewCount(tx *gorm.DB) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImagesViewCount", tx)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetImagesViewCount indicates an expected call of GetImagesViewCount.
+func (mr *MockImageServiceInterfaceMockRecorder) GetImagesViewCount(tx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImagesViewCount", reflect.TypeOf((*MockImageServiceInterface)(nil).GetImagesViewCount), tx)
 }
 
 // GetMetadata mocks base method.

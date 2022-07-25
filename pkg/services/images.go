@@ -61,6 +61,8 @@ type ImageServiceInterface interface {
 	SendImageNotification(image *models.Image) (ImageNotification, error)
 	SetDevicesUpdateAvailabilityFromImageSet(orgID string, ImageSetID uint) error
 	ValidateImagePackage(pack string, image *models.Image) error
+	GetImagesViewCount(tx *gorm.DB) (int64, error)
+	GetImagesView(limit int, offset int, tx *gorm.DB) (*[]models.ImageView, error)
 }
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
@@ -1517,4 +1519,69 @@ func (s *ImageService) SetDevicesUpdateAvailabilityFromImageSet(orgID string, Im
 	}
 
 	return nil
+}
+
+// GetImagesViewCount get the Images view records count
+func (s *ImageService) GetImagesViewCount(tx *gorm.DB) (int64, error) {
+	orgID, err := common.GetOrgIDFromContext(s.ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	if tx == nil {
+		tx = db.DB
+	}
+
+	var count int64
+	result := db.OrgDB(orgID, tx, "").Debug().Model(&models.Image{}).Count(&count)
+
+	if result.Error != nil {
+		s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("Error getting images count")
+		return 0, result.Error
+	}
+
+	return count, nil
+}
+
+// GetImagesView returns a list of Images view.
+func (s *ImageService) GetImagesView(limit int, offset int, tx *gorm.DB) (*[]models.ImageView, error) {
+	orgID, err := common.GetOrgIDFromContext(s.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if tx == nil {
+		tx = db.DB
+	}
+
+	var images []models.Image
+
+	if result := db.OrgDB(orgID, tx, "").Debug().Limit(limit).Offset(offset).
+		Preload("Installer").
+		Find(&images); result.Error != nil {
+		log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error(
+			"error when getting images",
+		)
+		return nil, result.Error
+	}
+	if len(images) == 0 {
+		return &[]models.ImageView{}, nil
+	}
+
+	imagesView := make([]models.ImageView, 0, len(images))
+	for _, image := range images {
+		imageView := models.ImageView{
+			ID:          image.ID,
+			Name:        image.Name,
+			Version:     image.Version,
+			Status:      image.Status,
+			OutputTypes: image.OutputTypes,
+			CreatedAt:   image.CreatedAt,
+		}
+		if image.Installer != nil && image.Installer.ImageBuildISOURL != "" && image.Installer.Status == models.ImageStatusSuccess {
+			imageView.ImageBuildIsoURL = GetStorageInstallerIsoURL(image.Installer.ID)
+		}
+		imagesView = append(imagesView, imageView)
+	}
+	return &imagesView, nil
 }

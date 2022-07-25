@@ -493,7 +493,7 @@ var _ = Describe("ImageSets Route Test", func() {
 		})
 	})
 
-	Context("GetImageSetsView", func() {
+	Context("ImageSets Views", func() {
 		OrgID := common.DefaultOrgID
 		CommonName := faker.UUIDHyphenated()
 
@@ -547,7 +547,7 @@ var _ = Describe("ImageSets Route Test", func() {
 			router.Route("/image-sets", MakeImageSetsRouter)
 		})
 
-		It("The imageSetView end point is working as expected", func() {
+		It("The imageSetsView end point is working as expected", func() {
 			req, err := http.NewRequest("GET", "/image-sets/view?limit=30&offset=0", nil)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -568,7 +568,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				},
 			}
 
-			mockImageSetService.EXPECT().GetImageSetsCount(gomock.Any()).Return(int64(2), nil)
+			mockImageSetService.EXPECT().GetImageSetsViewCount(gomock.Any()).Return(int64(2), nil)
 			mockImageSetService.EXPECT().GetImageSetsView(30, 0, gomock.Any()).Return(&imageSetsView, nil)
 
 			rr := httptest.NewRecorder()
@@ -591,6 +591,86 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(dataRow.Status).To(Equal(expectedDataRow.Status))
 				Expect(dataRow.ImageBuildIsoURL).To(Equal(expectedDataRow.ImageBuildIsoURL))
 			}
+		})
+
+		Context("imageSetIDView", func() {
+
+			It("The imageSetView end point is working as expected", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view/%d?limit=30&offset=0", imageSet1.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+				mockImageSetService.EXPECT().GetImageSetViewByID(imageSet1.ID, 30, 0, gomock.Any()).Return(&services.ImageSetIDView{}, nil)
+
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusOK))
+			})
+			It("The imageSetView end point return bad request when imageSet is not a number", func() {
+				req, err := http.NewRequest("GET", "/image-sets/view/NotValid", nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusBadRequest))
+			})
+			It("The imageSetView end point return not found when imageSet not found", func() {
+				req, err := http.NewRequest("GET", "/image-sets/view/9999999", nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusNotFound))
+			})
+			It("The imageSetView end point return not found when image not found", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view/%d?limit=30&offset=0", imageSet1.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+				mockImageSetService.EXPECT().GetImageSetViewByID(imageSet1.ID, 30, 0, gomock.Any()).Return(nil, new(services.ImageNotFoundError))
+
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusNotFound))
+			})
+		})
+
+		Context("ImageSet Images View", func() {
+			It("the image set view images versions is working as expected", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view/%d/versions?limit=30&offset=0", imageSet1.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImageSetService.EXPECT().GetImagesViewData(imageSet1.ID, 30, 0, gomock.Any()).Return(&services.ImagesViewData{}, nil)
+
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusOK))
+			})
+		})
+
+		Context("ImageSet Image View", func() {
+			It("the image set view image version is working as expected", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view/%d/versions/%d", imageSet1.ID, image3.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImageSetService.EXPECT().GetImageSetImageViewByID(imageSet1.ID, image3.ID).Return(&services.ImageSetImageIDView{}, nil)
+
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusOK))
+			})
+			It("the image set view image version return not found when image does not exists", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view/%d/versions/9999999", imageSet1.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusNotFound))
+			})
+			It("the image set view image version return bad request when image id is not valid", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view/%d/versions/Unvalid", imageSet1.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusBadRequest))
+			})
 		})
 	})
 })
