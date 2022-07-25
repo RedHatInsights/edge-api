@@ -903,10 +903,22 @@ var _ = Describe("DfseviceService", func() {
 				result = db.DB.Create(imageV1)
 				Expect(result.Error).ToNot(HaveOccurred())
 
-				deviceWithImage := models.Device{OrgID: orgID, ImageID: imageV1.ID}
+				deviceWithImage := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
 
 				result = db.DB.Create(&deviceWithImage)
 				Expect(result.Error).To(BeNil())
+				invDevice := inventory.Device{
+					ID:    deviceWithImage.UUID,
+					OrgID: orgID,
+				}
+				invResult := []inventory.Device{invDevice}
+				resp := inventory.Response{
+					Total:  1,
+					Count:  1,
+					Result: invResult,
+				}
+				mockInventoryClient.EXPECT().ReturnDevices(gomock.Any()).Return(resp, nil)
+				mockInventoryClient.EXPECT().ReturnDeviceListByID(gomock.Any()).Return(resp, nil)
 
 				deviceService := services.DeviceService{
 					Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),

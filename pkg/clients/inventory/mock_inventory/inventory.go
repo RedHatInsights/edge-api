@@ -5,10 +5,9 @@
 package mock_inventory
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	inventory "github.com/redhatinsights/edge-api/pkg/clients/inventory"
+	reflect "reflect"
 )
 
 // MockClientInterface is a mock of ClientInterface interface
@@ -62,6 +61,21 @@ func (m *MockClientInterface) ReturnDevicesByID(deviceID string) (inventory.Resp
 func (mr *MockClientInterfaceMockRecorder) ReturnDevicesByID(deviceID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReturnDevicesByID", reflect.TypeOf((*MockClientInterface)(nil).ReturnDevicesByID), deviceID)
+}
+
+// ReturnDeviceListByID mocks base method
+func (m *MockClientInterface) ReturnDeviceListByID(deviceIDs []string) (inventory.Response, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReturnDeviceListByID", deviceIDs)
+	ret0, _ := ret[0].(inventory.Response)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReturnDeviceListByID indicates an expected call of ReturnDeviceListByID
+func (mr *MockClientInterfaceMockRecorder) ReturnDeviceListByID(deviceIDs interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReturnDeviceListByID", reflect.TypeOf((*MockClientInterface)(nil).ReturnDeviceListByID), deviceIDs)
 }
 
 // ReturnDevicesByTag mocks base method
