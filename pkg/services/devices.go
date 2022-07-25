@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"sort"
+	"strconv"
 	"time"
 
 	version "github.com/knqyf263/go-rpm-version"
@@ -31,7 +32,7 @@ const (
 type DeviceServiceInterface interface {
 	GetDevices(params *inventory.Params) (*models.DeviceDetailsList, error)
 	GetDeviceByID(deviceID uint) (*models.Device, error)
-	GetDevicesView(limit int, offset int, tx *gorm.DB, params *inventory.Params) (*models.DeviceViewList, error)
+	GetDevicesView(limit int, offset int, tx *gorm.DB) (*models.DeviceViewList, error)
 	GetDevicesCount(tx *gorm.DB) (int64, error)
 	GetDeviceByUUID(deviceUUID string) (*models.Device, error)
 	// Device by UUID methods
@@ -654,7 +655,7 @@ func (s *DeviceService) GetDevicesCount(tx *gorm.DB) (int64, error) {
 }
 
 // GetDevicesView returns a list of EdgeDevices for a given org.
-func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB, params *inventory.Params) (*models.DeviceViewList, error) {
+func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*models.DeviceViewList, error) {
 	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {
 		return nil, err
@@ -664,28 +665,21 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB, param
 		tx = db.DB
 	}
 
-	// Sync our db with inventory
-	go s.syncDevicesWithInventory(params, orgID)
+	var storedDevices []models.Device
+	// search for all stored devices that are also in inventory
+	if res := db.OrgDB(orgID, tx, "").Limit(limit).Offset(offset).Preload("UpdateTransaction").Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
+		return nil, res.Error
+	}
 
-	// Get all inventory devices for this org_id
+	// Check inventory to see if you return the same number of devices, else, sync with inventory in a routine
+	var params *inventory.Params
 	inventoryDevices, err := s.Inventory.ReturnDevices(params)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error retrieving devices from inventory")
 		return nil, err
 	}
-	if inventoryDevices.Count == 0 {
-		return nil, nil
-	}
-	// Build a map from the received devices UUIDs and the already saved db devices IDs
-	devicesUUIDs := make([]string, 0, len(inventoryDevices.Result))
-	for _, device := range inventoryDevices.Result {
-		devicesUUIDs = append(devicesUUIDs, device.ID)
-	}
-
-	var storedDevices []models.Device
-	// search for all stored devices that are also in inventory
-	if res := db.OrgDB(orgID, tx, "").Where("UUID IN (?)", devicesUUIDs).Limit(limit).Offset(offset).Preload("UpdateTransaction").Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
-		return nil, res.Error
+	if inventoryDevices.Total != len(storedDevices) {
+		go s.syncDevicesWithInventory(orgID)
 	}
 
 	returnDevices, err := ReturnDevicesView(storedDevices, orgID)
@@ -926,42 +920,47 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 	return nil
 }
 
-func (s *DeviceService) syncDevicesWithInventory(params *inventory.Params, orgID string) {
-	// Get all inventory devices
-	inventoryDevices, err := s.Inventory.ReturnDevices(params)
-	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Error retrieving devices from inventory for sync")
+func (s *DeviceService) syncDevicesWithInventory(orgID string) {
+	// use stored devices to check inventory in chunks and see if we have any stale devices.
+	var params *inventory.Params
+	var total int64
+	limit := 100
+	offset := 0
+	var searchDevices, devicesToBeDeleted []models.Device
+
+	if res := db.Org(orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
+		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
 		return
 	}
 
-	// Build a map from the received devices UUIDs and the already saved db devices IDs
-	type visitedInventoryDevices struct {
-		visited         bool
-		inventoryDevice *inventory.Device
-	}
-	inventoryDevicesUUIDs := make(map[string]visitedInventoryDevices)
-	for _, device := range inventoryDevices.Result {
-		inventoryDevicesUUIDs[device.ID] = visitedInventoryDevices{visited: false, inventoryDevice: &device}
-	}
-
-	// Get all saved devices
-	var storedDevices []models.Device
-	if res := db.Org(orgID, "").Find(&storedDevices); res.Error != nil {
-		s.log.WithField("error", err.Error()).Error("Error retrieving devices from db for sync")
-		return
-	}
-
-	// now compare the two slices.
-	// If a device is only in storedDevices it must be "deleted"
-	// If a device is only in inventory is must be added to our DB
-	// If a device is in both, do nothing.
-	var devicesToBeDeleted []models.Device
-	for _, device := range storedDevices {
-		if _, ok := inventoryDevicesUUIDs[device.UUID]; ok {
-			inventoryDevicesUUIDs[device.UUID] = visitedInventoryDevices{visited: true, inventoryDevice: inventoryDevicesUUIDs[device.UUID].inventoryDevice}
-		} else {
-			devicesToBeDeleted = append(devicesToBeDeleted, device)
+	for int64(offset) < total {
+		if res := db.Org(orgID, "").Limit(limit).Offset(offset).Find(&searchDevices); res.Error != nil {
+			s.log.WithField("error", res.Error.Error()).Error("Error getting devices in device sync")
+			return
 		}
+		deviceIDS := []string{}
+		for _, devices := range searchDevices {
+			deviceIDS = append(deviceIDS, devices.UUID)
+		}
+		response, err := s.Inventory.ReturnDeviceListByID(deviceIDS)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Error getting device data from invenotry in device sync")
+		}
+		if response.Count != len(searchDevices) {
+			type void struct{}
+			var nothing void
+			// discover which devices need to be deleted
+			inventoryDeviceSet := make(map[string]void)
+			for _, invDevice := range response.Result {
+				inventoryDeviceSet[invDevice.ID] = nothing
+			}
+			for _, savedDevice := range searchDevices {
+				if _, exists := inventoryDeviceSet[savedDevice.UUID]; !exists {
+					devicesToBeDeleted = append(devicesToBeDeleted, savedDevice)
+				}
+			}
+		}
+		offset += limit
 	}
 
 	// Delete invalid devices
@@ -973,33 +972,95 @@ func (s *DeviceService) syncDevicesWithInventory(params *inventory.Params, orgID
 		}
 	}
 
-	for _, inventoryDevices := range inventoryDevicesUUIDs {
-		if !inventoryDevices.visited {
-			var deps []RpmOSTreeDeployment
-			for _, dep := range inventoryDevices.inventoryDevice.Ostree.RpmOstreeDeployments {
-				idep := RpmOSTreeDeployment{
-					Booted:   dep.Booted,
-					Checksum: dep.Checksum,
-				}
-				deps = append(deps, idep)
-			}
-			profile := systemProfile{
-				HostType:             "edge",
-				RpmOSTreeDeployments: deps,
-				RHCClientID:          inventoryDevices.inventoryDevice.Ostree.RHCClientID,
-			}
-			iHost := host{
-				ID:            inventoryDevices.inventoryDevice.ID,
-				Name:          inventoryDevices.inventoryDevice.DisplayName,
-				OrgID:         inventoryDevices.inventoryDevice.OrgID,
-				Updated:       models.EdgeAPITime{Time: time.Now(), Valid: true},
-				SystemProfile: profile,
-			}
-			createEvent := PlatformInsightsCreateUpdateEventPayload{
-				Type: InventoryEventTypeCreated,
-				Host: iHost,
-			}
-			go s.platformInventoryCreateEventHelper(createEvent)
-		}
+	// Get the count of our db and from inventory and compare them
+	// If they are the same, sync is done
+	// If not, we have missed some "create" events from inventory, we need to discover and add these devices to our DB
+	if res := db.Org(orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
+		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
+		return
 	}
+	inventoryResponse, err := s.Inventory.ReturnDevices(params)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error retrieving devices from inventory for sync")
+		return
+	}
+	if int64(inventoryResponse.Total) == total {
+		s.log.WithField("sync", "Sync complete for orgID "+orgID)
+		return
+	}
+
+	// We have missed one or more create device events from inventory
+	// Go through this users inventory devices in chunks and check they are in our DB.
+	// If not, add them
+	params.PerPage = strconv.Itoa(limit)
+	page := 1
+	params.Page = strconv.Itoa(page)
+	searchInventory := true
+	for searchInventory {
+		inventoryDevices, err := s.Inventory.ReturnDevices(params)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Error retrieving devices from inventory for sync")
+			return
+		}
+		var inveDeviceIds []string
+		for _, inDevice := range inventoryDevices.Result {
+			inveDeviceIds = append(inveDeviceIds, inDevice.ID)
+		}
+		var dbDevices []models.Device
+		if res := db.Org(orgID, "").Where("UUID IN ?", inveDeviceIds).Find(&dbDevices); res.Error != nil {
+			s.log.WithField("error", res.Error.Error()).Error("Error getting devices in device sync")
+			return
+		}
+
+		// check to see that all requested inventory devices are in the db
+		if len(dbDevices) != len(inventoryDevices.Result) {
+			// discover which inventory device is missing and add it.
+			// make a set of db sevices
+			type void struct{}
+			var nothing void
+			dbDeviceSet := make(map[string]void)
+			for _, device := range dbDevices {
+				dbDeviceSet[device.UUID] = nothing
+			}
+			// using the set, discover which inventory device is missing and add it
+			for _, inDevice := range inventoryDevices.Result {
+				if _, exists := dbDeviceSet[inDevice.ID]; !exists {
+					var deps []RpmOSTreeDeployment
+
+					for _, dep := range inDevice.Ostree.RpmOstreeDeployments {
+						idep := RpmOSTreeDeployment{
+							Booted:   dep.Booted,
+							Checksum: dep.Checksum,
+						}
+						deps = append(deps, idep)
+					}
+					profile := systemProfile{
+						HostType:             "edge",
+						RpmOSTreeDeployments: deps,
+						RHCClientID:          inDevice.Ostree.RHCClientID,
+					}
+					iHost := host{
+						ID:            inDevice.ID,
+						Name:          inDevice.DisplayName,
+						OrgID:         inDevice.OrgID,
+						Updated:       models.EdgeAPITime{Time: time.Now(), Valid: true},
+						SystemProfile: profile,
+					}
+					createEvent := PlatformInsightsCreateUpdateEventPayload{
+						Type: InventoryEventTypeCreated,
+						Host: iHost,
+					}
+					go s.platformInventoryCreateEventHelper(createEvent)
+				}
+			}
+		}
+		// check end condition
+		if inventoryDevices.Count < limit {
+			searchInventory = false
+		}
+		// increment
+		page++
+		params.Page = strconv.Itoa(page)
+	}
+	s.log.WithField("sync", "Sync complete for orgID "+orgID)
 }
