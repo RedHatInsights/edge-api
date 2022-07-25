@@ -5,11 +5,12 @@
 package mock_services
 
 import (
+	io "io"
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	models "github.com/redhatinsights/edge-api/pkg/models"
 	services "github.com/redhatinsights/edge-api/pkg/services"
-	io "io"
-	reflect "reflect"
 )
 
 // MockUpdateServiceInterface is a mock of UpdateServiceInterface interface.
@@ -194,31 +195,31 @@ func (mr *MockUpdateServiceInterfaceMockRecorder) ValidateUpdateDeviceGroup(orgI
 }
 
 // ValidateUpdateSelection mocks base method.
-func (m *MockUpdateServiceInterface) ValidateUpdateSelection(account, orgID string, imageIds []uint) (bool, error) {
+func (m *MockUpdateServiceInterface) ValidateUpdateSelection(orgID string, imageIds []uint) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ValidateUpdateSelection", account, orgID, imageIds)
+	ret := m.ctrl.Call(m, "ValidateUpdateSelection", orgID, imageIds)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ValidateUpdateSelection indicates an expected call of ValidateUpdateSelection.
-func (mr *MockUpdateServiceInterfaceMockRecorder) ValidateUpdateSelection(account, orgID, imageIds interface{}) *gomock.Call {
+func (mr *MockUpdateServiceInterfaceMockRecorder) ValidateUpdateSelection(orgID, imageIds interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateUpdateSelection", reflect.TypeOf((*MockUpdateServiceInterface)(nil).ValidateUpdateSelection), account, orgID, imageIds)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateUpdateSelection", reflect.TypeOf((*MockUpdateServiceInterface)(nil).ValidateUpdateSelection), orgID, imageIds)
 }
 
 // WriteTemplate mocks base method.
-func (m *MockUpdateServiceInterface) WriteTemplate(templateInfo services.TemplateRemoteInfo, account, orgID string) (string, error) {
+func (m *MockUpdateServiceInterface) WriteTemplate(templateInfo services.TemplateRemoteInfo, orgID string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WriteTemplate", templateInfo, account, orgID)
+	ret := m.ctrl.Call(m, "WriteTemplate", templateInfo, orgID)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // WriteTemplate indicates an expected call of WriteTemplate.
-func (mr *MockUpdateServiceInterfaceMockRecorder) WriteTemplate(templateInfo, account, orgID interface{}) *gomock.Call {
+func (mr *MockUpdateServiceInterfaceMockRecorder) WriteTemplate(templateInfo, orgID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteTemplate", reflect.TypeOf((*MockUpdateServiceInterface)(nil).WriteTemplate), templateInfo, account, orgID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteTemplate", reflect.TypeOf((*MockUpdateServiceInterface)(nil).WriteTemplate), templateInfo, orgID)
 }

@@ -132,8 +132,7 @@ var _ = Describe("Update routes", func() {
 			imageSameGroup1 = models.Image{
 				Name:       "image-same-group-1",
 				ImageSetID: &imageSetSameGroup.ID,
-				Account:    "0000000",
-				OrgID:      "0000000",
+				OrgID:      common.DefaultOrgID,
 			}
 			imageSameGroup2 = imageSameGroup1
 			imageSameGroup2.Name = "image-same-group-2"
@@ -183,7 +182,7 @@ var _ = Describe("Update routes", func() {
 				Expect(rr.Body.String()).Should(MatchJSON(jsonResponse))
 			})
 		})
-		When("when images selection has the same image set and same account", func() {
+		When("when images selection has the same image set and same orgID", func() {
 			It("should allow to update", func() {
 				jsonImagesBytes, err := json.Marshal([]models.Image{imageSameGroup1, imageSameGroup2})
 				Expect(err).To(BeNil())
@@ -204,7 +203,7 @@ var _ = Describe("Update routes", func() {
 				Expect(rr.Body.String()).Should(MatchJSON(jsonResponse))
 			})
 		})
-		When("when images selection has the same image set and different account", func() {
+		When("when images selection has the same image set and different orgID", func() {
 			BeforeEach(func() {
 				config.Get().Auth = true
 			})
@@ -220,8 +219,7 @@ var _ = Describe("Update routes", func() {
 
 				rr := httptest.NewRecorder()
 				ctx := context.WithValue(req.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{
-					AccountNumber: "111111",
-					OrgID:         "111111",
+					OrgID: "111111",
 				}})
 				req = req.WithContext(ctx)
 				ctx = dependencies.ContextWithServices(req.Context(), edgeAPIServices)
@@ -264,25 +262,20 @@ var _ = Describe("Update routes", func() {
 		var mockUpdateService *mock_services.MockUpdateServiceInterface
 		var ctrl *gomock.Controller
 
-		account := common.DefaultAccount
 		orgID := common.DefaultOrgID
-		account2 := faker.UUIDHyphenated()
 		orgID2 := faker.UUIDHyphenated()
 
 		imageSet := models.ImageSet{
-			Account: account,
-			OrgID:   orgID,
+			OrgID: orgID,
 		}
 		db.DB.Create(&imageSet)
 
 		commit := models.Commit{
-			Account: account,
-			OrgID:   orgID,
+			OrgID: orgID,
 		}
 		db.DB.Create(&commit)
 
 		image := models.Image{
-			Account:    account,
 			OrgID:      orgID,
 			CommitID:   commit.ID,
 			Status:     models.ImageStatusSuccess,
@@ -292,7 +285,6 @@ var _ = Describe("Update routes", func() {
 		db.DB.Create(&image)
 
 		device := models.Device{
-			Account: account,
 			OrgID:   orgID,
 			UUID:    faker.UUIDHyphenated(),
 			ImageID: image.ID,
@@ -300,13 +292,11 @@ var _ = Describe("Update routes", func() {
 		db.DB.Create(&device)
 
 		updateCommit := models.Commit{
-			Account: account,
-			OrgID:   orgID,
+			OrgID: orgID,
 		}
 		db.DB.Create(&updateCommit)
 
 		updateImage := models.Image{
-			Account:    account,
 			OrgID:      orgID,
 			CommitID:   updateCommit.ID,
 			Status:     models.ImageStatusSuccess,
@@ -315,8 +305,8 @@ var _ = Describe("Update routes", func() {
 		}
 		db.DB.Create(&updateImage)
 
-		// a device from another account
-		device2 := models.Device{Account: account2, OrgID: orgID2, UUID: faker.UUIDHyphenated()}
+		// a device from another orgID
+		device2 := models.Device{OrgID: orgID2, UUID: faker.UUIDHyphenated()}
 		db.DB.Create(&device2)
 
 		BeforeEach(func() {
@@ -379,7 +369,7 @@ var _ = Describe("Update routes", func() {
 				Expect(response.Message).To(Equal("There are no updates to perform"))
 			})
 
-			It("should not allow to update when devices from different accounts", func() {
+			It("should not allow to update when devices from different orgID", func() {
 				updateData, err := json.Marshal(models.DevicesUpdate{DevicesUUID: []string{device.UUID, device2.UUID}})
 				Expect(err).To(BeNil())
 				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(updateData))
@@ -398,7 +388,7 @@ var _ = Describe("Update routes", func() {
 
 		When("when devices exists and update commit exists", func() {
 			updateTransactions := []models.UpdateTransaction{
-				{Account: account, OrgID: orgID, CommitID: updateCommit.ID, Devices: []models.Device{device}, Status: models.UpdateStatusBuilding},
+				{OrgID: orgID, CommitID: updateCommit.ID, Devices: []models.Device{device}, Status: models.UpdateStatusBuilding},
 			}
 			db.DB.Create(updateTransactions)
 
