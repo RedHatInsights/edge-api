@@ -28,8 +28,9 @@ RUN go build -o /go/bin/edge-api-migrate-device cmd/db/updDb/set_account_on_devi
 # Run the doc binary
 RUN go run cmd/spec/main.go
 
-# Build the kafka binary
+# Build the microservice binaries
 RUN go build -o /go/bin/edge-api-ibvents cmd/kafka/main.go
+RUN go build -o /go/bin/edge-api-images-build pkg/services/images_build/main.go
 
 ######################################
 # STEP 2: build the dependencies image
@@ -74,6 +75,7 @@ COPY --from=edge-builder /go/bin/edge-api-migrate /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-wipe /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-migrate-device /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-ibvents /usr/bin
+COPY --from=edge-builder /go/bin/edge-api-images-build /usr/bin
 COPY --from=edge-builder ${EDGE_API_WORKSPACE}/cmd/spec/openapi.json /var/tmp
 
 # kickstart inject requirements
