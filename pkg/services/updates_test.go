@@ -298,7 +298,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 				url, err := updateService.WriteTemplate(t, account, org_id)
 
-				//Expect(err.Error()).To(Equal(0))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(url).ToNot(BeNil())
 				Expect(url).To(BeEquivalentTo("http://localhost:3000/api/edge/v1/updates/1000/update-playbook.yml"))

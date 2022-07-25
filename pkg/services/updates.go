@@ -284,13 +284,13 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, account s
 
 	// create the full path for /tmp/v2/<orgID>
 	if err := os.MkdirAll(dirpath, 0770); err != nil {
-		s.log.WithField("error", err.Error()).Error(fmt.Sprintf("Error creating folder: %s", dirpath))
+		s.log.WithField("error", err.Error()).Errorf("Error creating folder: %s", dirpath)
 		return "", err
 	}
 	// create the tmpfile with the full path
 	f, err := os.Create(tmpfilepath)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Error(fmt.Sprintf("Error creating file: %s", tmpfilepath))
+		s.log.WithField("error", err.Error()).Errorf("Error creating file: %s", tmpfilepath)
 		return "", err
 	}
 	err = templateContents.Execute(f, templateData)
