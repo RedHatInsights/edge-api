@@ -278,11 +278,19 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, account s
 	}
 
 	//TODO change the same time as line 231
-	fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", account, templateInfo.UpdateTransactionID)
-	tmpfilepath := fmt.Sprintf("/tmp/%s", fname)
+	fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", orgID, templateInfo.UpdateTransactionID)
+	tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", orgID, fname)
+	dirpath := fmt.Sprintf("/tmp/v2/%s", orgID)
+
+	// create the full path for /tmp/v2/<orgID>
+	if err := os.MkdirAll(dirpath, 0770); err != nil {
+		s.log.WithField("error", err.Error()).Errorf("Error creating folder: %s", dirpath)
+		return "", err
+	}
+	// create the tmpfile with the full path
 	f, err := os.Create(tmpfilepath)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Error creating file")
+		s.log.WithField("error", err.Error()).Errorf("Error creating file: %s", tmpfilepath)
 		return "", err
 	}
 	err = templateContents.Execute(f, templateData)
