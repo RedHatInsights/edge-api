@@ -3,7 +3,6 @@ package services_test
 import (
 	"context"
 	"fmt"
-
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -688,7 +687,7 @@ var _ = Describe("Image Service Test", func() {
 		})
 	})
 	Describe("Create image when using getImageSetForNewImage", func() {
-		orgID := faker.UUIDHyphenated()
+		orgID := common.DefaultOrgID
 		requestID := faker.UUIDHyphenated()
 		imageName := faker.UUIDHyphenated()
 		image := models.Image{Distribution: "rhel-85", Name: imageName}
@@ -879,6 +878,56 @@ var _ = Describe("Image Service Test", func() {
 			actualErr := service.UpdateImage(image, previousImage)
 			Expect(actualErr).To(HaveOccurred())
 			Expect(actualErr).To(MatchError(expectedErr))
+		})
+	})
+	Context("Get image set images View", func() {
+		orgID := common.DefaultOrgID
+		imageSet := models.ImageSet{OrgID: orgID, Name: faker.Name()}
+		db.DB.Create(&imageSet)
+		image1 := models.Image{
+			OrgID: orgID, Name: imageSet.Name, ImageSetID: &imageSet.ID, Version: 1,
+			OutputTypes: []string{models.ImageTypeCommit, models.ImageTypeInstaller},
+			Status:      models.ImageStatusSuccess,
+			Installer:   &models.Installer{OrgID: orgID, ImageBuildISOURL: faker.URL(), Status: models.ImageStatusSuccess},
+		}
+		db.DB.Create(&image1)
+		image2 := models.Image{
+			OrgID: orgID, Name: imageSet.Name, ImageSetID: &imageSet.ID, Version: 2,
+			OutputTypes: []string{models.ImageTypeCommit, models.ImageTypeInstaller},
+			Status:      models.ImageStatusError,
+			Installer:   &models.Installer{OrgID: orgID, ImageBuildISOURL: faker.URL(), Status: models.ImageStatusPending},
+		}
+		db.DB.Create(&image2)
+
+		imageSetInner := models.ImageSet{OrgID: orgID, Name: faker.Name()}
+		db.DB.Create(&imageSetInner)
+		imageInner := models.Image{OrgID: orgID, Name: imageSet.Name, ImageSetID: &imageSetInner.ID, Installer: &models.Installer{OrgID: orgID, ImageBuildISOURL: faker.URL()}}
+		db.DB.Create(&imageInner)
+
+		imageSetDB := db.DB.Where("image_set_id = ?", imageSet.ID).Order("created_at DESC")
+
+		It("return the right image set images view count", func() {
+			imagesViewsCount, err := service.GetImagesViewCount(imageSetDB)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(imagesViewsCount).To(Equal(int64(2)))
+		})
+		It("return the right image set images view", func() {
+			imagesViews, err := service.GetImagesView(30, 0, imageSetDB)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(*imagesViews)).To(Equal(2))
+			for ind, expectedImage := range []models.Image{image2, image1} {
+				imageView := (*imagesViews)[ind]
+				Expect(imageView.ID).To(Equal(expectedImage.ID))
+				Expect(imageView.Name).To(Equal(expectedImage.Name))
+				Expect(imageView.Version).To(Equal(expectedImage.Version))
+				Expect(len(imageView.OutputTypes)).To(Equal(len(expectedImage.OutputTypes)))
+				Expect(len(imageView.OutputTypes)).To(Equal(2))
+				Expect(imageView.OutputTypes[0]).To(Equal(models.ImageTypeCommit))
+				Expect(imageView.OutputTypes[1]).To(Equal(models.ImageTypeInstaller))
+				Expect(imageView.Status).To(Equal(expectedImage.Status))
+			}
+			Expect((*imagesViews)[0].ImageBuildIsoURL).To(BeEmpty())
+			Expect((*imagesViews)[1].ImageBuildIsoURL).To(Equal(fmt.Sprintf("/api/edge/v1/storage/isos/%d", image1.Installer.ID)))
 		})
 	})
 })
