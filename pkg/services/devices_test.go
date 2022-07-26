@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -878,6 +879,7 @@ var _ = Describe("DfseviceService", func() {
 	Context("GetDeviceView", func() {
 		When("devices are returned from the db", func() {
 			It("should return devices", func() {
+				defer GinkgoRecover()
 				orgID := common.DefaultOrgID
 				var imageV1 *models.Image
 
@@ -917,8 +919,20 @@ var _ = Describe("DfseviceService", func() {
 					Count:  1,
 					Result: invResult,
 				}
-				mockInventoryClient.EXPECT().ReturnDevices(gomock.Any()).Return(resp, nil)
-				mockInventoryClient.EXPECT().ReturnDeviceListByID(gomock.Any()).Return(resp, nil)
+				// calls to inventory are now in go routines.
+				// in order for the mocks to stay active for the duration of the tests, wait groups were added
+				// these calls to inventory can happen more than once so the `AnyTimes()` param was added
+				// each call was added to a unique wait group in the `Do` wrapper
+				wg := sync.WaitGroup{}
+				mockInventoryClient.EXPECT().ReturnDevices(gomock.Any()).Return(resp, nil).AnyTimes().Do(func(arg interface{}) {
+					wg.Add(1)
+					defer wg.Done()
+				})
+				wg2 := sync.WaitGroup{}
+				mockInventoryClient.EXPECT().ReturnDeviceListByID(gomock.Any()).Return(resp, nil).AnyTimes().Do(func(arg interface{}) {
+					wg2.Add(1)
+					defer wg2.Done()
+				})
 
 				deviceService := services.DeviceService{
 					Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
@@ -926,6 +940,8 @@ var _ = Describe("DfseviceService", func() {
 				}
 
 				devices, err := deviceService.GetDevicesView(0, 0, nil)
+				wg.Wait()
+				wg2.Wait()
 				Expect(err).To(BeNil())
 				Expect(devices).ToNot(BeNil())
 			})

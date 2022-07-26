@@ -678,7 +678,13 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 		s.log.WithField("error", err.Error()).Error("Error retrieving devices from inventory")
 		return nil, err
 	}
-	if inventoryDevices.Total != len(storedDevices) {
+
+	var total int64
+	if res := db.Org(orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
+		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
+		return nil, res.Error
+	}
+	if int64(inventoryDevices.Total) != total {
 		go s.syncDevicesWithInventory(orgID)
 	}
 
@@ -984,14 +990,19 @@ func (s *DeviceService) syncDevicesWithInventory(orgID string) {
 		s.log.WithField("error", err.Error()).Error("Error retrieving devices from inventory for sync")
 		return
 	}
-	if int64(inventoryResponse.Total) == total {
-		s.log.WithField("sync", "Sync complete for orgID "+orgID)
-		return
+	if int64(inventoryResponse.Total) != total {
+		s.log.WithField("sync", "Sync syncDevicesWithInventory complete but db and inventory still dont match, continuing sync")
+		s.syncInventoryWithDevices(orgID)
 	}
+	s.log.WithField("sync", "Sync syncDevicesWithInventory complete for orgID "+orgID)
+}
 
+func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 	// We have missed one or more create device events from inventory
 	// Go through this users inventory devices in chunks and check they are in our DB.
 	// If not, add them
+	var params *inventory.Params
+	limit := 100
 	params.PerPage = strconv.Itoa(limit)
 	page := 1
 	params.Page = strconv.Itoa(page)
@@ -1035,7 +1046,7 @@ func (s *DeviceService) syncDevicesWithInventory(orgID string) {
 						deps = append(deps, idep)
 					}
 					profile := systemProfile{
-						HostType:             "edge",
+						HostType:             inDevice.Ostree.HostType,
 						RpmOSTreeDeployments: deps,
 						RHCClientID:          inDevice.Ostree.RHCClientID,
 					}

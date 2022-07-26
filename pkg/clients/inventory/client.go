@@ -57,6 +57,7 @@ type Device struct {
 type SystemProfile struct {
 	RHCClientID          string   `json:"rhc_client_id"`
 	RpmOstreeDeployments []OSTree `json:"rpm_ostree_deployments"`
+	HostType             string   `json:"host_type"`
 }
 
 // OSTree represents the struct of a SystemProfile on Inventory API
@@ -206,17 +207,22 @@ func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
 
 // ReturnDeviceListByID will return the list of devices by uuid
 func (c *Client) ReturnDeviceListByID(deviceIDs []string) (Response, error) {
+	if len(deviceIDs) == 0 {
+		return Response{}, fmt.Errorf("no device ID's passed to inventory client")
+	}
 	if _, err := uuid.Parse(deviceIDs[0]); err != nil {
 		c.log.WithFields(log.Fields{"error": err, "deviceID": deviceIDs[0]}).Error("invalid device ID")
 		return Response{}, err
 	}
 	url := fmt.Sprintf("%s/%s/%s", config.Get().InventoryConfig.URL, inventoryAPI, deviceIDs[0])
-	for _, deviceID := range deviceIDs[1:] {
-		if _, err := uuid.Parse(deviceID); err != nil {
-			c.log.WithFields(log.Fields{"error": err, "deviceID": deviceID}).Error("invalid device ID")
-			return Response{}, err
+	if len(deviceIDs) > 1 {
+		for _, deviceID := range deviceIDs[1:] {
+			if _, err := uuid.Parse(deviceID); err != nil {
+				c.log.WithFields(log.Fields{"error": err, "deviceID": deviceID}).Error("invalid device ID")
+				return Response{}, err
+			}
+			url = url + "," + deviceID
 		}
-		url = url + "," + deviceID
 	}
 	c.log.WithFields(log.Fields{
 		"url": url,
