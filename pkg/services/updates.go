@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"io"
 	"net/http"
 	"os"
@@ -181,12 +182,18 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	}
 	// 3. Loop through all devices in UpdateTransaction
 	dispatchRecords := update.DispatchRecords
+	account, err := common.GetAccountFromContext(s.ctx)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error when getting account from context")
+		return nil, new(AccountNotSet)
+	}
 	for _, device := range update.Devices {
 		device := device // this will prevent implicit memory aliasing in the loop
 		// Create new &DispatcherPayload{}
 		payloadDispatcher := playbookdispatcher.DispatcherPayload{
 			Recipient:   device.RHCClientID,
 			PlaybookURL: playbookURL,
+			Account:     account,
 			OrgID:       update.OrgID,
 		}
 		s.log.Debug("Calling playbook dispatcher")
