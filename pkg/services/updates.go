@@ -34,12 +34,12 @@ type UpdateServiceInterface interface {
 	GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error)
 	GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error)
 	ProcessPlaybookDispatcherRunEvent(message []byte) error
-	WriteTemplate(templateInfo TemplateRemoteInfo, account string, orgID string) (string, error)
+	WriteTemplate(templateInfo TemplateRemoteInfo, orgID string) (string, error)
 	SetUpdateStatusBasedOnDispatchRecord(dispatchRecord models.DispatchRecord) error
 	SetUpdateStatus(update *models.UpdateTransaction) error
 	SendDeviceNotification(update *models.UpdateTransaction) (ImageNotification, error)
 	UpdateDevicesFromUpdateTransaction(update models.UpdateTransaction) error
-	ValidateUpdateSelection(account string, orgID string, imageIds []uint) (bool, error)
+	ValidateUpdateSelection(orgID string, imageIds []uint) (bool, error)
 	ValidateUpdateDeviceGroup(orgID string, deviceGroupID uint) (bool, error)
 }
 
@@ -95,7 +95,6 @@ type TemplateRemoteInfo struct {
 // PlaybookDispatcherEventPayload belongs to PlaybookDispatcherEvent
 type PlaybookDispatcherEventPayload struct {
 	ID            string `json:"id"`
-	Account       string `json:"account"`
 	OrgID         string `json:"org_id"`
 	Recipient     string `json:"recipient"`
 	CorrelationID string `json:"correlation_id"`
@@ -173,7 +172,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	remoteInfo.OSTreeRef = update.Commit.OSTreeRef
 	remoteInfo.RemoteOstreeUpdate = fmt.Sprint(update.ChangesRefs)
 
-	playbookURL, err := s.WriteTemplate(remoteInfo, update.Account, update.OrgID)
+	playbookURL, err := s.WriteTemplate(remoteInfo, update.OrgID)
 	if err != nil {
 		update.Status = models.UpdateStatusError
 		db.DB.Save(update)
@@ -188,7 +187,6 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		payloadDispatcher := playbookdispatcher.DispatcherPayload{
 			Recipient:   device.RHCClientID,
 			PlaybookURL: playbookURL,
-			Account:     update.Account,
 			OrgID:       update.OrgID,
 		}
 		s.log.Debug("Calling playbook dispatcher")
@@ -237,8 +235,8 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 // GetUpdatePlaybook is the function that returns the path to an update playbook
 func (s *UpdateService) GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error) {
 	//TODO change this path name to use org id
-	fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", update.Account, update.ID)
-	path := fmt.Sprintf("%s/playbooks/%s", update.Account, fname)
+	fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", update.OrgID, update.ID)
+	path := fmt.Sprintf("%s/playbooks/%s", update.OrgID, fname)
 	return s.FilesService.GetFile(path)
 }
 
@@ -250,7 +248,7 @@ func (s *UpdateService) getPlaybookURL(updateID uint) string {
 }
 
 // WriteTemplate is the function that writes the template to a file
-func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, account string, orgID string) (string, error) {
+func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, orgID string) (string, error) {
 	cfg := config.Get()
 	filePath := cfg.TemplatesPath
 	templateName := "template_playbook_dispatcher_ostree_upgrade_payload.yml"
@@ -299,7 +297,7 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, account s
 		return "", err
 	}
 
-	uploadPath := fmt.Sprintf("%s/playbooks/%s", account, fname)
+	uploadPath := fmt.Sprintf("%s/playbooks/%s", orgID, fname)
 	playbookURL, err := s.FilesService.GetUploader().UploadFile(tmpfilepath, uploadPath)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error uploading file to S3")
@@ -483,7 +481,6 @@ func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (Ima
 		recipient.Users = users
 		recipients = append(recipients, recipient)
 
-		notify.Account = i.Account
 		notify.OrgID = i.OrgID
 		notify.Context = fmt.Sprintf("{  \"CommitID\" : \"%v\"}", i.CommitID)
 		notify.Events = events
@@ -516,7 +513,7 @@ func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (Ima
 
 // UpdateDevicesFromUpdateTransaction update device with new image and update availability
 func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateTransaction) error {
-	logger := s.log.WithFields(log.Fields{"account": update.Account, "org_id": update.OrgID, "context": "UpdateDevicesFromUpdateTransaction"})
+	logger := s.log.WithFields(log.Fields{"org_id": update.OrgID, "context": "UpdateDevicesFromUpdateTransaction"})
 	if update.Status != models.UpdateStatusSuccess {
 		// update only when update is successful
 		// do nothing
@@ -526,7 +523,7 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 
 	// reload update transaction from db
 	var currentUpdate models.UpdateTransaction
-	if result := db.AccountOrOrg(update.Account, update.OrgID, "").Preload("Devices").Preload("Commit").First(&currentUpdate, update.ID); result.Error != nil {
+	if result := db.Org(update.OrgID, "").Preload("Devices").Preload("Commit").First(&currentUpdate, update.ID); result.Error != nil {
 		return result.Error
 	}
 
@@ -537,7 +534,7 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 
 	// get the update commit image
 	var deviceImage models.Image
-	if result := db.AccountOrOrg(currentUpdate.Account, currentUpdate.OrgID, "images").
+	if result := db.Org(currentUpdate.OrgID, "images").
 		Joins("JOIN commits ON commits.id = images.commit_id").
 		Where("commits.os_tree_commit = ? ", currentUpdate.Commit.OSTreeCommit).
 		First(&deviceImage); result.Error != nil {
@@ -548,7 +545,7 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 	// get image update availability, by finding if there is later images updates
 	// consider only those with ImageStatusSuccess
 	var updateImages []models.Image
-	if result := db.AccountOrOrg(deviceImage.Account, deviceImage.OrgID, "").Select("id").Where("image_set_id = ? AND status = ? AND created_at > ?",
+	if result := db.Org(deviceImage.OrgID, "").Select("id").Where("image_set_id = ? AND status = ? AND created_at > ?",
 		deviceImage.ImageSetID, models.ImageStatusSuccess, deviceImage.CreatedAt).Find(&updateImages); result.Error != nil {
 		logger.WithField("error", result.Error).Error("Error while getting update images")
 		return result.Error
@@ -562,7 +559,7 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 	}
 
 	// update devices with image and update availability
-	if result := db.AccountOrOrg(deviceImage.Account, deviceImage.OrgID, "").Model(&models.Device{}).Where("id IN (?) ", devicesIDS).
+	if result := db.Org(deviceImage.OrgID, "").Model(&models.Device{}).Where("id IN (?) ", devicesIDS).
 		Updates(map[string]interface{}{"image_id": deviceImage.ID, "update_available": updateAvailable}); result.Error != nil {
 		logger.WithField("error", result.Error).Error("Error occurred while updating device image and update_available")
 		return result.Error
@@ -572,9 +569,9 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 }
 
 // ValidateUpdateSelection validate the images for update
-func (s *UpdateService) ValidateUpdateSelection(account string, orgID string, imageIds []uint) (bool, error) {
+func (s *UpdateService) ValidateUpdateSelection(orgID string, imageIds []uint) (bool, error) {
 	var count int64
-	if result := db.AccountOrOrg(account, orgID, "").Table("images").Where(`id IN ?`, imageIds).Group("image_set_id").Count(&count); result.Error != nil {
+	if result := db.Org(orgID, "").Debug().Table("images").Where(`id IN ?`, imageIds).Group("image_set_id").Count(&count); result.Error != nil {
 		return false, result.Error
 	}
 

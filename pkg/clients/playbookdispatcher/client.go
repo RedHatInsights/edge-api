@@ -36,7 +36,6 @@ func InitClient(ctx context.Context, log *log.Entry) *Client {
 type DispatcherPayload struct {
 	Recipient   string `json:"recipient"`
 	PlaybookURL string `json:"url"`
-	Account     string `json:"account"`
 	OrgID       string `json:"org_id"`
 }
 
