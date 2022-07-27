@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	"github.com/redhatinsights/edge-api/pkg/services"
 	"io/ioutil"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -46,6 +48,10 @@ func main() {
 	gen.addSchema("v1.DeviceDetails", &models.DeviceDetails{})
 	gen.addSchema("v1.Device", &models.Device{})
 	gen.addSchema("v1.ImageSet", &models.ImageSet{})
+	gen.addSchema("v1.ImageSetView", &models.ImageSetView{})
+	gen.addSchema("v1.ImageSetIDView", &services.ImageSetIDView{})
+	gen.addSchema("v1.ImagesViewData", &services.ImagesViewData{})
+	gen.addSchema("v1.ImageSetImageIDView", &services.ImageSetImageIDView{})
 	gen.addSchema("v1.Device", &models.Device{})
 	gen.addSchema("v1.CheckImageResponse", &routes.CheckImageNameResponse{})
 	var booleanResponse bool
@@ -61,6 +67,7 @@ func main() {
 	gen.addSchema("v1.DeviceGroupDetailsView", &models.DeviceGroupDetailsView{})
 	gen.addSchema("v1.DeviceGroupDetails", &models.DeviceGroupDetails{})
 	gen.addSchema("v1.ValidateUpdateResponse", &routes.ValidateUpdateResponse{})
+	gen.addSchema("v1.APIResponse", &common.APIResponse{})
 
 	type Swagger struct {
 		Components openapi3.Components `json:"components,omitempty" yaml:"components,omitempty"`

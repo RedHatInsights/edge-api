@@ -137,7 +137,7 @@ var _ = Describe("DeviceGroup routes", func() {
 			Expect(err).ToNot(HaveOccurred())
 			w := httptest.NewRecorder()
 
-			ValidateQueryParams(next).ServeHTTP(w, req)
+			ValidateQueryParams("device-groups")(next).ServeHTTP(w, req)
 
 			resp := w.Result()
 			var jsonBody []validationError
@@ -206,8 +206,8 @@ var _ = Describe("DeviceGroup routes", func() {
 				rr := httptest.NewRecorder()
 
 				// setup mock for DeviceGroupsService
-				mockDeviceGroupsService.EXPECT().GetDeviceGroupsCount(gomock.Any(), gomock.Any(), gomock.Any()).Return(int64(0), nil)
-				mockDeviceGroupsService.EXPECT().GetDeviceGroups(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&[]models.DeviceGroupListDetail{}, nil)
+				mockDeviceGroupsService.EXPECT().GetDeviceGroupsCount(gomock.Any(), gomock.Any()).Return(int64(0), nil)
+				mockDeviceGroupsService.EXPECT().GetDeviceGroups(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(&[]models.DeviceGroupListDetail{}, nil)
 
 				handler := http.HandlerFunc(GetAllDeviceGroups)
 				handler.ServeHTTP(rr, req)
@@ -251,9 +251,9 @@ var _ = Describe("DeviceGroup routes", func() {
 		})
 
 		Context("get DeviceGroup from DB", func() {
-			dbResult := db.AccountOrOrg(account, orgID, "").First(&deviceGroup).Error
+			dbResult := db.Org(orgID, "").First(&deviceGroup).Error
 			Expect(dbResult).To(BeNil())
-			dbResult = db.AccountOrOrg(account, orgID, "").Find(&devices).Error
+			dbResult = db.Org(orgID, "").Find(&devices).Error
 			Expect(dbResult).To(BeNil())
 		})
 		jsonDeviceBytes, err := json.Marshal(models.DeviceGroup{Devices: devices})
@@ -272,7 +272,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				rr := httptest.NewRecorder()
 
 				// setup mock for DeviceGroupsService
-				mockDeviceGroupsService.EXPECT().AddDeviceGroupDevices(account, orgID, deviceGroup.ID, gomock.Any()).Return(&devices, nil)
+				mockDeviceGroupsService.EXPECT().AddDeviceGroupDevices(orgID, deviceGroup.ID, gomock.Any()).Return(&devices, nil)
 
 				handler := http.HandlerFunc(AddDeviceGroupDevices)
 				handler.ServeHTTP(rr, req)
@@ -362,7 +362,7 @@ var _ = Describe("DeviceGroup routes", func() {
 
 				// setup mock for DeviceGroupsService
 				mockDeviceGroupsService.EXPECT().GetDeviceGroupByID(fmt.Sprintf("%d", deviceGroupUpdated.ID)).Return(deviceGroupUpdated, nil)
-				mockDeviceGroupsService.EXPECT().UpdateDeviceGroup(deviceGroupUpdated, common.DefaultAccount, common.DefaultOrgID, fmt.Sprintf("%d", deviceGroupUpdated.ID)).Return(nil)
+				mockDeviceGroupsService.EXPECT().UpdateDeviceGroup(deviceGroupUpdated, common.DefaultOrgID, fmt.Sprintf("%d", deviceGroupUpdated.ID)).Return(nil)
 
 				handler := http.HandlerFunc(UpdateDeviceGroup)
 				handler.ServeHTTP(rr, req)
@@ -401,7 +401,7 @@ var _ = Describe("DeviceGroup routes", func() {
 			Expect(dbResult).To(BeNil())
 		})
 		Context("getting DeviceGroup", func() {
-			dbResult := db.AccountOrOrg(account, orgID, "").First(&deviceGroup).Error
+			dbResult := db.Org(orgID, "").First(&deviceGroup).Error
 			Expect(dbResult).To(BeNil())
 		})
 		When("all is valid", func() {
@@ -614,7 +614,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
 
-				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupDevices(account, orgID, deviceGroup.ID, devicesToRemove).Return(&devicesToRemove, nil)
+				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupDevices(orgID, deviceGroup.ID, devicesToRemove).Return(&devicesToRemove, nil)
 				handler := http.HandlerFunc(DeleteDeviceGroupOneDevice)
 				handler.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(http.StatusOK))
@@ -636,7 +636,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
 
-				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupDevices(account, orgID, deviceGroup.ID, gomock.Any()).Return(&devicesToRemove, nil)
+				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupDevices(orgID, deviceGroup.ID, gomock.Any()).Return(&devicesToRemove, nil)
 				handler := http.HandlerFunc(DeleteDeviceGroupManyDevices)
 				handler.ServeHTTP(rr, req)
 
@@ -656,7 +656,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				rr := httptest.NewRecorder()
 
 				var devicesToRemove []models.Device
-				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupDevices(account, orgID, deviceGroup.ID, devicesToRemove).Return(nil, new(services.DeviceGroupDevicesNotSupplied))
+				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupDevices(orgID, deviceGroup.ID, devicesToRemove).Return(nil, new(services.DeviceGroupDevicesNotSupplied))
 				handler := http.HandlerFunc(DeleteDeviceGroupManyDevices)
 				handler.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(http.StatusBadRequest))
@@ -729,7 +729,6 @@ var _ = Describe("DeviceGroup routes", func() {
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
 
-				account, err := common.GetAccount(req)
 				Expect(err).To(BeNil())
 				orgID, err := common.GetOrgID(req)
 				Expect(err).To(BeNil())
@@ -748,7 +747,7 @@ var _ = Describe("DeviceGroup routes", func() {
 					Return(commitID, nil)
 				mockCommitService.EXPECT().GetCommitByID(commitID).
 					Return(&commit, nil)
-				mockUpdateService.EXPECT().BuildUpdateTransactions(&devicesUpdate, account, orgID, &commit).
+				mockUpdateService.EXPECT().BuildUpdateTransactions(&devicesUpdate, orgID, &commit).
 					Return(&updTransactions, nil)
 				for _, trans := range updTransactions {
 					mockUpdateService.EXPECT().CreateUpdateAsync(trans.ID)

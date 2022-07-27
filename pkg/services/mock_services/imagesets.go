@@ -7,8 +7,11 @@ package mock_services
 import (
 	reflect "reflect"
 
+	services "github.com/redhatinsights/edge-api/pkg/services"
+
 	gomock "github.com/golang/mock/gomock"
 	models "github.com/redhatinsights/edge-api/pkg/models"
+	gorm "gorm.io/gorm"
 )
 
 // MockImageSetsServiceInterface is a mock of ImageSetsServiceInterface interface.
@@ -34,6 +37,51 @@ func (m *MockImageSetsServiceInterface) EXPECT() *MockImageSetsServiceInterfaceM
 	return m.recorder
 }
 
+// GetImageSetImageViewByID mocks base method.
+func (m *MockImageSetsServiceInterface) GetImageSetImageViewByID(imageSetID, imageID uint) (*services.ImageSetImageIDView, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImageSetImageViewByID", imageSetID, imageID)
+	ret0, _ := ret[0].(*services.ImageSetImageIDView)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetImageSetImageViewByID indicates an expected call of GetImageSetImageViewByID.
+func (mr *MockImageSetsServiceInterfaceMockRecorder) GetImageSetImageViewByID(imageSetID, imageID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageSetImageViewByID", reflect.TypeOf((*MockImageSetsServiceInterface)(nil).GetImageSetImageViewByID), imageSetID, imageID)
+}
+
+// GetImageSetViewByID mocks base method.
+func (m *MockImageSetsServiceInterface) GetImageSetViewByID(imageSetID uint, imagesLimit, imagesOffSet int, imagesDBFilter *gorm.DB) (*services.ImageSetIDView, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImageSetViewByID", imageSetID, imagesLimit, imagesOffSet, imagesDBFilter)
+	ret0, _ := ret[0].(*services.ImageSetIDView)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetImageSetViewByID indicates an expected call of GetImageSetViewByID.
+func (mr *MockImageSetsServiceInterfaceMockRecorder) GetImageSetViewByID(imageSetID, imagesLimit, imagesOffSet, imagesDBFilter interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageSetViewByID", reflect.TypeOf((*MockImageSetsServiceInterface)(nil).GetImageSetViewByID), imageSetID, imagesLimit, imagesOffSet, imagesDBFilter)
+}
+
+// GetImageSetsBuildIsoURL mocks base method.
+func (m *MockImageSetsServiceInterface) GetImageSetsBuildIsoURL(orgID string, imageSetIDS []uint) (map[uint]uint, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImageSetsBuildIsoURL", orgID, imageSetIDS)
+	ret0, _ := ret[0].(map[uint]uint)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetImageSetsBuildIsoURL indicates an expected call of GetImageSetsBuildIsoURL.
+func (mr *MockImageSetsServiceInterfaceMockRecorder) GetImageSetsBuildIsoURL(orgID, imageSetIDS interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageSetsBuildIsoURL", reflect.TypeOf((*MockImageSetsServiceInterface)(nil).GetImageSetsBuildIsoURL), orgID, imageSetIDS)
+}
+
 // GetImageSetsByID mocks base method.
 func (m *MockImageSetsServiceInterface) GetImageSetsByID(imageSetID int) (*models.ImageSet, error) {
 	m.ctrl.T.Helper()
@@ -47,4 +95,49 @@ func (m *MockImageSetsServiceInterface) GetImageSetsByID(imageSetID int) (*model
 func (mr *MockImageSetsServiceInterfaceMockRecorder) GetImageSetsByID(imageSetID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageSetsByID", reflect.TypeOf((*MockImageSetsServiceInterface)(nil).GetImageSetsByID), imageSetID)
+}
+
+// GetImageSetsView mocks base method.
+func (m *MockImageSetsServiceInterface) GetImageSetsView(limit, offset int, tx *gorm.DB) (*[]models.ImageSetView, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImageSetsView", limit, offset, tx)
+	ret0, _ := ret[0].(*[]models.ImageSetView)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetImageSetsView indicates an expected call of GetImageSetsView.
+func (mr *MockImageSetsServiceInterfaceMockRecorder) GetImageSetsView(limit, offset, tx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageSetsView", reflect.TypeOf((*MockImageSetsServiceInterface)(nil).GetImageSetsView), limit, offset, tx)
+}
+
+// GetImageSetsViewCount mocks base method.
+func (m *MockImageSetsServiceInterface) GetImageSetsViewCount(tx *gorm.DB) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImageSetsViewCount", tx)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetImageSetsViewCount indicates an expected call of GetImageSetsViewCount.
+func (mr *MockImageSetsServiceInterfaceMockRecorder) GetImageSetsViewCount(tx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageSetsViewCount", reflect.TypeOf((*MockImageSetsServiceInterface)(nil).GetImageSetsViewCount), tx)
+}
+
+// GetImagesViewData mocks base method.
+func (m *MockImageSetsServiceInterface) GetImagesViewData(imageSetID uint, imagesLimit, imagesOffSet int, tx *gorm.DB) (*services.ImagesViewData, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImagesViewData", imageSetID, imagesLimit, imagesOffSet, tx)
+	ret0, _ := ret[0].(*services.ImagesViewData)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetImagesViewData indicates an expected call of GetImagesViewData.
+func (mr *MockImageSetsServiceInterfaceMockRecorder) GetImagesViewData(imageSetID, imagesLimit, imagesOffSet, tx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImagesViewData", reflect.TypeOf((*MockImageSetsServiceInterface)(nil).GetImagesViewData), imageSetID, imagesLimit, imagesOffSet, tx)
 }

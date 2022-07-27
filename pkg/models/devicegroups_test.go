@@ -14,11 +14,11 @@ func TestGroupValidateRequest(t *testing.T) {
 		group    *DeviceGroup
 		expected error
 	}{
-		{name: "Empty name", group: &DeviceGroup{OrgID: "222222", Account: "111111", Type: "static"}, expected: errors.New(DeviceGroupNameEmptyErrorMessage)},
-		{name: "Invalid type", group: &DeviceGroup{Name: "test_group", OrgID: "222222", Account: "111111", Type: "invalid type"}, expected: errors.New(DeviceGroupTypeInvalidErrorMessage)},
-		{name: "Invalid name", group: &DeviceGroup{Name: "** test group", OrgID: "222222", Account: "111111", Type: DeviceGroupTypeDefault}, expected: errors.New(DeviceGroupNameInvalidErrorMessage)},
-		{name: "Empty account", group: &DeviceGroup{Name: "test_group", Type: "static", OrgID: "222222"}, expected: errors.New(DeviceGroupAccountEmptyErrorMessage)},
-		{name: "Valid DeviceGroup", group: &DeviceGroup{Name: "test_group", Account: "111111", OrgID: "222222", Type: DeviceGroupTypeDefault}, expected: nil},
+		{name: "Empty name", group: &DeviceGroup{OrgID: "111111", Type: "static"}, expected: errors.New(DeviceGroupNameEmptyErrorMessage)},
+		{name: "Invalid type", group: &DeviceGroup{Name: "test_group", OrgID: "111111", Type: "invalid type"}, expected: errors.New(DeviceGroupTypeInvalidErrorMessage)},
+		{name: "Invalid name", group: &DeviceGroup{Name: "** test group", OrgID: "111111", Type: DeviceGroupTypeDefault}, expected: errors.New(DeviceGroupNameInvalidErrorMessage)},
+		{name: "Empty orgID", group: &DeviceGroup{Name: "test_group", OrgID: "", Type: "static"}, expected: errors.New(DeviceGroupOrgIDEmptyErrorMessage)},
+		{name: "Valid DeviceGroup", group: &DeviceGroup{Name: "test_group", OrgID: "111111", Type: DeviceGroupTypeDefault}, expected: nil},
 	}
 
 	for _, testScenario := range testScenarios {
@@ -36,18 +36,15 @@ func TestGroupValidateRequest(t *testing.T) {
 }
 
 func TestGroupCreateUpdateConstraint(t *testing.T) {
-	groupInitialAccount := "111111"
+	groupInitialAccount := "1111111"
 	groupInitialName := "test_group"
 	groupInitialType := DeviceGroupTypeDynamic
-	groupInitialOrgID := "333333"
 	groupNewAccount := "222222"
-	groupNewOrgID := "444444"
+	groupInitialOrgID := "1111111"
 
 	groupNewType := DeviceGroupTypeStatic
 	groupNewName := "new_test_group"
-
-	group := DeviceGroup{Name: groupInitialName, OrgID: groupInitialOrgID, Account: groupInitialAccount, Type: groupInitialType}
-
+	group := DeviceGroup{Name: groupInitialName, Account: groupInitialAccount, OrgID: groupInitialOrgID, Type: groupInitialType}
 	err := group.ValidateRequest()
 	if err != nil {
 		t.Errorf("Failed to pass validation, Error: %q", err)
@@ -65,7 +62,6 @@ func TestGroupCreateUpdateConstraint(t *testing.T) {
 	}
 
 	savedGroup.Account = groupNewAccount
-	savedGroup.OrgID = groupNewOrgID
 	savedGroup.Type = groupNewType
 	savedGroup.Name = groupNewName
 

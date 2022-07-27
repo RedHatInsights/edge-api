@@ -91,6 +91,10 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	}
 
 	if len(update.OldCommits) > 0 {
+		rb.log.WithFields(log.Fields{
+			"updateID":   update.ID,
+			"OldCommits": len(update.OldCommits)}).
+			Info("Old commits found to this commit")
 		stagePath := filepath.Clean(filepath.Join(path, "staging"))
 		err = os.MkdirAll(stagePath, os.FileMode(int(0755)))
 		if err != nil {
@@ -106,6 +110,11 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		// If there are any old commits, we need to download them all to be merged
 		// into the update commit repo
 		for _, commit := range update.OldCommits {
+			rb.log.WithFields(log.Fields{
+				"updateID":            update.ID,
+				"commit.OSTreeCommit": commit.OSTreeCommit,
+				"OldCommits":          commit.ID}).
+				Info("Calculate diff from previous commit")
 			commit := commit // this will prevent implicit memory aliasing in the loop
 			tarFileName, err := rb.DownloadVersionRepo(&commit, filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit)), false)
 			if err != nil {
@@ -273,9 +282,9 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string, extern
 	return tarFileName, nil
 }
 
-func (rb *RepoBuilder) uploadTarRepo(account, imageName string, repoID int) (string, error) { // TODO, add org_id alongside account at the end of migration
+func (rb *RepoBuilder) uploadTarRepo(OrgID, imageName string, repoID int) (string, error) {
 	rb.log.Info("Start upload tar repo")
-	uploadPath := fmt.Sprintf("%s/tar/%v/%s", account, repoID, imageName) // TODO, add org_id alongside account at the end of migration
+	uploadPath := fmt.Sprintf("v2/%s/tar/%v/%s", OrgID, repoID, imageName)
 	uploadPath = filepath.Clean(uploadPath)
 	filesService := NewFilesService(rb.log)
 	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
@@ -301,7 +310,7 @@ func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string) e
 	repoID := int(*c.RepoID)
 	rb.log = rb.log.WithFields(log.Fields{"commitID": c.ID, "filepath": tarFileName, "repoID": repoID})
 	rb.log.Info("Uploading repo")
-	repoTarURL, err := rb.uploadTarRepo(c.Account, tarFileName, repoID) // TODO, add org_id alongside account at the end of migration
+	repoTarURL, err := rb.uploadTarRepo(c.OrgID, tarFileName, repoID)
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Failed to upload repo")
 		return err

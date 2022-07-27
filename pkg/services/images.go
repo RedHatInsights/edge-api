@@ -61,6 +61,8 @@ type ImageServiceInterface interface {
 	SendImageNotification(image *models.Image) (ImageNotification, error)
 	SetDevicesUpdateAvailabilityFromImageSet(orgID string, ImageSetID uint) error
 	ValidateImagePackage(pack string, image *models.Image) error
+	GetImagesViewCount(tx *gorm.DB) (int64, error)
+	GetImagesView(limit int, offset int, tx *gorm.DB) (*[]models.ImageView, error)
 }
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
@@ -82,29 +84,27 @@ type ImageService struct {
 	RepoService  RepoServiceInterface
 }
 
-// ValidateAllImageReposAreFromOrgID validates the account for Third Party Repositories
-func ValidateAllImageReposAreFromOrgID(orgID string, repos []models.ThirdPartyRepo) error {
+// GetImageReposFromDB return ThirdParty repo of image by OrgID
+func GetImageReposFromDB(orgID string, repos []models.ThirdPartyRepo) (*[]models.ThirdPartyRepo, error) {
 
 	if orgID == "" {
-		return new(OrgIDNotSet)
+		return nil, new(OrgIDNotSet)
 	}
-	if len(repos) == 0 {
-		return nil
+	var imagesRepos []models.ThirdPartyRepo
+	for _, custRepo := range repos {
+		var repo models.ThirdPartyRepo
+		if custRepo.ID == 0 {
+			return nil, new(ThirdPartyRepositoryNotFound)
+		}
+		if result := db.Org(orgID, "").First(&repo, custRepo.ID); result.Error != nil {
+			if result.Error == gorm.ErrRecordNotFound {
+				return nil, new(ThirdPartyRepositoryNotFound)
+			}
+			return nil, result.Error
+		}
+		imagesRepos = append(imagesRepos, repo)
 	}
-	var ids []uint
-	for _, repo := range repos {
-		ids = append(ids, repo.ID)
-	}
-
-	var existingRepos []models.ThirdPartyRepo
-	if result := db.Org(orgID, "").Select("id").Find(&existingRepos, ids); result.Error != nil {
-		return result.Error
-	}
-	if len(existingRepos) != len(ids) {
-		return new(ThirdPartyRepositoryNotFound)
-	}
-
-	return nil
+	return &imagesRepos, nil
 }
 
 func (s *ImageService) getImageSetForNewImage(orgID string, image *models.Image) (*models.ImageSet, error) {
@@ -169,10 +169,11 @@ func (s *ImageService) CreateImage(image *models.Image, orgID string, requestID 
 			return er
 		}
 	}
-	if err := ValidateAllImageReposAreFromOrgID(orgID, image.ThirdPartyRepositories); err != nil {
-
+	imagesrepos, err := GetImageReposFromDB(orgID, image.ThirdPartyRepositories)
+	if err != nil {
 		return err
 	}
+	image.ThirdPartyRepositories = *imagesrepos
 	//Send Image creation to notification
 	notify, errNotify := s.SendImageNotification(image)
 	if errNotify != nil {
@@ -264,9 +265,11 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 			return er
 		}
 	}
-	if err := ValidateAllImageReposAreFromOrgID(previousImage.OrgID, image.ThirdPartyRepositories); err != nil {
+	imagesrepos, err := GetImageReposFromDB(previousImage.OrgID, image.ThirdPartyRepositories)
+	if err != nil {
 		return err
 	}
+	image.ThirdPartyRepositories = *imagesrepos
 
 	// important: update the image imageSet for any previous image build status,
 	// otherwise image will be orphaned from its imageSet if previous build failed
@@ -1516,4 +1519,74 @@ func (s *ImageService) SetDevicesUpdateAvailabilityFromImageSet(orgID string, Im
 	}
 
 	return nil
+}
+
+// GetImagesViewCount get the Images view records count
+func (s *ImageService) GetImagesViewCount(tx *gorm.DB) (int64, error) {
+	orgID, err := common.GetOrgIDFromContext(s.ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	if tx == nil {
+		tx = db.DB
+	}
+
+	var count int64
+	result := db.OrgDB(orgID, tx, "").Model(&models.Image{}).Count(&count)
+
+	if result.Error != nil {
+		s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("Error getting images count")
+		return 0, result.Error
+	}
+
+	return count, nil
+}
+
+// GetImagesView returns a list of Images view.
+func (s *ImageService) GetImagesView(limit int, offset int, tx *gorm.DB) (*[]models.ImageView, error) {
+	orgID, err := common.GetOrgIDFromContext(s.ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if tx == nil {
+		tx = db.DB
+	}
+
+	var images []models.Image
+
+	if result := db.OrgDB(orgID, tx, "").Debug().Limit(limit).Offset(offset).
+		Preload("Installer").
+		Preload("Commit").
+		Find(&images); result.Error != nil {
+		log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error(
+			"error when getting images",
+		)
+		return nil, result.Error
+	}
+	if len(images) == 0 {
+		return &[]models.ImageView{}, nil
+	}
+
+	imagesView := make([]models.ImageView, 0, len(images))
+	for _, image := range images {
+		imageView := models.ImageView{
+			ID:          image.ID,
+			Name:        image.Name,
+			Version:     image.Version,
+			ImageType:   image.ImageType,
+			Status:      image.Status,
+			OutputTypes: image.OutputTypes,
+			CreatedAt:   image.CreatedAt,
+		}
+		if image.Installer != nil && image.Installer.ImageBuildISOURL != "" && image.Installer.Status == models.ImageStatusSuccess {
+			imageView.ImageBuildIsoURL = GetStorageInstallerIsoURL(image.Installer.ID)
+		}
+		if image.Commit != nil && image.Commit.Status == models.ImageStatusSuccess {
+			imageView.CommitCheckSum = image.Commit.OSTreeCommit
+		}
+		imagesView = append(imagesView, imageView)
+	}
+	return &imagesView, nil
 }

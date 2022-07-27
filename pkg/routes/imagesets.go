@@ -9,35 +9,48 @@ import (
 	"strconv"
 	"strings"
 
-	"gorm.io/gorm"
-
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type imageSetTypeKey int
+type imageSetImageTypeKey int
 
 const imageSetKey imageSetTypeKey = iota
+const imageSetImageKey imageSetImageTypeKey = iota
 
 var sortOption = []string{"created_at", "updated_at", "name"}
 var statusOption = []string{models.ImageStatusCreated, models.ImageStatusBuilding, models.ImageStatusError, models.ImageStatusSuccess}
 
 // MakeImageSetsRouter adds support for operations on image-sets
 func MakeImageSetsRouter(sub chi.Router) {
-	sub.With(ValidateQueryParams).With(validateFilterParams).With(common.Paginate).Get("/", ListAllImageSets)
+	sub.With(ValidateQueryParams("image-sets")).With(validateFilterParams).With(common.Paginate).Get("/", ListAllImageSets)
+	sub.With(validateFilterParams).With(common.Paginate).Get("/view", GetImageSetsView)
 	sub.Route("/{imageSetID}", func(r chi.Router) {
 		r.Use(ImageSetCtx)
 		r.With(validateFilterParams).With(common.Paginate).Get("/", GetImageSetsByID)
 	})
+	sub.Route("/view/{imageSetID}", func(r chi.Router) {
+		r.Use(ImageSetViewCtx)
+		r.With(ValidateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetImageSetViewByID)
+		r.With(ValidateGetAllImagesSearchParams).With(common.Paginate).Get("/versions", GetImageSetImagesView)
+		r.Route("/versions/{imageID}", func(rVersion chi.Router) {
+			rVersion.Use(ImageSetImageViewCtx)
+			rVersion.Get("/", GetImageSetImageView)
+		})
+	})
 }
 
 func getStorageInstallerIsoURL(installerID uint) string {
-	return fmt.Sprintf("/api/edge/v1/storage/isos/%d", installerID)
+	return services.GetStorageInstallerIsoURL(installerID)
 }
 
 var imageSetFilters = common.ComposeFilters(
@@ -372,4 +385,216 @@ func returnImageDetails(images []models.Image, s *dependencies.EdgeAPIServices) 
 	}
 
 	return Imgs
+}
+
+// GetImageSetsView return a list of image-sets view
+func GetImageSetsView(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID
+		return
+	}
+
+	pagination := common.GetPagination(r)
+
+	imageSetsCount, err := ctxServices.ImageSetService.GetImageSetsViewCount(imageSetFilters(r, db.DB))
+	if err != nil {
+		ctxServices.Log.WithFields(log.Fields{"error": err.Error(), "orgID": orgID}).Error("error getting image-sets view count")
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
+		return
+	}
+
+	imageSetsViewList, err := ctxServices.ImageSetService.GetImageSetsView(pagination.Limit, pagination.Offset, imageSetFilters(r, db.DB))
+	if err != nil {
+		ctxServices.Log.WithFields(log.Fields{"error": err.Error(), "orgID": orgID}).Error("error getting image-sets view")
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
+		return
+	}
+	respondWithJSONBody(w, ctxServices.Log, map[string]interface{}{"data": imageSetsViewList, "count": imageSetsCount})
+}
+
+// ImageSetViewCtx provides the handler for ImageSet view details
+func ImageSetViewCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		orgID := readOrgID(w, r, ctxServices.Log)
+		if orgID == "" {
+			return
+		}
+		imageSetIDString := chi.URLParam(r, "imageSetID")
+		if imageSetIDString == "" {
+			return
+		}
+		ctxServices.Log = ctxServices.Log.WithField("imageSetID", imageSetIDString)
+		imageSetID, err := strconv.Atoi(imageSetIDString)
+		if err != nil {
+			ctxServices.Log.WithField("error", err.Error()).Error("error while converting image-set id from string")
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("bad image-set id"))
+			return
+		}
+		var imageSet models.ImageSet
+		if result := db.Org(orgID, "").First(&imageSet, imageSetID); result.Error != nil {
+			if result.Error == gorm.ErrRecordNotFound {
+				respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("image-set not found"))
+				return
+			}
+			apiError := errors.NewInternalServerError()
+			apiError.SetTitle("internal server error occurred while getting image-set")
+			respondWithAPIError(w, ctxServices.Log, apiError)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), imageSetKey, &imageSet)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func getContextImageSet(w http.ResponseWriter, r *http.Request) *models.ImageSet {
+	ctx := r.Context()
+	imageSet, ok := ctx.Value(imageSetKey).(*models.ImageSet)
+	if !ok {
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("failed to get image-set from context"))
+		return nil
+	}
+	return imageSet
+}
+
+// GetImageSetViewByID handle the image-set view
+func GetImageSetViewByID(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	imageSet := getContextImageSet(w, r)
+	if imageSet == nil {
+		// log and response handled by getContextImageSet
+		return
+	}
+	imagesDBFilters := imageDetailFilters(r, db.DB)
+	pagination := common.GetPagination(r)
+	imageSetIDView, err := ctxServices.ImageSetService.GetImageSetViewByID(imageSet.ID, pagination.Limit, pagination.Offset, imagesDBFilters)
+	if err != nil {
+		var apiError errors.APIError
+		switch err.(type) {
+		case *services.ImageSetNotFoundError:
+			apiError = errors.NewNotFound("image-set not found")
+		case *services.ImageNotFoundError:
+			apiError = errors.NewNotFound("image-set has no image")
+		case *services.OrgIDNotSet:
+			apiError = errors.NewBadRequest("org-id not set")
+		default:
+			apiError = errors.NewInternalServerError()
+		}
+		respondWithAPIError(w, ctxServices.Log, apiError)
+		return
+	}
+	respondWithJSONBody(w, ctxServices.Log, imageSetIDView)
+}
+
+// GetImageSetImagesView handle the image-set images view
+func GetImageSetImagesView(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	imageSet := getContextImageSet(w, r)
+	if imageSet == nil {
+		// log and response handled by getContextImageSet
+		return
+	}
+	imagesDBFilters := imageDetailFilters(r, db.DB)
+	pagination := common.GetPagination(r)
+
+	imageSetImagesView, err := ctxServices.ImageSetService.GetImagesViewData(imageSet.ID, pagination.Limit, pagination.Offset, imagesDBFilters)
+	if err != nil {
+		var apiError errors.APIError
+		switch err.(type) {
+		case *services.OrgIDNotSet:
+			apiError = errors.NewBadRequest("org-id not set")
+		default:
+			apiError = errors.NewInternalServerError()
+		}
+		respondWithAPIError(w, ctxServices.Log, apiError)
+		return
+	}
+	respondWithJSONBody(w, ctxServices.Log, imageSetImagesView)
+}
+
+// ImageSetImageViewCtx provides the handler for Image view details
+func ImageSetImageViewCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		orgID := readOrgID(w, r, ctxServices.Log)
+		if orgID == "" {
+			return
+		}
+		imageSet := getContextImageSet(w, r)
+		if imageSet == nil {
+			return
+		}
+		imageIDString := chi.URLParam(r, "imageID")
+		if imageIDString == "" {
+			return
+		}
+		ctxServices.Log = ctxServices.Log.WithField("imageID", imageIDString)
+		imageID, err := strconv.Atoi(imageIDString)
+		if err != nil {
+			ctxServices.Log.WithField("error", err.Error()).Error("error while converting image id from string")
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("bad image id"))
+			return
+		}
+		var image models.Image
+		if result := db.Org(orgID, "").Where("image_set_id", imageSet.ID).First(&image, imageID); result.Error != nil {
+			if result.Error == gorm.ErrRecordNotFound {
+				respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("image for image set view not found"))
+				return
+			}
+			apiError := errors.NewInternalServerError()
+			apiError.SetTitle("internal server error occurred while getting image set image")
+			respondWithAPIError(w, ctxServices.Log, apiError)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), imageSetImageKey, &image)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func getContextImageSetImage(w http.ResponseWriter, r *http.Request) *models.Image {
+	ctx := r.Context()
+	image, ok := ctx.Value(imageSetImageKey).(*models.Image)
+	if !ok {
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("failed to get image from context"))
+		return nil
+	}
+	return image
+}
+
+// GetImageSetImageView handle the image-set image view
+func GetImageSetImageView(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	imageSet := getContextImageSet(w, r)
+	if imageSet == nil {
+		return
+	}
+
+	image := getContextImageSetImage(w, r)
+	if image == nil {
+		return
+	}
+
+	imageSetImageView, err := ctxServices.ImageSetService.GetImageSetImageViewByID(imageSet.ID, image.ID)
+	if err != nil {
+		var apiError errors.APIError
+		switch err.(type) {
+		case *services.ImageSetNotFoundError:
+			apiError = errors.NewNotFound("image-set not found")
+		case *services.ImageNotFoundError:
+			apiError = errors.NewNotFound("image-set has no image")
+		case *services.OrgIDNotSet:
+			apiError = errors.NewBadRequest("org-id not set")
+		default:
+			apiError = errors.NewInternalServerError()
+		}
+		respondWithAPIError(w, ctxServices.Log, apiError)
+		return
+	}
+	respondWithJSONBody(w, ctxServices.Log, imageSetImageView)
 }

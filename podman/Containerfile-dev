@@ -10,6 +10,7 @@ ENV GO111MODULE=on
 # Using go get requires root.
 USER root
 RUN go get -d -v
+#RUN go get github.com/RedHatInsights/sources-api-go/config
 
 # interim FDO requirements
 ENV LD_LIBRARY_PATH /usr/local/lib
