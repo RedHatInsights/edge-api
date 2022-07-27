@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -19,6 +20,7 @@ import (
 type ClientInterface interface {
 	ReturnDevices(parameters *Params) (Response, error)
 	ReturnDevicesByID(deviceID string) (Response, error)
+	ReturnDeviceListByID(deviceIDs []string) (Response, error)
 	ReturnDevicesByTag(tag string) (Response, error)
 	BuildURL(parameters *Params) string
 }
@@ -56,6 +58,7 @@ type Device struct {
 type SystemProfile struct {
 	RHCClientID          string   `json:"rhc_client_id"`
 	RpmOstreeDeployments []OSTree `json:"rpm_ostree_deployments"`
+	HostType             string   `json:"host_type"`
 }
 
 // OSTree represents the struct of a SystemProfile on Inventory API
@@ -197,6 +200,59 @@ func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
 	var inventory Response
 	if err := json.Unmarshal([]byte(body), &inventory); err != nil {
 		c.log.WithField("response", &inventory).Error("Error while trying to unmarshal InventoryResponse")
+		return Response{}, err
+	}
+	return inventory, nil
+
+}
+
+// ReturnDeviceListByID will return the list of devices by uuid
+func (c *Client) ReturnDeviceListByID(deviceIDs []string) (Response, error) {
+	if len(deviceIDs) == 0 {
+		return Response{}, fmt.Errorf("no device ID's passed to inventory client")
+	}
+	for _, deviceID := range deviceIDs {
+		if _, err := uuid.Parse(deviceID); err != nil {
+			c.log.WithFields(log.Fields{"error": err, "deviceID": deviceID}).Error("invalid device ID")
+			return Response{}, err
+		}
+	}
+	devices := strings.Join(deviceIDs[:], ",")
+	url := fmt.Sprintf("%s/%s/%s", config.Get().InventoryConfig.URL, inventoryAPI, devices)
+	c.log.WithFields(log.Fields{
+		"url": url,
+	}).Info("Inventory ReturnDeviceListByID Request Started")
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Add("Content-Type", "application/json")
+	for key, value := range clients.GetOutgoingHeaders(c.ctx) {
+		req.Header.Add(key, value)
+	}
+	client := &http.Client{}
+	res, err := client.Do(req)
+
+	if err != nil {
+		c.log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Inventory ReturnDeviceListByID Request Error")
+		return Response{}, err
+	}
+
+	body, err := ioutil.ReadAll(res.Body)
+	c.log.WithFields(log.Fields{
+		"statusCode":   res.StatusCode,
+		"responseBody": string(body),
+		"error":        err,
+	}).Info("Inventory ReturnDeviceListByID Response")
+	if err != nil {
+		return Response{}, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return Response{}, fmt.Errorf("error requesting InventoryResponse in ReturnDeviceListByID, got status code %d and body %s", res.StatusCode, body)
+	}
+	var inventory Response
+	if err := json.Unmarshal([]byte(body), &inventory); err != nil {
+		c.log.WithField("response", &inventory).Error("Error while trying to unmarshal InventoryResponse in ReturnDeviceListByID")
 		return Response{}, err
 	}
 	return inventory, nil
