@@ -17,6 +17,31 @@ type ImageSetsServiceInterface interface {
 	GetImageSetsByID(imageSetID int) (*models.ImageSet, error)
 	GetImageSetsViewCount(tx *gorm.DB) (int64, error)
 	GetImageSetsView(limit int, offset int, tx *gorm.DB) (*[]models.ImageSetView, error)
+	GetImageSetViewByID(imageSetID uint, imagesLimit int, imagesOffSet int, imagesDBFilter *gorm.DB) (*ImageSetIDView, error)
+	GetImageSetsBuildIsoURL(orgID string, imageSetIDS []uint) (map[uint]uint, error)
+	GetImagesViewData(imageSetID uint, imagesLimit int, imagesOffSet int, tx *gorm.DB) (*ImagesViewData, error)
+	GetImageSetImageViewByID(imageSetID uint, imageID uint) (*ImageSetImageIDView, error)
+}
+
+// ImagesViewData is the images view data return for images view with filters , limit, offSet
+type ImagesViewData struct {
+	Count int64              `json:"count"`
+	Data  []models.ImageView `json:"data"`
+}
+
+// ImageSetIDView is the image set details view returned for ui image-set display
+type ImageSetIDView struct {
+	ImageBuildIsoURL string          `json:"ImageBuildIsoURL"`
+	ImageSet         models.ImageSet `json:"ImageSet"`
+	LastImageDetails ImageDetail     `json:"LastImageDetails"`
+	ImagesViewData   ImagesViewData  `json:"ImagesViewData"`
+}
+
+// ImageSetImageIDView is the image set image view returned for ui image-set / version display
+type ImageSetImageIDView struct {
+	ImageBuildIsoURL string          `json:"ImageBuildIsoURL"`
+	ImageSet         models.ImageSet `json:"ImageSet"`
+	ImageDetails     ImageDetail     `json:"ImageDetails"`
 }
 
 // NewImageSetsService gives a instance of the main implementation of a ImageSetsServiceInterface
@@ -47,12 +72,12 @@ func (s *ImageSetsService) GetImageSetsByID(imageSetID int) (*models.ImageSet, e
 		s.log.WithField("error", err).Error("Error retrieving org_id")
 		return nil, new(OrgIDNotSet)
 	}
-	result := db.Org(orgID, "image_sets").Debug().First(&imageSet, imageSetID)
+	result := db.Org(orgID, "image_sets").First(&imageSet, imageSetID)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error getting image set by id")
 		return nil, new(ImageSetNotFoundError)
 	}
-	result = db.Org(orgID, "").Debug().Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
+	result = db.Org(orgID, "").Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error getting image set's images")
 		return nil, new(ImageNotFoundError)
@@ -73,11 +98,9 @@ func (s *ImageSetsService) GetImageSetsViewCount(tx *gorm.DB) (int64, error) {
 
 	var count int64
 
-	result := db.OrgDB(orgID, tx, "image_sets").Debug().
+	if result := db.OrgDB(orgID, tx, "image_sets").Debug().
 		Joins(`JOIN images ON image_sets.id = images.image_set_id AND Images.id = (Select Max(id) from Images where images.image_set_id = image_sets.id)`).
-		Model(&models.ImageSet{}).Count(&count)
-
-	if result.Error != nil {
+		Model(&models.ImageSet{}).Count(&count); result.Error != nil {
 		s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("Error getting image sets count")
 		return 0, result.Error
 	}
@@ -98,18 +121,18 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 
 	// ImageSetRow the structure for getting the main data table
 	type ImageSetRow struct {
-		ID          uint               `json:"ID"`
-		Name        string             `json:"Name"`
-		Version     int                `json:"Version"`
-		UpdatedAt   models.EdgeAPITime `json:"UpdatedAt"`
-		Status      string             `json:"Status"`
-		InstallerID uint               `json:"InstallerID"`
+		ID        uint               `json:"ID"`
+		Name      string             `json:"Name"`
+		Version   int                `json:"Version"`
+		UpdatedAt models.EdgeAPITime `json:"UpdatedAt"`
+		Status    string             `json:"Status"`
+		ImageID   uint               `json:"ImageID"`
 	}
 
 	var imageSetsRows []ImageSetRow
 
 	if result := db.OrgDB(orgID, tx, "image_sets").Debug().Table("image_sets").Limit(limit).Offset(offset).
-		Select("image_sets.id, image_sets.name, image_sets.version, image_sets.updated_at, images.status").
+		Select(`image_sets.id, image_sets.name, image_sets.version, image_sets.updated_at, images.status, images.id as "image_id"`).
 		Joins(`JOIN images ON image_sets.id = images.image_set_id AND Images.id = (Select Max(id) from Images where images.image_set_id = image_sets.id)`).
 		Find(&imageSetsRows); result.Error != nil {
 
@@ -129,30 +152,11 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 		imageSetIDS = append(imageSetIDS, imageSetRow.ID)
 	}
 
-	// ImageSetInstaller the structure that correspond to the latest successful installer build of each image-set
-	type ImageSetInstaller struct {
-		ImageSetID  uint `json:"ImageSetID"`
-		InstallerID uint `json:"InstallerID"`
-	}
-
-	var imageSetsInstallers []ImageSetInstaller
-	if result := db.Org(orgID, "images").Debug().Table("images").
-		Select(`images.image_set_id, Max(installers.id) as "installer_id"`).
-		Joins("JOIN installers ON images.installer_id = installers.id").
-		Where("images.status = ? AND images.image_set_id in (?)", models.ImageStatusSuccess, imageSetIDS).
-		Where("(installers.image_build_iso_url != '' AND installers.image_build_iso_url IS NOT NULL)").
-		Group("images.image_set_id").
-		Find(&imageSetsInstallers); result.Error != nil {
-		log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error(
-			"error when getting image sets view installer data",
+	imageSetsInstallersMap, err := s.GetImageSetsBuildIsoURL(orgID, imageSetIDS)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err.Error(), "OrgID": orgID}).Error(
+			"error when getting image-sets view installer data",
 		)
-		return nil, err
-	}
-
-	// create a map of the corresponding image-sets and installers
-	imageSetsInstallersMap := make(map[uint]uint, len(imageSetsInstallers))
-	for _, imageInstaller := range imageSetsInstallers {
-		imageSetsInstallersMap[imageInstaller.ImageSetID] = imageInstaller.InstallerID
 	}
 
 	// create the main image-sets view
@@ -164,6 +168,7 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 			Version:   imageSetRow.Version,
 			UpdatedAt: imageSetRow.UpdatedAt,
 			Status:    imageSetRow.Status,
+			ImageID:   imageSetRow.ImageID,
 		}
 		installerID, ok := imageSetsInstallersMap[imageSetRow.ID]
 		if ok {
@@ -174,4 +179,188 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 	}
 
 	return &imageSetsView, nil
+}
+
+// GetImageSetsBuildIsoURL return a map of image-set id and the latest successfully built installer id
+func (s *ImageSetsService) GetImageSetsBuildIsoURL(orgID string, imageSetIDS []uint) (map[uint]uint, error) {
+	if orgID == "" {
+		return nil, new(OrgIDNotSet)
+	}
+	if len(imageSetIDS) == 0 {
+		return map[uint]uint{}, nil
+	}
+
+	// ImageSetInstaller the structure that correspond to the latest successful installer build of each image-set
+	type ImageSetInstaller struct {
+		ImageSetID  uint `json:"ImageSetID"`
+		InstallerID uint `json:"InstallerID"`
+	}
+	var imageSetsInstallers []ImageSetInstaller
+
+	if result := db.Org(orgID, "images").Table("images").
+		Select(`images.image_set_id, Max(installers.id) as "installer_id"`).
+		Joins("JOIN installers ON images.installer_id = installers.id").
+		Where("images.status = ? AND images.image_set_id in (?)", models.ImageStatusSuccess, imageSetIDS).
+		Where("(installers.image_build_iso_url != '' AND installers.image_build_iso_url IS NOT NULL)").
+		Group("images.image_set_id").
+		Find(&imageSetsInstallers); result.Error != nil {
+		log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error(
+			"error when getting image sets view installer data",
+		)
+		return nil, result.Error
+	}
+
+	imageSetsInstallersMap := make(map[uint]uint, len(imageSetsInstallers))
+	for _, imageInstaller := range imageSetsInstallers {
+		imageSetsInstallersMap[imageInstaller.ImageSetID] = imageInstaller.InstallerID
+	}
+	return imageSetsInstallersMap, nil
+}
+
+// GetImagesViewData return images view count and images view data of the supplied image-set
+func (s *ImageSetsService) GetImagesViewData(imageSetID uint, imagesLimit int, imagesOffSet int, imagesDBFilter *gorm.DB) (*ImagesViewData, error) {
+	if imagesDBFilter == nil {
+		imagesDBFilter = db.DB
+	}
+	imageService := NewImageService(s.ctx, s.log)
+
+	imagesDBFilter = imagesDBFilter.Where("image_set_id = ?", imageSetID)
+	imagesCount, err := imageService.GetImagesViewCount(imagesDBFilter)
+	if err != nil {
+		return nil, err
+	}
+	imagesView, err := imageService.GetImagesView(imagesLimit, imagesOffSet, imagesDBFilter)
+	if err != nil {
+		return nil, err
+	}
+	return &ImagesViewData{Count: imagesCount, Data: *imagesView}, nil
+}
+
+// GetImageSetViewByID return the data related to image set, data, build iso url, last image and images view.
+func (s *ImageSetsService) GetImageSetViewByID(imageSetID uint, imagesLimit int, imagesOffSet int, imagesDBFilter *gorm.DB) (*ImageSetIDView, error) {
+	orgID, err := common.GetOrgIDFromContext(s.ctx)
+	if err != nil {
+		return nil, new(OrgIDNotSet)
+	}
+	if imagesDBFilter == nil {
+		imagesDBFilter = db.DB
+	}
+
+	imageService := NewImageService(s.ctx, s.log)
+
+	var imageSetIDView ImageSetIDView
+
+	// get the image-set
+	if result := db.Org(orgID, "").First(&imageSetIDView.ImageSet, imageSetID); result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("image-set not found")
+			return nil, new(ImageSetNotFoundError)
+		}
+		s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("error getting image-set")
+		return nil, result.Error
+	}
+
+	var lastImage models.Image
+	// get the last image-set image
+	if result := db.Org(orgID, "").Order("created_at DESC").
+		Preload("Packages").
+		Preload("CustomPackages").
+		Preload("Installer").
+		Preload("Commit").
+		Preload("Commit.Repo").
+		Preload("Commit.InstalledPackages").
+		Where("image_set_id = ?", imageSetID).First(&lastImage); result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("image-set last image not found")
+			return nil, new(ImageNotFoundError)
+		}
+		s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("error getting image-set last-image")
+		return nil, result.Error
+	}
+
+	imageInfo, err := imageService.AddPackageInfo(&lastImage)
+	if err != nil {
+		return nil, err
+	}
+	imageSetIDView.LastImageDetails = imageInfo
+
+	// set build iso URL
+	if imageSetsInstallersMap, err := s.GetImageSetsBuildIsoURL(orgID, []uint{imageSetID}); err != nil {
+		return nil, err
+	} else if installerID, ok := imageSetsInstallersMap[imageSetID]; ok {
+		imageSetIDView.ImageBuildIsoURL = GetStorageInstallerIsoURL(installerID)
+	}
+
+	if imageSetIDView.LastImageDetails.Image.Installer != nil && imageSetIDView.LastImageDetails.Image.Installer.Status == models.ImageStatusSuccess {
+		// replace the BuildIsoURL with internal path
+		imageSetIDView.LastImageDetails.Image.Installer.ImageBuildISOURL = GetStorageInstallerIsoURL(imageSetIDView.LastImageDetails.Image.Installer.ID)
+	}
+
+	imagesViewData, err := s.GetImagesViewData(imageSetID, imagesLimit, imagesOffSet, imagesDBFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	imageSetIDView.ImagesViewData = *imagesViewData
+
+	return &imageSetIDView, nil
+}
+
+// GetImageSetImageViewByID  return image-set image view details info, the image set data, the build iso url and the image detailsInfo
+func (s *ImageSetsService) GetImageSetImageViewByID(imageSetID uint, imageID uint) (*ImageSetImageIDView, error) {
+	orgID, err := common.GetOrgIDFromContext(s.ctx)
+	if err != nil {
+		return nil, new(OrgIDNotSet)
+	}
+
+	imageService := NewImageService(s.ctx, s.log)
+
+	var imageSetImageIDView ImageSetImageIDView
+
+	// get the image-set
+	if result := db.Org(orgID, "").First(&imageSetImageIDView.ImageSet, imageSetID); result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("image-set not found")
+			return nil, new(ImageSetNotFoundError)
+		}
+		return nil, result.Error
+	}
+
+	var image models.Image
+	// get the image-set image
+	if result := db.Org(orgID, "").Order("created_at DESC").
+		Preload("Packages").
+		Preload("CustomPackages").
+		Preload("Commit").
+		Preload("Commit.Repo").
+		Preload("Commit.InstalledPackages").
+		Preload("Installer").
+		Where("image_set_id = ?", imageSetID).First(&image, imageID); result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("image-set image not found")
+			return nil, new(ImageNotFoundError)
+		}
+		s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("error getting image-set image")
+		return nil, result.Error
+	}
+
+	imageInfo, err := imageService.AddPackageInfo(&image)
+	if err != nil {
+		return nil, err
+	}
+	imageSetImageIDView.ImageDetails = imageInfo
+
+	// set build iso URL
+	if imageSetsInstallersMap, err := s.GetImageSetsBuildIsoURL(orgID, []uint{imageSetID}); err != nil {
+		return nil, err
+	} else if installerID, ok := imageSetsInstallersMap[imageSetID]; ok {
+		imageSetImageIDView.ImageBuildIsoURL = GetStorageInstallerIsoURL(installerID)
+	}
+
+	if imageSetImageIDView.ImageDetails.Image.Installer != nil {
+		// replace the BuildIsoURL with
+		imageSetImageIDView.ImageDetails.Image.Installer.ImageBuildISOURL = GetStorageInstallerIsoURL(imageSetImageIDView.ImageDetails.Image.Installer.ID)
+	}
+
+	return &imageSetImageIDView, nil
 }
