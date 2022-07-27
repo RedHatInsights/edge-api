@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -210,20 +211,14 @@ func (c *Client) ReturnDeviceListByID(deviceIDs []string) (Response, error) {
 	if len(deviceIDs) == 0 {
 		return Response{}, fmt.Errorf("no device ID's passed to inventory client")
 	}
-	if _, err := uuid.Parse(deviceIDs[0]); err != nil {
-		c.log.WithFields(log.Fields{"error": err, "deviceID": deviceIDs[0]}).Error("invalid device ID")
-		return Response{}, err
-	}
-	url := fmt.Sprintf("%s/%s/%s", config.Get().InventoryConfig.URL, inventoryAPI, deviceIDs[0])
-	if len(deviceIDs) > 1 {
-		for _, deviceID := range deviceIDs[1:] {
-			if _, err := uuid.Parse(deviceID); err != nil {
-				c.log.WithFields(log.Fields{"error": err, "deviceID": deviceID}).Error("invalid device ID")
-				return Response{}, err
-			}
-			url = url + "," + deviceID
+	for _, deviceID := range deviceIDs {
+		if _, err := uuid.Parse(deviceID); err != nil {
+			c.log.WithFields(log.Fields{"error": err, "deviceID": deviceID}).Error("invalid device ID")
+			return Response{}, err
 		}
 	}
+	devices := strings.Join(deviceIDs[:], ",")
+	url := fmt.Sprintf("%s/%s/%s", config.Get().InventoryConfig.URL, inventoryAPI, devices)
 	c.log.WithFields(log.Fields{
 		"url": url,
 	}).Info("Inventory ReturnDeviceListByID Request Started")
