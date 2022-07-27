@@ -1001,14 +1001,14 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 	// We have missed one or more create device events from inventory
 	// Go through this users inventory devices in chunks and check they are in our DB.
 	// If not, add them
-	var params *inventory.Params
+	var params inventory.Params
 	limit := 100
 	params.PerPage = strconv.Itoa(limit)
 	page := 1
 	params.Page = strconv.Itoa(page)
 	searchInventory := true
 	for searchInventory {
-		inventoryDevices, err := s.Inventory.ReturnDevices(params)
+		inventoryDevices, err := s.Inventory.ReturnDevices(&params)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error retrieving devices from inventory for sync")
 			return
@@ -1061,7 +1061,7 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 						Type: InventoryEventTypeCreated,
 						Host: iHost,
 					}
-					go s.platformInventoryCreateEventHelper(createEvent)
+					s.platformInventoryCreateEventHelper(createEvent)
 				}
 			}
 		}

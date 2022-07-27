@@ -945,6 +945,138 @@ var _ = Describe("DfseviceService", func() {
 				Expect(err).To(BeNil())
 				Expect(devices).ToNot(BeNil())
 			})
+
+			It("should sync devices with inventory", func() {
+				defer GinkgoRecover()
+				orgID := common.DefaultOrgID
+				var imageV1 *models.Image
+
+				imageSet := &models.ImageSet{
+					Name:    "test",
+					Version: 2,
+					OrgID:   orgID,
+				}
+				result := db.DB.Create(imageSet)
+				Expect(result.Error).ToNot(HaveOccurred())
+				imageV1 = &models.Image{
+					Commit: &models.Commit{
+						OSTreeCommit: faker.UUIDHyphenated(),
+						OrgID:        orgID,
+					},
+					Status:     models.ImageStatusSuccess,
+					ImageSetID: &imageSet.ID,
+					Version:    1,
+					OrgID:      common.DefaultOrgID,
+				}
+				result = db.DB.Create(imageV1.Commit)
+				Expect(result.Error).ToNot(HaveOccurred())
+				result = db.DB.Create(imageV1)
+				Expect(result.Error).ToNot(HaveOccurred())
+
+				deviceWithImage := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
+
+				result = db.DB.Create(&deviceWithImage)
+				Expect(result.Error).To(BeNil())
+				invResult := []inventory.Device{}
+				resp := inventory.Response{
+					Total:  0,
+					Count:  0,
+					Result: invResult,
+				}
+				wg := sync.WaitGroup{}
+				mockInventoryClient.EXPECT().ReturnDevices(gomock.Any()).Return(resp, nil).AnyTimes().Do(func(arg interface{}) {
+					wg.Add(1)
+					defer wg.Done()
+				})
+				wg2 := sync.WaitGroup{}
+				mockInventoryClient.EXPECT().ReturnDeviceListByID(gomock.Any()).Return(resp, nil).AnyTimes().Do(func(arg interface{}) {
+					wg2.Add(1)
+					defer wg2.Done()
+				})
+
+				deviceService := services.DeviceService{
+					Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+					Inventory: mockInventoryClient,
+				}
+
+				devices, err := deviceService.GetDevicesView(0, 0, nil)
+				wg.Wait()
+				wg2.Wait()
+				Expect(err).To(BeNil())
+				Expect(devices).ToNot(BeNil())
+			})
+
+			It("should sync inventory with devices", func() {
+				defer GinkgoRecover()
+				orgID := common.DefaultOrgID
+				var imageV1 *models.Image
+
+				imageSet := &models.ImageSet{
+					Name:    "test",
+					Version: 2,
+					OrgID:   orgID,
+				}
+				result := db.DB.Create(imageSet)
+				Expect(result.Error).ToNot(HaveOccurred())
+				imageV1 = &models.Image{
+					Commit: &models.Commit{
+						OSTreeCommit: faker.UUIDHyphenated(),
+						OrgID:        orgID,
+					},
+					Status:     models.ImageStatusSuccess,
+					ImageSetID: &imageSet.ID,
+					Version:    1,
+					OrgID:      common.DefaultOrgID,
+				}
+				result = db.DB.Create(imageV1.Commit)
+				Expect(result.Error).ToNot(HaveOccurred())
+				result = db.DB.Create(imageV1)
+				Expect(result.Error).ToNot(HaveOccurred())
+
+				deviceWithImage := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
+
+				result = db.DB.Create(&deviceWithImage)
+				Expect(result.Error).To(BeNil())
+				invDevice := inventory.Device{
+					ID:    deviceWithImage.UUID,
+					OrgID: orgID,
+				}
+				invDevice2 := inventory.Device{
+					ID:    faker.UUIDHyphenated(),
+					OrgID: orgID,
+				}
+				invResult := []inventory.Device{invDevice, invDevice2}
+				resp := inventory.Response{
+					Total:  2,
+					Count:  2,
+					Result: invResult,
+				}
+				// calls to inventory are now in go routines.
+				// in order for the mocks to stay active for the duration of the tests, wait groups were added
+				// these calls to inventory can happen more than once so the `AnyTimes()` param was added
+				// each call was added to a unique wait group in the `Do` wrapper
+				wg := sync.WaitGroup{}
+				mockInventoryClient.EXPECT().ReturnDevices(gomock.Any()).Return(resp, nil).AnyTimes().Do(func(arg interface{}) {
+					wg.Add(1)
+					defer wg.Done()
+				})
+				wg2 := sync.WaitGroup{}
+				mockInventoryClient.EXPECT().ReturnDeviceListByID(gomock.Any()).Return(resp, nil).AnyTimes().Do(func(arg interface{}) {
+					wg2.Add(1)
+					defer wg2.Done()
+				})
+
+				deviceService := services.DeviceService{
+					Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+					Inventory: mockInventoryClient,
+				}
+
+				devices, err := deviceService.GetDevicesView(0, 0, nil)
+				wg.Wait()
+				wg2.Wait()
+				Expect(err).To(BeNil())
+				Expect(devices).ToNot(BeNil())
+			})
 		})
 	})
 	Context("Get CommitID from Device Image", func() {
