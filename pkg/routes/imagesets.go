@@ -542,11 +542,11 @@ func ImageSetImageViewCtx(next http.Handler) http.Handler {
 		var image models.Image
 		if result := db.Org(orgID, "").Where("image_set_id", imageSet.ID).First(&image, imageID); result.Error != nil {
 			if result.Error == gorm.ErrRecordNotFound {
-				respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("image not found"))
+				respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("image for image set view not found"))
 				return
 			}
 			apiError := errors.NewInternalServerError()
-			apiError.SetTitle("internal server error occurred while getting image")
+			apiError.SetTitle("internal server error occurred while getting image set image")
 			respondWithAPIError(w, ctxServices.Log, apiError)
 			return
 		}

@@ -72,12 +72,12 @@ func (s *ImageSetsService) GetImageSetsByID(imageSetID int) (*models.ImageSet, e
 		s.log.WithField("error", err).Error("Error retrieving org_id")
 		return nil, new(OrgIDNotSet)
 	}
-	result := db.Org(orgID, "image_sets").Debug().First(&imageSet, imageSetID)
+	result := db.Org(orgID, "image_sets").First(&imageSet, imageSetID)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error getting image set by id")
 		return nil, new(ImageSetNotFoundError)
 	}
-	result = db.Org(orgID, "").Debug().Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
+	result = db.Org(orgID, "").Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error getting image set's images")
 		return nil, new(ImageNotFoundError)
@@ -197,7 +197,7 @@ func (s *ImageSetsService) GetImageSetsBuildIsoURL(orgID string, imageSetIDS []u
 	}
 	var imageSetsInstallers []ImageSetInstaller
 
-	if result := db.Org(orgID, "images").Debug().Table("images").
+	if result := db.Org(orgID, "images").Table("images").
 		Select(`images.image_set_id, Max(installers.id) as "installer_id"`).
 		Joins("JOIN installers ON images.installer_id = installers.id").
 		Where("images.status = ? AND images.image_set_id in (?)", models.ImageStatusSuccess, imageSetIDS).
@@ -262,7 +262,7 @@ func (s *ImageSetsService) GetImageSetViewByID(imageSetID uint, imagesLimit int,
 
 	var lastImage models.Image
 	// get the last image-set image
-	if result := db.Org(orgID, "").Debug().Order("created_at DESC").
+	if result := db.Org(orgID, "").Order("created_at DESC").
 		Preload("Packages").
 		Preload("CustomPackages").
 		Preload("Installer").
@@ -328,7 +328,7 @@ func (s *ImageSetsService) GetImageSetImageViewByID(imageSetID uint, imageID uin
 
 	var image models.Image
 	// get the image-set image
-	if result := db.Org(orgID, "").Debug().Order("created_at DESC").
+	if result := db.Org(orgID, "").Order("created_at DESC").
 		Preload("Packages").
 		Preload("CustomPackages").
 		Preload("Commit").

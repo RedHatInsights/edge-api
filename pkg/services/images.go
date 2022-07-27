@@ -1533,7 +1533,7 @@ func (s *ImageService) GetImagesViewCount(tx *gorm.DB) (int64, error) {
 	}
 
 	var count int64
-	result := db.OrgDB(orgID, tx, "").Debug().Model(&models.Image{}).Count(&count)
+	result := db.OrgDB(orgID, tx, "").Model(&models.Image{}).Count(&count)
 
 	if result.Error != nil {
 		s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("Error getting images count")
