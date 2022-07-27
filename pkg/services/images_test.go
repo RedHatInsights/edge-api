@@ -887,15 +887,19 @@ var _ = Describe("Image Service Test", func() {
 		image1 := models.Image{
 			OrgID: orgID, Name: imageSet.Name, ImageSetID: &imageSet.ID, Version: 1,
 			OutputTypes: []string{models.ImageTypeCommit, models.ImageTypeInstaller},
+			ImageType:   models.ImageTypeInstaller,
 			Status:      models.ImageStatusSuccess,
 			Installer:   &models.Installer{OrgID: orgID, ImageBuildISOURL: faker.URL(), Status: models.ImageStatusSuccess},
+			Commit:      &models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated(), Status: models.ImageStatusSuccess},
 		}
 		db.DB.Create(&image1)
 		image2 := models.Image{
 			OrgID: orgID, Name: imageSet.Name, ImageSetID: &imageSet.ID, Version: 2,
 			OutputTypes: []string{models.ImageTypeCommit, models.ImageTypeInstaller},
+			ImageType:   models.ImageTypeInstaller,
 			Status:      models.ImageStatusError,
 			Installer:   &models.Installer{OrgID: orgID, ImageBuildISOURL: faker.URL(), Status: models.ImageStatusPending},
+			Commit:      &models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated(), Status: models.ImageStatusError},
 		}
 		db.DB.Create(&image2)
 
@@ -922,12 +926,16 @@ var _ = Describe("Image Service Test", func() {
 				Expect(imageView.Version).To(Equal(expectedImage.Version))
 				Expect(len(imageView.OutputTypes)).To(Equal(len(expectedImage.OutputTypes)))
 				Expect(len(imageView.OutputTypes)).To(Equal(2))
+				Expect(imageView.ImageType).To(Equal(expectedImage.ImageType))
 				Expect(imageView.OutputTypes[0]).To(Equal(models.ImageTypeCommit))
 				Expect(imageView.OutputTypes[1]).To(Equal(models.ImageTypeInstaller))
 				Expect(imageView.Status).To(Equal(expectedImage.Status))
 			}
 			Expect((*imagesViews)[0].ImageBuildIsoURL).To(BeEmpty())
+			Expect((*imagesViews)[0].CommitCheckSum).To(BeEmpty())
 			Expect((*imagesViews)[1].ImageBuildIsoURL).To(Equal(fmt.Sprintf("/api/edge/v1/storage/isos/%d", image1.Installer.ID)))
+			Expect((*imagesViews)[1].CommitCheckSum).To(Equal(image1.Commit.OSTreeCommit))
+
 		})
 	})
 })

@@ -1558,6 +1558,7 @@ func (s *ImageService) GetImagesView(limit int, offset int, tx *gorm.DB) (*[]mod
 
 	if result := db.OrgDB(orgID, tx, "").Debug().Limit(limit).Offset(offset).
 		Preload("Installer").
+		Preload("Commit").
 		Find(&images); result.Error != nil {
 		log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error(
 			"error when getting images",
@@ -1574,12 +1575,16 @@ func (s *ImageService) GetImagesView(limit int, offset int, tx *gorm.DB) (*[]mod
 			ID:          image.ID,
 			Name:        image.Name,
 			Version:     image.Version,
+			ImageType:   image.ImageType,
 			Status:      image.Status,
 			OutputTypes: image.OutputTypes,
 			CreatedAt:   image.CreatedAt,
 		}
 		if image.Installer != nil && image.Installer.ImageBuildISOURL != "" && image.Installer.Status == models.ImageStatusSuccess {
 			imageView.ImageBuildIsoURL = GetStorageInstallerIsoURL(image.Installer.ID)
+		}
+		if image.Commit != nil && image.Commit.Status == models.ImageStatusSuccess {
+			imageView.CommitCheckSum = image.Commit.OSTreeCommit
 		}
 		imagesView = append(imagesView, imageView)
 	}

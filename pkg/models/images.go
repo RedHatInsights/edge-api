@@ -276,11 +276,13 @@ type ImageSetView struct {
 	ImageID          uint        `json:"ImageID"`
 }
 
-// ImageView is the image row returned for ui images-set diplay
+// ImageView is the image row returned for ui images-set display
 type ImageView struct {
 	ID               uint        `json:"ID"`
 	Name             string      `json:"Name"`
 	Version          int         `json:"Version"`
+	ImageType        string      `json:"ImageType"`
+	CommitCheckSum   string      `json:"CommitCheckSum"`
 	OutputTypes      []string    `json:"OutputTypes"`
 	CreatedAt        EdgeAPITime `json:"CreatedAt"`
 	Status           string      `json:"Status"`
