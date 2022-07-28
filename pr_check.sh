@@ -19,8 +19,22 @@ source $CICD_ROOT/build.sh
 # Run the unit tests with an ephemeral db
 # source $APP_ROOT/unit_test.sh
 
+echo $(date -u) "*** To start deployment"
+source ${CICD_ROOT}/_common_deploy_logic.sh
+export NAMESPACE=$(bonfire namespace reserve)
+
+bonfire deploy \
+    ${APP_NAME} \
+    --source=appsre \
+    --ref-env insights-production \
+    --set-template-ref ${COMPONENT_NAME}=${GIT_COMMIT} \
+    --set-image-tag $IMAGE=$IMAGE_TAG \
+    --namespace ${NAMESPACE} \
+    --timeout 900 --optional-deps-method hybrid
+# END WORKAROUND
+
 # Deploy edge to an ephemeral namespace for testing
-source $CICD_ROOT/deploy_ephemeral_env.sh
+# source $CICD_ROOT/deploy_ephemeral_env.sh
 
 # This code is to create a 'dummy' result file so Jenkins will not fail when smoke tests are disabled
 #mkdir -p $ARTIFACTS_DIR
@@ -34,3 +48,7 @@ source $CICD_ROOT/deploy_ephemeral_env.sh
 source $CICD_ROOT/cji_smoke_test.sh
 # Upload test results to ibutusu
 source $CICD_ROOT/post_test_results.sh
+
+# run cypress
+oc project ${NAMESPACE}
+scripts/ephemeral/cypress.sh
