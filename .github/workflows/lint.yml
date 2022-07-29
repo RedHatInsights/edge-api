@@ -38,7 +38,7 @@ jobs:
       - name: Vet
         uses: addnab/docker-run-action@v3
         with:
-          image: quay.io/fleet-management/libfdo-data:sha256:1eb087a42f3380ba0fed4a381fe4181ef82d2e2acf7e598129f85cb489fa03c0
+          image: quay.io/fleet-management/libfdo-data:latest
           options: -v ${{ github.workspace }}:/edge-api
           run: make -C edge-api vet
 
