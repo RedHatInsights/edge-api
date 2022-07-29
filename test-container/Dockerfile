@@ -60,7 +60,7 @@ LABEL description="The edge-api project is an API server for fleet edge manageme
 LABEL io.k8s.display-name="edge-api-micro-testing"
 
 # Copy install root contents over from Stage 1 to Stage 2 container
-COPY --from=builder ${INSTALL_ROOT}/ /
+COPY --from=builder /mnt/rootfs /
 # Copy ubi repository over from Stage 1 to Stage 2 container
 COPY --from=builder /etc/yum.repos.d/ubi.repo /etc/yum.repos.d/ubi.repo
 
