@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"gorm.io/gorm"
 	"net/http"
 	"os"
 	"strings"
@@ -117,6 +118,26 @@ func TestContainFilterHandlerWithMultiple(t *testing.T) {
 	}
 	if hasBothStatus != len(images) {
 		t.Errorf("Expected images with both status %s and %s to be returned but got only one status", testStatusOne, testStatusTwo)
+	}
+}
+
+func TestContainFilterMultipleGrouped(t *testing.T) {
+	testStatusOne := "SUCCESS"
+	testStatusTwo := "ERROR"
+	filter := ComposeFilters(ContainFilterHandler(&Filter{
+		QueryParam: "status",
+		DBField:    "images.status",
+	}))
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/images?status=%s&status=%s", testStatusOne, testStatusTwo), nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %s", err)
+	}
+	images := []models.Image{}
+	sql := db.DB.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		return filter(req, tx).Find(&images)
+	})
+	if !strings.Contains(sql, `(images.status LIKE "%SUCCESS%" OR images.status LIKE "%ERROR%")`) {
+		t.Fatalf("SQL LIKE expressions are not grouped: %s", sql)
 	}
 }
 
