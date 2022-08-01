@@ -76,7 +76,7 @@ var imageDetailFilters = common.ComposeFilters(
 		QueryParam: "name",
 		DBField:    "images.name",
 	}),
-	common.ContainFilterHandler(&common.Filter{
+	common.IntegerNumberFilterHandler(&common.Filter{
 		QueryParam: "version",
 		DBField:    "images.version",
 	}),
@@ -285,7 +285,7 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
 		}
 	}
-	result := imageDetailFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
+	result := imageDetailFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Debug().Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
 		Preload("Commit.Repo").Preload("Commit.InstalledPackages").Preload("Installer").
 		Joins(`JOIN Image_Sets ON Image_Sets.id = Images.image_set_id`).
 		Where(`Image_sets.id = ?`, &imageSet.ID).
@@ -293,10 +293,8 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 
 	if result.Error != nil {
 		err := errors.NewBadRequest("Error to filter images")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		respondWithAPIError(w, s.Log.WithError(err), err)
+		return
 	}
 
 	Imgs := returnImageDetails(images, s)
@@ -347,10 +345,18 @@ func validateFilterParams(next http.Handler) http.Handler {
 			}
 		}
 
+		if val := r.URL.Query().Get("version"); val != "" {
+			_, err := strconv.Atoi(val)
+			if err != nil {
+				errs = append(errs, common.ValidationError{Key: "version", Reason: fmt.Sprintf("%s is not a valid version type, version must be number", val)})
+			}
+
+		}
 		if len(errs) == 0 {
 			next.ServeHTTP(w, r)
 			return
 		}
+
 		w.WriteHeader(http.StatusBadRequest)
 		if err := json.NewEncoder(w).Encode(&errs); err != nil {
 			services := dependencies.ServicesFromContext(r.Context())
