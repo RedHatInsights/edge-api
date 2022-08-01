@@ -404,7 +404,7 @@ func ValidateGetAllImagesSearchParams(next http.Handler) http.Handler {
 			if string(val[0]) == "-" {
 				name = val[1:]
 			}
-			if name != "status" && name != "name" && name != "distribution" && name != "created_at" {
+			if name != "status" && name != "name" && name != "distribution" && name != "created_at" && name != "version" {
 				errs = append(errs, validationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must be status or name or distribution or created_at", name)})
 			}
 		}
