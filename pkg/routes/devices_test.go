@@ -13,6 +13,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes"
@@ -196,6 +197,78 @@ var _ = Describe("Devices View Router", func() {
 				handler.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(http.StatusOK))
 
+			})
+		})
+	})
+	Context("Filters", func() {
+		BeforeEach(func() {
+			mockDeviceService.EXPECT().GetDevicesCount(gomock.Any()).Return(int64(0), nil)
+			mockDeviceService.EXPECT().GetDevicesView(gomock.Any(), gomock.Any(), gomock.Any()).Return(&models.DeviceViewList{}, nil)
+
+		})
+
+		When("filter by name", func() {
+			It("should return devices with given name", func() {
+				name := "device-1"
+				req, err := http.NewRequest("GET", fmt.Sprintf("/devices/devicesview?name=%s", name), nil)
+				if err != nil {
+					Expect(err).ToNot(HaveOccurred())
+				}
+				rr := httptest.NewRecorder()
+				handler := http.HandlerFunc(routes.GetDevicesView)
+
+				ctx := dependencies.ContextWithServices(req.Context(), mockServices)
+				req = req.WithContext(ctx)
+				handler.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusOK))
+			})
+		})
+		When("filter by update_available", func() {
+			It("should return devices with update_available as true", func() {
+				req, err := http.NewRequest("GET", "/devices/devicesview?update_available=trues", nil)
+				if err != nil {
+					Expect(err).ToNot(HaveOccurred())
+				}
+				rr := httptest.NewRecorder()
+				handler := http.HandlerFunc(routes.GetDevicesView)
+
+				ctx := dependencies.ContextWithServices(req.Context(), mockServices)
+				req = req.WithContext(ctx)
+				handler.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusOK))
+			})
+		})
+		When("filter by uuid", func() {
+			It("should return devices with given uuid", func() {
+				uuid := "bbb-bbb-bbb-bbb"
+				req, err := http.NewRequest("GET", fmt.Sprintf("/devices/devicesview?uuid=%s", uuid), nil)
+				if err != nil {
+					Expect(err).ToNot(HaveOccurred())
+				}
+				rr := httptest.NewRecorder()
+				handler := http.HandlerFunc(routes.GetDevicesView)
+
+				ctx := dependencies.ContextWithServices(req.Context(), mockServices)
+				req = req.WithContext(ctx)
+				handler.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusOK))
+			})
+		})
+		When("filter by image-id", func() {
+			It("should return devices with given image-id", func() {
+				image_id := "2"
+
+				req, err := http.NewRequest("GET", fmt.Sprintf("/devices/devicesview?image_id=%s", image_id), nil)
+				if err != nil {
+					Expect(err).ToNot(HaveOccurred())
+				}
+				rr := httptest.NewRecorder()
+				handler := http.HandlerFunc(routes.GetDevicesView)
+
+				ctx := dependencies.ContextWithServices(req.Context(), mockServices)
+				req = req.WithContext(ctx)
+				handler.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusOK))
 			})
 		})
 	})
