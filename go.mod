@@ -3,12 +3,12 @@ module github.com/redhatinsights/edge-api
 require (
 	github.com/RedHatInsights/tenant-utils v1.0.0
 	github.com/Unleash/unleash-client-go/v3 v3.6.0
-	github.com/aws/aws-sdk-go v1.44.63
+	github.com/aws/aws-sdk-go v1.44.67
 	github.com/bxcodec/faker/v3 v3.8.0
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/confluentinc/confluent-kafka-go v1.9.1
 	github.com/fedora-iot/fido-device-onboard-rs/libfdo-data-go v0.0.0-20211210154920-5c241beb5c4e
-	github.com/getkin/kin-openapi v0.97.0
+	github.com/getkin/kin-openapi v0.98.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-openapi/runtime v0.24.1
