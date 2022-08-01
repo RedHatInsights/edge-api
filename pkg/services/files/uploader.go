@@ -65,7 +65,14 @@ func (u *LocalUploader) UploadRepo(src string, account string) (string, error) {
 // Allowing offline development without S3 and satisfying the interface
 func (u *LocalUploader) UploadFile(fname string, uploadPath string) (string, error) {
 	destfile := filepath.Clean(u.BaseDir + "/" + uploadPath)
-	u.log.WithFields(log.Fields{"fname": fname, "destfine": destfile}).Debug("Copying fname to destfile")
+	// create the directories if they don't exist
+	destDir := filepath.Dir(destfile)
+	if _, err := os.Stat(destDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(destDir, os.ModePerm); err != nil {
+			u.log.WithField("directory", destDir).Error("Unable to create local directory")
+		}
+	}
+	u.log.WithFields(log.Fields{"fname": fname, "destfile": destfile}).Debug("Copying fname to destfile")
 	cmd := exec.Command("cp", fname, destfile) //#nosec G204 - This uploadPath variable is actually controlled by the calling method
 	err := cmd.Run()
 	if err != nil {
@@ -198,6 +205,7 @@ func (u *S3Uploader) uploadFileWithACL(fname string, uploadPath string, acl stri
 	}
 	region := *u.Client.Config.Region
 	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", u.Bucket, region, uploadPath)
+	//u.log.WithField("url", s3URL).Debug("DELETE THIS WHEN DONE TRYING TO FIGURE THIS OUT")
 	return s3URL, nil
 }
 

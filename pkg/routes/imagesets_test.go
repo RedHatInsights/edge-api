@@ -530,7 +530,6 @@ var _ = Describe("ImageSets Route Test", func() {
 
 		BeforeEach(func() {
 			ctrl = gomock.NewController(GinkgoT())
-			// mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
 			mockImageSetService = mock_services.NewMockImageSetsServiceInterface(ctrl)
 			edgeAPIServices = &dependencies.EdgeAPIServices{
 				// ImageService: mockImageService,
@@ -568,7 +567,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				},
 			}
 
-			mockImageSetService.EXPECT().GetImageSetsViewCount(gomock.Any()).Return(int64(2), nil)
+			//mockImageSetService.EXPECT().GetImageSetsCount(gomock.Any()).Return(int64(2), nil)
 			mockImageSetService.EXPECT().GetImageSetsView(30, 0, gomock.Any()).Return(&imageSetsView, nil)
 
 			rr := httptest.NewRecorder()

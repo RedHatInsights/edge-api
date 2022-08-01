@@ -283,9 +283,9 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string, extern
 }
 
 func (rb *RepoBuilder) uploadTarRepo(OrgID, imageName string, repoID int) (string, error) {
-	rb.log.Info("Start upload tar repo")
 	uploadPath := fmt.Sprintf("v2/%s/tar/%v/%s", OrgID, repoID, imageName)
 	uploadPath = filepath.Clean(uploadPath)
+	rb.log.WithField("url", uploadPath).Info("Start upload tar repo")
 	filesService := NewFilesService(rb.log)
 	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
 
@@ -318,7 +318,7 @@ func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string) e
 	c.ImageBuildTarURL = repoTarURL
 	result := db.DB.Save(c)
 	if result.Error != nil {
-		rb.log.WithField("error", result.Error.Error()).Error("Error saving tar file")
+		rb.log.WithField("error", result.Error.Error()).Error("Error saving tar file URL")
 		return result.Error
 	}
 	rb.log.Info("Repo uploaded")

@@ -198,38 +198,46 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if feature.ImageCreateEDA.IsEnabled() {
-		// call the Produce method of the specific Event
-		// NOTE: these are the only custom lines necessary to Produce an event of a specific type
-		//			and can be cut/pasted/modified in the other routes
-		ctxServices.Log.Debug("Creating image from API request with EDA")
-		edgeEvent, eventErr := images.ProduceEvent(&images.EdgeMgmtImageCreateEvent{}, image, ident)
-		if eventErr != nil {
-			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(eventErr.Error()))
-
-			return
-		}
-
-		respondWithJSONBody(w, ctxServices.Log, edgeEvent)
-
-		return
-	}
-
 	ctxServices.Log.Debug("Creating image from API request")
-	err = ctxServices.ImageService.CreateImage(image, image.OrgID, image.RequestID)
-	if err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Failed creating image")
+	// initial checks and filling in necessary image info
+	if err = ctxServices.ImageService.CreateImage(image); err != nil {
+		ctxServices.Log.WithField("error", err.Error()).Error("Failed creating the image")
 		var apiError errors.APIError
 		switch err.(type) {
 		case *services.PackageNameDoesNotExist, *services.ThirdPartyRepositoryInfoIsInvalid, *services.ThirdPartyRepositoryNotFound, *services.ImageNameAlreadyExists, *services.ImageSetAlreadyExists:
 			apiError = errors.NewBadRequest(err.Error())
 		default:
 			apiError = errors.NewInternalServerError()
-			apiError.SetTitle("Failed creating image")
+			apiError.SetTitle("Failed creating the image")
 		}
 		respondWithAPIError(w, ctxServices.Log, apiError)
 		return
 	}
+
+	if feature.ImageCreateEDA.IsEnabled() {
+		// call the Produce method of the specific Event
+		ctxServices.Log.Debug("Creating image from API request with EDA")
+
+		// send the event
+		_, eventErr := images.ProduceEvent(&images.EdgeMgmtImageCreateEvent{}, image, ident)
+		if eventErr != nil {
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(eventErr.Error()))
+
+			return
+		}
+
+		// return to Edge UI
+		w.WriteHeader(http.StatusOK)
+		respondWithJSONBody(w, ctxServices.Log, image)
+
+		return
+	}
+
+	// FALL THROUGH IF NOT EDA
+
+	// TODO: this is going to go away with EDA
+	ctxServices.ImageService.ProcessImage(image)
+
 	ctxServices.Log.WithFields(log.Fields{
 		"imageId": image.ID,
 	}).Info("Image build process started from API request")
@@ -435,6 +443,7 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 func GetImageStatusByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		ctxServices := dependencies.ServicesFromContext(r.Context())
+		log.WithField("status", image.Status).Debug("Returning image status to UI")
 		respondWithJSONBody(w, ctxServices.Log,
 			struct {
 				Status string

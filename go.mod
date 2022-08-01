@@ -1,6 +1,7 @@
 module github.com/redhatinsights/edge-api
 
 require (
+	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/RedHatInsights/tenant-utils v1.0.0
 	github.com/Unleash/unleash-client-go/v3 v3.6.0
 	github.com/aws/aws-sdk-go v1.44.67
@@ -22,7 +23,7 @@ require (
 	github.com/onsi/gomega v1.20.0
 	github.com/prometheus/client_golang v1.12.2
 	github.com/redhatinsights/app-common-go v1.6.3
-	github.com/redhatinsights/platform-go-middlewares v0.19.0
+	github.com/redhatinsights/platform-go-middlewares v0.20.0
 	github.com/segmentio/kafka-go v0.4.33
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/viper v1.12.0

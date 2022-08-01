@@ -69,6 +69,8 @@ func GetNewS3Client() *s3.S3 {
 // NewFilesService creates a new service to handle files
 func NewFilesService(log *log.Entry) FilesService {
 	cfg := config.Get()
+	// FIXME: this breaks local dev process with upstream Image Builder
+	//			but commenting it out breaks the test. Fix one or the other. :-)
 	if cfg.Local {
 		return &LocalFilesService{
 			BasicFileService{

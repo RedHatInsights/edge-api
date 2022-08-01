@@ -1,9 +1,14 @@
 package images
 
 import (
+	"context"
+	"encoding/base64"
 	"encoding/json"
 
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
+	"github.com/redhatinsights/edge-api/pkg/dependencies"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	"github.com/redhatinsights/edge-api/pkg/services"
 	identity "github.com/redhatinsights/platform-go-middlewares/identity"
 
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -54,11 +59,56 @@ type EdgeMgmtImageCreateEvent struct {
 
 // Consume executes code against the data in the received event
 func (ev EdgeMgmtImageCreateEvent) Consume() error {
-	ev.pre()
+	// rebuilding the context and identity here
+	// TODO: move this to its own context function
+	// TODO: then get rid of the context and service dependencies
+	ctx := context.Background()
+	// TODO: refactor services out of the mix so the microservices can more easily stand alone
+	edgeAPIServices := dependencies.Init(ctx)
+	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 
-	// ADD THE CREATE EVENT CODE HERE
+	//resumeLog := edgeAPIServices.Log.WithField("originalRequestId", image.RequestID)
+	log.Info("Starting image build")
 
-	ev.post()
+	// recreate a stripped down identity header
+	//strippedIdentity := `{ "identity": {"account_number": ` + image.Account + `, "type": "User", "internal": {"org_id": ` + image.OrgID + `, }, }, }`
+	//resumeLog.WithField("identity_text", strippedIdentity).Debug("Creating a new stripped identity")
+	identity := ev.ConsoleSchema.GetIdentity()
+	identityBytes, err := json.Marshal(identity)
+	log.WithField("marshaled_identity", string(identityBytes)).Debug("Marshaled the identity")
+	if err != nil {
+		log.Error("Error Marshaling the identity into a string")
+	}
+	//log.WithField("identity", string(identityString)).Debug("Getting identity to (re)create context")
+
+	base64Identity := base64.StdEncoding.EncodeToString(identityBytes)
+	log.WithField("identity_base64", base64Identity).Debug("Using a base64encoded identity")
+
+	// add the new identity to the context and create ctxServices with that context
+	ctx = common.SetOriginalIdentity(ctx, base64Identity)
+	//ctxServices := dependencies.ServicesFromContext(ctx)
+	// TODO: consider a bitwise& param to only add needed ctxServices
+
+	// temporarily using some Marshal/Unmarshal conjuring to move our future EDA image back to models.Image world
+	var image *models.Image
+	imageString, jsonErr := json.Marshal(ev.NewImage)
+	if jsonErr != nil {
+		log.Error("Error marshaling the image")
+	}
+	jsonErr = json.Unmarshal(imageString, &image)
+
+	log := log.WithFields(log.Fields{
+		"requestId": image.RequestID,
+		"accountId": image.Account,
+		"orgID":     image.OrgID,
+	})
+
+	// call the service-based CreateImage
+	// TODO: port it all to EDA
+	imageService := services.NewImageService(ctx, log)
+	err = imageService.ProcessImage(image)
+	// TODO: send an event with the status here
+	//ev.post()
 
 	return nil
 }

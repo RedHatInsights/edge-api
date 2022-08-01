@@ -1,4 +1,4 @@
-package db
+package db_test
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
@@ -26,8 +27,8 @@ func setupTestDB() {
 	time := time.Now().UnixNano()
 	dbName = fmt.Sprintf("%d-services.db", time)
 	config.Get().Database.Name = dbName
-	InitDB()
-	err := DB.AutoMigrate(
+	db.InitDB()
+	err := db.DB.AutoMigrate(
 		&models.Device{},
 	)
 	if err != nil {

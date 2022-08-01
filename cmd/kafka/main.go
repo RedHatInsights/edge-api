@@ -172,7 +172,9 @@ func main() {
 			req.Header.Add("x-rh-identity", base64Identity)
 
 			// create a client and send a request against the Edge API
-			client := &http.Client{}
+			// ignore env proxy settings to talk directly to adjacent API
+			var defaultTransport http.RoundTripper = &http.Transport{Proxy: nil}
+			client := &http.Client{Transport: defaultTransport}
 			res, err := client.Do(req)
 			if err != nil {
 				var code int

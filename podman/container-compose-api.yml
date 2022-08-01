@@ -14,7 +14,9 @@ services:
 #      depends-on: postgresql
       volumes:
         - $DEVDIR:/opt/app-root/src:z
-      working_dir: /opt/app-root/src
+        - $HOME/go:/go
+#      working_dir: /opt/app-root
+#      working_dir: /opt/app-root/src
       command: ["go", "run", "main.go"]
       secrets:
         - source: edgemgmt_config
