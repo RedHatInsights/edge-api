@@ -141,6 +141,25 @@ func TestContainFilterMultipleGrouped(t *testing.T) {
 	}
 }
 
+func TestIntegerNumberFilterHandler(t *testing.T) {
+	imageID := 121
+	filter := ComposeFilters(IntegerNumberFilterHandler(&Filter{
+		QueryParam: "image_id",
+		DBField:    "devices.image_id",
+	}))
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/devices/devicesview?image_id=%d", imageID), nil)
+	if err != nil {
+		t.Fatalf("Failed to create request: %s", err)
+	}
+	devices := []models.Device{}
+	sql := db.DB.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		return filter(req, tx).Find(&devices)
+	})
+	if !strings.Contains(sql, fmt.Sprintf(`devices.image_id = %d`, imageID)) {
+		t.Fatalf("integer filter not applied : %s", sql)
+	}
+}
+
 func TestOneOfFilterHandler(t *testing.T) {
 	filter := ComposeFilters(OneOfFilterHandler(&Filter{
 		QueryParam: "status",
