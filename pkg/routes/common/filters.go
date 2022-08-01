@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -62,6 +63,22 @@ func BoolFilterHandler(filter *Filter) FilterFunc {
 		}
 		return tx.Where(sqlQuery + sqlValue)
 	})
+}
+
+// IntegerNumberFilterHandler handles integer number values filters
+func IntegerNumberFilterHandler(filter *Filter) FilterFunc {
+	sqlQuery := fmt.Sprintf("%s = ?", filter.DBField)
+	return func(r *http.Request, tx *gorm.DB) *gorm.DB {
+		value := r.URL.Query().Get(filter.QueryParam)
+		if value == "" {
+			return tx
+		}
+		intValue, err := strconv.Atoi(value)
+		if err != nil {
+			return nil
+		}
+		return tx.Where(sqlQuery, intValue)
+	}
 }
 
 // OneOfFilterHandler handles multiple values filters
