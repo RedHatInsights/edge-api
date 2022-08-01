@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/redhatinsights/edge-api/pkg/db"
+
 	"gorm.io/gorm"
 )
 
@@ -23,13 +25,21 @@ type Filter struct {
 func ContainFilterHandler(filter *Filter) FilterFunc {
 	return FilterFunc(func(r *http.Request, tx *gorm.DB) *gorm.DB {
 		if multipleStatusQuery := r.URL.Query()[filter.QueryParam]; len(multipleStatusQuery) > 1 {
+			containFilter := db.DB
 			for i, query := range multipleStatusQuery {
 				if i == 0 {
-					tx = tx.Where(fmt.Sprintf("%s LIKE ?", filter.DBField), "%"+query+"%")
+					containFilter = containFilter.Where(fmt.Sprintf("%s LIKE ?", filter.DBField), "%"+query+"%")
+
 				} else {
-					tx = tx.Or(fmt.Sprintf("%s LIKE ?", filter.DBField), "%"+query+"%")
+					containFilter = containFilter.Or(fmt.Sprintf("%s LIKE ?", filter.DBField), "%"+query+"%")
 				}
 			}
+			// this will ensure that the SQL OR will be grouped in brackets
+			// for example:  WHERE (status LIKE '%SUCCESS%' OR status LIKE '%ERROR%') AND org_id = 'XXXXXXXX'
+			// otherwise it will be merged with other SQL AND operator, the results will be unpredictable
+			// for example without brackets :
+			// WHERE status LIKE '%SUCCESS%' OR status LIKE '%ERROR%' AND org_id = 'XXXXXXXX'
+			tx = tx.Where(containFilter)
 		} else if val := r.URL.Query().Get(filter.QueryParam); val != "" {
 			tx = tx.Where(fmt.Sprintf("%s LIKE ?", filter.DBField), "%"+val+"%")
 		}
