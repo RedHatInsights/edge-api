@@ -23,7 +23,11 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 2
-      
+
+      - name: install modules
+        run: |
+          [ $(go get -a | wc -l) -eq 0 ]
+
       - name: fmt
         run: |
           [ $(go fmt ./... | wc -l) -eq 0 ]
