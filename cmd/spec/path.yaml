@@ -822,10 +822,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  Count:
+                  count:
                     type: integer
                     example: 100
-                  Data:
+                  data:
                     type: array
                     items:
                       $ref: "#/components/schemas/v1.ImageSetView"
