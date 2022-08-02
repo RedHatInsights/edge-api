@@ -900,7 +900,7 @@ paths:
       summary: Return the image-set description view.
   /image-sets/view/{image_set_id}/versions:
     get:
-      operationId: GetImageSetImagesView
+      operationId: GetAllImageSetImagesView
       parameters:
         - name: image_set_id
           in: path

@@ -41,7 +41,7 @@ func MakeImageSetsRouter(sub chi.Router) {
 	sub.Route("/view/{imageSetID}", func(r chi.Router) {
 		r.Use(ImageSetViewCtx)
 		r.With(ValidateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetImageSetViewByID)
-		r.With(ValidateGetAllImagesSearchParams).With(common.Paginate).Get("/versions", GetImageSetImagesView)
+		r.With(ValidateGetAllImagesSearchParams).With(common.Paginate).Get("/versions", GetAllImageSetImagesView)
 		r.Route("/versions/{imageID}", func(rVersion chi.Router) {
 			rVersion.Use(ImageSetImageViewCtx)
 			rVersion.Get("/", GetImageSetImageView)
@@ -496,8 +496,8 @@ func GetImageSetViewByID(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, ctxServices.Log, imageSetIDView)
 }
 
-// GetImageSetImagesView handle the image-set images view
-func GetImageSetImagesView(w http.ResponseWriter, r *http.Request) {
+// GetAllImageSetImagesView handle the image-set images view
+func GetAllImageSetImagesView(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	imageSet := getContextImageSet(w, r)
 	if imageSet == nil {

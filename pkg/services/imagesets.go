@@ -34,7 +34,6 @@ type ImageSetIDView struct {
 	ImageBuildIsoURL string          `json:"ImageBuildIsoURL"`
 	ImageSet         models.ImageSet `json:"ImageSet"`
 	LastImageDetails ImageDetail     `json:"LastImageDetails"`
-	ImagesViewData   ImagesViewData  `json:"ImagesViewData"`
 }
 
 // ImageSetImageIDView is the image set image view returned for ui image-set / version display
@@ -295,13 +294,6 @@ func (s *ImageSetsService) GetImageSetViewByID(imageSetID uint, imagesLimit int,
 		// replace the BuildIsoURL with internal path
 		imageSetIDView.LastImageDetails.Image.Installer.ImageBuildISOURL = GetStorageInstallerIsoURL(imageSetIDView.LastImageDetails.Image.Installer.ID)
 	}
-
-	imagesViewData, err := s.GetImagesViewData(imageSetID, imagesLimit, imagesOffSet, imagesDBFilter)
-	if err != nil {
-		return nil, err
-	}
-
-	imageSetIDView.ImagesViewData = *imagesViewData
 
 	return &imageSetIDView, nil
 }
