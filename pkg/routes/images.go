@@ -6,12 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/go-chi/chi"
-	"github.com/redhatinsights/edge-api/config"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
@@ -187,31 +185,6 @@ func GetImageWithIdentity(w http.ResponseWriter, r *http.Request) (*models.Image
 	return image, ident, nil
 }
 
-// FIXME: remove this when EDA feature is in production
-//			and clean up where it's called
-func checkFeatureFlagEDA() (bool, bool) {
-	// Check to see if local or feature is enabled and not in ephemeral
-	cfg := config.Get()
-	enabled := false
-	skipEDAReturn := false
-	if cfg.Local || (cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "") {
-
-		// TODO: change this when local unleash is available
-		if cfg.Local {
-			enabled = true
-			// skip the EDA return to the HTTP API caller and run both EDA and service func
-			// TODO: remove this check when switching over to EDA forevah
-			if _, exists := os.LookupEnv("SKIP_EDA_RETURN"); exists {
-				skipEDAReturn = true
-			}
-		} else {
-			enabled = feature.CheckFeature(feature.FeatureImageBuildMS)
-		}
-	}
-
-	return enabled, skipEDAReturn
-}
-
 // CreateImage creates an image on hosted image builder.
 // It always creates a commit on Image Builder.
 // Then we create our repo with the ostree commit and if needed, create the installer.
@@ -225,24 +198,21 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	enabled, skipEDAReturn := checkFeatureFlagEDA()
-	if enabled {
+	if feature.ImageCreateEDA.IsEnabled() {
 		// call the Produce method of the specific Event
 		// NOTE: these are the only custom lines necessary to Produce an event of a specific type
 		//			and can be cut/pasted/modified in the other routes
 		ctxServices.Log.Debug("Creating image from API request with EDA")
 		edgeEvent, eventErr := images.ProduceEvent(&images.EdgeMgmtImageCreateEvent{}, image, ident)
-		if !skipEDAReturn {
-			if eventErr != nil {
-				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(eventErr.Error()))
-
-				return
-			}
-
-			respondWithJSONBody(w, ctxServices.Log, edgeEvent)
+		if eventErr != nil {
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(eventErr.Error()))
 
 			return
 		}
+
+		respondWithJSONBody(w, ctxServices.Log, edgeEvent)
+
+		return
 	}
 
 	ctxServices.Log.Debug("Creating image from API request")
@@ -289,31 +259,26 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 	image.RequestID = request_id.GetReqID(r.Context())
 
-	// Check to see if feature is enabled and not in ephemeral
-	cfg := config.Get()
-	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
-		enabled := feature.CheckFeature(feature.FeatureImageBuildMS)
-		if enabled {
-			ident, err := common.GetIdentityFromContext(r.Context())
-			if err != nil {
-				ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving identity from request")
-				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-				return
-			}
-			consoleEvent := kafkacommon.CreateConsoleEvent(image.RequestID, image.OrgID, image.Name, "redhat:console:fleetmanagement:createimageupdateevent", ident)
-			edgeEvent := models.EdgeUpdateCommitEvent{
-				ConsoleSchema: consoleEvent,
-				NewImage:      *image,
-				OldImage:      *previousImage,
-			}
-			edgeEventMessage, _ := json.Marshal(edgeEvent)
-			if err = kafkacommon.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, kafkacommon.RecordKeyCreateImageUpdate, edgeEventMessage); err != nil {
-				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-				return
-			}
-			respondWithJSONBody(w, ctxServices.Log, edgeEvent)
+	if feature.ImageUpdateEDA.IsEnabled() {
+		ident, err := common.GetIdentityFromContext(r.Context())
+		if err != nil {
+			ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving identity from request")
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 			return
 		}
+		consoleEvent := kafkacommon.CreateConsoleEvent(image.RequestID, image.OrgID, image.Name, "redhat:console:fleetmanagement:createimageupdateevent", ident)
+		edgeEvent := models.EdgeUpdateCommitEvent{
+			ConsoleSchema: consoleEvent,
+			NewImage:      *image,
+			OldImage:      *previousImage,
+		}
+		edgeEventMessage, _ := json.Marshal(edgeEvent)
+		if err = kafkacommon.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, kafkacommon.RecordKeyCreateImageUpdate, edgeEventMessage); err != nil {
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+			return
+		}
+		respondWithJSONBody(w, ctxServices.Log, edgeEvent)
+		return
 	}
 
 	ctxServices.Log.Debug("Updating an image from API request")
@@ -550,29 +515,25 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check to see if feature is enabled and not in ephemeral
-	cfg := config.Get()
-	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
-		enabled := feature.CheckFeature(feature.FeatureImageBuildMS)
-		if enabled {
-			ident, err := common.GetIdentityFromContext(r.Context())
-			if err != nil {
-				ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving identity from request")
-				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-				return
-			}
-			consoleEvent := kafkacommon.CreateConsoleEvent(image.RequestID, image.OrgID, image.Name, "redhat:console:fleetmanagement:createinstallerevent", ident)
-			edgeEvent := models.EdgeCreateCommitEvent{
-				ConsoleSchema: consoleEvent,
-				NewImage:      *image,
-			}
-			edgeEventMessage, _ := json.Marshal(edgeEvent)
-			if err = kafkacommon.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, kafkacommon.RecordKeyCreateInstaller, edgeEventMessage); err != nil {
-				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-				return
-			}
-			respondWithJSONBody(w, ctxServices.Log, edgeEvent)
+	if feature.ImageCreateInstallerEDA.IsEnabled() {
+		ident, err := common.GetIdentityFromContext(r.Context())
+		if err != nil {
+			ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving identity from request")
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 			return
 		}
+		consoleEvent := kafkacommon.CreateConsoleEvent(image.RequestID, image.OrgID, image.Name, "redhat:console:fleetmanagement:createinstallerevent", ident)
+		edgeEvent := models.EdgeCreateCommitEvent{
+			ConsoleSchema: consoleEvent,
+			NewImage:      *image,
+		}
+		edgeEventMessage, _ := json.Marshal(edgeEvent)
+		if err = kafkacommon.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, kafkacommon.RecordKeyCreateInstaller, edgeEventMessage); err != nil {
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+			return
+		}
+		respondWithJSONBody(w, ctxServices.Log, edgeEvent)
+		return
 	}
 
 	image, _, err := ctxServices.ImageService.CreateInstallerForImage(image)
@@ -649,30 +610,26 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 	if image == nil {
 		return
 	}
-	// Check to see if feature is enabled and not in ephemeral
-	cfg := config.Get()
-	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
-		enabled := feature.CheckFeature(feature.FeatureImageBuildMS)
-		if enabled {
-			ident, err := common.GetIdentityFromContext(r.Context())
-			if err != nil {
-				ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving identity from request")
-				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-				return
-			}
-			consoleEvent := kafkacommon.CreateConsoleEvent(image.RequestID, image.OrgID, image.Name, "redhat:console:fleetmanagement:createkickstartevent", ident)
-			edgeEvent := models.EdgeCreateCommitEvent{
-				ConsoleSchema: consoleEvent,
-				NewImage:      *image,
-			}
-			edgeEventMessage, _ := json.Marshal(edgeEvent)
-			if err = kafkacommon.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, kafkacommon.RecordKeyCreateKickstart, edgeEventMessage); err != nil {
-				respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-				return
-			}
-			respondWithJSONBody(w, ctxServices.Log, edgeEvent)
+	// Check to see if feature is enabled
+	if feature.ImageCreateKickstartEDA.IsEnabled() {
+		ident, err := common.GetIdentityFromContext(r.Context())
+		if err != nil {
+			ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving identity from request")
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 			return
 		}
+		consoleEvent := kafkacommon.CreateConsoleEvent(image.RequestID, image.OrgID, image.Name, "redhat:console:fleetmanagement:createkickstartevent", ident)
+		edgeEvent := models.EdgeCreateCommitEvent{
+			ConsoleSchema: consoleEvent,
+			NewImage:      *image,
+		}
+		edgeEventMessage, _ := json.Marshal(edgeEvent)
+		if err = kafkacommon.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, kafkacommon.RecordKeyCreateKickstart, edgeEventMessage); err != nil {
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+			return
+		}
+		respondWithJSONBody(w, ctxServices.Log, edgeEvent)
+		return
 	}
 
 	if err := ctxServices.ImageService.AddUserInfo(image); err != nil {
