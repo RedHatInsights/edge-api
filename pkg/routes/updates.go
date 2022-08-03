@@ -88,7 +88,7 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 	playbook, err := services.UpdateService.GetUpdatePlaybook(update)
 	if err != nil {
 		services.Log.WithField("error", err.Error()).Error("Error getting update playbook")
-		err := errors.NewInternalServerError()
+		err := errors.NewNotFound("file was not found on the S3 bucket")
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
 			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
