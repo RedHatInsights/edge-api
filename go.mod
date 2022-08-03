@@ -6,7 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.67
 	github.com/bxcodec/faker/v3 v3.8.0
 	github.com/cavaliercoder/grab v2.0.0+incompatible
-	github.com/confluentinc/confluent-kafka-go v1.9.1
+	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/fedora-iot/fido-device-onboard-rs/libfdo-data-go v0.0.0-20211210154920-5c241beb5c4e
 	github.com/getkin/kin-openapi v0.98.0
 	github.com/ghodss/yaml v1.0.0
