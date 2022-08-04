@@ -143,6 +143,7 @@ test-no-fdo:
 	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS)
 
 vet:
+	go mod tidy
 	go install -a
 	go vet $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
 
