@@ -7,6 +7,7 @@ import (
 	"reflect"
 
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
+	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
 var m map[string][]string
@@ -40,8 +41,15 @@ func ValidateQueryParams(endpoint string) func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var errs []validationError
 			filtersMap := r.URL.Query()
+			var device models.Device
 			queriesKeys := reflect.ValueOf(filtersMap).MapKeys()
 			qparamsArray := GetQueryParamsArray(endpoint)
+			// check for invalid update_available value
+			if val := r.URL.Query().Get("update_available"); val != "true" && val != "false" && val != "" {
+				if !device.UpdateAvailable {
+					errs = append(errs, validationError{Key: "update_available", Reason: fmt.Sprintf("%s is not a valid value for update_available. Update_available must be boolean", val)})
+				}
+			}
 			// interating over the queries keys to validate we support those
 			for _, key := range queriesKeys {
 				if !(contains(qparamsArray, key.String())) {
