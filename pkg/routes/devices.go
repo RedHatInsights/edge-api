@@ -124,6 +124,7 @@ func ValidateGetDevicesViewFilterParams(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var device models.Device
 		var errs []validationError
+		ctxServices := dependencies.ServicesFromContext(r.Context())
 
 		// check for invalid update_available value
 		if val := r.URL.Query().Get("update_available"); val != "true" && val != "false" && val != "" {
@@ -136,10 +137,7 @@ func ValidateGetDevicesViewFilterParams(next http.Handler) http.Handler {
 			return
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(&errs); err != nil {
-			ctxServices := dependencies.ServicesFromContext(r.Context())
-			ctxServices.Log.WithField("error", errs).Error("Error while trying to encode devicesview filter validation errors")
-		}
+		respondWithJSONBody(w, ctxServices.Log, &errs)
 	})
 }
 
