@@ -120,7 +120,7 @@ func main() {
 						edgeEvent := images.RegisteredEvents[key]
 						json.Unmarshal(e.Value, edgeEvent)
 						// using reflection to avoid the compiler error with Consume() and an unknown struct
-						reflect.ValueOf(edgeEvent).MethodByName("Consume").Call(nil)
+						go reflect.ValueOf(edgeEvent).MethodByName("Consume").Call(nil)
 					} else {
 						logevent.Warning("Skipping event. Record key is not defined")
 					}

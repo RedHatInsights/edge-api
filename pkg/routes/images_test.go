@@ -114,7 +114,8 @@ func TestCreate(t *testing.T) {
 
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+	mockImageService.EXPECT().CreateImage(gomock.Any()).Return(nil)
+	mockImageService.EXPECT().ProcessImage(gomock.Any()).Return(nil)
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),
@@ -160,7 +161,7 @@ func TestCreateWithInvalidPackageName(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any(), gomock.Any()).Return(new(services.PackageNameDoesNotExist))
+	mockImageService.EXPECT().CreateImage(gomock.Any()).Return(new(services.PackageNameDoesNotExist))
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),
@@ -205,7 +206,7 @@ func TestCreateWithThirdPartyRepositoryInfoInvalid(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any(), gomock.Any()).Return(new(services.ThirdPartyRepositoryInfoIsInvalid))
+	mockImageService.EXPECT().CreateImage(gomock.Any()).Return(new(services.ThirdPartyRepositoryInfoIsInvalid))
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),
@@ -250,7 +251,8 @@ func TestCreateWithImageNameAlreadyExist(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	mockImageService.EXPECT().CreateImage(gomock.Any(), gomock.Any(), gomock.Any()).Return(new(services.ImageNameAlreadyExists))
+	mockImageService.EXPECT().CreateImage(gomock.Any()).Return(new(services.ImageNameAlreadyExists))
+
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),

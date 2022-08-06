@@ -40,6 +40,7 @@ type EdgeConfig struct {
 	KafkaTopics              map[string]string         `json:"kafka_topics,omitempty"`
 	FDO                      *fdoConfig                `json:"fdo,omitempty"`
 	Local                    bool                      `json:"local,omitempty"`
+	Dev                      bool                      `json:"dev,omitempty"`
 	UnleashURL               string                    `json:"unleash_url,omitempty"`
 	UnleashSecretName        string                    `json:"unleash_secret_name,omitempty"`
 	FeatureFlagsEnvironment  string                    `json:"featureflags_environment,omitempty"`
@@ -119,6 +120,7 @@ func Init() {
 	options.SetDefault("FDOApiVersion", "v1")
 	options.SetDefault("FDOAuthorizationBearer", "lorum-ipsum")
 	options.SetDefault("Local", false)
+	options.SetDefault("Dev", false)
 	options.SetDefault("EDGEMGMT_CONFIGPATH", "/tmp/edgemgmt_config.json")
 	options.AutomaticEnv()
 
@@ -204,6 +206,7 @@ func Init() {
 			AuthorizationBearer: options.GetString("FDOAuthorizationBearer"),
 		},
 		Local:                   options.GetBool("Local"),
+		Dev:                     options.GetBool("Dev"),
 		UnleashURL:              options.GetString("FeatureFlagsUrl"),
 		UnleashSecretName:       options.GetString("FeatureFlagsBearerToken"),
 		FeatureFlagsEnvironment: options.GetString("FeatureFlagsEnvironment"),
@@ -267,8 +270,9 @@ func Init() {
 
 		config.KafkaConfig = cfg.Kafka
 	}
-	// get config from file if running local
-	if config.Local {
+	// get config from file if running in developer mode
+	// this is different than Local due to code in services/files.go
+	if config.Dev {
 		configFile := os.Getenv("EDGEMGMT_CONFIG")
 		options.SetConfigFile(configFile)
 
