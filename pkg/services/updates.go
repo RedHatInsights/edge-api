@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"io"
 	"net/http"
 	"os"
@@ -14,6 +13,8 @@ import (
 	"syscall"
 	"text/template"
 	"time"
+
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
@@ -489,6 +490,7 @@ func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (Ima
 		recipients = append(recipients, recipient)
 
 		notify.OrgID = i.OrgID
+		notify.Account = i.Account
 		notify.Context = fmt.Sprintf("{  \"CommitID\" : \"%v\"}", i.CommitID)
 		notify.Events = events
 		notify.Recipients = recipients
