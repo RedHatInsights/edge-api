@@ -3,6 +3,7 @@ package routes
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -21,7 +22,7 @@ import (
 // MakeDevicesRouter adds support for operations on update
 func MakeDevicesRouter(sub chi.Router) {
 	sub.With(ValidateQueryParams("devices")).With(ValidateGetAllDevicesFilterParams).Get("/", GetDevices)
-	sub.With(ValidateQueryParams("devicesview")).With(common.Paginate).Get("/devicesview", GetDevicesView)
+	sub.With(ValidateQueryParams("devicesview")).With(common.Paginate).With(ValidateGetDevicesViewFilterParams).Get("/devicesview", GetDevicesView)
 	sub.With(common.Paginate).Get("/db", GetDBDevices)
 	sub.Route("/{DeviceUUID}", func(r chi.Router) {
 		r.Use(DeviceCtx)
@@ -115,6 +116,28 @@ func ValidateGetAllDevicesFilterParams(next http.Handler) http.Handler {
 			ctxServices := dependencies.ServicesFromContext(r.Context())
 			ctxServices.Log.WithField("error", errs).Error("Error while trying to encode devices filter validation errors")
 		}
+	})
+}
+
+// ValidateGetDevicesViewFilterParams validate the query parameters that sent to /devicesview endpoint
+func ValidateGetDevicesViewFilterParams(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var device models.Device
+		var errs []validationError
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+
+		// check for invalid update_available value
+		if val := r.URL.Query().Get("update_available"); val != "true" && val != "false" && val != "" {
+			if !device.UpdateAvailable {
+				errs = append(errs, validationError{Key: "update_available", Reason: fmt.Sprintf("%s is not a valid value for update_available. Update_available must be boolean", val)})
+			}
+		}
+		if len(errs) == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		respondWithJSONBody(w, ctxServices.Log, &errs)
 	})
 }
 

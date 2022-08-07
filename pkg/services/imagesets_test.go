@@ -156,14 +156,6 @@ var _ = Describe("ImageSets Service Test", func() {
 			Expect(imageSetIDView.ImageBuildIsoURL).To(Equal(fmt.Sprintf("/api/edge/v1/storage/isos/%d", image2.Installer.ID)))
 			Expect(imageSetIDView.LastImageDetails.Image.ID).To(Equal(image3.ID))
 			Expect(imageSetIDView.LastImageDetails.Image.Installer.ImageBuildISOURL).To(BeEmpty())
-			Expect(imageSetIDView.ImagesViewData.Count).To(Equal(int64(3)))
-			Expect(len(imageSetIDView.ImagesViewData.Data)).To(Equal(3))
-			for ind, expectedImage := range []models.Image{image3, image2, image1} {
-				imageView := imageSetIDView.ImagesViewData.Data[ind]
-				Expect(imageView.ID).To(Equal(expectedImage.ID))
-				Expect(imageView.Status).To(Equal(expectedImage.Status))
-				Expect(imageView.Version).To(Equal(expectedImage.Version))
-			}
 		})
 		It("GetImagesViewData returns image set images views as expected", func() {
 			imagesOrderByDB := db.DB.Order("images.created_at DESC")
