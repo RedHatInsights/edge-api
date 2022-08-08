@@ -1,11 +1,13 @@
 package kafkacommon
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -43,7 +45,7 @@ func GetProducerInstance() *kafka.Producer {
 }
 
 // ProduceEvent is a helper for the kafka producer
-func ProduceEvent(requestedTopic, recordKey string, edgeEventMessage []byte) error {
+func ProduceEvent(requestedTopic, recordKey string, event models.CRCCloudEvent) error {
 	log.Debug("Producing an event")
 	producer := GetProducerInstance()
 	if producer == nil {
@@ -53,6 +55,14 @@ func ProduceEvent(requestedTopic, recordKey string, edgeEventMessage []byte) err
 	if err != nil {
 		log.WithField("error", err).Error("Unable to lookup requested topic name")
 	}
+
+	// marshal the event into a string
+	edgeEventMessage, err := json.Marshal(event)
+	if err != nil {
+		log.Error("Marshal CRCCloudEvent failed")
+	}
+	log.WithField("event", string(edgeEventMessage)).Debug("Debug CRCCloudEvent contents")
+
 	err = producer.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &realTopic, Partition: kafka.PartitionAny},
 		Key:            []byte(recordKey),

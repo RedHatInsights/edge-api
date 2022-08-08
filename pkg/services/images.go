@@ -143,42 +143,6 @@ func (s *ImageService) getImageSetForNewImage(orgID string, image *models.Image)
 	return &imageSet, nil
 }
 
-// packageIsValid confirms a package exists in ImageBuilder for image arch and dist
-func packageIsValid(ctx context.Context, image *models.Image, name string) (bool, error) {
-	pkgLog := log.WithFields(log.Fields{"arch": image.Commit.Arch, "distribution": image.Distribution, "package": name})
-	ibClient := imagebuilder.InitClient(ctx, pkgLog)
-	pkgLog.Debug("Checking package exists in RHEL for Edge arch and distribution")
-	res, err := ibClient.SearchPackage(name, image.Commit.Arch, image.Distribution)
-	if err != nil {
-		log.WithFields(log.Fields{"package": name, "error": err.Error()}).Error("Search for package failed with error")
-		return false, err
-	}
-	if res.Meta.Count == 0 {
-		log.WithFields(log.Fields{"package": name, "meta_count": res.Meta.Count}).Error("Package search meta count is zero")
-		return false, new(PackageNameDoesNotExist)
-	}
-	for _, pkg := range res.Data {
-		if pkg.Name == name {
-			log.WithFields(log.Fields{"package": name, "meta_count": res.Meta.Count}).Debug("Package name matched in")
-			return true, nil
-		}
-	}
-	return false, new(PackageNameDoesNotExist)
-}
-
-// PackagesAreValid loops through packages in the list and validates with ImageBuilder
-func PackagesAreValid(ctx context.Context, image *models.Image) (bool, error) {
-	for _, p := range image.Packages {
-		if valid, err := packageIsValid(ctx, image, p.Name); !valid {
-			log.WithFields(log.Fields{"package": p.Name, "error": err.Error()}).Error("Package is not valid")
-
-			return false, err
-		}
-	}
-
-	return true, nil
-}
-
 // CreateImage sets up the image for the EDA-based CreateImage
 func (s *ImageService) CreateImage(image *models.Image) error {
 	if image.OrgID == "" {
@@ -243,7 +207,6 @@ func (s *ImageService) CreateImage(image *models.Image) error {
 		image.ImageType = models.ImageTypeCommit
 	}
 
-	// FIXME: what's the difference between this and HasOutputType below?
 	if image.Installer != nil {
 		image.Installer.OrgID = image.OrgID
 	}
@@ -941,7 +904,6 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 
 // CheckImageName returns false if the image doesnt exist and true if the image exists
 func (s *ImageService) CheckImageName(name, orgID string) (bool, error) {
-	//s.log.WithField("name", name).Debug("Checking image name")
 	var imageFindByName *models.Image
 	result := db.Org(orgID, "").Where("(name = ?)", name).First(&imageFindByName)
 	if result.Error != nil {
