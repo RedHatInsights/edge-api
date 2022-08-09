@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -21,7 +22,7 @@ import (
 
 // MakeUpdatesRouter adds support for operations on update
 func MakeUpdatesRouter(sub chi.Router) {
-	sub.With(common.Paginate).Get("/", GetUpdates)
+	sub.With(common.Paginate).With(ValidateGetUpdatesFilterParams).Get("/", GetUpdates)
 	sub.Post("/", AddUpdate)
 	sub.Post("/validate", PostValidateUpdate)
 	sub.Route("/{updateID}", func(r chi.Router) {
@@ -366,3 +367,43 @@ var updateFilters = common.ComposeFilters(
 	}),
 	common.SortFilterHandler("update_transactions", "created_at", "DESC"),
 )
+
+// ValidateGetAllDeviceGroupsFilterParams validate the query params that sent to /device-groups endpoint
+func ValidateGetUpdatesFilterParams(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var errs []validationError
+
+		// "created_at" validation
+		if val := r.URL.Query().Get("created_at"); val != "" {
+			if _, err := time.Parse(common.LayoutISO, val); err != nil {
+				errs = append(errs, validationError{Key: "created_at", Reason: err.Error()})
+			}
+		}
+		// "updated_at" validation
+		if val := r.URL.Query().Get("updated_at"); val != "" {
+			if _, err := time.Parse(common.LayoutISO, val); err != nil {
+				errs = append(errs, validationError{Key: "updated_at", Reason: err.Error()})
+			}
+		}
+		// "sort_by" validation for "name", "created_at", "updated_at"
+		if val := r.URL.Query().Get("sort_by"); val != "" {
+			name := val
+			if string(val[0]) == "-" {
+				name = val[1:]
+			}
+			if name != "name" && name != "created_at" && name != "updated_at" {
+				errs = append(errs, validationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must be name or created_at or updated_at", name)})
+			}
+		}
+
+		if len(errs) == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		if err := json.NewEncoder(w).Encode(&errs); err != nil {
+			ctxServices := dependencies.ServicesFromContext(r.Context())
+			ctxServices.Log.WithField("error", errs).Error("Error while trying to encode device groups filter validation errors")
+		}
+	})
+}
