@@ -111,12 +111,14 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 // GetUpdates returns the updates for the device
 func GetUpdates(w http.ResponseWriter, r *http.Request) {
 	services := dependencies.ServicesFromContext(r.Context())
+	result := updateFilters(r, db.DB)
+	pagination := common.GetPagination(r)
 	var updates []models.UpdateTransaction
 	orgID := readOrgID(w, r, services.Log)
 	if orgID == "" {
 		return
 	}
-	if result := db.Org(orgID, "update_transactions").Preload("DispatchRecords").Preload("Devices").
+	if result = db.OrgDB(orgID, result, "update_transactions").Limit(pagination.Limit).Offset(pagination.Offset).Preload("DispatchRecords").Preload("Devices").
 		Joins("Commit").Joins("Repo").Find(&updates); result.Error != nil {
 		services.Log.WithFields(log.Fields{
 			"error": result.Error.Error(),
@@ -350,3 +352,17 @@ func PostValidateUpdate(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	respondWithJSONBody(w, services.Log, &ValidateUpdateResponse{UpdateValid: valid})
 }
+
+var updateFilters = common.ComposeFilters(
+	// Filter handler for "status"
+	common.OneOfFilterHandler(&common.Filter{
+		QueryParam: "status",
+		DBField:    "update_transactions.status",
+	}),
+	// Filter handler for "created_at"
+	common.CreatedAtFilterHandler(&common.Filter{
+		QueryParam: "created_at",
+		DBField:    "update_transactions.created_at",
+	}),
+	common.SortFilterHandler("update_transactions", "created_at", "DESC"),
+)
