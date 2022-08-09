@@ -368,7 +368,7 @@ var updateFilters = common.ComposeFilters(
 	common.SortFilterHandler("update_transactions", "created_at", "DESC"),
 )
 
-// ValidateGetAllDeviceGroupsFilterParams validate the query params that sent to /device-groups endpoint
+// ValidateGetUpdatesFilterParams validate the query params that sent to /updates endpoint
 func ValidateGetUpdatesFilterParams(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var errs []validationError
@@ -391,8 +391,8 @@ func ValidateGetUpdatesFilterParams(next http.Handler) http.Handler {
 			if string(val[0]) == "-" {
 				name = val[1:]
 			}
-			if name != "name" && name != "created_at" && name != "updated_at" {
-				errs = append(errs, validationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must be name or created_at or updated_at", name)})
+			if name != "created_at" && name != "updated_at" {
+				errs = append(errs, validationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must be created_at or updated_at", name)})
 			}
 		}
 
