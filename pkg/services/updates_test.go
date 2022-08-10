@@ -884,7 +884,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Expect((*updates)[0].Status).Should(Equal(models.UpdateStatusDeviceDisconnected))
 				Expect((*updates)[0].Repo).Should(BeNil())
 
-				Expect(len((*updates)[0].Devices)).Should(Equal(0))
+				Expect(len((*updates)[0].Devices)).Should(Equal(1))
 			})
 		})
 
