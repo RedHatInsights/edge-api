@@ -213,6 +213,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Expect(err).To(BeNil())
 				db.DB.First(&d, d.ID)
 				Expect(d.Status).To(Equal(models.DispatchRecordStatusError))
+				Expect(d.Reason).To(Equal(models.UpdateReasonFailure))
 			})
 			It("should set status with an error when timeout is received", func() {
 				event.Payload.Status = services.PlaybookStatusTimeout
@@ -223,6 +224,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				db.DB.First(&u, u.ID)
 				Expect(d.Status).To(Equal(models.DispatchRecordStatusError))
 				Expect(u.Status).To(Equal(models.UpdateStatusError))
+				Expect(d.Reason).To(Equal(models.UpdateReasonTimeout))
 			})
 		})
 
