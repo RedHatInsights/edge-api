@@ -682,6 +682,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					"deviceUUID": device.ID,
 				}).Info("Device is disconnected")
 				update.Status = models.UpdateStatusDeviceDisconnected
+				update.Devices = append(update.Devices, *updateDevice)
 				if result := db.DB.Create(&update); result.Error != nil {
 					return nil, result.Error
 				}
