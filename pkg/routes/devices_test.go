@@ -13,9 +13,12 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 )
@@ -198,5 +201,118 @@ var _ = Describe("Devices View Router", func() {
 
 			})
 		})
+	})
+})
+
+var _ = Describe("Devices View Filters", func() {
+	var imageV1 *models.Image
+	var deviceUUID string
+
+	BeforeEach(func() {
+
+		orgID := common.DefaultOrgID
+
+		imageSet := &models.ImageSet{
+			Name:    "test",
+			Version: 2,
+			OrgID:   orgID,
+		}
+		result := db.DB.Create(imageSet)
+		Expect(result.Error).ToNot(HaveOccurred())
+		imageV1 = &models.Image{
+			Commit: &models.Commit{
+				OSTreeCommit: faker.UUIDHyphenated(),
+				OrgID:        orgID,
+			},
+			Status:     models.ImageStatusSuccess,
+			ImageSetID: &imageSet.ID,
+			Version:    1,
+			OrgID:      common.DefaultOrgID,
+		}
+		result = db.DB.Create(imageV1.Commit)
+		Expect(result.Error).ToNot(HaveOccurred())
+		result = db.DB.Create(imageV1)
+		Expect(result.Error).ToNot(HaveOccurred())
+		deviceUUID = faker.UUIDHyphenated()
+		device1 := models.Device{OrgID: orgID, Name: "device-1", UpdateAvailable: true, ImageID: imageV1.ID, UUID: deviceUUID}
+
+		device2 := models.Device{OrgID: orgID, Name: "device-2", UpdateAvailable: false, ImageID: 99, UUID: "aaa-aaa-aaa-aaa"}
+
+		result = db.DB.Create(&device1)
+		Expect(result.Error).To(BeNil())
+		result = db.DB.Create(&device2)
+		Expect(result.Error).To(BeNil())
+
+	})
+	It("when filter by name, return devices with given name", func() {
+		name := "device-1"
+		var devicesFilters = common.ComposeFilters(
+			// Filter handler for "name"
+			common.ContainFilterHandler(&common.Filter{
+				QueryParam: "name",
+				DBField:    "devices.name",
+			}),
+		)
+
+		req, err := http.NewRequest("GET", fmt.Sprintf("/?name=%s", name), nil)
+		Expect(err).ToNot(HaveOccurred())
+		dbFilters := devicesFilters(req, db.DB)
+		devices := []models.Device{}
+		dbFilters.Find(&devices)
+		Expect(len(devices)).To(Equal(1))
+		Expect(devices[0].Name).To(Equal(name))
+	})
+	It("when filter by update_available, return devices with given value", func() {
+		var devicesFilters = common.ComposeFilters(
+			// Filter handler for "update_available"
+			common.BoolFilterHandler(&common.Filter{
+				QueryParam: "update_available",
+				DBField:    "devices.update_available",
+			}),
+		)
+
+		req, err := http.NewRequest("GET", "/?update_available=true", nil)
+		Expect(err).ToNot(HaveOccurred())
+		dbFilters := devicesFilters(req, db.DB)
+		devices := []models.Device{}
+		dbFilters.Find(&devices)
+		Expect(len(devices)).ToNot(Equal(0))
+		for _, device := range devices {
+			Expect(device.UpdateAvailable).To(Equal(true))
+		}
+	})
+	It("when filter by uuid, return devices with given uuid", func() {
+		var devicesFilters = common.ComposeFilters(
+			// Filter handler for "uuid"
+			common.ContainFilterHandler(&common.Filter{
+				QueryParam: "uuid",
+				DBField:    "devices.uuid",
+			}),
+		)
+
+		req, err := http.NewRequest("GET", fmt.Sprintf("/?uuid=%s", deviceUUID), nil)
+		Expect(err).ToNot(HaveOccurred())
+		dbFilters := devicesFilters(req, db.DB)
+		devices := []models.Device{}
+		dbFilters.Find(&devices)
+		Expect(len(devices)).To(Equal(1))
+		Expect(devices[0].UUID).To(Equal(deviceUUID))
+	})
+	It("when filter by image_id, return devices with given image_id", func() {
+		var devicesFilters = common.ComposeFilters(
+			// Filter handler for "image_id"
+			common.IntegerNumberFilterHandler(&common.Filter{
+				QueryParam: "image_id",
+				DBField:    "devices.image_id",
+			}),
+		)
+
+		req, err := http.NewRequest("GET", fmt.Sprintf("/?image_id=%d", imageV1.ID), nil)
+		Expect(err).ToNot(HaveOccurred())
+		dbFilters := devicesFilters(req, db.DB)
+		devices := []models.Device{}
+		dbFilters.Find(&devices)
+		Expect(len(devices)).To(Equal(1))
+		Expect(devices[0].ImageID).To(Equal(imageV1.ID))
 	})
 })
