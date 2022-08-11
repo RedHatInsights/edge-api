@@ -40,6 +40,7 @@ type DispatchRecord struct {
 	DeviceID             uint    `json:"DeviceID"`
 	Device               *Device `json:"Device"`
 	Status               string  `json:"Status"`
+	Reason               string  `json:"Reason"`
 	PlaybookDispatcherID string  `json:"PlaybookDispatcherID"`
 }
 
@@ -78,6 +79,13 @@ const (
 	DispatchRecordStatusError = "ERROR"
 	// DispatchRecordStatusComplete is for when a playbook dispatcher job is complete
 	DispatchRecordStatusComplete = "COMPLETE"
+)
+
+const (
+	// UpdateReasonFailure is for when the update failed
+	UpdateReasonFailure = "The playbook failed to run."
+	// UpdateReasonTimeout is for when the device took more time than expected to update
+	UpdateReasonTimeout = "The service timed out during the last update."
 )
 
 // ValidateRequest validates a Update Record Request
