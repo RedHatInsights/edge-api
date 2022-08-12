@@ -111,11 +111,11 @@ func main() {
 				case *kafka.Message:
 					key := string(e.Key)
 					mslog = mslog.WithFields(log.Fields{
-						"consumer_group": consumerGroup,
-						"topic":          *e.TopicPartition.Topic,
-						"partition":      e.TopicPartition.Partition,
-						"offset":         e.TopicPartition.Offset,
-						"key":            string(e.Key),
+						"event_consumer_group": consumerGroup,
+						"event_topic":          *e.TopicPartition.Topic,
+						"event_partition":      e.TopicPartition.Partition,
+						"event_offset":         e.TopicPartition.Offset,
+						"event_recordkey":      string(e.Key),
 					})
 					mslog.WithField("message", string(e.Value)).Debug("Received an event")
 
