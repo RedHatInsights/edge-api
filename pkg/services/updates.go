@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"io"
 	"net/http"
 	"os"
@@ -14,6 +13,8 @@ import (
 	"syscall"
 	"text/template"
 	"time"
+
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
@@ -376,20 +377,26 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 		return result.Error
 	}
 
-	if e.Payload.Status == PlaybookStatusFailure || e.Payload.Status == PlaybookStatusTimeout {
-		dispatchRecord.Status = models.DispatchRecordStatusError
-	} else if e.Payload.Status == PlaybookStatusSuccess {
-		fmt.Printf("$$$$$$$$$ dispatchRecord.Device %v\n", dispatchRecord.Device)
+	switch e.Payload.Status {
+	case PlaybookStatusSuccess:
 		// TODO: We might wanna check if it's really success by checking the running hash on the device here
 		dispatchRecord.Status = models.DispatchRecordStatusComplete
 		dispatchRecord.Device.AvailableHash = os.DevNull
 		dispatchRecord.Device.CurrentHash = dispatchRecord.Device.AvailableHash
-	} else if e.Payload.Status == PlaybookStatusRunning {
+	case PlaybookStatusRunning:
 		dispatchRecord.Status = models.DispatchRecordStatusRunning
-	} else {
+	case PlaybookStatusTimeout:
 		dispatchRecord.Status = models.DispatchRecordStatusError
+		dispatchRecord.Reason = models.UpdateReasonTimeout
+	case PlaybookStatusFailure:
+		dispatchRecord.Status = models.DispatchRecordStatusError
+		dispatchRecord.Reason = models.UpdateReasonFailure
+	default:
+		dispatchRecord.Status = models.DispatchRecordStatusError
+		dispatchRecord.Reason = models.UpdateReasonFailure
 		s.log.Error("Playbook status is not on the json schema for this event")
 	}
+
 	result = db.DB.Save(&dispatchRecord)
 	if result.Error != nil {
 		return result.Error
@@ -489,6 +496,7 @@ func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (Ima
 		recipients = append(recipients, recipient)
 
 		notify.OrgID = i.OrgID
+		notify.Account = i.Account
 		notify.Context = fmt.Sprintf("{  \"CommitID\" : \"%v\"}", i.CommitID)
 		notify.Events = events
 		notify.Recipients = recipients
@@ -680,6 +688,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					"deviceUUID": device.ID,
 				}).Info("Device is disconnected")
 				update.Status = models.UpdateStatusDeviceDisconnected
+				update.Devices = append(update.Devices, *updateDevice)
 				if result := db.DB.Create(&update); result.Error != nil {
 					return nil, result.Error
 				}

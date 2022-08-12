@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -432,5 +433,52 @@ var _ = Describe("Update routes", func() {
 				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
 			})
 		})
+	})
+
+	Context("get all updates with filter parameters", func() {
+		tt := []struct {
+			name          string
+			params        string
+			expectedError []validationError
+		}{
+			{
+				name:   "bad created_at date",
+				params: "created_at=today",
+				expectedError: []validationError{
+					{Key: "created_at", Reason: `parsing time "today" as "2006-01-02": cannot parse "today" as "2006"`},
+				},
+			},
+			{
+				name:   "bad sort_by",
+				params: "sort_by=test",
+				expectedError: []validationError{
+					{Key: "sort_by", Reason: "test is not a valid sort_by. Sort-by must be name or created_at or updated_at"},
+				},
+			},
+		}
+
+		next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+		for _, te := range tt {
+			req, err := http.NewRequest("GET", fmt.Sprintf("/updates?%s", te.params), nil)
+			Expect(err).ToNot(HaveOccurred())
+			w := httptest.NewRecorder()
+
+			ValidateGetAllDeviceGroupsFilterParams(next).ServeHTTP(w, req)
+
+			resp := w.Result()
+			var jsonBody []validationError
+			err = json.NewDecoder(resp.Body).Decode(&jsonBody)
+			Expect(err).ToNot(HaveOccurred())
+			for _, exErr := range te.expectedError {
+				found := false
+				for _, jsErr := range jsonBody {
+					if jsErr.Key == exErr.Key && jsErr.Reason == exErr.Reason {
+						found = true
+						break
+					}
+				}
+				Expect(found).To(BeTrue(), fmt.Sprintf("in %q: was expected to have %v but not found in %v", te.name, exErr, jsonBody))
+			}
+		}
 	})
 })

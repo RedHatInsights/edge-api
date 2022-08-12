@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -21,7 +22,7 @@ import (
 
 // MakeUpdatesRouter adds support for operations on update
 func MakeUpdatesRouter(sub chi.Router) {
-	sub.With(common.Paginate).Get("/", GetUpdates)
+	sub.With(common.Paginate).With(ValidateGetUpdatesFilterParams).Get("/", GetUpdates)
 	sub.Post("/", AddUpdate)
 	sub.Post("/validate", PostValidateUpdate)
 	sub.Route("/{updateID}", func(r chi.Router) {
@@ -88,7 +89,7 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 	playbook, err := services.UpdateService.GetUpdatePlaybook(update)
 	if err != nil {
 		services.Log.WithField("error", err.Error()).Error("Error getting update playbook")
-		err := errors.NewInternalServerError()
+		err := errors.NewNotFound("file was not found on the S3 bucket")
 		w.WriteHeader(err.GetStatus())
 		if err := json.NewEncoder(w).Encode(&err); err != nil {
 			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
@@ -111,12 +112,14 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 // GetUpdates returns the updates for the device
 func GetUpdates(w http.ResponseWriter, r *http.Request) {
 	services := dependencies.ServicesFromContext(r.Context())
+	result := updateFilters(r, db.DB)
+	pagination := common.GetPagination(r)
 	var updates []models.UpdateTransaction
 	orgID := readOrgID(w, r, services.Log)
 	if orgID == "" {
 		return
 	}
-	if result := db.Org(orgID, "update_transactions").Preload("DispatchRecords").Preload("Devices").
+	if result = db.OrgDB(orgID, result, "update_transactions").Limit(pagination.Limit).Offset(pagination.Offset).Preload("DispatchRecords").Preload("Devices").
 		Joins("Commit").Joins("Repo").Find(&updates); result.Error != nil {
 		services.Log.WithFields(log.Fields{
 			"error": result.Error.Error(),
@@ -349,4 +352,58 @@ func PostValidateUpdate(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	respondWithJSONBody(w, services.Log, &ValidateUpdateResponse{UpdateValid: valid})
+}
+
+var updateFilters = common.ComposeFilters(
+	// Filter handler for "status"
+	common.OneOfFilterHandler(&common.Filter{
+		QueryParam: "status",
+		DBField:    "update_transactions.status",
+	}),
+	// Filter handler for "created_at"
+	common.CreatedAtFilterHandler(&common.Filter{
+		QueryParam: "created_at",
+		DBField:    "update_transactions.created_at",
+	}),
+	common.SortFilterHandler("update_transactions", "created_at", "DESC"),
+)
+
+// ValidateGetUpdatesFilterParams validate the query params that sent to /updates endpoint
+func ValidateGetUpdatesFilterParams(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var errs []validationError
+
+		// "created_at" validation
+		if val := r.URL.Query().Get("created_at"); val != "" {
+			if _, err := time.Parse(common.LayoutISO, val); err != nil {
+				errs = append(errs, validationError{Key: "created_at", Reason: err.Error()})
+			}
+		}
+		// "updated_at" validation
+		if val := r.URL.Query().Get("updated_at"); val != "" {
+			if _, err := time.Parse(common.LayoutISO, val); err != nil {
+				errs = append(errs, validationError{Key: "updated_at", Reason: err.Error()})
+			}
+		}
+		// "sort_by" validation for "name", "created_at", "updated_at"
+		if val := r.URL.Query().Get("sort_by"); val != "" {
+			name := val
+			if string(val[0]) == "-" {
+				name = val[1:]
+			}
+			if name != "created_at" && name != "updated_at" {
+				errs = append(errs, validationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must be created_at or updated_at", name)})
+			}
+		}
+
+		if len(errs) == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		if err := json.NewEncoder(w).Encode(&errs); err != nil {
+			ctxServices := dependencies.ServicesFromContext(r.Context())
+			ctxServices.Log.WithField("error", errs).Error("Error while trying to encode device groups filter validation errors")
+		}
+	})
 }
