@@ -569,7 +569,7 @@ func (s *ImageService) postProcessImage(id uint) {
 	// NOTE: Every log message in this method already has commit id and image id injected
 
 	s.log.Debug("Processing image build")
-	var i *models.Image
+	var image *models.Image
 
 	// setup a context and signal for SIGTERM
 	ctx := context.Background()
@@ -609,23 +609,23 @@ func (s *ImageService) postProcessImage(id uint) {
 	}()
 
 	// business as usual from here to end of block
-	db.DB.Debug().Joins("Commit").Joins("Installer").First(&i, id)
+	db.DB.Debug().Joins("Commit").Joins("Installer").First(&image, id)
 
-	// Request a commit from Image Builder for the image
-	s.log.WithField("imageID", i.ID).Debug("Creating a commit for this image")
-	err := s.postProcessCommit(i)
+	// Monitor the commit for completion
+	s.log.WithField("imageID", image.ID).Debug("Monitoring commit status for this image")
+	err := s.postProcessCommit(image)
 	if err != nil {
-		s.SetErrorStatusOnImage(err, i)
+		s.SetErrorStatusOnImage(err, image)
 		s.log.WithField("error", err.Error()).Error("Failed creating commit for image")
 	}
 
-	if i.Commit.Status == models.ImageStatusSuccess {
+	if image.Commit.Status == models.ImageStatusSuccess {
 		s.log.Debug("Commit is successful")
 
 		// Request an installer ISO from Image Builder for the image
-		if i.HasOutputType(models.ImageTypeInstaller) {
-			s.log.WithField("imageID", i.ID).Debug("Creating an installer for this image")
-			i, c, err := s.CreateInstallerForImage(i)
+		if image.HasOutputType(models.ImageTypeInstaller) {
+			s.log.WithField("imageID", image.ID).Debug("Creating an installer for this image")
+			image, c, err := s.CreateInstallerForImage(image)
 			/* CreateInstallerForImage is also called directly from an endpoint.
 			If called from the endpoint it will not block
 				the caller returns the channel output to _
@@ -635,12 +635,12 @@ func (s *ImageService) postProcessImage(id uint) {
 				err = <-c
 			}
 			if err != nil {
-				s.SetErrorStatusOnImage(err, i)
+				s.SetErrorStatusOnImage(err, image)
 				s.log.WithField("error", err.Error()).Error("Failed creating installer for image")
 			}
 		}
 	}
-	s.log.WithField("status", i.Status).Debug("Processing image build is done")
+	s.log.WithField("status", image.Status).Debug("Processing image build is done")
 }
 
 // CreateRepoForImage creates the OSTree repo to host that image
