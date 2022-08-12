@@ -14,11 +14,16 @@ services:
 #      depends-on: postgresql
       volumes:
         - $DEVDIR:/opt/app-root/src:z
-      working_dir: /opt/app-root/src
+        - $HOME/go:/go
+#      working_dir: /opt/app-root
+#      working_dir: /opt/app-root/src
       command: ["go", "run", "main.go"]
       secrets:
         - source: edgemgmt_config
           target: /tmp/edgemgmt_config.json
+      depends_on:
+        - "postgresql"
+        - "kafka"
 
 #    edge-api-utility:
 #      image: localhost/edge-api:localdev

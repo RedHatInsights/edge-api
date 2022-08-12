@@ -95,17 +95,17 @@ func (mr *MockImageServiceInterfaceMockRecorder) CheckImageName(name, orgID inte
 }
 
 // CreateImage mocks base method.
-func (m *MockImageServiceInterface) CreateImage(image *models.Image, orgID, requestID string) error {
+func (m *MockImageServiceInterface) CreateImage(image *models.Image) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateImage", image, orgID, requestID)
+	ret := m.ctrl.Call(m, "CreateImage", image)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateImage indicates an expected call of CreateImage.
-func (mr *MockImageServiceInterfaceMockRecorder) CreateImage(image, orgID, requestID interface{}) *gomock.Call {
+func (mr *MockImageServiceInterfaceMockRecorder) CreateImage(image interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).CreateImage), image, orgID, requestID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).CreateImage), image)
 }
 
 // CreateInstallerForImage mocks base method.
@@ -242,6 +242,20 @@ func (m *MockImageServiceInterface) GetUpdateInfo(image models.Image) ([]models.
 func (mr *MockImageServiceInterfaceMockRecorder) GetUpdateInfo(image interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUpdateInfo", reflect.TypeOf((*MockImageServiceInterface)(nil).GetUpdateInfo), image)
+}
+
+// ProcessImage mocks base method.
+func (m *MockImageServiceInterface) ProcessImage(image *models.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProcessImage", image)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ProcessImage indicates an expected call of ProcessImage.
+func (mr *MockImageServiceInterfaceMockRecorder) ProcessImage(image interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessImage", reflect.TypeOf((*MockImageServiceInterface)(nil).ProcessImage), image)
 }
 
 // ResumeCreateImage mocks base method.

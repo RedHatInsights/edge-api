@@ -3,25 +3,25 @@ package kafkacommon
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/redhatinsights/edge-api/pkg/models"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
 
-// CreateConsoleEvent helps to create the default console event
-func CreateConsoleEvent(reqID, orgID, name, subject string, ident identity.XRHID) models.ConsoleRedhatComCloudEventsSchema {
-	consoleEvent := models.ConsoleRedhatComCloudEventsSchema{
-		Dataschema:  "v1",
-		ID:          reqID,
-		Redhatorgid: orgID,
-		Source:      "Edge Management",
-		Specversion: "v1",
+// CreateEdgeEvent creates an event with standard CRC fields and edge payload
+func CreateEdgeEvent(orgID string, source string, reqID string,
+	eventType string, subject string, payload interface{}) models.CRCCloudEvent {
+
+	cloudEvent := models.CRCCloudEvent{
+		Data:        payload,
+		DataSchema:  "v1",
+		ID:          uuid.New().String(),
+		RedHatOrgID: orgID,
+		Source:      source,
+		SpecVersion: "v1",
 		Subject:     subject,
-		System: &models.RhelSystem{
-			DisplayName: name,
-		},
-		Time:           time.Now().Format(time.RFC3339),
-		Identity:       ident,
-		Lasthandeltime: time.Now().Format(time.RFC3339),
+		Time:        time.Now().Format(time.RFC3339),
+		Type:        eventType,
 	}
-	return consoleEvent
+
+	return cloudEvent
 }
