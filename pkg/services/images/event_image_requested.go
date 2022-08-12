@@ -42,14 +42,11 @@ func (ev ImageRequestedEvent) Consume(ctx context.Context) {
 	identity := payload.GetIdentity()
 	identityBytes, err := json.Marshal(identity)
 	if err != nil {
-		log.Error("Error Marshaling the identity into a string")
+		eventlog.Error("Error Marshaling the identity into a string")
 		return
 	}
 
-	log.WithField("identity", string(identityBytes)).Debug("Identity debug")
-
 	base64Identity := base64.StdEncoding.EncodeToString(identityBytes)
-	log.WithField("identity_base64", base64Identity).Debug("Using a base64encoded identity")
 
 	// add the new identity to the context and create ctxServices with that context
 	ctx = common.SetOriginalIdentity(ctx, base64Identity)

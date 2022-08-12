@@ -244,8 +244,8 @@ type EdgeBasePayload struct {
 }
 
 // GetIdentity returns the identity from an Edge event
-func (epl EdgeBasePayload) GetIdentity() identity.Identity {
-	return epl.Identity.Identity
+func (epl EdgeBasePayload) GetIdentity() identity.XRHID {
+	return epl.Identity
 }
 
 // GetRequestID returns the ID of the original REST API request
