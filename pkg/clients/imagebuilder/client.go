@@ -322,6 +322,7 @@ func (c *Client) getComposeStatus(jobID string) (*ComposeStatus, error) {
 	c.log.Info("Image Builder ComposeStatus Request Started")
 	req, _ := http.NewRequest("GET", url, nil)
 	for key, value := range clients.GetOutgoingHeaders(c.ctx) {
+		c.log.WithField(key, value).Debug("temp header debug")
 		req.Header.Add(key, value)
 	}
 	req.Header.Add("Content-Type", "application/json")
