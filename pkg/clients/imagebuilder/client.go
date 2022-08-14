@@ -319,9 +319,7 @@ func (c *Client) getComposeStatus(jobID string) (*ComposeStatus, error) {
 	cs := &ComposeStatus{}
 	cfg := config.Get()
 	url := fmt.Sprintf("%s/api/image-builder/v1/composes/%s", cfg.ImageBuilderConfig.URL, jobID)
-	c.log.WithFields(log.Fields{
-		"url": url,
-	}).Debug("Image Builder ComposeStatus Request Started")
+	c.log.Info("Image Builder ComposeStatus Request Started")
 	req, _ := http.NewRequest("GET", url, nil)
 	for key, value := range clients.GetOutgoingHeaders(c.ctx) {
 		req.Header.Add(key, value)

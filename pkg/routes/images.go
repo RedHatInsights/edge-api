@@ -17,7 +17,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
-	"github.com/redhatinsights/edge-api/pkg/services/images"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
@@ -198,27 +197,10 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if feature.ImageCreateEDA.IsEnabled() {
-		// call the Produce method of the specific Event
-		// NOTE: these are the only custom lines necessary to Produce an event of a specific type
-		//			and can be cut/pasted/modified in the other routes
-		ctxServices.Log.Debug("Creating image from API request with EDA")
-		edgeEvent, eventErr := images.ProduceEvent(&images.EdgeMgmtImageCreateEvent{}, image, ident)
-		if eventErr != nil {
-			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(eventErr.Error()))
-
-			return
-		}
-
-		respondWithJSONBody(w, ctxServices.Log, edgeEvent)
-
-		return
-	}
-
 	ctxServices.Log.Debug("Creating image from API request")
-	err = ctxServices.ImageService.CreateImage(image, image.OrgID, image.RequestID)
-	if err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Failed creating image")
+	// initial checks and filling in necessary image info
+	if err = ctxServices.ImageService.CreateImage(image); err != nil {
+		ctxServices.Log.WithField("error", err.Error()).Error("Failed creating the image")
 		var apiError errors.APIError
 		switch err.(type) {
 		case *services.PackageNameDoesNotExist, *services.ThirdPartyRepositoryInfoIsInvalid, *services.ThirdPartyRepositoryNotFound, *services.ImageNameAlreadyExists, *services.ImageSetAlreadyExists:
@@ -227,9 +209,48 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 			apiError = errors.NewInternalServerError()
 			apiError.SetTitle("Failed creating image")
 		}
+		// TODO: does this respond with the appropriate HTTP response code?
 		respondWithAPIError(w, ctxServices.Log, apiError)
 		return
 	}
+
+	if feature.ImageCreateEDA.IsEnabled() {
+		ctxServices.Log.Debug("Creating image from API request with EDA")
+
+		// create payload for ImageRequested event
+		edgePayload := &models.EdgeImageRequestedEventPayload{
+			EdgeBasePayload: models.EdgeBasePayload{
+				Identity:       ident,
+				LastHandleTime: time.Now().Format(time.RFC3339),
+				RequestID:      image.RequestID,
+			},
+			NewImage: *image,
+		}
+
+		// create the edge event
+		edgeEvent := kafkacommon.CreateEdgeEvent(ident.Identity.OrgID, models.SourceEdgeEventAPI, image.RequestID,
+			models.EventTypeEdgeImageRequested, image.Name, edgePayload)
+
+		// put the event on the bus
+		if err = kafkacommon.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageRequested, edgeEvent); err != nil {
+			log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+
+			return
+		}
+
+		// return to Edge UI
+		w.WriteHeader(http.StatusOK)
+		respondWithJSONBody(w, ctxServices.Log, image)
+
+		return
+	}
+
+	// FALL THROUGH IF NOT EDA
+
+	// TODO: this is going to go away with EDA
+	ctxServices.ImageService.ProcessImage(image)
+
 	ctxServices.Log.WithFields(log.Fields{
 		"imageId": image.ID,
 	}).Info("Image build process started from API request")
@@ -258,28 +279,6 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	image.RequestID = request_id.GetReqID(r.Context())
-
-	if feature.ImageUpdateEDA.IsEnabled() {
-		ident, err := common.GetIdentityFromContext(r.Context())
-		if err != nil {
-			ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving identity from request")
-			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-			return
-		}
-		consoleEvent := kafkacommon.CreateConsoleEvent(image.RequestID, image.OrgID, image.Name, "redhat:console:fleetmanagement:createimageupdateevent", ident)
-		edgeEvent := models.EdgeUpdateCommitEvent{
-			ConsoleSchema: consoleEvent,
-			NewImage:      *image,
-			OldImage:      *previousImage,
-		}
-		edgeEventMessage, _ := json.Marshal(edgeEvent)
-		if err = kafkacommon.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, kafkacommon.RecordKeyCreateImageUpdate, edgeEventMessage); err != nil {
-			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-			return
-		}
-		respondWithJSONBody(w, ctxServices.Log, edgeEvent)
-		return
-	}
 
 	ctxServices.Log.Debug("Updating an image from API request")
 	err = ctxServices.ImageService.UpdateImage(image, previousImage)
@@ -369,7 +368,7 @@ func ValidateGetAllImagesSearchParams(next http.Handler) http.Handler {
 			if string(val[0]) == "-" {
 				name = val[1:]
 			}
-			if name != "status" && name != "name" && name != "distribution" && name != "created_at" && name != "version" {
+			if name != "status" && name != "name" && name != "distribution" && name != "created_at" {
 				errs = append(errs, validationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must be status or name or distribution or created_at", name)})
 			}
 		}
@@ -435,6 +434,7 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 func GetImageStatusByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		ctxServices := dependencies.ServicesFromContext(r.Context())
+		log.WithField("status", image.Status).Debug("Returning image status to UI")
 		respondWithJSONBody(w, ctxServices.Log,
 			struct {
 				Status string
@@ -514,28 +514,6 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check to see if feature is enabled and not in ephemeral
-	if feature.ImageCreateInstallerEDA.IsEnabled() {
-		ident, err := common.GetIdentityFromContext(r.Context())
-		if err != nil {
-			ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving identity from request")
-			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-			return
-		}
-		consoleEvent := kafkacommon.CreateConsoleEvent(image.RequestID, image.OrgID, image.Name, "redhat:console:fleetmanagement:createinstallerevent", ident)
-		edgeEvent := models.EdgeCreateCommitEvent{
-			ConsoleSchema: consoleEvent,
-			NewImage:      *image,
-		}
-		edgeEventMessage, _ := json.Marshal(edgeEvent)
-		if err = kafkacommon.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, kafkacommon.RecordKeyCreateInstaller, edgeEventMessage); err != nil {
-			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-			return
-		}
-		respondWithJSONBody(w, ctxServices.Log, edgeEvent)
-		return
-	}
-
 	image, _, err := ctxServices.ImageService.CreateInstallerForImage(image)
 	if err != nil {
 		ctxServices.Log.WithField("error", err).Error("Failed to create installer")
@@ -610,34 +588,12 @@ func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 	if image == nil {
 		return
 	}
-	// Check to see if feature is enabled
-	if feature.ImageCreateKickstartEDA.IsEnabled() {
-		ident, err := common.GetIdentityFromContext(r.Context())
-		if err != nil {
-			ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving identity from request")
-			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-			return
-		}
-		consoleEvent := kafkacommon.CreateConsoleEvent(image.RequestID, image.OrgID, image.Name, "redhat:console:fleetmanagement:createkickstartevent", ident)
-		edgeEvent := models.EdgeCreateCommitEvent{
-			ConsoleSchema: consoleEvent,
-			NewImage:      *image,
-		}
-		edgeEventMessage, _ := json.Marshal(edgeEvent)
-		if err = kafkacommon.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, kafkacommon.RecordKeyCreateKickstart, edgeEventMessage); err != nil {
-			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-			return
-		}
-		respondWithJSONBody(w, ctxServices.Log, edgeEvent)
-		return
-	}
 
 	if err := ctxServices.ImageService.AddUserInfo(image); err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Kickstart file injection failed")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
-
 }
 
 // CheckImageNameResponse indicates whether the image exists

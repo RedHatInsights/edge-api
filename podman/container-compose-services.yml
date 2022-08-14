@@ -17,14 +17,20 @@ services:
     edge-api-images-build:
       image: localhost/edge-api:localdev
       restart: unless-stopped
+      privileged: true
       env_file:
         - env/edge-api.env
       volumes:
         - $DEVDIR:/opt/app-root/src:z
+        - $HOME/go:/go
       command: go run /opt/app-root/src/pkg/services/images_build/main.go
       secrets:
         - source: edgemgmt_config
           target: /tmp/edgemgmt_config.json
+      depends_on:
+        - "kafka"
+        - "db"
+        - "edge-api-service"
 
     edge-api-utility:
       image: localhost/edge-api:localdev
@@ -35,6 +41,7 @@ services:
 #      depends-on: postgresql
       volumes:
         - $DEVDIR:/opt/app-root/src:z
+        - $HOME/go:/go
       #working_dir: /opt/app-root/src
       command: go run /opt/app-root/src/cmd/kafka/main.go
       secrets:

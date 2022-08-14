@@ -39,7 +39,8 @@ var WaitGroup sync.WaitGroup
 // ImageServiceInterface defines the interface that helps handle
 // the business logic of creating RHEL For Edge Images
 type ImageServiceInterface interface {
-	CreateImage(image *models.Image, orgID string, requestID string) error
+	CreateImage(image *models.Image) error
+	ProcessImage(image *models.Image) error
 	UpdateImage(image *models.Image, previousImage *models.Image) error
 	AddUserInfo(image *models.Image) error
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
@@ -142,16 +143,15 @@ func (s *ImageService) getImageSetForNewImage(orgID string, image *models.Image)
 	return &imageSet, nil
 }
 
-// CreateImage creates an Image for an OrgUD on Image Builder and on our database
-func (s *ImageService) CreateImage(image *models.Image, orgID string, requestID string) error {
-
-	if orgID == "" {
+// CreateImage sets up the image for the EDA-based CreateImage
+func (s *ImageService) CreateImage(image *models.Image) error {
+	if image.OrgID == "" {
 		return new(OrgIDNotSet)
 	}
 	if image.Name == "" {
 		return new(ImageNameUndefined)
 	}
-	imageNameExists, err := s.CheckImageName(image.Name, orgID)
+	imageNameExists, err := s.CheckImageName(image.Name, image.OrgID)
 	if err != nil {
 		return err
 	}
@@ -169,7 +169,7 @@ func (s *ImageService) CreateImage(image *models.Image, orgID string, requestID 
 			return er
 		}
 	}
-	imagesrepos, err := GetImageReposFromDB(orgID, image.ThirdPartyRepositories)
+	imagesrepos, err := GetImageReposFromDB(image.OrgID, image.ThirdPartyRepositories)
 	if err != nil {
 		return err
 	}
@@ -181,25 +181,25 @@ func (s *ImageService) CreateImage(image *models.Image, orgID string, requestID 
 		s.log.WithField("message", notify).Error("Notify Error")
 	}
 
-	imageSet, err := s.getImageSetForNewImage(orgID, image)
+	// TODO: REFACTOR... ImageSet should be created first and an image created from it
+	imageSet, err := s.getImageSetForNewImage(image.OrgID, image)
 	if err != nil {
-		// all logs are handled in getImageSetForNewImage
 		return err
 	}
 
 	// create an image under the new imageSet
-	image.OrgID = orgID
-	image.RequestID = requestID
 	image.ImageSetID = &imageSet.ID
 	// make the initial call to Image Builder
+	// FIXME: for EDA this should happen on the consumer side
 	image, err = s.ImageBuilder.ComposeCommit(image)
 	if err != nil {
 		return err
 	}
-	image.Commit.OrgID = orgID
+	image.Commit.OrgID = image.OrgID
 	// FIXME: Status below is already set in the call to ComposeCommit()
 	image.Commit.Status = models.ImageStatusBuilding
 	image.Status = models.ImageStatusBuilding
+
 	// TODO: Remove code when frontend is not using ImageType on the table
 	if image.HasOutputType(models.ImageTypeInstaller) {
 		image.ImageType = models.ImageTypeInstaller
@@ -208,19 +208,25 @@ func (s *ImageService) CreateImage(image *models.Image, orgID string, requestID 
 	}
 
 	if image.Installer != nil {
-		image.Installer.OrgID = orgID
+		image.Installer.OrgID = image.OrgID
 	}
-
 	// TODO: End of remove block
+
 	if image.HasOutputType(models.ImageTypeInstaller) {
 		image.Installer.Status = models.ImageStatusPending
-		image.Installer.OrgID = orgID
+		image.Installer.OrgID = image.OrgID
 	}
 
 	if result := db.DB.Create(&image); result.Error != nil {
 		return result.Error
 	}
 
+	return nil
+}
+
+// ProcessImage creates an Image for an OrgID on Image Builder and on our database
+func (s *ImageService) ProcessImage(image *models.Image) error {
+	// TODO: refactor this when EDA enabled
 	go s.postProcessImage(image.ID)
 
 	return nil
@@ -563,7 +569,7 @@ func (s *ImageService) postProcessImage(id uint) {
 	// NOTE: Every log message in this method already has commit id and image id injected
 
 	s.log.Debug("Processing image build")
-	var i *models.Image
+	var image *models.Image
 
 	// setup a context and signal for SIGTERM
 	ctx := context.Background()
@@ -603,23 +609,23 @@ func (s *ImageService) postProcessImage(id uint) {
 	}()
 
 	// business as usual from here to end of block
-	db.DB.Debug().Joins("Commit").Joins("Installer").First(&i, id)
+	db.DB.Debug().Joins("Commit").Joins("Installer").First(&image, id)
 
-	// Request a commit from Image Builder for the image
-	s.log.WithField("imageID", i.ID).Debug("Creating a commit for this image")
-	err := s.postProcessCommit(i)
+	// Monitor the commit for completion
+	s.log.WithField("imageID", image.ID).Debug("Monitoring commit status for this image")
+	err := s.postProcessCommit(image)
 	if err != nil {
-		s.SetErrorStatusOnImage(err, i)
+		s.SetErrorStatusOnImage(err, image)
 		s.log.WithField("error", err.Error()).Error("Failed creating commit for image")
 	}
 
-	if i.Commit.Status == models.ImageStatusSuccess {
+	if image.Commit.Status == models.ImageStatusSuccess {
 		s.log.Debug("Commit is successful")
 
 		// Request an installer ISO from Image Builder for the image
-		if i.HasOutputType(models.ImageTypeInstaller) {
-			s.log.WithField("imageID", i.ID).Debug("Creating an installer for this image")
-			i, c, err := s.CreateInstallerForImage(i)
+		if image.HasOutputType(models.ImageTypeInstaller) {
+			s.log.WithField("imageID", image.ID).Debug("Creating an installer for this image")
+			image, c, err := s.CreateInstallerForImage(image)
 			/* CreateInstallerForImage is also called directly from an endpoint.
 			If called from the endpoint it will not block
 				the caller returns the channel output to _
@@ -629,12 +635,12 @@ func (s *ImageService) postProcessImage(id uint) {
 				err = <-c
 			}
 			if err != nil {
-				s.SetErrorStatusOnImage(err, i)
+				s.SetErrorStatusOnImage(err, image)
 				s.log.WithField("error", err.Error()).Error("Failed creating installer for image")
 			}
 		}
 	}
-	s.log.WithField("status", i.Status).Debug("Processing image build is done")
+	s.log.WithField("status", image.Status).Debug("Processing image build is done")
 }
 
 // CreateRepoForImage creates the OSTree repo to host that image
@@ -898,7 +904,6 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 
 // CheckImageName returns false if the image doesnt exist and true if the image exists
 func (s *ImageService) CheckImageName(name, orgID string) (bool, error) {
-	s.log.WithField("name", name).Debug("Checking image name")
 	var imageFindByName *models.Image
 	result := db.Org(orgID, "").Where("(name = ?)", name).First(&imageFindByName)
 	if result.Error != nil {
@@ -1031,7 +1036,7 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 		s.log.WithField("error", err).Debug("Request related error - ID is not integer")
 		return nil, new(IDMustBeInteger)
 	}
-	result := db.Org(orgID, "images").Debug().Preload("Commit.Repo").Preload("Commit.InstalledPackages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Joins("Commit").First(&image, id)
+	result := db.Org(orgID, "images").Preload("Commit.Repo").Preload("Commit.InstalledPackages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Joins("Commit").First(&image, id)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Debug("Request related error - image is not found")
 		return nil, new(ImageNotFoundError)
@@ -1078,7 +1083,7 @@ func (s *ImageService) RetryCreateImage(image *models.Image) error {
 
 func (s *ImageService) setImageStatus(image *models.Image, status string) error {
 	image.Status = status
-	tx := db.DB.Debug().Save(image)
+	tx := db.DB.Save(image)
 	if tx.Error != nil {
 		s.log.WithFields(log.Fields{"imageID": image.ID, "status": status, "error": tx.Error.Error()}).Error("Failed to update image status")
 		return tx.Error
@@ -1090,7 +1095,7 @@ func (s *ImageService) setImageStatus(image *models.Image, status string) error 
 
 func (s *ImageService) setCommitStatus(image *models.Image, status string) error {
 	image.Commit.Status = status
-	tx := db.DB.Debug().Save(image.Commit)
+	tx := db.DB.Save(image.Commit)
 	if tx.Error != nil {
 		s.log.WithFields(log.Fields{"imageID": image.ID, "commitID": image.Commit.ID, "status": status, "error": tx.Error.Error()}).Error("Failed to update commit status")
 		return tx.Error
@@ -1102,7 +1107,7 @@ func (s *ImageService) setCommitStatus(image *models.Image, status string) error
 
 func (s *ImageService) setInstallerStatus(image *models.Image, status string) error {
 	image.Installer.Status = status
-	tx := db.DB.Debug().Save(image.Installer)
+	tx := db.DB.Save(image.Installer)
 	if tx.Error != nil {
 		s.log.WithFields(log.Fields{"imageID": image.ID, "installerID": image.Installer.ID, "status": status, "error": tx.Error.Error()}).Error("Failed to update installer status")
 		return tx.Error

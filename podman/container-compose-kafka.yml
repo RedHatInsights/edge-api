@@ -3,6 +3,7 @@ services:
   kafka:
     container_name: kafka
     image: quay.io/strimzi/kafka:latest-kafka-2.8.1-amd64
+    restart: unless-stopped
     command:
       [
         "sh",
