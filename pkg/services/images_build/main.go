@@ -11,7 +11,7 @@ import (
 
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/models"
-	"github.com/redhatinsights/edge-api/pkg/services/images"
+	"github.com/redhatinsights/edge-api/pkg/services/image"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -131,7 +131,7 @@ func main() {
 						// TODO: this seems like a lot of work to read an event back in
 						//			make this configurable and reusable
 						// unmarshal the event bytes to a specific struct
-						crcEvent := &images.ImageRequestedEvent{}
+						crcEvent := &image.EventImageRequested{}
 						err = json.Unmarshal(e.Value, crcEvent)
 						if err != nil {
 							mslog.Error("Failed to unmarshal CRC event")
@@ -158,7 +158,7 @@ func main() {
 						// TODO: drop this and the crcEvent.Consume() call below switch to fallthrough if event is of type with Consume().
 						//		then set a flag and if it
 						// add the logger to the context before Consume() calls
-						ctx = images.ContextWithLogger(ctx, mslog)
+						ctx = image.ContextWithLogger(ctx, mslog)
 
 						// call the event's Consume method
 						go crcEvent.Consume(ctx)
@@ -187,5 +187,3 @@ func main() {
 		c.Close()
 	}
 }
-
-// FIXME: move consumer config map to central location so consumer code doesn't need to be touched

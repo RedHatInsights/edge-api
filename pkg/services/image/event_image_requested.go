@@ -1,4 +1,4 @@
-package images
+package image
 
 import (
 	"context"
@@ -13,13 +13,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// ImageRequestedEvent is the local image requseted event struct that consumer methods can be declared against
-type ImageRequestedEvent struct {
+// EventImageRequested is the local image requseted event struct that consumer methods can be declared against
+type EventImageRequested struct {
 	models.CRCCloudEvent
 }
 
 // Consume executes code against the data in the received event
-func (ev ImageRequestedEvent) Consume(ctx context.Context) {
+func (ev EventImageRequested) Consume(ctx context.Context) {
 	eventlog := GetLoggerFromContext(ctx)
 
 	// rebuilding the context and identity here

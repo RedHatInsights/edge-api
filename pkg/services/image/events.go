@@ -1,4 +1,4 @@
-package images
+package image
 
 import (
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -11,5 +11,5 @@ type EdgeMgmtImageEventInterface interface {
 
 // RegisteredEvents maps the record key to a corresponding event struct for handling
 var RegisteredEvents = map[string]interface{}{
-	models.EventTypeEdgeImageRequested: &ImageRequestedEvent{},
+	models.EventTypeEdgeImageRequested: &EventImageRequested{},
 }
