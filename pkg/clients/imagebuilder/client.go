@@ -6,15 +6,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-
-	log "github.com/sirupsen/logrus"
-
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services"
+	log "github.com/sirupsen/logrus"
+	"io/ioutil"
+	"net/http"
 )
 
 // ClientInterface is an Interface to make request to ImageBuilder
@@ -29,6 +28,7 @@ type ClientInterface interface {
 
 // Client is the implementation of an ClientInterface
 type Client struct {
+	ImageService services.ImageServiceInterface
 	ctx context.Context
 	log *log.Entry
 }
@@ -91,15 +91,19 @@ type ComposeRequest struct {
 // ComposeStatus is the status of a ComposeRequest
 type ComposeStatus struct {
 	ImageStatus ImageStatus `json:"image_status"`
+
 }
 
 // ImageStatus is the status of the upload of an Image
 type ImageStatus struct {
 	Status       imageStatusValue `json:"status"`
+	Reason       imageStatusValue `json:"reason"`
 	UploadStatus *UploadStatus    `json:"upload_status,omitempty"`
 }
 
 type imageStatusValue string
+
+
 
 const (
 	imageStatusBulding     imageStatusValue = "building"
@@ -108,6 +112,7 @@ const (
 	imageStatusRegistering imageStatusValue = "registering"
 	imageStatusSuccess     imageStatusValue = "success"
 	imageStatusUploading   imageStatusValue = "uploading"
+	imageReasonFailure 	   imageStatusValue = "Worker running this job stopped responding."
 )
 
 // UploadStatus is the status and metadata of an Image upload
@@ -315,7 +320,7 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 	return image, nil
 }
 
-func (c *Client) getComposeStatus(jobID string) (*ComposeStatus, error) {
+func (c *Client) getComposeStatus(jobID string, image *models.Image) (*ComposeStatus, error) {
 	cs := &ComposeStatus{}
 	cfg := config.Get()
 	url := fmt.Sprintf("%s/api/image-builder/v1/composes/%s", cfg.ImageBuilderConfig.URL, jobID)
@@ -343,6 +348,17 @@ func (c *Client) getComposeStatus(jobID string) (*ComposeStatus, error) {
 	if err != nil {
 		return nil, err
 	}
+	if cs.ImageStatus.Status == imageStatusFailure && cs.ImageStatus.Reason == imageReasonFailure {
+		err := c.ImageService.RetryCreateImage(image)
+		if err != nil {
+			c.log.WithFields(log.Fields{
+				"statusCode":   res.StatusCode,
+				"responseBody": string(body),
+				"error":        err,
+			}).Error("failed to retry for worker")
+			return nil, err
+		}
+	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("request for status was not successful")
@@ -358,7 +374,7 @@ func (c *Client) getComposeStatus(jobID string) (*ComposeStatus, error) {
 
 // GetCommitStatus gets the Commit status on Image Builder
 func (c *Client) GetCommitStatus(image *models.Image) (*models.Image, error) {
-	cs, err := c.getComposeStatus(image.Commit.ComposeJobID)
+	cs, err := c.getComposeStatus(image.Commit.ComposeJobID, image)
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +393,7 @@ func (c *Client) GetCommitStatus(image *models.Image) (*models.Image, error) {
 
 // GetInstallerStatus gets the Installer status on Image Builder
 func (c *Client) GetInstallerStatus(image *models.Image) (*models.Image, error) {
-	cs, err := c.getComposeStatus(image.Installer.ComposeJobID)
+	cs, err := c.getComposeStatus(image.Installer.ComposeJobID, image)
 	if err != nil {
 		return nil, err
 	}
