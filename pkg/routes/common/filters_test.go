@@ -2,12 +2,13 @@ package common
 
 import (
 	"fmt"
-	"gorm.io/gorm"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"gorm.io/gorm"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/redhatinsights/edge-api/config"
@@ -136,7 +137,7 @@ func TestContainFilterMultipleGrouped(t *testing.T) {
 	sql := db.DB.ToSQL(func(tx *gorm.DB) *gorm.DB {
 		return filter(req, tx).Find(&images)
 	})
-	if !strings.Contains(sql, `(images.status LIKE "%SUCCESS%" OR images.status LIKE "%ERROR%")`) {
+	if !strings.Contains(sql, `(upper(images.status) LIKE "%SUCCESS%" OR upper(images.status) LIKE "%ERROR%")`) {
 		t.Fatalf("SQL LIKE expressions are not grouped: %s", sql)
 	}
 }

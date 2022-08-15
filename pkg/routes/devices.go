@@ -84,7 +84,7 @@ var devicesFilters = common.ComposeFilters(
 		DBField:    "devices.created_at",
 	}),
 	// Filter handler for "image_id"
-	common.ContainFilterHandler(&common.Filter{
+	common.IntegerNumberFilterHandler(&common.Filter{
 		QueryParam: "image_id",
 		DBField:    "devices.image_id",
 	}),

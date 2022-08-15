@@ -373,6 +373,11 @@ paths:
           description: 'field: filter by status'
           schema:
             type: string
+        - name: limit
+          in: query
+          description: 'field: return number of updates until limit is reached. Default is 30.'
+          schema:
+            type: integer
       responses:
         "200":
           content:

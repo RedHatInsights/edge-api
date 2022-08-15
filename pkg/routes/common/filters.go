@@ -28,10 +28,10 @@ func ContainFilterHandler(filter *Filter) FilterFunc {
 			containFilter := db.DB
 			for i, query := range multipleStatusQuery {
 				if i == 0 {
-					containFilter = containFilter.Where(fmt.Sprintf("%s LIKE ?", filter.DBField), "%"+query+"%")
+					containFilter = containFilter.Where(fmt.Sprintf("upper(%s) LIKE ?", filter.DBField), "%"+strings.ToUpper(query)+"%")
 
 				} else {
-					containFilter = containFilter.Or(fmt.Sprintf("%s LIKE ?", filter.DBField), "%"+query+"%")
+					containFilter = containFilter.Or(fmt.Sprintf("upper(%s) LIKE ?", filter.DBField), "%"+strings.ToUpper(query)+"%")
 				}
 			}
 			// this will ensure that the SQL OR will be grouped in brackets
@@ -41,7 +41,7 @@ func ContainFilterHandler(filter *Filter) FilterFunc {
 			// WHERE status LIKE '%SUCCESS%' OR status LIKE '%ERROR%' AND org_id = 'XXXXXXXX'
 			tx = tx.Where(containFilter)
 		} else if val := r.URL.Query().Get(filter.QueryParam); val != "" {
-			tx = tx.Where(fmt.Sprintf("%s LIKE ?", filter.DBField), "%"+val+"%")
+			tx = tx.Where(fmt.Sprintf("upper(%s) LIKE ?", filter.DBField), "%"+strings.ToUpper(val)+"%")
 		}
 		return tx
 	})
