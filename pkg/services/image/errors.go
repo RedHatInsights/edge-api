@@ -1,4 +1,4 @@
-package images
+package image
 
 // PayloadTypeAssertionError indicates the image name is not defined
 type PayloadTypeAssertionError struct{}
