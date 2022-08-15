@@ -155,8 +155,8 @@ objects:
             cpu: ${{CPU_LIMIT}}
             memory: ${MEMORY_LIMIT}
           requests:
-            cpu: 250m
-            memory: 256Mi
+            cpu: 125m
+            memory: 128Mi
     - name: ibvents
       minReplicas: 1
       podSpec:
@@ -211,8 +211,8 @@ objects:
             cpu: ${{CPU_LIMIT}}
             memory: ${MEMORY_LIMIT}
           requests:
-            cpu: 250m
-            memory: 256Mi
+            cpu: 125m
+            memory: 128Mi
     objectStore:
     - ${EDGE_TARBALLS_BUCKET}
     database:
