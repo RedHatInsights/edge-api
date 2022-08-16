@@ -152,8 +152,8 @@ objects:
           value: ${TENANT_TRANSLATOR_PORT}
         resources:
           limits:
-            cpu: ${{CPU_LIMIT}}
-            memory: ${MEMORY_LIMIT}
+            cpu: 250m
+            memory: 2Gi
           requests:
             cpu: 125m
             memory: 128Mi
@@ -208,8 +208,8 @@ objects:
           value: ${TENANT_TRANSLATOR_PORT}
         resources:
           limits:
-            cpu: ${{CPU_LIMIT}}
-            memory: ${MEMORY_LIMIT}
+            cpu: 250m
+            memory: 256Mi
           requests:
             cpu: 125m
             memory: 128Mi
