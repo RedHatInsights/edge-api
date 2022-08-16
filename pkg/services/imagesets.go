@@ -100,7 +100,7 @@ func (s *ImageSetsService) GetImageSetsViewCount(tx *gorm.DB) (int64, error) {
 
 	if result := db.OrgDB(orgID, tx, "image_sets").Debug().
 		Joins(`JOIN images ON image_sets.id = images.image_set_id`).
-		Model(&models.ImageSet{}).Distinct("Image_Sets.ID").Count(&count); result.Error != nil {
+		Model(&models.ImageSet{}).Distinct("image_sets.id").Count(&count); result.Error != nil {
 		s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("Error getting image sets count")
 		return 0, result.Error
 	}
