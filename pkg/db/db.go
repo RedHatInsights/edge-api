@@ -87,9 +87,15 @@ func OrgDB(orgID string, gormDB *gorm.DB, table string) *gorm.DB {
 	if table != "" {
 		orgIDName = fmt.Sprintf("%s.%s", table, orgIDName)
 	}
-	sqlText := fmt.Sprintf(
-		"(%s = ? AND (%s != '' AND %s IS NOT NULL))",
-		orgIDName, orgIDName, orgIDName,
+	if orgIDName == "" {
+		return nil
+	}
+	var sqlText string
+
+	sqlText = fmt.Sprintf(
+		"(%s = ? )",
+		orgIDName,
 	)
+
 	return gormDB.Where(sqlText, orgID)
 }
