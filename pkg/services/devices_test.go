@@ -531,7 +531,6 @@ var _ = Describe("DfseviceService", func() {
 				}
 				db.DB.Create(oldImage.Commit)
 				db.DB.Create(oldImage)
-				fmt.Printf("Old image was created with id %d\n", oldImage.ID)
 				newImage := &models.Image{
 					Commit: &models.Commit{
 						OSTreeCommit: checksum,
