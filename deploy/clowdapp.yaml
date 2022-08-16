@@ -19,7 +19,6 @@ objects:
     deployments:
     - name: service
       minReplicas: ${{MIN_REPLICAS}}
-      maxReplicas: 2
       webServices:
         public:
           enabled: True
