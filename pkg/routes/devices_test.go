@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"time"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/go-chi/chi"
@@ -206,6 +207,7 @@ var _ = Describe("Devices View Router", func() {
 
 var _ = Describe("Devices View Filters", func() {
 	var imageV1 *models.Image
+	var deviceCreateedAt *time.Time
 	var deviceUUID string
 
 	BeforeEach(func() {
@@ -242,6 +244,7 @@ var _ = Describe("Devices View Filters", func() {
 		Expect(result.Error).To(BeNil())
 		result = db.DB.Create(&device2)
 		Expect(result.Error).To(BeNil())
+		deviceCreateedAt = &device1.CreatedAt.Time
 
 	})
 	It("when filter by name, return devices with given name", func() {
@@ -314,5 +317,25 @@ var _ = Describe("Devices View Filters", func() {
 		dbFilters.Find(&devices)
 		Expect(len(devices)).To(Equal(1))
 		Expect(devices[0].ImageID).To(Equal(imageV1.ID))
+	})
+	It("when filter by created_at, return devices with matching value", func() {
+		var devicesFilters = common.ComposeFilters(
+			// Filter handler for "image_id"
+			common.IntegerNumberFilterHandler(&common.Filter{
+				QueryParam: "image_id",
+				DBField:    "devices.image_id",
+			}),
+		)
+
+		req, err := http.NewRequest("GET", fmt.Sprintf("/?created_at=%s", deviceCreateedAt.String()), nil)
+		Expect(err).ToNot(HaveOccurred())
+		dbFilters := devicesFilters(req, db.DB)
+		devices := []models.Device{}
+		dbFilters.Find(&devices)
+		Expect(devices[0].CreatedAt.Time.Year()).To(Equal(deviceCreateedAt.Year()))
+		Expect(devices[0].CreatedAt.Time.Month()).To(Equal(deviceCreateedAt.Month()))
+		Expect(devices[0].CreatedAt.Time.Day()).To(Equal(deviceCreateedAt.Day()))
+		Expect(devices[0].CreatedAt.Time.Hour()).To(Equal(deviceCreateedAt.Hour()))
+		Expect(devices[0].CreatedAt.Time.Minute()).To(Equal(deviceCreateedAt.Minute()))
 	})
 })

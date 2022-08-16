@@ -17,7 +17,7 @@ func initalizeQueryParamsArray() map[string][]string {
 		m = make(map[string][]string)
 		m["device-groups"] = []string{"limit", "offset", "name", "created_at", "updated_at", "sort_by"}
 		m["devices"] = []string{"per_page", "page", "sort_by", "order_how", "hostname_or_id"}
-		m["devicesview"] = []string{"limit", "offset", "name", "uuid", "update_available", "image_id", "sort_by"}
+		m["devicesview"] = []string{"limit", "offset", "name", "uuid", "update_available", "image_id", "sort_by", "created_at"}
 		m["images"] = []string{"limit", "offset", "status", "name", "distribution", "created_at", "sort_by"}
 		m["image-sets"] = []string{"limit", "offset", "status", "name", "version", "sort_by"}
 		m["thirdpartyrepo"] = []string{"limit", "offset", "name", "created_at", "updated_at", "imageID", "sort_by"}
