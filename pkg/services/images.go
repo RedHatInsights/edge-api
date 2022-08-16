@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"text/template"
@@ -531,6 +532,9 @@ func (s *ImageService) postProcessImage(id uint) {
 	// Monitor the commit for completion
 	s.log.WithField("imageID", image.ID).Debug("Monitoring commit status for this image")
 	err := s.postProcessCommit(image)
+	if image.Status == models.ImageStatusInterrupted {
+		return
+	}
 	if err != nil {
 		s.SetErrorStatusOnImage(err, image)
 		s.log.WithField("error", err.Error()).Error("Failed creating commit for image")
@@ -550,6 +554,9 @@ func (s *ImageService) postProcessImage(id uint) {
 			*/
 			if c != nil {
 				err = <-c
+			}
+			if image.Status == models.ImageStatusInterrupted {
+				return
 			}
 			if err != nil {
 				s.SetErrorStatusOnImage(err, image)
@@ -788,7 +795,14 @@ func (s *ImageService) cleanFiles(kickstart string, isoName string, imageID uint
 func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, error) {
 	if image.Commit.Status == models.ImageStatusBuilding {
 		image, err := s.ImageBuilder.GetCommitStatus(image)
-		if err != nil {
+		if strings.Contains(err.Error(), "running this job stopped responding") {
+			image.Status = models.ImageStatusInterrupted
+			tx := db.DB.Debug().Model(&models.Image{}).Where("ID = ?", image.ID).Update("Status", models.ImageStatusInterrupted)
+			if tx.Error != nil {
+				return image, err
+			}
+			return image, err
+		} else if err != nil {
 			return image, err
 		}
 		if image.Commit.Status != models.ImageStatusBuilding {
@@ -1102,6 +1116,9 @@ func (s *ImageService) resumeProcessImage(image *models.Image) {
 		// Request a commit from Image Builder for the image
 		s.log.Debug("Creating a commit for this image")
 		err := s.postProcessCommit(image)
+		if image.Status == models.ImageStatusInterrupted {
+			return
+		}
 		if err != nil {
 			s.SetErrorStatusOnImage(err, image)
 			s.log.WithField("error", err.Error()).Error("Failed creating commit for image")
@@ -1152,6 +1169,9 @@ func (s *ImageService) resumeProcessImage(image *models.Image) {
 			*/
 			if c != nil {
 				err = <-c
+			}
+			if image.Status == models.ImageStatusInterrupted {
+				return
 			}
 			if err != nil {
 				s.SetErrorStatusOnImage(err, image2)

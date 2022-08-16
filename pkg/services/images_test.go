@@ -3,7 +3,6 @@ package services_test
 import (
 	"context"
 	"fmt"
-
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -22,10 +21,12 @@ var _ = Describe("Image Service Test", func() {
 	var service services.ImageService
 	var hash string
 	var mockImageBuilderClient *mock_imagebuilder.MockClientInterface
+	var mockImageService *mock_services.MockImageServiceInterface
 	var mockRepoService *mock_services.MockRepoServiceInterface
 	BeforeEach(func() {
 		ctrl := gomock.NewController(GinkgoT())
 		defer ctrl.Finish()
+		mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
 		mockImageBuilderClient = mock_imagebuilder.NewMockClientInterface(ctrl)
 		mockRepoService = mock_services.NewMockRepoServiceInterface(ctrl)
 		service = services.ImageService{
@@ -684,6 +685,26 @@ var _ = Describe("Image Service Test", func() {
 
 				err := service.SetDevicesUpdateAvailabilityFromImageSet(orgID, imageSet.ID)
 				Expect(err).To(BeNil())
+			})
+		})
+	})
+	Describe("update image stop when worker running job stopped responding", func() {
+		orgID := common.DefaultOrgID
+		//requestID := faker.UUIDHyphenated()
+		imageName := faker.UUIDHyphenated()
+		image := models.Image{OrgID: orgID, Distribution: "rhel-85", Name: imageName, Commit: &models.Commit{
+			Status: models.ImageStatusBuilding}}
+		expectedErr := fmt.Errorf("running this job stopped responding")
+		When("When image-builder failed in GetComposeStatus when worker stopped responding", func() {
+			It("image is created with INTERRUPTED status", func() {
+				ctrl := gomock.NewController(GinkgoT())
+				defer ctrl.Finish()
+				mockImageService.EXPECT().UpdateImageStatus(&image).Return(&image, expectedErr)
+				mockImageBuilderClient.EXPECT().GetCommitStatus(&image).Return(&image, expectedErr)
+				_, err := service.UpdateImageStatus(&image)
+				Expect(err).To(HaveOccurred())
+				// image is not created
+				Expect(image.ID).To(Equal(uint(0)))
 			})
 		})
 	})
