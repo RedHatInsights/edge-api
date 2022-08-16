@@ -167,7 +167,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	}
 
 	countResult := imageSetFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Debug().Model(&models.ImageSet{})).
-		Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id`, orgID).Distinct("Image_Sets.ID").Count(&count)
+		Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id`, orgID).Distinct("image_sets.id").Count(&count)
 
 	if countResult.Error != nil {
 		s.Log.WithField("error", countResult.Error.Error()).Error("Error counting results for image sets list")
@@ -180,7 +180,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.URL.Query().Get("sort_by") != "-status" && r.URL.Query().Get("sort_by") != "status" {
-		result = imageSetFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Debug().Model(&models.ImageSet{})).Distinct("Image_Sets.*").
+		result = imageSetFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Debug().Model(&models.ImageSet{})).Distinct("image_sets.*").
 			Limit(pagination.Limit).Offset(pagination.Offset).
 			Preload("Images").
 			Preload("Images.Commit").
@@ -190,7 +190,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 			Find(&imageSet)
 	} else {
 		// this code is no longer run, but would be used if sorting by status is re-implemented.
-		result = imageStatusFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Debug().Model(&models.ImageSet{})).Distinct("Image_Sets.*").
+		result = imageStatusFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Debug().Model(&models.ImageSet{})).Distinct("image_sets.*").
 			Limit(pagination.Limit).Offset(pagination.Offset).
 			Preload("Images", "lower(status) in (?)", strings.ToLower(r.URL.Query().Get("status"))).
 			Preload("Images.Commit").
