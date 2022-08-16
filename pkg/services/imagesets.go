@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+
 	"gorm.io/gorm"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -98,8 +99,8 @@ func (s *ImageSetsService) GetImageSetsViewCount(tx *gorm.DB) (int64, error) {
 	var count int64
 
 	if result := db.OrgDB(orgID, tx, "image_sets").Debug().
-		Joins(`JOIN images ON image_sets.id = images.image_set_id AND Images.id = (Select Max(id) from Images where images.image_set_id = image_sets.id)`).
-		Model(&models.ImageSet{}).Count(&count); result.Error != nil {
+		Joins(`JOIN images ON image_sets.id = images.image_set_id`).
+		Model(&models.ImageSet{}).Distinct("Image_Sets.ID").Count(&count); result.Error != nil {
 		s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("Error getting image sets count")
 		return 0, result.Error
 	}
@@ -131,8 +132,8 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 	var imageSetsRows []ImageSetRow
 
 	if result := db.OrgDB(orgID, tx, "image_sets").Debug().Table("image_sets").Limit(limit).Offset(offset).
-		Select(`image_sets.id, image_sets.name, image_sets.version, image_sets.updated_at, images.status, images.id as "image_id"`).
-		Joins(`JOIN images ON image_sets.id = images.image_set_id AND Images.id = (Select Max(id) from Images where images.image_set_id = image_sets.id)`).
+		Select(`image_sets.id, image_sets.name, image_sets.version, image_sets.updated_at, images.status, images.id as "image_id"`).Distinct("Image_Sets.*").
+		Joins(`JOIN images ON image_sets.id = images.image_set_id`).
 		Find(&imageSetsRows); result.Error != nil {
 
 		log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error(
