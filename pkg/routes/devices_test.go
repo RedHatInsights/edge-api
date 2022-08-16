@@ -321,9 +321,9 @@ var _ = Describe("Devices View Filters", func() {
 	It("when filter by created_at, return devices with matching value", func() {
 		var devicesFilters = common.ComposeFilters(
 			// Filter handler for "image_id"
-			common.IntegerNumberFilterHandler(&common.Filter{
-				QueryParam: "image_id",
-				DBField:    "devices.image_id",
+			common.CreatedAtFilterHandler(&common.Filter{
+				QueryParam: "created_at",
+				DBField:    "devices.created_at",
 			}),
 		)
 
