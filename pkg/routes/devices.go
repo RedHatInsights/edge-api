@@ -79,7 +79,7 @@ var devicesFilters = common.ComposeFilters(
 		DBField:    "devices.update_available",
 	}),
 	// Filter handler for "created_at"
-	common.BoolFilterHandler(&common.Filter{
+	common.CreatedAtFilterHandler(&common.Filter{
 		QueryParam: "created_at",
 		DBField:    "devices.created_at",
 	}),
