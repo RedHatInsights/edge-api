@@ -23,7 +23,7 @@ var _ = Describe("Db", func() {
 			sql := db.DB.ToSQL(func(gormDB *gorm.DB) *gorm.DB {
 				return db.OrgDB("00000000", gormDB, "").Find(&device)
 			})
-			Expect(sql).To(ContainSubstring("(org_id = \"00000000\" AND (org_id != '' AND org_id IS NOT NULL))"))
+			Expect(sql).To(ContainSubstring("org_id = \"00000000\""))
 		})
 	})
 	Context("get orgID from images table", func() {
@@ -32,7 +32,7 @@ var _ = Describe("Db", func() {
 			sql := db.DB.ToSQL(func(gormDB *gorm.DB) *gorm.DB {
 				return db.OrgDB("00000000", gormDB, "images").Find(&images)
 			})
-			Expect(sql).To(ContainSubstring("(images.org_id = \"00000000\" AND (images.org_id != '' AND images.org_id IS NOT NULL))"))
+			Expect(sql).To(ContainSubstring("images.org_id = \"00000000\""))
 		})
 	})
 })
