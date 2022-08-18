@@ -1,10 +1,13 @@
 package routes_test
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"testing"
+	"time"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/go-chi/chi"
@@ -206,6 +209,7 @@ var _ = Describe("Devices View Router", func() {
 
 var _ = Describe("Devices View Filters", func() {
 	var imageV1 *models.Image
+	var deviceCreateedAt *time.Time
 	var deviceUUID string
 
 	BeforeEach(func() {
@@ -242,6 +246,7 @@ var _ = Describe("Devices View Filters", func() {
 		Expect(result.Error).To(BeNil())
 		result = db.DB.Create(&device2)
 		Expect(result.Error).To(BeNil())
+		deviceCreateedAt = &device1.CreatedAt.Time
 
 	})
 	It("when filter by name, return devices with given name", func() {
@@ -254,7 +259,7 @@ var _ = Describe("Devices View Filters", func() {
 			}),
 		)
 
-		req, err := http.NewRequest("GET", fmt.Sprintf("/?name=%s", name), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("?name=%s", name), nil)
 		Expect(err).ToNot(HaveOccurred())
 		dbFilters := devicesFilters(req, db.DB)
 		devices := []models.Device{}
@@ -271,7 +276,7 @@ var _ = Describe("Devices View Filters", func() {
 			}),
 		)
 
-		req, err := http.NewRequest("GET", "/?update_available=true", nil)
+		req, err := http.NewRequest("GET", "?update_available=true", nil)
 		Expect(err).ToNot(HaveOccurred())
 		dbFilters := devicesFilters(req, db.DB)
 		devices := []models.Device{}
@@ -290,7 +295,7 @@ var _ = Describe("Devices View Filters", func() {
 			}),
 		)
 
-		req, err := http.NewRequest("GET", fmt.Sprintf("/?uuid=%s", deviceUUID), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("?uuid=%s", deviceUUID), nil)
 		Expect(err).ToNot(HaveOccurred())
 		dbFilters := devicesFilters(req, db.DB)
 		devices := []models.Device{}
@@ -307,7 +312,7 @@ var _ = Describe("Devices View Filters", func() {
 			}),
 		)
 
-		req, err := http.NewRequest("GET", fmt.Sprintf("/?image_id=%d", imageV1.ID), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("?image_id=%d", imageV1.ID), nil)
 		Expect(err).ToNot(HaveOccurred())
 		dbFilters := devicesFilters(req, db.DB)
 		devices := []models.Device{}
@@ -315,4 +320,104 @@ var _ = Describe("Devices View Filters", func() {
 		Expect(len(devices)).To(Equal(1))
 		Expect(devices[0].ImageID).To(Equal(imageV1.ID))
 	})
+	It("when filter by created_at, return devices with matching value", func() {
+		var devicesFilters = common.ComposeFilters(
+			// Filter handler for "image_id"
+			common.CreatedAtFilterHandler(&common.Filter{
+				QueryParam: "created_at",
+				DBField:    "devices.created_at",
+			}),
+		)
+
+		req, err := http.NewRequest("GET", fmt.Sprintf("/?created_at=%s", deviceCreateedAt.String()), nil)
+		Expect(err).ToNot(HaveOccurred())
+		dbFilters := devicesFilters(req, db.DB)
+		devices := []models.Device{}
+		dbFilters.Find(&devices)
+		Expect(devices[0].CreatedAt.Time.Year()).To(Equal(deviceCreateedAt.Year()))
+		Expect(devices[0].CreatedAt.Time.Month()).To(Equal(deviceCreateedAt.Month()))
+		Expect(devices[0].CreatedAt.Time.Day()).To(Equal(deviceCreateedAt.Day()))
+		Expect(devices[0].CreatedAt.Time.Hour()).To(Equal(deviceCreateedAt.Hour()))
+		Expect(devices[0].CreatedAt.Time.Minute()).To(Equal(deviceCreateedAt.Minute()))
+	})
 })
+
+type validationError struct {
+	Key    string
+	Reason string
+}
+
+func TestValidateGetDevicesViewFilterParams(t *testing.T) {
+	tt := []struct {
+		name          string
+		params        string
+		expectedError []validationError
+	}{
+		{
+			name:   "invalid update_available",
+			params: "update_available=abc",
+			expectedError: []validationError{
+				{Key: "update_available", Reason: "abc is not a valid value for update_available. update_available must be boolean"},
+			},
+		},
+		{
+			name:   "invalid update_available",
+			params: "update_available=123",
+			expectedError: []validationError{
+				{Key: "update_available", Reason: "123 is not a valid value for update_available. update_available must be boolean"},
+			},
+		},
+		{
+			name:   "invalid image_id",
+			params: "image_id=abc",
+			expectedError: []validationError{
+				{Key: "image_id", Reason: "abc is not a valid value for image_id. image_id must be integer"},
+			},
+		},
+		{
+			name:   "invalid image_id",
+			params: "image_id=123abc",
+			expectedError: []validationError{
+				{Key: "image_id", Reason: "123abc is not a valid value for image_id. image_id must be integer"},
+			},
+		},
+	}
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	for _, te := range tt {
+		req, err := http.NewRequest("GET", fmt.Sprintf("/devices/devicesview?%s", te.params), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		w := httptest.NewRecorder()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+		ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{
+			ImageService: mockImageService,
+			Log:          log.NewEntry(log.StandardLogger()),
+		})
+		req = req.WithContext(ctx)
+
+		routes.ValidateGetDevicesViewFilterParams(next).ServeHTTP(w, req)
+
+		resp := w.Result()
+		jsonBody := []validationError{}
+		err = json.NewDecoder(resp.Body).Decode(&jsonBody)
+		if err != nil {
+			t.Errorf("failed decoding response body: %s", err.Error())
+		}
+		for _, exErr := range te.expectedError {
+			found := false
+			for _, jsErr := range jsonBody {
+				if jsErr.Key == exErr.Key && jsErr.Reason == exErr.Reason {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("in %q: was expected to have %v but not found in %v", te.name, exErr, jsonBody)
+			}
+		}
+	}
+}
