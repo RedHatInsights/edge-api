@@ -22,7 +22,7 @@ import (
 
 // MakeUpdatesRouter adds support for operations on update
 func MakeUpdatesRouter(sub chi.Router) {
-	sub.With(common.Paginate).With(ValidateGetUpdatesFilterParams).Get("/", GetUpdates)
+	sub.With(ValidateQueryParams("updates")).With(common.Paginate).With(ValidateGetUpdatesFilterParams).Get("/", GetUpdates)
 	sub.Post("/", AddUpdate)
 	sub.Post("/validate", PostValidateUpdate)
 	sub.Route("/{updateID}", func(r chi.Router) {

@@ -21,6 +21,7 @@ func initalizeQueryParamsArray() map[string][]string {
 		m["images"] = []string{"limit", "offset", "status", "name", "distribution", "created_at", "sort_by"}
 		m["image-sets"] = []string{"limit", "offset", "status", "name", "version", "sort_by"}
 		m["thirdpartyrepo"] = []string{"limit", "offset", "name", "created_at", "updated_at", "imageID", "sort_by"}
+		m["updates"] = []string{"limit", "offset", "created_at", "updated_at", "status", "sort_by"}
 	}
 	return m
 }
