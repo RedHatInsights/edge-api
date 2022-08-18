@@ -128,35 +128,6 @@ func Init() {
 		options.Set("LOG_LEVEL", "DEBUG")
 	}
 
-	// FIXME: why both options and kubenv
-	kubenv := viper.New()
-	kubenv.AutomaticEnv()
-
-	if clowder.IsClowderEnabled() {
-		// FUTURE: refactor config to follow common CRC config code
-		// 		see https://github.com/RedHatInsights/sources-api-go/blob/main/config/config.go
-		cfg := clowder.LoadedConfig
-
-		if cfg.FeatureFlags != nil {
-			UnleashURL := ""
-			if cfg.FeatureFlags.Hostname != "" && cfg.FeatureFlags.Port != 0 && cfg.FeatureFlags.Scheme != "" {
-				UnleashURL = fmt.Sprintf("%s://%s:%d/api", cfg.FeatureFlags.Scheme, cfg.FeatureFlags.Hostname, cfg.FeatureFlags.Port)
-			}
-
-			options.SetDefault("FeatureFlagsUrl", UnleashURL)
-
-			clientAccessToken := ""
-			if cfg.FeatureFlags.ClientAccessToken != nil {
-				clientAccessToken = *cfg.FeatureFlags.ClientAccessToken
-			}
-			options.SetDefault("FeatureFlagsBearerToken", clientAccessToken)
-		}
-	} else {
-		options.SetDefault("FeatureFlagsUrl", os.Getenv("UNLEASH_URL"))
-		options.SetDefault("FeatureFlagsAPIToken", os.Getenv("UNLEASH_TOKEN"))
-		options.SetDefault("FeatureFlagsBearerToken", options.GetString("UNLEASH_TOKEN"))
-	}
-
 	options.SetDefault("FeatureFlagsService", os.Getenv("FEATURE_FLAGS_SERVICE"))
 
 	if os.Getenv("SOURCES_ENV") == "prod" {
@@ -174,7 +145,7 @@ func Init() {
 	options.SetDefault("TenantTranslatorPort", os.Getenv("TENANT_TRANSLATOR_PORT"))
 
 	config = &EdgeConfig{
-		Hostname:        kubenv.GetString("Hostname"),
+		Hostname:        options.GetString("Hostname"),
 		Auth:            options.GetBool("Auth"),
 		WebPort:         options.GetInt("WebPort"),
 		MetricsPort:     options.GetInt("MetricsPort"),
@@ -269,6 +240,27 @@ func Init() {
 		}
 
 		config.KafkaConfig = cfg.Kafka
+		// FUTURE: refactor config to follow common CRC config code
+		// 		see https://github.com/RedHatInsights/sources-api-go/blob/main/config/config.go
+
+		if cfg.FeatureFlags != nil {
+			UnleashURL := ""
+			if cfg.FeatureFlags.Hostname != "" && cfg.FeatureFlags.Port != 0 && cfg.FeatureFlags.Scheme != "" {
+				UnleashURL = fmt.Sprintf("%s://%s:%d/api", cfg.FeatureFlags.Scheme, cfg.FeatureFlags.Hostname, cfg.FeatureFlags.Port)
+			}
+
+			options.SetDefault("FeatureFlagsUrl", UnleashURL)
+
+			clientAccessToken := ""
+			if cfg.FeatureFlags.ClientAccessToken != nil {
+				clientAccessToken = *cfg.FeatureFlags.ClientAccessToken
+			}
+			options.SetDefault("FeatureFlagsBearerToken", clientAccessToken)
+		}
+	} else {
+		options.SetDefault("FeatureFlagsUrl", os.Getenv("UNLEASH_URL"))
+		options.SetDefault("FeatureFlagsAPIToken", os.Getenv("UNLEASH_TOKEN"))
+		options.SetDefault("FeatureFlagsBearerToken", options.GetString("UNLEASH_TOKEN"))
 	}
 	// get config from file if running in developer mode
 	// this is different than Local due to code in services/files.go
