@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"time"
 
 	apiError "github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
@@ -19,6 +21,8 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory/mock_inventory"
+	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
+	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher/mock_playbookdispatcher"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -132,29 +136,93 @@ var _ = Describe("UpdateService Basic functions", func() {
 			})
 		})
 
-		Context("from the beginning", func() {
+		Context("#CreateUpdate", func() {
 			uuid := faker.UUIDHyphenated()
-			org_id := faker.UUIDHyphenated()
 			device := models.Device{
-				UUID:  uuid,
-				OrgID: org_id,
+				UUID:        uuid,
+				OrgID:       common.DefaultOrgID,
+				RHCClientID: faker.UUIDHyphenated(),
 			}
 			db.DB.Create(&device)
-			update = models.UpdateTransaction{
+			update := models.UpdateTransaction{
+				Repo: &models.Repo{URL: faker.URL()},
+				Commit: &models.Commit{
+					OSTreeRef: "rhel/8/x86_64/edge",
+					OrgID:     common.DefaultOrgID,
+				},
 				Devices: []models.Device{
 					device,
 				},
-				OrgID:  org_id,
-				Status: models.UpdateStatusBuilding,
+				OrgID:   common.DefaultOrgID,
+				Account: common.DefaultAccount,
+				Status:  models.UpdateStatusBuilding,
 			}
 			db.DB.Create(&update)
-			It("should return error when can't build repo", func() {
-				mockRepoBuilder.EXPECT().BuildUpdateRepo(update.ID).Return(nil, errors.New("error building repo"))
-				actual, err := updateService.CreateUpdate(update.ID)
 
-				Expect(actual).To(BeNil())
-				Expect(err).To(HaveOccurred())
+			When("when build repo fail", func() {
+				It("should return error when can't build repo", func() {
+					mockRepoBuilder.EXPECT().BuildUpdateRepo(update.ID).Return(nil, errors.New("error building repo"))
+					actual, err := updateService.CreateUpdate(update.ID)
+
+					Expect(actual).To(BeNil())
+					Expect(err).To(HaveOccurred())
+				})
 			})
+
+			When("when update is valid", func() {
+				It("should create dispatcher records with status created ", func() {
+
+					cfg := config.Get()
+					cfg.TemplatesPath = "./../../templates/"
+					fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", update.OrgID, update.ID)
+					tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", update.OrgID, fname)
+
+					ctrl := gomock.NewController(GinkgoT())
+					defer ctrl.Finish()
+
+					mockFilesService := mock_services.NewMockFilesService(ctrl)
+					mockPlaybookClient := mock_playbookdispatcher.NewMockClientInterface(ctrl)
+					updateService := &services.UpdateService{
+						Service:        services.NewService(context.Background(), log.WithField("service", "update")),
+						FilesService:   mockFilesService,
+						RepoBuilder:    mockRepoBuilder,
+						PlaybookClient: mockPlaybookClient,
+						WaitForReboot:  time.Minute * 5,
+					}
+					mockRepoBuilder.EXPECT().BuildUpdateRepo(update.ID).Return(&update, nil)
+					mockUploader := mock_services.NewMockUploader(ctrl)
+					mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", update.OrgID, fname)).Return("url", nil)
+					mockFilesService.EXPECT().GetUploader().Return(mockUploader)
+
+					playbookDispatcherID := faker.UUIDHyphenated()
+					playbookURL := fmt.Sprintf("http://localhost:3000/api/edge/v1/updates/%d/update-playbook.yml", update.ID)
+					mockPlaybookClient.EXPECT().ExecuteDispatcher(playbookdispatcher.DispatcherPayload{
+						Recipient:   device.RHCClientID,
+						PlaybookURL: playbookURL,
+						Account:     update.Account,
+						OrgID:       update.OrgID,
+					}).Return([]playbookdispatcher.Response{
+						{
+							StatusCode:           http.StatusCreated,
+							PlaybookDispatcherID: playbookDispatcherID,
+						},
+					}, nil)
+
+					updateTransaction, err := updateService.CreateUpdate(update.ID)
+
+					Expect(err).To(BeNil())
+					Expect(updateTransaction).ToNot(BeNil())
+					Expect(updateTransaction.ID).Should(Equal(update.ID))
+					Expect(updateTransaction.Status).Should(Equal(models.UpdateStatusBuilding))
+					Expect(updateTransaction.OrgID).Should(Equal(update.OrgID))
+					Expect(updateTransaction.Account).Should(Equal(update.Account))
+					Expect(len(updateTransaction.DispatchRecords)).Should(Equal(1))
+					Expect(updateTransaction.DispatchRecords[0].Status).Should(Equal(models.DispatchRecordStatusCreated))
+					Expect(updateTransaction.DispatchRecords[0].Reason).Should(BeEmpty())
+					Expect(updateTransaction.DispatchRecords[0].PlaybookDispatcherID).Should(Equal(playbookDispatcherID))
+				})
+			})
+
 		})
 	})
 	Describe("playbook dispatcher event handling", func() {
