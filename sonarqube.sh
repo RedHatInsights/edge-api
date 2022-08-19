@@ -9,11 +9,22 @@ mkdir "${PWD}/sonarqube/certs/"
 mkdir "${PWD}/sonarqube/store/"
 
 RH_IT_ROOT_CA_CRT="${PWD}/sonarqube/certs/RH-IT-Root-CA.crt"
-EXPECTED_SHA1_FINGERPRINT='E0:A7:13:80:9D:96:3E:EE:5F:8B:74:24:74:8D:EF:3D:0C:0F:C4:0E'
+EXPECTED_SHA1_FINGERPRINT='SHA1 Fingerprint=E0:A7:13:80:9D:96:3E:EE:5F:8B:74:24:74:8D:EF:3D:0C:0F:C4:0E'
 curl --output "${RH_IT_ROOT_CA_CRT}" "${ROOT_CA_CERT_URL}"
-openssl x509 -fingerprint -in "${RH_IT_ROOT_CA_CRT}" -noout | grep "${EXPECTED_SHA1_FINGERPRINT}" \
-    && sudo mv -i -v "${RH_IT_ROOT_CA_CRT}" /etc/pki/ca-trust/source/anchors/ \
-    && sudo update-ca-trust extract
+FOUND_SHA1_FINGERPRINT="$(openssl x509 -fingerprint -in "${RH_IT_ROOT_CA_CRT}" -noout | grep "^${EXPECTED_SHA1_FINGERPRINT}$")"
+if [ "${EXPECTED_SHA1_FINGERPRINT}" != "${FOUND_SHA1_FINGERPRINT}" ];
+then
+  echo "Fingerprints do not match:"
+  echo -e "\tExpecting '$EXPECTED_SHA1_FINGERPRINT}"
+  echo -e "\tFound: '${FOUND_SHA1_FINGERPRINT}'"
+  exit 1
+fi
+
+if [ "${BUILD_NUMBER:-}" == '' ];
+then
+  sudo mv -i -v "${RH_IT_ROOT_CA_CRT}" "/etc/pki/ca-trust/source/anchors/"
+  sudo update-ca-trust extract
+fi
 
 KEYSTORE_PASSWORD="$(openssl rand -base64 32)"
 
@@ -54,7 +65,7 @@ docker run \
     -v"${PWD}":/home/jboss \
     --env-file "${PWD}/sonarqube/my-env.txt" \
     "${OPENJDK_CONTAINER_IMAGE}" \
-    "/home/jboss/edge-api/sonarqube_exec.sh"
+    "sonarqube_exec.sh"
 
 mkdir -p "${WORKSPACE}/artifacts"
 cat << EOF > "${WORKSPACE}/artifacts/junit-dummy.xml"
