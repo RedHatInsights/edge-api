@@ -62,7 +62,7 @@ docker pull "${OPENJDK_CONTAINER_IMAGE}"
 } >> "${PWD}/sonarqube/my-env.txt"
 
 docker run \
-    -v"${PWD}":/home/jboss \
+    -v"${PWD}":/home/jboss:z \
     --env-file "${PWD}/sonarqube/my-env.txt" \
     "${OPENJDK_CONTAINER_IMAGE}" \
     /bin/bash "sonarqube_exec.sh"
