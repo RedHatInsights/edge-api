@@ -15,15 +15,18 @@ openssl x509 -fingerprint -in "${RH_IT_ROOT_CA_CRT}" -noout | grep "${EXPECTED_S
     && sudo mv -i -v "${RH_IT_ROOT_CA_CRT}" /etc/pki/ca-trust/source/anchors/ \
     && sudo update-ca-trust extract
 
+KEYSTORE_PASSWORD="$(openssl rand -base64 32)"
+
+KEYSTORE_PATH="${PWD}/sonarqube/store/RH-IT-Root-CA.keystore"
 "${JAVA_HOME}/bin/keytool" \
-  -keystore "/${PWD}/sonarqube/store/RH-IT-Root-CA.keystore" \
+  -keystore "${KEYSTORE_PATH}" \
   -import \
   -alias "RH-IT-Root-CA" \
   -file "${RH_IT_ROOT_CA_CRT}" \
-  -storepass "redhat" \
+  -storepass "${KEYSTORE_PASSWORD}" \
   -noprompt
 
-export SONAR_SCANNER_OPTS="-Djavax.net.ssl.trustStore=${PWD}/sonarqube/store/RH-IT-Root-CA.keystore -Djavax.net.ssl.trustStorePassword=redhat"
+export SONAR_SCANNER_OPTS="-Djavax.net.ssl.trustStore=${KEYSTORE_PATH} -Djavax.net.ssl.trustStorePassword=${KEYSTORE_PASSWORD}"
 export SONAR_SCANNER_OS="linux"
 export SONAR_SCANNER_CLI_VERSION="4.7.0.2747"
 export SONAR_SCANNER_DOWNLOAD_NAME="sonar-scanner-cli-${SONAR_SCANNER_CLI_VERSION}-${SONAR_SCANNER_OS}"
