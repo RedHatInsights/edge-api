@@ -262,23 +262,18 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 
-	image, err := initImageCreateRequest(w, r)
+	// get the initial image with identity fields set
+	image, ident, err := GetImageWithIdentity(w, r)
 	if err != nil {
-		// initImageCreateRequest() already writes the response
+		log.WithField("error", err).Error("Failed to get an image with identity added")
 		return
 	}
+
 	previousImage := getImage(w, r)
 	if previousImage == nil {
 		// getImage already writes the response
 		return
 	}
-	image.OrgID, err = common.GetOrgID(r)
-	if err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving org_id from request")
-		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-		return
-	}
-	image.RequestID = request_id.GetReqID(r.Context())
 
 	ctxServices.Log.Debug("Updating an image from API request")
 	err = ctxServices.ImageService.UpdateImage(image, previousImage)
@@ -295,8 +290,48 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, ctxServices.Log, apiError)
 		return
 	}
+
+	if feature.ImageUpdateEDA.IsEnabled() {
+		ctxServices.Log.Debug("Creating image from API request with EDA")
+
+		// create payload for ImageRequested event
+		edgePayload := &models.EdgeImageUpdateRequestedEventPayload{
+			EdgeBasePayload: models.EdgeBasePayload{
+				Identity:       ident,
+				LastHandleTime: time.Now().Format(time.RFC3339),
+				RequestID:      image.RequestID,
+			},
+			NewImage: *image,
+		}
+
+		// create the edge event
+		edgeEvent := kafkacommon.CreateEdgeEvent(ident.Identity.OrgID, models.SourceEdgeEventAPI, image.RequestID,
+			models.EventTypeEdgeImageUpdateRequested, image.Name, edgePayload)
+
+		// put the event on the bus
+		if err = kafkacommon.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageUpdateRequested, edgeEvent); err != nil {
+			log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
+
+			return
+		}
+
+		// return to Edge UI
+		w.WriteHeader(http.StatusOK)
+		respondWithJSONBody(w, ctxServices.Log, image)
+
+		return
+	}
+
+	// FALL THROUGH IF NOT EDA
+
+	// TODO: this is going to go away with EDA
+	ctxServices.ImageService.ProcessImage(image)
+
 	w.WriteHeader(http.StatusOK)
 	respondWithJSONBody(w, ctxServices.Log, image)
+
+	return
 }
 
 // initImageCreateRequest validates request to create/update an image.

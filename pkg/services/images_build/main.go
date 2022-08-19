@@ -128,10 +128,8 @@ func main() {
 
 					switch key {
 					case models.EventTypeEdgeImageRequested:
-						// TODO: this seems like a lot of work to read an event back in
-						//			make this configurable and reusable
-						// unmarshal the event bytes to a specific struct
-						crcEvent := &image.EventImageRequested{}
+						crcEvent := &image.EventImageRequestedBuildHandler{}
+
 						err = json.Unmarshal(e.Value, crcEvent)
 						if err != nil {
 							mslog.Error("Failed to unmarshal CRC event")
@@ -140,23 +138,21 @@ func main() {
 						// add event UUID to logger
 						mslog = mslog.WithField("event_id", crcEvent.ID)
 
-						// CRC Event standard inlines the payload in Data field
-						//	we have to do some cast magic, but...
-						//	because of how Unmarshal handles interfaces, it's easier to go to bytes and back
-						edgePayloadString, err := json.Marshal(crcEvent.Data)
-						if err != nil {
-							mslog.Error("Failed to marshal Payload")
-						}
-						edgePayload := &models.EdgeImageRequestedEventPayload{}
-						err = json.Unmarshal(edgePayloadString, edgePayload)
-						if err != nil {
-							mslog.Error("Failed to unmarshal Payload")
-						}
-						// add the correct struct implementation for payload back to CRC struct in Data
-						crcEvent.Data = *edgePayload
+						// add the logger to the context before Consume() calls
+						ctx = image.ContextWithLogger(ctx, mslog)
 
-						// TODO: drop this and the crcEvent.Consume() call below switch to fallthrough if event is of type with Consume().
-						//		then set a flag and if it
+						// call the event's Consume method
+						go crcEvent.Consume(ctx)
+					case models.EventTypeEdgeImageUpdateRequested:
+						crcEvent := &image.EventImageUpdateRequestedBuildHandler{}
+						err = json.Unmarshal(e.Value, crcEvent)
+						if err != nil {
+							mslog.Error("Failed to unmarshal CRC event")
+						}
+
+						// add event UUID to logger
+						mslog = mslog.WithField("event_id", crcEvent.ID)
+
 						// add the logger to the context before Consume() calls
 						ctx = image.ContextWithLogger(ctx, mslog)
 

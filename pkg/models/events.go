@@ -130,13 +130,13 @@ type EdgeUpdateCommitEvent struct {
 }
 
 const (
-	// Event sources (e.g., api, imagemicroservice, devicemicroservice, etc.)
+	/* Event sources (e.g., api, imagemicroservice, devicemicroservice, etc.) */
 
 	// SourceEdgeEventAPI indicates the API service is the source
 	SourceEdgeEventAPI string = "urn:redhat:source:edgemanagement:api"
 
-	// Event types (e.g., image.requested, image.update.requested)
-	// 	Doubles as the record key
+	/* Event types (e.g., image.requested, image.update.requested)
+	Doubles as the record key */
 
 	// EventTypeEdgeImageRequested indicates an image has been requested
 	EventTypeEdgeImageRequested string = "com.redhat.console.edge.api.image.requested"
@@ -149,7 +149,6 @@ type CRCCloudEvent struct {
 	// See https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/formats/json-format.md for basic schema doc
 	// See https://raw.githubusercontent.com/cloudevents/spec/main/cloudevents/formats/cloudevents.json for base CloudEvents schema.
 	// See https://github.com/RedHatInsights/event-schemas/blob/main/schemas/events/v1/events.json for CRC event schema
-	// TODO: Add examples
 
 	// the data (or body) unique to the specific event
 	Data interface{} `json:"data,omitempty"`
@@ -263,5 +262,4 @@ type EdgeImageRequestedEventPayload struct {
 type EdgeImageUpdateRequestedEventPayload struct {
 	EdgeBasePayload
 	NewImage Image `json:"new_image"`
-	OldImage Image `json:"old_image"`
 }

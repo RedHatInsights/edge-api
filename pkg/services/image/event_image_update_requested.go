@@ -13,20 +13,20 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// EventImageRequestedBuildHandlerDummy is a dummy placeholder to workaround the Golang struct vs json fun
-type EventImageRequestedBuildHandlerDummy struct {
+// EventImageUpdateRequestedBuildHandlerDummy is a dummy placeholder to workaround the Golang struct vs json fun
+type EventImageUpdateRequestedBuildHandlerDummy struct {
 	models.CRCCloudEvent
 	// shadow the CRCCloudEvent Data with the actual payload type
-	Data models.EdgeImageRequestedEventPayload `json:"data,omitempty"`
+	Data models.EdgeImageUpdateRequestedEventPayload `json:"data,omitempty"`
 }
 
-// EventImageRequestedBuildHandler is the local image requested event struct that consumer methods can be declared against
-type EventImageRequestedBuildHandler struct {
-	EventImageRequestedBuildHandlerDummy
+// EventImageUpdateRequestedBuildHandler is the local image update requested event struct that consumer methods can be declared against
+type EventImageUpdateRequestedBuildHandler struct {
+	EventImageUpdateRequestedBuildHandlerDummy
 }
 
 // Consume executes code against the data in the received event
-func (ev EventImageRequestedBuildHandler) Consume(ctx context.Context) {
+func (ev EventImageUpdateRequestedBuildHandler) Consume(ctx context.Context) {
 	eventlog := GetLoggerFromContext(ctx)
 
 	// rebuilding the context and identity here

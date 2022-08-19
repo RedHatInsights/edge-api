@@ -21,7 +21,10 @@ type Flag struct {
 }
 
 // ImageCreateEDA is the feature flag for routes.CreateImage() EDA code
-var ImageCreateEDA = &Flag{Name: "fleet-management.images_iso", EnvVar: "FEATURE_IMAGECREATE"}
+var ImageCreateEDA = &Flag{Name: "edge-management.image_create", EnvVar: "FEATURE_IMAGECREATE"}
+
+// ImageUpdateEDA is the feature flag for routes.CreateImageUpdate() EDA code
+var ImageUpdateEDA = &Flag{Name: "edge-management.image_update", EnvVar: "FEATURE_IMAGEUPDATE"}
 
 // ImageCreateCommitEDA is the feature flag for routes.CreateCommit() EDA code
 var ImageCreateCommitEDA = &Flag{Name: "", EnvVar: "FEATURE_IMAGECREATE_COMMIT"}
@@ -34,9 +37,6 @@ var ImageCreateKickstartEDA = &Flag{Name: "", EnvVar: "FEATURE_IMAGECREATE_KICKS
 
 // ImageCreateRepoEDA is the feature flag for routes.CreateRepo() EDA code
 var ImageCreateRepoEDA = &Flag{Name: "", EnvVar: "FEATURE_IMAGECREATE_REPO"}
-
-// ImageUpdateEDA is the feature flag for routes.CreateImageUpdate() EDA code
-var ImageUpdateEDA = &Flag{Name: "", EnvVar: "FEATURE_IMAGEUPDATE"}
 
 // CheckFeature checks to see if a given feature is available
 func CheckFeature(feature string) bool {
