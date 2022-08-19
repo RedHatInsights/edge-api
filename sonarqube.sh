@@ -65,7 +65,7 @@ docker run \
     -v"${PWD}":/home/jboss \
     --env-file "${PWD}/sonarqube/my-env.txt" \
     "${OPENJDK_CONTAINER_IMAGE}" \
-    "sonarqube_exec.sh"
+    /bin/bash "sonarqube_exec.sh"
 
 mkdir -p "${WORKSPACE}/artifacts"
 cat << EOF > "${WORKSPACE}/artifacts/junit-dummy.xml"
