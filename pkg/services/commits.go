@@ -12,6 +12,7 @@ import (
 type CommitServiceInterface interface {
 	GetCommitByID(commitID uint) (*models.Commit, error)
 	GetCommitByOSTreeCommit(ost string) (*models.Commit, error)
+	ValidateUserProvidedCommitID(deviceUUID []string, commitID uint) error
 }
 
 // NewCommitService gives a instance of the main implementation of CommitServiceInterface
@@ -51,4 +52,35 @@ func (s *CommitService) GetCommitByOSTreeCommit(ost string) (*models.Commit, err
 	}
 	s.log.Debug("Commit retrieved")
 	return &commit, nil
+}
+
+// ValidateUserProvidedCommitID validates if user provided commitID belong to same ImageSet as of Device Image
+func (s *CommitService) ValidateUserProvidedCommitID(deviceUUID []string, commitID uint) error {
+
+	var device models.Device
+	var imageForCommitID models.Image
+	var imageID models.Image
+
+	resultDevice := db.DB.Where("uuid = ? ", deviceUUID).Find(&device)
+	if resultDevice.Error != nil {
+		s.log.WithField("error", resultDevice.Error.Error()).Error("Error searching for devices using DeviceUUID")
+		return resultDevice.Error
+	}
+
+	resultImageSet := db.DB.Where("id = ? ", device.ImageID).Find(&imageID)
+	if resultImageSet.Error != nil {
+		s.log.WithField("error", resultImageSet.Error.Error()).Error("Error searching for Image using DeviceImageID")
+		return resultImageSet.Error
+	}
+
+	resultCommit := db.DB.Where("commit_id = ?", commitID).Find(&imageForCommitID)
+	if resultCommit.Error != nil {
+		s.log.WithField("error", resultCommit.Error.Error()).Error("Error searching for Images using user provided CommitID")
+		return resultCommit.Error
+	}
+
+	if *imageForCommitID.ImageSetID != *imageID.ImageSetID {
+		return new(InvalidCommitID)
+	}
+	return nil
 }

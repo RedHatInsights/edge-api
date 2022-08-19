@@ -264,3 +264,10 @@ type OstreeNotFound struct{}
 func (e *OstreeNotFound) Error() string {
 	return "Ostree not found"
 }
+
+// InvalidCommitID indicates the CommitID does not belong to the same ImageSet as of Device's Image
+type InvalidCommitID struct{}
+
+func (e *InvalidCommitID) Error() string {
+	return "commit ID does not belong to same imageset as of device image"
+}
