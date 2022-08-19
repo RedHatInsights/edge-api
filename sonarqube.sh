@@ -8,13 +8,18 @@ mkdir "${PWD}/sonarqube/extract/"
 mkdir "${PWD}/sonarqube/certs/"
 mkdir "${PWD}/sonarqube/store/"
 
-curl --output "${PWD}/sonarqube/certs/RH-IT-Root-CA.crt" "${ROOT_CA_CERT_URL}"
+RH_IT_ROOT_CA_CRT="${PWD}/sonarqube/certs/RH-IT-Root-CA.crt"
+EXPECTED_SHA1_FINGERPRINT='E0:A7:13:80:9D:96:3E:EE:5F:8B:74:24:74:8D:EF:3D:0C:0F:C4:0E'
+curl --output "${RH_IT_ROOT_CA_CRT}" "${ROOT_CA_CERT_URL}"
+openssl x509 -fingerprint -in "${RH_IT_ROOT_CA_CRT}" -noout | grep "${EXPECTED_SHA1_FINGERPRINT}" \
+    && sudo mv -i -v "${RH_IT_ROOT_CA_CRT}" /etc/pki/ca-trust/source/anchors/ \
+    && sudo update-ca-trust extract
 
 "${JAVA_HOME}/bin/keytool" \
   -keystore "/${PWD}/sonarqube/store/RH-IT-Root-CA.keystore" \
   -import \
   -alias "RH-IT-Root-CA" \
-  -file "/${PWD}/sonarqube/certs/RH-IT-Root-CA.crt" \
+  -file "${RH_IT_ROOT_CA_CRT}" \
   -storepass "redhat" \
   -noprompt
 
@@ -24,7 +29,7 @@ export SONAR_SCANNER_CLI_VERSION="4.7.0.2747"
 export SONAR_SCANNER_DOWNLOAD_NAME="sonar-scanner-cli-${SONAR_SCANNER_CLI_VERSION}-${SONAR_SCANNER_OS}"
 export SONAR_SCANNER_NAME="sonar-scanner-${SONAR_SCANNER_CLI_VERSION}-${SONAR_SCANNER_OS}"
 
-curl -o "${PWD}/sonarqube/download/${SONAR_SCANNER_DOWNLOAD_NAME}.zip" --insecure "${SONARQUBE_CLI_URL}"
+curl --output "${PWD}/sonarqube/download/${SONAR_SCANNER_DOWNLOAD_NAME}.zip" "${SONARQUBE_CLI_URL}"
 
 unzip -d "${PWD}/sonarqube/extract/" "${PWD}/sonarqube/download/${SONAR_SCANNER_DOWNLOAD_NAME}.zip"
 
