@@ -81,3 +81,19 @@ Logging must follow the above logging key concepts as much as possible.
 - Be mindful of log levels. **Debug** is for insights of a route. **Info** should give enough information on a production service to answer most questions about what happened to a specific route for a specific customer. **Error** is for actual errors.
 
 Happy logging!
+
+## Guidlines for submitting a Pull Request
+
+In order to succesfully submit a PR we recommend the following guidlines:
+
+- Create your PR against main.
+- Keep your PR small, less than 200 lines of code.
+- Any new PR must have unit tests. Unit tests do not count towards the total number of lines of code.
+- Squash your commits.
+- Ensure your commit message is clear, easy to read, and is very informative. We recommend using words like "Added", "Removed", "Refactored", "Deleted" and "Fixes" to outline the changes made.
+- Never merge your own PR.
+- We work off of a +2 system, where every reviewer can give a +1 if they are happy with the changes. 2 reviewers are required to merge a PR, but if you feel your PR is partially complicated, you can request more reviewers.
+- Ensure you have run "make pre-commit" before submitting the PR.
+- Ensure your PR compiles and runs before submitting.
+- Add a detailed description about the changes this PR will make to the codebase, e.g. "Added new filtering to `/images/view` endpoint" 
+- Keep the code reviews respectful, this is a project that welcomes contributors from all backgrounds and technical levels. Discrimination will not be tolerated.
