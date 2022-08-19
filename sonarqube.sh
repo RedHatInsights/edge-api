@@ -8,7 +8,7 @@ mkdir "${PWD}/sonarqube/extract/"
 mkdir "${PWD}/sonarqube/certs/"
 mkdir "${PWD}/sonarqube/store/"
 
-curl -o "${PWD}/sonarqube/certs/RH-IT-Root-CA.crt" --insecure "${ROOT_CA_CERT_URL}"
+curl --output "${PWD}/sonarqube/certs/RH-IT-Root-CA.crt" "${ROOT_CA_CERT_URL}"
 
 "${JAVA_HOME}/bin/keytool" \
   -keystore "/${PWD}/sonarqube/store/RH-IT-Root-CA.keystore" \
