@@ -32,7 +32,9 @@ export PATH="${PWD}/sonarqube/extract/${SONAR_SCANNER_NAME}/bin:${PATH}"
 
 COMMIT_SHORT=$(git rev-parse --short=7 HEAD)
 
-docker pull registry.access.redhat.com/openjdk/openjdk-11-rhel7:1.12-1.1658422675
+OPENJDK_CONTAINER_IMAGE='registry.access.redhat.com/openjdk/openjdk-11-rhel7:1.12-1.1658422675'
+
+docker pull "${OPENJDK_CONTAINER_IMAGE}"
 
 { echo "SONARQUBE_REPORT_URL=${SONARQUBE_REPORT_URL}";
   echo "COMMIT_SHORT=${COMMIT_SHORT}";
@@ -43,8 +45,8 @@ docker pull registry.access.redhat.com/openjdk/openjdk-11-rhel7:1.12-1.165842267
 docker run \
     -v"${PWD}":/home/jboss \
     --env-file "${PWD}/sonarqube/my-env.txt" \
-    registry.access.redhat.com/openjdk/openjdk-11-rhel7:1.12-1.1658422675 \
-    "/home/jboss/sonarqube_exec.sh"
+    "${OPENJDK_CONTAINER_IMAGE}" \
+    "/home/jboss/edge-api/sonarqube_exec.sh"
 
 mkdir -p "${WORKSPACE}/artifacts"
 cat << EOF > "${WORKSPACE}/artifacts/junit-dummy.xml"
