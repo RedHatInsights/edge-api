@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"time"
-
 	apiError "github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	"io/ioutil"
+	"net/http"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
@@ -101,17 +99,26 @@ var _ = Describe("UpdateService Basic functions", func() {
 	Describe("update creation", func() {
 		var updateService services.UpdateServiceInterface
 		var mockRepoBuilder *mock_services.MockRepoBuilderInterface
+		var mockFilesService *mock_services.MockFilesService
+		var mockPlaybookClient *mock_playbookdispatcher.MockClientInterface
 		var update models.UpdateTransaction
+		var ctrl *gomock.Controller
+
 		BeforeEach(func() {
-			ctrl := gomock.NewController(GinkgoT())
+			ctrl = gomock.NewController(GinkgoT())
 			defer ctrl.Finish()
 			mockRepoBuilder = mock_services.NewMockRepoBuilderInterface(ctrl)
+			mockFilesService = mock_services.NewMockFilesService(ctrl)
+			mockPlaybookClient = mock_playbookdispatcher.NewMockClientInterface(ctrl)
 			updateService = &services.UpdateService{
-				Service:       services.NewService(context.Background(), log.WithField("service", "update")),
-				RepoBuilder:   mockRepoBuilder,
-				WaitForReboot: 0,
+				Service:        services.NewService(context.Background(), log.WithField("service", "update")),
+				FilesService:   mockFilesService,
+				RepoBuilder:    mockRepoBuilder,
+				PlaybookClient: mockPlaybookClient,
+				WaitForReboot:  0,
 			}
 		})
+
 		Context("send notification", func() {
 			uuid := faker.UUIDHyphenated()
 			org_id := faker.UUIDHyphenated()
@@ -137,27 +144,32 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 
 		Context("#CreateUpdate", func() {
-			uuid := faker.UUIDHyphenated()
-			device := models.Device{
-				UUID:        uuid,
-				OrgID:       common.DefaultOrgID,
-				RHCClientID: faker.UUIDHyphenated(),
-			}
-			db.DB.Create(&device)
-			update := models.UpdateTransaction{
-				Repo: &models.Repo{URL: faker.URL()},
-				Commit: &models.Commit{
-					OSTreeRef: "rhel/8/x86_64/edge",
-					OrgID:     common.DefaultOrgID,
-				},
-				Devices: []models.Device{
-					device,
-				},
-				OrgID:   common.DefaultOrgID,
-				Account: common.DefaultAccount,
-				Status:  models.UpdateStatusBuilding,
-			}
-			db.DB.Create(&update)
+			var uuid string
+			var device models.Device
+			var update models.UpdateTransaction
+
+			BeforeEach(func() {
+				uuid = faker.UUIDHyphenated()
+				device = models.Device{
+					UUID:        uuid,
+					OrgID:       common.DefaultOrgID,
+					RHCClientID: faker.UUIDHyphenated(),
+				}
+				db.DB.Create(&device)
+				update = models.UpdateTransaction{
+					Repo: &models.Repo{URL: faker.URL()},
+					Commit: &models.Commit{
+						OSTreeRef: "rhel/8/x86_64/edge",
+						OrgID:     common.DefaultOrgID,
+					},
+					Devices: []models.Device{
+						device,
+					},
+					OrgID:  common.DefaultOrgID,
+					Status: models.UpdateStatusBuilding,
+				}
+				db.DB.Create(&update)
+			})
 
 			When("when build repo fail", func() {
 				It("should return error when can't build repo", func() {
@@ -169,26 +181,13 @@ var _ = Describe("UpdateService Basic functions", func() {
 				})
 			})
 
-			When("when update is valid", func() {
-				It("should create dispatcher records with status created ", func() {
-
+			When("when playbook dispatcher respond with success", func() {
+				It("should create dispatcher records with status created", func() {
 					cfg := config.Get()
 					cfg.TemplatesPath = "./../../templates/"
 					fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", update.OrgID, update.ID)
 					tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", update.OrgID, fname)
 
-					ctrl := gomock.NewController(GinkgoT())
-					defer ctrl.Finish()
-
-					mockFilesService := mock_services.NewMockFilesService(ctrl)
-					mockPlaybookClient := mock_playbookdispatcher.NewMockClientInterface(ctrl)
-					updateService := &services.UpdateService{
-						Service:        services.NewService(context.Background(), log.WithField("service", "update")),
-						FilesService:   mockFilesService,
-						RepoBuilder:    mockRepoBuilder,
-						PlaybookClient: mockPlaybookClient,
-						WaitForReboot:  time.Minute * 5,
-					}
 					mockRepoBuilder.EXPECT().BuildUpdateRepo(update.ID).Return(&update, nil)
 					mockUploader := mock_services.NewMockUploader(ctrl)
 					mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", update.OrgID, fname)).Return("url", nil)
@@ -216,10 +215,104 @@ var _ = Describe("UpdateService Basic functions", func() {
 					Expect(updateTransaction.Status).Should(Equal(models.UpdateStatusBuilding))
 					Expect(updateTransaction.OrgID).Should(Equal(update.OrgID))
 					Expect(updateTransaction.Account).Should(Equal(update.Account))
+
 					Expect(len(updateTransaction.DispatchRecords)).Should(Equal(1))
 					Expect(updateTransaction.DispatchRecords[0].Status).Should(Equal(models.DispatchRecordStatusCreated))
 					Expect(updateTransaction.DispatchRecords[0].Reason).Should(BeEmpty())
 					Expect(updateTransaction.DispatchRecords[0].PlaybookDispatcherID).Should(Equal(playbookDispatcherID))
+					Expect(updateTransaction.DispatchRecords[0].Device.ID).Should(Equal(device.ID))
+
+					Expect(len(updateTransaction.Devices)).Should(Equal(1))
+					Expect(updateTransaction.Devices[0].ID).Should(Equal(device.ID))
+				})
+			})
+
+			When("when playbook dispatcher respond with an error", func() {
+				It("should create dispatcher records with status error and reason failure", func() {
+					cfg := config.Get()
+					cfg.TemplatesPath = "./../../templates/"
+					fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", update.OrgID, update.ID)
+					tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", update.OrgID, fname)
+
+					mockRepoBuilder.EXPECT().BuildUpdateRepo(update.ID).Return(&update, nil)
+					mockUploader := mock_services.NewMockUploader(ctrl)
+					mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", update.OrgID, fname)).Return("url", nil)
+					mockFilesService.EXPECT().GetUploader().Return(mockUploader)
+
+					playbookDispatcherID := faker.UUIDHyphenated()
+					playbookURL := fmt.Sprintf("http://localhost:3000/api/edge/v1/updates/%d/update-playbook.yml", update.ID)
+					mockPlaybookClient.EXPECT().ExecuteDispatcher(playbookdispatcher.DispatcherPayload{
+						Recipient:   device.RHCClientID,
+						PlaybookURL: playbookURL,
+						Account:     update.Account,
+						OrgID:       update.OrgID,
+					}).Return([]playbookdispatcher.Response{
+						{
+							StatusCode:           http.StatusBadRequest,
+							PlaybookDispatcherID: playbookDispatcherID,
+						},
+					}, nil)
+
+					updateTransaction, err := updateService.CreateUpdate(update.ID)
+
+					Expect(err).To(BeNil())
+					Expect(updateTransaction).ToNot(BeNil())
+					Expect(updateTransaction.ID).Should(Equal(update.ID))
+					Expect(updateTransaction.Status).Should(Equal(models.UpdateStatusError))
+					Expect(updateTransaction.OrgID).Should(Equal(update.OrgID))
+					Expect(updateTransaction.Account).Should(Equal(update.Account))
+
+					Expect(len(updateTransaction.DispatchRecords)).Should(Equal(1))
+					Expect(updateTransaction.DispatchRecords[0].Status).Should(Equal(models.DispatchRecordStatusError))
+					Expect(updateTransaction.DispatchRecords[0].Reason).Should(Equal(models.UpdateReasonFailure))
+					Expect(updateTransaction.DispatchRecords[0].PlaybookDispatcherID).Should(BeEmpty())
+					Expect(updateTransaction.DispatchRecords[0].Device.ID).Should(Equal(device.ID))
+
+					Expect(len(updateTransaction.Devices)).Should(Equal(1))
+					Expect(updateTransaction.Devices[0].ID).Should(Equal(device.ID))
+				})
+			})
+
+			When("when playbook dispatcher client got an error", func() {
+				It("should create dispatcher records with status error and reason failure", func() {
+					cfg := config.Get()
+					cfg.TemplatesPath = "./../../templates/"
+					fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", update.OrgID, update.ID)
+					tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", update.OrgID, fname)
+
+					mockRepoBuilder.EXPECT().BuildUpdateRepo(update.ID).Return(&update, nil)
+					mockUploader := mock_services.NewMockUploader(ctrl)
+					mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", update.OrgID, fname)).Return("url", nil)
+					mockFilesService.EXPECT().GetUploader().Return(mockUploader)
+
+					playbookURL := fmt.Sprintf("http://localhost:3000/api/edge/v1/updates/%d/update-playbook.yml", update.ID)
+					mockPlaybookClient.EXPECT().ExecuteDispatcher(playbookdispatcher.DispatcherPayload{
+						Recipient:   device.RHCClientID,
+						PlaybookURL: playbookURL,
+						Account:     update.Account,
+						OrgID:       update.OrgID,
+					}).Return(nil, errors.New("error on playbook dispatcher client"))
+
+					_, err := updateService.CreateUpdate(update.ID)
+
+					Expect(err).ShouldNot(BeNil())
+
+					var updateTransaction models.UpdateTransaction
+					db.DB.Preload("DispatchRecords").Preload("DispatchRecords.Device").Preload("Devices").First(&updateTransaction, update.ID)
+
+					Expect(updateTransaction.ID).Should(Equal(update.ID))
+					Expect(updateTransaction.Status).Should(Equal(models.UpdateStatusError))
+					Expect(updateTransaction.OrgID).Should(Equal(update.OrgID))
+					Expect(updateTransaction.Account).Should(Equal(update.Account))
+
+					Expect(len(updateTransaction.DispatchRecords)).Should(Equal(1))
+					Expect(updateTransaction.DispatchRecords[0].Status).Should(Equal(models.DispatchRecordStatusError))
+					Expect(updateTransaction.DispatchRecords[0].Reason).Should(Equal(models.UpdateReasonFailure))
+					Expect(updateTransaction.DispatchRecords[0].PlaybookDispatcherID).Should(BeEmpty())
+					Expect(updateTransaction.DispatchRecords[0].Device.ID).Should(Equal(device.ID))
+
+					Expect(len(updateTransaction.Devices)).Should(Equal(1))
+					Expect(updateTransaction.Devices[0].ID).Should(Equal(device.ID))
 				})
 			})
 
