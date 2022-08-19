@@ -2,7 +2,6 @@ package kafkacommon
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -25,15 +24,8 @@ func GetProducerInstance() *kafka.Producer {
 		if cfg.KafkaBrokers != nil {
 			log.WithFields(log.Fields{"broker": cfg.KafkaBrokers[0].Hostname,
 				"port": *cfg.KafkaBrokers[0].Port}).Debug("Creating a new producer")
-			kafkaConfigMap := kafka.ConfigMap{"bootstrap.servers": fmt.Sprintf("%s:%d", cfg.KafkaBrokers[0].Hostname, *cfg.KafkaBrokers[0].Port)}
 
-			if cfg.KafkaBrokers[0].Sasl != nil {
-				kafkaConfigMap.SetKey("sasl.mechanisms", cfg.KafkaBrokers[0].Sasl.SaslMechanism)
-				kafkaConfigMap.SetKey("security.protocol", cfg.KafkaBrokers[0].Sasl.SecurityProtocol)
-				kafkaConfigMap.SetKey("sasl.username", cfg.KafkaBrokers[0].Sasl.Username)
-				kafkaConfigMap.SetKey("sasl.password", cfg.KafkaBrokers[0].Sasl.Password)
-			}
-
+			kafkaConfigMap := GetKafkaProducerConfigMap()
 			p, err := kafka.NewProducer(&kafkaConfigMap)
 			if err != nil {
 				log.WithField("error", err).Error("Failed to create producer")
