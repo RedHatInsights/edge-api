@@ -338,7 +338,8 @@ var _ = Describe("Devices View Filters", func() {
 		Expect(devices[0].CreatedAt.Time.Month()).To(Equal(deviceCreateedAt.Month()))
 		Expect(devices[0].CreatedAt.Time.Day()).To(Equal(deviceCreateedAt.Day()))
 		Expect(devices[0].CreatedAt.Time.Hour()).To(Equal(deviceCreateedAt.Hour()))
-		Expect(devices[0].CreatedAt.Time.Minute()).To(Equal(deviceCreateedAt.Minute()))
+		minutesArray := [3]int{deviceCreateedAt.Minute() - 1, deviceCreateedAt.Minute(), deviceCreateedAt.Minute() + 1}
+		Expect(minutesArray).To(ContainElement(devices[0].CreatedAt.Time.Minute()))
 	})
 })
 
