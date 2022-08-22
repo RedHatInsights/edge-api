@@ -60,7 +60,7 @@ COMMIT_SHORT=$(git rev-parse --short=7 HEAD)
 
 OPENJDK_CONTAINER_IMAGE='registry.redhat.io/ubi8/openjdk-11-runtime:latest'
 
-docker pull "${OPENJDK_CONTAINER_IMAGE}"
+podman pull "${OPENJDK_CONTAINER_IMAGE}"
 
 { \
   echo "COMMIT_SHORT=${COMMIT_SHORT}";
@@ -70,9 +70,9 @@ docker pull "${OPENJDK_CONTAINER_IMAGE}"
   echo "SONARQUBE_TOKEN=${SONARQUBE_TOKEN}";
 } >> "${PWD}/sonarqube/my-env.txt"
 
-chcon --recursive --type container_file_t --verbose "${PWD}"
-docker run \
-    -v"${PWD}":/home/jboss:z \
+#chcon --recursive --type container_file_t --verbose "${PWD}"
+podman run \
+    --volume "${PWD}":/home/jboss:z \
     --env-file "${PWD}/sonarqube/my-env.txt" \
     "${OPENJDK_CONTAINER_IMAGE}" \
     /bin/bash "sonarqube_exec.sh"
