@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+set -o nonunset
 
 mkdir "${PWD}/sonarqube/"
 mkdir "${PWD}/sonarqube/download/"
@@ -10,12 +10,6 @@ mkdir "${PWD}/sonarqube/store/"
 
 RH_IT_ROOT_CA_CRT="${PWD}/sonarqube/certs/RH-IT-Root-CA.crt"
 EXPECTED_SHA1_FINGERPRINT='SHA1 Fingerprint=E0:A7:13:80:9D:96:3E:EE:5F:8B:74:24:74:8D:EF:3D:0C:0F:C4:0E'
-
-if [ "${ROOT_CA_CERT_URL:-}" == '' ];
-then
-  echo "ROOT_CA_CERT_URL is not defined"
-  exit 1
-fi
 
 curl --output "${RH_IT_ROOT_CA_CRT}" "${ROOT_CA_CERT_URL}"
 FOUND_SHA1_FINGERPRINT="$(openssl x509 -fingerprint -in "${RH_IT_ROOT_CA_CRT}" -noout | grep "^${EXPECTED_SHA1_FINGERPRINT}$")"
@@ -85,3 +79,7 @@ cat << @EOF > "${WORKSPACE}/artifacts/junit-dummy.xml"
     <testcase classname="dummy" name="dummytest"/>
 </testsuite>
 @EOF
+
+rm "${HOME}/group"
+
+rm "${HOME}/passwd"

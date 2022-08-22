@@ -1,34 +1,6 @@
 #!/bin/bash
 
-if [ "${COMMIT_SHORT}" == '' ];
-then
-  echo "COMMIT_SHORT environment variable not set"
-  exit 1
-fi
-
-if [ "${KEYSTORE_PASSWORD}" == '' ];
-then
-  echo "KEYSTORE_PASSWORD environment variable not set"
-  exit 1
-fi
-
-if [ "${SONAR_SCANNER_NAME}" == '' ];
-then
-  echo "SONAR_SCANNER_NAME environment variable not set"
-  exit 1
-fi
-
-if [ "${SONARQUBE_REPORT_URL}" == '' ];
-then
-  echo "SONARQUBE_REPORT_URL environment variable not set"
-  exit 1
-fi
-
-if [ "${SONARQUBE_TOKEN}" == '' ];
-then
-  echo "SONARQUBE_TOKEN environment variable not set"
-  exit 1
-fi
+set -o nounset
 
 if [ -w "${HOME}/passwd" ];
 then
@@ -70,6 +42,3 @@ sonar-scanner \
   -Dsonar.host.url="${SONARQUBE_REPORT_URL}" \
   -Dsonar.projectVersion="${COMMIT_SHORT}" \
   -Dsonar.login="${SONARQUBE_TOKEN}"
-
-rm "${HOME}/passwd"
-rm "${HOME}/group"
