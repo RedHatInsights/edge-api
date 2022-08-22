@@ -70,6 +70,7 @@ docker pull "${OPENJDK_CONTAINER_IMAGE}"
   echo "SONARQUBE_TOKEN=${SONARQUBE_TOKEN}";
 } >> "${PWD}/sonarqube/my-env.txt"
 
+chcon --recursive --type container_file_t --verbose "${PWD}"
 docker run \
     -v"${PWD}":/home/jboss:z \
     --env-file "${PWD}/sonarqube/my-env.txt" \
