@@ -502,7 +502,6 @@ func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (Ima
 		recipients = append(recipients, recipient)
 
 		notify.OrgID = i.OrgID
-		notify.Account = i.Account
 		notify.Context = fmt.Sprintf("{  \"CommitID\" : \"%v\"}", i.CommitID)
 		notify.Events = events
 		notify.Recipients = recipients
