@@ -70,11 +70,8 @@ podman pull "${OPENJDK_CONTAINER_IMAGE}"
   echo "SONARQUBE_TOKEN=${SONARQUBE_TOKEN}";
 } >> "${PWD}/sonarqube/my-env.txt"
 
-#chcon --recursive --type container_file_t --verbose "${PWD}"
-ls -ladZ \
-  "${PWD}" \
-  "${PWD}/group" \
-  "${PWD}/passwd"
+cp /etc/group "${PWD}/group"
+cp /etc/passwd "${PWD}/passwd"
 
 podman run \
     --volume "${PWD}":/home/jboss:z \

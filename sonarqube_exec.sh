@@ -30,9 +30,14 @@ then
   exit 1
 fi
 
-if [ ! -r "/home/jboss/passwd" ];
+if [ -w "${HOME}/passwd" ];
 then
-  sed "/^jboss/s/[^:]*/$(id -u)/3" /etc/passwd > "${HOME}/passwd"
+  sed "/^jboss/s/[^:]*/$(id --user)/3" /etc/passwd > "${HOME}/passwd"
+fi
+
+if [ -w "${HOME}/group" ];
+then
+  sed "/^jboss/s/[^:]*/$(id --group)/3" /etc/group > "${HOME}/group"
 fi
 
 KEYSTORE="${PWD}/sonarqube/store/RH-IT-Root-CA.keystore"
@@ -67,3 +72,4 @@ sonar-scanner \
   -Dsonar.login="${SONARQUBE_TOKEN}"
 
 rm "${HOME}/passwd"
+rm "${HOME}/group"
