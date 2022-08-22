@@ -70,7 +70,12 @@ podman pull "${OPENJDK_CONTAINER_IMAGE}"
   echo "SONARQUBE_TOKEN=${SONARQUBE_TOKEN}";
 } >> "${PWD}/sonarqube/my-env.txt"
 
-chcon --recursive --type container_file_t --verbose "${PWD}"
+#chcon --recursive --type container_file_t --verbose "${PWD}"
+ls -ladZ \
+  "${PWD}" \
+  "${PWD}/group" \
+  "${PWD}/passwd"
+
 podman run \
     --volume "${PWD}":/home/jboss:z \
     --env-file "${PWD}/sonarqube/my-env.txt" \
@@ -78,8 +83,8 @@ podman run \
     /bin/bash "sonarqube_exec.sh"
 
 mkdir -p "${WORKSPACE}/artifacts"
-cat << EOF > "${WORKSPACE}/artifacts/junit-dummy.xml"
+cat << @EOF > "${WORKSPACE}/artifacts/junit-dummy.xml"
 <testsuite tests="1">
     <testcase classname="dummy" name="dummytest"/>
 </testsuite>
-EOF
+@EOF
