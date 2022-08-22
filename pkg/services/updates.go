@@ -46,25 +46,26 @@ type UpdateServiceInterface interface {
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
 func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterface {
 	return &UpdateService{
-		Service:      Service{ctx: ctx, log: log.WithField("service", "update")},
-		FilesService: NewFilesService(log),
-		ImageService: NewImageService(ctx, log),
-		RepoBuilder:  NewRepoBuilder(ctx, log),
-		Inventory:    inventory.InitClient(ctx, log),
-		// DeviceService: NewDeviceService(ctx, log),
-		WaitForReboot: time.Minute * 5,
+		Service:        Service{ctx: ctx, log: log.WithField("service", "update")},
+		FilesService:   NewFilesService(log),
+		ImageService:   NewImageService(ctx, log),
+		RepoBuilder:    NewRepoBuilder(ctx, log),
+		Inventory:      inventory.InitClient(ctx, log),
+		PlaybookClient: playbookdispatcher.InitClient(ctx, log),
+		WaitForReboot:  time.Minute * 5,
 	}
 }
 
 // UpdateService is the main implementation of a UpdateServiceInterface
 type UpdateService struct {
 	Service
-	ImageService  ImageServiceInterface
-	RepoBuilder   RepoBuilderInterface
-	FilesService  FilesService
-	DeviceService DeviceServiceInterface
-	Inventory     inventory.ClientInterface
-	WaitForReboot time.Duration
+	ImageService   ImageServiceInterface
+	RepoBuilder    RepoBuilderInterface
+	FilesService   FilesService
+	DeviceService  DeviceServiceInterface
+	Inventory      inventory.ClientInterface
+	PlaybookClient playbookdispatcher.ClientInterface
+	WaitForReboot  time.Duration
 }
 
 type playbooks struct {
@@ -136,6 +137,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			s.log.WithField("error", err).Error("Error on update")
 		}
 	}()
+
 	go func(update *models.UpdateTransaction) {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
@@ -155,6 +157,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			WaitGroup.Done()
 		}
 	}(update)
+
 	update, err := s.RepoBuilder.BuildUpdateRepo(id)
 	if err != nil {
 		db.DB.First(&update, id)
@@ -163,6 +166,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		s.log.WithField("error", err.Error()).Error("Error building update repo")
 		return nil, err
 	}
+
 	var remoteInfo TemplateRemoteInfo
 	remoteInfo.RemoteURL = update.Repo.URL
 	remoteInfo.RemoteName = "rhel-edge"
@@ -173,6 +177,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	remoteInfo.RemoteOstreeUpdate = fmt.Sprint(update.ChangesRefs)
 
 	playbookURL, err := s.WriteTemplate(remoteInfo, update.OrgID)
+
 	if err != nil {
 		update.Status = models.UpdateStatusError
 		db.DB.Save(update)
@@ -190,15 +195,23 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			OrgID:       update.OrgID,
 		}
 		s.log.Debug("Calling playbook dispatcher")
-		client := playbookdispatcher.InitClient(s.ctx, s.log)
-		exc, err := client.ExecuteDispatcher(payloadDispatcher)
+		exc, err := s.PlaybookClient.ExecuteDispatcher(payloadDispatcher)
 
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error on playbook-dispatcher execution")
 			update.Status = models.UpdateStatusError
+
+			update.DispatchRecords = append(dispatchRecords, models.DispatchRecord{
+				Device:      &device,
+				PlaybookURL: playbookURL,
+				Status:      models.DispatchRecordStatusError,
+				Reason:      models.UpdateReasonFailure,
+			})
+
 			db.DB.Save(update)
 			return nil, err
 		}
+
 		for _, excPlaybook := range exc {
 			if excPlaybook.StatusCode == http.StatusCreated {
 				device.Connected = true
@@ -215,6 +228,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 					Device:      &device,
 					PlaybookURL: playbookURL,
 					Status:      models.DispatchRecordStatusError,
+					Reason:      models.UpdateReasonFailure,
 				}
 				dispatchRecords = append(dispatchRecords, *dispatchRecord)
 			}
