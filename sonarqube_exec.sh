@@ -32,7 +32,7 @@ fi
 
 if [ ! -r "/home/jboss/passwd" ];
 then
-  ln -s /etc/passwd /home/jboss/passwd
+  sed "/^jboss/s/[^:]*/$(id -u)/3" /etc/passwd > "${HOME}/passwd"
 fi
 
 KEYSTORE="${PWD}/sonarqube/store/RH-IT-Root-CA.keystore"
@@ -66,4 +66,4 @@ sonar-scanner \
   -Dsonar.projectVersion="${COMMIT_SHORT}" \
   -Dsonar.login="${SONARQUBE_TOKEN}"
 
-rm /home/jboss/passwd
+rm "${HOME}/passwd"
