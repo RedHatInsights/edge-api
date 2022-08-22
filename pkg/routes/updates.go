@@ -194,15 +194,16 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 			return nil
 		}
 		devicesUpdate.CommitID = commitID
-	}
-	// validate if user provided commitID belong to same ImageSet as of Device Image
-	if err := ctxServices.CommitService.ValidateUserProvidedCommitID(devicesUUID, devicesUpdate.CommitID); err != nil {
-		ctxServices.Log.WithFields(log.Fields{
-			"error":    err.Error(),
-			"commitID": devicesUpdate.CommitID,
-		}).Error("CommitID does not belong to same imageset as of Device Image. CommitID should belong the same imageset")
-		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(fmt.Sprintf("CommitID %d does not belong to same imageset as of Device Image. CommitID should belong the same imageset", devicesUpdate.CommitID)))
-		return nil
+	} else {
+		// validate if user provided commitID belong to same ImageSet as of Device Image
+		if err := ctxServices.CommitService.ValidateDevicesImageSetWithCommit(devicesUUID, devicesUpdate.CommitID); err != nil {
+			ctxServices.Log.WithFields(log.Fields{
+				"error":    err.Error(),
+				"commitID": devicesUpdate.CommitID,
+			}).Error("CommitID does not belong to same imageset. CommitID should belong the same imageset")
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(fmt.Sprintf("CommitID %d does not belong to same imageset. CommitID should belong the same imageset", devicesUpdate.CommitID)))
+			return nil
+		}
 	}
 	//validate if commit is valid before continue process
 	commit, err := ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID)

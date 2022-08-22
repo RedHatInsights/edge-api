@@ -269,5 +269,5 @@ func (e *OstreeNotFound) Error() string {
 type InvalidCommitID struct{}
 
 func (e *InvalidCommitID) Error() string {
-	return "commit ID does not belong to same imageset as of device image"
+	return "commit ID does not belong to the same image-set as devices images"
 }

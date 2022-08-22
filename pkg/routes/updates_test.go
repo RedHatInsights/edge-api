@@ -471,7 +471,9 @@ var _ = Describe("Update routes", func() {
 				handler := http.HandlerFunc(AddUpdate)
 				handler.ServeHTTP(responseRecorder, req)
 
-				Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := ioutil.ReadAll(responseRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("CommitID %d does not belong to same imageset. CommitID should belong the same imageset", updateCommit.ID))
 			})
 		})
 	})
