@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -o nonunset
+set -o nounset
 
 mkdir "${PWD}/sonarqube/"
 mkdir "${PWD}/sonarqube/download/"
