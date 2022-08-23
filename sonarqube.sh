@@ -28,8 +28,14 @@ then
 fi
 
 KEYSTORE_PASSWORD="$(openssl rand -base64 32)"
-
 KEYSTORE_PATH="${PWD}/sonarqube/store/RH-IT-Root-CA.keystore"
+
+if [ "${JAVA_HOME:-}" == '' ];
+then
+  BIN_DIR=$(dirname "$(which java)" )
+  JAVA_HOME=$(dirname "${BIN_DIR}" )
+fi
+
 "${JAVA_HOME}/bin/keytool" \
   -keystore "${KEYSTORE_PATH}" \
   -import \
