@@ -80,6 +80,6 @@ cat << @EOF > "${WORKSPACE}/artifacts/junit-dummy.xml"
 </testsuite>
 @EOF
 
-rm "${HOME}/group"
+rm "${PWD}/group"
 
-rm "${HOME}/passwd"
+rm "${PWD}/passwd"
