@@ -1464,7 +1464,6 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 		recipients = append(recipients, recipient)
 
 		notify.OrgID = i.OrgID
-		notify.Account = i.Account
 		notify.Context = fmt.Sprintf("{  \"ImageName\" : \"%v\"}", i.Name)
 		notify.Events = events
 		notify.Recipients = recipients

@@ -8,23 +8,42 @@ mkdir "${PWD}/sonarqube/extract/"
 mkdir "${PWD}/sonarqube/certs/"
 mkdir "${PWD}/sonarqube/store/"
 
-curl -o "${PWD}/sonarqube/certs/RH-IT-Root-CA.crt" --insecure "${ROOT_CA_CERT_URL}"
+RH_IT_ROOT_CA_CRT="${PWD}/sonarqube/certs/RH-IT-Root-CA.crt"
+EXPECTED_SHA1_FINGERPRINT='SHA1 Fingerprint=E0:A7:13:80:9D:96:3E:EE:5F:8B:74:24:74:8D:EF:3D:0C:0F:C4:0E'
+curl --output "${RH_IT_ROOT_CA_CRT}" "${ROOT_CA_CERT_URL}"
+FOUND_SHA1_FINGERPRINT="$(openssl x509 -fingerprint -in "${RH_IT_ROOT_CA_CRT}" -noout | grep "^${EXPECTED_SHA1_FINGERPRINT}$")"
+if [ "${EXPECTED_SHA1_FINGERPRINT}" != "${FOUND_SHA1_FINGERPRINT}" ];
+then
+  echo "Fingerprints do not match:"
+  echo -e "\tExpecting '$EXPECTED_SHA1_FINGERPRINT}"
+  echo -e "\tFound: '${FOUND_SHA1_FINGERPRINT}'"
+  exit 1
+fi
 
+if [ "${BUILD_NUMBER:-}" == '' ];
+then
+  sudo mv -i -v "${RH_IT_ROOT_CA_CRT}" "/etc/pki/ca-trust/source/anchors/"
+  sudo update-ca-trust extract
+fi
+
+KEYSTORE_PASSWORD="$(openssl rand -base64 32)"
+
+KEYSTORE_PATH="${PWD}/sonarqube/store/RH-IT-Root-CA.keystore"
 "${JAVA_HOME}/bin/keytool" \
-  -keystore "/${PWD}/sonarqube/store/RH-IT-Root-CA.keystore" \
+  -keystore "${KEYSTORE_PATH}" \
   -import \
   -alias "RH-IT-Root-CA" \
-  -file "/${PWD}/sonarqube/certs/RH-IT-Root-CA.crt" \
-  -storepass "redhat" \
+  -file "${RH_IT_ROOT_CA_CRT}" \
+  -storepass "${KEYSTORE_PASSWORD}" \
   -noprompt
 
-export SONAR_SCANNER_OPTS="-Djavax.net.ssl.trustStore=${PWD}/sonarqube/store/RH-IT-Root-CA.keystore -Djavax.net.ssl.trustStorePassword=redhat"
+export SONAR_SCANNER_OPTS="-Djavax.net.ssl.trustStore=${KEYSTORE_PATH} -Djavax.net.ssl.trustStorePassword=${KEYSTORE_PASSWORD}"
 export SONAR_SCANNER_OS="linux"
 export SONAR_SCANNER_CLI_VERSION="4.7.0.2747"
 export SONAR_SCANNER_DOWNLOAD_NAME="sonar-scanner-cli-${SONAR_SCANNER_CLI_VERSION}-${SONAR_SCANNER_OS}"
 export SONAR_SCANNER_NAME="sonar-scanner-${SONAR_SCANNER_CLI_VERSION}-${SONAR_SCANNER_OS}"
 
-curl -o "${PWD}/sonarqube/download/${SONAR_SCANNER_DOWNLOAD_NAME}.zip" --insecure "${SONARQUBE_CLI_URL}"
+curl --output "${PWD}/sonarqube/download/${SONAR_SCANNER_DOWNLOAD_NAME}.zip" "${SONARQUBE_CLI_URL}"
 
 unzip -d "${PWD}/sonarqube/extract/" "${PWD}/sonarqube/download/${SONAR_SCANNER_DOWNLOAD_NAME}.zip"
 
@@ -32,7 +51,9 @@ export PATH="${PWD}/sonarqube/extract/${SONAR_SCANNER_NAME}/bin:${PATH}"
 
 COMMIT_SHORT=$(git rev-parse --short=7 HEAD)
 
-docker pull registry.access.redhat.com/openjdk/openjdk-11-rhel7:1.12-1.1658422675
+OPENJDK_CONTAINER_IMAGE='registry.access.redhat.com/openjdk/openjdk-11-rhel7:1.12-1.1658422675'
+
+docker pull "${OPENJDK_CONTAINER_IMAGE}"
 
 { echo "SONARQUBE_REPORT_URL=${SONARQUBE_REPORT_URL}";
   echo "COMMIT_SHORT=${COMMIT_SHORT}";
@@ -43,8 +64,8 @@ docker pull registry.access.redhat.com/openjdk/openjdk-11-rhel7:1.12-1.165842267
 docker run \
     -v"${PWD}":/home/jboss \
     --env-file "${PWD}/sonarqube/my-env.txt" \
-    registry.access.redhat.com/openjdk/openjdk-11-rhel7:1.12-1.1658422675 \
-    "/home/jboss/sonarqube_exec.sh"
+    "${OPENJDK_CONTAINER_IMAGE}" \
+    "sonarqube_exec.sh"
 
 mkdir -p "${WORKSPACE}/artifacts"
 cat << EOF > "${WORKSPACE}/artifacts/junit-dummy.xml"
