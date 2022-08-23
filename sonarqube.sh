@@ -68,7 +68,7 @@ podman pull "${OPENJDK_CONTAINER_IMAGE}"
   echo "SONAR_SCANNER_NAME=${SONAR_SCANNER_NAME}";
   echo "SONARQUBE_REPORT_URL=${SONARQUBE_REPORT_URL}";
   echo "SONARQUBE_TOKEN=${SONARQUBE_TOKEN}";
-} >> "${PWD}/sonarqube/my-env.txt"
+} > "${PWD}/sonarqube/my-env.txt"
 
 cp /etc/group "${PWD}/group"
 cp /etc/passwd "${PWD}/passwd"
