@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -x
+set -o nounset
 
 mkdir "${PWD}/sonarqube/"
 mkdir "${PWD}/sonarqube/download/"
@@ -10,6 +10,7 @@ mkdir "${PWD}/sonarqube/store/"
 
 RH_IT_ROOT_CA_CRT="${PWD}/sonarqube/certs/RH-IT-Root-CA.crt"
 EXPECTED_SHA1_FINGERPRINT='SHA1 Fingerprint=E0:A7:13:80:9D:96:3E:EE:5F:8B:74:24:74:8D:EF:3D:0C:0F:C4:0E'
+
 curl --output "${RH_IT_ROOT_CA_CRT}" "${ROOT_CA_CERT_URL}"
 FOUND_SHA1_FINGERPRINT="$(openssl x509 -fingerprint -in "${RH_IT_ROOT_CA_CRT}" -noout | grep "^${EXPECTED_SHA1_FINGERPRINT}$")"
 if [ "${EXPECTED_SHA1_FINGERPRINT}" != "${FOUND_SHA1_FINGERPRINT}" ];
@@ -17,7 +18,7 @@ then
   echo "Fingerprints do not match:"
   echo -e "\tExpecting '$EXPECTED_SHA1_FINGERPRINT}"
   echo -e "\tFound: '${FOUND_SHA1_FINGERPRINT}'"
-  exit 1
+  exit 2
 fi
 
 if [ "${BUILD_NUMBER:-}" == '' ];
@@ -27,8 +28,14 @@ then
 fi
 
 KEYSTORE_PASSWORD="$(openssl rand -base64 32)"
-
 KEYSTORE_PATH="${PWD}/sonarqube/store/RH-IT-Root-CA.keystore"
+
+if [ "${JAVA_HOME:-}" == '' ];
+then
+  BIN_DIR=$(dirname "$(which java)" )
+  JAVA_HOME=$(dirname "${BIN_DIR}" )
+fi
+
 "${JAVA_HOME}/bin/keytool" \
   -keystore "${KEYSTORE_PATH}" \
   -import \
@@ -51,25 +58,34 @@ export PATH="${PWD}/sonarqube/extract/${SONAR_SCANNER_NAME}/bin:${PATH}"
 
 COMMIT_SHORT=$(git rev-parse --short=7 HEAD)
 
-OPENJDK_CONTAINER_IMAGE='registry.access.redhat.com/openjdk/openjdk-11-rhel7:1.12-1.1658422675'
+OPENJDK_CONTAINER_IMAGE='registry.redhat.io/ubi8/openjdk-11-runtime:latest'
 
-docker pull "${OPENJDK_CONTAINER_IMAGE}"
+podman pull "${OPENJDK_CONTAINER_IMAGE}"
 
-{ echo "SONARQUBE_REPORT_URL=${SONARQUBE_REPORT_URL}";
+{ \
   echo "COMMIT_SHORT=${COMMIT_SHORT}";
+  echo "KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD}";
+  echo "SONAR_SCANNER_NAME=${SONAR_SCANNER_NAME}";
+  echo "SONARQUBE_REPORT_URL=${SONARQUBE_REPORT_URL}";
   echo "SONARQUBE_TOKEN=${SONARQUBE_TOKEN}";
-  echo "SONAR_SCANNER_NAME=${SONAR_SCANNER_NAME}"
 } >> "${PWD}/sonarqube/my-env.txt"
 
-docker run \
-    -v"${PWD}":/home/jboss \
+cp /etc/group "${PWD}/group"
+cp /etc/passwd "${PWD}/passwd"
+
+podman run \
+    --volume "${PWD}":/home/jboss:z \
     --env-file "${PWD}/sonarqube/my-env.txt" \
     "${OPENJDK_CONTAINER_IMAGE}" \
-    "sonarqube_exec.sh"
+    /bin/bash "sonarqube_exec.sh"
 
 mkdir -p "${WORKSPACE}/artifacts"
-cat << EOF > "${WORKSPACE}/artifacts/junit-dummy.xml"
+cat << @EOF > "${WORKSPACE}/artifacts/junit-dummy.xml"
 <testsuite tests="1">
     <testcase classname="dummy" name="dummytest"/>
 </testsuite>
-EOF
+@EOF
+
+rm "${PWD}/group"
+
+rm "${PWD}/passwd"
