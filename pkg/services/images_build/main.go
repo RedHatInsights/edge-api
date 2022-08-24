@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -64,14 +63,8 @@ func main() {
 		signal.Notify(sigchan, os.Interrupt, syscall.SIGTERM)
 
 		// TODO: this should be a struct defined elsewhere and read in
-		c, err := kafka.NewConsumer(&kafka.ConfigMap{
-			"bootstrap.servers":     fmt.Sprintf("%s:%v", cfg.KafkaBrokers[0].Hostname, *cfg.KafkaBrokers[0].Port),
-			"broker.address.family": "v4",
-			"group.id":              consumerGroup,
-			"session.timeout.ms":    6000,
-			"auto.offset.reset":     "earliest",
-			//			"enable.auto.offset.store": false,
-		})
+		kafkaConfigMap := kafkacommon.GetKafkaConsumerConfigMap(consumerGroup)
+		c, err := kafka.NewConsumer(&kafkaConfigMap)
 
 		if err != nil {
 			mslog.WithField("error", err.Error()).Error("Failed to create consumer")

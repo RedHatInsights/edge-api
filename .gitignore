@@ -43,6 +43,8 @@ config.yaml
 #sonarqube
 .bash_history
 .scannerwork/
+group
+passwd
 sonarqube/
 
 openapi.json
