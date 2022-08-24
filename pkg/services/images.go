@@ -355,9 +355,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 
 	s.log = s.log.WithFields(log.Fields{"updatedImageID": image.ID, "updatedCommitID": image.Commit.ID})
 
-	s.log.Info("Image Updated successfully - starting bulding process")
-
-	go s.postProcessImage(image.ID)
+	s.log.Info("Image Updated successfully - starting building process")
 
 	return nil
 }

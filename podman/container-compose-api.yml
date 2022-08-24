@@ -1,7 +1,7 @@
 version: '2'
 secrets:
   edgemgmt_config:
-    file: $DEVDIR/podman/env/edgemgmt_config.json
+    file: $PWD/podman/env/edgemgmt_config.json
 services:
     edge-api-service:
       image: localhost/edge-api:localdev
@@ -13,7 +13,7 @@ services:
         - env/edge-api.env
 #      depends-on: postgresql
       volumes:
-        - $DEVDIR:/opt/app-root/src:z
+        - $PWD:/opt/app-root/src:z
         - $HOME/go:/go
 #      working_dir: /opt/app-root
 #      working_dir: /opt/app-root/src
