@@ -6,6 +6,7 @@ import (
 	"github.com/Unleash/unleash-client-go/v3"
 	unleashCTX "github.com/Unleash/unleash-client-go/v3/context"
 	"github.com/redhatinsights/edge-api/config"
+	log "github.com/sirupsen/logrus"
 )
 
 //FeatureCustomRepos is the const of the custom repo feature flag
@@ -63,8 +64,14 @@ func (ff *Flag) IsEnabled() bool {
 
 	// if either is enabled, make it so
 	if ffServiceEnabled || ffEnvEnabled {
+		log.WithFields(log.Fields{"feature": ff.Name,
+			"unleash": ffServiceEnabled, "environment": ffEnvEnabled,
+			"status": "enabled"}).Debug("Feature flag status")
 		return true
 	}
 
+	log.WithFields(log.Fields{"feature": ff.Name,
+		"unleash": ffServiceEnabled, "environment": ffEnvEnabled,
+		"status": "enabled"}).Debug("Feature flag status")
 	return false
 }
