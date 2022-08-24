@@ -10,8 +10,13 @@
       prod: "rh-edge-tarballs-prod"
       stage: "rh-edge-tarballs-stage"
       perf: "rh-edge-tarballs-perf"
-    repo_url: "https://{{ s3_buckets[fleet_infra_env] | default('rh-edge-tarballs-prod') }}.s3.{{ s3_region | default('us-east-1') }}.amazonaws.com/{{ update_number }}/upd/{{ update_number }}/repo"
+    repo_url: "@@ .RepoURL @@"
+    repo_content_url: "@@ .RepoContentURL @@"
     ostree_remote_name: "@@ .GoTemplateRemoteName @@"
+    ostree_remote_domain: "@@ .RemoteDomain @@"
+    ostree_remote_path: "@@ .RemotePath @@"
+    ostree_remote_cookie_name: "@@ .RemoteCookieName @@"
+    ostree_remote_cookie_value: "@@ .RemoteCookieValue @@"
     ostree_changes_refs: "@@ .RemoteOstreeUpdate @@"
     os_tree_ref: "@@ .OSTreeRef @@"
     ostree_gpg_verify: "false"
@@ -21,7 +26,8 @@
       url={{ repo_url }}
       gpg-verify={{ ostree_gpg_verify }}
       gpgkeypath={{ ostree_gpg_keypath }}
-      contenturl={{ repo_url }}
+      contenturl={{ repo_content_url }}
+    ostree_remote_cookie_cmd: "ostree remote add-cookie  {{ ostree_remote_name }} {{ ostree_remote_domain }} {{ ostree_remote_path }} {{ ostree_remote_cookie_name }} {{ ostree_remote_cookie_value }}"
     insights_signature_exclude: "/vars/insights_signature,/vars/fleet_infra_env,/vars/update_number,/vars/s3_region,/vars/ostree_remote_name,/vars/ostree_changes_refs,/vars/os_tree_ref"
     insights_signature: !!binary |
       TFMwdExTMUNSVWRKVGlCUVIxQWdVMGxIVGtGVVZWSkZMUzB0TFMwS1ZtVnljMmx2YmpvZ1IyNTFV
@@ -49,6 +55,12 @@
       ansible.builtin.copy:
         content: "{{ ostree_remote_template }}"
         dest: /etc/ostree/remotes.d/rhel-edge.conf
+    - name: remove ostree remote cookies file if exists
+      ansible.builtin.file:
+        path: /ostree/repo/{{ ostree_remote_name }}.cookies.txt
+        state: absent
+    - name: add ostree remote cookie
+      ansible.builtin.shell: "{{ ostree_remote_cookie_cmd }}"
     - name: run rpmostree update
       when: not ostree_changes_refs|bool
       ansible.builtin.shell: rpm-ostree upgrade --allow-downgrade

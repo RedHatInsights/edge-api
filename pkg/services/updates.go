@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	url2 "net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -27,6 +28,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	"github.com/redhatinsights/edge-api/pkg/routes/signature"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -82,9 +84,14 @@ type playbooks struct {
 	FleetInfraEnv        string
 	UpdateNumber         string
 	RepoURL              string
+	RepoContentURL       string
 	BucketRegion         string
 	RemoteOstreeUpdate   string
 	OSTreeRef            string
+	RemoteDomain         string
+	RemotePath           string
+	RemoteCookieName     string
+	RemoteCookieValue    string
 }
 
 // TemplateRemoteInfo the values to playbook
@@ -96,6 +103,7 @@ type TemplateRemoteInfo struct {
 	UpdateTransactionID uint
 	RemoteOstreeUpdate  string
 	OSTreeRef           string
+	RemoteCookieValue   string
 }
 
 // PlaybookDispatcherEventPayload belongs to PlaybookDispatcherEvent
@@ -129,6 +137,7 @@ func (s *UpdateService) CreateUpdateAsync(id uint) {
 
 // CreateUpdate is the function that creates an update transaction
 func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error) {
+	cfg := config.Get()
 	var update *models.UpdateTransaction
 	db.DB.Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").Find(&update, id)
 	update.Status = models.UpdateStatusBuilding
@@ -171,6 +180,14 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		return nil, err
 	}
 
+	remoteCookieValue, err := signature.EncodeUpdateTransactionCookieValue(
+		[]byte(cfg.PayloadSigningKey), *update, &signature.UpdateTransactionPayload{UpdateTransactionID: update.ID, OrgID: update.OrgID},
+	)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("error while creating update transaction cookie value")
+		return nil, err
+	}
+
 	var remoteInfo TemplateRemoteInfo
 	remoteInfo.RemoteURL = update.Repo.URL
 	remoteInfo.RemoteName = "rhel-edge"
@@ -179,6 +196,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	remoteInfo.GpgVerify = "false"
 	remoteInfo.OSTreeRef = update.Commit.OSTreeRef
 	remoteInfo.RemoteOstreeUpdate = fmt.Sprint(update.ChangesRefs)
+	remoteInfo.RemoteCookieValue = remoteCookieValue
 
 	playbookURL, err := s.WriteTemplate(remoteInfo, update.OrgID)
 
@@ -303,14 +321,27 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, orgID str
 		envName = "dev"
 	}
 
+	url, err := url2.Parse(cfg.EdgeAPIBaseURL)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("error while parsing config edge api url")
+		return "", err
+	}
+	remotePath := fmt.Sprintf("/api/edge/v1/storage/update-repos/%d", templateInfo.UpdateTransactionID)
+	repoURL := fmt.Sprintf("%s://%s%s", url.Scheme, url.Host, remotePath)
+
 	templateData := playbooks{
 		GoTemplateRemoteName: templateInfo.RemoteName,
 		FleetInfraEnv:        envName,
 		BucketRegion:         cfg.BucketRegion,
 		UpdateNumber:         strconv.FormatUint(uint64(templateInfo.UpdateTransactionID), 10),
-		RepoURL:              "https://{{ s3_buckets[fleet_infra_env] | default('rh-edge-tarballs-stage') }}.s3.{{ s3_region | default('us-east-1') }}.amazonaws.com/{{ update_number }}/upd/{{ update_number }}/repo",
+		RepoURL:              repoURL,
+		RepoContentURL:       fmt.Sprintf("%s/content", repoURL),
 		RemoteOstreeUpdate:   templateInfo.RemoteOstreeUpdate,
 		OSTreeRef:            templateInfo.OSTreeRef,
+		RemoteDomain:         url.Hostname(),
+		RemotePath:           remotePath,
+		RemoteCookieName:     "device",
+		RemoteCookieValue:    templateInfo.RemoteCookieValue,
 	}
 
 	// TODO change the same time as line 231
