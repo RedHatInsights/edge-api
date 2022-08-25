@@ -80,7 +80,7 @@ const (
 // THEEDGE-1921 created 2 temporary indexes to address production issue
 type Device struct {
 	Model
-	UUID              string               `gorm:"unique" json:"UUID"`
+	UUID              string               `gorm:"index" json:"UUID"`
 	AvailableHash     string               `json:"AvailableHash,omitempty"`
 	RHCClientID       string               `json:"RHCClientID"`
 	Connected         bool                 `gorm:"default:true" json:"Connected"`

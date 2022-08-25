@@ -632,42 +632,34 @@ var _ = Describe("DfseviceService", func() {
 		})
 	})
 	Context("ProcessPlatformInventoryCreateEvent", func() {
+
 		commit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}
 		result := db.DB.Create(&commit)
 		Expect(result.Error).To(BeNil())
 		image := models.Image{OrgID: orgID, CommitID: commit.ID, Status: models.ImageStatusSuccess}
 		result = db.DB.Create(&image)
 		Expect(result.Error).To(BeNil())
+		var message []byte
+		var err error
+		var event services.PlatformInsightsCreateUpdateEventPayload
+		BeforeEach(func() {
 
-		event := new(services.PlatformInsightsCreateUpdateEventPayload)
-		event.Type = services.InventoryEventTypeCreated
-		event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
-		event.Host.ID = faker.UUIDHyphenated()
-		event.Host.OrgID = orgID
-		event.Host.Name = faker.UUIDHyphenated()
-		event.Host.Updated = models.EdgeAPITime(sql.NullTime{Time: time.Now().UTC(), Valid: true})
-		event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
-		event.Host.SystemProfile.RHCClientID = faker.UUIDHyphenated()
-		message, err := json.Marshal(event)
-		Expect(err).To(BeNil())
-
-		var newDevice = models.Device{
-			UUID:        event.Host.ID,
-			RHCClientID: event.Host.SystemProfile.RHCClientID,
-			OrgID:       event.Host.OrgID,
-			Name:        event.Host.Name,
-			LastSeen:    event.Host.Updated,
-		}
-		result = db.DB.Debug().Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
-
+			event.Type = services.InventoryEventTypeCreated
+			event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
+			event.Host.ID = faker.UUIDHyphenated()
+			event.Host.OrgID = orgID
+			event.Host.Name = faker.UUIDHyphenated()
+			event.Host.Updated = models.EdgeAPITime(sql.NullTime{Time: time.Now().UTC(), Valid: true})
+			event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
+			event.Host.SystemProfile.RHCClientID = faker.UUIDHyphenated()
+			message, err = json.Marshal(event)
+			Expect(err).To(BeNil())
+		})
 		It("should create devices when no record is found", func() {
-			err := deviceService.ProcessPlatformInventoryCreateEvent(message)
+			err = deviceService.ProcessPlatformInventoryCreateEvent(message)
 			Expect(err).To(BeNil())
 			var savedDevice models.Device
-			var total []models.Device
-			db.DB.Where(models.Device{UUID: event.Host.ID, OrgID: event.Host.OrgID}).Find(&total).Debug()
-			fmt.Printf("\nTOTAL: %v\n", len(total))
-			result := db.DB.Where(models.Device{UUID: event.Host.ID, OrgID: event.Host.OrgID}).First(&savedDevice)
+			result := db.DB.Where(models.Device{UUID: event.Host.ID, OrgID: event.Host.OrgID}).First(&savedDevice).Unscoped()
 			Expect(result.Error).To(BeNil())
 			Expect(savedDevice.UUID).To(Equal(event.Host.ID))
 			Expect(savedDevice.OrgID).To(Equal(orgID))
@@ -675,6 +667,28 @@ var _ = Describe("DfseviceService", func() {
 			Expect(savedDevice.LastSeen.Time).To(Equal(event.Host.Updated.Time))
 			Expect(savedDevice.Name).To(Equal(event.Host.Name))
 			Expect(savedDevice.RHCClientID).To(Equal(event.Host.SystemProfile.RHCClientID))
+		})
+
+		It("should NOT create devices when record is found", func() {
+			var newDevice = models.Device{
+				UUID:        event.Host.ID,
+				RHCClientID: event.Host.SystemProfile.RHCClientID,
+				OrgID:       event.Host.OrgID,
+				Name:        event.Host.Name,
+				LastSeen:    event.Host.Updated,
+			}
+			result = db.DB.Debug().Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
+			err := deviceService.ProcessPlatformInventoryCreateEvent(message)
+			Expect(err).To(BeNil())
+			var savedDevice models.Device
+			result := db.DB.Where(models.Device{UUID: event.Host.ID, OrgID: event.Host.OrgID}).First(&savedDevice).Unscoped()
+			Expect(result.Error).To(BeNil())
+			Expect(&savedDevice.ID).To(Equal(&newDevice.ID))
+			Expect(savedDevice.UUID).To(Equal(newDevice.UUID))
+
+			var total []models.Device
+			db.DB.Where(models.Device{UUID: event.Host.ID, OrgID: event.Host.OrgID}).Find(&total).Debug()
+			Expect(len(total)).To(Equal(1))
 		})
 	})
 	Context("ProcessPlatformInventoryUpdatedEvent", func() {

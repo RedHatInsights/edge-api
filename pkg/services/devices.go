@@ -14,7 +14,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 const (
@@ -879,10 +878,7 @@ func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCre
 		Name:        e.Host.Name,
 		LastSeen:    e.Host.Updated,
 	}
-	// result := db.DB.Debug().Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
-
-	result := db.DB.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "UUID"}},
-		DoNothing: true}).Create(&newDevice).Debug()
+	result := db.DB.Debug().Where(&models.Device{UUID: newDevice.UUID}).FirstOrCreate(&newDevice)
 	if result.Error != nil {
 		s.log.WithFields(log.Fields{
 			"host_id": string(e.Host.ID),
