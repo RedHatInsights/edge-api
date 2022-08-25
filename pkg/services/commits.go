@@ -58,45 +58,34 @@ func (s *CommitService) GetCommitByOSTreeCommit(ost string) (*models.Commit, err
 // ValidateDevicesImageSetWithCommit validates if user provided commitID belong to same ImageSet as of Device Image
 func (s *CommitService) ValidateDevicesImageSetWithCommit(deviceUUID []string, commitID uint) error {
 
-	var devices []models.Device
 	var imageForCommitID []models.Image
+	var devicesImageSet []models.Image
+
 	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {
 		return err
 	}
-	resultDevice := db.Org(orgID, "").Where("uuid IN ?", deviceUUID).Find(&devices)
-	if resultDevice.Error != nil {
-		s.log.WithField("error", resultDevice.Error.Error()).Error("Error searching for devices using DeviceUUID")
-		return resultDevice.Error
-	}
 
-	devicesImageID := make([]uint, 0, len(devices))
-
-	for _, device := range devices {
-		if int(device.ImageID) == 0 {
-			return new(DeviceHasImageUndefined)
-		}
-		devicesImageID = append(devicesImageID, device.ImageID)
-	}
-
-	var devicesImage []models.Image
-
-	resultImageSet := db.Org(orgID, "").Find(&devicesImage, devicesImageID)
+	resultImageSet := db.Org(orgID, "devices").Table("devices").
+		Select(`images.image_set_id as "image_set_id"`).
+		Joins("JOIN images ON devices.image_id = images.id").
+		Where("devices.uuid in (?) AND devices.org_id = ?", deviceUUID, orgID).
+		Group("images.image_set_id").
+		Find(&devicesImageSet)
 	if resultImageSet.Error != nil {
-		s.log.WithField("error", resultImageSet.Error.Error()).Error("Error searching for Image using DeviceImageID")
+		s.log.WithField("error", resultImageSet.Error.Error()).Error("Error searching for ImageSet of Device Images")
 		return resultImageSet.Error
 	}
 
 	// finding unique ImageSetID for device Image
-	devicesImageSetID := make(map[uint]bool, len(devicesImage))
+	devicesImageSetID := make(map[uint]bool, len(devicesImageSet))
 	var imageSetID uint
-	for _, image := range devicesImage {
+	for _, image := range devicesImageSet {
 		if image.ImageSetID == nil {
 			return new(ImageHasNoImageSet)
 		}
 		imageSetID = *image.ImageSetID
 		devicesImageSetID[*image.ImageSetID] = true
-
 	}
 
 	if len(devicesImageSetID) > 1 {
