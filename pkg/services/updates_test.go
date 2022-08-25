@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	apiError "github.com/redhatinsights/edge-api/pkg/errors"
-	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"io/ioutil"
 	"net/http"
+
+	apiError "github.com/redhatinsights/edge-api/pkg/errors"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
@@ -585,30 +586,39 @@ var _ = Describe("UpdateService Basic functions", func() {
 	})
 
 	Describe("Update Devices From Update Transaction", func() {
-		org_id := faker.UUIDHyphenated()
-		imageSet := models.ImageSet{OrgID: org_id, Name: faker.UUIDHyphenated()}
-		db.DB.Create(&imageSet)
-		currentCommit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated()}
-		db.DB.Create(&currentCommit)
-		currentImage := models.Image{OrgID: org_id, CommitID: currentCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
-		db.DB.Create(&currentImage)
+		var update models.UpdateTransaction
+		var device models.Device
+		var currentImage models.Image
+		var newImage models.Image
+		var org_id string
+		var imageSet models.ImageSet
+		BeforeEach(func() {
 
-		newCommit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated()}
-		db.DB.Create(&newCommit)
-		newImage := models.Image{OrgID: org_id, CommitID: newCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
-		db.DB.Create(&newImage)
+			org_id = faker.UUIDHyphenated()
+			imageSet = models.ImageSet{OrgID: org_id, Name: faker.UUIDHyphenated()}
+			db.DB.Create(&imageSet)
+			currentCommit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated()}
+			db.DB.Create(&currentCommit)
+			currentImage = models.Image{OrgID: org_id, CommitID: currentCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
+			db.DB.Create(&currentImage)
 
-		device := models.Device{OrgID: org_id, ImageID: currentImage.ID, UpdateAvailable: true}
-		db.DB.Create(&device)
-		update := models.UpdateTransaction{
+			newCommit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated()}
+			db.DB.Create(&newCommit)
+			newImage = models.Image{OrgID: org_id, CommitID: newCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
+			db.DB.Create(&newImage)
 
-			OrgID:    org_id,
-			Devices:  []models.Device{device},
-			CommitID: newCommit.ID,
-			Status:   models.UpdateStatusBuilding,
-		}
-		db.DB.Create(&update)
+			device = models.Device{OrgID: org_id, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated()}
+			db.DB.Create(&device)
+			update = models.UpdateTransaction{
 
+				OrgID:    org_id,
+				Devices:  []models.Device{device},
+				CommitID: newCommit.ID,
+				Status:   models.UpdateStatusBuilding,
+			}
+			db.DB.Create(&update)
+
+		})
 		ctx := context.Background()
 		updateService := services.NewUpdateService(ctx, log.NewEntry(log.StandardLogger()))
 
@@ -621,6 +631,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			It("should not update device", func() {
 				var currentDevice models.Device
 				result := db.DB.First(&currentDevice, device.ID)
+
 				Expect(result.Error).To(BeNil())
 
 				Expect(currentDevice.ImageID).To(Equal(currentImage.ID))
@@ -630,18 +641,15 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 
 		Context("when update status is success", func() {
-			It("initialisation should pass", func() {
+			It("initialisation and update should pass", func() {
 				update.Status = models.UpdateStatusSuccess
 				result := db.DB.Save(&update)
 				Expect(result.Error).To(BeNil())
 
 				err := updateService.UpdateDevicesFromUpdateTransaction(update)
 				Expect(err).To(BeNil())
-			})
-
-			It("should update device", func() {
 				var currentDevice models.Device
-				result := db.DB.First(&currentDevice, device.ID)
+				result = db.DB.First(&currentDevice, device.ID)
 				Expect(result.Error).To(BeNil())
 
 				Expect(currentDevice.ImageID).To(Equal(newImage.ID))

@@ -11,6 +11,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"gorm.io/gorm/clause"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
@@ -650,10 +651,22 @@ var _ = Describe("DfseviceService", func() {
 		message, err := json.Marshal(event)
 		Expect(err).To(BeNil())
 
+		var newDevice = models.Device{
+			UUID:        event.Host.ID,
+			RHCClientID: event.Host.SystemProfile.RHCClientID,
+			OrgID:       event.Host.OrgID,
+			Name:        event.Host.Name,
+			LastSeen:    event.Host.Updated,
+		}
+		result = db.DB.Debug().Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
+
 		It("should create devices when no record is found", func() {
 			err := deviceService.ProcessPlatformInventoryCreateEvent(message)
 			Expect(err).To(BeNil())
 			var savedDevice models.Device
+			var total []models.Device
+			db.DB.Where(models.Device{UUID: event.Host.ID, OrgID: event.Host.OrgID}).Find(&total).Debug()
+			fmt.Printf("\nTOTAL: %v\n", len(total))
 			result := db.DB.Where(models.Device{UUID: event.Host.ID, OrgID: event.Host.OrgID}).First(&savedDevice)
 			Expect(result.Error).To(BeNil())
 			Expect(savedDevice.UUID).To(Equal(event.Host.ID))

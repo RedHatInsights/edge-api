@@ -617,7 +617,7 @@ var _ = Describe("Image Service Test", func() {
 
 			devices := make([]models.Device, 0, len(images))
 			for ind, image := range images {
-				device := models.Device{OrgID: orgID, ImageID: image.ID, UpdateAvailable: false}
+				device := models.Device{OrgID: orgID, ImageID: image.ID, UpdateAvailable: false, UUID: faker.UUIDHyphenated()}
 				if ind == len(images)-1 {
 					device.UpdateAvailable = true
 				}

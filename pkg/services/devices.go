@@ -879,7 +879,10 @@ func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCre
 		Name:        e.Host.Name,
 		LastSeen:    e.Host.Updated,
 	}
-	result := db.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
+	// result := db.DB.Debug().Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
+
+	result := db.DB.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "UUID"}},
+		DoNothing: true}).Create(&newDevice).Debug()
 	if result.Error != nil {
 		s.log.WithFields(log.Fields{
 			"host_id": string(e.Host.ID),
