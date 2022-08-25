@@ -878,6 +878,7 @@ func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCre
 		Name:        e.Host.Name,
 		LastSeen:    e.Host.Updated,
 	}
+	//We should not create a new device if UUID already exists
 	result := db.DB.Debug().Where(&models.Device{UUID: newDevice.UUID}).FirstOrCreate(&newDevice)
 	if result.Error != nil {
 		s.log.WithFields(log.Fields{
@@ -892,7 +893,9 @@ func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCre
 
 // ProcessPlatformInventoryDeleteEvent processes messages from platform.inventory.events kafka topic with event_type="delete"
 func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) error {
+
 	var eventData PlatformInsightsDeleteEventPayload
+
 	if err := json.Unmarshal(message, &eventData); err != nil {
 		s.log.WithFields(log.Fields{"value": string(message), "error": err}).Debug(
 			"Skipping kafka message - it's not a Platform Insights Inventory message with event type: delete, as unable to unmarshal the message",
@@ -903,7 +906,9 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 		s.log.Debug("Skipping kafka message - Platform Insights Inventory message host id is undefined or event type is not delete")
 		return nil
 	}
-
+	s.log.WithFields(log.Fields{
+		"host_id": string(eventData.ID),
+	}).Debug("Deleting edge device")
 	deviceUUID := eventData.ID
 	deviceOrgID := eventData.OrgID
 	var devices []models.Device
