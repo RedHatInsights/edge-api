@@ -58,7 +58,7 @@ export PATH="${PWD}/sonarqube/extract/${SONAR_SCANNER_NAME}/bin:${PATH}"
 
 COMMIT_SHORT=$(git rev-parse --short=7 HEAD)
 
-OPENJDK_CONTAINER_IMAGE='registry.redhat.io/ubi8/openjdk-11-runtime:latest'
+OPENJDK_CONTAINER_IMAGE='registry.redhat.io/ubi8/openjdk-17-runtime:latest'
 
 podman pull "${OPENJDK_CONTAINER_IMAGE}"
 
