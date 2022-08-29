@@ -667,7 +667,10 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 
 	var storedDevices []models.Device
 	// search for all stored devices that are also in inventory
-	if res := db.OrgDB(orgID, tx, "").Limit(limit).Offset(offset).Preload("UpdateTransaction").Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
+	if res := db.OrgDB(orgID, tx, "").Limit(limit).Offset(offset).
+		Preload("UpdateTransaction").
+		Preload("UpdateTransaction.DispatchRecords").
+		Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
 	}
 
@@ -767,7 +770,6 @@ func ReturnDevicesView(storedDevices []models.Device, orgID string) ([]models.De
 	}
 
 	// build the return object
-	// TODO: add device group info
 	returnDevices := []models.DeviceView{}
 	for _, device := range storedDevices {
 		var imageName string
@@ -785,16 +787,17 @@ func ReturnDevicesView(storedDevices []models.Device, orgID string) ([]models.De
 			deviceStatus = deviceStatusSet[device.ID]
 		}
 		currentDeviceView := models.DeviceView{
-			DeviceID:        device.ID,
-			DeviceName:      device.Name,
-			DeviceUUID:      device.UUID,
-			ImageID:         device.ImageID,
-			ImageName:       imageName,
-			LastSeen:        device.LastSeen,
-			UpdateAvailable: device.UpdateAvailable,
-			Status:          deviceStatus,
-			ImageSetID:      imageSetID,
-			DeviceGroups:    deviceGroups,
+			DeviceID:          device.ID,
+			DeviceName:        device.Name,
+			DeviceUUID:        device.UUID,
+			ImageID:           device.ImageID,
+			ImageName:         imageName,
+			LastSeen:          device.LastSeen,
+			UpdateAvailable:   device.UpdateAvailable,
+			Status:            deviceStatus,
+			ImageSetID:        imageSetID,
+			DeviceGroups:      deviceGroups,
+			UpdateTransaction: device.UpdateTransaction,
 		}
 		returnDevices = append(returnDevices, currentDeviceView)
 	}

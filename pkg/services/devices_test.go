@@ -875,6 +875,125 @@ var _ = Describe("DfseviceService", func() {
 			Expect(savedDeviceGroup.Devices).To(BeEmpty())
 		})
 	})
+	Context("GetDeviceDetailsByUUID", func() {
+		var orgID string
+		var imageV1 *models.Image
+		var deviceWithImage models.Device
+		var dispatchRecord *models.DispatchRecord
+		var update models.UpdateTransaction
+
+		var deviceService services.DeviceService
+
+		BeforeEach(func() {
+			defer GinkgoRecover()
+			orgID = common.DefaultOrgID
+
+			imageSet := &models.ImageSet{
+				Name:    "test",
+				Version: 2,
+				OrgID:   orgID,
+			}
+			result := db.DB.Create(imageSet)
+			Expect(result.Error).ToNot(HaveOccurred())
+			imageV1 = &models.Image{
+				Commit: &models.Commit{
+					OSTreeCommit: faker.UUIDHyphenated(),
+					OrgID:        orgID,
+				},
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    1,
+				OrgID:      orgID,
+			}
+			result = db.DB.Create(imageV1.Commit)
+			Expect(result.Error).ToNot(HaveOccurred())
+			result = db.DB.Create(imageV1)
+			Expect(result.Error).ToNot(HaveOccurred())
+
+			deviceWithImage = models.Device{
+				OrgID:   orgID,
+				ImageID: imageV1.ID, UUID: faker.UUIDHyphenated(),
+			}
+
+			result = db.DB.Create(&deviceWithImage)
+			Expect(result.Error).To(BeNil())
+			dispatchRecord = &models.DispatchRecord{
+				PlaybookDispatcherID: faker.UUIDHyphenated(),
+				Status:               models.DispatchRecordStatusComplete,
+				DeviceID:             deviceWithImage.ID,
+			}
+			db.DB.Create(dispatchRecord)
+
+			update = models.UpdateTransaction{
+				DispatchRecords: []models.DispatchRecord{*dispatchRecord},
+				Devices: []models.Device{
+					deviceWithImage,
+				},
+				OrgID:  orgID,
+				Status: models.UpdateStatusSuccess,
+			}
+			db.DB.Create(&update)
+
+			deviceService = services.DeviceService{
+				Service:       services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+				ImageService:  services.NewImageService(context.Background(), log.NewEntry(log.StandardLogger())),
+				UpdateService: services.NewUpdateService(context.Background(), log.NewEntry(log.StandardLogger())),
+				Inventory:     mockInventoryClient,
+			}
+		})
+
+		When("device exists", func() {
+			It("should return the device", func() {
+				invDevice := inventory.Device{
+					ID:    deviceWithImage.UUID,
+					OrgID: orgID,
+					Ostree: inventory.SystemProfile{
+						RpmOstreeDeployments: []inventory.OSTree{
+							{
+								Booted:   true,
+								Checksum: imageV1.Commit.OSTreeCommit,
+							},
+						},
+					},
+				}
+				invResult := []inventory.Device{invDevice}
+				resp := inventory.Response{
+					Total:  1,
+					Count:  1,
+					Result: invResult,
+				}
+				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Any()).Return(resp, nil)
+
+				deviceDetails, err := deviceService.GetDeviceDetailsByUUID(deviceWithImage.UUID)
+				Expect(err).To(BeNil())
+				Expect(deviceDetails).ToNot(BeNil())
+				Expect(deviceDetails.Device.ID).To(Equal(deviceWithImage.ID))
+				Expect(deviceDetails.Device.UUID).To(Equal(deviceWithImage.UUID))
+				Expect(deviceDetails.Device.Name).To(Equal(deviceWithImage.Name))
+				Expect(deviceDetails.Device.UpdateAvailable).To(BeFalse())
+				Expect(deviceDetails.Device.ImageID).To(Equal(imageV1.ID))
+				Expect(deviceDetails.Device.OrgID).To(Equal(orgID))
+
+				imageInfo := deviceDetails.Image
+				Expect(imageInfo.Image.ID).To(Equal(imageV1.ID))
+				Expect(imageInfo.Image.Name).To(Equal(imageV1.Name))
+				Expect(imageInfo.Image.OrgID).To(Equal(orgID))
+				Expect(imageInfo.UpdatesAvailable).To(BeNil())
+				Expect(imageInfo.Rollback).To(BeNil())
+
+				deviceUpdate := (*deviceDetails.UpdateTransactions)[0]
+
+				Expect(deviceUpdate.ID).To(Equal(update.ID))
+				Expect(deviceUpdate.Status).To(Equal(models.UpdateStatusSuccess))
+
+				Expect(len(deviceUpdate.DispatchRecords)).To(Equal(1))
+				Expect(deviceUpdate.DispatchRecords[0].DeviceID).To(Equal(deviceWithImage.ID))
+				Expect(deviceUpdate.DispatchRecords[0].PlaybookDispatcherID).To(Equal(dispatchRecord.PlaybookDispatcherID))
+				Expect(deviceUpdate.DispatchRecords[0].Status).To(Equal(models.DispatchRecordStatusComplete))
+			})
+		})
+	})
+
 	Context("GetDeviceView", func() {
 		When("devices are returned from the db", func() {
 			It("should return devices", func() {
@@ -908,6 +1027,23 @@ var _ = Describe("DfseviceService", func() {
 
 				result = db.DB.Create(&deviceWithImage)
 				Expect(result.Error).To(BeNil())
+				dispatchRecord := &models.DispatchRecord{
+					PlaybookDispatcherID: faker.UUIDHyphenated(),
+					Status:               models.DispatchRecordStatusComplete,
+					DeviceID:             deviceWithImage.ID,
+				}
+				db.DB.Create(dispatchRecord)
+
+				update := models.UpdateTransaction{
+					DispatchRecords: []models.DispatchRecord{*dispatchRecord},
+					Devices: []models.Device{
+						deviceWithImage,
+					},
+					OrgID:  orgID,
+					Status: models.UpdateStatusSuccess,
+				}
+				db.DB.Create(&update)
+
 				invDevice := inventory.Device{
 					ID:    deviceWithImage.UUID,
 					OrgID: orgID,
@@ -938,11 +1074,24 @@ var _ = Describe("DfseviceService", func() {
 					Inventory: mockInventoryClient,
 				}
 
-				devices, err := deviceService.GetDevicesView(0, 0, nil)
+				dbFilter := db.DB.Model(models.Device{}).Where("id = ?", deviceWithImage.ID)
+				devices, err := deviceService.GetDevicesView(0, 0, dbFilter)
 				wg.Wait()
 				wg2.Wait()
 				Expect(err).To(BeNil())
 				Expect(devices).ToNot(BeNil())
+				Expect(len(devices.Devices)).To(Equal(1))
+				Expect(len(*devices.Devices[0].UpdateTransaction)).To(Equal(1))
+
+				deviceUpdate := (*devices.Devices[0].UpdateTransaction)[0]
+
+				Expect(deviceUpdate.ID).To(Equal(update.ID))
+				Expect(deviceUpdate.Status).To(Equal(models.UpdateStatusSuccess))
+
+				Expect(len(deviceUpdate.DispatchRecords)).To(Equal(1))
+				Expect(deviceUpdate.DispatchRecords[0].DeviceID).To(Equal(deviceWithImage.ID))
+				Expect(deviceUpdate.DispatchRecords[0].PlaybookDispatcherID).To(Equal(dispatchRecord.PlaybookDispatcherID))
+				Expect(deviceUpdate.DispatchRecords[0].Status).To(Equal(models.DispatchRecordStatusComplete))
 			})
 
 			It("should sync devices with inventory", func() {
