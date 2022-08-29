@@ -271,3 +271,17 @@ type InvalidCommitID struct{}
 func (e *InvalidCommitID) Error() string {
 	return "commit ID does not belong to the same image-set as devices images"
 }
+
+// CommitImageNotFound indicates the Commit Image is not found
+type CommitImageNotFound struct{}
+
+func (e *CommitImageNotFound) Error() string {
+	return "commit image does not found"
+}
+
+// ImageSetNotFoundForAllDevices indicates that device record no image
+type ImageSetNotFoundForAllDevices struct{}
+
+func (e *ImageSetNotFoundForAllDevices) Error() string {
+	return "image-set not found for all devices"
+}

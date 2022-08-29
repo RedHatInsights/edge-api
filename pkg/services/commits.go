@@ -7,11 +7,12 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 // CommitServiceInterface defines the interface to handle the business logic of RHEL for Edge Commits
 type CommitServiceInterface interface {
-	GetCommitByID(commitID uint) (*models.Commit, error)
+	GetCommitByID(commitID uint, orgID string) (*models.Commit, error)
 	GetCommitByOSTreeCommit(ost string) (*models.Commit, error)
 	ValidateDevicesImageSetWithCommit(deviceUUID []string, commitID uint) error
 }
@@ -29,11 +30,12 @@ type CommitService struct {
 }
 
 // GetCommitByID receives CommitID uint and get a *models.Commit back
-func (s *CommitService) GetCommitByID(commitID uint) (*models.Commit, error) {
+func (s *CommitService) GetCommitByID(commitID uint, orgID string) (*models.Commit, error) {
+
 	s.log = s.log.WithField("commitID", commitID)
 	s.log.Debug("Getting commit by id")
 	var commit models.Commit
-	result := db.DB.First(&commit, commitID)
+	result := db.Org(orgID, "").First(&commit, commitID)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error searching for commit by commitID")
 		return nil, result.Error
@@ -56,49 +58,54 @@ func (s *CommitService) GetCommitByOSTreeCommit(ost string) (*models.Commit, err
 }
 
 // ValidateDevicesImageSetWithCommit validates if user provided commitID belong to same ImageSet as of Device Image
-func (s *CommitService) ValidateDevicesImageSetWithCommit(deviceUUID []string, commitID uint) error {
-
-	var imageForCommitID []models.Image
-	var devicesImageSet []models.Image
-
+func (s *CommitService) ValidateDevicesImageSetWithCommit(devicesUUID []string, commitID uint) error {
+	type ImageSetsDevices struct {
+		ImageSetID   uint `json:"image_set_id"`
+		DevicesCount int  `json:"devices_count"`
+	}
+	var imageSetsDevices []ImageSetsDevices
+	var commitImage models.Image
 	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {
 		return err
 	}
 
-	resultImageSet := db.Org(orgID, "devices").Table("devices").
-		Select(`images.image_set_id as "image_set_id"`).
+	if result := db.Org(orgID, "devices").Table("devices").
+		Select(`images.image_set_id as "image_set_id", count(devices.id) as devices_count`).
 		Joins("JOIN images ON devices.image_id = images.id").
-		Where("devices.uuid in (?) AND devices.org_id = ?", deviceUUID, orgID).
+		Where("devices.uuid in (?)", devicesUUID).
 		Group("images.image_set_id").
-		Find(&devicesImageSet)
-	if resultImageSet.Error != nil {
-		s.log.WithField("error", resultImageSet.Error.Error()).Error("Error searching for ImageSet of Device Images")
-		return resultImageSet.Error
+		Find(&imageSetsDevices); result.Error != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error searching for ImageSet of Device Images")
+		return result.Error
 	}
 
-	// finding unique ImageSetID for device Image
-	devicesImageSetID := make(map[uint]bool, len(devicesImageSet))
-	var imageSetID uint
-	for _, image := range devicesImageSet {
-		if image.ImageSetID == nil {
-			return new(ImageHasNoImageSet)
-		}
-		imageSetID = *image.ImageSetID
-		devicesImageSetID[*image.ImageSetID] = true
+	if len(imageSetsDevices) == 0 {
+		return new(ImageSetNotFoundError)
 	}
-
-	if len(devicesImageSetID) > 1 {
+	if len(imageSetsDevices) > 1 {
 		return new(DeviceHasMoreThanOneImageSet)
 	}
-	resultCommit := db.Org(orgID, "").Where("commit_id = ?", commitID).Find(&imageForCommitID)
-	if resultCommit.Error != nil {
-		s.log.WithField("error", resultCommit.Error.Error()).Error("Error searching for Images using user provided CommitID")
-		return resultCommit.Error
+	imageSetDevices := imageSetsDevices[0]
+	if imageSetDevices.DevicesCount != len(devicesUUID) {
+		return new(ImageSetNotFoundForAllDevices)
+
 	}
 
-	if *imageForCommitID[0].ImageSetID != imageSetID {
+	if result := db.Org(orgID, "").Where("commit_id = ?", commitID).First(&commitImage); result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			return new(CommitImageNotFound)
+		}
+		s.log.WithField("error", result.Error.Error()).Error("Error searching for Images using user provided CommitID")
+		return result.Error
+	}
+
+	if commitImage.ImageSetID == nil {
+		return new(ImageHasNoImageSet)
+	}
+	if imageSetDevices.ImageSetID != *commitImage.ImageSetID {
 		return new(InvalidCommitID)
 	}
 	return nil
+
 }

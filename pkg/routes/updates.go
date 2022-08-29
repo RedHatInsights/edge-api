@@ -206,7 +206,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 		}
 	}
 	//validate if commit is valid before continue process
-	commit, err := ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID)
+	commit, err := ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID, orgID)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{
 			"error":    err.Error(),

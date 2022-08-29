@@ -34,18 +34,18 @@ func (m *MockCommitServiceInterface) EXPECT() *MockCommitServiceInterfaceMockRec
 }
 
 // GetCommitByID mocks base method
-func (m *MockCommitServiceInterface) GetCommitByID(arg0 uint) (*models.Commit, error) {
+func (m *MockCommitServiceInterface) GetCommitByID(arg0 uint, arg1 string) (*models.Commit, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCommitByID", arg0)
+	ret := m.ctrl.Call(m, "GetCommitByID", arg0, arg1)
 	ret0, _ := ret[0].(*models.Commit)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetCommitByID indicates an expected call of GetCommitByID
-func (mr *MockCommitServiceInterfaceMockRecorder) GetCommitByID(arg0 interface{}) *gomock.Call {
+func (mr *MockCommitServiceInterfaceMockRecorder) GetCommitByID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommitByID", reflect.TypeOf((*MockCommitServiceInterface)(nil).GetCommitByID), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCommitByID", reflect.TypeOf((*MockCommitServiceInterface)(nil).GetCommitByID), arg0, arg1)
 }
 
 // GetCommitByOSTreeCommit mocks base method
