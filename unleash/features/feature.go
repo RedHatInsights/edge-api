@@ -72,6 +72,6 @@ func (ff *Flag) IsEnabled() bool {
 
 	log.WithFields(log.Fields{"feature": ff.Name,
 		"unleash": ffServiceEnabled, "environment": ffEnvEnabled,
-		"status": "enabled"}).Debug("Feature flag status")
+		"status": "disabled"}).Debug("Feature flag status")
 	return false
 }
