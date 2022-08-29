@@ -198,7 +198,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 					mockPlaybookClient.EXPECT().ExecuteDispatcher(playbookdispatcher.DispatcherPayload{
 						Recipient:   device.RHCClientID,
 						PlaybookURL: playbookURL,
-						Account:     update.Account,
 						OrgID:       update.OrgID,
 					}).Return([]playbookdispatcher.Response{
 						{
@@ -244,7 +243,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 					mockPlaybookClient.EXPECT().ExecuteDispatcher(playbookdispatcher.DispatcherPayload{
 						Recipient:   device.RHCClientID,
 						PlaybookURL: playbookURL,
-						Account:     update.Account,
 						OrgID:       update.OrgID,
 					}).Return([]playbookdispatcher.Response{
 						{
@@ -289,7 +287,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 					mockPlaybookClient.EXPECT().ExecuteDispatcher(playbookdispatcher.DispatcherPayload{
 						Recipient:   device.RHCClientID,
 						PlaybookURL: playbookURL,
-						Account:     update.Account,
 						OrgID:       update.OrgID,
 					}).Return(nil, errors.New("error on playbook dispatcher client"))
 
