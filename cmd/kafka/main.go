@@ -2,20 +2,16 @@ package main
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"time"
 
-	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/redhatinsights/edge-api/config"
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
-
-	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 )
 
 // NOTE: this is currently designed for a single ibvents replica
@@ -199,50 +195,8 @@ func main() {
 				}
 			}
 
-			// send an event on image-build topic
-			// currently using the API call for the resume on the edge-api side
-			if clowder.IsClowderEnabled() {
-				// get the list of brokers from the config
-				brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
-				for i, b := range clowder.LoadedConfig.Kafka.Brokers {
-					brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
-					fmt.Println(brokers[i])
-				}
-
-				topic := "platform.edge.fleetmgmt.image-build"
-
-				// Create Producer instance
-				// TODO: do this once before loop
-				p, err := kafka.NewProducer(&kafka.ConfigMap{
-					"bootstrap.servers": brokers[0]})
-				if err != nil {
-					log.WithField("error", err).Error("Failed to create producer")
-				}
-				// assemble the message to be sent
-				// TODO: formalize message formats
-				recordKey := "resume_image"
-				ibvent := IBevent{}
-				ibvent.ImageID = image.ID
-				ibventMessage, _ := json.Marshal(ibvent)
-				log.WithField("message", ibvent).Debug("Preparing record for producer")
-				// send the message
-				perr := p.Produce(&kafka.Message{
-					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-					Key:            []byte(recordKey),
-					Value:          ibventMessage,
-				}, nil)
-				if perr != nil {
-					log.Error("Error sending message")
-				}
-
-				// Wait for all messages to be delivered
-				p.Flush(15 * 1000)
-
-				// TODO: do this once at break from loop
-				p.Close()
-
-				log.WithField("topic", topic).Debug("IBvents interrupted build message was produced to topic")
-			}
+			// removed the old event producer and will replace with new Producer code when ready to move away from API call
+			// it goes here
 		}
 	}
 }
