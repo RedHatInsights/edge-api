@@ -36,7 +36,6 @@ func InitClient(ctx context.Context, log *log.Entry) *Client {
 type DispatcherPayload struct {
 	Recipient   string `json:"recipient"`
 	PlaybookURL string `json:"url"`
-	Account     string `json:"account"`
 	OrgID       string `json:"org_id"`
 }
 
@@ -52,7 +51,8 @@ func (c *Client) ExecuteDispatcher(payload DispatcherPayload) ([]Response, error
 	if err := json.NewEncoder(payloadBuf).Encode([1]DispatcherPayload{payload}); err != nil {
 		return nil, err
 	}
-	url := c.url + "/internal/dispatch"
+	// as per https://github.com/RedHatInsights/playbook-dispatcher/blob/master/schema/private.openapi.yaml
+	url := c.url + "/internal/v2/dispatch"
 	c.log.WithFields(log.Fields{
 		"url":     url,
 		"payload": payloadBuf.String(),
