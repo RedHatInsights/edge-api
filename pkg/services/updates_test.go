@@ -196,9 +196,11 @@ var _ = Describe("UpdateService Basic functions", func() {
 					playbookDispatcherID := faker.UUIDHyphenated()
 					playbookURL := fmt.Sprintf("http://localhost:3000/api/edge/v1/updates/%d/update-playbook.yml", update.ID)
 					mockPlaybookClient.EXPECT().ExecuteDispatcher(playbookdispatcher.DispatcherPayload{
-						Recipient:   device.RHCClientID,
-						PlaybookURL: playbookURL,
-						OrgID:       update.OrgID,
+						Recipient:    device.RHCClientID,
+						PlaybookURL:  playbookURL,
+						OrgID:        update.OrgID,
+						PlaybookName: "Edge-management",
+						Principal:    common.DefaultUserName,
 					}).Return([]playbookdispatcher.Response{
 						{
 							StatusCode:           http.StatusCreated,
@@ -241,9 +243,11 @@ var _ = Describe("UpdateService Basic functions", func() {
 					playbookDispatcherID := faker.UUIDHyphenated()
 					playbookURL := fmt.Sprintf("http://localhost:3000/api/edge/v1/updates/%d/update-playbook.yml", update.ID)
 					mockPlaybookClient.EXPECT().ExecuteDispatcher(playbookdispatcher.DispatcherPayload{
-						Recipient:   device.RHCClientID,
-						PlaybookURL: playbookURL,
-						OrgID:       update.OrgID,
+						Recipient:    device.RHCClientID,
+						PlaybookURL:  playbookURL,
+						OrgID:        update.OrgID,
+						PlaybookName: "Edge-management",
+						Principal:    common.DefaultUserName,
 					}).Return([]playbookdispatcher.Response{
 						{
 							StatusCode:           http.StatusBadRequest,
@@ -285,9 +289,11 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 					playbookURL := fmt.Sprintf("http://localhost:3000/api/edge/v1/updates/%d/update-playbook.yml", update.ID)
 					mockPlaybookClient.EXPECT().ExecuteDispatcher(playbookdispatcher.DispatcherPayload{
-						Recipient:   device.RHCClientID,
-						PlaybookURL: playbookURL,
-						OrgID:       update.OrgID,
+						Recipient:    device.RHCClientID,
+						PlaybookURL:  playbookURL,
+						OrgID:        update.OrgID,
+						PlaybookName: "Edge-management",
+						Principal:    common.DefaultUserName,
 					}).Return(nil, errors.New("error on playbook dispatcher client"))
 
 					_, err := updateService.CreateUpdate(update.ID)

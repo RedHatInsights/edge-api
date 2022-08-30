@@ -33,10 +33,16 @@ func InitClient(ctx context.Context, log *log.Entry) *Client {
 }
 
 // DispatcherPayload represents the payload sent to playbook dispatcher
+// as per https://github.com/RedHatInsights/playbook-dispatcher/blob/master/schema/private.openapi.yaml
+// RunInputV2
 type DispatcherPayload struct {
 	Recipient   string `json:"recipient"`
 	PlaybookURL string `json:"url"`
 	OrgID       string `json:"org_id"`
+	// Principal is the Username of the user interacting with the service
+	Principal string `json:"principal"`
+	// Human readable name of the playbook run. Used to present the given playbook run in external systems (Satellite)
+	PlaybookName string `json:"name"`
 }
 
 // Response represents the response retrieved by playbook dispatcher
