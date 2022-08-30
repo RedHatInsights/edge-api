@@ -188,14 +188,7 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		var code int
-		if res != nil {
-			code = res.StatusCode
-		}
-		c.log.WithFields(log.Fields{
-			"statusCode": code,
-			"error":      err,
-		}).Error("Image Builder Compose Request Error")
+		c.log.WithField("error", err.Error()).Error("Image Builder Compose Request Error")
 		return nil, err
 	}
 	respBody, err := ioutil.ReadAll(res.Body)
@@ -328,10 +321,7 @@ func (c *Client) getComposeStatus(jobID string) (*ComposeStatus, error) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		c.log.WithFields(log.Fields{
-			"statusCode": res.StatusCode,
-			"error":      err,
-		}).Error("Image Builder ComposeStatus Request Error")
+		c.log.WithField("error", err.Error()).Error("Image Builder ComposeStatus Request Error")
 		return nil, err
 	}
 	body, err := ioutil.ReadAll(res.Body)
@@ -414,10 +404,7 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		c.log.WithFields(log.Fields{
-			"statusCode": res.StatusCode,
-			"error":      err,
-		}).Error("Image Builder GetMetadata Request Error")
+		c.log.WithField("error", err.Error()).Error("Image Builder GetMetadata Request Error")
 		return nil, err
 	}
 	respBody, err := ioutil.ReadAll(res.Body)
@@ -506,10 +493,7 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*S
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		c.log.WithFields(log.Fields{
-			"statusCode": res.StatusCode,
-			"error":      err,
-		}).Error(new(PackageRequestError))
+		c.log.WithField("error", err.Error()).Error(new(PackageRequestError))
 		return nil, err
 	}
 	respBody, err := ioutil.ReadAll(res.Body)
