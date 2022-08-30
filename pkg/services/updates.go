@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"gorm.io/gorm"
 	"io"
 	"net/http"
 	"os"
@@ -32,7 +33,7 @@ type UpdateServiceInterface interface {
 	CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	CreateUpdateAsync(id uint)
 	GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error)
-	GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error)
+	GetLatestUpdateTransactionForDevice(device *models.Device) (*[]models.UpdateTransaction, error)
 	ProcessPlaybookDispatcherRunEvent(message []byte) error
 	WriteTemplate(templateInfo TemplateRemoteInfo, orgID string) (string, error)
 	SetUpdateStatusBasedOnDispatchRecord(dispatchRecord models.DispatchRecord) error
@@ -330,16 +331,19 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, orgID str
 	return playbookURL, nil
 }
 
-// GetUpdateTransactionsForDevice returns all update transactions for a given device
-func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error) {
+// GetLatestUpdateTransactionForDevice returns the latest update transaction for a given device
+func (s *UpdateService) GetLatestUpdateTransactionForDevice(device *models.Device) (*[]models.UpdateTransaction, error) {
 	var updates []models.UpdateTransaction
 	result := db.DB.
-		Table("update_transactions").Preload("DispatchRecords").
+		Table("update_transactions").
+		Preload("DispatchRecords", func(db *gorm.DB) *gorm.DB {
+			return db.Order("dispatch_records.created_at DESC").Limit(1)
+		}).
 		Joins(
 			`JOIN updatetransaction_devices ON update_transactions.id = updatetransaction_devices.update_transaction_id`).
 		Where(`updatetransaction_devices.device_id = ?`,
 			device.ID,
-		).Group("id").Order("id").Find(&updates)
+		).Group("id").Order("created_at").Limit(1).Find(&updates)
 	if result.Error != nil {
 		return nil, result.Error
 	}

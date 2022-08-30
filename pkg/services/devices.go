@@ -158,7 +158,7 @@ func (s *DeviceService) GetDeviceDetails(device inventory.Device) (*models.Devic
 	// In order to have an update transaction for a device it must be a least created
 	var updates *[]models.UpdateTransaction
 	if databaseDevice != nil {
-		updates, err = s.UpdateService.GetUpdateTransactionsForDevice(databaseDevice)
+		updates, err = s.UpdateService.GetLatestUpdateTransactionForDevice(databaseDevice)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Could not find information about updates for this device")
 			return nil, err
@@ -668,8 +668,12 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	var storedDevices []models.Device
 	// search for all stored devices that are also in inventory
 	if res := db.OrgDB(orgID, tx, "").Limit(limit).Offset(offset).
-		Preload("UpdateTransaction").
-		Preload("UpdateTransaction.DispatchRecords").
+		Preload("UpdateTransaction", func(db *gorm.DB) *gorm.DB {
+			return db.Order("update_transactions.created_at DESC").Limit(1)
+		}).
+		Preload("UpdateTransaction.DispatchRecords", func(db *gorm.DB) *gorm.DB {
+			return db.Order("dispatch_records.created_at DESC").Limit(1)
+		}).
 		Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
 	}

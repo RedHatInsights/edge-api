@@ -80,15 +80,15 @@ var _ = Describe("UpdateService Basic functions", func() {
 			db.DB.Create(&updates[1])
 			db.DB.Create(&updates[2])
 
-			It("to return two updates for first device", func() {
-				actual, err := updateService.GetUpdateTransactionsForDevice(&device)
+			It("to return one update for first device", func() {
+				actual, err := updateService.GetLatestUpdateTransactionForDevice(&device)
 
 				Expect(actual).ToNot(BeNil())
-				Expect(*actual).To(HaveLen(2))
+				Expect(*actual).To(HaveLen(1))
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("to return one update for second device", func() {
-				actual, err := updateService.GetUpdateTransactionsForDevice(&device2)
+				actual, err := updateService.GetLatestUpdateTransactionForDevice(&device2)
 
 				Expect(actual).ToNot(BeNil())
 				Expect(*actual).To(HaveLen(1))
