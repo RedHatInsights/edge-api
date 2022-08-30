@@ -1450,16 +1450,16 @@ paths:
            description: "field: filter by update date"
            schema:
              type: string
-        - description: 'field: return number of groups until limit is reached.'
-          in: query
-          name: limit
-          schema:
-            type: integer
-        - description: 'field: return number of groups beginning at the offset.'
-          in: query
-          name: offset
-          schema:
-            type: integer
+         - description: 'field: return number of groups until limit is reached.'
+           in: query
+           name: limit
+           schema:
+             type: integer
+         - description: 'field: return number of groups beginning at the offset.'
+           in: query
+           name: offset
+           schema:
+             type: integer
        responses:
          "200":
            content:
