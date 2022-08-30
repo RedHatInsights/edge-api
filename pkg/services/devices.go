@@ -906,9 +906,7 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 		s.log.Debug("Skipping kafka message - Platform Insights Inventory message host id is undefined or event type is not delete")
 		return nil
 	}
-	s.log.WithFields(log.Fields{
-		"host_id": string(eventData.ID),
-	}).Debug("Deleting edge device")
+
 	deviceUUID := eventData.ID
 	deviceOrgID := eventData.OrgID
 	var devices []models.Device
@@ -927,6 +925,9 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 		).Error("Error when deleting devices")
 		return result.Error
 	}
+	s.log.WithFields(log.Fields{
+		"host_id": string(eventData.ID),
+	}).Debug("Deleting edge device")
 	return nil
 }
 
