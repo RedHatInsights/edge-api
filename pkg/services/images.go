@@ -883,7 +883,7 @@ func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) er
 	s.log.WithField("checksum", image.Installer.Checksum).Info("Checksum calculated")
 	tx := db.DB.Save(&image.Installer)
 	if tx.Error != nil {
-		s.log.WithField("error", err.Error()).Error("Error saving installer")
+		s.log.WithField("error", tx.Error.Error()).Error("Error saving installer")
 		return tx.Error
 	}
 
