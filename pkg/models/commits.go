@@ -10,7 +10,8 @@ import (
 var (
 	// ErrOrgIDIsMandatory is for when orgID is not set
 	ErrOrgIDIsMandatory = errors.New("org_id is mandatory")
-	ErrDeviceEsists     = errors.New("This UUID already exists")
+	// ErrDeviceEsists is for UUID already registered on our DB
+	ErrDeviceEsists = errors.New("This UUID already exists")
 )
 
 const (
