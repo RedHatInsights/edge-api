@@ -207,7 +207,6 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 				Status:      models.DispatchRecordStatusError,
 				Reason:      models.UpdateReasonFailure,
 			})
-			fmt.Printf("\n update.DispatchRecords %v \n", update.DispatchRecords)
 			db.DB.Omit("Devices.*", "DispatchRecords.Device.*").Debug().Save(update)
 			return nil, err
 		}
@@ -402,15 +401,9 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 		dispatchRecord.Reason = models.UpdateReasonFailure
 		s.log.Error("Playbook status is not on the json schema for this event")
 	}
-	fmt.Printf("\n *********************\n")
-
-	fmt.Printf("\n dispatchRecord %v\n", dispatchRecord)
 
 	result = db.DB.Debug().Omit("Device").Save(&dispatchRecord)
-	fmt.Printf("\n *********************\n")
 	if result.Error != nil {
-		fmt.Printf("\n result.Error %v\n", result.Error)
-
 		return result.Error
 	}
 
@@ -431,7 +424,6 @@ func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord mode
 	if err := s.SetUpdateStatus(&update); err != nil {
 		return err
 	}
-	fmt.Printf("\n @@@@@@@@@@@@@@@@@@@@@@@@@@@2 \n")
 
 	return s.UpdateDevicesFromUpdateTransaction(update)
 }
@@ -452,9 +444,6 @@ func (s *UpdateService) SetUpdateStatus(update *models.UpdateTransaction) error 
 	if allSuccess {
 		update.Status = models.UpdateStatusSuccess
 	}
-	fmt.Printf("\n $$$$$$$$$$$$$$$$$$$$$$$$$ \n")
-	fmt.Printf("\n $$$$$$$$$$$$$$$$$$$$$$$$$ \n")
-
 	// If there isn't an error and it's not all success, some updates are still happening
 	result := db.DB.Debug().Omit("Devices.*, DispatchRecords.*").Save(update)
 	return result.Error
