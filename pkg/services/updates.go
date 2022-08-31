@@ -127,7 +127,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	var update *models.UpdateTransaction
 	db.DB.Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").Find(&update, id)
 	update.Status = models.UpdateStatusBuilding
-	db.DB.Save(&update)
+	db.DB.Omit("Devices.*", "DispatchRecords.*").Debug().Save(&update)
 
 	WaitGroup.Add(1) // Processing one update
 	defer func() {
@@ -202,13 +202,13 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			update.Status = models.UpdateStatusError
 
 			update.DispatchRecords = append(dispatchRecords, models.DispatchRecord{
-				Device:      &device,
+				DeviceID:    device.ID,
 				PlaybookURL: playbookURL,
 				Status:      models.DispatchRecordStatusError,
 				Reason:      models.UpdateReasonFailure,
 			})
-
-			db.DB.Save(update)
+			fmt.Printf("\n update.DispatchRecords %v \n", update.DispatchRecords)
+			db.DB.Omit("Devices.*", "DispatchRecords.Device.*").Debug().Save(update)
 			return nil, err
 		}
 
@@ -402,9 +402,15 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 		dispatchRecord.Reason = models.UpdateReasonFailure
 		s.log.Error("Playbook status is not on the json schema for this event")
 	}
+	fmt.Printf("\n *********************\n")
 
-	result = db.DB.Save(&dispatchRecord)
+	fmt.Printf("\n dispatchRecord %v\n", dispatchRecord)
+
+	result = db.DB.Debug().Omit("Device").Save(&dispatchRecord)
+	fmt.Printf("\n *********************\n")
 	if result.Error != nil {
+		fmt.Printf("\n result.Error %v\n", result.Error)
+
 		return result.Error
 	}
 
@@ -425,6 +431,7 @@ func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord mode
 	if err := s.SetUpdateStatus(&update); err != nil {
 		return err
 	}
+	fmt.Printf("\n @@@@@@@@@@@@@@@@@@@@@@@@@@@2 \n")
 
 	return s.UpdateDevicesFromUpdateTransaction(update)
 }
@@ -445,8 +452,11 @@ func (s *UpdateService) SetUpdateStatus(update *models.UpdateTransaction) error 
 	if allSuccess {
 		update.Status = models.UpdateStatusSuccess
 	}
+	fmt.Printf("\n $$$$$$$$$$$$$$$$$$$$$$$$$ \n")
+	fmt.Printf("\n $$$$$$$$$$$$$$$$$$$$$$$$$ \n")
+
 	// If there isn't an error and it's not all success, some updates are still happening
-	result := db.DB.Save(update)
+	result := db.DB.Debug().Omit("Devices.*, DispatchRecords.*").Save(update)
 	return result.Error
 }
 
@@ -683,7 +693,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					UUID:  device.ID,
 					OrgID: orgID,
 				}
-				if result := db.DB.Create(&updateDevice); result.Error != nil {
+				if result := db.DB.Debug().Omit("Devices.*").Create(&updateDevice); result.Error != nil {
 					return nil, result.Error
 				}
 			}
@@ -694,7 +704,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 				}).Info("Device is disconnected")
 				update.Status = models.UpdateStatusDeviceDisconnected
 				update.Devices = append(update.Devices, *updateDevice)
-				if result := db.DB.Create(&update); result.Error != nil {
+				if result := db.DB.Debug().Omit("Devices.*").Create(&update); result.Error != nil {
 					return nil, result.Error
 				}
 				continue
@@ -706,7 +716,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 			if updateDevice.OrgID == "" {
 				updateDevice.OrgID = orgID
 			}
-			result := db.DB.Save(&updateDevice)
+			result := db.DB.Debug().Omit("Devices.*").Save(&updateDevice)
 			if result.Error != nil {
 				return nil, result.Error
 			}
@@ -786,7 +796,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 				//Should not create a transaction to device already updated
 				update.OldCommits = oldCommits
 				update.RepoID = &repo.ID
-				if err := db.DB.Save(&update).Error; err != nil {
+				if err := db.DB.Omit("Devices.*").Save(&update).Error; err != nil {
 					err = errors.NewBadRequest(err.Error())
 					s.log.WithField("error", err.Error()).Error("Error encoding error")
 					return nil, err

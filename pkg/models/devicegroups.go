@@ -17,7 +17,7 @@ type DeviceGroup struct {
 	OrgID       string   `json:"org_id" gorm:"index"`
 	Name        string   `json:"Name"`
 	Type        string   `json:"Type" gorm:"default:static;<-:create"`
-	Devices     []Device `json:"Devices" gorm:"many2many:device_groups_devices;"`
+	Devices     []Device `faker:"-" json:"Devices" gorm:"many2many:device_groups_devices;"`
 	ValidUpdate bool     `json:"ValidUpdate" gorm:"-:all"`
 }
 

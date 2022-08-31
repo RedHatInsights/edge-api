@@ -873,13 +873,15 @@ var _ = Describe("DfseviceService", func() {
 			result = db.Org(event.OrgID, "").Model(&models.Device{}).Where("uuid = ?", event.ID).Count(&deviceCount)
 			Expect(result.Error).To(BeNil())
 			Expect(deviceCount == 1).To(BeTrue())
+
 			// create a device group with device
 			deviceGroup := models.DeviceGroup{
 				Type: models.DeviceGroupTypeDefault, OrgID: event.OrgID, Name: faker.UUIDHyphenated(),
 				Devices: []models.Device{device},
 			}
-			result = db.DB.Create(&deviceGroup)
+			result = db.DB.Debug().Omit("Devices.*").Create(&deviceGroup)
 			Expect(result.Error).To(BeNil())
+
 			// ensure device group created with device included
 			var savedDeviceGroup models.DeviceGroup
 			result = db.Org(deviceGroup.OrgID, "").Preload("Devices").First(&savedDeviceGroup, deviceGroup.ID)

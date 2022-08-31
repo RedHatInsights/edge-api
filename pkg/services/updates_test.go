@@ -45,15 +45,14 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 		Context("by device", func() {
 			org_id := faker.UUIDHyphenated()
-			uuid := faker.UUIDHyphenated()
-			uuid2 := faker.UUIDHyphenated()
+
 			device := models.Device{
-				UUID:  uuid,
+				UUID:  faker.UUIDHyphenated(),
 				OrgID: org_id,
 			}
 			db.DB.Create(&device)
 			device2 := models.Device{
-				UUID:  uuid2,
+				UUID:  faker.UUIDHyphenated(),
 				OrgID: org_id,
 			}
 			db.DB.Create(&device2)
@@ -77,9 +76,9 @@ var _ = Describe("UpdateService Basic functions", func() {
 					OrgID: org_id,
 				},
 			}
-			db.DB.Create(&updates[0])
-			db.DB.Create(&updates[1])
-			db.DB.Create(&updates[2])
+			db.DB.Debug().Omit("Devices.*").Debug().Create(&updates[0])
+			db.DB.Debug().Omit("Devices.*").Create(&updates[1])
+			db.DB.Debug().Omit("Devices.*").Create(&updates[2])
 
 			It("to return two updates for first device", func() {
 				actual, err := updateService.GetUpdateTransactionsForDevice(&device)
@@ -342,12 +341,12 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Status:               models.UpdateStatusBuilding,
 				DeviceID:             device.ID,
 			}
-			db.DB.Create(d)
+			db.DB.Omit("Devices.*").Create(d)
 			u := &models.UpdateTransaction{
 				DispatchRecords: []models.DispatchRecord{*d},
 				OrgID:           org_id,
 			}
-			db.DB.Create(u)
+			db.DB.Omit("Devices.*").Create(u)
 
 			event := &services.PlaybookDispatcherEvent{
 				Payload: services.PlaybookDispatcherEventPayload{
@@ -643,7 +642,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		Context("when update status is success", func() {
 			It("initialisation and update should pass", func() {
 				update.Status = models.UpdateStatusSuccess
-				result := db.DB.Save(&update)
+				result := db.DB.Omit("Devices.*").Save(&update)
 				Expect(result.Error).To(BeNil())
 
 				err := updateService.UpdateDevicesFromUpdateTransaction(update)
@@ -677,7 +676,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					CommitID: commit.ID,
 					Status:   models.UpdateStatusSuccess,
 				}
-				result = db.DB.Create(&update)
+				result = db.DB.Omit("Devices.*").Create(&update)
 				Expect(result.Error).To(BeNil())
 
 				err := updateService.UpdateDevicesFromUpdateTransaction(update)
@@ -927,7 +926,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			Repo:     &repo,
 			Status:   models.UpdateStatusBuilding,
 		}
-		db.DB.Create(&update)
+		db.DB.Omit("Devices.*").Create(&update)
 
 		var devicesUpdate models.DevicesUpdate
 		devicesUpdate.DevicesUUID = append(devicesUpdate.DevicesUUID, device.UUID)
