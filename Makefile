@@ -117,6 +117,7 @@ help:
 	@echo ""
 
 lint:
+	ls -la $(GOLINT)
 	$(GOLINT) $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
 
 pre-commit:
