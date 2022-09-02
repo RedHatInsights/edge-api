@@ -2,13 +2,16 @@ package services
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
+	"errors"
 	"sync"
 	"time"
 
+	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
+
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 
-	"github.com/segmentio/kafka-go"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -20,7 +23,7 @@ type ConsumerService interface {
 
 // KafkaConsumerService is the implementation of a consumer service based on Kafka topics
 type KafkaConsumerService struct {
-	Reader        *kafka.Reader
+	Reader        *kafka.Consumer
 	UpdateService UpdateServiceInterface
 	DeviceService DeviceServiceInterface
 	ImageService  ImageServiceInterface
@@ -52,6 +55,8 @@ func NewKafkaConsumerService(config *clowder.KafkaConfig, topic string) Consumer
 		s.consumer = s.ConsumePlaybookDispatcherRuns
 	case "platform.inventory.events":
 		s.consumer = s.ConsumePlatformInventoryEvents
+	case "platform.edge.fleetmgmt.image-build":
+		s.consumer = s.ConsumeImageBuildEvents
 	default:
 		log.WithField("topic", topic).Error("No consumer for topic")
 		return nil
@@ -60,21 +65,21 @@ func NewKafkaConsumerService(config *clowder.KafkaConfig, topic string) Consumer
 	return s
 }
 
-func (s *KafkaConsumerService) initReader() *kafka.Reader {
-	brokers := make([]string, len(s.config.Brokers))
-	for i, b := range s.config.Brokers {
-		brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
+func (s *KafkaConsumerService) initReader() *kafka.Consumer {
+	GroupID := "edge-fleet-management-update-playbook"
+	kafkaConfigMap := kafkacommon.GetKafkaConsumerConfigMap(GroupID)
+	c, err := kafka.NewConsumer(&kafkaConfigMap)
+
+	if err != nil {
+		log.WithField("error", err.Error()).Error("Failed to create consumer")
 	}
-	log.WithFields(log.Fields{
-		"brokers": brokers, "topic": s.topic,
-	}).Debug("Connecting with Kafka broker")
-	// make a new reader that consumes from topic from this consumer group
-	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers: brokers,
-		Topic:   s.topic,
-		GroupID: "edge-fleet-management-update-playbook",
-	})
-	return r
+
+	err = c.SubscribeTopics([]string{s.topic}, nil)
+	if err != nil {
+		log.Error("Subscribing to topics failed")
+
+	}
+	return c
 }
 
 // ConsumePlaybookDispatcherRuns is the method that consumes from the topic that gives us the execution of playbook from playbook dispatcher service
@@ -83,97 +88,151 @@ func (s *KafkaConsumerService) ConsumePlaybookDispatcherRuns() error {
 	// Keep as much logic out of this is method as the Kafka Reader is not mockable for unit tests, as per
 	// https://github.com/segmentio/kafka-go/issues/794
 	// Most of the logic needs to be under the ProcessPlaybookDispatcherRunEvent service
-	for {
-		m, err := s.Reader.ReadMessage(context.Background())
-		if err != nil {
-			log.WithFields(log.Fields{
-				"error": err.Error(),
-			}).Error("Error reading message from Kafka topic")
-			return err
+	run := true
+	for run {
+		cs := s.Reader.Poll(100)
+		if cs == nil {
+			continue
 		}
-		log.WithFields(log.Fields{
-			"topic":  m.Topic,
-			"offset": m.Offset,
-			"key":    string(m.Key),
-			"value":  string(m.Value),
-		}).Debug("Read message from Kafka topic")
-		var service string
-		for _, h := range m.Headers {
-			if h.Key == "service" {
-				service = string(h.Value)
+
+		switch e := cs.(type) {
+		case *kafka.Message:
+			key := string(e.Key)
+			var service string
+			if key == "service" {
+				service = string(e.Value)
 			}
-		}
-		if service == "edge" {
-			err = s.UpdateService.ProcessPlaybookDispatcherRunEvent(m.Value)
-			if err != nil {
-				log.WithFields(log.Fields{
-					"error": err.Error(),
-				}).Error("Error treating Kafka message")
+			if service == "edge" {
+				err := s.UpdateService.ProcessPlaybookDispatcherRunEvent(e.Value)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"error": err.Error(),
+					}).Error("Error treating Kafka message")
+					return err
+				}
+			} else {
+				log.Debug("Skipping message - it is not from edge service")
 			}
-		} else {
-			log.Debug("Skipping message - it is not from edge service")
+		case kafka.Error:
+			// terminate the application if all brokers are down.
+			log.WithFields(log.Fields{"code": e.Code(), "error": e}).Error("Exiting ConsumePlaybookDispatcherRuns loop due to Kafka broker issue")
+			if e.Code() == kafka.ErrAllBrokersDown {
+				run = false
+				return errors.New("uh oh, caught an error due to kafka broker issue") // create an error in errors.go
+			}
+		default:
+			log.Debug("Event Ignored: ", e)
 		}
+
 		if s.isShuttingDown() {
 			log.Info("Shutting down, exiting playbook dispatcher's runs consumer")
+			run = false
 			return nil
 		}
 	}
+	return nil
 }
 
 // ConsumePlatformInventoryEvents parses create events from platform.inventory.events kafka topic and save them as devices in the DB
 func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 	log.Info("Starting to consume platform inventory events")
-	for {
-		m, err := s.Reader.ReadMessage(context.Background())
-		if err != nil {
-			log.WithFields(log.Fields{
-				"error": err.Error(),
-			}).Error("Error reading message from Kafka topic")
-			return err
-		}
-		var eventType string
-		for _, h := range m.Headers {
-			if h.Key == "event_type" {
-				eventType = string(h.Value)
-				break
-			}
-		}
-		if eventType != InventoryEventTypeCreated && eventType != InventoryEventTypeUpdated && eventType != InventoryEventTypeDelete {
-			//log.Debug("Skipping kafka message - Insights Platform Inventory message is not a created and not an updated event type")
+	run := true
+	for run {
+		cs := s.Reader.Poll(100)
+		if cs == nil {
 			continue
 		}
-		log.WithFields(log.Fields{
-			"topic":  m.Topic,
-			"offset": m.Offset,
-			"key":    string(m.Key),
-			"value":  string(m.Value),
-		}).Debug("Read message from Kafka topic")
 
-		switch eventType {
-		case InventoryEventTypeCreated:
-			err = s.DeviceService.ProcessPlatformInventoryCreateEvent(m.Value)
-		case InventoryEventTypeUpdated:
-			err = s.DeviceService.ProcessPlatformInventoryUpdatedEvent(m.Value)
-		case InventoryEventTypeDelete:
-			err = s.DeviceService.ProcessPlatformInventoryDeleteEvent(m.Value)
+		switch e := cs.(type) {
+		case *kafka.Message:
+			key := string(e.Key)
+			var eventType string
+			if key == "event_type" {
+				eventType = string(e.Value)
+			}
+
+			if eventType != InventoryEventTypeCreated && eventType != InventoryEventTypeUpdated && eventType != InventoryEventTypeDelete {
+				//log.Debug("Skipping kafka message - Insights Platform Inventory message is not a created and not an updated event type")
+				continue
+			}
+
+			var err error
+
+			switch eventType {
+			case InventoryEventTypeCreated:
+				err = s.DeviceService.ProcessPlatformInventoryCreateEvent(e.Value)
+			case InventoryEventTypeUpdated:
+				err = s.DeviceService.ProcessPlatformInventoryUpdatedEvent(e.Value)
+			case InventoryEventTypeDelete:
+				err = s.DeviceService.ProcessPlatformInventoryDeleteEvent(e.Value)
+			default:
+				err = nil
+			}
+			if err != nil {
+				return err
+			}
+		case kafka.Error:
+			log.WithFields(log.Fields{"code": e.Code(), "error": e}).Error("Exiting ConsumePlatformInventoryEvents loop due to Kafka broker issue")
+			if e.Code() == kafka.ErrAllBrokersDown {
+				run = false
+				return errors.New("uh oh, caught an error due to kafka broker issue") // create an error in errors.go
+			}
 		default:
-			err = nil
+			log.Debug("Event Ignored: ", e)
 		}
-		if err != nil {
-			log.WithFields(log.Fields{
-				"error":     err,
-				"topic":     m.Topic,
-				"offset":    m.Offset,
-				"key":       string(m.Key),
-				"value":     string(m.Value),
-				"eventType": eventType,
-			}).Error("Error writing Kafka message to DB")
-		}
+
 		if s.isShuttingDown() {
 			log.Info("Shutting down, exiting platform inventory events consumer")
 			return nil
 		}
 	}
+	return nil
+}
+
+// ConsumeImageBuildEvents parses create events from platform.edge.fleetmgmt.image-build kafka topic
+func (s *KafkaConsumerService) ConsumeImageBuildEvents() error {
+	type IBevent struct {
+		ImageID uint `json:"image_id"`
+	}
+
+	log.Info("Starting to consume image build events")
+	run := true
+	for run {
+		cs := s.Reader.Poll(100)
+		if cs == nil {
+			continue
+		}
+
+		switch e := cs.(type) {
+		case *kafka.Message:
+			// retrieve the image ID from the message value
+			var eventMessage *IBevent
+			// currently only logging events while resume is handled via API
+			eventErr := json.Unmarshal([]byte(e.Value), &eventMessage)
+			if eventErr != nil {
+				log.WithField("error", eventErr).Debug("Error unmarshalling event. This is not the event you're looking for")
+			} else {
+				log.WithFields(log.Fields{"imageID": eventMessage.ImageID, "topic": s.topic}).Debug("Resuming image ID from event")
+			}
+			if s.isShuttingDown() {
+				log.Info("Shutting down, exiting image build events consumer")
+				return nil
+			}
+		case kafka.Error:
+			log.WithFields(log.Fields{"code": e.Code(), "error": e}).Error("Exiting ConsumePlatformInventoryEvents loop due to Kafka broker issue")
+			if e.Code() == kafka.ErrAllBrokersDown {
+				run = false
+				return nil // create an error in errors.go
+			}
+		default:
+			log.Debug("Event Ignored: ", e)
+		}
+		if s.isShuttingDown() {
+			log.Info("Shutting down, exiting image build events consumer")
+			return nil
+		}
+	}
+	return nil
 }
 
 func (s *KafkaConsumerService) isShuttingDown() bool {
