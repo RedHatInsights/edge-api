@@ -26,10 +26,12 @@ jobs:
 
       - name: install modules
         run: |
+          go get -a
           [ $(go get -a | wc -l) -eq 0 ]
 
       - name: fmt
         run: |
+          go fmt ./...
           [ $(go fmt ./... | wc -l) -eq 0 ]
 
       - name: Get dependencies
@@ -37,6 +39,7 @@ jobs:
 
       - name: Lint
         run: |
+          make -s lint
           [ $(make -s lint | wc -l) -eq 0 ]
 
       - name: Vet
@@ -49,7 +52,7 @@ jobs:
       - name: Set up python3
         uses: actions/setup-python@v3
         with:
-         python-version: '3.9'
+          python-version: '3.9'
 
       - name: Install openapi-spec-validator
         run: pip install openapi-spec-validator
