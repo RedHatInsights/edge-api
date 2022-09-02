@@ -23,7 +23,13 @@ EXCLUDE_DIRS=-e /test/ -e /cmd/db -e /cmd/kafka -e /config -e /pkg/clients/image
 
 CONTAINERFILE_NAME=Dockerfile
 
-.PHONY: all build-containers clean help test
+GOLINT=$(shell go list -f '{{.Target}}' golang.org/x/lint/golint)
+
+.PHONY: all bonfire-config-local bonfire-config-github build-containers \
+		build-edge-api-container coverage coverage-html coverage-no-fdo \
+		create-ns deploy-app deploy-env fmt generate-docs help lint pre-commit \
+		restart-app scale-down scale-up scan_project test test-clean-no-fdo \
+		test-no-fdo vet vet-no-fdo
 
 bonfire-config-local:
 	@cp default_config.yaml.local.example config.yaml
@@ -111,7 +117,7 @@ help:
 	@echo ""
 
 lint:
-	golint $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
+	$(GOLINT) $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
 
 pre-commit:
 	$(MAKE) fmt
