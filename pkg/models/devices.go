@@ -44,17 +44,18 @@ type DeviceViewList struct {
 
 // DeviceView is the device information needed for the UI
 type DeviceView struct {
-	DeviceID          uint                 `json:"DeviceID"`
-	DeviceName        string               `json:"DeviceName"`
-	DeviceUUID        string               `json:"DeviceUUID"`
-	ImageID           uint                 `json:"ImageID"`
-	ImageName         string               `json:"ImageName"`
-	LastSeen          EdgeAPITime          `json:"LastSeen"`
-	UpdateAvailable   bool                 `json:"UpdateAvailable"`
-	Status            string               `json:"Status"`
-	ImageSetID        uint                 `json:"ImageSetID"`
-	DeviceGroups      []DeviceDeviceGroup  `json:"DeviceGroups"`
-	UpdateTransaction *[]UpdateTransaction `json:"UpdateTransaction"`
+	DeviceID         uint                `json:"DeviceID"`
+	DeviceName       string              `json:"DeviceName"`
+	DeviceUUID       string              `json:"DeviceUUID"`
+	ImageID          uint                `json:"ImageID"`
+	ImageName        string              `json:"ImageName"`
+	LastSeen         EdgeAPITime         `json:"LastSeen"`
+	UpdateAvailable  bool                `json:"UpdateAvailable"`
+	Status           string              `json:"Status"`
+	ImageSetID       uint                `json:"ImageSetID"`
+	DeviceGroups     []DeviceDeviceGroup `json:"DeviceGroups"`
+	DispatcherStatus string              `json:"DispatcherStatus"`
+	DispatcherReason string              `json:"DispatcherReason"`
 }
 
 // DeviceDeviceGroup is a struct of device group name and id needed for DeviceView

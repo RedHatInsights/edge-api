@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"sort"
 	"strconv"
 	"time"
 
@@ -158,7 +157,7 @@ func (s *DeviceService) GetDeviceDetails(device inventory.Device) (*models.Devic
 	// In order to have an update transaction for a device it must be a least created
 	var updates *[]models.UpdateTransaction
 	if databaseDevice != nil {
-		updates, err = s.UpdateService.GetLatestUpdateTransactionForDevice(databaseDevice)
+		updates, err = s.UpdateService.GetUpdateTransactionsForDevice(databaseDevice)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Could not find information about updates for this device")
 			return nil, err
@@ -721,25 +720,31 @@ func ReturnDevicesView(storedDevices []models.Device, orgID string) ([]models.De
 		Name       string
 		ImageSetID uint
 	}
+	type neededDeviceInfo struct {
+		Status           string
+		DispatcherStatus string
+		DispatcherReason string
+	}
 
 	// create a map of unique image id's. We don't want to look at a given image id more than once.
-	deviceStatusSet := make(map[uint]string)
+	setOfDeviceInfo := make(map[uint]*neededDeviceInfo)
 	setOfImages := make(map[uint]*neededImageInfo)
-	for index, devices := range storedDevices {
-		var status = models.DeviceViewStatusRunning
+	for index, device := range storedDevices {
+		var deviceInfo = neededDeviceInfo{
+			Status: models.DeviceViewStatusRunning,
+		}
 		crtDevice := storedDevices[index]
 
 		if crtDevice.UpdateTransaction != nil && len(*crtDevice.UpdateTransaction) > 0 {
 			updateTransactions := *crtDevice.UpdateTransaction
-			sort.SliceStable(updateTransactions, func(i, j int) bool {
-				return updateTransactions[i].ID < updateTransactions[j].ID
-			})
+
 			log.WithFields(log.Fields{
 				"deviceID":           crtDevice.ID,
 				"updateTransactions": updateTransactions,
 			}).Debug("Found update transactions for device")
 
-			updateStatus := updateTransactions[len(updateTransactions)-1].Status
+			latestUpdateTransaction := updateTransactions[0]
+			updateStatus := latestUpdateTransaction.Status
 
 			log.WithFields(log.Fields{
 				"deviceID":     crtDevice.ID,
@@ -747,19 +752,33 @@ func ReturnDevicesView(storedDevices []models.Device, orgID string) ([]models.De
 			}).Debug("Found update status for device")
 
 			if updateStatus == models.UpdateStatusBuilding {
-				status = models.DeviceViewStatusUpdating
+				deviceInfo.Status = models.DeviceViewStatusUpdating
+			}
+
+			if latestUpdateTransaction.DispatchRecords != nil && len(latestUpdateTransaction.DispatchRecords) > 0 {
+				for _, dispatcherRecord := range latestUpdateTransaction.DispatchRecords {
+					if dispatcherRecord.DeviceID == device.ID {
+						deviceInfo.DispatcherStatus = dispatcherRecord.Status
+						deviceInfo.DispatcherReason = dispatcherRecord.Reason
+						break
+					}
+				}
+				if deviceInfo.DispatcherStatus == models.DispatchRecordStatusComplete {
+					deviceInfo.DispatcherStatus = models.UpdateStatusSuccess
+				} else if updateStatus == models.UpdateStatusDeviceDisconnected {
+					deviceInfo.DispatcherStatus = models.UpdateStatusDeviceUnresponsive
+				}
 			}
 		}
 
-		// deviceStatusSet[devices.ID] = status
-		deviceStatusSet[crtDevice.ID] = status
-		if devices.ImageID != 0 {
-			setOfImages[devices.ImageID] = &neededImageInfo{}
+		setOfDeviceInfo[crtDevice.ID] = &deviceInfo
+		if device.ImageID != 0 {
+			setOfImages[device.ImageID] = &neededImageInfo{}
 		}
 	}
 
 	// using the map of unique image ID's, get the corresponding image name and status.
-	imagesIDS := []uint{}
+	var imagesIDS []uint
 	for key := range setOfImages {
 		imagesIDS = append(imagesIDS, key)
 	}
@@ -774,10 +793,10 @@ func ReturnDevicesView(storedDevices []models.Device, orgID string) ([]models.De
 	}
 
 	// build the return object
-	returnDevices := []models.DeviceView{}
+	var returnDevices []models.DeviceView
 	for _, device := range storedDevices {
 		var imageName string
-		var deviceStatus string
+		deviceInfo := &neededDeviceInfo{}
 		var imageSetID uint
 		var deviceGroups []models.DeviceDeviceGroup
 		if _, ok := setOfImages[device.ImageID]; ok {
@@ -787,21 +806,22 @@ func ReturnDevicesView(storedDevices []models.Device, orgID string) ([]models.De
 		if _, ok := deviceToGroupMap[device.ID]; ok {
 			deviceGroups = deviceToGroupMap[device.ID]
 		}
-		if _, ok := deviceStatusSet[device.ID]; ok {
-			deviceStatus = deviceStatusSet[device.ID]
+		if _, ok := setOfDeviceInfo[device.ID]; ok {
+			deviceInfo = setOfDeviceInfo[device.ID]
 		}
 		currentDeviceView := models.DeviceView{
-			DeviceID:          device.ID,
-			DeviceName:        device.Name,
-			DeviceUUID:        device.UUID,
-			ImageID:           device.ImageID,
-			ImageName:         imageName,
-			LastSeen:          device.LastSeen,
-			UpdateAvailable:   device.UpdateAvailable,
-			Status:            deviceStatus,
-			ImageSetID:        imageSetID,
-			DeviceGroups:      deviceGroups,
-			UpdateTransaction: device.UpdateTransaction,
+			DeviceID:         device.ID,
+			DeviceName:       device.Name,
+			DeviceUUID:       device.UUID,
+			ImageID:          device.ImageID,
+			ImageName:        imageName,
+			LastSeen:         device.LastSeen,
+			UpdateAvailable:  device.UpdateAvailable,
+			Status:           deviceInfo.Status,
+			ImageSetID:       imageSetID,
+			DeviceGroups:     deviceGroups,
+			DispatcherStatus: deviceInfo.DispatcherStatus,
+			DispatcherReason: deviceInfo.DispatcherReason,
 		}
 		returnDevices = append(returnDevices, currentDeviceView)
 	}

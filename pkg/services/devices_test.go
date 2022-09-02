@@ -1081,17 +1081,8 @@ var _ = Describe("DfseviceService", func() {
 				Expect(err).To(BeNil())
 				Expect(devices).ToNot(BeNil())
 				Expect(len(devices.Devices)).To(Equal(1))
-				Expect(len(*devices.Devices[0].UpdateTransaction)).To(Equal(1))
-
-				deviceUpdate := (*devices.Devices[0].UpdateTransaction)[0]
-
-				Expect(deviceUpdate.ID).To(Equal(update.ID))
-				Expect(deviceUpdate.Status).To(Equal(models.UpdateStatusSuccess))
-
-				Expect(len(deviceUpdate.DispatchRecords)).To(Equal(1))
-				Expect(deviceUpdate.DispatchRecords[0].DeviceID).To(Equal(deviceWithImage.ID))
-				Expect(deviceUpdate.DispatchRecords[0].PlaybookDispatcherID).To(Equal(dispatchRecord.PlaybookDispatcherID))
-				Expect(deviceUpdate.DispatchRecords[0].Status).To(Equal(models.DispatchRecordStatusComplete))
+				Expect(devices.Devices[0].DispatcherStatus).To(Equal(models.UpdateStatusSuccess))
+				Expect(devices.Devices[0].DispatcherReason).To(BeEmpty())
 			})
 
 			It("should sync devices with inventory", func() {

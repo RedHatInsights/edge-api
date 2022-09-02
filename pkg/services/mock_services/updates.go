@@ -94,9 +94,9 @@ func (mr *MockUpdateServiceInterfaceMockRecorder) GetUpdatePlaybook(update inter
 }
 
 // GetUpdateTransactionsForDevice mocks base method.
-func (m *MockUpdateServiceInterface) GetLatestUpdateTransactionForDevice(device *models.Device) (*[]models.UpdateTransaction, error) {
+func (m *MockUpdateServiceInterface) GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetLatestUpdateTransactionForDevice", device)
+	ret := m.ctrl.Call(m, "GetUpdateTransactionsForDevice", device)
 	ret0, _ := ret[0].(*[]models.UpdateTransaction)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -105,7 +105,7 @@ func (m *MockUpdateServiceInterface) GetLatestUpdateTransactionForDevice(device 
 // GetUpdateTransactionsForDevice indicates an expected call of GetUpdateTransactionsForDevice.
 func (mr *MockUpdateServiceInterfaceMockRecorder) GetUpdateTransactionsForDevice(device interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestUpdateTransactionForDevice", reflect.TypeOf((*MockUpdateServiceInterface)(nil).GetLatestUpdateTransactionForDevice), device)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUpdateTransactionsForDevice", reflect.TypeOf((*MockUpdateServiceInterface)(nil).GetUpdateTransactionsForDevice), device)
 }
 
 // ProcessPlaybookDispatcherRunEvent mocks base method.
