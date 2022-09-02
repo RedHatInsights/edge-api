@@ -833,7 +833,7 @@ func (s *DeviceService) GetLatestCommitFromDevices(orgID string, devicesUUID []s
 
 	}
 	if len(devicesImageSetID) > 1 {
-		return 0, new(DeviceHasMoreThanOneImageSet)
+		return 0, new(DevicesHasMoreThanOneImageSet)
 	}
 
 	// check for updates , find if any later images exists to get the commitID

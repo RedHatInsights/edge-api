@@ -234,10 +234,10 @@ func (e *DeviceHasNoImageUpdate) Error() string {
 	return "device has no image update"
 }
 
-// DeviceHasMoreThanOneImageSet indicates that device record no image
-type DeviceHasMoreThanOneImageSet struct{}
+// DevicesHasMoreThanOneImageSet indicates that device record no image
+type DevicesHasMoreThanOneImageSet struct{}
 
-func (e *DeviceHasMoreThanOneImageSet) Error() string {
+func (e *DevicesHasMoreThanOneImageSet) Error() string {
 	return "device has more than one imageset"
 }
 
@@ -265,10 +265,10 @@ func (e *OstreeNotFound) Error() string {
 	return "Ostree not found"
 }
 
-// InvalidCommitID indicates the CommitID does not belong to the same ImageSet as of Device's Image
-type InvalidCommitID struct{}
+// EntitiesImageSetsMismatch indicates the CommitID does not belong to the same ImageSet as of Device's Image
+type EntitiesImageSetsMismatch struct{}
 
-func (e *InvalidCommitID) Error() string {
+func (e *EntitiesImageSetsMismatch) Error() string {
 	return "commit ID does not belong to the same image-set as devices images"
 }
 
@@ -279,9 +279,9 @@ func (e *CommitImageNotFound) Error() string {
 	return "commit image does not found"
 }
 
-// ImageSetNotFoundForAllDevices indicates that device record no image
-type ImageSetNotFoundForAllDevices struct{}
+// SomeDevicesDoesNotExists indicates that device record no image
+type SomeDevicesDoesNotExists struct{}
 
-func (e *ImageSetNotFoundForAllDevices) Error() string {
+func (e *SomeDevicesDoesNotExists) Error() string {
 	return "image-set not found for all devices"
 }

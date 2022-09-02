@@ -84,12 +84,15 @@ func (s *CommitService) ValidateDevicesImageSetWithCommit(devicesUUID []string, 
 		return new(ImageSetNotFoundError)
 	}
 	if len(imageSetsDevices) > 1 {
-		return new(DeviceHasMoreThanOneImageSet)
+		return new(DevicesHasMoreThanOneImageSet)
 	}
 	imageSetDevices := imageSetsDevices[0]
 	if imageSetDevices.DevicesCount != len(devicesUUID) {
-		return new(ImageSetNotFoundForAllDevices)
-
+		s.log.WithFields(log.Fields{
+			"Devices Expected": len(devicesUUID),
+			"Devices Found":    imageSetDevices.DevicesCount,
+		}).Error()
+		return new(SomeDevicesDoesNotExists)
 	}
 
 	if result := db.Org(orgID, "").Where("commit_id = ?", commitID).First(&commitImage); result.Error != nil {
@@ -104,7 +107,7 @@ func (s *CommitService) ValidateDevicesImageSetWithCommit(devicesUUID []string, 
 		return new(ImageHasNoImageSet)
 	}
 	if imageSetDevices.ImageSetID != *commitImage.ImageSetID {
-		return new(InvalidCommitID)
+		return new(EntitiesImageSetsMismatch)
 	}
 	return nil
 

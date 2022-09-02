@@ -473,7 +473,7 @@ var _ = Describe("Update routes", func() {
 
 				respBody, err := ioutil.ReadAll(responseRecorder.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(string(respBody)).To(ContainSubstring("CommitID %d does not belong to same imageset. CommitID should belong the same imageset", updateCommit.ID))
+				Expect(string(respBody)).To(ContainSubstring("Commit %d does not belong to the same image-set as devices", updateCommit.ID))
 			})
 		})
 	})
