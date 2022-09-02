@@ -42,7 +42,7 @@ var _ = Describe("File Service Test", func() {
 					log.Fatal(err)
 				}
 				defer f.Close()
-				err := ioutil.WriteFile(path, []byte(data), fs.ModeAppend)
+				err = ioutil.WriteFile(path, []byte(data), fs.ModeAppend)
 				Expect(err).To(BeNil())
 			})
 			AfterEach(func() {

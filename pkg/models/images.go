@@ -108,11 +108,6 @@ const (
 	InvalidSSHKeyError = "SSH Key supports RSA or DSS or ED25519 or ECDSA-SHA2 algorithms"
 )
 
-//
-
-// Required Packages to send to image builder that will go into the base image
-var requiredPackages = []string{}
-
 var (
 	validSSHPrefix     = regexp.MustCompile(`^(ssh-(rsa|dss|ed25519)|ecdsa-sha2-nistp(256|384|521)) \S+`)
 	validImageName     = regexp.MustCompile(`^[A-Za-z0-9]+[A-Za-z0-9\s_-]*$`)

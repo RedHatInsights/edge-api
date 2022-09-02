@@ -61,11 +61,6 @@ func main() {
 	log.Info("Starting up...")
 
 	var images []models.Image
-	// IBevent represents the struct of the value in a Kafka message
-	// TODO: add the original requestid
-	type IBevent struct {
-		ImageID uint `json:"image_id"`
-	}
 
 	config.Init()
 	l.InitLogger()

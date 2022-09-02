@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Unleash/unleash-client-go/v3/api"
+	log "github.com/sirupsen/logrus"
 )
 
 // FakeUnleashServer is the server object
@@ -102,9 +103,9 @@ func (f *FakeUnleashServer) handler(w http.ResponseWriter, req *http.Request) {
 	case "POST /client/metrics":
 		w.WriteHeader(200)
 	default:
-		err := w.Write([]byte("Unknown route"))
+		_, err := w.Write([]byte("Unknown route"))
 		if err != nil {
-			logger.WithField("error", err.Error()).Error("Error writing 'Unknown route' message")
+			log.WithField("error", err.Error()).Error("Error writing 'Unknown route' message")
 		}
 		w.WriteHeader(500)
 	}

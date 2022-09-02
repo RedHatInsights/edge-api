@@ -5,6 +5,7 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/redhatinsights/edge-api/config"
+	log "github.com/sirupsen/logrus"
 )
 
 // GetKafkaProducerConfigMap returns the correct kafka auth based on the environment and given config
@@ -49,7 +50,7 @@ func GetKafkaConsumerConfigMap(consumerGroup string) kafka.ConfigMap {
 	kafkaConfigMap := GetKafkaProducerConfigMap()
 
 	if cfg.KafkaBrokers != nil {
-		err = kafkaConfigMap.SetKey("broker.address.family", "v4")
+		err := kafkaConfigMap.SetKey("broker.address.family", "v4")
 		if err != nil {
 			log.WithField("broker.address.family", "v4").Error("Error setting Kafka key")
 		}
