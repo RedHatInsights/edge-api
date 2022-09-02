@@ -59,8 +59,9 @@ type RpmOSTreeDeployment struct {
 
 // PlatformInsightsCreateUpdateEventPayload is the body of the create event found on the platform.inventory.events kafka topic.
 type PlatformInsightsCreateUpdateEventPayload struct {
-	Type string `json:"type"`
-	Host host   `json:"host"`
+	Type   string `json:"type"`
+	Host   host   `json:"host"`
+	Source string `json:"source,omitempty"`
 }
 
 type systemProfile struct {
@@ -860,6 +861,7 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 		}).Debug("Skipping message - it is not a create message")
 	} else {
 		if e.Type == InventoryEventTypeCreated && e.Host.SystemProfile.HostType == InventoryHostTypeEdge {
+			s.log.WithField("message", string(message)).Debug("Inventory create event message body")
 			return s.platformInventoryCreateEventHelper(*e)
 		}
 		s.log.Debug("Skipping message - not an edge create message from platform insights")
@@ -879,7 +881,7 @@ func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCre
 		Name:        e.Host.Name,
 		LastSeen:    e.Host.Updated,
 	}
-	result := db.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
+	result := db.DB.Debug().Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
 	if result.Error != nil {
 		s.log.WithFields(log.Fields{
 			"host_id": string(e.Host.ID),
@@ -934,13 +936,13 @@ func (s *DeviceService) syncDevicesWithInventory(orgID string) {
 	offset := 0
 	var searchDevices, devicesToBeDeleted []models.Device
 
-	if res := db.Org(orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
+	if res := db.Org(orgID, "").Debug().Model(&models.Device{}).Count(&total); res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
 		return
 	}
 
 	for int64(offset) < total {
-		if res := db.Org(orgID, "").Limit(limit).Offset(offset).Find(&searchDevices); res.Error != nil {
+		if res := db.Org(orgID, "").Debug().Limit(limit).Offset(offset).Find(&searchDevices); res.Error != nil {
 			s.log.WithField("error", res.Error.Error()).Error("Error getting devices in device sync")
 			return
 		}
@@ -971,7 +973,11 @@ func (s *DeviceService) syncDevicesWithInventory(orgID string) {
 
 	// Delete invalid devices
 	for _, device := range devicesToBeDeleted {
-		if result := db.DB.Delete(&device); result.Error != nil {
+		s.log.WithFields(
+			log.Fields{"host_id": device.UUID, "OrgID": device.OrgID},
+		).Debug("Deleting device")
+
+		if result := db.DB.Debug().Delete(&device); result.Error != nil {
 			s.log.WithFields(
 				log.Fields{"host_id": device.UUID, "OrgID": device.OrgID, "error": result.Error},
 			).Error("Error when deleting device in device sync")
@@ -981,7 +987,7 @@ func (s *DeviceService) syncDevicesWithInventory(orgID string) {
 	// Get the count of our db and from inventory and compare them
 	// If they are the same, sync is done
 	// If not, we have missed some "create" events from inventory, we need to discover and add these devices to our DB
-	if res := db.Org(orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
+	if res := db.Org(orgID, "").Debug().Model(&models.Device{}).Count(&total); res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
 		return
 	}
@@ -1058,8 +1064,9 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 						SystemProfile: profile,
 					}
 					createEvent := PlatformInsightsCreateUpdateEventPayload{
-						Type: InventoryEventTypeCreated,
-						Host: iHost,
+						Type:   InventoryEventTypeCreated,
+						Host:   iHost,
+						Source: "edge-api syncInventoryWithDevices()",
 					}
 					s.platformInventoryCreateEventHelper(createEvent)
 				}
