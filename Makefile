@@ -117,6 +117,7 @@ help:
 	@echo ""
 
 lint:
+	ls -laR /home/runner/go
 	ls -la $(GOLINT)
 	$(GOLINT) $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
 
