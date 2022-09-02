@@ -18,7 +18,7 @@ import (
 
 var dbName string
 
-func setUp() {
+func setUp(m *testing.M) {
 	orgID := faker.UUIDHyphenated()
 	config.Init()
 	config.Get().Debug = true
@@ -28,7 +28,7 @@ func setUp() {
 	db.InitDB()
 	err := db.DB.AutoMigrate(&models.Image{})
 	if err != nil {
-		t.Fatalf("Failed to auto migrate database: %s", err)
+		m.Fatalf("Failed to auto migrate database: %s", err)
 	}
 
 	images := []models.Image{
@@ -65,7 +65,7 @@ func setUp() {
 }
 
 func TestMain(m *testing.M) {
-	setUp()
+	setUp(m)
 	retCode := m.Run()
 	db.DB.Exec("DELETE FROM images")
 	os.Remove(dbName)
