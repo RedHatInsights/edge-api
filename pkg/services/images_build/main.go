@@ -1,15 +1,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"os/signal"
-	"reflect"
 	"syscall"
 	"time"
 
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
+	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services/image"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -17,18 +18,22 @@ import (
 
 	l "github.com/redhatinsights/edge-api/logger" // is this one really needed with logrus?
 	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/edge-api/pkg/services/images"
 )
 
 func main() {
-	log.WithField("microservice", "images-build").Info("Microservice started")
+	// create a new context
+	ctx := context.Background()
+	// create a base logger with fields to pass through the entire flow
+	mslog := log.WithFields(log.Fields{"app": "edge", "service": "images"})
+
+	mslog.Info("Microservice started")
 
 	// FIXME: a good opportunity to refactor config
 	config.Init()
 	l.InitLogger()
 	cfg := config.Get()
 	// TODO: update these fields
-	log.WithFields(log.Fields{
+	mslog.WithFields(log.Fields{
 		"Hostname":                 cfg.Hostname,
 		"Auth":                     cfg.Auth,
 		"WebPort":                  cfg.WebPort,
@@ -58,21 +63,15 @@ func main() {
 		signal.Notify(sigchan, os.Interrupt, syscall.SIGTERM)
 
 		// TODO: this should be a struct defined elsewhere and read in
-		c, err := kafka.NewConsumer(&kafka.ConfigMap{
-			"bootstrap.servers":     fmt.Sprintf("%s:%v", cfg.KafkaBrokers[0].Hostname, *cfg.KafkaBrokers[0].Port),
-			"broker.address.family": "v4",
-			"group.id":              consumerGroup,
-			"session.timeout.ms":    6000,
-			"auto.offset.reset":     "earliest",
-			//			"enable.auto.offset.store": false,
-		})
+		kafkaConfigMap := kafkacommon.GetKafkaConsumerConfigMap(consumerGroup)
+		c, err := kafka.NewConsumer(&kafkaConfigMap)
 
 		if err != nil {
-			log.WithField("error", err).Error("Failed to create consumer")
+			mslog.WithField("error", err.Error()).Error("Failed to create consumer")
 			os.Exit(1)
 		}
 
-		log.WithField("consumer", c).Debug("Created Consumer")
+		mslog.WithField("consumer", c).Debug("Created Consumer")
 
 		// TODO: define this by mapping topics to a microservice struct
 		// TODO: and nail record keys to the topic
@@ -80,15 +79,18 @@ func main() {
 		topics := []string{kafkacommon.TopicFleetmgmtImageBuild}
 		err = c.SubscribeTopics(topics, nil)
 		if err != nil {
-			log.Error("Subscribing to topics failed")
+			mslog.Error("Subscribing to topics failed")
+			// TODO: handle retries
+			// TODO: handle notifications
 		}
 
-		run := true
+		mslog.Info("Microservice ready")
 
+		run := true
 		for run {
 			select {
 			case sig := <-sigchan:
-				log.WithField("signal", sig).Debug("Caught signal and terminating")
+				mslog.WithField("signal", sig).Debug("Caught signal and terminating")
 				time.Sleep(5)
 				run = false
 			default:
@@ -101,33 +103,62 @@ func main() {
 				switch e := ev.(type) {
 				case *kafka.Message:
 					key := string(e.Key)
-					logevent := log.WithFields(log.Fields{
-						"topic":     *e.TopicPartition.Topic,
-						"partition": e.TopicPartition.Partition,
-						"offset":    e.TopicPartition.Offset,
-						"key":       string(e.Key)})
-					logevent.WithField("message", string(e.Value)).Debug("Received an event")
+					mslog = mslog.WithFields(log.Fields{
+						"event_consumer_group": consumerGroup,
+						"event_topic":          *e.TopicPartition.Topic,
+						"event_partition":      e.TopicPartition.Partition,
+						"event_offset":         e.TopicPartition.Offset,
+						"event_recordkey":      string(e.Key),
+					})
+					mslog.WithField("message", string(e.Value)).Debug("Received an event")
 
 					if e.Headers != nil {
-						logevent.WithField("headers", e.Headers).Debug("Headers received with the event")
+						mslog.WithField("headers", e.Headers).Debug("Headers received with the event")
 					}
 
 					// route to specific event handler based on the event key
-					logevent.Debug("consumer routing based on key")
+					mslog.Debug("consumer is routing based on record key")
 
-					// execute the event handler if the record key has been defined
-					if _, exists := images.RegisteredEvents[key]; exists {
-						edgeEvent := images.RegisteredEvents[key]
-						json.Unmarshal(e.Value, edgeEvent)
-						// using reflection to avoid the compiler error with Consume() and an unknown struct
-						reflect.ValueOf(edgeEvent).MethodByName("Consume").Call(nil)
-					} else {
-						logevent.Warning("Skipping event. Record key is not defined")
+					switch key {
+					case models.EventTypeEdgeImageRequested:
+						crcEvent := &image.EventImageRequestedBuildHandler{}
+
+						err = json.Unmarshal(e.Value, crcEvent)
+						if err != nil {
+							mslog.Error("Failed to unmarshal CRC event")
+						}
+
+						// add event UUID to logger
+						mslog = mslog.WithField("event_id", crcEvent.ID)
+
+						// add the logger to the context before Consume() calls
+						ctx = image.ContextWithLogger(ctx, mslog)
+
+						// call the event's Consume method
+						go crcEvent.Consume(ctx)
+					case models.EventTypeEdgeImageUpdateRequested:
+						crcEvent := &image.EventImageUpdateRequestedBuildHandler{}
+						err = json.Unmarshal(e.Value, crcEvent)
+						if err != nil {
+							mslog.Error("Failed to unmarshal CRC event")
+						}
+
+						// add event UUID to logger
+						mslog = mslog.WithField("event_id", crcEvent.ID)
+
+						// add the logger to the context before Consume() calls
+						ctx = image.ContextWithLogger(ctx, mslog)
+
+						// call the event's Consume method
+						go crcEvent.Consume(ctx)
+					default:
+						mslog.Trace("Record key is not recognized by consumer")
 					}
 
+					// commit the Kafka offset
 					_, err := c.Commit()
 					if err != nil {
-						logevent.WithField("error", err).Error("Error storing offset after message")
+						mslog.WithField("error", err).Error("Error storing offset after message")
 					}
 				case kafka.Error:
 					// terminate the application if all brokers are down.
@@ -145,5 +176,3 @@ func main() {
 		c.Close()
 	}
 }
-
-// FIXME: move consumer config map to central location so consumer code doesn't need to be touched

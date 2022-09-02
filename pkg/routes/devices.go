@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -79,12 +80,12 @@ var devicesFilters = common.ComposeFilters(
 		DBField:    "devices.update_available",
 	}),
 	// Filter handler for "created_at"
-	common.BoolFilterHandler(&common.Filter{
+	common.CreatedAtFilterHandler(&common.Filter{
 		QueryParam: "created_at",
 		DBField:    "devices.created_at",
 	}),
 	// Filter handler for "image_id"
-	common.ContainFilterHandler(&common.Filter{
+	common.IntegerNumberFilterHandler(&common.Filter{
 		QueryParam: "image_id",
 		DBField:    "devices.image_id",
 	}),
@@ -129,7 +130,13 @@ func ValidateGetDevicesViewFilterParams(next http.Handler) http.Handler {
 		// check for invalid update_available value
 		if val := r.URL.Query().Get("update_available"); val != "true" && val != "false" && val != "" {
 			if !device.UpdateAvailable {
-				errs = append(errs, validationError{Key: "update_available", Reason: fmt.Sprintf("%s is not a valid value for update_available. Update_available must be boolean", val)})
+				errs = append(errs, validationError{Key: "update_available", Reason: fmt.Sprintf("%s is not a valid value for update_available. update_available must be boolean", val)})
+			}
+		}
+		// check for invalid image_id value
+		if val := r.URL.Query().Get("image_id"); val != "" {
+			if _, err := strconv.Atoi(val); err != nil {
+				errs = append(errs, validationError{Key: "image_id", Reason: fmt.Sprintf("%s is not a valid value for image_id. image_id must be integer", val)})
 			}
 		}
 		if len(errs) == 0 {

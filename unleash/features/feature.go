@@ -6,6 +6,7 @@ import (
 	"github.com/Unleash/unleash-client-go/v3"
 	unleashCTX "github.com/Unleash/unleash-client-go/v3/context"
 	"github.com/redhatinsights/edge-api/config"
+	log "github.com/sirupsen/logrus"
 )
 
 //FeatureCustomRepos is the const of the custom repo feature flag
@@ -21,7 +22,10 @@ type Flag struct {
 }
 
 // ImageCreateEDA is the feature flag for routes.CreateImage() EDA code
-var ImageCreateEDA = &Flag{Name: "fleet-management.images_iso", EnvVar: "FEATURE_IMAGECREATE"}
+var ImageCreateEDA = &Flag{Name: "edge-management.image_create", EnvVar: "FEATURE_IMAGECREATE"}
+
+// ImageUpdateEDA is the feature flag for routes.CreateImageUpdate() EDA code
+var ImageUpdateEDA = &Flag{Name: "edge-management.image_update", EnvVar: "FEATURE_IMAGEUPDATE"}
 
 // ImageCreateCommitEDA is the feature flag for routes.CreateCommit() EDA code
 var ImageCreateCommitEDA = &Flag{Name: "", EnvVar: "FEATURE_IMAGECREATE_COMMIT"}
@@ -34,9 +38,6 @@ var ImageCreateKickstartEDA = &Flag{Name: "", EnvVar: "FEATURE_IMAGECREATE_KICKS
 
 // ImageCreateRepoEDA is the feature flag for routes.CreateRepo() EDA code
 var ImageCreateRepoEDA = &Flag{Name: "", EnvVar: "FEATURE_IMAGECREATE_REPO"}
-
-// ImageUpdateEDA is the feature flag for routes.CreateImageUpdate() EDA code
-var ImageUpdateEDA = &Flag{Name: "", EnvVar: "FEATURE_IMAGEUPDATE"}
 
 // CheckFeature checks to see if a given feature is available
 func CheckFeature(feature string) bool {
@@ -63,8 +64,14 @@ func (ff *Flag) IsEnabled() bool {
 
 	// if either is enabled, make it so
 	if ffServiceEnabled || ffEnvEnabled {
+		log.WithFields(log.Fields{"feature": ff.Name,
+			"unleash": ffServiceEnabled, "environment": ffEnvEnabled,
+			"status": "enabled"}).Debug("Feature flag status")
 		return true
 	}
 
+	log.WithFields(log.Fields{"feature": ff.Name,
+		"unleash": ffServiceEnabled, "environment": ffEnvEnabled,
+		"status": "disabled"}).Debug("Feature flag status")
 	return false
 }

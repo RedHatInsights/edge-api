@@ -102,7 +102,7 @@ objects:
             cpu: 500m
             memory: 512Mi
     - name: images-build
-      minReplicas: 1
+      minReplicas: 0
       podSpec:
         image: ${IMAGE}:${IMAGE_TAG}
         command:
@@ -152,11 +152,11 @@ objects:
           value: ${TENANT_TRANSLATOR_PORT}
         resources:
           limits:
-            cpu: ${{CPU_LIMIT}}
-            memory: ${MEMORY_LIMIT}
-          requests:
             cpu: 250m
-            memory: 256Mi
+            memory: 2Gi
+          requests:
+            cpu: 125m
+            memory: 128Mi
     - name: ibvents
       minReplicas: 1
       podSpec:
@@ -208,11 +208,11 @@ objects:
           value: ${TENANT_TRANSLATOR_PORT}
         resources:
           limits:
-            cpu: ${{CPU_LIMIT}}
-            memory: ${MEMORY_LIMIT}
-          requests:
             cpu: 250m
             memory: 256Mi
+          requests:
+            cpu: 125m
+            memory: 128Mi
     objectStore:
     - ${EDGE_TARBALLS_BUCKET}
     database:

@@ -40,6 +40,7 @@ type EdgeConfig struct {
 	KafkaTopics              map[string]string         `json:"kafka_topics,omitempty"`
 	FDO                      *fdoConfig                `json:"fdo,omitempty"`
 	Local                    bool                      `json:"local,omitempty"`
+	Dev                      bool                      `json:"dev,omitempty"`
 	UnleashURL               string                    `json:"unleash_url,omitempty"`
 	UnleashSecretName        string                    `json:"unleash_secret_name,omitempty"`
 	FeatureFlagsEnvironment  string                    `json:"featureflags_environment,omitempty"`
@@ -119,16 +120,13 @@ func Init() {
 	options.SetDefault("FDOApiVersion", "v1")
 	options.SetDefault("FDOAuthorizationBearer", "lorum-ipsum")
 	options.SetDefault("Local", false)
+	options.SetDefault("Dev", false)
 	options.SetDefault("EDGEMGMT_CONFIGPATH", "/tmp/edgemgmt_config.json")
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
 		options.Set("LOG_LEVEL", "DEBUG")
 	}
-
-	// FIXME: why both options and kubenv
-	kubenv := viper.New()
-	kubenv.AutomaticEnv()
 
 	if clowder.IsClowderEnabled() {
 		// FUTURE: refactor config to follow common CRC config code
@@ -154,7 +152,6 @@ func Init() {
 		options.SetDefault("FeatureFlagsAPIToken", os.Getenv("UNLEASH_TOKEN"))
 		options.SetDefault("FeatureFlagsBearerToken", options.GetString("UNLEASH_TOKEN"))
 	}
-
 	options.SetDefault("FeatureFlagsService", os.Getenv("FEATURE_FLAGS_SERVICE"))
 
 	if os.Getenv("SOURCES_ENV") == "prod" {
@@ -172,7 +169,7 @@ func Init() {
 	options.SetDefault("TenantTranslatorPort", os.Getenv("TENANT_TRANSLATOR_PORT"))
 
 	config = &EdgeConfig{
-		Hostname:        kubenv.GetString("Hostname"),
+		Hostname:        options.GetString("Hostname"),
 		Auth:            options.GetBool("Auth"),
 		WebPort:         options.GetInt("WebPort"),
 		MetricsPort:     options.GetInt("MetricsPort"),
@@ -204,6 +201,7 @@ func Init() {
 			AuthorizationBearer: options.GetString("FDOAuthorizationBearer"),
 		},
 		Local:                   options.GetBool("Local"),
+		Dev:                     options.GetBool("Dev"),
 		UnleashURL:              options.GetString("FeatureFlagsUrl"),
 		UnleashSecretName:       options.GetString("FeatureFlagsBearerToken"),
 		FeatureFlagsEnvironment: options.GetString("FeatureFlagsEnvironment"),
@@ -235,6 +233,7 @@ func Init() {
 		}
 	}
 
+	// TODO: consolidate this with the clowder block above and refactor to use default, etc.
 	if clowder.IsClowderEnabled() {
 		cfg := clowder.LoadedConfig
 
@@ -267,8 +266,10 @@ func Init() {
 
 		config.KafkaConfig = cfg.Kafka
 	}
-	// get config from file if running local
-	if config.Local {
+
+	// get config from file if running in developer mode
+	// this is different than Local due to code in services/files.go
+	if config.Dev {
 		configFile := os.Getenv("EDGEMGMT_CONFIG")
 		options.SetConfigFile(configFile)
 

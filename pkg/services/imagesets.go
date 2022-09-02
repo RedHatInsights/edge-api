@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+
 	"gorm.io/gorm"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -98,8 +99,8 @@ func (s *ImageSetsService) GetImageSetsViewCount(tx *gorm.DB) (int64, error) {
 	var count int64
 
 	if result := db.OrgDB(orgID, tx, "image_sets").Debug().
-		Joins(`JOIN images ON image_sets.id = images.image_set_id AND Images.id = (Select Max(id) from Images where images.image_set_id = image_sets.id)`).
-		Model(&models.ImageSet{}).Count(&count); result.Error != nil {
+		Joins(`JOIN images ON image_sets.id = images.image_set_id`).
+		Model(&models.ImageSet{}).Distinct("image_sets.id").Count(&count); result.Error != nil {
 		s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("Error getting image sets count")
 		return 0, result.Error
 	}

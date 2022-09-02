@@ -14,8 +14,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/redhatinsights/edge-api/pkg/routes/common"
-
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/redhatinsights/edge-api/config"
@@ -24,6 +22,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -48,25 +47,26 @@ type UpdateServiceInterface interface {
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
 func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterface {
 	return &UpdateService{
-		Service:      Service{ctx: ctx, log: log.WithField("service", "update")},
-		FilesService: NewFilesService(log),
-		ImageService: NewImageService(ctx, log),
-		RepoBuilder:  NewRepoBuilder(ctx, log),
-		Inventory:    inventory.InitClient(ctx, log),
-		// DeviceService: NewDeviceService(ctx, log),
-		WaitForReboot: time.Minute * 5,
+		Service:        Service{ctx: ctx, log: log.WithField("service", "update")},
+		FilesService:   NewFilesService(log),
+		ImageService:   NewImageService(ctx, log),
+		RepoBuilder:    NewRepoBuilder(ctx, log),
+		Inventory:      inventory.InitClient(ctx, log),
+		PlaybookClient: playbookdispatcher.InitClient(ctx, log),
+		WaitForReboot:  time.Minute * 5,
 	}
 }
 
 // UpdateService is the main implementation of a UpdateServiceInterface
 type UpdateService struct {
 	Service
-	ImageService  ImageServiceInterface
-	RepoBuilder   RepoBuilderInterface
-	FilesService  FilesService
-	DeviceService DeviceServiceInterface
-	Inventory     inventory.ClientInterface
-	WaitForReboot time.Duration
+	ImageService   ImageServiceInterface
+	RepoBuilder    RepoBuilderInterface
+	FilesService   FilesService
+	DeviceService  DeviceServiceInterface
+	Inventory      inventory.ClientInterface
+	PlaybookClient playbookdispatcher.ClientInterface
+	WaitForReboot  time.Duration
 }
 
 type playbooks struct {
@@ -138,6 +138,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			s.log.WithField("error", err).Error("Error on update")
 		}
 	}()
+
 	go func(update *models.UpdateTransaction) {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
@@ -157,6 +158,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			WaitGroup.Done()
 		}
 	}(update)
+
 	update, err := s.RepoBuilder.BuildUpdateRepo(id)
 	if err != nil {
 		db.DB.First(&update, id)
@@ -165,6 +167,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		s.log.WithField("error", err.Error()).Error("Error building update repo")
 		return nil, err
 	}
+
 	var remoteInfo TemplateRemoteInfo
 	remoteInfo.RemoteURL = update.Repo.URL
 	remoteInfo.RemoteName = "rhel-edge"
@@ -175,38 +178,54 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	remoteInfo.RemoteOstreeUpdate = fmt.Sprint(update.ChangesRefs)
 
 	playbookURL, err := s.WriteTemplate(remoteInfo, update.OrgID)
+
 	if err != nil {
 		update.Status = models.UpdateStatusError
 		db.DB.Save(update)
 		s.log.WithField("error", err.Error()).Error("Error writing playbook template")
 		return nil, err
 	}
+	// get the content identity
+	indent, err := common.GetIdentityFromContext(s.ctx)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error getting context RHidentity")
+	}
+	identity := indent.Identity
+	// ensure identity org_id is the same as the update transaction
+	if identity.OrgID != update.OrgID {
+		s.log.Error("context identity org_id and update transaction org_id mismatch")
+		return nil, ErrOrgIDMismatch
+	}
 	// 3. Loop through all devices in UpdateTransaction
 	dispatchRecords := update.DispatchRecords
-	account, err := common.GetAccountFromContext(s.ctx)
-	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Error when getting account from context")
-		return nil, new(AccountNotSet)
-	}
 	for _, device := range update.Devices {
 		device := device // this will prevent implicit memory aliasing in the loop
 		// Create new &DispatcherPayload{}
 		payloadDispatcher := playbookdispatcher.DispatcherPayload{
-			Recipient:   device.RHCClientID,
-			PlaybookURL: playbookURL,
-			Account:     account,
-			OrgID:       update.OrgID,
+			Recipient:    device.RHCClientID,
+			PlaybookURL:  playbookURL,
+			OrgID:        update.OrgID,
+			PlaybookName: "Edge-management",
+			Principal:    identity.User.Username,
 		}
 		s.log.Debug("Calling playbook dispatcher")
-		client := playbookdispatcher.InitClient(s.ctx, s.log)
-		exc, err := client.ExecuteDispatcher(payloadDispatcher)
+		exc, err := s.PlaybookClient.ExecuteDispatcher(payloadDispatcher)
 
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error on playbook-dispatcher execution")
 			update.Status = models.UpdateStatusError
+
+			update.DispatchRecords = append(dispatchRecords, models.DispatchRecord{
+				Device:      &device,
+				PlaybookURL: playbookURL,
+				Status:      models.DispatchRecordStatusError,
+				Reason:      models.UpdateReasonFailure,
+			})
+
 			db.DB.Save(update)
 			return nil, err
 		}
+
 		for _, excPlaybook := range exc {
 			if excPlaybook.StatusCode == http.StatusCreated {
 				device.Connected = true
@@ -223,6 +242,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 					Device:      &device,
 					PlaybookURL: playbookURL,
 					Status:      models.DispatchRecordStatusError,
+					Reason:      models.UpdateReasonFailure,
 				}
 				dispatchRecords = append(dispatchRecords, *dispatchRecord)
 			}
@@ -377,20 +397,26 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 		return result.Error
 	}
 
-	if e.Payload.Status == PlaybookStatusFailure || e.Payload.Status == PlaybookStatusTimeout {
-		dispatchRecord.Status = models.DispatchRecordStatusError
-	} else if e.Payload.Status == PlaybookStatusSuccess {
-		fmt.Printf("$$$$$$$$$ dispatchRecord.Device %v\n", dispatchRecord.Device)
+	switch e.Payload.Status {
+	case PlaybookStatusSuccess:
 		// TODO: We might wanna check if it's really success by checking the running hash on the device here
 		dispatchRecord.Status = models.DispatchRecordStatusComplete
 		dispatchRecord.Device.AvailableHash = os.DevNull
 		dispatchRecord.Device.CurrentHash = dispatchRecord.Device.AvailableHash
-	} else if e.Payload.Status == PlaybookStatusRunning {
+	case PlaybookStatusRunning:
 		dispatchRecord.Status = models.DispatchRecordStatusRunning
-	} else {
+	case PlaybookStatusTimeout:
 		dispatchRecord.Status = models.DispatchRecordStatusError
+		dispatchRecord.Reason = models.UpdateReasonTimeout
+	case PlaybookStatusFailure:
+		dispatchRecord.Status = models.DispatchRecordStatusError
+		dispatchRecord.Reason = models.UpdateReasonFailure
+	default:
+		dispatchRecord.Status = models.DispatchRecordStatusError
+		dispatchRecord.Reason = models.UpdateReasonFailure
 		s.log.Error("Playbook status is not on the json schema for this event")
 	}
+
 	result = db.DB.Save(&dispatchRecord)
 	if result.Error != nil {
 		return result.Error
@@ -490,7 +516,6 @@ func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (Ima
 		recipients = append(recipients, recipient)
 
 		notify.OrgID = i.OrgID
-		notify.Account = i.Account
 		notify.Context = fmt.Sprintf("{  \"CommitID\" : \"%v\"}", i.CommitID)
 		notify.Events = events
 		notify.Recipients = recipients
@@ -682,6 +707,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					"deviceUUID": device.ID,
 				}).Info("Device is disconnected")
 				update.Status = models.UpdateStatusDeviceDisconnected
+				update.Devices = append(update.Devices, *updateDevice)
 				if result := db.DB.Create(&update); result.Error != nil {
 					return nil, result.Error
 				}

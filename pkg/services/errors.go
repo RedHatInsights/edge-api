@@ -285,3 +285,7 @@ type SomeDevicesDoesNotExists struct{}
 func (e *SomeDevicesDoesNotExists) Error() string {
 	return "image-set not found for all devices"
 }
+
+// ErrOrgIDMismatch returned when the contexrt orgID is diffenrent from an entity OrgID
+var ErrOrgIDMismatch = errors.New("context org_id and entity org_id mismatch")
+

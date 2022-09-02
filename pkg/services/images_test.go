@@ -3,6 +3,7 @@ package services_test
 import (
 	"context"
 	"fmt"
+
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -688,14 +689,14 @@ var _ = Describe("Image Service Test", func() {
 	})
 	Describe("Create image when using getImageSetForNewImage", func() {
 		orgID := common.DefaultOrgID
-		requestID := faker.UUIDHyphenated()
+		//requestID := faker.UUIDHyphenated()
 		imageName := faker.UUIDHyphenated()
-		image := models.Image{Distribution: "rhel-85", Name: imageName}
+		image := models.Image{OrgID: orgID, Distribution: "rhel-85", Name: imageName}
 		expectedErr := fmt.Errorf("failed to create commit for image")
 		When("When image-builder ComposeCommit fail", func() {
 			It("imageSet is created", func() {
 				mockImageBuilderClient.EXPECT().ComposeCommit(&image).Return(&image, expectedErr)
-				err := service.CreateImage(&image, orgID, requestID)
+				err := service.CreateImage(&image)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
 				// image is not created
@@ -712,7 +713,7 @@ var _ = Describe("Image Service Test", func() {
 				// set image imageSet to nil
 				image.ImageSetID = nil
 				mockImageBuilderClient.EXPECT().ComposeCommit(&image).Return(&image, expectedErr)
-				err := service.CreateImage(&image, orgID, requestID)
+				err := service.CreateImage(&image)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
 				// image is not created
@@ -731,7 +732,7 @@ var _ = Describe("Image Service Test", func() {
 				// create a new image linked with the known imageSet
 				result := db.DB.Create(&models.Image{OrgID: orgID, Distribution: "rhel-85", Name: faker.UUIDHyphenated(), ImageSetID: &imageSetID})
 				Expect(result.Error).ToNot(HaveOccurred())
-				err := service.CreateImage(&image, orgID, requestID)
+				err := service.CreateImage(&image)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal("image set already exists"))
 				// image is not created
@@ -742,7 +743,7 @@ var _ = Describe("Image Service Test", func() {
 	})
 	Describe("Create image when ValidateImagePackage", func() {
 		orgID := faker.UUIDHyphenated()
-		requestID := faker.UUIDHyphenated()
+		//requestID := faker.UUIDHyphenated()
 		imageName := faker.UUIDHyphenated()
 		When("When image-builder SearchPackage succeed", func() {
 			It("image create with valid package name", func() {
@@ -753,7 +754,7 @@ var _ = Describe("Image Service Test", func() {
 						Name: "vim-common",
 					},
 				}
-				image := models.Image{Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
+				image := models.Image{OrgID: orgID, Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
 				expectedErr := fmt.Errorf("failed to create commit for image")
 				imageBuilder := &imageBuilderClient.SearchPackageResult{}
 				var s imageBuilderClient.SearchPackage
@@ -762,7 +763,7 @@ var _ = Describe("Image Service Test", func() {
 				imageBuilder.Meta.Count = 1
 				mockImageBuilderClient.EXPECT().SearchPackage("vim-common", "x86_64", "rhel-85").Return(imageBuilder, nil)
 				mockImageBuilderClient.EXPECT().ComposeCommit(&image).Return(&image, expectedErr)
-				err := service.CreateImage(&image, orgID, requestID)
+				err := service.CreateImage(&image)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
 				// image is not created
@@ -778,12 +779,12 @@ var _ = Describe("Image Service Test", func() {
 						Name: "badrpm",
 					},
 				}
-				image := models.Image{Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
+				image := models.Image{OrgID: orgID, Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
 				expectedErr := fmt.Errorf("package name doesn't exist")
 				imageBuilder := &imageBuilderClient.SearchPackageResult{}
 				imageBuilder.Meta.Count = 0
 				mockImageBuilderClient.EXPECT().SearchPackage("badrpm", "x86_64", "rhel-85").Return(imageBuilder, expectedErr)
-				err := service.CreateImage(&image, orgID, requestID)
+				err := service.CreateImage(&image)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
 				// image is not created
@@ -801,11 +802,11 @@ var _ = Describe("Image Service Test", func() {
 						Name: "vim-common",
 					},
 				}
-				image := models.Image{Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
+				image := models.Image{OrgID: orgID, Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
 				expectedErr := fmt.Errorf("value is not one of the allowed values")
 				imageBuilder := &imageBuilderClient.SearchPackageResult{}
 				mockImageBuilderClient.EXPECT().SearchPackage("vim-common", "", "rhel-85").Return(imageBuilder, expectedErr)
-				err := service.CreateImage(&image, orgID, requestID)
+				err := service.CreateImage(&image)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
 				// image is not created
@@ -823,11 +824,11 @@ var _ = Describe("Image Service Test", func() {
 						Name: "vim-common",
 					},
 				}
-				image := models.Image{Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
+				image := models.Image{OrgID: orgID, Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
 				expectedErr := fmt.Errorf("value is not one of the allowed values")
 				imageBuilder := &imageBuilderClient.SearchPackageResult{}
 				mockImageBuilderClient.EXPECT().SearchPackage("vim-common", "x86_64", "").Return(imageBuilder, expectedErr)
-				err := service.CreateImage(&image, orgID, requestID)
+				err := service.CreateImage(&image)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal(expectedErr.Error()))
 				// image is not created

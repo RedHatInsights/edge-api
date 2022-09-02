@@ -41,6 +41,10 @@ config.yaml
 .DS_Store
 
 #sonarqube
+.bash_history
+.scannerwork/
+group
+passwd
 sonarqube/
 
 openapi.json

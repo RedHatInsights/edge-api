@@ -12,8 +12,7 @@ var _ = Describe("ConsumerService basic functions", func() {
 	Describe("creation of the service", func() {
 		port := 9092
 		config := &v1.KafkaConfig{Brokers: []v1.BrokerConfig{{Hostname: "localhost", Port: &port}}}
-		topics := []string{"platform.playbook-dispatcher.runs",
-			"platform.inventory.events", "platform.edge.fleetmgmt.image-build"}
+		topics := []string{"platform.playbook-dispatcher.runs", "platform.inventory.events"}
 		nonRealTopic := faker.DomainName()
 		Context("returns a correct instance", func() {
 			for _, topic := range topics {
