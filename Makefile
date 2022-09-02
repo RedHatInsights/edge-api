@@ -23,8 +23,6 @@ EXCLUDE_DIRS=-e /test/ -e /cmd/db -e /cmd/kafka -e /config -e /pkg/clients/image
 
 CONTAINERFILE_NAME=Dockerfile
 
-GOLINT=$(shell go list -f '{{.Target}}' golang.org/x/lint/golint)
-
 .PHONY: all bonfire-config-local bonfire-config-github build-containers \
 		build-edge-api-container coverage coverage-html coverage-no-fdo \
 		create-ns deploy-app deploy-env fmt generate-docs help lint pre-commit \
@@ -100,7 +98,7 @@ help:
 	@echo "fmt                       Runs 'go fmt' on the project"
 	@echo "generate-docs             Creates OpenAPI specification for the project"
 	@echo "help                      Show this message"
-	@echo "lint                      Runs 'golint' on the project"
+	@echo "lint                      Runs 'golangci-lint' on the project"
 	@echo "pre-commit                Runs fmt, vet, lint, and clean on the project"
 	@echo "restart-app				 Scales the edge-api-service deployment down to 0 then up to 1 in the given namespace"
 	@echo "                            @param NAMESPACE - (optional) the namespace to use"
@@ -117,9 +115,7 @@ help:
 	@echo ""
 
 lint:
-	ls -laR /home/runner/go
-	ls -la $(GOLINT)
-	$(GOLINT) $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
+	golangci-lint run --out-format=github-actions --version --verbose $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
 
 pre-commit:
 	$(MAKE) fmt
