@@ -595,16 +595,25 @@ func (s *ImageService) CreateRepoForImage(i *models.Image) (*models.Repo, error)
 func (s *ImageService) SetErrorStatusOnImage(err error, image *models.Image) {
 	if image.Status != models.ImageStatusError {
 		image.Status = models.ImageStatusError
-		s.setImageStatus(image, models.ImageStatusError)
+		err := s.setImageStatus(image, models.ImageStatusError)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Error setting image status")
+		}
 
 		if image.Commit != nil {
 			image.Commit.Status = models.ImageStatusError
-			s.setCommitStatus(image, models.ImageStatusError)
+			err = s.setCommitStatus(image, models.ImageStatusError)
+			if err != nil {
+				s.log.WithField("error", err.Error()).Error("Error setting image commit status")
+			}
 		}
 
 		if image.Installer != nil {
 			image.Installer.Status = models.ImageStatusError
-			s.setInstallerStatus(image, models.ImageStatusError)
+			err = s.setInstallerStatus(image, models.ImageStatusError)
+			if err != nil {
+				s.log.WithField("error", err.Error()).Error("Error setting installer status")
+			}
 		}
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error setting image final status")

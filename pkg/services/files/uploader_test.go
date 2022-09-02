@@ -64,7 +64,10 @@ var _ = Describe("Uploader Test", func() {
 					log.Fatal(err)
 				}
 				defer f.Close()
-				os.Create(path)
+				err = os.Create(path)
+				if err != nul {
+					Expect(err).To(BeNil())
+				}
 			})
 			AfterEach(func() {
 				os.Remove(path)

@@ -1061,7 +1061,10 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 						Type: InventoryEventTypeCreated,
 						Host: iHost,
 					}
-					s.platformInventoryCreateEventHelper(createEvent)
+					err := s.platformInventoryCreateEventHelper(createEvent)
+					if err != nil {
+						s.log.WithField("event", createEvent).Error("Error running platformInventoryCreateEventHelper")
+					}
 				}
 			}
 		}

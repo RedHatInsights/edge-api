@@ -26,7 +26,11 @@ func setUp() {
 	dbName = fmt.Sprintf("%d-routes-common.db", time)
 	config.Get().Database.Name = dbName
 	db.InitDB()
-	db.DB.AutoMigrate(&models.Image{})
+	err := db.DB.AutoMigrate(&models.Image{})
+	if err != nil {
+		t.Fatalf("Failed to auto migrate database: %s", err)
+	}
+
 	images := []models.Image{
 		{
 			Name:         "Motion Sensor 1",

@@ -115,7 +115,12 @@ help:
 	@echo ""
 
 lint:
-	golangci-lint run --out-format=github-actions --version --verbose $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
+	if [ "$(GITHUB_ACTION)" != '' ]; \
+	then \
+		golangci-lint run --out-format=github-actions $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/); \
+	else \
+		golangci-lint run --verbose ./...; \
+	fi
 
 pre-commit:
 	$(MAKE) fmt
