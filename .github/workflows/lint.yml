@@ -35,7 +35,11 @@ jobs:
           [ $(go fmt ./... | wc -l) -eq 0 ]
 
       - name: Get dependencies
-        run: go get -u golang.org/x/lint/golint
+        run: |
+          go get -u golang.org/x/lint/golint
+          echo "Go binary = '${GOBIN}'"
+          echo "Go path = '${GOPATH}'"
+          ls ${GOBIN} | grep golint
 
       - name: Lint
         run: |
