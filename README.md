@@ -11,7 +11,7 @@
 ## Getting Started
 
 The **edge-api** project is an API server for fleet edge management capabilities. The API server will provide [Restful web services](https://www.redhat.com/en/topics/api/what-is-a-rest-api).
-This is a [Golang](https://golang.org/) project developed using Golang 1.16. *Make sure you have at least this version installed.*
+This is a [Golang](https://golang.org/) project developed using Golang 1.18. *Make sure you have at least this version installed.*
 
 ### Project Architecture
 
@@ -254,7 +254,7 @@ Please note that you can use either podman or docker for the example below
      docs
      ```bash
      localhost:3000/docs
-     ```    
+     ```
 ### Setup with Kubernetes
 
 Following the information above you should have Docker or Podman, a minikube cluster running with Clowder installed, and a Python environment with `bonfire` installed. Now move on to running the `edge-api` application.
