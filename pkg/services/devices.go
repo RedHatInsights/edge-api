@@ -684,7 +684,9 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
 		return nil, res.Error
 	}
+	s.log.WithFields(log.Fields{"edge_count": total, "insights_count": inventoryDevices.Total}).Debug("Comparing edge and insights inventory counts")
 	if int64(inventoryDevices.Total) != total {
+		s.log.WithFields(log.Fields{"edge_count": total, "insights_count": inventoryDevices.Total}).Debug("Inventory counts do not match. Calling syncDevicesWithInventory")
 		go s.syncDevicesWithInventory(orgID)
 	}
 
@@ -928,6 +930,7 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 }
 
 func (s *DeviceService) syncDevicesWithInventory(orgID string) {
+	s.log.Debug("Syncing edge and insights inventories")
 	// use stored devices to check inventory in chunks and see if we have any stale devices.
 	// Delete devices in Edge Inventory that are not in Insights Inventory
 	var params *inventory.Params
@@ -943,7 +946,10 @@ func (s *DeviceService) syncDevicesWithInventory(orgID string) {
 
 	s.log.WithField("edge_count", total).Debug("Edge inventory device count")
 
+	var insightsCount int
+	var edgeCount int
 	for int64(offset) < total {
+		s.log.WithFields(log.Fields{"offset": int64(offset), "total": total}).Debug("Comparing offset to total")
 		if res := db.Org(orgID, "").Limit(limit).Offset(offset).Find(&searchDevices); res.Error != nil {
 			s.log.WithField("error", res.Error.Error()).Error("Error getting devices in device sync")
 			return
@@ -957,8 +963,12 @@ func (s *DeviceService) syncDevicesWithInventory(orgID string) {
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error getting device data from inventory in device sync")
 		}
-		if response.Count != len(searchDevices) {
-			s.log.WithFields(log.Fields{"edge_count": len(searchDevices), "insights_count": response.Count}).Debug("Inventory counts do not match")
+
+		edgeCount = len(searchDevices)
+		insightsCount = response.Count
+		s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount}).Debug("Comparing inventory counts before delete list compilation")
+		if edgeCount > insightsCount {
+			s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount}).Debug("Inventory counts do not match")
 			type void struct{}
 			var nothing void
 			// discover which devices need to be deleted
@@ -977,18 +987,22 @@ func (s *DeviceService) syncDevicesWithInventory(orgID string) {
 	}
 
 	// Delete invalid devices
-	for _, device := range devicesToBeDeleted {
-		s.log.WithFields(
-			log.Fields{"host_id": device.UUID, "OrgID": device.OrgID},
-		).Debug("Deleting device")
+	s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount}).Debug("Comparing inventory counts before device deletion")
+	if edgeCount > insightsCount {
+		s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount}).Debug("Inventory counts do not match. Going through delete list")
 
-		if result := db.DB.Debug().Delete(&device); result.Error != nil {
+		for _, device := range devicesToBeDeleted {
 			s.log.WithFields(
-				log.Fields{"host_id": device.UUID, "OrgID": device.OrgID, "error": result.Error},
-			).Error("Error when deleting device in device sync")
+				log.Fields{"host_id": device.UUID, "OrgID": device.OrgID},
+			).Debug("Deleting device")
+
+			if result := db.DB.Debug().Delete(&device); result.Error != nil {
+				s.log.WithFields(
+					log.Fields{"host_id": device.UUID, "OrgID": device.OrgID, "error": result.Error},
+				).Error("Error when deleting device in device sync")
+			}
 		}
 	}
-
 	// Get the count of our db and from inventory and compare them
 	// If they are the same, sync is done
 	// If not, we have missed some "create" events from inventory, we need to discover and add these devices to our DB
@@ -1018,6 +1032,9 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 	page := 1
 	params.Page = strconv.Itoa(page)
 	searchInventory := true
+
+	var insightsCount int
+	var edgeCount int
 	for searchInventory {
 		inventoryDevices, err := s.Inventory.ReturnDevices(&params)
 		if err != nil {
@@ -1035,7 +1052,11 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 		}
 
 		// check to see that all requested inventory devices are in the db
-		if len(dbDevices) != len(inventoryDevices.Result) {
+		edgeCount = len(dbDevices)
+		insightsCount = len(inventoryDevices.Result)
+		s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount}).Debug("Comparing inventory counts before device add loop")
+
+		if edgeCount < insightsCount {
 			s.log.WithFields(log.Fields{"edge_count": len(dbDevices), "insights_count": len(inventoryDevices.Result)}).Debug("Inventory counts do not match")
 
 			// discover which inventory device is missing and add it.
