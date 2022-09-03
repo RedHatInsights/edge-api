@@ -668,11 +668,9 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	// search for all stored devices that are also in inventory
 	if res := db.OrgDB(orgID, tx, "").Limit(limit).Offset(offset).
 		Preload("UpdateTransaction", func(db *gorm.DB) *gorm.DB {
-			return db.Order("update_transactions.created_at DESC").Limit(1)
+			return db.Order("update_transactions.created_at DESC")
 		}).
-		Preload("UpdateTransaction.DispatchRecords", func(db *gorm.DB) *gorm.DB {
-			return db.Order("dispatch_records.created_at DESC").Limit(1)
-		}).
+		Preload("UpdateTransaction.DispatchRecords").
 		Preload("DevicesGroups").Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
 	}

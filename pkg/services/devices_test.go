@@ -1023,35 +1023,137 @@ var _ = Describe("DfseviceService", func() {
 				result = db.DB.Create(imageV1)
 				Expect(result.Error).ToNot(HaveOccurred())
 
-				deviceWithImage := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
-
-				result = db.DB.Create(&deviceWithImage)
+				deviceUnresponsive := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
+				result = db.DB.Create(&deviceUnresponsive)
 				Expect(result.Error).To(BeNil())
+
+				deviceSuccess := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
+				result = db.DB.Create(&deviceSuccess)
+				Expect(result.Error).To(BeNil())
+
+				deviceErrorFailure := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
+				result = db.DB.Create(&deviceErrorFailure)
+				Expect(result.Error).To(BeNil())
+
+				deviceErrorTimeout := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
+				result = db.DB.Create(&deviceErrorTimeout)
+				Expect(result.Error).To(BeNil())
+
+				deviceBuilding := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
+				result = db.DB.Create(&deviceBuilding)
+				Expect(result.Error).To(BeNil())
+
+				deviceRunning := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
+				result = db.DB.Create(&deviceRunning)
+				Expect(result.Error).To(BeNil())
+
 				dispatchRecord := &models.DispatchRecord{
 					PlaybookDispatcherID: faker.UUIDHyphenated(),
-					Status:               models.DispatchRecordStatusComplete,
-					DeviceID:             deviceWithImage.ID,
+					Status:               models.DispatchRecordStatusError,
+					DeviceID:             deviceUnresponsive.ID,
 				}
 				db.DB.Create(dispatchRecord)
 
 				update := models.UpdateTransaction{
 					DispatchRecords: []models.DispatchRecord{*dispatchRecord},
 					Devices: []models.Device{
-						deviceWithImage,
+						deviceUnresponsive,
+					},
+					OrgID:  orgID,
+					Status: models.UpdateStatusDeviceDisconnected,
+				}
+				db.DB.Create(&update)
+
+				dispatchRecord2 := &models.DispatchRecord{
+					PlaybookDispatcherID: faker.UUIDHyphenated(),
+					Status:               models.DispatchRecordStatusComplete,
+					DeviceID:             deviceSuccess.ID,
+				}
+				db.DB.Create(dispatchRecord2)
+
+				dispatchRecord3 := &models.DispatchRecord{
+					PlaybookDispatcherID: faker.UUIDHyphenated(),
+					Status:               models.DispatchRecordStatusError,
+					Reason:               models.UpdateReasonFailure,
+					DeviceID:             deviceErrorFailure.ID,
+				}
+				db.DB.Create(dispatchRecord3)
+
+				update2 := models.UpdateTransaction{
+					DispatchRecords: []models.DispatchRecord{*dispatchRecord2, *dispatchRecord3},
+					Devices: []models.Device{
+						deviceSuccess,
+						deviceErrorFailure,
 					},
 					OrgID:  orgID,
 					Status: models.UpdateStatusSuccess,
 				}
-				db.DB.Create(&update)
+				db.DB.Create(&update2)
 
-				invDevice := inventory.Device{
-					ID:    deviceWithImage.UUID,
-					OrgID: orgID,
+				dispatchRecord4 := &models.DispatchRecord{
+					PlaybookDispatcherID: faker.UUIDHyphenated(),
+					Status:               models.DispatchRecordStatusRunning,
+					DeviceID:             deviceBuilding.ID,
 				}
-				invResult := []inventory.Device{invDevice}
+				db.DB.Create(dispatchRecord4)
+
+				update4 := models.UpdateTransaction{
+					DispatchRecords: []models.DispatchRecord{*dispatchRecord4},
+					Devices: []models.Device{
+						deviceBuilding,
+					},
+					OrgID:  orgID,
+					Status: models.UpdateStatusBuilding,
+				}
+				db.DB.Create(&update4)
+
+				dispatchRecord5 := &models.DispatchRecord{
+					PlaybookDispatcherID: faker.UUIDHyphenated(),
+					Status:               models.DispatchRecordStatusError,
+					Reason:               models.UpdateReasonTimeout,
+					DeviceID:             deviceErrorTimeout.ID,
+				}
+				db.DB.Create(dispatchRecord5)
+
+				update5 := models.UpdateTransaction{
+					DispatchRecords: []models.DispatchRecord{*dispatchRecord5},
+					Devices: []models.Device{
+						deviceErrorTimeout,
+					},
+					OrgID:  orgID,
+					Status: models.UpdateStatusError,
+				}
+				db.DB.Create(&update5)
+
+				invResult := []inventory.Device{
+					{
+						ID:    deviceUnresponsive.UUID,
+						OrgID: orgID,
+					},
+					{
+						ID:    deviceSuccess.UUID,
+						OrgID: orgID,
+					},
+					{
+						ID:    deviceErrorFailure.UUID,
+						OrgID: orgID,
+					},
+					{
+						ID:    deviceErrorTimeout.UUID,
+						OrgID: orgID,
+					},
+					{
+						ID:    deviceBuilding.UUID,
+						OrgID: orgID,
+					},
+					{
+						ID:    deviceRunning.UUID,
+						OrgID: orgID,
+					},
+				}
 				resp := inventory.Response{
-					Total:  1,
-					Count:  1,
+					Total:  6,
+					Count:  6,
 					Result: invResult,
 				}
 				// calls to inventory are now in go routines.
@@ -1074,15 +1176,37 @@ var _ = Describe("DfseviceService", func() {
 					Inventory: mockInventoryClient,
 				}
 
-				dbFilter := db.DB.Model(models.Device{}).Where("id = ?", deviceWithImage.ID)
+				dbFilter := db.DB.Model(models.Device{}).Where("devices.image_id = ?", imageV1.ID).Order("devices.created_at ASC")
 				devices, err := deviceService.GetDevicesView(0, 0, dbFilter)
 				wg.Wait()
 				wg2.Wait()
 				Expect(err).To(BeNil())
 				Expect(devices).ToNot(BeNil())
-				Expect(len(devices.Devices)).To(Equal(1))
-				Expect(devices.Devices[0].DispatcherStatus).To(Equal(models.UpdateStatusSuccess))
+				Expect(len(devices.Devices)).To(Equal(6))
+
+				Expect(devices.Devices[0].DispatcherStatus).To(Equal(models.UpdateStatusDeviceUnresponsive))
+				Expect(devices.Devices[0].Status).To(Equal(models.DeviceViewStatusRunning))
 				Expect(devices.Devices[0].DispatcherReason).To(BeEmpty())
+
+				Expect(devices.Devices[1].DispatcherStatus).To(Equal(models.UpdateStatusSuccess))
+				Expect(devices.Devices[1].Status).To(Equal(models.DeviceViewStatusRunning))
+				Expect(devices.Devices[1].DispatcherReason).To(BeEmpty())
+
+				Expect(devices.Devices[2].DispatcherStatus).To(Equal(models.DispatchRecordStatusError))
+				Expect(devices.Devices[2].Status).To(Equal(models.DeviceViewStatusRunning))
+				Expect(devices.Devices[2].DispatcherReason).To(Equal(models.UpdateReasonFailure))
+
+				Expect(devices.Devices[3].DispatcherStatus).To(Equal(models.DispatchRecordStatusError))
+				Expect(devices.Devices[3].Status).To(Equal(models.DeviceViewStatusRunning))
+				Expect(devices.Devices[3].DispatcherReason).To(Equal(models.UpdateReasonTimeout))
+
+				Expect(devices.Devices[4].DispatcherStatus).To(Equal(models.DispatchRecordStatusRunning))
+				Expect(devices.Devices[4].Status).To(Equal(models.DeviceViewStatusUpdating))
+				Expect(devices.Devices[4].DispatcherReason).To(BeEmpty())
+
+				Expect(devices.Devices[5].DispatcherStatus).To(BeEmpty())
+				Expect(devices.Devices[5].Status).To(Equal(models.DeviceViewStatusRunning))
+				Expect(devices.Devices[5].DispatcherReason).To(BeEmpty())
 			})
 
 			It("should sync devices with inventory", func() {
