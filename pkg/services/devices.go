@@ -59,9 +59,9 @@ type RpmOSTreeDeployment struct {
 
 // PlatformInsightsCreateUpdateEventPayload is the body of the create event found on the platform.inventory.events kafka topic.
 type PlatformInsightsCreateUpdateEventPayload struct {
-	Type   string  `json:"type"`
-	Host   host    `json:"host"`
-	Source *string `json:"source,omitempty"`
+	Type   string `json:"type"`
+	Host   host   `json:"host"`
+	Source string `json:"source,omitempty"`
 }
 
 type systemProfile struct {
@@ -870,14 +870,9 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 }
 
 func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCreateUpdateEventPayload) error {
-	if e.Source == nil {
-		source := "inventory"
-		e.Source = &source
-	}
 	s.log.WithFields(log.Fields{
 		"host_id": string(e.Host.ID),
 		"name":    string(e.Host.Name),
-		"source":  string(*e.Source),
 	}).Debug("Saving newly created edge device")
 	var newDevice = models.Device{
 		UUID:        e.Host.ID,
@@ -886,7 +881,7 @@ func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCre
 		Name:        e.Host.Name,
 		LastSeen:    e.Host.Updated,
 	}
-	result := db.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
+	result := db.DB.Debug().Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
 	if result.Error != nil {
 		s.log.WithFields(log.Fields{
 			"host_id": string(e.Host.ID),
@@ -1068,11 +1063,10 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 						Updated:       models.EdgeAPITime{Time: time.Now(), Valid: true},
 						SystemProfile: profile,
 					}
-					source := "edge-api"
 					createEvent := PlatformInsightsCreateUpdateEventPayload{
 						Type:   InventoryEventTypeCreated,
 						Host:   iHost,
-						Source: &source,
+						Source: "edge-api syncInventoryWithDevices()",
 					}
 					s.platformInventoryCreateEventHelper(createEvent)
 				}
