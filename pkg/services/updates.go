@@ -331,7 +331,7 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, orgID str
 	return playbookURL, nil
 }
 
-// GetUpdateTransactionsForDevice returns the latest update transaction for a given device
+// GetUpdateTransactionsForDevice returns all update transactions for a given device
 func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error) {
 	var updates []models.UpdateTransaction
 	result := db.DB.
