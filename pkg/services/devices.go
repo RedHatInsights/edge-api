@@ -12,6 +12,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -672,22 +673,24 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	}
 
 	// Check inventory to see if you return the same number of devices, else, sync with inventory in a routine
-	var params *inventory.Params
-	inventoryDevices, err := s.Inventory.ReturnDevices(params)
-	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Error retrieving devices from inventory")
-		return nil, err
-	}
+	if feature.DeviceSync.IsEnabled() {
+		var params *inventory.Params
+		inventoryDevices, err := s.Inventory.ReturnDevices(params)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Error retrieving devices from inventory")
+			return nil, err
+		}
 
-	var total int64
-	if res := db.Org(orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
-		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
-		return nil, res.Error
-	}
-	s.log.WithFields(log.Fields{"edge_count": total, "insights_count": inventoryDevices.Total}).Debug("Comparing edge and insights inventory counts")
-	if int64(inventoryDevices.Total) != total {
-		s.log.WithFields(log.Fields{"edge_count": total, "insights_count": inventoryDevices.Total}).Debug("Inventory counts do not match. Calling syncDevicesWithInventory")
-		go s.syncDevicesWithInventory(orgID)
+		var total int64
+		if res := db.Org(orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
+			s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
+			return nil, res.Error
+		}
+		s.log.WithFields(log.Fields{"edge_count": total, "insights_count": inventoryDevices.Total}).Debug("Comparing edge and insights inventory counts")
+		if int64(inventoryDevices.Total) != total {
+			s.log.WithFields(log.Fields{"edge_count": total, "insights_count": inventoryDevices.Total}).Debug("Inventory counts do not match. Calling syncDevicesWithInventory")
+			go s.syncDevicesWithInventory(orgID)
+		}
 	}
 
 	returnDevices, err := ReturnDevicesView(storedDevices, orgID)
@@ -983,7 +986,6 @@ func (s *DeviceService) syncDevicesWithInventory(orgID string) {
 			}
 		}
 		offset += limit
-
 	}
 
 	// Delete invalid devices
@@ -992,18 +994,21 @@ func (s *DeviceService) syncDevicesWithInventory(orgID string) {
 	if edgeCount > insightsCount {
 		s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount}).Debug("Inventory counts do not match. Going through delete list")
 
-		for _, device := range devicesToBeDeleted {
-			s.log.WithFields(
-				log.Fields{"host_id": device.UUID, "OrgID": device.OrgID},
-			).Debug("Deleting device")
-
-			if result := db.DB.Debug().Delete(&device); result.Error != nil {
+		if feature.DeviceSyncDelete.IsEnabled() {
+			for _, device := range devicesToBeDeleted {
 				s.log.WithFields(
-					log.Fields{"host_id": device.UUID, "OrgID": device.OrgID, "error": result.Error},
-				).Error("Error when deleting device in device sync")
+					log.Fields{"host_id": device.UUID, "OrgID": device.OrgID},
+				).Debug("Deleting device")
+
+				if result := db.DB.Debug().Delete(&device); result.Error != nil {
+					s.log.WithFields(
+						log.Fields{"host_id": device.UUID, "OrgID": device.OrgID, "error": result.Error},
+					).Error("Error when deleting device in device sync")
+				}
 			}
 		}
 	}
+
 	// Get the count of our db and from inventory and compare them
 	// If they are the same, sync is done
 	// If not, we have missed some "create" events from inventory, we need to discover and add these devices to our DB
@@ -1101,8 +1106,10 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 						Host: iHost,
 					}
 
-					s.log.WithField("deviceUUID", inDevice.ID).Debug("Passing fake device event to be added")
-					s.platformInventoryCreateEventHelper(createEvent)
+					if feature.DeviceSyncCreate.IsEnabled() {
+						s.log.WithField("deviceUUID", inDevice.ID).Debug("Passing fake device event to be added")
+						s.platformInventoryCreateEventHelper(createEvent)
+					}
 				}
 			}
 		}
