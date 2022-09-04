@@ -3,7 +3,6 @@ package services_test
 import (
 	"context"
 	"fmt"
-
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -400,6 +399,53 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 				_, err := deviceGroupsService.DeleteDeviceGroupDevices(orgID, deviceGroupID, []models.Device{})
 				Expect(err).ToNot(BeNil())
 				Expect(err.Error()).To(Equal("devices must be supplied to be added to or removed from device group"))
+			})
+		})
+	})
+	Context("Create DeviceGroup with 2 Devices that has same Image", func() {
+		orgID := faker.UUIDHyphenated()
+		deviceGroupName := faker.Name()
+		commit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated(), ChangesRefs: true}
+		db.DB.Create(&commit)
+		imageSet1 := models.ImageSet{OrgID: orgID, Name: faker.Name(), Version: 3}
+		db.DB.Create(&imageSet1)
+		image := models.Image{Name: faker.Name(), OrgID: orgID, CommitID: commit.ID, ImageSetID: &imageSet1.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
+		db.DB.Create(&image)
+
+		devices := []models.Device{
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				OrgID:   orgID,
+				ImageID: image.ID,
+			},
+			{
+				Name:    faker.Name(),
+				UUID:    faker.UUIDHyphenated(),
+				OrgID:   orgID,
+				ImageID: image.ID,
+			},
+		}
+		db.DB.Create(&devices)
+		deviceGroup := models.DeviceGroup{
+			Name:    deviceGroupName,
+			OrgID:   orgID,
+			Type:    models.DeviceGroupTypeDefault,
+			Devices: devices,
+		}
+		When("Create DeviceGroup with 2 Devices that has same Image", func() {
+			It("check that image appear once under DeviceImageInfo", func() {
+				res := db.DB.Create(&deviceGroup)
+				Expect(res.Error).To(BeNil())
+				Expect(deviceGroup.ID).NotTo(Equal(0))
+				re, err := deviceGroupsService.GetDeviceGroups(orgID, 100, 0, db.DB)
+				Expect(err).To(BeNil())
+				Expect(re).ToNot(BeNil())
+				Expect(*re).ToNot(BeEmpty())
+				result := (*re)[0].DeviceImageInfo
+				Expect(result).ToNot(BeNil())
+				Expect(len(*result)).To(Equal(1))
+				Expect((*result)[0].Name).To(Equal(image.Name))
 			})
 		})
 	})
