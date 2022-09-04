@@ -937,35 +937,34 @@ func (s *DeviceService) syncDevicesWithInventory(orgID string) {
 	var total int64
 	limit := 100
 	offset := 0
-	var searchDevices, devicesToBeDeleted []models.Device
+	var edgeDevices, devicesToBeDeleted []models.Device
 
 	if res := db.Org(orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
 		return
 	}
 
-	s.log.WithField("edge_count", total).Debug("Edge inventory device count")
-
-	var insightsCount int
-	var edgeCount int
+	var insightsCount int64
+	var edgeCount int64
 	for int64(offset) < total {
 		s.log.WithFields(log.Fields{"offset": int64(offset), "total": total}).Debug("Comparing offset to total")
-		if res := db.Org(orgID, "").Limit(limit).Offset(offset).Find(&searchDevices); res.Error != nil {
+		if res := db.Org(orgID, "").Limit(limit).Offset(offset).Find(&edgeDevices); res.Error != nil {
 			s.log.WithField("error", res.Error.Error()).Error("Error getting devices in device sync")
 			return
 		}
 		deviceIDS := []string{}
-		for _, devices := range searchDevices {
+		for _, devices := range edgeDevices {
 			deviceIDS = append(deviceIDS, devices.UUID)
-			s.log.WithField("deviceUUID", devices.UUID).Debug("Appending device to searchDevices")
+			s.log.WithField("host_id", devices.UUID).Debug("Appending device to deviceIDS")
 		}
 		response, err := s.Inventory.ReturnDeviceListByID(deviceIDS)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error getting device data from inventory in device sync")
 		}
+		s.log.WithFields(log.Fields{"total": response.Total, "count": response.Count}).Debug("Received device list from Insights")
 
-		edgeCount = len(searchDevices)
-		insightsCount = response.Count
+		edgeCount = int64(len(edgeDevices))
+		insightsCount = int64(response.Count)
 		s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount}).Debug("Comparing inventory counts before delete list compilation")
 		if edgeCount > insightsCount {
 			s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount}).Debug("Inventory counts do not match")
@@ -976,10 +975,10 @@ func (s *DeviceService) syncDevicesWithInventory(orgID string) {
 			for _, invDevice := range response.Result {
 				inventoryDeviceSet[invDevice.ID] = nothing
 			}
-			for _, savedDevice := range searchDevices {
-				if _, exists := inventoryDeviceSet[savedDevice.UUID]; !exists {
-					devicesToBeDeleted = append(devicesToBeDeleted, savedDevice)
-					s.log.WithField("deviceUUID", savedDevice.UUID).Debug("Appending device to devicesToBeDeleted")
+			for _, edgeDevice := range edgeDevices {
+				if _, exists := inventoryDeviceSet[edgeDevice.UUID]; !exists {
+					devicesToBeDeleted = append(devicesToBeDeleted, edgeDevice)
+					s.log.WithField("host_id", edgeDevice.UUID).Debug("Appending device to devicesToBeDeleted")
 				}
 			}
 		}
@@ -1015,8 +1014,12 @@ func (s *DeviceService) syncDevicesWithInventory(orgID string) {
 		s.log.WithField("error", err.Error()).Error("Error retrieving devices from inventory for sync")
 		return
 	}
+
+	edgeCount = total
+	insightsCount = int64(inventoryResponse.Total)
+	s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount}).Debug("Comparing inventory counts before syncInventoryWithDevices()")
 	if int64(inventoryResponse.Total) != total {
-		s.log.WithField("orgID", orgID).Debug("Sync syncDevicesWithInventory complete but db and inventory still dont match, continuing sync")
+		s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount, "orgID": orgID}).Debug("Sync syncDevicesWithInventory complete but db and inventory still dont match, continuing sync")
 		s.syncInventoryWithDevices(orgID)
 	}
 	s.log.WithField("orgID", orgID).Debug("Sync syncDevicesWithInventory complete for orgID")
@@ -1033,8 +1036,8 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 	params.Page = strconv.Itoa(page)
 	searchInventory := true
 
-	var insightsCount int
-	var edgeCount int
+	var insightsCount int64
+	var edgeCount int64
 	for searchInventory {
 		inventoryDevices, err := s.Inventory.ReturnDevices(&params)
 		if err != nil {
@@ -1046,14 +1049,14 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 			inveDeviceIds = append(inveDeviceIds, inDevice.ID)
 		}
 		var dbDevices []models.Device
-		if res := db.Org(orgID, "").Where("UUID IN ?", inveDeviceIds).Find(&dbDevices); res.Error != nil {
+		if res := db.Org(orgID, "").Debug().Where("UUID IN ?", inveDeviceIds).Find(&dbDevices); res.Error != nil {
 			s.log.WithField("error", res.Error.Error()).Error("Error getting devices in device sync")
 			return
 		}
 
 		// check to see that all requested inventory devices are in the db
-		edgeCount = len(dbDevices)
-		insightsCount = len(inventoryDevices.Result)
+		edgeCount = int64(len(dbDevices))
+		insightsCount = int64(len(inventoryDevices.Result))
 		s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount}).Debug("Comparing inventory counts before device add loop")
 
 		if edgeCount < insightsCount {
@@ -1109,5 +1112,27 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 		page++
 		params.Page = strconv.Itoa(page)
 	}
-	s.log.WithField("sync", "Sync complete for orgID "+orgID)
+	s.log.WithField("orgID", orgID).Debug("Sync complete for orgID")
+
+	// Get the count of our db and from inventory and compare them
+	// If they are the same, sync is done
+	// If not, sync failed
+	var total int64
+	if res := db.Org(orgID, "").Debug().Model(&models.Device{}).Count(&total); res.Error != nil {
+		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
+		return
+	}
+	var params2 *inventory.Params
+	inventoryResponse, err := s.Inventory.ReturnDevices(params2)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error retrieving devices from inventory for sync")
+		return
+	}
+
+	edgeCount = total
+	insightsCount = int64(inventoryResponse.Total)
+	s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount}).Debug("Comparing inventory counts after sync")
+	if edgeCount != insightsCount {
+		s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount, "orgID": orgID}).Error("Sync failed. Inventory counts do not match")
+	}
 }
