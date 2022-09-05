@@ -21,6 +21,8 @@ type Flag struct {
 	EnvVar string
 }
 
+// IMAGE FEATURE FLAGS
+
 // ImageCreateEDA is the feature flag for routes.CreateImage() EDA code
 var ImageCreateEDA = &Flag{Name: "edge-management.image_create", EnvVar: "FEATURE_IMAGECREATE"}
 
@@ -38,6 +40,20 @@ var ImageCreateKickstartEDA = &Flag{Name: "", EnvVar: "FEATURE_IMAGECREATE_KICKS
 
 // ImageCreateRepoEDA is the feature flag for routes.CreateRepo() EDA code
 var ImageCreateRepoEDA = &Flag{Name: "", EnvVar: "FEATURE_IMAGECREATE_REPO"}
+
+// DEVICE FEATURE FLAGS
+
+// DeviceSync is the feature flag for routes.CreateImageUpdate() EDA code
+var DeviceSync = &Flag{Name: "edge-management.device_sync", EnvVar: "DEVICE_SYNC"}
+
+// DeviceSyncCreate is the feature flag for routes.CreateImageUpdate() EDA code
+var DeviceSyncCreate = &Flag{Name: "edge-management.device_sync_create", EnvVar: "DEVICE_SYNC_CREATE"}
+
+// DeviceSyncDelete is the feature flag for routes.CreateImageUpdate() EDA code
+var DeviceSyncDelete = &Flag{Name: "edge-management.device_sync_delete", EnvVar: "DEVICE_SYNC_DELETE"}
+
+// (ADD FEATURE FLAGS ABOVE)
+// FEATURE FLAG CHECK CODE
 
 // CheckFeature checks to see if a given feature is available
 func CheckFeature(feature string) bool {
