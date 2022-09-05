@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"gorm.io/gorm"
 	"io"
 	"net/http"
 	"os"
@@ -349,11 +350,14 @@ func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*
 	var updates []models.UpdateTransaction
 	result := db.DB.
 		Table("update_transactions").
+		Preload("DispatchRecords", func(db *gorm.DB) *gorm.DB {
+			return db.Where("dispatch_records.device_id = ?", device.ID)
+		}).
 		Joins(
 			`JOIN updatetransaction_devices ON update_transactions.id = updatetransaction_devices.update_transaction_id`).
 		Where(`updatetransaction_devices.device_id = ?`,
 			device.ID,
-		).Group("id").Order("id").Find(&updates)
+		).Group("id").Order("created_at").Limit(10).Find(&updates)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -368,7 +372,7 @@ const (
 	PlaybookStatusSuccess = "success"
 	// PlaybookStatusFailure is the status when a playbook execution fails
 	PlaybookStatusFailure = "failure"
-	// PlaybookStatusFailure is the status when a playbook execution times out
+	// PlaybookStatusTimeout is the status when a playbook execution times out
 	PlaybookStatusTimeout = "timeout"
 )
 
