@@ -125,15 +125,15 @@ func (s *DeviceService) GetDeviceByID(deviceID uint) (*models.Device, error) {
 
 // GetDeviceByUUID receives UUID string and get a *models.Device back
 func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, error) {
-	s.log = s.log.WithField("deviceUUID", deviceUUID)
-	s.log.Info("Get device by uuid")
+	ulog := s.log.WithField("deviceUUID", deviceUUID)
+	ulog.Info("Get device by uuid")
 	var device models.Device
 	if result := db.DB.Where("uuid = ?", deviceUUID).Preload("DevicesGroups").First(&device); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			s.log.WithField("error", result.Error.Error()).Error("device not found by UUID")
+			ulog.WithField("error", result.Error.Error()).Error("device not found by UUID")
 			return nil, new(DeviceNotFoundError)
 		}
-		s.log.WithField("error", result.Error.Error()).Error("unknown db error occurred when getting device by UUID")
+		ulog.WithField("error", result.Error.Error()).Error("unknown db error occurred when getting device by UUID")
 		return nil, result.Error
 	}
 
@@ -142,13 +142,13 @@ func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, erro
 
 // GetDeviceDetails provides details for a given Device by going to inventory API and trying to also merge with the information on our database
 func (s *DeviceService) GetDeviceDetails(device inventory.Device) (*models.DeviceDetails, error) {
-	s.log = s.log.WithField("deviceUUID", device.ID)
-	s.log.Info("Get device by uuid")
+	ulog := s.log.WithField("deviceUUID", device.ID)
+	ulog.Info("Get device details")
 
 	// Get device's running image
 	imageInfo, err := s.GetDeviceImageInfo(device)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Could not find information about the running image on the device")
+		ulog.WithField("error", err.Error()).Error("Could not find information about the running image on the device")
 		return nil, err
 	}
 	// Get device on Edge API, not on inventory
@@ -159,12 +159,12 @@ func (s *DeviceService) GetDeviceDetails(device inventory.Device) (*models.Devic
 	if databaseDevice != nil {
 		updates, err = s.UpdateService.GetUpdateTransactionsForDevice(databaseDevice)
 		if err != nil {
-			s.log.WithField("error", err.Error()).Error("Could not find information about updates for this device")
+			ulog.WithField("error", err.Error()).Error("Could not find information about updates for this device")
 			return nil, err
 		}
 	}
 	if err != nil {
-		s.log.Info("Could not find device on the devices table yet - returning just the data from inventory")
+		ulog.Info("Could not find device on the devices table yet - returning just the data from inventory")
 		// if err != nil then databaseDevice is nil pointer
 		databaseDevice = &models.Device{
 			UUID:        device.ID,
@@ -187,7 +187,7 @@ func (s *DeviceService) GetDeviceDetails(device inventory.Device) (*models.Devic
 
 // GetDeviceDetailsByUUID provides details for a given Device UUID by going to inventory API and trying to also merge with the information on our database
 func (s *DeviceService) GetDeviceDetailsByUUID(deviceUUID string) (*models.DeviceDetails, error) {
-	s.log = s.log.WithField("deviceUUID", deviceUUID)
+	//s.log = s.log.WithField("deviceUUID", deviceUUID)
 	resp, err := s.Inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || resp.Total != 1 {
 		return nil, new(DeviceNotFoundError)
@@ -197,7 +197,7 @@ func (s *DeviceService) GetDeviceDetailsByUUID(deviceUUID string) (*models.Devic
 
 // GetUpdateAvailableForDeviceByUUID returns if it exists an update for the current image at the device given its UUID.
 func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string, latest bool) ([]models.ImageUpdateAvailable, error) {
-	s.log = s.log.WithField("deviceUUID", deviceUUID)
+	//s.log = s.log.WithField("deviceUUID", deviceUUID)
 	resp, err := s.Inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || resp.Total != 1 {
 		return nil, new(DeviceNotFoundError)
@@ -316,7 +316,7 @@ func GetDiffOnUpdate(oldImg models.Image, newImg models.Image) models.PackageDif
 
 // GetDeviceImageInfoByUUID returns the information of a running image for a device given its UUID
 func (s *DeviceService) GetDeviceImageInfoByUUID(deviceUUID string) (*models.ImageInfo, error) {
-	s.log = s.log.WithField("deviceUUID", deviceUUID)
+	//s.log = s.log.WithField("deviceUUID", deviceUUID)
 	resp, err := s.Inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || resp.Total != 1 {
 		return nil, new(DeviceNotFoundError)
@@ -688,7 +688,9 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
 		return nil, res.Error
 	}
+	s.log.WithFields(log.Fields{"edge_count": total, "insights_count": inventoryDevices.Total}).Debug("Comparing edge and insights inventory counts")
 	if int64(inventoryDevices.Total) != total {
+		s.log.WithFields(log.Fields{"edge_count": total, "insights_count": inventoryDevices.Total}).Debug("Inventory counts do not match. Calling syncDevicesWithInventory")
 		go s.syncDevicesWithInventory(orgID)
 	}
 
@@ -885,6 +887,7 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 		}).Debug("Skipping message - it is not a create message")
 	} else {
 		if e.Type == InventoryEventTypeCreated && e.Host.SystemProfile.HostType == InventoryHostTypeEdge {
+			s.log.WithField("message", string(message)).Debug("Inventory create event message body")
 			return s.platformInventoryCreateEventHelper(*e)
 		}
 		s.log.Debug("Skipping message - not an edge create message from platform insights")
@@ -904,7 +907,7 @@ func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCre
 		Name:        e.Host.Name,
 		LastSeen:    e.Host.Updated,
 	}
-	result := db.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
+	result := db.DB.Debug().Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
 	if result.Error != nil {
 		s.log.WithFields(log.Fields{
 			"host_id": string(e.Host.ID),
@@ -952,32 +955,44 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 }
 
 func (s *DeviceService) syncDevicesWithInventory(orgID string) {
+	s.log.Debug("Syncing edge and insights inventories")
 	// use stored devices to check inventory in chunks and see if we have any stale devices.
+	// Delete devices in Edge Inventory that are not in Insights Inventory
 	var params *inventory.Params
 	var total int64
 	limit := 100
 	offset := 0
-	var searchDevices, devicesToBeDeleted []models.Device
+	var edgeDevices, devicesToBeDeleted []models.Device
 
 	if res := db.Org(orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
 		return
 	}
 
+	var insightsCount int64
+	var edgeCount int64
 	for int64(offset) < total {
-		if res := db.Org(orgID, "").Limit(limit).Offset(offset).Find(&searchDevices); res.Error != nil {
+		s.log.WithFields(log.Fields{"offset": int64(offset), "total": total}).Debug("Comparing offset to total")
+		if res := db.Org(orgID, "").Debug().Limit(limit).Offset(offset).Find(&edgeDevices); res.Error != nil {
 			s.log.WithField("error", res.Error.Error()).Error("Error getting devices in device sync")
 			return
 		}
 		deviceIDS := []string{}
-		for _, devices := range searchDevices {
+		for _, devices := range edgeDevices {
 			deviceIDS = append(deviceIDS, devices.UUID)
+			s.log.WithField("host_id", devices.UUID).Debug("Appending device to deviceIDS")
 		}
 		response, err := s.Inventory.ReturnDeviceListByID(deviceIDS)
 		if err != nil {
-			s.log.WithField("error", err.Error()).Error("Error getting device data from invenotry in device sync")
+			s.log.WithField("error", err.Error()).Error("Error getting device data from inventory in device sync")
 		}
-		if response.Count != len(searchDevices) {
+		s.log.WithFields(log.Fields{"total": response.Total, "count": response.Count}).Debug("Received device list from Insights")
+
+		edgeCount = int64(len(edgeDevices))
+		insightsCount = int64(response.Count)
+		s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount}).Debug("Comparing inventory counts before delete list compilation")
+		if edgeCount > insightsCount {
+			s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount}).Debug("Inventory counts do not match")
 			type void struct{}
 			var nothing void
 			// discover which devices need to be deleted
@@ -985,28 +1000,39 @@ func (s *DeviceService) syncDevicesWithInventory(orgID string) {
 			for _, invDevice := range response.Result {
 				inventoryDeviceSet[invDevice.ID] = nothing
 			}
-			for _, savedDevice := range searchDevices {
-				if _, exists := inventoryDeviceSet[savedDevice.UUID]; !exists {
-					devicesToBeDeleted = append(devicesToBeDeleted, savedDevice)
+			for _, edgeDevice := range edgeDevices {
+				if _, exists := inventoryDeviceSet[edgeDevice.UUID]; !exists {
+					devicesToBeDeleted = append(devicesToBeDeleted, edgeDevice)
+					s.log.WithField("host_id", edgeDevice.UUID).Debug("Appending device to devicesToBeDeleted")
 				}
 			}
 		}
 		offset += limit
+
 	}
 
 	// Delete invalid devices
-	for _, device := range devicesToBeDeleted {
-		if result := db.DB.Delete(&device); result.Error != nil {
+	s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount, "devicesToBeDeleted size": len(devicesToBeDeleted)}).Debug("Comparing inventory counts before device deletion")
+
+	if edgeCount > insightsCount {
+		s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount}).Debug("Inventory counts do not match. Going through delete list")
+
+		for _, device := range devicesToBeDeleted {
 			s.log.WithFields(
-				log.Fields{"host_id": device.UUID, "OrgID": device.OrgID, "error": result.Error},
-			).Error("Error when deleting device in device sync")
+				log.Fields{"host_id": device.UUID, "OrgID": device.OrgID},
+			).Debug("Deleting device")
+
+			if result := db.DB.Debug().Delete(&device); result.Error != nil {
+				s.log.WithFields(
+					log.Fields{"host_id": device.UUID, "OrgID": device.OrgID, "error": result.Error},
+				).Error("Error when deleting device in device sync")
+			}
 		}
 	}
-
 	// Get the count of our db and from inventory and compare them
 	// If they are the same, sync is done
 	// If not, we have missed some "create" events from inventory, we need to discover and add these devices to our DB
-	if res := db.Org(orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
+	if res := db.Org(orgID, "").Debug().Model(&models.Device{}).Count(&total); res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
 		return
 	}
@@ -1015,11 +1041,15 @@ func (s *DeviceService) syncDevicesWithInventory(orgID string) {
 		s.log.WithField("error", err.Error()).Error("Error retrieving devices from inventory for sync")
 		return
 	}
+
+	edgeCount = total
+	insightsCount = int64(inventoryResponse.Total)
+	s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount}).Debug("Comparing inventory counts before syncInventoryWithDevices()")
 	if int64(inventoryResponse.Total) != total {
-		s.log.WithField("sync", "Sync syncDevicesWithInventory complete but db and inventory still dont match, continuing sync")
+		s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount, "orgID": orgID}).Debug("Sync syncDevicesWithInventory complete but db and inventory still dont match, continuing sync")
 		s.syncInventoryWithDevices(orgID)
 	}
-	s.log.WithField("sync", "Sync syncDevicesWithInventory complete for orgID "+orgID)
+	s.log.WithField("orgID", orgID).Debug("Sync syncDevicesWithInventory complete for orgID")
 }
 
 func (s *DeviceService) syncInventoryWithDevices(orgID string) {
@@ -1032,6 +1062,9 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 	page := 1
 	params.Page = strconv.Itoa(page)
 	searchInventory := true
+
+	var insightsCount int64
+	var edgeCount int64
 	for searchInventory {
 		inventoryDevices, err := s.Inventory.ReturnDevices(&params)
 		if err != nil {
@@ -1043,13 +1076,19 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 			inveDeviceIds = append(inveDeviceIds, inDevice.ID)
 		}
 		var dbDevices []models.Device
-		if res := db.Org(orgID, "").Where("UUID IN ?", inveDeviceIds).Find(&dbDevices); res.Error != nil {
+		if res := db.Org(orgID, "").Debug().Where("UUID IN ?", inveDeviceIds).Find(&dbDevices); res.Error != nil {
 			s.log.WithField("error", res.Error.Error()).Error("Error getting devices in device sync")
 			return
 		}
 
 		// check to see that all requested inventory devices are in the db
-		if len(dbDevices) != len(inventoryDevices.Result) {
+		edgeCount = int64(len(dbDevices))
+		insightsCount = int64(len(inventoryDevices.Result))
+		s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount}).Debug("Comparing inventory counts before device add loop")
+
+		if edgeCount < insightsCount {
+			s.log.WithFields(log.Fields{"edge_count": len(dbDevices), "insights_count": len(inventoryDevices.Result)}).Debug("Inventory counts do not match")
+
 			// discover which inventory device is missing and add it.
 			// make a set of db sevices
 			type void struct{}
@@ -1086,6 +1125,8 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 						Type: InventoryEventTypeCreated,
 						Host: iHost,
 					}
+
+					s.log.WithField("deviceUUID", inDevice.ID).Debug("Passing fake device event to be added")
 					s.platformInventoryCreateEventHelper(createEvent)
 				}
 			}
@@ -1098,5 +1139,27 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 		page++
 		params.Page = strconv.Itoa(page)
 	}
-	s.log.WithField("sync", "Sync complete for orgID "+orgID)
+	s.log.WithField("orgID", orgID).Debug("Sync complete for orgID")
+
+	// Get the count of our db and from inventory and compare them
+	// If they are the same, sync is done
+	// If not, sync failed
+	var total int64
+	if res := db.Org(orgID, "").Debug().Model(&models.Device{}).Count(&total); res.Error != nil {
+		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
+		return
+	}
+	var params2 *inventory.Params
+	inventoryResponse, err := s.Inventory.ReturnDevices(params2)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error retrieving devices from inventory for sync")
+		return
+	}
+
+	edgeCount = total
+	insightsCount = int64(inventoryResponse.Total)
+	s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount}).Debug("Comparing inventory counts after sync")
+	if edgeCount != insightsCount {
+		s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount, "orgID": orgID}).Error("Sync failed. Inventory counts do not match")
+	}
 }

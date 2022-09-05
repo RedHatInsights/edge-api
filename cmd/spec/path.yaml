@@ -378,6 +378,11 @@ paths:
           description: 'field: return number of updates until limit is reached. Default is 30.'
           schema:
             type: integer
+        - name: offset
+          in: query
+          description: 'field: return updates beginning at the given offset.'
+          schema:
+            type: integer
       responses:
         "200":
           content:
@@ -1161,6 +1166,16 @@ paths:
           description: 'field: filter by update date'
           schema:
             type: string
+        - name: limit
+          in: query
+          description: 'field: return number of repositories until limit is reached.'
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          description: 'field: return number of repositories beginning at the offset.'
+          schema:
+            type: integer
       responses:
         "200":
           content:
@@ -1435,6 +1450,16 @@ paths:
            description: "field: filter by update date"
            schema:
              type: string
+         - name: limit
+           in: query
+           description: 'field: return number of groups until limit is reached.'
+           schema:
+             type: integer
+         - name: offset
+           in: query
+           description: 'field: return number of groups beginning at the offset.'
+           schema:
+             type: integer
        responses:
          "200":
            content:

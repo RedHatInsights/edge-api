@@ -264,3 +264,6 @@ type OstreeNotFound struct{}
 func (e *OstreeNotFound) Error() string {
 	return "Ostree not found"
 }
+
+// ErrOrgIDMismatch returned when the contexrt orgID is diffenrent from an entity OrgID
+var ErrOrgIDMismatch = errors.New("context org_id and entity org_id mismatch")
