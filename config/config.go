@@ -290,7 +290,8 @@ func Init() {
 
 	if config.KafkaConfig != nil {
 		config.KafkaBrokers = make([]clowder.BrokerConfig, len(config.KafkaConfig.Brokers))
-		for i, b := range config.KafkaConfig.Brokers {
+		for i, b := range config.KafkaConfig.Brokers { //nolint:gosimple
+			// TODO: fix this 1.18 issue
 			config.KafkaBrokers[i] = b
 		}
 	}

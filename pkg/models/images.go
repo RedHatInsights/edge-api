@@ -209,7 +209,8 @@ func (i *Image) GetPackagesList() *[]string {
 	l := len(requiredPackages)
 
 	pkgs := make([]string, len(i.Packages)+l)
-	for i, p := range requiredPackages {
+	for i, p := range requiredPackages { //nolint:gosimple
+		// TODO: fix this 1.18 issue
 		pkgs[i] = p
 	}
 	for i, p := range i.Packages {

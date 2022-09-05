@@ -362,7 +362,7 @@ var _ = Describe("Update routes", func() {
 				handler.ServeHTTP(rr, req)
 
 				var response common.APIResponse
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, err := ioutil.ReadAll(rr.Body) //nolint:ineffassign,staticcheck // TODO: fix this 1.18 issue
 				err = json.Unmarshal(respBody, &response)
 
 				Expect(rr.Code).To(Equal(http.StatusOK))

@@ -47,7 +47,8 @@ func Paginate(next http.Handler) http.Handler {
 		if val, ok := r.URL.Query()["limit"]; ok {
 			valInt, err := strconv.Atoi(val[0])
 			if err != nil {
-				errors.NewBadRequest(err.Error())
+				errors.NewBadRequest(err.Error()) //nolint:errcheck
+				// TODO: fix this 1.18 issue
 				return
 			}
 			pagination.Limit = valInt
@@ -55,7 +56,8 @@ func Paginate(next http.Handler) http.Handler {
 		if val, ok := r.URL.Query()["offset"]; ok {
 			valInt, err := strconv.Atoi(val[0])
 			if err != nil {
-				errors.NewBadRequest(err.Error())
+				errors.NewBadRequest(err.Error()) //nolint:errcheck
+				// TODO: fix this 1.18 issue
 				return
 			}
 			pagination.Offset = valInt

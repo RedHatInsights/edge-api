@@ -91,7 +91,7 @@ func main() {
 			select {
 			case sig := <-sigchan:
 				mslog.WithField("signal", sig).Debug("Caught signal and terminating")
-				time.Sleep(5)
+				time.Sleep(5) //nolint:revive,staticcheck // TODO: fix this 1.18 issue
 				run = false
 			default:
 				ev := c.Poll(100)

@@ -243,7 +243,8 @@ func (s *ImageSetsService) GetImageSetViewByID(imageSetID uint, imagesLimit int,
 		return nil, new(OrgIDNotSet)
 	}
 	if imagesDBFilter == nil {
-		imagesDBFilter = db.DB
+		imagesDBFilter = db.DB //nolint:ineffassign,revive,staticcheck
+		// TODO: fix this 1.18 issue
 	}
 
 	imageService := NewImageService(s.ctx, s.log)

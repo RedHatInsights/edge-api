@@ -361,12 +361,12 @@ var _ = Describe("UpdateService Basic functions", func() {
 			message, _ := json.Marshal(event)
 
 			It("should update status when record is found", func() {
-				updateService.ProcessPlaybookDispatcherRunEvent(message)
+				updateService.ProcessPlaybookDispatcherRunEvent(message) //nolint:errcheck // TODO: fix this 1.18 issue
 				db.DB.First(&d, d.ID)
 				Expect(d.Status).To(Equal(models.DispatchRecordStatusComplete))
 			})
 			It("should update status of the dispatch record", func() {
-				updateService.ProcessPlaybookDispatcherRunEvent(message)
+				updateService.ProcessPlaybookDispatcherRunEvent(message) //nolint:errcheck // TODO: fix this 1.18 issue
 				db.DB.First(&u, u.ID)
 				Expect(u.Status).To(Equal(models.UpdateStatusSuccess))
 			})
@@ -536,7 +536,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			}
 			db.DB.Create(u)
 			It("should keep update status", func() {
-				updateService.SetUpdateStatus(u)
+				updateService.SetUpdateStatus(u) //nolint:errcheck // TODO: fix this 1.18 issue
 				db.DB.First(&u, u.ID)
 				Expect(u.Status).To(Equal(models.UpdateStatusBuilding))
 			})
@@ -558,7 +558,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			}
 			db.DB.Create(u)
 			It("should set the update status as error", func() {
-				updateService.SetUpdateStatus(u)
+				updateService.SetUpdateStatus(u) //nolint:errcheck // TODO: fix this 1.18 issue
 				db.DB.First(&u, u.ID)
 				Expect(u.Status).To(Equal(models.UpdateStatusError))
 			})
@@ -580,7 +580,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			}
 			db.DB.Create(u)
 			It("should set the update status as error", func() {
-				updateService.SetUpdateStatus(u)
+				updateService.SetUpdateStatus(u) //nolint:errcheck // TODO: fix this 1.18 issue
 				db.DB.First(&u, u.ID)
 				Expect(u.Status).To(Equal(models.UpdateStatusSuccess))
 			})

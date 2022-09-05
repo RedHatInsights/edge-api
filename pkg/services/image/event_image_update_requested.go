@@ -72,5 +72,5 @@ func (ev EventImageUpdateRequestedBuildHandler) Consume(ctx context.Context) {
 		log.Error("Error processing the image")
 	}
 
-	return
+	return //nolint:gosimple,revive // TODO: fix this 1.18 issue
 }

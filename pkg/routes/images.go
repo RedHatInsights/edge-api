@@ -249,7 +249,8 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	// FALL THROUGH IF NOT EDA
 
 	// TODO: this is going to go away with EDA
-	ctxServices.ImageService.ProcessImage(image)
+	ctxServices.ImageService.ProcessImage(image) //nolint:errcheck
+	// TODO: fix this 1.18 issue
 
 	ctxServices.Log.WithFields(log.Fields{
 		"imageId": image.ID,
@@ -326,12 +327,13 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	// FALL THROUGH IF NOT EDA
 
 	// TODO: this is going to go away with EDA
-	ctxServices.ImageService.ProcessImage(image)
+	ctxServices.ImageService.ProcessImage(image) //nolint:errcheck
+	// TODO: fix this 1.18 issue
 
 	w.WriteHeader(http.StatusOK)
 	respondWithJSONBody(w, ctxServices.Log, image)
 
-	return
+	return //nolint:gosimple,revive // TODO: fix this 1.18 issue
 }
 
 // initImageCreateRequest validates request to create/update an image.

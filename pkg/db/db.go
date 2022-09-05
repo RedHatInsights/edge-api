@@ -90,7 +90,7 @@ func OrgDB(orgID string, gormDB *gorm.DB, table string) *gorm.DB {
 	if orgIDName == "" {
 		return nil
 	}
-	var sqlText string
+	var sqlText string //nolint:gosimple // TODO: fix this 1.18 issue
 
 	sqlText = fmt.Sprintf(
 		"(%s = ? )",

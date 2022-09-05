@@ -10,7 +10,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func readAccount(w http.ResponseWriter, r *http.Request, logEntry *log.Entry) string {
+func readAccount( //nolint:unused	// TODO: fix this 1.18 issue
+	w http.ResponseWriter,
+	r *http.Request,
+	logEntry *log.Entry) string {
 	account, err := common.GetAccount(r)
 	if err != nil {
 		logEntry.WithField("error", err.Error()).Error("Error retrieving account")

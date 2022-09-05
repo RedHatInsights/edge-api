@@ -227,7 +227,7 @@ func TestGetALLPackagesListWithCustomRepos(t *testing.T) {
 
 	allPackagesList := image.GetALLPackagesList()
 
-	if allPackagesList == nil {
+	if allPackagesList == nil { //nolint:staticcheck // TODO: fix this 1.18 issue
 		t.Errorf("error to load required expectedPackages")
 	}
 
@@ -243,7 +243,7 @@ func TestGetALLPackagesListWithCustomRepos(t *testing.T) {
 		customPackages[0].Name,
 		customPackages[1].Name,
 	}
-	if len(expectedPackages) != len(*allPackagesList) {
+	if len(expectedPackages) != len(*allPackagesList) { //nolint:staticcheck // TODO: fix this 1.18 issue
 		t.Errorf("Expected to have %d expectedPackages, but got %d", len(expectedPackages), len(*allPackagesList))
 	}
 
@@ -265,7 +265,7 @@ func TestGetALLPackagesListWithoutCustomRepos(t *testing.T) {
 
 	allPackagesList := image.GetALLPackagesList()
 
-	if allPackagesList == nil {
+	if allPackagesList == nil { //nolint:staticcheck // TODO: fix this 1.18 issue
 		t.Errorf("error to load required expectedPackages")
 	}
 
@@ -281,7 +281,7 @@ func TestGetALLPackagesListWithoutCustomRepos(t *testing.T) {
 		"wget",
 	}
 
-	if len(expectedPackages) != len(*allPackagesList) {
+	if len(expectedPackages) != len(*allPackagesList) { //nolint:staticcheck // TODO: fix this 1.18 issue
 		t.Errorf("Expected to have %d expectedPackages, but got %d", len(expectedPackages), len(*allPackagesList))
 	}
 

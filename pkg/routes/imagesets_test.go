@@ -442,7 +442,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(rr.Code).To(Equal(http.StatusOK))
 
 				var allImageSetsResponse AllImageSetsResponse
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, err := ioutil.ReadAll(rr.Body) //nolint:ineffassign,staticcheck // TODO: fix this 1.18 issue
 				err = json.Unmarshal(respBody, &allImageSetsResponse)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(len(allImageSetsResponse.Data) > 0).To(BeTrue())
@@ -478,7 +478,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				router.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(http.StatusOK))
 				var imageSetDetailsResponse ImageSetDetailsResponse
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, err := ioutil.ReadAll(rr.Body) //nolint:ineffassign,staticcheck // TODO: fix this 1.18 issue
 				err = json.Unmarshal(respBody, &imageSetDetailsResponse)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(imageSetDetailsResponse.Count).To(Equal(2))
@@ -577,7 +577,7 @@ var _ = Describe("ImageSets Route Test", func() {
 			Expect(rr.Code).To(Equal(http.StatusOK))
 
 			var imageSetsViewResponse ImageSetsViewResponse
-			respBody, err := ioutil.ReadAll(rr.Body)
+			respBody, err := ioutil.ReadAll(rr.Body) //nolint:ineffassign,staticcheck // TODO: fix this 1.18 issue
 			err = json.Unmarshal(respBody, &imageSetsViewResponse)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(imageSetsViewResponse.Count).To(Equal(2))

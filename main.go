@@ -144,11 +144,6 @@ func featureFlagsConfigPresent() bool {
 	return conf.FeatureFlagsURL != ""
 }
 
-func featureFlagsServiceUnleash() bool {
-	conf := config.Get()
-	return conf.FeatureFlagsService == "unleash"
-}
-
 func main() {
 	// this only catches interrupts for main
 	// see images for image build interrupt

@@ -86,7 +86,7 @@ func setUp() {
 
 	faker := mockUnleash.NewFakeUnleash()
 
-	unleash.Initialize(
+	unleash.Initialize( //nolint:errcheck // TODO: fix this 1.18 issue
 		unleash.WithListener(&unleash.DebugListener{}),
 		unleash.WithAppName("my-application"),
 		unleash.WithUrl(faker.URL()),

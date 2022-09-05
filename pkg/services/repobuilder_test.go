@@ -38,7 +38,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 				filePath := fmt.Sprintf("/tmp/tar_extract_test_%d", time.Now().Unix())
 				filePathExtraction := filepath.Join(filePath, filePath)
 
-				os.MkdirAll(filePathExtraction, 0755)
+				os.MkdirAll(filePathExtraction, 0755) //nolint:errcheck // TODO: fix this 1.18 issue
 				testFilePath, _ := createTestFile(filePath)
 				testTarFile = filepath.Join(filePath, testTarFile)
 				err := createTarball(testTarFile, testFilePath)
