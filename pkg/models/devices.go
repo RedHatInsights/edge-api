@@ -107,7 +107,7 @@ func (d *Device) BeforeCreate(tx *gorm.DB) error {
 	result := tx.First(&device, "UUID = ? ", d.UUID).Unscoped()
 	if result.RowsAffected > 0 {
 		log.Error("device already exists")
-		return ErrDeviceEsists
+		return ErrDeviceExists
 	}
 
 	return nil
