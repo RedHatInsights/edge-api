@@ -3,7 +3,7 @@ module github.com/redhatinsights/edge-api
 require (
 	github.com/RedHatInsights/tenant-utils v1.0.0
 	github.com/Unleash/unleash-client-go/v3 v3.7.0
-	github.com/aws/aws-sdk-go v1.44.90
+	github.com/aws/aws-sdk-go v1.44.91
 	github.com/bxcodec/faker/v3 v3.8.0
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/confluentinc/confluent-kafka-go v1.9.2
