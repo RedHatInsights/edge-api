@@ -264,3 +264,10 @@ type OstreeNotFound struct{}
 func (e *OstreeNotFound) Error() string {
 	return "Ostree not found"
 }
+
+// KafkaBrokerIssue indicates that the error has occured due to kafka broker issue
+type KafkaBrokerIssue struct{}
+
+func (e *KafkaBrokerIssue) Error() string {
+	return "uh oh, caught an error due to kafka broker issue"
+}

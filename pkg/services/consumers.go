@@ -85,9 +85,7 @@ func (s *KafkaConsumerService) initReader() *kafka.Consumer {
 // ConsumePlaybookDispatcherRuns is the method that consumes from the topic that gives us the execution of playbook from playbook dispatcher service
 func (s *KafkaConsumerService) ConsumePlaybookDispatcherRuns() error {
 	log.Info("Starting to consume playbook dispatcher's runs")
-	// Keep as much logic out of this is method as the Kafka Reader is not mockable for unit tests, as per
-	// https://github.com/segmentio/kafka-go/issues/794
-	// Most of the logic needs to be under the ProcessPlaybookDispatcherRunEvent service
+
 	run := true
 	for run {
 		cs := s.Reader.Poll(100)
@@ -118,7 +116,7 @@ func (s *KafkaConsumerService) ConsumePlaybookDispatcherRuns() error {
 			log.WithFields(log.Fields{"code": e.Code(), "error": e}).Error("Exiting ConsumePlaybookDispatcherRuns loop due to Kafka broker issue")
 			if e.Code() == kafka.ErrAllBrokersDown {
 				run = false
-				return errors.New("uh oh, caught an error due to kafka broker issue") // create an error in errors.go
+				return new(KafkaBrokerIssue)
 			}
 		default:
 			log.Debug("Event Ignored: ", e)
@@ -152,7 +150,6 @@ func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 			}
 
 			if eventType != InventoryEventTypeCreated && eventType != InventoryEventTypeUpdated && eventType != InventoryEventTypeDelete {
-				//log.Debug("Skipping kafka message - Insights Platform Inventory message is not a created and not an updated event type")
 				continue
 			}
 
