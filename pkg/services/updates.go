@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"gorm.io/gorm"
 	"io"
 	"net/http"
 	"os"
@@ -22,6 +23,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -184,15 +186,28 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		s.log.WithField("error", err.Error()).Error("Error writing playbook template")
 		return nil, err
 	}
+	// get the content identity
+	indent, err := common.GetIdentityFromContext(s.ctx)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error getting context RHidentity")
+	}
+	identity := indent.Identity
+	// ensure identity org_id is the same as the update transaction
+	if identity.OrgID != update.OrgID {
+		s.log.Error("context identity org_id and update transaction org_id mismatch")
+		return nil, ErrOrgIDMismatch
+	}
 	// 3. Loop through all devices in UpdateTransaction
 	dispatchRecords := update.DispatchRecords
 	for _, device := range update.Devices {
 		device := device // this will prevent implicit memory aliasing in the loop
 		// Create new &DispatcherPayload{}
 		payloadDispatcher := playbookdispatcher.DispatcherPayload{
-			Recipient:   device.RHCClientID,
-			PlaybookURL: playbookURL,
-			OrgID:       update.OrgID,
+			Recipient:    device.RHCClientID,
+			PlaybookURL:  playbookURL,
+			OrgID:        update.OrgID,
+			PlaybookName: "Edge-management",
+			Principal:    identity.User.Username,
 		}
 		s.log.Debug("Calling playbook dispatcher")
 		exc, err := s.PlaybookClient.ExecuteDispatcher(payloadDispatcher)
@@ -335,11 +350,14 @@ func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*
 	var updates []models.UpdateTransaction
 	result := db.DB.
 		Table("update_transactions").
+		Preload("DispatchRecords", func(db *gorm.DB) *gorm.DB {
+			return db.Where("dispatch_records.device_id = ?", device.ID)
+		}).
 		Joins(
 			`JOIN updatetransaction_devices ON update_transactions.id = updatetransaction_devices.update_transaction_id`).
 		Where(`updatetransaction_devices.device_id = ?`,
 			device.ID,
-		).Group("id").Order("id").Find(&updates)
+		).Group("id").Order("created_at").Limit(10).Find(&updates)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -354,7 +372,7 @@ const (
 	PlaybookStatusSuccess = "success"
 	// PlaybookStatusFailure is the status when a playbook execution fails
 	PlaybookStatusFailure = "failure"
-	// PlaybookStatusFailure is the status when a playbook execution times out
+	// PlaybookStatusTimeout is the status when a playbook execution times out
 	PlaybookStatusTimeout = "timeout"
 )
 

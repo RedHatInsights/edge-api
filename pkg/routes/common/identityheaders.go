@@ -9,10 +9,16 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
 
+const (
+	// DefaultUserName that will return on tests and on debug/local mode
+	DefaultUserName = "default"
+)
+
 // GetDefaultIdentity is a function to create the default identity struct. Structs can not be const in go
 func GetDefaultIdentity() identity.XRHID {
 	DefaultIdentity := identity.XRHID{}
 	DefaultIdentity.Identity.OrgID = DefaultOrgID
+	DefaultIdentity.Identity.User.Username = DefaultUserName
 	return DefaultIdentity
 }
 
