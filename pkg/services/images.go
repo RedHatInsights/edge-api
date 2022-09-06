@@ -371,47 +371,7 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 
 		// the Image Builder status has changed from BUILDING
 		if i.Installer.Status != models.ImageStatusBuilding {
-
-			// if clowder is enabled, send an event on Image Build completion
-			// TODO: break this out into its own function
-			if clowder.IsClowderEnabled() {
-				// get the list of brokers from the config
-				brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
-				for i, b := range clowder.LoadedConfig.Kafka.Brokers {
-					brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
-				}
-
-				topic := "platform.edge.fleetmgmt.image-build"
-
-				// Create Producer instance
-				p, err := kafka.NewProducer(&kafka.ConfigMap{
-					"bootstrap.servers": brokers[0]})
-				if err != nil {
-					s.log.WithField("error", err).Error("Failed to create producer")
-					os.Exit(1)
-				}
-
-				// assemble the message to be sent
-				// TODO: formalize message formats
-				recordKey := "postProcessInstaller"
-				recordValue, _ := json.Marshal(&image)
-				s.log.WithField("message", recordValue).Debug("Preparing record for producer")
-				perr := p.Produce(&kafka.Message{
-					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-					Key:            []byte(recordKey),
-					Value:          []byte(recordValue),
-				}, nil)
-				if perr != nil {
-					s.log.Error("Error sending message")
-				}
-
-				// Wait for all messages to be delivered
-				p.Flush(15 * 1000)
-				p.Close()
-
-				s.log.WithField("topic", topic).Debug("postProcessInstaller message was produced to topic")
-			}
-
+			// TODO: re-add an event producer to notify consumers of installer completion
 			break
 		}
 		time.Sleep(1 * time.Minute)
@@ -443,48 +403,7 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 			return err
 		}
 		if i.Commit.Status != models.ImageStatusBuilding {
-
-			// if clowder is enabled, send an event on Image Build completion
-			// TODO: break this out into its own function
-			if clowder.IsClowderEnabled() {
-				// get the list of brokers from the config
-				brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
-				for i, b := range clowder.LoadedConfig.Kafka.Brokers {
-					brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
-				}
-
-				topic := "platform.edge.fleetmgmt.image-build"
-
-				// Create Producer instance
-				p, err := kafka.NewProducer(&kafka.ConfigMap{
-					"bootstrap.servers": brokers[0]})
-				if err != nil {
-					s.log.WithField("error", err).Error("Failed to create producer")
-					os.Exit(1)
-				}
-
-				// assemble the message to be sent
-				// TODO: formalize message formats
-				recordKey := "postProcessCommit"
-				recordValue, _ := json.Marshal(&image)
-				s.log.WithField("message", recordValue).Debug("Preparing record for producer")
-				// send the message
-				perr := p.Produce(&kafka.Message{
-					TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-					Key:            []byte(recordKey),
-					Value:          []byte(recordValue),
-				}, nil)
-				if perr != nil {
-					s.log.Error("Error sending message")
-				}
-
-				// Wait for all messages to be delivered
-				p.Flush(15 * 1000)
-				p.Close()
-
-				s.log.WithField("topic", topic).Debug("postProcessCommit message was produced to topic")
-			}
-
+			// TODO: re-add an event producer to notify consumers of installer completion
 			break
 		}
 		time.Sleep(1 * time.Minute)
@@ -964,7 +883,7 @@ func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) er
 	s.log.WithField("checksum", image.Installer.Checksum).Info("Checksum calculated")
 	tx := db.DB.Save(&image.Installer)
 	if tx.Error != nil {
-		s.log.WithField("error", err.Error()).Error("Error saving installer")
+		s.log.WithField("error", tx.Error.Error()).Error("Error saving installer")
 		return tx.Error
 	}
 

@@ -397,13 +397,13 @@ func ValidateGetAllImagesSearchParams(next http.Handler) http.Handler {
 				errs = append(errs, validationError{Key: "created_at", Reason: err.Error()})
 			}
 		}
-		// "sort_by" validation for "status", "name", "distribution", "created_at"
+		// "sort_by" validation for "status", "name", "distribution", "created_at", "version"
 		if val := r.URL.Query().Get("sort_by"); val != "" {
 			name := val
 			if string(val[0]) == "-" {
 				name = val[1:]
 			}
-			if name != "status" && name != "name" && name != "distribution" && name != "created_at" {
+			if name != "status" && name != "name" && name != "distribution" && name != "created_at" && name != "version" {
 				errs = append(errs, validationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must be status or name or distribution or created_at", name)})
 			}
 		}

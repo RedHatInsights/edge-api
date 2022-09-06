@@ -65,6 +65,8 @@ const (
 	UpdateStatusSuccess = "SUCCESS"
 	// UpdateStatusDeviceDisconnected is for when a update is UpdateStatusDeviceDisconnected
 	UpdateStatusDeviceDisconnected = "DISCONNECTED"
+	// UpdateStatusDeviceUnresponsive is for when an update is UpdateStatusDeviceUnresponsive
+	UpdateStatusDeviceUnresponsive = "UNRESPONSIVE"
 )
 
 const (

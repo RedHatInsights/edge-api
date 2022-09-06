@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -53,8 +52,6 @@ func NewKafkaConsumerService(config *clowder.KafkaConfig, topic string) Consumer
 		s.consumer = s.ConsumePlaybookDispatcherRuns
 	case "platform.inventory.events":
 		s.consumer = s.ConsumePlatformInventoryEvents
-	case "platform.edge.fleetmgmt.image-build":
-		s.consumer = s.ConsumeImageBuildEvents
 	default:
 		log.WithField("topic", topic).Error("No consumer for topic")
 		return nil
@@ -174,48 +171,6 @@ func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 		}
 		if s.isShuttingDown() {
 			log.Info("Shutting down, exiting platform inventory events consumer")
-			return nil
-		}
-	}
-}
-
-// ConsumeImageBuildEvents parses create events from platform.edge.fleetmgmt.image-build kafka topic
-func (s *KafkaConsumerService) ConsumeImageBuildEvents() error {
-	type IBevent struct {
-		ImageID uint `json:"image_id"`
-	}
-
-	log.Info("Starting to consume image build events")
-	for {
-		m, err := s.Reader.ReadMessage(context.Background())
-		if err != nil {
-			log.WithFields(log.Fields{
-				"error": err.Error(),
-			}).Error("Error reading message from Kafka platform.edge.fleetmgmt.image-build topic")
-			return err
-		}
-
-		// temporarily logging all events from the topic
-		log.WithFields(log.Fields{
-			"topic":  m.Topic,
-			"offset": m.Offset,
-			"key":    string(m.Key),
-			"value":  string(m.Value),
-		}).Debug("Read message from Kafka platform.edge.fleetmgmt.image-build topic")
-
-		// retrieve the image ID from the message value
-		var eventMessage *IBevent
-
-		// currently only logging events while resume is handled via API
-		eventErr := json.Unmarshal([]byte(m.Value), &eventMessage)
-		if eventErr != nil {
-			log.WithField("error", eventErr).Debug("Error unmarshalling event. This is not the event you're looking for")
-		} else {
-			log.WithFields(log.Fields{"imageID": eventMessage.ImageID, "topic": m.Topic}).Debug("Resuming image ID from event")
-		}
-
-		if s.isShuttingDown() {
-			log.Info("Shutting down, exiting image build events consumer")
 			return nil
 		}
 	}
