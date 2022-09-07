@@ -1905,6 +1905,7 @@ paths:
           description: installer not found.
   /storage/update-repos/{updateTransactionID}/{repoFilePath}:
     get:
+      summary: Return the update transaction repository content located at repoFilePath from root repository
       operationId: GetDeviceRepoFile
       parameters:
         - in: cookie
@@ -1917,7 +1918,7 @@ paths:
         - name: updateTransactionID
           in: path
           required: true
-          description: Installer ID
+          description: Update Transaction ID
           schema:
             type: integer
             example: 120
@@ -1947,6 +1948,7 @@ paths:
           description: repository file not found.
   /storage/update-repos/{updateTransactionID}/content/{repoFilePath}:
     get:
+      summary: Redirect to signed URL of the update transaction repository content located at repoFilePath from root repository
       operationId: GetDeviceRepoFileContent
       parameters:
         - in: cookie
@@ -1959,7 +1961,7 @@ paths:
         - name: updateTransactionID
           in: path
           required: true
-          description: Installer ID
+          description: Update Transaction ID
           schema:
             type: integer
             example: 120

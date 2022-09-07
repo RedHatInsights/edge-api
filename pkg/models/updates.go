@@ -8,6 +8,9 @@ import (
 	"gorm.io/gorm"
 )
 
+// ErrUpdateTransactionEmptyUUID returned when trying to use an update transaction with uuid not initiated
+var ErrUpdateTransactionEmptyUUID = errors.New("error update transaction uuid is empty")
+
 // UpdateTransaction represents the combination of an OSTree commit and a set of Inventory
 // hosts that need to have the commit deployed to them
 // This will ultimately kick off a transaction where the old version(s) of

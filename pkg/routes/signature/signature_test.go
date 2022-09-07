@@ -140,8 +140,6 @@ var _ = Describe("Signature", func() {
 			var cookieValue string
 			updateTransaction := models.UpdateTransaction{
 				OrgID: orgID,
-				//Devices: []models.Device{},
-				//Repo:    &models.Repo{URL: "https://repo-storage.org/path/to/bucket", Status: models.ImageStatusSuccess},
 			}
 			db.DB.Create(&updateTransaction)
 
@@ -157,7 +155,7 @@ var _ = Describe("Signature", func() {
 				update := models.UpdateTransaction{OrgID: orgID, Status: models.ImageStatusSuccess}
 				_, err := signature.EncodeUpdateTransactionCookieValue(key, update, &signature.UpdateTransactionPayload{OrgID: orgID})
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(Equal(signature.ErrUpdateTransactionEmptyUUID))
+				Expect(err).To(Equal(models.ErrUpdateTransactionEmptyUUID))
 			})
 
 			It("should encode the update transaction cookie value successfully", func() {
