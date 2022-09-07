@@ -8,6 +8,8 @@ import (
 const (
 	// TopicFleetmgmtImageBuild topic name
 	TopicFleetmgmtImageBuild string = "platform.edge.fleetmgmt.image-build"
+	// TopicFleetmgmtImageISOBuild topic name
+	TopicFleetmgmtImageISOBuild string = "platform.edge.fleetmgmt.image-iso-build"
 )
 
 // TopicNotFoundError indicates the account was nil
