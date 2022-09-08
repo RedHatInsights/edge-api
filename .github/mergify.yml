@@ -112,7 +112,7 @@ pull_request_rules:
   # Detect when PR received review and remove label
   - name: remove waiting for review label if not needed
     conditions:
-      - "#commented-reviews-by>=1"
+      - "#commented-reviews-by>=2"
       - -draft
     actions:
       label:
