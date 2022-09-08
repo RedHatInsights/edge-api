@@ -21,12 +21,10 @@ var _ = Describe("Image Service Test", func() {
 	var service services.ImageService
 	var hash string
 	var mockImageBuilderClient *mock_imagebuilder.MockClientInterface
-	var mockImageService *mock_services.MockImageServiceInterface
 	var mockRepoService *mock_services.MockRepoServiceInterface
 	BeforeEach(func() {
 		ctrl := gomock.NewController(GinkgoT())
 		defer ctrl.Finish()
-		mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
 		mockImageBuilderClient = mock_imagebuilder.NewMockClientInterface(ctrl)
 		mockRepoService = mock_services.NewMockRepoServiceInterface(ctrl)
 		service = services.ImageService{
@@ -689,22 +687,23 @@ var _ = Describe("Image Service Test", func() {
 		})
 	})
 	Describe("update image stop when worker running job stopped responding", func() {
-		orgID := common.DefaultOrgID
-		//requestID := faker.UUIDHyphenated()
-		imageName := faker.UUIDHyphenated()
-		image := models.Image{OrgID: orgID, Distribution: "rhel-85", Name: imageName, Commit: &models.Commit{
-			Status: models.ImageStatusBuilding}}
+		orgID := faker.UUIDHyphenated()
+		imageSet := models.ImageSet{OrgID: orgID, Name: faker.UUIDHyphenated()}
+		result := db.DB.Create(&imageSet)
+		Expect(result.Error).To(BeNil())
+		commit := models.Commit{OrgID: orgID, Status: models.ImageStatusBuilding}
+		db.DB.Create(&commit)
+		image := models.Image{ImageSetID: &imageSet.ID, OrgID: orgID, CommitID: commit.ID, Commit: &commit}
+		re := db.DB.Create(&image)
+		Expect(re.Error).To(BeNil())
 		expectedErr := fmt.Errorf("running this job stopped responding")
 		When("When image-builder failed in GetComposeStatus when worker stopped responding", func() {
 			It("image is created with INTERRUPTED status", func() {
-				ctrl := gomock.NewController(GinkgoT())
-				defer ctrl.Finish()
-				mockImageService.EXPECT().UpdateImageStatus(&image).Return(&image, expectedErr)
 				mockImageBuilderClient.EXPECT().GetCommitStatus(&image).Return(&image, expectedErr)
 				_, err := service.UpdateImageStatus(&image)
+
 				Expect(err).To(HaveOccurred())
-				// image is not created
-				Expect(image.ID).To(Equal(uint(0)))
+				Expect(image.Status).To(Equal(models.ImageStatusInterrupted))
 			})
 		})
 	})
