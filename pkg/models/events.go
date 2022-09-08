@@ -142,6 +142,8 @@ const (
 	EventTypeEdgeImageRequested string = "com.redhat.console.edge.api.image.requested"
 	// EventTypeEdgeImageUpdateRequested indicates an image update has been requested
 	EventTypeEdgeImageUpdateRequested string = "com.redhat.console.edge.api.image.update.requested"
+	// EventTypeEdgeImageISORequested indicates an image update has been requested
+	EventTypeEdgeImageISORequested string = "com.redhat.console.edge.api.image.iso.requested"
 )
 
 // CRCCloudEvent is a standard event schema that wraps the Edge-specific "Data" payload
@@ -262,4 +264,10 @@ type EdgeImageRequestedEventPayload struct {
 type EdgeImageUpdateRequestedEventPayload struct {
 	EdgeBasePayload
 	NewImage Image `json:"new_image"`
+}
+
+// EdgeImageISORequestedEventPayload provides edge-specific data when an image iso is requested
+type EdgeImageISORequestedEventPayload struct {
+	EdgeBasePayload
+	ImageID uint `json:"image_id"`
 }
