@@ -272,6 +272,5 @@ func (e *KafkaBrokerIssue) Error() string {
 	return "uh oh, caught an error due to kafka broker issue"
 }
 
-// ErrOrgIDMismatch returned when the contexrt orgID is diffenrent from an entity OrgID
+// ErrOrgIDMismatch returned when the contexrt orgID is different from an entity OrgID
 var ErrOrgIDMismatch = errors.New("context org_id and entity org_id mismatch")
-
