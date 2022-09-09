@@ -213,6 +213,62 @@ objects:
           requests:
             cpu: 125m
             memory: 128Mi
+    - name: isos-build
+      minReplicas: 0
+      podSpec:
+        image: ${IMAGE}:${IMAGE_TAG}
+        command:
+        - /usr/bin/edge-api-isos-build
+        env:
+        - name: CLOWDER_ENABLED
+          value: ${CLOWDER_ENABLED}
+        - name: ENABLE_CLOUDWATCH_LOGGING
+          value: ${ENABLE_CLOUDWATCH_LOGGING}
+        - name: AUTH
+          value: ${ENABLE_RH_IDENTITY_PROCESSING}
+        - name: EDGETARBALLSBUCKET
+          value: ${EDGE_TARBALLS_BUCKET}
+        - name: OPENAPIFILEPATH
+          value: ${OPEN_API_FILEPATH}
+        - name: IMAGEBUILDERURL
+          value: ${IMAGEBUILDER_URL}
+        - name: INVENTORYURL
+          value: ${INVENTORYURL}
+        - name: PLAYBOOKDISPATCHERURL
+          value: ${PLAYBOOKDISPATCHERURL}
+        - name: FDO_HOST_URL
+          value: ${FDO_HOST_URL}
+        - name: FDO_API_VERSION
+          value: ${FDO_API_VERSION}
+        - name: PLAYBOOKDISPATCHERPSK
+          valueFrom:
+            secretKeyRef:
+              key: key
+              name: psk-playbook-dispatcher
+        - name: EDGEAPIBASEURL
+          value: ${EDGEAPIBASEURL}
+        - name: UPLOADWORKERS
+          value: ${UPLOADWORKERS}
+        - name: LOG_LEVEL
+          value: ${LOG_LEVEL}
+        - name: UNLEASH_URL
+          value: ${UNLEASH_URL}
+        - name: UNLEASH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: ${UNLEASH_SECRET_NAME}
+              key: CLIENT_ACCESS_TOKEN
+        - name: TENANT_TRANSLATOR_HOST
+          value: ${TENANT_TRANSLATOR_HOST}
+        - name: TENANT_TRANSLATOR_PORT
+          value: ${TENANT_TRANSLATOR_PORT}
+        resources:
+          limits:
+            cpu: 250m
+            memory: 2Gi
+          requests:
+            cpu: 125m
+            memory: 128Mi
     objectStore:
     - ${EDGE_TARBALLS_BUCKET}
     database:
