@@ -3,6 +3,7 @@ package services_test
 import (
 	"context"
 	"fmt"
+
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -435,7 +436,7 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 		}
 		When("Create DeviceGroup with 2 Devices that has same Image", func() {
 			It("check that image appear once under DeviceImageInfo", func() {
-				res := db.DB.Create(&deviceGroup)
+				res := db.DB.Omit("Devices.*").Create(&deviceGroup)
 				Expect(res.Error).To(BeNil())
 				Expect(deviceGroup.ID).NotTo(Equal(0))
 				re, err := deviceGroupsService.GetDeviceGroups(orgID, 100, 0, db.DB)

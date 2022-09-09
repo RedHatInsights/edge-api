@@ -76,7 +76,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					OrgID: org_id,
 				},
 			}
-			db.DB.Debug().Omit("Devices.*").Debug().Create(&updates[0])
+			db.DB.Debug().Omit("Devices.*").Create(&updates[0])
 			db.DB.Debug().Omit("Devices.*").Create(&updates[1])
 			db.DB.Debug().Omit("Devices.*").Create(&updates[2])
 
