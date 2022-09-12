@@ -97,7 +97,7 @@ func (c *Client) BuildURL(parameters *Params) string {
 	URL.Path += inventoryAPI
 	params := url.Values{}
 	params.Add("filter[system_profile][host_type]", "edge")
-	params.Add("fields[system_profile]", fmt.Sprintf("%s=%s", "fields[system_profile]", Fields))
+	params.Add("fields[system_profile]", fmt.Sprintf("%s", Fields))
 	if parameters != nil && parameters.PerPage != "" {
 		params.Add("per_page", parameters.PerPage)
 	}

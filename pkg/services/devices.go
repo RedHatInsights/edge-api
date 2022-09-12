@@ -754,10 +754,6 @@ func ReturnDevicesView(storedDevices []models.Device, orgID string) ([]models.De
 				"updateStatus": updateStatus,
 			}).Debug("Found update status for device")
 
-			if updateStatus == models.UpdateStatusBuilding {
-				deviceInfo.Status = models.DeviceViewStatusUpdating
-			}
-
 			if latestUpdateTransaction.DispatchRecords != nil && len(latestUpdateTransaction.DispatchRecords) > 0 {
 				for _, dispatcherRecord := range latestUpdateTransaction.DispatchRecords {
 					if dispatcherRecord.DeviceID == device.ID {
@@ -768,9 +764,13 @@ func ReturnDevicesView(storedDevices []models.Device, orgID string) ([]models.De
 				}
 				if deviceInfo.DispatcherStatus == models.DispatchRecordStatusComplete {
 					deviceInfo.DispatcherStatus = models.UpdateStatusSuccess
-				} else if updateStatus == models.UpdateStatusDeviceDisconnected {
-					deviceInfo.DispatcherStatus = models.UpdateStatusDeviceUnresponsive
 				}
+			}
+
+			if updateStatus == models.UpdateStatusBuilding {
+				deviceInfo.Status = models.DeviceViewStatusUpdating
+			} else if updateStatus == models.UpdateStatusDeviceDisconnected {
+				deviceInfo.DispatcherStatus = models.UpdateStatusDeviceUnresponsive
 			}
 		}
 
@@ -1095,7 +1095,7 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 			s.log.WithFields(log.Fields{"edge_count": len(dbDevices), "insights_count": len(inventoryDevices.Result)}).Debug("Inventory counts do not match")
 
 			// discover which inventory device is missing and add it.
-			// make a set of db sevices
+			// make a set of db services
 			type void struct{}
 			var nothing void
 			dbDeviceSet := make(map[string]void)
