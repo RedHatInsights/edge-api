@@ -105,7 +105,7 @@ help:
 	@echo "generate-docs             Creates OpenAPI specification for the project"
 	@echo "help                      Show this message"
 	@echo "lint                      Runs 'golint' on the project"
-	@echo "newlint					 Runs 'golangci-lint' on the project"
+	@echo "golangci-lint			 Runs 'golangci-lint' on the project"
 	@echo "pre-commit                Runs fmt, vet, lint, and clean on the project"
 	@echo "restart-app				 Scales the edge-api-service deployment down to 0 then up to 1 in the given namespace"
 	@echo "                            @param NAMESPACE - (optional) the namespace to use"
@@ -121,10 +121,7 @@ help:
 	@echo "vet-no-fdo                Runs 'go vet' on the project without FDO"
 	@echo ""
 
-lint:
-	golint $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
-
-newlint:
+golangci-lint:
 	if [ "$(GITHUB_ACTION)" != '' ]; \
     then \
     	golangci-lint run \
@@ -137,6 +134,9 @@ newlint:
 			--out-format=colored-line-number \
 			./...; \
 	fi
+
+lint:
+	golint $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
 
 pre-commit:
 	$(MAKE) fmt
