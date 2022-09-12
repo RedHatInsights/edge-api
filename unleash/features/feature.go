@@ -21,6 +21,11 @@ type Flag struct {
 	EnvVar string
 }
 
+// KAFKA LOGGING FLAGS
+
+// KafkaLogging is the feature flag for logging kafka messages
+var KafkaLogging = &Flag{Name: "edge-management.kafka_logging", EnvVar: "KAFKA_LOGGING"}
+
 // IMAGE FEATURE FLAGS
 
 // ImageCreateEDA is the feature flag for routes.CreateImage() EDA code

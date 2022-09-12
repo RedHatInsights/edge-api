@@ -892,7 +892,9 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 			s.log.WithField("message", string(message)).Debug("Inventory create event message body")
 			return s.platformInventoryCreateEventHelper(*e)
 		}
-		s.log.Debug("Skipping message - not an edge create message from platform insights")
+		if feature.KafkaLogging.IsEnabled() {
+			s.log.Debug("Skipping message - not an edge create message from platform insights")
+		}
 	}
 	return nil
 }
