@@ -754,10 +754,6 @@ func ReturnDevicesView(storedDevices []models.Device, orgID string) ([]models.De
 				"updateStatus": updateStatus,
 			}).Debug("Found update status for device")
 
-			if updateStatus == models.UpdateStatusBuilding {
-				deviceInfo.Status = models.DeviceViewStatusUpdating
-			}
-
 			if latestUpdateTransaction.DispatchRecords != nil && len(latestUpdateTransaction.DispatchRecords) > 0 {
 				for _, dispatcherRecord := range latestUpdateTransaction.DispatchRecords {
 					if dispatcherRecord.DeviceID == device.ID {
@@ -768,9 +764,13 @@ func ReturnDevicesView(storedDevices []models.Device, orgID string) ([]models.De
 				}
 				if deviceInfo.DispatcherStatus == models.DispatchRecordStatusComplete {
 					deviceInfo.DispatcherStatus = models.UpdateStatusSuccess
-				} else if updateStatus == models.UpdateStatusDeviceDisconnected {
-					deviceInfo.DispatcherStatus = models.UpdateStatusDeviceUnresponsive
 				}
+			}
+
+			if updateStatus == models.UpdateStatusBuilding {
+				deviceInfo.Status = models.DeviceViewStatusUpdating
+			} else if updateStatus == models.UpdateStatusDeviceDisconnected {
+				deviceInfo.DispatcherStatus = models.UpdateStatusDeviceUnresponsive
 			}
 		}
 
