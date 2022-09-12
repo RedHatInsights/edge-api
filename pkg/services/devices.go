@@ -1095,7 +1095,7 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 			s.log.WithFields(log.Fields{"edge_count": len(dbDevices), "insights_count": len(inventoryDevices.Result)}).Debug("Inventory counts do not match")
 
 			// discover which inventory device is missing and add it.
-			// make a set of db sevices
+			// make a set of db services
 			type void struct{}
 			var nothing void
 			dbDeviceSet := make(map[string]void)
