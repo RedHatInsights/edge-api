@@ -3,6 +3,7 @@ package services_test
 import (
 	"context"
 	"fmt"
+
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -318,7 +319,7 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 				Expect(deletedDevicesIDS).To(BeEmpty())
 			})
 
-			It("should not delete non exsiting device from device-group", func() {
+			It("should not delete non existing device from device-group", func() {
 				var fakeDevice models.Device
 				err := faker.FakeData(&fakeDevice)
 				Expect(err).To(BeNil())

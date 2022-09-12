@@ -158,7 +158,7 @@ var _ = Describe("Image Service Test", func() {
 					Expect(image.ID).To(Equal(imageV1.ID))
 				})
 			})
-			Context("when rollback image doesnt exists", func() {
+			Context("when rollback image does not exists", func() {
 				var image *models.Image
 				var err error
 				BeforeEach(func() {
@@ -175,7 +175,7 @@ var _ = Describe("Image Service Test", func() {
 		})
 	})
 	Describe("update image", func() {
-		Context("when previous image doesnt exist", func() {
+		Context("when previous image does not exist", func() {
 			var err error
 			BeforeEach(func() {
 				err = service.UpdateImage(&models.Image{}, nil)
