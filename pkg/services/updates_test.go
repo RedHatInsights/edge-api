@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	apiError "github.com/redhatinsights/edge-api/pkg/errors"
-	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"io/ioutil"
 	"net/http"
+
+	apiError "github.com/redhatinsights/edge-api/pkg/errors"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
