@@ -28,10 +28,10 @@ func GetKafkaProducerConfigMap() kafka.ConfigMap {
 func GetKafkaConsumerConfigMap(consumerGroup string) kafka.ConfigMap {
 	cfg := config.Get()
 	kafkaConfigMap := GetKafkaProducerConfigMap()
+	kafkaConfigMap.SetKey("group.id", consumerGroup)
 
 	if cfg.KafkaBrokers != nil {
 		kafkaConfigMap.SetKey("broker.address.family", "v4")
-		kafkaConfigMap.SetKey("group.id", consumerGroup)
 		kafkaConfigMap.SetKey("session.timeout.ms", 6000)
 		kafkaConfigMap.SetKey("auto.offset.reset", "earliest")
 	}

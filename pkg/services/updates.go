@@ -14,6 +14,8 @@ import (
 	"text/template"
 	"time"
 
+	"gorm.io/gorm"
+
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/redhatinsights/edge-api/config"
@@ -349,11 +351,14 @@ func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*
 	var updates []models.UpdateTransaction
 	result := db.DB.
 		Table("update_transactions").
+		Preload("DispatchRecords", func(db *gorm.DB) *gorm.DB {
+			return db.Where("dispatch_records.device_id = ?", device.ID)
+		}).
 		Joins(
 			`JOIN updatetransaction_devices ON update_transactions.id = updatetransaction_devices.update_transaction_id`).
 		Where(`updatetransaction_devices.device_id = ?`,
 			device.ID,
-		).Group("id").Order("id").Find(&updates)
+		).Group("id").Order("created_at").Limit(10).Find(&updates)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -368,7 +373,7 @@ const (
 	PlaybookStatusSuccess = "success"
 	// PlaybookStatusFailure is the status when a playbook execution fails
 	PlaybookStatusFailure = "failure"
-	// PlaybookStatusFailure is the status when a playbook execution times out
+	// PlaybookStatusTimeout is the status when a playbook execution times out
 	PlaybookStatusTimeout = "timeout"
 )
 
@@ -377,6 +382,7 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 	var e *PlaybookDispatcherEvent
 	err := json.Unmarshal(message, &e)
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error unmarshaling playbook dispatcher event message")
 		return err
 	}
 	s.log = log.WithFields(log.Fields{

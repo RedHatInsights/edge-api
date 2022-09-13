@@ -237,15 +237,15 @@ func (e *DeviceHasNoImageUpdate) Error() string {
 // DevicesHasMoreThanOneImageSet indicates that device record no image
 type DevicesHasMoreThanOneImageSet struct{}
 
-func (e *DevicesHasMoreThanOneImageSet) Error() string {
-	return "device has more than one imageset"
+func (e *DeviceHasMoreThanOneImageSet) Error() string {
+	return "device has more than one image-set"
 }
 
 // ImageHasNoImageSet indicates that device record no image
 type ImageHasNoImageSet struct{}
 
 func (e *ImageHasNoImageSet) Error() string {
-	return "Image has no imageset"
+	return "Image has no image-set"
 }
 
 // ErrUndefinedCommit indicate that the update transaction/image or some entity  has no commit defined.
@@ -286,5 +286,12 @@ func (e *SomeDevicesDoesNotExists) Error() string {
 	return "image-set not found for all devices"
 }
 
-// ErrOrgIDMismatch returned when the contexrt orgID is diffenrent from an entity OrgID
+// ErrOrgIDMismatch returned when the context orgID is different from an entity OrgID
 var ErrOrgIDMismatch = errors.New("context org_id and entity org_id mismatch")
+
+// KafkaAllBrokersDown indicates that the error has occured due to kafka broker issue
+type KafkaAllBrokersDown struct{}
+
+func (e *KafkaAllBrokersDown) Error() string {
+	return "Cannot connect to any Kafka brokers"
+}
