@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gorm.io/gorm"
 	"io"
 	"net/http"
 	"os"
@@ -14,6 +13,8 @@ import (
 	"syscall"
 	"text/template"
 	"time"
+
+	"gorm.io/gorm"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
@@ -380,6 +381,7 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 	var e *PlaybookDispatcherEvent
 	err := json.Unmarshal(message, &e)
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error unmarshaling playbook dispatcher event message")
 		return err
 	}
 	s.log = log.WithFields(log.Fields{

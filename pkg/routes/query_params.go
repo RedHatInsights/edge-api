@@ -43,7 +43,7 @@ func ValidateQueryParams(endpoint string) func(next http.Handler) http.Handler {
 			filtersMap := r.URL.Query()
 			queriesKeys := reflect.ValueOf(filtersMap).MapKeys()
 			qparamsArray := GetQueryParamsArray(endpoint)
-			// interating over the queries keys to validate we support those
+			// iterating over the queries keys to validate we support those
 			for _, key := range queriesKeys {
 				if !(contains(qparamsArray, key.String())) {
 					qkey := key.String()

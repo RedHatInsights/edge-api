@@ -673,7 +673,7 @@ func (s *ImageService) AddUserInfo(image *models.Image) error {
 	s.log.Debug("Injecting the kickstart into image...")
 	err = s.exeInjectionScript(kickstart, imageName, image.ID)
 	if err != nil {
-		return fmt.Errorf("error execuiting fleetkick script :: %s", err.Error())
+		return fmt.Errorf("error executing fleetkick script :: %s", err.Error())
 	}
 
 	s.log.Debug("Calculating the checksum for the ISO image...")
@@ -850,7 +850,7 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 	return image, nil
 }
 
-// CheckImageName returns false if the image doesnt exist and true if the image exists
+// CheckImageName returns false if the image does not exist and true if the image exists
 func (s *ImageService) CheckImageName(name, orgID string) (bool, error) {
 	var imageFindByName *models.Image
 	result := db.Org(orgID, "").Where("(name = ?)", name).First(&imageFindByName)
@@ -998,7 +998,7 @@ func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Im
 	var image models.Image
 	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {
-		s.log.Error("Error retreving org_id")
+		s.log.Error("Error retrieving org_id")
 		return nil, new(OrgIDNotSet)
 	}
 	result := db.Org(orgID, "images").Joins("JOIN commits ON commits.id = images.commit_id AND commits.os_tree_commit = ?", commitHash).Joins("Installer").Preload("Packages").Preload("Commit.InstalledPackages").Preload("Commit.Repo").First(&image)
@@ -1347,7 +1347,7 @@ func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, err
 	var rollback models.Image
 	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {
-		s.log.Error("Error retreving org_id")
+		s.log.Error("Error retrieving org_id")
 		return nil, new(OrgIDNotSet)
 	}
 	result := db.Org(orgID, "images").Debug().Joins("Commit").Joins("Installer").Preload("Packages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where(&models.Image{ImageSetID: image.ImageSetID, Status: models.ImageStatusSuccess}).Last(&rollback, "images.id < ?", image.ID)
