@@ -237,7 +237,7 @@ func (e *DeviceHasNoImageUpdate) Error() string {
 // DevicesHasMoreThanOneImageSet indicates that device record no image
 type DevicesHasMoreThanOneImageSet struct{}
 
-func (e *DeviceHasMoreThanOneImageSet) Error() string {
+func (e *DevicesHasMoreThanOneImageSet) Error() string {
 	return "device has more than one image-set"
 }
 
