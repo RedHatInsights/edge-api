@@ -15,10 +15,10 @@ func GetKafkaProducerConfigMap() kafka.ConfigMap {
 	if cfg.KafkaBrokers != nil {
 		kafkaConfigMap.SetKey("bootstrap.servers", fmt.Sprintf("%s:%d", cfg.KafkaBrokers[0].Hostname, *cfg.KafkaBrokers[0].Port))
 		if cfg.KafkaBrokers[0].Sasl != nil {
-			kafkaConfigMap.SetKey("sasl.mechanisms", cfg.KafkaBrokers[0].Sasl.SaslMechanism)
-			kafkaConfigMap.SetKey("security.protocol", cfg.KafkaBrokers[0].Sasl.SecurityProtocol)
-			kafkaConfigMap.SetKey("sasl.username", cfg.KafkaBrokers[0].Sasl.Username)
-			kafkaConfigMap.SetKey("sasl.password", cfg.KafkaBrokers[0].Sasl.Password)
+			kafkaConfigMap.SetKey("sasl.mechanisms", *cfg.KafkaBrokers[0].Sasl.SaslMechanism)
+			kafkaConfigMap.SetKey("security.protocol", *cfg.KafkaBrokers[0].Sasl.SecurityProtocol)
+			kafkaConfigMap.SetKey("sasl.username", *cfg.KafkaBrokers[0].Sasl.Username)
+			kafkaConfigMap.SetKey("sasl.password", *cfg.KafkaBrokers[0].Sasl.Password)
 		}
 	}
 	return kafkaConfigMap
