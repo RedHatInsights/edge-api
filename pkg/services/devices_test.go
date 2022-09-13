@@ -11,6 +11,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"gorm.io/gorm/clause"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
@@ -631,30 +632,34 @@ var _ = Describe("DfseviceService", func() {
 		})
 	})
 	Context("ProcessPlatformInventoryCreateEvent", func() {
+
 		commit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}
 		result := db.DB.Create(&commit)
 		Expect(result.Error).To(BeNil())
 		image := models.Image{OrgID: orgID, CommitID: commit.ID, Status: models.ImageStatusSuccess}
 		result = db.DB.Create(&image)
 		Expect(result.Error).To(BeNil())
+		var message []byte
+		var err error
+		var event services.PlatformInsightsCreateUpdateEventPayload
+		BeforeEach(func() {
 
-		event := new(services.PlatformInsightsCreateUpdateEventPayload)
-		event.Type = services.InventoryEventTypeCreated
-		event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
-		event.Host.ID = faker.UUIDHyphenated()
-		event.Host.OrgID = orgID
-		event.Host.Name = faker.UUIDHyphenated()
-		event.Host.Updated = models.EdgeAPITime(sql.NullTime{Time: time.Now().UTC(), Valid: true})
-		event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
-		event.Host.SystemProfile.RHCClientID = faker.UUIDHyphenated()
-		message, err := json.Marshal(event)
-		Expect(err).To(BeNil())
-
+			event.Type = services.InventoryEventTypeCreated
+			event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
+			event.Host.ID = faker.UUIDHyphenated()
+			event.Host.OrgID = orgID
+			event.Host.Name = faker.UUIDHyphenated()
+			event.Host.Updated = models.EdgeAPITime(sql.NullTime{Time: time.Now().UTC(), Valid: true})
+			event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
+			event.Host.SystemProfile.RHCClientID = faker.UUIDHyphenated()
+			message, err = json.Marshal(event)
+			Expect(err).To(BeNil())
+		})
 		It("should create devices when no record is found", func() {
-			err := deviceService.ProcessPlatformInventoryCreateEvent(message)
+			err = deviceService.ProcessPlatformInventoryCreateEvent(message)
 			Expect(err).To(BeNil())
 			var savedDevice models.Device
-			result := db.DB.Where(models.Device{UUID: event.Host.ID, OrgID: event.Host.OrgID}).First(&savedDevice)
+			result := db.DB.Where(models.Device{UUID: event.Host.ID, OrgID: event.Host.OrgID}).First(&savedDevice).Unscoped()
 			Expect(result.Error).To(BeNil())
 			Expect(savedDevice.UUID).To(Equal(event.Host.ID))
 			Expect(savedDevice.OrgID).To(Equal(orgID))
@@ -662,6 +667,28 @@ var _ = Describe("DfseviceService", func() {
 			Expect(savedDevice.LastSeen.Time).To(Equal(event.Host.Updated.Time))
 			Expect(savedDevice.Name).To(Equal(event.Host.Name))
 			Expect(savedDevice.RHCClientID).To(Equal(event.Host.SystemProfile.RHCClientID))
+		})
+
+		It("should NOT create devices when record is found", func() {
+			var newDevice = models.Device{
+				UUID:        event.Host.ID,
+				RHCClientID: event.Host.SystemProfile.RHCClientID,
+				OrgID:       event.Host.OrgID,
+				Name:        event.Host.Name,
+				LastSeen:    event.Host.Updated,
+			}
+			result = db.DB.Debug().Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
+			err := deviceService.ProcessPlatformInventoryCreateEvent(message)
+			Expect(err).To(BeNil())
+			var savedDevice models.Device
+			result := db.DB.Where(models.Device{UUID: event.Host.ID, OrgID: event.Host.OrgID}).First(&savedDevice).Unscoped()
+			Expect(result.Error).To(BeNil())
+			Expect(&savedDevice.ID).To(Equal(&newDevice.ID))
+			Expect(savedDevice.UUID).To(Equal(newDevice.UUID))
+
+			var total []models.Device
+			db.DB.Where(models.Device{UUID: event.Host.ID, OrgID: event.Host.OrgID}).Find(&total).Debug()
+			Expect(len(total)).To(Equal(1))
 		})
 	})
 	Context("ProcessPlatformInventoryUpdatedEvent", func() {
@@ -846,13 +873,15 @@ var _ = Describe("DfseviceService", func() {
 			result = db.Org(event.OrgID, "").Model(&models.Device{}).Where("uuid = ?", event.ID).Count(&deviceCount)
 			Expect(result.Error).To(BeNil())
 			Expect(deviceCount == 1).To(BeTrue())
+
 			// create a device group with device
 			deviceGroup := models.DeviceGroup{
 				Type: models.DeviceGroupTypeDefault, OrgID: event.OrgID, Name: faker.UUIDHyphenated(),
 				Devices: []models.Device{device},
 			}
-			result = db.DB.Create(&deviceGroup)
+			result = db.DB.Debug().Omit("Devices.*").Create(&deviceGroup)
 			Expect(result.Error).To(BeNil())
+
 			// ensure device group created with device included
 			var savedDeviceGroup models.DeviceGroup
 			result = db.Org(deviceGroup.OrgID, "").Preload("Devices").First(&savedDeviceGroup, deviceGroup.ID)
@@ -922,7 +951,7 @@ var _ = Describe("DfseviceService", func() {
 				Status:               models.DispatchRecordStatusComplete,
 				DeviceID:             deviceWithImage.ID,
 			}
-			db.DB.Create(dispatchRecord)
+			db.DB.Omit("Devices.*").Create(dispatchRecord)
 
 			update = models.UpdateTransaction{
 				DispatchRecords: []models.DispatchRecord{*dispatchRecord},
@@ -932,7 +961,7 @@ var _ = Describe("DfseviceService", func() {
 				OrgID:  orgID,
 				Status: models.UpdateStatusSuccess,
 			}
-			db.DB.Create(&update)
+			db.DB.Omit("Devices.*").Create(&update)
 
 			deviceService = services.DeviceService{
 				Service:       services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
@@ -1052,7 +1081,7 @@ var _ = Describe("DfseviceService", func() {
 					Status:               models.DispatchRecordStatusError,
 					DeviceID:             deviceUnresponsive.ID,
 				}
-				db.DB.Create(dispatchRecord)
+				db.DB.Omit("Devices.*").Create(dispatchRecord)
 
 				update := models.UpdateTransaction{
 					DispatchRecords: []models.DispatchRecord{*dispatchRecord},
@@ -1062,14 +1091,14 @@ var _ = Describe("DfseviceService", func() {
 					OrgID:  orgID,
 					Status: models.UpdateStatusDeviceDisconnected,
 				}
-				db.DB.Create(&update)
+				db.DB.Omit("Devices.*").Create(&update)
 
 				dispatchRecord2 := &models.DispatchRecord{
 					PlaybookDispatcherID: faker.UUIDHyphenated(),
 					Status:               models.DispatchRecordStatusComplete,
 					DeviceID:             deviceSuccess.ID,
 				}
-				db.DB.Create(dispatchRecord2)
+				db.DB.Omit("Devices.*").Create(dispatchRecord2)
 
 				dispatchRecord3 := &models.DispatchRecord{
 					PlaybookDispatcherID: faker.UUIDHyphenated(),
@@ -1077,7 +1106,7 @@ var _ = Describe("DfseviceService", func() {
 					Reason:               models.UpdateReasonFailure,
 					DeviceID:             deviceErrorFailure.ID,
 				}
-				db.DB.Create(dispatchRecord3)
+				db.DB.Omit("Devices.*").Create(dispatchRecord3)
 
 				update2 := models.UpdateTransaction{
 					DispatchRecords: []models.DispatchRecord{*dispatchRecord2, *dispatchRecord3},
@@ -1088,14 +1117,14 @@ var _ = Describe("DfseviceService", func() {
 					OrgID:  orgID,
 					Status: models.UpdateStatusSuccess,
 				}
-				db.DB.Create(&update2)
+				db.DB.Omit("Devices.*").Create(&update2)
 
 				dispatchRecord4 := &models.DispatchRecord{
 					PlaybookDispatcherID: faker.UUIDHyphenated(),
 					Status:               models.DispatchRecordStatusRunning,
 					DeviceID:             deviceBuilding.ID,
 				}
-				db.DB.Create(dispatchRecord4)
+				db.DB.Omit("Devices.*").Create(dispatchRecord4)
 
 				update4 := models.UpdateTransaction{
 					DispatchRecords: []models.DispatchRecord{*dispatchRecord4},
@@ -1105,7 +1134,7 @@ var _ = Describe("DfseviceService", func() {
 					OrgID:  orgID,
 					Status: models.UpdateStatusBuilding,
 				}
-				db.DB.Create(&update4)
+				db.DB.Omit("Devices.*").Create(&update4)
 
 				dispatchRecord5 := &models.DispatchRecord{
 					PlaybookDispatcherID: faker.UUIDHyphenated(),
@@ -1113,7 +1142,7 @@ var _ = Describe("DfseviceService", func() {
 					Reason:               models.UpdateReasonTimeout,
 					DeviceID:             deviceErrorTimeout.ID,
 				}
-				db.DB.Create(dispatchRecord5)
+				db.DB.Omit("Devices.*").Create(dispatchRecord5)
 
 				update5 := models.UpdateTransaction{
 					DispatchRecords: []models.DispatchRecord{*dispatchRecord5},
@@ -1123,7 +1152,7 @@ var _ = Describe("DfseviceService", func() {
 					OrgID:  orgID,
 					Status: models.UpdateStatusError,
 				}
-				db.DB.Create(&update5)
+				db.DB.Omit("Devices.*").Create(&update5)
 
 				invResult := []inventory.Device{
 					{

@@ -14,7 +14,6 @@ import (
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 const (
@@ -910,7 +909,10 @@ func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCre
 		Name:        e.Host.Name,
 		LastSeen:    e.Host.Updated,
 	}
-	result := db.DB.Debug().Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
+
+	//We should not create a new device if UUID already exists
+	result := db.DB.Debug().Where(&models.Device{UUID: newDevice.UUID}).FirstOrCreate(&newDevice)
+
 	if result.Error != nil {
 		s.log.WithFields(log.Fields{
 			"host_id": string(e.Host.ID),
@@ -924,7 +926,9 @@ func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCre
 
 // ProcessPlatformInventoryDeleteEvent processes messages from platform.inventory.events kafka topic with event_type="delete"
 func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) error {
+
 	var eventData PlatformInsightsDeleteEventPayload
+
 	if err := json.Unmarshal(message, &eventData); err != nil {
 		s.log.WithFields(log.Fields{"value": string(message), "error": err}).Debug(
 			"Skipping kafka message - it's not a Platform Insights Inventory message with event type: delete, as unable to unmarshal the message",
@@ -954,6 +958,9 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 		).Error("Error when deleting devices")
 		return result.Error
 	}
+	s.log.WithFields(log.Fields{
+		"host_id": string(eventData.ID),
+	}).Debug("Deleting edge device")
 	return nil
 }
 

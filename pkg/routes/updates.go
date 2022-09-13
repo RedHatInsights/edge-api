@@ -255,7 +255,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 			ctxServices.UpdateService.CreateUpdateAsync(update.ID)
 		}
 	}
-	if result := db.DB.Save(upd); result.Error != nil {
+	if result := db.DB.Debug().Omit("Devices.*").Save(upd); result.Error != nil {
 		ctxServices.Log.WithFields(log.Fields{
 			"error": result.Error.Error(),
 		}).Error("Error saving update")
