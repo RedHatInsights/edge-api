@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
@@ -130,8 +131,8 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	var update *models.UpdateTransaction
 	db.DB.Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").Find(&update, id)
 	update.Status = models.UpdateStatusBuilding
-	db.DB.Omit("Devices.*", "DispatchRecords.*").Debug().Save(&update)
-
+	// db.DB.Omit("Devices.*", "DispatchRecords.*").Debug().Save(&update)
+	db.DB.Model(&models.UpdateTransaction{}).Where("ID=?", update.ID).Update("Status", update.Status)
 	WaitGroup.Add(1) // Processing one update
 	defer func() {
 		WaitGroup.Done() // Done with one update (successfully or not)
@@ -223,7 +224,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 				Status:      models.DispatchRecordStatusError,
 				Reason:      models.UpdateReasonFailure,
 			})
-			db.DB.Omit("Devices.*", "DispatchRecords.Device.*").Debug().Save(update)
+			db.DB.Omit("Devices.*").Debug().Save(update)
 			return nil, err
 		}
 
@@ -255,6 +256,12 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			s.log.WithField("error", err.Error()).Error("Error saving update")
 			return nil, err
 		}
+		dRecord := db.DB.Debug().Omit(clause.Associations).Save(update.DispatchRecords)
+		if dRecord.Error != nil {
+			s.log.WithField("error", dRecord.Error).Error("Error saving Dispach Record")
+			return nil, dRecord.Error
+		}
+
 	}
 
 	s.log.WithField("updateID", update.ID).Info("Update was finished")
@@ -466,6 +473,7 @@ func (s *UpdateService) SetUpdateStatus(update *models.UpdateTransaction) error 
 	}
 	// If there isn't an error and it's not all success, some updates are still happening
 	result := db.DB.Debug().Model(&models.UpdateTransaction{}).Where("ID=?", update.ID).Update("Status", update.Status)
+
 	return result.Error
 }
 

@@ -168,7 +168,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					OrgID:  common.DefaultOrgID,
 					Status: models.UpdateStatusBuilding,
 				}
-				db.DB.Create(&update)
+				db.DB.Omit("Devices.*").Create(&update)
 			})
 
 			When("when build repo fail", func() {
@@ -256,7 +256,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					}, nil)
 
 					updateTransaction, err := updateService.CreateUpdate(update.ID)
-
+					Expect(updateTransaction).ToNot(BeNil())
 					Expect(err).To(BeNil())
 					Expect(updateTransaction).ToNot(BeNil())
 					Expect(updateTransaction.ID).Should(Equal(update.ID))
@@ -301,7 +301,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 					Expect(err).ShouldNot(BeNil())
 
 					var updateTransaction models.UpdateTransaction
-					db.DB.Preload("DispatchRecords").Preload("DispatchRecords.Device").Preload("Devices").First(&updateTransaction, update.ID)
+
+					db.DB.Debug().Preload("DispatchRecords").Preload("DispatchRecords.Device").Preload("Devices").First(&updateTransaction, update.ID)
 
 					Expect(updateTransaction.ID).Should(Equal(update.ID))
 					Expect(updateTransaction.Status).Should(Equal(models.UpdateStatusError))
