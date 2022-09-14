@@ -24,17 +24,17 @@ type BasicFileService struct {
 	downloader files.Downloader
 }
 
-// GetExtractor retuns a new extractor for files
+// GetExtractor returns a new extractor for files
 func (s *BasicFileService) GetExtractor() files.Extractor {
 	return s.extractor
 }
 
-// GetUploader retuns a new uploader for files
+// GetUploader returns a new uploader for files
 func (s *BasicFileService) GetUploader() files.Uploader {
 	return s.uploader
 }
 
-// GetDownloader retuns a new downloads for files
+// GetDownloader returns a new downloads for files
 func (s *BasicFileService) GetDownloader() files.Downloader {
 	return s.downloader
 }
@@ -90,7 +90,7 @@ func NewFilesService(log *log.Entry) FilesService {
 	}
 }
 
-// GetFile retuns the file given a path
+// GetFile returns the file given a path
 func (s *LocalFilesService) GetFile(path string) (io.ReadCloser, error) {
 	path = "/tmp/" + path
 	f, err := os.Open(filepath.Clean(path))

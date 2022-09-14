@@ -255,7 +255,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 			ctxServices.UpdateService.CreateUpdateAsync(update.ID)
 		}
 	}
-	if result := db.DB.Save(upd); result.Error != nil {
+	if result := db.DB.Debug().Omit("Devices.*").Save(upd); result.Error != nil {
 		ctxServices.Log.WithFields(log.Fields{
 			"error": result.Error.Error(),
 		}).Error("Error saving update")
@@ -304,7 +304,7 @@ func SendNotificationForDevice(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-		services.Log.WithField("StatusOK", http.StatusOK).Info("Writting Header")
+		services.Log.WithField("StatusOK", http.StatusOK).Info("Writing Header")
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(notify); err != nil {
 			services.Log.WithField("error", notify).Error("Error while trying to encode")

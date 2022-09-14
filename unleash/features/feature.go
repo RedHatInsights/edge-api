@@ -41,6 +41,9 @@ var ImageCreateKickstartEDA = &Flag{Name: "", EnvVar: "FEATURE_IMAGECREATE_KICKS
 // ImageCreateRepoEDA is the feature flag for routes.CreateRepo() EDA code
 var ImageCreateRepoEDA = &Flag{Name: "", EnvVar: "FEATURE_IMAGECREATE_REPO"}
 
+// ImageCreateISOEDA is the feature flag for routes.CreateCommit() EDA code
+var ImageCreateISOEDA = &Flag{Name: "edge-management.image_create_iso", EnvVar: "FEATURE_IMAGECREATE_ISO"}
+
 // DEVICE FEATURE FLAGS
 
 // DeviceSync is the feature flag for routes.CreateImageUpdate() EDA code

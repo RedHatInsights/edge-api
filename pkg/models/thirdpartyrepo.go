@@ -64,7 +64,7 @@ func (t *ThirdPartyRepo) ValidateRequest() error {
 	return nil
 }
 
-// BeforeCreate method is called before creating Third Party Tepository, it make sure org_id is not empty
+// BeforeCreate method is called before creating Third Party Repository, it make sure org_id is not empty
 func (t *ThirdPartyRepo) BeforeCreate(tx *gorm.DB) error {
 	if t.OrgID == "" {
 		log.Error("custom-repository do not have an org_id")

@@ -126,6 +126,7 @@ func main() {
 						err = json.Unmarshal(e.Value, crcEvent)
 						if err != nil {
 							mslog.Error("Failed to unmarshal CRC event")
+							break
 						}
 
 						// add event UUID to logger

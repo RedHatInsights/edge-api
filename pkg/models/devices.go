@@ -93,7 +93,7 @@ type Device struct {
 	OrgID             string               `json:"org_id" gorm:"index"`
 	ImageID           uint                 `json:"ImageID"`
 	UpdateAvailable   bool                 `json:"UpdateAvailable"`
-	DevicesGroups     []DeviceGroup        `faker:"-" gorm:"many2many:device_groups_devices;" json:"DevicesGroups"`
+	DevicesGroups     []DeviceGroup        `faker:"-" gorm:"many2many:device_groups_devices;save_association:false" json:"DevicesGroups"`
 	UpdateTransaction *[]UpdateTransaction `faker:"-" gorm:"many2many:updatetransaction_devices;" json:"UpdateTransaction"`
 }
 
@@ -102,6 +102,12 @@ func (d *Device) BeforeCreate(tx *gorm.DB) error {
 	if d.OrgID == "" {
 		log.Error("device do not have an org_id")
 		return ErrOrgIDIsMandatory
+	}
+	var device Device
+	result := tx.First(&device, "UUID = ? ", d.UUID).Unscoped()
+	if result.RowsAffected > 0 {
+		log.Errorf("device uuid %v already exists %v", d.UUID, result.RowsAffected)
+		return ErrDeviceExists
 	}
 
 	return nil

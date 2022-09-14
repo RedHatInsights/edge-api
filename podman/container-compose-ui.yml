@@ -1,6 +1,7 @@
 version: '2'
 services:
     edge-ui:
+        container_name: edge-ui
         image: localhost/edge-frontend:podmandevx
 #        image: quay.io/loadtheaccumulator/edge-frontend:podmandev
         restart: unless-stopped

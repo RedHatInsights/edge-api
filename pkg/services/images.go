@@ -21,10 +21,12 @@ import (
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
+	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 	log "github.com/sirupsen/logrus"
 
 	"gorm.io/gorm"
@@ -547,6 +549,35 @@ func (s *ImageService) postProcessImage(id uint) {
 		if image.HasOutputType(models.ImageTypeInstaller) {
 			s.log.WithField("imageID", image.ID).Debug("Creating an installer for this image")
 			image, c, err := s.CreateInstallerForImage(image)
+
+			if feature.ImageCreateISOEDA.IsEnabled() {
+				s.log.Debug("Creating image iso with EDA")
+
+				ident, errident := common.GetIdentityFromContext(ctx)
+				if errident != nil {
+					s.log.WithField("error", errident.Error()).Error("Failed retrieving identity from context")
+					return
+				}
+				// create payload for ImageISORequested event
+				edgePayload := &models.EdgeImageISORequestedEventPayload{
+					EdgeBasePayload: models.EdgeBasePayload{
+						Identity:       ident,
+						LastHandleTime: time.Now().Format(time.RFC3339),
+						RequestID:      image.RequestID,
+					},
+					ImageID: image.ID,
+				}
+
+				// create the edge event
+				edgeEvent := kafkacommon.CreateEdgeEvent(ident.Identity.OrgID, models.SourceEdgeEventAPI, image.RequestID,
+					models.EventTypeEdgeImageISORequested, image.Name, edgePayload)
+
+				// put the event on the bus
+				if err = kafkacommon.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageISORequested, edgeEvent); err != nil {
+					log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
+					return
+				}
+			}
 			/* CreateInstallerForImage is also called directly from an endpoint.
 			If called from the endpoint it will not block
 				the caller returns the channel output to _
@@ -649,7 +680,7 @@ func (s *ImageService) AddUserInfo(image *models.Image) error {
 	s.log.Debug("Injecting the kickstart into image...")
 	err = s.exeInjectionScript(kickstart, imageName, image.ID)
 	if err != nil {
-		return fmt.Errorf("error execuiting fleetkick script :: %s", err.Error())
+		return fmt.Errorf("error executing fleetkick script :: %s", err.Error())
 	}
 
 	s.log.Debug("Calculating the checksum for the ISO image...")
@@ -835,7 +866,7 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 	return image, nil
 }
 
-// CheckImageName returns false if the image doesnt exist and true if the image exists
+// CheckImageName returns false if the image does not exist and true if the image exists
 func (s *ImageService) CheckImageName(name, orgID string) (bool, error) {
 	var imageFindByName *models.Image
 	result := db.Org(orgID, "").Where("(name = ?)", name).First(&imageFindByName)
@@ -983,7 +1014,7 @@ func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Im
 	var image models.Image
 	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {
-		s.log.Error("Error retreving org_id")
+		s.log.Error("Error retrieving org_id")
 		return nil, new(OrgIDNotSet)
 	}
 	result := db.Org(orgID, "images").Joins("JOIN commits ON commits.id = images.commit_id AND commits.os_tree_commit = ?", commitHash).Joins("Installer").Preload("Packages").Preload("Commit.InstalledPackages").Preload("Commit.Repo").First(&image)
@@ -1338,7 +1369,7 @@ func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, err
 	var rollback models.Image
 	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {
-		s.log.Error("Error retreving org_id")
+		s.log.Error("Error retrieving org_id")
 		return nil, new(OrgIDNotSet)
 	}
 	result := db.Org(orgID, "images").Debug().Joins("Commit").Joins("Installer").Preload("Packages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where(&models.Image{ImageSetID: image.ImageSetID, Status: models.ImageStatusSuccess}).Last(&rollback, "images.id < ?", image.ID)

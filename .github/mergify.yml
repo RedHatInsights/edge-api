@@ -7,7 +7,7 @@ queue_rules:
   - name: edge-api
     conditions:
       - base=main
-      - "#approved-reviews-by>=1"
+      - "#approved-reviews-by>=2"
 #
 # Pull request rules https://docs.mergify.com/configuration/#pull-request-rules
 # N.B. Evaluated in order defined
@@ -17,7 +17,7 @@ pull_request_rules:
   - name: Automatic merge for Dependabot pull requests
     conditions:
       - author~=^dependabot(|-preview)\[bot\]$
-      - "#approved-reviews-by>=1"
+      - "#approved-reviews-by>=2"
       - check-success=Lint
       - check-success=Travis CI - Pull Request
     actions:
@@ -51,7 +51,7 @@ pull_request_rules:
   - name: Automatic merge on approval
     conditions:
       - base=main
-      - "#approved-reviews-by>=1"
+      - "#approved-reviews-by>=2"
       - "#changes-requested-reviews-by=0"
       - check-success=Lint
       - check-success=Travis CI - Pull Request
@@ -101,7 +101,7 @@ pull_request_rules:
   # Detect when PR is awaiting review and add label
   - name: waiting for review
     conditions:
-      - "#commented-reviews-by<1"
+      - "#commented-reviews-by<2"
       - created-at<1 days ago
       - -draft
     actions:
@@ -112,7 +112,7 @@ pull_request_rules:
   # Detect when PR received review and remove label
   - name: remove waiting for review label if not needed
     conditions:
-      - "#commented-reviews-by>=1"
+      - "#commented-reviews-by>=2"
       - -draft
     actions:
       label:
@@ -122,7 +122,7 @@ pull_request_rules:
   # Detect when PR includes a bug fix and add label
   - name: add bug fix label
     conditions:
-      - body~=(?m)^\[X\] Bug fix (non-breaking change which fixes an issue)
+      - body~=(?m)^- \[[xX]\] Bug fix \(non-breaking change which fixes an issue\)
     actions:
       label:
         add:
@@ -131,7 +131,7 @@ pull_request_rules:
   # Detect when PR includes new feature and add label
   - name: add new feature label
     conditions:
-      - body~=(?m)^\[X\] New feature (non-breaking change which adds functionality)
+      - body~=(?m)^- \[[xX]\] New feature \(non-breaking change which adds functionality\)
     actions:
       label:
         add:
@@ -140,7 +140,7 @@ pull_request_rules:
   # Detect when PR includes documentation updates and add label
   - name: add documentation label
     conditions:
-      - body~=(?m)^\[X\] Documentation update
+      - body~=(?m)^- \[[xX]\] Documentation update
     actions:
       label:
         add:
@@ -149,16 +149,17 @@ pull_request_rules:
   # Detect when PR includes tests update and add label
   - name: add test update label
     conditions:
-      - body~=(?m)^\[X\] Tests update
+      - body~=(?m)^- \[[xX]\] Tests update
     actions:
       label:
         add:
           - test update
+
   #
   # Detect when PR no longer includes bug fix and remove label
   - name: remove bug fix label
     conditions:
-      - body~=(?m)^\[ \] Bug fix (non-breaking change which fixes an issue)
+      - body~=(?m)^- \[ \] Bug fix \(non-breaking change which fixes an issue\)
     actions:
       label:
         remove:
@@ -167,7 +168,7 @@ pull_request_rules:
   # Detect when PR no longer includes new feature and remove label
   - name: remove new feature label
     conditions:
-      - body~=(?m)^\[ \] New feature (non-breaking change which adds functionality)
+      - body~=(?m)^- \[ \] New feature \(non-breaking change which adds functionality\)
     actions:
       label:
         remove:
@@ -176,7 +177,7 @@ pull_request_rules:
   # Detect when PR no longer includes documentation updates and remove label
   - name: remove documentation label
     conditions:
-      - body~=(?m)^\[ \] Documentation update
+      - body~=(?m)^- \[ \] Documentation update
     actions:
       label:
         remove:
@@ -185,7 +186,7 @@ pull_request_rules:
   # Detect when PR no longer includes tests update and remove label
   - name: remove test update label
     conditions:
-      - body~=(?m)^\[ \] Tests update
+      - body~=(?m)^- \[ \] Tests update
     actions:
       label:
         remove:
@@ -194,11 +195,11 @@ pull_request_rules:
   # Detect when PR is ready and add label
   - name: add ready label
     conditions:
-      - body~=(?m)^\[X\] I have commented my code, particularly in hard-to-understand areas
-      - body~=(?m)^\[X\] I have made corresponding changes to the documentation
-      - body~=(?m)^\[X\] I have added tests that prove my fix is effective or that my feature works
-      - body~=(?m)^\[X\] New and existing unit tests pass locally with my changes
-      - body~=(?m)^\[X\]  I run make pre-commit to check fmt/vet/lint/test-no-fdo
+      - body~=(?m)^- \[[xX]\] I have commented my code, particularly in hard-to-understand areas
+      - body~=(?m)^- \[[xX]\] I have made corresponding changes to the documentation
+      - body~=(?m)^- \[[xX]\] I have added tests that prove my fix is effective or that my feature works
+      - body~=(?m)^- \[[xX]\] New and existing unit tests pass locally with my changes
+      - body~=(?m)^- \[[xX]\] I run `make pre-commit` to check fmt\/vet\/lint\/test-no-fdo
     actions:
       label:
         add:

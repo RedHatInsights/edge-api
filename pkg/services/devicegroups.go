@@ -154,8 +154,12 @@ func (s *DeviceGroupsService) GetDeviceGroups(orgID string, limit int, offset in
 			}
 		}
 		var info []models.DeviceImageInfo
+		imgAdded := make(map[string]bool)
 		for i := range imgInfo {
-			info = append(info, imgInfo[i])
+			if _, ok := imgAdded[imgInfo[i].Name]; !ok {
+				info = append(info, imgInfo[i])
+				imgAdded[imgInfo[i].Name] = true
+			}
 		}
 		group.ValidUpdate, err = s.UpdateService.ValidateUpdateDeviceGroup(orgID, group.ID)
 		if err != nil {
@@ -413,7 +417,7 @@ func (s *DeviceGroupsService) AddDeviceGroupDevices(orgID string, deviceGroupID 
 	}
 
 	s.log.WithFields(log.Fields{"deviceCount": len(devicesToAdd), "deviceGroupID": deviceGroup.ID}).Debug("Adding devices to device group")
-	if err := db.DB.Model(&deviceGroup).Association("Devices").Append(devicesToAdd); err != nil {
+	if err := db.DB.Model(&deviceGroup).Omit("Devices.*").Association("Devices").Append(devicesToAdd); err != nil {
 		return nil, err
 	}
 

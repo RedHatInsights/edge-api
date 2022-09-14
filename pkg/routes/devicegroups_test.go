@@ -706,7 +706,7 @@ var _ = Describe("DeviceGroup routes", func() {
 
 		When("all is valid with same imageID", func() {
 			It("should update Devices from Group", func() {
-				res := db.DB.Create(&deviceGroup)
+				res := db.DB.Debug().Omit("Devices.*").Create(&deviceGroup)
 				Expect(res.Error).To(BeNil())
 				Expect(deviceGroup.ID).NotTo(Equal(0))
 				db.DB.Create(&commit)

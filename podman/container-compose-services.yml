@@ -12,16 +12,17 @@ version: '2'
 #
 secrets:
   edgemgmt_config:
-    file: $DEVDIR/config/files/edgemgmt_config.json
+    file: $PWD/podman/env/edgemgmt_config.json
 services:
     edge-api-images-build:
+      container_name: edge-api-images-build
       image: localhost/edge-api:localdev
       restart: unless-stopped
       privileged: true
       env_file:
         - env/edge-api.env
       volumes:
-        - $DEVDIR:/opt/app-root/src:z
+        - $PWD:/opt/app-root/src:z
         - $HOME/go:/go
       command: go run /opt/app-root/src/pkg/services/images_build/main.go
       secrets:
@@ -40,7 +41,7 @@ services:
         - env/edge-api.env
 #      depends-on: postgresql
       volumes:
-        - $DEVDIR:/opt/app-root/src:z
+        - $PWD:/opt/app-root/src:z
         - $HOME/go:/go
       #working_dir: /opt/app-root/src
       command: go run /opt/app-root/src/cmd/kafka/main.go

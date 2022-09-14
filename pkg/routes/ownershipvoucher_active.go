@@ -152,7 +152,7 @@ func ConnectDevices(w http.ResponseWriter, r *http.Request) {
 
 	resp, errList := services.OwnershipVoucherService.ConnectDevices(data)
 	if errList != nil {
-		services.Log.Error("An error occured while trying to connect devices")
+		services.Log.Error("An error occurred while trying to connect devices")
 		var unknownDevices []string
 		for _, err := range errList {
 			unknownDevices = append(unknownDevices, err.Error())
