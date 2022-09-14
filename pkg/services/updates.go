@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
@@ -255,7 +254,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			s.log.WithField("error", err.Error()).Error("Error saving update")
 			return nil, err
 		}
-		dRecord := db.DB.Debug().Omit(clause.Associations).Save(update.DispatchRecords)
+		dRecord := db.DB.Debug().Omit("Devices, DispatchRecords.Device").Save(update)
 		if dRecord.Error != nil {
 			s.log.WithField("error", dRecord.Error).Error("Error saving Dispach Record")
 			return nil, dRecord.Error
