@@ -465,7 +465,7 @@ func (s *UpdateService) SetUpdateStatus(update *models.UpdateTransaction) error 
 		update.Status = models.UpdateStatusSuccess
 	}
 	// If there isn't an error and it's not all success, some updates are still happening
-	result := db.DB.Debug().Omit("Devices.*, DispatchRecords.*").Save(update)
+	result := db.DB.Debug().Model(&models.UpdateTransaction{}).Where("ID=?", update.ID).Update("Status", update.Status)
 	return result.Error
 }
 
