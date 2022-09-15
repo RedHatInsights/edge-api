@@ -97,6 +97,7 @@ type ComposeStatus struct {
 type ImageStatus struct {
 	Status       imageStatusValue `json:"status"`
 	UploadStatus *UploadStatus    `json:"upload_status,omitempty"`
+	Reason       imageStatusValue `json:"reason"`
 }
 
 type imageStatusValue string
@@ -108,6 +109,7 @@ const (
 	imageStatusRegistering imageStatusValue = "registering"
 	imageStatusSuccess     imageStatusValue = "success"
 	imageStatusUploading   imageStatusValue = "uploading"
+	imageReasonFailure     imageStatusValue = "Worker running this job stopped responding"
 )
 
 // UploadStatus is the status and metadata of an Image upload
@@ -339,6 +341,9 @@ func (c *Client) getComposeStatus(jobID string) (*ComposeStatus, error) {
 	}
 
 	err = json.Unmarshal(body, &cs)
+	if cs.ImageStatus.Reason == imageReasonFailure && cs.ImageStatus.Status == imageStatusFailure {
+		return nil, fmt.Errorf("worker running this job stopped responding")
+	}
 	if err != nil {
 		return nil, err
 	}
