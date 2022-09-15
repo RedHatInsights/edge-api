@@ -10,6 +10,11 @@ const (
 	TopicFleetmgmtImageBuild string = "platform.edge.fleetmgmt.image-build"
 	// TopicFleetmgmtImageISOBuild topic name
 	TopicFleetmgmtImageISOBuild string = "platform.edge.fleetmgmt.image-iso-build"
+
+	// TopicPlaybookDispatcherRuns external topic for playbook dispatcher results
+	TopicPlaybookDispatcherRuns string = "platform.playbook-dispatcher.runs"
+	// TopicInventoryEvents external topic for hosted inventory events
+	TopicInventoryEvents string = "platform.inventory.events"
 )
 
 // TopicNotFoundError indicates the account was nil

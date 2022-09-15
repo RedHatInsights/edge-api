@@ -155,10 +155,10 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 
 	update.Repo.URL = repoURL
 	update.Repo.Status = models.RepoStatusSuccess
-	if err := db.DB.Save(&update).Error; err != nil {
+	if err := db.DB.Omit("Devices.*").Save(&update).Error; err != nil {
 		return nil, err
 	}
-	if err := db.DB.Save(&update.Repo).Error; err != nil {
+	if err := db.DB.Omit("Devices.*").Save(&update.Repo).Error; err != nil {
 		return nil, err
 	}
 

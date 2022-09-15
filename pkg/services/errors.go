@@ -267,3 +267,10 @@ func (e *OstreeNotFound) Error() string {
 
 // ErrOrgIDMismatch returned when the context orgID is different from an entity OrgID
 var ErrOrgIDMismatch = errors.New("context org_id and entity org_id mismatch")
+
+// KafkaAllBrokersDown indicates that the error has occured due to kafka broker issue
+type KafkaAllBrokersDown struct{}
+
+func (e *KafkaAllBrokersDown) Error() string {
+	return "Cannot connect to any Kafka brokers"
+}
