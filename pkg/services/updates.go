@@ -231,6 +231,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 				device.Connected = true
 				dispatchRecord := &models.DispatchRecord{
 					Device:               &device,
+					DeviceID:             device.ID,
 					PlaybookURL:          playbookURL,
 					Status:               models.DispatchRecordStatusCreated,
 					PlaybookDispatcherID: excPlaybook.PlaybookDispatcherID,
@@ -240,6 +241,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 				device.Connected = false
 				dispatchRecord := &models.DispatchRecord{
 					Device:      &device,
+					DeviceID:    device.ID,
 					PlaybookURL: playbookURL,
 					Status:      models.DispatchRecordStatusError,
 					Reason:      models.UpdateReasonFailure,
