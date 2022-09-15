@@ -130,8 +130,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	var update *models.UpdateTransaction
 	db.DB.Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").Find(&update, id)
 	update.Status = models.UpdateStatusBuilding
-	// db.DB.Model(&models.UpdateTransaction{}).Where("ID=?", update.ID).Update("Status", update.Status)
-	db.DB.Omit("Devices, DispatchRecords.Device").Debug().Save(&update)
+	db.DB.Model(&models.UpdateTransaction{}).Where("ID=?", update.ID).Update("Status", update.Status)
 	WaitGroup.Add(1) // Processing one update
 	defer func() {
 		WaitGroup.Done() // Done with one update (successfully or not)
