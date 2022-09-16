@@ -19,11 +19,21 @@ KUBECTL=kubectl
 NAMESPACE=default
 TEST_OPTIONS="-race"
 BUILD_TAGS=-tags=fdo
-EXCLUDE_DIRS=-e /test/ -e /cmd/db -e /cmd/kafka -e /config -e /pkg/clients/imagebuilder/mock_imagebuilder -e /pkg/imagebuilder/mock_imagebuilder -e /pkg/clients/inventory/mock_inventory -e /pkg/errors -e /pkg/services/mock_services -e /unleash
+ENABLED_GO_LINTERS=errcheck gocritic gofmt goimports gosec gosimple govet \
+					ineffassign revive staticcheck typecheck unused
+EXCLUDE_DIRS=-e /test/ -e /cmd/db -e /cmd/kafka -e /config \
+				-e /pkg/clients/imagebuilder/mock_imagebuilder \
+				-e /pkg/imagebuilder/mock_imagebuilder \
+				-e /pkg/clients/inventory/mock_inventory \
+				-e /pkg/errors -e /pkg/services/mock_services -e /unleash
 
 CONTAINERFILE_NAME=Dockerfile
 
-.PHONY: all build-containers clean help test
+.PHONY:	all bonfire-config-local bonfire-config-github build-containers \
+               build-edge-api-container coverage coverage-html coverage-no-fdo \
+               create-ns deploy-app deploy-env fmt generate-docs help lint pre-commit \
+               restart-app scale-down scale-up scan_project test test-clean-no-fdo \
+               test-no-fdo vet vet-no-fdo
 
 bonfire-config-local:
 	@cp default_config.yaml.local.example config.yaml
@@ -95,6 +105,7 @@ help:
 	@echo "generate-docs             Creates OpenAPI specification for the project"
 	@echo "help                      Show this message"
 	@echo "lint                      Runs 'golint' on the project"
+	@echo "golangci-lint			 Runs 'golangci-lint' on the project"
 	@echo "pre-commit                Runs fmt, vet, lint, and clean on the project"
 	@echo "restart-app				 Scales the edge-api-service deployment down to 0 then up to 1 in the given namespace"
 	@echo "                            @param NAMESPACE - (optional) the namespace to use"
@@ -109,6 +120,20 @@ help:
 	@echo "vet                       Runs 'go vet' on the project"
 	@echo "vet-no-fdo                Runs 'go vet' on the project without FDO"
 	@echo ""
+
+golangci-lint:
+	if [ "$(GITHUB_ACTION)" != '' ]; \
+    then \
+    	golangci-lint run \
+			--disable-all \
+			--enable $(ENABLED_GO_LINTERS) \
+			--out-format=line-number \
+			$$(go list $(BUILD_TAGS) ./... | grep -v /vendor/); \
+    else \
+    	golangci-lint run \
+			--out-format=colored-line-number \
+			./...; \
+	fi
 
 lint:
 	golint $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)

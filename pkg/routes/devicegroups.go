@@ -732,7 +732,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("devices not found"))
 		return
 	}
-	result := db.DB.Save(upd)
+	result := db.DB.Omit("Devices").Save(upd)
 	if result.Error != nil {
 		ctxServices.Log.WithFields(log.Fields{
 			"error": err.Error(),
