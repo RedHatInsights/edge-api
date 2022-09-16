@@ -679,10 +679,10 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 		if setOfImageSetID != nil && !containsInt(setOfImageSetID, *img.ImageSetID) {
 			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("can't update devices with different image set ID"))
 			return
-		} else {
-			setOfImageSetID = append(setOfImageSetID, *img.ImageSetID)
-			setOfDeviceUUIDS = append(setOfDeviceUUIDS, d.UUID)
 		}
+		setOfImageSetID = append(setOfImageSetID, *img.ImageSetID)
+		setOfDeviceUUIDS = append(setOfDeviceUUIDS, d.UUID)
+
 	}
 
 	var devicesUpdate models.DevicesUpdate
