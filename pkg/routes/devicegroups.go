@@ -665,18 +665,26 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	devices := deviceGroup.Devices
-
+	var setOfImageSetID []uint
 	var setOfDeviceUUIDS []string
-	deviceImageID := devices[0].ImageID
-	for _, device := range devices {
-		setOfDeviceUUIDS = append(setOfDeviceUUIDS, device.UUID)
-		if device.ImageID != deviceImageID {
-			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("can't update devices with different imageID"))
-			return
 
+	for _, d := range deviceGroup.Devices {
+		var img models.Image
+		err := db.DB.Joins("Images").Debug().Find(&img,
+			"id = ?", d.ImageID)
+		if err.Error != nil {
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(fmt.Sprintf(err.Error.Error())))
+			return
+		}
+		if setOfImageSetID != nil && !containsInt(setOfImageSetID, *img.ImageSetID) {
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("can't update devices with different image set ID"))
+			return
+		} else {
+			setOfImageSetID = append(setOfImageSetID, *img.ImageSetID)
+			setOfDeviceUUIDS = append(setOfDeviceUUIDS, d.UUID)
 		}
 	}
+
 	var devicesUpdate models.DevicesUpdate
 	devicesUpdate.DevicesUUID = setOfDeviceUUIDS
 	//validate if commit is valid before continue process
@@ -735,4 +743,13 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	respondWithJSONBody(w, ctxServices.Log, updates)
+}
+
+func containsInt(s []uint, searchterm uint) bool {
+	for _, a := range s {
+		if a == searchterm {
+			return true
+		}
+	}
+	return false
 }
