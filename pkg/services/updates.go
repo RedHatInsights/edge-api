@@ -355,7 +355,7 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, orgID str
 // GetUpdateTransactionsForDevice returns all update transactions for a given device
 func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error) {
 	var updates []models.UpdateTransaction
-	result := db.DB.
+	result := db.DB.Debug().
 		Table("update_transactions").
 		Preload("DispatchRecords", func(db *gorm.DB) *gorm.DB {
 			return db.Where("dispatch_records.device_id = ?", device.ID)
@@ -364,7 +364,7 @@ func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*
 			`JOIN updatetransaction_devices ON update_transactions.id = updatetransaction_devices.update_transaction_id`).
 		Where(`updatetransaction_devices.device_id = ?`,
 			device.ID,
-		).Group("id").Order("created_at").Limit(10).Find(&updates)
+		).Group("id").Order("created_at DESC").Limit(10).Find(&updates)
 	if result.Error != nil {
 		return nil, result.Error
 	}
