@@ -413,8 +413,7 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		var storeDevice models.Device
 		// Don't throw error if device not found
 		db.DB.Where("id=?", dbDeviceID).First(&storeDevice)
-
-		err := db.DB.Model(&storeDevice).Association("UpdateTransaction").Find(&storeDevice.UpdateTransaction)
+		err := db.DB.Model(&storeDevice).Debug().Association("UpdateTransaction").Find(&storeDevice.UpdateTransaction)
 
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error finding associated updates for device")
