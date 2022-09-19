@@ -63,7 +63,8 @@ func main() {
 	var images []models.Image
 	// IBevent represents the struct of the value in a Kafka message
 	// TODO: add the original requestid
-	type IBevent struct {
+	// FIXME: golangci-lint
+	type IBevent struct { // nolint:unused
 		ImageID uint `json:"image_id"`
 	}
 
