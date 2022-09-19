@@ -1139,7 +1139,8 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 
 					if feature.DeviceSyncCreate.IsEnabled() {
 						s.log.WithField("deviceUUID", inDevice.ID).Debug("Passing fake device event to be added")
-						s.platformInventoryCreateEventHelper(createEvent)
+						// FIXME: golangci-lint
+						s.platformInventoryCreateEventHelper(createEvent) // nolint:errcheck,revive
 					}
 				}
 			}
