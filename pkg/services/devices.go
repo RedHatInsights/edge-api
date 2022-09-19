@@ -413,8 +413,7 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		var storeDevice models.Device
 		// Don't throw error if device not found
 		db.DB.Where("id=?", dbDeviceID).First(&storeDevice)
-
-		err := db.DB.Model(&storeDevice).Association("UpdateTransaction").Find(&storeDevice.UpdateTransaction)
+		err := db.DB.Model(&storeDevice).Debug().Association("UpdateTransaction").Find(&storeDevice.UpdateTransaction)
 
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error finding associated updates for device")
@@ -862,7 +861,7 @@ func (s *DeviceService) GetLatestCommitFromDevices(orgID string, devicesUUID []s
 
 	}
 	if len(devicesImageSetID) > 1 {
-		return 0, new(DeviceHasMoreThanOneImageSet)
+		return 0, new(DevicesHasMoreThanOneImageSet)
 	}
 
 	// check for updates , find if any later images exists to get the commitID

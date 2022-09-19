@@ -187,7 +187,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 			}).Error("error when getting latest commit for devices")
 			var apiError errors.APIError
 			switch err.(type) {
-			case *services.DeviceHasImageUndefined, *services.ImageHasNoImageSet, *services.DeviceHasMoreThanOneImageSet, *services.DeviceHasNoImageUpdate:
+			case *services.DeviceHasImageUndefined, *services.ImageHasNoImageSet, *services.DevicesHasMoreThanOneImageSet, *services.DeviceHasNoImageUpdate:
 				apiError = errors.NewBadRequest(err.Error())
 			default:
 				apiError = errors.NewInternalServerError()
@@ -197,9 +197,19 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 			return nil
 		}
 		devicesUpdate.CommitID = commitID
+	} else {
+		// validate if user provided commitID belong to same ImageSet as of Device Image
+		if err := ctxServices.CommitService.ValidateDevicesImageSetWithCommit(devicesUUID, devicesUpdate.CommitID); err != nil {
+			ctxServices.Log.WithFields(log.Fields{
+				"error":    err.Error(),
+				"commitID": devicesUpdate.CommitID,
+			}).Error("Commit does not belong to the same image-set as devices")
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(fmt.Sprintf("Commit %d does not belong to the same image-set as devices", devicesUpdate.CommitID)))
+			return nil
+		}
 	}
 	//validate if commit is valid before continue process
-	commit, err := ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID)
+	commit, err := ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID, orgID)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{
 			"error":    err.Error(),
