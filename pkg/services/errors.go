@@ -234,18 +234,18 @@ func (e *DeviceHasNoImageUpdate) Error() string {
 	return "device has no image update"
 }
 
-// DeviceHasMoreThanOneImageSet indicates that device record no image
-type DeviceHasMoreThanOneImageSet struct{}
+// DevicesHasMoreThanOneImageSet indicates that device record no image
+type DevicesHasMoreThanOneImageSet struct{}
 
-func (e *DeviceHasMoreThanOneImageSet) Error() string {
-	return "device has more than one imageset"
+func (e *DevicesHasMoreThanOneImageSet) Error() string {
+	return "device has more than one image-set"
 }
 
 // ImageHasNoImageSet indicates that device record no image
 type ImageHasNoImageSet struct{}
 
 func (e *ImageHasNoImageSet) Error() string {
-	return "Image has no imageset"
+	return "Image has no image-set"
 }
 
 // ErrUndefinedCommit indicate that the update transaction/image or some entity  has no commit defined.
@@ -265,5 +265,33 @@ func (e *OstreeNotFound) Error() string {
 	return "Ostree not found"
 }
 
-// ErrOrgIDMismatch returned when the contexrt orgID is diffenrent from an entity OrgID
+// EntitiesImageSetsMismatch indicates the CommitID does not belong to the same ImageSet as of Device's Image
+type EntitiesImageSetsMismatch struct{}
+
+func (e *EntitiesImageSetsMismatch) Error() string {
+	return "commit ID does not belong to the same image-set as devices images"
+}
+
+// CommitImageNotFound indicates the Commit Image is not found
+type CommitImageNotFound struct{}
+
+func (e *CommitImageNotFound) Error() string {
+	return "commit image does not found"
+}
+
+// SomeDevicesDoesNotExists indicates that device record no image
+type SomeDevicesDoesNotExists struct{}
+
+func (e *SomeDevicesDoesNotExists) Error() string {
+	return "image-set not found for all devices"
+}
+
+// ErrOrgIDMismatch returned when the context orgID is different from an entity OrgID
 var ErrOrgIDMismatch = errors.New("context org_id and entity org_id mismatch")
+
+// KafkaAllBrokersDown indicates that the error has occured due to kafka broker issue
+type KafkaAllBrokersDown struct{}
+
+func (e *KafkaAllBrokersDown) Error() string {
+	return "Cannot connect to any Kafka brokers"
+}

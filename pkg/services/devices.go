@@ -14,7 +14,6 @@ import (
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 const (
@@ -414,8 +413,7 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		var storeDevice models.Device
 		// Don't throw error if device not found
 		db.DB.Where("id=?", dbDeviceID).First(&storeDevice)
-
-		err := db.DB.Model(&storeDevice).Association("UpdateTransaction").Find(&storeDevice.UpdateTransaction)
+		err := db.DB.Model(&storeDevice).Debug().Association("UpdateTransaction").Find(&storeDevice.UpdateTransaction)
 
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error finding associated updates for device")
@@ -754,10 +752,6 @@ func ReturnDevicesView(storedDevices []models.Device, orgID string) ([]models.De
 				"updateStatus": updateStatus,
 			}).Debug("Found update status for device")
 
-			if updateStatus == models.UpdateStatusBuilding {
-				deviceInfo.Status = models.DeviceViewStatusUpdating
-			}
-
 			if latestUpdateTransaction.DispatchRecords != nil && len(latestUpdateTransaction.DispatchRecords) > 0 {
 				for _, dispatcherRecord := range latestUpdateTransaction.DispatchRecords {
 					if dispatcherRecord.DeviceID == device.ID {
@@ -768,9 +762,13 @@ func ReturnDevicesView(storedDevices []models.Device, orgID string) ([]models.De
 				}
 				if deviceInfo.DispatcherStatus == models.DispatchRecordStatusComplete {
 					deviceInfo.DispatcherStatus = models.UpdateStatusSuccess
-				} else if updateStatus == models.UpdateStatusDeviceDisconnected {
-					deviceInfo.DispatcherStatus = models.UpdateStatusDeviceUnresponsive
 				}
+			}
+
+			if updateStatus == models.UpdateStatusBuilding {
+				deviceInfo.Status = models.DeviceViewStatusUpdating
+			} else if updateStatus == models.UpdateStatusDeviceDisconnected {
+				deviceInfo.DispatcherStatus = models.UpdateStatusDeviceUnresponsive
 			}
 		}
 
@@ -863,7 +861,7 @@ func (s *DeviceService) GetLatestCommitFromDevices(orgID string, devicesUUID []s
 
 	}
 	if len(devicesImageSetID) > 1 {
-		return 0, new(DeviceHasMoreThanOneImageSet)
+		return 0, new(DevicesHasMoreThanOneImageSet)
 	}
 
 	// check for updates , find if any later images exists to get the commitID
@@ -910,7 +908,10 @@ func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCre
 		Name:        e.Host.Name,
 		LastSeen:    e.Host.Updated,
 	}
-	result := db.DB.Debug().Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
+
+	//We should not create a new device if UUID already exists
+	result := db.DB.Debug().Where(&models.Device{UUID: newDevice.UUID}).FirstOrCreate(&newDevice)
+
 	if result.Error != nil {
 		s.log.WithFields(log.Fields{
 			"host_id": string(e.Host.ID),
@@ -924,7 +925,9 @@ func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCre
 
 // ProcessPlatformInventoryDeleteEvent processes messages from platform.inventory.events kafka topic with event_type="delete"
 func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) error {
+
 	var eventData PlatformInsightsDeleteEventPayload
+
 	if err := json.Unmarshal(message, &eventData); err != nil {
 		s.log.WithFields(log.Fields{"value": string(message), "error": err}).Debug(
 			"Skipping kafka message - it's not a Platform Insights Inventory message with event type: delete, as unable to unmarshal the message",
@@ -954,6 +957,9 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 		).Error("Error when deleting devices")
 		return result.Error
 	}
+	s.log.WithFields(log.Fields{
+		"host_id": string(eventData.ID),
+	}).Debug("Deleting edge device")
 	return nil
 }
 
@@ -1095,7 +1101,7 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 			s.log.WithFields(log.Fields{"edge_count": len(dbDevices), "insights_count": len(inventoryDevices.Result)}).Debug("Inventory counts do not match")
 
 			// discover which inventory device is missing and add it.
-			// make a set of db sevices
+			// make a set of db services
 			type void struct{}
 			var nothing void
 			dbDeviceSet := make(map[string]void)

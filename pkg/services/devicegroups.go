@@ -417,7 +417,7 @@ func (s *DeviceGroupsService) AddDeviceGroupDevices(orgID string, deviceGroupID 
 	}
 
 	s.log.WithFields(log.Fields{"deviceCount": len(devicesToAdd), "deviceGroupID": deviceGroup.ID}).Debug("Adding devices to device group")
-	if err := db.DB.Model(&deviceGroup).Association("Devices").Append(devicesToAdd); err != nil {
+	if err := db.DB.Model(&deviceGroup).Omit("Devices.*").Association("Devices").Append(devicesToAdd); err != nil {
 		return nil, err
 	}
 

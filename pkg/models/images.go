@@ -73,7 +73,7 @@ const (
 	NameCantBeInvalidMessage = "name must start with alphanumeric characters and can contain underscore and hyphen characters"
 	// ImageTypeNotAccepted is the error message when an image type is not accepted
 	ImageTypeNotAccepted = "this image type is not accepted"
-	// ImageNameAlreadyExists is the error message when an image name alredy exists
+	// ImageNameAlreadyExists is the error message when an image name already exists
 	ImageNameAlreadyExists = "this image name is already in use"
 	// NoOutputTypes is the error message when the output types list is empty
 	NoOutputTypes = "an output type is required"

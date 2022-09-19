@@ -4,6 +4,7 @@ secrets:
     file: $PWD/podman/env/edgemgmt_config.json
 services:
     edge-api-service:
+      container_name: edge-api-service
       image: localhost/edge-api:localdev
       restart: always
       privileged: true
@@ -11,12 +12,10 @@ services:
         - 3000:3000
       env_file:
         - env/edge-api.env
-#      depends-on: postgresql
       volumes:
         - $PWD:/opt/app-root/src:z
         - $HOME/go:/go
-#      working_dir: /opt/app-root
-#      working_dir: /opt/app-root/src
+
       command: ["go", "run", "main.go"]
       secrets:
         - source: edgemgmt_config

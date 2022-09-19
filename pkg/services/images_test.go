@@ -3,7 +3,6 @@ package services_test
 import (
 	"context"
 	"fmt"
-
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -158,7 +157,7 @@ var _ = Describe("Image Service Test", func() {
 					Expect(image.ID).To(Equal(imageV1.ID))
 				})
 			})
-			Context("when rollback image doesnt exists", func() {
+			Context("when rollback image does not exists", func() {
 				var image *models.Image
 				var err error
 				BeforeEach(func() {
@@ -175,7 +174,7 @@ var _ = Describe("Image Service Test", func() {
 		})
 	})
 	Describe("update image", func() {
-		Context("when previous image doesnt exist", func() {
+		Context("when previous image does not exist", func() {
 			var err error
 			BeforeEach(func() {
 				err = service.UpdateImage(&models.Image{}, nil)
@@ -617,7 +616,7 @@ var _ = Describe("Image Service Test", func() {
 
 			devices := make([]models.Device, 0, len(images))
 			for ind, image := range images {
-				device := models.Device{OrgID: orgID, ImageID: image.ID, UpdateAvailable: false}
+				device := models.Device{OrgID: orgID, ImageID: image.ID, UpdateAvailable: false, UUID: faker.UUIDHyphenated()}
 				if ind == len(images)-1 {
 					device.UpdateAvailable = true
 				}
@@ -684,6 +683,27 @@ var _ = Describe("Image Service Test", func() {
 
 				err := service.SetDevicesUpdateAvailabilityFromImageSet(orgID, imageSet.ID)
 				Expect(err).To(BeNil())
+			})
+		})
+	})
+	Describe("update image stop when worker running job stopped responding", func() {
+		orgID := faker.UUIDHyphenated()
+		imageSet := models.ImageSet{OrgID: orgID, Name: faker.UUIDHyphenated()}
+		result := db.DB.Create(&imageSet)
+		Expect(result.Error).To(BeNil())
+		commit := models.Commit{OrgID: orgID, Status: models.ImageStatusBuilding}
+		db.DB.Create(&commit)
+		image := models.Image{ImageSetID: &imageSet.ID, OrgID: orgID, CommitID: commit.ID, Commit: &commit}
+		re := db.DB.Create(&image)
+		Expect(re.Error).To(BeNil())
+		expectedErr := fmt.Errorf("running this job stopped responding")
+		When("When image-builder failed in GetComposeStatus when worker stopped responding", func() {
+			It("image is created with INTERRUPTED status", func() {
+				mockImageBuilderClient.EXPECT().GetCommitStatus(&image).Return(&image, expectedErr)
+				_, err := service.UpdateImageStatus(&image)
+
+				Expect(err).To(HaveOccurred())
+				Expect(image.Status).To(Equal(models.ImageStatusInterrupted))
 			})
 		})
 	})

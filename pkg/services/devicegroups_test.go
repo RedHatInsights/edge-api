@@ -3,6 +3,7 @@ package services_test
 import (
 	"context"
 	"fmt"
+
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -318,7 +319,7 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 				Expect(deletedDevicesIDS).To(BeEmpty())
 			})
 
-			It("should not delete non exsiting device from device-group", func() {
+			It("should not delete non existing device from device-group", func() {
 				var fakeDevice models.Device
 				err := faker.FakeData(&fakeDevice)
 				Expect(err).To(BeNil())
@@ -356,7 +357,7 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 				err = faker.FakeData(&fakeDeviceGroup)
 				Expect(err).To(BeNil())
 				fakeDeviceGroup.Devices = []models.Device{savedDeviceGroup.Devices[0]}
-				Expect(db.DB.Create(&fakeDeviceGroup).Error).To(BeNil())
+				Expect(db.DB.Debug().Omit("Devices.*").Create(&fakeDeviceGroup).Error).To(BeNil())
 
 				deletedDevices, delErr := deviceGroupsService.DeleteDeviceGroupDevices(orgID, deviceGroupID, fakeDeviceGroup.Devices)
 				Expect(delErr).NotTo(BeNil())
@@ -374,7 +375,7 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 				err = faker.FakeData(&fakeDeviceGroup)
 				Expect(err).To(BeNil())
 				fakeDeviceGroup.Devices = []models.Device{savedDeviceGroup.Devices[0], fakeDevice}
-				Expect(db.DB.Create(&fakeDeviceGroup).Error).To(BeNil())
+				Expect(db.DB.Debug().Omit("Devices.*").Create(&fakeDeviceGroup).Error).To(BeNil())
 
 				deletedDevices, delErr := deviceGroupsService.DeleteDeviceGroupDevices(orgID, deviceGroupID, fakeDeviceGroup.Devices)
 				Expect(delErr).NotTo(BeNil())
@@ -435,7 +436,7 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 		}
 		When("Create DeviceGroup with 2 Devices that has same Image", func() {
 			It("check that image appear once under DeviceImageInfo", func() {
-				res := db.DB.Create(&deviceGroup)
+				res := db.DB.Omit("Devices.*").Create(&deviceGroup)
 				Expect(res.Error).To(BeNil())
 				Expect(deviceGroup.ID).NotTo(Equal(0))
 				re, err := deviceGroupsService.GetDeviceGroups(orgID, 100, 0, db.DB)

@@ -282,10 +282,17 @@ objects:
     - replicas: 3
       partitions: 3
       topicName: platform.edge.fleetmgmt.device-update
+    - replicas: 3
+      partitions: 3
+      topicName: platform.playbook-dispatcher.runs
+    - replicas: 3
+      partitions: 3
+      topicName: platform.inventory.events
     dependencies:
       - unleash-proxy
     optionalDependencies:
-      - "host-inventory"
+      - host-inventory
+      - playbook-dispatcher
       - ingress
     featureFlags: true
 parameters:

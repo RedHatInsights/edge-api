@@ -58,7 +58,7 @@ func TestGroupCreateUpdateConstraint(t *testing.T) {
 	var savedGroup DeviceGroup
 	result = db.DB.First(&savedGroup, group.ID)
 	if result.Error != nil {
-		t.Errorf("Failed to retreive the created DeviceGroup: %q", result.Error)
+		t.Errorf("Failed to retrieve the created DeviceGroup: %q", result.Error)
 	}
 
 	savedGroup.Account = groupNewAccount
@@ -73,7 +73,7 @@ func TestGroupCreateUpdateConstraint(t *testing.T) {
 	var updatedGroup DeviceGroup
 	result = db.DB.First(&updatedGroup, group.ID)
 	if result.Error != nil {
-		t.Errorf("Failed to retreive the updated DeviceGroup: %q", result.Error)
+		t.Errorf("Failed to retrieve the updated DeviceGroup: %q", result.Error)
 	}
 	// The group Account should not be updated
 	if updatedGroup.Account != groupInitialAccount {
