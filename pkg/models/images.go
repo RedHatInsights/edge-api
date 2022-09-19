@@ -111,7 +111,8 @@ const (
 //
 
 // Required Packages to send to image builder that will go into the base image
-var requiredPackages = []string{}
+// FIXME: golangci-lint
+var requiredPackages = []string{} // nolint:unused
 
 var (
 	validSSHPrefix     = regexp.MustCompile(`^(ssh-(rsa|dss|ed25519)|ecdsa-sha2-nistp(256|384|521)) \S+`)
