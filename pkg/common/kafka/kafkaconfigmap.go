@@ -37,9 +37,12 @@ func GetKafkaConsumerConfigMap(consumerGroup string) kafka.ConfigMap {
 	kafkaConfigMap.SetKey("group.id", consumerGroup) // nolint:errcheck,revive
 
 	if cfg.KafkaBrokers != nil {
-		kafkaConfigMap.SetKey("broker.address.family", "v4")
-		kafkaConfigMap.SetKey("session.timeout.ms", 6000)
-		kafkaConfigMap.SetKey("auto.offset.reset", "earliest")
+		// FIXME: golangci-lint
+		kafkaConfigMap.SetKey("broker.address.family", "v4") // nolint:errcheck,revive
+		// FIXME: golangci-lint
+		kafkaConfigMap.SetKey("session.timeout.ms", 6000) // nolint:errcheck,revive
+		// FIXME: golangci-lint
+		kafkaConfigMap.SetKey("auto.offset.reset", "earliest") // nolint:errcheck,revive
 	}
 	return kafkaConfigMap
 }
