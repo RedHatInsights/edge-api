@@ -26,7 +26,8 @@ func setUp() {
 	dbName = fmt.Sprintf("%d-routes-common.db", time)
 	config.Get().Database.Name = dbName
 	db.InitDB()
-	db.DB.AutoMigrate(&models.Image{})
+	// FIXME: golangci-lint
+	db.DB.AutoMigrate(&models.Image{}) // nolint:errcheck,revive
 	images := []models.Image{
 		{
 			Name:         "Motion Sensor 1",
