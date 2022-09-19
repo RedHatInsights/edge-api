@@ -269,5 +269,5 @@ type EdgeImageUpdateRequestedEventPayload struct {
 // EdgeImageISORequestedEventPayload provides edge-specific data when an image iso is requested
 type EdgeImageISORequestedEventPayload struct {
 	EdgeBasePayload
-	ImageID uint `json:"image_id"`
+	NewImage Image `json:"new_image"`
 }
