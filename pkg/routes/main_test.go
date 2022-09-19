@@ -86,12 +86,13 @@ func setUp() {
 
 	faker := mockUnleash.NewFakeUnleash()
 
+	// FIXME: golangci-lint
 	unleash.Initialize(
 		unleash.WithListener(&unleash.DebugListener{}),
 		unleash.WithAppName("my-application"),
 		unleash.WithUrl(faker.URL()),
 		unleash.WithRefreshInterval(1*time.Millisecond),
-	)
+	) // nolint:errcheck,revive
 	unleash.WaitForReady()
 	faker.Enable(feature.FeatureCustomRepos)
 
