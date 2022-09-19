@@ -701,7 +701,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 
 	devicesUpdate.CommitID = commitID
 	//get commit info to build update repo
-	commit, err := ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID)
+	commit, err := ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID, orgID)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{
 			"error":  err.Error(),
