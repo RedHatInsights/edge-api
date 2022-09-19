@@ -42,7 +42,8 @@ var _ = Describe("File Service Test", func() {
 					log.Fatal(err)
 				}
 				defer f.Close()
-				ioutil.WriteFile(path, []byte(data), fs.ModeAppend)
+				// FIXME: golangci-lint
+				ioutil.WriteFile(path, []byte(data), fs.ModeAppend) // nolint:errcheck,revive
 			})
 			AfterEach(func() {
 				os.Remove(path)
