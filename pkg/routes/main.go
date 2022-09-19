@@ -10,7 +10,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func readAccount(w http.ResponseWriter, r *http.Request, logEntry *log.Entry) string {
+// FIXME: golangci-lint
+func readAccount(w http.ResponseWriter, r *http.Request, logEntry *log.Entry) string { // nolint:revive,unused
 	account, err := common.GetAccount(r)
 	if err != nil {
 		logEntry.WithField("error", err.Error()).Error("Error retrieving account")
