@@ -132,6 +132,7 @@ golangci-lint:
     else \
     	golangci-lint run \
 			--out-format=colored-line-number \
+			--timeout 5m0s \
 			./...; \
 	fi
 
