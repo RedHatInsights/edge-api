@@ -38,7 +38,8 @@ var _ = Describe("RepoBuilder Service Test", func() {
 				filePath := fmt.Sprintf("/tmp/tar_extract_test_%d", time.Now().Unix())
 				filePathExtraction := filepath.Join(filePath, filePath)
 
-				os.MkdirAll(filePathExtraction, 0755)
+				// FIXME: golangci-lint
+				os.MkdirAll(filePathExtraction, 0755) // nolint:errcheck,revive
 				testFilePath, _ := createTestFile(filePath)
 				testTarFile = filepath.Join(filePath, testTarFile)
 				err := createTarball(testTarFile, testFilePath)
