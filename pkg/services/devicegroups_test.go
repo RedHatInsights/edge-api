@@ -17,7 +17,9 @@ import (
 )
 
 var _ = Describe("DeviceGroupsService basic functions", func() {
-	faker.SetRandomNumberBoundaries(1000, 100000) // set the boundaries for the random number generator - avoids collisions
+	// FIXME: golangci-lint
+	// set the boundaries for the random number generator - avoids collisions
+	faker.SetRandomNumberBoundaries(1000, 100000) // nolint:errcheck,revive
 	var (
 		ctx                 context.Context
 		deviceGroupsService services.DeviceGroupsServiceInterface
