@@ -63,5 +63,7 @@ jobs:
     #     - "[ $(go fmt ./... | wc -l) -eq 0 ]"
     - name: "Code Linting"
       script:
+        - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.49.0
+        - golangci-lint --version
         - make -s golangci-lint
         - "[ $(make -s golangci-lint | wc -l) -eq 0 ]"
