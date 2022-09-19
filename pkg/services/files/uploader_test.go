@@ -64,7 +64,8 @@ var _ = Describe("Uploader Test", func() {
 					log.Fatal(err)
 				}
 				defer f.Close()
-				os.Create(path)
+				// FIXME: golangci-lint
+				os.Create(path) // nolint:errcheck,revive
 			})
 			AfterEach(func() {
 				os.Remove(path)
