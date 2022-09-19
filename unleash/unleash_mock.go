@@ -102,7 +102,8 @@ func (f *FakeUnleashServer) handler(w http.ResponseWriter, req *http.Request) {
 	case "POST /client/metrics":
 		w.WriteHeader(200)
 	default:
-		w.Write([]byte("Unknown route"))
+		// FIXME: golangci-lint
+		w.Write([]byte("Unknown route")) // nolint:errcheck,revive
 		w.WriteHeader(500)
 	}
 }
