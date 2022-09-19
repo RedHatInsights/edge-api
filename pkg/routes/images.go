@@ -249,7 +249,8 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	// FALL THROUGH IF NOT EDA
 
 	// TODO: this is going to go away with EDA
-	ctxServices.ImageService.ProcessImage(image)
+	// FIXME: golangci-lint
+	ctxServices.ImageService.ProcessImage(image) // nolint:errcheck,revive
 
 	ctxServices.Log.WithFields(log.Fields{
 		"imageId": image.ID,
@@ -326,7 +327,8 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	// FALL THROUGH IF NOT EDA
 
 	// TODO: this is going to go away with EDA
-	ctxServices.ImageService.ProcessImage(image)
+	// FIXME: golangci-lint
+	ctxServices.ImageService.ProcessImage(image) // nolint:errcheck,revive
 
 	w.WriteHeader(http.StatusOK)
 	respondWithJSONBody(w, ctxServices.Log, image)
