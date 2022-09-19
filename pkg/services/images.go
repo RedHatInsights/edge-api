@@ -633,16 +633,19 @@ func (s *ImageService) CreateRepoForImage(i *models.Image) (*models.Repo, error)
 func (s *ImageService) SetErrorStatusOnImage(err error, image *models.Image) {
 	if image.Status != models.ImageStatusError {
 		image.Status = models.ImageStatusError
-		s.setImageStatus(image, models.ImageStatusError)
+		// FIXME: golangci-lint
+		s.setImageStatus(image, models.ImageStatusError) // nolint:errcheck,revive
 
 		if image.Commit != nil {
 			image.Commit.Status = models.ImageStatusError
-			s.setCommitStatus(image, models.ImageStatusError)
+			// FIXME: golangci-lint
+			s.setCommitStatus(image, models.ImageStatusError) // nolint:errcheck,revive
 		}
 
 		if image.Installer != nil {
 			image.Installer.Status = models.ImageStatusError
-			s.setInstallerStatus(image, models.ImageStatusError)
+			// FIXME: golangci-lint
+			s.setInstallerStatus(image, models.ImageStatusError) // nolint:errcheck,revive
 		}
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error setting image final status")
