@@ -362,12 +362,14 @@ var _ = Describe("UpdateService Basic functions", func() {
 			message, _ := json.Marshal(event)
 
 			It("should update status when record is found", func() {
-				updateService.ProcessPlaybookDispatcherRunEvent(message)
+				// FIXME: golangci-lint
+				updateService.ProcessPlaybookDispatcherRunEvent(message) // nolint:errcheck,revive
 				db.DB.First(&d, d.ID)
 				Expect(d.Status).To(Equal(models.DispatchRecordStatusComplete))
 			})
 			It("should update status of the dispatch record", func() {
-				updateService.ProcessPlaybookDispatcherRunEvent(message)
+				// FIXME: golangci-lint
+				updateService.ProcessPlaybookDispatcherRunEvent(message) // nolint:errcheck,revive
 				db.DB.First(&u, u.ID)
 				Expect(u.Status).To(Equal(models.UpdateStatusSuccess))
 			})
@@ -537,7 +539,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 			}
 			db.DB.Create(u)
 			It("should keep update status", func() {
-				updateService.SetUpdateStatus(u)
+				// FIXME: golangci-lint
+				updateService.SetUpdateStatus(u) // nolint:errcheck,revive
 				db.DB.First(&u, u.ID)
 				Expect(u.Status).To(Equal(models.UpdateStatusBuilding))
 			})
@@ -559,7 +562,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 			}
 			db.DB.Create(u)
 			It("should set the update status as error", func() {
-				updateService.SetUpdateStatus(u)
+				// FIXME: golangci-lint
+				updateService.SetUpdateStatus(u) // nolint:errcheck,revive
 				db.DB.First(&u, u.ID)
 				Expect(u.Status).To(Equal(models.UpdateStatusError))
 			})
@@ -581,7 +585,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 			}
 			db.DB.Create(u)
 			It("should set the update status as error", func() {
-				updateService.SetUpdateStatus(u)
+				// FIXME: golangci-lint
+				updateService.SetUpdateStatus(u) // nolint:errcheck,revive
 				db.DB.First(&u, u.ID)
 				Expect(u.Status).To(Equal(models.UpdateStatusSuccess))
 			})
