@@ -20,8 +20,10 @@ func GetKafkaProducerConfigMap() kafka.ConfigMap {
 			kafkaConfigMap.SetKey("sasl.mechanisms", *cfg.KafkaBrokers[0].Sasl.SaslMechanism) // nolint:errcheck,revive
 			// FIXME: golangci-lint
 			kafkaConfigMap.SetKey("security.protocol", *cfg.KafkaBrokers[0].Sasl.SecurityProtocol) // nolint:errcheck,revive
-			kafkaConfigMap.SetKey("sasl.username", *cfg.KafkaBrokers[0].Sasl.Username)
-			kafkaConfigMap.SetKey("sasl.password", *cfg.KafkaBrokers[0].Sasl.Password)
+			// FIXME: golangci-lint
+			kafkaConfigMap.SetKey("sasl.username", *cfg.KafkaBrokers[0].Sasl.Username) // nolint:errcheck,revive
+			// FIXME: golangci-lint
+			kafkaConfigMap.SetKey("sasl.password", *cfg.KafkaBrokers[0].Sasl.Password) // nolint:errcheck,revive
 		}
 	}
 	return kafkaConfigMap
@@ -31,7 +33,8 @@ func GetKafkaProducerConfigMap() kafka.ConfigMap {
 func GetKafkaConsumerConfigMap(consumerGroup string) kafka.ConfigMap {
 	cfg := config.Get()
 	kafkaConfigMap := GetKafkaProducerConfigMap()
-	kafkaConfigMap.SetKey("group.id", consumerGroup)
+	// FIXME: golangci-lint
+	kafkaConfigMap.SetKey("group.id", consumerGroup) // nolint:errcheck,revive
 
 	if cfg.KafkaBrokers != nil {
 		kafkaConfigMap.SetKey("broker.address.family", "v4")
