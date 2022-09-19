@@ -122,7 +122,8 @@ type PlaybookDispatcherEvent struct {
 
 // CreateUpdateAsync is the function that creates an update transaction asynchronously
 func (s *UpdateService) CreateUpdateAsync(id uint) {
-	go s.CreateUpdate(id)
+	// FIXME: golangci-lint
+	go s.CreateUpdate(id) // nolint:errcheck,revive
 }
 
 // CreateUpdate is the function that creates an update transaction
