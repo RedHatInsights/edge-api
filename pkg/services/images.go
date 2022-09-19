@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"syscall"
 	"text/template"
@@ -534,6 +535,9 @@ func (s *ImageService) postProcessImage(id uint) {
 	s.log.WithField("imageID", image.ID).Debug("Monitoring commit status for this image")
 	err := s.postProcessCommit(image)
 	if err != nil {
+		if image.Status == models.ImageStatusInterrupted {
+			return
+		}
 		s.SetErrorStatusOnImage(err, image)
 		s.log.WithField("error", err.Error()).Error("Failed creating commit for image")
 	}
@@ -581,6 +585,9 @@ func (s *ImageService) postProcessImage(id uint) {
 			*/
 			if c != nil {
 				err = <-c
+			}
+			if image.Status == models.ImageStatusInterrupted {
+				return
 			}
 			if err != nil {
 				s.SetErrorStatusOnImage(err, image)
@@ -820,6 +827,15 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 	if image.Commit.Status == models.ImageStatusBuilding {
 		image, err := s.ImageBuilder.GetCommitStatus(image)
 		if err != nil {
+			// check that if error contain timeout and job stop responding and image's time creation is less than 3 hours
+			if strings.Contains(err.Error(), "running this job stopped responding") {
+				image.Status = models.ImageStatusInterrupted
+				tx := db.DB.Debug().Model(&models.Image{}).Where("ID = ?", image.ID).Update("Status", models.ImageStatusInterrupted)
+				if tx.Error != nil {
+					return image, err
+				}
+				return image, err
+			}
 			return image, err
 		}
 		if image.Commit.Status != models.ImageStatusBuilding {
@@ -1134,6 +1150,9 @@ func (s *ImageService) resumeProcessImage(image *models.Image) {
 		s.log.Debug("Creating a commit for this image")
 		err := s.postProcessCommit(image)
 		if err != nil {
+			if image.Status == models.ImageStatusInterrupted {
+				return
+			}
 			s.SetErrorStatusOnImage(err, image)
 			s.log.WithField("error", err.Error()).Error("Failed creating commit for image")
 		}
@@ -1185,6 +1204,9 @@ func (s *ImageService) resumeProcessImage(image *models.Image) {
 				err = <-c
 			}
 			if err != nil {
+				if image.Status == models.ImageStatusInterrupted {
+					return
+				}
 				s.SetErrorStatusOnImage(err, image2)
 				s.log.WithField("error", err.Error()).Error("Failed creating installer for image")
 			}

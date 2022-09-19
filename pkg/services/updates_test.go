@@ -45,15 +45,14 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 		Context("by device", func() {
 			org_id := faker.UUIDHyphenated()
-			uuid := faker.UUIDHyphenated()
-			uuid2 := faker.UUIDHyphenated()
+
 			device := models.Device{
-				UUID:  uuid,
+				UUID:  faker.UUIDHyphenated(),
 				OrgID: org_id,
 			}
 			db.DB.Create(&device)
 			device2 := models.Device{
-				UUID:  uuid2,
+				UUID:  faker.UUIDHyphenated(),
 				OrgID: org_id,
 			}
 			db.DB.Create(&device2)
@@ -77,9 +76,9 @@ var _ = Describe("UpdateService Basic functions", func() {
 					OrgID: org_id,
 				},
 			}
-			db.DB.Create(&updates[0])
-			db.DB.Create(&updates[1])
-			db.DB.Create(&updates[2])
+			db.DB.Debug().Omit("Devices.*").Create(&updates[0])
+			db.DB.Debug().Omit("Devices.*").Create(&updates[1])
+			db.DB.Debug().Omit("Devices.*").Create(&updates[2])
 
 			It("to return two updates for first device", func() {
 				actual, err := updateService.GetUpdateTransactionsForDevice(&device)
@@ -169,7 +168,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					OrgID:  common.DefaultOrgID,
 					Status: models.UpdateStatusBuilding,
 				}
-				db.DB.Create(&update)
+				db.DB.Omit("Devices.*").Create(&update)
 			})
 
 			When("when build repo fail", func() {
@@ -257,7 +256,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					}, nil)
 
 					updateTransaction, err := updateService.CreateUpdate(update.ID)
-
+					Expect(updateTransaction).ToNot(BeNil())
 					Expect(err).To(BeNil())
 					Expect(updateTransaction).ToNot(BeNil())
 					Expect(updateTransaction.ID).Should(Equal(update.ID))
@@ -302,7 +301,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 					Expect(err).ShouldNot(BeNil())
 
 					var updateTransaction models.UpdateTransaction
-					db.DB.Preload("DispatchRecords").Preload("DispatchRecords.Device").Preload("Devices").First(&updateTransaction, update.ID)
+
+					db.DB.Debug().Preload("DispatchRecords").Preload("DispatchRecords.Device").Preload("Devices").First(&updateTransaction, update.ID)
 
 					Expect(updateTransaction.ID).Should(Equal(update.ID))
 					Expect(updateTransaction.Status).Should(Equal(models.UpdateStatusError))
@@ -345,12 +345,12 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Status:               models.UpdateStatusBuilding,
 				DeviceID:             device.ID,
 			}
-			db.DB.Create(d)
+			db.DB.Omit("Devices.*").Create(d)
 			u := &models.UpdateTransaction{
 				DispatchRecords: []models.DispatchRecord{*d},
 				OrgID:           org_id,
 			}
-			db.DB.Create(u)
+			db.DB.Omit("Devices.*").Create(u)
 
 			event := &services.PlaybookDispatcherEvent{
 				Payload: services.PlaybookDispatcherEventPayload{
@@ -589,30 +589,39 @@ var _ = Describe("UpdateService Basic functions", func() {
 	})
 
 	Describe("Update Devices From Update Transaction", func() {
-		org_id := faker.UUIDHyphenated()
-		imageSet := models.ImageSet{OrgID: org_id, Name: faker.UUIDHyphenated()}
-		db.DB.Create(&imageSet)
-		currentCommit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated()}
-		db.DB.Create(&currentCommit)
-		currentImage := models.Image{OrgID: org_id, CommitID: currentCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
-		db.DB.Create(&currentImage)
+		var update models.UpdateTransaction
+		var device models.Device
+		var currentImage models.Image
+		var newImage models.Image
+		var org_id string
+		var imageSet models.ImageSet
+		BeforeEach(func() {
 
-		newCommit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated()}
-		db.DB.Create(&newCommit)
-		newImage := models.Image{OrgID: org_id, CommitID: newCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
-		db.DB.Create(&newImage)
+			org_id = faker.UUIDHyphenated()
+			imageSet = models.ImageSet{OrgID: org_id, Name: faker.UUIDHyphenated()}
+			db.DB.Create(&imageSet)
+			currentCommit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated()}
+			db.DB.Create(&currentCommit)
+			currentImage = models.Image{OrgID: org_id, CommitID: currentCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
+			db.DB.Create(&currentImage)
 
-		device := models.Device{OrgID: org_id, ImageID: currentImage.ID, UpdateAvailable: true}
-		db.DB.Create(&device)
-		update := models.UpdateTransaction{
+			newCommit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated()}
+			db.DB.Create(&newCommit)
+			newImage = models.Image{OrgID: org_id, CommitID: newCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
+			db.DB.Create(&newImage)
 
-			OrgID:    org_id,
-			Devices:  []models.Device{device},
-			CommitID: newCommit.ID,
-			Status:   models.UpdateStatusBuilding,
-		}
-		db.DB.Create(&update)
+			device = models.Device{OrgID: org_id, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated()}
+			db.DB.Create(&device)
+			update = models.UpdateTransaction{
 
+				OrgID:    org_id,
+				Devices:  []models.Device{device},
+				CommitID: newCommit.ID,
+				Status:   models.UpdateStatusBuilding,
+			}
+			db.DB.Create(&update)
+
+		})
 		ctx := context.Background()
 		updateService := services.NewUpdateService(ctx, log.NewEntry(log.StandardLogger()))
 
@@ -625,6 +634,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			It("should not update device", func() {
 				var currentDevice models.Device
 				result := db.DB.First(&currentDevice, device.ID)
+
 				Expect(result.Error).To(BeNil())
 
 				Expect(currentDevice.ImageID).To(Equal(currentImage.ID))
@@ -634,18 +644,15 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 
 		Context("when update status is success", func() {
-			It("initialisation should pass", func() {
+			It("initialisation and update should pass", func() {
 				update.Status = models.UpdateStatusSuccess
-				result := db.DB.Save(&update)
+				result := db.DB.Omit("Devices.*").Save(&update)
 				Expect(result.Error).To(BeNil())
 
 				err := updateService.UpdateDevicesFromUpdateTransaction(update)
 				Expect(err).To(BeNil())
-			})
-
-			It("should update device", func() {
 				var currentDevice models.Device
-				result := db.DB.First(&currentDevice, device.ID)
+				result = db.DB.First(&currentDevice, device.ID)
 				Expect(result.Error).To(BeNil())
 
 				Expect(currentDevice.ImageID).To(Equal(newImage.ID))
@@ -673,7 +680,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					CommitID: commit.ID,
 					Status:   models.UpdateStatusSuccess,
 				}
-				result = db.DB.Create(&update)
+				result = db.DB.Omit("Devices.*").Create(&update)
 				Expect(result.Error).To(BeNil())
 
 				err := updateService.UpdateDevicesFromUpdateTransaction(update)
@@ -923,7 +930,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			Repo:     &repo,
 			Status:   models.UpdateStatusBuilding,
 		}
-		db.DB.Create(&update)
+		db.DB.Omit("Devices.*").Create(&update)
 
 		var devicesUpdate models.DevicesUpdate
 		devicesUpdate.DevicesUUID = append(devicesUpdate.DevicesUUID, device.UUID)
