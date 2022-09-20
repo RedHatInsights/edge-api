@@ -31,7 +31,7 @@ jobs:
           [ $(go fmt ./... | wc -l) -eq 0 ]
 
       - name: golangci-lint
-        run: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v3
         with:
           version: latest
 
@@ -45,7 +45,7 @@ jobs:
       - name: Set up python3
         uses: actions/setup-python@v2
         with:
-         python-version: '3.9'
+          python-version: '3.9'
 
       - name: Install openapi-spec-validator
         run: pip install openapi-spec-validator
