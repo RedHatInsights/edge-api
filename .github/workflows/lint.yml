@@ -15,14 +15,12 @@ jobs:
         run: printenv
 
       - name: Set up Go 1.x
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.16
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 2
+        uses: actions/checkout@v3
 
       - name: install modules
         run: |
@@ -32,12 +30,10 @@ jobs:
         run: |
           [ $(go fmt ./... | wc -l) -eq 0 ]
 
-      - name: Get dependencies
-        run: go get -u golang.org/x/lint/golint
-
-      - name: Lint
-        run: |
-          [ $(make -s lint | wc -l) -eq 0 ]
+      - name: golangci-lint
+        run: golangci/golangci-lint-action@v3
+        with:
+          version: latest
 
       - name: Vet
         uses: addnab/docker-run-action@v3
@@ -56,7 +52,7 @@ jobs:
 
       - name: Generate API docs spec file
         run: go run cmd/spec/main.go
-     
+
       - name: Validate spec-file
         run: python3 -m openapi_spec_validator ${{ github.workspace }}/cmd/spec/openapi.json
 
