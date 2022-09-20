@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:errcheck,gocritic,gosec,govet,revive
 package services
 
 import (
@@ -113,7 +115,7 @@ func (s *DeviceService) GetDeviceByID(deviceID uint) (*models.Device, error) {
 		return nil, new(DeviceNotFoundError)
 	}
 
-	//Load from device DB the groups info and add to the new struct
+	// Load from device DB the groups info and add to the new struct
 	err := db.DB.Model(&device).Association("DevicesGroups").Find(&device.DevicesGroups)
 	if err != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error finding associated devicegroups for device")
@@ -179,7 +181,7 @@ func (s *DeviceService) GetDeviceDetails(device inventory.Device) (*models.Devic
 			OrgID:      device.OrgID},
 		Image:              imageInfo,
 		UpdateTransactions: updates,
-		//Given we are concat the info from inventory with our db, we need to add this field to the struct to be able to see the result
+		// Given we are concat the info from inventory with our db, we need to add this field to the struct to be able to see the result
 		DevicesGroups: &databaseDevice.DevicesGroups,
 	}
 	return details, nil
@@ -187,7 +189,7 @@ func (s *DeviceService) GetDeviceDetails(device inventory.Device) (*models.Devic
 
 // GetDeviceDetailsByUUID provides details for a given Device UUID by going to inventory API and trying to also merge with the information on our database
 func (s *DeviceService) GetDeviceDetailsByUUID(deviceUUID string) (*models.DeviceDetails, error) {
-	//s.log = s.log.WithField("deviceUUID", deviceUUID)
+	// s.log = s.log.WithField("deviceUUID", deviceUUID)
 	resp, err := s.Inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || resp.Total != 1 {
 		return nil, new(DeviceNotFoundError)
@@ -197,7 +199,7 @@ func (s *DeviceService) GetDeviceDetailsByUUID(deviceUUID string) (*models.Devic
 
 // GetUpdateAvailableForDeviceByUUID returns if it exists an update for the current image at the device given its UUID.
 func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string, latest bool) ([]models.ImageUpdateAvailable, error) {
-	//s.log = s.log.WithField("deviceUUID", deviceUUID)
+	// s.log = s.log.WithField("deviceUUID", deviceUUID)
 	resp, err := s.Inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || resp.Total != 1 {
 		return nil, new(DeviceNotFoundError)
@@ -316,7 +318,7 @@ func GetDiffOnUpdate(oldImg models.Image, newImg models.Image) models.PackageDif
 
 // GetDeviceImageInfoByUUID returns the information of a running image for a device given its UUID
 func (s *DeviceService) GetDeviceImageInfoByUUID(deviceUUID string) (*models.ImageInfo, error) {
-	//s.log = s.log.WithField("deviceUUID", deviceUUID)
+	// s.log = s.log.WithField("deviceUUID", deviceUUID)
 	resp, err := s.Inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || resp.Total != 1 {
 		return nil, new(DeviceNotFoundError)
@@ -409,7 +411,7 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 			dbDeviceID = 0
 		}
 
-		//Load from device DB the groups info and add to the new struct
+		// Load from device DB the groups info and add to the new struct
 		var storeDevice models.Device
 		// Don't throw error if device not found
 		db.DB.Where("id=?", dbDeviceID).First(&storeDevice)
@@ -581,7 +583,7 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 		return err
 	}
 	if eventData.Type != InventoryEventTypeUpdated || eventData.Host.SystemProfile.HostType != InventoryHostTypeEdge {
-		//s.log.Debug("Skipping kafka message - Platform Insights Inventory message host type is not edge and event type is not updated")
+		// s.log.Debug("Skipping kafka message - Platform Insights Inventory message host type is not edge and event type is not updated")
 		return nil
 	}
 	deviceUUID := eventData.Host.ID
@@ -909,7 +911,7 @@ func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCre
 		LastSeen:    e.Host.Updated,
 	}
 
-	//We should not create a new device if UUID already exists
+	// We should not create a new device if UUID already exists
 	result := db.DB.Debug().Where(&models.Device{UUID: newDevice.UUID}).FirstOrCreate(&newDevice)
 
 	if result.Error != nil {

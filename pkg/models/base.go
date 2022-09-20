@@ -1,9 +1,12 @@
+// FIXME: golangci-lint
+// nolint:govet,revive
 package models
 
 import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
+
 	"gorm.io/gorm"
 )
 

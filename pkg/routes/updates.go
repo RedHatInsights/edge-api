@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:govet,revive
 package routes
 
 import (
@@ -29,7 +31,7 @@ func MakeUpdatesRouter(sub chi.Router) {
 		r.Use(UpdateCtx)
 		r.Get("/", GetUpdateByID)
 		r.Get("/update-playbook.yml", GetUpdatePlaybook)
-		r.Get("/notify", SendNotificationForDevice) //TMP ROUTE TO SEND THE NOTIFICATION
+		r.Get("/notify", SendNotificationForDevice) // TMP ROUTE TO SEND THE NOTIFICATION
 	})
 	// TODO: This is for backwards compatibility with the previous route
 	// Once the frontend starts querying the device
@@ -208,7 +210,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 			return nil
 		}
 	}
-	//validate if commit is valid before continue process
+	// validate if commit is valid before continue process
 	commit, err := ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID, orgID)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{
@@ -299,7 +301,7 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction
 	return update
 }
 
-//SendNotificationForDevice TMP route to validate
+// SendNotificationForDevice TMP route to validate
 func SendNotificationForDevice(w http.ResponseWriter, r *http.Request) {
 	if update := getUpdate(w, r); update != nil {
 		services := dependencies.ServicesFromContext(r.Context())

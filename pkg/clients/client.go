@@ -1,7 +1,10 @@
+// FIXME: golangci-lint
+// nolint:revive
 package clients
 
 import (
 	"context"
+
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	log "github.com/sirupsen/logrus"

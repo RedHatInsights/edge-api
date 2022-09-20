@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:gocritic,govet,revive,staticcheck
 package routes
 
 import (
@@ -207,17 +209,17 @@ var deviceGroupsFilters = common.ComposeFilters(
 		QueryParam: "name",
 		DBField:    "device_groups.name",
 	}),
-	//Filter handler for "created_at"
+	// Filter handler for "created_at"
 	common.CreatedAtFilterHandler(&common.Filter{
 		QueryParam: "created_at",
 		DBField:    "device_groups.created_at",
 	}),
-	//Filter handler for "updated_at"
+	// Filter handler for "updated_at"
 	common.CreatedAtFilterHandler(&common.Filter{
 		QueryParam: "updated_at",
 		DBField:    "device_groups.updated_at",
 	}),
-	//Filter handler for sorting "created_at"
+	// Filter handler for sorting "created_at"
 	common.SortFilterHandler("device_groups", "created_at", "DESC"),
 )
 
@@ -650,7 +652,7 @@ func CheckGroupName(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, ctxServices.Log, map[string]interface{}{"data": map[string]interface{}{"isValid": value}})
 }
 
-//UpdateAllDevicesFromGroup will be responsible to update all devices that belong to a group
+// UpdateAllDevicesFromGroup will be responsible to update all devices that belong to a group
 func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	deviceGroup := getContextDeviceGroup(w, r)
@@ -687,8 +689,8 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 
 	var devicesUpdate models.DevicesUpdate
 	devicesUpdate.DevicesUUID = setOfDeviceUUIDS
-	//validate if commit is valid before continue process
-	//should be created a new method to return the latest commit by imageId and be able to update regardless of imageset
+	// validate if commit is valid before continue process
+	// should be created a new method to return the latest commit by imageId and be able to update regardless of imageset
 	commitID, err := ctxServices.DeviceService.GetLatestCommitFromDevices(orgID, setOfDeviceUUIDS)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{
@@ -700,7 +702,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	devicesUpdate.CommitID = commitID
-	//get commit info to build update repo
+	// get commit info to build update repo
 	commit, err := ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID, orgID)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{

@@ -131,7 +131,9 @@ golangci-lint:
 			$$(go list $(BUILD_TAGS) ./... | grep -v /vendor/); \
     else \
     	golangci-lint run \
+			--max-same-issues 20 \
 			--out-format=colored-line-number \
+			--timeout 5m0s \
 			./...; \
 	fi
 

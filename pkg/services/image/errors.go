@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:revive
 package image
 
 // PayloadTypeAssertionError indicates the image name is not defined

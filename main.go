@@ -1,6 +1,8 @@
 // Package main Edge API
 //
 //  An API server for fleet edge management capabilities.
+// FIXME: golangci-lint
+// nolint:errcheck,revive,unused
 package main
 
 import (

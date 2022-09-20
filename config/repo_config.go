@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:revive
 package config
 
 // DefaultDistribution set the default image distribution in case miss it

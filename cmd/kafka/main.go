@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:errcheck,govet,revive,unused
 package main
 
 import (

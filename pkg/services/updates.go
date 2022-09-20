@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:errcheck,gocritic,govet,revive
 package services
 
 import (
@@ -270,7 +272,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 
 // GetUpdatePlaybook is the function that returns the path to an update playbook
 func (s *UpdateService) GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error) {
-	//TODO change this path name to use org id
+	// TODO change this path name to use org id
 	fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", update.OrgID, update.ID)
 	path := fmt.Sprintf("%s/playbooks/%s", update.OrgID, fname)
 	return s.FilesService.GetFile(path)
@@ -311,7 +313,7 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, orgID str
 		OSTreeRef:            templateInfo.OSTreeRef,
 	}
 
-	//TODO change the same time as line 231
+	// TODO change the same time as line 231
 	fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", orgID, templateInfo.UpdateTransactionID)
 	tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", orgID, fname)
 	dirpath := fmt.Sprintf("/tmp/v2/%s", orgID)
@@ -641,7 +643,7 @@ func (s *UpdateService) ValidateUpdateDeviceGroup(orgID string, deviceGroupID ui
 	return count == 1, nil
 }
 
-//BuildUpdateTransactions build records
+// BuildUpdateTransactions build records
 func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate,
 	orgID string, commit *models.Commit) (*[]models.UpdateTransaction, error) {
 	var inv inventory.Response
@@ -810,7 +812,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 
 				update.Repo = repo
 
-				//Should not create a transaction to device already updated
+				// Should not create a transaction to device already updated
 				update.OldCommits = oldCommits
 				update.RepoID = &repo.ID
 				if err := db.DB.Omit("Devices.*").Save(&update).Error; err != nil {

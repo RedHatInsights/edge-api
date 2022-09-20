@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:govet,revive,staticcheck
 package models
 
 import (
@@ -44,7 +46,7 @@ type DispatchRecord struct {
 	PlaybookDispatcherID string  `json:"PlaybookDispatcherID"`
 }
 
-//DevicesUpdate contains the update structure for the device
+// DevicesUpdate contains the update structure for the device
 type DevicesUpdate struct {
 	CommitID    uint     `json:"CommitID,omitempty"`
 	DevicesUUID []string `json:"DevicesUUID"`

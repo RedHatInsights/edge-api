@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:revive
 package db_test
 
 import (
