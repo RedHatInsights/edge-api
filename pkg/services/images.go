@@ -385,10 +385,40 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 	if image.Installer.Status == models.ImageStatusSuccess {
 		// Post process the installer ISO
 		//	User, kickstart, checksum, etc.
-		err := s.AddUserInfo(image)
-		if err != nil {
-			s.log.WithField("error", err.Error()).Error("Kickstart file injection failed")
-			return err
+		if feature.ImageCreateISOEDA.IsEnabled() {
+			s.log.Debug("Creating image iso with EDA")
+
+			ctx := context.Background()
+			ident, errident := common.GetIdentityFromContext(ctx)
+			if errident != nil {
+				s.log.WithField("error", errident.Error()).Error("Failed retrieving identity from context")
+				return errident
+			}
+			// create payload for ImageISORequested event
+			edgePayload := &models.EdgeImageISORequestedEventPayload{
+				EdgeBasePayload: models.EdgeBasePayload{
+					Identity:       ident,
+					LastHandleTime: time.Now().Format(time.RFC3339),
+					RequestID:      image.RequestID,
+				},
+				NewImage: *image,
+			}
+
+			// create the edge event
+			edgeEvent := kafkacommon.CreateEdgeEvent(ident.Identity.OrgID, models.SourceEdgeEventAPI, image.RequestID,
+				models.EventTypeEdgeImageISORequested, image.Name, edgePayload)
+
+			// put the event on the bus
+			if err := kafkacommon.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageISORequested, edgeEvent); err != nil {
+				log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
+				return err
+			}
+		} else {
+			err := s.AddUserInfo(image)
+			if err != nil {
+				s.log.WithField("error", err.Error()).Error("Kickstart file injection failed")
+				return err
+			}
 		}
 	}
 	// Regardless of the status, call this method to make sure the status will be updated
@@ -551,35 +581,6 @@ func (s *ImageService) postProcessImage(id uint) {
 		if image.HasOutputType(models.ImageTypeInstaller) {
 			s.log.WithField("imageID", image.ID).Debug("Creating an installer for this image")
 			image, c, err := s.CreateInstallerForImage(image)
-
-			if feature.ImageCreateISOEDA.IsEnabled() {
-				s.log.Debug("Creating image iso with EDA")
-
-				ident, errident := common.GetIdentityFromContext(ctx)
-				if errident != nil {
-					s.log.WithField("error", errident.Error()).Error("Failed retrieving identity from context")
-					return
-				}
-				// create payload for ImageISORequested event
-				edgePayload := &models.EdgeImageISORequestedEventPayload{
-					EdgeBasePayload: models.EdgeBasePayload{
-						Identity:       ident,
-						LastHandleTime: time.Now().Format(time.RFC3339),
-						RequestID:      image.RequestID,
-					},
-					ImageID: image.ID,
-				}
-
-				// create the edge event
-				edgeEvent := kafkacommon.CreateEdgeEvent(ident.Identity.OrgID, models.SourceEdgeEventAPI, image.RequestID,
-					models.EventTypeEdgeImageISORequested, image.Name, edgePayload)
-
-				// put the event on the bus
-				if err = kafkacommon.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageISORequested, edgeEvent); err != nil {
-					log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
-					return
-				}
-			}
 			/* CreateInstallerForImage is also called directly from an endpoint.
 			If called from the endpoint it will not block
 				the caller returns the channel output to _
