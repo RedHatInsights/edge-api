@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:revive
 package image
 
 // EdgeMgmtImageEventInterface is the interface for the image microservice(s)

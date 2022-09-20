@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:govet,revive
 package models
 
 import (
@@ -21,13 +23,13 @@ type DeviceGroup struct {
 	ValidUpdate bool     `json:"ValidUpdate" gorm:"-:all"`
 }
 
-//DeviceGroupListDetail is a record of Edge Devices Groups with images and status information
+// DeviceGroupListDetail is a record of Edge Devices Groups with images and status information
 type DeviceGroupListDetail struct {
 	DeviceGroup     DeviceGroup        `json:"DeviceGroup"`
 	DeviceImageInfo *[]DeviceImageInfo `json:"DevicesImageInfo"`
 }
 
-//DeviceImageInfo is a record of group with the current images running on the device
+// DeviceImageInfo is a record of group with the current images running on the device
 type DeviceImageInfo struct {
 	Name            string
 	Version         int

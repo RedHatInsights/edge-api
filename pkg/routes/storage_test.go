@@ -1,7 +1,12 @@
+// FIXME: golangci-lint
+// nolint:revive
 package routes
 
 import (
 	"fmt"
+	"io/ioutil"
+	url2 "net/url"
+
 	"github.com/bxcodec/faker/v3"
 	"github.com/go-chi/chi"
 	"github.com/golang/mock/gomock"
@@ -12,13 +17,12 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
-	"io/ioutil"
-	url2 "net/url"
 
 	// "github.com/redhatinsights/edge-api/pkg/routes"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/http/httptest"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var _ = Describe("Storage Router", func() {

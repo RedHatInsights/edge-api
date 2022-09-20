@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:errcheck,govet,revive
 package services_test
 
 import (
@@ -440,7 +442,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					RemoteOstreeUpdate:  "false",
 					OSTreeRef:           "rhel/8/x86_64/edge",
 				}
-				//TODO change to org_id once migration is complete
+				// TODO change to org_id once migration is complete
 				org_id := "1005"
 				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", org_id, t.UpdateTransactionID)
 				tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", org_id, fname)
@@ -480,7 +482,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					RemoteOstreeUpdate:  "true",
 					OSTreeRef:           "rhel/9/x86_64/edge",
 				}
-				//TODO change to org_id once migration is complete
+				// TODO change to org_id once migration is complete
 				org_id := "1005"
 				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", org_id, t.UpdateTransactionID)
 				tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", org_id, fname)

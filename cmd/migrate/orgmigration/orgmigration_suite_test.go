@@ -1,13 +1,16 @@
+// FIXME: golangci-lint
+// nolint:revive
 package orgmigration_test
 
 import (
 	"fmt"
-	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/edge-api/pkg/models"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/models"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

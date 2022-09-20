@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:errcheck,govet,revive
 package imagebuilder
 
 import (
@@ -486,7 +488,7 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*S
 	if packageName == "" || arch == "" || dist == "" {
 		return nil, errors.New("mandatory fields should not be empty")
 	}
-	//build the correct URL using the package name
+	// build the correct URL using the package name
 	url := fmt.Sprintf("%s/api/image-builder/v1/packages?distribution=%s&architecture=%s&search=%s", cfg.ImageBuilderConfig.URL, dist, arch, packageName)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

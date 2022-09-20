@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:errcheck,gosimple,govet,revive
 package routes
 
 import (
@@ -53,7 +55,7 @@ func MakeImagesRouter(sub chi.Router) {
 		r.Post("/update", CreateImageUpdate)
 		r.Post("/retry", RetryCreateImage)
 		r.Post("/resume", ResumeCreateImage)       // temporary to be replaced with EDA
-		r.Get("/notify", SendNotificationForImage) //TMP ROUTE TO SEND THE NOTIFICATION
+		r.Get("/notify", SendNotificationForImage) // TMP ROUTE TO SEND THE NOTIFICATION
 	})
 }
 
@@ -484,7 +486,7 @@ func GetImageStatusByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//ImageDetail return the structure to inform package info to images
+// ImageDetail return the structure to inform package info to images
 type ImageDetail struct {
 	Image              *models.Image `json:"image"`
 	AdditionalPackages int           `json:"additional_packages"`
@@ -587,7 +589,7 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-//GetRepoForImage gets the repository for an Image
+// GetRepoForImage gets the repository for an Image
 func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -602,7 +604,7 @@ func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//GetMetadataForImage gets the metadata from image-builder on /metadata endpoint
+// GetMetadataForImage gets the metadata from image-builder on /metadata endpoint
 func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -689,7 +691,7 @@ func ResumeCreateImage(w http.ResponseWriter, r *http.Request) {
 	*/
 	if tempImage := getImage(w, r); tempImage != nil {
 		// TODO: move this to its own context function
-		//ctx := context.Background()
+		// ctx := context.Background()
 		ctx := r.Context()
 		// using the Middleware() steps to be similar to the front door
 		edgeAPIServices := dependencies.Init(ctx)
@@ -729,7 +731,7 @@ func ResumeCreateImage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//SendNotificationForImage TMP route to validate
+// SendNotificationForImage TMP route to validate
 func SendNotificationForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		ctxServices := dependencies.ServicesFromContext(r.Context())

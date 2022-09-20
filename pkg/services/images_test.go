@@ -1,8 +1,11 @@
+// FIXME: golangci-lint
+// nolint:errcheck,gosec,govet,revive
 package services_test
 
 import (
 	"context"
 	"fmt"
+
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -709,7 +712,7 @@ var _ = Describe("Image Service Test", func() {
 	})
 	Describe("Create image when using getImageSetForNewImage", func() {
 		orgID := common.DefaultOrgID
-		//requestID := faker.UUIDHyphenated()
+		// requestID := faker.UUIDHyphenated()
 		imageName := faker.UUIDHyphenated()
 		image := models.Image{OrgID: orgID, Distribution: "rhel-85", Name: imageName}
 		expectedErr := fmt.Errorf("failed to create commit for image")
@@ -763,7 +766,7 @@ var _ = Describe("Image Service Test", func() {
 	})
 	Describe("Create image when ValidateImagePackage", func() {
 		orgID := faker.UUIDHyphenated()
-		//requestID := faker.UUIDHyphenated()
+		// requestID := faker.UUIDHyphenated()
 		imageName := faker.UUIDHyphenated()
 		When("When image-builder SearchPackage succeed", func() {
 			It("image create with valid package name", func() {

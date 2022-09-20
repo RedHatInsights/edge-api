@@ -1,10 +1,13 @@
 //go:build !fdo
 // +build !fdo
 
+// FIXME: golangci-lint
+// nolint:revive
 package services
 
 import (
 	"context"
+
 	log "github.com/sirupsen/logrus"
 )
 

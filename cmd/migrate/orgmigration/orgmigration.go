@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:gosec,govet,revive
 package orgmigration
 
 import (

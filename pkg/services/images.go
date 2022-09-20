@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:errcheck,gocritic,govet,revive
 package services
 
 import (
@@ -177,7 +179,7 @@ func (s *ImageService) CreateImage(image *models.Image) error {
 		return err
 	}
 	image.ThirdPartyRepositories = *imagesrepos
-	//Send Image creation to notification
+	// Send Image creation to notification
 	notify, errNotify := s.SendImageNotification(image)
 	if errNotify != nil {
 		s.log.WithField("message", errNotify.Error()).Error("Error sending notification")
@@ -937,7 +939,7 @@ func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) er
 	return nil
 }
 
-//ImageDetail return the structure to inform package info to images
+// ImageDetail return the structure to inform package info to images
 type ImageDetail struct {
 	Image              *models.Image `json:"image"`
 	AdditionalPackages int           `json:"additional_packages"`
@@ -1281,7 +1283,7 @@ func (s *ImageService) CheckIfIsLatestVersion(previousImage *models.Image) error
 	return nil
 }
 
-//GetUpdateInfo return package info when has an update to the image
+// GetUpdateInfo return package info when has an update to the image
 func (s *ImageService) GetUpdateInfo(image models.Image) ([]models.ImageUpdateAvailable, error) {
 	var images []models.Image
 	var imageDiff []models.ImageUpdateAvailable
@@ -1323,7 +1325,7 @@ func (s *ImageService) GetUpdateInfo(image models.Image) ([]models.ImageUpdateAv
 	return imageDiff, nil
 }
 
-//GetMetadata return package info when has an update to the image
+// GetMetadata return package info when has an update to the image
 func (s *ImageService) GetMetadata(image *models.Image) (*models.Image, error) {
 	s.log.Debug("Retrieving metadata")
 	image, err := s.ImageBuilder.GetMetadata(image)
