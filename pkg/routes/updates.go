@@ -211,7 +211,8 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 		}
 	} else {
 		// validate if commit is valid before continue process
-		commit_tmp, err := ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID, orgID)
+		var err error
+		commit, err = ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID, orgID)
 		if err != nil {
 			ctxServices.Log.WithFields(log.Fields{
 				"error":    err.Error(),
@@ -220,7 +221,6 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 			respondWithAPIError(w, ctxServices.Log, errors.NewNotFound(fmt.Sprintf("No commit found for CommitID %d", devicesUpdate.CommitID)))
 			return nil
 		}
-		commit = commit_tmp
 		// validate if user provided commitID belong to same ImageSet as of Device Image
 		if err := ctxServices.CommitService.ValidateDevicesImageSetWithCommit(devicesUUID, devicesUpdate.CommitID); err != nil {
 			ctxServices.Log.WithFields(log.Fields{
