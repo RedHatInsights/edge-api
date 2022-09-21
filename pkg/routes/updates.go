@@ -181,6 +181,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 		respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("some devices where not found"))
 		return nil
 	}
+	var commit *models.Commit
 	if devicesUpdate.CommitID == 0 {
 		commitID, err := ctxServices.DeviceService.GetLatestCommitFromDevices(orgID, devicesUUID)
 		if err != nil {
@@ -199,7 +200,27 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 			return nil
 		}
 		devicesUpdate.CommitID = commitID
+		commit, err = ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID, orgID)
+		if err != nil {
+			ctxServices.Log.WithFields(log.Fields{
+				"error":    err.Error(),
+				"commitID": devicesUpdate.CommitID,
+			}).Error("Can't find latest commit for the devices")
+			respondWithAPIError(w, ctxServices.Log, errors.NewNotFound(fmt.Sprintf("No commit found for CommitID %d", devicesUpdate.CommitID)))
+			return nil
+		}
 	} else {
+		// validate if commit is valid before continue process
+		commit_tmp, err := ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID, orgID)
+		if err != nil {
+			ctxServices.Log.WithFields(log.Fields{
+				"error":    err.Error(),
+				"commitID": devicesUpdate.CommitID,
+			}).Error("No commit found for Commit ID")
+			respondWithAPIError(w, ctxServices.Log, errors.NewNotFound(fmt.Sprintf("No commit found for CommitID %d", devicesUpdate.CommitID)))
+			return nil
+		}
+		commit = commit_tmp
 		// validate if user provided commitID belong to same ImageSet as of Device Image
 		if err := ctxServices.CommitService.ValidateDevicesImageSetWithCommit(devicesUUID, devicesUpdate.CommitID); err != nil {
 			ctxServices.Log.WithFields(log.Fields{
@@ -209,16 +230,6 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(fmt.Sprintf("Commit %d does not belong to the same image-set as devices", devicesUpdate.CommitID)))
 			return nil
 		}
-	}
-	// validate if commit is valid before continue process
-	commit, err := ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID, orgID)
-	if err != nil {
-		ctxServices.Log.WithFields(log.Fields{
-			"error":    err.Error(),
-			"commitID": devicesUpdate.CommitID,
-		}).Error("No commit found for Commit ID")
-		respondWithAPIError(w, ctxServices.Log, errors.NewNotFound(fmt.Sprintf("No commit found for CommitID %d", devicesUpdate.CommitID)))
-		return nil
 	}
 	ctxServices.Log.WithField("commit", commit.ID).Debug("Commit retrieved from this update")
 	updates, err := ctxServices.UpdateService.BuildUpdateTransactions(&devicesUpdate, orgID, commit)
