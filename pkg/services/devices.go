@@ -971,7 +971,8 @@ func (s *DeviceService) syncDevicesWithInventory(orgID string) {
 	// Delete devices in Edge Inventory that are not in Insights Inventory
 	var params *inventory.Params
 	var total int64
-	limit := 100
+	// setting limit to a small amount as this is passed as a URL param, URL params have a limit of 2000 chars.
+	limit := 30
 	offset := 0
 	var edgeDevices, devicesToBeDeleted []models.Device
 
@@ -1070,7 +1071,8 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 	// Go through this users inventory devices in chunks and check they are in our DB.
 	// If not, add them
 	var params inventory.Params
-	limit := 100
+	// setting limit to a small amount as this is passed as a URL param, URL params have a limit of 2000 chars.
+	limit := 30
 	params.PerPage = strconv.Itoa(limit)
 	page := 1
 	params.Page = strconv.Itoa(page)
