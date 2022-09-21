@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:govet,revive
 package models
 
 import (
@@ -17,17 +19,17 @@ type DeviceGroup struct {
 	OrgID       string   `json:"org_id" gorm:"index"`
 	Name        string   `json:"Name"`
 	Type        string   `json:"Type" gorm:"default:static;<-:create"`
-	Devices     []Device `json:"Devices" gorm:"many2many:device_groups_devices;"`
+	Devices     []Device `faker:"-" json:"Devices" gorm:"many2many:device_groups_devices;"`
 	ValidUpdate bool     `json:"ValidUpdate" gorm:"-:all"`
 }
 
-//DeviceGroupListDetail is a record of Edge Devices Groups with images and status information
+// DeviceGroupListDetail is a record of Edge Devices Groups with images and status information
 type DeviceGroupListDetail struct {
 	DeviceGroup     DeviceGroup        `json:"DeviceGroup"`
 	DeviceImageInfo *[]DeviceImageInfo `json:"DevicesImageInfo"`
 }
 
-//DeviceImageInfo is a record of group with the current images running on the device
+// DeviceImageInfo is a record of group with the current images running on the device
 type DeviceImageInfo struct {
 	Name            string
 	Version         int

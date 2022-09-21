@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:errcheck,gosec,govet,ineffassign,revive,staticcheck
 package routes
 
 import (
@@ -666,31 +668,52 @@ var _ = Describe("DeviceGroup routes", func() {
 	Context("Updating devices from DeviceGroup", func() {
 		account := "0000000"
 		orgID := "0000000"
-		fakeID := uint(233)
 		deviceGroupName := faker.Name()
+		imageSet := &models.ImageSet{
+			Name:    "test",
+			Version: 1,
+			OrgID:   orgID,
+		}
+		result := db.DB.Create(imageSet)
+		imageV1 := &models.Image{
+			Commit: &models.Commit{
+				OSTreeCommit: faker.UUIDHyphenated(),
+				OrgID:        orgID,
+			},
+			Status:     models.ImageStatusSuccess,
+			ImageSetID: &imageSet.ID,
+			Version:    1,
+			OrgID:      orgID,
+		}
+		result = db.DB.Create(imageV1.Commit)
+		Expect(result.Error).ToNot(HaveOccurred())
+		result = db.DB.Create(imageV1)
+		Expect(result.Error).ToNot(HaveOccurred())
+
 		devices := []models.Device{
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
 				OrgID:   orgID,
-				ImageID: fakeID,
+				ImageID: imageV1.ID,
 			},
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
 				OrgID:   orgID,
-				ImageID: fakeID,
+				ImageID: imageV1.ID,
 			},
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
 				OrgID:   orgID,
-				ImageID: fakeID,
+				ImageID: imageV1.ID,
 			},
 		}
+
 		deviceGroup := models.DeviceGroup{
 			Name:    deviceGroupName,
 			Account: account,
@@ -704,9 +727,9 @@ var _ = Describe("DeviceGroup routes", func() {
 			OrgID: orgID,
 		}
 
-		When("all is valid with same imageID", func() {
+		When("all is valid with same image Set ID", func() {
 			It("should update Devices from Group", func() {
-				res := db.DB.Create(&deviceGroup)
+				res := db.DB.Debug().Omit("Devices.*").Create(&deviceGroup)
 				Expect(res.Error).To(BeNil())
 				Expect(deviceGroup.ID).NotTo(Equal(0))
 				db.DB.Create(&commit)
@@ -745,7 +768,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				// setup mock for update
 				mockDeviceService.EXPECT().GetLatestCommitFromDevices(orgID, setOfDeviceUUIDS).
 					Return(commitID, nil)
-				mockCommitService.EXPECT().GetCommitByID(commitID).
+				mockCommitService.EXPECT().GetCommitByID(commitID, orgID).
 					Return(&commit, nil)
 				mockUpdateService.EXPECT().BuildUpdateTransactions(&devicesUpdate, orgID, &commit).
 					Return(&updTransactions, nil)
@@ -763,29 +786,72 @@ var _ = Describe("DeviceGroup routes", func() {
 		account := "0000000"
 		orgID := "0000000"
 		deviceGroupName := faker.Name()
+		imageSet := &models.ImageSet{
+			Name:    "test",
+			Version: 1,
+			OrgID:   orgID,
+		}
+
+		result := db.DB.Create(imageSet)
+		imageSet2 := &models.ImageSet{
+			Name:    "test2",
+			Version: 1,
+			OrgID:   orgID,
+		}
+		result = db.DB.Create(imageSet2)
+		Expect(result.Error).ToNot(HaveOccurred())
+		imageV1 := &models.Image{
+			Commit: &models.Commit{
+				OSTreeCommit: faker.UUIDHyphenated(),
+				OrgID:        orgID,
+			},
+			Status:     models.ImageStatusSuccess,
+			ImageSetID: &imageSet.ID,
+			Version:    1,
+			OrgID:      orgID,
+		}
+		imageV2 := &models.Image{
+			Commit: &models.Commit{
+				OSTreeCommit: faker.UUIDHyphenated(),
+				OrgID:        orgID,
+			},
+			Status:     models.ImageStatusSuccess,
+			ImageSetID: &imageSet2.ID,
+			Version:    1,
+			OrgID:      orgID,
+		}
+		result = db.DB.Create(imageV2)
+		Expect(result.Error).ToNot(HaveOccurred())
+
+		result = db.DB.Create(imageV1.Commit)
+		Expect(result.Error).ToNot(HaveOccurred())
+		result = db.DB.Create(imageV1)
+		Expect(result.Error).ToNot(HaveOccurred())
+
 		devices := []models.Device{
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
 				OrgID:   orgID,
-				ImageID: uint(001),
+				ImageID: imageV1.ID,
 			},
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
 				OrgID:   orgID,
-				ImageID: uint(002),
+				ImageID: imageV1.ID,
 			},
 			{
 				Name:    faker.Name(),
 				UUID:    faker.UUIDHyphenated(),
 				Account: account,
 				OrgID:   orgID,
-				ImageID: uint(003),
+				ImageID: imageV2.ID,
 			},
 		}
+
 		deviceGroup := models.DeviceGroup{
 			Name:    deviceGroupName,
 			Account: account,
@@ -794,12 +860,13 @@ var _ = Describe("DeviceGroup routes", func() {
 			Devices: devices,
 		}
 
+		Expect(result.Error).ToNot(HaveOccurred())
 		commit := models.Commit{
 			Arch: "x86_64",
 		}
 
 		When("with different imageID", func() {
-			It("should not update Devices from Group with different imageID", func() {
+			It("should not update Devices from Group with different image set ID", func() {
 				res := db.DB.Create(&deviceGroup)
 				Expect(res.Error).To(BeNil())
 				Expect(deviceGroup.ID).NotTo(Equal(0))

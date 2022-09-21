@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:gocritic,govet,revive
 package services
 
 import (
@@ -121,7 +123,7 @@ func (s *DeviceGroupsService) GetDeviceGroups(orgID string, limit int, offset in
 		return nil, res.Error
 	}
 
-	//Getting all devices for all groups
+	// Getting all devices for all groups
 	setOfDevices := make(map[int]models.Device)
 	for _, group := range deviceGroups {
 		for _, device := range group.Devices {
@@ -129,7 +131,7 @@ func (s *DeviceGroupsService) GetDeviceGroups(orgID string, limit int, offset in
 		}
 	}
 
-	//built set of imageInfo
+	// built set of imageInfo
 	setOfImages := make(map[int]models.DeviceImageInfo)
 	for _, device := range setOfDevices {
 		if int(device.ImageID) > 0 {
@@ -137,14 +139,14 @@ func (s *DeviceGroupsService) GetDeviceGroups(orgID string, limit int, offset in
 		}
 	}
 
-	//Getting image info to related images
+	// Getting image info to related images
 	err := s.GetDeviceImageInfo(setOfImages, orgID)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error getting device image info")
 		return nil, res.Error
 	}
 
-	//Concat info
+	// Concat info
 	var deviceGroupListDetail []models.DeviceGroupListDetail
 	for _, group := range deviceGroups {
 		imgInfo := make(map[int]models.DeviceImageInfo)
@@ -187,7 +189,7 @@ func (s *DeviceGroupsService) GetDeviceImageInfo(images map[int]models.DeviceIma
 				return result.Error
 			}
 
-			//should be changed to get the deviceInfo once we have the data correctly on DB
+			// should be changed to get the deviceInfo once we have the data correctly on DB
 			if result := db.Org(orgID, "").Preload("Images").
 				First(&deviceImageSet, deviceImage.ImageSetID).Order("ID desc"); result.Error != nil {
 				return result.Error
@@ -238,7 +240,7 @@ func (s *DeviceGroupsService) GetDeviceImageInfo(images map[int]models.DeviceIma
 	return nil
 }
 
-//CreateDeviceGroup create a device group for an ID
+// CreateDeviceGroup create a device group for an ID
 func (s *DeviceGroupsService) CreateDeviceGroup(deviceGroup *models.DeviceGroup) (*models.DeviceGroup, error) {
 	deviceGroupExists, err := s.DeviceGroupNameExists(deviceGroup.OrgID, deviceGroup.Name)
 	if err != nil {
@@ -417,7 +419,7 @@ func (s *DeviceGroupsService) AddDeviceGroupDevices(orgID string, deviceGroupID 
 	}
 
 	s.log.WithFields(log.Fields{"deviceCount": len(devicesToAdd), "deviceGroupID": deviceGroup.ID}).Debug("Adding devices to device group")
-	if err := db.DB.Model(&deviceGroup).Association("Devices").Append(devicesToAdd); err != nil {
+	if err := db.DB.Model(&deviceGroup).Omit("Devices.*").Association("Devices").Append(devicesToAdd); err != nil {
 		return nil, err
 	}
 

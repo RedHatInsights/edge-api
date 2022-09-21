@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:revive
 package routes_test
 
 import (
@@ -240,7 +242,7 @@ var _ = Describe("Devices View Filters", func() {
 		deviceUUID = faker.UUIDHyphenated()
 		device1 := models.Device{OrgID: orgID, Name: "device-1", UpdateAvailable: true, ImageID: imageV1.ID, UUID: deviceUUID}
 
-		device2 := models.Device{OrgID: orgID, Name: "device-2", UpdateAvailable: false, ImageID: 99, UUID: "aaa-aaa-aaa-aaa"}
+		device2 := models.Device{OrgID: orgID, Name: "device-2", UpdateAvailable: false, ImageID: 99, UUID: faker.UUIDHyphenated()}
 
 		result = db.DB.Create(&device1)
 		Expect(result.Error).To(BeNil())

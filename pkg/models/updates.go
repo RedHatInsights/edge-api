@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:govet,revive,staticcheck
 package models
 
 import (
@@ -22,13 +24,13 @@ type UpdateTransaction struct {
 	Account         string           `json:"Account"`
 	OrgID           string           `json:"org_id" gorm:"index"`
 	OldCommits      []Commit         `gorm:"many2many:updatetransaction_commits;" json:"OldCommits"`
-	Devices         []Device         `gorm:"many2many:updatetransaction_devices;" json:"Devices"`
+	Devices         []Device         `gorm:"many2many:updatetransaction_devices;save_association:false" json:"Devices"`
 	Tag             string           `json:"Tag"`
 	Status          string           `json:"Status"`
 	RepoID          *uint            `json:"RepoID"`
 	Repo            *Repo            `json:"Repo"`
 	ChangesRefs     bool             `gorm:"default:false" json:"ChangesRefs"`
-	DispatchRecords []DispatchRecord `gorm:"many2many:updatetransaction_dispatchrecords;" json:"DispatchRecords"`
+	DispatchRecords []DispatchRecord `gorm:"many2many:updatetransaction_dispatchrecords;save_association:false" json:"DispatchRecords"`
 }
 
 // DispatchRecord represents the combination of a Playbook Dispatcher (https://github.com/RedHatInsights/playbook-dispatcher),
@@ -38,13 +40,13 @@ type DispatchRecord struct {
 	Model
 	PlaybookURL          string  `json:"PlaybookURL"`
 	DeviceID             uint    `json:"DeviceID"`
-	Device               *Device `json:"Device"`
+	Device               *Device `json:"Device;save_association:false"`
 	Status               string  `json:"Status"`
 	Reason               string  `json:"Reason"`
 	PlaybookDispatcherID string  `json:"PlaybookDispatcherID"`
 }
 
-//DevicesUpdate contains the update structure for the device
+// DevicesUpdate contains the update structure for the device
 type DevicesUpdate struct {
 	CommitID    uint     `json:"CommitID,omitempty"`
 	DevicesUUID []string `json:"DevicesUUID"`

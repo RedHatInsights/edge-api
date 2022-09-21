@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:gocritic,govet,revive,staticcheck
 package routes
 
 import (
@@ -207,17 +209,17 @@ var deviceGroupsFilters = common.ComposeFilters(
 		QueryParam: "name",
 		DBField:    "device_groups.name",
 	}),
-	//Filter handler for "created_at"
+	// Filter handler for "created_at"
 	common.CreatedAtFilterHandler(&common.Filter{
 		QueryParam: "created_at",
 		DBField:    "device_groups.created_at",
 	}),
-	//Filter handler for "updated_at"
+	// Filter handler for "updated_at"
 	common.CreatedAtFilterHandler(&common.Filter{
 		QueryParam: "updated_at",
 		DBField:    "device_groups.updated_at",
 	}),
-	//Filter handler for sorting "created_at"
+	// Filter handler for sorting "created_at"
 	common.SortFilterHandler("device_groups", "created_at", "DESC"),
 )
 
@@ -650,7 +652,7 @@ func CheckGroupName(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, ctxServices.Log, map[string]interface{}{"data": map[string]interface{}{"isValid": value}})
 }
 
-//UpdateAllDevicesFromGroup will be responsible to update all devices that belong to a group
+// UpdateAllDevicesFromGroup will be responsible to update all devices that belong to a group
 func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	deviceGroup := getContextDeviceGroup(w, r)
@@ -665,22 +667,30 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	devices := deviceGroup.Devices
-
+	var setOfImageSetID []uint
 	var setOfDeviceUUIDS []string
-	deviceImageID := devices[0].ImageID
-	for _, device := range devices {
-		setOfDeviceUUIDS = append(setOfDeviceUUIDS, device.UUID)
-		if device.ImageID != deviceImageID {
-			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("can't update devices with different imageID"))
-			return
 
+	for _, d := range deviceGroup.Devices {
+		var img models.Image
+		err := db.DB.Joins("Images").Debug().Find(&img,
+			"id = ?", d.ImageID)
+		if err.Error != nil {
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(fmt.Sprintf(err.Error.Error())))
+			return
 		}
+		if setOfImageSetID != nil && !containsInt(setOfImageSetID, *img.ImageSetID) {
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("can't update devices with different image set ID"))
+			return
+		}
+		setOfImageSetID = append(setOfImageSetID, *img.ImageSetID)
+		setOfDeviceUUIDS = append(setOfDeviceUUIDS, d.UUID)
+
 	}
+
 	var devicesUpdate models.DevicesUpdate
 	devicesUpdate.DevicesUUID = setOfDeviceUUIDS
-	//validate if commit is valid before continue process
-	//should be created a new method to return the latest commit by imageId and be able to update regardless of imageset
+	// validate if commit is valid before continue process
+	// should be created a new method to return the latest commit by imageId and be able to update regardless of imageset
 	commitID, err := ctxServices.DeviceService.GetLatestCommitFromDevices(orgID, setOfDeviceUUIDS)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{
@@ -692,8 +702,8 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	devicesUpdate.CommitID = commitID
-	//get commit info to build update repo
-	commit, err := ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID)
+	// get commit info to build update repo
+	commit, err := ctxServices.CommitService.GetCommitByID(devicesUpdate.CommitID, orgID)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{
 			"error":  err.Error(),
@@ -724,7 +734,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("devices not found"))
 		return
 	}
-	result := db.DB.Save(upd)
+	result := db.DB.Omit("Devices").Save(upd)
 	if result.Error != nil {
 		ctxServices.Log.WithFields(log.Fields{
 			"error": err.Error(),
@@ -735,4 +745,13 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	respondWithJSONBody(w, ctxServices.Log, updates)
+}
+
+func containsInt(s []uint, searchterm uint) bool {
+	for _, a := range s {
+		if a == searchterm {
+			return true
+		}
+	}
+	return false
 }

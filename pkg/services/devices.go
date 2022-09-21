@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:errcheck,gocritic,gosec,govet,revive
 package services
 
 import (
@@ -14,7 +16,6 @@ import (
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 const (
@@ -114,7 +115,7 @@ func (s *DeviceService) GetDeviceByID(deviceID uint) (*models.Device, error) {
 		return nil, new(DeviceNotFoundError)
 	}
 
-	//Load from device DB the groups info and add to the new struct
+	// Load from device DB the groups info and add to the new struct
 	err := db.DB.Model(&device).Association("DevicesGroups").Find(&device.DevicesGroups)
 	if err != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error finding associated devicegroups for device")
@@ -180,7 +181,7 @@ func (s *DeviceService) GetDeviceDetails(device inventory.Device) (*models.Devic
 			OrgID:      device.OrgID},
 		Image:              imageInfo,
 		UpdateTransactions: updates,
-		//Given we are concat the info from inventory with our db, we need to add this field to the struct to be able to see the result
+		// Given we are concat the info from inventory with our db, we need to add this field to the struct to be able to see the result
 		DevicesGroups: &databaseDevice.DevicesGroups,
 	}
 	return details, nil
@@ -188,7 +189,7 @@ func (s *DeviceService) GetDeviceDetails(device inventory.Device) (*models.Devic
 
 // GetDeviceDetailsByUUID provides details for a given Device UUID by going to inventory API and trying to also merge with the information on our database
 func (s *DeviceService) GetDeviceDetailsByUUID(deviceUUID string) (*models.DeviceDetails, error) {
-	//s.log = s.log.WithField("deviceUUID", deviceUUID)
+	// s.log = s.log.WithField("deviceUUID", deviceUUID)
 	resp, err := s.Inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || resp.Total != 1 {
 		return nil, new(DeviceNotFoundError)
@@ -198,7 +199,7 @@ func (s *DeviceService) GetDeviceDetailsByUUID(deviceUUID string) (*models.Devic
 
 // GetUpdateAvailableForDeviceByUUID returns if it exists an update for the current image at the device given its UUID.
 func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string, latest bool) ([]models.ImageUpdateAvailable, error) {
-	//s.log = s.log.WithField("deviceUUID", deviceUUID)
+	// s.log = s.log.WithField("deviceUUID", deviceUUID)
 	resp, err := s.Inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || resp.Total != 1 {
 		return nil, new(DeviceNotFoundError)
@@ -317,7 +318,7 @@ func GetDiffOnUpdate(oldImg models.Image, newImg models.Image) models.PackageDif
 
 // GetDeviceImageInfoByUUID returns the information of a running image for a device given its UUID
 func (s *DeviceService) GetDeviceImageInfoByUUID(deviceUUID string) (*models.ImageInfo, error) {
-	//s.log = s.log.WithField("deviceUUID", deviceUUID)
+	// s.log = s.log.WithField("deviceUUID", deviceUUID)
 	resp, err := s.Inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || resp.Total != 1 {
 		return nil, new(DeviceNotFoundError)
@@ -410,12 +411,11 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 			dbDeviceID = 0
 		}
 
-		//Load from device DB the groups info and add to the new struct
+		// Load from device DB the groups info and add to the new struct
 		var storeDevice models.Device
 		// Don't throw error if device not found
 		db.DB.Where("id=?", dbDeviceID).First(&storeDevice)
-
-		err := db.DB.Model(&storeDevice).Association("UpdateTransaction").Find(&storeDevice.UpdateTransaction)
+		err := db.DB.Model(&storeDevice).Debug().Association("UpdateTransaction").Find(&storeDevice.UpdateTransaction)
 
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error finding associated updates for device")
@@ -583,7 +583,7 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 		return err
 	}
 	if eventData.Type != InventoryEventTypeUpdated || eventData.Host.SystemProfile.HostType != InventoryHostTypeEdge {
-		//s.log.Debug("Skipping kafka message - Platform Insights Inventory message host type is not edge and event type is not updated")
+		// s.log.Debug("Skipping kafka message - Platform Insights Inventory message host type is not edge and event type is not updated")
 		return nil
 	}
 	deviceUUID := eventData.Host.ID
@@ -863,7 +863,7 @@ func (s *DeviceService) GetLatestCommitFromDevices(orgID string, devicesUUID []s
 
 	}
 	if len(devicesImageSetID) > 1 {
-		return 0, new(DeviceHasMoreThanOneImageSet)
+		return 0, new(DevicesHasMoreThanOneImageSet)
 	}
 
 	// check for updates , find if any later images exists to get the commitID
@@ -893,7 +893,9 @@ func (s *DeviceService) ProcessPlatformInventoryCreateEvent(message []byte) erro
 			s.log.WithField("message", string(message)).Debug("Inventory create event message body")
 			return s.platformInventoryCreateEventHelper(*e)
 		}
-		s.log.Debug("Skipping message - not an edge create message from platform insights")
+		if feature.KafkaLogging.IsEnabled() {
+			s.log.Debug("Skipping message - not an edge create message from platform insights")
+		}
 	}
 	return nil
 }
@@ -910,7 +912,10 @@ func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCre
 		Name:        e.Host.Name,
 		LastSeen:    e.Host.Updated,
 	}
-	result := db.DB.Debug().Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
+
+	// We should not create a new device if UUID already exists
+	result := db.DB.Debug().Where(&models.Device{UUID: newDevice.UUID}).FirstOrCreate(&newDevice)
+
 	if result.Error != nil {
 		s.log.WithFields(log.Fields{
 			"host_id": string(e.Host.ID),
@@ -924,7 +929,9 @@ func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCre
 
 // ProcessPlatformInventoryDeleteEvent processes messages from platform.inventory.events kafka topic with event_type="delete"
 func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) error {
+
 	var eventData PlatformInsightsDeleteEventPayload
+
 	if err := json.Unmarshal(message, &eventData); err != nil {
 		s.log.WithFields(log.Fields{"value": string(message), "error": err}).Debug(
 			"Skipping kafka message - it's not a Platform Insights Inventory message with event type: delete, as unable to unmarshal the message",
@@ -954,6 +961,9 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 		).Error("Error when deleting devices")
 		return result.Error
 	}
+	s.log.WithFields(log.Fields{
+		"host_id": string(eventData.ID),
+	}).Debug("Deleting edge device")
 	return nil
 }
 
@@ -963,7 +973,8 @@ func (s *DeviceService) syncDevicesWithInventory(orgID string) {
 	// Delete devices in Edge Inventory that are not in Insights Inventory
 	var params *inventory.Params
 	var total int64
-	limit := 100
+	// setting limit to a small amount as this is passed as a URL param, URL params have a limit of 2000 chars.
+	limit := 30
 	offset := 0
 	var edgeDevices, devicesToBeDeleted []models.Device
 
@@ -1062,7 +1073,8 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 	// Go through this users inventory devices in chunks and check they are in our DB.
 	// If not, add them
 	var params inventory.Params
-	limit := 100
+	// setting limit to a small amount as this is passed as a URL param, URL params have a limit of 2000 chars.
+	limit := 30
 	params.PerPage = strconv.Itoa(limit)
 	page := 1
 	params.Page = strconv.Itoa(page)

@@ -1,6 +1,8 @@
 // Package main Edge API
 //
 //  An API server for fleet edge management capabilities.
+// FIXME: golangci-lint
+// nolint:errcheck,revive,unused
 package main
 
 import (
@@ -16,6 +18,7 @@ import (
 	redoc "github.com/go-openapi/runtime/middleware"
 	"github.com/redhatinsights/edge-api/config"
 	l "github.com/redhatinsights/edge-api/logger"
+	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/routes"
@@ -179,8 +182,8 @@ func main() {
 	}
 
 	consumers := []services.ConsumerService{
-		services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.playbook-dispatcher.runs"),
-		services.NewKafkaConsumerService(cfg.KafkaConfig, "platform.inventory.events"),
+		services.NewKafkaConsumerService(cfg.KafkaConfig, kafkacommon.TopicPlaybookDispatcherRuns),
+		services.NewKafkaConsumerService(cfg.KafkaConfig, kafkacommon.TopicInventoryEvents),
 	}
 	webServer := serveWeb(cfg, consumers)
 	metricsServer := serveMetrics(cfg.MetricsPort)

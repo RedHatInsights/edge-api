@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:govet,revive
 package files
 
 import (
@@ -11,7 +13,7 @@ import (
 )
 
 func TestUntar(t *testing.T) {
-	//create tar file to be used as mock
+	// create tar file to be used as mock
 	tarPath := "mockTarFile.tar"
 	files := map[string]string{
 		"index.html":   `<body>Ansible!</body>`,

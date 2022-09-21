@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:gocritic,govet,revive
 package routes
 
 import (
@@ -145,7 +147,7 @@ func ImageSetCtx(next http.Handler) http.Handler {
 	})
 }
 
-//ImageSetInstallerURL returns Imageset structure with last installer available
+// ImageSetInstallerURL returns Imageset structure with last installer available
 type ImageSetInstallerURL struct {
 	ImageSetData     models.ImageSet `json:"image_set"`
 	ImageBuildISOURL *string         `json:"image_build_iso_url"`
@@ -258,7 +260,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//ImageSetImagePackages return info related to details on images from imageset
+// ImageSetImagePackages return info related to details on images from imageset
 type ImageSetImagePackages struct {
 	ImageSetData     models.ImageSet `json:"image_set"`
 	Images           []ImageDetail   `json:"images"`

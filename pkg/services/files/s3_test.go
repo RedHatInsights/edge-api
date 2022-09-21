@@ -1,12 +1,15 @@
+// FIXME: golangci-lint
+// nolint:revive
 package files_test
 
 import (
+	"os"
+
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/services/files"
-	"os"
 )
 
 var _ = Describe("Uploader Test", func() {

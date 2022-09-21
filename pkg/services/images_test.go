@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:errcheck,gosec,govet,revive
 package services_test
 
 import (
@@ -617,7 +619,7 @@ var _ = Describe("Image Service Test", func() {
 
 			devices := make([]models.Device, 0, len(images))
 			for ind, image := range images {
-				device := models.Device{OrgID: orgID, ImageID: image.ID, UpdateAvailable: false}
+				device := models.Device{OrgID: orgID, ImageID: image.ID, UpdateAvailable: false, UUID: faker.UUIDHyphenated()}
 				if ind == len(images)-1 {
 					device.UpdateAvailable = true
 				}
@@ -687,9 +689,30 @@ var _ = Describe("Image Service Test", func() {
 			})
 		})
 	})
+	Describe("update image stop when worker running job stopped responding", func() {
+		orgID := faker.UUIDHyphenated()
+		imageSet := models.ImageSet{OrgID: orgID, Name: faker.UUIDHyphenated()}
+		result := db.DB.Create(&imageSet)
+		Expect(result.Error).To(BeNil())
+		commit := models.Commit{OrgID: orgID, Status: models.ImageStatusBuilding}
+		db.DB.Create(&commit)
+		image := models.Image{ImageSetID: &imageSet.ID, OrgID: orgID, CommitID: commit.ID, Commit: &commit}
+		re := db.DB.Create(&image)
+		Expect(re.Error).To(BeNil())
+		expectedErr := fmt.Errorf("running this job stopped responding")
+		When("When image-builder failed in GetComposeStatus when worker stopped responding", func() {
+			It("image is created with INTERRUPTED status", func() {
+				mockImageBuilderClient.EXPECT().GetCommitStatus(&image).Return(&image, expectedErr)
+				_, err := service.UpdateImageStatus(&image)
+
+				Expect(err).To(HaveOccurred())
+				Expect(image.Status).To(Equal(models.ImageStatusInterrupted))
+			})
+		})
+	})
 	Describe("Create image when using getImageSetForNewImage", func() {
 		orgID := common.DefaultOrgID
-		//requestID := faker.UUIDHyphenated()
+		// requestID := faker.UUIDHyphenated()
 		imageName := faker.UUIDHyphenated()
 		image := models.Image{OrgID: orgID, Distribution: "rhel-85", Name: imageName}
 		expectedErr := fmt.Errorf("failed to create commit for image")
@@ -743,7 +766,7 @@ var _ = Describe("Image Service Test", func() {
 	})
 	Describe("Create image when ValidateImagePackage", func() {
 		orgID := faker.UUIDHyphenated()
-		//requestID := faker.UUIDHyphenated()
+		// requestID := faker.UUIDHyphenated()
 		imageName := faker.UUIDHyphenated()
 		When("When image-builder SearchPackage succeed", func() {
 			It("image create with valid package name", func() {

@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:errcheck,gocritic,gosimple,govet,revive
 package config
 
 import (
@@ -8,6 +10,7 @@ import (
 	"sync"
 
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -91,6 +94,11 @@ type loggingConfig struct {
 }
 
 var config *EdgeConfig
+
+// DevConfigFile is a wrapper for local dev kafka config
+type DevConfigFile struct {
+	Kafka clowder.KafkaConfig
+}
 
 // Init configuration for service
 func Init() {
@@ -271,21 +279,19 @@ func Init() {
 	// this is different than Local due to code in services/files.go
 	if config.Dev {
 		configFile := os.Getenv("EDGEMGMT_CONFIG")
-		options.SetConfigFile(configFile)
 
-		if configfileErr := options.MergeInConfig(); configfileErr != nil {
-			fmt.Println("Error reading config file")
-			fmt.Println(configfileErr.Error())
-		}
-		kafkaJSON, err := json.Marshal(options.Get("kafka"))
+		// SOMETHING CHANGED with upstream SetConfigFile or Unmarshal that caused Unmarshal
+		// to freak out on mixedCase being translated to lowercase by SetConfigFile
+		devConfigFile, err := os.ReadFile(configFile)
 		if err != nil {
-			fmt.Println("KafkaConfig marshal error")
+			log.WithField("error", err.Error()).Error("Error reading local dev config file")
 		}
-		kafkaConfig := clowder.KafkaConfig{}
-		if err := json.Unmarshal(kafkaJSON, &kafkaConfig); err != nil {
-			fmt.Println("KafkaConfig unmarshal error")
+		devConfig := DevConfigFile{}
+		if err := json.Unmarshal(devConfigFile, &devConfig); err != nil {
+			log.WithField("error", err.Error()).Error("Dev config unmarshal error")
 		}
-		config.KafkaConfig = &kafkaConfig
+
+		config.KafkaConfig = &devConfig.Kafka
 	}
 
 	if config.KafkaConfig != nil {

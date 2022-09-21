@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:errcheck,govet,revive
 package common
 
 import (
@@ -57,7 +59,9 @@ func Paginate(next http.Handler) http.Handler {
 			if err != nil {
 				errors.NewBadRequest(err.Error())
 				return
-			}
+			} // FIXME: golangci-lint
+			// nolint:revive
+
 			pagination.Offset = valInt
 		}
 		ctx := context.WithValue(r.Context(), PaginationKey, pagination)

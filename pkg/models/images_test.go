@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:govet,revive,staticcheck
 package models
 
 import (

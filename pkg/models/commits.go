@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:govet,revive
 package models
 
 import (
@@ -10,6 +12,8 @@ import (
 var (
 	// ErrOrgIDIsMandatory is for when orgID is not set
 	ErrOrgIDIsMandatory = errors.New("org_id is mandatory")
+	// ErrDeviceExists is for UUID already registered on our DB
+	ErrDeviceExists = errors.New("This UUID already exists")
 )
 
 const (

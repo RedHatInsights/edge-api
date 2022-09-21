@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:revive
 package feature
 
 import (
@@ -9,10 +11,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-//FeatureCustomRepos is the const of the custom repo feature flag
+// FeatureCustomRepos is the const of the custom repo feature flag
 const FeatureCustomRepos = "fleet-management.custom-repos"
 
-//FeatureImageBuildMS is the const of the ms build feature flag
+// FeatureImageBuildMS is the const of the ms build feature flag
 const FeatureImageBuildMS = "fleet-management.images_iso"
 
 // Flag defines names for feature flag service and local env
@@ -20,6 +22,11 @@ type Flag struct {
 	Name   string
 	EnvVar string
 }
+
+// KAFKA LOGGING FLAGS
+
+// KafkaLogging is the feature flag for logging kafka messages
+var KafkaLogging = &Flag{Name: "edge-management.kafka_logging", EnvVar: "KAFKA_LOGGING"}
 
 // IMAGE FEATURE FLAGS
 

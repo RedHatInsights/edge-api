@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:revive,unused
 package routes
 
 import (
