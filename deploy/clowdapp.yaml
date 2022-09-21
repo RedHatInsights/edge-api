@@ -214,7 +214,7 @@ objects:
             cpu: 125m
             memory: 128Mi
     - name: isos-build
-      minReplicas: 0
+      minReplicas: 1
       podSpec:
         image: ${IMAGE}:${IMAGE_TAG}
         command:
