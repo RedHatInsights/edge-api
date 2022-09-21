@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:errcheck,govet,revive
 package services_test
 
 import (
@@ -168,7 +170,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					OrgID:  common.DefaultOrgID,
 					Status: models.UpdateStatusBuilding,
 				}
-				db.DB.Create(&update)
+				db.DB.Omit("Devices.*").Create(&update)
 			})
 
 			When("when build repo fail", func() {
@@ -256,7 +258,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					}, nil)
 
 					updateTransaction, err := updateService.CreateUpdate(update.ID)
-
+					Expect(updateTransaction).ToNot(BeNil())
 					Expect(err).To(BeNil())
 					Expect(updateTransaction).ToNot(BeNil())
 					Expect(updateTransaction.ID).Should(Equal(update.ID))
@@ -301,7 +303,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 					Expect(err).ShouldNot(BeNil())
 
 					var updateTransaction models.UpdateTransaction
-					db.DB.Preload("DispatchRecords").Preload("DispatchRecords.Device").Preload("Devices").First(&updateTransaction, update.ID)
+
+					db.DB.Debug().Preload("DispatchRecords").Preload("DispatchRecords.Device").Preload("Devices").First(&updateTransaction, update.ID)
 
 					Expect(updateTransaction.ID).Should(Equal(update.ID))
 					Expect(updateTransaction.Status).Should(Equal(models.UpdateStatusError))
@@ -439,7 +442,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					RemoteOstreeUpdate:  "false",
 					OSTreeRef:           "rhel/8/x86_64/edge",
 				}
-				//TODO change to org_id once migration is complete
+				// TODO change to org_id once migration is complete
 				org_id := "1005"
 				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", org_id, t.UpdateTransactionID)
 				tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", org_id, fname)
@@ -479,7 +482,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					RemoteOstreeUpdate:  "true",
 					OSTreeRef:           "rhel/9/x86_64/edge",
 				}
-				//TODO change to org_id once migration is complete
+				// TODO change to org_id once migration is complete
 				org_id := "1005"
 				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", org_id, t.UpdateTransactionID)
 				tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", org_id, fname)

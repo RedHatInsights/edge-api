@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:govet,revive
 package files
 
 import (
@@ -14,7 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-//Uploader is an interface for uploading repository
+// Uploader is an interface for uploading repository
 type Uploader interface {
 	UploadRepo(src string, account string) (string, error)
 	UploadFile(fname string, uploadPath string) (string, error)
@@ -89,7 +91,7 @@ func newS3Uploader(log *log.Entry) *S3Uploader {
 	}
 }
 
-//Struct that contains all details required to upload a file to a destination
+// Struct that contains all details required to upload a file to a destination
 type uploadDetails struct {
 	fileName   string
 	uploadPath string
@@ -116,8 +118,8 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 
 	u.log = u.log.WithFields(log.Fields{"src": src, "account": account})
 	u.log.Info("Uploading repo")
-	//Wait group is created per request
-	//this allows multiple repo's to be independently uploaded simultaneously
+	// Wait group is created per request
+	// this allows multiple repo's to be independently uploaded simultaneously
 	count := 0
 
 	var uploadDetailsList []*uploadDetails

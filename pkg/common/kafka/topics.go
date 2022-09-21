@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:revive
 package kafkacommon
 
 import (
@@ -10,6 +12,11 @@ const (
 	TopicFleetmgmtImageBuild string = "platform.edge.fleetmgmt.image-build"
 	// TopicFleetmgmtImageISOBuild topic name
 	TopicFleetmgmtImageISOBuild string = "platform.edge.fleetmgmt.image-iso-build"
+
+	// TopicPlaybookDispatcherRuns external topic for playbook dispatcher results
+	TopicPlaybookDispatcherRuns string = "platform.playbook-dispatcher.runs"
+	// TopicInventoryEvents external topic for hosted inventory events
+	TopicInventoryEvents string = "platform.inventory.events"
 )
 
 // TopicNotFoundError indicates the account was nil
@@ -23,18 +30,18 @@ func (e *TopicNotFoundError) Error() string {
 func GetTopic(requested string) (string, error) {
 	cfg := config.Get()
 	if cfg.KafkaConfig != nil {
-		log.Debug("looking up actual topic")
 		topics := cfg.KafkaConfig.Topics
 		for _, topic := range topics {
+			log.WithField("requestedName", requested).Debug("looking up actual topic")
 			if topic.RequestedName == requested {
-				log.WithField("Name", topic.Name).Debug("Found the actual topic name")
+				log.WithFields(log.Fields{"requestedName": requested, "Name": topic.Name}).Debug("Found the actual topic name")
 
 				return topic.Name, nil
 			}
 		}
 	}
 	err := new(TopicNotFoundError)
-	log.WithFields(log.Fields{"requested_name": requested, "error": err}).Error("Actual topic not found. Returning the requested topic name")
+	log.WithFields(log.Fields{"requestedName": requested, "error": err}).Error("Actual topic not found. Returning the requested topic name")
 
 	return requested, err
 }

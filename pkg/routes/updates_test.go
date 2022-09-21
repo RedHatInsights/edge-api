@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:errcheck,govet,ineffassign,revive,staticcheck
 package routes
 
 import (
@@ -306,6 +308,28 @@ var _ = Describe("Update routes", func() {
 		}
 		db.DB.Create(&updateImage)
 
+		imageSet2 := models.ImageSet{
+			OrgID: orgID,
+		}
+		db.DB.Create(&imageSet2)
+
+		// a Image with ImageSet from imageSet2
+		imageWithImageSetID := models.Image{
+			OrgID:      orgID,
+			ImageSetID: &imageSet2.ID,
+			Status:     models.ImageStatusSuccess,
+			CommitID:   commit.ID,
+		}
+		db.DB.Create(&imageWithImageSetID)
+
+		// a device3
+		device3 := models.Device{
+			OrgID:   orgID,
+			UUID:    faker.UUIDHyphenated(),
+			ImageID: imageWithImageSetID.ID,
+		}
+		db.DB.Create(&device3)
+
 		// a device from another orgID
 		device2 := models.Device{OrgID: orgID2, UUID: faker.UUIDHyphenated()}
 		db.DB.Create(&device2)
@@ -431,6 +455,28 @@ var _ = Describe("Update routes", func() {
 				handler.ServeHTTP(responseRecorder, req)
 
 				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+			})
+		})
+		When("CommitID provided by user does not belong to same ImageSet as that of Device Image", func() {
+			It("should not allow to update with commitID belonging to different ImageSet", func() {
+
+				updateData, err := json.Marshal(models.DevicesUpdate{CommitID: updateCommit.ID, DevicesUUID: []string{device3.UUID}})
+				Expect(err).To(BeNil())
+
+				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(updateData))
+				Expect(err).To(BeNil())
+
+				ctx := dependencies.ContextWithServices(req.Context(), edgeAPIServices)
+				req = req.WithContext(ctx)
+
+				responseRecorder := httptest.NewRecorder()
+
+				handler := http.HandlerFunc(AddUpdate)
+				handler.ServeHTTP(responseRecorder, req)
+
+				respBody, err := ioutil.ReadAll(responseRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("Commit %d does not belong to the same image-set as devices", updateCommit.ID))
 			})
 		})
 	})

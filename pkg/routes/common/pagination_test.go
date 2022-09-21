@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:govet,revive
 package common
 
 import (

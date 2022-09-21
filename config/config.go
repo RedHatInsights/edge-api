@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:errcheck,gocritic,gosimple,govet,revive
 package config
 
 import (

@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:revive
 package services
 
 import "errors"
@@ -234,10 +236,10 @@ func (e *DeviceHasNoImageUpdate) Error() string {
 	return "device has no image update"
 }
 
-// DeviceHasMoreThanOneImageSet indicates that device record no image
-type DeviceHasMoreThanOneImageSet struct{}
+// DevicesHasMoreThanOneImageSet indicates that device record no image
+type DevicesHasMoreThanOneImageSet struct{}
 
-func (e *DeviceHasMoreThanOneImageSet) Error() string {
+func (e *DevicesHasMoreThanOneImageSet) Error() string {
 	return "device has more than one image-set"
 }
 
@@ -263,6 +265,27 @@ type OstreeNotFound struct{}
 
 func (e *OstreeNotFound) Error() string {
 	return "Ostree not found"
+}
+
+// EntitiesImageSetsMismatch indicates the CommitID does not belong to the same ImageSet as of Device's Image
+type EntitiesImageSetsMismatch struct{}
+
+func (e *EntitiesImageSetsMismatch) Error() string {
+	return "commit ID does not belong to the same image-set as devices images"
+}
+
+// CommitImageNotFound indicates the Commit Image is not found
+type CommitImageNotFound struct{}
+
+func (e *CommitImageNotFound) Error() string {
+	return "commit image does not found"
+}
+
+// SomeDevicesDoesNotExists indicates that device record no image
+type SomeDevicesDoesNotExists struct{}
+
+func (e *SomeDevicesDoesNotExists) Error() string {
+	return "image-set not found for all devices"
 }
 
 // ErrOrgIDMismatch returned when the context orgID is different from an entity OrgID

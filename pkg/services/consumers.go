@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:gocritic,govet,ineffassign,revive
 package services
 
 import (
@@ -40,6 +42,12 @@ func NewKafkaConsumerService(config *clowder.KafkaConfig, topic string) Consumer
 	if config == nil {
 		return nil
 	}
+
+	actualTopic, err := kafkacommon.GetTopic(topic)
+	if err != nil {
+		log.WithField("error", err.Error()).Error("Error getting actual topic from requested topic")
+	}
+
 	// to consume messages
 	s := &KafkaConsumerService{
 		UpdateService: NewUpdateService(context.Background(), log.WithField("service", "update")),
@@ -48,12 +56,12 @@ func NewKafkaConsumerService(config *clowder.KafkaConfig, topic string) Consumer
 		RetryMinutes:  5,
 		config:        config,
 		shuttingDown:  false,
-		topic:         topic,
+		topic:         actualTopic,
 	}
 	switch topic {
-	case "platform.playbook-dispatcher.runs":
+	case kafkacommon.TopicPlaybookDispatcherRuns:
 		s.consumer = s.ConsumePlaybookDispatcherRuns
-	case "platform.inventory.events":
+	case kafkacommon.TopicInventoryEvents:
 		s.consumer = s.ConsumePlatformInventoryEvents
 	default:
 		log.WithField("topic", topic).Error("No consumer for topic")

@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:gosimple,revive
 package db
 
 import (

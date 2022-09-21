@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:errcheck,govet,revive
 package imagebuilder
 
 import (
@@ -97,6 +99,7 @@ type ComposeStatus struct {
 type ImageStatus struct {
 	Status       imageStatusValue `json:"status"`
 	UploadStatus *UploadStatus    `json:"upload_status,omitempty"`
+	Reason       imageStatusValue `json:"reason"`
 }
 
 type imageStatusValue string
@@ -108,6 +111,7 @@ const (
 	imageStatusRegistering imageStatusValue = "registering"
 	imageStatusSuccess     imageStatusValue = "success"
 	imageStatusUploading   imageStatusValue = "uploading"
+	imageReasonFailure     imageStatusValue = "Worker running this job stopped responding"
 )
 
 // UploadStatus is the status and metadata of an Image upload
@@ -339,6 +343,9 @@ func (c *Client) getComposeStatus(jobID string) (*ComposeStatus, error) {
 	}
 
 	err = json.Unmarshal(body, &cs)
+	if cs.ImageStatus.Reason == imageReasonFailure && cs.ImageStatus.Status == imageStatusFailure {
+		return nil, fmt.Errorf("worker running this job stopped responding")
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -481,7 +488,7 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*S
 	if packageName == "" || arch == "" || dist == "" {
 		return nil, errors.New("mandatory fields should not be empty")
 	}
-	//build the correct URL using the package name
+	// build the correct URL using the package name
 	url := fmt.Sprintf("%s/api/image-builder/v1/packages?distribution=%s&architecture=%s&search=%s", cfg.ImageBuilderConfig.URL, dist, arch, packageName)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:govet,ineffassign,revive,staticcheck
 package services
 
 import (
@@ -132,8 +134,9 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 	var imageSetsRows []ImageSetRow
 
 	if result := db.OrgDB(orgID, tx, "image_sets").Debug().Table("image_sets").Limit(limit).Offset(offset).
-		Select(`image_sets.id, image_sets.name, image_sets.version, image_sets.updated_at, images.status, images.id as "image_id"`).
-		Joins(`JOIN images ON image_sets.id = images.image_set_id AND Images.id = (Select Max(id) from Images where images.image_set_id = image_sets.id)`).
+		Select(`image_sets.id, image_sets.name, image_sets.version, image_sets.updated_at, max(images.id) as "image_id"`).
+		Joins(`JOIN images ON image_sets.id = images.image_set_id`).
+		Group(`image_sets.id, image_sets.name, image_sets.version,image_sets.updated_at`).
 		Find(&imageSetsRows); result.Error != nil {
 
 		log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error(
@@ -148,10 +151,22 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 	// get the latest installer iso url for each image-set
 	// get the image-set ids
 	var imageSetIDS []uint
+	//get image status and avoid slow query
+	var imageIDS []uint
 	for _, imageSetRow := range imageSetsRows {
 		imageSetIDS = append(imageSetIDS, imageSetRow.ID)
+		imageIDS = append(imageIDS, imageSetRow.ImageID)
 	}
 
+	var imgs []models.Image
+	db.DB.Debug().Where("ID in ?", imageIDS).Find(&imgs)
+	//build set of image status
+	imageSetToStatus := make(map[uint]string)
+	for _, image := range imgs {
+		if _, ok := imageSetToStatus[image.ID]; !ok {
+			imageSetToStatus[image.ID] = image.Status
+		}
+	}
 	imageSetsInstallersMap, err := s.GetImageSetsBuildIsoURL(orgID, imageSetIDS)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error(), "OrgID": orgID}).Error(
@@ -167,7 +182,7 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 			Name:      imageSetRow.Name,
 			Version:   imageSetRow.Version,
 			UpdatedAt: imageSetRow.UpdatedAt,
-			Status:    imageSetRow.Status,
+			Status:    imageSetToStatus[imageSetRow.ImageID],
 			ImageID:   imageSetRow.ImageID,
 		}
 		installerID, ok := imageSetsInstallersMap[imageSetRow.ID]

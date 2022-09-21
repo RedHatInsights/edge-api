@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:govet,revive
 package services
 
 // ImageNotification is the implementation of expected boddy notification
@@ -14,13 +16,13 @@ type ImageNotification struct {
 	Recipients  []RecipientNotification `json:"recipients"`
 }
 
-//EventNotification is used to track events to notification
+// EventNotification is used to track events to notification
 type EventNotification struct {
 	Metadata map[string]string `json:"metadata"`
 	Payload  string            `json:"payload"`
 }
 
-//RecipientNotification is used to track recipients to notification
+// RecipientNotification is used to track recipients to notification
 type RecipientNotification struct {
 	OnlyAdmins            bool     `json:"only_admins"`
 	IgnoreUserPreferences bool     `json:"ignore_user_preferences"`
@@ -28,18 +30,18 @@ type RecipientNotification struct {
 }
 
 const (
-	//NotificationTopic to be used
+	// NotificationTopic to be used
 	NotificationTopic = "platform.notifications.ingress"
-	//NotificationConfigVersion to be used
+	// NotificationConfigVersion to be used
 	NotificationConfigVersion = "v1.1.0"
-	//NotificationConfigBundle to be used
+	// NotificationConfigBundle to be used
 	NotificationConfigBundle = "rhel"
-	//NotificationConfigApplication to be used
+	// NotificationConfigApplication to be used
 	NotificationConfigApplication = "edge-management"
-	//NotificationConfigEventTypeImage to be used
+	// NotificationConfigEventTypeImage to be used
 	NotificationConfigEventTypeImage = "image-creation"
-	//NotificationConfigEventTypeDevice to be used
+	// NotificationConfigEventTypeDevice to be used
 	NotificationConfigEventTypeDevice = "update-devices"
-	//NotificationConfigUser to be used
+	// NotificationConfigUser to be used
 	NotificationConfigUser = "fleet-management"
 )

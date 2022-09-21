@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:errcheck,gocritic,gosimple,govet,revive
 package inventory
 
 import (
@@ -217,7 +219,7 @@ func (c *Client) ReturnDeviceListByID(deviceIDs []string) (Response, error) {
 			return Response{}, err
 		}
 	}
-	devices := strings.Join(deviceIDs[:], ",")
+	devices := strings.Join(deviceIDs, ",")
 	url := fmt.Sprintf("%s/%s/%s", config.Get().InventoryConfig.URL, inventoryAPI, devices)
 	c.log.WithFields(log.Fields{
 		"url": url,

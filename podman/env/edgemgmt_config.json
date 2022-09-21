@@ -3,14 +3,26 @@
         "brokers": [
             {
                 "hostname": "kafka",
-                "port": 9092,
-                "requestedName": "platform.edge.fleetmgmt.image-build"
+                "port": 9092
             }
         ],
         "topics": [
             {
                 "requestedName": "platform.edge.fleetmgmt.image-build",
-                "name": "platform.edge.fleetmgmt.image-build"            }
+                "name": "platform.edge.fleetmgmt.image-build"
+            },
+            {
+                "requestedName": "platform.edge.fleetmgmt.image-iso-build",
+                "name": "platform.edge.fleetmgmt.image-iso-build"
+            },
+            {
+                "requestedName": "platform.playbook-dispatcher.runs",
+                "name": "platform.playbook-dispatcher.runs"
+            },
+            {
+                "requestedName": "platform.inventory.events",
+                "name": "platform.inventory.events"
+            }
         ]
     }
 }
