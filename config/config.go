@@ -85,7 +85,7 @@ type playbookDispatcherConfig struct {
 	Status string `json:"status,omitempty"`
 }
 
-//
+// loggingConfig
 type loggingConfig struct {
 	AccessKeyID     string `json:"-"`
 	SecretAccessKey string `json:"-"`
