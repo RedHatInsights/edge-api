@@ -479,6 +479,28 @@ var _ = Describe("Update routes", func() {
 				Expect(string(respBody)).To(ContainSubstring("Commit %d does not belong to the same image-set as devices", updateCommit.ID))
 			})
 		})
+		When("CommitID provided by user does not exist", func() {
+			It("should not allow to update with commitID that dose not exist", func() {
+				non_existant_commit := uint(99999999)
+				updateData, err := json.Marshal(models.DevicesUpdate{CommitID: non_existant_commit, DevicesUUID: []string{device3.UUID}})
+				Expect(err).To(BeNil())
+
+				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(updateData))
+				Expect(err).To(BeNil())
+
+				ctx := dependencies.ContextWithServices(req.Context(), edgeAPIServices)
+				req = req.WithContext(ctx)
+
+				responseRecorder := httptest.NewRecorder()
+
+				handler := http.HandlerFunc(AddUpdate)
+				handler.ServeHTTP(responseRecorder, req)
+
+				respBody, err := ioutil.ReadAll(responseRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("No commit found for CommitID %d", non_existant_commit))
+			})
+		})
 	})
 
 	Context("get all updates with filter parameters", func() {
