@@ -151,7 +151,7 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 	// get the latest installer iso url for each image-set
 	// get the image-set ids
 	var imageSetIDS []uint
-	//get image status and avoid slow query
+	// get image status and avoid slow query
 	var imageIDS []uint
 	for _, imageSetRow := range imageSetsRows {
 		imageSetIDS = append(imageSetIDS, imageSetRow.ID)
@@ -160,7 +160,7 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 
 	var imgs []models.Image
 	db.DB.Debug().Where("ID in ?", imageIDS).Find(&imgs)
-	//build set of image status
+	// build set of image status
 	imageSetToStatus := make(map[uint]string)
 	for _, image := range imgs {
 		if _, ok := imageSetToStatus[image.ID]; !ok {

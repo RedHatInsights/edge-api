@@ -149,7 +149,7 @@ type CreateImageRequest struct {
 }
 
 // GetImageWithIdentity pre-populates the image with Account, OrgID, requestID and also returns an identity header
-//	This is used by every image endpoint, so it reduces copy/paste risk
+// This is used by every image endpoint, so it reduces copy/paste risk
 func GetImageWithIdentity(w http.ResponseWriter, r *http.Request) (*models.Image, identity.XRHID, error) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 

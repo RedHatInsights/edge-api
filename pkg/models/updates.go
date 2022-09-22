@@ -10,13 +10,12 @@ import (
 )
 
 // UpdateTransaction represents the combination of an OSTree commit and a set of Inventory
-//	hosts that need to have the commit deployed to them
-//
-//	This will ultimately kick off a transaction where the old version(s) of
-//	OSTree commit that are currently deployed onto those devices are combined
-//	with the new commit into a new OSTree repo, static deltas are computed, and
-//	then the result is stored in a way that can be served(proxied) by a
-//	Server (pkg/repo/server.go).
+// hosts that need to have the commit deployed to them
+// This will ultimately kick off a transaction where the old version(s) of
+// OSTree commit that are currently deployed onto those devices are combined
+// with the new commit into a new OSTree repo, static deltas are computed, and
+// then the result is stored in a way that can be served(proxied) by a
+// Server (pkg/repo/server.go).
 type UpdateTransaction struct {
 	Model
 	Commit          *Commit          `json:"Commit"`

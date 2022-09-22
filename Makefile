@@ -17,10 +17,14 @@ TEST_CONTAINER_TAG="quay.io/fleet-management/libfdo-data:$(IMAGE_TAG)"
 
 KUBECTL=kubectl
 NAMESPACE=default
-TEST_OPTIONS="-race"
+TEST_OPTIONS=-race
 BUILD_TAGS=-tags=fdo
-ENABLED_GO_LINTERS=errcheck gocritic gofmt goimports gosec gosimple govet \
-					ineffassign revive staticcheck typecheck unused
+
+GOLANGCI_LINT_COMMON_OPTIONS=\
+			--enable errcheck,gocritic,gofmt,goimports,gosec,gosimple,govet,ineffassign,revive,staticcheck,typecheck,unused \
+			--max-same-issues 20 \
+			--timeout 5m0s
+
 EXCLUDE_DIRS=-e /test/ -e /cmd/db -e /cmd/kafka -e /config \
 				-e /pkg/clients/imagebuilder/mock_imagebuilder \
 				-e /pkg/imagebuilder/mock_imagebuilder \
@@ -122,28 +126,34 @@ help:
 	@echo ""
 
 golangci-lint:
+	if [ "$(GITHUB_ACTION)" != '' ];\
+	then\
+		OUT_FORMAT="--out-format=line-number";\
+		TARGET_FILES=$$(go list $(BUILD_TAGS) ./... | grep -v /vendor/);\
+    else\
+		OUT_FORMAT="--out-format=colored-line-number";\
+		TARGET_FILES=$$(go list -f '{{.Dir}}' ${BUILD_TAGS} ./... | grep -v '/vendor/');\
+	fi;\
+    golangci-lint run $(GOLANGCI_LINT_COMMON_OPTIONS) $(OUT_FORMAT) \
+			$(TARGET_FILES)
+
+golangci-lint-no-fdo:
 	if [ "$(GITHUB_ACTION)" != '' ]; \
     then \
-    	golangci-lint run \
-			--disable-all \
-			--enable $(ENABLED_GO_LINTERS) \
-			--out-format=line-number \
-			$$(go list $(BUILD_TAGS) ./... | grep -v /vendor/); \
+		OUT_FORMAT="--out-format=line-number"; \
+		TARGET_FILES=$$(go list ./... | grep -v /vendor/);\
     else \
-    	golangci-lint run \
-			--max-same-issues 20 \
-			--out-format=colored-line-number \
-			--timeout 5m0s \
-			./...; \
-	fi
+		OUT_FORMAT="--out-format=colored-line-number"; \
+		TARGET_FILES=$$(go list -f '{{.Dir}}' ./... | grep -v '/vendor/');\
+	fi;\
+    golangci-lint run $(GOLANGCI_LINT_COMMON_OPTIONS) $(OUT_FORMAT) \
+			$(TARGET_FILES)
 
 lint:
 	golint $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
 
 pre-commit:
-	$(MAKE) fmt
-	$(MAKE) vet-no-fdo
-	$(MAKE) lint
+	$(MAKE) golangci-lint-no-fdo
 	$(MAKE) test-clean-no-fdo
 
 restart-app:
