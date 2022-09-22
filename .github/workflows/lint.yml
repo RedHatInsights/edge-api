@@ -26,22 +26,11 @@ jobs:
         run: |
           [ $(go get -a | wc -l) -eq 0 ]
 
-      - name: fmt
-        run: |
-          [ $(go fmt ./... | wc -l) -eq 0 ]
-
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
           version: latest
           args: --max-same-issues 20 --timeout 5m0s
-
-      - name: Vet
-        uses: addnab/docker-run-action@v3
-        with:
-          image: quay.io/fleet-management/libfdo-data:latest
-          options: -v ${{ github.workspace }}:/edge-api
-          run: make -C edge-api vet
 
       - name: Set up python3
         uses: actions/setup-python@v2
