@@ -16,7 +16,6 @@ ThirdPartyRepo is a record of Third Party Repository or we can call it as Custom
 
 	Here, URL refers to the url of the third party repository, OrgID refers to the OrgID attached to the third party
 	repository.
-
 */
 type ThirdPartyRepo struct {
 	Model
