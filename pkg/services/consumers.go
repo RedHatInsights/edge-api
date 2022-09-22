@@ -12,6 +12,7 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -118,29 +119,31 @@ func (s *KafkaConsumerService) ConsumePlaybookDispatcherRuns() error {
 		case *kafka.Message:
 			service := getHeader(e.Headers, "service")
 
-			elog := log.WithFields(log.Fields{
-				"event_topic":     *e.TopicPartition.Topic,
-				"event_partition": e.TopicPartition.Partition,
-				"event_offset":    e.TopicPartition.Offset,
-				"event_recordkey": string(e.Key),
-				"event_service":   service,
-			})
+			if feature.KafkaLogging.IsEnabled() {
+				log.WithFields(log.Fields{
+					"event_topic":     *e.TopicPartition.Topic,
+					"event_partition": e.TopicPartition.Partition,
+					"event_offset":    e.TopicPartition.Offset,
+					"event_recordkey": string(e.Key),
+					"event_service":   service,
+				})
+			}
 
 			// if it's an edge service event, process the message body
 			if service == "edge" {
 				err := s.UpdateService.ProcessPlaybookDispatcherRunEvent(e.Value)
 				// if there's a problem with the message body, log the error and commit the offset
 				if err != nil {
-					elog.WithField("error", err.Error()).Error("Continuing without handling edge service event")
+					log.WithField("error", err.Error()).Error("Continuing without handling edge service event")
 				}
 			} else {
-				elog.WithField("headers", fmt.Sprintf("%v", e.Headers)).Debug("Skipping message - it is not from edge service")
+				log.WithField("headers", fmt.Sprintf("%v", e.Headers)).Debug("Skipping message - it is not from edge service")
 			}
 
 			// commit the Kafka offset
 			_, err := s.Reader.Commit()
 			if err != nil {
-				elog.WithField("error", err).Error("Error committing offset after message")
+				log.WithField("error", err).Error("Error committing offset after message")
 			}
 		case kafka.Error:
 			// terminate the application if all brokers are down.
@@ -150,7 +153,9 @@ func (s *KafkaConsumerService) ConsumePlaybookDispatcherRuns() error {
 				return new(KafkaAllBrokersDown)
 			}
 		default:
-			log.Debug("Event Ignored: ", e)
+			if feature.KafkaLogging.IsEnabled() {
+				log.Debug("Event Ignored: ", e)
+			}
 		}
 
 		if s.isShuttingDown() {
@@ -176,19 +181,21 @@ func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 		case *kafka.Message:
 			eventType := getHeader(e.Headers, "event_type")
 
-			elog := log.WithFields(log.Fields{
-				"event_topic":     *e.TopicPartition.Topic,
-				"event_partition": e.TopicPartition.Partition,
-				"event_offset":    e.TopicPartition.Offset,
-				"event_recordkey": string(e.Key),
-				"event_type":      eventType,
-			})
+			if feature.KafkaLogging.IsEnabled() {
+				log.WithFields(log.Fields{
+					"event_topic":     *e.TopicPartition.Topic,
+					"event_partition": e.TopicPartition.Partition,
+					"event_offset":    e.TopicPartition.Offset,
+					"event_recordkey": string(e.Key),
+					"event_type":      eventType,
+				})
+			}
 
 			if eventType != InventoryEventTypeCreated && eventType != InventoryEventTypeUpdated && eventType != InventoryEventTypeDelete {
 				continue
 			}
 
-			elog.Debug("Processing an Inventory event")
+			log.Debug("Processing an Inventory event")
 
 			var err error
 
@@ -204,7 +211,7 @@ func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 			}
 
 			if err != nil {
-				elog.WithField("error", err.Error()).Error("Continuing without handling event_type event")
+				log.WithField("error", err.Error()).Error("Continuing without handling event_type event: " + eventType)
 			}
 
 			// commit the Kafka offset
