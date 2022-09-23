@@ -47,12 +47,6 @@ jobs:
     # - name: "Golang Security Checker"
     #   script:
     #   - docker run --rm -v $(pwd):/edge-api -w /edge-api ${LIBFDO_IMAGE} /bin/sh -c "gosec ./..."
-    # TODO: We can get this back as soon as we add python on the testing container
-    # - name: "Validate spec-file"
-    #   language: python
-    #   python: 3.9
-    #   install: pip install openapi-spec-validator
-    #   script: python3 -m openapi_spec_validator ./cmd/spec/openapi.json
     # - name: "Coverage Testing"
     #   script:
     #     - docker run --rm -v $(pwd):/edge-api ${LIBFDO_IMAGE}

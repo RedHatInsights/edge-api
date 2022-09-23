@@ -33,9 +33,9 @@ jobs:
           args: --max-same-issues 20 --timeout 5m0s
 
       - name: Set up python3
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
-          python-version: '3.9'
+          python-version: '3.10'
 
       - name: Install openapi-spec-validator
         run: pip install openapi-spec-validator
