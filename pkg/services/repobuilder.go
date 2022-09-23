@@ -390,8 +390,8 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 }
 
 // RepoPullLocalStaticDeltas pull local repo into the new update repo and compute static deltas
-//  uprepo should be where the update commit lives, u is the update commit
-//  oldrepo should be where the old commit lives, o is the commit to be merged
+// uprepo should be where the update commit lives, u is the update commit
+// oldrepo should be where the old commit lives, o is the commit to be merged
 func (rb *RepoBuilder) repoPullLocalStaticDeltas(u *models.Commit, o *models.Commit, uprepo string, oldrepo string) error {
 	err := os.Chdir(uprepo)
 	if err != nil {
