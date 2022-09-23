@@ -41,20 +41,10 @@ jobs:
     #     - docker build -t ${EDGE_API_IMAGE} -f ./Dockerfile .
     #     - docker login quay.io -u ${FLEETER_BOT:-${FLEETER_BOT_PR}} -p ${FLEETER_PASS:-${FLEETER_PASS_PR}} >/dev/null 2>&1
     #     - docker push ${EDGE_API_IMAGE}
-    # - name: "Static Code Analysis"
-    #   script:
-    #     - docker run --rm -w /edge-api -v $(pwd):/edge-api ${LIBFDO_IMAGE} /bin/sh -c "staticcheck -go 1.15 -f stylish ./..."
-    # - name: "Golang Security Checker"
-    #   script:
-    #   - docker run --rm -v $(pwd):/edge-api -w /edge-api ${LIBFDO_IMAGE} /bin/sh -c "gosec ./..."
     # - name: "Coverage Testing"
     #   script:
     #     - docker run --rm -v $(pwd):/edge-api ${LIBFDO_IMAGE}
     #     - bash <(curl -s https://codecov.io/bash)
-    # - name: "Code Formatting"
-    #   script:
-    #     - go fmt ./...
-    #     - "[ $(go fmt ./... | wc -l) -eq 0 ]"
     - name: "Code Linting"
       script:
         - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.49.0
