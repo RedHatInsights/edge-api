@@ -46,5 +46,11 @@ jobs:
       - name: Validate spec-file
         run: python3 -m openapi_spec_validator ${{ github.workspace }}/cmd/spec/openapi.json
 
-      - name: Run coverage without fdo
+      - name: Run Go Test Coverage without fdo
         run: make coverage-no-fdo
+
+      - uses: actions/checkout@master
+      - uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: true
+          verbose: true
