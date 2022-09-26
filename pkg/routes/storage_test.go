@@ -171,6 +171,7 @@ var _ = Describe("Storage Router", func() {
 				fileContent := "this is a simple file content"
 
 				url, err := url2.Parse(updateTransaction.Repo.URL)
+				Expect(err).ToNot(HaveOccurred())
 				targetPath := fmt.Sprintf("%s/%s", url.Path, targetRepoFile)
 
 				fileContentReader := strings.NewReader(fileContent)
@@ -451,6 +452,7 @@ var _ = Describe("Storage Router", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				url, err := url2.Parse(updateTransaction.Repo.URL)
+				Expect(err).ToNot(HaveOccurred())
 				targetPath := fmt.Sprintf("%s/%s", url.Path, targetRepoFile)
 				expectedURL := fmt.Sprintf("%s/%s?signature", url, targetRepoFile)
 				mockFilesService.EXPECT().GetSignedURL(targetPath).Return(expectedURL, nil)
