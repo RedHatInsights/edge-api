@@ -1908,8 +1908,8 @@ paths:
       summary: Return the update transaction repository content located at repoFilePath from root repository
       operationId: GetDeviceRepoFile
       parameters:
-        - in: cookie
-          name: device
+        - name: device
+          in: cookie
           required: true
           description: a joined string combine a payload and signature of the payload
           schema:
@@ -1951,8 +1951,8 @@ paths:
       summary: Redirect to signed URL of the update transaction repository content located at repoFilePath from root repository
       operationId: GetDeviceRepoFileContent
       parameters:
-        - in: cookie
-          name: device
+        - name: device
+          in: cookie
           required: true
           description: a joined string combine a payload and signature of the payload
           schema:

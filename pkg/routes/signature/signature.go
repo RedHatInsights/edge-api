@@ -83,7 +83,7 @@ func UnpackDataAndSignature(value string) ([]byte, string, error) {
 	}
 	data, err := urlDecode(values[0])
 	if err != nil {
-		log.WithField("error", err.Error()).Error("payload data is valid for url decode")
+		log.WithField("error", err.Error()).Error("payload data is invalid for url decode")
 		return nil, "", err
 	}
 	// return data, signature, error

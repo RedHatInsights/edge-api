@@ -142,11 +142,11 @@ var _ = Describe("Storage Router", func() {
 		device := models.Device{OrgID: orgID, UUID: deviceUUID}
 		db.DB.Create(&device)
 		updateTransaction := models.UpdateTransaction{
-			OrgID:   orgID,
-			Devices: []models.Device{device},
-			Repo:    &models.Repo{URL: "https://repo-storage.org/path/to/bucket", Status: models.ImageStatusSuccess},
+			OrgID: orgID,
+			Repo:  &models.Repo{URL: "https://repo-storage.org/path/to/bucket", Status: models.ImageStatusSuccess},
 		}
 		db.DB.Create(&updateTransaction)
+		_ = db.DB.Model(&updateTransaction).Association("Devices").Append([]models.Device{device})
 
 		deviceData := signature.UpdateTransactionPayload{
 			OrgID:               common.DefaultOrgID,
@@ -208,15 +208,13 @@ var _ = Describe("Storage Router", func() {
 
 			It("should return error when the cookie transaction id is different from the requested one", func() {
 				innerUpdateTransaction := models.UpdateTransaction{
-					OrgID:   orgID,
-					Devices: []models.Device{device},
-					Repo:    &models.Repo{URL: "https://repo-storage.org/path/to/bucket", Status: models.ImageStatusSuccess},
+					OrgID: orgID,
+					Repo:  &models.Repo{URL: "https://repo-storage.org/path/to/bucket", Status: models.ImageStatusSuccess},
 					// set the same uuid as the first update transaction
 					UUID: updateTransaction.UUID,
 				}
 				res := db.DB.Create(&innerUpdateTransaction)
 				Expect(res.Error).ToNot(HaveOccurred())
-
 				req, err := http.NewRequest("GET", fmt.Sprintf("/storage/update-repos/%d/summary.sig", innerUpdateTransaction.ID), nil)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -236,9 +234,8 @@ var _ = Describe("Storage Router", func() {
 
 			It("should return error when the cookie transaction org_id is different from the requested one", func() {
 				innerUpdateTransaction := models.UpdateTransaction{
-					OrgID:   faker.UUIDHyphenated(),
-					Devices: []models.Device{device},
-					Repo:    &models.Repo{URL: "https://repo-storage.org/path/to/bucket", Status: models.ImageStatusSuccess},
+					OrgID: faker.UUIDHyphenated(),
+					Repo:  &models.Repo{URL: "https://repo-storage.org/path/to/bucket", Status: models.ImageStatusSuccess},
 					// set the same uuid as the first update transaction
 					UUID: updateTransaction.UUID,
 				}
@@ -360,9 +357,8 @@ var _ = Describe("Storage Router", func() {
 
 			It("should return error when update transaction has empty repo", func() {
 				updateTransaction := models.UpdateTransaction{
-					OrgID:   orgID,
-					Devices: []models.Device{device},
-					Repo:    &models.Repo{URL: ""},
+					OrgID: orgID,
+					Repo:  &models.Repo{URL: ""},
 				}
 				db.DB.Create(&updateTransaction)
 
@@ -390,9 +386,8 @@ var _ = Describe("Storage Router", func() {
 
 			It("should return error when update transaction is without repo", func() {
 				updateTransaction := models.UpdateTransaction{
-					OrgID:   orgID,
-					Devices: []models.Device{device},
-					Repo:    nil,
+					OrgID: orgID,
+					Repo:  nil,
 				}
 				db.DB.Create(&updateTransaction)
 
@@ -420,9 +415,8 @@ var _ = Describe("Storage Router", func() {
 
 			It("should return error when update transaction repo has an un-parseable url", func() {
 				updateTransaction := models.UpdateTransaction{
-					OrgID:   orgID,
-					Devices: []models.Device{device},
-					Repo:    &models.Repo{URL: "https:\t//repo-storage.org\n/path/to/bucket", Status: models.ImageStatusSuccess},
+					OrgID: orgID,
+					Repo:  &models.Repo{URL: "https:\t//repo-storage.org\n/path/to/bucket", Status: models.ImageStatusSuccess},
 				}
 				db.DB.Create(&updateTransaction)
 
@@ -490,9 +484,8 @@ var _ = Describe("Storage Router", func() {
 
 			It("should return error when the cookie transaction id is different from the requested one", func() {
 				innerUpdateTransaction := models.UpdateTransaction{
-					OrgID:   orgID,
-					Devices: []models.Device{device},
-					Repo:    &models.Repo{URL: "https://repo-storage.org/path/to/bucket", Status: models.ImageStatusSuccess},
+					OrgID: orgID,
+					Repo:  &models.Repo{URL: "https://repo-storage.org/path/to/bucket", Status: models.ImageStatusSuccess},
 					// set the same uuid as the first update transaction
 					UUID: updateTransaction.UUID,
 				}
@@ -518,9 +511,8 @@ var _ = Describe("Storage Router", func() {
 
 			It("should return error when the cookie transaction org_id is different from the requested one", func() {
 				innerUpdateTransaction := models.UpdateTransaction{
-					OrgID:   faker.UUIDHyphenated(),
-					Devices: []models.Device{device},
-					Repo:    &models.Repo{URL: "https://repo-storage.org/path/to/bucket", Status: models.ImageStatusSuccess},
+					OrgID: faker.UUIDHyphenated(),
+					Repo:  &models.Repo{URL: "https://repo-storage.org/path/to/bucket", Status: models.ImageStatusSuccess},
 					// set the same uuid as the first update transaction
 					UUID: updateTransaction.UUID,
 				}
@@ -642,9 +634,8 @@ var _ = Describe("Storage Router", func() {
 
 			It("should return error when update transaction has empty repo", func() {
 				updateTransaction := models.UpdateTransaction{
-					OrgID:   orgID,
-					Devices: []models.Device{device},
-					Repo:    &models.Repo{URL: ""},
+					OrgID: orgID,
+					Repo:  &models.Repo{URL: ""},
 				}
 				db.DB.Create(&updateTransaction)
 
@@ -672,9 +663,8 @@ var _ = Describe("Storage Router", func() {
 
 			It("should return error when update transaction is without repo", func() {
 				updateTransaction := models.UpdateTransaction{
-					OrgID:   orgID,
-					Devices: []models.Device{device},
-					Repo:    nil,
+					OrgID: orgID,
+					Repo:  nil,
 				}
 				db.DB.Create(&updateTransaction)
 
@@ -702,9 +692,8 @@ var _ = Describe("Storage Router", func() {
 
 			It("should return error when update transaction repo has an un-parseable url", func() {
 				updateTransaction := models.UpdateTransaction{
-					OrgID:   orgID,
-					Devices: []models.Device{device},
-					Repo:    &models.Repo{URL: "https:\t//repo-storage.org\n/path/to/bucket", Status: models.ImageStatusSuccess},
+					OrgID: orgID,
+					Repo:  &models.Repo{URL: "https:\t//repo-storage.org\n/path/to/bucket", Status: models.ImageStatusSuccess},
 				}
 				db.DB.Create(&updateTransaction)
 
