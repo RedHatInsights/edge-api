@@ -49,7 +49,6 @@ jobs:
       - name: Run Go Test Coverage without fdo
         run: make coverage-no-fdo
 
-      - uses: actions/checkout@master
       - uses: codecov/codecov-action@v3
         with:
           fail_ci_if_error: true
