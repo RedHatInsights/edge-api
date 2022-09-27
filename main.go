@@ -82,6 +82,8 @@ func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 		http.ServeFile(w, r, cfg.OpenAPIFilePath)
 	})
 
+	route.Route("/api/edge/v1/storage/update-repos", routes.MakeStorageUpdateReposRouter)
+
 	// Authenticated routes
 	authRoute := route.Group(nil)
 	if cfg.Auth {

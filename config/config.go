@@ -54,6 +54,7 @@ type EdgeConfig struct {
 	TenantTranslatorHost     string                    `json:"tenant_translator_host,omitempty"`
 	TenantTranslatorPort     string                    `json:"tenant_translator_port,omitempty"`
 	TenantTranslatorURL      string                    `json:"tenant_translator_url,omitempty"`
+	PayloadSigningKey        string                    `json:"payload_signing_key"`
 }
 
 type dbConfig struct {
@@ -219,6 +220,7 @@ func Init() {
 		FeatureFlagsService:     options.GetString("FeatureFlagsService"),
 		TenantTranslatorHost:    options.GetString("TenantTranslatorHost"),
 		TenantTranslatorPort:    options.GetString("TenantTranslatorPort"),
+		PayloadSigningKey:       options.GetString("PayloadSigningKey"),
 	}
 	if config.TenantTranslatorHost != "" && config.TenantTranslatorPort != "" {
 		config.TenantTranslatorURL = fmt.Sprintf("http://%s:%s", config.TenantTranslatorHost, config.TenantTranslatorPort)
