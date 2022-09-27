@@ -9,7 +9,6 @@ import (
 
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
-	"github.com/redhatinsights/edge-api/pkg/services"
 
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
@@ -30,10 +29,6 @@ type EventImageRequestedBuildHandler struct {
 // Consume executes code against the data in the received event
 func (ev EventImageRequestedBuildHandler) Consume(ctx context.Context) {
 	eventlog := GetLoggerFromContext(ctx)
-
-	// rebuilding the context and identity here
-	edgeAPIServices := dependencies.Init(ctx)
-	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 
 	eventlog.Info("Starting image build")
 
@@ -67,8 +62,9 @@ func (ev EventImageRequestedBuildHandler) Consume(ctx context.Context) {
 		"orgID":     image.OrgID,
 	})
 
-	// call the service-based CreateImage
-	imageService := services.NewImageService(ctx, log)
+	// get the services from the context
+	edgeAPIServices := dependencies.ServicesFromContext(ctx)
+	imageService := edgeAPIServices.ImageService
 	err = imageService.ProcessImage(image)
 	if err != nil {
 		log.Error("Error processing the image")
