@@ -41,10 +41,6 @@ jobs:
     #     - docker build -t ${EDGE_API_IMAGE} -f ./Dockerfile .
     #     - docker login quay.io -u ${FLEETER_BOT:-${FLEETER_BOT_PR}} -p ${FLEETER_PASS:-${FLEETER_PASS_PR}} >/dev/null 2>&1
     #     - docker push ${EDGE_API_IMAGE}
-    # - name: "Coverage Testing"
-    #   script:
-    #     - docker run --rm -v $(pwd):/edge-api ${LIBFDO_IMAGE}
-    #     - bash <(curl -s https://codecov.io/bash)
     - name: "Code Linting"
       script:
         - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.49.0
