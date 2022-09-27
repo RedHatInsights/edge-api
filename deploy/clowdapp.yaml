@@ -22,10 +22,6 @@ objects:
       webServices:
         public:
           enabled: True
-          apiPath: edge
-          whitelistPaths:
-            - /api/edge/v1/openapi.json
-            - /api/edge/v1/storage/update-repos*
       podSpec:
         image: ${IMAGE}:${IMAGE_TAG}
         initContainers:
