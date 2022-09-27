@@ -10,13 +10,8 @@
       prod: "rh-edge-tarballs-prod"
       stage: "rh-edge-tarballs-stage"
       perf: "rh-edge-tarballs-perf"
-    repo_url: "@@ .RepoURL @@"
-    repo_content_url: "@@ .RepoContentURL @@"
+    repo_url: "https://{{ s3_buckets[fleet_infra_env] | default('rh-edge-tarballs-prod') }}.s3.{{ s3_region | default('us-east-1') }}.amazonaws.com/{{ update_number }}/upd/{{ update_number }}/repo"
     ostree_remote_name: "@@ .GoTemplateRemoteName @@"
-    ostree_remote_domain: "@@ .RemoteDomain @@"
-    ostree_remote_path: "@@ .RemotePath @@"
-    ostree_remote_cookie_name: "@@ .RemoteCookieName @@"
-    ostree_remote_cookie_value: "@@ .RemoteCookieValue @@"
     ostree_changes_refs: "@@ .RemoteOstreeUpdate @@"
     os_tree_ref: "@@ .OSTreeRef @@"
     ostree_gpg_verify: "false"
@@ -26,41 +21,34 @@
       url={{ repo_url }}
       gpg-verify={{ ostree_gpg_verify }}
       gpgkeypath={{ ostree_gpg_keypath }}
-      contenturl={{ repo_content_url }}
-    ostree_remote_cookie_cmd: "ostree remote add-cookie  {{ ostree_remote_name }} {{ ostree_remote_domain }} {{ ostree_remote_path }} {{ ostree_remote_cookie_name }} {{ ostree_remote_cookie_value }}"
+      contenturl={{ repo_url }}
     insights_signature_exclude: "/vars/insights_signature,/vars/fleet_infra_env,/vars/update_number,/vars/s3_region,/vars/ostree_remote_name,/vars/ostree_changes_refs,/vars/os_tree_ref"
     insights_signature: !!binary |
       TFMwdExTMUNSVWRKVGlCUVIxQWdVMGxIVGtGVVZWSkZMUzB0TFMwS1ZtVnljMmx2YmpvZ1IyNTFV
-      RWNnZGpFS0NtbFJTVlpCZDFWQldYaHNWVlZ6ZG5jMU9FUXJhalZ3VGtGUloycDNVUzhyVGxSSk5W
-      VmtXRXc0WkdKMU5uWnFhMlIwZWtZelVYUk9jM0Y1VTJwWGNWb0tOVFV2TkM5aU9YVnNUa2xwTjI4
-      MmFuVm9hRFV3SzNSR2NXazNTRFZrVDFwWE5FdERkbmhLVXpWNWVFSlhWRkp4ZFVWT2NUbGlZamxU
-      YjFNeFkzY3did3BwWmpkQ0wyOVVOM0ZaUWtkNVV6Z3hhbHBwU3k4M2RqWXJTVkJoYlV0T1NtTjJV
-      VTR4TkRKdVIySklhVWN6WTFwQ1UwSllTbmhpVlZGbFptVmpaREJHQ2l0cFprNHZiM1ZXZFdOa1dI
-      a3plRUZ0UVhWd1RTOVRkMUJxYjFsVVQxYzRNamhZSzBaaVFWTTVhVmRUWTJ4b09YZElWMGgzTm1o
-      aFJqTllSMGcyYlVJS0syeGphblJXU2pSa2FVVkpRa3hHUkdScmJucEdWaThyU2tSd09XbEdRVE5p
-      ZVhwb1NHZE9kMmRTTHpkd2NtSmxUMFJZYVZSeFRtWlhaVU5OTDBWdmN3b3ZjblZzZERob2QxbE9T
-      MDlhYkVaYU0zbHdNblIwZW5keVRGTlNabGRYVEc1aVdtZGhPVkJqU0dkcGRFVk1aMVp0Ykc5S2N6
-      QkZhRVl6ZFRocldXRlpDa2w1Y1hRcmJYUkhTMmMxVEdGcmRtUldRV0l5UVZORVZFcG1PRXhrTVds
-      Wk1XSlZOVVJsY1VSNldIVnRWM0pNUlVWcWRUQlFkbkYyYTB0Qk1qaDRNVXdLZWtZNGNFdFFjalJE
-      TjBGcFR6aFlWVTVJUVVKSk5rVTJUMjVHTkVzMFZVVjNja1l6ZVZZcmNFOUZVVlJ0WldSamQxa3lM
-      MGRMV21WVFdsUTNXVXd6YlFweVdrZDZiVkJzTUZBMlRrNHlUamczTVRSUlZtTlVXblpJYVZobk4z
-      ZFlXamRvVldoMlJUVkJRM0pxTVV3M05raEVXVGd3ZDFoV1lXVlBlRlJ2ZEVSM0NrZEtUVGx2UWps
-      dVZFVjFPRUZ6ZFRaUFdXOXZUamhNTlRORlVXWXZZMGhET0RVMk1VOXdZa0ZzUVhsTlJYSlRNRXBG
-      TjNvMGN6SkdkVGhJY2psSlF6UUtaek5qV21GVlFrb3pObkZ2VGl0dFp6RTNibmRoVkdZdlNrUTJl
-      VzUzZW1semNFbENkVlJaTUNzNFREUmpkVzVYU1ZkcFQybGtaMngyUml0TVNXNU9TQXBUTmpsNVZY
-      TTBVa2RoT0QwS1BVaDViMFlLTFMwdExTMUZUa1FnVUVkUUlGTkpSMDVCVkZWU1JTMHRMUzB0Q2c9
+      RWNnZGpFS0NtbFJTVlpCZDFWQldYUkJjVlZOZG5jMU9FUXJhalZ3VGtGUmFWQmlVUzh2V0dobmRX
+      dFNNRzlWT0hrd2VFMW1TMFl5SzJRNFVFbHdOVXhyYTJWakwyTUtOV0pNU0ZoeldrZzRTMGxxVG5S
+      bmNIUTBXRkJJV1hZeU9VWnlSamRNVlRKVWFFUjNTSGRHY1c1UVJVNUNTbTF1ZEdjNVVVcE9ZMWRL
+      VkV3cmVGVnBXUXBHVEc4clNIZHpTRlE1ZUhNNFpIWmpWMUpHYVVOdVVteEtUekF5YTNsYVNWVk1i
+      amRYVG5NcmVXeFVjbHByVUdSblNYaGFUMlkwS3pkWVozSTFTVmxzQ25WM1l6TmxjMkZMYzBNNFF6
+      SklXV2Q0TURWVmFsVTFPRVF5WkZwUVYzTnpRazVCUTFSUk1VeHVXa0prZWt0YU5ISlJVbkZYVmk5
+      SVVtaDFTelEzS3pZS05YaHZjbmxTVkVORk4yaFFWMjVhVkZOMGNEaEJhSFozVDBSMlVFRkVWVnBo
+      UjNacEt6Wk9jbEZFV0RKQ1VERnZaRFF4SzFwR1ZYbHVRMmxIWldSdlJBcHVha2tyY1VsUVNEQlBi
+      bWxRUWxWSlduWXJhSE5pTVRWdVQydEtVVVZ0V1RaVGJuWlhVR3hrWlVwQmNGZHRXalZyT0ZoQ1Ru
+      Qk5jalJQVFVWRU56aDRDa05zVldrMFdsRjVhRWRTWW5nek5EQmFRekpSWWtrdmVXWXpialJITmt4
+      TVEwcFBaVWt2Tm5CdldGSktSbE5EYVdreFZVVjZMM1JFVW1oMWFHeFNkbElLTlZGMmIzVlNTalp4
+      UlZRNVJFSlVheXQwZGxBNFoySklkbWQxZUUxTmFsaFVaMlZuTkZsWFVqVlRTVmRMZERkd1kzZFNV
+      bXhDVERKQ1dqQnpOSHB2T1FwM1FtMDJVRUk0WTNOTmJIcHpNR2hPWkhoeU5EbGtNWFZRWkhWTVVF
+      TjZUbWR0VjJwVmNscGFRelV3TkhwMFpFSmhUR1V2YVd0RlowczFNR1k1Y2psekNtSXJZWEJpYVZS
+      QmVtcHdTMk4xTVdwUU9IWkhXRFpyTTJGb00zUnpkRFZZY2t0R1V6VlBiM0Z3YnpBeVNEUldjSGxQ
+      VWxob1dpODFLM1V5VFdOSE5XNEtLMmt6V0d4YVlUWlRaVlJ1VWpkTWNFaE9iblk1Ymk4Mk9URnFW
+      VU5sZG1wRlZYVmhNR2RzWlU1M01qUmhNSGM0ZDJ3clduTjNOSGNyYW5BMVYxcHZaUW93WlRsM2FF
+      WmFabU51VFQwS1BYWnBhMDRLTFMwdExTMUZUa1FnVUVkUUlGTkpSMDVCVkZWU1JTMHRMUzB0Q2c9
       PQ==
   tasks:
     - name: apply templated ostree remote config
       ansible.builtin.copy:
         content: "{{ ostree_remote_template }}"
         dest: /etc/ostree/remotes.d/rhel-edge.conf
-    - name: remove ostree remote cookies file if exists
-      ansible.builtin.file:
-        path: /ostree/repo/{{ ostree_remote_name }}.cookies.txt
-        state: absent
-    - name: add ostree remote cookie
-      ansible.builtin.shell: "{{ ostree_remote_cookie_cmd }}"
     - name: run rpmostree update
       when: not ostree_changes_refs|bool
       ansible.builtin.shell: rpm-ostree upgrade --allow-downgrade
@@ -75,4 +63,5 @@
       failed_when: 'rpmostree_rebase_out.rc != 0'
     - name: schedule reboot when rpmostree upgraded
       ansible.builtin.shell: systemd-run --on-active=5 /usr/bin/systemctl reboot
-      when: ('rpmostree_rebase_out.changed | "Staging deployment...done" in rpmostree_rebase_out.out') or ('rpmostree_upgrade_out.changed | "Staging deployment...done" in rpmostree_upgrade_out.stdout')
+      when: ('rpmostree_rebase_out.changed | "Staging deployment...done" in rpmostree_rebase_out.out') or
+            ('rpmostree_upgrade_out.changed | "Staging deployment...done" in rpmostree_upgrade_out.stdout')
