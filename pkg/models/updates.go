@@ -39,7 +39,7 @@ type DispatchRecord struct {
 	Model
 	PlaybookURL          string  `json:"PlaybookURL"`
 	DeviceID             uint    `json:"DeviceID"`
-	Device               *Device `json:"Device;save_association:false"`
+	Device               *Device `json:"Device"`
 	Status               string  `json:"Status"`
 	Reason               string  `json:"Reason"`
 	PlaybookDispatcherID string  `json:"PlaybookDispatcherID"`
