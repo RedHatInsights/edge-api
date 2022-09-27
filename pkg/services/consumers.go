@@ -195,8 +195,6 @@ func (s *KafkaConsumerService) ConsumePlatformInventoryEvents() error {
 				continue
 			}
 
-			log.Debug("Processing an Inventory event")
-
 			var err error
 
 			switch eventType {
