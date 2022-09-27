@@ -18,7 +18,7 @@ import (
 
 // Uploader is an interface for uploading repository
 type Uploader interface {
-	UploadRepo(src string, account string) (string, error)
+	UploadRepo(src string, account string, acl string) (string, error)
 	UploadFile(fname string, uploadPath string) (string, error)
 }
 
@@ -56,7 +56,7 @@ type LocalUploader struct {
 // It doesnt do anything and it doesn't delete the original folder
 // It returns error if the repo is not using u.BaseDir as its base folder
 // Allowing offline development without S3 and satisfying the interface
-func (u *LocalUploader) UploadRepo(src string, account string) (string, error) {
+func (u *LocalUploader) UploadRepo(src string, account string, acl string) (string, error) {
 	if strings.HasPrefix(src, u.BaseDir) {
 		return src, nil
 	}
@@ -100,9 +100,9 @@ type uploadDetails struct {
 	count      int
 }
 
-func (u *S3Uploader) worker(uploadQueue chan *uploadDetails) {
+func (u *S3Uploader) worker(uploadQueue chan *uploadDetails, acl string) {
 	for p := range uploadQueue {
-		fname, err := p.uploader.uploadFileWithACL(p.fileName, p.uploadPath, "public-read")
+		fname, err := p.uploader.uploadFileWithACL(p.fileName, p.uploadPath, acl)
 		if err != nil {
 			u.log.WithFields(log.Fields{"fname": fname, "count": p.count, "error": err.Error()}).Error("Error uploading file")
 		}
@@ -112,9 +112,13 @@ func (u *S3Uploader) worker(uploadQueue chan *uploadDetails) {
 }
 
 // UploadRepo uploads the repo to a backing object storage bucket
-// the repository is uploaded to bucket/$account/$name/
-func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
+// the repository is uploaded to bucket/$account/$name/ with ACL "private"  "public-read"
+func (u *S3Uploader) UploadRepo(src string, account string, acl string) (string, error) {
 	cfg := config.Get()
+
+	if acl == "" {
+		acl = "private"
+	}
 
 	u.log = u.log.WithFields(log.Fields{"src": src, "account": account})
 	u.log.Info("Uploading repo")
@@ -155,7 +159,7 @@ func (u *S3Uploader) UploadRepo(src string, account string) (string, error) {
 
 	numberOfWorkers := cfg.UploadWorkers
 	for i := 0; i < numberOfWorkers; i++ {
-		go u.worker(uploadQueue)
+		go u.worker(uploadQueue, acl)
 	}
 
 	for i, ud := range uploadDetailsList {
