@@ -498,10 +498,7 @@ type ImageDetail struct {
 
 // GetImageByID obtains an image from the database for an orgID
 func GetImageByID(w http.ResponseWriter, r *http.Request) {
-	if image := getImage(w, r); image != nil {
-		ctxServices := dependencies.ServicesFromContext(r.Context())
-		respondWithJSONBody(w, ctxServices.Log, image)
-	}
+	respondWithJSONBody(w, nil, "")
 }
 
 // GetImageDetailsByID obtains an image from the database for an orgID
