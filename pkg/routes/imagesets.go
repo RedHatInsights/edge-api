@@ -36,10 +36,6 @@ var statusOption = []string{models.ImageStatusCreated, models.ImageStatusBuildin
 func MakeImageSetsRouter(sub chi.Router) {
 	sub.With(ValidateQueryParams("image-sets")).With(validateFilterParams).With(common.Paginate).Get("/", ListAllImageSets)
 	sub.With(validateFilterParams).With(common.Paginate).Get("/view", GetImageSetsView)
-	sub.Route("/{imageSetID}", func(r chi.Router) {
-		r.Use(ImageSetCtx)
-		r.With(validateFilterParams).With(common.Paginate).Get("/", GetImageSetsByID)
-	})
 	sub.Route("/view/{imageSetID}", func(r chi.Router) {
 		r.Use(ImageSetViewCtx)
 		r.With(ValidateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetImageSetViewByID)
