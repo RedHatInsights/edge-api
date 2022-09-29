@@ -36,7 +36,7 @@ func main() {
 	}
 
 	consumerGroup := "imagesisobuild"
-	kafkaConfigMap := kafkacommon.GetKafkaConsumerConfigMap(consumerGroup)
+	kafkaConfigMap := kafkacommon.NewKafkaConfigMapService().GetKafkaConsumerConfigMap(consumerGroup)
 	c, err := kafka.NewConsumer(&kafkaConfigMap)
 
 	if err != nil {

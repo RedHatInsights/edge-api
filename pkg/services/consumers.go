@@ -43,7 +43,7 @@ func NewKafkaConsumerService(config *clowder.KafkaConfig, topic string) Consumer
 		return nil
 	}
 
-	actualTopic, err := kafkacommon.GetTopic(topic)
+	actualTopic, err := kafkacommon.NewTopicService().GetTopic(topic)
 	if err != nil {
 		log.WithField("error", err.Error()).Error("Error getting actual topic from requested topic")
 	}
@@ -73,7 +73,7 @@ func NewKafkaConsumerService(config *clowder.KafkaConfig, topic string) Consumer
 
 func (s *KafkaConsumerService) initReader() *kafka.Consumer {
 	GroupID := "edge-fleet-management-update-playbook"
-	kafkaConfigMap := kafkacommon.GetKafkaConsumerConfigMap(GroupID)
+	kafkaConfigMap := kafkacommon.NewKafkaConfigMapService().GetKafkaConsumerConfigMap(GroupID)
 	c, err := kafka.NewConsumer(&kafkaConfigMap)
 
 	if err != nil {

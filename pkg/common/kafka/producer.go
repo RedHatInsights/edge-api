@@ -4,6 +4,7 @@ package kafkacommon
 
 import (
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -14,10 +15,48 @@ import (
 
 var lock = &sync.Mutex{}
 
-var singleInstance *kafka.Producer
+var singleInstance Producer
+
+// Producer the an interface for a kafka producer, it matches the confluent producer type defination
+type Producer interface {
+	Close()
+	Events() chan kafka.Event
+	Flush(timeoutMs int) int
+	GetFatalError() error
+	GetMetadata(topic *string, allTopics bool, timeoutMs int) (*kafka.Metadata, error)
+	Len() int
+	OffsetsForTimes(times []kafka.TopicPartition, timeoutMs int) (offsets []kafka.TopicPartition, err error)
+	Produce(msg *kafka.Message, deliveryChan chan kafka.Event) error
+	ProduceChannel() chan *kafka.Message
+	QueryWatermarkOffsets(topic string, partition int32, timeoutMs int) (low, high int64, err error)
+	SetOAuthBearerToken(oauthBearerToken kafka.OAuthBearerToken) error
+	SetOAuthBearerTokenFailure(errstr string) error
+	String() string
+	TestFatalError(code kafka.ErrorCode, str string) kafka.ErrorCode
+}
+
+// ProducerServiceInterface is the interface that defines the producer service
+type ProducerServiceInterface interface {
+	GetProducerInstance() Producer
+	ProduceEvent(requestedTopic, recordKey string, event models.CRCCloudEvent) error
+}
+
+// ProducerService is the producer service for edge
+type ProducerService struct {
+	Topic          TopicServiceInterface
+	KafkaConfigMap KafkaConfigMapServiceInterface
+}
+
+// NewProducerService returns a new service
+func NewProducerService() ProducerServiceInterface {
+	return &ProducerService{
+		Topic:          NewTopicService(),
+		KafkaConfigMap: NewKafkaConfigMapService(),
+	}
+}
 
 // GetProducerInstance returns a kafka producer instance
-func GetProducerInstance() *kafka.Producer {
+func (p *ProducerService) GetProducerInstance() Producer {
 	log.Debug("Getting the producer instance")
 	if singleInstance == nil {
 		lock.Lock()
@@ -27,7 +66,8 @@ func GetProducerInstance() *kafka.Producer {
 			log.WithFields(log.Fields{"broker": cfg.KafkaBrokers[0].Hostname,
 				"port": *cfg.KafkaBrokers[0].Port}).Debug("Creating a new producer")
 
-			kafkaConfigMap := GetKafkaProducerConfigMap()
+			kafkaConfigMap := p.KafkaConfigMap.GetKafkaProducerConfigMap()
+			fmt.Println("KafkaConfigMap: ", kafkaConfigMap)
 			p, err := kafka.NewProducer(&kafkaConfigMap)
 			if err != nil {
 				log.WithField("error", err).Error("Failed to create producer")
@@ -40,13 +80,13 @@ func GetProducerInstance() *kafka.Producer {
 }
 
 // ProduceEvent is a helper for the kafka producer
-func ProduceEvent(requestedTopic, recordKey string, event models.CRCCloudEvent) error {
+func (p *ProducerService) ProduceEvent(requestedTopic, recordKey string, event models.CRCCloudEvent) error {
 	log.Debug("Producing an event")
-	producer := GetProducerInstance()
+	producer := p.GetProducerInstance()
 	if producer == nil {
 		log.Error("Failed to get the producer instance")
 	}
-	realTopic, err := GetTopic(requestedTopic)
+	realTopic, err := p.Topic.GetTopic(requestedTopic)
 	if err != nil {
 		log.WithField("error", err).Error("Unable to lookup requested topic name")
 	}
@@ -69,4 +109,9 @@ func ProduceEvent(requestedTopic, recordKey string, event models.CRCCloudEvent) 
 	}
 
 	return nil
+}
+
+// UnsetProducer sets the producer singelton to nil
+func (p *ProducerService) UnsetProducer() {
+	singleInstance = nil
 }
