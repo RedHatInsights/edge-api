@@ -45,7 +45,6 @@ func MakeImagesRouter(sub chi.Router) {
 	})
 	sub.Route("/{imageId}", func(r chi.Router) {
 		r.Use(ImageByIDCtx)
-		r.Get("/", GetImageByID)
 		r.Get("/details", GetImageDetailsByID)
 		r.Get("/status", GetImageStatusByID)
 		r.Get("/repo", GetRepoForImage)
