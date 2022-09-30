@@ -11,6 +11,7 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services/image"
 	log "github.com/sirupsen/logrus"
@@ -18,6 +19,9 @@ import (
 
 func main() {
 	ctx := context.Background()
+	// Init edge api services and attach them to the context
+	edgeAPIServices := dependencies.Init(ctx)
+	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 	// create a base logger with fields to pass through the entire flow
 	mslog := log.WithFields(log.Fields{"app": "edge", "service": "images"})
 
