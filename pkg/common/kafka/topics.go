@@ -31,8 +31,8 @@ func GetTopic(requested string) (string, error) {
 	cfg := config.Get()
 	if cfg.KafkaConfig != nil {
 		topics := cfg.KafkaConfig.Topics
+		log.WithField("requestedName", requested).Debug("looking up actual topic")
 		for _, topic := range topics {
-			log.WithField("requestedName", requested).Debug("looking up actual topic")
 			if topic.RequestedName == requested {
 				log.WithFields(log.Fields{"requestedName": requested, "Name": topic.Name}).Debug("Found the actual topic name")
 

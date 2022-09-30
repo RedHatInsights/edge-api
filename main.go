@@ -7,7 +7,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -158,10 +157,9 @@ func main() {
 
 	initDependencies()
 	cfg := config.Get()
-	var configValues map[string]interface{}
-	cfgBytes, _ := json.Marshal(cfg)
-	_ = json.Unmarshal(cfgBytes, &configValues)
-	log.WithFields(configValues).Info("Configuration Values")
+
+	newLogData := config.Scrub(*cfg)
+	log.WithFields(newLogData).Info("Configuration values")
 
 	if featureFlagsConfigPresent() {
 		err := unleash.Initialize(

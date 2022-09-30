@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"sync"
 
@@ -26,8 +27,8 @@ type EdgeConfig struct {
 	Database                 *dbConfig                 `json:"database,omitempty"`
 	BucketName               string                    `json:"bucket_name,omitempty"`
 	BucketRegion             string                    `json:"bucket_region,omitempty"`
-	AccessKey                string                    `json:"-"`
-	SecretKey                string                    `json:"-"`
+	AccessKey                string                    `json:"-" edge:"scrub"`
+	SecretKey                string                    `json:"-" edge:"scrub"`
 	RepoTempPath             string                    `json:"repo_temp_path,omitempty"`
 	OpenAPIFilePath          string                    `json:"openapi_file_path,omitempty"`
 	ImageBuilderConfig       *imageBuilderConfig       `json:"image_builder,omitempty"`
@@ -321,4 +322,27 @@ func GetConfigValues() (map[string]interface{}, error) {
 		return configValues, err
 	}
 	return configValues, nil
+}
+
+// Scrub returns a map without sensitive data
+// To use, add edge:"scrub" to the struct field
+// e.g.,
+// 	AccessKey   string   `json:"-" edge:"scrub"`
+// NOTE: It currently only returns the first level as key/value pairs
+func Scrub(cfg interface{}) map[string]interface{} {
+	newMap := make(map[string]interface{})
+
+	// reflect on the struct passed in
+	values := reflect.ValueOf(cfg)
+	// loop through the fields and ignore if the edge scrub field tag is defined
+	types := values.Type()
+	for i := 0; i < values.NumField(); i++ {
+		if types.Field(i).Tag.Get("edge") != "scrub" {
+			newMap[types.Field(i).Name] = values.Field(i)
+		}
+	}
+
+	// TODO: walk the struct fields and add to the map
+
+	return newMap
 }
