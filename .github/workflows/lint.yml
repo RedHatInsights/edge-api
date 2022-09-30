@@ -33,9 +33,9 @@ jobs:
           args: --max-same-issues 20 --timeout 5m0s
 
       - name: Set up python3
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
-          python-version: '3.9'
+          python-version: '3.10'
 
       - name: Install openapi-spec-validator
         run: pip install openapi-spec-validator
@@ -46,5 +46,10 @@ jobs:
       - name: Validate spec-file
         run: python3 -m openapi_spec_validator ${{ github.workspace }}/cmd/spec/openapi.json
 
-      - name: Run coverage without fdo
+      - name: Run Go Test Coverage without fdo
         run: make coverage-no-fdo
+
+      - uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: true
+          verbose: true
