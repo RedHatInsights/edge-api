@@ -10,6 +10,7 @@ import (
 	url2 "net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -229,6 +230,16 @@ func ValidateStorageUpdateTransaction(w http.ResponseWriter, r *http.Request) st
 		"updateTransactionID":   updateTransaction.ID,
 		"updateTransactionUUID": updateTransaction.UUID,
 	})
+
+	// check update transaction expiry
+	updateTransactionExpire := time.Duration(config.Get().UpdateTransactionExpiry) * time.Minute
+	expiryTimeRemaining := int64(time.Until(updateTransaction.CreatedAt.Time.Add(updateTransactionExpire)).Minutes())
+	if expiryTimeRemaining < 0 {
+		errMessage := fmt.Sprintf("update transaction expired: %d minutes ago", -1*expiryTimeRemaining)
+		logContext.Errorf(errMessage)
+		respondWithAPIError(w, logContext, errors.NewAccessForbidden(errMessage))
+		return ""
+	}
 
 	filePath := chi.URLParam(r, "*")
 	if filePath == "" {

@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	url2 "net/url"
 	"strings"
+	"time"
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -191,6 +192,31 @@ var _ = Describe("Storage Router", func() {
 				respBody, err := ioutil.ReadAll(rr.Body)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(string(respBody)).To(Equal(fileContent))
+			})
+
+			It("Should return error 403 when update transaction expire", func() {
+				additionalTimeAfterExpiry := 120 * time.Minute
+				updateTransactionExpiry := time.Duration(config.UpdateTransactionExpiry) * time.Minute
+				updateTransactionCreatedAt := time.Now().Add(-updateTransactionExpiry - additionalTimeAfterExpiry)
+				updateTransaction := models.UpdateTransaction{
+					Model: models.Model{CreatedAt: models.EdgeAPITime{Time: updateTransactionCreatedAt, Valid: true}},
+					OrgID: orgID,
+					Repo:  &models.Repo{URL: "https://repo-storage.org/path/to/bucket", Status: models.ImageStatusSuccess},
+				}
+				res := db.DB.Create(&updateTransaction)
+				Expect(res.Error).ToNot(HaveOccurred())
+
+				targetRepoFile := "summary.sig"
+				req, err := http.NewRequest("GET", fmt.Sprintf("/storage/update-repos/%d/%s", updateTransaction.ID, targetRepoFile), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
+
+				Expect(rr.Code).To(Equal(http.StatusForbidden))
+				respBody, err := ioutil.ReadAll(rr.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring(fmt.Sprintf("update transaction expired: %d minutes ago", int64(additionalTimeAfterExpiry.Minutes()))))
 			})
 
 			It("should return error when the update transaction does not exists", func() {
@@ -468,6 +494,31 @@ var _ = Describe("Storage Router", func() {
 
 				Expect(rr.Code).To(Equal(http.StatusSeeOther))
 				Expect(rr.Header()["Location"][0]).To(Equal(expectedURL))
+			})
+
+			It("Should return error 403 when update transaction expire", func() {
+				additionalTimeAfterExpiry := 120 * time.Minute
+				updateTransactionExpiry := time.Duration(config.UpdateTransactionExpiry) * time.Minute
+				updateTransactionCreatedAt := time.Now().Add(-updateTransactionExpiry - additionalTimeAfterExpiry)
+				updateTransaction := models.UpdateTransaction{
+					Model: models.Model{CreatedAt: models.EdgeAPITime{Time: updateTransactionCreatedAt, Valid: true}},
+					OrgID: orgID,
+					Repo:  &models.Repo{URL: "https://repo-storage.org/path/to/bucket", Status: models.ImageStatusSuccess},
+				}
+				res := db.DB.Create(&updateTransaction)
+				Expect(res.Error).ToNot(HaveOccurred())
+
+				targetRepoFile := "summary.sig"
+				req, err := http.NewRequest("GET", fmt.Sprintf("/storage/update-repos/%d/content/%s", updateTransaction.ID, targetRepoFile), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
+
+				Expect(rr.Code).To(Equal(http.StatusForbidden))
+				respBody, err := ioutil.ReadAll(rr.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring(fmt.Sprintf("update transaction expired: %d minutes ago", int64(additionalTimeAfterExpiry.Minutes()))))
 			})
 
 			It("should return error when the update transaction does not exists", func() {

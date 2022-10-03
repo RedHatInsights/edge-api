@@ -54,7 +54,8 @@ type EdgeConfig struct {
 	TenantTranslatorHost     string                    `json:"tenant_translator_host,omitempty"`
 	TenantTranslatorPort     string                    `json:"tenant_translator_port,omitempty"`
 	TenantTranslatorURL      string                    `json:"tenant_translator_url,omitempty"`
-	PayloadSigningKey        string                    `json:"payload_signing_key"`
+	PayloadSigningKey        string                    `json:"-"`
+	UpdateTransactionExpiry  int64                     `json:"UpdateTransactionExpiry"`
 }
 
 type dbConfig struct {
@@ -131,6 +132,7 @@ func Init() {
 	options.SetDefault("Local", false)
 	options.SetDefault("Dev", false)
 	options.SetDefault("EDGEMGMT_CONFIGPATH", "/tmp/edgemgmt_config.json")
+	options.SetDefault("UpdateTransactionExpiry", 1440) // default is 24 hours
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
@@ -221,6 +223,7 @@ func Init() {
 		TenantTranslatorHost:    options.GetString("TenantTranslatorHost"),
 		TenantTranslatorPort:    options.GetString("TenantTranslatorPort"),
 		PayloadSigningKey:       options.GetString("PayloadSigningKey"),
+		UpdateTransactionExpiry: options.GetInt64("UpdateTransactionExpiry"),
 	}
 	if config.TenantTranslatorHost != "" && config.TenantTranslatorPort != "" {
 		config.TenantTranslatorURL = fmt.Sprintf("http://%s:%s", config.TenantTranslatorHost, config.TenantTranslatorPort)

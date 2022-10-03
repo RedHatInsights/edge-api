@@ -409,3 +409,7 @@ parameters:
   name: TENANT_TRANSLATOR_PORT
   required: false
   value: '8892'
+- description: Update transaction expiry time in minutes.
+  name: UPDATETRANSACTIONEXPIRY
+  required: false
+  value: '1440'

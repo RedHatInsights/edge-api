@@ -127,35 +127,41 @@ func DecodeSignedPayloadValue(key []byte, value string, dataReceiver interface{}
 	return nil
 }
 
-// EncodeUpdateTransactionCookieValue create a one string update transaction data payload and a signature of the payload
-// using the key and update transaction uuid
-func EncodeUpdateTransactionCookieValue(key []byte, update models.UpdateTransaction, data *UpdateTransactionPayload) (string, error) {
+// getUpdateTransactionSignatureKey generate a new sign key as a hash of update-transaction uuid
+// this will ensure the that the signature key is unique for only this update transaction
+func getUpdateTransactionSignatureKey(key []byte, updateTransaction models.UpdateTransaction) ([]byte, error) {
 	if len(key) == 0 {
 		log.WithField("error", ErrSignatureKeyCannotBeEmpty.Error()).Error("signature key is empty")
-		return "", ErrSignatureKeyCannotBeEmpty
+		return nil, ErrSignatureKeyCannotBeEmpty
 	}
-	if update.UUID == uuid.Nil {
-		log.WithField("error", models.ErrUpdateTransactionEmptyUUID.Error()).Error("update transaction uuid is empty")
-		return "", models.ErrUpdateTransactionEmptyUUID
-	}
-	// extend the key with update transaction uuid
-	key = append(key, []byte(update.UUID.String())...)
 
-	return EncodeSignedPayloadValue(key, data)
+	if updateTransaction.UUID == uuid.Nil {
+		log.WithField("error", models.ErrUpdateTransactionEmptyUUID.Error()).Error("update transaction uuid is empty")
+		return nil, models.ErrUpdateTransactionEmptyUUID
+	}
+	return sign(key, []byte(updateTransaction.UUID.String())), nil
+}
+
+// EncodeUpdateTransactionCookieValue create a one string update transaction data payload and a signature of the payload
+// using the key and update transaction uuid
+func EncodeUpdateTransactionCookieValue(key []byte, updateTransaction models.UpdateTransaction, data *UpdateTransactionPayload) (string, error) {
+	signatureKey, err := getUpdateTransactionSignatureKey(key, updateTransaction)
+	if err != nil {
+		log.WithField("error", err.Error()).Error("error when generating updateTransaction transaction signature key")
+		return "", err
+	}
+
+	return EncodeSignedPayloadValue(signatureKey, data)
 }
 
 // DecodeUpdateTransactionCookieValue decode the data payload from a given cookie string
 // and validate it among the update transaction, use the update transaction uuid as part of the key
-func DecodeUpdateTransactionCookieValue(key []byte, cookieValue string, update models.UpdateTransaction, dataReceiver *UpdateTransactionPayload) error {
-	if len(key) == 0 {
-		log.WithField("error", ErrSignatureKeyCannotBeEmpty.Error()).Error("signature key is empty")
-		return ErrSignatureKeyCannotBeEmpty
+func DecodeUpdateTransactionCookieValue(key []byte, cookieValue string, updateTransaction models.UpdateTransaction, dataReceiver *UpdateTransactionPayload) error {
+	signatureKey, err := getUpdateTransactionSignatureKey(key, updateTransaction)
+	if err != nil {
+		log.WithField("error", err.Error()).Error("error when generating updateTransaction transaction signature key")
+		return err
 	}
-	if update.UUID == uuid.Nil {
-		log.WithField("error", models.ErrUpdateTransactionEmptyUUID.Error()).Error("update transaction uuid is empty")
-		return models.ErrUpdateTransactionEmptyUUID
-	}
-	key = append(key, []byte(update.UUID.String())...)
 
-	return DecodeSignedPayloadValue(key, cookieValue, dataReceiver)
+	return DecodeSignedPayloadValue(signatureKey, cookieValue, dataReceiver)
 }

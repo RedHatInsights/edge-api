@@ -80,3 +80,17 @@ func NewFeatureNotAvailable(message string) APIError {
 	err.Status = http.StatusNotImplemented
 	return err
 }
+
+// AccessForbidden  defines an error when a resource is not allowed to be served
+type AccessForbidden struct {
+	apiError
+}
+
+// NewAccessForbidden creates a new AccessForbidden
+func NewAccessForbidden(message string) APIError {
+	err := new(AccessForbidden)
+	err.Code = "ACCESS_FORBIDDEN"
+	err.Title = message
+	err.Status = http.StatusForbidden
+	return err
+}
