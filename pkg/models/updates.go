@@ -1,15 +1,13 @@
+// FIXME: golangci-lint
+// nolint:govet,revive,staticcheck
 package models
 
 import (
 	"errors"
 
-	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
-
-// ErrUpdateTransactionEmptyUUID returned when trying to use an update transaction with uuid not initiated
-var ErrUpdateTransactionEmptyUUID = errors.New("error update transaction uuid is empty")
 
 // UpdateTransaction represents the combination of an OSTree commit and a set of Inventory
 // hosts that need to have the commit deployed to them
@@ -32,7 +30,6 @@ type UpdateTransaction struct {
 	Repo            *Repo            `json:"Repo"`
 	ChangesRefs     bool             `gorm:"default:false" json:"ChangesRefs"`
 	DispatchRecords []DispatchRecord `gorm:"many2many:updatetransaction_dispatchrecords;save_association:false" json:"DispatchRecords"`
-	UUID            uuid.UUID        `gorm:"type:uuid" json:"UUID"`
 }
 
 // DispatchRecord represents the combination of a Playbook Dispatcher (https://github.com/RedHatInsights/playbook-dispatcher),
@@ -108,9 +105,6 @@ func (ur *UpdateTransaction) BeforeCreate(tx *gorm.DB) error {
 		log.Error("update-transaction do not have an org_id")
 		return ErrOrgIDIsMandatory
 	}
-	if ur.UUID == uuid.Nil {
-		// if not initiated generate a new uuid
-		ur.UUID = uuid.New()
-	}
+
 	return nil
 }

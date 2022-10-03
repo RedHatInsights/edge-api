@@ -16,7 +16,6 @@ import (
 var _ = Describe("Uploader Test", func() {
 	var logEntry *log.Entry
 	var account string
-	var acl = "private"
 	Describe("local uploader", func() {
 		var uploader files.Uploader
 		BeforeEach(func() {
@@ -35,7 +34,7 @@ var _ = Describe("Uploader Test", func() {
 		When("upload repo is called", func() {
 			It("returns src and does nothing", func() {
 				src := "/tmp/tmp-repo"
-				uploadPath, err := uploader.UploadRepo(src, account, acl)
+				uploadPath, err := uploader.UploadRepo(src, account)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(uploadPath).To(Equal(src))
 			})
@@ -43,7 +42,7 @@ var _ = Describe("Uploader Test", func() {
 		When("upload file is called", func() {
 			It("returns src and does nothing", func() {
 				src := "/tmp/tmp-repo"
-				uploadPath, err := uploader.UploadRepo(src, account, acl)
+				uploadPath, err := uploader.UploadRepo(src, account)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(uploadPath).To(Equal(src))
 			})
@@ -51,7 +50,7 @@ var _ = Describe("Uploader Test", func() {
 		When("base folder is invalid", func() {
 			It("returns error", func() {
 				src := "/invalid-base-folder/tmp-repo"
-				uploadPath, err := uploader.UploadRepo(src, account, acl)
+				uploadPath, err := uploader.UploadRepo(src, account)
 				Expect(err).To(HaveOccurred())
 				Expect(uploadPath).To(Equal(""))
 			})

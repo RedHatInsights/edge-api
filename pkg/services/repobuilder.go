@@ -149,7 +149,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
 
 	rb.log.Info("Upload repo")
-	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Clean(filepath.Join(path, "repo")), strconv.FormatUint(uint64(update.ID), 10), "private")
+	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Clean(filepath.Join(path, "repo")), strconv.FormatUint(uint64(update.ID), 10))
 	rb.log.Info("Finished uploading repo")
 	if err != nil {
 		return nil, err
@@ -219,7 +219,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		return nil, fmt.Errorf("error extracting repo :: %s", err.Error())
 	}
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
-	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Clean(filepath.Join(path, "repo")), strconv.FormatUint(uint64(r.ID), 10), "public-read")
+	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Clean(filepath.Join(path, "repo")), strconv.FormatUint(uint64(r.ID), 10))
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error uploading repo")
 		return nil, fmt.Errorf("error uploading repo :: %s", err.Error())

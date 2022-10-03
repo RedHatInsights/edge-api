@@ -31,22 +31,6 @@ import (
 )
 
 var _ = Describe("UpdateService Basic functions", func() {
-	cfg := config.Get()
-	// backup original signing key and EdgeAPIBaseURL
-	originalSigningKey := cfg.PayloadSigningKey
-	originalEdgeAPIBaseURL := cfg.EdgeAPIBaseURL
-	signingKey := "OJ_6Ww7BIpWAqktkelIkPDHRO6j0vtb6prME7uXXZXZLVtBjiAiHFnTK1XUv74fn"
-
-	BeforeEach(func() {
-		cfg.PayloadSigningKey = signingKey
-		cfg.EdgeAPIBaseURL = "http://localhost:3000"
-	})
-	AfterEach(func() {
-		// restore original signing key and EdgeAPIBaseURL
-		cfg.PayloadSigningKey = originalSigningKey
-		cfg.EdgeAPIBaseURL = originalEdgeAPIBaseURL
-	})
-
 	Describe("creation of the service", func() {
 		Context("returns a correct instance", func() {
 			ctx := context.Background()
@@ -457,7 +441,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 					RemoteName:          "remote-name",
 					RemoteOstreeUpdate:  "false",
 					OSTreeRef:           "rhel/8/x86_64/edge",
-					RemoteCookieValue:   "eyJvcmdfaWQiOiIxMDA1IiwiZGV2aWNlX3V1aWQiOiIiLCJ1cGRhdGVfdHJhbnNhY3Rpb25faWQiOjEwMDB9::BKLp9JOXWyf7YmMzMMcw36tlgprO-OITJ771wxdKKlM=",
 				}
 				// TODO change to org_id once migration is complete
 				org_id := "1005"
@@ -498,7 +481,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 					RemoteName:          "remote-name",
 					RemoteOstreeUpdate:  "true",
 					OSTreeRef:           "rhel/9/x86_64/edge",
-					RemoteCookieValue:   "eyJvcmdfaWQiOiIxMDA1IiwiZGV2aWNlX3V1aWQiOiIiLCJ1cGRhdGVfdHJhbnNhY3Rpb25faWQiOjEwMDB9::BKLp9JOXWyf7YmMzMMcw36tlgprO-OITJ771wxdKKlM=",
 				}
 				// TODO change to org_id once migration is complete
 				org_id := "1005"

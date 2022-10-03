@@ -10,12 +10,6 @@ objects:
     name: psk-playbook-dispatcher
   stringData:
     key: ${PSK_DISPATCHER}
-- apiVersion: v1
-  kind: Secret
-  metadata:
-    name: payload-signing-key
-  stringData:
-    key:  ${PAYLOAD_SIGNING_KEY}
 - apiVersion: cloud.redhat.com/v1alpha1
   kind: ClowdApp
   metadata:
@@ -100,11 +94,6 @@ objects:
           value: ${TENANT_TRANSLATOR_HOST}
         - name: TENANT_TRANSLATOR_PORT
           value: ${TENANT_TRANSLATOR_PORT}
-        - name: PAYLOADSIGNINGKEY
-          valueFrom:
-            secretKeyRef:
-              key: key
-              name: payload-signing-key
         resources:
           limits:
             cpu: ${{CPU_LIMIT}}
@@ -161,11 +150,6 @@ objects:
           value: ${TENANT_TRANSLATOR_HOST}
         - name: TENANT_TRANSLATOR_PORT
           value: ${TENANT_TRANSLATOR_PORT}
-        - name: PAYLOADSIGNINGKEY
-          valueFrom:
-            secretKeyRef:
-              key: key
-              name: payload-signing-key
         resources:
           limits:
             cpu: 250m
@@ -222,11 +206,6 @@ objects:
           value: ${TENANT_TRANSLATOR_HOST}
         - name: TENANT_TRANSLATOR_PORT
           value: ${TENANT_TRANSLATOR_PORT}
-        - name: PAYLOADSIGNINGKEY
-          valueFrom:
-            secretKeyRef:
-              key: key
-              name: payload-signing-key
         resources:
           limits:
             cpu: 250m

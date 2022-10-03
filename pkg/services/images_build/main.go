@@ -1,5 +1,3 @@
-// FIXME: golangci-lint
-// nolint:govet,revive,staticcheck
 package main
 
 import (
@@ -11,6 +9,7 @@ import (
 	"time"
 
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
+	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services/image"
 	log "github.com/sirupsen/logrus"
@@ -25,6 +24,9 @@ import (
 func main() {
 	// create a new context
 	ctx := context.Background()
+	// Init edge api services and attach them to the context
+	edgeAPIServices := dependencies.Init(ctx)
+	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 	// create a base logger with fields to pass through the entire flow
 	mslog := log.WithFields(log.Fields{"app": "edge", "service": "images"})
 
@@ -93,7 +95,8 @@ func main() {
 			select {
 			case sig := <-sigchan:
 				mslog.WithField("signal", sig).Debug("Caught signal and terminating")
-				time.Sleep(5)
+				sleepTime := time.Duration(5)
+				time.Sleep(sleepTime)
 				run = false
 			default:
 				ev := c.Poll(100)
