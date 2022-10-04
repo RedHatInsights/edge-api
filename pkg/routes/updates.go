@@ -178,7 +178,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 		return nil
 	}
 	if int64(len(devicesUUID)) != devicesCount {
-		respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("some devices where not found"))
+		respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("some devices were not found"))
 		return nil
 	}
 	var commit *models.Commit
