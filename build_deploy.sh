@@ -90,7 +90,6 @@ else
     FLEET_MANAGEMENT_EDGE_API_IMAGE="quay.io/fleet-management/edge-api:pr-checks:${FLEET_MANAGEMENT_TAG}-edge-api"
     echo "LABEL quay.expires-after=2d" >> "${FLEET_MANAGEMENT_EDGE_API_CONTAINERFILE}"
 
-    # shellcheck disable=SC2034
     FLEET_MANAGEMENT_LIBFDO_IMAGE="quay.io/fleet-management/libfdo-data:pr-checks:${FLEET_MANAGEMENT_TAG}-libfdo"
     echo "LABEL quay.expires-after=2d" >> "${FLEET_MANAGEMENT_LIBFDO_CONTAINERFILE}"
 fi
