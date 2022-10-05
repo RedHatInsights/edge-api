@@ -96,11 +96,11 @@ else
 fi
 
 # Travis build libfdo-data
-#podman build \
-#       --file "${FLEET_MANAGEMENT_CONTAINERFILE}" \
-#       --no-cache \
-#       --tag "${FLEET_MANAGEMENT_LIBFDO_IMAGE}" \
-#       .
+podman build \
+       --file "${FLEET_MANAGEMENT_LIBFDO_CONTAINERFILE}" \
+       --no-cache \
+       --tag "${FLEET_MANAGEMENT_LIBFDO_IMAGE}" \
+       .
 #
 #podman push \
 #        "${FLEET_MANAGEMENT_LIBFDO_IMAGE}"
