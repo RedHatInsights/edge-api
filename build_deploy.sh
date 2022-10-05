@@ -69,27 +69,31 @@ done
 
 declare FLEET_MANAGEMENT_LIBFDO_CONTAINERFILE
 FLEET_MANAGEMENT_LIBFDO_CONTAINERFILE="test-container/Dockerfile"
-# shellcheck disable=SC2034
 readonly FLEET_MANAGEMENT_LIBFDO_CONTAINERFILE
 
 declare FLEET_MANAGEMENT_EDGE_API_CONTAINERFILE
 FLEET_MANAGEMENT_EDGE_API_CONTAINERFILE="Dockerfile"
-# shellcheck disable=SC2034
 readonly FLEET_MANAGEMENT_EDGE_API_CONTAINERFILE
 
 # Travis before_install
-#if [ "${GITHUB_PR_NUMBER}" == false ]; # FIXME - ${IMAGE_TAG}?
-#then
-#   TAG="latest"
-#    FLEET_MANAGEMENT_EDGE_API_IMAGE="quay.io/fleet-management/edge-api:${TAG}"
-#    FLEET_MANAGEMENT_LIBFDO_IMAGE="quay.io/fleet-management/libfdo-data:${TAG}"
-#else
-#   TAG="pr-${GITHUB_PR_NUMBER}" # FIXME
-#    FLEET_MANAGEMENT_EDGE_API_IMAGE="quay.io/fleet-management/edge-api:pr-checks:${TAG}-edge-api"
-#    FLEET_MANAGEMENT_LIBFDO_IMAGE="quay.io/fleet-management/libfdo-data:pr-checks:${TAG}-libfdo"
-#   echo "LABEL quay.expires-after=2d" >> "${FLEET_MANAGEMENT_CONTAINERFILE}"
-#   echo "LABEL quay.expires-after=2d" >> "${"./Dockerfile
-#fi
+if [ "${ghprbPullId:-}" == '' ];
+then
+    FLEET_MANAGEMENT_TAG="latest"
+
+    FLEET_MANAGEMENT_EDGE_API_IMAGE="quay.io/fleet-management/edge-api:${FLEET_MANAGEMENT_TAG}"
+
+    FLEET_MANAGEMENT_LIBFDO_IMAGE="quay.io/fleet-management/libfdo-data:${FLEET_MANAGEMENT_TAG}"
+else
+    FLEET_MANAGEMENT_TAG="pr-${ghprbPullId}-${IMAGE_TAG}"
+
+    # shellcheck disable=SC2034
+    FLEET_MANAGEMENT_EDGE_API_IMAGE="quay.io/fleet-management/edge-api:pr-checks:${FLEET_MANAGEMENT_TAG}-edge-api"
+    echo "LABEL quay.expires-after=2d" >> "${FLEET_MANAGEMENT_EDGE_API_CONTAINERFILE}"
+
+    # shellcheck disable=SC2034
+    FLEET_MANAGEMENT_LIBFDO_IMAGE="quay.io/fleet-management/libfdo-data:pr-checks:${FLEET_MANAGEMENT_TAG}-libfdo"
+    echo "LABEL quay.expires-after=2d" >> "${FLEET_MANAGEMENT_LIBFDO_CONTAINERFILE}"
+fi
 
 # Travis build libfdo-data
 #podman build \
