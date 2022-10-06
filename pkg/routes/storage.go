@@ -49,7 +49,7 @@ func MakeStorageRouter(sub chi.Router) {
 }
 
 // redirectToStorageSignedURL redirect request to real content storage url using a signed url
-func redirectToStorageSignedURL(w http.ResponseWriter, r *http.Request, path string) error {
+func redirectToStorageSignedURL(w http.ResponseWriter, r *http.Request, path string) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	logContext := ctxServices.Log.WithField("service", "device-repository-storage")
 	signedURL, err := ctxServices.FilesService.GetSignedURL(path)
@@ -59,15 +59,14 @@ func redirectToStorageSignedURL(w http.ResponseWriter, r *http.Request, path str
 			path:    path,
 		}).Error("error occurred when signing url")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
-		return err
+		return
 	}
 	logContext.WithField("path", signedURL).Debug("redirect")
 	http.Redirect(w, r, signedURL, http.StatusSeeOther)
-	return nil
 }
 
 // serveStorageContent return the real content from storage
-func serveStorageContent(w http.ResponseWriter, r *http.Request, path string) error {
+func serveStorageContent(w http.ResponseWriter, r *http.Request, path string) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	logContext := ctxServices.Log.WithField("service", "device-repository-storage")
 	requestFile, err := ctxServices.FilesService.GetFile(path)
@@ -82,7 +81,7 @@ func serveStorageContent(w http.ResponseWriter, r *http.Request, path string) er
 			apiError = errors.NewInternalServerError()
 		}
 		respondWithAPIError(w, ctxServices.Log, apiError)
-		return err
+		return
 	}
 	defer func(requestFile io.ReadCloser) {
 		err := requestFile.Close()
@@ -97,9 +96,7 @@ func serveStorageContent(w http.ResponseWriter, r *http.Request, path string) er
 		logContext.WithField("error", err.Error()).
 			WithField("Content-Type", w.Header().Values("Content-Type")).
 			WithField("len-content", ind).Error("error writing content")
-		return err
 	}
-	return nil
 }
 
 // InstallerByIDCtx is a handler for Installer ISOs requests
@@ -299,8 +296,7 @@ func GetUpdateTransactionRepoFileContent(w http.ResponseWriter, r *http.Request)
 		"path":                requestPath,
 	}).Info("redirect storage update transaction repo resource")
 
-	_ = redirectToStorageSignedURL(w, r, requestPath)
-	// redirectToStorageSignedURL will respond with proper response on failure and handle logging
+	redirectToStorageSignedURL(w, r, requestPath)
 }
 
 // GetUpdateTransactionRepoFile return the content of an update-transaction repository path
@@ -324,6 +320,5 @@ func GetUpdateTransactionRepoFile(w http.ResponseWriter, r *http.Request) {
 		"path":                requestPath,
 	})
 	logContext.Info("return storage update transaction repo resource content")
-	_ = serveStorageContent(w, r, requestPath)
-	// serveStorageContent will respond with proper response on failure and handle logging
+	serveStorageContent(w, r, requestPath)
 }
