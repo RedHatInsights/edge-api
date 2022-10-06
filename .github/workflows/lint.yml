@@ -2,49 +2,95 @@ name: Go
 
 on:
   push:
-    branches: [main]
+    # tags:
+    #   - v*
+    branches:
+      - main
   pull_request:
-    branches: [main]
-
+    branches:
+      - main
+permissions:
+  contents: read
+  # Optional: allow read access to pull request.  Use with 'only-new-issues' option.
+  # pull-requests: read
 jobs:
-  build:
+  golangci:
     name: Lint
     runs-on: ubuntu-latest
     steps:
       - name: Display build environment
         run: printenv
 
-      - name: Set up Go 1.x
-        uses: actions/setup-go@v3
+      - uses: actions/setup-go@v3
+        name: Set up Go 1.x
         with:
-          go-version: 1.16
+          go-version: 1.17
 
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v3
-
-      - name: install modules
-        run: |
-          [ $(go get -a | wc -l) -eq 0 ]
+      - uses: actions/checkout@v3
+        name: Checkout edge-api
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
+          # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
           version: latest
           args: --max-same-issues 20 --timeout 5m0s
+          # Optional: working directory, useful for monorepos
+          # working-directory: somedir
 
-      - name: Set up python3
-        uses: actions/setup-python@v2
+          # Optional: golangci-lint command line arguments.
+          # args: --issues-exit-code=0
+
+          # Optional: show only new issues if it's a pull request. The default value is `false`.
+          # only-new-issues: true
+
+          # Optional: if set to true then the all caching functionality will be complete disabled,
+          #           takes precedence over all other caching options.
+          # skip-cache: true
+
+          # Optional: if set to true then the action don't cache or restore ~/go/pkg.
+          # skip-pkg-cache: true
+
+          # Optional: if set to true then the action don't cache or restore ~/.cache/go-build.
+          # skip-build-cache: true
+
+  openapi:
+    name: OpenAPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v3
+        name: Set up Go 1.x
         with:
-          python-version: '3.9'
+          go-version: 1.17
 
-      - name: Install openapi-spec-validator
-        run: pip install openapi-spec-validator
+      - uses: actions/checkout@v3
+        name: Checkout edge-api
 
       - name: Generate API docs spec file
         run: go run cmd/spec/main.go
 
+      - name: Set up python3
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.10'
+
+      - name: Install openapi-spec-validator
+        run: pip install openapi-spec-validator
+
       - name: Validate spec-file
         run: python3 -m openapi_spec_validator ${{ github.workspace }}/cmd/spec/openapi.json
 
-      - name: Run coverage without fdo
+  gocoverage:
+    name: Codecov
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        name: Checkout edge-api
+
+      - name: Run Go Test Coverage without fdo
         run: make coverage-no-fdo
+
+      - uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: true
+          verbose: true
