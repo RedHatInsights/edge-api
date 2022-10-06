@@ -985,7 +985,7 @@ func (s *DeviceService) syncDevicesWithInventory(orgID string) {
 
 	var insightsCount int64
 	var edgeCount int64
-	for int64(offset) < total {
+	for int64(offset) <= total {
 		s.log.WithFields(log.Fields{"offset": int64(offset), "total": total}).Debug("Comparing offset to total")
 		if res := db.Org(orgID, "").Debug().Limit(limit).Offset(offset).Find(&edgeDevices); res.Error != nil {
 			s.log.WithField("error", res.Error.Error()).Error("Error getting devices in device sync")
@@ -1027,7 +1027,7 @@ func (s *DeviceService) syncDevicesWithInventory(orgID string) {
 	// Delete invalid devices
 	s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount, "devicesToBeDeleted size": len(devicesToBeDeleted)}).Debug("Comparing inventory counts before device deletion")
 
-	if edgeCount > insightsCount {
+	if len(devicesToBeDeleted) > 0 {
 		s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount}).Debug("Inventory counts do not match. Going through delete list")
 
 		if feature.DeviceSyncDelete.IsEnabled() {
@@ -1092,6 +1092,7 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 		for _, inDevice := range inventoryDevices.Result {
 			inveDeviceIds = append(inveDeviceIds, inDevice.ID)
 		}
+
 		var dbDevices []models.Device
 		if res := db.Org(orgID, "").Debug().Where("UUID IN ?", inveDeviceIds).Find(&dbDevices); res.Error != nil {
 			s.log.WithField("error", res.Error.Error()).Error("Error getting devices in device sync")

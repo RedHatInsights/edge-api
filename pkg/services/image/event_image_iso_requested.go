@@ -8,7 +8,6 @@ import (
 
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
-	"github.com/redhatinsights/edge-api/pkg/services"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -29,10 +28,6 @@ func (ev EventImageISORequestedBuildHandler) Consume(ctx context.Context) {
 	eventlog := GetLoggerFromContext(ctx)
 	eventlog.Info("Starting image iso build")
 
-	// rebuilding the context and identity here
-	edgeAPIServices := dependencies.Init(ctx)
-	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
-
 	payload := ev.Data
 	var image *models.Image
 	imageString, err := json.Marshal(payload.NewImage)
@@ -45,13 +40,23 @@ func (ev EventImageISORequestedBuildHandler) Consume(ctx context.Context) {
 		eventlog.Error("Error unmarshaling the image")
 		return
 	}
-	log := eventlog.WithFields(log.Fields{
+	if image.OrgID == "" || image.RequestID == "" {
+		eventlog.WithFields(log.Fields{
+			"message":   "Malformed image request, vital data missing",
+			"requestId": image.RequestID,
+			"orgID":     image.OrgID,
+		})
+		return
+	}
+	eventlog.WithFields(log.Fields{
+		"message":   "Image ISO request recieved",
 		"requestId": image.RequestID,
 		"orgID":     image.OrgID,
 	})
 
-	// call the service-based CreateImage
-	imageService := services.NewImageService(ctx, log)
+	// get the services from the context
+	edgeAPIServices := dependencies.ServicesFromContext(ctx)
+	imageService := edgeAPIServices.ImageService
 	err = imageService.AddUserInfo(image)
 	if err != nil {
 		imageService.SetErrorStatusOnImage(err, image)
