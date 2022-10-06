@@ -100,6 +100,8 @@ const (
 
 	// MissingInstaller is the error message for not passing an installer in the request
 	MissingInstaller = "installer info must be provided"
+	// MissingOrganizationId is the error message for not providing an org id in the request
+	MissingOrganizationId = "org_id must be provided"
 	// MissingUsernameError is the error message for not passing username in the request
 	MissingUsernameError = "username must be provided"
 	// ReservedUsernameError is the error message for passing a reserved username in the request
@@ -249,7 +251,7 @@ func (i *Image) GetALLPackagesList() *[]string {
 // BeforeCreate method is called before creating Images, it make sure org_id is not empty
 func (i *Image) BeforeCreate(tx *gorm.DB) error {
 	if i.OrgID == "" {
-		log.Error("image do not have an org_id")
+		log.Error(MissingOrganizationId)
 		return ErrOrgIDIsMandatory
 
 	}
@@ -260,7 +262,7 @@ func (i *Image) BeforeCreate(tx *gorm.DB) error {
 // BeforeCreate method is called before creating ImageSet, it make sure org_id is not empty
 func (imgset *ImageSet) BeforeCreate(tx *gorm.DB) error {
 	if imgset.OrgID == "" {
-		log.Error("imageSet do have an org_id")
+		log.Error(MissingOrganizationId)
 		return ErrOrgIDIsMandatory
 	}
 

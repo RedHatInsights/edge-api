@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -296,7 +296,7 @@ func TestGetStatus(t *testing.T) {
 	var ir struct {
 		Status string
 	}
-	respBody, err := ioutil.ReadAll(rr.Body)
+	respBody, err := io.ReadAll(rr.Body)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -346,7 +346,7 @@ func TestGetImageDetailsById(t *testing.T) {
 	}
 
 	var ir ImageResponse
-	respBody, err := ioutil.ReadAll(rr.Body)
+	respBody, err := io.ReadAll(rr.Body)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -554,7 +554,7 @@ func TestGetRepoForImage(t *testing.T) {
 	}
 
 	var repoResponse models.Repo
-	respBody, err := ioutil.ReadAll(rr.Body)
+	respBody, err := io.ReadAll(rr.Body)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -622,7 +622,7 @@ func TestGetImageByOstree(t *testing.T) {
 	}
 
 	var ir models.Image
-	respBody, err := ioutil.ReadAll(rr.Body)
+	respBody, err := io.ReadAll(rr.Body)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -727,7 +727,7 @@ func TestPostCheckImageNameDoesNotExist(t *testing.T) {
 	handler := http.HandlerFunc(CheckImageName)
 
 	handler.ServeHTTP(rr, req)
-	respBody, err := ioutil.ReadAll(rr.Body)
+	respBody, err := io.ReadAll(rr.Body)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
