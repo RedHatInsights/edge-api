@@ -4,7 +4,7 @@ package routes
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	url2 "net/url"
 
 	"github.com/bxcodec/faker/v3"
@@ -84,7 +84,7 @@ var _ = Describe("Storage Router", func() {
 			router.ServeHTTP(rr, req)
 
 			Expect(rr.Code).To(Equal(http.StatusNotFound))
-			respBody, err := ioutil.ReadAll(rr.Body)
+			respBody, err := io.ReadAll(rr.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(respBody)).To(ContainSubstring("installer not found"))
 		})
@@ -97,7 +97,7 @@ var _ = Describe("Storage Router", func() {
 			router.ServeHTTP(rr, req)
 
 			Expect(rr.Code).To(Equal(http.StatusNotFound))
-			respBody, err := ioutil.ReadAll(rr.Body)
+			respBody, err := io.ReadAll(rr.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(respBody)).To(ContainSubstring("empty installer iso url"))
 		})
@@ -110,7 +110,7 @@ var _ = Describe("Storage Router", func() {
 			router.ServeHTTP(rr, req)
 
 			Expect(rr.Code).To(Equal(http.StatusBadRequest))
-			respBody, err := ioutil.ReadAll(rr.Body)
+			respBody, err := io.ReadAll(rr.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(respBody)).To(ContainSubstring("bad installer iso url"))
 		})
@@ -123,7 +123,7 @@ var _ = Describe("Storage Router", func() {
 			router.ServeHTTP(rr, req)
 
 			Expect(rr.Code).To(Equal(http.StatusBadRequest))
-			respBody, err := ioutil.ReadAll(rr.Body)
+			respBody, err := io.ReadAll(rr.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(respBody)).To(ContainSubstring("installer id must be an integer"))
 		})

@@ -5,7 +5,7 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -182,7 +182,7 @@ func main() {
 					"error":      err,
 				}).Error("Edge API resume request error")
 			} else {
-				respBody, err := ioutil.ReadAll(res.Body)
+				respBody, err := io.ReadAll(res.Body)
 				if err != nil {
 					log.Error("Error reading body of uninterrupted build resume response")
 				}
