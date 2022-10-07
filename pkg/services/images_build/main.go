@@ -55,6 +55,7 @@ func main() {
 		"DatabaseType":             cfg.Database.Type,
 		"DatabaseName":             cfg.Database.Name,
 		"EdgeAPIURL":               cfg.EdgeAPIBaseURL,
+		"EdgeCertAPIURL":           cfg.EdgeCertAPIBaseURL,
 		"EdgeAPIServiceHost":       cfg.EdgeAPIServiceHost,
 		"EdgeAPIServicePort":       cfg.EdgeAPIServicePort,
 	}).Info("Configuration Values:")

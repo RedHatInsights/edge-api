@@ -3,14 +3,9 @@
   become: true
   hosts: localhost
   vars:
-    fleet_infra_env: "dev"
     update_number: "1000"
-    s3_region: "us-east-1"
-    s3_buckets:
-      prod: "rh-edge-tarballs-prod"
-      stage: "rh-edge-tarballs-stage"
-      perf: "rh-edge-tarballs-perf"
-    repo_url: "https://{{ s3_buckets[fleet_infra_env] | default('rh-edge-tarballs-prod') }}.s3.{{ s3_region | default('us-east-1') }}.amazonaws.com/{{ update_number }}/upd/{{ update_number }}/repo"
+    repo_url: "http://cert.localhost:3000/api/edge/v1/storage/update-repos/1000"
+    repo_content_url: "http://cert.localhost:3000/api/edge/v1/storage/update-repos/1000/content"
     ostree_remote_name: "remote-name"
     ostree_changes_refs: "false"
     os_tree_ref: "rhel/8/x86_64/edge"
@@ -21,8 +16,10 @@
       url={{ repo_url }}
       gpg-verify={{ ostree_gpg_verify }}
       gpgkeypath={{ ostree_gpg_keypath }}
-      contenturl={{ repo_url }}
-    insights_signature_exclude: "/vars/insights_signature,/vars/fleet_infra_env,/vars/update_number,/vars/s3_region,/vars/ostree_remote_name,/vars/ostree_changes_refs,/vars/os_tree_ref"
+      contenturl={{ repo_content_url }}
+      tls-client-key-path=/etc/pki/consumer/key.pem
+      tls-client-cert-path=/etc/pki/consumer/cert.pem
+    insights_signature_exclude: "/vars/insights_signature,/vars/update_number,/vars/ostree_remote_name,/vars/ostree_changes_refs,/vars/os_tree_ref"
     insights_signature: !!binary |
       TFMwdExTMUNSVWRKVGlCUVIxQWdVMGxIVGtGVVZWSkZMUzB0TFMwS1ZtVnljMmx2YmpvZ1IyNTFV
       RWNnZGpFS0NtbFJTVlpCZDFWQldYUkJjVlZOZG5jMU9FUXJhalZ3VGtGUmFWQmlVUzh2V0dobmRX
