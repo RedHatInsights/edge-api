@@ -3,7 +3,7 @@ module github.com/redhatinsights/edge-api
 require (
 	github.com/RedHatInsights/tenant-utils v1.0.0
 	github.com/Unleash/unleash-client-go/v3 v3.7.0
-	github.com/aws/aws-sdk-go v1.44.111
+	github.com/aws/aws-sdk-go v1.44.113
 	github.com/bxcodec/faker/v3 v3.8.0
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/confluentinc/confluent-kafka-go v1.9.2
@@ -16,6 +16,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936
 	github.com/lib/pq v1.10.7
+	github.com/magiconair/properties v1.8.6
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/ginkgo/v2 v2.2.0
