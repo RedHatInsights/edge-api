@@ -409,7 +409,7 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 				models.EventTypeEdgeImageISORequested, image.Name, edgePayload)
 
 			// put the event on the bus
-			if err := kafkacommon.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageISORequested, edgeEvent); err != nil {
+			if err := kafkacommon.NewProducerService().ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageISORequested, edgeEvent); err != nil {
 				log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
 				return err
 			}
