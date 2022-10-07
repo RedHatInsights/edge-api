@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"os"
 
 	"github.com/bxcodec/faker/v3"
@@ -44,7 +43,7 @@ var _ = Describe("File Service Test", func() {
 					log.Fatal(err)
 				}
 				defer f.Close()
-				ioutil.WriteFile(path, []byte(data), fs.ModeAppend)
+				os.WriteFile(path, []byte(data), fs.ModeAppend)
 			})
 			AfterEach(func() {
 				os.Remove(path)

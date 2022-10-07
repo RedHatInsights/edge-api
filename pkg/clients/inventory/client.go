@@ -6,7 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -141,7 +141,7 @@ func (c *Client) ReturnDevices(parameters *Params) (Response, error) {
 		}).Error("Inventory ReturnDevices Request Error")
 		return Response{}, err
 	}
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	c.log.WithFields(log.Fields{
 		"statusCode":   res.StatusCode,
 		"responseBody": string(body),
@@ -186,7 +186,7 @@ func (c *Client) ReturnDevicesByID(deviceID string) (Response, error) {
 		return Response{}, err
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	c.log.WithFields(log.Fields{
 		"statusCode":   res.StatusCode,
 		"responseBody": string(body),
@@ -239,7 +239,7 @@ func (c *Client) ReturnDeviceListByID(deviceIDs []string) (Response, error) {
 		return Response{}, err
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	c.log.WithFields(log.Fields{
 		"statusCode":   res.StatusCode,
 		"responseBody": string(body),
@@ -283,7 +283,7 @@ func (c *Client) ReturnDevicesByTag(tag string) (Response, error) {
 		}).Error("Inventory ReturnDevicesByTag Request Error")
 		return Response{}, err
 	}
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	c.log.WithFields(log.Fields{
 		"statusCode":   res.StatusCode,
 		"responseBody": string(body),

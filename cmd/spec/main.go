@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -86,7 +86,7 @@ func main() {
 	schema, err := yaml.JSONToYAML(b.Bytes())
 	checkErr(err)
 
-	paths, err := ioutil.ReadFile("./cmd/spec/path.yaml")
+	paths, err := os.ReadFile("./cmd/spec/path.yaml")
 	checkErr(err)
 
 	b = &bytes.Buffer{}
@@ -98,9 +98,9 @@ func main() {
 
 	jsonB, err := json.MarshalIndent(doc, "", "  ")
 	checkErr(err)
-	err = ioutil.WriteFile("./cmd/spec/openapi.json", jsonB, 0644) // #nosec G306
+	err = os.WriteFile("./cmd/spec/openapi.json", jsonB, 0644) // #nosec G306
 	checkErr(err)
-	err = ioutil.WriteFile("./cmd/spec/openapi.yaml", b.Bytes(), 0644) // #nosec G306
+	err = os.WriteFile("./cmd/spec/openapi.yaml", b.Bytes(), 0644) // #nosec G306
 	checkErr(err)
 	fmt.Println("Spec was generated successfully")
 }

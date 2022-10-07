@@ -7,8 +7,30 @@ import (
 	"testing"
 
 	"github.com/bxcodec/faker/v3"
+	"github.com/magiconair/properties/assert"
 	"github.com/redhatinsights/edge-api/pkg/db"
 )
+
+func TestGetPackageListWihoutDistribution(t *testing.T) {
+	pkgs := []Package{
+		{
+			Name: "vim",
+		},
+		{
+			Name: "wget",
+		},
+	}
+	img := &Image{
+		Distribution: "",
+		Packages:     pkgs,
+	}
+
+	packageList := img.GetPackagesList()
+	// We're returning nil in the case when Distribution is not provided
+	// The assertion needs to compare the interface type and value
+	assert.Equal(t, packageList, (*[]string)(nil))
+
+}
 
 func TestGetPackagesList(t *testing.T) {
 	pkgs := []Package{
@@ -294,39 +316,73 @@ func TestGetALLPackagesListWithoutCustomRepos(t *testing.T) {
 	}
 }
 
-func TestImagesBeforeCreate(t *testing.T) {
+func TestImageCreateWithOrgID(t *testing.T) {
 	orgID := faker.UUIDHyphenated()
 	image := &Image{
 
 		Distribution: "rhel-85",
 		Name:         "image_name",
-		Commit:       &Commit{Arch: "x86_64"},
-		OutputTypes:  []string{ImageTypeInstaller},
+		Commit: &Commit{
+			Arch:  "x86_64",
+			OrgID: orgID,
+		},
+		OutputTypes: []string{ImageTypeInstaller},
 		Installer: &Installer{
 			Username: "test",
 			SSHKey:   "ssh-rsa dd:00:eeff:10",
+			OrgID:    orgID,
 		},
 		OrgID: orgID,
 	}
 
-	// BeforeCreate make sure Image has orgID
-	err := image.BeforeCreate(db.DB)
-	if err != nil {
-		t.Error("Error running BeforeCreate")
-	}
+	// Make sure Image has orgID
+	result := db.DB.Create(&image)
+	assert.Equal(t, result.Error, nil)
 }
 
-func TestImageSetBeforeCreate(t *testing.T) {
+func TestImageCreateWithoutOrgID(t *testing.T) {
 	orgID := faker.UUIDHyphenated()
-	imageSet1 := ImageSet{
+	image := &Image{
+
+		Distribution: "rhel-85",
+		Name:         "image_name",
+		Commit: &Commit{
+			Arch:  "x86_64",
+			OrgID: orgID,
+		},
+		OutputTypes: []string{ImageTypeInstaller},
+		Installer: &Installer{
+			Username: "test",
+			SSHKey:   "ssh-rsa dd:00:eeff:10",
+			OrgID:    orgID,
+		},
+	}
+
+	// Make sure Image is not created without an orgID
+	result := db.DB.Create(&image)
+	assert.Equal(t, result.Error, ErrOrgIDIsMandatory)
+}
+
+func TestImageSetCreateWithOrgID(t *testing.T) {
+	orgID := faker.UUIDHyphenated()
+	imageSet := ImageSet{
 		Name:    "image-set-1",
 		Version: 1,
 		OrgID:   orgID,
 	}
 
-	// BeforeCreate make sure ImageSet has orgID
-	err := imageSet1.BeforeCreate(db.DB)
-	if err != nil {
-		t.Error("Error running BeforeCreate")
+	// Make sure ImageSet is created with orgID
+	result := db.DB.Create(&imageSet)
+	assert.Equal(t, result.Error, nil)
+}
+
+func TestImageSetCreateWithoutOrgID(t *testing.T) {
+	imageSet := ImageSet{
+		Name:    "image-set-1",
+		Version: 1,
 	}
+
+	// Make sure ImageSet cannot be created without an orgID
+	result := db.DB.Create(&imageSet)
+	assert.Equal(t, result.Error, ErrOrgIDIsMandatory)
 }

@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
@@ -195,7 +195,7 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 		c.log.WithField("error", err.Error()).Error("Image Builder Compose Request Error")
 		return nil, err
 	}
-	respBody, err := ioutil.ReadAll(res.Body)
+	respBody, err := io.ReadAll(res.Body)
 	c.log.WithFields(log.Fields{
 		"statusCode":   res.StatusCode,
 		"responseBody": string(respBody),
@@ -328,7 +328,7 @@ func (c *Client) getComposeStatus(jobID string) (*ComposeStatus, error) {
 		c.log.WithField("error", err.Error()).Error("Image Builder ComposeStatus Request Error")
 		return nil, err
 	}
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	c.log.WithFields(log.Fields{
 		"statusCode":   res.StatusCode,
 		"responseBody": string(body),
@@ -414,7 +414,7 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 		c.log.WithField("error", err.Error()).Error("Image Builder GetMetadata Request Error")
 		return nil, err
 	}
-	respBody, err := ioutil.ReadAll(res.Body)
+	respBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -503,7 +503,7 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*S
 		c.log.WithField("error", err.Error()).Error(new(PackageRequestError))
 		return nil, err
 	}
-	respBody, err := ioutil.ReadAll(res.Body)
+	respBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
