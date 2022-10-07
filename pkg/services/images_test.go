@@ -528,7 +528,16 @@ var _ = Describe("Image Service Test", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 			})
-			It("should give an error", func() {
+			It("should raise ThirdPartyRepositoryNotFound error", func() {
+				orgID := faker.UUIDHyphenated()
+				repos := []models.ThirdPartyRepo{
+					{OrgID: orgID, Name: faker.UUIDHyphenated(), URL: "https://repo1.simple.com"},
+				}
+				_, err := services.GetImageReposFromDB(orgID, repos)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(new(services.ThirdPartyRepositoryNotFound).Error()))
+			})
+			It("should raise OrgIDNotSet error", func() {
 				var repos []models.ThirdPartyRepo
 				orgID := ""
 				_, err := services.GetImageReposFromDB(orgID, repos)

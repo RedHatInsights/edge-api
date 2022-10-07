@@ -7,6 +7,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// TopicServiceInterface is the interface for the service
+type TopicServiceInterface interface {
+	GetTopic(requested string) (string, error)
+}
+
+// TopicService is the service struct
+type TopicService struct {
+}
+
 const (
 	// TopicFleetmgmtImageBuild topic name
 	TopicFleetmgmtImageBuild string = "platform.edge.fleetmgmt.image-build"
@@ -26,8 +35,13 @@ func (e *TopicNotFoundError) Error() string {
 	return "Topic is not found in config"
 }
 
+// NewTopicService returns a new service
+func NewTopicService() TopicServiceInterface {
+	return &TopicService{}
+}
+
 // GetTopic takes the requested kafka topic and returns the topic actually created
-func GetTopic(requested string) (string, error) {
+func (t *TopicService) GetTopic(requested string) (string, error) {
 	cfg := config.Get()
 	if cfg.KafkaConfig != nil {
 		topics := cfg.KafkaConfig.Topics

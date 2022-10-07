@@ -67,7 +67,7 @@ func main() {
 		signal.Notify(sigchan, os.Interrupt, syscall.SIGTERM)
 
 		// TODO: this should be a struct defined elsewhere and read in
-		kafkaConfigMap := kafkacommon.GetKafkaConsumerConfigMap(consumerGroup)
+		kafkaConfigMap := kafkacommon.NewKafkaConfigMapService().GetKafkaConsumerConfigMap(consumerGroup)
 		c, err := kafka.NewConsumer(&kafkaConfigMap)
 
 		if err != nil {
