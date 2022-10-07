@@ -28,7 +28,7 @@ require (
 	github.com/spf13/viper v1.13.0
 	golang.org/x/crypto v0.0.0-20220826181053-bd7e27e6170d // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
-	gorm.io/driver/postgres v1.4.0
+	gorm.io/driver/postgres v1.4.1
 	gorm.io/driver/sqlite v1.3.6
 	gorm.io/gorm v1.23.7
 )
