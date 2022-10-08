@@ -10,7 +10,7 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 )
 
-//KafkaConfigMapServiceInterface is the interface that defines the config map service
+// KafkaConfigMapServiceInterface is the interface that defines the config map service
 type KafkaConfigMapServiceInterface interface {
 	GetKafkaProducerConfigMap() kafka.ConfigMap
 	GetKafkaConsumerConfigMap(consumerGroup string) kafka.ConfigMap

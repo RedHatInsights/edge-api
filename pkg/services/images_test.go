@@ -176,6 +176,43 @@ var _ = Describe("Image Service Test", func() {
 			})
 		})
 	})
+	Describe("#CreateImage", func() {
+		Context("when creating a new image", func() {
+			It("should raise OrgIDNotSet", func() {
+				image := models.Image{}
+				error := service.CreateImage(&image)
+				Expect(error).To(MatchError(new(services.OrgIDNotSet)))
+			})
+			It("should raise ImageNameUndefined", func() {
+				image := models.Image{OrgID: faker.UUIDHyphenated()}
+				error := service.CreateImage(&image)
+				Expect(error).To(MatchError(new(services.ImageNameUndefined)))
+			})
+			It("should raise ImageNameAlreadyExists", func() {
+				orgId := faker.UUIDHyphenated()
+				name := faker.UUIDHyphenated()
+				image := &models.Image{OrgID: orgId, Name: name}
+				result := db.DB.Create(image)
+				Expect(result.Error).ToNot(HaveOccurred())
+				error := service.CreateImage(image)
+				Expect(error).To(MatchError(new(services.ImageNameAlreadyExists)))
+			})
+			It("should raise ThirdPartyRepositoryNotFound", func() {
+				orgID := faker.UUIDHyphenated()
+				name := faker.UUIDHyphenated()
+				repos := []models.ThirdPartyRepo{
+					{OrgID: orgID, Name: faker.UUIDHyphenated(), URL: "https://repo1.simple.com"},
+				}
+				image := models.Image{
+					OrgID:                  orgID,
+					Name:                   name,
+					ThirdPartyRepositories: repos,
+				}
+				error := service.CreateImage(&image)
+				Expect(error).To(MatchError(new(services.ThirdPartyRepositoryNotFound)))
+			})
+		})
+	})
 	Describe("update image", func() {
 		Context("when previous image does not exist", func() {
 			var err error
