@@ -1,5 +1,5 @@
 // FIXME: golangci-lint
-// nolint:revive
+// nolint:errcheck,govet,revive
 package routes
 
 import (
