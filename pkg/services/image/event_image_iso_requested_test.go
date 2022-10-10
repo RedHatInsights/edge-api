@@ -1,6 +1,5 @@
 // FIXME: golangci-lint
-// nolint:revive
-package image_test
+package image_test // nolint:revive
 
 import (
 	"context"
@@ -27,15 +26,15 @@ var _ = Describe("Event Image ISO Event Test", func() {
 		mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
 
 		ctx = context.Background()
-		ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+		ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{ // nolint:revive
 			ImageService: mockImageService,
 		})
-		ctx = eventImageReq.ContextWithLogger(ctx, log.NewEntry(log.StandardLogger()))
+		ctx = eventImageReq.ContextWithLogger(ctx, log.NewEntry(log.StandardLogger())) // nolint:revive
 	})
 	Describe("consume image iso event", func() {
 		When("image iso is requested", func() {
 			Context("when image does not exist", func() {
-				It("should be ok", func() {
+				It("should be ok", func() { // nolint:revive
 					orgID := faker.UUIDHyphenated()
 
 					image := &models.Image{
@@ -60,7 +59,7 @@ var _ = Describe("Event Image ISO Event Test", func() {
 					}
 					Expect(edgePayload).ToNot(BeNil())
 
-					mockImageService.EXPECT().AddUserInfo(gomock.Any()).Return(nil)
+					mockImageService.EXPECT().AddUserInfo(gomock.Any()).Return(nil) // nolint:revive
 					event := &eventImageReq.EventImageISORequestedBuildHandler{}
 					event.Data = *edgePayload
 					event.Consume(ctx)
@@ -87,7 +86,7 @@ var _ = Describe("Event Image ISO Event Test", func() {
 				})
 			})
 			Context("when add image info fails", func() {
-				It("should be ok", func() {
+				It("should be ok", func() { // nolint:revive
 					orgID := faker.UUIDHyphenated()
 
 					image := &models.Image{
@@ -112,8 +111,8 @@ var _ = Describe("Event Image ISO Event Test", func() {
 					}
 					Expect(edgePayload).ToNot(BeNil())
 
-					mockImageService.EXPECT().AddUserInfo(gomock.Any()).Return(err)
-					mockImageService.EXPECT().SetErrorStatusOnImage(gomock.Any(), gomock.Any())
+					mockImageService.EXPECT().AddUserInfo(gomock.Any()).Return(err)             // nolint:revive
+					mockImageService.EXPECT().SetErrorStatusOnImage(gomock.Any(), gomock.Any()) // nolint:revive
 					event := &eventImageReq.EventImageISORequestedBuildHandler{}
 					event.Data = *edgePayload
 					event.Consume(ctx)

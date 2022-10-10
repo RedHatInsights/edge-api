@@ -1,6 +1,5 @@
 // FIXME: golangci-lint
-// nolint:dupword,gocritic,govet,revive
-package services
+package services // nolint:revive
 
 import (
 	"bytes"
@@ -25,8 +24,8 @@ import (
 type RepoBuilderInterface interface {
 	BuildUpdateRepo(id uint) (*models.UpdateTransaction, error)
 	ImportRepo(r *models.Repo) (*models.Repo, error)
-	DownloadVersionRepo(c *models.Commit, dest string, external bool) (string, error)
-	ExtractVersionRepo(c *models.Commit, tarFileName string, dest string) error
+	DownloadVersionRepo(c *models.Commit, dest string, external bool) (string, error) // nolint:revive
+	ExtractVersionRepo(c *models.Commit, tarFileName string, dest string) error       // nolint:revive
 	UploadVersionRepo(c *models.Commit, tarFileName string) error
 }
 
@@ -39,29 +38,29 @@ type RepoBuilder struct {
 }
 
 // NewRepoBuilder initializes the repository builder in this package
-func NewRepoBuilder(ctx context.Context, log *log.Entry) RepoBuilderInterface {
+func NewRepoBuilder(ctx context.Context, log *log.Entry) RepoBuilderInterface { // nolint:revive
 	return &RepoBuilder{
-		Service:      Service{ctx: ctx, log: log.WithField("service", "repobuilder")},
+		Service:      Service{ctx: ctx, log: log.WithField("service", "repobuilder")}, // nolint:revive
 		filesService: NewFilesService(log),
 		repoService:  NewRepoService(ctx, log),
 		log:          log,
 	}
 }
 
-// BuildUpdateRepo build an update repo with the set of commits all merged into a single repo
+// nolint:revive // BuildUpdateRepo build an update repo with the set of commits all merged into a single repo
 // with static deltas generated between them all
-func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, error) {
+func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, error) { // nolint:revive
 	var update *models.UpdateTransaction
-	db.DB.Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").Find(&update, id)
+	db.DB.Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").Find(&update, id) // nolint:revive
 
 	rb.log.Info("Starts building update repo...")
 	if update == nil {
 		rb.log.Error("nil pointer to models.UpdateTransaction provided")
-		return nil, errors.New("invalid models.UpdateTransaction Provided: nil pointer")
+		return nil, errors.New("invalid models.UpdateTransaction Provided: nil pointer") // nolint:revive
 	}
 	if update.Commit == nil {
 		rb.log.Error("nil pointer to models.UpdateTransaction.Commit provided")
-		return nil, errors.New("invalid models.UpdateTransaction.Commit Provided: nil pointer")
+		return nil, errors.New("invalid models.UpdateTransaction.Commit Provided: nil pointer") // nolint:revive
 	}
 	rb.log = rb.log.WithFields(log.Fields{
 		"commitID": update.Commit.ID,
@@ -71,9 +70,9 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		return nil, errors.New("repo unavailable")
 	}
 	cfg := config.Get()
-	path := filepath.Clean(filepath.Join(cfg.RepoTempPath, "upd/", strconv.FormatUint(uint64(update.ID), 10)))
+	path := filepath.Clean(filepath.Join(cfg.RepoTempPath, "upd/", strconv.FormatUint(uint64(update.ID), 10))) // nolint:revive
 	rb.log.WithField("path", path).Debug("Update path will be created")
-	err := os.MkdirAll(path, os.FileMode(int(0755)))
+	err := os.MkdirAll(path, os.FileMode(int(0755))) // nolint:revive
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +83,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	tarFileName, err := rb.DownloadVersionRepo(update.Commit, path, false)
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error downloading tar")
-		return nil, fmt.Errorf("error Upload repo repo :: %s", err.Error())
+		return nil, fmt.Errorf("error Upload repo repo :: %s", err.Error()) // nolint:dupword,revive
 	}
 	err = rb.ExtractVersionRepo(update.Commit, tarFileName, path)
 	if err != nil {
@@ -92,15 +91,15 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		return nil, fmt.Errorf("error extracting repo :: %s", err.Error())
 	}
 
-	if len(update.OldCommits) > 0 {
+	if len(update.OldCommits) > 0 { // nolint:revive
 		rb.log.WithFields(log.Fields{
 			"updateID":   update.ID,
 			"OldCommits": len(update.OldCommits)}).
 			Info("Old commits found to this commit")
 		stagePath := filepath.Clean(filepath.Join(path, "staging"))
-		err = os.MkdirAll(stagePath, os.FileMode(int(0755)))
+		err = os.MkdirAll(stagePath, os.FileMode(int(0755))) // nolint:revive
 		if err != nil {
-			rb.log.WithField("error", err.Error()).Error("Error making dir")
+			rb.log.WithField("error", err.Error()).Error("Error making dir") // nolint:revive
 			return nil, fmt.Errorf("error mkdir :: %s", err.Error())
 		}
 		err = os.Chdir(stagePath)
@@ -109,47 +108,46 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 			return nil, fmt.Errorf("error chdir :: %s", err.Error())
 		}
 
-		// If there are any old commits, we need to download them all to be merged
+		// nolint:revive // If there are any old commits, we need to download them all to be merged
 		// into the update commit repo
 		for _, commit := range update.OldCommits {
 			rb.log.WithFields(log.Fields{
-				"updateID":            update.ID,
+				"updateID":            update.ID, // nolint:revive
 				"commit.OSTreeCommit": commit.OSTreeCommit,
 				"OldCommits":          commit.ID}).
 				Info("Calculate diff from previous commit")
-			commit := commit // this will prevent implicit memory aliasing in the loop
-			tarFileName, err := rb.DownloadVersionRepo(&commit, filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit)), false)
+			commit := commit                                                                                                          // this will prevent implicit memory aliasing in the loop
+			tarFileName, err := rb.DownloadVersionRepo(&commit, filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit)), false) // nolint:govet,revive
 			if err != nil {
-				rb.log.WithField("error", err.Error()).Error("Error downloading tar")
-				return nil, fmt.Errorf("error Upload repo repo :: %s", err.Error())
+				rb.log.WithField("error", err.Error()).Error("Error downloading tar") // nolint:revive
+				return nil, fmt.Errorf("error Upload repo repo :: %s", err.Error())   // nolint:dupword,revive
 			}
 			err = rb.ExtractVersionRepo(update.Commit, tarFileName, path)
 			if err != nil {
-				rb.log.WithField("error", err.Error()).Error("Error extracting repo")
+				rb.log.WithField("error", err.Error()).Error("Error extracting repo") // nolint:revive
 				return nil, err
 			}
-			// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
-			err = rb.repoPullLocalStaticDeltas(update.Commit, &commit, filepath.Clean(filepath.Join(path, "repo")),
-				filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit, "repo")))
+			// nolint:revive // FIXME: hardcoding "repo" in here because that's how it comes from osbuild
+			err = rb.repoPullLocalStaticDeltas(update.Commit, &commit, filepath.Clean(filepath.Join(path, "repo")), // nolint:revive
+				filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit, "repo"))) // nolint:revive
 			if err != nil {
-				rb.log.WithField("error", err.Error()).Error("Error pulling static deltas")
+				rb.log.WithField("error", err.Error()).Error("Error pulling static deltas") // nolint:revive
 				return nil, err
 			}
 		}
 
-		// Once all the old commits have been pulled into the update commit's repo
+		// nolint:revive // Once all the old commits have been pulled into the update commit's repo
 		// and has static deltas generated, then we don't need the old commits
 		// anymore.
 		err = os.RemoveAll(stagePath)
 		if err != nil {
 			return nil, err
 		}
-
 	}
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
 
 	rb.log.Info("Upload repo")
-	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Clean(filepath.Join(path, "repo")), strconv.FormatUint(uint64(update.ID), 10))
+	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Clean(filepath.Join(path, "repo")), strconv.FormatUint(uint64(update.ID), 10)) // nolint:revive
 	rb.log.Info("Finished uploading repo")
 	if err != nil {
 		return nil, err
@@ -157,10 +155,10 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 
 	update.Repo.URL = repoURL
 	update.Repo.Status = models.RepoStatusSuccess
-	if err := db.DB.Omit("Devices.*").Save(&update).Error; err != nil {
+	if err := db.DB.Omit("Devices.*").Save(&update).Error; err != nil { // nolint:govet,revive
 		return nil, err
 	}
-	if err := db.DB.Omit("Devices.*").Save(&update.Repo).Error; err != nil {
+	if err := db.DB.Omit("Devices.*").Save(&update.Repo).Error; err != nil { // nolint:govet,revive
 		return nil, err
 	}
 
@@ -168,7 +166,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 }
 
 // ImportRepo (unpack and upload) a single repo
-func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
+func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) { // nolint:revive
 
 	var cmt models.Commit
 	cmtDB := db.DB.Where("repo_id = ?", r.ID).Find(&cmt)
@@ -176,9 +174,9 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		return nil, cmtDB.Error
 	}
 	cfg := config.Get()
-	path := filepath.Clean(filepath.Join(cfg.RepoTempPath, strconv.FormatUint(uint64(r.ID), 10)))
+	path := filepath.Clean(filepath.Join(cfg.RepoTempPath, strconv.FormatUint(uint64(r.ID), 10))) // nolint:revive
 	rb.log.WithField("path", path).Debug("Importing repo...")
-	err := os.MkdirAll(path, os.FileMode(int(0755)))
+	err := os.MkdirAll(path, os.FileMode(int(0755))) // nolint:revive
 	if err != nil {
 		rb.log.Error(err)
 		return nil, err
@@ -193,9 +191,9 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		r.Status = models.RepoStatusError
 		result := db.DB.Save(&r)
 		if result.Error != nil {
-			rb.log.WithField("error", result.Error.Error()).Error("Error saving repo...")
+			rb.log.WithField("error", result.Error.Error()).Error("Error saving repo...") // nolint:revive
 		}
-		rb.log.WithField("error", err.Error()).Error("Error downloading repo...")
+		rb.log.WithField("error", err.Error()).Error("Error downloading repo...") // nolint:revive
 		return nil, fmt.Errorf("error downloading repo")
 	}
 	errUpload := rb.UploadVersionRepo(&cmt, tarFileName)
@@ -203,23 +201,23 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		r.Status = models.RepoStatusError
 		result := db.DB.Save(&r)
 		if result.Error != nil {
-			rb.log.WithField("error", result.Error.Error()).Error("Error saving repo...")
+			rb.log.WithField("error", result.Error.Error()).Error("Error saving repo...") // nolint:revive
 		}
-		rb.log.WithField("error", errUpload.Error()).Error("Error uploading repo...")
-		return nil, fmt.Errorf("error Upload repo repo :: %s", errUpload.Error())
+		rb.log.WithField("error", errUpload.Error()).Error("Error uploading repo...") // nolint:revive
+		return nil, fmt.Errorf("error Upload repo repo :: %s", errUpload.Error())     // nolint:dupword,revive
 	}
 	err = rb.ExtractVersionRepo(&cmt, tarFileName, path)
 	if err != nil {
 		r.Status = models.RepoStatusError
 		result := db.DB.Save(&r)
 		if result.Error != nil {
-			rb.log.WithField("error", result.Error.Error()).Error("Error saving repo")
+			rb.log.WithField("error", result.Error.Error()).Error("Error saving repo") // nolint:revive
 		}
 		rb.log.WithField("error", err.Error()).Error("Error extracting repo")
 		return nil, fmt.Errorf("error extracting repo :: %s", err.Error())
 	}
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
-	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Clean(filepath.Join(path, "repo")), strconv.FormatUint(uint64(r.ID), 10))
+	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Clean(filepath.Join(path, "repo")), strconv.FormatUint(uint64(r.ID), 10)) // nolint:revive
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error uploading repo")
 		return nil, fmt.Errorf("error uploading repo :: %s", err.Error())
@@ -229,15 +227,15 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 	r.Status = models.RepoStatusSuccess
 	result := db.DB.Save(&r)
 	if result.Error != nil {
-		rb.log.WithField("error", result.Error.Error()).Error("Error saving repo")
-		return nil, fmt.Errorf("error saving status :: %s", result.Error.Error())
+		rb.log.WithField("error", result.Error.Error()).Error("Error saving repo") // nolint:revive
+		return nil, fmt.Errorf("error saving status :: %s", result.Error.Error())  // nolint:revive
 	}
 
 	return r, nil
 }
 
 // DownloadVersionRepo Download and Extract the repo tarball to dest dir
-func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string, external bool) (string, error) {
+func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string, external bool) (string, error) { // nolint:revive
 	// ensure we weren't passed a nil pointer
 	if c == nil {
 		rb.log.Error("nil pointer to models.Commit provided")
@@ -246,13 +244,13 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string, extern
 	rb.log = rb.log.WithField("commitID", c.ID)
 	rb.log.Info("Downloading repo")
 
-	err := os.MkdirAll(dest, os.FileMode(int(0755)))
+	err := os.MkdirAll(dest, os.FileMode(int(0755))) // nolint:revive
 	if err != nil {
 		return "", err
 	}
 	err = os.Chdir(dest)
 	if err != nil {
-		return "", err
+		return "", err // nolint:revive
 	}
 
 	// Save the tarball to the OSBuild Hash ID and then extract it
@@ -263,19 +261,19 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string, extern
 	tarFileName = filepath.Clean(filepath.Join(dest, tarFileName))
 
 	if external {
-		rb.log.WithFields(log.Fields{"filepath": tarFileName, "imageBuildTarURL": c.ImageBuildTarURL}).Debug("Grabbing tar file")
+		rb.log.WithFields(log.Fields{"filepath": tarFileName, "imageBuildTarURL": c.ImageBuildTarURL}).Debug("Grabbing tar file") // nolint:revive
 		_, err = grab.Get(tarFileName, c.ImageBuildTarURL)
 
 		if err != nil {
-			rb.log.WithField("error", err.Error()).Error("Error grabbing tar file")
+			rb.log.WithField("error", err.Error()).Error("Error grabbing tar file") // nolint:revive
 			return "", err
 		}
 	} else {
-		rb.log.WithFields(log.Fields{"filepath": tarFileName, "imageBuildTarURL": c.ImageBuildTarURL}).Debug("Downloading tar file")
+		rb.log.WithFields(log.Fields{"filepath": tarFileName, "imageBuildTarURL": c.ImageBuildTarURL}).Debug("Downloading tar file") // nolint:revive
 
-		filesService := NewFilesService(rb.log.WithField("url", c.ImageBuildTarURL))
-		if err := filesService.GetDownloader().DownloadToPath(c.ImageBuildTarURL, tarFileName); err != nil {
-			rb.log.WithField("error", err.Error()).Error("Error downloading tar file")
+		filesService := NewFilesService(rb.log.WithField("url", c.ImageBuildTarURL))                         // nolint:revive
+		if err := filesService.GetDownloader().DownloadToPath(c.ImageBuildTarURL, tarFileName); err != nil { // nolint:govet,revive
+			rb.log.WithField("error", err.Error()).Error("Error downloading tar file") // nolint:revive
 			return "", err
 		}
 	}
@@ -284,7 +282,7 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string, extern
 	return tarFileName, nil
 }
 
-func (rb *RepoBuilder) uploadTarRepo(OrgID, imageName string, repoID int) (string, error) {
+func (rb *RepoBuilder) uploadTarRepo(OrgID, imageName string, repoID int) (string, error) { // nolint:gocritic,revive
 	rb.log.Info("Start upload tar repo")
 	uploadPath := fmt.Sprintf("v2/%s/tar/%v/%s", OrgID, repoID, imageName)
 	uploadPath = filepath.Clean(uploadPath)
@@ -292,7 +290,7 @@ func (rb *RepoBuilder) uploadTarRepo(OrgID, imageName string, repoID int) (strin
 	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
 
 	if err != nil {
-		return "error", fmt.Errorf("error uploading the Tar :: %s :: %s", uploadPath, err.Error())
+		return "error", fmt.Errorf("error uploading the Tar :: %s :: %s", uploadPath, err.Error()) // nolint:revive
 	}
 	rb.log.Info("Finish upload tar repo")
 
@@ -300,17 +298,17 @@ func (rb *RepoBuilder) uploadTarRepo(OrgID, imageName string, repoID int) (strin
 }
 
 // UploadVersionRepo uploads the repo tarball to the repository storage
-func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string) error {
+func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string) error { // nolint:revive
 	if c == nil {
 		rb.log.Error("nil pointer to models.Commit provided")
 		return errors.New("invalid Commit Provided: nil pointer")
 	}
 	if c.RepoID == nil {
 		rb.log.Error("nil pointer to models.Commit.RepoID provided")
-		return errors.New("invalid Commit Provided: nil pointer")
+		return errors.New("invalid Commit Provided: nil pointer") // nolint:revive
 	}
 	repoID := int(*c.RepoID)
-	rb.log = rb.log.WithFields(log.Fields{"commitID": c.ID, "filepath": tarFileName, "repoID": repoID})
+	rb.log = rb.log.WithFields(log.Fields{"commitID": c.ID, "filepath": tarFileName, "repoID": repoID}) // nolint:revive
 	rb.log.Info("Uploading repo")
 	repoTarURL, err := rb.uploadTarRepo(c.OrgID, tarFileName, repoID)
 	if err != nil {
@@ -320,7 +318,7 @@ func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string) e
 	c.ImageBuildTarURL = repoTarURL
 	result := db.DB.Save(c)
 	if result.Error != nil {
-		rb.log.WithField("error", result.Error.Error()).Error("Error saving tar file")
+		rb.log.WithField("error", result.Error.Error()).Error("Error saving tar file") // nolint:revive
 		return result.Error
 	}
 	rb.log.Info("Repo uploaded")
@@ -328,9 +326,9 @@ func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string) e
 }
 
 // ExtractVersionRepo Download and Extract the repo tarball to dest dir
-func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, dest string) error {
+func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, dest string) error { // nolint:revive
 	if c == nil {
-		rb.log.Error("nil pointer to models.Commit provided")
+		rb.log.Error("nil pointer to models.Commit provided") // nolint:revive
 		return errors.New("invalid Commit Provided: nil pointer")
 	}
 	rb.log = rb.log.WithField("commitID", c.ID)
@@ -343,13 +341,13 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 		}).Error("Failed to open file")
 		return err
 	}
-	err = rb.filesService.GetExtractor().Extract(tarFile, filepath.Clean(filepath.Join(dest)))
+	err = rb.filesService.GetExtractor().Extract(tarFile, filepath.Clean(filepath.Join(dest))) // nolint:gocritic,revive
 	if err != nil {
-		rb.log.WithField("error", err.Error()).Error("Error extracting tar file")
+		rb.log.WithField("error", err.Error()).Error("Error extracting tar file") // nolint:revive
 		return err
 	}
 
-	rb.log.WithField("filepath", tarFileName).Debug("Unpacking tarball finished")
+	rb.log.WithField("filepath", tarFileName).Debug("Unpacking tarball finished") // nolint:revive
 
 	err = os.Remove(tarFileName)
 	if err != nil {
@@ -360,6 +358,7 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 	// Commenting this Block, as failing, and seems never was working, fixing this block will create a new commit with
 	// a new checksum that need to be recorded back to the current commit, this will also need to change the logic of
 	// the caller function of this function, this need more discussion, a bug has been created.
+	// nolint:revive
 	/*
 		var cmd *exec.Cmd
 		if c.OSTreeRef == "" {
@@ -389,10 +388,10 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 	return nil
 }
 
-// RepoPullLocalStaticDeltas pull local repo into the new update repo and compute static deltas
+// nolint:revive // RepoPullLocalStaticDeltas pull local repo into the new update repo and compute static deltas
 // uprepo should be where the update commit lives, u is the update commit
 // oldrepo should be where the old commit lives, o is the commit to be merged
-func (rb *RepoBuilder) repoPullLocalStaticDeltas(u *models.Commit, o *models.Commit, uprepo string, oldrepo string) error {
+func (rb *RepoBuilder) repoPullLocalStaticDeltas(u *models.Commit, o *models.Commit, uprepo string, oldrepo string) error { // nolint:revive
 	err := os.Chdir(uprepo)
 	if err != nil {
 		return err
@@ -423,7 +422,7 @@ func (rb *RepoBuilder) repoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 	cmd = &exec.Cmd{
 		Path: "/usr/bin/ostree",
 		Args: []string{
-			"--repo", uprepo, "static-delta", "generate", "--from", oldRevParse, "--to", updateRevParse,
+			"--repo", uprepo, "static-delta", "generate", "--from", oldRevParse, "--to", updateRevParse, // nolint:revive
 		},
 	}
 	err = cmd.Run()
@@ -436,7 +435,7 @@ func (rb *RepoBuilder) repoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 
 // RepoRevParse Handle the RevParse separate since we need the stdout parsed
 func RepoRevParse(path string, ref string) (string, error) {
-	cmd := exec.Command("ostree", "rev-parse", "--repo", path, ref)
+	cmd := exec.Command("ostree", "rev-parse", "--repo", path, ref) // nolint:revive
 
 	var res bytes.Buffer
 	cmd.Stdout = &res

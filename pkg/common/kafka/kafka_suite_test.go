@@ -1,4 +1,5 @@
-package kafkacommon_test
+// FIXME: golangci-lint
+package kafkacommon_test // nolint:revive
 
 import (
 	"testing"

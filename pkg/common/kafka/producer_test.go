@@ -1,4 +1,5 @@
-package kafkacommon_test
+// FIXME: golangci-lint
+package kafkacommon_test // nolint:revive
 
 import (
 	"time"
@@ -11,7 +12,7 @@ import (
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/redhatinsights/edge-api/config"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
-	mock_kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka/mock_kafka"
+	mock_kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka/mock_kafka" // nolint:revive
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
@@ -19,7 +20,7 @@ import (
 
 var _ = Describe("Kafka Producer Test", func() {
 	var mockTopicService *mock_kafkacommon.MockTopicServiceInterface
-	var mockKafkaConfigService *mock_kafkacommon.MockKafkaConfigMapServiceInterface
+	var mockKafkaConfigService *mock_kafkacommon.MockKafkaConfigMapServiceInterface // nolint:revive
 	var service *kafkacommon.ProducerService
 	var ctrl *gomock.Controller
 	var kafkaConfigMap *kafka.ConfigMap
@@ -27,7 +28,7 @@ var _ = Describe("Kafka Producer Test", func() {
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 		mockTopicService = mock_kafkacommon.NewMockTopicServiceInterface(ctrl)
-		mockKafkaConfigService = mock_kafkacommon.NewMockKafkaConfigMapServiceInterface(ctrl)
+		mockKafkaConfigService = mock_kafkacommon.NewMockKafkaConfigMapServiceInterface(ctrl) // nolint:revive
 		service = &kafkacommon.ProducerService{
 			Topic:          mockTopicService,
 			KafkaConfigMap: mockKafkaConfigService,
@@ -55,7 +56,6 @@ var _ = Describe("Kafka Producer Test", func() {
 		kafkaConfigMap = &kafka.ConfigMap{
 			"bootstrap.servers": "192.168.1.3:80",
 		}
-
 	})
 	AfterEach(func() {
 		ctrl.Finish()
@@ -65,22 +65,20 @@ var _ = Describe("Kafka Producer Test", func() {
 		When("One does not exist yet", func() {
 			Context("One does not exist yet", func() {
 				It("should be ok", func() {
-					mockKafkaConfigService.EXPECT().GetKafkaProducerConfigMap().Return(*kafkaConfigMap)
+					mockKafkaConfigService.EXPECT().GetKafkaProducerConfigMap().Return(*kafkaConfigMap) // nolint:revive
 					p := service.GetProducerInstance()
 					Expect(p).ToNot(BeNil())
-
 				})
 			})
 			Context("Producer is a singleton", func() {
 				It("should be the same producer", func() {
-					mockKafkaConfigService.EXPECT().GetKafkaProducerConfigMap().Return(*kafkaConfigMap)
+					mockKafkaConfigService.EXPECT().GetKafkaProducerConfigMap().Return(*kafkaConfigMap) // nolint:revive
 					p1 := service.GetProducerInstance()
 					Expect(p1).ToNot(BeNil())
 
 					p2 := service.GetProducerInstance()
 					Expect(p2).ToNot(BeNil())
 					Expect(p1).To(Equal(p2))
-
 				})
 			})
 		})
@@ -94,7 +92,7 @@ var _ = Describe("Kafka Producer Test", func() {
 						"sasl.mechanisms":   gomock.Any(),
 						"security.protocol": gomock.Any(),
 					}
-					mockKafkaConfigService.EXPECT().GetKafkaProducerConfigMap().Return(kafkaConfigMap2)
+					mockKafkaConfigService.EXPECT().GetKafkaProducerConfigMap().Return(kafkaConfigMap2) // nolint:revive
 					p1 := service.GetProducerInstance()
 					Expect(p1).To(BeNil())
 				})
@@ -106,8 +104,8 @@ var _ = Describe("Kafka Producer Test", func() {
 			Context("ok", func() {
 				It("should be ok", func() {
 					topic := "Test Topic"
-					mockTopicService.EXPECT().GetTopic(gomock.Any()).Return(topic, nil)
-					mockKafkaConfigService.EXPECT().GetKafkaProducerConfigMap().Return(nil)
+					mockTopicService.EXPECT().GetTopic(gomock.Any()).Return(topic, nil)     // nolint:revive
+					mockKafkaConfigService.EXPECT().GetKafkaProducerConfigMap().Return(nil) // nolint:revive
 					imageSet := &models.ImageSet{
 						Name:    "test",
 						Version: 2,
@@ -146,7 +144,7 @@ var _ = Describe("Kafka Producer Test", func() {
 						Time:        time.Now().Format(time.RFC3339),
 						Type:        models.EventTypeEdgeImageRequested,
 					}
-					err := service.ProduceEvent(gomock.Any().String(), gomock.Any().String(), cloudEvent)
+					err := service.ProduceEvent(gomock.Any().String(), gomock.Any().String(), cloudEvent) // nolint:revive
 					Expect(err).To(BeNil())
 				})
 			})

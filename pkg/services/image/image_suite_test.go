@@ -1,6 +1,5 @@
 // FIXME: golangci-lint
-// nolint:revive
-package image_test
+package image_test // nolint:revive
 
 import (
 	"testing"

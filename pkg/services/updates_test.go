@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"os"
 
-	apiError "github.com/redhatinsights/edge-api/pkg/errors"
+	apiError "github.com/redhatinsights/edge-api/pkg/errors" // nolint:typecheck
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 
 	"github.com/bxcodec/faker/v3"

@@ -1,6 +1,5 @@
 // FIXME: golangci-lint
-// nolint:govet,revive
-package main
+package main // nolint:revive
 
 import (
 	"context"
@@ -19,11 +18,11 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/redhatinsights/edge-api/config"
 
-	l "github.com/redhatinsights/edge-api/logger" // is this one really needed with logrus?
+	l "github.com/redhatinsights/edge-api/logger" // nolint:revive // is this one really needed with logrus?
 	"github.com/redhatinsights/edge-api/pkg/db"
 )
 
-func main() {
+func main() { // nolint:revive
 	// create a new context
 	ctx := context.Background()
 	// Init edge api services and attach them to the context
@@ -65,16 +64,16 @@ func main() {
 	if cfg.KafkaConfig.Brokers != nil {
 		consumerGroup := "imagesbuild"
 
-		sigchan := make(chan os.Signal, 1)
+		sigchan := make(chan os.Signal, 1) // nolint:revive
 		signal.Notify(sigchan, os.Interrupt, syscall.SIGTERM)
 
 		// TODO: this should be a struct defined elsewhere and read in
-		kafkaConfigMap := kafkacommon.NewKafkaConfigMapService().GetKafkaConsumerConfigMap(consumerGroup)
+		kafkaConfigMap := kafkacommon.NewKafkaConfigMapService().GetKafkaConsumerConfigMap(consumerGroup) // nolint:revive
 		c, err := kafka.NewConsumer(&kafkaConfigMap)
 
 		if err != nil {
-			mslog.WithField("error", err.Error()).Error("Failed to create consumer")
-			os.Exit(1)
+			mslog.WithField("error", err.Error()).Error("Failed to create consumer") // nolint:revive
+			os.Exit(1)                                                               // nolint:revive
 		}
 
 		mslog.WithField("consumer", c).Debug("Created Consumer")
@@ -96,12 +95,12 @@ func main() {
 		for run {
 			select {
 			case sig := <-sigchan:
-				mslog.WithField("signal", sig).Debug("Caught signal and terminating")
-				sleepTime := time.Duration(5)
+				mslog.WithField("signal", sig).Debug("Caught signal and terminating") // nolint:revive
+				sleepTime := time.Duration(5)                                         // nolint:revive
 				time.Sleep(sleepTime)
 				run = false
 			default:
-				ev := c.Poll(100)
+				ev := c.Poll(100) // nolint:revive
 				if ev == nil {
 					continue
 				}
@@ -117,10 +116,10 @@ func main() {
 						"event_offset":         e.TopicPartition.Offset,
 						"event_recordkey":      string(e.Key),
 					})
-					mslog.WithField("message", string(e.Value)).Debug("Received an event")
+					mslog.WithField("message", string(e.Value)).Debug("Received an event") // nolint:revive
 
 					if e.Headers != nil {
-						mslog.WithField("headers", e.Headers).Debug("Headers received with the event")
+						mslog.WithField("headers", e.Headers).Debug("Headers received with the event") // nolint:revive
 					}
 
 					// route to specific event handler based on the event key
@@ -145,7 +144,7 @@ func main() {
 						// call the event's Consume method
 						go crcEvent.Consume(ctx)
 					case models.EventTypeEdgeImageUpdateRequested:
-						crcEvent := &image.EventImageUpdateRequestedBuildHandler{}
+						crcEvent := &image.EventImageUpdateRequestedBuildHandler{} // nolint:revive
 						err = json.Unmarshal(e.Value, crcEvent)
 						if err != nil {
 							mslog.Error("Failed to unmarshal CRC event")
@@ -164,13 +163,13 @@ func main() {
 					}
 
 					// commit the Kafka offset
-					_, err := c.Commit()
+					_, err := c.Commit() // nolint:govet
 					if err != nil {
-						mslog.WithField("error", err).Error("Error storing offset after message")
+						mslog.WithField("error", err).Error("Error storing offset after message") // nolint:revive
 					}
 				case kafka.Error:
 					// terminate the application if all brokers are down.
-					log.WithFields(log.Fields{"code": e.Code(), "error": e}).Error("Exiting loop due to Kafka broker issue")
+					log.WithFields(log.Fields{"code": e.Code(), "error": e}).Error("Exiting loop due to Kafka broker issue") // nolint:revive
 					if e.Code() == kafka.ErrAllBrokersDown {
 						run = false
 					}

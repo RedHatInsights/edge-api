@@ -181,7 +181,7 @@ func DeviceGroupDeviceCtx(next http.Handler) http.Handler {
 			if err != nil {
 				var responseErr errors.APIError
 				switch err.(type) {
-				case *services.DeviceGroupNotFound:
+				case *services.DeviceGroupNotFound: // nolint:typecheck
 					responseErr = errors.NewNotFound(err.Error())
 				case *services.DeviceGroupDeviceNotSupplied:
 					responseErr = errors.NewBadRequest("Device group device not supplied")
