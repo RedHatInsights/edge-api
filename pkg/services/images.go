@@ -409,7 +409,7 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 				models.EventTypeEdgeImageISORequested, image.Name, edgePayload)
 
 			// put the event on the bus
-			if err := kafkacommon.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageISORequested, edgeEvent); err != nil {
+			if err := kafkacommon.NewProducerService().ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageISORequested, edgeEvent); err != nil {
 				log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
 				return err
 			}
@@ -872,11 +872,16 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 // CheckImageName returns false if the image does not exist and true if the image exists
 func (s *ImageService) CheckImageName(name, orgID string) (bool, error) {
 	var imageFindByName *models.Image
+	// Search for an organization with an image with specific name
 	result := db.Org(orgID, "").Where("(name = ?)", name).First(&imageFindByName)
+	// If we get an error from the query
 	if result.Error != nil {
+		// If no records were found
 		if result.Error == gorm.ErrRecordNotFound {
+			// Return false but don't return the error
 			return false, nil
 		}
+		// If a different type of error happens, return it
 		return false, result.Error
 	}
 	return imageFindByName != nil, nil
