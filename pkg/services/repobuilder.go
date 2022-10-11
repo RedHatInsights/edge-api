@@ -1,5 +1,5 @@
 // FIXME: golangci-lint
-// nolint:gocritic,govet,revive
+// nolint:dupword,gocritic,govet,revive
 package services
 
 import (
