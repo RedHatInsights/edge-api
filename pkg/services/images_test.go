@@ -13,6 +13,7 @@ import (
 	imageBuilderClient "github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder/mock_imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -809,6 +810,117 @@ var _ = Describe("Image Service Test", func() {
 				Expect(image.ImageSetID).To(BeNil())
 			})
 		})
+	})
+	Describe("Test ValidateImagePackage function", func() {
+		When("When there's no valid arch", func() {
+			It("should raise NewBadRequest", func() {
+				package_name := faker.UUIDHyphenated()
+				image := models.Image{
+					Commit: &models.Commit{},
+				}
+				error := service.ValidateImagePackage(package_name, &image)
+				Expect(error).To(HaveOccurred())
+				Expect(error).To(BeAssignableToTypeOf(new(errors.BadRequest)))
+			})
+		})
+		When("When there's no valid distribution", func() {
+			It("should raise NewBadRequest", func() {
+				package_name := faker.UUIDHyphenated()
+				image := models.Image{
+					Commit: &models.Commit{Arch: "x86_64"},
+				}
+				error := service.ValidateImagePackage(package_name, &image)
+				Expect(error).To(HaveOccurred())
+				Expect(error).To(BeAssignableToTypeOf(new(errors.BadRequest)))
+			})
+		})
+		When("When SearchPackage fails to find a package", func() {
+			It("should raise an error", func() {
+				arch := "x86_64"
+				dist := "rhel-90"
+				package_name := "emacs"
+				image := models.Image{
+					Commit:       &models.Commit{Arch: arch},
+					Distribution: dist,
+				}
+				imageBuilder := &imageBuilderClient.SearchPackageResult{}
+				var s imageBuilderClient.SearchPackage
+				s.Name = package_name
+				imageBuilder.Data = append(imageBuilder.Data, s)
+				imageBuilder.Meta.Count = 1
+				mockImageBuilderClient.EXPECT().SearchPackage(
+					package_name, arch, dist).Return(imageBuilder, new(imageBuilderClient.PackageRequestError))
+				error := service.ValidateImagePackage(package_name, &image)
+				Expect(error).To(HaveOccurred())
+				Expect(error).To(MatchError(new(imageBuilderClient.PackageRequestError)))
+			})
+		})
+		When("When Meta.Count is zero", func() {
+			It("should raise PackageNameDoesNotExist", func() {
+				arch := "x86_64"
+				dist := "rhel-90"
+				package_name := "emacs"
+				image := models.Image{
+					Commit:       &models.Commit{Arch: arch},
+					Distribution: dist,
+				}
+				imageBuilder := &imageBuilderClient.SearchPackageResult{}
+				var s imageBuilderClient.SearchPackage
+				s.Name = package_name
+				imageBuilder.Data = append(imageBuilder.Data, s)
+				imageBuilder.Meta.Count = 0
+				mockImageBuilderClient.EXPECT().SearchPackage(
+					package_name, arch, dist).Return(imageBuilder, nil)
+				error := service.ValidateImagePackage(package_name, &image)
+				Expect(error).To(HaveOccurred())
+				Expect(error).To(MatchError(new(services.PackageNameDoesNotExist)))
+			})
+		})
+		When("When package name is not found", func() {
+			It("should also raise PackageNameDoesNotExist", func() {
+				arch := "x86_64"
+				dist := "rhel-90"
+				package_name := "emacs"
+				wrong_package_name := "vim-common"
+				image := models.Image{
+					Commit:       &models.Commit{Arch: arch},
+					Distribution: dist,
+				}
+				imageBuilder := &imageBuilderClient.SearchPackageResult{}
+				var s imageBuilderClient.SearchPackage
+				s.Name = package_name
+				imageBuilder.Data = append(imageBuilder.Data, s)
+				imageBuilder.Meta.Count = 1
+				mockImageBuilderClient.EXPECT().SearchPackage(
+					wrong_package_name, arch, dist).Return(imageBuilder, nil)
+				error := service.ValidateImagePackage(wrong_package_name, &image)
+				Expect(error).To(HaveOccurred())
+				Expect(error).To(MatchError(new(services.PackageNameDoesNotExist)))
+
+			})
+		})
+		When("When package name is found", func() {
+			It("should return nil", func() {
+				arch := "x86_64"
+				dist := "rhel-90"
+				package_name := "emacs"
+				image := models.Image{
+					Commit:       &models.Commit{Arch: arch},
+					Distribution: dist,
+				}
+				imageBuilder := &imageBuilderClient.SearchPackageResult{}
+				var s imageBuilderClient.SearchPackage
+				s.Name = package_name
+				imageBuilder.Data = append(imageBuilder.Data, s)
+				imageBuilder.Meta.Count = 1
+				mockImageBuilderClient.EXPECT().SearchPackage(
+					package_name, arch, dist).Return(imageBuilder, nil)
+				error := service.ValidateImagePackage(package_name, &image)
+				Expect(error).ToNot(HaveOccurred())
+				Expect(error).To(BeNil())
+			})
+		})
+
 	})
 	Describe("Create image when ValidateImagePackage", func() {
 		orgID := faker.UUIDHyphenated()
