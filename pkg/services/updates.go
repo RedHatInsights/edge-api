@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	url2 "net/url"
+	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -295,12 +295,12 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, orgID str
 		return "", err
 	}
 
-	url, err := url2.Parse(cfg.EdgeCertAPIBaseURL)
+	edgeCertAPIBaseURL, err := url.Parse(cfg.EdgeCertAPIBaseURL)
 	if err != nil {
 		s.log.WithFields(log.Fields{"error": err.Error(), "url": cfg.EdgeCertAPIBaseURL}).Error("error while parsing config edge cert api url")
 		return "", err
 	}
-	repoURL := fmt.Sprintf("%s://%s/api/edge/v1/storage/update-repos/%d", url.Scheme, url.Host, templateInfo.UpdateTransactionID)
+	repoURL := fmt.Sprintf("%s://%s/api/edge/v1/storage/update-repos/%d", edgeCertAPIBaseURL.Scheme, edgeCertAPIBaseURL.Host, templateInfo.UpdateTransactionID)
 
 	templateData := playbooks{
 		GoTemplateRemoteName: templateInfo.RemoteName,
