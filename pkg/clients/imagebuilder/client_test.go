@@ -6,7 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -157,7 +157,7 @@ var _ = Describe("Image Builder Client Test", func() {
 			defer GinkgoRecover()
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			b, err := ioutil.ReadAll(r.Body)
+			b, err := io.ReadAll(r.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(b).ToNot(BeNil())
 			var req ComposeRequest

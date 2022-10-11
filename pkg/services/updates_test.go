@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 
 	apiError "github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
@@ -456,9 +456,9 @@ var _ = Describe("UpdateService Basic functions", func() {
 				}
 				mockUploader := mock_services.NewMockUploader(ctrl)
 				mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", org_id, fname)).Do(func(x, y string) {
-					actual, err := ioutil.ReadFile(x)
+					actual, err := os.ReadFile(x)
 					Expect(err).ToNot(HaveOccurred())
-					expected, err := ioutil.ReadFile("./../../templates/template_playbook_dispatcher_ostree_upgrade_payload.test.yml")
+					expected, err := os.ReadFile("./../../templates/template_playbook_dispatcher_ostree_upgrade_payload.test.yml")
 					Expect(err).ToNot(HaveOccurred())
 					Expect(string(actual)).To(BeEquivalentTo(string(expected)))
 				}).Return("url", nil)
@@ -495,9 +495,9 @@ var _ = Describe("UpdateService Basic functions", func() {
 				}
 				mockUploader := mock_services.NewMockUploader(ctrl)
 				mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", org_id, fname)).Do(func(x, y string) {
-					actual, err := ioutil.ReadFile(x)
+					actual, err := os.ReadFile(x)
 					Expect(err).ToNot(HaveOccurred())
-					expected, err := ioutil.ReadFile("./../../templates/template_playbook_dispatcher_ostree_rebase_payload.test.yml")
+					expected, err := os.ReadFile("./../../templates/template_playbook_dispatcher_ostree_rebase_payload.test.yml")
 					Expect(err).ToNot(HaveOccurred())
 					Expect(string(actual)).To(BeEquivalentTo(string(expected)))
 				}).Return("url", nil)

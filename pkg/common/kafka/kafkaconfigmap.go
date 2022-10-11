@@ -1,5 +1,6 @@
 // FIXME: golangci-lint
 // nolint:errcheck,revive
+// Package kafkacommon contains all common kafka functions
 package kafkacommon
 
 import (
@@ -9,8 +10,23 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 )
 
+// KafkaConfigMapServiceInterface is the interface that defines the config map service
+type KafkaConfigMapServiceInterface interface {
+	GetKafkaProducerConfigMap() kafka.ConfigMap
+	GetKafkaConsumerConfigMap(consumerGroup string) kafka.ConfigMap
+}
+
+// KafkaConfigMapService is the config map service
+type KafkaConfigMapService struct {
+}
+
+// NewKafkaConfigMapService returns a new service
+func NewKafkaConfigMapService() KafkaConfigMapServiceInterface {
+	return &KafkaConfigMapService{}
+}
+
 // GetKafkaProducerConfigMap returns the correct kafka auth based on the environment and given config
-func GetKafkaProducerConfigMap() kafka.ConfigMap {
+func (k *KafkaConfigMapService) GetKafkaProducerConfigMap() kafka.ConfigMap {
 	cfg := config.Get()
 	kafkaConfigMap := kafka.ConfigMap{}
 
@@ -27,9 +43,9 @@ func GetKafkaProducerConfigMap() kafka.ConfigMap {
 }
 
 // GetKafkaConsumerConfigMap returns the correct kafka auth based on the environment and given config
-func GetKafkaConsumerConfigMap(consumerGroup string) kafka.ConfigMap {
+func (k *KafkaConfigMapService) GetKafkaConsumerConfigMap(consumerGroup string) kafka.ConfigMap {
 	cfg := config.Get()
-	kafkaConfigMap := GetKafkaProducerConfigMap()
+	kafkaConfigMap := k.GetKafkaProducerConfigMap()
 	kafkaConfigMap.SetKey("group.id", consumerGroup)
 
 	if cfg.KafkaBrokers != nil {

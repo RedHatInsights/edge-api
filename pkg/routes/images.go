@@ -234,7 +234,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 			models.EventTypeEdgeImageRequested, image.Name, edgePayload)
 
 		// put the event on the bus
-		if err = kafkacommon.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageRequested, edgeEvent); err != nil {
+		if err = kafkacommon.NewProducerService().ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageRequested, edgeEvent); err != nil {
 			log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
 			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 
@@ -311,7 +311,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 			models.EventTypeEdgeImageUpdateRequested, image.Name, edgePayload)
 
 		// put the event on the bus
-		if err = kafkacommon.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageUpdateRequested, edgeEvent); err != nil {
+		if err = kafkacommon.NewProducerService().ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageUpdateRequested, edgeEvent); err != nil {
 			log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
 			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 
