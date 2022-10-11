@@ -3,14 +3,9 @@
   become: true
   hosts: localhost
   vars:
-    fleet_infra_env: "dev"
     update_number: "1000"
-    s3_region: "us-east-1"
-    s3_buckets:
-      prod: "rh-edge-tarballs-prod"
-      stage: "rh-edge-tarballs-stage"
-      perf: "rh-edge-tarballs-perf"
-    repo_url: "https://{{ s3_buckets[fleet_infra_env] | default('rh-edge-tarballs-prod') }}.s3.{{ s3_region | default('us-east-1') }}.amazonaws.com/{{ update_number }}/upd/{{ update_number }}/repo"
+    repo_url: "http://cert.localhost:3000/api/edge/v1/storage/update-repos/1000"
+    repo_content_url: "http://cert.localhost:3000/api/edge/v1/storage/update-repos/1000/content"
     ostree_remote_name: "remote-name"
     ostree_changes_refs: "true"
     os_tree_ref: "rhel/9/x86_64/edge"
@@ -21,28 +16,30 @@
       url={{ repo_url }}
       gpg-verify={{ ostree_gpg_verify }}
       gpgkeypath={{ ostree_gpg_keypath }}
-      contenturl={{ repo_url }}
-    insights_signature_exclude: "/vars/insights_signature,/vars/fleet_infra_env,/vars/update_number,/vars/s3_region,/vars/ostree_remote_name,/vars/ostree_changes_refs,/vars/os_tree_ref"
+      contenturl={{ repo_content_url }}
+      tls-client-key-path=/etc/pki/consumer/key.pem
+      tls-client-cert-path=/etc/pki/consumer/cert.pem
+    insights_signature_exclude: "/vars/insights_signature,/vars/update_number,/vars/ostree_remote_name,/vars/ostree_changes_refs,/vars/os_tree_ref"
     insights_signature: !!binary |
       TFMwdExTMUNSVWRKVGlCUVIxQWdVMGxIVGtGVVZWSkZMUzB0TFMwS1ZtVnljMmx2YmpvZ1IyNTFV
-      RWNnZGpFS0NtbFJTVlpCZDFWQldYUkJjVlZOZG5jMU9FUXJhalZ3VGtGUmFWQmlVUzh2V0dobmRX
-      dFNNRzlWT0hrd2VFMW1TMFl5SzJRNFVFbHdOVXhyYTJWakwyTUtOV0pNU0ZoeldrZzRTMGxxVG5S
-      bmNIUTBXRkJJV1hZeU9VWnlSamRNVlRKVWFFUjNTSGRHY1c1UVJVNUNTbTF1ZEdjNVVVcE9ZMWRL
-      VkV3cmVGVnBXUXBHVEc4clNIZHpTRlE1ZUhNNFpIWmpWMUpHYVVOdVVteEtUekF5YTNsYVNWVk1i
-      amRYVG5NcmVXeFVjbHByVUdSblNYaGFUMlkwS3pkWVozSTFTVmxzQ25WM1l6TmxjMkZMYzBNNFF6
-      SklXV2Q0TURWVmFsVTFPRVF5WkZwUVYzTnpRazVCUTFSUk1VeHVXa0prZWt0YU5ISlJVbkZYVmk5
-      SVVtaDFTelEzS3pZS05YaHZjbmxTVkVORk4yaFFWMjVhVkZOMGNEaEJhSFozVDBSMlVFRkVWVnBo
-      UjNacEt6Wk9jbEZFV0RKQ1VERnZaRFF4SzFwR1ZYbHVRMmxIWldSdlJBcHVha2tyY1VsUVNEQlBi
-      bWxRUWxWSlduWXJhSE5pTVRWdVQydEtVVVZ0V1RaVGJuWlhVR3hrWlVwQmNGZHRXalZyT0ZoQ1Ru
-      Qk5jalJQVFVWRU56aDRDa05zVldrMFdsRjVhRWRTWW5nek5EQmFRekpSWWtrdmVXWXpialJITmt4
-      TVEwcFBaVWt2Tm5CdldGSktSbE5EYVdreFZVVjZMM1JFVW1oMWFHeFNkbElLTlZGMmIzVlNTalp4
-      UlZRNVJFSlVheXQwZGxBNFoySklkbWQxZUUxTmFsaFVaMlZuTkZsWFVqVlRTVmRMZERkd1kzZFNV
-      bXhDVERKQ1dqQnpOSHB2T1FwM1FtMDJVRUk0WTNOTmJIcHpNR2hPWkhoeU5EbGtNWFZRWkhWTVVF
-      TjZUbWR0VjJwVmNscGFRelV3TkhwMFpFSmhUR1V2YVd0RlowczFNR1k1Y2psekNtSXJZWEJpYVZS
-      QmVtcHdTMk4xTVdwUU9IWkhXRFpyTTJGb00zUnpkRFZZY2t0R1V6VlBiM0Z3YnpBeVNEUldjSGxQ
-      VWxob1dpODFLM1V5VFdOSE5XNEtLMmt6V0d4YVlUWlRaVlJ1VWpkTWNFaE9iblk1Ymk4Mk9URnFW
-      VU5sZG1wRlZYVmhNR2RzWlU1M01qUmhNSGM0ZDJ3clduTjNOSGNyYW5BMVYxcHZaUW93WlRsM2FF
-      WmFabU51VFQwS1BYWnBhMDRLTFMwdExTMUZUa1FnVUVkUUlGTkpSMDVCVkZWU1JTMHRMUzB0Q2c9
+      RWNnZGpFS0NtbFJTVlpCZDFWQldUQlFjaXROZG5jMU9FUXJhalZ3VGtGUmFIVTRVa0ZCYmpkc05Y
+      VkZVbFpZUlU1bWRHdGlUVkZQUVU1U1FUTTNUWEJZZVd4Q1lsTUtXRzQwVlRoS1RWbzFhVXA2WkRO
+      c2EweDBNalJEZVdrd2NIZzFOSFZGV0RoemIwRlZNa1JhWjJJM1luaHBiUzluWVd0NldWUkRUMjR4
+      YVZFd1puQldMd3BKTDB0RVdWUnRZbG8zVFhSVEsxaFpaa1JOZWpCbFpGRnRSbFpJTW5OVVpYZHdZ
+      bFZFVkc1cE9XWTVZbXRtWlhoaFJ5dG9NVUZaU1ZsUFIwOXBjeTkzQ21SUlZrODBWV1J3TnpsR1Iy
+      bGFkbGc1TUdGVE5WVklReko2V2t3emVtOXpNM0YyWVdGWlV6QXhWVTAxYVdScUwzZzVkMDVyTWt3
+      NFFrNDFkMHRWWTIwS1UxWXZWVzV2ZEd0bE9HSmpSVE1yUXl0WVJEUnJkSHBoVFV3ME5rcENZMnBw
+      VTNOa1FuZ3hSREZDVVVkdEwwZG1aek5UUTNwM1ZEZHlRVWhJTVZaTGFRb3phek14Y0ZselNteGpS
+      MFJtTXpCc2FDOXhaVkE1WVUwdldUUmpjRGRpYldRMlNFbE5hMmt3TUhCS1lqVTFRV0ptZFhOVVZW
+      ZERVVWxyZVhGT1ZuRnNDbUZhUmpsWVl6TTNWbTVyVUc5c1JEZElNME5QV2swNGQwMURZbkU1VFVo
+      YWRYSTBURGxFZEV0dVlYUjNlV2R1ZUc4eWVFZGpPVkUyTDNRM1YwVk1jSGdLTVRRdk1qVk1OalZO
+      V1V4eFRETndXVTAwYUZsSU1FTkVTMFkxYm1aNFRHbE1lRFJJZEZkMlVsTlBhbEJaV21SMFZXVmhj
+      WFJxWjFnMVVGTk5OM2x4YndwVFYzWm1kakZuWVhGWFFrcG9SSFZhVEd0VU1HeExORWhKU2k5UVVG
+      WmhiWFJYUmxSMGFtRmpVMnd5V25jeFNtSXlVM056ZURJd2FIRmplbTh2ZGxnekNuZ3lTM0pWVDJS
+      dWNqZDJabWhFVFdWMFJrVmFLMUZzWlRsMFRFTkhRMmxzU2pWbWJFZEllbEpHTjJKMFdVSnVUVk0z
+      UWpWbGJuZFFNV0UwYkd3M01XSUtiRTEyUlVSelRHMXdlWGxaYURONE5sTnRUVnAyYjNORGVHSnFN
+      WEE0YzNWNmJFeFVZbkJMZWpOU1ZqbE9XWGh6WjBkbGRrazJSekZ1VVZJMVJIaDRZUXAzWW14NE1W
+      ZzVaa2xhUlQwS1BWVkZWbGNLTFMwdExTMUZUa1FnVUVkUUlGTkpSMDVCVkZWU1JTMHRMUzB0Q2c9
       PQ==
   tasks:
     - name: apply templated ostree remote config
@@ -63,5 +60,4 @@
       failed_when: 'rpmostree_rebase_out.rc != 0'
     - name: schedule reboot when rpmostree upgraded
       ansible.builtin.shell: systemd-run --on-active=5 /usr/bin/systemctl reboot
-      when: ('rpmostree_rebase_out.changed | "Staging deployment...done" in rpmostree_rebase_out.out') or
-            ('rpmostree_upgrade_out.changed | "Staging deployment...done" in rpmostree_upgrade_out.stdout')
+      when: ('rpmostree_rebase_out.changed | "Staging deployment...done" in rpmostree_rebase_out.out') or ('rpmostree_upgrade_out.changed | "Staging deployment...done" in rpmostree_upgrade_out.stdout')
