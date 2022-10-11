@@ -21,14 +21,14 @@ func sanitizePath(destination string, filePath string) (destpath string, err err
 	return
 }
 
-//objectIsWithinMemoryLimit returns a bool result from compare an object with Cloudwatch Maximum Log Message Size
+// objectIsWithinMemoryLimit returns a bool result from compare an object with Cloudwatch Maximum Log Message Size
 func objectIsWithinMemoryLimit(object interface{}) bool {
 	objReflection := reflect.ValueOf(object)
 	len, _ := Sizeof(objReflection)
 	return len < CloudwatchMaximumLogMessageSize
 }
 
-//Sizeof receive a reflect value and returns the length and capacity of an object in memory using in Kb
+// Sizeof receive a reflect value and returns the length and capacity of an object in memory using in Kb
 func Sizeof(rv reflect.Value) (int, int) {
 	rt := rv.Type()
 	if rt.Kind() == reflect.Slice {
