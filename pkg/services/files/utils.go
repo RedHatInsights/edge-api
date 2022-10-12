@@ -27,7 +27,7 @@ func objectIsWithinMemoryLimit(object interface{}) bool {
 	return len < CloudwatchMaximumLogMessageSize
 }
 
-//Sizeof receive a reflect value and returns the length and capacity of an object in memory using in Kb
+// Sizeof receive a reflect value and returns the length and capacity of an object in memory using in Kb
 func Sizeof(rv reflect.Value) (int, int) {
 	rt := rv.Type()
 	if rt.Kind() == reflect.Slice {
