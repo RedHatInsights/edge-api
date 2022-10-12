@@ -21,7 +21,6 @@ func sanitizePath(destination string, filePath string) (destpath string, err err
 	return
 }
 
-// objectIsWithinMemoryLimit returns a bool result from compare an object with Cloudwatch Maximum Log Message Size
 func objectIsWithinMemoryLimit(object interface{}) bool {
 	objReflection := reflect.ValueOf(object)
 	len, _ := Sizeof(objReflection)
