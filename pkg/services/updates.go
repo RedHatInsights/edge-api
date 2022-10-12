@@ -785,7 +785,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					if uError != nil {
 						s.log.WithField("error", err.Error()).Error("Error returning current image ostree checksum")
 					}
-					if currentImage.Distribution != updatedImage.Distribution {
+					if config.DistributionsRefs[currentImage.Distribution] != config.DistributionsRefs[updatedImage.Distribution] {
 						update.ChangesRefs = true
 					}
 				}
