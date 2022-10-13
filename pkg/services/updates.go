@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 	"text/template"
 	"time"
@@ -79,10 +79,9 @@ type playbooks struct {
 	OstreeRemoteName     string
 	OstreeGpgVerify      string
 	OstreeGpgKeypath     string
-	FleetInfraEnv        string
 	UpdateNumber         string
 	RepoURL              string
-	BucketRegion         string
+	RepoContentURL       string
 	RemoteOstreeUpdate   string
 	OSTreeRef            string
 }
@@ -295,20 +294,19 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, orgID str
 		s.log.WithField("error", err.Error()).Error("Error parsing playbook template")
 		return "", err
 	}
-	var envName string
-	if strings.Contains(cfg.BucketName, "-prod") || strings.Contains(cfg.BucketName, "-stage") || strings.Contains(cfg.BucketName, "-perf") {
-		bucketNameSplit := strings.Split(cfg.BucketName, "-")
-		envName = bucketNameSplit[len(bucketNameSplit)-1]
-	} else {
-		envName = "dev"
+
+	edgeCertAPIBaseURL, err := url.Parse(cfg.EdgeCertAPIBaseURL)
+	if err != nil {
+		s.log.WithFields(log.Fields{"error": err.Error(), "url": cfg.EdgeCertAPIBaseURL}).Error("error while parsing config edge cert api url")
+		return "", err
 	}
+	repoURL := fmt.Sprintf("%s://%s/api/edge/v1/storage/update-repos/%d", edgeCertAPIBaseURL.Scheme, edgeCertAPIBaseURL.Host, templateInfo.UpdateTransactionID)
 
 	templateData := playbooks{
 		GoTemplateRemoteName: templateInfo.RemoteName,
-		FleetInfraEnv:        envName,
-		BucketRegion:         cfg.BucketRegion,
 		UpdateNumber:         strconv.FormatUint(uint64(templateInfo.UpdateTransactionID), 10),
-		RepoURL:              "https://{{ s3_buckets[fleet_infra_env] | default('rh-edge-tarballs-stage') }}.s3.{{ s3_region | default('us-east-1') }}.amazonaws.com/{{ update_number }}/upd/{{ update_number }}/repo",
+		RepoURL:              repoURL,
+		RepoContentURL:       fmt.Sprintf("%s/content", repoURL),
 		RemoteOstreeUpdate:   templateInfo.RemoteOstreeUpdate,
 		OSTreeRef:            templateInfo.OSTreeRef,
 	}
@@ -787,7 +785,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					if uError != nil {
 						s.log.WithField("error", err.Error()).Error("Error returning current image ostree checksum")
 					}
-					if currentImage.Distribution != updatedImage.Distribution {
+					if config.DistributionsRefs[currentImage.Distribution] != config.DistributionsRefs[updatedImage.Distribution] {
 						update.ChangesRefs = true
 					}
 				}

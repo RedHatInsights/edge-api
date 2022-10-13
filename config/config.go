@@ -35,6 +35,7 @@ type EdgeConfig struct {
 	PlaybookDispatcherConfig *playbookDispatcherConfig `json:"playbook_dispatcher,omitempty"`
 	TemplatesPath            string                    `json:"templates_path,omitempty"`
 	EdgeAPIBaseURL           string                    `json:"edge_api_base_url,omitempty"`
+	EdgeCertAPIBaseURL       string                    `json:"edge_cert_api_base_url,omitempty"`
 	EdgeAPIServiceHost       string                    `json:"edge_api_service_host,omitempty"`
 	EdgeAPIServicePort       int                       `json:"edge_api_service_port,omitempty"`
 	UploadWorkers            int                       `json:"upload_workers,omitempty"`
@@ -121,6 +122,7 @@ func Init() {
 	options.SetDefault("DatabaseFile", "test.db")
 	options.SetDefault("TemplatesPath", "/usr/local/etc/")
 	options.SetDefault("EdgeAPIBaseURL", "http://localhost:3000")
+	options.SetDefault("EdgeCertAPIBaseURL", "http://cert.localhost:3000")
 	options.SetDefault("EdgeAPIServiceHost", "localhost")
 	options.SetDefault("EdgeAPIServicePort", "3000")
 	options.SetDefault("UploadWorkers", 100)
@@ -200,6 +202,7 @@ func Init() {
 		},
 		TemplatesPath:      options.GetString("TemplatesPath"),
 		EdgeAPIBaseURL:     options.GetString("EdgeAPIBaseURL"),
+		EdgeCertAPIBaseURL: options.GetString("EdgeCertAPIBaseURL"),
 		EdgeAPIServiceHost: options.GetString("EDGE_API_SERVICE_SERVICE_HOST"),
 		EdgeAPIServicePort: options.GetInt("EDGE_API_SERVICE_SERVICE_PORT"),
 		UploadWorkers:      options.GetInt("UploadWorkers"),

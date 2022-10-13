@@ -38,5 +38,13 @@ func setupTestDB() {
 }
 
 func tearDownTestDB() {
+	sqlDB, err := DB.DB()
+
+	if err != nil {
+		panic(err)
+	}
+
+	sqlDB.Close()
+
 	os.Remove(dbName)
 }
