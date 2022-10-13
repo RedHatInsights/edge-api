@@ -1,4 +1,4 @@
-package kafkacommon_test
+package kafkacommon_test // nolint:revive
 
 import (
 	"testing"
