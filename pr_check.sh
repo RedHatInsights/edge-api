@@ -10,17 +10,17 @@ export IQE_FILTER_EXPRESSION=""  # This is the value passed to pytest -k
 export IQE_CJI_TIMEOUT="30m"  # This is the time to wait for smoke test to complete or fail
 
 # Install bonfire repo/initialize
-CICD_URL=https://raw.githubusercontent.com/RedHatInsights/bonfire/master/cicd
-curl -s $CICD_URL/bootstrap.sh > ${WORKSPACE}/cicd_bootstrap.sh && source ${WORKSPACE}/cicd_bootstrap.sh
+# CICD_URL=https://raw.githubusercontent.com/RedHatInsights/bonfire/master/cicd
+# curl -s $CICD_URL/bootstrap.sh > ${WORKSPACE}/cicd_bootstrap.sh && source ${WORKSPACE}/cicd_bootstrap.sh
 
 # Build the image and push to quay
-source $CICD_ROOT/build.sh
+# source $CICD_ROOT/build.sh
 
 # Run the unit tests with an ephemeral db
 # source $APP_ROOT/unit_test.sh
 
 # Deploy edge to an ephemeral namespace for testing
-source $CICD_ROOT/deploy_ephemeral_env.sh
+# source $CICD_ROOT/deploy_ephemeral_env.sh
 
 # This code is to create a 'dummy' result file so Jenkins will not fail when smoke tests are disabled
 #mkdir -p $ARTIFACTS_DIR
@@ -31,6 +31,9 @@ source $CICD_ROOT/deploy_ephemeral_env.sh
 #EOF
 
 # Run smoke tests with ClowdJobInvocation
-source $CICD_ROOT/cji_smoke_test.sh
+# source $CICD_ROOT/cji_smoke_test.sh
 # Upload test results to ibutusu
-source $CICD_ROOT/post_test_results.sh
+# source $CICD_ROOT/post_test_results.sh
+
+# Run our tests and generate coverage for sonarqube via app-interface
+make coverage-no-fdo

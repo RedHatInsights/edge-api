@@ -72,7 +72,7 @@ coverage:
 	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v $(EXCLUDE_DIRS)) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
 
 coverage-html:
-	go tool cover -html=coverage.txt -o coverage.html
+	go tool cover -html=coverage.out -o coverage.html
 
 coverage-no-fdo:
 	go test $$(go list ./... | grep -v $(EXCLUDE_DIRS)) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
