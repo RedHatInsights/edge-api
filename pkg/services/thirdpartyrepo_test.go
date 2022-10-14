@@ -63,6 +63,35 @@ var _ = Describe("ThirdPartyRepos basic functions", func() {
 			Expect(newRepo.OrgID).To(Equal(orgID))
 		})
 
+		It("ThirdPartyRepoNameExists  return True when repository exists", func() {
+			orgID := faker.UUIDHyphenated()
+			name := faker.UUIDHyphenated()
+			repo := models.ThirdPartyRepo{Name: name, URL: faker.URL(), OrgID: orgID}
+			result := db.DB.Create(&repo)
+			Expect(result.Error).ToNot(HaveOccurred())
+			value, err := customReposService.ThirdPartyRepoNameExists(orgID, name)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(value).To(BeTrue())
+		})
+
+		It("ThirdPartyRepoNameExists  return false when repository does not exists", func() {
+			value, err := customReposService.ThirdPartyRepoNameExists(faker.UUIDHyphenated(), faker.UUIDHyphenated())
+			Expect(err).ToNot(HaveOccurred())
+			Expect(value).To(BeFalse())
+		})
+
+		It("ThirdPartyRepoNameExists return error when org_id is empty", func() {
+			_, err := customReposService.ThirdPartyRepoNameExists("", faker.UUIDHyphenated())
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("Org ID is not set"))
+		})
+
+		It("ThirdPartyRepoNameExists return error when repository name is empty", func() {
+			_, err := customReposService.ThirdPartyRepoNameExists(faker.UUIDHyphenated(), "")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("custom repository name cannot be empty"))
+		})
+
 		It("Custom repo should not be created if name already exists", func() {
 			orgID := faker.UUIDHyphenated()
 			repo := models.ThirdPartyRepo{Name: faker.UUIDHyphenated(), URL: faker.URL()}

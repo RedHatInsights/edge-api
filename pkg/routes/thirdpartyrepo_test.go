@@ -6,15 +6,23 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
+
+	"github.com/bxcodec/faker/v3"
+	"github.com/go-chi/chi"
+	"github.com/golang/mock/gomock"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -238,3 +246,98 @@ func TestGetAllThirdPartyRepoFilterParams(t *testing.T) {
 		}
 	}
 }
+
+var _ = Describe("ThirdPartyRepos basic routes", func() {
+	var ctrl *gomock.Controller
+	var router chi.Router
+	var mockThirdPartyRepoService *mock_services.MockThirdPartyRepoServiceInterface
+	var edgeAPIServices *dependencies.EdgeAPIServices
+
+	BeforeEach(func() {
+		ctrl = gomock.NewController(GinkgoT())
+		mockThirdPartyRepoService = mock_services.NewMockThirdPartyRepoServiceInterface(ctrl)
+		edgeAPIServices = &dependencies.EdgeAPIServices{
+			ThirdPartyRepoService: mockThirdPartyRepoService,
+			Log:                   log.NewEntry(log.StandardLogger()),
+		}
+		router = chi.NewRouter()
+		router.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ctx := dependencies.ContextWithServices(r.Context(), edgeAPIServices)
+				next.ServeHTTP(w, r.WithContext(ctx))
+			})
+		})
+		router.Route("/thirdpartyrepo", MakeThirdPartyRepoRouter)
+	})
+
+	AfterEach(func() {
+		ctrl.Finish()
+	})
+
+	Context("CheckThirdPartyRepoName", func() {
+		orgID := common.DefaultOrgID
+		type ResponseData struct {
+			IsValid bool `json:"isValid"`
+		}
+		type Response struct {
+			Data ResponseData `json:"data"`
+		}
+
+		It("should return isValid true when third party repository exists", func() {
+			repoName := faker.UUIDHyphenated()
+			req, err := http.NewRequest("GET", fmt.Sprintf("/thirdpartyrepo/checkName/%s", repoName), nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			mockThirdPartyRepoService.EXPECT().ThirdPartyRepoNameExists(orgID, repoName).Return(true, nil)
+			httpTestRecorder := httptest.NewRecorder()
+			router.ServeHTTP(httpTestRecorder, req)
+
+			Expect(httpTestRecorder.Code).To(Equal(http.StatusOK))
+			respBody, err := io.ReadAll(httpTestRecorder.Body)
+			Expect(err).ToNot(HaveOccurred())
+			var response Response
+			err = json.Unmarshal(respBody, &response)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response.Data.IsValid).To(BeTrue())
+		})
+
+		It("should return isValid false when third party repository does not exist", func() {
+			repoName := faker.UUIDHyphenated()
+			req, err := http.NewRequest("GET", fmt.Sprintf("/thirdpartyrepo/checkName/%s", repoName), nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			mockThirdPartyRepoService.EXPECT().ThirdPartyRepoNameExists(orgID, repoName).Return(false, nil)
+			httpTestRecorder := httptest.NewRecorder()
+			router.ServeHTTP(httpTestRecorder, req)
+
+			Expect(httpTestRecorder.Code).To(Equal(http.StatusOK))
+			respBody, err := io.ReadAll(httpTestRecorder.Body)
+			Expect(err).ToNot(HaveOccurred())
+
+			var response Response
+			err = json.Unmarshal(respBody, &response)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response.Data.IsValid).To(BeFalse())
+		})
+
+		It("should return error when third party repository name is empty", func() {
+			// now the router will return 404 when repo name is empty (this happens early at router level),
+			// but we need to test our handler that it handles the case well
+			// (this increases handler coverage, and cover the case of router's behavior change where empty name is passed to our handler)
+			repoName := faker.UUIDHyphenated()
+			req, err := http.NewRequest("GET", fmt.Sprintf("/thirdpartyrepo/checkName/%s", repoName), nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			expectedError := new(services.ThirdPartyRepositoryNameIsEmpty)
+
+			mockThirdPartyRepoService.EXPECT().ThirdPartyRepoNameExists(orgID, repoName).Return(false, expectedError)
+			httpTestRecorder := httptest.NewRecorder()
+			router.ServeHTTP(httpTestRecorder, req)
+
+			Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+			respBody, err := io.ReadAll(httpTestRecorder.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(respBody)).To(ContainSubstring(expectedError.Error()))
+		})
+	})
+})
