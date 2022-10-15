@@ -34,6 +34,7 @@ services:
         - "edge-api-service"
 
     edge-api-utility:
+      container_name: edge-api-utility
       image: localhost/edge-api:localdev
       restart: unless-stopped
       privileged: true

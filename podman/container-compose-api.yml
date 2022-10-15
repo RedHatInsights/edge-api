@@ -6,7 +6,7 @@ services:
     edge-api-service:
       container_name: edge-api-service
       image: localhost/edge-api:localdev
-      restart: always
+      restart: unless-stopped
       privileged: true
       ports:
         - 3000:3000
