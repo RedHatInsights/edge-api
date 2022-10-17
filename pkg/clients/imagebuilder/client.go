@@ -1,3 +1,4 @@
+// Package imagebuilder provides Image Builder API client functions
 // FIXME: golangci-lint
 // nolint:errcheck,govet,revive
 package imagebuilder
@@ -105,7 +106,7 @@ type ImageStatus struct {
 type imageStatusValue string
 
 const (
-	imageStatusBulding     imageStatusValue = "building"
+	imageStatusBuilding    imageStatusValue = "building"
 	imageStatusFailure     imageStatusValue = "failure"
 	imageStatusPending     imageStatusValue = "pending"
 	imageStatusRegistering imageStatusValue = "registering"
@@ -315,7 +316,8 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 	return image, nil
 }
 
-func (c *Client) getComposeStatus(jobID string) (*ComposeStatus, error) {
+// GetComposeStatus returns a compose job status given a specific ID
+func (c *Client) GetComposeStatus(jobID string) (*ComposeStatus, error) {
 	cs := &ComposeStatus{}
 	cfg := config.Get()
 	url := fmt.Sprintf("%s/api/image-builder/v1/composes/%s", cfg.ImageBuilderConfig.URL, jobID)
@@ -358,7 +360,7 @@ func (c *Client) getComposeStatus(jobID string) (*ComposeStatus, error) {
 
 // GetCommitStatus gets the Commit status on Image Builder
 func (c *Client) GetCommitStatus(image *models.Image) (*models.Image, error) {
-	cs, err := c.getComposeStatus(image.Commit.ComposeJobID)
+	cs, err := c.GetComposeStatus(image.Commit.ComposeJobID)
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +379,7 @@ func (c *Client) GetCommitStatus(image *models.Image) (*models.Image, error) {
 
 // GetInstallerStatus gets the Installer status on Image Builder
 func (c *Client) GetInstallerStatus(image *models.Image) (*models.Image, error) {
-	cs, err := c.getComposeStatus(image.Installer.ComposeJobID)
+	cs, err := c.GetComposeStatus(image.Installer.ComposeJobID)
 	if err != nil {
 		return nil, err
 	}
