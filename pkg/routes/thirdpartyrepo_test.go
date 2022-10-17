@@ -4,6 +4,7 @@ package routes
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,6 +18,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/go-chi/chi"
@@ -253,27 +255,6 @@ var _ = Describe("ThirdPartyRepos basic routes", func() {
 	var mockThirdPartyRepoService *mock_services.MockThirdPartyRepoServiceInterface
 	var edgeAPIServices *dependencies.EdgeAPIServices
 
-	BeforeEach(func() {
-		ctrl = gomock.NewController(GinkgoT())
-		mockThirdPartyRepoService = mock_services.NewMockThirdPartyRepoServiceInterface(ctrl)
-		edgeAPIServices = &dependencies.EdgeAPIServices{
-			ThirdPartyRepoService: mockThirdPartyRepoService,
-			Log:                   log.NewEntry(log.StandardLogger()),
-		}
-		router = chi.NewRouter()
-		router.Use(func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				ctx := dependencies.ContextWithServices(r.Context(), edgeAPIServices)
-				next.ServeHTTP(w, r.WithContext(ctx))
-			})
-		})
-		router.Route("/thirdpartyrepo", MakeThirdPartyRepoRouter)
-	})
-
-	AfterEach(func() {
-		ctrl.Finish()
-	})
-
 	Context("CheckThirdPartyRepoName", func() {
 		orgID := common.DefaultOrgID
 		type ResponseData struct {
@@ -282,6 +263,27 @@ var _ = Describe("ThirdPartyRepos basic routes", func() {
 		type Response struct {
 			Data ResponseData `json:"data"`
 		}
+
+		BeforeEach(func() {
+			ctrl = gomock.NewController(GinkgoT())
+			mockThirdPartyRepoService = mock_services.NewMockThirdPartyRepoServiceInterface(ctrl)
+			edgeAPIServices = &dependencies.EdgeAPIServices{
+				ThirdPartyRepoService: mockThirdPartyRepoService,
+				Log:                   log.NewEntry(log.StandardLogger()),
+			}
+			router = chi.NewRouter()
+			router.Use(func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					ctx := dependencies.ContextWithServices(r.Context(), edgeAPIServices)
+					next.ServeHTTP(w, r.WithContext(ctx))
+				})
+			})
+			router.Route("/thirdpartyrepo", MakeThirdPartyRepoRouter)
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
+		})
 
 		It("should return isValid true when third party repository exists", func() {
 			repoName := faker.UUIDHyphenated()
@@ -338,6 +340,53 @@ var _ = Describe("ThirdPartyRepos basic routes", func() {
 			respBody, err := io.ReadAll(httpTestRecorder.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(string(respBody)).To(ContainSubstring(expectedError.Error()))
+		})
+	})
+
+	Context("when orgID cannot be defined", func() {
+		var originalAuth bool
+		conf := config.Get()
+
+		BeforeEach(func() {
+			// save original config auth value
+			originalAuth = conf.Auth
+			// set auth to True to force use identity
+			conf.Auth = true
+			ctrl = gomock.NewController(GinkgoT())
+			edgeAPIServices = &dependencies.EdgeAPIServices{
+				ThirdPartyRepoService: mock_services.NewMockThirdPartyRepoServiceInterface(ctrl),
+				Log:                   log.NewEntry(log.StandardLogger()),
+			}
+			router = chi.NewRouter()
+			router.Use(func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					// set identity with empty orgID, this should provoke to return an error from GetOrgIDFromContext
+					ctx := context.WithValue(r.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: ""}})
+					ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+					next.ServeHTTP(w, r.WithContext(ctx))
+				})
+			})
+			router.Route("/thirdpartyrepo", MakeThirdPartyRepoRouter)
+		})
+
+		AfterEach(func() {
+			// restore config auth value
+			conf.Auth = originalAuth
+			ctrl.Finish()
+		})
+
+		It("returns error when orgID is not defined", func() {
+			repoName := faker.UUIDHyphenated()
+			req, err := http.NewRequest("GET", fmt.Sprintf("/thirdpartyrepo/checkName/%s", repoName), nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			httpTestRecorder := httptest.NewRecorder()
+			router.ServeHTTP(httpTestRecorder, req)
+
+			Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+			respBody, err := io.ReadAll(httpTestRecorder.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(respBody)).To(ContainSubstring("cannot find org-id"))
 		})
 	})
 })
