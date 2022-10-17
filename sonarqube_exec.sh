@@ -41,4 +41,5 @@ sonar-scanner \
   -Dsonar.sources="./${APP}" \
   -Dsonar.host.url="${SONARQUBE_REPORT_URL}" \
   -Dsonar.projectVersion="${COMMIT_SHORT}" \
+  -Dsonar.go.coverage.reportPaths="./${APP}/coverage.txt" \
   -Dsonar.login="${SONARQUBE_TOKEN}"
