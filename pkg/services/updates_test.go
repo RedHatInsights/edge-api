@@ -24,6 +24,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory/mock_inventory"
 	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
 	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher/mock_playbookdispatcher"
+	mock_kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka/mock_kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -103,6 +104,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 		var mockRepoBuilder *mock_services.MockRepoBuilderInterface
 		var mockFilesService *mock_services.MockFilesService
 		var mockPlaybookClient *mock_playbookdispatcher.MockClientInterface
+		var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
+		var mockProducer *mock_kafkacommon.MockProducer
 		var update models.UpdateTransaction
 		var ctrl *gomock.Controller
 
@@ -112,12 +115,15 @@ var _ = Describe("UpdateService Basic functions", func() {
 			mockRepoBuilder = mock_services.NewMockRepoBuilderInterface(ctrl)
 			mockFilesService = mock_services.NewMockFilesService(ctrl)
 			mockPlaybookClient = mock_playbookdispatcher.NewMockClientInterface(ctrl)
+			mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
+			mockProducer = mock_kafkacommon.NewMockProducer(ctrl)
 			updateService = &services.UpdateService{
-				Service:        services.NewService(context.Background(), log.WithField("service", "update")),
-				FilesService:   mockFilesService,
-				RepoBuilder:    mockRepoBuilder,
-				PlaybookClient: mockPlaybookClient,
-				WaitForReboot:  0,
+				Service:         services.NewService(context.Background(), log.WithField("service", "update")),
+				FilesService:    mockFilesService,
+				RepoBuilder:     mockRepoBuilder,
+				PlaybookClient:  mockPlaybookClient,
+				ProducerService: mockProducerService,
+				WaitForReboot:   0,
 			}
 		})
 
@@ -138,10 +144,20 @@ var _ = Describe("UpdateService Basic functions", func() {
 			}
 			db.DB.Create(&update)
 			It("should send the notification", func() {
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 				notify, err := updateService.SendDeviceNotification(&update)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(notify.Version).To(Equal("v1.1.0"))
 				Expect(notify.EventType).To(Equal("update-devices"))
+			})
+			It("should send return an error", func() {
+				err := errors.New("error producing message")
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(err)
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				_, err2 := updateService.SendDeviceNotification(&update)
+				Expect(err2).To(HaveOccurred())
+				Expect(err).To(Equal(err2))
 			})
 		})
 
@@ -327,10 +343,16 @@ var _ = Describe("UpdateService Basic functions", func() {
 	Describe("playbook dispatcher event handling", func() {
 
 		var updateService services.UpdateServiceInterface
+		var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
+		var ctrl *gomock.Controller
 
 		BeforeEach(func() {
+			ctrl = gomock.NewController(GinkgoT())
+			defer ctrl.Finish()
+			mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
 			updateService = &services.UpdateService{
-				Service: services.NewService(context.Background(), log.WithField("service", "update")),
+				Service:         services.NewService(context.Background(), log.WithField("service", "update")),
+				ProducerService: mockProducerService,
 			}
 
 		})
@@ -450,9 +472,11 @@ var _ = Describe("UpdateService Basic functions", func() {
 				ctrl := gomock.NewController(GinkgoT())
 				defer ctrl.Finish()
 				mockFilesService := mock_services.NewMockFilesService(ctrl)
+				mockProducerService := mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
 				updateService := &services.UpdateService{
-					Service:      services.NewService(context.Background(), log.WithField("service", "update")),
-					FilesService: mockFilesService,
+					Service:         services.NewService(context.Background(), log.WithField("service", "update")),
+					FilesService:    mockFilesService,
+					ProducerService: mockProducerService,
 				}
 				mockUploader := mock_services.NewMockUploader(ctrl)
 				mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", orgID, fname)).Do(func(x, y string) {
@@ -487,9 +511,11 @@ var _ = Describe("UpdateService Basic functions", func() {
 				ctrl := gomock.NewController(GinkgoT())
 				defer ctrl.Finish()
 				mockFilesService := mock_services.NewMockFilesService(ctrl)
+				mockProducerService := mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
 				updateService := &services.UpdateService{
-					Service:      services.NewService(context.Background(), log.WithField("service", "update")),
-					FilesService: mockFilesService,
+					Service:         services.NewService(context.Background(), log.WithField("service", "update")),
+					FilesService:    mockFilesService,
+					ProducerService: mockProducerService,
 				}
 				mockUploader := mock_services.NewMockUploader(ctrl)
 				mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", orgID, fname)).Do(func(x, y string) {
@@ -513,10 +539,16 @@ var _ = Describe("UpdateService Basic functions", func() {
 	Describe("Set status on update", func() {
 
 		var updateService services.UpdateServiceInterface
+		var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
+		var ctrl *gomock.Controller
 
 		BeforeEach(func() {
+			ctrl = gomock.NewController(GinkgoT())
+			defer ctrl.Finish()
+			mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
 			updateService = &services.UpdateService{
-				Service: services.NewService(context.Background(), log.WithField("service", "update")),
+				Service:         services.NewService(context.Background(), log.WithField("service", "update")),
+				ProducerService: mockProducerService,
 			}
 
 		})
@@ -703,20 +735,26 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		var mockImageService *mock_services.MockImageServiceInterface
 		var mockInventoryClient *mock_inventory.MockClientInterface
-
 		var mockRepoBuilder *mock_services.MockRepoBuilderInterface
+		var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
+		var mockProducer *mock_kafkacommon.MockProducer
+
 		BeforeEach(func() {
 			ctrl := gomock.NewController(GinkgoT())
 			defer ctrl.Finish()
 			mockRepoBuilder = mock_services.NewMockRepoBuilderInterface(ctrl)
 			mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
 			mockInventoryClient = mock_inventory.NewMockClientInterface(ctrl)
+			mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
+			mockProducer = mock_kafkacommon.NewMockProducer(ctrl)
+
 			updateService = &services.UpdateService{
-				Service:       services.NewService(context.Background(), log.WithField("service", "update")),
-				RepoBuilder:   mockRepoBuilder,
-				Inventory:     mockInventoryClient,
-				ImageService:  mockImageService,
-				WaitForReboot: 0,
+				Service:         services.NewService(context.Background(), log.WithField("service", "update")),
+				RepoBuilder:     mockRepoBuilder,
+				Inventory:       mockInventoryClient,
+				ImageService:    mockImageService,
+				ProducerService: mockProducerService,
+				WaitForReboot:   0,
 			}
 		})
 
@@ -778,6 +816,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(currentCommit.OSTreeCommit).Return(&currentImage, nil)
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(commit.OSTreeCommit).Return(&image, nil)
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(latestCommit.OSTreeCommit).Return(&latestImage, nil)
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 
 				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, org_id, &commit)
 				Expect(err).To(BeNil())
@@ -791,23 +831,28 @@ var _ = Describe("UpdateService Basic functions", func() {
 	Describe("Update Devices to same distribution", func() {
 		org_id := faker.UUIDHyphenated()
 		var updateService services.UpdateServiceInterface
-
 		var mockImageService *mock_services.MockImageServiceInterface
 		var mockInventoryClient *mock_inventory.MockClientInterface
-
 		var mockRepoBuilder *mock_services.MockRepoBuilderInterface
+		var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
+		var mockProducer *mock_kafkacommon.MockProducer
+
 		BeforeEach(func() {
 			ctrl := gomock.NewController(GinkgoT())
 			defer ctrl.Finish()
 			mockRepoBuilder = mock_services.NewMockRepoBuilderInterface(ctrl)
 			mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
 			mockInventoryClient = mock_inventory.NewMockClientInterface(ctrl)
+			mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
+			mockProducer = mock_kafkacommon.NewMockProducer(ctrl)
+
 			updateService = &services.UpdateService{
-				Service:       services.NewService(context.Background(), log.WithField("service", "update")),
-				RepoBuilder:   mockRepoBuilder,
-				Inventory:     mockInventoryClient,
-				ImageService:  mockImageService,
-				WaitForReboot: 0,
+				Service:         services.NewService(context.Background(), log.WithField("service", "update")),
+				RepoBuilder:     mockRepoBuilder,
+				Inventory:       mockInventoryClient,
+				ImageService:    mockImageService,
+				ProducerService: mockProducerService,
+				WaitForReboot:   0,
 			}
 		})
 
@@ -869,6 +914,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(currentCommit.OSTreeCommit).Return(&currentImage, nil)
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(commit.OSTreeCommit).Return(&image, nil)
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(latestCommit.OSTreeCommit).Return(&latestImage, nil)
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 
 				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, org_id, &commit)
 				Expect(err).To(BeNil())
@@ -885,20 +932,26 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		var mockImageService *mock_services.MockImageServiceInterface
 		var mockInventoryClient *mock_inventory.MockClientInterface
-
 		var mockRepoBuilder *mock_services.MockRepoBuilderInterface
+		var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
+		var mockProducer *mock_kafkacommon.MockProducer
+
 		BeforeEach(func() {
 			ctrl := gomock.NewController(GinkgoT())
 			defer ctrl.Finish()
 			mockRepoBuilder = mock_services.NewMockRepoBuilderInterface(ctrl)
 			mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
 			mockInventoryClient = mock_inventory.NewMockClientInterface(ctrl)
+			mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
+			mockProducer = mock_kafkacommon.NewMockProducer(ctrl)
+
 			updateService = &services.UpdateService{
-				Service:       services.NewService(context.Background(), log.WithField("service", "update")),
-				RepoBuilder:   mockRepoBuilder,
-				Inventory:     mockInventoryClient,
-				ImageService:  mockImageService,
-				WaitForReboot: 0,
+				Service:         services.NewService(context.Background(), log.WithField("service", "update")),
+				RepoBuilder:     mockRepoBuilder,
+				Inventory:       mockInventoryClient,
+				ImageService:    mockImageService,
+				ProducerService: mockProducerService,
+				WaitForReboot:   0,
 			}
 		})
 
@@ -953,6 +1006,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(currentCommit.OSTreeCommit).Return(&currentImage, nil)
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(commit.OSTreeCommit).Return(&image, nil)
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 
 				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, org_id, &commit)
 				Expect(err).To(BeNil())
@@ -979,19 +1034,25 @@ var _ = Describe("UpdateService Basic functions", func() {
 		var updateService services.UpdateServiceInterface
 		var mockRepoBuilder *mock_services.MockRepoBuilderInterface
 		var mockInventory *mock_inventory.MockClientInterface
+		var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
+		var mockProducer *mock_kafkacommon.MockProducer
 
 		BeforeEach(func() {
 			ctrl := gomock.NewController(GinkgoT())
 			defer ctrl.Finish()
 			mockRepoBuilder = mock_services.NewMockRepoBuilderInterface(ctrl)
 			mockInventory = mock_inventory.NewMockClientInterface(ctrl)
+			mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
+			mockProducer = mock_kafkacommon.NewMockProducer(ctrl)
+
 			ctx := context.Background()
 			updateService = &services.UpdateService{
-				Service:       services.NewService(ctx, log.WithField("service", "update")),
-				RepoBuilder:   mockRepoBuilder,
-				Inventory:     mockInventory,
-				ImageService:  services.NewImageService(ctx, log.WithField("service", "image")),
-				WaitForReboot: 0,
+				Service:         services.NewService(ctx, log.WithField("service", "update")),
+				RepoBuilder:     mockRepoBuilder,
+				Inventory:       mockInventory,
+				ImageService:    services.NewImageService(ctx, log.WithField("service", "image")),
+				ProducerService: mockProducerService,
+				WaitForReboot:   0,
 			}
 
 			imageSet = models.ImageSet{OrgID: orgId, Name: faker.UUIDHyphenated()}
@@ -1022,6 +1083,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 				}}
 				mockInventory.EXPECT().ReturnDevicesByID(device.UUID).
 					Return(responseInventory, nil)
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 
 				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultOrgID, &newCommit)
 
@@ -1050,6 +1113,9 @@ var _ = Describe("UpdateService Basic functions", func() {
 				}}
 				mockInventory.EXPECT().ReturnDevicesByID(device.UUID).
 					Return(responseInventory, nil)
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+
 				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgId, &newCommit)
 				Expect(err).To(BeNil())
 				Expect(len(*updates)).Should(Equal(1))
@@ -1076,6 +1142,9 @@ var _ = Describe("UpdateService Basic functions", func() {
 				}}
 				mockInventory.EXPECT().ReturnDevicesByID(device.UUID).
 					Return(responseInventory, nil)
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+
 				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgId, &newCommit2)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(len(*updates)).Should(Equal(1))
@@ -1093,6 +1162,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 				}}
 				mockInventory.EXPECT().ReturnDevicesByID(device.UUID).
 					Return(responseInventory, nil)
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 
 				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultOrgID, &newCommit)
 
@@ -1126,6 +1197,10 @@ var _ = Describe("UpdateService Basic functions", func() {
 				}}
 				mockInventory.EXPECT().ReturnDevicesByID(device2.UUID).
 					Return(responseInventory2, nil)
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 
 				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultOrgID, &newCommit)
 
