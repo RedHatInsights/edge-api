@@ -308,9 +308,13 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, orgID str
 		GoTemplateRemoteName: templateInfo.RemoteName,
 		UpdateNumber:         strconv.FormatUint(uint64(templateInfo.UpdateTransactionID), 10),
 		RepoURL:              repoURL,
-		RepoContentURL:       fmt.Sprintf("%s/content", repoURL),
-		RemoteOstreeUpdate:   templateInfo.RemoteOstreeUpdate,
-		OSTreeRef:            templateInfo.OSTreeRef,
+		// encountering SSl Connection error when pulling too many files with content end-point (signed url redirect),
+		// this is raising when updating major version eg: rhel-8.6 -> rhel-9.0
+		// this need more investigations.
+		// RepoContentURL:     fmt.Sprintf("%s/content", repoURL),
+		RepoContentURL:     repoURL,
+		RemoteOstreeUpdate: templateInfo.RemoteOstreeUpdate,
+		OSTreeRef:          templateInfo.OSTreeRef,
 	}
 
 	// TODO change the same time as line 231
