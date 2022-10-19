@@ -5,7 +5,7 @@
   vars:
     update_number: "1000"
     repo_url: "http://cert.localhost:3000/api/edge/v1/storage/update-repos/1000"
-    repo_content_url: "http://cert.localhost:3000/api/edge/v1/storage/update-repos/1000/content"
+    repo_content_url: "http://cert.localhost:3000/api/edge/v1/storage/update-repos/1000"
     ostree_remote_name: "remote-name"
     ostree_changes_refs: "true"
     os_tree_ref: "rhel/9/x86_64/edge"
