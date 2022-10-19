@@ -3,7 +3,7 @@
 package logger_test
 
 import (
-	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/ginkgo"
 	"github.com/redhatinsights/edge-api/logger"
 
 	log "github.com/sirupsen/logrus"
