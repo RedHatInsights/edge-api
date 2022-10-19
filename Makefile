@@ -23,7 +23,11 @@ BUILD_TAGS=-tags=fdo
 GOLANGCI_LINT_COMMON_OPTIONS=\
 			--enable errcheck,gocritic,gofmt,goimports,gosec,gosimple,govet,ineffassign,revive,staticcheck,typecheck,unused \
 			--max-same-issues 20 \
-			--timeout 5m0s
+			--print-issued-lines true \
+			--print-linter-name true \
+			--sort-results true \
+			--timeout 5m0s \
+			--uniq-by-line false
 
 EXCLUDE_DIRS=-e /test/ -e /cmd/db -e /cmd/kafka -e /config \
 				-e /pkg/clients/imagebuilder/mock_imagebuilder \
