@@ -5,7 +5,6 @@ package main
 import (
 	"os"
 
-	"github.com/redhatinsights/edge-api/cmd/migrate/orgmigration"
 	"github.com/redhatinsights/edge-api/config"
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -25,7 +24,6 @@ func handlePanic(errorOccurred *bool) {
 func main() {
 	config.Init()
 	l.InitLogger()
-	cfg := config.Get()
 	configValues, err := config.GetConfigValues()
 	if err != nil {
 		l.LogErrorAndPanic("error when getting config values", err)
@@ -182,11 +180,6 @@ func main() {
 			log.Warningf("database automigrate failure %s", err)
 			errorOccurred = true
 		}
-	}
-
-	if err := orgmigration.MigrateAllModels(cfg, nil); err != nil {
-		log.WithField("error", err.Error()).Error("account -> org_id Migration completed with errors")
-		errorOccurred = true
 	}
 
 	if !errorOccurred {
