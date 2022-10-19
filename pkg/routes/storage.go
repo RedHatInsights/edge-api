@@ -115,12 +115,12 @@ func InstallerByIDCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		account, orgID := readAccountOrOrgID(w, r, ctxServices.Log)
-		if account == "" && orgID == "" {
+		orgID := readOrgID(w, r, ctxServices.Log)
+		if orgID == "" {
 			return
 		}
 		var installer models.Installer
-		if result := db.AccountOrOrg(account, orgID, "").First(&installer, installerID); result.Error != nil {
+		if result := db.Org(orgID, "").First(&installer, installerID); result.Error != nil {
 			if result.Error == gorm.ErrRecordNotFound {
 				respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("installer not found"))
 				return
@@ -129,12 +129,11 @@ func InstallerByIDCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		if (installer.Account != "" && installer.Account != account) || (installer.OrgID != "" && installer.OrgID != orgID) {
+		if installer.OrgID != orgID {
 			ctxServices.Log.WithFields(log.Fields{
-				"account": account,
-				"org_id":  orgID,
-			}).Error("installer doesn't belong to account or org_id")
-			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("installer doesn't belong to account or org_id"))
+				"org_id": orgID,
+			}).Error("installer doesn't belong to org_id")
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("installer doesn't belong to org_id"))
 			return
 		}
 
