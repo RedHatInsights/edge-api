@@ -29,6 +29,9 @@ const tprepoKey tprepoTypeKey = iota
 func MakeThirdPartyRepoRouter(sub chi.Router) {
 	sub.With(ValidateQueryParams("thirdpartyrepo")).With(validateGetAllThirdPartyRepoFilterParams).With(common.Paginate).Get("/", GetAllThirdPartyRepo)
 	sub.Post("/", CreateThirdPartyRepo)
+	sub.Route("/checkName", func(r chi.Router) {
+		r.Get("/{name}", CheckThirdPartyRepoName)
+	})
 	sub.Route("/{ID}", func(r chi.Router) {
 		r.Use(ThirdPartyRepoCtx)
 		r.Get("/", GetThirdPartyRepoByID)
@@ -52,6 +55,30 @@ var thirdPartyRepoFilters = common.ComposeFilters(
 	}),
 	common.SortFilterHandler("third_party_repos", "created_at", "DESC"),
 )
+
+func CheckThirdPartyRepoName(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	name := chi.URLParam(r, "name")
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID
+		return
+	}
+
+	value, err := ctxServices.ThirdPartyRepoService.ThirdPartyRepoNameExists(orgID, name)
+	if err != nil {
+		var apiError errors.APIError
+		switch err.(type) {
+		case *services.OrgIDNotSet, *services.ThirdPartyRepositoryNameIsEmpty:
+			apiError = errors.NewBadRequest(err.Error())
+		default:
+			apiError = errors.NewInternalServerError()
+		}
+		respondWithAPIError(w, ctxServices.Log, apiError)
+		return
+	}
+	respondWithJSONBody(w, ctxServices.Log, map[string]interface{}{"data": map[string]interface{}{"isValid": value}})
+}
 
 // A CreateTPRepoRequest model.
 type CreateTPRepoRequest struct {

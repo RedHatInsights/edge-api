@@ -308,7 +308,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		}
 
 		image.Commit.OSTreeParentCommit = repo.URL
-		if previousImage.Distribution != image.Distribution {
+		if config.DistributionsRefs[previousImage.Distribution] != config.DistributionsRefs[image.Distribution] {
 			image.Commit.ChangesRefs = true
 		}
 		var refs string
@@ -321,7 +321,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		if image.Commit.OSTreeRef == "" {
 			image.Commit.OSTreeRef = refs
 		}
-		if previousImage.Commit.OSTreeRef == "" {
+		if image.Commit.OSTreeParentRef == "" {
 			image.Commit.OSTreeParentRef = config.DistributionsRefs[previousImage.Distribution]
 		}
 

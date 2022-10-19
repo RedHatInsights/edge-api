@@ -1,89 +1,12 @@
+// Package models contains structs, related struct methods, and constants
+// This file defines models for events
 // FIXME: golangci-lint
 // nolint:govet,revive
 package models
 
 import (
 	identity "github.com/redhatinsights/platform-go-middlewares/identity"
-	log "github.com/sirupsen/logrus"
 )
-
-// AdvisorRecommendation for a system
-type AdvisorRecommendation struct {
-	PublishDate     string `json:"publish_date"`
-	RebootRequired  bool   `json:"reboot_required"`
-	RuleDescription string `json:"rule_description"`
-	RuleID          string `json:"rule_id"`
-	RuleURL         string `json:"rule_url"`
-	TotalRisk       string `json:"total_risk"`
-}
-
-// For more on cloudevent standards, see https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/formats/json-format.md
-
-// ConsoleRedhatComCloudEventsSchema is a standard event schema that wraps the Edge-specific "Data" payload
-type ConsoleRedhatComCloudEventsSchema struct {
-	// See https://raw.githubusercontent.com/cloudevents/spec/main/cloudevents/formats/cloudevents.json for base CloudEvents schema.
-	// NOTE: this schema inlines and further constrains some CloudEvents properties
-	// Advisor recommendations for a system
-	AdvisorRecommendations []*AdvisorRecommendation `json:"advisor_recommendations,omitempty"`
-	Data                   *Data                    `json:"data,omitempty"`
-
-	// Identifies the schema that data adheres to.
-	Dataschema string `json:"dataschema"`
-	Error      *Error `json:"error,omitempty"`
-
-	// Identifies the event.
-	ID string `json:"id"`
-
-	// Describes the console.redhat.com bundle.
-	Redhatconsolebundle string `json:"redhatconsolebundle,omitempty"`
-
-	// Red Hat Organization ID
-	Redhatorgid string `json:"redhatorgid"`
-
-	// Describes the console.redhat.com app that generated the event.
-	Source string `json:"source"`
-
-	// Specifies the version of the CloudEvents spec targeted.
-	Specversion string `json:"specversion"`
-
-	// Describes the subject of the event. URN in format urn:redhat:console:$instance_type:$id. The urn may be longer to accommodate hierarchies
-	Subject string      `json:"subject"`
-	System  *RhelSystem `json:"system,omitempty"`
-
-	// Timestamp of when the occurrence happened. Must adhere to RFC 3339.
-	Time string `json:"time"`
-
-	// The type of the event.
-	Type string `json:"type"`
-
-	// The users identity
-	Identity identity.XRHID `json:"identity"`
-
-	// Timestamp of when a service interacted with this event. Must adhere to RFC 3339.
-	Lasthandeltime string `json:"lasthandeltime"`
-}
-
-// GetIdentity returns the identity from an Edge event
-func (cs ConsoleRedhatComCloudEventsSchema) GetIdentity() identity.Identity {
-	return cs.Identity.Identity
-}
-
-// GetAccount returns the account from an Edge event
-func (cs ConsoleRedhatComCloudEventsSchema) GetAccount() string {
-	return cs.Identity.Identity.AccountNumber
-}
-
-// GetOrgID returns the org id from an Edge event
-func (cs ConsoleRedhatComCloudEventsSchema) GetOrgID() string {
-	return cs.Identity.Identity.OrgID
-}
-
-// Data contains optional data for an event
-type Data struct {
-	AdvisorRecommendations *AdvisorRecommendation `json:"advisor_recommendations,omitempty"`
-	Error                  *Error                 `json:"error,omitempty"`
-	System                 *RhelSystem            `json:"system,omitempty"`
-}
 
 // Error An error reported by an application.
 type Error struct {
@@ -99,36 +22,6 @@ type Error struct {
 
 	// The stack trace/traceback (optional)
 	StackTrace string `json:"stack_trace,omitempty"`
-}
-
-// RhelSystem A RHEL system managed by console.redhat.com
-type RhelSystem struct {
-	DisplayName string           `json:"display_name,omitempty"`
-	HostURL     string           `json:"host_url,omitempty"`
-	Hostname    string           `json:"hostname,omitempty"`
-	InventoryID string           `json:"inventory_id"`
-	RhelVersion string           `json:"rhel_version,omitempty"`
-	Tags        []*RhelSystemTag `json:"tags,omitempty"`
-}
-
-// RhelSystemTag tags for a RHEL system
-type RhelSystemTag struct {
-	Key       string `json:"key"`
-	Namespace string `json:"namespace"`
-	Value     string `json:"value"`
-}
-
-// EdgeCreateCommitEvent wraps the console event with image information
-type EdgeCreateCommitEvent struct {
-	ConsoleSchema ConsoleRedhatComCloudEventsSchema `json:"consoleschema"`
-	NewImage      Image                             `json:"newimage"`
-}
-
-// EdgeUpdateCommitEvent wraps the console event with previous and new image information
-type EdgeUpdateCommitEvent struct {
-	ConsoleSchema ConsoleRedhatComCloudEventsSchema `json:"consoleschema"`
-	NewImage      Image                             `json:"newimage"`
-	OldImage      Image                             `json:"oldimage"`
 }
 
 const (
@@ -185,53 +78,6 @@ type CRCCloudEvent struct {
 	// e.g., "com.redhat.console.edge.api.image.requested"
 	//		"com.redhat.console.edge.api.image.update.requested"
 	Type string `json:"type"`
-}
-
-// IsValid verifies the event meets necessary requirements
-func (event *CRCCloudEvent) IsValid() bool {
-	// check required fields
-	if event.DataSchema == "" {
-		log.Error("Event Data Schema is not set")
-
-		return false
-	}
-	if event.ID == "" {
-		log.Error("Event ID is not set")
-
-		return false
-	}
-	if event.RedHatOrgID == "" {
-		log.Error("Event Red Hat Org ID is not set")
-
-		return false
-	}
-	if event.Source == "" {
-		log.Error("Event Source is not set")
-
-		return false
-	}
-	if event.SpecVersion == "" {
-		log.Error("Event SpecVersion is not set")
-
-		return false
-	}
-	if event.Subject == "" {
-		log.Error("Event Subject is not set")
-
-		return false
-	}
-	if event.Time == "" {
-		log.Error("Event Time is not set")
-
-		return false
-	}
-	if event.Type == "" {
-		log.Error("Event Type is not set")
-
-		return false
-	}
-
-	return true
 }
 
 // EdgeBasePayload describes the edge standard fields for payloads
