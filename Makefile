@@ -21,7 +21,7 @@ TEST_OPTIONS=-race
 BUILD_TAGS=-tags=fdo
 
 GOLANGCI_LINT_COMMON_OPTIONS=\
-			--enable errcheck,gocritic,gofmt,goimports,gosec,gosimple,govet,ineffassign,revive,staticcheck,typecheck,unused \
+			--enable=errcheck,gocritic,gofmt,goimports,gosec,gosimple,govet,ineffassign,revive,staticcheck,typecheck,unused \
 			--max-same-issues=20 \
 			--print-issued-lines=true \
 			--print-linter-name=true \
