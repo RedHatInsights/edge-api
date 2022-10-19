@@ -47,7 +47,7 @@ func InitClient(ctx context.Context, log *log.Entry) *Client {
 type OSTree struct {
 	URL       string `json:"url,omitempty"`
 	Ref       string `json:"ref"`
-	ParentRef string `json:"parent"`
+	ParentRef string `json:"parent,omitempty"`
 }
 
 // Customizations is made of the packages that are baked into an image
@@ -253,7 +253,10 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 			req.ImageRequests[0].Ostree = &OSTree{}
 		}
 		req.ImageRequests[0].Ostree.URL = image.Commit.OSTreeParentCommit
-		req.ImageRequests[0].Ostree.ParentRef = image.Commit.OSTreeParentRef
+
+		if image.Commit.OSTreeRef != "" && image.Commit.OSTreeParentRef != "" && image.Commit.OSTreeRef != image.Commit.OSTreeParentRef {
+			req.ImageRequests[0].Ostree.ParentRef = image.Commit.OSTreeParentRef
+		}
 	}
 
 	cr, err := c.compose(req)
