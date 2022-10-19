@@ -187,16 +187,16 @@ var _ = Describe("Image Builder Client Test", func() {
 		})
 
 		When("change ref is false", func() {
-			dist := "rhel-85"
+			dist := "rhel-85"	// nolint:gofmt,goimports,govet
 			newDist := "rhel-86"
 			composeJobID := faker.UUIDHyphenated()
-			type TestOSTree struct {
+			type TestOSTree struct {	// nolint:gofmt,goimports,govet
 				URL       *string `json:"url,omitempty"`
 				Ref       string  `json:"ref"`
 				ParentRef *string `json:"parent"`
 			}
 
-			type TestImageRequest struct {
+			type TestImageRequest struct {	// nolint:gofmt,goimports,govet
 				Architecture  string         `json:"architecture"`
 				ImageType     string         `json:"image_type"`
 				Ostree        *TestOSTree    `json:"ostree,omitempty"`
