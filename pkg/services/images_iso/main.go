@@ -28,10 +28,8 @@ func main() {
 	mslog.Info("Microservice started")
 	config.Init()
 	cfg := config.Get()
-	var configValues map[string]interface{}
-	cfgBytes, _ := json.Marshal(cfg)
-	_ = json.Unmarshal(cfgBytes, &configValues)
-	log.WithFields(configValues).Info("Configuration Values")
+	config.LogConfigAtStartup(cfg)
+
 	db.InitDB()
 
 	if cfg.KafkaConfig.Brokers == nil {
