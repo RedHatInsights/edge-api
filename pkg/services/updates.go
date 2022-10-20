@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 	"text/template"
 	"time"
@@ -19,10 +19,10 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
+	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -51,26 +51,28 @@ type UpdateServiceInterface interface {
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
 func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterface {
 	return &UpdateService{
-		Service:        Service{ctx: ctx, log: log.WithField("service", "update")},
-		FilesService:   NewFilesService(log),
-		ImageService:   NewImageService(ctx, log),
-		RepoBuilder:    NewRepoBuilder(ctx, log),
-		Inventory:      inventory.InitClient(ctx, log),
-		PlaybookClient: playbookdispatcher.InitClient(ctx, log),
-		WaitForReboot:  time.Minute * 5,
+		Service:         Service{ctx: ctx, log: log.WithField("service", "update")},
+		FilesService:    NewFilesService(log),
+		ImageService:    NewImageService(ctx, log),
+		RepoBuilder:     NewRepoBuilder(ctx, log),
+		Inventory:       inventory.InitClient(ctx, log),
+		PlaybookClient:  playbookdispatcher.InitClient(ctx, log),
+		ProducerService: kafkacommon.NewProducerService(),
+		WaitForReboot:   time.Minute * 5,
 	}
 }
 
 // UpdateService is the main implementation of a UpdateServiceInterface
 type UpdateService struct {
 	Service
-	ImageService   ImageServiceInterface
-	RepoBuilder    RepoBuilderInterface
-	FilesService   FilesService
-	DeviceService  DeviceServiceInterface
-	Inventory      inventory.ClientInterface
-	PlaybookClient playbookdispatcher.ClientInterface
-	WaitForReboot  time.Duration
+	ImageService    ImageServiceInterface
+	RepoBuilder     RepoBuilderInterface
+	FilesService    FilesService
+	DeviceService   DeviceServiceInterface
+	Inventory       inventory.ClientInterface
+	PlaybookClient  playbookdispatcher.ClientInterface
+	ProducerService kafkacommon.ProducerServiceInterface
+	WaitForReboot   time.Duration
 }
 
 type playbooks struct {
@@ -79,10 +81,9 @@ type playbooks struct {
 	OstreeRemoteName     string
 	OstreeGpgVerify      string
 	OstreeGpgKeypath     string
-	FleetInfraEnv        string
 	UpdateNumber         string
 	RepoURL              string
-	BucketRegion         string
+	RepoContentURL       string
 	RemoteOstreeUpdate   string
 	OSTreeRef            string
 }
@@ -295,22 +296,25 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, orgID str
 		s.log.WithField("error", err.Error()).Error("Error parsing playbook template")
 		return "", err
 	}
-	var envName string
-	if strings.Contains(cfg.BucketName, "-prod") || strings.Contains(cfg.BucketName, "-stage") || strings.Contains(cfg.BucketName, "-perf") {
-		bucketNameSplit := strings.Split(cfg.BucketName, "-")
-		envName = bucketNameSplit[len(bucketNameSplit)-1]
-	} else {
-		envName = "dev"
+
+	edgeCertAPIBaseURL, err := url.Parse(cfg.EdgeCertAPIBaseURL)
+	if err != nil {
+		s.log.WithFields(log.Fields{"error": err.Error(), "url": cfg.EdgeCertAPIBaseURL}).Error("error while parsing config edge cert api url")
+		return "", err
 	}
+	repoURL := fmt.Sprintf("%s://%s/api/edge/v1/storage/update-repos/%d", edgeCertAPIBaseURL.Scheme, edgeCertAPIBaseURL.Host, templateInfo.UpdateTransactionID)
 
 	templateData := playbooks{
 		GoTemplateRemoteName: templateInfo.RemoteName,
-		FleetInfraEnv:        envName,
-		BucketRegion:         cfg.BucketRegion,
 		UpdateNumber:         strconv.FormatUint(uint64(templateInfo.UpdateTransactionID), 10),
-		RepoURL:              "https://{{ s3_buckets[fleet_infra_env] | default('rh-edge-tarballs-stage') }}.s3.{{ s3_region | default('us-east-1') }}.amazonaws.com/{{ update_number }}/upd/{{ update_number }}/repo",
-		RemoteOstreeUpdate:   templateInfo.RemoteOstreeUpdate,
-		OSTreeRef:            templateInfo.OSTreeRef,
+		RepoURL:              repoURL,
+		// encountering SSl Connection error when pulling too many files with content end-point (signed url redirect),
+		// this is raising when updating major version eg: rhel-8.6 -> rhel-9.0
+		// this need more investigations.
+		// RepoContentURL:     fmt.Sprintf("%s/content", repoURL),
+		RepoContentURL:     repoURL,
+		RemoteOstreeUpdate: templateInfo.RemoteOstreeUpdate,
+		OSTreeRef:          templateInfo.OSTreeRef,
 	}
 
 	// TODO change the same time as line 231
@@ -482,81 +486,41 @@ func (s *UpdateService) SetUpdateStatus(update *models.UpdateTransaction) error 
 // SendDeviceNotification connects to platform.notifications.ingress on image topic
 func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (ImageNotification, error) {
 	s.log.WithField("message", i).Info("SendImageNotification::Starts")
-	var notify ImageNotification
-	notify.Version = NotificationConfigVersion
-	notify.Bundle = NotificationConfigBundle
-	notify.Application = NotificationConfigApplication
-	notify.EventType = NotificationConfigEventTypeDevice
-	notify.Timestamp = time.Now().Format(time.RFC3339)
+	topic := NotificationTopic
+	events := []EventNotification{{Metadata: make(map[string]string), Payload: fmt.Sprintf("{  \"UpdateID\" : \"%v\"}", i.ID)}}
+	users := []string{NotificationConfigUser}
+	recipients := []RecipientNotification{{IgnoreUserPreferences: false, OnlyAdmins: false, Users: users}}
 
-	if clowder.IsClowderEnabled() {
-		var users []string
-		var events []EventNotification
-		var event EventNotification
-		var recipients []RecipientNotification
-		var recipient RecipientNotification
-		brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
-
-		for i, b := range clowder.LoadedConfig.Kafka.Brokers {
-			brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
-			fmt.Println(brokers[i])
-		}
-
-		topic := NotificationTopic
-
-		// Create Producer instance
-		p, err := kafka.NewProducer(&kafka.ConfigMap{
-			"bootstrap.servers": brokers[0]})
-		if err != nil {
-			s.log.WithField("message", err.Error()).Error("Error creating Kafka producer")
-			os.Exit(1)
-		}
-
-		type metadata struct {
-			metaMap map[string]string
-		}
-		emptyJSON := metadata{
-			metaMap: make(map[string]string),
-		}
-
-		event.Metadata = emptyJSON.metaMap
-
-		event.Payload = fmt.Sprintf("{  \"UpdateID\" : \"%v\"}", i.ID)
-		events = append(events, event)
-
-		recipient.IgnoreUserPreferences = false
-		recipient.OnlyAdmins = false
-		users = append(users, NotificationConfigUser)
-		recipient.Users = users
-		recipients = append(recipients, recipient)
-
-		notify.OrgID = i.OrgID
-		notify.Context = fmt.Sprintf("{  \"CommitID\" : \"%v\"}", i.CommitID)
-		notify.Events = events
-		notify.Recipients = recipients
-
-		// assemble the message to be sent
-		recordKey := "ImageCreationStarts"
-		recordValue, _ := json.Marshal(notify)
-
-		s.log.WithField("message", recordValue).Info("Preparing record for producer")
-
-		// send the message
-		perr := p.Produce(&kafka.Message{
-			TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
-			Key:            []byte(recordKey),
-			Value:          []byte(recordValue),
-		}, nil)
-
-		if perr != nil {
-			s.log.WithField("message", perr.Error()).Error("Error on produce")
-			return notify, err
-		}
-		p.Close()
-		s.log.WithField("message", topic).Info("SendNotification message was produced to topic")
-		fmt.Printf("SendNotification message was produced to topic %s!\n", topic)
-		return notify, nil
+	notify := ImageNotification{
+		Version:     NotificationConfigVersion,
+		Bundle:      NotificationConfigBundle,
+		Application: NotificationConfigApplication,
+		EventType:   NotificationConfigEventTypeDevice,
+		Timestamp:   time.Now().Format(time.RFC3339),
+		OrgID:       i.OrgID,
+		Context:     fmt.Sprintf("{  \"CommitID\" : \"%v\"}", i.CommitID),
+		Events:      events,
+		Recipients:  recipients,
 	}
+
+	// assemble the message to be sent
+	recordKey := "ImageCreationStarts"
+	recordValue, _ := json.Marshal(notify)
+
+	// send the message
+	p := s.ProducerService.GetProducerInstance()
+	perr := p.Produce(&kafka.Message{
+		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+		Key:            []byte(recordKey),
+		Value:          []byte(recordValue),
+	}, nil)
+
+	if perr != nil {
+		s.log.WithField("message", perr.Error()).Error("Error on produce")
+		return notify, perr
+	}
+	s.log.WithField("message", topic).Info("SendNotification message was produced to topic")
+
 	return notify, nil
 }
 
@@ -787,7 +751,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					if uError != nil {
 						s.log.WithField("error", err.Error()).Error("Error returning current image ostree checksum")
 					}
-					if currentImage.Distribution != updatedImage.Distribution {
+					if config.DistributionsRefs[currentImage.Distribution] != config.DistributionsRefs[updatedImage.Distribution] {
 						update.ChangesRefs = true
 					}
 				}

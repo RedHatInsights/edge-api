@@ -1204,6 +1204,42 @@ paths:
                 $ref: '#/components/schemas/v1.InternalServerError'
           description: There was an internal server error.
       summary: Lists all Third Party Repository for an account.
+  /thirdpartyrepo/checkName/{name}:
+    get:
+      summary: Checks to see if a ThirdParty repo Name exists.
+      operationId: CheckThirdPartyRepoName
+      parameters:
+        - name: name
+          in: path
+          required: true
+          description: ThirdParty repo Name
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      isValid:
+                        type: boolean
+        "400":
+          description: The request sent couldn't be processed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.BadRequest"
+        "500":
+          description: There was an internal server error.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.InternalServerError"
   /thirdpartyrepo/{ID}:
     get:
       operationId: GetThirdPartyRepoByID

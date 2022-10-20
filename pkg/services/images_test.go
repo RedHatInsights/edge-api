@@ -10,9 +10,11 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/redhatinsights/edge-api/config"
 	imageBuilderClient "github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder/mock_imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -206,6 +208,7 @@ var _ = Describe("Image Service Test", func() {
 				image := models.Image{
 					OrgID:                  orgID,
 					Name:                   name,
+					Distribution:           "rhel-90",
 					ThirdPartyRepositories: repos,
 				}
 				error := service.CreateImage(&image)
@@ -301,6 +304,141 @@ var _ = Describe("Image Service Test", func() {
 				Expect(image.Commit.OSTreeParentRef).To(Equal("rhel/8/x86_64/edge"))
 				Expect(image.Commit.OSTreeRef).To(Equal("rhel/8/x86_64/edge"))
 			})
+
+			When("updating major version, from 8.6 to 9.0", func() {
+				orgID := faker.UUIDHyphenated()
+				imageSet := &models.ImageSet{OrgID: orgID}
+				dist := "rhel-86"
+				newDist := "rhel-90"
+				imageSetResult := db.DB.Create(imageSet)
+				repo := models.Repo{URL: faker.URL(), Status: models.RepoStatusSuccess}
+				repoResult := db.DB.Create(&repo)
+				previousImage := &models.Image{
+					OrgID:  orgID,
+					Status: models.ImageStatusSuccess,
+					Commit: &models.Commit{
+						Repo:  &models.Repo{URL: faker.URL(), Status: models.RepoStatusSuccess},
+						OrgID: orgID,
+					},
+					Version:      1,
+					Distribution: dist,
+					Name:         faker.Name(),
+					ImageSetID:   &imageSet.ID,
+				}
+				previousImageResult := db.DB.Create(previousImage)
+				image := &models.Image{
+					OrgID:        orgID,
+					Commit:       &models.Commit{},
+					OutputTypes:  []string{models.ImageTypeCommit},
+					Version:      2,
+					Distribution: newDist,
+					Name:         previousImage.Name,
+				}
+				It("should have parent ref and url defined when updating major version", func() {
+					Expect(repoResult.Error).ToNot(HaveOccurred())
+					Expect(imageSetResult.Error).ToNot(HaveOccurred())
+					Expect(previousImageResult.Error).ToNot(HaveOccurred())
+					Expect(dist).NotTo(Equal(newDist))
+					osTreeParentRef := config.DistributionsRefs[dist]
+					osTreeRef := config.DistributionsRefs[newDist]
+					Expect(osTreeRef).ToNot(Equal(osTreeParentRef))
+
+					// simulate error building image to analyse the image values only
+					expectedErr := fmt.Errorf("Failed creating commit for image")
+					mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
+					mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(&repo, nil)
+					actualErr := service.UpdateImage(image, previousImage)
+					Expect(actualErr).To(HaveOccurred())
+					Expect(actualErr).To(MatchError(expectedErr))
+
+					Expect(image.Commit.OSTreeParentCommit).To(Equal(repo.URL))
+					Expect(image.Commit.OSTreeRef).To(Equal(osTreeRef))
+					Expect(image.Commit.OSTreeParentRef).To(Equal(osTreeParentRef))
+					Expect(image.Commit.ChangesRefs).To(BeTrue())
+				})
+
+				When("previous image commit has osTree Refs defined", func() {
+					previousImage.Commit.OSTreeRef = config.DistributionsRefs[dist]
+					previousImage.Commit.OSTreeParentRef = config.DistributionsRefs[dist]
+					result := db.DB.Save(&previousImage.Commit)
+
+					It("should have parent ref and url defined when updating major version", func() {
+						Expect(result.Error).ToNot(HaveOccurred())
+						Expect(dist).NotTo(Equal(newDist))
+						osTreeParentRef := config.DistributionsRefs[dist]
+						osTreeRef := config.DistributionsRefs[newDist]
+						Expect(osTreeRef).ToNot(Equal(osTreeParentRef))
+
+						// simulate error building image to analyse the image values only
+						expectedErr := fmt.Errorf("Failed creating commit for image")
+						mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
+						mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(&repo, nil)
+						actualErr := service.UpdateImage(image, previousImage)
+						Expect(actualErr).To(HaveOccurred())
+						Expect(actualErr).To(MatchError(expectedErr))
+
+						Expect(image.Commit.OSTreeParentCommit).To(Equal(repo.URL))
+						Expect(image.Commit.OSTreeRef).To(Equal(osTreeRef))
+						Expect(image.Commit.OSTreeParentRef).To(Equal(osTreeParentRef))
+						Expect(image.Commit.ChangesRefs).To(BeTrue())
+					})
+				})
+			})
+			When("not updating major version, from 8.5 to 8.6", func() {
+				orgID := faker.UUIDHyphenated()
+				imageSet := &models.ImageSet{OrgID: orgID}
+				dist := "rhel-85"
+				newDist := "rhel-86"
+				imageSetResult := db.DB.Create(imageSet)
+				repo := models.Repo{URL: faker.URL(), Status: models.RepoStatusSuccess}
+				repoResult := db.DB.Create(&repo)
+				previousImage := &models.Image{
+					OrgID:  orgID,
+					Status: models.ImageStatusSuccess,
+					Commit: &models.Commit{
+						Repo:  &models.Repo{URL: faker.URL(), Status: models.RepoStatusSuccess},
+						OrgID: orgID,
+					},
+					Version:      1,
+					Distribution: dist,
+					Name:         faker.Name(),
+					ImageSetID:   &imageSet.ID,
+				}
+				previousImageResult := db.DB.Create(previousImage)
+				image := &models.Image{
+					OrgID:        orgID,
+					Commit:       &models.Commit{},
+					OutputTypes:  []string{models.ImageTypeCommit},
+					Version:      2,
+					Distribution: newDist,
+					Name:         previousImage.Name,
+				}
+				It("should have parent ref and ref to be equal and url defined when not updating major version", func() {
+					Expect(repoResult.Error).ToNot(HaveOccurred())
+					Expect(imageSetResult.Error).ToNot(HaveOccurred())
+					Expect(previousImageResult.Error).ToNot(HaveOccurred())
+					Expect(dist).NotTo(Equal(newDist))
+					osTreeParentRef := config.DistributionsRefs[dist]
+					osTreeRef := config.DistributionsRefs[newDist]
+					Expect(osTreeRef).To(Equal(osTreeParentRef))
+
+					// simulate error building image to analyse the image values only
+					expectedErr := fmt.Errorf("Failed creating commit for image")
+					mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
+					mockRepoService.EXPECT().GetRepoByID(previousImage.Commit.RepoID).Return(&repo, nil)
+					actualErr := service.UpdateImage(image, previousImage)
+					Expect(actualErr).To(HaveOccurred())
+					Expect(actualErr).To(MatchError(expectedErr))
+
+					Expect(image.Commit.OSTreeParentCommit).To(Equal(repo.URL))
+					Expect(image.Commit.OSTreeRef).To(Equal(osTreeRef))
+					Expect(image.Commit.OSTreeParentRef).To(Equal(osTreeParentRef))
+					Expect(image.Commit.OSTreeRef).To(Equal(image.Commit.OSTreeParentRef))
+					Expect(image.Commit.ChangesRefs).To(BeFalse())
+				})
+
+			})
+
 		})
 
 		Context("when previous image has success status", func() {
@@ -809,6 +947,117 @@ var _ = Describe("Image Service Test", func() {
 				Expect(image.ImageSetID).To(BeNil())
 			})
 		})
+	})
+	Describe("Test ValidateImagePackage function", func() {
+		When("When there's no valid arch", func() {
+			It("should raise NewBadRequest", func() {
+				package_name := faker.UUIDHyphenated()
+				image := models.Image{
+					Commit: &models.Commit{},
+				}
+				error := service.ValidateImagePackage(package_name, &image)
+				Expect(error).To(HaveOccurred())
+				Expect(error).To(BeAssignableToTypeOf(new(errors.BadRequest)))
+			})
+		})
+		When("When there's no valid distribution", func() {
+			It("should raise NewBadRequest", func() {
+				package_name := faker.UUIDHyphenated()
+				image := models.Image{
+					Commit: &models.Commit{Arch: "x86_64"},
+				}
+				error := service.ValidateImagePackage(package_name, &image)
+				Expect(error).To(HaveOccurred())
+				Expect(error).To(BeAssignableToTypeOf(new(errors.BadRequest)))
+			})
+		})
+		When("When SearchPackage fails to find a package", func() {
+			It("should raise an error", func() {
+				arch := "x86_64"
+				dist := "rhel-90"
+				package_name := "emacs"
+				image := models.Image{
+					Commit:       &models.Commit{Arch: arch},
+					Distribution: dist,
+				}
+				imageBuilder := &imageBuilderClient.SearchPackageResult{}
+				var s imageBuilderClient.SearchPackage
+				s.Name = package_name
+				imageBuilder.Data = append(imageBuilder.Data, s)
+				imageBuilder.Meta.Count = 1
+				mockImageBuilderClient.EXPECT().SearchPackage(
+					package_name, arch, dist).Return(imageBuilder, new(imageBuilderClient.PackageRequestError))
+				error := service.ValidateImagePackage(package_name, &image)
+				Expect(error).To(HaveOccurred())
+				Expect(error).To(MatchError(new(imageBuilderClient.PackageRequestError)))
+			})
+		})
+		When("When Meta.Count is zero", func() {
+			It("should raise PackageNameDoesNotExist", func() {
+				arch := "x86_64"
+				dist := "rhel-90"
+				package_name := "emacs"
+				image := models.Image{
+					Commit:       &models.Commit{Arch: arch},
+					Distribution: dist,
+				}
+				imageBuilder := &imageBuilderClient.SearchPackageResult{}
+				var s imageBuilderClient.SearchPackage
+				s.Name = package_name
+				imageBuilder.Data = append(imageBuilder.Data, s)
+				imageBuilder.Meta.Count = 0
+				mockImageBuilderClient.EXPECT().SearchPackage(
+					package_name, arch, dist).Return(imageBuilder, nil)
+				error := service.ValidateImagePackage(package_name, &image)
+				Expect(error).To(HaveOccurred())
+				Expect(error).To(MatchError(new(services.PackageNameDoesNotExist)))
+			})
+		})
+		When("When package name is not found", func() {
+			It("should also raise PackageNameDoesNotExist", func() {
+				arch := "x86_64"
+				dist := "rhel-90"
+				package_name := "emacs"
+				wrong_package_name := "vim-common"
+				image := models.Image{
+					Commit:       &models.Commit{Arch: arch},
+					Distribution: dist,
+				}
+				imageBuilder := &imageBuilderClient.SearchPackageResult{}
+				var s imageBuilderClient.SearchPackage
+				s.Name = package_name
+				imageBuilder.Data = append(imageBuilder.Data, s)
+				imageBuilder.Meta.Count = 1
+				mockImageBuilderClient.EXPECT().SearchPackage(
+					wrong_package_name, arch, dist).Return(imageBuilder, nil)
+				error := service.ValidateImagePackage(wrong_package_name, &image)
+				Expect(error).To(HaveOccurred())
+				Expect(error).To(MatchError(new(services.PackageNameDoesNotExist)))
+
+			})
+		})
+		When("When package name is found", func() {
+			It("should return nil", func() {
+				arch := "x86_64"
+				dist := "rhel-90"
+				package_name := "emacs"
+				image := models.Image{
+					Commit:       &models.Commit{Arch: arch},
+					Distribution: dist,
+				}
+				imageBuilder := &imageBuilderClient.SearchPackageResult{}
+				var s imageBuilderClient.SearchPackage
+				s.Name = package_name
+				imageBuilder.Data = append(imageBuilder.Data, s)
+				imageBuilder.Meta.Count = 1
+				mockImageBuilderClient.EXPECT().SearchPackage(
+					package_name, arch, dist).Return(imageBuilder, nil)
+				error := service.ValidateImagePackage(package_name, &image)
+				Expect(error).ToNot(HaveOccurred())
+				Expect(error).To(BeNil())
+			})
+		})
+
 	})
 	Describe("Create image when ValidateImagePackage", func() {
 		orgID := faker.UUIDHyphenated()

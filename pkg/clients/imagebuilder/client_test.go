@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -122,6 +123,175 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(img).ToNot(BeNil())
 		Expect(img.Commit.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
 	})
+
+	Context("compose image commit with ChangesRefs values", func() {
+		dist := "rhel-86"
+		repoURL := faker.URL()
+		var originalImageBuilderURL string
+		conf := config.Get()
+
+		BeforeEach(func() {
+			// save the original image builder url
+			originalImageBuilderURL = conf.ImageBuilderConfig.URL
+		})
+
+		AfterEach(func() {
+			// restore the original image builder url
+			conf.ImageBuilderConfig.URL = originalImageBuilderURL
+		})
+
+		When("change ref is true", func() {
+			// this happens when upgrading an image to a different major version, example: form 8.6 to 9.0
+			newDist := "rhel-90"
+			composeJobID := faker.UUIDHyphenated()
+			It("parent ref is present in the request ", func() {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					var req ComposeRequest
+					body, err := io.ReadAll(r.Body)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(body).ToNot(BeNil())
+					err = json.Unmarshal(body, &req)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(req.ImageRequests[0].Ostree).ToNot(BeNil())
+					Expect(req.ImageRequests[0].Ostree.URL).To(Equal(repoURL))
+					Expect(req.ImageRequests[0].Ostree.Ref).To(Equal(config.DistributionsRefs[newDist]))
+					Expect(req.ImageRequests[0].Ostree.ParentRef).To(Equal(config.DistributionsRefs[dist]))
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusCreated)
+					_, err = fmt.Fprintf(w, `{"id": "%s"}`, composeJobID)
+					Expect(err).ToNot(HaveOccurred())
+
+				}))
+				defer ts.Close()
+
+				Expect(dist).ToNot(Equal(newDist))
+				Expect(config.DistributionsRefs[dist]).ToNot(BeEmpty())
+				Expect(config.DistributionsRefs[newDist]).ToNot(BeEmpty())
+				Expect(config.DistributionsRefs[newDist]).ToNot(Equal(config.DistributionsRefs[dist]))
+
+				config.Get().ImageBuilderConfig.URL = ts.URL
+				img := &models.Image{Distribution: dist,
+					Commit: &models.Commit{
+						Arch:               "x86_64",
+						Repo:               &models.Repo{},
+						OSTreeRef:          config.DistributionsRefs[newDist],
+						OSTreeParentRef:    config.DistributionsRefs[dist],
+						ChangesRefs:        true,
+						OSTreeParentCommit: repoURL,
+					}}
+				img, err := client.ComposeCommit(img)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(img).ToNot(BeNil())
+				Expect(img.Commit.ComposeJobID).To(Equal(composeJobID))
+			})
+		})
+
+		When("change ref is false", func() {
+			dist := "rhel-85"	// nolint:gofmt,goimports,govet
+			newDist := "rhel-86"
+			composeJobID := faker.UUIDHyphenated()
+			type TestOSTree struct {	// nolint:gofmt,goimports,govet
+				URL       *string `json:"url,omitempty"`
+				Ref       string  `json:"ref"`
+				ParentRef *string `json:"parent"`
+			}
+
+			type TestImageRequest struct {	// nolint:gofmt,goimports,govet
+				Architecture  string         `json:"architecture"`
+				ImageType     string         `json:"image_type"`
+				Ostree        *TestOSTree    `json:"ostree,omitempty"`
+				UploadRequest *UploadRequest `json:"upload_request"`
+			}
+
+			type TestComposeRequest struct {
+				Customizations *Customizations    `json:"customizations"`
+				Distribution   string             `json:"distribution"`
+				ImageRequests  []TestImageRequest `json:"image_requests"`
+			}
+
+			It("parent ref is not present in the request when parent ref equal to current ref ", func() {
+				// this happens when updating an image within the same major version
+				// example: form 8.5 to 8.5 to change the installed packages collections or updating from 8.5 to 8.6
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					var req TestComposeRequest
+					body, err := io.ReadAll(r.Body)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(body).ToNot(BeNil())
+					err = json.Unmarshal(body, &req)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(req.ImageRequests[0].Ostree).ToNot(BeNil())
+					Expect(*req.ImageRequests[0].Ostree.URL).To(Equal(repoURL))
+					Expect(req.ImageRequests[0].Ostree.Ref).To(Equal(config.DistributionsRefs[newDist]))
+					Expect(req.ImageRequests[0].Ostree.ParentRef).To(BeNil())
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusCreated)
+					_, err = fmt.Fprintf(w, `{"id": "%s"}`, composeJobID)
+					Expect(err).ToNot(HaveOccurred())
+
+				}))
+				defer ts.Close()
+
+				Expect(dist).ToNot(Equal(newDist))
+				Expect(config.DistributionsRefs[dist]).ToNot(BeEmpty())
+				Expect(config.DistributionsRefs[newDist]).ToNot(BeEmpty())
+				Expect(config.DistributionsRefs[newDist]).To(Equal(config.DistributionsRefs[dist]))
+
+				config.Get().ImageBuilderConfig.URL = ts.URL
+				img := &models.Image{Distribution: dist,
+					Commit: &models.Commit{
+						Arch:               "x86_64",
+						Repo:               &models.Repo{},
+						OSTreeRef:          config.DistributionsRefs[newDist],
+						OSTreeParentRef:    config.DistributionsRefs[dist],
+						ChangesRefs:        false,
+						OSTreeParentCommit: repoURL,
+					}}
+				img, err := client.ComposeCommit(img)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(img).ToNot(BeNil())
+				Expect(img.Commit.ComposeJobID).To(Equal(composeJobID))
+			})
+
+			It("parent ref and url are not present in the request when parent repo url is empty", func() {
+				// this happens when creating a new image
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					var req TestComposeRequest
+					body, err := io.ReadAll(r.Body)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(body).ToNot(BeNil())
+					err = json.Unmarshal(body, &req)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(req.ImageRequests[0].Ostree).ToNot(BeNil())
+					Expect(req.ImageRequests[0].Ostree.Ref).To(Equal(config.DistributionsRefs[newDist]))
+					Expect(req.ImageRequests[0].Ostree.URL).To(BeNil())
+					Expect(req.ImageRequests[0].Ostree.ParentRef).To(BeNil())
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusCreated)
+					_, err = fmt.Fprintf(w, `{"id": "%s"}`, composeJobID)
+					Expect(err).ToNot(HaveOccurred())
+				}))
+				defer ts.Close()
+
+				Expect(config.DistributionsRefs[newDist]).ToNot(BeEmpty())
+
+				config.Get().ImageBuilderConfig.URL = ts.URL
+				img := &models.Image{Distribution: dist,
+					Commit: &models.Commit{
+						Arch:               "x86_64",
+						Repo:               &models.Repo{},
+						OSTreeRef:          config.DistributionsRefs[newDist],
+						OSTreeParentRef:    "",
+						ChangesRefs:        false,
+						OSTreeParentCommit: "",
+					}}
+				img, err := client.ComposeCommit(img)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(img).ToNot(BeNil())
+				Expect(img.Commit.ComposeJobID).To(Equal(composeJobID))
+			})
+		})
+	})
+
 	It("test compose installer", func() {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")

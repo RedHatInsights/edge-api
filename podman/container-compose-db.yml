@@ -1,6 +1,7 @@
 version: '2'
 services:
     postgresql:
+      container_name: postgresql
       image: registry.redhat.io/rhel8/postgresql-10:1-173.1647451846
       restart: unless-stopped
       ports:
@@ -9,4 +10,3 @@ services:
         - env/edge-api.env
       volumes:
         - ~/dev/postgresql:/var/lib/pgsql:Z
-

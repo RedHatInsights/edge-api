@@ -79,6 +79,8 @@ objects:
               name: psk-playbook-dispatcher
         - name: EDGEAPIBASEURL
           value: ${EDGEAPIBASEURL}
+        - name: EDGECERTAPIBASEURL
+          value: ${EDGECERTAPIBASEURL}
         - name: UPLOADWORKERS
           value: ${UPLOADWORKERS}
         - name: LOG_LEVEL
@@ -135,6 +137,8 @@ objects:
               name: psk-playbook-dispatcher
         - name: EDGEAPIBASEURL
           value: ${EDGEAPIBASEURL}
+        - name: EDGECERTAPIBASEURL
+          value: ${EDGECERTAPIBASEURL}
         - name: UPLOADWORKERS
           value: ${UPLOADWORKERS}
         - name: LOG_LEVEL
@@ -191,6 +195,8 @@ objects:
               name: psk-playbook-dispatcher
         - name: EDGEAPIBASEURL
           value: ${EDGEAPIBASEURL}
+        - name: EDGECERTAPIBASEURL
+          value: ${EDGECERTAPIBASEURL}
         - name: UPLOADWORKERS
           value: ${UPLOADWORKERS}
         - name: LOG_LEVEL
@@ -247,6 +253,8 @@ objects:
               name: psk-playbook-dispatcher
         - name: EDGEAPIBASEURL
           value: ${EDGEAPIBASEURL}
+        - name: EDGECERTAPIBASEURL
+          value: ${EDGECERTAPIBASEURL}
         - name: UPLOADWORKERS
           value: ${UPLOADWORKERS}
         - name: LOG_LEVEL
@@ -354,6 +362,10 @@ parameters:
   name: EDGEAPIBASEURL
   required: false
   value: "https://cloud.stage.redhat.com"
+- description: Edge-api cert Base URL
+  name: EDGECERTAPIBASEURL
+  required: false
+  value: "https://cert.console.stage.redhat.com"
 - description: Number of workers for uploading to a backing object storage bucket
   name: UPLOADWORKERS
   required: false

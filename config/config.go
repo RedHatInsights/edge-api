@@ -1,3 +1,4 @@
+// Package config sets up the application configuration from env, file, etc.
 // FIXME: golangci-lint
 // nolint:errcheck,gocritic,gosimple,govet,revive
 package config
@@ -5,7 +6,9 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
+	"reflect"
 	"strings"
 	"sync"
 
@@ -35,6 +38,7 @@ type EdgeConfig struct {
 	PlaybookDispatcherConfig *playbookDispatcherConfig `json:"playbook_dispatcher,omitempty"`
 	TemplatesPath            string                    `json:"templates_path,omitempty"`
 	EdgeAPIBaseURL           string                    `json:"edge_api_base_url,omitempty"`
+	EdgeCertAPIBaseURL       string                    `json:"edge_cert_api_base_url,omitempty"`
 	EdgeAPIServiceHost       string                    `json:"edge_api_service_host,omitempty"`
 	EdgeAPIServicePort       int                       `json:"edge_api_service_port,omitempty"`
 	UploadWorkers            int                       `json:"upload_workers,omitempty"`
@@ -121,6 +125,7 @@ func Init() {
 	options.SetDefault("DatabaseFile", "test.db")
 	options.SetDefault("TemplatesPath", "/usr/local/etc/")
 	options.SetDefault("EdgeAPIBaseURL", "http://localhost:3000")
+	options.SetDefault("EdgeCertAPIBaseURL", "http://cert.localhost:3000")
 	options.SetDefault("EdgeAPIServiceHost", "localhost")
 	options.SetDefault("EdgeAPIServicePort", "3000")
 	options.SetDefault("UploadWorkers", 100)
@@ -200,6 +205,7 @@ func Init() {
 		},
 		TemplatesPath:      options.GetString("TemplatesPath"),
 		EdgeAPIBaseURL:     options.GetString("EdgeAPIBaseURL"),
+		EdgeCertAPIBaseURL: options.GetString("EdgeCertAPIBaseURL"),
 		EdgeAPIServiceHost: options.GetString("EDGE_API_SERVICE_SERVICE_HOST"),
 		EdgeAPIServicePort: options.GetInt("EDGE_API_SERVICE_SERVICE_PORT"),
 		UploadWorkers:      options.GetInt("UploadWorkers"),
@@ -321,4 +327,52 @@ func GetConfigValues() (map[string]interface{}, error) {
 		return configValues, err
 	}
 	return configValues, nil
+}
+
+func redactPasswordFromURL(value string) string {
+	url, err := url.Parse(value)
+	if err == nil && url.Host != "" && url.Scheme != "" {
+		value = url.Redacted()
+	}
+
+	return value
+}
+
+// LogConfigAtStartup logs specific config fields at startup
+func LogConfigAtStartup(cfg *EdgeConfig) {
+	// Add EdgeConfig struct fields we want to log at app startup.
+	// This does not walk multi-level types.
+	// Instead, list dot format field paths as key.
+	allowedConfig := map[string]interface{}{
+		"Hostname":                 cfg.Hostname,
+		"Auth":                     cfg.Auth,
+		"WebPort":                  cfg.WebPort,
+		"MetricsPort":              cfg.MetricsPort,
+		"LogLevel":                 cfg.LogLevel,
+		"Debug":                    cfg.Debug,
+		"BucketName":               cfg.BucketName,
+		"BucketRegion":             cfg.BucketRegion,
+		"RepoTempPath ":            cfg.RepoTempPath,
+		"OpenAPIFilePath ":         cfg.OpenAPIFilePath,
+		"ImageBuilderURL":          cfg.ImageBuilderConfig.URL,
+		"InventoryURL":             cfg.InventoryConfig.URL,
+		"PlaybookDispatcherConfig": cfg.PlaybookDispatcherConfig.URL,
+		"TemplatesPath":            cfg.TemplatesPath,
+		"DatabaseType":             cfg.Database.Type,
+		"DatabaseName":             cfg.Database.Name,
+		"EdgeAPIURL":               cfg.EdgeAPIBaseURL,
+		"EdgeAPIServiceHost":       cfg.EdgeAPIServiceHost,
+		"EdgeAPIServicePort":       cfg.EdgeAPIServicePort,
+		"EdgeCertAPIURL":           cfg.EdgeCertAPIBaseURL,
+	}
+
+	// loop through the key/value pairs
+	for k, v := range allowedConfig {
+		value := reflect.ValueOf(v)
+		if value.Kind() == reflect.String {
+			v = redactPasswordFromURL(value.String())
+		}
+
+		log.WithField(k, v).Info("Startup configuration values")
+	}
 }

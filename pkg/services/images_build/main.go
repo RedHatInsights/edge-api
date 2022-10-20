@@ -38,28 +38,8 @@ func main() {
 	config.Init()
 	l.InitLogger()
 	cfg := config.Get()
-	// TODO: update these fields
-	mslog.WithFields(log.Fields{
-		"Hostname":                 cfg.Hostname,
-		"Auth":                     cfg.Auth,
-		"WebPort":                  cfg.WebPort,
-		"MetricsPort":              cfg.MetricsPort,
-		"LogLevel":                 cfg.LogLevel,
-		"Debug":                    cfg.Debug,
-		"BucketName":               cfg.BucketName,
-		"BucketRegion":             cfg.BucketRegion,
-		"RepoTempPath ":            cfg.RepoTempPath,
-		"OpenAPIFilePath ":         cfg.OpenAPIFilePath,
-		"ImageBuilderURL":          cfg.ImageBuilderConfig.URL,
-		"InventoryURL":             cfg.InventoryConfig.URL,
-		"PlaybookDispatcherConfig": cfg.PlaybookDispatcherConfig.URL,
-		"TemplatesPath":            cfg.TemplatesPath,
-		"DatabaseType":             cfg.Database.Type,
-		"DatabaseName":             cfg.Database.Name,
-		"EdgeAPIURL":               cfg.EdgeAPIBaseURL,
-		"EdgeAPIServiceHost":       cfg.EdgeAPIServiceHost,
-		"EdgeAPIServicePort":       cfg.EdgeAPIServicePort,
-	}).Info("Configuration Values:")
+	config.LogConfigAtStartup(cfg)
+
 	db.InitDB()
 
 	if cfg.KafkaConfig.Brokers != nil {

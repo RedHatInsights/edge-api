@@ -21,6 +21,7 @@ type ThirdPartyRepoServiceInterface interface {
 	GetThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error)
 	UpdateThirdPartyRepo(tprepo *models.ThirdPartyRepo, orgID string, ID string) error
 	DeleteThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error)
+	ThirdPartyRepoNameExists(orgID string, name string) (bool, error)
 }
 
 // NewThirdPartyRepoService gives a instance of the main implementation of a ThirdPartyRepoServiceInterface
@@ -35,11 +36,15 @@ type ThirdPartyRepoService struct {
 	Service
 }
 
-// thirdPartyRepoNameExists check if a repo with the requested name exists
-func (s *ThirdPartyRepoService) thirdPartyRepoNameExists(orgID string, name string) (bool, error) {
+// ThirdPartyRepoNameExists check if a repo with the requested name exists
+func (s *ThirdPartyRepoService) ThirdPartyRepoNameExists(orgID string, name string) (bool, error) {
 	if orgID == "" {
 		return false, new(OrgIDNotSet)
 	}
+	if name == "" {
+		return false, new(ThirdPartyRepositoryNameIsEmpty)
+	}
+
 	var reposCount int64
 	if result := db.Org(orgID, "").Debug().Model(&models.ThirdPartyRepo{}).Where("name = ?", name).Count(&reposCount); result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error checking custom repository existence")
@@ -49,7 +54,7 @@ func (s *ThirdPartyRepoService) thirdPartyRepoNameExists(orgID string, name stri
 	return reposCount > 0, nil
 }
 
-// thirdPartyRepoNameExists check if a repo with the requested name exists
+// thirdPartyRepoImagesExists check if a repo with the requested name exists
 func (s *ThirdPartyRepoService) thirdPartyRepoImagesExists(id string, imageStatuses []string) (bool, error) {
 	repo, err := s.GetThirdPartyRepoByID(id)
 	if err != nil {
@@ -85,7 +90,7 @@ func (s *ThirdPartyRepoService) CreateThirdPartyRepo(thirdPartyRepo *models.Thir
 		return nil, new(InvalidURLForCustomRepo)
 	}
 
-	repoExists, err := s.thirdPartyRepoNameExists(orgID, thirdPartyRepo.Name)
+	repoExists, err := s.ThirdPartyRepoNameExists(orgID, thirdPartyRepo.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +140,7 @@ func (s *ThirdPartyRepoService) UpdateThirdPartyRepo(tprepo *models.ThirdPartyRe
 	if tprepo.Name != "" {
 		if tprepo.Name != repoDetails.Name {
 			// check if a repository with the new name already exists
-			repoExists, err := s.thirdPartyRepoNameExists(orgID, tprepo.Name)
+			repoExists, err := s.ThirdPartyRepoNameExists(orgID, tprepo.Name)
 			if err != nil {
 				return err
 			}
