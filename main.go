@@ -161,11 +161,12 @@ func main() {
 	var configValues map[string]interface{}
 	cfgBytes, _ := json.Marshal(cfg)
 	_ = json.Unmarshal(cfgBytes, &configValues)
+	// TODO: remove this next line once we have all allowed config values moved to config.LogConfigAtStartup
 	log.WithFields(configValues).Info("Configuration Values")
+	config.LogConfigAtStartup(cfg)
 
 	if featureFlagsConfigPresent() {
 		err := unleash.Initialize(
-			unleash.WithListener(&unleash.DebugListener{}),
 			unleash.WithAppName("edge-api"),
 			unleash.WithUrl(cfg.UnleashURL),
 			unleash.WithRefreshInterval(5*time.Second),
