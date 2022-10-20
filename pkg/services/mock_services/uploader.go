@@ -49,16 +49,16 @@ func (mr *MockUploaderMockRecorder) UploadFile(fname, uploadPath interface{}) *g
 }
 
 // UploadRepo mocks base method.
-func (m *MockUploader) UploadRepo(src, account string) (string, error) {
+func (m *MockUploader) UploadRepo(src, account, acl string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UploadRepo", src, account)
+	ret := m.ctrl.Call(m, "UploadRepo", src, account, acl)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UploadRepo indicates an expected call of UploadRepo.
-func (mr *MockUploaderMockRecorder) UploadRepo(src, account interface{}) *gomock.Call {
+func (mr *MockUploaderMockRecorder) UploadRepo(src, account, acl interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadRepo", reflect.TypeOf((*MockUploader)(nil).UploadRepo), src, account)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadRepo", reflect.TypeOf((*MockUploader)(nil).UploadRepo), src, account, acl)
 }
