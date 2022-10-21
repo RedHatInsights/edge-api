@@ -167,6 +167,7 @@ func main() {
 
 	if featureFlagsConfigPresent() {
 		err := unleash.Initialize(
+			unleash.WithListener(&unleash.DebugListener{}),
 			unleash.WithAppName("edge-api"),
 			unleash.WithUrl(cfg.UnleashURL),
 			unleash.WithRefreshInterval(5*time.Second),
