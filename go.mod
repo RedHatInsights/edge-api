@@ -1,7 +1,6 @@
 module github.com/redhatinsights/edge-api
 
 require (
-	github.com/RedHatInsights/tenant-utils v1.0.0
 	github.com/Unleash/unleash-client-go/v3 v3.7.0
 	github.com/aws/aws-sdk-go v1.44.118
 	github.com/bxcodec/faker/v3 v3.8.0
@@ -19,7 +18,7 @@ require (
 	github.com/magiconair/properties v1.8.6
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/ginkgo/v2 v2.3.1
+	github.com/onsi/ginkgo/v2 v2.3.1 // indirect
 	github.com/onsi/gomega v1.22.1
 	github.com/prometheus/client_golang v1.13.0
 	github.com/redhatinsights/app-common-go v1.6.4
@@ -28,9 +27,9 @@ require (
 	github.com/spf13/viper v1.13.0
 	golang.org/x/crypto v0.0.0-20220826181053-bd7e27e6170d // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
-	gorm.io/driver/postgres v1.4.4
+	gorm.io/driver/postgres v1.4.5
 	gorm.io/driver/sqlite v1.4.3
-	gorm.io/gorm v1.24.0
+	gorm.io/gorm v1.24.1-0.20221019064659-5dd2bb482755
 )
 
 go 1.16
