@@ -298,6 +298,17 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		return err
 	}
 
+	var refs string
+	if image.Distribution == "" {
+		refs = config.DistributionsRefs[config.DefaultDistribution]
+	} else {
+		refs = config.DistributionsRefs[image.Distribution]
+	}
+
+	if image.Commit.OSTreeRef == "" {
+		image.Commit.OSTreeRef = refs
+	}
+
 	if previousImage.Status == models.ImageStatusSuccess {
 		// Always get the repo URL from the previous Image's commit
 		repo, err := s.RepoService.GetRepoByID(previousImage.Commit.RepoID)
@@ -311,16 +322,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		if config.DistributionsRefs[previousImage.Distribution] != config.DistributionsRefs[image.Distribution] {
 			image.Commit.ChangesRefs = true
 		}
-		var refs string
-		if image.Distribution == "" {
-			refs = config.DistributionsRefs[config.DefaultDistribution]
-		} else {
-			refs = config.DistributionsRefs[image.Distribution]
-		}
 
-		if image.Commit.OSTreeRef == "" {
-			image.Commit.OSTreeRef = refs
-		}
 		if image.Commit.OSTreeParentRef == "" {
 			image.Commit.OSTreeParentRef = config.DistributionsRefs[previousImage.Distribution]
 		}
