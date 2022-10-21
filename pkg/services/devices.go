@@ -677,25 +677,26 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 	}
 
 	// Check inventory to see if you return the same number of devices, else, sync with inventory in a routine
-	if feature.DeviceSync.IsEnabled() {
-		var params *inventory.Params
-		inventoryDevices, err := s.Inventory.ReturnDevices(params)
-		if err != nil {
-			s.log.WithField("error", err.Error()).Error("Error retrieving devices from inventory")
-			return nil, err
-		}
-
-		var total int64
-		if res := db.Org(orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
-			s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
-			return nil, res.Error
-		}
-		s.log.WithFields(log.Fields{"edge_count": total, "insights_count": inventoryDevices.Total}).Debug("Comparing edge and insights inventory counts")
-		if int64(inventoryDevices.Total) != total {
-			s.log.WithFields(log.Fields{"edge_count": total, "insights_count": inventoryDevices.Total}).Debug("Inventory counts do not match. Calling syncDevicesWithInventory")
-			go s.syncDevicesWithInventory(orgID)
-		}
-	}
+	// temporary comment this code to investigate on some errors
+	//if feature.DeviceSync.IsEnabled() {
+	//	var params *inventory.Params
+	//	inventoryDevices, err := s.Inventory.ReturnDevices(params)
+	//	if err != nil {
+	//		s.log.WithField("error", err.Error()).Error("Error retrieving devices from inventory")
+	//		return nil, err
+	//	}
+	//
+	//	var total int64
+	//	if res := db.Org(orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
+	//		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
+	//		return nil, res.Error
+	//	}
+	//	s.log.WithFields(log.Fields{"edge_count": total, "insights_count": inventoryDevices.Total}).Debug("Comparing edge and insights inventory counts")
+	//	if int64(inventoryDevices.Total) != total {
+	//		s.log.WithFields(log.Fields{"edge_count": total, "insights_count": inventoryDevices.Total}).Debug("Inventory counts do not match. Calling syncDevicesWithInventory")
+	//		go s.syncDevicesWithInventory(orgID)
+	//	}
+	//}
 
 	returnDevices, err := ReturnDevicesView(storedDevices, orgID)
 	if err != nil {
