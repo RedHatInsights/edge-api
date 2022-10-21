@@ -38,6 +38,7 @@ jobs:
           # Args should be the same as Makefile
           args: >
             --enable=errcheck,gocritic,gofmt,goimports,gosec,gosimple,govet,ineffassign,revive,staticcheck,typecheck,unused
+            --fix=false
             --max-same-issues=20
             --print-issued-lines=true
             --print-linter-name=true
