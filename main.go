@@ -23,6 +23,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/routes"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	edgeunleash "github.com/redhatinsights/edge-api/unleash"
 
 	"github.com/Unleash/unleash-client-go/v3"
 	"github.com/go-chi/chi"
@@ -129,9 +130,6 @@ func serveWeb(cfg *config.EdgeConfig, consumers []services.ConsumerService) *htt
 
 func gracefulTermination(server *http.Server, serviceName string) {
 	log.Infof("%s service stopped", serviceName)
-	if featureFlagsConfigPresent() {
-		unleash.Close()
-	}
 	ctxShutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second) // 5 seconds for graceful shutdown
 	defer cancel()
 	if err := server.Shutdown(ctxShutdown); err != nil {
@@ -167,7 +165,7 @@ func main() {
 
 	if featureFlagsConfigPresent() {
 		err := unleash.Initialize(
-			unleash.WithListener(&unleash.DebugListener{}),
+			unleash.WithListener(&edgeunleash.EdgeListener{}),
 			unleash.WithAppName("edge-api"),
 			unleash.WithUrl(cfg.UnleashURL),
 			unleash.WithRefreshInterval(5*time.Second),
