@@ -167,16 +167,6 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		ctx = db.OrgDB(orgID, thirdPartyRepoFilters(r, db.DB), "").Debug().Model(&models.ThirdPartyRepo{})
 	}
 
-	// Check to see if feature is enabled and not in ephemeral
-	//cfg := config.Get()
-	//if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
-	//	enabled := feature.CheckFeature(feature.FeatureCustomRepos)
-	//	if !enabled {
-	//		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable("Feature not available"))
-	//		return
-	//	}
-	//}
-
 	pagination := common.GetPagination(r)
 
 	if result := ctx.Count(&count); result.Error != nil {
