@@ -272,6 +272,10 @@ var _ = Describe("DfseviceService", func() {
 								Name:    "vim",
 								Version: "2.0.0",
 							},
+							{
+								Name:    "git",
+								Version: "2.0.0",
+							},
 						},
 						OrgID: orgID,
 					},
@@ -289,7 +293,7 @@ var _ = Describe("DfseviceService", func() {
 				newUpdate := updatesAvailable[0]
 				Expect(newUpdate.Image.ID).To(Equal(newImage.ID))
 				Expect(newUpdate.PackageDiff.Upgraded).To(HaveLen(1))
-				Expect(newUpdate.PackageDiff.Added).To(HaveLen(1))
+				Expect(newUpdate.PackageDiff.Added).To(HaveLen(2))
 				Expect(newUpdate.PackageDiff.Removed).To(HaveLen(1))
 			})
 			It("should return updates", func() {
@@ -494,11 +498,44 @@ var _ = Describe("DfseviceService", func() {
 			},
 			OrgID: orgID,
 		}
-		It("should return diff", func() {
-			deltaDiff := services.GetDiffOnUpdate(oldImage, newImage)
-			Expect(deltaDiff.Added).To(HaveLen(1))
-			Expect(deltaDiff.Removed).To(HaveLen(2))
-			Expect(deltaDiff.Upgraded).To(HaveLen(1))
+		newImageWithoutChanges := models.Image{
+			Commit: &models.Commit{
+				InstalledPackages: []models.InstalledPackage{
+					{
+						Name:    "vim",
+						Version: "2.2",
+					},
+					{
+						Name:    "ansible",
+						Version: "1",
+					},
+					{
+						Name:    "yum",
+						Version: "2:6.0-1",
+					},
+					{
+						Name:    "dnf",
+						Version: "2:6.0-1",
+					},
+				},
+				OrgID: orgID,
+			},
+			OrgID: orgID,
+		}
+		When("check package different between version", func() {
+			It("should return different in case there are changes between version", func() {
+				deltaDiff := services.GetDiffOnUpdate(oldImage, newImage)
+				Expect(deltaDiff.Added).To(HaveLen(1))
+				Expect(deltaDiff.Removed).To(HaveLen(2))
+				Expect(deltaDiff.Upgraded).To(HaveLen(1))
+			})
+
+			It("should not return different in case there is no changes between version", func() {
+				deltaDiff := services.GetDiffOnUpdate(oldImage, newImageWithoutChanges)
+				Expect(deltaDiff.Added).To(HaveLen(0))
+				Expect(deltaDiff.Removed).To(HaveLen(0))
+				Expect(deltaDiff.Upgraded).To(HaveLen(0))
+			})
 		})
 	})
 	Context("GetImageForDeviceByUUID", func() {
