@@ -1,5 +1,12 @@
 ---
 #
+# Shared keys
+shared:
+  my_ci: &common-merge-criteria
+    - "#approved-reviews-by>=2"
+    - "#changes-requested-reviews-by=0"
+    - "#review-threads-unresolved=0"
+#
 # Merge queue rules https://docs.mergify.com/actions/queue/#queue-rules
 queue_rules:
   #
@@ -7,9 +14,7 @@ queue_rules:
   - name: edge-api
     conditions:
       - base=main
-      - "#approved-reviews-by>=2"
-      - "#changes-requested-reviews-by=0"
-      - "#review-threads-unresolved=0"
+      - and: *common-merge-criteria
 #
 # Pull request rules https://docs.mergify.com/configuration/#pull-request-rules
 # N.B. Evaluated in order defined
@@ -38,7 +43,7 @@ pull_request_rules:
           - question
   #
   # If all conversations to be resolved, remove question label
-  - name: Check for unresolved conversations before merging
+  - name: Remove question label from resolved conversations
     conditions:
       - "#review-threads-unresolved=0"
     actions:
@@ -50,8 +55,7 @@ pull_request_rules:
   - name: Automatic merge for Dependabot pull requests
     conditions:
       - author~=^dependabot(|-preview)\[bot\]$
-      - "#approved-reviews-by>=2"
-      - "#review-threads-unresolved=0"
+      - and: *common-merge-criteria
       - check-success=Lint
       # - check-success=Travis CI - Pull Request
     actions:
@@ -65,9 +69,7 @@ pull_request_rules:
     conditions:
       - and:
           - base=main
-          - "#changes-requested-reviews-by=0"
-          - "#approved-reviews-by>=2"
-          - "#review-threads-unresolved=0"
+          - and: *common-merge-criteria
           - label!=work in progress
           - label!=do not merge
           - updated-at<1 days ago
@@ -86,9 +88,7 @@ pull_request_rules:
   - name: Automatic merge on approval
     conditions:
       - base=main
-      - "#approved-reviews-by>=2"
-      - "#changes-requested-reviews-by=0"
-      - "#review-threads-unresolved=0"
+      - and: *common-merge-criteria
       - check-success=Lint
       # - check-success=Travis CI - Pull Request
       - check-success=ci.int.devshift.net PR build
