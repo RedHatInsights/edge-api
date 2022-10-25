@@ -260,6 +260,13 @@ func (e *CommitNotFound) Error() string {
 	return "commit not found"
 }
 
+// CommitNotValid indicates commit matching the given id was not found
+type CommitNotValid struct{}
+
+func (e *CommitNotValid) Error() string {
+	return "commit not valid to update"
+}
+
 // OstreeNotFound was not found
 type OstreeNotFound struct{}
 

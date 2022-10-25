@@ -64,6 +64,7 @@ func (s *CommitService) ValidateDevicesImageSetWithCommit(devicesUUID []string, 
 	type ImageSetsDevices struct {
 		ImageSetID   uint `json:"image_set_id"`
 		DevicesCount int  `json:"devices_count"`
+		Commit_Id    uint `json:"commit_Id"`
 	}
 	var imageSetsDevices []ImageSetsDevices
 	var commitImage models.Image
@@ -72,10 +73,10 @@ func (s *CommitService) ValidateDevicesImageSetWithCommit(devicesUUID []string, 
 		return err
 	}
 
-	if result := db.Org(orgID, "devices").Table("devices").
-		Select(`images.image_set_id as "image_set_id", count(devices.id) as devices_count`).
-		Joins("JOIN images ON devices.image_id = images.id").
-		Where("devices.uuid in (?)", devicesUUID).
+	if result := db.Org(orgID, "devices").Table("devices").Debug().
+		Select(`images.image_set_id as "image_set_id", images.commit_Id , count(devices.uuid) as devices_count`).
+		Joins("JOIN images ON devices.image_id = images.id join COMMITS on commits.ID = images.commit_id").
+		Where("devices.uuid in (?) AND devices.DELETED_AT is null", devicesUUID).
 		Group("images.image_set_id").
 		Find(&imageSetsDevices); result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error searching for ImageSet of Device Images")
@@ -96,7 +97,6 @@ func (s *CommitService) ValidateDevicesImageSetWithCommit(devicesUUID []string, 
 		}).Error()
 		return new(SomeDevicesDoesNotExists)
 	}
-
 	if result := db.Org(orgID, "").Where("commit_id = ?", commitID).First(&commitImage); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return new(CommitImageNotFound)
@@ -105,6 +105,9 @@ func (s *CommitService) ValidateDevicesImageSetWithCommit(devicesUUID []string, 
 		return result.Error
 	}
 
+	if imageSetDevices.Commit_Id > commitID {
+		return new(CommitNotValid)
+	}
 	if commitImage.ImageSetID == nil {
 		return new(ImageHasNoImageSet)
 	}

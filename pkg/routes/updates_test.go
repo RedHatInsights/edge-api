@@ -503,6 +503,135 @@ var _ = Describe("Update routes", func() {
 		})
 	})
 
+	Context("Devices update by diff commits", func() {
+		var edgeAPIServices *dependencies.EdgeAPIServices
+		var mockUpdateService *mock_services.MockUpdateServiceInterface
+		var ctrl *gomock.Controller
+
+		orgID := common.DefaultOrgID
+
+		imageSet := models.ImageSet{
+			OrgID: orgID,
+		}
+		db.DB.Create(&imageSet)
+
+		commits := []models.Commit{{OrgID: orgID, Name: "1"},
+			{OrgID: orgID, Name: "2"},
+			{OrgID: orgID, Name: "3"},
+			{OrgID: orgID, Name: "4"},
+			{OrgID: orgID, Name: "5"}}
+		db.DB.Debug().Create(&commits)
+
+		images := [5]models.Image{
+			{OrgID: orgID, CommitID: commits[0].ID, Status: models.ImageStatusSuccess, Version: 1, ImageSetID: &imageSet.ID},
+			{OrgID: orgID, CommitID: commits[1].ID, Status: models.ImageStatusSuccess, Version: 2, ImageSetID: &imageSet.ID},
+			{OrgID: orgID, CommitID: commits[2].ID, Status: models.ImageStatusSuccess, Version: 3, ImageSetID: &imageSet.ID},
+			{OrgID: orgID, CommitID: commits[3].ID, Status: models.ImageStatusSuccess, Version: 4, ImageSetID: &imageSet.ID},
+			{OrgID: orgID, CommitID: commits[4].ID, Status: models.ImageStatusSuccess, Version: 5, ImageSetID: &imageSet.ID},
+		}
+		db.DB.Debug().Create(&images)
+
+		device := models.Device{
+			OrgID:   orgID,
+			UUID:    faker.UUIDHyphenated(),
+			ImageID: images[1].ID,
+		}
+		db.DB.Create(&device)
+		BeforeEach(func() {
+			ctrl = gomock.NewController(GinkgoT())
+			mockUpdateService = mock_services.NewMockUpdateServiceInterface(ctrl)
+			ctx := context.Background()
+			logger := log.NewEntry(log.StandardLogger())
+
+			edgeAPIServices = &dependencies.EdgeAPIServices{
+				DeviceService: services.NewDeviceService(ctx, logger),
+				CommitService: services.NewCommitService(ctx, logger),
+				UpdateService: mockUpdateService,
+				Log:           logger,
+			}
+		})
+		AfterEach(func() {
+			ctrl.Finish()
+		})
+
+		When("when try to update a device to specific image", func() {
+
+			It("should not allow to update", func() {
+				updateData, err := json.Marshal(models.DevicesUpdate{DevicesUUID: []string{device.UUID}, CommitID: commits[0].ID})
+				Expect(err).To(BeNil())
+				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(updateData))
+				Expect(err).To(BeNil())
+
+				ctx := dependencies.ContextWithServices(req.Context(), edgeAPIServices)
+				req = req.WithContext(ctx)
+
+				rr := httptest.NewRecorder()
+				handler := http.HandlerFunc(AddUpdate)
+				handler.ServeHTTP(rr, req)
+
+				var response common.APIResponse
+				respBody, err := ioutil.ReadAll(rr.Body)
+				err = json.Unmarshal(respBody, &response)
+
+				responseRecorder := httptest.NewRecorder()
+				handler.ServeHTTP(responseRecorder, req)
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
+			})
+
+			It("should update to version 3 and see 4,5 availble", func() {
+				updateData, err := json.Marshal(models.DevicesUpdate{DevicesUUID: []string{device.UUID}, CommitID: commits[2].ID})
+				Expect(err).To(BeNil())
+				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(updateData))
+				Expect(err).To(BeNil())
+
+				ctx := req.Context()
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+
+				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), orgID, gomock.Any()).Return(&[]models.UpdateTransaction{}, nil)
+
+				rr := httptest.NewRecorder()
+				handler := http.HandlerFunc(AddUpdate)
+				handler.ServeHTTP(rr, req)
+
+				var response common.APIResponse
+				respBody, err := ioutil.ReadAll(rr.Body)
+				err = json.Unmarshal(respBody, &response)
+
+				Expect(rr.Code).To(Equal(http.StatusOK))
+				Expect(err).Should(BeNil())
+			})
+
+			It("should update to version 4 and see only 5 availble", func() {
+				updateData, err := json.Marshal(models.DevicesUpdate{DevicesUUID: []string{device.UUID}, CommitID: commits[3].ID})
+				Expect(err).To(BeNil())
+				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(updateData))
+				Expect(err).To(BeNil())
+
+				ctx := req.Context()
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+
+				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), orgID, gomock.Any()).Return(&[]models.UpdateTransaction{}, nil)
+
+				rr := httptest.NewRecorder()
+				handler := http.HandlerFunc(AddUpdate)
+				handler.ServeHTTP(rr, req)
+
+				var response common.APIResponse
+				respBody, err := ioutil.ReadAll(rr.Body)
+				err = json.Unmarshal(respBody, &response)
+
+				Expect(rr.Code).To(Equal(http.StatusOK))
+				Expect(err).Should(BeNil())
+				// Expect(response.Message).To(Equal("There are no updates to perform"))
+			})
+
+		})
+
+	})
+
 	Context("get all updates with filter parameters", func() {
 		tt := []struct {
 			name          string
