@@ -78,5 +78,10 @@ var _ = Describe("ValidateDevicesImageSetWithCommit", func() {
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(Equal("commit image does not found"))
 		})
+
+		It("should not return error", func() {
+			err := commitService.ValidateDevicesImageSetWithCommit([]string{device.UUID}, commits[3].ID)
+			Expect(err).To(BeNil())
+		})
 	})
 })
