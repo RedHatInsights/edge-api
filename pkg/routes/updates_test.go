@@ -556,7 +556,7 @@ var _ = Describe("Update routes", func() {
 
 		When("when try to update a device to specific image", func() {
 
-			It("should not allow to update", func() {
+			It("should not allow to update to previous commit", func() {
 				updateData, err := json.Marshal(models.DevicesUpdate{DevicesUUID: []string{device.UUID}, CommitID: commits[0].ID})
 				Expect(err).To(BeNil())
 				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(updateData))
@@ -575,8 +575,8 @@ var _ = Describe("Update routes", func() {
 
 				responseRecorder := httptest.NewRecorder()
 				handler.ServeHTTP(responseRecorder, req)
-
 				Expect(responseRecorder.Code).To(Equal(http.StatusBadRequest))
+
 			})
 
 			It("should update to version 3 and see 4,5 availble", func() {
@@ -625,7 +625,6 @@ var _ = Describe("Update routes", func() {
 
 				Expect(rr.Code).To(Equal(http.StatusOK))
 				Expect(err).Should(BeNil())
-				// Expect(response.Message).To(Equal("There are no updates to perform"))
 			})
 
 		})
