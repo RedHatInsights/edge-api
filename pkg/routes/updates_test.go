@@ -579,7 +579,7 @@ var _ = Describe("Update routes", func() {
 
 			})
 
-			It("should update to version 3 and see 4,5 availble", func() {
+			It("should update to version 3 and see 4,5 available", func() {
 				updateData, err := json.Marshal(models.DevicesUpdate{DevicesUUID: []string{device.UUID}, CommitID: commits[2].ID})
 				Expect(err).To(BeNil())
 				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(updateData))
@@ -603,7 +603,7 @@ var _ = Describe("Update routes", func() {
 				Expect(err).Should(BeNil())
 			})
 
-			It("should update to version 4 and see only 5 availble", func() {
+			It("should update to version 4 and see only 5 available", func() {
 				updateData, err := json.Marshal(models.DevicesUpdate{DevicesUUID: []string{device.UUID}, CommitID: commits[3].ID})
 				Expect(err).To(BeNil())
 				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(updateData))
