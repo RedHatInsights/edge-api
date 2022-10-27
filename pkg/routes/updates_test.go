@@ -588,9 +588,11 @@ var _ = Describe("Update routes", func() {
 				ctx := req.Context()
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
-
-				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), orgID, gomock.Any()).Return(&[]models.UpdateTransaction{}, nil)
-
+				var desiredCommit models.Commit
+				db.DB.First(&desiredCommit, &commits[2].ID)
+				mockUpdateService.EXPECT().BuildUpdateTransactions(&models.DevicesUpdate{DevicesUUID: []string{device.UUID}, CommitID: commits[2].ID},
+					orgID, &desiredCommit).
+					Return(&[]models.UpdateTransaction{}, nil)
 				rr := httptest.NewRecorder()
 				handler := http.HandlerFunc(AddUpdate)
 				handler.ServeHTTP(rr, req)
@@ -612,8 +614,11 @@ var _ = Describe("Update routes", func() {
 				ctx := req.Context()
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
-
-				mockUpdateService.EXPECT().BuildUpdateTransactions(gomock.Any(), orgID, gomock.Any()).Return(&[]models.UpdateTransaction{}, nil)
+				var desiredCommit models.Commit
+				db.DB.First(&desiredCommit, &commits[3].ID)
+				mockUpdateService.EXPECT().BuildUpdateTransactions(&models.DevicesUpdate{DevicesUUID: []string{device.UUID}, CommitID: commits[3].ID},
+					orgID, &desiredCommit).
+					Return(&[]models.UpdateTransaction{}, nil)
 
 				rr := httptest.NewRecorder()
 				handler := http.HandlerFunc(AddUpdate)
