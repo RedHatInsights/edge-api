@@ -30,7 +30,7 @@ type Commit struct {
 	Model
 	Name                 string
 	Account              string             `json:"Account"`
-	OrgID                string             `json:"org_id" gorm:"index"`
+	OrgID                string             `json:"org_id" gorm:"index;<-:create"`
 	ImageBuildHash       string             `json:"ImageBuildHash"`
 	ImageBuildParentHash string             `json:"ImageBuildParentHash"`
 	ImageBuildTarURL     string             `json:"ImageBuildTarURL"`

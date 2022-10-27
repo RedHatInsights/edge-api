@@ -11,7 +11,7 @@ import (
 type Installer struct {
 	Model
 	Account          string `json:"Account"`
-	OrgID            string `json:"org_id" gorm:"index"`
+	OrgID            string `json:"org_id" gorm:"index;<-:create"`
 	ImageBuildISOURL string `json:"ImageBuildISOURL"`
 	ComposeJobID     string `json:"ComposeJobID"`
 	Status           string `json:"Status"`
