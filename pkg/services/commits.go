@@ -78,7 +78,7 @@ func (s *CommitService) ValidateDevicesImageSetWithCommit(devicesUUID []string, 
 		Joins("JOIN images ON devices.image_id = images.id").
 		Joins("Join commits on commits.ID = images.commit_id").
 		Where("devices.uuid in (?) AND devices.DELETED_AT is null", devicesUUID).
-		Group("images.image_set_id").
+		Group("images.image_set_id, images.commit_Id ").
 		Scan(&imageSetsDevices); result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error searching for ImageSet of Device Images")
 		return result.Error
