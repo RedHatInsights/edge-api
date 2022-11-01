@@ -6,9 +6,11 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
+	"strings"
 	"time"
 
 	version "github.com/knqyf263/go-rpm-version"
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -264,11 +266,19 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 			return nil, err
 		}
 		var delta models.ImageUpdateAvailable
+		SystemRunning, err := s.GetDevicesCountByImage(upd.ID)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Could not find device image info")
+			return nil, new(ImageNotFoundError)
+		}
 		diff := GetDiffOnUpdate(currentImage, upd)
 		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
 		delta.Image = upd
 		delta.PackageDiff = diff
+		delta.SystemRunningCurrentImage = SystemRunning
+		delta.CanUpdate = s.CanUpdate(currentImage.Distribution, upd.Distribution)
 		imageDiff = append(imageDiff, delta)
+
 	}
 	return imageDiff, nil
 }
@@ -344,6 +354,12 @@ func (s *DeviceService) GetDeviceImageInfo(device inventory.Device) (*models.Ima
 		return nil, new(ImageNotFoundError)
 	}
 	currentImage, err := s.ImageService.GetImageByOSTreeCommitHash(lastDeployment.Checksum)
+
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Could not find device image info")
+		return nil, new(ImageNotFoundError)
+	}
+	SystemRunning, err := s.GetDevicesCountByImage(currentImage.ID)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Could not find device image info")
 		return nil, new(ImageNotFoundError)
@@ -362,10 +378,11 @@ func (s *DeviceService) GetDeviceImageInfo(device inventory.Device) (*models.Ima
 		return nil, err
 	} else if updateAvailable != nil {
 		ImageInfo.UpdatesAvailable = &updateAvailable
+
 	}
 	ImageInfo.Rollback = rollback
 	ImageInfo.Image = *currentImage
-
+	ImageInfo.SystemRunningCurrentImage = SystemRunning
 	return &ImageInfo, nil
 }
 
@@ -651,6 +668,22 @@ func (s *DeviceService) GetDevicesCount(tx *gorm.DB) (int64, error) {
 		return 0, res.Error
 	}
 
+	return count, nil
+}
+
+// GetDevicesCountByImage returns a list of EdgeDevices for a given org.
+func (s *DeviceService) GetDevicesCountByImage(imageId uint) (int64, error) {
+	orgID, err := common.GetOrgIDFromContext(s.ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	var count int64
+	res := db.OrgDB(orgID, db.DB, "").Find(&models.Device{}, "image_id =? ", imageId).Count(&count)
+	if res.Error != nil {
+		s.log.WithField("error", res.Error.Error()).Error("Error getting device groups count")
+		return 0, res.Error
+	}
 	return count, nil
 }
 
@@ -1182,4 +1215,17 @@ func (s *DeviceService) syncInventoryWithDevices(orgID string) {
 	if edgeCount != insightsCount {
 		s.log.WithFields(log.Fields{"edge_count": edgeCount, "insights_count": insightsCount, "orgID": orgID}).Error("Sync failed. Inventory counts do not match")
 	}
+}
+
+func (s *DeviceService) CanUpdate(currentDistribution string, updDistribution string) bool {
+	if config.DistributionsRefs[currentDistribution] == config.DistributionsRefs[updDistribution] {
+		return true
+	}
+	updPkgs := config.DistributionsPackages[updDistribution]
+	for i, pkg := range config.DistributionsPackages[currentDistribution] {
+		if !(strings.Contains(updPkgs[i], pkg)) {
+			return false
+		}
+	}
+	return false
 }

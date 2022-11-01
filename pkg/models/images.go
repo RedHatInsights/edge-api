@@ -48,8 +48,10 @@ type Image struct {
 
 // ImageUpdateAvailable contains image and differences between current and available commits
 type ImageUpdateAvailable struct {
-	Image       Image       `json:"Image"`
-	PackageDiff PackageDiff `json:"PackageDiff"`
+	Image                     Image       `json:"Image"`
+	SystemRunningCurrentImage int64       `json:"SystemRunning"`
+	CanUpdate                 bool        `json:"CanUpdate"`
+	PackageDiff               PackageDiff `json:"PackageDiff"`
 }
 
 // PackageDiff provides package difference details between current and available commits
@@ -61,9 +63,10 @@ type PackageDiff struct {
 
 // ImageInfo contains Image with updates available and rollback image
 type ImageInfo struct {
-	Image            Image                   `json:"Image"`
-	UpdatesAvailable *[]ImageUpdateAvailable `json:"UpdatesAvailable,omitempty"`
-	Rollback         *Image                  `json:"RollbackImage,omitempty"`
+	Image                     Image                   `json:"Image"`
+	SystemRunningCurrentImage int64                   `json:"SystemRunning"`
+	UpdatesAvailable          *[]ImageUpdateAvailable `json:"UpdatesAvailable,omitempty"`
+	Rollback                  *Image                  `json:"RollbackImage,omitempty"`
 }
 
 const (
