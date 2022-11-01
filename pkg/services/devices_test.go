@@ -1493,4 +1493,20 @@ var _ = Describe("DfseviceService", func() {
 			Expect(updateImageCommitID).To(Equal(secondCommit.ID))
 		})
 	})
+	Context("Validate if can update device", func() {
+		It("should return true when same refs", func() {
+			canUpdate := deviceService.CanUpdate("rhel-85", "rhel-86")
+			Expect(canUpdate).To(BeTrue())
+
+		})
+		It("should return true when same required package", func() {
+			canUpdate := deviceService.CanUpdate("rhel-86", "rhel-90")
+			Expect(canUpdate).To(BeTrue())
+		})
+
+		It("should return false when diff required package", func() {
+			canUpdate := deviceService.CanUpdate("rhel-85", "rhel-90")
+			Expect(canUpdate).To(BeFalse())
+		})
+	})
 })

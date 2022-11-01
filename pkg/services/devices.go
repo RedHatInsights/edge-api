@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
-	"strings"
 	"time"
 
 	version "github.com/knqyf263/go-rpm-version"
@@ -1223,8 +1222,8 @@ func (s *DeviceService) CanUpdate(currentDistribution string, updDistribution st
 	}
 	updPkgs := config.DistributionsPackages[updDistribution]
 	for i, pkg := range config.DistributionsPackages[currentDistribution] {
-		if !(strings.Contains(updPkgs[i], pkg)) {
-			return false
+		if updPkgs[i] == pkg {
+			return true
 		}
 	}
 	return false
