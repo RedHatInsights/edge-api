@@ -5,6 +5,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -360,6 +361,9 @@ func (s *DeviceService) GetDeviceImageInfo(device inventory.Device) (*models.Ima
 		return nil, new(ImageNotFoundError)
 	}
 	SystemRunning, err := s.GetDevicesCountByImage(currentImage.ID)
+	fmt.Print("**************************************")
+	fmt.Printf("\n SystemRunning %v \n", SystemRunning)
+	fmt.Printf("\n currentImage.ID %v \n", currentImage.ID)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Could not find device image info")
 		return nil, new(ImageNotFoundError)
@@ -681,7 +685,7 @@ func (s *DeviceService) GetDevicesCountByImage(imageId uint) (int64, error) {
 	}
 
 	var count int64
-	res := db.OrgDB(orgID, db.DB, "").Find(&models.Device{}, "image_id =? ", imageId).Count(&count)
+	res := db.OrgDB(orgID, db.DB.Model(&models.Device{}), "devices").Debug().Find(&models.Device{}, "image_id =? ", imageId).Count(&count)
 	if res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device groups count")
 		return 0, res.Error

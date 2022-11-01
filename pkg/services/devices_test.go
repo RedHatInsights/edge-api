@@ -1565,6 +1565,14 @@ var _ = Describe("DfseviceService", func() {
 			db.DB.Create(updImage.Commit)
 			db.DB.Create(updImage)
 
+			device := models.Device{
+				OrgID:   "00000000",
+				UUID:    faker.UUIDHyphenated(),
+				ImageID: newImage.ID,
+			}
+
+			db.DB.Debug().Create(&device)
+
 			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(newImage, nil)
 			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(newImage)).Return(oldImage, nil)
 			imageInfoUpd, err := deviceService.GetUpdateAvailableForDevice(resp.Result[0], false)
@@ -1576,6 +1584,8 @@ var _ = Describe("DfseviceService", func() {
 			Expect(imageInfo.Rollback).ToNot(BeNil())
 			Expect(imageInfo.UpdatesAvailable).ToNot(BeNil())
 			Expect(imageInfo.TotalPackages).To(Equal(len(newImage.Commit.InstalledPackages)))
+
+			Expect(imageInfo.SystemRunningCurrentImage).To(Equal(int64(1)))
 
 		})
 		It("should return no packages", func() {
@@ -1611,6 +1621,13 @@ var _ = Describe("DfseviceService", func() {
 			}
 			db.DB.Create(image.Commit)
 			db.DB.Create(image)
+			device := models.Device{
+				OrgID:   "00000000",
+				UUID:    faker.UUIDHyphenated(),
+				ImageID: image.ID,
+			}
+
+			db.DB.Debug().Create(&device)
 
 			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(image, nil)
 			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(image)).Return(image, nil)
@@ -1620,6 +1637,7 @@ var _ = Describe("DfseviceService", func() {
 			Expect(imageInfo.Image).ToNot(BeNil())
 			Expect(imageInfo.Rollback).To(BeNil())
 			Expect(imageInfo.TotalPackages).To(Equal(0))
+			Expect(imageInfo.SystemRunningCurrentImage).To(Equal(int64(1)))
 
 		})
 	})
