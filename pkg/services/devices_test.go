@@ -1657,4 +1657,69 @@ var _ = Describe("DfseviceService", func() {
 			Expect(canUpdate).To(BeFalse())
 		})
 	})
+
+	Context("Get Device count by image ", func() {
+		var imageSet *models.ImageSet
+		var img *models.Image
+		var img2 *models.Image
+		var img3 *models.Image
+		var device []models.Device
+		BeforeEach(func() {
+			imageSet = &models.ImageSet{
+				Name:    "test",
+				Version: 1,
+				OrgID:   orgID,
+			}
+			db.DB.Create(imageSet)
+			img = &models.Image{
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    1,
+				OrgID:      orgID,
+			}
+			db.DB.Create(&img)
+			img2 = &models.Image{
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    2,
+				OrgID:      orgID,
+			}
+			db.DB.Create(&img2)
+			img3 = &models.Image{
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    3,
+				OrgID:      orgID,
+			}
+			db.DB.Create(&img3)
+			device = []models.Device{
+				{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: img.ID},
+				{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: img.ID},
+				{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: img.ID},
+				{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: img2.ID},
+				{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: img2.ID},
+			}
+		})
+		It("should return devices", func() {
+
+			db.DB.Debug().Create(&device)
+			count, err := deviceService.GetDevicesCountByImage(img.ID)
+			Expect(err).To(BeNil())
+			Expect(count).To(Equal(int64(3)))
+
+		})
+		It("should return 2", func() {
+			db.DB.Debug().Create(&device)
+			count, err := deviceService.GetDevicesCountByImage(img2.ID)
+			Expect(err).To(BeNil())
+			Expect(count).To(Equal(int64(2)))
+		})
+		It("should return 0", func() {
+			db.DB.Debug().Create(&device)
+			count, err := deviceService.GetDevicesCountByImage(img3.ID)
+			Expect(err).To(BeNil())
+			Expect(count).To(Equal(int64(0)))
+		})
+
+	})
 })
