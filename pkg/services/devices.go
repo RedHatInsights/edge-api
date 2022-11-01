@@ -276,6 +276,7 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 		delta.PackageDiff = diff
 		delta.SystemRunningCurrentImage = SystemRunning
 		delta.CanUpdate = s.CanUpdate(currentImage.Distribution, upd.Distribution)
+		delta.TotalPackages = len(upd.Commit.InstalledPackages)
 		imageDiff = append(imageDiff, delta)
 
 	}
@@ -382,6 +383,8 @@ func (s *DeviceService) GetDeviceImageInfo(device inventory.Device) (*models.Ima
 	ImageInfo.Rollback = rollback
 	ImageInfo.Image = *currentImage
 	ImageInfo.SystemRunningCurrentImage = SystemRunning
+	ImageInfo.TotalPackages = len(currentImage.Commit.InstalledPackages)
+
 	return &ImageInfo, nil
 }
 

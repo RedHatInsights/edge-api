@@ -52,6 +52,7 @@ type ImageUpdateAvailable struct {
 	SystemRunningCurrentImage int64       `json:"SystemRunning"`
 	CanUpdate                 bool        `json:"CanUpdate"`
 	PackageDiff               PackageDiff `json:"PackageDiff"`
+	TotalPackages             int         `json:"TotalPackages"`
 }
 
 // PackageDiff provides package difference details between current and available commits
@@ -67,6 +68,7 @@ type ImageInfo struct {
 	SystemRunningCurrentImage int64                   `json:"SystemRunning"`
 	UpdatesAvailable          *[]ImageUpdateAvailable `json:"UpdatesAvailable,omitempty"`
 	Rollback                  *Image                  `json:"RollbackImage,omitempty"`
+	TotalPackages             int                     `json:"TotalPackages"`
 }
 
 const (
