@@ -1565,6 +1565,14 @@ var _ = Describe("DfseviceService", func() {
 			db.DB.Create(updImage.Commit)
 			db.DB.Create(updImage)
 
+			device := models.Device{
+				OrgID:   "00000000",
+				UUID:    faker.UUIDHyphenated(),
+				ImageID: newImage.ID,
+			}
+
+			db.DB.Debug().Create(&device)
+
 			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(newImage, nil)
 			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(newImage)).Return(oldImage, nil)
 			imageInfoUpd, err := deviceService.GetUpdateAvailableForDevice(resp.Result[0], false)
@@ -1576,6 +1584,8 @@ var _ = Describe("DfseviceService", func() {
 			Expect(imageInfo.Rollback).ToNot(BeNil())
 			Expect(imageInfo.UpdatesAvailable).ToNot(BeNil())
 			Expect(imageInfo.TotalPackages).To(Equal(len(newImage.Commit.InstalledPackages)))
+
+			Expect(imageInfo.TotalDevicesWithImage).To(Equal(int64(1)))
 
 		})
 		It("should return no packages", func() {
@@ -1611,6 +1621,13 @@ var _ = Describe("DfseviceService", func() {
 			}
 			db.DB.Create(image.Commit)
 			db.DB.Create(image)
+			device := models.Device{
+				OrgID:   "00000000",
+				UUID:    faker.UUIDHyphenated(),
+				ImageID: image.ID,
+			}
+
+			db.DB.Debug().Create(&device)
 
 			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(image, nil)
 			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(image)).Return(image, nil)
@@ -1620,7 +1637,89 @@ var _ = Describe("DfseviceService", func() {
 			Expect(imageInfo.Image).ToNot(BeNil())
 			Expect(imageInfo.Rollback).To(BeNil())
 			Expect(imageInfo.TotalPackages).To(Equal(0))
+			Expect(imageInfo.TotalDevicesWithImage).To(Equal(int64(1)))
 
 		})
+	})
+	Context("Validate if can update device", func() {
+		It("should return true when same refs", func() {
+			canUpdate := deviceService.CanUpdate("rhel-85", "rhel-86")
+			Expect(canUpdate).To(BeTrue())
+
+		})
+		It("should return true when same required package", func() {
+			canUpdate := deviceService.CanUpdate("rhel-86", "rhel-90")
+			Expect(canUpdate).To(BeTrue())
+		})
+
+		It("should return false when diff required package", func() {
+			canUpdate := deviceService.CanUpdate("rhel-85", "rhel-90")
+			Expect(canUpdate).To(BeFalse())
+		})
+	})
+
+	Context("Get Device count by image ", func() {
+		var imageSet *models.ImageSet
+		var img *models.Image
+		var img2 *models.Image
+		var img3 *models.Image
+		var device []models.Device
+		BeforeEach(func() {
+			imageSet = &models.ImageSet{
+				Name:    "test",
+				Version: 1,
+				OrgID:   orgID,
+			}
+			db.DB.Create(imageSet)
+			img = &models.Image{
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    1,
+				OrgID:      orgID,
+			}
+			db.DB.Create(&img)
+			img2 = &models.Image{
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    2,
+				OrgID:      orgID,
+			}
+			db.DB.Create(&img2)
+			img3 = &models.Image{
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    3,
+				OrgID:      orgID,
+			}
+			db.DB.Create(&img3)
+			device = []models.Device{
+				{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: img.ID},
+				{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: img.ID},
+				{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: img.ID},
+				{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: img2.ID},
+				{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: img2.ID},
+			}
+		})
+		It("should return devices", func() {
+
+			db.DB.Debug().Create(&device)
+			count, err := deviceService.GetDevicesCountByImage(img.ID)
+			Expect(err).To(BeNil())
+			Expect(count).To(Equal(int64(3)))
+
+		})
+		It("should return 2", func() {
+			db.DB.Debug().Create(&device)
+			count, err := deviceService.GetDevicesCountByImage(img2.ID)
+			Expect(err).To(BeNil())
+			Expect(count).To(Equal(int64(2)))
+		})
+		It("should return 0", func() {
+			db.DB.Debug().Create(&device)
+			count, err := deviceService.GetDevicesCountByImage(img3.ID)
+			Expect(err).To(BeNil())
+			Expect(count).To(Equal(int64(0)))
+		})
+
 	})
 })
