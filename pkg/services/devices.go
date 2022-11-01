@@ -5,7 +5,6 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -361,9 +360,6 @@ func (s *DeviceService) GetDeviceImageInfo(device inventory.Device) (*models.Ima
 		return nil, new(ImageNotFoundError)
 	}
 	SystemRunning, err := s.GetDevicesCountByImage(currentImage.ID)
-	fmt.Print("**************************************")
-	fmt.Printf("\n SystemRunning %v \n", SystemRunning)
-	fmt.Printf("\n currentImage.ID %v \n", currentImage.ID)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Could not find device image info")
 		return nil, new(ImageNotFoundError)
