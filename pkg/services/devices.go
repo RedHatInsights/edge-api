@@ -265,7 +265,7 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 			return nil, err
 		}
 		var delta models.ImageUpdateAvailable
-		SystemRunning, err := s.GetDevicesCountByImage(upd.ID)
+		devicesCountByImage, err := s.GetDevicesCountByImage(upd.ID)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Could not find device image info")
 			return nil, new(ImageNotFoundError)
@@ -274,7 +274,7 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
 		delta.Image = upd
 		delta.PackageDiff = diff
-		delta.SystemRunningCurrentImage = SystemRunning
+		delta.SystemsRunningCurrentImage = devicesCountByImage
 		delta.CanUpdate = s.CanUpdate(currentImage.Distribution, upd.Distribution)
 		delta.TotalPackages = len(upd.Commit.InstalledPackages)
 		imageDiff = append(imageDiff, delta)
@@ -359,7 +359,7 @@ func (s *DeviceService) GetDeviceImageInfo(device inventory.Device) (*models.Ima
 		s.log.WithField("error", err.Error()).Error("Could not find device image info")
 		return nil, new(ImageNotFoundError)
 	}
-	SystemRunning, err := s.GetDevicesCountByImage(currentImage.ID)
+	devicesCountByImage, err := s.GetDevicesCountByImage(currentImage.ID)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Could not find device image info")
 		return nil, new(ImageNotFoundError)
@@ -382,7 +382,7 @@ func (s *DeviceService) GetDeviceImageInfo(device inventory.Device) (*models.Ima
 	}
 	ImageInfo.Rollback = rollback
 	ImageInfo.Image = *currentImage
-	ImageInfo.SystemRunningCurrentImage = SystemRunning
+	ImageInfo.SystemsRunningCurrentImage = devicesCountByImage
 	ImageInfo.TotalPackages = len(currentImage.Commit.InstalledPackages)
 
 	return &ImageInfo, nil
@@ -673,7 +673,7 @@ func (s *DeviceService) GetDevicesCount(tx *gorm.DB) (int64, error) {
 	return count, nil
 }
 
-// GetDevicesCountByImage returns a list of EdgeDevices for a given org.
+// GetDevicesCountByImage returns a list of devices running a image in a org.
 func (s *DeviceService) GetDevicesCountByImage(imageId uint) (int64, error) {
 	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {

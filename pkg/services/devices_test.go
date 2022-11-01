@@ -1585,7 +1585,7 @@ var _ = Describe("DfseviceService", func() {
 			Expect(imageInfo.UpdatesAvailable).ToNot(BeNil())
 			Expect(imageInfo.TotalPackages).To(Equal(len(newImage.Commit.InstalledPackages)))
 
-			Expect(imageInfo.SystemRunningCurrentImage).To(Equal(int64(1)))
+			Expect(imageInfo.SystemsRunningCurrentImage).To(Equal(int64(1)))
 
 		})
 		It("should return no packages", func() {
@@ -1637,7 +1637,7 @@ var _ = Describe("DfseviceService", func() {
 			Expect(imageInfo.Image).ToNot(BeNil())
 			Expect(imageInfo.Rollback).To(BeNil())
 			Expect(imageInfo.TotalPackages).To(Equal(0))
-			Expect(imageInfo.SystemRunningCurrentImage).To(Equal(int64(1)))
+			Expect(imageInfo.SystemsRunningCurrentImage).To(Equal(int64(1)))
 
 		})
 	})
