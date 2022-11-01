@@ -575,6 +575,9 @@ var _ = Describe("DfseviceService", func() {
 					Commit: &models.Commit{
 						OSTreeCommit: checksum,
 						OrgID:        orgID,
+						InstalledPackages: []models.InstalledPackage{
+							{Name: "vim"},
+						},
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
@@ -593,6 +596,8 @@ var _ = Describe("DfseviceService", func() {
 				Expect(err).To(BeNil())
 				Expect(oldImage.Commit.OSTreeCommit).To(Equal(imageInfo.Rollback.Commit.OSTreeCommit))
 				Expect(newImage.Commit.OSTreeCommit).To(Equal(imageInfo.Image.Commit.OSTreeCommit))
+				Expect(newImage.Commit.OSTreeCommit).To(Equal(imageInfo.Image.Commit.OSTreeCommit))
+				Expect(imageInfo.TotalPackages).To(Equal(1))
 			})
 		})
 		When("Image is not found", func() {
@@ -1491,6 +1496,131 @@ var _ = Describe("DfseviceService", func() {
 			updateImageCommitID, err := deviceService.GetLatestCommitFromDevices(device.OrgID, devicesUUID)
 			Expect(err).To(BeNil())
 			Expect(updateImageCommitID).To(Equal(secondCommit.ID))
+		})
+	})
+
+	Context("Get Device Image Info", func() {
+		It("should return full image info", func() {
+			checksum := "fake-checksum"
+			resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
+				{ID: uuid, Ostree: inventory.SystemProfile{
+					RHCClientID: faker.UUIDHyphenated(),
+					RpmOstreeDeployments: []inventory.OSTree{
+						{Checksum: checksum, Booted: true},
+					},
+				},
+					OrgID: orgID,
+				},
+			}}
+			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).
+				Return(resp, nil).Times(1)
+			imageSet := &models.ImageSet{
+				Name:    "test",
+				Version: 2,
+				OrgID:   orgID,
+			}
+			db.DB.Create(imageSet)
+			oldImage := &models.Image{
+				Commit: &models.Commit{
+					OSTreeCommit: fmt.Sprintf("a-old-%s", checksum),
+					OrgID:        orgID,
+				},
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    1,
+				OrgID:      orgID,
+			}
+			db.DB.Create(oldImage.Commit)
+			db.DB.Create(oldImage)
+			newImage := &models.Image{
+				Commit: &models.Commit{
+					OSTreeCommit: checksum,
+					OrgID:        orgID,
+					InstalledPackages: []models.InstalledPackage{
+						{Name: "vim"},
+						{Name: "emacs"},
+					},
+				},
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    2,
+				OrgID:      orgID,
+			}
+			db.DB.Create(newImage.Commit)
+			db.DB.Create(newImage)
+			updImage := &models.Image{
+				Commit: &models.Commit{
+					OSTreeCommit: checksum,
+					OrgID:        orgID,
+					InstalledPackages: []models.InstalledPackage{
+						{Name: "vim"},
+						{Name: "emacs"},
+					},
+				},
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    32,
+				OrgID:      orgID,
+			}
+			db.DB.Create(updImage.Commit)
+			db.DB.Create(updImage)
+
+			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(newImage, nil)
+			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(newImage)).Return(oldImage, nil)
+			imageInfoUpd, err := deviceService.GetUpdateAvailableForDevice(resp.Result[0], false)
+			Expect(err).To(BeNil())
+			Expect(imageInfoUpd).ToNot(BeNil())
+			imageInfo, err := deviceService.GetDeviceImageInfo(resp.Result[0])
+			Expect(err).To(BeNil())
+			Expect(imageInfo.Image).ToNot(BeNil())
+			Expect(imageInfo.Rollback).ToNot(BeNil())
+			Expect(imageInfo.UpdatesAvailable).ToNot(BeNil())
+			Expect(imageInfo.TotalPackages).To(Equal(len(newImage.Commit.InstalledPackages)))
+
+		})
+		It("should return no packages", func() {
+			checksum := "fake-checksum-2"
+			resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
+				{ID: uuid, Ostree: inventory.SystemProfile{
+					RHCClientID: faker.UUIDHyphenated(),
+					RpmOstreeDeployments: []inventory.OSTree{
+						{Checksum: checksum, Booted: true},
+					},
+				},
+					OrgID: orgID,
+				},
+			}}
+			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).
+				Return(resp, nil).Times(1)
+			imageSet := &models.ImageSet{
+				Name:    "test",
+				Version: 1,
+				OrgID:   orgID,
+			}
+			db.DB.Create(imageSet)
+
+			image := &models.Image{
+				Commit: &models.Commit{
+					OSTreeCommit: checksum,
+					OrgID:        orgID,
+				},
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    1,
+				OrgID:      orgID,
+			}
+			db.DB.Create(image.Commit)
+			db.DB.Create(image)
+
+			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(image, nil)
+			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(image)).Return(image, nil)
+
+			imageInfo, err := deviceService.GetDeviceImageInfo(resp.Result[0])
+			Expect(err).To(BeNil())
+			Expect(imageInfo.Image).ToNot(BeNil())
+			Expect(imageInfo.Rollback).To(BeNil())
+			Expect(imageInfo.TotalPackages).To(Equal(0))
+
 		})
 	})
 })
