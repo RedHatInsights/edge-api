@@ -268,6 +268,7 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
 		delta.Image = upd
 		delta.PackageDiff = diff
+		delta.TotalPackages = len(upd.Commit.InstalledPackages)
 		imageDiff = append(imageDiff, delta)
 	}
 	return imageDiff, nil
@@ -365,6 +366,7 @@ func (s *DeviceService) GetDeviceImageInfo(device inventory.Device) (*models.Ima
 	}
 	ImageInfo.Rollback = rollback
 	ImageInfo.Image = *currentImage
+	ImageInfo.TotalPackages = len(currentImage.Commit.InstalledPackages)
 
 	return &ImageInfo, nil
 }
