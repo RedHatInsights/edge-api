@@ -59,7 +59,7 @@ var _ = Describe("ValidateDevicesImageSetWithCommit", func() {
 		commitService = services.NewCommitService(ctx, log.NewEntry(log.StandardLogger()))
 	})
 
-	Context("ValidateDevicesImageSetWithCommit", func() {
+	Context("Validate if user provided commitID belong to same ImageSet and its valid to perform update", func() {
 
 		It("commit is invalid to update", func() {
 			err := commitService.ValidateDevicesImageSetWithCommit([]string{device.UUID}, commits[0].ID)
