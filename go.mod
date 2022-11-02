@@ -20,7 +20,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/ginkgo/v2 v2.3.1 // indirect
 	github.com/onsi/gomega v1.22.1
-	github.com/prometheus/client_golang v1.13.0
+	github.com/prometheus/client_golang v1.13.1
 	github.com/redhatinsights/app-common-go v1.6.4
 	github.com/redhatinsights/platform-go-middlewares v0.20.0
 	github.com/sirupsen/logrus v1.9.0
