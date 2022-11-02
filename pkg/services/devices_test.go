@@ -133,14 +133,14 @@ var _ = Describe("DfseviceService", func() {
 			It("should return error and no updates available - for all updates", func() {
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(inventory.Response{}, errors.New("error on inventory api"))
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false, 10, 0)
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 				Expect(updatesAvailable).To(BeNil())
 			})
 			It("should return error and no updates available - for latest update", func() {
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(inventory.Response{}, errors.New("error on inventory api"))
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true, 10, 0)
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 				Expect(updatesAvailable).To(BeNil())
 			})
@@ -154,7 +154,7 @@ var _ = Describe("DfseviceService", func() {
 					Inventory: mockInventoryClient,
 				}
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false, 10, 0)
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 				Expect(updatesAvailable).To(BeNil())
 			})
@@ -166,7 +166,7 @@ var _ = Describe("DfseviceService", func() {
 					Inventory: mockInventoryClient,
 				}
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true, 10, 0)
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 				Expect(updatesAvailable).To(BeNil())
 			})
@@ -191,7 +191,7 @@ var _ = Describe("DfseviceService", func() {
 					Inventory: mockInventoryClient,
 				}
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false, 10, 0)
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 				Expect(updatesAvailable).To(BeNil())
 			})
@@ -214,7 +214,7 @@ var _ = Describe("DfseviceService", func() {
 					Inventory: mockInventoryClient,
 				}
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true, 10, 0)
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 				Expect(updatesAvailable).To(BeNil())
 			})
@@ -286,7 +286,7 @@ var _ = Describe("DfseviceService", func() {
 				db.DB.Create(newImage.Commit)
 				db.DB.Create(newImage)
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false, 10, 0)
 
 				Expect(err).To(BeNil())
 				Expect(updatesAvailable).To(HaveLen(1))
@@ -381,7 +381,7 @@ var _ = Describe("DfseviceService", func() {
 				db.DB.Create(thirdImage.Commit)
 				db.DB.Create(thirdImage)
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true, 10, 0)
 
 				Expect(err).To(BeNil())
 				Expect(updatesAvailable).To(HaveLen(1))
@@ -426,7 +426,7 @@ var _ = Describe("DfseviceService", func() {
 				}
 				db.DB.Create(oldImage)
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false, 10, 0)
 				Expect(err).To(BeNil())
 				Expect(updatesAvailable).To(BeNil())
 			})
@@ -446,7 +446,7 @@ var _ = Describe("DfseviceService", func() {
 				}}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false, 10, 0)
 				Expect(err).ToNot(BeNil())
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 				Expect(updatesAvailable).To(BeNil())
@@ -592,7 +592,7 @@ var _ = Describe("DfseviceService", func() {
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(newImage, nil)
 				mockImageService.EXPECT().GetRollbackImage(gomock.Eq(newImage)).Return(oldImage, nil)
 
-				imageInfo, err := deviceService.GetDeviceImageInfoByUUID(uuid)
+				imageInfo, err := deviceService.GetDeviceImageInfoByUUID(uuid, 10, 0)
 				Expect(err).To(BeNil())
 				Expect(oldImage.Commit.OSTreeCommit).To(Equal(imageInfo.Rollback.Commit.OSTreeCommit))
 				Expect(newImage.Commit.OSTreeCommit).To(Equal(imageInfo.Image.Commit.OSTreeCommit))
@@ -616,7 +616,7 @@ var _ = Describe("DfseviceService", func() {
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(nil, errors.New("Not found"))
 
-				_, err := deviceService.GetDeviceImageInfoByUUID(uuid)
+				_, err := deviceService.GetDeviceImageInfoByUUID(uuid, 10, 0)
 				Expect(err).To(MatchError(new(services.ImageNotFoundError)))
 			})
 		})
@@ -1037,7 +1037,7 @@ var _ = Describe("DfseviceService", func() {
 				}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Any()).Return(resp, nil)
 
-				deviceDetails, err := deviceService.GetDeviceDetailsByUUID(deviceWithImage.UUID)
+				deviceDetails, err := deviceService.GetDeviceDetailsByUUID(deviceWithImage.UUID, 10, 0)
 				Expect(err).To(BeNil())
 				Expect(deviceDetails).ToNot(BeNil())
 				Expect(deviceDetails.Device.ID).To(Equal(deviceWithImage.ID))
@@ -1567,10 +1567,10 @@ var _ = Describe("DfseviceService", func() {
 
 			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(newImage, nil)
 			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(newImage)).Return(oldImage, nil)
-			imageInfoUpd, err := deviceService.GetUpdateAvailableForDevice(resp.Result[0], false)
+			imageInfoUpd, err := deviceService.GetUpdateAvailableForDevice(resp.Result[0], false, 10, 0)
 			Expect(err).To(BeNil())
 			Expect(imageInfoUpd).ToNot(BeNil())
-			imageInfo, err := deviceService.GetDeviceImageInfo(resp.Result[0])
+			imageInfo, err := deviceService.GetDeviceImageInfo(resp.Result[0], 10, 0)
 			Expect(err).To(BeNil())
 			Expect(imageInfo.Image).ToNot(BeNil())
 			Expect(imageInfo.Rollback).ToNot(BeNil())
@@ -1615,7 +1615,7 @@ var _ = Describe("DfseviceService", func() {
 			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(image, nil)
 			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(image)).Return(image, nil)
 
-			imageInfo, err := deviceService.GetDeviceImageInfo(resp.Result[0])
+			imageInfo, err := deviceService.GetDeviceImageInfo(resp.Result[0], 10, 0)
 			Expect(err).To(BeNil())
 			Expect(imageInfo.Image).ToNot(BeNil())
 			Expect(imageInfo.Rollback).To(BeNil())
