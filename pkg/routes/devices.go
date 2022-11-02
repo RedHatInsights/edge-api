@@ -189,9 +189,6 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 	}
 	pagination := common.GetPagination(r)
 	result, err := contextServices.DeviceService.GetDeviceImageInfoByUUID(dc.DeviceUUID, pagination.Limit, pagination.Offset)
-	fmt.Print("\n*********************************")
-	fmt.Printf("\n route %v, %v\n", pagination.Limit, pagination.Offset)
-	fmt.Print("\n*********************************")
 	if err != nil {
 		var apiError errors.APIError
 		switch err.(type) {

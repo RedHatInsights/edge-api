@@ -5,7 +5,6 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -329,9 +328,6 @@ func GetDiffOnUpdate(oldImg models.Image, newImg models.Image) models.PackageDif
 
 // GetDeviceImageInfoByUUID returns the information of a running image for a device given its UUID
 func (s *DeviceService) GetDeviceImageInfoByUUID(deviceUUID string, limit int, offset int) (*models.ImageInfo, error) {
-	fmt.Print("\n*********************************")
-	fmt.Printf("\n service %v, %v\n", limit, offset)
-	fmt.Print("\n*********************************")
 	// s.log = s.log.WithField("deviceUUID", deviceUUID)
 	resp, err := s.Inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || resp.Total != 1 {
