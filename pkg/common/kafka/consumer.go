@@ -3,11 +3,7 @@ package kafkacommon
 import (
 	"time"
 
-	"encoding/json"
-
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -41,34 +37,38 @@ type Consumer interface {
 	StoreMessage(m *kafka.Message) (storedOffsets []kafka.TopicPartition, err error)
 	StoreOffsets(offsets []kafka.TopicPartition) (storedOffsets []kafka.TopicPartition, err error)
 	String() string
+	Subscribe(topic string, rebalanceCb kafka.RebalanceCb) error
+	SubscribeTopics(topics []string, rebalanceCb kafka.RebalanceCb) (err error)
 	Subscription() (topics []string, err error)
+	Unsubscribe() (err error)
 	Unassign() (err error)
 }
 
 // ConsumerServiceInterface is the interface that defines the consumer service
 type ConsumerServiceInterface interface {
-	ConsumeMessage(event models.CRCCloudEvent) error
+	GetConsumer(groupID string) (Consumer, error)
 }
 
-// ConsumeService is the consumer service for edge
-type ConsumeService struct {
-	Topic          TopicServiceInterface
+// ConsumerService is the consumer service for edge
+type ConsumerService struct {
 	KafkaConfigMap KafkaConfigMapServiceInterface
 }
 
-// ConsumeMessage is a helper for the kafka consumer
-func (c *ConsumeService) ConsumeMessage(event models.CRCCloudEvent) error {
-	log.Debug("Consume an event")
-
-	cfg := config.Get()
-	cfgBytes, _ := json.Marshal(cfg)
-	crcEvent := &event.Data
-
-	// unmarshal the event from a string
-	err := json.Unmarshal(cfgBytes, crcEvent)
-	if err != nil {
-		log.Error("Unmarshal CRCCloudEvent failed")
-		return err
+// NewConsumerService returns a new service
+func NewConsumerService() ConsumerServiceInterface {
+	return &ConsumerService{
+		KafkaConfigMap: NewKafkaConfigMapService(),
 	}
-	return nil
+}
+
+func (s *ConsumerService) GetConsumer(groupID string) (Consumer, error) {
+	kafkaConfigMap := s.KafkaConfigMap.GetKafkaConsumerConfigMap(groupID)
+	c, err := kafka.NewConsumer(&kafkaConfigMap)
+
+	if err != nil {
+		log.WithField("error", err.Error()).Error("Failed to create consumer")
+		return nil, err
+	}
+
+	return c, nil
 }

@@ -38,11 +38,10 @@ func main() {
 	}
 
 	consumerGroup := "imagesisobuild"
-	kafkaConfigMap := kafkacommon.NewKafkaConfigMapService().GetKafkaConsumerConfigMap(consumerGroup)
-	c, err := kafka.NewConsumer(&kafkaConfigMap)
+	c, err := edgeAPIServices.ConsumerService.GetConsumer(consumerGroup)
 
 	if err != nil {
-		mslog.WithField("error", err.Error()).Error("Failed to create ISO consumer")
+		mslog.WithField("error", err.Error()).Error("Failed to get ISO consumer")
 		os.Exit(1)
 	}
 

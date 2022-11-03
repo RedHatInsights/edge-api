@@ -48,9 +48,7 @@ func main() {
 		sigchan := make(chan os.Signal, 1)
 		signal.Notify(sigchan, os.Interrupt, syscall.SIGTERM)
 
-		// TODO: this should be a struct defined elsewhere and read in
-		kafkaConfigMap := kafkacommon.NewKafkaConfigMapService().GetKafkaConsumerConfigMap(consumerGroup)
-		c, err := kafka.NewConsumer(&kafkaConfigMap)
+		c, err := edgeAPIServices.ConsumerService.GetConsumer(consumerGroup)
 
 		if err != nil {
 			mslog.WithField("error", err.Error()).Error("Failed to create consumer")
