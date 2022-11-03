@@ -19,7 +19,7 @@ type ImageSet struct {
 	Name    string  `json:"Name"`
 	Version int     `json:"Version" gorm:"default:1"`
 	Account string  `json:"Account"`
-	OrgID   string  `json:"org_id" gorm:"index"`
+	OrgID   string  `json:"org_id" gorm:"index;<-:create"`
 	Images  []Image `json:"Images"`
 }
 
