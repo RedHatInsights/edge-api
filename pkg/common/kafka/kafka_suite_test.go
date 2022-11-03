@@ -8,6 +8,6 @@ import (
 )
 
 func TestKafka(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Kafka Suite")
+	RegisterFailHandler(Fail) // nolint:typecheck
+	RunSpecs(t, "Kafka Suite") // nolint:typecheck
 }

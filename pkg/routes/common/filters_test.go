@@ -1,5 +1,5 @@
 // FIXME: golangci-lint
-// nolint:errcheck,gocritic,revive
+// nolint:errcheck,gocritic,revive,typecheck
 package common
 
 import (

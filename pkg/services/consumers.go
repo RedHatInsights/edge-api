@@ -1,5 +1,5 @@
 // FIXME: golangci-lint
-// nolint:gocritic,govet,ineffassign,revive
+// nolint:gocritic,govet,ineffassign,revive,typecheck
 package services
 
 import (

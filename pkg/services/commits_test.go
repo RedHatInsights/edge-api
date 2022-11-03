@@ -1,5 +1,5 @@
 // FIXME: golangci-lint
-// nolint:errcheck,gosec,govet,revive
+// nolint:errcheck,gosec,govet,revive,typecheck
 package services_test
 
 import (
