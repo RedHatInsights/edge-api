@@ -1,5 +1,5 @@
 // FIXME: golangci-lint
-// nolint:govet,ineffassign,revive,staticcheck
+// nolint:govet,ineffassign,revive,staticcheck,typecheck
 package routes
 
 import (

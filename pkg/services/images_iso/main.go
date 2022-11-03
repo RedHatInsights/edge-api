@@ -1,5 +1,5 @@
 // FIXME: golangci-lint
-// nolint:errcheck,govet,revive
+// nolint:errcheck,govet,revive,typecheck
 package main
 
 import (

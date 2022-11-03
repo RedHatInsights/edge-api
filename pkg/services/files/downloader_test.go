@@ -1,5 +1,5 @@
 // FIXME: golangci-lint
-// nolint:revive
+// nolint:revive,typecheck
 package files
 
 import (
