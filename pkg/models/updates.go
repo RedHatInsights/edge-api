@@ -21,7 +21,7 @@ type UpdateTransaction struct {
 	Commit          *Commit          `json:"Commit"`
 	CommitID        uint             `json:"CommitID"`
 	Account         string           `json:"Account"`
-	OrgID           string           `json:"org_id" gorm:"index"`
+	OrgID           string           `json:"org_id" gorm:"index;<-:create"`
 	OldCommits      []Commit         `gorm:"many2many:updatetransaction_commits;" json:"OldCommits"`
 	Devices         []Device         `gorm:"many2many:updatetransaction_devices;save_association:false" json:"Devices"`
 	Tag             string           `json:"Tag"`
