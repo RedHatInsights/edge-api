@@ -2,7 +2,7 @@
 //
 // An API server for fleet edge management capabilities.
 // FIXME: golangci-lint
-// nolint:errcheck,revive,unused
+// nolint:errcheck,revive,typecheck,unused
 package main
 
 import (

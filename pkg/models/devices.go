@@ -92,7 +92,7 @@ type Device struct {
 	LastSeen          EdgeAPITime          `json:"LastSeen"`
 	CurrentHash       string               `json:"CurrentHash,omitempty"`
 	Account           string               `gorm:"index" json:"Account"`
-	OrgID             string               `json:"org_id" gorm:"index"`
+	OrgID             string               `json:"org_id" gorm:"index;<-:create"`
 	ImageID           uint                 `json:"ImageID"`
 	UpdateAvailable   bool                 `json:"UpdateAvailable"`
 	DevicesGroups     []DeviceGroup        `faker:"-" gorm:"many2many:device_groups_devices;save_association:false" json:"DevicesGroups"`

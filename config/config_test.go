@@ -1,6 +1,6 @@
 // Package config sets up the application configuration from env, file, etc.
 // FIXME: golangci-lint
-// nolint:errcheck,gocritic,gosimple,govet,revive, gosec
+// nolint:errcheck,gocritic,gosec,gosimple,govet,revive,typecheck
 package config
 
 import (

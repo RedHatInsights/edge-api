@@ -1,5 +1,5 @@
 // FIXME: golangci-lint
-// nolint:govet,revive
+// nolint:govet,revive,typecheck
 package models
 
 import (
@@ -41,7 +41,7 @@ func TestGroupCreateUpdateConstraint(t *testing.T) {
 	groupInitialAccount := "1111111"
 	groupInitialName := "test_group"
 	groupInitialType := DeviceGroupTypeDynamic
-	groupNewAccount := "222222"
+	groupNewOrgID := "222222"
 	groupInitialOrgID := "1111111"
 
 	groupNewType := DeviceGroupTypeStatic
@@ -63,7 +63,7 @@ func TestGroupCreateUpdateConstraint(t *testing.T) {
 		t.Errorf("Failed to retrieve the created DeviceGroup: %q", result.Error)
 	}
 
-	savedGroup.Account = groupNewAccount
+	savedGroup.OrgID = groupNewOrgID
 	savedGroup.Type = groupNewType
 	savedGroup.Name = groupNewName
 
@@ -78,8 +78,8 @@ func TestGroupCreateUpdateConstraint(t *testing.T) {
 		t.Errorf("Failed to retrieve the updated DeviceGroup: %q", result.Error)
 	}
 	// The group Account should not be updated
-	if updatedGroup.Account != groupInitialAccount {
-		t.Errorf("The group Account has been updated expected: %q  but found %q", groupInitialAccount, updatedGroup.Account)
+	if updatedGroup.OrgID != groupInitialOrgID {
+		t.Errorf("The org id has been updated expected: %q  but found %q", groupInitialOrgID, updatedGroup.OrgID)
 	}
 	// The group Type should not be updated
 	if updatedGroup.Type != groupInitialType {
