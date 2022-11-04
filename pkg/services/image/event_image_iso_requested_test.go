@@ -10,6 +10,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	mock_kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka/mock_kafka"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
@@ -21,14 +22,19 @@ import (
 var _ = Describe("Event Image ISO Event Test", func() {
 	var ctx context.Context
 	var mockImageService *mock_services.MockImageServiceInterface
+	var mockConsumerService *mock_kafkacommon.MockConsumerServiceInterface
+	var mockConsumer *mock_kafkacommon.MockConsumer
+
 	BeforeEach(func() {
 		ctrl := gomock.NewController(GinkgoT())
 		defer ctrl.Finish()
 		mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
-
+		mockConsumerService = mock_kafkacommon.NewMockConsumerServiceInterface(ctrl)
+		mockConsumer = mock_kafkacommon.NewMockConsumer(ctrl)
 		ctx = context.Background()
 		ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
-			ImageService: mockImageService,
+			ImageService:    mockImageService,
+			ConsumerService: mockConsumerService,
 		})
 		ctx = eventImageReq.ContextWithLogger(ctx, log.NewEntry(log.StandardLogger()))
 	})
@@ -61,10 +67,10 @@ var _ = Describe("Event Image ISO Event Test", func() {
 					Expect(edgePayload).ToNot(BeNil())
 
 					mockImageService.EXPECT().AddUserInfo(gomock.Any()).Return(nil)
+					mockConsumerService.EXPECT().GetConsumer(Equal(mockConsumer))
 					event := &eventImageReq.EventImageISORequestedBuildHandler{}
 					event.Data = *edgePayload
 					event.Consume(ctx)
-
 				})
 			})
 			Context("when image passed is nil", func() {
