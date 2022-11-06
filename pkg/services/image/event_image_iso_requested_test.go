@@ -67,9 +67,13 @@ var _ = Describe("Event Image ISO Event Test", func() {
 					Expect(edgePayload).ToNot(BeNil())
 
 					mockImageService.EXPECT().AddUserInfo(gomock.Any()).Return(nil)
-					mockConsumerService.EXPECT().GetConsumer(Equal(mockConsumer))
 					event := &eventImageReq.EventImageISORequestedBuildHandler{}
 					event.Data = *edgePayload
+					timeout := 100
+					groupIDConsumer := "imagebuilder"
+					mockConsumer.EXPECT().Poll(timeout)
+					consumer := mockConsumerService.EXPECT().GetConsumer(groupIDConsumer).Return(mockConsumer, nil)
+					Expect(consumer).ToNot(BeNil())
 					event.Consume(ctx)
 				})
 			})
