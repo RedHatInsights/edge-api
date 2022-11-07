@@ -503,14 +503,17 @@ var _ = Describe("Update routes", func() {
 		})
 
 		When("CommitID is not valid for update because is rollback info", func() {
-			// a deviceRunning latest image
-			deviceUpdated := models.Device{
-				OrgID:   orgID,
-				UUID:    faker.UUIDHyphenated(),
-				ImageID: updateImage.ID,
-			}
-			db.DB.Create(&deviceUpdated)
+
 			It("should not allow to update with prior commitID ", func() {
+				// a deviceRunning latest image
+				deviceUpdated := models.Device{
+					OrgID:   orgID,
+					UUID:    faker.UUIDHyphenated(),
+					ImageID: updateImage.ID,
+				}
+				errDB := db.DB.Create(&deviceUpdated)
+
+				Expect(errDB.Error).To(BeNil())
 
 				updateData, err := json.Marshal(models.DevicesUpdate{CommitID: image.CommitID, DevicesUUID: []string{deviceUpdated.UUID}})
 				Expect(err).To(BeNil())
