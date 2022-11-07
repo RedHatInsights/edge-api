@@ -501,6 +501,36 @@ var _ = Describe("Update routes", func() {
 				Expect(string(respBody)).To(ContainSubstring("No commit found for CommitID %d", non_existant_commit))
 			})
 		})
+
+		When("CommitID is not valid for update because is rollback info", func() {
+			// a deviceRunning latest image
+			deviceUpdated := models.Device{
+				OrgID:   orgID,
+				UUID:    faker.UUIDHyphenated(),
+				ImageID: updateImage.ID,
+			}
+			db.DB.Create(&deviceUpdated)
+			It("should not allow to update with prior commitID ", func() {
+
+				updateData, err := json.Marshal(models.DevicesUpdate{CommitID: image.CommitID, DevicesUUID: []string{deviceUpdated.UUID}})
+				Expect(err).To(BeNil())
+
+				req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(updateData))
+				Expect(err).To(BeNil())
+
+				ctx := dependencies.ContextWithServices(req.Context(), edgeAPIServices)
+				req = req.WithContext(ctx)
+
+				responseRecorder := httptest.NewRecorder()
+
+				handler := http.HandlerFunc(AddUpdate)
+				handler.ServeHTTP(responseRecorder, req)
+
+				respBody, err := ioutil.ReadAll(responseRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("Commit %d not valid to update", image.CommitID))
+			})
+		})
 	})
 
 	Context("Devices update by diff commits", func() {
