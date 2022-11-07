@@ -51,11 +51,9 @@ type Image struct {
 
 // ImageUpdateAvailable contains image and differences between current and available commits
 type ImageUpdateAvailable struct {
-	Image                 Image       `json:"Image"`
-	TotalDevicesWithImage int64       `json:"SystemsRunning"`
-	CanUpdate             bool        `json:"CanUpdate"`
-	PackageDiff           PackageDiff `json:"PackageDiff"`
-	TotalPackages         int         `json:"TotalPackages"`
+	Image       Image       `json:"Image"`
+	CanUpdate   bool        `json:"CanUpdate"`
+	PackageDiff PackageDiff `json:"PackageDiff"`
 }
 
 // PackageDiff provides package difference details between current and available commits
