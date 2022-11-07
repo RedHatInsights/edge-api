@@ -64,11 +64,16 @@ type PackageDiff struct {
 
 // ImageInfo contains Image with updates available and rollback image
 type ImageInfo struct {
-	Image                 Image                   `json:"Image"`
-	TotalDevicesWithImage int64                   `json:"SystemsRunning"`
-	UpdatesAvailable      *[]ImageUpdateAvailable `json:"UpdatesAvailable,omitempty"`
-	Rollback              *Image                  `json:"RollbackImage,omitempty"`
-	TotalPackages         int                     `json:"TotalPackages"`
+	Image            CurrentImage            `json:"Image"`
+	UpdatesAvailable *[]ImageUpdateAvailable `json:"UpdatesAvailable,omitempty"`
+	Rollback         *Image                  `json:"RollbackImage,omitempty"`
+}
+
+// CurrentImage contains image details for current image
+type CurrentImage struct {
+	Image                 Image `json:"Image"`
+	TotalDevicesWithImage int64 `json:"SystemsRunning"`
+	TotalPackages         int   `json:"TotalPackages"`
 }
 
 const (

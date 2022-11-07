@@ -381,9 +381,9 @@ func (s *DeviceService) GetDeviceImageInfo(device inventory.Device, limit int, o
 
 	}
 	ImageInfo.Rollback = rollback
-	ImageInfo.Image = *currentImage
-	ImageInfo.TotalDevicesWithImage = devicesCountByImage
-	ImageInfo.TotalPackages = len(currentImage.Commit.InstalledPackages)
+	ImageInfo.Image.Image = *currentImage
+	ImageInfo.Image.TotalDevicesWithImage = devicesCountByImage
+	ImageInfo.Image.TotalPackages = len(currentImage.Commit.InstalledPackages)
 
 	return &ImageInfo, nil
 }
