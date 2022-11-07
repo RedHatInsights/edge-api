@@ -304,3 +304,10 @@ type KafkaAllBrokersDown struct{}
 func (e *KafkaAllBrokersDown) Error() string {
 	return "Cannot connect to any Kafka brokers"
 }
+
+// DBError indicates a dbError during search
+type DBCommitError struct{}
+
+func (e *DBCommitError) Error() string {
+	return "Error searching for ImageSet of Device Images"
+}
