@@ -88,7 +88,7 @@ var _ = Describe("Kafka Producer Test", func() {
 		})
 	})
 	Describe("Get Producer instance fails", func() {
-		When("One dosent exist yet two", func() {
+		When("One does not exist yet two", func() {
 			Context("Kafka Config errors", func() {
 				It("Producer should be nil", func() {
 					kafkaConfigMap2 := kafka.ConfigMap{
