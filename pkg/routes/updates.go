@@ -227,7 +227,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 				"error":    err.Error(),
 				"commitID": devicesUpdate.CommitID,
 			}).Error(err.Error())
-			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(fmt.Sprintf("Commit %d does not belong to the same image-set as devices", devicesUpdate.CommitID)))
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(fmt.Sprintf("Commit %d %v", devicesUpdate.CommitID, err.Error())))
 			return nil
 		}
 	}
