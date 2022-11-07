@@ -72,13 +72,6 @@ type ImageInfo struct {
 	Rollback         *Image                  `json:"RollbackImage,omitempty"`
 }
 
-// CurrentImage contains image details for current image
-type CurrentImage struct {
-	Image                 Image `json:"Image"`
-	TotalDevicesWithImage int64 `json:"SystemsRunning"`
-	TotalPackages         int   `json:"TotalPackages"`
-}
-
 const (
 	// DistributionCantBeNilMessage is the error message when a distribution is nil
 	DistributionCantBeNilMessage = "distribution can't be empty"
