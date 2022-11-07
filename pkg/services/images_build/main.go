@@ -15,6 +15,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/image"
+	"github.com/redhatinsights/edge-api/pkg/services/utility"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -119,7 +120,7 @@ func main() {
 						mslog = mslog.WithField("event_id", crcEvent.ID)
 
 						// add the logger to the context before Consume() calls
-						ctx = image.ContextWithLogger(ctx, mslog)
+						ctx = utility.ContextWithLogger(ctx, mslog)
 
 						// call the event's Consume method
 						imageService := services.NewImageService(ctx, mslog)
@@ -135,7 +136,7 @@ func main() {
 						mslog = mslog.WithField("event_id", crcEvent.ID)
 
 						// add the logger to the context before Consume() calls
-						ctx = image.ContextWithLogger(ctx, mslog)
+						ctx = utility.ContextWithLogger(ctx, mslog)
 
 						// call the event's Consume method
 						go crcEvent.Consume(ctx)

@@ -51,6 +51,7 @@ type DeviceServiceInterface interface {
 	ProcessPlatformInventoryCreateEvent(message []byte) error
 	ProcessPlatformInventoryUpdatedEvent(message []byte) error
 	ProcessPlatformInventoryDeleteEvent(message []byte) error
+	SyncDevicesWithInventory(orgID string)
 }
 
 // RpmOSTreeDeployment is the member of PlatformInsightsCreateUpdateEventPayload host system profile rpm ostree deployments list
@@ -730,7 +731,7 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 		s.log.WithFields(log.Fields{"edge_count": total, "insights_count": inventoryDevices.Total}).Debug("Comparing edge and insights inventory counts")
 		if int64(inventoryDevices.Total) != total {
 			s.log.WithFields(log.Fields{"edge_count": total, "insights_count": inventoryDevices.Total}).Debug("Inventory counts do not match. Calling syncDevicesWithInventory")
-			go s.syncDevicesWithInventory(orgID)
+			go s.SyncDevicesWithInventory(orgID)
 		}
 	}
 
@@ -1004,7 +1005,7 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 	return nil
 }
 
-func (s *DeviceService) syncDevicesWithInventory(orgID string) {
+func (s *DeviceService) SyncDevicesWithInventory(orgID string) {
 	s.log.Debug("Syncing edge and insights inventories")
 	// use stored devices to check inventory in chunks and see if we have any stale devices.
 	// Delete devices in Edge Inventory that are not in Insights Inventory

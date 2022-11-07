@@ -8,6 +8,7 @@ import (
 
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services/utility"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -25,7 +26,7 @@ type EventImageISORequestedBuildHandler struct {
 
 // Consume executes code against the data in the received event
 func (ev EventImageISORequestedBuildHandler) Consume(ctx context.Context) {
-	eventlog := GetLoggerFromContext(ctx)
+	eventlog := utility.GetLoggerFromContext(ctx)
 	eventlog.Info("Starting image iso build")
 
 	payload := ev.Data

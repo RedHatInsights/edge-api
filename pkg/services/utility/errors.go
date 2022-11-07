@@ -1,6 +1,6 @@
 // FIXME: golangci-lint
 // nolint:revive
-package image
+package utility
 
 // PayloadTypeAssertionError indicates the image name is not defined
 type PayloadTypeAssertionError struct{}
