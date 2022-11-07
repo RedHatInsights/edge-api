@@ -595,8 +595,8 @@ var _ = Describe("DfseviceService", func() {
 				imageInfo, err := deviceService.GetDeviceImageInfoByUUID(uuid, 10, 0)
 				Expect(err).To(BeNil())
 				Expect(oldImage.Commit.OSTreeCommit).To(Equal(imageInfo.Rollback.Commit.OSTreeCommit))
-				Expect(newImage.Commit.OSTreeCommit).To(Equal(imageInfo.Image.Image.Commit.OSTreeCommit))
-				Expect(newImage.Commit.OSTreeCommit).To(Equal(imageInfo.Image.Image.Commit.OSTreeCommit))
+				Expect(newImage.Commit.OSTreeCommit).To(Equal(imageInfo.Image.Commit.OSTreeCommit))
+				Expect(newImage.Commit.OSTreeCommit).To(Equal(imageInfo.Image.Commit.OSTreeCommit))
 				Expect(imageInfo.Image.TotalPackages).To(Equal(1))
 			})
 
@@ -1049,9 +1049,9 @@ var _ = Describe("DfseviceService", func() {
 				Expect(deviceDetails.Device.OrgID).To(Equal(orgID))
 
 				imageInfo := deviceDetails.Image
-				Expect(imageInfo.Image.Image.ID).To(Equal(imageV1.ID))
-				Expect(imageInfo.Image.Image.Name).To(Equal(imageV1.Name))
-				Expect(imageInfo.Image.Image.OrgID).To(Equal(orgID))
+				Expect(imageInfo.Image.ID).To(Equal(imageV1.ID))
+				Expect(imageInfo.Image.Name).To(Equal(imageV1.Name))
+				Expect(imageInfo.Image.OrgID).To(Equal(orgID))
 				Expect(imageInfo.UpdatesAvailable).To(BeNil())
 				Expect(imageInfo.Rollback).To(BeNil())
 
