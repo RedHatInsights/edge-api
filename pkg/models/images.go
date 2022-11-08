@@ -45,8 +45,8 @@ type Image struct {
 	CustomPackages         []Package        `json:"CustomPackages,omitempty" gorm:"many2many:images_custom_packages"`
 	RequestID              string           `json:"request_id"` // storing for logging reference on resume
 
-	TotalDevicesWithImage int64 `json:"SystemsRunning" gorm:"-"` //only for forms
-	TotalPackages         int   `json:"TotalPackages" gorm:"-"`  //only for forms
+	TotalDevicesWithImage int64 `json:"SystemsRunning" gorm:"-"` // only for forms
+	TotalPackages         int   `json:"TotalPackages" gorm:"-"`  // only for forms
 }
 
 // ImageUpdateAvailable contains image and differences between current and available commits
