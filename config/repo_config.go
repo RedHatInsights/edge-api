@@ -15,8 +15,8 @@ var RequiredPackages = []string{"rhc",
 // RHEL8 contains aditional list of packages to build an image to >= RHEL85
 var RHEL8 = []string{"ansible"}
 
-// RHEL86 contains aditional list of packages to build an image to = RHEL86
-var RHEL86 = []string{"ansible-core"}
+// RHEL8X contains aditional list of packages to build an image to = RHEL86
+var RHEL8X = []string{"ansible-core"}
 
 // RHEL90 contains aditional list of packages to build an image to = RHEL90
 var RHEL90 = []string{"ansible-core"}
@@ -25,8 +25,8 @@ var RHEL90 = []string{"ansible-core"}
 var DistributionsPackages = map[string][]string{
 	"rhel-84": RHEL8,
 	"rhel-85": RHEL8,
-	"rhel-86": RHEL86,
-	"rhel-87": RHEL86,
+	"rhel-86": RHEL8X,
+	"rhel-87": RHEL8X,
 	"rhel-90": RHEL90,
 }
 
