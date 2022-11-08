@@ -259,6 +259,26 @@ func (s *ImageService) ValidateImagePackage(packageName string, image *models.Im
 	return new(PackageNameDoesNotExist)
 }
 
+// getLatestPreviousSuccessfulImage return the latest previously successfully built image from the given image
+// if no image found return nil
+func (s *ImageService) getLatestPreviousSuccessfulImage(image *models.Image) (*models.Image, error) {
+	var previousSuccessfulImage models.Image
+	if result := db.Org(image.OrgID, "images").
+		Where(models.Image{ImageSetID: image.ImageSetID, Status: models.ImageStatusSuccess}).
+		Preload("Commit.Repo").Joins("Commit").
+		Where("images.created_at < ?", image.CreatedAt).
+		Order("images.created_at DESC").
+		First(&previousSuccessfulImage); result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			// no previous image was successfully built
+			s.log.WithField("image_id", image.ID).Info("latest successful previous image build was not found")
+			return nil, nil
+		}
+		return nil, result.Error
+	}
+	return &previousSuccessfulImage, nil
+}
+
 // UpdateImage updates an image, adding a new version of this image to an imageset
 func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Image) error {
 	s.log.Info("Updating image...")
@@ -309,9 +329,20 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		image.Commit.OSTreeRef = refs
 	}
 
+	var previousSuccessfulImage *models.Image
 	if previousImage.Status == models.ImageStatusSuccess {
-		// Always get the repo URL from the previous Image's commit
-		repo, err := s.RepoService.GetRepoByID(previousImage.Commit.RepoID)
+		previousSuccessfulImage = previousImage
+	} else {
+		// we need to get the latest previously successfully built image
+		previousSuccessfulImage, err = s.getLatestPreviousSuccessfulImage(previousImage)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Error getting the latest successful built image from previous image")
+			return err
+		}
+	}
+	if previousSuccessfulImage != nil {
+		// Always get the repo URL from the previous successful Image's commit
+		repo, err := s.RepoService.GetRepoByID(previousSuccessfulImage.Commit.RepoID)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Commit repo wasn't found on the database")
 			err := errors.NewBadRequest(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.Commit.ID))
@@ -319,17 +350,13 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		}
 
 		image.Commit.OSTreeParentCommit = repo.URL
-		if config.DistributionsRefs[previousImage.Distribution] != config.DistributionsRefs[image.Distribution] {
+		if config.DistributionsRefs[previousSuccessfulImage.Distribution] != config.DistributionsRefs[image.Distribution] {
 			image.Commit.ChangesRefs = true
 		}
 
 		if image.Commit.OSTreeParentRef == "" {
-			image.Commit.OSTreeParentRef = config.DistributionsRefs[previousImage.Distribution]
+			image.Commit.OSTreeParentRef = config.DistributionsRefs[previousSuccessfulImage.Distribution]
 		}
-
-	} else {
-		// Previous image was not built successfully
-		s.log.WithField("previousImageID", previousImage.ID).Info("Creating an update based on a image with a status that is not success")
 	}
 	image, err = s.ImageBuilder.ComposeCommit(image)
 	if err != nil {
