@@ -263,6 +263,241 @@ var _ = Describe("Image Service Test", func() {
 				Expect(actualErr).To(MatchError(expectedErr))
 			})
 		})
+		Context("updating image within same major version when all previous images failed", func() {
+			orgID := faker.UUIDHyphenated()
+			imageName := faker.Name()
+			imageSet := models.ImageSet{Name: imageName, OrgID: orgID}
+			dist84 := "rhel-84"
+			dist85 := "rhel-85"
+			imageSetResult := db.DB.Create(&imageSet)
+			previousImage1 := models.Image{
+				OrgID:        orgID,
+				Status:       models.ImageStatusError,
+				Commit:       &models.Commit{OrgID: orgID},
+				Version:      1,
+				Distribution: dist84,
+				Name:         imageName,
+				ImageSetID:   &imageSet.ID,
+			}
+			previousImage1Result := db.DB.Create(&previousImage1)
+			previousImage2 := models.Image{
+				OrgID:        orgID,
+				Status:       models.ImageStatusError,
+				Commit:       &models.Commit{OrgID: orgID},
+				Version:      2,
+				Distribution: dist84,
+				Name:         imageName,
+				ImageSetID:   &imageSet.ID,
+			}
+			previousImage2Result := db.DB.Create(&previousImage2)
+			image := &models.Image{
+				OrgID:        orgID,
+				Distribution: dist85,
+				Commit:       &models.Commit{OrgID: orgID},
+				OutputTypes:  []string{models.ImageTypeCommit},
+				Name:         imageName,
+			}
+
+			It("new image should have no parent repo url and parent ostree ref", func() {
+				Expect(imageSetResult.Error).ToNot(HaveOccurred())
+				Expect(previousImage1Result.Error).ToNot(HaveOccurred())
+				Expect(previousImage2Result.Error).ToNot(HaveOccurred())
+
+				// simulate an error build in order to check the image values only
+				expectedErr := fmt.Errorf("failed creating commit for image")
+				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
+
+				actualErr := service.UpdateImage(image, &previousImage2)
+				Expect(actualErr).To(HaveOccurred())
+				Expect(actualErr).To(MatchError(expectedErr))
+				Expect(image.Commit.OSTreeRef).To(Equal(config.DistributionsRefs[dist85]))
+				Expect(image.Commit.OSTreeParentRef).To(BeEmpty())
+				Expect(image.Commit.OSTreeParentCommit).To(BeEmpty())
+			})
+		})
+		Context("updating image within same major version when one of previous images succeed", func() {
+			orgID := faker.UUIDHyphenated()
+			imageName := faker.Name()
+			imageSet := models.ImageSet{Name: imageName, OrgID: orgID}
+			dist84 := "rhel-84"
+			dist85 := "rhel-85"
+			imageSetResult := db.DB.Create(&imageSet)
+			previousImage1 := models.Image{
+				OrgID:        orgID,
+				Status:       models.ImageStatusError,
+				Commit:       &models.Commit{OrgID: orgID},
+				Version:      1,
+				Distribution: dist84,
+				Name:         imageName,
+				ImageSetID:   &imageSet.ID,
+			}
+			previousImage1Result := db.DB.Create(&previousImage1)
+			previousImage2 := models.Image{
+				OrgID:        orgID,
+				Status:       models.ImageStatusSuccess,
+				Commit:       &models.Commit{Repo: &models.Repo{URL: faker.URL(), Status: models.RepoStatusSuccess}, OrgID: orgID},
+				Version:      2,
+				Distribution: dist84,
+				Name:         imageName,
+				ImageSetID:   &imageSet.ID,
+			}
+			previousImage2Result := db.DB.Create(&previousImage2)
+			previousImage3 := models.Image{
+				OrgID:        orgID,
+				Status:       models.ImageStatusError,
+				Commit:       &models.Commit{OrgID: orgID},
+				Version:      3,
+				Distribution: dist84,
+				Name:         imageName,
+				ImageSetID:   &imageSet.ID,
+			}
+			previousImage3Result := db.DB.Create(&previousImage3)
+			image := &models.Image{
+				OrgID:        orgID,
+				Distribution: dist85,
+				Commit:       &models.Commit{OrgID: orgID},
+				OutputTypes:  []string{models.ImageTypeCommit},
+				Name:         imageName,
+			}
+
+			It("new image should have no parent repo url and parent ostree ref", func() {
+				Expect(imageSetResult.Error).ToNot(HaveOccurred())
+				Expect(previousImage1Result.Error).ToNot(HaveOccurred())
+				Expect(previousImage2Result.Error).ToNot(HaveOccurred())
+				Expect(previousImage3Result.Error).ToNot(HaveOccurred())
+				// simulate an error build in order to check the image values only
+				expectedErr := fmt.Errorf("failed creating commit for image")
+				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
+				mockRepoService.EXPECT().GetRepoByID(previousImage2.Commit.RepoID).Return(previousImage2.Commit.Repo, nil)
+
+				// the previous successful image is previousImage2
+				actualErr := service.UpdateImage(image, &previousImage3)
+				Expect(actualErr).To(HaveOccurred())
+				Expect(actualErr).To(MatchError(expectedErr))
+				Expect(image.Commit.OSTreeRef).To(Equal(config.DistributionsRefs[dist85]))
+				Expect(image.Commit.OSTreeParentRef).To(Equal(config.DistributionsRefs[dist84]))
+				Expect(image.Commit.OSTreeParentCommit).To(Equal(previousImage2.Commit.Repo.URL))
+			})
+		})
+		Context("updating image major version when all previous images failed", func() {
+			orgID := faker.UUIDHyphenated()
+			imageName := faker.Name()
+			imageSet := models.ImageSet{Name: imageName, OrgID: orgID}
+			dist84 := "rhel-84"
+			dist90 := "rhel-90"
+			imageSetResult := db.DB.Create(&imageSet)
+			previousImage1 := models.Image{
+				OrgID:        orgID,
+				Status:       models.ImageStatusError,
+				Commit:       &models.Commit{OrgID: orgID},
+				Version:      1,
+				Distribution: dist84,
+				Name:         imageName,
+				ImageSetID:   &imageSet.ID,
+			}
+			previousImage1Result := db.DB.Create(&previousImage1)
+			previousImage2 := models.Image{
+				OrgID:        orgID,
+				Status:       models.ImageStatusError,
+				Commit:       &models.Commit{OrgID: orgID},
+				Version:      2,
+				Distribution: dist84,
+				Name:         imageName,
+				ImageSetID:   &imageSet.ID,
+			}
+			previousImage2Result := db.DB.Create(&previousImage2)
+			image := &models.Image{
+				OrgID:        orgID,
+				Distribution: dist90,
+				Commit:       &models.Commit{OrgID: orgID},
+				OutputTypes:  []string{models.ImageTypeCommit},
+				Name:         imageName,
+			}
+
+			It("new image should have no parent repo url and parent ostree ref", func() {
+				Expect(imageSetResult.Error).ToNot(HaveOccurred())
+				Expect(previousImage1Result.Error).ToNot(HaveOccurred())
+				Expect(previousImage2Result.Error).ToNot(HaveOccurred())
+
+				// simulate an error build in order to check the image values only
+				expectedErr := fmt.Errorf("failed creating commit for image")
+				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
+
+				actualErr := service.UpdateImage(image, &previousImage2)
+				Expect(actualErr).To(HaveOccurred())
+				Expect(actualErr).To(MatchError(expectedErr))
+				Expect(image.Commit.OSTreeRef).To(Equal(config.DistributionsRefs[dist90]))
+				Expect(image.Commit.OSTreeParentRef).To(BeEmpty())
+				Expect(image.Commit.OSTreeParentCommit).To(BeEmpty())
+			})
+		})
+		Context("updating image major version when one of previous images succeed", func() {
+			orgID := faker.UUIDHyphenated()
+			imageName := faker.Name()
+			imageSet := models.ImageSet{Name: imageName, OrgID: orgID}
+			dist84 := "rhel-84"
+			dist85 := "rhel-85"
+			dist86 := "rhel-86"
+			dist90 := "rhel-90"
+			imageSetResult := db.DB.Create(&imageSet)
+			previousImage1 := models.Image{
+				OrgID:        orgID,
+				Status:       models.ImageStatusError,
+				Commit:       &models.Commit{OrgID: orgID},
+				Version:      1,
+				Distribution: dist84,
+				Name:         imageName,
+				ImageSetID:   &imageSet.ID,
+			}
+			previousImage1Result := db.DB.Create(&previousImage1)
+			previousImage2 := models.Image{
+				OrgID:        orgID,
+				Status:       models.ImageStatusSuccess,
+				Commit:       &models.Commit{Repo: &models.Repo{URL: faker.URL(), Status: models.RepoStatusSuccess}, OrgID: orgID},
+				Version:      2,
+				Distribution: dist85,
+				Name:         imageName,
+				ImageSetID:   &imageSet.ID,
+			}
+			previousImage2Result := db.DB.Create(&previousImage2)
+			previousImage3 := models.Image{
+				OrgID:        orgID,
+				Status:       models.ImageStatusError,
+				Commit:       &models.Commit{OrgID: orgID},
+				Version:      3,
+				Distribution: dist86,
+				Name:         imageName,
+				ImageSetID:   &imageSet.ID,
+			}
+			previousImage3Result := db.DB.Create(&previousImage3)
+			image := &models.Image{
+				OrgID:        orgID,
+				Distribution: dist90,
+				Commit:       &models.Commit{OrgID: orgID},
+				OutputTypes:  []string{models.ImageTypeCommit},
+				Name:         imageName,
+			}
+
+			It("new image should have no parent repo url and parent ostree ref", func() {
+				Expect(imageSetResult.Error).ToNot(HaveOccurred())
+				Expect(previousImage1Result.Error).ToNot(HaveOccurred())
+				Expect(previousImage2Result.Error).ToNot(HaveOccurred())
+				Expect(previousImage3Result.Error).ToNot(HaveOccurred())
+				// simulate an error build in order to check the image values only
+				expectedErr := fmt.Errorf("failed creating commit for image")
+				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
+				mockRepoService.EXPECT().GetRepoByID(previousImage2.Commit.RepoID).Return(previousImage2.Commit.Repo, nil)
+
+				// the previous successful image is previousImage2
+				actualErr := service.UpdateImage(image, &previousImage3)
+				Expect(actualErr).To(HaveOccurred())
+				Expect(actualErr).To(MatchError(expectedErr))
+				Expect(image.Commit.OSTreeRef).To(Equal(config.DistributionsRefs[dist90]))
+				Expect(image.Commit.OSTreeParentRef).To(Equal(config.DistributionsRefs[dist85]))
+				Expect(image.Commit.OSTreeParentCommit).To(Equal(previousImage2.Commit.Repo.URL))
+			})
+		})
+
 		Context("when previous image has success status", func() {
 			It("should have the parent image repo url set as parent commit url", func() {
 				id, _ := faker.RandomInt(1)
