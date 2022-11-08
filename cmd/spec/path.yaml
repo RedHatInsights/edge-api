@@ -629,12 +629,12 @@ paths:
             type: integer
         - name: order_by
           in: query
-          description: "field: choose which filter to order"
+          description: "field: order by display_name, updated or operating_system"
           schema:
             type: string
         - name: order_how
           in: query
-          description: "field: choose to order asc or desc"
+          description: "field: choose to order ASC or DESC"
           schema:
             type: string
         - name: hostname_or_id
