@@ -62,4 +62,13 @@ var _ = Describe("Validates repo config", func() {
 			Expect(len(config.DistributionsPackages)).To(Equal(len(distri8) + len(distri8X) + len(distri9)))
 		})
 	})
+
+	Context("Invalid distribution", func() {
+		It("should return empty values", func() {
+			Expect(config.DistributionsPackages["rhel-10"]).To(BeNil())
+		})
+		It("should return empty values", func() {
+			Expect(config.DistributionsRefs["rhel-10"]).To(BeEmpty())
+		})
+	})
 })
