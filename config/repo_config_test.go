@@ -9,7 +9,7 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 )
 
-//Validate distribution ref values should return refs by distribution"
+// Validate distribution ref values should return refs by distribution"
 func TestValidateRepo(t *testing.T) {
 	supportedDistributions := []string{"rhel-84", "rhel-85", "rhel-86", "rhel-87", "rhel-90"}
 
