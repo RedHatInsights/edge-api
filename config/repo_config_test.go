@@ -18,30 +18,20 @@ var _ = Describe("Validates repo config", func() {
 		It("should return RHEL8 distribution refs", func() {
 			for _, d := range distri8 {
 				Expect(config.DistributionsRefs[d]).ToNot(BeNil())
-				Expect(config.DistributionsRefs[d]).To(ContainSubstring("rhel"))
-				Expect(config.DistributionsRefs[d]).To(ContainSubstring("x86_64"))
-				Expect(config.DistributionsRefs[d]).To(ContainSubstring("edge"))
-				Expect(config.DistributionsRefs[d]).To(ContainSubstring("8"))
-
+				Expect(config.DistributionsRefs[d]).To(ContainSubstring("rhel/8/x86_64/edge"))
 			}
 		})
 		It("should return RHEL8X distribution refs", func() {
 			for _, d := range distri8X {
 				Expect(config.DistributionsRefs[d]).ToNot(BeNil())
-				Expect(config.DistributionsRefs[d]).To(ContainSubstring("rhel"))
-				Expect(config.DistributionsRefs[d]).To(ContainSubstring("x86_64"))
-				Expect(config.DistributionsRefs[d]).To(ContainSubstring("edge"))
-				Expect(config.DistributionsRefs[d]).To(ContainSubstring("8"))
+				Expect(config.DistributionsRefs[d]).To(ContainSubstring("rhel/8/x86_64/edge"))
 
 			}
 		})
 		It("should return RHEL9 distribution refs", func() {
 			for _, d := range distri9 {
 				Expect(config.DistributionsRefs[d]).ToNot(BeNil())
-				Expect(config.DistributionsRefs[d]).To(ContainSubstring("rhel"))
-				Expect(config.DistributionsRefs[d]).To(ContainSubstring("x86_64"))
-				Expect(config.DistributionsRefs[d]).To(ContainSubstring("edge"))
-				Expect(config.DistributionsRefs[d]).To(ContainSubstring("9"))
+				Expect(config.DistributionsRefs[d]).To(ContainSubstring("rhel/9/x86_64/edge"))
 
 			}
 		})
