@@ -3,72 +3,58 @@
 package config_test
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"strings"
+	"testing"
+
 	"github.com/redhatinsights/edge-api/config"
 )
 
-var _ = Describe("Validates repo config", func() {
+//Validate distribution ref values should return refs by distribution"
+func TestValidateRepo(t *testing.T) {
+	supportedDistributions := []string{"rhel-84", "rhel-85", "rhel-86", "rhel-87", "rhel-90"}
 
-	distri8 := []string{"rhel-84", "rhel-85"}
-	distri8X := []string{"rhel-86", "rhel-87"}
-	distri9 := []string{"rhel-90"}
+	for _, d := range supportedDistributions {
+		dist := strings.Split(d, "-")
+		distribution := dist[0]
+		version := strings.Split(dist[1], "")
+		majorVersion := strings.Join(version[:len(version)-1], "")
 
-	Context("Validate distribution ref values", func() {
-		It("should return RHEL8 distribution refs", func() {
-			for _, d := range distri8 {
-				Expect(config.DistributionsRefs[d]).ToNot(BeNil())
-				Expect(config.DistributionsRefs[d]).To(ContainSubstring("rhel/8/x86_64/edge"))
-			}
-		})
-		It("should return RHEL8X distribution refs", func() {
-			for _, d := range distri8X {
-				Expect(config.DistributionsRefs[d]).ToNot(BeNil())
-				Expect(config.DistributionsRefs[d]).To(ContainSubstring("rhel/8/x86_64/edge"))
+		if !strings.Contains(config.DistributionsRefs[d], distribution) {
+			t.Errorf(" %q not found: %q", distribution, config.DistributionsRefs[d])
+		}
 
-			}
-		})
-		It("should return RHEL9 distribution refs", func() {
-			for _, d := range distri9 {
-				Expect(config.DistributionsRefs[d]).ToNot(BeNil())
-				Expect(config.DistributionsRefs[d]).To(ContainSubstring("rhel/9/x86_64/edge"))
+		if !strings.Contains(config.DistributionsRefs[d], majorVersion) {
+			t.Errorf("%q not found: %q", majorVersion, config.DistributionsRefs[d])
+		}
 
-			}
-		})
+	}
 
-	})
+}
+func TestValidatePackages(t *testing.T) {
+	supportedDistributions := []string{"rhel-84", "rhel-85", "rhel-86", "rhel-87", "rhel-90"}
 
-	Context("Validate package distribution packages", func() {
-		It("should return RHEL8 packages", func() {
-			for _, d := range distri8 {
-				Expect(config.RHEL8).To(Equal(config.DistributionsPackages[d]))
-			}
-		})
-		It("should return RHEL8X packages", func() {
-			for _, d := range distri8X {
-				Expect(config.RHEL8X).To(Equal(config.DistributionsPackages[d]))
-			}
-		})
-		It("should return RHEL9 packages", func() {
-			for _, d := range distri9 {
-				Expect(config.RHEL90).To(Equal(config.DistributionsPackages[d]))
-			}
-		})
+	for _, d := range supportedDistributions {
 
-	})
+		if len(config.DistributionsPackages[d]) == 0 {
+			t.Errorf("package not found: %q", config.DistributionsPackages[d])
+		}
+	}
 
-	Context("Validate all supported versions", func() {
-		It("should return same size of versions", func() {
-			Expect(len(config.DistributionsPackages)).To(Equal(len(distri8) + len(distri8X) + len(distri9)))
-		})
-	})
+}
+func TestSupportedPackages(t *testing.T) {
+	supportedDistributions := []string{"rhel-84", "rhel-85", "rhel-86", "rhel-87", "rhel-90"}
 
-	Context("Invalid distribution", func() {
-		It("should return null packages", func() {
-			Expect(config.DistributionsPackages["invalid"]).To(BeNil())
-		})
-		It("should return empty for ref", func() {
-			Expect(config.DistributionsRefs["invalid"]).To(BeEmpty())
-		})
-	})
-})
+	if len(config.DistributionsPackages) != len(supportedDistributions) {
+		t.Errorf("packages supported %d and found %d", len(config.DistributionsPackages), len(supportedDistributions))
+	}
+
+}
+
+func TestInvaliddistribution(t *testing.T) {
+	if config.DistributionsPackages["invalid"] != nil {
+		t.Errorf("expected nil,  found %v", config.DistributionsPackages["invalid"])
+	}
+	if config.DistributionsRefs["invalid"] != "" {
+		t.Errorf("expected nil,  found %v", config.DistributionsPackages["invalid"])
+	}
+}
