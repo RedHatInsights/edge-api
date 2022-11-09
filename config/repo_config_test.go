@@ -64,11 +64,11 @@ var _ = Describe("Validates repo config", func() {
 	})
 
 	Context("Invalid distribution", func() {
-		It("should return empty values", func() {
-			Expect(config.DistributionsPackages["rhel-10"]).To(BeNil())
+		It("should return null packages", func() {
+			Expect(config.DistributionsPackages["invalid"]).To(BeNil())
 		})
-		It("should return empty values", func() {
-			Expect(config.DistributionsRefs["rhel-10"]).To(BeEmpty())
+		It("should return empty for ref", func() {
+			Expect(config.DistributionsRefs["invalid"]).To(BeEmpty())
 		})
 	})
 })
