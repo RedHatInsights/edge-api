@@ -21,7 +21,7 @@ var RHEL8X = []string{"ansible-core"}
 // RHEL90 contains additional list of packages to build an image to = RHEL90
 var RHEL90 = []string{"ansible-core"}
 
-// DistributionsPackages add packages byi mage
+// DistributionsPackages add packages by mage
 var DistributionsPackages = map[string][]string{
 	"rhel-84": RHEL8,
 	"rhel-85": RHEL8,
