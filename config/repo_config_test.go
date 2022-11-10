@@ -11,22 +11,21 @@ import (
 
 // Validate distribution ref values should return refs by distribution"
 func TestValidateRepo(t *testing.T) {
-	supportedDistributions := []string{"rhel-84", "rhel-85", "rhel-86", "rhel-87", "rhel-90"}
+	for key, d := range config.DistributionsRefs {
 
-	for _, d := range supportedDistributions {
-		dist := strings.Split(d, "-")
+		dist := strings.Split(key, "-")
 		distribution := dist[0]
 		version := strings.Split(dist[1], "")
 		majorVersion := strings.Join(version[:len(version)-1], "")
 
 		t.Run("validate distribution", func(t *testing.T) {
-			if !strings.Contains(config.DistributionsRefs[d], distribution) {
+			if !strings.Contains(config.DistributionsRefs[key], distribution) {
 				t.Errorf(" %q not found: %q", distribution, config.DistributionsRefs[d])
 			}
 		})
 
 		t.Run("validate major", func(t *testing.T) {
-			if !strings.Contains(config.DistributionsRefs[d], majorVersion) {
+			if !strings.Contains(config.DistributionsRefs[key], majorVersion) {
 				t.Errorf("%q not found: %q", majorVersion, config.DistributionsRefs[d])
 			}
 		})
@@ -35,22 +34,19 @@ func TestValidateRepo(t *testing.T) {
 
 }
 func TestValidatePackages(t *testing.T) {
-	supportedDistributions := []string{"rhel-84", "rhel-85", "rhel-86", "rhel-87", "rhel-90"}
-
-	for _, d := range supportedDistributions {
+	for key, value := range config.DistributionsPackages {
 		t.Run("validate package", func(t *testing.T) {
-			if len(config.DistributionsPackages[d]) == 0 {
-				t.Errorf("package not found: %q", config.DistributionsPackages[d])
+			if len(config.DistributionsPackages[key]) == 0 {
+				t.Errorf("package not found: %q", value)
 			}
 		})
 	}
 
 }
 func TestSupportedPackages(t *testing.T) {
-	supportedDistributions := []string{"rhel-84", "rhel-85", "rhel-86", "rhel-87", "rhel-90"}
 	t.Run("validate size", func(t *testing.T) {
-		if len(config.DistributionsPackages) != len(supportedDistributions) {
-			t.Errorf("packages supported %d and found %d", len(config.DistributionsPackages), len(supportedDistributions))
+		if len(config.DistributionsPackages) != len(config.DistributionsRefs) {
+			t.Errorf("packages supported %d and found %d", len(config.DistributionsPackages), len(config.DistributionsRefs))
 		}
 	})
 
