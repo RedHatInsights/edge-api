@@ -44,15 +44,16 @@ type Image struct {
 	ThirdPartyRepositories []ThirdPartyRepo `json:"ThirdPartyRepositories,omitempty" gorm:"many2many:images_repos;"`
 	CustomPackages         []Package        `json:"CustomPackages,omitempty" gorm:"many2many:images_custom_packages"`
 	RequestID              string           `json:"request_id"` // storing for logging reference on resume
+
+	TotalDevicesWithImage int64 `json:"SystemsRunning" gorm:"-"` // only for forms
+	TotalPackages         int   `json:"TotalPackages" gorm:"-"`  // only for forms
 }
 
 // ImageUpdateAvailable contains image and differences between current and available commits
 type ImageUpdateAvailable struct {
-	Image                 Image       `json:"Image"`
-	TotalDevicesWithImage int64       `json:"SystemsRunning"`
-	CanUpdate             bool        `json:"CanUpdate"`
-	PackageDiff           PackageDiff `json:"PackageDiff"`
-	TotalPackages         int         `json:"TotalPackages"`
+	Image       Image       `json:"Image"`
+	CanUpdate   bool        `json:"CanUpdate"`
+	PackageDiff PackageDiff `json:"PackageDiff"`
 }
 
 // PackageDiff provides package difference details between current and available commits
@@ -64,11 +65,9 @@ type PackageDiff struct {
 
 // ImageInfo contains Image with updates available and rollback image
 type ImageInfo struct {
-	Image                 Image                   `json:"Image"`
-	TotalDevicesWithImage int64                   `json:"SystemsRunning"`
-	UpdatesAvailable      *[]ImageUpdateAvailable `json:"UpdatesAvailable,omitempty"`
-	Rollback              *Image                  `json:"RollbackImage,omitempty"`
-	TotalPackages         int                     `json:"TotalPackages"`
+	Image            Image                   `json:"Image"`
+	UpdatesAvailable *[]ImageUpdateAvailable `json:"UpdatesAvailable,omitempty"`
+	Rollback         *Image                  `json:"RollbackImage,omitempty"`
 }
 
 const (
