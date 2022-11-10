@@ -35,12 +35,12 @@ var statusOption = []string{models.ImageStatusCreated, models.ImageStatusBuildin
 // MakeImageSetsRouter adds support for operations on image-sets
 func MakeImageSetsRouter(sub chi.Router) {
 	sub.With(ValidateQueryParams("image-sets")).With(validateFilterParams).With(common.Paginate).Get("/", ListAllImageSets)
-	sub.With(validateFilterParams).With(common.Paginate).Get("/view", GetImageSetsView)
+	sub.With(ValidateQueryParams("image-sets")).With(validateFilterParams).With(common.Paginate).Get("/view", GetImageSetsView)
 	sub.Route("/{imageSetID}", func(r chi.Router) {
 		r.Use(ImageSetCtx)
 		r.With(validateFilterParams).With(common.Paginate).Get("/", GetImageSetsByID)
 	})
-	sub.Route("/view/{imageSetID}", func(r chi.Router) {
+	sub.With(validateFilterParams).Route("/view/{imageSetID}", func(r chi.Router) {
 		r.Use(ImageSetViewCtx)
 		r.With(ValidateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetImageSetViewByID)
 		r.With(ValidateGetAllImagesSearchParams).With(common.Paginate).Get("/versions", GetAllImageSetImagesView)
@@ -357,8 +357,16 @@ func validateFilterParams(next http.Handler) http.Handler {
 			if err != nil {
 				errs = append(errs, common.ValidationError{Key: "version", Reason: fmt.Sprintf("%s is not a valid version type, version must be number", val)})
 			}
+		}
+
+		if val := r.URL.Query().Get("id"); val != "" {
+			_, err := strconv.Atoi(val)
+			if err != nil {
+				errs = append(errs, common.ValidationError{Key: "id", Reason: fmt.Sprintf("%s is not a valid id type, id must be number", val)})
+			}
 
 		}
+
 		if len(errs) == 0 {
 			next.ServeHTTP(w, r)
 			return
@@ -411,14 +419,22 @@ func GetImageSetsView(w http.ResponseWriter, r *http.Request) {
 
 	pagination := common.GetPagination(r)
 
-	imageSetsCount, err := ctxServices.ImageSetService.GetImageSetsViewCount(imageSetFilters(r, db.DB))
+	imageSetDBFilter := imageSetFilters(r, db.DB)
+
+	if imageSetDBFilter == nil {
+		ctxServices.Log.WithFields(log.Fields{"queryParameters": r.URL.Query(), "orgID": orgID}).Error("invalid query parameter")
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("invalid query parameter"))
+		return
+	}
+
+	imageSetsCount, err := ctxServices.ImageSetService.GetImageSetsViewCount(imageSetDBFilter)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{"error": err.Error(), "orgID": orgID}).Error("error getting image-sets view count")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
 
-	imageSetsViewList, err := ctxServices.ImageSetService.GetImageSetsView(pagination.Limit, pagination.Offset, imageSetFilters(r, db.DB))
+	imageSetsViewList, err := ctxServices.ImageSetService.GetImageSetsView(pagination.Limit, pagination.Offset, imageSetDBFilter)
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{"error": err.Error(), "orgID": orgID}).Error("error getting image-sets view")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
