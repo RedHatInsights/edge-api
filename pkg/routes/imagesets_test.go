@@ -595,6 +595,42 @@ var _ = Describe("ImageSets Route Test", func() {
 			}
 		})
 
+		It("The image-sets view route should filter by id", func() {
+			ctrl := gomock.NewController(GinkgoT())
+			defer ctrl.Finish()
+			imageSetsService := services.ImageSetsService{
+				Service: services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+			}
+
+			edgeAPIServices := &dependencies.EdgeAPIServices{
+				ImageSetService: &imageSetsService,
+				Log:             log.NewEntry(log.StandardLogger()),
+			}
+			router := chi.NewRouter()
+			router.Use(func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					ctx := dependencies.ContextWithServices(r.Context(), edgeAPIServices)
+					next.ServeHTTP(w, r.WithContext(ctx))
+				})
+			})
+			router.Route("/image-sets", MakeImageSetsRouter)
+
+			req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view?id=%d", imageSet1.ID), nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			rr := httptest.NewRecorder()
+			router.ServeHTTP(rr, req)
+			Expect(rr.Code).To(Equal(http.StatusOK))
+
+			var imageSetsViewResponse ImageSetsViewResponse
+			respBody, err := ioutil.ReadAll(rr.Body)
+			err = json.Unmarshal(respBody, &imageSetsViewResponse)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(imageSetsViewResponse.Count).To(Equal(1))
+			Expect(len(imageSetsViewResponse.Data)).To(Equal(1))
+			Expect(imageSetsViewResponse.Data[0].ID).To(Equal(imageSet1.ID))
+		})
+
 		Context("imageSetIDView", func() {
 
 			It("The imageSetView end point is working as expected", func() {

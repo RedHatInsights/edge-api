@@ -65,6 +65,10 @@ var imageSetFilters = common.ComposeFilters(
 		QueryParam: "name",
 		DBField:    "image_sets.name",
 	}),
+	common.IntegerNumberFilterHandler(&common.Filter{
+		QueryParam: "id",
+		DBField:    "image_sets.id",
+	}),
 	common.SortFilterHandler("image_sets", "created_at", "DESC"),
 )
 
