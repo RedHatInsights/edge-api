@@ -23,9 +23,11 @@ import (
 
 type installerTypeKey string
 type updateTransactionTypeKey string
+type storageImageTypeKey string
 
 const installerKey installerTypeKey = "installer_key"
 const updateTransactionKey updateTransactionTypeKey = "update_transaction_key"
+const storageImageKey storageImageTypeKey = "storage_image_key"
 
 func setContextInstaller(ctx context.Context, installer *models.Installer) context.Context {
 	return context.WithValue(ctx, installerKey, installer)
@@ -33,6 +35,10 @@ func setContextInstaller(ctx context.Context, installer *models.Installer) conte
 
 func setContextUpdateTransaction(ctx context.Context, installer *models.UpdateTransaction) context.Context {
 	return context.WithValue(ctx, updateTransactionKey, installer)
+}
+
+func setContextStorageImage(ctx context.Context, image *models.Image) context.Context {
+	return context.WithValue(ctx, storageImageKey, image)
 }
 
 // MakeStorageRouter adds support for external storage
@@ -45,6 +51,11 @@ func MakeStorageRouter(sub chi.Router) {
 		r.Use(UpdateTransactionCtx)
 		r.Get("/content/*", GetUpdateTransactionRepoFileContent)
 		r.Get("/*", GetUpdateTransactionRepoFile)
+	})
+	sub.Route("/images-repos/{imageID}", func(r chi.Router) {
+		r.Use(storageImageCtx)
+		r.Get("/content/*", GetImageRepoFileContent)
+		r.Get("/*", GetImageRepoFile)
 	})
 }
 
@@ -319,5 +330,142 @@ func GetUpdateTransactionRepoFile(w http.ResponseWriter, r *http.Request) {
 		"path":                requestPath,
 	})
 	logContext.Info("return storage update transaction repo resource content")
+	serveStorageContent(w, r, requestPath)
+}
+
+// storageImageCtx is a handler for storage image requests
+func storageImageCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		orgID := readOrgID(w, r, ctxServices.Log)
+		if orgID == "" {
+			// readOrgID handle response and logging on failure
+			return
+		}
+
+		imageIDString := chi.URLParam(r, "imageID")
+		if imageIDString == "" {
+			ctxServices.Log.Debug("storage image ID was not passed to the request or it was empty")
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("storage image ID required"))
+			return
+		}
+		imageID, err := strconv.Atoi(imageIDString)
+		if err != nil {
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("storage image ID must be an integer"))
+			return
+		}
+
+		var image models.Image
+		if result := db.Org(orgID, "images").Preload("Commit.Repo").Joins("Commit").First(&image, imageID); result.Error != nil {
+			if result.Error == gorm.ErrRecordNotFound {
+				ctxServices.Log.WithField("error", result.Error.Error()).Error("storage image not found")
+				respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("storage image not found"))
+				return
+			}
+			ctxServices.Log.WithField("error", result.Error.Error()).Error("failed to retrieve storage image")
+			respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
+			return
+		}
+
+		ctx := setContextStorageImage(r.Context(), &image)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func getContextStorageImage(w http.ResponseWriter, r *http.Request) *models.Image {
+	ctx := r.Context()
+	image, ok := ctx.Value(storageImageKey).(*models.Image)
+	if !ok {
+		ctxServices := dependencies.ServicesFromContext(ctx)
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("Failed getting storage image from context"))
+		return nil
+	}
+	return image
+}
+
+// ValidateStorageImage validate storage image and return the request path
+func ValidateStorageImage(w http.ResponseWriter, r *http.Request) string {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	image := getContextStorageImage(w, r)
+	if image == nil {
+		return ""
+	}
+	logContext := ctxServices.Log.WithFields(log.Fields{
+		"service": "image-repository-storage",
+		"orgID":   image.OrgID,
+		"imageID": image.ID,
+	})
+
+	filePath := chi.URLParam(r, "*")
+	if filePath == "" {
+		logContext.Error("target repository file path is missing")
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("target repository file path is missing"))
+		return ""
+	}
+
+	if image.Commit.Repo == nil || image.Commit.Repo.URL == "" {
+		logContext.Error("image repository does not exist")
+		respondWithAPIError(w, logContext, errors.NewNotFound("image repository does not exist"))
+		return ""
+	}
+
+	RepoURL, err := url2.Parse(image.Commit.Repo.URL)
+	if err != nil {
+		logContext.WithFields(log.Fields{
+			"error": err.Error(),
+			"URL":   image.Commit.Repo.URL,
+		}).Error("error occurred when parsing repository url")
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("bad image repository url"))
+		return ""
+	}
+
+	requestPath := fmt.Sprintf(RepoURL.Path + "/" + filePath)
+	return requestPath
+}
+
+// GetImageRepoFileContent redirect to a signed url of an image commit repository path content
+func GetImageRepoFileContent(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	logContext := ctxServices.Log.WithField("service", "image-repository-storage")
+	image := getContextStorageImage(w, r)
+	if image == nil {
+		// getContextStorageImage will handle errors
+		return
+	}
+
+	requestPath := ValidateStorageImage(w, r)
+	if requestPath == "" {
+		// ValidateStorageImage will handle errors
+		return
+	}
+
+	logContext.WithFields(log.Fields{
+		"orgID":   image.OrgID,
+		"imageID": image.ID,
+		"path":    requestPath,
+	}).Info("redirect storage image repo resource")
+	redirectToStorageSignedURL(w, r, requestPath)
+}
+
+// GetImageRepoFile return the content of an image commit repository path
+func GetImageRepoFile(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	logContext := ctxServices.Log.WithField("service", "image-repository-storage")
+	image := getContextStorageImage(w, r)
+	if image == nil {
+		// getContextStorageImage will handle errors
+		return
+	}
+	requestPath := ValidateStorageImage(w, r)
+	if requestPath == "" {
+		// ValidateStorageImage will handle errors
+		return
+	}
+
+	logContext.WithFields(log.Fields{
+		"orgID":   image.OrgID,
+		"imageID": image.ID,
+		"path":    requestPath,
+	}).Info("return storage image repo resource content")
 	serveStorageContent(w, r, requestPath)
 }

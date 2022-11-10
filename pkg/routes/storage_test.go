@@ -442,4 +442,333 @@ var _ = Describe("Storage Router", func() {
 			})
 		})
 	})
+	Context("image repository storage content", func() {
+		orgID := common.DefaultOrgID
+		image := models.Image{
+			OrgID: orgID,
+			Name:  faker.UUIDHyphenated(),
+			Commit: &models.Commit{
+				OrgID: orgID,
+				Repo: &models.Repo{
+					URL:    "https://repo-storage.org/path/to/bucket",
+					Status: models.ImageStatusSuccess,
+				},
+			},
+		}
+		result := db.DB.Create(&image)
+
+		It("initial image created", func() {
+			Expect(result.Error).ToNot(HaveOccurred())
+		})
+
+		Context("GetImageRepoFile", func() {
+			It("Should return the requested resource content", func() {
+				targetRepoFile := "summary.sig"
+				req, err := http.NewRequest("GET", fmt.Sprintf("/storage/images-repos/%d/%s", image.ID, targetRepoFile), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				fileContent := "this is a simple file content"
+
+				url, err := url2.Parse(image.Commit.Repo.URL)
+				Expect(err).ToNot(HaveOccurred())
+				targetPath := fmt.Sprintf("%s/%s", url.Path, targetRepoFile)
+
+				fileContentReader := strings.NewReader(fileContent)
+				fileContentReadCloser := io.NopCloser(fileContentReader)
+				mockFilesService.EXPECT().GetFile(targetPath).Return(fileContentReadCloser, nil)
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusOK))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(Equal(fileContent))
+			})
+			It("should return error when the image does not exists", func() {
+
+				req, err := http.NewRequest("GET", fmt.Sprintf("/storage/images-repos/%d/summary.sig", 9999), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusNotFound))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("storage image not found"))
+			})
+
+			It("should return error when requested image id is not a number", func() {
+				req, err := http.NewRequest("GET", "/storage/images-repos/not-a-number/summary.sig", nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("storage image ID must be an integer"))
+			})
+
+			It("should return error when requested image id is empty", func() {
+				req, err := http.NewRequest("GET", "/storage/images-repos//summary.sig", nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("storage image ID required"))
+			})
+
+			It("should return error when target file path is missing", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/storage/images-repos/%d/", image.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("target repository file path is missing"))
+			})
+
+			It("should return error when image commit has empty repo", func() {
+				image := models.Image{
+					OrgID: orgID,
+					Name:  faker.UUIDHyphenated(),
+					Commit: &models.Commit{
+						OrgID: orgID,
+						Repo: &models.Repo{
+							URL:    "",
+							Status: models.ImageStatusSuccess,
+						},
+					},
+				}
+				db.DB.Create(&image)
+
+				targetRepoFile := "summary.sig"
+				req, err := http.NewRequest("GET", fmt.Sprintf("/storage/images-repos/%d/%s", image.ID, targetRepoFile), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusNotFound))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("image repository does not exist"))
+			})
+
+			It("should return error when image commit is without repo", func() {
+				image := models.Image{
+					OrgID: orgID,
+					Name:  faker.UUIDHyphenated(),
+					Commit: &models.Commit{
+						OrgID: orgID,
+						Repo:  nil,
+					},
+				}
+				result := db.DB.Create(&image)
+				Expect(result.Error).ToNot(HaveOccurred())
+
+				targetRepoFile := "summary.sig"
+				req, err := http.NewRequest("GET", fmt.Sprintf("/storage/images-repos/%d/%s", image.ID, targetRepoFile), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusNotFound))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("image repository does not exist"))
+			})
+
+			It("should return error when image commit repo has an un-parseable url", func() {
+				image := models.Image{
+					OrgID: orgID,
+					Name:  faker.UUIDHyphenated(),
+					Commit: &models.Commit{
+						OrgID: orgID,
+						Repo: &models.Repo{
+							URL:    "https:\t//repo-storage.org\n/path/to/bucket",
+							Status: models.ImageStatusSuccess,
+						},
+					},
+				}
+				result := db.DB.Create(&image)
+				Expect(result.Error).ToNot(HaveOccurred())
+
+				targetRepoFile := "summary.sig"
+				req, err := http.NewRequest("GET", fmt.Sprintf("/storage/images-repos/%d/%s", image.ID, targetRepoFile), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("bad image repository url"))
+			})
+		})
+
+		Context("GetImageRepoFileContent", func() {
+			It("Should redirect to the requested resource content file", func() {
+				targetRepoFile := "summary.sig"
+				req, err := http.NewRequest("GET", fmt.Sprintf("/storage/images-repos/%d/content/%s", image.ID, targetRepoFile), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				url, err := url2.Parse(image.Commit.Repo.URL)
+				Expect(err).ToNot(HaveOccurred())
+				targetPath := fmt.Sprintf("%s/%s", url.Path, targetRepoFile)
+				expectedURL := fmt.Sprintf("%s/%s?signature", url, targetRepoFile)
+				mockFilesService.EXPECT().GetSignedURL(targetPath).Return(expectedURL, nil)
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusSeeOther))
+				Expect(httpTestRecorder.Header()["Location"][0]).To(Equal(expectedURL))
+			})
+			It("should return error when the image does not exists", func() {
+
+				req, err := http.NewRequest("GET", fmt.Sprintf("/storage/images-repos/%d/content/summary.sig", 9999), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusNotFound))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("storage image not found"))
+			})
+
+			It("should return error when requested image id is not a number", func() {
+				req, err := http.NewRequest("GET", "/storage/images-repos/not-a-number/content/summary.sig", nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("storage image ID must be an integer"))
+			})
+
+			It("should return error when requested image id is empty", func() {
+				req, err := http.NewRequest("GET", "/storage/images-repos//summary.sig", nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("storage image ID required"))
+			})
+
+			It("should return error when target file path is missing", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/storage/images-repos/%d/content/", image.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("target repository file path is missing"))
+			})
+
+			It("should return error when image commit has empty repo", func() {
+				image := models.Image{
+					OrgID: orgID,
+					Name:  faker.UUIDHyphenated(),
+					Commit: &models.Commit{
+						OrgID: orgID,
+						Repo: &models.Repo{
+							URL:    "",
+							Status: models.ImageStatusSuccess,
+						},
+					},
+				}
+				db.DB.Create(&image)
+
+				targetRepoFile := "summary.sig"
+				req, err := http.NewRequest("GET", fmt.Sprintf("/storage/images-repos/%d/content/%s", image.ID, targetRepoFile), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusNotFound))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("image repository does not exist"))
+			})
+
+			It("should return error when image commit is without repo", func() {
+				image := models.Image{
+					OrgID: orgID,
+					Name:  faker.UUIDHyphenated(),
+					Commit: &models.Commit{
+						OrgID: orgID,
+						Repo:  nil,
+					},
+				}
+				result := db.DB.Create(&image)
+				Expect(result.Error).ToNot(HaveOccurred())
+
+				targetRepoFile := "summary.sig"
+				req, err := http.NewRequest("GET", fmt.Sprintf("/storage/images-repos/%d/content/%s", image.ID, targetRepoFile), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusNotFound))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("image repository does not exist"))
+			})
+
+			It("should return error when image commit repo has an un-parseable url", func() {
+				image := models.Image{
+					OrgID: orgID,
+					Name:  faker.UUIDHyphenated(),
+					Commit: &models.Commit{
+						OrgID: orgID,
+						Repo: &models.Repo{
+							URL:    "https:\t//repo-storage.org\n/path/to/bucket",
+							Status: models.ImageStatusSuccess,
+						},
+					},
+				}
+				result := db.DB.Create(&image)
+				Expect(result.Error).ToNot(HaveOccurred())
+
+				targetRepoFile := "summary.sig"
+				req, err := http.NewRequest("GET", fmt.Sprintf("/storage/images-repos/%d/content/%s", image.ID, targetRepoFile), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("bad image repository url"))
+			})
+		})
+	})
 })
