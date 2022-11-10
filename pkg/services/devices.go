@@ -5,6 +5,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -256,6 +257,8 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 			s.log.WithField("error", err.Error()).Error("Could not find installed packages")
 			return nil, err
 		}
+		fmt.Printf("\n 1 -InstalledPackages %v\n", len(upd.Commit.InstalledPackages))
+
 		if err := db.DB.Model(&upd).Association("Packages").Find(&upd.Packages); err != nil {
 			s.log.WithField("error", err.Error()).Error("Could not find packages")
 			return nil, err
@@ -271,9 +274,10 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 			return nil, new(ImageNotFoundError)
 		}
 		diff := GetDiffOnUpdate(currentImage, upd)
-		delta.Image.TotalPackages = len(upd.Commit.InstalledPackages)
+		totlaPackages := len(upd.Commit.InstalledPackages)
 		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
 		delta.Image = upd
+		delta.Image.TotalPackages = totlaPackages
 		delta.PackageDiff = diff
 		delta.Image.TotalDevicesWithImage = devicesCountByImage
 		delta.CanUpdate = s.CanUpdate(currentImage.Distribution, upd.Distribution)
