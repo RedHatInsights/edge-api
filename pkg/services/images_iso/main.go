@@ -26,10 +26,8 @@ func main() {
 	mslog := log.WithFields(log.Fields{"app": "edge", "service": "images"})
 
 	mslog.Info("Microservice started")
-	config.Init()
 	cfg := config.Get()
 	config.LogConfigAtStartup(cfg)
-
 	db.InitDB()
 
 	if cfg.KafkaConfig.Brokers == nil {
@@ -46,8 +44,8 @@ func main() {
 	}
 
 	mslog.WithField("consumer", c).Debug("Created ISO Consumer")
-	topics := []string{kafkacommon.TopicFleetmgmtImageISOBuild}
-	err = c.SubscribeTopics(topics, nil)
+	topics := kafkacommon.TopicFleetmgmtImageISOBuild
+	err = c.Subscribe(topics, nil)
 	if err != nil {
 		mslog.Error("Subscribing to topics failed")
 		os.Exit(1)
