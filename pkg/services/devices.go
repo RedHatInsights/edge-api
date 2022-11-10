@@ -5,7 +5,6 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -257,7 +256,6 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 			s.log.WithField("error", err.Error()).Error("Could not find installed packages")
 			return nil, err
 		}
-		fmt.Printf("\n 1 -InstalledPackages %v\n", len(upd.Commit.InstalledPackages))
 
 		if err := db.DB.Model(&upd).Association("Packages").Find(&upd.Packages); err != nil {
 			s.log.WithField("error", err.Error()).Error("Could not find packages")
