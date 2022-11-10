@@ -6,8 +6,13 @@ package config
 import (
 	"testing"
 
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
+
+var _ = Describe("Config", func() {
+
+})
 
 func TestRedactPasswordFromURL(t *testing.T) {
 	g := NewGomegaWithT(t)
