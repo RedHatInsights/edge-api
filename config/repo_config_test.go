@@ -52,7 +52,7 @@ func TestSupportedPackages(t *testing.T) {
 
 }
 
-func TestInvaliddistribution(t *testing.T) {
+func TestInvalidDistribution(t *testing.T) {
 	if config.DistributionsPackages["invalid"] != nil {
 		t.Errorf("expected nil,  found %v", config.DistributionsPackages["invalid"])
 	}
