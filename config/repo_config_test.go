@@ -19,13 +19,17 @@ func TestValidateRepo(t *testing.T) {
 		version := strings.Split(dist[1], "")
 		majorVersion := strings.Join(version[:len(version)-1], "")
 
-		if !strings.Contains(config.DistributionsRefs[d], distribution) {
-			t.Errorf(" %q not found: %q", distribution, config.DistributionsRefs[d])
-		}
+		t.Run("validate distribution", func(t *testing.T) {
+			if !strings.Contains(config.DistributionsRefs[d], distribution) {
+				t.Errorf(" %q not found: %q", distribution, config.DistributionsRefs[d])
+			}
+		})
 
-		if !strings.Contains(config.DistributionsRefs[d], majorVersion) {
-			t.Errorf("%q not found: %q", majorVersion, config.DistributionsRefs[d])
-		}
+		t.Run("validate major", func(t *testing.T) {
+			if !strings.Contains(config.DistributionsRefs[d], majorVersion) {
+				t.Errorf("%q not found: %q", majorVersion, config.DistributionsRefs[d])
+			}
+		})
 
 	}
 
@@ -34,19 +38,21 @@ func TestValidatePackages(t *testing.T) {
 	supportedDistributions := []string{"rhel-84", "rhel-85", "rhel-86", "rhel-87", "rhel-90"}
 
 	for _, d := range supportedDistributions {
-
-		if len(config.DistributionsPackages[d]) == 0 {
-			t.Errorf("package not found: %q", config.DistributionsPackages[d])
-		}
+		t.Run("validate package", func(t *testing.T) {
+			if len(config.DistributionsPackages[d]) == 0 {
+				t.Errorf("package not found: %q", config.DistributionsPackages[d])
+			}
+		})
 	}
 
 }
 func TestSupportedPackages(t *testing.T) {
 	supportedDistributions := []string{"rhel-84", "rhel-85", "rhel-86", "rhel-87", "rhel-90"}
-
-	if len(config.DistributionsPackages) != len(supportedDistributions) {
-		t.Errorf("packages supported %d and found %d", len(config.DistributionsPackages), len(supportedDistributions))
-	}
+	t.Run("validate size", func(t *testing.T) {
+		if len(config.DistributionsPackages) != len(supportedDistributions) {
+			t.Errorf("packages supported %d and found %d", len(config.DistributionsPackages), len(supportedDistributions))
+		}
+	})
 
 }
 
