@@ -652,7 +652,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(len(imageSetsViewResponse.Data)).To(Equal(0))
 			})
 
-			It("Should get empty when filtering by string id", func() {
+			It("Should get an error when filtering by string id", func() {
 				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view?id=%s", "some-string"), nil)
 				Expect(err).ToNot(HaveOccurred())
 
