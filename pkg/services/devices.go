@@ -274,10 +274,10 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 			return nil, new(ImageNotFoundError)
 		}
 		diff := GetDiffOnUpdate(currentImage, upd)
-		totlaPackages := len(upd.Commit.InstalledPackages)
+		totalPackages := len(upd.Commit.InstalledPackages)
 		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
 		delta.Image = upd
-		delta.Image.TotalPackages = totlaPackages
+		delta.Image.TotalPackages = totalPackages
 		delta.PackageDiff = diff
 		delta.Image.TotalDevicesWithImage = devicesCountByImage
 		delta.CanUpdate = s.CanUpdate(currentImage.Distribution, upd.Distribution)

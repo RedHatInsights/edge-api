@@ -87,6 +87,9 @@ var _ = Describe("Image Service Test", func() {
 					Commit: &models.Commit{
 						OSTreeCommit: faker.UUIDHyphenated(),
 						OrgID:        common.DefaultOrgID,
+						InstalledPackages: []models.InstalledPackage{
+							{Name: "vim"},
+						},
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
@@ -101,27 +104,35 @@ var _ = Describe("Image Service Test", func() {
 					Commit: &models.Commit{
 						OSTreeCommit: faker.UUIDHyphenated(),
 						OrgID:        common.DefaultOrgID,
+						InstalledPackages: []models.InstalledPackage{
+							{Name: "vim"},
+						},
 					},
 					Status:     models.ImageStatusError,
 					ImageSetID: &imageSet.ID,
 					Version:    2,
 					OrgID:      common.DefaultOrgID,
 				}
+				db.DB.Create(imageV2.Commit.InstalledPackages)
 				db.DB.Create(imageV2.Commit)
 				db.DB.Create(imageV2)
 				imageV3 = &models.Image{
 					Commit: &models.Commit{
 						OSTreeCommit: faker.UUIDHyphenated(),
 						OrgID:        common.DefaultOrgID,
+						InstalledPackages: []models.InstalledPackage{
+							{Name: "vim"},
+						},
 					},
+
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
 					Version:    3,
 					OrgID:      common.DefaultOrgID,
 				}
+				db.DB.Create(imageV3.Commit.InstalledPackages)
 				db.DB.Create(imageV3.Commit)
 				db.DB.Create(imageV3)
-
 			})
 			Context("by ID", func() {
 				var image *models.Image
@@ -160,6 +171,9 @@ var _ = Describe("Image Service Test", func() {
 				})
 				It("should have a v1 image", func() {
 					Expect(image.ID).To(Equal(imageV1.ID))
+				})
+				It("should have a total packages", func() {
+					Expect(image.TotalPackages).To(Equal(1))
 				})
 			})
 			Context("when rollback image does not exists", func() {
