@@ -1,6 +1,6 @@
 // FIXME: golangci-lint
 // nolint:revive,typecheck
-package config_test
+package config
 
 import (
 	"testing"

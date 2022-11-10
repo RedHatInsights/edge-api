@@ -1,17 +1,15 @@
 // FIXME: golangci-lint
 // nolint:errcheck,gosec,govet,revive,typecheck
-package config_test
+package config
 
 import (
 	"strings"
 	"testing"
-
-	"github.com/redhatinsights/edge-api/config"
 )
 
 // Validate distribution ref values should return refs by distribution"
 func TestValidateRepo(t *testing.T) {
-	for key, d := range config.DistributionsRefs {
+	for key, d := range DistributionsRefs {
 
 		dist := strings.Split(key, "-")
 		distribution := dist[0]
@@ -19,14 +17,14 @@ func TestValidateRepo(t *testing.T) {
 		majorVersion := strings.Join(version[:len(version)-1], "")
 
 		t.Run("validate distribution", func(t *testing.T) {
-			if !strings.Contains(config.DistributionsRefs[key], distribution) {
-				t.Errorf(" %q not found: %q", distribution, config.DistributionsRefs[d])
+			if !strings.Contains(DistributionsRefs[key], distribution) {
+				t.Errorf(" %q not found: %q", distribution, DistributionsRefs[d])
 			}
 		})
 
 		t.Run("validate major", func(t *testing.T) {
-			if !strings.Contains(config.DistributionsRefs[key], majorVersion) {
-				t.Errorf("%q not found: %q", majorVersion, config.DistributionsRefs[d])
+			if !strings.Contains(DistributionsRefs[key], majorVersion) {
+				t.Errorf("%q not found: %q", majorVersion, DistributionsRefs[d])
 			}
 		})
 
@@ -34,9 +32,9 @@ func TestValidateRepo(t *testing.T) {
 
 }
 func TestValidatePackages(t *testing.T) {
-	for key, value := range config.DistributionsPackages {
+	for key, value := range DistributionsPackages {
 		t.Run("validate package", func(t *testing.T) {
-			if len(config.DistributionsPackages[key]) == 0 {
+			if len(DistributionsPackages[key]) == 0 {
 				t.Errorf("package not found: %q", value)
 			}
 		})
@@ -45,18 +43,18 @@ func TestValidatePackages(t *testing.T) {
 }
 func TestSupportedPackages(t *testing.T) {
 	t.Run("validate size", func(t *testing.T) {
-		if len(config.DistributionsPackages) != len(config.DistributionsRefs) {
-			t.Errorf("packages supported %d and found %d", len(config.DistributionsPackages), len(config.DistributionsRefs))
+		if len(DistributionsPackages) != len(DistributionsRefs) {
+			t.Errorf("packages supported %d and found %d", len(DistributionsPackages), len(DistributionsRefs))
 		}
 	})
 
 }
 
 func TestInvalidDistribution(t *testing.T) {
-	if config.DistributionsPackages["invalid"] != nil {
-		t.Errorf("expected nil,  found %v", config.DistributionsPackages["invalid"])
+	if DistributionsPackages["invalid"] != nil {
+		t.Errorf("expected nil,  found %v", DistributionsPackages["invalid"])
 	}
-	if config.DistributionsRefs["invalid"] != "" {
-		t.Errorf("expected nil,  found %v", config.DistributionsPackages["invalid"])
+	if DistributionsRefs["invalid"] != "" {
+		t.Errorf("expected nil,  found %v", DistributionsPackages["invalid"])
 	}
 }
