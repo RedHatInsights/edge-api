@@ -165,6 +165,13 @@ func (e *ImageSetAlreadyExists) Error() string {
 	return "image set already exists"
 }
 
+// ImageSetAlreadyExists indicates the ImageSet attempting to be created already exists
+type ImageNotInErrorState struct{}
+
+func (e *ImageNotInErrorState) Error() string {
+	return "image is not in error state"
+}
+
 // DeviceGroupOrgIDDevicesNotFound indicates that devices not found among the device group OrgID
 type DeviceGroupOrgIDDevicesNotFound struct{}
 

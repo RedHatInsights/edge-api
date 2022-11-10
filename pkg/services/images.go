@@ -67,6 +67,7 @@ type ImageServiceInterface interface {
 	GetImagesViewCount(tx *gorm.DB) (int64, error)
 	GetImagesView(limit int, offset int, tx *gorm.DB) (*[]models.ImageView, error)
 	SetLog(*log.Entry)
+	DeleteImage(image *models.Image) error
 }
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
@@ -1698,4 +1699,21 @@ func (s *ImageService) GetImagesView(limit int, offset int, tx *gorm.DB) (*[]mod
 		imagesView = append(imagesView, imageView)
 	}
 	return &imagesView, nil
+}
+
+func (s *ImageService) DeleteImage(i *models.Image) error {
+	if i.Status != models.ImageStatusError {
+		s.log.WithFields(
+			log.Fields{"Image_id": i.ID},
+		).Error("Error when deleting image, only errored images can be deleted")
+		return new(ImageNotInErrorState)
+	}
+
+	if result := db.DB.Delete(&i); result.Error != nil {
+		s.log.WithFields(
+			log.Fields{"Image_id": i.ID, "error": result.Error},
+		).Error("Error when deleting image")
+		return result.Error
+	}
+	return nil
 }

@@ -1506,4 +1506,62 @@ var _ = Describe("Image Service Test", func() {
 
 		})
 	})
+	Describe("delete image", func() {
+		When("image is in error state", func() {
+			Context("by id", func() {
+				It("image is deleted successfully", func() {
+					orgID := common.DefaultOrgID
+					imageSet := models.ImageSet{OrgID: orgID, Name: faker.Name()}
+					db.DB.Create(&imageSet)
+					image1 := models.Image{
+						OrgID:      orgID,
+						Name:       imageSet.Name,
+						ImageSetID: &imageSet.ID,
+						Version:    1,
+						Status:     models.ImageStatusError,
+					}
+					db.DB.Create(&image1)
+					err := service.DeleteImage(&image1)
+					Expect(err).To(BeNil())
+				})
+			})
+		})
+		When("image is not in error state", func() {
+			Context("by id", func() {
+				It("image is not deleted", func() {
+					orgID := common.DefaultOrgID
+					imageSet := models.ImageSet{OrgID: orgID, Name: faker.Name()}
+					db.DB.Create(&imageSet)
+					image2 := models.Image{
+						OrgID:      orgID,
+						Name:       imageSet.Name,
+						ImageSetID: &imageSet.ID,
+						Version:    1,
+						Status:     models.ImageStatusCreated,
+					}
+					db.DB.Create(&image2)
+					err := service.DeleteImage(&image2)
+					Expect(err).ToNot(BeNil())
+				})
+			})
+		})
+		When("image has not been saved ", func() {
+			Context("by id", func() {
+				It("delete image errors", func() {
+					orgID := common.DefaultOrgID
+					imageSet := models.ImageSet{OrgID: orgID, Name: faker.Name()}
+					db.DB.Create(&imageSet)
+					image2 := models.Image{
+						OrgID:      orgID,
+						Name:       imageSet.Name,
+						ImageSetID: &imageSet.ID,
+						Version:    1,
+						Status:     models.ImageStatusCreated,
+					}
+					err := service.DeleteImage(&image2)
+					Expect(err).ToNot(BeNil())
+				})
+			})
+		})
+	})
 })
