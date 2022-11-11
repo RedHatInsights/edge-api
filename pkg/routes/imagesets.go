@@ -419,22 +419,14 @@ func GetImageSetsView(w http.ResponseWriter, r *http.Request) {
 
 	pagination := common.GetPagination(r)
 
-	imageSetDBFilter := imageSetFilters(r, db.DB)
-
-	if imageSetDBFilter == nil {
-		ctxServices.Log.WithFields(log.Fields{"queryParameters": r.URL.Query(), "orgID": orgID}).Error("invalid query parameter")
-		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("invalid query parameter"))
-		return
-	}
-
-	imageSetsCount, err := ctxServices.ImageSetService.GetImageSetsViewCount(imageSetDBFilter)
+	imageSetsCount, err := ctxServices.ImageSetService.GetImageSetsViewCount(imageSetFilters(r, db.DB))
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{"error": err.Error(), "orgID": orgID}).Error("error getting image-sets view count")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
 
-	imageSetsViewList, err := ctxServices.ImageSetService.GetImageSetsView(pagination.Limit, pagination.Offset, imageSetDBFilter)
+	imageSetsViewList, err := ctxServices.ImageSetService.GetImageSetsView(pagination.Limit, pagination.Offset, imageSetFilters(r, db.DB))
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{"error": err.Error(), "orgID": orgID}).Error("error getting image-sets view")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
