@@ -36,22 +36,12 @@ func main() {
 	}
 
 	consumerGroup := "imagesisobuild"
-	c, err := edgeAPIServices.ConsumerService.GetConsumer(consumerGroup)
-
+	c, err := edgeAPIServices.ConsumerService.GetInstanceConsumer([]string{kafkacommon.TopicFleetmgmtImageBuild}, consumerGroup)
 	if err != nil {
 		mslog.WithField("error", err.Error()).Error("Failed to get ISO consumer")
 		os.Exit(1)
 	}
-
 	mslog.WithField("consumer", c).Debug("Created ISO Consumer")
-	topics := kafkacommon.TopicFleetmgmtImageISOBuild
-	err = c.Subscribe(topics, nil)
-	if err != nil {
-		mslog.Error("Subscribing to topics failed")
-		os.Exit(1)
-	}
-
-	mslog.Info("ISO Microservice ready")
 
 	run := true
 	pollTime := 100

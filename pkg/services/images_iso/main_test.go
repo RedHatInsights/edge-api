@@ -3,8 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	eventImageReq "github.com/redhatinsights/edge-api/pkg/services/image"
-	log "github.com/sirupsen/logrus"
 	"time"
 
 	"github.com/bxcodec/faker/v3"
@@ -18,7 +16,9 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	eventImageReq "github.com/redhatinsights/edge-api/pkg/services/image"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
+	log "github.com/sirupsen/logrus"
 )
 
 var _ = Describe("Image Iso Kafka Consumer Test", func() {
