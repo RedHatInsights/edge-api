@@ -36,4 +36,7 @@ source $CICD_ROOT/cji_smoke_test.sh
 source $CICD_ROOT/post_test_results.sh
 
 # Generate coverate report for sonarqube
+echo "*********************############################*********************"
+go version
+echo "*********************############################*********************"
 make coverage-no-fdo
