@@ -2,7 +2,7 @@ module github.com/redhatinsights/edge-api
 
 require (
 	github.com/Unleash/unleash-client-go/v3 v3.7.0
-	github.com/aws/aws-sdk-go v1.44.134
+	github.com/aws/aws-sdk-go v1.44.136
 	github.com/bxcodec/faker/v3 v3.8.0
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/confluentinc/confluent-kafka-go v1.9.2
@@ -69,7 +69,6 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
-	github.com/onsi/ginkgo/v2 v2.3.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
