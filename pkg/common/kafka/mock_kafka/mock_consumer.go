@@ -552,3 +552,18 @@ func (mr *MockConsumerServiceInterfaceMockRecorder) GetConsumer(groupID interfac
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConsumer", reflect.TypeOf((*MockConsumerServiceInterface)(nil).GetConsumer), groupID)
 }
+
+// GetInstanceConsumer mocks base method.
+func (m *MockConsumerServiceInterface) GetInstanceConsumer(topics []string, groupID string) (kafkacommon.Consumer, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetInstanceConsumer", topics, groupID)
+	ret0, _ := ret[0].(kafkacommon.Consumer)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetInstanceConsumer indicates an expected call of GetInstanceConsumer.
+func (mr *MockConsumerServiceInterfaceMockRecorder) GetInstanceConsumer(topics, groupID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstanceConsumer", reflect.TypeOf((*MockConsumerServiceInterface)(nil).GetInstanceConsumer), topics, groupID)
+}

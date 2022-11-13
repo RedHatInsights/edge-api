@@ -17,17 +17,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func main() {
-	ctx := context.Background()
-	// Init edge api services and attach them to the context
-	edgeAPIServices := dependencies.Init(ctx)
-	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
-	// create a base logger with fields to pass through the entire flow
+func getConfiguration(ctx context.Context) {
+	edgeAPIServices := dependencies.ServicesFromContext(ctx)
 	mslog := log.WithFields(log.Fields{"app": "edge", "service": "images"})
 
 	mslog.Info("Microservice started")
 	cfg := config.Get()
 	config.LogConfigAtStartup(cfg)
+
 	db.InitDB()
 
 	if cfg.KafkaConfig.Brokers == nil {
@@ -36,21 +33,31 @@ func main() {
 	}
 
 	consumerGroup := "imagesisobuild"
-	c, err := edgeAPIServices.ConsumerService.GetInstanceConsumer([]string{kafkacommon.TopicFleetmgmtImageBuild}, consumerGroup)
+	c, err := edgeAPIServices.ConsumerService.GetConsumer(consumerGroup)
+
 	if err != nil {
 		mslog.WithField("error", err.Error()).Error("Failed to get ISO consumer")
 		os.Exit(1)
 	}
+
 	mslog.WithField("consumer", c).Debug("Created ISO Consumer")
+	topics := []string{kafkacommon.TopicFleetmgmtImageISOBuild}
+	err = c.SubscribeTopics(topics, nil)
+	if err != nil {
+		mslog.Error("Subscribing to topics failed")
+		os.Exit(1)
+	}
+
+	mslog.Info("ISO Microservice ready")
 
 	run := true
 	pollTime := 100
 	for run {
 		ev := c.Poll(pollTime)
 		if ev == nil {
+			mslog.Info("ISO Microservice Event is nil")
 			continue
 		}
-
 		// handling event metadata
 		switch e := ev.(type) {
 		case *kafka.Message:
@@ -83,6 +90,7 @@ func main() {
 				// call the event's Consume method
 				go crcEvent.Consume(ctx)
 			default:
+				mslog.Info("ISO Microservice Default Event")
 				mslog.Trace("Record key is not recognized by ISO consumer: " + key)
 			}
 
@@ -91,14 +99,26 @@ func main() {
 			if err != nil {
 				mslog.WithField("error", err).Error("Error storing offset after ISO message")
 			}
+			continue
+			// run = false
 		case kafka.Error:
 			// terminate the application if all brokers are down.
+			mslog.Info("ISO Microservice Error")
 			log.WithFields(log.Fields{"code": e.Code(), "error": e}).Error("Exiting ISO loop due to Kafka broker issue")
-			if e.Code() == kafka.ErrAllBrokersDown {
-				run = false
-			}
+			run = false
 		default:
 			log.WithField("event", e).Warning("Event ignored")
+			os.Exit(1)
 		}
 	}
+}
+
+func main() {
+	ctx := context.Background()
+	// Init edge api services and attach them to the context
+	edgeAPIServices := dependencies.Init(ctx)
+	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+	// create a base logger with fields to pass through the entire flow
+	getConfiguration(ctx)
+
 }
