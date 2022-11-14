@@ -17,7 +17,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func getConfiguration(ctx context.Context) {
+func initConsumer(ctx context.Context) {
 	edgeAPIServices := dependencies.ServicesFromContext(ctx)
 	mslog := log.WithFields(log.Fields{"app": "edge", "service": "images"})
 
@@ -58,6 +58,7 @@ func getConfiguration(ctx context.Context) {
 			mslog.Info("ISO Microservice Event is nil")
 			continue
 		}
+
 		// handling event metadata
 		switch e := ev.(type) {
 		case *kafka.Message:
@@ -101,14 +102,13 @@ func getConfiguration(ctx context.Context) {
 			}
 			continue
 			// run = false
-		case kafka.Error:
+		case *kafka.Error:
 			// terminate the application if all brokers are down.
 			mslog.Info("ISO Microservice Error")
 			log.WithFields(log.Fields{"code": e.Code(), "error": e}).Error("Exiting ISO loop due to Kafka broker issue")
 			run = false
 		default:
 			log.WithField("event", e).Warning("Event ignored")
-			os.Exit(1)
 		}
 	}
 }
@@ -119,6 +119,6 @@ func main() {
 	edgeAPIServices := dependencies.Init(ctx)
 	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 	// create a base logger with fields to pass through the entire flow
-	getConfiguration(ctx)
+	initConsumer(ctx)
 
 }
