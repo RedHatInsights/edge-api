@@ -14,7 +14,7 @@ import (
 var edgeBasePayload = &EdgeBasePayload{
 	Identity:       identity.XRHID{Identity: identity.Identity{OrgID: common.DefaultOrgID}},      // nolint:gofmt,goimports,revive
 	LastHandleTime: time.Date(2015, 10, 21, 9, 00, 42, 651387237, time.UTC).Format(time.RFC3339), // nolint:revive
-	RequestID:      faker.UUIDDigit(),                                                            // nolint:typecheck
+	RequestID:      faker.UUIDDigit(),                                                            // nolint:revive,typecheck
 }
 
 // nolint:revive // TestGetIdentity compares the field returned from the payload with the expected result
