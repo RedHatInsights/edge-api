@@ -1414,6 +1414,7 @@ func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, err
 		s.log.WithField("error", result.Error).Error("Error retrieving rollback image")
 		return nil, new(ImageNotFoundError)
 	}
+	rollback.TotalPackages = len(rollback.Commit.InstalledPackages)
 	s.log = s.log.WithField("imageID", image.ID)
 	s.log.Info("Rollback image successfully retrieved")
 	return &rollback, nil
