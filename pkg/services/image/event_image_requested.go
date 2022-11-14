@@ -1,3 +1,4 @@
+// Package image contains image-related EDA functions
 // FIXME: golangci-lint
 // nolint:gosimple,revive
 package image
@@ -7,12 +8,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
-	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 )
+
+// ImgService is the interface representation of ImageService to facilitate testing
+type imageService interface {
+	ProcessImage(context.Context, *models.Image) error
+}
 
 // EventImageRequestedBuildHandlerDummy is a dummy placeholder to workaround the Golang struct vs json fun
 type EventImageRequestedBuildHandlerDummy struct {
@@ -27,7 +32,7 @@ type EventImageRequestedBuildHandler struct {
 }
 
 // Consume executes code against the data in the received event
-func (ev EventImageRequestedBuildHandler) Consume(ctx context.Context) {
+func (ev EventImageRequestedBuildHandler) Consume(ctx context.Context, imgService imageService) {
 	eventlog := GetLoggerFromContext(ctx)
 
 	eventlog.Info("Starting image build")
@@ -62,13 +67,9 @@ func (ev EventImageRequestedBuildHandler) Consume(ctx context.Context) {
 		"orgID":     image.OrgID,
 	})
 
-	// get the services from the context
-	edgeAPIServices := dependencies.ServicesFromContext(ctx)
-	imageService := edgeAPIServices.ImageService
-	err = imageService.ProcessImage(image)
+	// using NewImageService to pass ctx and log through legacy code
+	err = imgService.ProcessImage(ctx, image)
 	if err != nil {
 		log.Error("Error processing the image")
 	}
-
-	return
 }

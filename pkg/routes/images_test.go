@@ -117,7 +117,7 @@ func TestCreate(t *testing.T) {
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
 	mockImageService.EXPECT().CreateImage(gomock.Any()).Return(nil)
-	mockImageService.EXPECT().ProcessImage(gomock.Any()).Return(nil)
+	mockImageService.EXPECT().ProcessImage(gomock.Any(), gomock.Any()).Return(nil)
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),
