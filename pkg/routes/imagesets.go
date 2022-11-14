@@ -35,12 +35,12 @@ var statusOption = []string{models.ImageStatusCreated, models.ImageStatusBuildin
 // MakeImageSetsRouter adds support for operations on image-sets
 func MakeImageSetsRouter(sub chi.Router) {
 	sub.With(ValidateQueryParams("image-sets")).With(validateFilterParams).With(common.Paginate).Get("/", ListAllImageSets)
-	sub.With(validateFilterParams).With(common.Paginate).Get("/view", GetImageSetsView)
+	sub.With(ValidateQueryParams("image-sets")).With(validateFilterParams).With(common.Paginate).Get("/view", GetImageSetsView)
 	sub.Route("/{imageSetID}", func(r chi.Router) {
 		r.Use(ImageSetCtx)
 		r.With(validateFilterParams).With(common.Paginate).Get("/", GetImageSetsByID)
 	})
-	sub.Route("/view/{imageSetID}", func(r chi.Router) {
+	sub.With(validateFilterParams).Route("/view/{imageSetID}", func(r chi.Router) {
 		r.Use(ImageSetViewCtx)
 		r.With(ValidateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetImageSetViewByID)
 		r.With(ValidateGetAllImagesSearchParams).With(common.Paginate).Get("/versions", GetAllImageSetImagesView)
@@ -64,6 +64,10 @@ var imageSetFilters = common.ComposeFilters(
 	common.ContainFilterHandler(&common.Filter{
 		QueryParam: "name",
 		DBField:    "image_sets.name",
+	}),
+	common.IntegerNumberFilterHandler(&common.Filter{
+		QueryParam: "id",
+		DBField:    "image_sets.id",
 	}),
 	common.SortFilterHandler("image_sets", "created_at", "DESC"),
 )
@@ -353,8 +357,16 @@ func validateFilterParams(next http.Handler) http.Handler {
 			if err != nil {
 				errs = append(errs, common.ValidationError{Key: "version", Reason: fmt.Sprintf("%s is not a valid version type, version must be number", val)})
 			}
+		}
+
+		if val := r.URL.Query().Get("id"); val != "" {
+			_, err := strconv.Atoi(val)
+			if err != nil {
+				errs = append(errs, common.ValidationError{Key: "id", Reason: fmt.Sprintf("%s is not a valid id type, id must be an integer", val)})
+			}
 
 		}
+
 		if len(errs) == 0 {
 			next.ServeHTTP(w, r)
 			return

@@ -595,6 +595,82 @@ var _ = Describe("ImageSets Route Test", func() {
 			}
 		})
 
+		Context("Filter image-sets view by id", func() {
+			var router chi.Router
+
+			BeforeEach(func() {
+				ctrl := gomock.NewController(GinkgoT())
+				defer ctrl.Finish()
+				imageSetsService := services.ImageSetsService{
+					Service: services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+				}
+
+				edgeAPIServices := &dependencies.EdgeAPIServices{
+					ImageSetService: &imageSetsService,
+					Log:             log.NewEntry(log.StandardLogger()),
+				}
+				router = chi.NewRouter()
+				router.Use(func(next http.Handler) http.Handler {
+					return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						ctx := dependencies.ContextWithServices(r.Context(), edgeAPIServices)
+						next.ServeHTTP(w, r.WithContext(ctx))
+					})
+				})
+				router.Route("/image-sets", MakeImageSetsRouter)
+			})
+
+			It("Should filter when the image-set exists", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view?id=%d", imageSet1.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusOK))
+
+				var imageSetsViewResponse ImageSetsViewResponse
+				respBody, err := ioutil.ReadAll(rr.Body)
+				err = json.Unmarshal(respBody, &imageSetsViewResponse)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(imageSetsViewResponse.Count).To(Equal(1))
+				Expect(len(imageSetsViewResponse.Data)).To(Equal(1))
+				Expect(imageSetsViewResponse.Data[0].ID).To(Equal(imageSet1.ID))
+			})
+
+			It("Should get empty when filtering by non-existing id", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view?id=%d", 999999999), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusOK))
+
+				var imageSetsViewResponse ImageSetsViewResponse
+				respBody, err := ioutil.ReadAll(rr.Body)
+				err = json.Unmarshal(respBody, &imageSetsViewResponse)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(imageSetsViewResponse.Count).To(Equal(0))
+				Expect(len(imageSetsViewResponse.Data)).To(Equal(0))
+			})
+
+			It("Should get an error when filtering by string id", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view?id=%s", "some-string"), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusBadRequest))
+
+				var responseError []validationError
+				respBody, err := ioutil.ReadAll(rr.Body)
+
+				err = json.Unmarshal(respBody, &responseError)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(responseError)).To(Equal(1))
+				Expect(responseError[0].Reason).To(Equal("some-string is not a valid id type, id must be an integer"))
+				Expect(responseError[0].Key).To(Equal("id"))
+			})
+		})
+
 		Context("imageSetIDView", func() {
 
 			It("The imageSetView end point is working as expected", func() {

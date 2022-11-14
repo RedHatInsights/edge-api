@@ -836,6 +836,11 @@ paths:
           description: "field: filter by status"
           schema:
             type: string
+        - name: id
+          in: query
+          description: "field: filter by id"
+          schema:
+            type: integer
         - name: limit
           in: query
           description: "field: return number of image-set view until limit is reached. Default is 30."
