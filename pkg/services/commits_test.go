@@ -64,10 +64,10 @@ var _ = Describe("ValidateDevicesImageSetWithCommit", func() {
 		It("commit is invalid to update", func() {
 			err := commitService.ValidateDevicesImageSetWithCommit([]string{device.UUID}, commits[0].ID)
 			Expect(err).ToNot(BeNil())
-			Expect(err.Error()).To(Equal("commit not valid to update"))
+			Expect(err.Error()).To(Equal("not valid to update"))
 		})
 
-		It("device not found for comit", func() {
+		It("device not found for commit", func() {
 			err := commitService.ValidateDevicesImageSetWithCommit([]string{faker.UUIDHyphenated()}, commits[0].ID)
 			Expect(err).ToNot(BeNil())
 			Expect(err.Error()).To(Equal("image-set was not found"))

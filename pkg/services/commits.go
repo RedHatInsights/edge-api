@@ -81,7 +81,7 @@ func (s *CommitService) ValidateDevicesImageSetWithCommit(devicesUUID []string, 
 		Group("images.image_set_id, images.commit_Id ").
 		Scan(&imageSetsDevices); result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error searching for ImageSet of Device Images")
-		return result.Error
+		return new(DBCommitError)
 	}
 
 	if len(imageSetsDevices) == 0 {
@@ -103,7 +103,7 @@ func (s *CommitService) ValidateDevicesImageSetWithCommit(devicesUUID []string, 
 			return new(CommitImageNotFound)
 		}
 		s.log.WithField("error", result.Error.Error()).Error("Error searching for Images using user provided CommitID")
-		return result.Error
+		return new(DBCommitError)
 	}
 
 	if imageSetDevices.Commit_Id > commitID {

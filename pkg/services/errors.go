@@ -257,14 +257,14 @@ var ErrUndefinedCommit = errors.New("entity has defined commit")
 type CommitNotFound struct{}
 
 func (e *CommitNotFound) Error() string {
-	return "commit not found"
+	return "not found"
 }
 
 // CommitNotValid indicates commit matching the given id was not found
 type CommitNotValid struct{}
 
 func (e *CommitNotValid) Error() string {
-	return "commit not valid to update"
+	return "not valid to update"
 }
 
 // OstreeNotFound was not found
@@ -278,7 +278,7 @@ func (e *OstreeNotFound) Error() string {
 type EntitiesImageSetsMismatch struct{}
 
 func (e *EntitiesImageSetsMismatch) Error() string {
-	return "commit ID does not belong to the same image-set as devices images"
+	return "does not belong to the same image-set as devices images"
 }
 
 // CommitImageNotFound indicates the Commit Image is not found
@@ -303,4 +303,11 @@ type KafkaAllBrokersDown struct{}
 
 func (e *KafkaAllBrokersDown) Error() string {
 	return "Cannot connect to any Kafka brokers"
+}
+
+// DBError indicates a dbError during search
+type DBCommitError struct{}
+
+func (e *DBCommitError) Error() string {
+	return "Error searching for ImageSet of Device Images"
 }

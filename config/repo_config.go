@@ -12,20 +12,21 @@ var RequiredPackages = []string{"rhc",
 	"subscription-manager-plugin-ostree",
 	"insights-client"}
 
-// RHEL8 contains aditional list of packages to build an image to >= RHEL85
+// RHEL8 contains additional list of packages to build an image to >= RHEL85
 var RHEL8 = []string{"ansible"}
 
-// RHEL86 contains aditional list of packages to build an image to = RHEL86
-var RHEL86 = []string{"ansible-core"}
+// RHEL8X contains additional list of packages to build an image to = RHEL8X
+var RHEL8X = []string{"ansible-core"}
 
-// RHEL90 contains aditional list of packages to build an image to = RHEL90
+// RHEL90 contains additional list of packages to build an image to = RHEL90
 var RHEL90 = []string{"ansible-core"}
 
-// DistributionsPackages add packages byi mage
+// DistributionsPackages add packages by image
 var DistributionsPackages = map[string][]string{
 	"rhel-84": RHEL8,
 	"rhel-85": RHEL8,
-	"rhel-86": RHEL86,
+	"rhel-86": RHEL8X,
+	"rhel-87": RHEL8X,
 	"rhel-90": RHEL90,
 }
 
@@ -34,5 +35,6 @@ var DistributionsRefs = map[string]string{
 	"rhel-84": "rhel/8/x86_64/edge",
 	"rhel-85": "rhel/8/x86_64/edge",
 	"rhel-86": "rhel/8/x86_64/edge",
+	"rhel-87": "rhel/8/x86_64/edge",
 	"rhel-90": "rhel/9/x86_64/edge",
 }

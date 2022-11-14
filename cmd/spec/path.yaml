@@ -629,12 +629,12 @@ paths:
             type: integer
         - name: order_by
           in: query
-          description: "field: choose which filter to order"
+          description: "field: order by display_name, updated or operating_system"
           schema:
             type: string
         - name: order_how
           in: query
-          description: "field: choose to order asc or desc"
+          description: "field: choose to order ASC or DESC when order_by is being used"
           schema:
             type: string
         - name: hostname_or_id
@@ -1984,6 +1984,78 @@ paths:
           in: path
           required: true
           description: Update Transaction ID
+          schema:
+            type: integer
+            example: 120
+        - name: repoFilePath
+          in: path
+          required: true
+          description: the ostree repository file location
+          schema:
+            type: string
+            example: refs/heads/rhel/8/x86_64/edge
+      responses:
+        "303":
+          description: Redirect to actual stored iso file
+          content:
+            application/octet-stream: {}
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.BadRequest"
+          description: The request sent couldn't be processed.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.NotFound"
+          description: repository file not found.
+  /storage/images-repos/{imageID}/{repoFilePath}:
+    get:
+      summary: Return the image commit repository content located at repoFilePath from root repository
+      operationId: GetImageRepoFile
+      parameters:
+        - name: imageID
+          in: path
+          required: true
+          description: image ID
+          schema:
+            type: integer
+            example: 120
+        - name: repoFilePath
+          in: path
+          required: true
+          description: the ostree repository file location
+          schema:
+            type: string
+            example: refs/heads/rhel/8/x86_64/edge
+      responses:
+        "200":
+          description: return the content of the repo file path
+          content:
+            application/octet-stream: {}
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.BadRequest"
+          description: The request sent couldn't be processed.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.NotFound"
+          description: repository file not found.
+  /storage/images-repos/{imageID}/content/{repoFilePath}:
+    get:
+      summary: Redirect to signed URL of the image commit repository content located at repoFilePath from root repository
+      operationId: GetImageRepoFileContent
+      parameters:
+        - name: imageID
+          in: path
+          required: true
+          description: image ID
           schema:
             type: integer
             example: 120
