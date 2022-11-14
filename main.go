@@ -6,12 +6,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
 	"time"
 
@@ -155,6 +157,21 @@ func main() {
 	signal.Notify(interruptSignal, os.Interrupt, syscall.SIGTERM)
 
 	initDependencies()
+
+	if buildInfo, ok := debug.ReadBuildInfo(); ok {
+		b := new(bytes.Buffer)
+		enc := json.NewEncoder(b)
+		enc.SetIndent("", "  ")
+		err := enc.Encode(buildInfo)
+		if err == nil {
+			log.WithField("buildInfo", b).Debug("Build information")
+		} else {
+			log.WithField("ok", ok).Debug("Unable to encode buildInfo")
+		}
+	} else {
+		log.WithField("ok", ok).Debug("Unable to get Build Info")
+	}
+
 	cfg := config.Get()
 	var configValues map[string]interface{}
 	cfgBytes, _ := json.Marshal(cfg)
