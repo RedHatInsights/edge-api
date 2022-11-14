@@ -47,7 +47,6 @@ type Consumer interface {
 // ConsumerServiceInterface is the interface that defines the consumer service
 type ConsumerServiceInterface interface {
 	GetConsumer(groupID string) (Consumer, error)
-	GetInstanceConsumer(topics []string, groupID string) (Consumer, error)
 }
 
 // ConsumerService is the consumer service for edge
@@ -64,6 +63,7 @@ func NewConsumerService() ConsumerServiceInterface {
 	}
 }
 
+// GetConsumer returns a kafka Consumer
 func (s *ConsumerService) GetConsumer(groupID string) (Consumer, error) {
 	kafkaConfigMap := s.KafkaConfigMap.GetKafkaConsumerConfigMap(groupID)
 	c, err := kafka.NewConsumer(&kafkaConfigMap)
@@ -73,24 +73,5 @@ func (s *ConsumerService) GetConsumer(groupID string) (Consumer, error) {
 		return nil, err
 	}
 
-	return c, nil
-}
-
-func (s *ConsumerService) GetInstanceConsumer(topics []string, groupID string) (Consumer, error) {
-	kafkaConfigMap := NewKafkaConfigMapService().GetKafkaConsumerConfigMap(groupID)
-	c, err := kafka.NewConsumer(&kafkaConfigMap)
-	if err != nil {
-		log.WithField("error", err.Error()).Error("Failed to create consumer")
-		return nil, err
-	}
-
-	log.WithField("consumer", c).Debug("Created Consumer")
-
-	// TODO: define this by mapping topics to a microservice struct
-	// TODO: and nail record keys to the topic
-	// TODO: make this main.go a single run engine for all microservices
-	if err := c.SubscribeTopics(topics, nil); err != nil {
-		return nil, err
-	}
 	return c, nil
 }

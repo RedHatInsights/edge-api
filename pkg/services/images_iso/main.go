@@ -106,7 +106,9 @@ func initConsumer(ctx context.Context) {
 			// terminate the application if all brokers are down.
 			mslog.Info("ISO Microservice Error")
 			log.WithFields(log.Fields{"code": e.Code(), "error": e}).Error("Exiting ISO loop due to Kafka broker issue")
-			run = false
+			if e.Code() == kafka.ErrAllBrokersDown {
+				run = false
+			}
 		default:
 			log.WithField("event", e).Warning("Event ignored")
 		}
@@ -118,7 +120,6 @@ func main() {
 	// Init edge api services and attach them to the context
 	edgeAPIServices := dependencies.Init(ctx)
 	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
-	// create a base logger with fields to pass through the entire flow
 	initConsumer(ctx)
 
 }
