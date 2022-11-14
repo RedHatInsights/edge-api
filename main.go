@@ -158,21 +158,23 @@ func main() {
 
 	initDependencies()
 
-	if buildInfo, ok := debug.ReadBuildInfo(); ok {
-		b := new(bytes.Buffer)
-		enc := json.NewEncoder(b)
-		enc.SetIndent("", "  ")
-		err := enc.Encode(buildInfo)
-		if err == nil {
-			log.WithField("buildInfo", b).Debug("Build information")
+	cfg := config.Get()
+	if cfg.Debug {
+		if buildInfo, ok := debug.ReadBuildInfo(); ok {
+			b := new(bytes.Buffer)
+			enc := json.NewEncoder(b)
+			enc.SetIndent("", "  ")
+			err := enc.Encode(buildInfo)
+			if err == nil {
+				log.WithField("buildInfo", b).Debug("Build information")
+			} else {
+				log.WithField("ok", ok).Debug("Unable to encode buildInfo")
+			}
 		} else {
-			log.WithField("ok", ok).Debug("Unable to encode buildInfo")
+			log.WithField("ok", ok).Debug("Unable to get Build Info")
 		}
-	} else {
-		log.WithField("ok", ok).Debug("Unable to get Build Info")
 	}
 
-	cfg := config.Get()
 	var configValues map[string]interface{}
 	cfgBytes, _ := json.Marshal(cfg)
 	_ = json.Unmarshal(cfgBytes, &configValues)
