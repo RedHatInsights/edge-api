@@ -17,7 +17,7 @@ var lock = &sync.Mutex{}
 
 var singleInstance Producer
 
-// Producer the an interface for a kafka producer, it matches the confluent producer type defination
+// Producer is an interface for a kafka producer, it matches the confluent producer type definition
 type Producer interface {
 	Close()
 	Events() chan kafka.Event
@@ -35,7 +35,7 @@ type Producer interface {
 	TestFatalError(code kafka.ErrorCode, str string) kafka.ErrorCode
 }
 
-// ProducerServiceInterface is the interface that defines the producer service
+// ProducerServiceInterface is an interface that defines the producer service
 type ProducerServiceInterface interface {
 	GetProducerInstance() Producer
 	ProduceEvent(requestedTopic, recordKey string, event models.CRCCloudEvent) error
@@ -111,7 +111,7 @@ func (p *ProducerService) ProduceEvent(requestedTopic, recordKey string, event m
 	return nil
 }
 
-// UnsetProducer sets the producer singelton to nil
+// UnsetProducer sets the producer singleton to nil
 func (p *ProducerService) UnsetProducer() {
 	singleInstance = nil
 }
