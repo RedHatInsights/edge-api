@@ -634,7 +634,7 @@ paths:
             type: string
         - name: order_how
           in: query
-          description: "field: choose to order ASC or DESC"
+          description: "field: choose to order ASC or DESC when order_by is being used"
           schema:
             type: string
         - name: hostname_or_id
