@@ -666,7 +666,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				err = json.Unmarshal(respBody, &responseError)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(len(responseError)).To(Equal(1))
-				Expect(responseError[0].Reason).To(Equal("some-string is not a valid id type, id must be number"))
+				Expect(responseError[0].Reason).To(Equal("some-string is not a valid id type, id must be an integer"))
 				Expect(responseError[0].Key).To(Equal("id"))
 			})
 		})

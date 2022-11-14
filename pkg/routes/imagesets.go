@@ -362,7 +362,7 @@ func validateFilterParams(next http.Handler) http.Handler {
 		if val := r.URL.Query().Get("id"); val != "" {
 			_, err := strconv.Atoi(val)
 			if err != nil {
-				errs = append(errs, common.ValidationError{Key: "id", Reason: fmt.Sprintf("%s is not a valid id type, id must be number", val)})
+				errs = append(errs, common.ValidationError{Key: "id", Reason: fmt.Sprintf("%s is not a valid id type, id must be an integer", val)})
 			}
 
 		}
