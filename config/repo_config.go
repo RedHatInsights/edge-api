@@ -5,6 +5,10 @@ package config
 // DefaultDistribution set the default image distribution in case miss it
 const DefaultDistribution = "rhel-90"
 
+// ostree ref for supported distributions
+const OstreeRefRHEL8 = "rhel/8/x86_64/edge"
+const OstreeRefRHEL9 = "rhel/9/x86_64/edge"
+
 // RequiredPackages contains minimun list of packages to build an image
 var RequiredPackages = []string{"rhc",
 	"rhc-worker-playbook",
@@ -23,18 +27,18 @@ var RHEL90 = []string{"ansible-core"}
 
 // DistributionsPackages add packages by image
 var DistributionsPackages = map[string][]string{
-	"rhel-84": RHEL8,
-	"rhel-85": RHEL8,
-	"rhel-86": RHEL8X,
-	"rhel-87": RHEL8X,
-	"rhel-90": RHEL90,
+	"rhel-84":           RHEL8,
+	"rhel-85":           RHEL8,
+	"rhel-86":           RHEL8X,
+	"rhel-87":           RHEL8X,
+	DefaultDistribution: RHEL90,
 }
 
 // DistributionsRefs set the ref to Images
 var DistributionsRefs = map[string]string{
-	"rhel-84": "rhel/8/x86_64/edge",
-	"rhel-85": "rhel/8/x86_64/edge",
-	"rhel-86": "rhel/8/x86_64/edge",
-	"rhel-87": "rhel/8/x86_64/edge",
-	"rhel-90": "rhel/9/x86_64/edge",
+	"rhel-84":           OstreeRefRHEL8,
+	"rhel-85":           OstreeRefRHEL8,
+	"rhel-86":           OstreeRefRHEL8,
+	"rhel-87":           OstreeRefRHEL8,
+	DefaultDistribution: OstreeRefRHEL9,
 }
