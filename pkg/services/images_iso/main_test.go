@@ -25,15 +25,14 @@ import (
 
 var _ = Describe("Image Iso Kafka Consumer Test", func() {
 	var ctx context.Context
+	var ctrl *gomock.Controller
 	var mockImageService *mock_services.MockImageServiceInterface
 	var mockConsumerService *mock_kafkacommon.MockConsumerServiceInterface
 	var mockConsumer *mock_kafkacommon.MockConsumer
-	var ctrl *gomock.Controller
 
 	BeforeEach(func() {
 		ctx = context.Background()
 		ctrl = gomock.NewController(GinkgoT())
-
 		mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
 		mockConsumerService = mock_kafkacommon.NewMockConsumerServiceInterface(ctrl)
 		mockConsumer = mock_kafkacommon.NewMockConsumer(ctrl)
@@ -74,11 +73,10 @@ var _ = Describe("Image Iso Kafka Consumer Test", func() {
 		When("One does not exist yet", func() {
 			Context("One does not exist yet", func() {
 				It("should be ok", func() {
+					var ident identity.XRHID
 					consumerGroupID := "imagesisobuild"
 					timeout := 100
-					mockConsumerService.EXPECT().GetConsumer(consumerGroupID).Return(mockConsumer, nil)
-					mockConsumer.EXPECT().SubscribeTopics(gomock.Any(), gomock.Any())
-
+					ident.Identity.OrgID = common.DefaultOrgID
 					imageSet := &models.ImageSet{
 						Name:    "test",
 						Version: 2,
@@ -95,8 +93,6 @@ var _ = Describe("Image Iso Kafka Consumer Test", func() {
 						OrgID:      common.DefaultOrgID,
 						Name:       gomock.Any().String(),
 					}
-					var ident identity.XRHID
-					ident.Identity.OrgID = common.DefaultOrgID
 					edgePayload := &models.EdgeImageRequestedEventPayload{
 						EdgeBasePayload: models.EdgeBasePayload{
 							Identity:       ident,
@@ -105,7 +101,6 @@ var _ = Describe("Image Iso Kafka Consumer Test", func() {
 						},
 						NewImage: *image,
 					}
-
 					cloudEvent := models.CRCCloudEvent{
 						Data:        edgePayload,
 						DataSchema:  "v1",
@@ -117,10 +112,10 @@ var _ = Describe("Image Iso Kafka Consumer Test", func() {
 						Time:        time.Now().Format(time.RFC3339),
 						Type:        models.EventTypeEdgeImageRequested,
 					}
-
 					recordKey := "com.redhat.console.edge.api.image.iso.requested"
 					key1 := []byte(recordKey)
 					message, err := json.Marshal(cloudEvent)
+					Expect(err).To(BeNil())
 					off := kafka.Offset(64)
 					tp := kafka.TopicPartition{
 						Topic:     &recordKey,
@@ -132,12 +127,13 @@ var _ = Describe("Image Iso Kafka Consumer Test", func() {
 						Value:          message,
 						TopicPartition: tp,
 					}
+					mockConsumerService.EXPECT().GetConsumer(consumerGroupID).Return(mockConsumer, nil)
+					mockConsumer.EXPECT().SubscribeTopics(gomock.Any(), gomock.Any())
 					mockConsumer.EXPECT().Poll(timeout).Return(&kafkaMessage)
 					mockConsumer.EXPECT().Commit().AnyTimes()
-					kakfaError := kafka.NewError(kafka.ErrAllBrokersDown, "Error", true)
-					mockConsumer.EXPECT().Poll(timeout).Return(&kakfaError).AnyTimes()
+					kafkaError := kafka.NewError(kafka.ErrAllBrokersDown, "Error", true)
+					mockConsumer.EXPECT().Poll(timeout).Return(&kafkaError).AnyTimes()
 					initConsumer(ctx)
-					Expect(err).To(BeNil())
 				})
 			})
 		})
