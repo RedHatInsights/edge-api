@@ -660,7 +660,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 			var updateDevice *models.Device
 			dbDevice := db.DB.Where("uuid = ?", device.ID).First(&updateDevice)
 			if dbDevice.Error != nil {
-				if !(dbDevice.Error.Error() == "Device was not found") {
+				if dbDevice.Error.Error() != "Device was not found" {
 					s.log.WithFields(log.Fields{
 						"error":      dbDevice.Error.Error(),
 						"deviceUUID": device.ID,
