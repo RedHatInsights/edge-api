@@ -28,6 +28,7 @@ var DistributionsPackages = map[string][]string{
 	"rhel-86": RHEL8X,
 	"rhel-87": RHEL8X,
 	"rhel-90": RHEL90,
+	"rhel-91": RHEL90,
 }
 
 // DistributionsRefs set the ref to Images
@@ -37,4 +38,5 @@ var DistributionsRefs = map[string]string{
 	"rhel-86": "rhel/8/x86_64/edge",
 	"rhel-87": "rhel/8/x86_64/edge",
 	"rhel-90": "rhel/9/x86_64/edge",
+	"rhel-91": "rhel/9/x86_64/edge",
 }
