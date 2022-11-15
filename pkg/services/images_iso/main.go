@@ -117,9 +117,8 @@ func initConsumer(ctx context.Context) {
 
 func main() {
 	ctx := context.Background()
-	// Init edge api services and attach them to the context
-	edgeAPIServices := dependencies.Init(ctx)
-	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+	mslog := log.WithFields(log.Fields{"app": "edge", "service": "images"})
+	ctx = image.ContextWithLogger(ctx, mslog)
 	initConsumer(ctx)
 
 }
