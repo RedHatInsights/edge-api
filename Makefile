@@ -75,7 +75,7 @@ coverage-html:
 	go tool cover -html=coverage.txt -o coverage.html
 
 coverage-no-fdo:
-	go test $$(go list ./... | grep -v $(EXCLUDE_DIRS)) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
+	go test $$(go list ./... | grep -v $(EXCLUDE_DIRS)) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic -json > coverage.json
 
 create-ns:
 	$(KUBECTL) create ns $(NAMESPACE)
