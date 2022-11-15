@@ -2,8 +2,15 @@
 // nolint:revive
 package config
 
+// List of supported RHEL distributions
+const distRHEL84 = "rhel-84"
+const distRHEL85 = "rhel-85"
+const distRHEL86 = "rhel-86"
+const distRHEL87 = "rhel-87"
+const distRHEL90 = "rhel-90"
+
 // DefaultDistribution set the default image distribution in case miss it
-const DefaultDistribution = "rhel-90"
+const DefaultDistribution = distRHEL90
 
 // ostree ref for supported distributions
 const OstreeRefRHEL8 = "rhel/8/x86_64/edge"
@@ -27,18 +34,18 @@ var RHEL90 = []string{"ansible-core"}
 
 // DistributionsPackages add packages by image
 var DistributionsPackages = map[string][]string{
-	"rhel-84":           RHEL8,
-	"rhel-85":           RHEL8,
-	"rhel-86":           RHEL8X,
-	"rhel-87":           RHEL8X,
-	DefaultDistribution: RHEL90,
+	distRHEL84: RHEL8,
+	distRHEL85: RHEL8,
+	distRHEL86: RHEL8X,
+	distRHEL87: RHEL8X,
+	distRHEL90: RHEL90,
 }
 
 // DistributionsRefs set the ref to Images
 var DistributionsRefs = map[string]string{
-	"rhel-84":           OstreeRefRHEL8,
-	"rhel-85":           OstreeRefRHEL8,
-	"rhel-86":           OstreeRefRHEL8,
-	"rhel-87":           OstreeRefRHEL8,
-	DefaultDistribution: OstreeRefRHEL9,
+	distRHEL84: OstreeRefRHEL8,
+	distRHEL85: OstreeRefRHEL8,
+	distRHEL86: OstreeRefRHEL8,
+	distRHEL87: OstreeRefRHEL8,
+	distRHEL90: OstreeRefRHEL9,
 }
