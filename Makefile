@@ -30,7 +30,7 @@ GOLANGCI_LINT_COMMON_OPTIONS=\
 			--timeout=5m0s \
 			--uniq-by-line=false
 
-EXCLUDE_DIRS=-e /test/ -e /cmd/db -e /cmd/kafka -e /config \
+EXCLUDE_DIRS=-e /test/ -e /cmd/db -e /cmd/kafka \
 				-e /pkg/clients/imagebuilder/mock_imagebuilder \
 				-e /pkg/imagebuilder/mock_imagebuilder \
 				-e /pkg/clients/inventory/mock_inventory \
