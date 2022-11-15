@@ -16,7 +16,7 @@ podman run \
  -Dsonar.test.inclusions=**/*_test.go \
  -Dsonar.go.tests.reportPaths=/usr/src/coverage.json \
  -Dsonar.go.coverage.reportPaths=/usr/src/coverage.txt \
- -Dsonar.exclusions=**/*_test.go,**/*.html,**/*.yml,**/*.yaml,**/*.json,**/main*.go,**/*suite*,**/cmd/db*,**/cmd/kafka*,**/config*,**/errors*,**/mock_*" \
+ -Dsonar.exclusions=**/*_test.go,**/*.html,**/*.yml,**/*.yaml,**/*.json,**/*suite*,**/cmd/db*,**/cmd/kafka*,**/unleash*,**/errors*,**/mock_*" \
 images.paas.redhat.com/alm/sonar-scanner-alpine:4.7.0.2747-5ec0a15 -X
 
 mkdir -p "${WORKSPACE}/artifacts"
