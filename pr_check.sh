@@ -3,7 +3,7 @@
 export GOROOT="/opt/go/1.17.7" # Force Jenkins to use Go 1.17.7 since we don't have 1.18 yet
 export PATH="${GOROOT}/bin:${PATH}"
 
-export PR_CHECK=true # Only used when doing a PR check from Github.
+export PR_CHECK="true" # Only used when doing a PR check from Github.
 
 export APP_NAME="edge"  # name of app-sre "application" folder this component lives in
 export COMPONENT_NAME="edge-api"  # name of app-sre "resourceTemplate" in deploy.yaml for this component
