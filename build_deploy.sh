@@ -44,3 +44,8 @@ for tag in $(echo $TAGS); do
     podman tag "${IMAGE}:${IMAGE_TAG}" "${IMAGE}:${tag}"
     podman push "${IMAGE}:${tag}"
 done
+
+# Generate coverate report for sonarqube
+make coverage-no-fdo
+# Generate sonarqube reports
+make scan_project
