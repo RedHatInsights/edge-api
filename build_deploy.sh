@@ -2,6 +2,8 @@
 
 set -exv
 
+export PR_CHECK="false" # Only used when doing a PR check from Github.
+
 IMAGE="quay.io/cloudservices/edge-api"
 
 # Determine Git commit hash (7 hex characters)
