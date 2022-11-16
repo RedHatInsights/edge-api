@@ -10,8 +10,8 @@ COMMIT_SHORT=$(git rev-parse --short=7 HEAD)
 # Both ${GIT_BRANCH}  and ${ghprbPullId} are provided by App-Interface's Jenkins.
 # SonarQube parameters can be found below:
 #   https://sonarqube.corp.redhat.com/documentation/analysis/pull-request/
-if [[ $PR_CHECK -eq "true"]]; then
-    PR_CHECK_OPTS="-Dsonar.pullrequest.branch=${GIT_BRANCH} -Dsonar.pullrequest.key=${ghprbPullId}";
+if [ "${PR_CHECK}" = "true" ]; then
+    export PR_CHECK_OPTS="-Dsonar.pullrequest.branch=${GIT_BRANCH} -Dsonar.pullrequest.key=${ghprbPullId}";
 fi
 
 podman run \
