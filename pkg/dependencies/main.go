@@ -52,7 +52,7 @@ func Init(ctx context.Context) *EdgeAPIServices {
 		OwnershipVoucherService: services.NewOwnershipVoucherService(ctx, log),
 		DeviceGroupsService:     services.NewDeviceGroupsService(ctx, log),
 		FilesService:            services.NewFilesService(log),
-		ConsumerService:         kafkacommon.NewConsumerService(),
+		ConsumerService:         kafkacommon.NewConsumerService(ctx, log),
 		Log:                     log,
 	}
 }

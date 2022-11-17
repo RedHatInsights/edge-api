@@ -1,6 +1,7 @@
 package kafkacommon
 
 import (
+	"context"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -51,13 +52,17 @@ type ConsumerServiceInterface interface {
 
 // ConsumerService is the consumer service for edge
 type ConsumerService struct {
+	ctx            context.Context
+	log            *log.Entry
 	Topic          TopicServiceInterface
 	KafkaConfigMap KafkaConfigMapServiceInterface
 }
 
 // NewConsumerService returns a new service
-func NewConsumerService() ConsumerServiceInterface {
+func NewConsumerService(ctx context.Context, log *log.Entry) ConsumerServiceInterface {
 	return &ConsumerService{
+		ctx:            ctx,
+		log:            log,
 		Topic:          NewTopicService(),
 		KafkaConfigMap: NewKafkaConfigMapService(),
 	}
