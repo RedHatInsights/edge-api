@@ -9,7 +9,6 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	eventImageReq "github.com/redhatinsights/edge-api/pkg/services/image"
@@ -26,9 +25,9 @@ var _ = Describe("Event Image Build Requested Test", func() {
 		mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
 
 		ctx = context.Background()
-		ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
-			ImageService: mockImageService,
-		})
+		//		ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+		//			ImageService: mockImageService,
+		//		})
 		ctx = eventImageReq.ContextWithLogger(ctx, log.NewEntry(log.StandardLogger()))
 	})
 	Describe("consume image build event", func() {
