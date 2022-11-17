@@ -55,7 +55,6 @@ func initConsumer(ctx context.Context) {
 	for run {
 		ev := c.Poll(pollTime)
 		if ev == nil {
-			mslog.Info("ISO Microservice Event is nil")
 			continue
 		}
 
@@ -91,7 +90,6 @@ func initConsumer(ctx context.Context) {
 				// call the event's Consume method
 				go crcEvent.Consume(ctx)
 			default:
-				mslog.Info("ISO Microservice Default Event")
 				mslog.Trace("Record key is not recognized by ISO consumer: " + key)
 			}
 
@@ -104,7 +102,6 @@ func initConsumer(ctx context.Context) {
 			// run = false
 		case *kafka.Error:
 			// terminate the application if all brokers are down.
-			mslog.Info("ISO Microservice Error")
 			log.WithFields(log.Fields{"code": e.Code(), "error": e}).Error("Exiting ISO loop due to Kafka broker issue")
 			if e.Code() == kafka.ErrAllBrokersDown {
 				run = false
