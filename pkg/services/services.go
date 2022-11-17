@@ -21,3 +21,8 @@ type ServiceInterface interface{}
 func NewService(ctx context.Context, log *log.Entry) Service {
 	return Service{ctx: ctx, log: log}
 }
+
+// SetLog sets a new log on the struct
+func (s *Service) SetLog(log *log.Entry) {
+	s.log = log
+}

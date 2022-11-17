@@ -65,7 +65,7 @@ func (ev EventImageUpdateRequestedBuildHandler) Consume(ctx context.Context) {
 	// get the services from the context
 	edgeAPIServices := dependencies.ServicesFromContext(ctx)
 	imageService := edgeAPIServices.ImageService
-	err = imageService.ProcessImage(image)
+	err = imageService.ProcessImage(ctx, image)
 	if err != nil {
 		log.Error("Error processing the image")
 	}

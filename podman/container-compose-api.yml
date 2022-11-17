@@ -3,26 +3,30 @@ secrets:
   edgemgmt_config:
     file: $PWD/podman/env/edgemgmt_config.json
 services:
-    edge-api-service:
-      container_name: edge-api-service
-      image: localhost/edge-api:localdev
-      restart: unless-stopped
-      privileged: true
-      ports:
-        - 3000:3000
-      env_file:
-        - env/edge-api.env
-      volumes:
-        - $PWD:/opt/app-root/src:z
-        - $HOME/go:/go
-
-      command: ["go", "run", "main.go"]
-      secrets:
-        - source: edgemgmt_config
-          target: /tmp/edgemgmt_config.json
-      depends_on:
-        - "postgresql"
-        - "kafka"
+  edge-api-service:
+    container_name: edge-api-service
+    image: localhost/edge-api:localdev
+    restart: unless-stopped
+    privileged: true
+    ports:
+      - 3000:3000
+    env_file:
+      - env/edge-api.env
+    volumes:
+      - $PWD:/opt/app-root/src:z
+      - $HOME/go:/go
+      - $HOME/repos/:/tmp/repos:z
+    command: ["go", "run", "main.go"]
+    secrets:
+      - source: edgemgmt_config
+        target: /tmp/edgemgmt_config.json
+    depends_on:
+      - "postgresql"
+      - "kafka"
+    deploy:
+      resources:
+        limits:
+          memory: 4G
 
 #    edge-api-utility:
 #      image: localhost/edge-api:localdev
