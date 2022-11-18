@@ -58,6 +58,7 @@ type EdgeConfig struct {
 	TenantTranslatorHost     string                    `json:"tenant_translator_host,omitempty"`
 	TenantTranslatorPort     string                    `json:"tenant_translator_port,omitempty"`
 	TenantTranslatorURL      string                    `json:"tenant_translator_url,omitempty"`
+	ImageBuilderOrgID        string                    `json:"image_builder_org_id,omitempty"`
 }
 
 type dbConfig struct {
@@ -225,6 +226,7 @@ func Init() {
 		FeatureFlagsService:     options.GetString("FeatureFlagsService"),
 		TenantTranslatorHost:    options.GetString("TenantTranslatorHost"),
 		TenantTranslatorPort:    options.GetString("TenantTranslatorPort"),
+		ImageBuilderOrgID:       options.GetString("ImageBuilderOrgID"),
 	}
 	if config.TenantTranslatorHost != "" && config.TenantTranslatorPort != "" {
 		config.TenantTranslatorURL = fmt.Sprintf("http://%s:%s", config.TenantTranslatorHost, config.TenantTranslatorPort)
@@ -364,6 +366,7 @@ func LogConfigAtStartup(cfg *EdgeConfig) {
 		"EdgeAPIServiceHost":       cfg.EdgeAPIServiceHost,
 		"EdgeAPIServicePort":       cfg.EdgeAPIServicePort,
 		"EdgeCertAPIURL":           cfg.EdgeCertAPIBaseURL,
+		"ImageBuilderOrgID":        cfg.ImageBuilderOrgID,
 	}
 
 	// loop through the key/value pairs
