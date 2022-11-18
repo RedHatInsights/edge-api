@@ -18,7 +18,7 @@ podman run \
 --pull=always --rm \
 -v "${PWD}":/usr/src:z   \
 -e SONAR_SCANNER_OPTS="-Dsonar.scm.provider=git \
- ${PR_CHECK_OPTS} \
+ ${PR_CHECK_OPTS:-} \
  -Dsonar.working.directory=/tmp \
  -Dsonar.projectKey=console.redhat.com:fleet-management \
  -Dsonar.projectVersion=${COMMIT_SHORT} \
