@@ -2,6 +2,9 @@
 
 set -exv
 
+export GOROOT="/opt/go/1.17.7" # Force Jenkins to use Go 1.17.7 since we don't have 1.18 yet
+export PATH="${GOROOT}/bin:${PATH}"
+
 export PR_CHECK="false" # Only used when doing a PR check from Github.
 
 IMAGE="quay.io/cloudservices/edge-api"
