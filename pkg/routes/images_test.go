@@ -13,6 +13,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 
 	"github.com/golang/mock/gomock"
@@ -754,5 +756,138 @@ func TestGetImage(t *testing.T) {
 
 	if image := getImage(*w, req.WithContext(ctx)); image == nil {
 		t.Errorf("image should not be nil")
+	}
+}
+
+func TestDeleteImage(t *testing.T) {
+	errorImage := &models.Image{
+		Name:   "Image Name",
+		Status: models.ImageStatusError,
+		OrgID:  common.DefaultOrgID,
+	}
+	result := db.DB.Create(errorImage)
+	if result.Error != nil {
+		t.Errorf("saving image error got %s", result.Error)
+	}
+	req, err := http.NewRequest("DELETE", fmt.Sprintf("/images/%v/", errorImage.ID), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := req.Context()
+	ctrl := gomock.NewController(t)
+
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	mockImageService.EXPECT().DeleteImage(gomock.Any()).Return(nil)
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
+	})
+	ctx = context.WithValue(ctx, imageKey, errorImage)
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(DeleteImage)
+
+	handler.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v, want %v",
+			status, http.StatusOK)
+	}
+}
+
+func TestDeleteImageFail(t *testing.T) {
+	errorImage := &models.Image{
+		Name:   "Image Name",
+		Status: models.ImageStatusError,
+		OrgID:  common.DefaultOrgID,
+	}
+	result := db.DB.Create(errorImage)
+	if result.Error != nil {
+		t.Errorf("saving image error got %s", result.Error)
+	}
+	req, err := http.NewRequest("DELETE", fmt.Sprintf("/images/%v/", errorImage.ID), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := req.Context()
+	ctrl := gomock.NewController(t)
+
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	reterr := errors.New("Error")
+	mockImageService.EXPECT().DeleteImage(gomock.Any()).Return(reterr)
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
+	})
+	ctx = context.WithValue(ctx, imageKey, errorImage)
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(DeleteImage)
+
+	handler.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusInternalServerError {
+		t.Errorf("handler returned wrong status code: got %v, want %v",
+			status, http.StatusInternalServerError)
+	}
+}
+
+func TestDeleteImageInvalidImage(t *testing.T) {
+	req, err := http.NewRequest("DELETE", fmt.Sprintf("/images/%v/", nil), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := req.Context()
+	ctrl := gomock.NewController(t)
+
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
+	})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(DeleteImage)
+
+	handler.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("handler returned wrong status code: got %v, want %v",
+			status, http.StatusBadRequest)
+	}
+}
+
+func TestDeleteImageOrgIDMissmatch(t *testing.T) {
+	errorImage := &models.Image{
+		Name:   "Image Name",
+		Status: models.ImageStatusError,
+		OrgID:  "00001111",
+	}
+	result := db.DB.Create(errorImage)
+	if result.Error != nil {
+		t.Errorf("saving image error got %s", result.Error)
+	}
+	req, err := http.NewRequest("DELETE", fmt.Sprintf("/images/%v/", errorImage.ID), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := req.Context()
+	ctrl := gomock.NewController(t)
+
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
+	})
+	ctx = context.WithValue(ctx, imageKey, errorImage)
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(DeleteImage)
+
+	handler.ServeHTTP(rr, req)
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("handler returned wrong status code: got %v, want %v",
+			status, http.StatusBadRequest)
 	}
 }

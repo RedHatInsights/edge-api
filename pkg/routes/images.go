@@ -56,6 +56,7 @@ func MakeImagesRouter(sub chi.Router) {
 		r.Post("/retry", RetryCreateImage)
 		r.Post("/resume", ResumeCreateImage)       // temporary to be replaced with EDA
 		r.Get("/notify", SendNotificationForImage) // TMP ROUTE TO SEND THE NOTIFICATION
+		r.Delete("/", DeleteImage)
 	})
 }
 
@@ -747,4 +748,29 @@ func SendNotificationForImage(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		respondWithJSONBody(w, ctxServices.Log, &notify)
 	}
+}
+
+func DeleteImage(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	image := getImage(w, r)
+	if image == nil {
+		return
+	}
+	orgID := readOrgID(w, r, ctxServices.Log)
+
+	if orgID != image.OrgID {
+		err := errors.NewBadRequest("Not the image owner, unable to delete")
+		err.SetTitle("Failed deleting image")
+		respondWithAPIError(w, ctxServices.Log, err)
+		return
+	}
+
+	err := ctxServices.ImageService.DeleteImage(image)
+	if err != nil {
+		err := errors.NewInternalServerError()
+		err.SetTitle("Failed deleting image")
+		respondWithAPIError(w, ctxServices.Log, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }

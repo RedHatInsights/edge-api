@@ -6,97 +6,38 @@ package mock_services
 
 import (
 	context "context"
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	models "github.com/redhatinsights/edge-api/pkg/models"
 	services "github.com/redhatinsights/edge-api/pkg/services"
 	logrus "github.com/sirupsen/logrus"
 	gorm "gorm.io/gorm"
+	reflect "reflect"
 )
 
-// MockImageServiceInterface is a mock of ImageServiceInterface interface.
+// MockImageServiceInterface is a mock of ImageServiceInterface interface
 type MockImageServiceInterface struct {
 	ctrl     *gomock.Controller
 	recorder *MockImageServiceInterfaceMockRecorder
 }
 
-// MockImageServiceInterfaceMockRecorder is the mock recorder for MockImageServiceInterface.
+// MockImageServiceInterfaceMockRecorder is the mock recorder for MockImageServiceInterface
 type MockImageServiceInterfaceMockRecorder struct {
 	mock *MockImageServiceInterface
 }
 
-// NewMockImageServiceInterface creates a new mock instance.
+// NewMockImageServiceInterface creates a new mock instance
 func NewMockImageServiceInterface(ctrl *gomock.Controller) *MockImageServiceInterface {
 	mock := &MockImageServiceInterface{ctrl: ctrl}
 	mock.recorder = &MockImageServiceInterfaceMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use.
+// EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockImageServiceInterface) EXPECT() *MockImageServiceInterfaceMockRecorder {
 	return m.recorder
 }
 
-// AddPackageInfo mocks base method.
-func (m *MockImageServiceInterface) AddPackageInfo(image *models.Image) (services.ImageDetail, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddPackageInfo", image)
-	ret0, _ := ret[0].(services.ImageDetail)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// AddPackageInfo indicates an expected call of AddPackageInfo.
-func (mr *MockImageServiceInterfaceMockRecorder) AddPackageInfo(image interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPackageInfo", reflect.TypeOf((*MockImageServiceInterface)(nil).AddPackageInfo), image)
-}
-
-// AddUserInfo mocks base method.
-func (m *MockImageServiceInterface) AddUserInfo(image *models.Image) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddUserInfo", image)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// AddUserInfo indicates an expected call of AddUserInfo.
-func (mr *MockImageServiceInterfaceMockRecorder) AddUserInfo(image interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUserInfo", reflect.TypeOf((*MockImageServiceInterface)(nil).AddUserInfo), image)
-}
-
-// CheckIfIsLatestVersion mocks base method.
-func (m *MockImageServiceInterface) CheckIfIsLatestVersion(previousImage *models.Image) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckIfIsLatestVersion", previousImage)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CheckIfIsLatestVersion indicates an expected call of CheckIfIsLatestVersion.
-func (mr *MockImageServiceInterfaceMockRecorder) CheckIfIsLatestVersion(previousImage interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckIfIsLatestVersion", reflect.TypeOf((*MockImageServiceInterface)(nil).CheckIfIsLatestVersion), previousImage)
-}
-
-// CheckImageName mocks base method.
-func (m *MockImageServiceInterface) CheckImageName(name, orgID string) (bool, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckImageName", name, orgID)
-	ret0, _ := ret[0].(bool)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CheckImageName indicates an expected call of CheckImageName.
-func (mr *MockImageServiceInterfaceMockRecorder) CheckImageName(name, orgID interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckImageName", reflect.TypeOf((*MockImageServiceInterface)(nil).CheckImageName), name, orgID)
-}
-
-// CreateImage mocks base method.
+// CreateImage mocks base method
 func (m *MockImageServiceInterface) CreateImage(image *models.Image) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateImage", image)
@@ -104,13 +45,97 @@ func (m *MockImageServiceInterface) CreateImage(image *models.Image) error {
 	return ret0
 }
 
-// CreateImage indicates an expected call of CreateImage.
+// CreateImage indicates an expected call of CreateImage
 func (mr *MockImageServiceInterfaceMockRecorder) CreateImage(image interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).CreateImage), image)
 }
 
-// CreateInstallerForImage mocks base method.
+// ProcessImage mocks base method
+func (m *MockImageServiceInterface) ProcessImage(arg0 context.Context, arg1 *models.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProcessImage", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ProcessImage indicates an expected call of ProcessImage
+func (mr *MockImageServiceInterfaceMockRecorder) ProcessImage(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessImage", reflect.TypeOf((*MockImageServiceInterface)(nil).ProcessImage), arg0, arg1)
+}
+
+// UpdateImage mocks base method
+func (m *MockImageServiceInterface) UpdateImage(image, previousImage *models.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateImage", image, previousImage)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateImage indicates an expected call of UpdateImage
+func (mr *MockImageServiceInterfaceMockRecorder) UpdateImage(image, previousImage interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).UpdateImage), image, previousImage)
+}
+
+// AddUserInfo mocks base method
+func (m *MockImageServiceInterface) AddUserInfo(image *models.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddUserInfo", image)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddUserInfo indicates an expected call of AddUserInfo
+func (mr *MockImageServiceInterfaceMockRecorder) AddUserInfo(image interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUserInfo", reflect.TypeOf((*MockImageServiceInterface)(nil).AddUserInfo), image)
+}
+
+// UpdateImageStatus mocks base method
+func (m *MockImageServiceInterface) UpdateImageStatus(image *models.Image) (*models.Image, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateImageStatus", image)
+	ret0, _ := ret[0].(*models.Image)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateImageStatus indicates an expected call of UpdateImageStatus
+func (mr *MockImageServiceInterfaceMockRecorder) UpdateImageStatus(image interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateImageStatus", reflect.TypeOf((*MockImageServiceInterface)(nil).UpdateImageStatus), image)
+}
+
+// SetErrorStatusOnImage mocks base method
+func (m *MockImageServiceInterface) SetErrorStatusOnImage(err error, i *models.Image) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetErrorStatusOnImage", err, i)
+}
+
+// SetErrorStatusOnImage indicates an expected call of SetErrorStatusOnImage
+func (mr *MockImageServiceInterfaceMockRecorder) SetErrorStatusOnImage(err, i interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetErrorStatusOnImage", reflect.TypeOf((*MockImageServiceInterface)(nil).SetErrorStatusOnImage), err, i)
+}
+
+// CreateRepoForImage mocks base method
+func (m *MockImageServiceInterface) CreateRepoForImage(arg0 context.Context, arg1 *models.Image) (*models.Repo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateRepoForImage", arg0, arg1)
+	ret0, _ := ret[0].(*models.Repo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateRepoForImage indicates an expected call of CreateRepoForImage
+func (mr *MockImageServiceInterfaceMockRecorder) CreateRepoForImage(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRepoForImage", reflect.TypeOf((*MockImageServiceInterface)(nil).CreateRepoForImage), arg0, arg1)
+}
+
+// CreateInstallerForImage mocks base method
 func (m *MockImageServiceInterface) CreateInstallerForImage(arg0 context.Context, arg1 *models.Image) (*models.Image, chan error, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateInstallerForImage", arg0, arg1)
@@ -120,28 +145,13 @@ func (m *MockImageServiceInterface) CreateInstallerForImage(arg0 context.Context
 	return ret0, ret1, ret2
 }
 
-// CreateInstallerForImage indicates an expected call of CreateInstallerForImage.
+// CreateInstallerForImage indicates an expected call of CreateInstallerForImage
 func (mr *MockImageServiceInterfaceMockRecorder) CreateInstallerForImage(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInstallerForImage", reflect.TypeOf((*MockImageServiceInterface)(nil).CreateInstallerForImage), arg0, arg1)
 }
 
-// CreateRepoForImage mocks base method.
-func (m *MockImageServiceInterface) CreateRepoForImage(arg0 context.Context, arg1 *models.Image) (*models.Repo, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateRepoForImage", arg0, arg1)
-	ret0, _ := ret[0].(*models.Repo)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateRepoForImage indicates an expected call of CreateRepoForImage.
-func (mr *MockImageServiceInterfaceMockRecorder) CreateRepoForImage(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRepoForImage", reflect.TypeOf((*MockImageServiceInterface)(nil).CreateRepoForImage), arg0, arg1)
-}
-
-// GetImageByID mocks base method.
+// GetImageByID mocks base method
 func (m *MockImageServiceInterface) GetImageByID(id string) (*models.Image, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetImageByID", id)
@@ -150,88 +160,13 @@ func (m *MockImageServiceInterface) GetImageByID(id string) (*models.Image, erro
 	return ret0, ret1
 }
 
-// GetImageByID indicates an expected call of GetImageByID.
+// GetImageByID indicates an expected call of GetImageByID
 func (mr *MockImageServiceInterfaceMockRecorder) GetImageByID(id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageByID", reflect.TypeOf((*MockImageServiceInterface)(nil).GetImageByID), id)
 }
 
-// GetImageByOSTreeCommitHash mocks base method.
-func (m *MockImageServiceInterface) GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetImageByOSTreeCommitHash", commitHash)
-	ret0, _ := ret[0].(*models.Image)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetImageByOSTreeCommitHash indicates an expected call of GetImageByOSTreeCommitHash.
-func (mr *MockImageServiceInterfaceMockRecorder) GetImageByOSTreeCommitHash(commitHash interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageByOSTreeCommitHash", reflect.TypeOf((*MockImageServiceInterface)(nil).GetImageByOSTreeCommitHash), commitHash)
-}
-
-// GetImagesView mocks base method.
-func (m *MockImageServiceInterface) GetImagesView(limit, offset int, tx *gorm.DB) (*[]models.ImageView, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetImagesView", limit, offset, tx)
-	ret0, _ := ret[0].(*[]models.ImageView)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetImagesView indicates an expected call of GetImagesView.
-func (mr *MockImageServiceInterfaceMockRecorder) GetImagesView(limit, offset, tx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImagesView", reflect.TypeOf((*MockImageServiceInterface)(nil).GetImagesView), limit, offset, tx)
-}
-
-// GetImagesViewCount mocks base method.
-func (m *MockImageServiceInterface) GetImagesViewCount(tx *gorm.DB) (int64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetImagesViewCount", tx)
-	ret0, _ := ret[0].(int64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetImagesViewCount indicates an expected call of GetImagesViewCount.
-func (mr *MockImageServiceInterfaceMockRecorder) GetImagesViewCount(tx interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImagesViewCount", reflect.TypeOf((*MockImageServiceInterface)(nil).GetImagesViewCount), tx)
-}
-
-// GetMetadata mocks base method.
-func (m *MockImageServiceInterface) GetMetadata(image *models.Image) (*models.Image, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetMetadata", image)
-	ret0, _ := ret[0].(*models.Image)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetMetadata indicates an expected call of GetMetadata.
-func (mr *MockImageServiceInterfaceMockRecorder) GetMetadata(image interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetadata", reflect.TypeOf((*MockImageServiceInterface)(nil).GetMetadata), image)
-}
-
-// GetRollbackImage mocks base method.
-func (m *MockImageServiceInterface) GetRollbackImage(image *models.Image) (*models.Image, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRollbackImage", image)
-	ret0, _ := ret[0].(*models.Image)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetRollbackImage indicates an expected call of GetRollbackImage.
-func (mr *MockImageServiceInterfaceMockRecorder) GetRollbackImage(image interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRollbackImage", reflect.TypeOf((*MockImageServiceInterface)(nil).GetRollbackImage), image)
-}
-
-// GetUpdateInfo mocks base method.
+// GetUpdateInfo mocks base method
 func (m *MockImageServiceInterface) GetUpdateInfo(image models.Image) ([]models.ImageUpdateAvailable, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUpdateInfo", image)
@@ -240,41 +175,58 @@ func (m *MockImageServiceInterface) GetUpdateInfo(image models.Image) ([]models.
 	return ret0, ret1
 }
 
-// GetUpdateInfo indicates an expected call of GetUpdateInfo.
+// GetUpdateInfo indicates an expected call of GetUpdateInfo
 func (mr *MockImageServiceInterfaceMockRecorder) GetUpdateInfo(image interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUpdateInfo", reflect.TypeOf((*MockImageServiceInterface)(nil).GetUpdateInfo), image)
 }
 
-// ProcessImage mocks base method.
-func (m *MockImageServiceInterface) ProcessImage(arg0 context.Context, arg1 *models.Image) error {
+// AddPackageInfo mocks base method
+func (m *MockImageServiceInterface) AddPackageInfo(image *models.Image) (services.ImageDetail, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ProcessImage", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "AddPackageInfo", image)
+	ret0, _ := ret[0].(services.ImageDetail)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// ProcessImage indicates an expected call of ProcessImage.
-func (mr *MockImageServiceInterfaceMockRecorder) ProcessImage(arg0, arg1 interface{}) *gomock.Call {
+// AddPackageInfo indicates an expected call of AddPackageInfo
+func (mr *MockImageServiceInterfaceMockRecorder) AddPackageInfo(image interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessImage", reflect.TypeOf((*MockImageServiceInterface)(nil).ProcessImage), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPackageInfo", reflect.TypeOf((*MockImageServiceInterface)(nil).AddPackageInfo), image)
 }
 
-// ResumeCreateImage mocks base method.
-func (m *MockImageServiceInterface) ResumeCreateImage(arg0 context.Context, arg1 *models.Image) error {
+// GetImageByOSTreeCommitHash mocks base method
+func (m *MockImageServiceInterface) GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResumeCreateImage", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret := m.ctrl.Call(m, "GetImageByOSTreeCommitHash", commitHash)
+	ret0, _ := ret[0].(*models.Image)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
-// ResumeCreateImage indicates an expected call of ResumeCreateImage.
-func (mr *MockImageServiceInterfaceMockRecorder) ResumeCreateImage(arg0, arg1 interface{}) *gomock.Call {
+// GetImageByOSTreeCommitHash indicates an expected call of GetImageByOSTreeCommitHash
+func (mr *MockImageServiceInterfaceMockRecorder) GetImageByOSTreeCommitHash(commitHash interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResumeCreateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).ResumeCreateImage), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageByOSTreeCommitHash", reflect.TypeOf((*MockImageServiceInterface)(nil).GetImageByOSTreeCommitHash), commitHash)
 }
 
-// RetryCreateImage mocks base method.
+// CheckImageName mocks base method
+func (m *MockImageServiceInterface) CheckImageName(name, orgID string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckImageName", name, orgID)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CheckImageName indicates an expected call of CheckImageName
+func (mr *MockImageServiceInterfaceMockRecorder) CheckImageName(name, orgID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckImageName", reflect.TypeOf((*MockImageServiceInterface)(nil).CheckImageName), name, orgID)
+}
+
+// RetryCreateImage mocks base method
 func (m *MockImageServiceInterface) RetryCreateImage(arg0 context.Context, arg1 *models.Image) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RetryCreateImage", arg0, arg1)
@@ -282,13 +234,97 @@ func (m *MockImageServiceInterface) RetryCreateImage(arg0 context.Context, arg1 
 	return ret0
 }
 
-// RetryCreateImage indicates an expected call of RetryCreateImage.
+// RetryCreateImage indicates an expected call of RetryCreateImage
 func (mr *MockImageServiceInterfaceMockRecorder) RetryCreateImage(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RetryCreateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).RetryCreateImage), arg0, arg1)
 }
 
-// SendImageNotification mocks base method.
+// ResumeCreateImage mocks base method
+func (m *MockImageServiceInterface) ResumeCreateImage(arg0 context.Context, arg1 *models.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResumeCreateImage", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResumeCreateImage indicates an expected call of ResumeCreateImage
+func (mr *MockImageServiceInterfaceMockRecorder) ResumeCreateImage(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResumeCreateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).ResumeCreateImage), arg0, arg1)
+}
+
+// GetMetadata mocks base method
+func (m *MockImageServiceInterface) GetMetadata(image *models.Image) (*models.Image, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMetadata", image)
+	ret0, _ := ret[0].(*models.Image)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetMetadata indicates an expected call of GetMetadata
+func (mr *MockImageServiceInterfaceMockRecorder) GetMetadata(image interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetadata", reflect.TypeOf((*MockImageServiceInterface)(nil).GetMetadata), image)
+}
+
+// SetFinalImageStatus mocks base method
+func (m *MockImageServiceInterface) SetFinalImageStatus(i *models.Image) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetFinalImageStatus", i)
+}
+
+// SetFinalImageStatus indicates an expected call of SetFinalImageStatus
+func (mr *MockImageServiceInterfaceMockRecorder) SetFinalImageStatus(i interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetFinalImageStatus", reflect.TypeOf((*MockImageServiceInterface)(nil).SetFinalImageStatus), i)
+}
+
+// CheckIfIsLatestVersion mocks base method
+func (m *MockImageServiceInterface) CheckIfIsLatestVersion(previousImage *models.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckIfIsLatestVersion", previousImage)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CheckIfIsLatestVersion indicates an expected call of CheckIfIsLatestVersion
+func (mr *MockImageServiceInterfaceMockRecorder) CheckIfIsLatestVersion(previousImage interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckIfIsLatestVersion", reflect.TypeOf((*MockImageServiceInterface)(nil).CheckIfIsLatestVersion), previousImage)
+}
+
+// SetBuildingStatusOnImageToRetryBuild mocks base method
+func (m *MockImageServiceInterface) SetBuildingStatusOnImageToRetryBuild(image *models.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetBuildingStatusOnImageToRetryBuild", image)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetBuildingStatusOnImageToRetryBuild indicates an expected call of SetBuildingStatusOnImageToRetryBuild
+func (mr *MockImageServiceInterfaceMockRecorder) SetBuildingStatusOnImageToRetryBuild(image interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBuildingStatusOnImageToRetryBuild", reflect.TypeOf((*MockImageServiceInterface)(nil).SetBuildingStatusOnImageToRetryBuild), image)
+}
+
+// GetRollbackImage mocks base method
+func (m *MockImageServiceInterface) GetRollbackImage(image *models.Image) (*models.Image, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRollbackImage", image)
+	ret0, _ := ret[0].(*models.Image)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRollbackImage indicates an expected call of GetRollbackImage
+func (mr *MockImageServiceInterfaceMockRecorder) GetRollbackImage(image interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRollbackImage", reflect.TypeOf((*MockImageServiceInterface)(nil).GetRollbackImage), image)
+}
+
+// SendImageNotification mocks base method
 func (m *MockImageServiceInterface) SendImageNotification(image *models.Image) (services.ImageNotification, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendImageNotification", image)
@@ -297,27 +333,13 @@ func (m *MockImageServiceInterface) SendImageNotification(image *models.Image) (
 	return ret0, ret1
 }
 
-// SendImageNotification indicates an expected call of SendImageNotification.
+// SendImageNotification indicates an expected call of SendImageNotification
 func (mr *MockImageServiceInterfaceMockRecorder) SendImageNotification(image interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendImageNotification", reflect.TypeOf((*MockImageServiceInterface)(nil).SendImageNotification), image)
 }
 
-// SetBuildingStatusOnImageToRetryBuild mocks base method.
-func (m *MockImageServiceInterface) SetBuildingStatusOnImageToRetryBuild(image *models.Image) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetBuildingStatusOnImageToRetryBuild", image)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SetBuildingStatusOnImageToRetryBuild indicates an expected call of SetBuildingStatusOnImageToRetryBuild.
-func (mr *MockImageServiceInterfaceMockRecorder) SetBuildingStatusOnImageToRetryBuild(image interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBuildingStatusOnImageToRetryBuild", reflect.TypeOf((*MockImageServiceInterface)(nil).SetBuildingStatusOnImageToRetryBuild), image)
-}
-
-// SetDevicesUpdateAvailabilityFromImageSet mocks base method.
+// SetDevicesUpdateAvailabilityFromImageSet mocks base method
 func (m *MockImageServiceInterface) SetDevicesUpdateAvailabilityFromImageSet(orgID string, ImageSetID uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetDevicesUpdateAvailabilityFromImageSet", orgID, ImageSetID)
@@ -325,78 +347,13 @@ func (m *MockImageServiceInterface) SetDevicesUpdateAvailabilityFromImageSet(org
 	return ret0
 }
 
-// SetDevicesUpdateAvailabilityFromImageSet indicates an expected call of SetDevicesUpdateAvailabilityFromImageSet.
+// SetDevicesUpdateAvailabilityFromImageSet indicates an expected call of SetDevicesUpdateAvailabilityFromImageSet
 func (mr *MockImageServiceInterfaceMockRecorder) SetDevicesUpdateAvailabilityFromImageSet(orgID, ImageSetID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetDevicesUpdateAvailabilityFromImageSet", reflect.TypeOf((*MockImageServiceInterface)(nil).SetDevicesUpdateAvailabilityFromImageSet), orgID, ImageSetID)
 }
 
-// SetErrorStatusOnImage mocks base method.
-func (m *MockImageServiceInterface) SetErrorStatusOnImage(err error, i *models.Image) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetErrorStatusOnImage", err, i)
-}
-
-// SetErrorStatusOnImage indicates an expected call of SetErrorStatusOnImage.
-func (mr *MockImageServiceInterfaceMockRecorder) SetErrorStatusOnImage(err, i interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetErrorStatusOnImage", reflect.TypeOf((*MockImageServiceInterface)(nil).SetErrorStatusOnImage), err, i)
-}
-
-// SetFinalImageStatus mocks base method.
-func (m *MockImageServiceInterface) SetFinalImageStatus(i *models.Image) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetFinalImageStatus", i)
-}
-
-// SetFinalImageStatus indicates an expected call of SetFinalImageStatus.
-func (mr *MockImageServiceInterfaceMockRecorder) SetFinalImageStatus(i interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetFinalImageStatus", reflect.TypeOf((*MockImageServiceInterface)(nil).SetFinalImageStatus), i)
-}
-
-// SetLog mocks base method.
-func (m *MockImageServiceInterface) SetLog(arg0 *logrus.Entry) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetLog", arg0)
-}
-
-// SetLog indicates an expected call of SetLog.
-func (mr *MockImageServiceInterfaceMockRecorder) SetLog(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLog", reflect.TypeOf((*MockImageServiceInterface)(nil).SetLog), arg0)
-}
-
-// UpdateImage mocks base method.
-func (m *MockImageServiceInterface) UpdateImage(image, previousImage *models.Image) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateImage", image, previousImage)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateImage indicates an expected call of UpdateImage.
-func (mr *MockImageServiceInterfaceMockRecorder) UpdateImage(image, previousImage interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateImage", reflect.TypeOf((*MockImageServiceInterface)(nil).UpdateImage), image, previousImage)
-}
-
-// UpdateImageStatus mocks base method.
-func (m *MockImageServiceInterface) UpdateImageStatus(image *models.Image) (*models.Image, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateImageStatus", image)
-	ret0, _ := ret[0].(*models.Image)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// UpdateImageStatus indicates an expected call of UpdateImageStatus.
-func (mr *MockImageServiceInterfaceMockRecorder) UpdateImageStatus(image interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateImageStatus", reflect.TypeOf((*MockImageServiceInterface)(nil).UpdateImageStatus), image)
-}
-
-// ValidateImagePackage mocks base method.
+// ValidateImagePackage mocks base method
 func (m *MockImageServiceInterface) ValidateImagePackage(pack string, image *models.Image) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ValidateImagePackage", pack, image)
@@ -404,8 +361,64 @@ func (m *MockImageServiceInterface) ValidateImagePackage(pack string, image *mod
 	return ret0
 }
 
-// ValidateImagePackage indicates an expected call of ValidateImagePackage.
+// ValidateImagePackage indicates an expected call of ValidateImagePackage
 func (mr *MockImageServiceInterfaceMockRecorder) ValidateImagePackage(pack, image interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateImagePackage", reflect.TypeOf((*MockImageServiceInterface)(nil).ValidateImagePackage), pack, image)
+}
+
+// GetImagesViewCount mocks base method
+func (m *MockImageServiceInterface) GetImagesViewCount(tx *gorm.DB) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImagesViewCount", tx)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetImagesViewCount indicates an expected call of GetImagesViewCount
+func (mr *MockImageServiceInterfaceMockRecorder) GetImagesViewCount(tx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImagesViewCount", reflect.TypeOf((*MockImageServiceInterface)(nil).GetImagesViewCount), tx)
+}
+
+// GetImagesView mocks base method
+func (m *MockImageServiceInterface) GetImagesView(limit, offset int, tx *gorm.DB) (*[]models.ImageView, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImagesView", limit, offset, tx)
+	ret0, _ := ret[0].(*[]models.ImageView)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetImagesView indicates an expected call of GetImagesView
+func (mr *MockImageServiceInterfaceMockRecorder) GetImagesView(limit, offset, tx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImagesView", reflect.TypeOf((*MockImageServiceInterface)(nil).GetImagesView), limit, offset, tx)
+}
+
+// SetLog mocks base method
+func (m *MockImageServiceInterface) SetLog(arg0 *logrus.Entry) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetLog", arg0)
+}
+
+// SetLog indicates an expected call of SetLog
+func (mr *MockImageServiceInterfaceMockRecorder) SetLog(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLog", reflect.TypeOf((*MockImageServiceInterface)(nil).SetLog), arg0)
+}
+
+// DeleteImage mocks base method
+func (m *MockImageServiceInterface) DeleteImage(image *models.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteImage", image)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteImage indicates an expected call of DeleteImage
+func (mr *MockImageServiceInterfaceMockRecorder) DeleteImage(image interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteImage", reflect.TypeOf((*MockImageServiceInterface)(nil).DeleteImage), image)
 }
