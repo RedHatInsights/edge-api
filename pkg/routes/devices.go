@@ -30,9 +30,9 @@ func MakeDevicesRouter(sub chi.Router) {
 	sub.Route("/{DeviceUUID}", func(r chi.Router) {
 		r.Use(DeviceCtx)
 		r.Get("/dbinfo", GetDeviceDBInfo)
-		r.Get("/", GetDevice)
-		r.Get("/updates", GetUpdateAvailableForDevice)
-		r.Get("/image", GetDeviceImageInfo)
+		r.With(common.Paginate).Get("/", GetDevice)
+		r.With(common.Paginate).Get("/updates", GetUpdateAvailableForDevice)
+		r.With(common.Paginate).Get("/image", GetDeviceImageInfo)
 	})
 }
 
@@ -162,7 +162,8 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Query().Get("latest") == "true" {
 		latest = true
 	}
-	result, err := contextServices.DeviceService.GetUpdateAvailableForDeviceByUUID(dc.DeviceUUID, latest)
+	pagination := common.GetPagination(r)
+	result, err := contextServices.DeviceService.GetUpdateAvailableForDeviceByUUID(dc.DeviceUUID, latest, pagination.Limit, pagination.Offset)
 	if err != nil {
 		var apiError errors.APIError
 		switch err.(type) {
@@ -186,7 +187,8 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 	if dc.DeviceUUID == "" || !ok {
 		return // Error set by DeviceCtx method
 	}
-	result, err := contextServices.DeviceService.GetDeviceImageInfoByUUID(dc.DeviceUUID)
+	pagination := common.GetPagination(r)
+	result, err := contextServices.DeviceService.GetDeviceImageInfoByUUID(dc.DeviceUUID, pagination.Limit, pagination.Offset)
 	if err != nil {
 		var apiError errors.APIError
 		switch err.(type) {
@@ -212,7 +214,8 @@ func GetDevice(w http.ResponseWriter, r *http.Request) {
 	if dc.DeviceUUID == "" || !ok {
 		return // Error set by DeviceCtx method
 	}
-	result, err := contextServices.DeviceService.GetDeviceDetailsByUUID(dc.DeviceUUID)
+	pagination := common.GetPagination(r)
+	result, err := contextServices.DeviceService.GetDeviceDetailsByUUID(dc.DeviceUUID, pagination.Limit, pagination.Offset)
 	if err != nil {
 		var apiError errors.APIError
 		switch err.(type) {

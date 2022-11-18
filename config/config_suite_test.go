@@ -1,6 +1,6 @@
 // FIXME: golangci-lint
 // nolint:revive,typecheck
-package main_test
+package config
 
 import (
 	"testing"
@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestMigrate(t *testing.T) {
+func TestServiceSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Migrate Suite")
+	RunSpecs(t, "Services Suite")
 }

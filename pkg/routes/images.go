@@ -1,5 +1,5 @@
 // FIXME: golangci-lint
-// nolint:errcheck,gosimple,govet,revive
+// nolint:errcheck,gosimple,govet,revive,typecheck
 package routes
 
 import (
@@ -251,7 +251,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	// FALL THROUGH IF NOT EDA
 
 	// TODO: this is going to go away with EDA
-	ctxServices.ImageService.ProcessImage(image)
+	ctxServices.ImageService.ProcessImage(r.Context(), image)
 
 	ctxServices.Log.WithFields(log.Fields{
 		"imageId": image.ID,
@@ -328,7 +328,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	// FALL THROUGH IF NOT EDA
 
 	// TODO: this is going to go away with EDA
-	ctxServices.ImageService.ProcessImage(image)
+	ctxServices.ImageService.ProcessImage(r.Context(), image)
 
 	w.WriteHeader(http.StatusOK)
 	respondWithJSONBody(w, ctxServices.Log, image)
@@ -551,7 +551,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	image, _, err := ctxServices.ImageService.CreateInstallerForImage(image)
+	image, _, err := ctxServices.ImageService.CreateInstallerForImage(r.Context(), image)
 	if err != nil {
 		ctxServices.Log.WithField("error", err).Error("Failed to create installer")
 		err := errors.NewInternalServerError()
@@ -568,9 +568,9 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 	image := getImage(w, r)
 
 	go func(id uint, ctx context.Context) {
-		services := dependencies.ServicesFromContext(r.Context())
-		var i *models.Image
-		result := db.DB.Joins("Commit").Joins("Installer").First(&i, id)
+		services := dependencies.ServicesFromContext(ctx)
+		var img *models.Image
+		result := db.DB.Joins("Commit").Joins("Installer").First(&img, id)
 		if result.Error != nil {
 			services.Log.WithField("error", result.Error.Error()).Debug("Query error")
 			err := errors.NewBadRequest(result.Error.Error())
@@ -580,8 +580,8 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-		db.DB.First(&i.Commit, i.CommitID)
-		if _, err := services.ImageService.CreateRepoForImage(i); err != nil {
+		db.DB.First(&img.Commit, img.CommitID)
+		if _, err := services.ImageService.CreateRepoForImage(ctx, img); err != nil {
 			services.Log.WithField("error", err).Error("Failed to create repo")
 		}
 	}(image.ID, r.Context())
@@ -668,7 +668,7 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 func RetryCreateImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
 		ctxServices := dependencies.ServicesFromContext(r.Context())
-		err := ctxServices.ImageService.RetryCreateImage(image)
+		err := ctxServices.ImageService.RetryCreateImage(r.Context(), image)
 		if err != nil {
 			ctxServices.Log.WithField("error", err.Error()).Error("Failed to retry to create image")
 			err := errors.NewInternalServerError()
@@ -716,7 +716,7 @@ func ResumeCreateImage(w http.ResponseWriter, r *http.Request) {
 		// TODO: consider a bitwise& param to only add needed ctxServices
 
 		// use the new ctxServices w/ context to make the imageService.ResumeCreateImage call
-		err := ctxServices.ImageService.ResumeCreateImage(image)
+		err := ctxServices.ImageService.ResumeCreateImage(ctx, image)
 
 		// finish out the original API call
 		if err != nil {

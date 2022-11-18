@@ -1,3 +1,4 @@
+// Package services handles all service-related features
 // FIXME: golangci-lint
 // nolint:errcheck,gocritic,govet,revive
 package services
@@ -12,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"sync"
 	"syscall"
 	"text/template"
 	"time"
@@ -29,6 +31,9 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	log "github.com/sirupsen/logrus"
 )
+
+// WaitGroup is the waitgroup for pending updates
+var WaitGroup sync.WaitGroup
 
 // UpdateServiceInterface defines the interface that helps
 // handle the business logic of sending updates to a edge device
@@ -660,7 +665,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 			var updateDevice *models.Device
 			dbDevice := db.DB.Where("uuid = ?", device.ID).First(&updateDevice)
 			if dbDevice.Error != nil {
-				if !(dbDevice.Error.Error() == "Device was not found") {
+				if dbDevice.Error.Error() != "Device was not found" {
 					s.log.WithFields(log.Fields{
 						"error":      dbDevice.Error.Error(),
 						"deviceUUID": device.ID,

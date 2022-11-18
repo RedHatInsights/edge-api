@@ -2,6 +2,8 @@
 
 set -exv
 
+export PR_CHECK="false" # Only used when doing a PR check from Github.
+
 IMAGE="quay.io/cloudservices/edge-api"
 
 # Determine Git commit hash (7 hex characters)
@@ -44,3 +46,8 @@ for tag in $(echo $TAGS); do
     podman tag "${IMAGE}:${IMAGE_TAG}" "${IMAGE}:${tag}"
     podman push "${IMAGE}:${tag}"
 done
+
+# Generate coverate report for sonarqube
+make coverage-no-fdo
+# Generate sonarqube reports
+make scan_project

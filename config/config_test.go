@@ -1,13 +1,18 @@
 // Package config sets up the application configuration from env, file, etc.
 // FIXME: golangci-lint
-// nolint:errcheck,gocritic,gosimple,govet,revive, gosec
+// nolint:errcheck,gocritic,gosec,gosimple,govet,revive,typecheck
 package config
 
 import (
 	"testing"
 
+	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
+
+var _ = Describe("Config", func() {
+
+})
 
 func TestRedactPasswordFromURL(t *testing.T) {
 	g := NewGomegaWithT(t)

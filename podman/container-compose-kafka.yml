@@ -2,7 +2,7 @@ version: "2"
 services:
   kafka:
     container_name: kafka
-    image: quay.io/strimzi/kafka:latest-kafka-2.8.1-amd64
+    image: quay.io/strimzi/kafka:latest-kafka-2.8.1
     restart: unless-stopped
     command:
       [
@@ -21,6 +21,10 @@ services:
     volumes:
        - ~/dev/kafkadata/logs:/tmp/logs:z
        - ~/dev/kafkadata/kraft-combined-logs:/tmp/kraft-combined-logs:z
+    deploy:
+      resources:
+        limits:
+          memory: 4G
 
   kafka-ui:
     container_name: kafka-ui
@@ -33,3 +37,7 @@ services:
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
     depends_on:
       - "kafka"
+    deploy:
+      resources:
+        limits:
+          memory: 1G

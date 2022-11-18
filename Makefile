@@ -22,6 +22,7 @@ BUILD_TAGS=-tags=fdo
 
 GOLANGCI_LINT_COMMON_OPTIONS=\
 			--enable=errcheck,gocritic,gofmt,goimports,gosec,gosimple,govet,ineffassign,revive,staticcheck,typecheck,unused \
+			--fix=false \
 			--max-same-issues=20 \
 			--print-issued-lines=true \
 			--print-linter-name=true \
@@ -29,7 +30,7 @@ GOLANGCI_LINT_COMMON_OPTIONS=\
 			--timeout=5m0s \
 			--uniq-by-line=false
 
-EXCLUDE_DIRS=-e /test/ -e /cmd/db -e /cmd/kafka -e /config \
+EXCLUDE_DIRS=-e /test/ -e /cmd/db -e /cmd/kafka \
 				-e /pkg/clients/imagebuilder/mock_imagebuilder \
 				-e /pkg/imagebuilder/mock_imagebuilder \
 				-e /pkg/clients/inventory/mock_inventory \
@@ -74,7 +75,7 @@ coverage-html:
 	go tool cover -html=coverage.txt -o coverage.html
 
 coverage-no-fdo:
-	go test $$(go list ./... | grep -v $(EXCLUDE_DIRS)) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
+	go test $$(go list ./... | grep -v $(EXCLUDE_DIRS)) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic -json > coverage.json
 
 create-ns:
 	$(KUBECTL) create ns $(NAMESPACE)

@@ -13,6 +13,7 @@ import (
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/image"
 	log "github.com/sirupsen/logrus"
 
@@ -123,7 +124,8 @@ func main() {
 						ctx = image.ContextWithLogger(ctx, mslog)
 
 						// call the event's Consume method
-						go crcEvent.Consume(ctx)
+						imageService := services.NewImageService(ctx, mslog)
+						go crcEvent.Consume(ctx, imageService)
 					case models.EventTypeEdgeImageUpdateRequested:
 						crcEvent := &image.EventImageUpdateRequestedBuildHandler{}
 						err = json.Unmarshal(e.Value, crcEvent)

@@ -2,16 +2,18 @@
 //
 // An API server for fleet edge management capabilities.
 // FIXME: golangci-lint
-// nolint:errcheck,revive,unused
+// nolint:errcheck,revive,typecheck,unused
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
 	"time"
 
@@ -23,6 +25,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/routes"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	edgeunleash "github.com/redhatinsights/edge-api/unleash"
 
 	"github.com/Unleash/unleash-client-go/v3"
 	"github.com/go-chi/chi"
@@ -129,9 +132,6 @@ func serveWeb(cfg *config.EdgeConfig, consumers []services.ConsumerService) *htt
 
 func gracefulTermination(server *http.Server, serviceName string) {
 	log.Infof("%s service stopped", serviceName)
-	if featureFlagsConfigPresent() {
-		unleash.Close()
-	}
 	ctxShutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second) // 5 seconds for graceful shutdown
 	defer cancel()
 	if err := server.Shutdown(ctxShutdown); err != nil {
@@ -157,7 +157,24 @@ func main() {
 	signal.Notify(interruptSignal, os.Interrupt, syscall.SIGTERM)
 
 	initDependencies()
+
 	cfg := config.Get()
+	if cfg.Debug {
+		if buildInfo, ok := debug.ReadBuildInfo(); ok {
+			b := new(bytes.Buffer)
+			enc := json.NewEncoder(b)
+			enc.SetIndent("", "  ")
+			err := enc.Encode(buildInfo)
+			if err == nil {
+				log.WithField("buildInfo", b).Debug("Build information")
+			} else {
+				log.WithField("ok", ok).Debug("Unable to encode buildInfo")
+			}
+		} else {
+			log.WithField("ok", ok).Debug("Unable to get Build Info")
+		}
+	}
+
 	var configValues map[string]interface{}
 	cfgBytes, _ := json.Marshal(cfg)
 	_ = json.Unmarshal(cfgBytes, &configValues)
@@ -167,7 +184,7 @@ func main() {
 
 	if featureFlagsConfigPresent() {
 		err := unleash.Initialize(
-			unleash.WithListener(&unleash.DebugListener{}),
+			unleash.WithListener(&edgeunleash.EdgeListener{}),
 			unleash.WithAppName("edge-api"),
 			unleash.WithUrl(cfg.UnleashURL),
 			unleash.WithRefreshInterval(5*time.Second),

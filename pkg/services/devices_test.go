@@ -1,5 +1,5 @@
 // FIXME: golangci-lint
-// nolint:govet,revive
+// nolint:govet,revive,typecheck
 package services_test
 
 import (
@@ -133,14 +133,14 @@ var _ = Describe("DfseviceService", func() {
 			It("should return error and no updates available - for all updates", func() {
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(inventory.Response{}, errors.New("error on inventory api"))
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false, 10, 0)
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 				Expect(updatesAvailable).To(BeNil())
 			})
 			It("should return error and no updates available - for latest update", func() {
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(inventory.Response{}, errors.New("error on inventory api"))
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true, 10, 0)
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 				Expect(updatesAvailable).To(BeNil())
 			})
@@ -154,7 +154,7 @@ var _ = Describe("DfseviceService", func() {
 					Inventory: mockInventoryClient,
 				}
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false, 10, 0)
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 				Expect(updatesAvailable).To(BeNil())
 			})
@@ -166,7 +166,7 @@ var _ = Describe("DfseviceService", func() {
 					Inventory: mockInventoryClient,
 				}
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true, 10, 0)
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 				Expect(updatesAvailable).To(BeNil())
 			})
@@ -191,7 +191,7 @@ var _ = Describe("DfseviceService", func() {
 					Inventory: mockInventoryClient,
 				}
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false, 10, 0)
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 				Expect(updatesAvailable).To(BeNil())
 			})
@@ -214,7 +214,7 @@ var _ = Describe("DfseviceService", func() {
 					Inventory: mockInventoryClient,
 				}
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true, 10, 0)
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 				Expect(updatesAvailable).To(BeNil())
 			})
@@ -272,6 +272,10 @@ var _ = Describe("DfseviceService", func() {
 								Name:    "vim",
 								Version: "2.0.0",
 							},
+							{
+								Name:    "git",
+								Version: "2.0.0",
+							},
 						},
 						OrgID: orgID,
 					},
@@ -282,14 +286,14 @@ var _ = Describe("DfseviceService", func() {
 				db.DB.Create(newImage.Commit)
 				db.DB.Create(newImage)
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false, 10, 0)
 
 				Expect(err).To(BeNil())
 				Expect(updatesAvailable).To(HaveLen(1))
 				newUpdate := updatesAvailable[0]
 				Expect(newUpdate.Image.ID).To(Equal(newImage.ID))
 				Expect(newUpdate.PackageDiff.Upgraded).To(HaveLen(1))
-				Expect(newUpdate.PackageDiff.Added).To(HaveLen(1))
+				Expect(newUpdate.PackageDiff.Added).To(HaveLen(2))
 				Expect(newUpdate.PackageDiff.Removed).To(HaveLen(1))
 			})
 			It("should return updates", func() {
@@ -377,7 +381,7 @@ var _ = Describe("DfseviceService", func() {
 				db.DB.Create(thirdImage.Commit)
 				db.DB.Create(thirdImage)
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true, 10, 0)
 
 				Expect(err).To(BeNil())
 				Expect(updatesAvailable).To(HaveLen(1))
@@ -422,7 +426,7 @@ var _ = Describe("DfseviceService", func() {
 				}
 				db.DB.Create(oldImage)
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false, 10, 0)
 				Expect(err).To(BeNil())
 				Expect(updatesAvailable).To(BeNil())
 			})
@@ -442,7 +446,7 @@ var _ = Describe("DfseviceService", func() {
 				}}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
-				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false)
+				updatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false, 10, 0)
 				Expect(err).ToNot(BeNil())
 				Expect(err).To(MatchError(new(services.DeviceNotFoundError)))
 				Expect(updatesAvailable).To(BeNil())
@@ -494,11 +498,44 @@ var _ = Describe("DfseviceService", func() {
 			},
 			OrgID: orgID,
 		}
-		It("should return diff", func() {
-			deltaDiff := services.GetDiffOnUpdate(oldImage, newImage)
-			Expect(deltaDiff.Added).To(HaveLen(1))
-			Expect(deltaDiff.Removed).To(HaveLen(2))
-			Expect(deltaDiff.Upgraded).To(HaveLen(1))
+		newImageWithoutChanges := models.Image{
+			Commit: &models.Commit{
+				InstalledPackages: []models.InstalledPackage{
+					{
+						Name:    "vim",
+						Version: "2.2",
+					},
+					{
+						Name:    "ansible",
+						Version: "1",
+					},
+					{
+						Name:    "yum",
+						Version: "2:6.0-1",
+					},
+					{
+						Name:    "dnf",
+						Version: "2:6.0-1",
+					},
+				},
+				OrgID: orgID,
+			},
+			OrgID: orgID,
+		}
+		When("check package different between version", func() {
+			It("should return different in case there are changes between version", func() {
+				deltaDiff := services.GetDiffOnUpdate(oldImage, newImage)
+				Expect(deltaDiff.Added).To(HaveLen(1))
+				Expect(deltaDiff.Removed).To(HaveLen(2))
+				Expect(deltaDiff.Upgraded).To(HaveLen(1))
+			})
+
+			It("should not return different in case there is no changes between version", func() {
+				deltaDiff := services.GetDiffOnUpdate(oldImage, newImageWithoutChanges)
+				Expect(deltaDiff.Added).To(HaveLen(0))
+				Expect(deltaDiff.Removed).To(HaveLen(0))
+				Expect(deltaDiff.Upgraded).To(HaveLen(0))
+			})
 		})
 	})
 	Context("GetImageForDeviceByUUID", func() {
@@ -538,6 +575,9 @@ var _ = Describe("DfseviceService", func() {
 					Commit: &models.Commit{
 						OSTreeCommit: checksum,
 						OrgID:        orgID,
+						InstalledPackages: []models.InstalledPackage{
+							{Name: "vim"},
+						},
 					},
 					Status:     models.ImageStatusSuccess,
 					ImageSetID: &imageSet.ID,
@@ -552,11 +592,14 @@ var _ = Describe("DfseviceService", func() {
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(newImage, nil)
 				mockImageService.EXPECT().GetRollbackImage(gomock.Eq(newImage)).Return(oldImage, nil)
 
-				imageInfo, err := deviceService.GetDeviceImageInfoByUUID(uuid)
+				imageInfo, err := deviceService.GetDeviceImageInfoByUUID(uuid, 10, 0)
 				Expect(err).To(BeNil())
 				Expect(oldImage.Commit.OSTreeCommit).To(Equal(imageInfo.Rollback.Commit.OSTreeCommit))
 				Expect(newImage.Commit.OSTreeCommit).To(Equal(imageInfo.Image.Commit.OSTreeCommit))
+				Expect(newImage.Commit.OSTreeCommit).To(Equal(imageInfo.Image.Commit.OSTreeCommit))
+				Expect(imageInfo.Image.TotalPackages).To(Equal(1))
 			})
+
 		})
 		When("Image is not found", func() {
 			It("should return image not found", func() {
@@ -574,7 +617,7 @@ var _ = Describe("DfseviceService", func() {
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(nil, errors.New("Not found"))
 
-				_, err := deviceService.GetDeviceImageInfoByUUID(uuid)
+				_, err := deviceService.GetDeviceImageInfoByUUID(uuid, 10, 0)
 				Expect(err).To(MatchError(new(services.ImageNotFoundError)))
 			})
 		})
@@ -995,7 +1038,7 @@ var _ = Describe("DfseviceService", func() {
 				}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Any()).Return(resp, nil)
 
-				deviceDetails, err := deviceService.GetDeviceDetailsByUUID(deviceWithImage.UUID)
+				deviceDetails, err := deviceService.GetDeviceDetailsByUUID(deviceWithImage.UUID, 10, 0)
 				Expect(err).To(BeNil())
 				Expect(deviceDetails).ToNot(BeNil())
 				Expect(deviceDetails.Device.ID).To(Equal(deviceWithImage.ID))
@@ -1454,6 +1497,349 @@ var _ = Describe("DfseviceService", func() {
 			updateImageCommitID, err := deviceService.GetLatestCommitFromDevices(device.OrgID, devicesUUID)
 			Expect(err).To(BeNil())
 			Expect(updateImageCommitID).To(Equal(secondCommit.ID))
+		})
+	})
+
+	Context("Get Device Image Info", func() {
+		It("should return full image info", func() {
+			checksum := "fake-checksum"
+			resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
+				{ID: uuid, Ostree: inventory.SystemProfile{
+					RHCClientID: faker.UUIDHyphenated(),
+					RpmOstreeDeployments: []inventory.OSTree{
+						{Checksum: checksum, Booted: true},
+					},
+				},
+					OrgID: orgID,
+				},
+			}}
+			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).
+				Return(resp, nil).Times(1)
+			imageSet := &models.ImageSet{
+				Name:    "test",
+				Version: 2,
+				OrgID:   orgID,
+			}
+			db.DB.Create(imageSet)
+			oldImage := &models.Image{
+				Commit: &models.Commit{
+					OSTreeCommit: fmt.Sprintf("a-old-%s", checksum),
+					OrgID:        orgID,
+				},
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    1,
+				OrgID:      orgID,
+			}
+			db.DB.Create(oldImage.Commit)
+			db.DB.Create(oldImage)
+			newImage := &models.Image{
+				Commit: &models.Commit{
+					OSTreeCommit: checksum,
+					OrgID:        orgID,
+					InstalledPackages: []models.InstalledPackage{
+						{Name: "vim"},
+						{Name: "emacs"},
+					},
+				},
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    2,
+				OrgID:      orgID,
+			}
+			db.DB.Create(newImage.Commit)
+			db.DB.Create(newImage)
+			updImage := &models.Image{
+				Commit: &models.Commit{
+					OSTreeCommit: checksum,
+					OrgID:        orgID,
+					InstalledPackages: []models.InstalledPackage{
+						{Name: "vim"},
+						{Name: "emacs"},
+					},
+				},
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    32,
+				OrgID:      orgID,
+			}
+			db.DB.Create(updImage.Commit)
+			db.DB.Create(updImage)
+
+			device := models.Device{
+				OrgID:   "00000000",
+				UUID:    faker.UUIDHyphenated(),
+				ImageID: newImage.ID,
+			}
+
+			db.DB.Debug().Create(&device)
+
+			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(newImage, nil)
+			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(newImage)).Return(oldImage, nil)
+			imageInfoUpd, err := deviceService.GetUpdateAvailableForDevice(resp.Result[0], false, 10, 0)
+			Expect(err).To(BeNil())
+			Expect(imageInfoUpd).ToNot(BeNil())
+			imageInfo, err := deviceService.GetDeviceImageInfo(resp.Result[0], 10, 0)
+			Expect(err).To(BeNil())
+			Expect(imageInfo.Image).ToNot(BeNil())
+			Expect(imageInfo.Rollback).ToNot(BeNil())
+			Expect(imageInfo.UpdatesAvailable).ToNot(BeNil())
+			Expect(imageInfo.Image.TotalPackages).To(Equal(len(newImage.Commit.InstalledPackages)))
+
+			Expect(imageInfo.Image.TotalDevicesWithImage).To(Equal(int64(1)))
+
+		})
+		It("should return no packages", func() {
+			checksum := "fake-checksum-2"
+			resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
+				{ID: uuid, Ostree: inventory.SystemProfile{
+					RHCClientID: faker.UUIDHyphenated(),
+					RpmOstreeDeployments: []inventory.OSTree{
+						{Checksum: checksum, Booted: true},
+					},
+				},
+					OrgID: orgID,
+				},
+			}}
+			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).
+				Return(resp, nil).Times(1)
+			imageSet := &models.ImageSet{
+				Name:    "test",
+				Version: 1,
+				OrgID:   orgID,
+			}
+			db.DB.Create(imageSet)
+
+			image := &models.Image{
+				Commit: &models.Commit{
+					OSTreeCommit: checksum,
+					OrgID:        orgID,
+				},
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    1,
+				OrgID:      orgID,
+			}
+			db.DB.Create(image.Commit)
+			db.DB.Create(image)
+			device := models.Device{
+				OrgID:   "00000000",
+				UUID:    faker.UUIDHyphenated(),
+				ImageID: image.ID,
+			}
+
+			db.DB.Debug().Create(&device)
+
+			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(image, nil)
+			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(image)).Return(image, nil)
+
+			imageInfo, err := deviceService.GetDeviceImageInfo(resp.Result[0], 10, 0)
+			Expect(err).To(BeNil())
+			Expect(imageInfo.Image).ToNot(BeNil())
+			Expect(imageInfo.Rollback).To(BeNil())
+			Expect(imageInfo.Image.TotalPackages).To(Equal(0))
+			Expect(imageInfo.Image.TotalDevicesWithImage).To(Equal(int64(1)))
+
+		})
+	})
+	Context("Validate if can update device", func() {
+		It("should return true when same refs", func() {
+			canUpdate := deviceService.CanUpdate("rhel-85", "rhel-86")
+			Expect(canUpdate).To(BeTrue())
+
+		})
+		It("should return true when same required package", func() {
+			canUpdate := deviceService.CanUpdate("rhel-86", "rhel-90")
+			Expect(canUpdate).To(BeTrue())
+		})
+
+		It("should return false when diff required package", func() {
+			canUpdate := deviceService.CanUpdate("rhel-85", "rhel-90")
+			Expect(canUpdate).To(BeFalse())
+		})
+	})
+
+	Context("Get Device count by image ", func() {
+		var imageSet *models.ImageSet
+		var img *models.Image
+		var img2 *models.Image
+		var img3 *models.Image
+		var device []models.Device
+		BeforeEach(func() {
+			imageSet = &models.ImageSet{
+				Name:    "test",
+				Version: 1,
+				OrgID:   orgID,
+			}
+			db.DB.Create(imageSet)
+			img = &models.Image{
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    1,
+				OrgID:      orgID,
+			}
+			db.DB.Create(&img)
+			img2 = &models.Image{
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    2,
+				OrgID:      orgID,
+			}
+			db.DB.Create(&img2)
+			img3 = &models.Image{
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    3,
+				OrgID:      orgID,
+			}
+			db.DB.Create(&img3)
+			device = []models.Device{
+				{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: img.ID},
+				{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: img.ID},
+				{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: img.ID},
+				{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: img2.ID},
+				{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: img2.ID},
+			}
+		})
+		It("should return devices", func() {
+
+			db.DB.Debug().Create(&device)
+			count, err := deviceService.GetDevicesCountByImage(img.ID)
+			Expect(err).To(BeNil())
+			Expect(count).To(Equal(int64(3)))
+
+		})
+		It("should return 2", func() {
+			db.DB.Debug().Create(&device)
+			count, err := deviceService.GetDevicesCountByImage(img2.ID)
+			Expect(err).To(BeNil())
+			Expect(count).To(Equal(int64(2)))
+		})
+		It("should return 0", func() {
+			db.DB.Debug().Create(&device)
+			count, err := deviceService.GetDevicesCountByImage(img3.ID)
+			Expect(err).To(BeNil())
+			Expect(count).To(Equal(int64(0)))
+		})
+
+	})
+
+	Context("Get Device image info paginated ", func() {
+		var checksum string
+		var resp inventory.Response
+		var imageSet *models.ImageSet
+		var oldImage *models.Image
+		var newImage *models.Image
+		var newImage2 *models.Image
+		BeforeEach(func() {
+			checksum = "fake-checksum-pag"
+			resp = inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
+				{ID: uuid, Ostree: inventory.SystemProfile{
+					RHCClientID: faker.UUIDHyphenated(),
+					RpmOstreeDeployments: []inventory.OSTree{
+						{Checksum: checksum, Booted: true},
+					},
+				},
+					OrgID: orgID,
+				},
+			}}
+			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(2)
+			imageSet = &models.ImageSet{
+				Name:    "test pag",
+				Version: 2,
+				OrgID:   orgID,
+			}
+			db.DB.Create(imageSet)
+			oldImage = &models.Image{
+				Commit: &models.Commit{
+					OSTreeCommit: checksum,
+					OrgID:        orgID,
+				},
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    1,
+				OrgID:      orgID,
+			}
+			db.DB.Create(oldImage.Commit)
+			db.DB.Create(oldImage)
+
+			newImage = &models.Image{
+				Commit: &models.Commit{
+					OSTreeCommit: fmt.Sprintf("1-old-%s", checksum),
+					OrgID:        orgID,
+					InstalledPackages: []models.InstalledPackage{
+						{Name: "vim"},
+					},
+				},
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    2,
+				OrgID:      orgID,
+			}
+			db.DB.Create(newImage.Commit)
+			db.DB.Create(newImage)
+			newImage2 = &models.Image{
+				Commit: &models.Commit{
+					OSTreeCommit: fmt.Sprintf("2-old-%s", checksum),
+					OrgID:        orgID,
+					InstalledPackages: []models.InstalledPackage{
+						{Name: "vim"},
+					},
+				},
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    3,
+				OrgID:      orgID,
+			}
+			db.DB.Create(newImage2.Commit)
+			db.DB.Create(newImage2)
+		})
+
+		It("should return first result", func() {
+			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(oldImage, nil)
+			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(newImage)).Return(oldImage, nil)
+
+			imageInfo, err := deviceService.GetDeviceImageInfoByUUID(uuid, 1, 0)
+
+			Expect(err).To(BeNil())
+			Expect(len((*imageInfo.UpdatesAvailable))).To(Equal(1))
+			Expect(newImage2.Version).To(Equal((*imageInfo.UpdatesAvailable)[0].Image.Version))
+
+		})
+		It("should return last result", func() {
+			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(oldImage, nil)
+			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(newImage2)).Return(oldImage, nil)
+
+			imageInfo, err := deviceService.GetDeviceImageInfoByUUID(uuid, 1, 1)
+			Expect(err).To(BeNil())
+			Expect(len((*imageInfo.UpdatesAvailable))).To(Equal(1))
+			Expect(newImage.Version).To(Equal((*imageInfo.UpdatesAvailable)[0].Image.Version))
+		})
+		It("should return all result", func() {
+			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(oldImage, nil)
+			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(oldImage)).Return(oldImage, nil)
+
+			imageInfo, err := deviceService.GetDeviceImageInfoByUUID(uuid, 10, 0)
+			Expect(err).To(BeNil())
+			Expect(len((*imageInfo.UpdatesAvailable))).To(Equal(2))
+		})
+		It("should return last result", func() {
+			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(oldImage, nil)
+			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(oldImage)).Return(oldImage, nil)
+
+			imageInfo, err := deviceService.GetDeviceImageInfoByUUID(uuid, -1, 1)
+			Expect(err).To(BeNil())
+			fmt.Printf("\n *imageInfo.UpdatesAvailable %v\n", *imageInfo.UpdatesAvailable)
+			Expect(len((*imageInfo.UpdatesAvailable))).To(Equal(1))
+		})
+		It("should return last result", func() {
+			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(oldImage, nil)
+			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(oldImage)).Return(oldImage, nil)
+
+			imageInfo, err := deviceService.GetDeviceImageInfoByUUID(uuid, -1, 0)
+			Expect(err).To(BeNil())
+			fmt.Printf("\n *imageInfo.UpdatesAvailable %v\n", *imageInfo.UpdatesAvailable)
+			Expect(len((*imageInfo.UpdatesAvailable))).To(Equal(2))
 		})
 	})
 })
