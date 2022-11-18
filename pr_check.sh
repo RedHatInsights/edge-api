@@ -48,7 +48,7 @@ podman run --rm -i \
     --name $CONTAINER_NAME \
     -v $PWD:/usr/src:z \
     registry.access.redhat.com/ubi8/go-toolset:1.18.4-8 \
-    make coverage-no-fdo
+    cd /usr/src && make coverage-no-fdo
 
 # Generate sonarqube reports
 make scan_project
