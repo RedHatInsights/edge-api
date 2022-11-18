@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/redhatinsights/edge-api/logger"
+	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
@@ -26,6 +27,7 @@ type EdgeAPIServices struct {
 	OwnershipVoucherService services.OwnershipVoucherServiceInterface
 	DeviceGroupsService     services.DeviceGroupsServiceInterface
 	FilesService            services.FilesService
+	ConsumerService         kafkacommon.ConsumerServiceInterface
 	Log                     *log.Entry
 }
 
@@ -50,6 +52,7 @@ func Init(ctx context.Context) *EdgeAPIServices {
 		OwnershipVoucherService: services.NewOwnershipVoucherService(ctx, log),
 		DeviceGroupsService:     services.NewDeviceGroupsService(ctx, log),
 		FilesService:            services.NewFilesService(log),
+		ConsumerService:         kafkacommon.NewConsumerService(ctx, log),
 		Log:                     log,
 	}
 }

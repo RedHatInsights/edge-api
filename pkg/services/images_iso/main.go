@@ -17,16 +17,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func main() {
-	ctx := context.Background()
-	// Init edge api services and attach them to the context
-	edgeAPIServices := dependencies.Init(ctx)
-	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
-	// create a base logger with fields to pass through the entire flow
+func initConsumer(ctx context.Context) {
+	edgeAPIServices := dependencies.ServicesFromContext(ctx)
 	mslog := log.WithFields(log.Fields{"app": "edge", "service": "images"})
 
 	mslog.Info("Microservice started")
-	config.Init()
 	cfg := config.Get()
 	config.LogConfigAtStartup(cfg)
 
@@ -38,11 +33,10 @@ func main() {
 	}
 
 	consumerGroup := "imagesisobuild"
-	kafkaConfigMap := kafkacommon.NewKafkaConfigMapService().GetKafkaConsumerConfigMap(consumerGroup)
-	c, err := kafka.NewConsumer(&kafkaConfigMap)
+	c, err := edgeAPIServices.ConsumerService.GetConsumer(consumerGroup)
 
 	if err != nil {
-		mslog.WithField("error", err.Error()).Error("Failed to create ISO consumer")
+		mslog.WithField("error", err.Error()).Error("Failed to get ISO consumer")
 		os.Exit(1)
 	}
 
@@ -104,7 +98,9 @@ func main() {
 			if err != nil {
 				mslog.WithField("error", err).Error("Error storing offset after ISO message")
 			}
-		case kafka.Error:
+			continue
+			// run = false
+		case *kafka.Error:
 			// terminate the application if all brokers are down.
 			log.WithFields(log.Fields{"code": e.Code(), "error": e}).Error("Exiting ISO loop due to Kafka broker issue")
 			if e.Code() == kafka.ErrAllBrokersDown {
@@ -114,4 +110,14 @@ func main() {
 			log.WithField("event", e).Warning("Event ignored")
 		}
 	}
+}
+
+func main() {
+	ctx := context.Background()
+	edgeAPIServices := dependencies.Init(ctx)
+	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+	mslog := log.WithFields(log.Fields{"app": "edge", "service": "images"})
+	ctx = image.ContextWithLogger(ctx, mslog)
+	initConsumer(ctx)
+
 }
