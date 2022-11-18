@@ -1,3 +1,4 @@
+// Package services handles all service-related features
 // FIXME: golangci-lint
 // nolint:errcheck,gocritic,govet,revive
 package services
@@ -16,7 +17,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"syscall"
 	"text/template"
 	"time"
@@ -37,28 +37,25 @@ import (
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 )
 
-// WaitGroup is the waitg roup for pending image builds
-// FIXME: this no longer applies to images. move to devices
-var WaitGroup sync.WaitGroup
-
 // ImageServiceInterface defines the interface that helps handle
-// the business logic of creating RHEL For Edge Images
+// the business logic of creating RHEL For Edge Images.
+// This interface is used for mock generation.
 type ImageServiceInterface interface {
 	CreateImage(image *models.Image) error
-	ProcessImage(image *models.Image) error
+	ProcessImage(context.Context, *models.Image) error
 	UpdateImage(image *models.Image, previousImage *models.Image) error
 	AddUserInfo(image *models.Image) error
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
-	CreateRepoForImage(i *models.Image) (*models.Repo, error)
-	CreateInstallerForImage(i *models.Image) (*models.Image, chan error, error)
+	CreateRepoForImage(context.Context, *models.Image) (*models.Repo, error)
+	CreateInstallerForImage(context.Context, *models.Image) (*models.Image, chan error, error)
 	GetImageByID(id string) (*models.Image, error)
 	GetUpdateInfo(image models.Image) ([]models.ImageUpdateAvailable, error)
 	AddPackageInfo(image *models.Image) (ImageDetail, error)
 	GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error)
 	CheckImageName(name, orgID string) (bool, error)
-	RetryCreateImage(image *models.Image) error
-	ResumeCreateImage(image *models.Image) error
+	RetryCreateImage(context.Context, *models.Image) error
+	ResumeCreateImage(context.Context, *models.Image) error
 	GetMetadata(image *models.Image) (*models.Image, error)
 	SetFinalImageStatus(i *models.Image)
 	CheckIfIsLatestVersion(previousImage *models.Image) error
@@ -69,6 +66,8 @@ type ImageServiceInterface interface {
 	ValidateImagePackage(pack string, image *models.Image) error
 	GetImagesViewCount(tx *gorm.DB) (int64, error)
 	GetImagesView(limit int, offset int, tx *gorm.DB) (*[]models.ImageView, error)
+	SetLog(*log.Entry)
+	DeleteImage(image *models.Image) error
 }
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
@@ -230,9 +229,9 @@ func (s *ImageService) CreateImage(image *models.Image) error {
 }
 
 // ProcessImage creates an Image for an OrgID on Image Builder and on our database
-func (s *ImageService) ProcessImage(image *models.Image) error {
-	// TODO: refactor this when EDA enabled
-	go s.postProcessImage(image.ID)
+func (s *ImageService) ProcessImage(ctx context.Context, img *models.Image) error {
+
+	go s.processImage(ctx, img.ID)
 
 	return nil
 }
@@ -394,7 +393,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	return nil
 }
 
-func (s *ImageService) postProcessInstaller(image *models.Image) error {
+func (s *ImageService) processInstaller(ctx context.Context, image *models.Image) error {
 	s.log.Debug("Post processing the installer for the image")
 	for {
 		i, err := s.UpdateImageStatus(image)
@@ -454,11 +453,44 @@ func (s *ImageService) postProcessInstaller(image *models.Image) error {
 	// It updates the status across the image and not just the installer
 	s.log.Debug("Setting final image status")
 	s.SetFinalImageStatus(image)
+
+	// send an installer completed event
+	if feature.ImageCompletionEventsEDA.IsEnabled() {
+		s.log.Debug("Installer completed (EDA)")
+
+		// get the identity from the context
+		ident, err := common.GetIdentityInstanceFromContext(ctx)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Error getting identity from context")
+		}
+
+		// create payload for event
+		edgePayload := &models.EdgeInstallerCompletedEventPayload{
+			EdgeBasePayload: models.EdgeBasePayload{
+				Identity:       ident,
+				LastHandleTime: time.Now().Format(time.RFC3339),
+				RequestID:      image.RequestID,
+			},
+			NewImage: *image,
+		}
+
+		// create the edge event
+		edgeEvent := kafkacommon.CreateEdgeEvent(ident.Identity.OrgID, models.SourceEdgeEventAPI, image.RequestID,
+			models.EventTypeEdgeInstallerCompleted, image.Name, edgePayload)
+
+		// put the event on the bus
+		if err := kafkacommon.NewProducerService().ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeInstallerCompleted, edgeEvent); err != nil {
+			log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
+
+			return err
+		}
+	}
+
 	s.log.WithField("status", image.Status).Debug("Processing image installer is done")
 	return nil
 }
 
-func (s *ImageService) postProcessCommit(image *models.Image) error {
+func (s *ImageService) processCommit(ctx context.Context, image *models.Image) error {
 	s.log.Debug("Processing image build commit")
 	for {
 		i, err := s.UpdateImageStatus(image)
@@ -474,15 +506,48 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 	}
 
 	if image.Commit.Status == models.ImageStatusSuccess {
-		i, err := s.ImageBuilder.GetMetadata(image)
+		imageWithMetaData, err := s.ImageBuilder.GetMetadata(image)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Failed getting metadata from image builder")
-			s.SetErrorStatusOnImage(err, i)
+			s.SetErrorStatusOnImage(err, imageWithMetaData)
 			return err
 		}
 
+		// send a commit completed event
+		if feature.ImageCompletionEventsEDA.IsEnabled() {
+
+			// get the identity from the context
+			ident, err := common.GetIdentityInstanceFromContext(ctx)
+			if err != nil {
+				s.log.WithField("error", err.Error()).Error("Error getting identity from context")
+
+				return err
+			}
+
+			// create payload for event
+			edgePayload := &models.EdgeCommitCompletedEventPayload{
+				EdgeBasePayload: models.EdgeBasePayload{
+					Identity:       ident,
+					LastHandleTime: time.Now().Format(time.RFC3339),
+					RequestID:      image.RequestID,
+				},
+				NewImage: *image,
+			}
+
+			// create the edge event
+			edgeEvent := kafkacommon.CreateEdgeEvent(ident.Identity.OrgID, models.SourceEdgeEventAPI, image.RequestID,
+				models.EventTypeEdgeCommitCompleted, image.Name, edgePayload)
+
+			// put the event on the bus
+			if err := kafkacommon.NewProducerService().ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeCommitCompleted, edgeEvent); err != nil {
+				s.log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
+
+				return err
+			}
+		}
+
 		// Create the repo for the image
-		_, err = s.CreateRepoForImage(image)
+		_, err = s.CreateRepoForImage(ctx, image)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Failed creating repo for image")
 			return err
@@ -494,6 +559,7 @@ func (s *ImageService) postProcessCommit(image *models.Image) error {
 		s.SetFinalImageStatus(image)
 		s.log.Debug("Processing image is done - no installer to create")
 	}
+
 	s.log.Debug("Processing commit is done")
 	return nil
 }
@@ -546,15 +612,12 @@ func (s *ImageService) SetFinalImageStatus(i *models.Image) {
 	}
 }
 
-func (s *ImageService) postProcessImage(id uint) {
-	// NOTE: Every log message in this method already has commit id and image id injected
-
+func (s *ImageService) processImage(ctx context.Context, id uint) {
 	s.log.Debug("Processing image build")
 	var image *models.Image
 
 	// setup a context and signal for SIGTERM
-	ctx := context.Background()
-	intctx, intcancel := context.WithCancel(ctx)
+	intctx, intcancel := context.WithCancel(context.Background())
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 
@@ -594,7 +657,7 @@ func (s *ImageService) postProcessImage(id uint) {
 
 	// Monitor the commit for completion
 	s.log.WithField("imageID", image.ID).Debug("Monitoring commit status for this image")
-	err := s.postProcessCommit(image)
+	err := s.processCommit(ctx, image)
 	if err != nil {
 		if image.Status == models.ImageStatusInterrupted {
 			return
@@ -609,7 +672,7 @@ func (s *ImageService) postProcessImage(id uint) {
 		// Request an installer ISO from Image Builder for the image
 		if image.HasOutputType(models.ImageTypeInstaller) {
 			s.log.WithField("imageID", image.ID).Debug("Creating an installer for this image")
-			image, c, err := s.CreateInstallerForImage(image)
+			image, c, err := s.CreateInstallerForImage(ctx, image)
 			/* CreateInstallerForImage is also called directly from an endpoint.
 			If called from the endpoint it will not block
 				the caller returns the channel output to _
@@ -631,7 +694,7 @@ func (s *ImageService) postProcessImage(id uint) {
 }
 
 // CreateRepoForImage creates the OSTree repo to host that image
-func (s *ImageService) CreateRepoForImage(i *models.Image) (*models.Repo, error) {
+func (s *ImageService) CreateRepoForImage(ctx context.Context, img *models.Image) (*models.Repo, error) {
 	s.log.Info("Creating OSTree repo for image")
 	repo := &models.Repo{
 		Status: models.RepoStatusBuilding,
@@ -643,10 +706,10 @@ func (s *ImageService) CreateRepoForImage(i *models.Image) (*models.Repo, error)
 	s.log = s.log.WithField("repoID", repo.ID)
 	s.log.Debug("OSTree repo is created on the database")
 
-	i.Commit.Repo = repo
-	i.Commit.RepoID = &repo.ID
+	img.Commit.Repo = repo
+	img.Commit.RepoID = &repo.ID
 
-	tx = db.DB.Save(i.Commit)
+	tx = db.DB.Save(img.Commit)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -656,6 +719,41 @@ func (s *ImageService) CreateRepoForImage(i *models.Image) (*models.Repo, error)
 	if err != nil {
 		return nil, err
 	}
+
+	// send a commit completed event
+	if feature.ImageCompletionEventsEDA.IsEnabled() {
+		s.log.Debug("Repo completed (EDA)")
+
+		// get the identity from the context
+		ident, err := common.GetIdentityInstanceFromContext(ctx)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Error getting identity from context")
+
+			return nil, err
+		}
+
+		// create payload for event
+		edgePayload := &models.EdgeOstreeRepoCompletedEventPayload{
+			EdgeBasePayload: models.EdgeBasePayload{
+				Identity:       ident,
+				LastHandleTime: time.Now().Format(time.RFC3339),
+				RequestID:      img.RequestID,
+			},
+			NewImage: *img,
+		}
+
+		// create the edge event
+		edgeEvent := kafkacommon.CreateEdgeEvent(ident.Identity.OrgID, models.SourceEdgeEventAPI,
+			img.RequestID, models.EventTypeEdgeOstreeRepoCompleted, img.Name, edgePayload)
+
+		// put the event on the bus
+		if err := kafkacommon.NewProducerService().ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeOstreeRepoCompleted, edgeEvent); err != nil {
+			log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
+
+			return nil, err
+		}
+	}
+
 	s.log.Info("OSTree repo is ready")
 
 	return repo, nil
@@ -1065,7 +1163,7 @@ func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Im
 }
 
 // RetryCreateImage retries the whole post process of the image creation
-func (s *ImageService) RetryCreateImage(image *models.Image) error {
+func (s *ImageService) RetryCreateImage(ctx context.Context, image *models.Image) error {
 	s.log = s.log.WithFields(log.Fields{"imageID": image.ID, "commitID": image.Commit.ID})
 	// recompose commit
 	image, err := s.ImageBuilder.ComposeCommit(image)
@@ -1078,7 +1176,7 @@ func (s *ImageService) RetryCreateImage(image *models.Image) error {
 		s.log.WithField("error", err.Error()).Error("Failed setting image status")
 		return nil
 	}
-	go s.postProcessImage(image.ID)
+	go s.processImage(ctx, image.ID)
 	return nil
 }
 
@@ -1119,7 +1217,7 @@ func (s *ImageService) setInstallerStatus(image *models.Image, status string) er
 }
 
 // ResumeCreateImage retries the whole post process of the image creation
-func (s *ImageService) ResumeCreateImage(image *models.Image) error {
+func (s *ImageService) ResumeCreateImage(ctx context.Context, image *models.Image) error {
 	// add additional information to all log entries in this pipeline
 	s.log = s.log.WithField("originalRequestId", image.RequestID)
 	s.log = s.log.WithField("imageID", image.ID)
@@ -1131,20 +1229,19 @@ func (s *ImageService) ResumeCreateImage(image *models.Image) error {
 	}
 
 	// go routine so we can return to the API caller ASAP
-	go s.resumeProcessImage(image)
+	go s.resumeProcessImage(ctx, image)
 
 	return nil
 }
 
-func (s *ImageService) resumeProcessImage(image *models.Image) {
+func (s *ImageService) resumeProcessImage(ctx context.Context, image *models.Image) {
 	// NOTE: Every log message in this method already has commit id and image id injected
 	s.log.Debug("Processing image build from where it was interrupted")
 
 	id := image.ID
 
 	// setup a context and signal for SIGTERM
-	ctx := context.Background()
-	intctx, intcancel := context.WithCancel(ctx)
+	intctx, intcancel := context.WithCancel(context.Background())
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 
@@ -1185,7 +1282,7 @@ func (s *ImageService) resumeProcessImage(image *models.Image) {
 	if image.Commit.Status != models.ImageStatusSuccess {
 		// Request a commit from Image Builder for the image
 		s.log.Debug("Creating a commit for this image")
-		err := s.postProcessCommit(image)
+		err := s.processCommit(ctx, image)
 		if err != nil {
 			if image.Status == models.ImageStatusInterrupted {
 				return
@@ -1208,7 +1305,7 @@ func (s *ImageService) resumeProcessImage(image *models.Image) {
 
 		// Create the repo for the image
 		if image.Commit.Repo.Status != models.RepoStatusSuccess {
-			_, err := s.CreateRepoForImage(image)
+			_, err := s.CreateRepoForImage(ctx, image)
 			if err != nil {
 				s.log.WithField("error", err.Error()).Error("Failed creating repo for image")
 				return
@@ -1231,7 +1328,7 @@ func (s *ImageService) resumeProcessImage(image *models.Image) {
 		// skip if already set to success
 		if image.HasOutputType(models.ImageTypeInstaller) && image.Installer.Status != models.ImageStatusSuccess {
 			s.log.WithField("imageID", image.ID).Debug("Creating an installer for this image")
-			image2, c, err := s.CreateInstallerForImage(image)
+			image2, c, err := s.CreateInstallerForImage(ctx, image)
 			/* CreateInstallerForImage is also called directly from an endpoint.
 			If called from the endpoint it will not block
 				the caller returns the channel output to _
@@ -1373,7 +1470,7 @@ func (s *ImageService) GetMetadata(image *models.Image) (*models.Image, error) {
 }
 
 // CreateInstallerForImage creates a installer given an existing image
-func (s *ImageService) CreateInstallerForImage(image *models.Image) (*models.Image, chan error, error) {
+func (s *ImageService) CreateInstallerForImage(ctx context.Context, image *models.Image) (*models.Image, chan error, error) {
 	s.log.Debug("Creating installer for image")
 	c := make(chan error)
 
@@ -1394,7 +1491,7 @@ func (s *ImageService) CreateInstallerForImage(image *models.Image) (*models.Ima
 		return nil, c, err
 	}
 	go func(chan error) {
-		err := s.postProcessInstaller(image)
+		err := s.processInstaller(ctx, image)
 		c <- err
 	}(c)
 	return image, c, nil
@@ -1602,4 +1699,21 @@ func (s *ImageService) GetImagesView(limit int, offset int, tx *gorm.DB) (*[]mod
 		imagesView = append(imagesView, imageView)
 	}
 	return &imagesView, nil
+}
+
+func (s *ImageService) DeleteImage(i *models.Image) error {
+	if i.Status != models.ImageStatusError {
+		s.log.WithFields(
+			log.Fields{"Image_id": i.ID},
+		).Error("Error when deleting image, only errored images can be deleted")
+		return new(ImageNotInErrorState)
+	}
+
+	if result := db.DB.Delete(&i); result.Error != nil {
+		s.log.WithFields(
+			log.Fields{"Image_id": i.ID, "error": result.Error},
+		).Error("Error when deleting image")
+		return result.Error
+	}
+	return nil
 }

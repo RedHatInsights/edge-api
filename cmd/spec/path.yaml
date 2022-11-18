@@ -166,6 +166,35 @@ paths:
                 $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
       summary: Get an image by id.
+    delete:
+      operationId: DeleteImage
+      parameters:
+        - name: imageId
+          in: path
+          required: true
+          description: ImageID
+          schema:
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.Image"
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.BadRequest"
+          description: The request sent couldn't be processed.
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.InternalServerError"
+          description: There was an internal server error.
+      summary: Deletes an image
   /images/{imageId}/details:
     get:
       operationId: getImageDetail

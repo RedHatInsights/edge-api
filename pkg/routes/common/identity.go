@@ -4,7 +4,11 @@ package common
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
+
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 )
 
 type rhIdentityKeyType string
@@ -24,4 +28,25 @@ func GetOriginalIdentity(ctx context.Context) (string, error) {
 // SetOriginalIdentity set the original identity data to the context
 func SetOriginalIdentity(ctx context.Context, value string) context.Context {
 	return context.WithValue(ctx, rhIdentityKey, value)
+}
+
+// GetIdentityInstanceFromContext returns an instances of identity.XRHID from Base64 encoded ident in context
+func GetIdentityInstanceFromContext(ctx context.Context) (identity.XRHID, error) {
+	ident64, err := GetOriginalIdentity(ctx)
+	if err != nil {
+		return identity.XRHID{}, err
+	}
+
+	identBytes, err := base64.StdEncoding.DecodeString(ident64)
+	if err != nil {
+		return identity.XRHID{}, err
+	}
+
+	var ident identity.XRHID
+	err = json.Unmarshal(identBytes, &ident)
+	if err != nil {
+		return identity.XRHID{}, err
+	}
+
+	return ident, nil
 }

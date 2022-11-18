@@ -3,6 +3,7 @@
 package routes
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	url2 "net/url"
 	"strings"
 
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -21,6 +23,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -617,6 +620,176 @@ var _ = Describe("Storage Router", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(string(respBody)).To(ContainSubstring("bad image repository url"))
 			})
+
+			Context("org access", func() {
+				// by org access we mean the org that created/own the image and repo
+				var originalAuth bool
+				var originalImageBuilderOrgID string
+				conf := config.Get()
+				imageBuilderOrgID := faker.UUIDHyphenated()
+
+				BeforeEach(func() {
+					// save original config auth and imageBuilderOrgID values
+					originalAuth = conf.Auth
+					originalImageBuilderOrgID = conf.ImageBuilderOrgID
+					// set auth to True to force use identity
+					conf.Auth = true
+					// set ImageBuilderOrgID to the current defined one
+					conf.ImageBuilderOrgID = imageBuilderOrgID
+					ctrl = gomock.NewController(GinkgoT())
+					router = chi.NewRouter()
+					router.Use(func(next http.Handler) http.Handler {
+						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							// set identity orgID to orgID the creator/owner of the image
+							ctx := context.WithValue(r.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: orgID}})
+							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+							next.ServeHTTP(w, r.WithContext(ctx))
+						})
+					})
+					router.Route("/storage", MakeStorageRouter)
+				})
+
+				AfterEach(func() {
+					// restore config values
+					conf.Auth = originalAuth
+					conf.ImageBuilderOrgID = originalImageBuilderOrgID
+					ctrl.Finish()
+				})
+
+				It("org user should return the requested resource content", func() {
+					targetRepoFile := "summary.sig"
+					req, err := http.NewRequest("GET", fmt.Sprintf("/storage/images-repos/%d/%s", image.ID, targetRepoFile), nil)
+					Expect(err).ToNot(HaveOccurred())
+
+					fileContent := "this is a simple file content"
+
+					url, err := url2.Parse(image.Commit.Repo.URL)
+					Expect(err).ToNot(HaveOccurred())
+					targetPath := fmt.Sprintf("%s/%s", url.Path, targetRepoFile)
+
+					fileContentReader := strings.NewReader(fileContent)
+					fileContentReadCloser := io.NopCloser(fileContentReader)
+					mockFilesService.EXPECT().GetFile(targetPath).Return(fileContentReadCloser, nil)
+
+					httpTestRecorder := httptest.NewRecorder()
+					router.ServeHTTP(httpTestRecorder, req)
+
+					Expect(httpTestRecorder.Code).To(Equal(http.StatusOK))
+					respBody, err := io.ReadAll(httpTestRecorder.Body)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(string(respBody)).To(Equal(fileContent))
+				})
+			})
+			Context("image builder org access", func() {
+				var originalAuth bool
+				var originalImageBuilderOrgID string
+				conf := config.Get()
+				imageBuilderOrgID := faker.UUIDHyphenated()
+
+				BeforeEach(func() {
+					// save original config auth and imageBuilderOrgID values
+					originalAuth = conf.Auth
+					originalImageBuilderOrgID = conf.ImageBuilderOrgID
+					// set auth to True to force use identity
+					conf.Auth = true
+					// set ImageBuilderOrgID to the current defined one
+					conf.ImageBuilderOrgID = imageBuilderOrgID
+					ctrl = gomock.NewController(GinkgoT())
+					router = chi.NewRouter()
+					router.Use(func(next http.Handler) http.Handler {
+						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							// set identity orgID to imageBuilderOrgID
+							ctx := context.WithValue(r.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: imageBuilderOrgID}})
+							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+							next.ServeHTTP(w, r.WithContext(ctx))
+						})
+					})
+					router.Route("/storage", MakeStorageRouter)
+				})
+
+				AfterEach(func() {
+					// restore config values
+					conf.Auth = originalAuth
+					conf.ImageBuilderOrgID = originalImageBuilderOrgID
+					ctrl.Finish()
+				})
+
+				It("image builder org user should return the requested resource content", func() {
+					targetRepoFile := "summary.sig"
+					req, err := http.NewRequest("GET", fmt.Sprintf("/storage/images-repos/%d/%s", image.ID, targetRepoFile), nil)
+					Expect(err).ToNot(HaveOccurred())
+
+					fileContent := "this is a simple file content"
+
+					url, err := url2.Parse(image.Commit.Repo.URL)
+					Expect(err).ToNot(HaveOccurred())
+					targetPath := fmt.Sprintf("%s/%s", url.Path, targetRepoFile)
+
+					fileContentReader := strings.NewReader(fileContent)
+					fileContentReadCloser := io.NopCloser(fileContentReader)
+					mockFilesService.EXPECT().GetFile(targetPath).Return(fileContentReadCloser, nil)
+
+					httpTestRecorder := httptest.NewRecorder()
+					router.ServeHTTP(httpTestRecorder, req)
+
+					Expect(httpTestRecorder.Code).To(Equal(http.StatusOK))
+					respBody, err := io.ReadAll(httpTestRecorder.Body)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(string(respBody)).To(Equal(fileContent))
+				})
+			})
+
+			Context("any other org access", func() {
+				// by other org we mean the org accessing the image repo is not the one that created/own it,
+				// and it is not image builder org
+				var originalAuth bool
+				var originalImageBuilderOrgID string
+				conf := config.Get()
+				imageBuilderOrgID := faker.UUIDHyphenated()
+				otherOrgID := faker.UUIDHyphenated()
+
+				BeforeEach(func() {
+					// save original config auth and imageBuilderOrgID values
+					originalAuth = conf.Auth
+					originalImageBuilderOrgID = conf.ImageBuilderOrgID
+					// set auth to True to force use identity
+					conf.Auth = true
+					// set ImageBuilderOrgID to the current defined one
+					conf.ImageBuilderOrgID = imageBuilderOrgID
+					ctrl = gomock.NewController(GinkgoT())
+					router = chi.NewRouter()
+					router.Use(func(next http.Handler) http.Handler {
+						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							// set identity orgID to otherOrgID
+							ctx := context.WithValue(r.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: otherOrgID}})
+							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+							next.ServeHTTP(w, r.WithContext(ctx))
+						})
+					})
+					router.Route("/storage", MakeStorageRouter)
+				})
+
+				AfterEach(func() {
+					// restore config values
+					conf.Auth = originalAuth
+					conf.ImageBuilderOrgID = originalImageBuilderOrgID
+					ctrl.Finish()
+				})
+
+				It("image is not found when other org try to access image repo", func() {
+					targetRepoFile := "summary.sig"
+					req, err := http.NewRequest("GET", fmt.Sprintf("/storage/images-repos/%d/%s", image.ID, targetRepoFile), nil)
+					Expect(err).ToNot(HaveOccurred())
+
+					httpTestRecorder := httptest.NewRecorder()
+					router.ServeHTTP(httpTestRecorder, req)
+
+					Expect(httpTestRecorder.Code).To(Equal(http.StatusNotFound))
+					respBody, err := io.ReadAll(httpTestRecorder.Body)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(string(respBody)).To(ContainSubstring("storage image not found"))
+				})
+			})
 		})
 
 		Context("GetImageRepoFileContent", func() {
@@ -768,6 +941,164 @@ var _ = Describe("Storage Router", func() {
 				respBody, err := io.ReadAll(httpTestRecorder.Body)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(string(respBody)).To(ContainSubstring("bad image repository url"))
+			})
+
+			Context("org access", func() {
+				// by org access we mean the org that created/own the image and repo
+				var originalAuth bool
+				var originalImageBuilderOrgID string
+				conf := config.Get()
+				imageBuilderOrgID := faker.UUIDHyphenated()
+
+				BeforeEach(func() {
+					// save original config auth and imageBuilderOrgID values
+					originalAuth = conf.Auth
+					originalImageBuilderOrgID = conf.ImageBuilderOrgID
+					// set auth to True to force use identity
+					conf.Auth = true
+					// set ImageBuilderOrgID to the current defined one
+					conf.ImageBuilderOrgID = imageBuilderOrgID
+					ctrl = gomock.NewController(GinkgoT())
+					router = chi.NewRouter()
+					router.Use(func(next http.Handler) http.Handler {
+						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							// set identity orgID to orgID the creator/owner of the image
+							ctx := context.WithValue(r.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: orgID}})
+							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+							next.ServeHTTP(w, r.WithContext(ctx))
+						})
+					})
+					router.Route("/storage", MakeStorageRouter)
+				})
+
+				AfterEach(func() {
+					// restore config values
+					conf.Auth = originalAuth
+					conf.ImageBuilderOrgID = originalImageBuilderOrgID
+					ctrl.Finish()
+				})
+
+				It("org user should redirect to the requested resource content", func() {
+					targetRepoFile := "summary.sig"
+					req, err := http.NewRequest("GET", fmt.Sprintf("/storage/images-repos/%d/content/%s", image.ID, targetRepoFile), nil)
+					Expect(err).ToNot(HaveOccurred())
+
+					url, err := url2.Parse(image.Commit.Repo.URL)
+					Expect(err).ToNot(HaveOccurred())
+					targetPath := fmt.Sprintf("%s/%s", url.Path, targetRepoFile)
+					expectedURL := fmt.Sprintf("%s/%s?signature", url, targetRepoFile)
+					mockFilesService.EXPECT().GetSignedURL(targetPath).Return(expectedURL, nil)
+
+					httpTestRecorder := httptest.NewRecorder()
+					router.ServeHTTP(httpTestRecorder, req)
+
+					Expect(httpTestRecorder.Code).To(Equal(http.StatusSeeOther))
+					Expect(httpTestRecorder.Header()["Location"][0]).To(Equal(expectedURL))
+				})
+			})
+			Context("image builder org access", func() {
+				var originalAuth bool
+				var originalImageBuilderOrgID string
+				conf := config.Get()
+				imageBuilderOrgID := faker.UUIDHyphenated()
+
+				BeforeEach(func() {
+					// save original config auth and imageBuilderOrgID values
+					originalAuth = conf.Auth
+					originalImageBuilderOrgID = conf.ImageBuilderOrgID
+					// set auth to True to force use identity
+					conf.Auth = true
+					// set ImageBuilderOrgID to the current defined one
+					conf.ImageBuilderOrgID = imageBuilderOrgID
+					ctrl = gomock.NewController(GinkgoT())
+					router = chi.NewRouter()
+					router.Use(func(next http.Handler) http.Handler {
+						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							// set identity orgID to imageBuilderOrgID
+							ctx := context.WithValue(r.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: imageBuilderOrgID}})
+							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+							next.ServeHTTP(w, r.WithContext(ctx))
+						})
+					})
+					router.Route("/storage", MakeStorageRouter)
+				})
+
+				AfterEach(func() {
+					// restore config values
+					conf.Auth = originalAuth
+					conf.ImageBuilderOrgID = originalImageBuilderOrgID
+					ctrl.Finish()
+				})
+
+				It("image builder org user should redirect to the requested resource content", func() {
+					targetRepoFile := "summary.sig"
+					req, err := http.NewRequest("GET", fmt.Sprintf("/storage/images-repos/%d/content/%s", image.ID, targetRepoFile), nil)
+					Expect(err).ToNot(HaveOccurred())
+
+					url, err := url2.Parse(image.Commit.Repo.URL)
+					Expect(err).ToNot(HaveOccurred())
+					targetPath := fmt.Sprintf("%s/%s", url.Path, targetRepoFile)
+					expectedURL := fmt.Sprintf("%s/%s?signature", url, targetRepoFile)
+					mockFilesService.EXPECT().GetSignedURL(targetPath).Return(expectedURL, nil)
+
+					httpTestRecorder := httptest.NewRecorder()
+					router.ServeHTTP(httpTestRecorder, req)
+
+					Expect(httpTestRecorder.Code).To(Equal(http.StatusSeeOther))
+					Expect(httpTestRecorder.Header()["Location"][0]).To(Equal(expectedURL))
+				})
+			})
+
+			Context("any other org access", func() {
+				// by other org we mean the org accessing the image repo is not the one that created/own it,
+				// and it is not image builder org
+				var originalAuth bool
+				var originalImageBuilderOrgID string
+				conf := config.Get()
+				imageBuilderOrgID := faker.UUIDHyphenated()
+				otherOrgID := faker.UUIDHyphenated()
+
+				BeforeEach(func() {
+					// save original config auth and imageBuilderOrgID values
+					originalAuth = conf.Auth
+					originalImageBuilderOrgID = conf.ImageBuilderOrgID
+					// set auth to True to force use identity
+					conf.Auth = true
+					// set ImageBuilderOrgID to the current defined one
+					conf.ImageBuilderOrgID = imageBuilderOrgID
+					ctrl = gomock.NewController(GinkgoT())
+					router = chi.NewRouter()
+					router.Use(func(next http.Handler) http.Handler {
+						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							// set identity orgID to otherOrgID
+							ctx := context.WithValue(r.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: otherOrgID}})
+							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+							next.ServeHTTP(w, r.WithContext(ctx))
+						})
+					})
+					router.Route("/storage", MakeStorageRouter)
+				})
+
+				AfterEach(func() {
+					// restore config values
+					conf.Auth = originalAuth
+					conf.ImageBuilderOrgID = originalImageBuilderOrgID
+					ctrl.Finish()
+				})
+
+				It("image is not found when other org try to access image repo", func() {
+					targetRepoFile := "summary.sig"
+					req, err := http.NewRequest("GET", fmt.Sprintf("/storage/images-repos/%d/%s", image.ID, targetRepoFile), nil)
+					Expect(err).ToNot(HaveOccurred())
+
+					httpTestRecorder := httptest.NewRecorder()
+					router.ServeHTTP(httpTestRecorder, req)
+
+					Expect(httpTestRecorder.Code).To(Equal(http.StatusNotFound))
+					respBody, err := io.ReadAll(httpTestRecorder.Body)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(string(respBody)).To(ContainSubstring("storage image not found"))
+				})
 			})
 		})
 	})
