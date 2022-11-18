@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 
@@ -354,9 +355,16 @@ func storageImageCtx(next http.Handler) http.Handler {
 			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("storage image ID must be an integer"))
 			return
 		}
-
+		imageBuilderOrgID := config.Get().ImageBuilderOrgID
+		var dbFilter *gorm.DB
+		if imageBuilderOrgID != "" && orgID == imageBuilderOrgID {
+			// image-builder have read access to all image commit repositories
+			dbFilter = db.DB
+		} else {
+			dbFilter = db.Org(orgID, "images")
+		}
 		var image models.Image
-		if result := db.Org(orgID, "images").Preload("Commit.Repo").Joins("Commit").First(&image, imageID); result.Error != nil {
+		if result := dbFilter.Preload("Commit.Repo").Joins("Commit").First(&image, imageID); result.Error != nil {
 			if result.Error == gorm.ErrRecordNotFound {
 				ctxServices.Log.WithField("error", result.Error.Error()).Error("storage image not found")
 				respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("storage image not found"))
