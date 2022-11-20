@@ -29,6 +29,7 @@ type imageSetImageTypeKey int
 const imageSetKey imageSetTypeKey = iota
 const imageSetImageKey imageSetImageTypeKey = iota
 
+var sortImageSetImageOption = []string{"created_at", "name", "version"}
 var sortOption = []string{"created_at", "updated_at", "name"}
 var statusOption = []string{models.ImageStatusCreated, models.ImageStatusBuilding, models.ImageStatusError, models.ImageStatusSuccess}
 
@@ -40,7 +41,7 @@ func MakeImageSetsRouter(sub chi.Router) {
 		r.Use(ImageSetCtx)
 		r.With(validateFilterParams).With(common.Paginate).Get("/", GetImageSetsByID)
 	})
-	sub.With(validateFilterParams).Route("/view/{imageSetID}", func(r chi.Router) {
+	sub.With(ValidateQueryParams("imagesetimageview")).With(validateFilterParams).Route("/view/{imageSetID}", func(r chi.Router) {
 		r.Use(ImageSetViewCtx)
 		r.With(ValidateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetImageSetViewByID)
 		r.With(ValidateGetAllImagesSearchParams).With(common.Paginate).Get("/versions", GetAllImageSetImagesView)
@@ -347,8 +348,14 @@ func validateFilterParams(next http.Handler) http.Handler {
 			if string(val[0]) == "-" {
 				name = val[1:]
 			}
-			if !contains(sortOption, name) {
-				errs = append(errs, common.ValidationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must %v", name, strings.Join(sortOption, " or "))})
+			if strings.Contains(r.URL.RequestURI(), "/view/") {
+				if !contains(sortImageSetImageOption, name) {
+					errs = append(errs, common.ValidationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must %v", name, strings.Join(sortImageSetImageOption, " or "))})
+				}
+			} else {
+				if !contains(sortOption, name) {
+					errs = append(errs, common.ValidationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must %v", name, strings.Join(sortOption, " or "))})
+				}
 			}
 		}
 
