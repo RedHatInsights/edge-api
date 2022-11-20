@@ -1448,7 +1448,7 @@ func (s *ImageService) GetUpdateInfo(image models.Image) ([]models.ImageUpdateAv
 			return nil, err
 		}
 		var delta models.ImageUpdateAvailable
-		devicesCountByImage, err := s.GetDevicesCountByImage(image.ID)
+		devicesCountByImage, err := s.GetImageDevicesCount(image.ID)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Could not find device image info")
 			return nil, new(ImageNotFoundError)
@@ -1661,8 +1661,8 @@ func (s *ImageService) GetImagesViewCount(tx *gorm.DB) (int64, error) {
 	return count, nil
 }
 
-// GetDevicesCountByImage returns a list of devices running an image in an org.
-func (s *ImageService) GetDevicesCountByImage(imageId uint) (int64, error) {
+// GetImageDevicesCount returns a list of devices running an image in an org.
+func (s *ImageService) GetImageDevicesCount(imageId uint) (int64, error) {
 	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {
 		return 0, err
