@@ -50,6 +50,7 @@ type ImageServiceInterface interface {
 	CreateRepoForImage(context.Context, *models.Image) (*models.Repo, error)
 	CreateInstallerForImage(context.Context, *models.Image) (*models.Image, chan error, error)
 	GetImageByID(id string) (*models.Image, error)
+	GetImageDevicesCount(imageId uint) (int64, error)
 	GetUpdateInfo(image models.Image) ([]models.ImageUpdateAvailable, error)
 	AddPackageInfo(image *models.Image) (ImageDetail, error)
 	GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error)

@@ -1564,4 +1564,58 @@ var _ = Describe("Image Service Test", func() {
 			})
 		})
 	})
+
+	Describe("get devices of image", func() {
+		When("image exists with some devices", func() {
+			var image1, image2 *models.Image
+			var device []models.Device
+			var imageSet *models.ImageSet
+			BeforeEach(func() {
+				imageSet = &models.ImageSet{
+					Name:    "test",
+					Version: 2,
+					OrgID:   common.DefaultOrgID,
+				}
+				result := db.DB.Create(imageSet)
+				Expect(result.Error).ToNot(HaveOccurred())
+				image1 = &models.Image{
+					Status:     models.ImageStatusSuccess,
+					ImageSetID: &imageSet.ID,
+					Version:    1,
+					OrgID:      common.DefaultOrgID,
+				}
+				result = db.DB.Create(image1)
+				Expect(result.Error).ToNot(HaveOccurred())
+				image2 = &models.Image{
+					Status:     models.ImageStatusSuccess,
+					ImageSetID: &imageSet.ID,
+					Version:    1,
+					OrgID:      common.DefaultOrgID,
+				}
+				result = db.DB.Create(image2)
+				Expect(result.Error).ToNot(HaveOccurred())
+
+				device = []models.Device{
+					{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: image1.ID},
+					{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: image1.ID},
+				}
+
+			})
+			Context("Get Devices count image", func() {
+				It("should return device count of image1", func() {
+					db.DB.Debug().Create(&device)
+					count, err := service.GetImageDevicesCount(image1.ID)
+					Expect(err).To(BeNil())
+					Expect(count).To(Equal(int64(2)))
+
+				})
+				It("should return 0 device of image2", func() {
+					db.DB.Debug().Create(&device)
+					count, err := service.GetImageDevicesCount(image2.ID)
+					Expect(err).To(BeNil())
+					Expect(count).To(Equal(int64(0)))
+				})
+			})
+		})
+	})
 })
