@@ -1449,10 +1449,10 @@ func (s *ImageService) GetUpdateInfo(image models.Image) ([]models.ImageUpdateAv
 			return nil, err
 		}
 		var delta models.ImageUpdateAvailable
-		devicesCountByImage, err := s.GetImageDevicesCount(image.ID)
+		imageDevicesCount, err := s.GetImageDevicesCount(image.ID)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Could not find device image info")
-			return nil, new(ImageNotFoundError)
+			return nil, err
 		}
 		diff := GetDiffOnUpdate(image, upd)
 		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
@@ -1460,7 +1460,7 @@ func (s *ImageService) GetUpdateInfo(image models.Image) ([]models.ImageUpdateAv
 		delta.PackageDiff = diff
 		totalPackages := len(image.Commit.InstalledPackages)
 		delta.Image.TotalPackages = totalPackages
-		delta.Image.TotalDevicesWithImage = devicesCountByImage
+		delta.Image.TotalDevicesWithImage = imageDevicesCount
 		imageDiff = append(imageDiff, delta)
 	}
 	return imageDiff, nil
@@ -1666,6 +1666,7 @@ func (s *ImageService) GetImagesViewCount(tx *gorm.DB) (int64, error) {
 func (s *ImageService) GetImageDevicesCount(imageId uint) (int64, error) {
 	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error getting orgID from context")
 		return 0, err
 	}
 

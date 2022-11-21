@@ -19,6 +19,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -27,6 +28,7 @@ var _ = Describe("Image Service Test", func() {
 	var hash string
 	var mockImageBuilderClient *mock_imagebuilder.MockClientInterface
 	var mockRepoService *mock_services.MockRepoServiceInterface
+
 	BeforeEach(func() {
 		ctrl := gomock.NewController(GinkgoT())
 		defer ctrl.Finish()
@@ -1596,8 +1598,8 @@ var _ = Describe("Image Service Test", func() {
 				Expect(result.Error).ToNot(HaveOccurred())
 
 				device = []models.Device{
-					{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: image1.ID},
-					{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: image1.ID},
+					{OrgID: common.DefaultOrgID, UUID: faker.UUIDHyphenated(), ImageID: image1.ID},
+					{OrgID: common.DefaultOrgID, UUID: faker.UUIDHyphenated(), ImageID: image1.ID},
 				}
 
 			})
@@ -1614,6 +1616,34 @@ var _ = Describe("Image Service Test", func() {
 					count, err := service.GetImageDevicesCount(image2.ID)
 					Expect(err).To(BeNil())
 					Expect(count).To(Equal(int64(0)))
+				})
+			})
+			Context("Should not get Devices count image", func() {
+				conf := config.Get()
+				BeforeEach(func() {
+
+					conf.Auth = true
+
+				})
+				AfterEach(func() {
+					conf.Auth = false
+				})
+				It("GetImageDevicesCount should return error in case that OrgID not found", func() {
+					ctx := context.Background()
+					ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{
+						OrgID: ""}})
+					imageService := services.NewImageService(ctx, log.NewEntry(log.StandardLogger()))
+
+					_, err := imageService.GetImageDevicesCount(image2.ID)
+					Expect(err.Error()).To(Equal("cannot find org-id"))
+				})
+				It("GetUpdateInfo should return error when GetImageDevicesCount return error", func() {
+					ctx := context.Background()
+					ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{
+						OrgID: ""}})
+					imageService := services.NewImageService(ctx, log.NewEntry(log.StandardLogger()))
+					_, err1 := imageService.GetUpdateInfo(*image2)
+					Expect(err1.Error()).To(Equal("cannot find org-id"))
 				})
 			})
 		})
