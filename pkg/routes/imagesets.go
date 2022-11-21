@@ -41,13 +41,13 @@ func MakeImageSetsRouter(sub chi.Router) {
 		r.Use(ImageSetCtx)
 		r.With(validateFilterParams).With(common.Paginate).Get("/", GetImageSetsByID)
 	})
-	sub.With(ValidateQueryParams("imagesetimageview")).With(validateFilterParams).Route("/view/{imageSetID}", func(r chi.Router) {
+	sub.Route("/view/{imageSetID}", func(r chi.Router) {
 		r.Use(ImageSetViewCtx)
-		r.With(ValidateGetAllImagesSearchParams).With(common.Paginate).Get("/", GetImageSetViewByID)
-		r.With(ValidateGetAllImagesSearchParams).With(common.Paginate).Get("/versions", GetAllImageSetImagesView)
+		r.With(ValidateQueryParams("imagesetimageview")).With(validateFilterParams).With(common.Paginate).Get("/", GetImageSetViewByID)
+		r.With(ValidateQueryParams("imagesetimageview")).With(validateFilterParams).With(common.Paginate).Get("/versions", GetAllImageSetImagesView)
 		r.Route("/versions/{imageID}", func(rVersion chi.Router) {
 			rVersion.Use(ImageSetImageViewCtx)
-			rVersion.Get("/", GetImageSetImageView)
+			rVersion.With(ValidateQueryParams("imagesetimageview")).With(validateFilterParams).Get("/", GetImageSetImageView)
 		})
 	})
 }
