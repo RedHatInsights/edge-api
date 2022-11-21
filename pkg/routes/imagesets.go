@@ -43,11 +43,11 @@ func MakeImageSetsRouter(sub chi.Router) {
 	})
 	sub.Route("/view/{imageSetID}", func(r chi.Router) {
 		r.Use(ImageSetViewCtx)
-		r.With(ValidateQueryParams("imagesetimageview")).With(validateFilterParams).With(common.Paginate).Get("/", GetImageSetViewByID)
-		r.With(ValidateQueryParams("imagesetimageview")).With(validateFilterParams).With(common.Paginate).Get("/versions", GetAllImageSetImagesView)
+		r.With(ValidateQueryParams("imagesetimageview")).With(validateImageFilterParams).With(common.Paginate).Get("/", GetImageSetViewByID)
+		r.With(ValidateQueryParams("imagesetimageview")).With(validateImageFilterParams).With(common.Paginate).Get("/versions", GetAllImageSetImagesView)
 		r.Route("/versions/{imageID}", func(rVersion chi.Router) {
 			rVersion.Use(ImageSetImageViewCtx)
-			rVersion.With(ValidateQueryParams("imagesetimageview")).With(validateFilterParams).Get("/", GetImageSetImageView)
+			rVersion.With(ValidateQueryParams("imagesetimageview")).With(validateImageFilterParams).Get("/", GetImageSetImageView)
 		})
 	})
 }
@@ -348,14 +348,8 @@ func validateFilterParams(next http.Handler) http.Handler {
 			if string(val[0]) == "-" {
 				name = val[1:]
 			}
-			if strings.Contains(r.URL.RequestURI(), "/view/") {
-				if !contains(sortImageSetImageOption, name) {
-					errs = append(errs, common.ValidationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must %v", name, strings.Join(sortImageSetImageOption, " or "))})
-				}
-			} else {
-				if !contains(sortOption, name) {
-					errs = append(errs, common.ValidationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must %v", name, strings.Join(sortOption, " or "))})
-				}
+			if !contains(sortOption, name) {
+				errs = append(errs, common.ValidationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must %v", name, strings.Join(sortOption, " or "))})
 			}
 		}
 
@@ -366,10 +360,83 @@ func validateFilterParams(next http.Handler) http.Handler {
 			}
 		}
 
+		if val := r.URL.Query().Get("limit"); val != "" {
+			_, err := strconv.Atoi(val)
+			if err != nil {
+				errs = append(errs, common.ValidationError{Key: "limit", Reason: fmt.Sprintf("%s is not a valid limit type, limit must be an integer", val)})
+			}
+
+		}
+
+		if val := r.URL.Query().Get("offset"); val != "" {
+			_, err := strconv.Atoi(val)
+			if err != nil {
+				errs = append(errs, common.ValidationError{Key: "offset", Reason: fmt.Sprintf("%s is not a valid offset type, offset must be an integer", val)})
+			}
+
+		}
+
 		if val := r.URL.Query().Get("id"); val != "" {
 			_, err := strconv.Atoi(val)
 			if err != nil {
 				errs = append(errs, common.ValidationError{Key: "id", Reason: fmt.Sprintf("%s is not a valid id type, id must be an integer", val)})
+			}
+
+		}
+
+		if len(errs) == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		w.WriteHeader(http.StatusBadRequest)
+		if err := json.NewEncoder(w).Encode(&errs); err != nil {
+			services := dependencies.ServicesFromContext(r.Context())
+			services.Log.WithField("error", errs).Error("Error while trying to encode")
+		}
+	})
+}
+
+func validateImageFilterParams(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		errs := []common.ValidationError{}
+		if statuses, ok := r.URL.Query()["status"]; ok {
+			for _, status := range statuses {
+				if !contains(statusOption, strings.ToUpper(status)) {
+					errs = append(errs, common.ValidationError{Key: "status", Reason: fmt.Sprintf("%s is not a valid status. Status must be %s", status, strings.Join(validStatuses, " or "))})
+				}
+			}
+		}
+		if val := r.URL.Query().Get("sort_by"); val != "" {
+			name := val
+			if string(val[0]) == "-" {
+				name = val[1:]
+			}
+			if !contains(sortImageSetImageOption, name) {
+				errs = append(errs, common.ValidationError{Key: "sort_by", Reason: fmt.Sprintf("%s is not a valid sort_by. Sort-by must %v", name, strings.Join(sortImageSetImageOption, " or "))})
+			}
+		}
+
+		if val := r.URL.Query().Get("version"); val != "" {
+			_, err := strconv.Atoi(val)
+			if err != nil {
+				errs = append(errs, common.ValidationError{Key: "version", Reason: fmt.Sprintf("%s is not a valid version type, version must be number", val)})
+			}
+		}
+
+		if val := r.URL.Query().Get("limit"); val != "" {
+			_, err := strconv.Atoi(val)
+			if err != nil {
+				errs = append(errs, common.ValidationError{Key: "limit", Reason: fmt.Sprintf("%s is not a valid limit type, limit must be an integer", val)})
+			}
+
+		}
+
+		if val := r.URL.Query().Get("offset"); val != "" {
+			_, err := strconv.Atoi(val)
+			if err != nil {
+				errs = append(errs, common.ValidationError{Key: "offset", Reason: fmt.Sprintf("%s is not a valid offset type, offset must be an integer", val)})
 			}
 
 		}
