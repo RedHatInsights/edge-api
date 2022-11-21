@@ -64,6 +64,9 @@ var DeviceSyncCreate = &Flag{Name: "edge-management.device_sync_create", EnvVar:
 // DeviceSyncDelete is the feature flag for routes.CreateImageUpdate() EDA code
 var DeviceSyncDelete = &Flag{Name: "edge-management.device_sync_delete", EnvVar: "DEVICE_SYNC_DELETE"}
 
+// StorageImagesRepos is the feature flag to use storage.images-repos when updating images or creating ISO artifacts
+var StorageImagesRepos = &Flag{Name: "edge-management.storage_images_repos", EnvVar: "STORAGE_IMAGES_REPOS"}
+
 // (ADD FEATURE FLAGS ABOVE)
 // FEATURE FLAG CHECK CODE
 

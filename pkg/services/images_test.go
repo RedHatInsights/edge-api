@@ -5,6 +5,7 @@ package services_test
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
@@ -730,6 +731,55 @@ var _ = Describe("Image Service Test", func() {
 				Expect(image.Commit.OSTreeParentCommit).To(Equal(parentRepo.URL))
 				Expect(image.Commit.OSTreeParentRef).To(Equal("rhel/8/x86_64/edge"))
 				Expect(image.Commit.OSTreeRef).To(Equal("rhel/9/x86_64/edge"))
+			})
+		})
+		Context("edge-management.storage_images_repos feature", func() {
+			BeforeEach(func() {
+				// enable the feature
+				err := os.Setenv("STORAGE_IMAGES_REPOS", "True")
+				Expect(err).ToNot(HaveOccurred())
+			})
+			AfterEach(func() {
+				// disable the feature
+				os.Unsetenv("STORAGE_IMAGES_REPOS")
+			})
+			It("should have the parent image repo url set to edge api cert storage images-repos url", func() {
+				orgID := faker.UUIDHyphenated()
+				id, _ := faker.RandomInt(1)
+				uid := uint(id[0])
+				imageSet := &models.ImageSet{OrgID: orgID}
+				result := db.DB.Save(imageSet)
+				Expect(result.Error).To(Not(HaveOccurred()))
+				previousImage := &models.Image{
+					OrgID:        orgID,
+					Status:       models.ImageStatusSuccess,
+					Commit:       &models.Commit{RepoID: &uid, OrgID: orgID},
+					Version:      1,
+					Distribution: "rhel-86",
+					Name:         faker.Name(),
+					ImageSetID:   &imageSet.ID,
+				}
+				image := &models.Image{
+					OrgID:        orgID,
+					Commit:       &models.Commit{},
+					OutputTypes:  []string{models.ImageTypeCommit},
+					Version:      2,
+					Distribution: "rhel-90",
+					Name:         previousImage.Name,
+				}
+				result = db.DB.Save(previousImage)
+				Expect(result.Error).To(Not(HaveOccurred()))
+
+				expectedURL := fmt.Sprintf("http://cert.localhost:3000/api/edge/v1/storage/images-repos/%d", previousImage.ID)
+				expectedErr := fmt.Errorf("Failed creating commit for image")
+				mockImageBuilderClient.EXPECT().ComposeCommit(image).Return(image, expectedErr)
+
+				actualErr := service.UpdateImage(image, previousImage)
+
+				Expect(actualErr).To(HaveOccurred())
+				Expect(actualErr).To(MatchError(expectedErr))
+				Expect(image.Commit.ChangesRefs).To(BeTrue())
+				Expect(image.Commit.OSTreeParentCommit).To(Equal(expectedURL))
 			})
 		})
 	})
