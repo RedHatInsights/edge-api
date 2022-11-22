@@ -730,7 +730,7 @@ var _ = Describe("ImageSets Route Test", func() {
 		Context("imageSetIDView", func() {
 
 			It("The imageSetView end point is working as expected", func() {
-				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view/%d?limit=30&offset=0", imageSet1.ID), nil)
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view/%d", imageSet1.ID), nil)
 				Expect(err).ToNot(HaveOccurred())
 				mockImageSetService.EXPECT().GetImageSetViewByID(imageSet1.ID, 30, 0, gomock.Any()).Return(&services.ImageSetIDView{}, nil)
 
@@ -755,60 +755,13 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(rr.Code).To(Equal(http.StatusNotFound))
 			})
 			It("The imageSetView end point return not found when image not found", func() {
-				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view/%d?limit=30&offset=0", imageSet1.ID), nil)
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view/%d", imageSet1.ID), nil)
 				Expect(err).ToNot(HaveOccurred())
 				mockImageSetService.EXPECT().GetImageSetViewByID(imageSet1.ID, 30, 0, gomock.Any()).Return(nil, new(services.ImageNotFoundError))
 
 				rr := httptest.NewRecorder()
 				router.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(http.StatusNotFound))
-			})
-			It("should get an error passing unsuported query param", func() {
-				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view/%d?query=%s", imageSet1.ID, "some_string"), nil)
-				Expect(err).ToNot(HaveOccurred())
-
-				rr := httptest.NewRecorder()
-				router.ServeHTTP(rr, req)
-				Expect(rr.Code).To(Equal(http.StatusBadRequest))
-
-				var responseError []validationError
-				respBody, err := ioutil.ReadAll(rr.Body)
-
-				err = json.Unmarshal(respBody, &responseError)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(len(responseError)).To(Equal(1))
-				Expect(responseError[0].Reason).To(Equal("query is not a valid query param, supported query params: [limit offset version status sort_by]"))
-				Expect(responseError[0].Key).To(Equal("query"))
-			})
-			It("should get an error passing unsuported sort_by param", func() {
-				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view/%d?sort_by=%s", imageSet1.ID, "some_string"), nil)
-				Expect(err).ToNot(HaveOccurred())
-
-				rr := httptest.NewRecorder()
-				router.ServeHTTP(rr, req)
-				Expect(rr.Code).To(Equal(http.StatusBadRequest))
-
-				var responseError []validationError
-				respBody, err := ioutil.ReadAll(rr.Body)
-
-				err = json.Unmarshal(respBody, &responseError)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(len(responseError)).To(Equal(1))
-				Expect(responseError[0].Reason).To(Equal("some_string is not a valid sort_by. Sort-by must created_at or name or version"))
-				Expect(responseError[0].Key).To(Equal("sort_by"))
-			})
-			It("the image set view image version sort is responding as expected", func() {
-				sort_args := []string{"created_at", "name", "version"}
-				for _, sort_arg := range sort_args {
-					req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view/%d?sort_by=%s", imageSet1.ID, sort_arg), nil)
-					Expect(err).ToNot(HaveOccurred())
-
-					mockImageSetService.EXPECT().GetImageSetViewByID(imageSet1.ID, 30, 0, gomock.Any()).Return(&services.ImageSetIDView{}, nil)
-
-					rr := httptest.NewRecorder()
-					router.ServeHTTP(rr, req)
-					Expect(rr.Code).To(Equal(http.StatusOK))
-				}
 			})
 		})
 
