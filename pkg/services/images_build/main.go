@@ -6,33 +6,22 @@ import (
 	"context"
 	"encoding/json"
 	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/redhatinsights/edge-api/config"
+	l "github.com/redhatinsights/edge-api/logger" // is this one really needed with logrus?
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
+	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/image"
 	"github.com/redhatinsights/edge-api/pkg/services/utility"
 	log "github.com/sirupsen/logrus"
-
-	"github.com/confluentinc/confluent-kafka-go/kafka"
-
-	"github.com/redhatinsights/edge-api/config"
-
-	l "github.com/redhatinsights/edge-api/logger" // is this one really needed with logrus?
-	"github.com/redhatinsights/edge-api/pkg/db"
 )
 
-func main() {
-	// create a new context
-	ctx := context.Background()
-	// Init edge api services and attach them to the context
-	edgeAPIServices := dependencies.Init(ctx)
-	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
-	// create a base logger with fields to pass through the entire flow
+func initConsumerImageBuild(ctx context.Context) {
+	edgeAPIServices := dependencies.ServicesFromContext(ctx)
 	mslog := log.WithFields(log.Fields{"app": "edge", "service": "images"})
 
 	mslog.Info("Microservice started")
@@ -44,47 +33,69 @@ func main() {
 	config.LogConfigAtStartup(cfg)
 
 	db.InitDB()
+	if cfg.KafkaConfig.Brokers == nil {
+		mslog.WithField("error", "No kafka configuration found")
+		os.Exit(1)
+	}
 
-	if cfg.KafkaConfig.Brokers != nil {
-		consumerGroup := "imagesbuild"
+	consumerGroup := "imagesbuild"
+	c, err := edgeAPIServices.ConsumerService.GetConsumer(consumerGroup)
 
-		sigchan := make(chan os.Signal, 1)
-		signal.Notify(sigchan, os.Interrupt, syscall.SIGTERM)
+	if err != nil {
+		mslog.WithField("error", err.Error()).Error("Failed to create consumer")
+		os.Exit(1)
+	}
 
-		c, err := edgeAPIServices.ConsumerService.GetConsumer(consumerGroup)
+	mslog.WithField("consumer", c).Debug("Created Consumer")
 
-		if err != nil {
-			mslog.WithField("error", err.Error()).Error("Failed to create consumer")
-			os.Exit(1)
+	// TODO: define this by mapping topics to a microservice struct
+	// TODO: and nail record keys to the topic
+	// TODO: make this main.go a single run engine for all microservices
+	topics := []string{kafkacommon.TopicFleetmgmtImageBuild}
+	err = c.SubscribeTopics(topics, nil)
+	if err != nil {
+		mslog.Error("Subscribing to topics failed")
+		// TODO: handle retries
+		// TODO: handle notifications
+	}
+
+	mslog.Info("Microservice ready")
+
+	run := true
+	for run {
+		ev := c.Poll(100)
+		if ev == nil {
+			continue
 		}
 
-		mslog.WithField("consumer", c).Debug("Created Consumer")
+		// handling event metadata
+		switch e := ev.(type) {
+		case *kafka.Message:
+			key := string(e.Key)
+			mslog = mslog.WithFields(log.Fields{
+				"event_consumer_group": consumerGroup,
+				"event_topic":          *e.TopicPartition.Topic,
+				"event_partition":      e.TopicPartition.Partition,
+				"event_offset":         e.TopicPartition.Offset,
+				"event_recordkey":      string(e.Key),
+			})
+			mslog.WithField("message", string(e.Value)).Debug("Received an event")
 
-		// TODO: define this by mapping topics to a microservice struct
-		// TODO: and nail record keys to the topic
-		// TODO: make this main.go a single run engine for all microservices
-		topics := []string{kafkacommon.TopicFleetmgmtImageBuild}
-		err = c.SubscribeTopics(topics, nil)
-		if err != nil {
-			mslog.Error("Subscribing to topics failed")
-			// TODO: handle retries
-			// TODO: handle notifications
-		}
+			if e.Headers != nil {
+				mslog.WithField("headers", e.Headers).Debug("Headers received with the event")
+			}
 
-		mslog.Info("Microservice ready")
+			// route to specific event handler based on the event key
+			mslog.Debug("consumer is routing based on record key")
 
-		run := true
-		for run {
-			select {
-			case sig := <-sigchan:
-				mslog.WithField("signal", sig).Debug("Caught signal and terminating")
-				sleepTime := time.Duration(5)
-				time.Sleep(sleepTime)
-				run = false
-			default:
-				ev := c.Poll(100)
-				if ev == nil {
-					continue
+			switch key {
+			case models.EventTypeEdgeImageRequested:
+				crcEvent := &image.EventImageRequestedBuildHandler{}
+
+				err = json.Unmarshal(e.Value, crcEvent)
+				if err != nil {
+					mslog.Error("Failed to unmarshal CRC event")
+					break
 				}
 
 				// handling event metadata
@@ -165,4 +176,12 @@ func main() {
 		log.Info("Closing consumer\n")
 		c.Close()
 	}
+}
+func main() {
+	ctx := context.Background()
+	edgeAPIServices := dependencies.Init(ctx)
+	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+	mslog := log.WithFields(log.Fields{"app": "edge", "service": "images"})
+	ctx = utility.ContextWithLogger(ctx, mslog)
+	initConsumerImageBuild(ctx)
 }
