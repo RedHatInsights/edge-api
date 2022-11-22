@@ -7,9 +7,12 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+<<<<<<< HEAD
 	"os/signal"
 	"syscall"
 	"time"
+=======
+>>>>>>> eb585e83 (fix some comments)
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/redhatinsights/edge-api/config"
@@ -61,6 +64,7 @@ func initConsumer(ctx context.Context) error {
 	run := true
 	pollTime := 100
 	for run {
+<<<<<<< HEAD
 		select {
 		case sig := <-sigchan:
 			mslog.WithField("signal", sig).Debug("Caught signal and terminating")
@@ -87,6 +91,37 @@ func initConsumer(ctx context.Context) error {
 				mslog.WithField("message", string(e.Value)).Debug("Received an ISO event")
 				if e.Headers != nil {
 					mslog.WithField("headers", e.Headers).Debug("Headers received with the event")
+=======
+		ev := c.Poll(pollTime)
+		if ev == nil {
+			continue
+		}
+
+		// handling event metadata
+		switch e := ev.(type) {
+		case *kafka.Message:
+			key := string(e.Key)
+			mslog = mslog.WithFields(log.Fields{
+				"event_consumer_group": consumerGroup,
+				"event_topic":          *e.TopicPartition.Topic,
+				"event_partition":      e.TopicPartition.Partition,
+				"event_offset":         e.TopicPartition.Offset,
+				"event_recordkey":      string(e.Key),
+			})
+			mslog.WithField("message", string(e.Value)).Debug("Received an ISO event")
+			if e.Headers != nil {
+				mslog.WithField("headers", e.Headers).Debug("Headers received with the event")
+			}
+
+			switch key {
+			case models.EventTypeEdgeImageISORequested:
+				crcEvent := &image.EventImageISORequestedBuildHandler{}
+
+				err = json.Unmarshal(e.Value, crcEvent)
+				if err != nil {
+					mslog.Error("Failed to unmarshal CRC ISO event")
+					break
+>>>>>>> eb585e83 (fix some comments)
 				}
 
 				switch key {
@@ -99,6 +134,7 @@ func initConsumer(ctx context.Context) error {
 						break
 					}
 
+<<<<<<< HEAD
 					mslog = mslog.WithField("event_id", crcEvent.ID)
 					ctx = utility.ContextWithLogger(ctx, mslog)
 
@@ -123,6 +159,19 @@ func initConsumer(ctx context.Context) error {
 				}
 			default:
 				log.WithField("event", e).Warning("Event ignored")
+=======
+			// commit the Kafka offset
+			_, err := c.Commit()
+			if err != nil {
+				mslog.WithField("error", err).Error("Error storing offset after ISO message")
+			}
+			continue
+		case *kafka.Error:
+			// terminate the application if all brokers are down.
+			log.WithFields(log.Fields{"code": e.Code(), "error": e}).Error("Exiting ISO loop due to Kafka broker issue")
+			if e.Code() == kafka.ErrAllBrokersDown {
+				run = false
+>>>>>>> eb585e83 (fix some comments)
 			}
 		}
 	}
@@ -137,6 +186,10 @@ func main() {
 	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 	mslog := log.WithFields(log.Fields{"app": "edge", "service": "images"})
 	ctx = utility.ContextWithLogger(ctx, mslog)
+<<<<<<< HEAD
+=======
+	ctx = utility.ContextWithLogger(ctx, mslog)
+>>>>>>> eb585e83 (fix some comments)
 	err := initConsumer(ctx)
 	exitCode := 0
 	if err != nil {
@@ -145,5 +198,8 @@ func main() {
 	}
 	logger.FlushLogger()
 	os.Exit(exitCode)
+<<<<<<< HEAD
 
+=======
+>>>>>>> eb585e83 (fix some comments)
 }

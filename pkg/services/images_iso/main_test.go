@@ -135,7 +135,7 @@ var _ = Describe("Image Iso Kafka Consumer Test", func() {
 					kafkaError := kafka.NewError(kafka.ErrAllBrokersDown, "Error", true)
 					mockConsumer.EXPECT().Poll(timeout).Return(&kafkaError).AnyTimes()
 					errResult := initConsumer(ctx)
-					Expect(errResult).ToNot(BeNil())
+					Expect(errResult).To(BeNil())
 				})
 			})
 		})
@@ -148,7 +148,6 @@ var _ = Describe("Image Iso Kafka Consumer Test", func() {
 					mockConsumerService.EXPECT().GetConsumer(consumerGroupID).Return(nil, errors.New("failed to get ISO consumer"))
 					errResult := initConsumer(ctx)
 					Expect(errResult).ToNot(BeNil())
-
 				})
 			})
 		})
