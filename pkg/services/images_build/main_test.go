@@ -86,12 +86,13 @@ var _ = Describe("Image Iso Kafka Consumer Test", func() {
 						Commit: &models.Commit{
 							OSTreeCommit: faker.UUIDHyphenated(),
 							OrgID:        common.DefaultOrgID,
+							Status:       "BUILDING",
 						},
 						Status:     models.ImageStatusSuccess,
 						ImageSetID: &imageSet.ID,
 						Version:    1,
 						OrgID:      common.DefaultOrgID,
-						Name:       gomock.Any().String(),
+						Name:       "test",
 					}
 					edgePayload := &models.EdgeImageRequestedEventPayload{
 						EdgeBasePayload: models.EdgeBasePayload{
@@ -130,9 +131,9 @@ var _ = Describe("Image Iso Kafka Consumer Test", func() {
 					mockConsumerService.EXPECT().GetConsumer(consumerGroupID).Return(mockConsumer, nil)
 					mockConsumer.EXPECT().SubscribeTopics(gomock.Any(), gomock.Any())
 					mockConsumer.EXPECT().Poll(timeout).Return(&kafkaMessage)
-					mockConsumer.EXPECT().Commit().AnyTimes()
+					mockConsumer.EXPECT().Commit().Times(1)
 					kafkaError := kafka.NewError(kafka.ErrAllBrokersDown, "Error", true)
-					mockConsumer.EXPECT().Poll(timeout).Return(&kafkaError).AnyTimes()
+					mockConsumer.EXPECT().Poll(timeout).Return(kafkaError).Times(1)
 					initConsumerImageBuild(ctx)
 				})
 			})

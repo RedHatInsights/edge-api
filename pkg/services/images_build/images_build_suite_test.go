@@ -9,5 +9,5 @@ import (
 
 func TestClients(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Clients Suite")
+	RunSpecs(t, "Images Build Suite")
 }
