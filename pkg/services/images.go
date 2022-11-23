@@ -341,15 +341,23 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		}
 	}
 	if previousSuccessfulImage != nil {
-		// Always get the repo URL from the previous successful Image's commit
-		repo, err := s.RepoService.GetRepoByID(previousSuccessfulImage.Commit.RepoID)
-		if err != nil {
-			s.log.WithField("error", err.Error()).Error("Commit repo wasn't found on the database")
-			err := errors.NewBadRequest(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.Commit.ID))
-			return err
+		if feature.StorageImagesRepos.IsEnabled() {
+			image.Commit.OSTreeParentCommit = fmt.Sprintf(
+				"%s/api/edge/v1/storage/images-repos/%d",
+				config.Get().EdgeCertAPIBaseURL,
+				previousSuccessfulImage.ID,
+			)
+		} else {
+			// Always get the repo URL from the previous successful Image's commit
+			repo, err := s.RepoService.GetRepoByID(previousSuccessfulImage.Commit.RepoID)
+			if err != nil {
+				s.log.WithField("error", err.Error()).Error("Commit repo wasn't found on the database")
+				err := errors.NewBadRequest(fmt.Sprintf("Commit repo wasn't found in the database: #%v", image.Commit.ID))
+				return err
+			}
+			image.Commit.OSTreeParentCommit = repo.URL
 		}
 
-		image.Commit.OSTreeParentCommit = repo.URL
 		if config.DistributionsRefs[previousSuccessfulImage.Distribution] != config.DistributionsRefs[image.Distribution] {
 			image.Commit.ChangesRefs = true
 		}
