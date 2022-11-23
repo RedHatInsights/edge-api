@@ -4,7 +4,6 @@ package routes
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -91,22 +90,14 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 	playbook, err := services.UpdateService.GetUpdatePlaybook(update)
 	if err != nil {
 		services.Log.WithField("error", err.Error()).Error("Error getting update playbook")
-		err := errors.NewNotFound("file was not found on the S3 bucket")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		respondWithAPIError(w, services.Log, errors.NewNotFound("file was not found on the S3 bucket"))
 		return
 	}
 	defer playbook.Close()
 	_, err = io.Copy(w, playbook)
 	if err != nil {
 		services.Log.WithField("error", err.Error()).Error("Error reading the update playbook")
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		respondWithAPIError(w, services.Log, errors.NewInternalServerError())
 		return
 	}
 }
@@ -126,17 +117,11 @@ func GetUpdates(w http.ResponseWriter, r *http.Request) {
 		services.Log.WithFields(log.Fields{
 			"error": result.Error.Error(),
 		}).Error("Error retrieving updates")
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		respondWithAPIError(w, services.Log, errors.NewInternalServerError())
 		return
 	}
 
-	if err := json.NewEncoder(w).Encode(&updates); err != nil {
-		services.Log.WithField("error", updates).Error("Error while trying to encode")
-	}
+	respondWithJSONBody(w, services.Log, &updates)
 }
 
 func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTransaction {
@@ -291,15 +276,13 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 
 // GetUpdateByID obtains an update from the database for an orgID
 func GetUpdateByID(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
 	update := getUpdate(w, r)
 	if update == nil {
 		// Error set by UpdateCtx already
 		return
 	}
-	if err := json.NewEncoder(w).Encode(update); err != nil {
-		services := dependencies.ServicesFromContext(r.Context())
-		services.Log.WithField("error", update).Error("Error while trying to encode")
-	}
+	respondWithJSONBody(w, ctxServices.Log, update)
 }
 
 func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction {
@@ -315,23 +298,19 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction
 // SendNotificationForDevice TMP route to validate
 func SendNotificationForDevice(w http.ResponseWriter, r *http.Request) {
 	if update := getUpdate(w, r); update != nil {
-		services := dependencies.ServicesFromContext(r.Context())
-		notify, err := services.UpdateService.SendDeviceNotification(update)
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		notify, err := ctxServices.UpdateService.SendDeviceNotification(update)
 		if err != nil {
-			services.Log.WithField("error", err.Error()).Error("Failed to retry to send notification")
+			ctxServices.Log.WithField("error", err.Error()).Error("Failed to retry to send notification")
 			err := errors.NewInternalServerError()
 			err.SetTitle("Failed creating image")
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-			}
+			respondWithAPIError(w, ctxServices.Log, err)
 			return
 		}
-		services.Log.WithField("StatusOK", http.StatusOK).Info("Writing Header")
+		ctxServices.Log.WithField("StatusOK", http.StatusOK).Info("Writing Header")
+
 		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(notify); err != nil {
-			services.Log.WithField("error", notify).Error("Error while trying to encode")
-		}
+		respondWithJSONBody(w, ctxServices.Log, &notify)
 	}
 }
 
@@ -394,6 +373,7 @@ var updateFilters = common.ComposeFilters(
 // ValidateGetUpdatesFilterParams validate the query params that sent to /updates endpoint
 func ValidateGetUpdatesFilterParams(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctxServices := dependencies.ServicesFromContext(r.Context())
 		var errs []validationError
 
 		// "created_at" validation
@@ -424,9 +404,6 @@ func ValidateGetUpdatesFilterParams(next http.Handler) http.Handler {
 			return
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(&errs); err != nil {
-			ctxServices := dependencies.ServicesFromContext(r.Context())
-			ctxServices.Log.WithField("error", errs).Error("Error while trying to encode device groups filter validation errors")
-		}
+		respondWithJSONBody(w, ctxServices.Log, &errs)
 	})
 }

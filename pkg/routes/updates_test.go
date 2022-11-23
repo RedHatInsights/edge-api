@@ -34,9 +34,9 @@ func TestGetUpdateByID(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
+	ctx = context.WithValue(ctx, UpdateContextKey, &testUpdates[0])
 	rr := httptest.NewRecorder()
-
-	ctx := context.WithValue(req.Context(), UpdateContextKey, &testUpdates[0])
 	handler := http.HandlerFunc(GetUpdateByID)
 	handler.ServeHTTP(rr, req.WithContext(ctx))
 
