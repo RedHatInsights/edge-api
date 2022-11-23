@@ -789,7 +789,7 @@ paths:
       parameters:
         - name: sort_by
           in: query
-          description: "Define sort fields: Created_at, Name, Status. To sort DESC use -"
+          description: "Define sort fields: Created_at, updated_at, Name, Status. To sort DESC use -"
           schema:
             type: string
         - name: name
@@ -852,7 +852,7 @@ paths:
       parameters:
         - name: sort_by
           in: query
-          description: "Define sort fields: created_at, name. To sort DESC use -"
+          description: "Define sort fields: created_at, updated_at, name. To sort DESC use -"
           schema:
             type: string
         - name: name
