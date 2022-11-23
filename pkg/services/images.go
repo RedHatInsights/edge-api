@@ -1743,11 +1743,31 @@ func (s *ImageService) DeleteImage(i *models.Image) error {
 		return new(ImageNotInErrorState)
 	}
 
+	// if this is the only image in an image set, delete the set also
+	var imageSet models.ImageSet
+	result := db.Org(i.OrgID, "").Preload("Images").Where("(name = ?)", i.Name).First(&imageSet)
+	if result.Error != nil {
+		s.log.WithFields(
+			log.Fields{"Image_id": i.ID, "error": result.Error},
+		).Error("Error when getting image set")
+		return result.Error
+	}
+
 	if result := db.DB.Delete(&i); result.Error != nil {
 		s.log.WithFields(
 			log.Fields{"Image_id": i.ID, "error": result.Error},
 		).Error("Error when deleting image")
 		return result.Error
 	}
+
+	if len(imageSet.Images) <= 1 {
+		if result := db.DB.Delete(&imageSet); result.Error != nil {
+			s.log.WithFields(
+				log.Fields{"Image_id": i.ID, "error": result.Error},
+			).Error("Error when deleting image set")
+			return result.Error
+		}
+	}
+
 	return nil
 }
