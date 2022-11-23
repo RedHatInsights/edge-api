@@ -5,7 +5,6 @@ package routes
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -123,11 +122,12 @@ func ImageByIDCtx(next http.Handler) http.Handler {
 				return
 			}
 			if image.OrgID != "" && image.OrgID != orgID {
+				errMessage := "image and session org mismatch"
 				s.Log.WithFields(log.Fields{
-					"error":  err.Error(),
-					"org_id": orgID,
-				}).Error("image doesn't belong to org_id")
-				respondWithAPIError(w, s.Log, errors.NewBadRequest("image doesn't belong to org_id"))
+					"image_org_id": image.OrgID,
+					"org_id":       orgID,
+				}).Error(errMessage)
+				respondWithAPIError(w, s.Log, errors.NewBadRequest(errMessage))
 				return
 			}
 			ctx := context.WithValue(r.Context(), imageKey, image)
@@ -437,21 +437,13 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	countResult := db.OrgDB(orgID, imageFilters(r, db.DB.Model(&models.Image{})), "images").Count(&count)
 	if countResult.Error != nil {
 		ctxServices.Log.WithField("error", countResult.Error.Error()).Error("Error retrieving images")
-		countErr := errors.NewInternalServerError()
-		w.WriteHeader(countErr.GetStatus())
-		if err := json.NewEncoder(w).Encode(&countErr); err != nil {
-			ctxServices.Log.WithField("error", countErr).Error("Error while trying to encode")
-		}
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
 	result = db.OrgDB(orgID, result, "images").Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Preload("Commit.Repo").Preload("CustomPackages").Preload("ThirdPartyRepositories").Joins("Commit").Joins("Installer").Find(&images)
 	if result.Error != nil {
 		ctxServices.Log.WithField("error", result.Error.Error()).Error("Error retrieving images")
-		err := errors.NewInternalServerError()
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			ctxServices.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
 	respondWithJSONBody(w, ctxServices.Log, map[string]interface{}{"data": &images, "count": count})
@@ -569,21 +561,18 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 	image := getImage(w, r)
 
 	go func(id uint, ctx context.Context) {
-		services := dependencies.ServicesFromContext(ctx)
+		ctxServices := dependencies.ServicesFromContext(ctx)
 		var img *models.Image
-		result := db.DB.Joins("Commit").Joins("Installer").First(&img, id)
-		if result.Error != nil {
-			services.Log.WithField("error", result.Error.Error()).Debug("Query error")
-			err := errors.NewBadRequest(result.Error.Error())
-			w.WriteHeader(err.GetStatus())
-			if err := json.NewEncoder(w).Encode(&err); err != nil {
-				services.Log.WithField("error", result.Error.Error()).Error("Error while trying to encode")
-			}
+		if result := db.DB.Joins("Commit").Joins("Installer").First(&img, id); result.Error != nil {
+			ctxServices.Log.WithField("error", result.Error.Error()).Debug("error while trying to get image")
 			return
 		}
-		db.DB.First(&img.Commit, img.CommitID)
-		if _, err := services.ImageService.CreateRepoForImage(ctx, img); err != nil {
-			services.Log.WithField("error", err).Error("Failed to create repo")
+		if result := db.DB.First(&img.Commit, img.CommitID); result.Error != nil {
+			ctxServices.Log.WithField("error", result.Error.Error()).Debug("error while trying to get image commit")
+			return
+		}
+		if _, err := ctxServices.ImageService.CreateRepoForImage(ctx, img); err != nil {
+			ctxServices.Log.WithField("error", err).Error("Failed to create repo")
 		}
 	}(image.ID, r.Context())
 
@@ -740,7 +729,7 @@ func SendNotificationForImage(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			ctxServices.Log.WithField("error", err.Error()).Error("Failed to retry to send notification")
 			err := errors.NewInternalServerError()
-			err.SetTitle("Failed creating image")
+			err.SetTitle("Failed to send notification")
 			respondWithAPIError(w, ctxServices.Log, err)
 			return
 		}

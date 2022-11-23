@@ -4,7 +4,6 @@ package routes
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -116,35 +115,37 @@ func ImageSetCtx(next http.Handler) http.Handler {
 			s.Log = s.Log.WithField("imageSetID", imageSetID)
 			_, err := strconv.Atoi(imageSetID)
 			if err != nil {
-				err := errors.NewBadRequest(err.Error())
-				w.WriteHeader(err.GetStatus())
-				if err := json.NewEncoder(w).Encode(&err); err != nil {
-					s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-				}
+				errMessage := "imageSetID must be of type integer"
+				s.Log.WithField("error", err.Error()).Error(errMessage)
+				respondWithAPIError(w, s.Log, errors.NewBadRequest(errMessage))
 				return
 			}
 			result := db.Org(orgID, "").Where("Image_sets.id = ?", imageSetID).First(&imageSet)
 
 			if result.Error != nil {
-				err := errors.NewNotFound(result.Error.Error())
-				w.WriteHeader(err.GetStatus())
-				if err := json.NewEncoder(w).Encode(&err); err != nil {
-					s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+				s.Log.WithFields(log.Fields{"error": result.Error.Error(), "image_set_id": imageSetID}).Error("error getting image-set")
+				var apiError errors.APIError
+				switch result.Error {
+				case gorm.ErrRecordNotFound:
+					apiError = errors.NewNotFound("record not found")
+				default:
+					apiError = errors.NewInternalServerError()
 				}
+				respondWithAPIError(w, s.Log, apiError)
 				return
 			}
 			if imageSet.Images != nil {
 				result := db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
 				if result.Error != nil {
-					s.Log.WithField("error", result.Error.Error()).Debug("Result error")
-					err := errors.NewBadRequest(result.Error.Error())
-					w.WriteHeader(err.GetStatus())
-					if err := json.NewEncoder(w).Encode(&err); err != nil {
-						s.Log.WithField("error", result.Error.Error()).Error("Error while trying to encode")
-					}
+					s.Log.WithField("error", result.Error.Error()).Debug("error when getting image-set images")
+					respondWithAPIError(w, s.Log, errors.NewInternalServerError())
 					return
 				}
-				db.DB.Where("id = ?", &imageSet.Images[len(imageSet.Images)-1].InstallerID).Find(&imageSet.Images[len(imageSet.Images)-1].Installer)
+				if result := db.DB.Where("id = ?", &imageSet.Images[len(imageSet.Images)-1].InstallerID).Find(&imageSet.Images[len(imageSet.Images)-1].Installer); result.Error != nil {
+					s.Log.WithField("error", result.Error.Error()).Debug("error when getting image installer")
+					respondWithAPIError(w, s.Log, errors.NewInternalServerError())
+					return
+				}
 			}
 			ctx := context.WithValue(r.Context(), imageSetKey, &imageSet)
 			next.ServeHTTP(w, r.WithContext(ctx))
@@ -178,11 +179,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 
 	if countResult.Error != nil {
 		s.Log.WithField("error", countResult.Error.Error()).Error("Error counting results for image sets list")
-		countErr := errors.NewInternalServerError()
-		w.WriteHeader(countErr.GetStatus())
-		if err := json.NewEncoder(w).Encode(&countErr); err != nil {
-			s.Log.WithField("error", countErr.Error()).Error("Error while trying to encode")
-		}
+		respondWithAPIError(w, s.Log, errors.NewInternalServerError())
 		return
 	}
 
@@ -209,12 +206,8 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 
 	}
 	if result.Error != nil {
-		s.Log.WithField("error", result.Error.Error()).Error("Image sets not found")
-		err := errors.NewBadRequest("Not Found")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		s.Log.WithField("error", result.Error.Error()).Error("error while getting Image-sets")
+		respondWithAPIError(w, s.Log, errors.NewInternalServerError())
 		return
 	}
 	for idx, img := range imageSet {
@@ -245,24 +238,21 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		imageSetInfo = append(imageSetInfo, imgSet)
 	}
 	if result.Error != nil {
-		s.Log.WithField("error", result.Error.Error()).Error("Image sets not found")
-		err := errors.NewBadRequest("Not Found")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
+		s.Log.WithField("error", result.Error.Error()).Error("error occurred while getting Image sets image installer")
+		var apiError errors.APIError
+		switch result.Error {
+		case gorm.ErrRecordNotFound:
+			apiError = errors.NewNotFound("image-set image installer not found")
+		default:
+			apiError = errors.NewInternalServerError()
 		}
+		respondWithAPIError(w, s.Log, apiError)
 		return
 	}
-
-	if err := json.NewEncoder(w).Encode(&common.EdgeAPIPaginatedResponse{
+	respondWithJSONBody(w, s.Log, &common.EdgeAPIPaginatedResponse{
 		Count: count,
 		Data:  imageSetInfo,
-	}); err != nil {
-		s.Log.WithField("error", &common.EdgeAPIPaginatedResponse{
-			Count: count,
-			Data:  imageSetInfo,
-		}).Error("Error while trying to encode")
-	}
+	})
 }
 
 // ImageSetImagePackages return info related to details on images from imageset
@@ -287,11 +277,9 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	imageSet, ok := ctx.Value(imageSetKey).(*models.ImageSet)
 	if !ok {
-		err := errors.NewBadRequest("Must pass image set id")
-		w.WriteHeader(err.GetStatus())
-		if err := json.NewEncoder(w).Encode(&err); err != nil {
-			s.Log.WithField("error", err.Error()).Error("Error while trying to encode")
-		}
+		s.Log.Error("image-set not found in the context")
+		respondWithAPIError(w, s.Log, errors.NewBadRequest("image-set not found in the context"))
+		return
 	}
 	result := imageDetailFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Debug().Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
 		Preload("Commit.Repo").Preload("Commit.InstalledPackages").Preload("Installer").
@@ -322,19 +310,15 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		details.ImageBuildISOURL = img.Installer.ImageBuildISOURL
 	}
 
-	if err := json.NewEncoder(w).Encode(&common.EdgeAPIPaginatedResponse{
+	respondWithJSONBody(w, s.Log, &common.EdgeAPIPaginatedResponse{
 		Data:  &details,
 		Count: int64(len(images)),
-	}); err != nil {
-		s.Log.WithField("error", &common.EdgeAPIPaginatedResponse{Data: &details,
-			Count: int64(len(images)),
-		}).Error("Error while trying to encode")
-	}
+	})
 }
 
 func validateFilterParams(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
+		ctxServices := dependencies.ServicesFromContext(r.Context())
 		errs := []common.ValidationError{}
 		if statuses, ok := r.URL.Query()["status"]; ok {
 			for _, status := range statuses {
@@ -390,16 +374,13 @@ func validateFilterParams(next http.Handler) http.Handler {
 		}
 
 		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(&errs); err != nil {
-			services := dependencies.ServicesFromContext(r.Context())
-			services.Log.WithField("error", errs).Error("Error while trying to encode")
-		}
+		respondWithJSONBody(w, ctxServices.Log, &errs)
 	})
 }
 
 func validateImageFilterParams(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
+		ctxServices := dependencies.ServicesFromContext(r.Context())
 		errs := []common.ValidationError{}
 		if statuses, ok := r.URL.Query()["status"]; ok {
 			for _, status := range statuses {
@@ -447,10 +428,7 @@ func validateImageFilterParams(next http.Handler) http.Handler {
 		}
 
 		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(&errs); err != nil {
-			services := dependencies.ServicesFromContext(r.Context())
-			services.Log.WithField("error", errs).Error("Error while trying to encode")
-		}
+		respondWithJSONBody(w, ctxServices.Log, &errs)
 	})
 }
 
