@@ -50,6 +50,7 @@ type ImageServiceInterface interface {
 	CreateRepoForImage(context.Context, *models.Image) (*models.Repo, error)
 	CreateInstallerForImage(context.Context, *models.Image) (*models.Image, chan error, error)
 	GetImageByID(id string) (*models.Image, error)
+	GetImageDevicesCount(imageId uint) (int64, error)
 	GetUpdateInfo(image models.Image) ([]models.ImageUpdateAvailable, error)
 	AddPackageInfo(image *models.Image) (ImageDetail, error)
 	GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error)
@@ -1456,10 +1457,18 @@ func (s *ImageService) GetUpdateInfo(image models.Image) ([]models.ImageUpdateAv
 			return nil, err
 		}
 		var delta models.ImageUpdateAvailable
+		imageDevicesCount, err := s.GetImageDevicesCount(image.ID)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Could not find device image info")
+			return nil, err
+		}
 		diff := GetDiffOnUpdate(image, upd)
 		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
 		delta.Image = upd
 		delta.PackageDiff = diff
+		totalPackages := len(image.Commit.InstalledPackages)
+		delta.Image.TotalPackages = totalPackages
+		delta.Image.TotalDevicesWithImage = imageDevicesCount
 		imageDiff = append(imageDiff, delta)
 	}
 	return imageDiff, nil
@@ -1658,6 +1667,23 @@ func (s *ImageService) GetImagesViewCount(tx *gorm.DB) (int64, error) {
 		return 0, result.Error
 	}
 
+	return count, nil
+}
+
+// GetImageDevicesCount returns a list of devices running an image in an org.
+func (s *ImageService) GetImageDevicesCount(imageId uint) (int64, error) {
+	orgID, err := common.GetOrgIDFromContext(s.ctx)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error getting orgID from context")
+		return 0, err
+	}
+
+	var count int64
+	res := db.Org(orgID, "").Model(&models.Device{}).Where("image_id =? ", imageId).Count(&count)
+	if res.Error != nil {
+		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
+		return 0, res.Error
+	}
 	return count, nil
 }
 

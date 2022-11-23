@@ -789,7 +789,7 @@ paths:
       parameters:
         - name: sort_by
           in: query
-          description: "Define sort fields: Created_at, Name, Status. To sort DESC use -"
+          description: "Define sort fields: Created_at, updated_at, Name, Status. To sort DESC use -"
           schema:
             type: string
         - name: name
@@ -852,7 +852,7 @@ paths:
       parameters:
         - name: sort_by
           in: query
-          description: "Define sort fields: created_at, name. To sort DESC use -"
+          description: "Define sort fields: created_at, updated_at, name. To sort DESC use -"
           schema:
             type: string
         - name: name
@@ -910,31 +910,6 @@ paths:
           in: path
           required: true
           description: the image-set id
-          schema:
-            type: integer
-        - name: sort_by
-          in: query
-          description: "Define sort fields: created_at, version, To sort DESC use -"
-          schema:
-            type: string
-        - name: status
-          in: query
-          description: "field: filter by status"
-          schema:
-            type: string
-        - name: version
-          in: query
-          description: 'field: filter by version'
-          schema:
-            type: string
-        - name: limit
-          in: query
-          description: "field: return number of images until limit is reached. Default is 100."
-          schema:
-            type: integer
-        - name: offset
-          in: query
-          description: "field: return number of images beginning at the offset."
           schema:
             type: integer
       responses:
