@@ -1511,7 +1511,7 @@ var _ = Describe("Image Service Test", func() {
 	Describe("delete image", func() {
 		When("image is in error state", func() {
 			Context("by id", func() {
-				It("image is deleted successfully", func() {
+				It("image and image set is deleted successfully", func() {
 					orgID := common.DefaultOrgID
 					imageSet := models.ImageSet{OrgID: orgID, Name: faker.Name()}
 					db.DB.Create(&imageSet)
@@ -1525,6 +1525,43 @@ var _ = Describe("Image Service Test", func() {
 					db.DB.Create(&image1)
 					err := service.DeleteImage(&image1)
 					Expect(err).To(BeNil())
+					var tempImage models.Image
+					res := db.DB.First(&tempImage, image1)
+					Expect(res.Error.Error()).Should(Equal("record not found"))
+					var tempImageSet models.ImageSet
+					res = db.DB.First(&tempImageSet, imageSet)
+					Expect(res.Error.Error()).Should(Equal("record not found"))
+				})
+				It("image is deleted successfully", func() {
+					orgID := common.DefaultOrgID
+					imageSet := models.ImageSet{OrgID: orgID, Name: faker.Name()}
+					db.DB.Create(&imageSet)
+					image1 := models.Image{
+						OrgID:      orgID,
+						Name:       imageSet.Name,
+						ImageSetID: &imageSet.ID,
+						Version:    1,
+						Status:     models.ImageStatusError,
+					}
+					image2 := models.Image{
+						OrgID:      orgID,
+						Name:       imageSet.Name,
+						ImageSetID: &imageSet.ID,
+						Version:    1,
+						Status:     models.ImageStatusError,
+					}
+					db.DB.Create(&image1)
+					db.DB.Create(&image2)
+					err := service.DeleteImage(&image1)
+					Expect(err).To(BeNil())
+					var tempImage models.Image
+					res := db.DB.First(&tempImage, image1)
+					Expect(res.Error.Error()).Should(Equal("record not found"))
+					res = db.DB.First(&tempImage, image2)
+					Expect(res.Error).To(BeNil())
+					var tempImageSet models.ImageSet
+					res = db.DB.First(&tempImageSet, imageSet)
+					Expect(res.Error).To(BeNil())
 				})
 			})
 		})
@@ -1562,6 +1599,24 @@ var _ = Describe("Image Service Test", func() {
 					}
 					err := service.DeleteImage(&image2)
 					Expect(err).ToNot(BeNil())
+				})
+			})
+		})
+		When("image set has not been saved ", func() {
+			Context("by id", func() {
+				It("delete image errors", func() {
+					orgID := common.DefaultOrgID
+					id := uint(0)
+					imageSet := models.ImageSet{OrgID: orgID, Name: faker.Name()}
+					image2 := models.Image{
+						OrgID:      orgID,
+						Name:       imageSet.Name,
+						ImageSetID: &id,
+						Version:    1,
+						Status:     models.ImageStatusError,
+					}
+					err := service.DeleteImage(&image2)
+					Expect(err.Error()).Should(Equal("record not found"))
 				})
 			})
 		})
