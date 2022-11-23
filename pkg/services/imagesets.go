@@ -251,6 +251,39 @@ func (s *ImageSetsService) GetImagesViewData(imageSetID uint, imagesLimit int, i
 	return &ImagesViewData{Count: imagesCount, Data: *imagesView}, nil
 }
 
+// preloadImageSetImageData preload the image related data one by one instead of doing a general gorm preload.
+func (s *ImageSetsService) preloadImageSetImageData(image *models.Image) error {
+	if err := db.DB.Model(&image).Association("Packages").Find(&image.Packages); err != nil {
+		s.log.WithField("error", err.Error()).Error("error occurred when preloading image.Packages data")
+		return err
+	}
+	if err := db.DB.Model(&image).Association("CustomPackages").Find(&image.CustomPackages); err != nil {
+		s.log.WithField("error", err.Error()).Error("error occurred when preloading image.CustomPackages data")
+		return err
+	}
+	if image.InstallerID != nil {
+		if res := db.DB.First(&image.Installer, *image.InstallerID); res.Error != nil {
+			s.log.WithField("error", res.Error.Error()).Error("error occurred when preloading image.Installer data")
+			return res.Error
+		}
+	}
+	if res := db.DB.First(&image.Commit, image.CommitID); res.Error != nil {
+		s.log.WithField("error", res.Error.Error()).Error("error occurred when preloading image.Commit data")
+		return res.Error
+	}
+	if image.Commit.RepoID != nil {
+		if res := db.DB.First(&image.Commit.Repo, *image.Commit.RepoID); res.Error != nil {
+			s.log.WithField("error", res.Error.Error()).Error("error occurred when preloading image.Commit.Repo data")
+			return res.Error
+		}
+	}
+	if err := db.DB.Debug().Model(image.Commit).Association("InstalledPackages").Find(&image.Commit.InstalledPackages); err != nil {
+		s.log.WithField("error", err.Error()).Error("error occurred when preloading image.Commit.InstalledPackages data")
+		return err
+	}
+	return nil
+}
+
 // GetImageSetViewByID return the data related to image set, data, build iso url, last image and images view.
 func (s *ImageSetsService) GetImageSetViewByID(imageSetID uint, imagesLimit int, imagesOffSet int, imagesDBFilter *gorm.DB) (*ImageSetIDView, error) {
 	orgID, err := common.GetOrgIDFromContext(s.ctx)
@@ -278,12 +311,6 @@ func (s *ImageSetsService) GetImageSetViewByID(imageSetID uint, imagesLimit int,
 	var lastImage models.Image
 	// get the last image-set image
 	if result := db.Org(orgID, "").Order("created_at DESC").
-		Preload("Packages").
-		Preload("CustomPackages").
-		Preload("Installer").
-		Preload("Commit").
-		Preload("Commit.Repo").
-		Preload("Commit.InstalledPackages").
 		Where("image_set_id = ?", imageSetID).First(&lastImage); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("image-set last image not found")
@@ -291,6 +318,13 @@ func (s *ImageSetsService) GetImageSetViewByID(imageSetID uint, imagesLimit int,
 		}
 		s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("error getting image-set last-image")
 		return nil, result.Error
+	}
+
+	// seems gorm will preload all the data from all the images of the image set , that may affect performance if the image-set
+	// has too many images, loading the data one by one is the only way to ensure we are loading only the needed one
+	if err := s.preloadImageSetImageData(&lastImage); err != nil {
+		s.log.WithField("error", err.Error()).Error("error occurred when preloading image data")
+		return nil, err
 	}
 
 	imageInfo, err := imageService.AddPackageInfo(&lastImage)
@@ -337,12 +371,6 @@ func (s *ImageSetsService) GetImageSetImageViewByID(imageSetID uint, imageID uin
 	var image models.Image
 	// get the image-set image
 	if result := db.Org(orgID, "").Order("created_at DESC").
-		Preload("Packages").
-		Preload("CustomPackages").
-		Preload("Commit").
-		Preload("Commit.Repo").
-		Preload("Commit.InstalledPackages").
-		Preload("Installer").
 		Where("image_set_id = ?", imageSetID).First(&image, imageID); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("image-set image not found")
@@ -350,6 +378,13 @@ func (s *ImageSetsService) GetImageSetImageViewByID(imageSetID uint, imageID uin
 		}
 		s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("error getting image-set image")
 		return nil, result.Error
+	}
+
+	// seems gorm will preload all the data from all the images of the image set , that may affect performance if the image-set
+	// has too many images, loading the data one by one is the only way to ensure we are loading only the needed one
+	if err := s.preloadImageSetImageData(&image); err != nil {
+		s.log.WithField("error", err.Error()).Error("error occurred when preloading image data")
+		return nil, err
 	}
 
 	imageInfo, err := imageService.AddPackageInfo(&image)
