@@ -351,6 +351,108 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(img).ToNot(BeNil())
 		Expect(img.Commit.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
 	})
+
+	Context("edge-management.storage_images_repos  feature", func() {
+		BeforeEach(func() {
+			err := os.Setenv("STORAGE_IMAGES_REPOS", "True")
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			os.Unsetenv("STORAGE_IMAGES_REPOS")
+		})
+
+		It("when repo url use cert endpoint rhsm is true", func() {
+			composeJobID := faker.UUIDHyphenated()
+			orgID := faker.UUIDHyphenated()
+			repoURL := fmt.Sprintf("%s/api/edge/v1/storage/images-repos/12345", config.Get().EdgeCertAPIBaseURL)
+			dist := "rhel-84"
+			newDist := "rhel-85"
+
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var req ComposeRequest
+				body, err := io.ReadAll(r.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(body).ToNot(BeNil())
+				err = json.Unmarshal(body, &req)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(req.ImageRequests[0].Ostree.URL).To(Equal(repoURL))
+				Expect(req.ImageRequests[0].Ostree.ContentURL).To(Equal(repoURL))
+				Expect(req.ImageRequests[0].Ostree.RHSM).To(BeTrue())
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusCreated)
+				_, err = fmt.Fprintf(w, `{"id": "%s"}`, composeJobID)
+				Expect(err).ToNot(HaveOccurred())
+			}))
+			defer ts.Close()
+			config.Get().ImageBuilderConfig.URL = ts.URL
+
+			img := &models.Image{Distribution: dist,
+				Name:  faker.Name(),
+				OrgID: orgID,
+				Commit: &models.Commit{
+					OrgID:              orgID,
+					Arch:               "x86_64",
+					Repo:               &models.Repo{},
+					OSTreeRef:          config.DistributionsRefs[newDist],
+					OSTreeParentRef:    config.DistributionsRefs[dist],
+					OSTreeParentCommit: repoURL,
+				},
+			}
+
+			img, err := client.ComposeCommit(img)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(img).ToNot(BeNil())
+			Expect(img.Commit.ComposeJobID).To(Equal(composeJobID))
+		})
+
+		It("ComposeInstaller use cert endpoint with rhsm true", func() {
+			composeJobID := faker.UUIDHyphenated()
+			orgID := faker.UUIDHyphenated()
+			dist := "rhel-84"
+			newDist := "rhel-85"
+			img := models.Image{Distribution: dist,
+				Name:      faker.Name(),
+				OrgID:     orgID,
+				Installer: &models.Installer{OrgID: orgID},
+				Commit: &models.Commit{
+					OrgID:              orgID,
+					Arch:               "x86_64",
+					Repo:               &models.Repo{},
+					OSTreeRef:          config.DistributionsRefs[newDist],
+					OSTreeParentRef:    config.DistributionsRefs[dist],
+					OSTreeParentCommit: faker.URL(),
+				},
+			}
+			result := db.DB.Create(&img)
+			Expect(result.Error).ToNot(HaveOccurred())
+			expectedRepoURL := fmt.Sprintf("%s/api/edge/v1/storage/images-repos/%d", config.Get().EdgeCertAPIBaseURL, img.ID)
+
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var req ComposeRequest
+				body, err := io.ReadAll(r.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(body).ToNot(BeNil())
+				err = json.Unmarshal(body, &req)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(req.ImageRequests[0].Ostree.URL).To(Equal(expectedRepoURL))
+				Expect(req.ImageRequests[0].Ostree.ContentURL).To(Equal(expectedRepoURL))
+				Expect(req.ImageRequests[0].Ostree.RHSM).To(BeTrue())
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusCreated)
+				_, err = fmt.Fprintf(w, `{"id": "%s"}`, composeJobID)
+				Expect(err).ToNot(HaveOccurred())
+			}))
+			defer ts.Close()
+			config.Get().ImageBuilderConfig.URL = ts.URL
+
+			image, err := client.ComposeInstaller(&img)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(image).ToNot(BeNil())
+			Expect(image.Installer.ComposeJobID).To(Equal(composeJobID))
+		})
+	})
+
 	Describe("get thirdpartyrepo information", func() {
 		Context("when thirdpartyrepo information does exists", func() {
 			It("should have third party repository url as payloadrepository baseurl", func() {

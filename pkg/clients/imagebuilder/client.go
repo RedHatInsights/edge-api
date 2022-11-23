@@ -18,6 +18,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 )
 
 // ClientInterface is an Interface to make request to ImageBuilder
@@ -45,9 +46,11 @@ func InitClient(ctx context.Context, log *log.Entry) *Client {
 
 // OSTree gives OSTree information for an image
 type OSTree struct {
-	URL       string `json:"url,omitempty"`
-	Ref       string `json:"ref"`
-	ParentRef string `json:"parent,omitempty"`
+	URL        string `json:"url,omitempty"`
+	ContentURL string `json:"contenturl,omitempty"`
+	RHSM       bool   `json:"rhsm,omitempty"`
+	Ref        string `json:"ref"`
+	ParentRef  string `json:"parent,omitempty"`
 }
 
 // Customizations is made of the packages that are baked into an image
@@ -253,6 +256,11 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 			req.ImageRequests[0].Ostree = &OSTree{}
 		}
 		req.ImageRequests[0].Ostree.URL = image.Commit.OSTreeParentCommit
+		if feature.StorageImagesRepos.IsEnabled() {
+			req.ImageRequests[0].Ostree.RHSM = true
+			// because of some redirect failures (SSL connect), use the same url as URL
+			req.ImageRequests[0].Ostree.ContentURL = req.ImageRequests[0].Ostree.URL
+		}
 
 		if image.Commit.OSTreeRef != "" && image.Commit.OSTreeParentRef != "" && image.Commit.OSTreeRef != image.Commit.OSTreeParentRef {
 			req.ImageRequests[0].Ostree.ParentRef = image.Commit.OSTreeParentRef
@@ -273,6 +281,16 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 // ComposeInstaller composes a Installer on ImageBuilder
 func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 	pkgs := make([]string, 0)
+	var repoURL string
+	var rhsm bool
+	if feature.StorageImagesRepos.IsEnabled() {
+		repoURL = fmt.Sprintf("%s/api/edge/v1/storage/images-repos/%d", config.Get().EdgeCertAPIBaseURL, image.ID)
+		rhsm = true
+	} else {
+		repoURL = image.Commit.Repo.URL
+		rhsm = false
+	}
+
 	req := &ComposeRequest{
 		Customizations: &Customizations{
 			Packages: &pkgs,
@@ -284,8 +302,10 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 				Architecture: image.Commit.Arch,
 				ImageType:    models.ImageTypeInstaller,
 				Ostree: &OSTree{
-					Ref: image.Commit.OSTreeRef,
-					URL: image.Commit.Repo.URL,
+					Ref:        image.Commit.OSTreeRef,
+					URL:        repoURL,
+					ContentURL: repoURL, // because of some redirect failures (SSL connect), use the same url as URL
+					RHSM:       rhsm,
 				},
 				UploadRequest: &UploadRequest{
 					Options: make(map[string]string),
