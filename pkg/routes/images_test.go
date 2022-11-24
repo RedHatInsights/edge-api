@@ -814,8 +814,7 @@ func TestDeleteImageFail(t *testing.T) {
 
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	reterr := errors.New("Error")
-	mockImageService.EXPECT().DeleteImage(gomock.Any()).Return(reterr)
+	mockImageService.EXPECT().DeleteImage(gomock.Any()).Return(new(services.ImageNotInErrorState))
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),
