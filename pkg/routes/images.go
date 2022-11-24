@@ -522,6 +522,8 @@ func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 			imgDetail.UpdateAdded = len(upd[len(upd)-1].PackageDiff.Removed)
 			imgDetail.UpdateRemoved = len(upd[len(upd)-1].PackageDiff.Added)
 			imgDetail.UpdateUpdated = len(upd[len(upd)-1].PackageDiff.Upgraded)
+			imgDetail.Image.TotalDevicesWithImage = upd[len(upd)-1].Image.TotalDevicesWithImage
+			imgDetail.Image.TotalPackages = upd[len(upd)-1].Image.TotalPackages
 		} else {
 			imgDetail.UpdateAdded = 0
 			imgDetail.UpdateRemoved = 0
