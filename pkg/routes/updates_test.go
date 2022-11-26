@@ -386,7 +386,7 @@ var _ = Describe("Update routes", func() {
 				handler.ServeHTTP(rr, req)
 
 				var response common.APIResponse
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, _ := ioutil.ReadAll(rr.Body)
 				err = json.Unmarshal(respBody, &response)
 
 				Expect(rr.Code).To(Equal(http.StatusOK))
@@ -531,7 +531,7 @@ var _ = Describe("Update routes", func() {
 
 				respBody, err := ioutil.ReadAll(responseRecorder.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(string(respBody)).To(ContainSubstring("Commit %d not valid to update", image.CommitID))
+				Expect(string(respBody)).To(ContainSubstring("%d Commit is not valid for update", image.CommitID))
 			})
 		})
 	})
@@ -603,8 +603,8 @@ var _ = Describe("Update routes", func() {
 				handler.ServeHTTP(rr, req)
 
 				var response common.APIResponse
-				respBody, err := ioutil.ReadAll(rr.Body)
-				err = json.Unmarshal(respBody, &response)
+				respBody, _ := ioutil.ReadAll(rr.Body)
+				_ = json.Unmarshal(respBody, &response)
 
 				responseRecorder := httptest.NewRecorder()
 				handler.ServeHTTP(responseRecorder, req)
@@ -631,7 +631,7 @@ var _ = Describe("Update routes", func() {
 				handler.ServeHTTP(rr, req)
 
 				var response common.APIResponse
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, _ := ioutil.ReadAll(rr.Body)
 				err = json.Unmarshal(respBody, &response)
 
 				Expect(rr.Code).To(Equal(http.StatusOK))
@@ -658,7 +658,7 @@ var _ = Describe("Update routes", func() {
 				handler.ServeHTTP(rr, req)
 
 				var response common.APIResponse
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, _ := ioutil.ReadAll(rr.Body)
 				err = json.Unmarshal(respBody, &response)
 
 				Expect(rr.Code).To(Equal(http.StatusOK))
