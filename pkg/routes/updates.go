@@ -286,10 +286,11 @@ func GetUpdateByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
 	ctx := r.Context()
 	update, ok := ctx.Value(UpdateContextKey).(*models.UpdateTransaction)
 	if !ok {
-		// Error set by UpdateCtx already
+		respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("update-transaction not found in context"))
 		return nil
 	}
 	return update
@@ -303,7 +304,7 @@ func SendNotificationForDevice(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			ctxServices.Log.WithField("error", err.Error()).Error("Failed to retry to send notification")
 			err := errors.NewInternalServerError()
-			err.SetTitle("Failed creating image")
+			err.SetTitle("Failed to send notification")
 			respondWithAPIError(w, ctxServices.Log, err)
 			return
 		}
