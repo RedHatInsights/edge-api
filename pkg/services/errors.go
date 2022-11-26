@@ -49,7 +49,6 @@ const SomeDevicesDoesNotExistsMsg = "image-set not found for all devices"
 const KafkaAllBrokersDownMsg = "Cannot connect to any Kafka brokers"
 const DBCommitErrorMsg = "Error searching for ImageSet of Device Images"
 
-
 // DeviceNotFoundError indicates the device was not found
 type DeviceNotFoundError struct{}
 

@@ -10,7 +10,7 @@ import (
 func TestDeviceNotFoundError(t *testing.T) {
 	testCases := []struct {
 		expectedErr error
-		expectedMsg	string
+		expectedMsg string
 	}{
 		{new(services.DeviceNotFoundError), services.DeviceNotFoundErrorMsg},
 		{new(services.UpdateNotFoundError), services.UpdateNotFoundErrorMsg},
@@ -58,13 +58,12 @@ func TestDeviceNotFoundError(t *testing.T) {
 		{new(services.DBCommitError), services.DBCommitErrorMsg},
 	}
 
-
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("Testing for %T", tc.expectedErr), func(t *testing.T) {
 			errMsg := tc.expectedErr.Error()
 			if errMsg != tc.expectedMsg {
 				t.Errorf("Got error message '%s', Expected '%s'.", errMsg, tc.expectedMsg)
-			}	
+			}
 		})
 	}
 }
