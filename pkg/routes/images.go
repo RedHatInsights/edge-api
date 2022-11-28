@@ -770,7 +770,7 @@ func DeleteImage(w http.ResponseWriter, r *http.Request) {
 		var responseErr errors.APIError
 		switch err.(type) {
 		case *services.ImageNotInErrorState:
-			responseErr = errors.NewBadRequest("Given image is not in ERROR state, it can't be delted")
+			responseErr = errors.NewBadRequest("Given image is not in ERROR state, it can't be deleted")
 		default:
 			responseErr = errors.NewInternalServerError()
 			responseErr.SetTitle("Failed deleting image")
