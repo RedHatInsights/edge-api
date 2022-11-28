@@ -16,6 +16,8 @@ import (
 	"testing"
 	"time"
 
+	apiError "github.com/redhatinsights/edge-api/pkg/errors"
+
 	"github.com/bxcodec/faker/v3"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -535,7 +537,10 @@ var _ = Describe("Update routes", func() {
 
 				respBody, err := ioutil.ReadAll(responseRecorder.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(string(respBody)).To(ContainSubstring("%d Commit is not valid for update", image.CommitID))
+
+				var response apiError.BadRequest
+				err = json.Unmarshal(respBody, &response)
+				Expect(response.Title).To(Equal(fmt.Sprintf("Commit %d is not valid for update", image.CommitID)))
 			})
 		})
 	})
