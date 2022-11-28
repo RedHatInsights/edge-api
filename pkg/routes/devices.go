@@ -4,7 +4,6 @@ package routes
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -97,6 +96,7 @@ var devicesFilters = common.ComposeFilters(
 // ValidateGetAllDevicesFilterParams validate the query params that sent to /devices endpoint
 func ValidateGetAllDevicesFilterParams(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctxServices := dependencies.ServicesFromContext(r.Context())
 		var errs []validationError
 		// "uuid" validation
 		if val := r.URL.Query().Get("uuid"); val != "" {
@@ -115,10 +115,7 @@ func ValidateGetAllDevicesFilterParams(next http.Handler) http.Handler {
 			return
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		if err := json.NewEncoder(w).Encode(&errs); err != nil {
-			ctxServices := dependencies.ServicesFromContext(r.Context())
-			ctxServices.Log.WithField("error", errs).Error("Error while trying to encode devices filter validation errors")
-		}
+		respondWithJSONBody(w, ctxServices.Log, &errs)
 	})
 }
 

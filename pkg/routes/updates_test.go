@@ -6,12 +6,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/redhatinsights/edge-api/config"
@@ -20,6 +23,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 
+	"github.com/go-chi/chi"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -34,9 +38,9 @@ func TestGetUpdateByID(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
+	ctx = context.WithValue(ctx, UpdateContextKey, &testUpdates[0])
 	rr := httptest.NewRecorder()
-
-	ctx := context.WithValue(req.Context(), UpdateContextKey, &testUpdates[0])
 	handler := http.HandlerFunc(GetUpdateByID)
 	handler.ServeHTTP(rr, req.WithContext(ctx))
 
@@ -386,7 +390,7 @@ var _ = Describe("Update routes", func() {
 				handler.ServeHTTP(rr, req)
 
 				var response common.APIResponse
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, _ := ioutil.ReadAll(rr.Body)
 				err = json.Unmarshal(respBody, &response)
 
 				Expect(rr.Code).To(Equal(http.StatusOK))
@@ -531,7 +535,7 @@ var _ = Describe("Update routes", func() {
 
 				respBody, err := ioutil.ReadAll(responseRecorder.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(string(respBody)).To(ContainSubstring("Commit %d not valid to update", image.CommitID))
+				Expect(string(respBody)).To(ContainSubstring("%d Commit is not valid for update", image.CommitID))
 			})
 		})
 	})
@@ -603,8 +607,8 @@ var _ = Describe("Update routes", func() {
 				handler.ServeHTTP(rr, req)
 
 				var response common.APIResponse
-				respBody, err := ioutil.ReadAll(rr.Body)
-				err = json.Unmarshal(respBody, &response)
+				respBody, _ := ioutil.ReadAll(rr.Body)
+				_ = json.Unmarshal(respBody, &response)
 
 				responseRecorder := httptest.NewRecorder()
 				handler.ServeHTTP(responseRecorder, req)
@@ -631,7 +635,7 @@ var _ = Describe("Update routes", func() {
 				handler.ServeHTTP(rr, req)
 
 				var response common.APIResponse
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, _ := ioutil.ReadAll(rr.Body)
 				err = json.Unmarshal(respBody, &response)
 
 				Expect(rr.Code).To(Equal(http.StatusOK))
@@ -658,7 +662,7 @@ var _ = Describe("Update routes", func() {
 				handler.ServeHTTP(rr, req)
 
 				var response common.APIResponse
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, _ := ioutil.ReadAll(rr.Body)
 				err = json.Unmarshal(respBody, &response)
 
 				Expect(rr.Code).To(Equal(http.StatusOK))
@@ -714,6 +718,358 @@ var _ = Describe("Update routes", func() {
 				Expect(found).To(BeTrue(), fmt.Sprintf("in %q: was expected to have %v but not found in %v", te.name, exErr, jsonBody))
 			}
 		}
+	})
+
+	Context("ValidateGetUpdatesFilterParams", func() {
+		ctrl := gomock.NewController(GinkgoT())
+		defer ctrl.Finish()
+		mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+
+		It("filters and sort_by working as expected", func() {
+
+			tt := []struct {
+				name          string
+				params        string
+				expectedError []validationError
+			}{
+				{
+					name:          "good ASC sort_by",
+					params:        "sort_by=updated_at",
+					expectedError: nil,
+				},
+				{
+					name:          "good DESC sort_by",
+					params:        "sort_by=-updated_at",
+					expectedError: nil,
+				},
+				{
+					name:   "bad created_at date",
+					params: "created_at=today",
+					expectedError: []validationError{
+						{Key: "created_at", Reason: `parsing time "today" as "2006-01-02": cannot parse "today" as "2006"`},
+					},
+				},
+				{
+					name:   "bad created_at date",
+					params: "updated_at=today",
+					expectedError: []validationError{
+						{Key: "updated_at", Reason: `parsing time "today" as "2006-01-02": cannot parse "today" as "2006"`},
+					},
+				},
+				{
+					name:   "bad sort_by",
+					params: "sort_by=test",
+					expectedError: []validationError{
+						{Key: "sort_by", Reason: "test is not a valid sort_by. Sort-by must be created_at or updated_at"},
+					},
+				},
+			}
+
+			next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+			for _, te := range tt {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/updates?%s", te.params), nil)
+				Expect(err).ToNot(HaveOccurred())
+				w := httptest.NewRecorder()
+
+				ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{
+					ImageService: mockImageService,
+					Log:          log.NewEntry(log.StandardLogger()),
+				})
+				req = req.WithContext(ctx)
+
+				ValidateGetUpdatesFilterParams(next).ServeHTTP(w, req)
+				if te.expectedError == nil {
+					Expect(w.Code).To(Equal(http.StatusOK))
+					continue
+				}
+				Expect(w.Code).To(Equal(http.StatusBadRequest))
+				resp := w.Result()
+				var jsonBody []validationError
+				err = json.NewDecoder(resp.Body).Decode(&jsonBody)
+				Expect(err).ToNot(HaveOccurred())
+				for _, exErr := range te.expectedError {
+					found := false
+					for _, jsErr := range jsonBody {
+						if jsErr.Key == exErr.Key && jsErr.Reason == exErr.Reason {
+							found = true
+							break
+						}
+					}
+					Expect(found).To(BeTrue(), fmt.Sprintf("in %q: was expected to have %v but not found in %v", te.name, exErr, jsonBody))
+				}
+			}
+		})
+	})
+
+	Context("update end-points", func() {
+
+		var ctrl *gomock.Controller
+		var router chi.Router
+		var mockUpdateService *mock_services.MockUpdateServiceInterface
+		var edgeAPIServices *dependencies.EdgeAPIServices
+
+		BeforeEach(func() {
+			ctrl = gomock.NewController(GinkgoT())
+			mockUpdateService = mock_services.NewMockUpdateServiceInterface(ctrl)
+			edgeAPIServices = &dependencies.EdgeAPIServices{
+				UpdateService: mockUpdateService,
+				Log:           log.NewEntry(log.StandardLogger()),
+			}
+			router = chi.NewRouter()
+			router.Use(func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					ctx := dependencies.ContextWithServices(r.Context(), edgeAPIServices)
+					next.ServeHTTP(w, r.WithContext(ctx))
+				})
+			})
+			router.Route("/updates", MakeUpdatesRouter)
+		})
+		AfterEach(func() {
+			ctrl.Finish()
+		})
+
+		Context("GetUpdatePlaybook", func() {
+
+			updateTransaction := models.UpdateTransaction{
+				OrgID: common.DefaultOrgID,
+				Repo:  &models.Repo{URL: faker.URL(), Status: models.ImageStatusSuccess},
+			}
+			res := db.DB.Create(&updateTransaction)
+
+			It("should return the requested resource content", func() {
+				Expect(res.Error).ToNot(HaveOccurred())
+				req, err := http.NewRequest("GET", fmt.Sprintf("/updates/%d/update-playbook.yml", updateTransaction.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				fileContent := "this is a simple file content"
+
+				fileContentReader := strings.NewReader(fileContent)
+				fileContentReadCloser := io.NopCloser(fileContentReader)
+				mockUpdateService.EXPECT().GetUpdatePlaybook(gomock.Any()).Return(fileContentReadCloser, nil)
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusOK))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(Equal(fileContent))
+			})
+
+			It("should return error UpdateService.GetUpdatePlaybook return error", func() {
+				Expect(res.Error).ToNot(HaveOccurred())
+				req, err := http.NewRequest("GET", fmt.Sprintf("/updates/%d/update-playbook.yml", updateTransaction.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				expectedError := errors.New("error resource not found")
+				mockUpdateService.EXPECT().GetUpdatePlaybook(gomock.Any()).Return(nil, expectedError)
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusNotFound))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("file was not found on the S3 bucket"))
+			})
+
+			It("should return error when updateTransaction does not exist in context", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/updates/%d/update-playbook.yml", updateTransaction.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+
+				ctx := dependencies.ContextWithServices(context.Background(), edgeAPIServices)
+				req = req.WithContext(ctx)
+				handler := http.HandlerFunc(GetUpdatePlaybook)
+
+				handler.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusNotFound))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("update-transaction not found in context"))
+			})
+		})
+
+		Context("GetUpdates", func() {
+			It("should return update transactions", func() {
+				updateTransaction1 := models.UpdateTransaction{
+					OrgID: common.DefaultOrgID,
+					Repo:  &models.Repo{URL: faker.URL(), Status: models.ImageStatusSuccess},
+				}
+				res1 := db.DB.Create(&updateTransaction1)
+				updateTransaction2 := models.UpdateTransaction{
+					OrgID: common.DefaultOrgID,
+					Repo:  &models.Repo{URL: faker.URL(), Status: models.ImageStatusSuccess},
+				}
+				res2 := db.DB.Create(&updateTransaction2)
+
+				Expect(res1.Error).ToNot(HaveOccurred())
+				Expect(res2.Error).ToNot(HaveOccurred())
+				req, err := http.NewRequest("GET", "/updates?sort_by=-created_at&limit=2", nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusOK))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).ToNot(BeEmpty())
+
+				var respUpdates []models.UpdateTransaction
+				err = json.Unmarshal(respBody, &respUpdates)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(respUpdates)).To(Equal(2))
+				Expect(respUpdates[0].ID).To(Equal(updateTransaction2.ID))
+				Expect(respUpdates[1].ID).To(Equal(updateTransaction1.ID))
+			})
+			Context("empty org", func() {
+				originalAuth := config.Get().Auth
+				BeforeEach(func() {
+					config.Get().Auth = true
+				})
+
+				AfterEach(func() {
+					config.Get().Auth = originalAuth
+				})
+
+				It("should return error when org is not set  in context", func() {
+					req, err := http.NewRequest("GET", "/updates", nil)
+					Expect(err).ToNot(HaveOccurred())
+
+					httpTestRecorder := httptest.NewRecorder()
+
+					ctx := dependencies.ContextWithServices(context.Background(), edgeAPIServices)
+					ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: ""}})
+					req = req.WithContext(ctx)
+					handler := http.HandlerFunc(GetUpdates)
+
+					handler.ServeHTTP(httpTestRecorder, req)
+
+					Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+					respBody, err := io.ReadAll(httpTestRecorder.Body)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(string(respBody)).To(ContainSubstring("cannot find org-id"))
+				})
+			})
+		})
+
+		Context("GetUpdateByID", func() {
+			updateTransaction := models.UpdateTransaction{
+				OrgID: common.DefaultOrgID,
+				Repo:  &models.Repo{URL: faker.URL(), Status: models.ImageStatusSuccess},
+			}
+			res := db.DB.Create(&updateTransaction)
+
+			It("should return update transaction successfully", func() {
+				Expect(res.Error).ToNot(HaveOccurred())
+				req, err := http.NewRequest("GET", fmt.Sprintf("/updates/%d", updateTransaction.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusOK))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).ToNot(BeEmpty())
+
+				var respUpdate models.UpdateTransaction
+				err = json.Unmarshal(respBody, &respUpdate)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(respUpdate.ID).To(Equal(updateTransaction.ID))
+			})
+
+			It("should return error when transaction does not exist", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/updates/%d", 9999999999), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusNotFound))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("update not found"))
+			})
+
+			It("should return error when updateTransaction does not exist in context", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/updates/%d", updateTransaction.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+
+				ctx := dependencies.ContextWithServices(context.Background(), edgeAPIServices)
+				req = req.WithContext(ctx)
+				handler := http.HandlerFunc(GetUpdateByID)
+
+				handler.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusNotFound))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("update-transaction not found in context"))
+			})
+
+		})
+
+		Context("SendNotificationForDevice", func() {
+			updateTransaction := models.UpdateTransaction{
+				OrgID: common.DefaultOrgID,
+				Repo:  &models.Repo{URL: faker.URL(), Status: models.ImageStatusSuccess},
+			}
+			res := db.DB.Create(&updateTransaction)
+
+			notification := services.ImageNotification{
+				Version:     services.NotificationConfigVersion,
+				Bundle:      services.NotificationConfigBundle,
+				Application: services.NotificationConfigApplication,
+				EventType:   services.NotificationConfigEventTypeImage,
+				Timestamp:   time.Now().Format(time.RFC3339),
+			}
+
+			It("should send notification successfully", func() {
+				Expect(res.Error).ToNot(HaveOccurred())
+
+				req, err := http.NewRequest("GET", fmt.Sprintf("/updates/%d/notify", updateTransaction.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockUpdateService.EXPECT().SendDeviceNotification(gomock.Any()).Return(notification, nil)
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusOK))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).ToNot(BeEmpty())
+
+				var resNotification services.ImageNotification
+				err = json.Unmarshal(respBody, &resNotification)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(resNotification.Version).To(Equal(notification.Version))
+				Expect(resNotification.EventType).To(Equal(notification.EventType))
+			})
+			It("should return error when send notification failed", func() {
+				Expect(res.Error).ToNot(HaveOccurred())
+
+				req, err := http.NewRequest("GET", fmt.Sprintf("/updates/%d/notify", updateTransaction.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				expectedErr := errors.New("notification error")
+				mockUpdateService.EXPECT().SendDeviceNotification(gomock.Any()).Return(notification, expectedErr)
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusInternalServerError))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("Failed to send notification"))
+			})
+		})
 	})
 })
 
