@@ -185,6 +185,8 @@ func TestGetAllImageSetsQueryParameters(t *testing.T) {
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 	for _, te := range tt {
 		req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets?%s", te.params), nil)
+		ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
+		req = req.WithContext(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -234,11 +236,31 @@ func TestSearchParams(t *testing.T) {
 			},
 		},
 		{
+			name:          "good sort_by",
+			params:        "sort_by=-name",
+			expectedError: nil,
+		},
+		{
 			name:   "bad sort_by and status",
 			params: "sort_by=host&status=ONHOLD",
 			expectedError: []validationError{
 				{Key: "sort_by", Reason: "host is not a valid sort_by. Sort-by must created_at or updated_at or name"},
 				{Key: "status", Reason: "ONHOLD is not a valid status. Status must be CREATED or BUILDING or ERROR or SUCCESS"},
+			},
+		},
+		{
+			name:   "bad limit and offset",
+			params: "limit=bad_limit&offset=bad_offset",
+			expectedError: []validationError{
+				{Key: "limit", Reason: "bad_limit is not a valid limit type, limit must be an integer"},
+				{Key: "offset", Reason: "bad_offset is not a valid offset type, offset must be an integer"},
+			},
+		},
+		{
+			name:   "bad version",
+			params: "version=bad_version",
+			expectedError: []validationError{
+				{Key: "version", Reason: "bad_version is not a valid version type, version must be number"},
 			},
 		},
 	}
@@ -249,11 +271,19 @@ func TestSearchParams(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
+		req = req.WithContext(ctx)
 		w := httptest.NewRecorder()
 		validateFilterParams(next).ServeHTTP(w, req)
 
 		resp := w.Result()
 		jsonBody := []validationError{}
+		if te.expectedError == nil {
+			if w.Code != http.StatusOK {
+				t.Errorf("in %q: was expected to return status code 200 but returned %d", te.name, w.Code)
+			}
+			continue
+		}
 		err = json.NewDecoder(resp.Body).Decode(&jsonBody)
 		if err != nil {
 			t.Errorf("failed decoding response body: %s", err.Error())
@@ -309,6 +339,8 @@ func TestDetailSearchParams(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
+		req = req.WithContext(ctx)
 		w := httptest.NewRecorder()
 		validateFilterParams(next).ServeHTTP(w, req)
 
@@ -908,7 +940,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(responseError[0].Key).To(Equal("sort_by"))
 			})
 			It("the image set view image version sort is responding as expected", func() {
-				sort_args := []string{"created_at", "name", "version"}
+				sort_args := []string{"created_at", "name", "version", "-version"}
 				for _, sort_arg := range sort_args {
 					req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view/%d/versions?sort_by=%s", imageSet1.ID, sort_arg), nil)
 					Expect(err).ToNot(HaveOccurred())
@@ -920,6 +952,75 @@ var _ = Describe("ImageSets Route Test", func() {
 					Expect(rr.Code).To(Equal(http.StatusOK))
 				}
 			})
+			It("should get an error passing unsupported version param", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view/%d/versions?version=%s", imageSet1.ID, "some_string"), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusBadRequest))
+
+				var responseError []validationError
+				respBody, err := ioutil.ReadAll(rr.Body)
+
+				err = json.Unmarshal(respBody, &responseError)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(responseError)).To(Equal(1))
+				Expect(responseError[0].Reason).To(Equal("some_string is not a valid version type, version must be number"))
+				Expect(responseError[0].Key).To(Equal("version"))
+			})
+			It("should get an error passing unsupported limit param", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view/%d/versions?limit=%s", imageSet1.ID, "some_string"), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusBadRequest))
+
+				var responseError []validationError
+				respBody, err := ioutil.ReadAll(rr.Body)
+
+				err = json.Unmarshal(respBody, &responseError)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(responseError)).To(Equal(1))
+				Expect(responseError[0].Reason).To(Equal("some_string is not a valid limit type, limit must be an integer"))
+				Expect(responseError[0].Key).To(Equal("limit"))
+			})
+			It("should get an error passing unsupported offset param", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view/%d/versions?offset=%s", imageSet1.ID, "some_string"), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusBadRequest))
+
+				var responseError []validationError
+				respBody, err := ioutil.ReadAll(rr.Body)
+
+				err = json.Unmarshal(respBody, &responseError)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(responseError)).To(Equal(1))
+				Expect(responseError[0].Reason).To(Equal("some_string is not a valid offset type, offset must be an integer"))
+				Expect(responseError[0].Key).To(Equal("offset"))
+			})
+			It("should get an error passing unsupported status param", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view/%d/versions?status=%s", imageSet1.ID, "invalid_status"), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusBadRequest))
+
+				var responseError []validationError
+				respBody, err := ioutil.ReadAll(rr.Body)
+
+				err = json.Unmarshal(respBody, &responseError)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(responseError)).To(Equal(1))
+				Expect(responseError[0].Reason).To(Equal("invalid_status is not a valid status. Status must be CREATED or BUILDING or ERROR or SUCCESS"))
+				Expect(responseError[0].Key).To(Equal("status"))
+			})
+
 		})
 	})
 })

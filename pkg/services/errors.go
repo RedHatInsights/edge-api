@@ -4,172 +4,217 @@ package services
 
 import "errors"
 
+const DeviceNotFoundErrorMsg = "Device was not found"
+const UpdateNotFoundErrorMsg = "Update was not found"
+const ImageNotFoundErrorMsg = "image was not found"
+const ImageSetNotFoundErrorMsg = "image-set was not found"
+const AccountOrOrgIDNotSetMsg = "Account or orgID is not set"
+const AccountNotSetMsg = "Account is not set"
+const OrgIDNotSetMsg = "Org ID is not set"
+const IDMustBeIntegerMsg = "ID needs to be an integer"
+const ThirdPartyRepositoryNotFoundMsg = "third party repository was not found"
+const ThirdPartyRepositoryAlreadyExistsMsg = "custom repository already exists"
+const ThirdPartyRepositoryNameIsEmptyMsg = "custom repository name cannot be empty"
+const ThirdPartyRepositoryURLIsEmptyMsg = "custom repository URL cannot be empty"
+const ThirdPartyRepositoryInfoIsInvalidMsg = "custom repository info is invalid"
+const InvalidURLForCustomRepoMsg = "invalid URL"
+const ThirdPartyRepositoryImagesExistsMsg = "custom repository is used by some images"
+const ImageVersionAlreadyExistsMsg = "updated image version already exists"
+const ImageNameAlreadyExistsMsg = "image with supplied name already exists"
+const PackageNameDoesNotExistMsg = "package name doesn't exist"
+const ImageNameUndefinedMsg = "image name is not defined"
+const ImageSetUnDefinedMsg = "image-set is undefined"
+const ImageUnDefinedMsg = "image-set is undefined"
+const DeviceGroupNotFoundMsg = "device group was not found"
+const ImageSetAlreadyExistsMsg = "image set already exists"
+const ImageNotInErrorStateMsg = "image is not in error state"
+const DeviceGroupOrgIDDevicesNotFoundMsg = "devices not found among the device group orgID"
+const DeviceGroupDevicesNotFoundMsg = "devices not found in device group"
+const DeviceGroupAccountOrIDUndefinedMsg = "account or deviceGroupID undefined"
+const DeviceGroupDevicesNotSuppliedMsg = "devices must be supplied to be added to or removed from device group"
+const DeviceGroupDeviceNotSuppliedMsg = "device-group device must be supplied"
+const DeviceGroupAlreadyExistsMsg = "device group already exists"
+const DeviceGroupAccountOrNameUndefinedMsg = "device group account or name are undefined"
+const DeviceGroupMandatoryFieldsUndefinedMsg = "device group mandatory field are undefined"
+const DeviceHasImageUndefinedMsg = "device has image undefined"
+const DeviceHasNoImageUpdateMsg = "device has no image update"
+const DevicesHasMoreThanOneImageSetMsg = "device has more than one image-set"
+const ImageHasNoImageSetMsg = "Image has no image-set"
+const CommitNotFoundMsg = "Commit was not found"
+const CommitNotValidMsg = "is not valid for update"
+const OstreeNotFoundMsg = "Ostree not found"
+const EntitiesImageSetsMismatchMsg = "does not belong to the same image-set as devices images"
+const CommitImageNotFoundMsg = "Commit image was not found"
+const SomeDevicesDoesNotExistsMsg = "image-set not found for all devices"
+const KafkaAllBrokersDownMsg = "Cannot connect to any Kafka brokers"
+const DBCommitErrorMsg = "Error searching for ImageSet of Device Images"
+
 // DeviceNotFoundError indicates the device was not found
 type DeviceNotFoundError struct{}
 
 func (e *DeviceNotFoundError) Error() string {
-	return "Device was not found"
+	return DeviceNotFoundErrorMsg
 }
 
 // UpdateNotFoundError indicates the update was not found
 type UpdateNotFoundError struct{}
 
 func (e *UpdateNotFoundError) Error() string {
-	return "Update was not found"
+	return UpdateNotFoundErrorMsg
 }
 
 // ImageNotFoundError indicates the image was not found
 type ImageNotFoundError struct{}
 
 func (e *ImageNotFoundError) Error() string {
-	return "image is not found"
+	return ImageNotFoundErrorMsg
 }
 
 // ImageSetNotFoundError indicates the image-set was not found
 type ImageSetNotFoundError struct{}
 
 func (e *ImageSetNotFoundError) Error() string {
-	return "image-set was not found"
+	return ImageSetNotFoundErrorMsg
 }
 
 // AccountOrOrgIDNotSet indicates the account or orgID was nil
 type AccountOrOrgIDNotSet struct{}
 
 func (e *AccountOrOrgIDNotSet) Error() string {
-	return "Account or orgID is not set"
+	return AccountOrOrgIDNotSetMsg
 }
 
 // AccountNotSet indicates the account was nil
 type AccountNotSet struct{}
 
 func (e *AccountNotSet) Error() string {
-	return "Account is not set"
+	return AccountNotSetMsg
 }
 
 // OrgIDNotSet indicates the account was nil
 type OrgIDNotSet struct{}
 
 func (e *OrgIDNotSet) Error() string {
-	return "Org ID is not set"
+	return OrgIDNotSetMsg
 }
 
 // IDMustBeInteger indicates the ID is required to be an integer value
 type IDMustBeInteger struct{}
 
 func (e *IDMustBeInteger) Error() string {
-	return "ID needs to be an integer"
+	return IDMustBeIntegerMsg
 }
 
 // ThirdPartyRepositoryNotFound indicates the Third Party Repository was not found
 type ThirdPartyRepositoryNotFound struct{}
 
 func (e *ThirdPartyRepositoryNotFound) Error() string {
-	return "third party repository was not found"
+	return ThirdPartyRepositoryNotFoundMsg
 }
 
 // ThirdPartyRepositoryAlreadyExists indicates the Third Party Repository already exists
 type ThirdPartyRepositoryAlreadyExists struct{}
 
 func (e *ThirdPartyRepositoryAlreadyExists) Error() string {
-	return "custom repository already exists"
+	return ThirdPartyRepositoryAlreadyExistsMsg
 }
 
 // ThirdPartyRepositoryNameIsEmpty indicates the Third Party Repository name is empty
 type ThirdPartyRepositoryNameIsEmpty struct{}
 
 func (e *ThirdPartyRepositoryNameIsEmpty) Error() string {
-	return "custom repository name cannot be empty"
+	return ThirdPartyRepositoryNameIsEmptyMsg
 }
 
 // ThirdPartyRepositoryURLIsEmpty indicates the Third Party Repository url is empty
 type ThirdPartyRepositoryURLIsEmpty struct{}
 
 func (e *ThirdPartyRepositoryURLIsEmpty) Error() string {
-	return "custom repository URL cannot be empty"
+	return ThirdPartyRepositoryURLIsEmptyMsg
 }
 
 // ThirdPartyRepositoryInfoIsInvalid indicates the Third Party Repository info is not valid
 type ThirdPartyRepositoryInfoIsInvalid struct{}
 
 func (e *ThirdPartyRepositoryInfoIsInvalid) Error() string {
-	return "custom repository info is invalid"
+	return ThirdPartyRepositoryInfoIsInvalidMsg
 }
 
 // InvalidURLForCustomRepo indicates the Third Party Repository url is invalid
 type InvalidURLForCustomRepo struct{}
 
 func (e *InvalidURLForCustomRepo) Error() string {
-	return "invalid URL"
+	return InvalidURLForCustomRepoMsg
 }
 
 // ThirdPartyRepositoryImagesExists indicates the Third Party Repository has been used in some images
 type ThirdPartyRepositoryImagesExists struct{}
 
 func (e *ThirdPartyRepositoryImagesExists) Error() string {
-	return "custom repository is used by some images"
+	return ThirdPartyRepositoryImagesExistsMsg
 }
 
 // ImageVersionAlreadyExists indicates the updated image version was already present
 type ImageVersionAlreadyExists struct{}
 
 func (e *ImageVersionAlreadyExists) Error() string {
-	return "updated image version already exists"
+	return ImageVersionAlreadyExistsMsg
 }
 
 // ImageNameAlreadyExists indicates the image with supplied name already exists
 type ImageNameAlreadyExists struct{}
 
 func (e *ImageNameAlreadyExists) Error() string {
-	return "image with supplied name already exists"
+	return ImageNameAlreadyExistsMsg
 }
 
 // PackageNameDoesNotExist indicates that package name doesn't exist
 type PackageNameDoesNotExist struct{}
 
 func (e *PackageNameDoesNotExist) Error() string {
-	return "package name doesn't exist"
+	return PackageNameDoesNotExistMsg
 }
 
 // ImageNameUndefined indicates the image name is not defined
 type ImageNameUndefined struct{}
 
 func (e *ImageNameUndefined) Error() string {
-	return "image name is not defined"
+	return ImageNameUndefinedMsg
 }
 
 // ImageSetUnDefined indicates the image has no imageSetDefined
 type ImageSetUnDefined struct{}
 
 func (e *ImageSetUnDefined) Error() string {
-	return "image-set is undefined"
+	return ImageSetUnDefinedMsg
 }
 
 // ImageUnDefined indicates the image is undefined in the db
 type ImageUnDefined struct{}
 
 func (e *ImageUnDefined) Error() string {
-	return "image-set is undefined"
+	return ImageUnDefinedMsg
 }
 
 // DeviceGroupNotFound indicates the Third Party Repository was not found
 type DeviceGroupNotFound struct{}
 
 func (e *DeviceGroupNotFound) Error() string {
-	return "device group was not found"
+	return DeviceGroupNotFoundMsg
 }
 
 // ImageSetAlreadyExists indicates the ImageSet attempting to be created already exists
 type ImageSetAlreadyExists struct{}
 
 func (e *ImageSetAlreadyExists) Error() string {
-	return "image set already exists"
+	return ImageSetAlreadyExistsMsg
 }
 
 // ImageNotInErrorState indicates unable to delete an image
 type ImageNotInErrorState struct{}
 
 func (e *ImageNotInErrorState) Error() string {
-	return "image is not in error state"
+	return ImageNotInErrorStateMsg
 }
 
 // ImageSetInUse indicates unable to delete an image set
@@ -183,7 +228,7 @@ func (e *ImageSetInUse) Error() string {
 type DeviceGroupOrgIDDevicesNotFound struct{}
 
 func (e *DeviceGroupOrgIDDevicesNotFound) Error() string {
-	return "devices not found among the device group orgID"
+	return DeviceGroupOrgIDDevicesNotFoundMsg
 
 }
 
@@ -191,77 +236,77 @@ func (e *DeviceGroupOrgIDDevicesNotFound) Error() string {
 type DeviceGroupDevicesNotFound struct{}
 
 func (e *DeviceGroupDevicesNotFound) Error() string {
-	return "devices not found in device group"
+	return DeviceGroupDevicesNotFoundMsg
 }
 
 // DeviceGroupAccountOrIDUndefined indicates that device group account or ID was not supplied
 type DeviceGroupAccountOrIDUndefined struct{}
 
 func (e *DeviceGroupAccountOrIDUndefined) Error() string {
-	return "account or deviceGroupID undefined"
+	return DeviceGroupAccountOrIDUndefinedMsg
 }
 
 // DeviceGroupDevicesNotSupplied indicates that device group devices was not supplied
 type DeviceGroupDevicesNotSupplied struct{}
 
 func (e *DeviceGroupDevicesNotSupplied) Error() string {
-	return "devices must be supplied to be added to or removed from device group"
+	return DeviceGroupDevicesNotSuppliedMsg
 }
 
 // DeviceGroupDeviceNotSupplied indicates that device group device was not supplied
 type DeviceGroupDeviceNotSupplied struct{}
 
 func (e *DeviceGroupDeviceNotSupplied) Error() string {
-	return "device-group device must be supplied"
+	return DeviceGroupDeviceNotSuppliedMsg
 }
 
 // DeviceGroupAlreadyExists indicates that device group already exists
 type DeviceGroupAlreadyExists struct{}
 
 func (e *DeviceGroupAlreadyExists) Error() string {
-	return "device group already exists"
+	return DeviceGroupAlreadyExistsMsg
 }
 
 // DeviceGroupAccountOrNameUndefined indicates that device group account or name are undefined
 type DeviceGroupAccountOrNameUndefined struct{}
 
 func (e *DeviceGroupAccountOrNameUndefined) Error() string {
-	return "device group account or name are undefined"
+	return DeviceGroupAccountOrNameUndefinedMsg
 }
 
 // DeviceGroupMandatoryFieldsUndefined indicates that device group mandatory field are undefined
 type DeviceGroupMandatoryFieldsUndefined struct{}
 
 func (e *DeviceGroupMandatoryFieldsUndefined) Error() string {
-	return "device group mandatory field are undefined"
+	return DeviceGroupMandatoryFieldsUndefinedMsg
 }
 
 // DeviceHasImageUndefined indicates that device record has image not defined
 type DeviceHasImageUndefined struct{}
 
 func (e *DeviceHasImageUndefined) Error() string {
-	return "device has image undefined"
+	return DeviceHasImageUndefinedMsg
 }
 
 // DeviceHasNoImageUpdate indicates that device record no image
 type DeviceHasNoImageUpdate struct{}
 
 func (e *DeviceHasNoImageUpdate) Error() string {
-	return "device has no image update"
+	return DeviceHasNoImageUpdateMsg
 }
 
 // DevicesHasMoreThanOneImageSet indicates that device record no image
 type DevicesHasMoreThanOneImageSet struct{}
 
 func (e *DevicesHasMoreThanOneImageSet) Error() string {
-	return "device has more than one image-set"
+	return DevicesHasMoreThanOneImageSetMsg
 }
 
 // ImageHasNoImageSet indicates that device record no image
 type ImageHasNoImageSet struct{}
 
 func (e *ImageHasNoImageSet) Error() string {
-	return "Image has no image-set"
+	return ImageHasNoImageSetMsg
 }
 
 // ErrUndefinedCommit indicate that the update transaction/image or some entity  has no commit defined.
@@ -271,42 +316,42 @@ var ErrUndefinedCommit = errors.New("entity has defined commit")
 type CommitNotFound struct{}
 
 func (e *CommitNotFound) Error() string {
-	return "not found"
+	return CommitNotFoundMsg
 }
 
 // CommitNotValid indicates commit matching the given id was not found
 type CommitNotValid struct{}
 
 func (e *CommitNotValid) Error() string {
-	return "not valid to update"
+	return CommitNotValidMsg
 }
 
 // OstreeNotFound was not found
 type OstreeNotFound struct{}
 
 func (e *OstreeNotFound) Error() string {
-	return "Ostree not found"
+	return OstreeNotFoundMsg
 }
 
 // EntitiesImageSetsMismatch indicates the CommitID does not belong to the same ImageSet as of Device's Image
 type EntitiesImageSetsMismatch struct{}
 
 func (e *EntitiesImageSetsMismatch) Error() string {
-	return "does not belong to the same image-set as devices images"
+	return EntitiesImageSetsMismatchMsg
 }
 
 // CommitImageNotFound indicates the Commit Image is not found
 type CommitImageNotFound struct{}
 
 func (e *CommitImageNotFound) Error() string {
-	return "commit image does not found"
+	return CommitImageNotFoundMsg
 }
 
 // SomeDevicesDoesNotExists indicates that device record no image
 type SomeDevicesDoesNotExists struct{}
 
 func (e *SomeDevicesDoesNotExists) Error() string {
-	return "image-set not found for all devices"
+	return SomeDevicesDoesNotExistsMsg
 }
 
 // ErrOrgIDMismatch returned when the context orgID is different from an entity OrgID
@@ -316,12 +361,12 @@ var ErrOrgIDMismatch = errors.New("context org_id and entity org_id mismatch")
 type KafkaAllBrokersDown struct{}
 
 func (e *KafkaAllBrokersDown) Error() string {
-	return "Cannot connect to any Kafka brokers"
+	return KafkaAllBrokersDownMsg
 }
 
 // DBError indicates a dbError during search
 type DBCommitError struct{}
 
 func (e *DBCommitError) Error() string {
-	return "Error searching for ImageSet of Device Images"
+	return DBCommitErrorMsg
 }

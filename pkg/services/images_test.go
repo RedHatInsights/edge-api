@@ -1675,7 +1675,7 @@ var _ = Describe("Image Service Test", func() {
 	Describe("get devices of image", func() {
 		When("image exists with some devices", func() {
 			var image1, image2 *models.Image
-			var device []models.Device
+			var devices []models.Device
 			var imageSet *models.ImageSet
 			BeforeEach(func() {
 				imageSet = &models.ImageSet{
@@ -1698,31 +1698,49 @@ var _ = Describe("Image Service Test", func() {
 					ImageSetID: &imageSet.ID,
 					Version:    1,
 					OrgID:      common.DefaultOrgID,
+					Commit: &models.Commit{
+						OrgID: common.DefaultOrgID,
+						Arch:  "x86_64",
+						InstalledPackages: []models.InstalledPackage{
+							{Name: "vim"},
+						},
+					},
 				}
 				result = db.DB.Create(image2)
 				Expect(result.Error).ToNot(HaveOccurred())
 
-				device = []models.Device{
-					{OrgID: common.DefaultOrgID, UUID: faker.UUIDHyphenated(), ImageID: image1.ID},
-					{OrgID: common.DefaultOrgID, UUID: faker.UUIDHyphenated(), ImageID: image1.ID},
+				devices = []models.Device{
+					{OrgID: common.DefaultOrgID, UUID: faker.UUIDHyphenated(), ImageID: image2.ID},
+					{OrgID: common.DefaultOrgID, UUID: faker.UUIDHyphenated(), ImageID: image2.ID},
 				}
 
 			})
 			Context("Get Devices count image", func() {
-				It("should return device count of image1", func() {
-					db.DB.Debug().Create(&device)
-					count, err := service.GetImageDevicesCount(image1.ID)
+				It("should return device count of image2", func() {
+					db.DB.Debug().Create(&devices)
+					count, err := service.GetImageDevicesCount(image2.ID)
 					Expect(err).To(BeNil())
 					Expect(count).To(Equal(int64(2)))
 
 				})
-				It("should return 0 device of image2", func() {
-					db.DB.Debug().Create(&device)
-					count, err := service.GetImageDevicesCount(image2.ID)
+				It("should return 0 device of image1", func() {
+					db.DB.Debug().Create(&devices)
+					count, err := service.GetImageDevicesCount(image1.ID)
 					Expect(err).To(BeNil())
 					Expect(count).To(Equal(int64(0)))
 				})
+
+				It("GetUpdateInfo of image2 with 2 system and one installPackage", func() {
+					var imageDiff []models.ImageUpdateAvailable
+					db.DB.Debug().Create(&devices)
+					totalPackage := len(image2.Commit.InstalledPackages)
+					imageDiff, err := service.GetUpdateInfo(*image2)
+					Expect(imageDiff[0].Image.TotalPackages).To(Equal(totalPackage))
+					Expect(imageDiff[0].Image.TotalDevicesWithImage).To(Equal(int64(2)))
+					Expect(err).To(BeNil())
+				})
 			})
+
 			Context("Should not get Devices count image", func() {
 				conf := config.Get()
 				BeforeEach(func() {

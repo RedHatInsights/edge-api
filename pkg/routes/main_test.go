@@ -12,6 +12,7 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	mockUnleash "github.com/redhatinsights/edge-api/unleash"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 )
@@ -74,9 +75,15 @@ func setUp() {
 		Account: "0000000",
 		Status:  models.ImageStatusBuilding,
 		Commit: &models.Commit{
+			OrgID:  common.DefaultOrgID,
 			Status: models.ImageStatusBuilding,
+			InstalledPackages: []models.InstalledPackage{
+				{Name: "vim"},
+			},
 		},
-		Name: "Image Name in DB",
+		Name:                  "Image Name in DB",
+		TotalDevicesWithImage: 5,
+		TotalPackages:         5,
 	}
 	db.DB.Create(&testImage.Commit)
 	db.DB.Create(&testImage)
