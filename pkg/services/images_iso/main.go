@@ -14,6 +14,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services/image"
+	"github.com/redhatinsights/edge-api/pkg/services/utility"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -85,7 +86,7 @@ func initConsumer(ctx context.Context) {
 				}
 
 				mslog = mslog.WithField("event_id", crcEvent.ID)
-				ctx = image.ContextWithLogger(ctx, mslog)
+				ctx = utility.ContextWithLogger(ctx, mslog)
 
 				// call the event's Consume method
 				go crcEvent.Consume(ctx)
@@ -117,7 +118,7 @@ func main() {
 	edgeAPIServices := dependencies.Init(ctx)
 	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 	mslog := log.WithFields(log.Fields{"app": "edge", "service": "images"})
-	ctx = image.ContextWithLogger(ctx, mslog)
+	ctx = utility.ContextWithLogger(ctx, mslog)
 	initConsumer(ctx)
 
 }

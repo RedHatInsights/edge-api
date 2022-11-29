@@ -15,6 +15,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	eventImageReq "github.com/redhatinsights/edge-api/pkg/services/image"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
+	"github.com/redhatinsights/edge-api/pkg/services/utility"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -30,7 +31,7 @@ var _ = Describe("Event Image ISO Event Test", func() {
 		ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 			ImageService: mockImageService,
 		})
-		ctx = eventImageReq.ContextWithLogger(ctx, log.NewEntry(log.StandardLogger()))
+		ctx = utility.ContextWithLogger(ctx, log.NewEntry(log.StandardLogger()))
 	})
 	Describe("consume image iso event", func() {
 		When("image iso is requested", func() {
