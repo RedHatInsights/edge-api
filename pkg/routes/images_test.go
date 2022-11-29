@@ -11,19 +11,25 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 
+	"github.com/bxcodec/faker/v3"
+	"github.com/go-chi/chi"
 	"github.com/golang/mock/gomock"
-	log "github.com/sirupsen/logrus"
-
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
+	log "github.com/sirupsen/logrus"
 )
 
 func TestCreateWasCalledWithWrongBody(t *testing.T) {
@@ -890,3 +896,638 @@ func TestDeleteImageOrgIDMissmatch(t *testing.T) {
 			status, http.StatusBadRequest)
 	}
 }
+
+var _ = Describe("Images Route Tests", func() {
+
+	Context("Routes", func() {
+		var ctrl *gomock.Controller
+		var router chi.Router
+		var mockImagesService *mock_services.MockImageServiceInterface
+		var edgeAPIServices *dependencies.EdgeAPIServices
+
+		BeforeEach(func() {
+			ctrl = gomock.NewController(GinkgoT())
+			mockImagesService = mock_services.NewMockImageServiceInterface(ctrl)
+			edgeAPIServices = &dependencies.EdgeAPIServices{
+				ImageService: mockImagesService,
+				Log:          log.NewEntry(log.StandardLogger()),
+			}
+			router = chi.NewRouter()
+			router.Use(func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					ctx := dependencies.ContextWithServices(r.Context(), edgeAPIServices)
+					next.ServeHTTP(w, r.WithContext(ctx))
+				})
+			})
+			router.Route("/images", MakeImagesRouter)
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
+		})
+
+		Context("GetAllImages", func() {
+			name := faker.UUIDHyphenated()
+			orgID := common.DefaultOrgID
+			images := []models.Image{
+				{Name: name, OrgID: orgID},
+				{Name: name, OrgID: orgID},
+			}
+			res := db.DB.Create(&images)
+
+			It("should return the requested images", func() {
+				Expect(res.Error).ToNot(HaveOccurred())
+				req, err := http.NewRequest("GET", fmt.Sprintf("/images?name=%s", name), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusOK))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).ToNot(BeEmpty())
+
+				type ResponseData struct {
+					Count  int64          `json:"count"`
+					Images []models.Image `json:"data"`
+				}
+
+				var responseData ResponseData
+				err = json.Unmarshal(respBody, &responseData)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(responseData.Count).To(Equal(int64(len(images))))
+				Expect(len(responseData.Images)).To(Equal(len(images)))
+				for _, image := range responseData.Images {
+					Expect(image.Name).To(Equal(name))
+					Expect(image.OrgID).To(Equal(orgID))
+				}
+			})
+
+			When("org undefined", func() {
+				var originalAuth bool
+				conf := config.Get()
+
+				BeforeEach(func() {
+					// save original config values
+					originalAuth = conf.Auth
+					// set auth to True to force use identity
+					conf.Auth = true
+					router = chi.NewRouter()
+					router.Use(func(next http.Handler) http.Handler {
+						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							// set identity orgID as empty
+							ctx := context.WithValue(r.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: ""}})
+							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+							next.ServeHTTP(w, r.WithContext(ctx))
+						})
+					})
+					router.Route("/images", MakeImagesRouter)
+				})
+
+				AfterEach(func() {
+					// restore config values
+					conf.Auth = originalAuth
+					ctrl.Finish()
+				})
+
+				It("should return error when org undefined", func() {
+					Expect(res.Error).ToNot(HaveOccurred())
+					req, err := http.NewRequest("GET", fmt.Sprintf("/images?name=%s", name), nil)
+					Expect(err).ToNot(HaveOccurred())
+
+					httpTestRecorder := httptest.NewRecorder()
+					router.ServeHTTP(httpTestRecorder, req)
+
+					Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+					respBody, err := io.ReadAll(httpTestRecorder.Body)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(string(respBody)).To(ContainSubstring("cannot find org-id"))
+				})
+			})
+		})
+
+		Context("GetImageByID", func() {
+			image := models.Image{Name: faker.Name(), OrgID: common.DefaultOrgID}
+			res := db.DB.Create(&image)
+
+			It("Should return the image data successfully", func() {
+				Expect(res.Error).ToNot(HaveOccurred())
+				req, err := http.NewRequest("GET", fmt.Sprintf("/images/%d", image.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusOK))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).ToNot(BeEmpty())
+
+				var resImage models.Image
+				err = json.Unmarshal(respBody, &resImage)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(resImage.ID).To(Equal(image.ID))
+				Expect(resImage.Name).To(Equal(image.Name))
+			})
+
+			It("should return error when image does not exist", func() {
+				imageID := "99999999999"
+				req, err := http.NewRequest("GET", fmt.Sprintf("/images/%s", imageID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				expectedError := new(services.ImageNotFoundError)
+				mockImagesService.EXPECT().GetImageByID(imageID).Return(nil, expectedError)
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusNotFound))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring(expectedError.Error()))
+			})
+
+			It("should return error when image id is not passed", func() {
+				req, err := http.NewRequest("GET", "/images//", nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("Image ID required"))
+			})
+
+			It("should return error when org id is undefined", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/images/%d", image.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				expectedError := new(services.OrgIDNotSet)
+				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(nil, expectedError)
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring(expectedError.Error()))
+			})
+
+			It("Should return error when image id is not integer", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/images/%d", image.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				expectedError := new(services.IDMustBeInteger)
+				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(nil, expectedError)
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring(expectedError.Error()))
+			})
+
+			It("should return error when error occurred when getting image", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/images/%d", image.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				expectedError := errors.New("an unknown error occurred")
+				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(nil, expectedError)
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusInternalServerError))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("Something went wrong."))
+			})
+			It("should return error when image org and session org mismatch", func() {
+				image := models.Image{Name: faker.Name(), OrgID: faker.UUIDHyphenated()}
+				res := db.DB.Create(&image)
+				Expect(res.Error).ToNot(HaveOccurred())
+				req, err := http.NewRequest("GET", fmt.Sprintf("/images/%d", image.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("image and session org mismatch"))
+			})
+
+			When("org undefined", func() {
+				var originalAuth bool
+				conf := config.Get()
+
+				BeforeEach(func() {
+					// save original config values
+					originalAuth = conf.Auth
+					// set auth to True to force use identity
+					conf.Auth = true
+					router = chi.NewRouter()
+					router.Use(func(next http.Handler) http.Handler {
+						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							// set identity orgID as empty
+							ctx := context.WithValue(r.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: ""}})
+							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+							next.ServeHTTP(w, r.WithContext(ctx))
+						})
+					})
+					router.Route("/images", MakeImagesRouter)
+				})
+
+				AfterEach(func() {
+					// restore config values
+					conf.Auth = originalAuth
+					ctrl.Finish()
+				})
+
+				It("should return error when org undefined", func() {
+					Expect(res.Error).ToNot(HaveOccurred())
+					req, err := http.NewRequest("GET", fmt.Sprintf("/images/%d", image.ID), nil)
+					Expect(err).ToNot(HaveOccurred())
+
+					mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
+					httpTestRecorder := httptest.NewRecorder()
+					router.ServeHTTP(httpTestRecorder, req)
+
+					Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+					respBody, err := io.ReadAll(httpTestRecorder.Body)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(string(respBody)).To(ContainSubstring("image doesn't belong to org_id"))
+				})
+			})
+		})
+
+		Context("CreateImageUpdate", func() {
+			imageName := faker.UUIDHyphenated()
+			image := models.Image{Name: imageName, OrgID: common.DefaultOrgID}
+			res := db.DB.Create(&image)
+			packageName := "vim"
+			updateImage := models.Image{
+				Name:         imageName,
+				Distribution: "rhel-85",
+				OutputTypes:  []string{models.ImageTypeCommit},
+				Commit: &models.Commit{
+					Arch: "x86_64",
+					InstalledPackages: []models.InstalledPackage{
+						{Name: packageName},
+					},
+				},
+			}
+
+			It("should update image successfully", func() {
+				Expect(res.Error).ToNot(HaveOccurred())
+
+				var buf bytes.Buffer
+				err := json.NewEncoder(&buf).Encode(&updateImage)
+				Expect(err).ToNot(HaveOccurred())
+
+				req, err := http.NewRequest("POST", fmt.Sprintf("/images/%d/update", image.ID), &buf)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
+				// we cannot predict the instance value of first argument, we know that it's updateImage
+				// but as it's un-marshaled it's using an other pointer, most important assertions are those at the end of the test
+				mockImagesService.EXPECT().UpdateImage(gomock.Any(), &image).Return(nil)
+				// same here for context and updateImage
+				mockImagesService.EXPECT().ProcessImage(gomock.Any(), gomock.Any())
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusOK))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).ToNot(BeEmpty())
+
+				var resImage models.Image
+				err = json.Unmarshal(respBody, &resImage)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(resImage.Name).To(Equal(updateImage.Name))
+				Expect(resImage.Distribution).To(Equal(updateImage.Distribution))
+				Expect(len(resImage.Commit.InstalledPackages) > 0).To(BeTrue())
+				Expect(resImage.Commit.InstalledPackages[0].Name).To(Equal(packageName))
+			})
+
+			It("should return error when update image fail with PackageNameDoesNotExist", func() {
+				var buf bytes.Buffer
+				err := json.NewEncoder(&buf).Encode(&updateImage)
+				Expect(err).ToNot(HaveOccurred())
+
+				req, err := http.NewRequest("POST", fmt.Sprintf("/images/%d/update", image.ID), &buf)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
+				// we cannot predict the instance value of first argument, we know that it's updateImage
+				// but as it's un-marshaled it's using an other pointer, most important assertions are those at the end of the test
+				expectedErr := new(services.PackageNameDoesNotExist)
+				mockImagesService.EXPECT().UpdateImage(gomock.Any(), &image).Return(expectedErr)
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring(expectedErr.Error()))
+			})
+
+			It("should return error when update image fail with unknown error", func() {
+				var buf bytes.Buffer
+				err := json.NewEncoder(&buf).Encode(&updateImage)
+				Expect(err).ToNot(HaveOccurred())
+
+				req, err := http.NewRequest("POST", fmt.Sprintf("/images/%d/update", image.ID), &buf)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
+				// we cannot predict the instance value of first argument, we know that it's updateImage
+				// but as it's un-marshaled it's using an other pointer, most important assertions are those at the end of the test
+				expectedErr := errors.New("unknown error occurred")
+				mockImagesService.EXPECT().UpdateImage(gomock.Any(), &image).Return(expectedErr)
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusInternalServerError))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("Failed creating image"))
+			})
+		})
+		Context("GetImageByOSTree", func() {
+			imageName := faker.UUIDHyphenated()
+			ostreeHash := faker.UUIDHyphenated()
+			orgID := common.DefaultOrgID
+			image := models.Image{
+				Name: imageName, OrgID: orgID,
+				Commit: &models.Commit{OSTreeCommit: ostreeHash, OrgID: orgID},
+			}
+			res := db.DB.Create(&image)
+
+			It("should return the image data successfully", func() {
+				Expect(res.Error).ToNot(HaveOccurred())
+				req, err := http.NewRequest("GET", fmt.Sprintf("/images/%s/info", ostreeHash), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImagesService.EXPECT().GetImageByOSTreeCommitHash(ostreeHash).Return(&image, nil)
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusOK))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).ToNot(BeEmpty())
+
+				var resImage models.Image
+				err = json.Unmarshal(respBody, &resImage)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(resImage.ID).To(Equal(image.ID))
+				Expect(resImage.Name).To(Equal(image.Name))
+			})
+
+			It("should return error when image does not exist", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/images/%s/info", ostreeHash), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				expectedError := new(services.ImageNotFoundError)
+				mockImagesService.EXPECT().GetImageByOSTreeCommitHash(ostreeHash).Return(nil, expectedError)
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusNotFound))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring(expectedError.Error()))
+			})
+
+			It("should return error when orgID not set", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/images/%s/info", ostreeHash), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				expectedError := new(services.OrgIDNotSet)
+				mockImagesService.EXPECT().GetImageByOSTreeCommitHash(ostreeHash).Return(nil, expectedError)
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring(expectedError.Error()))
+			})
+
+			It("should return error when unknown error", func() {
+				req, err := http.NewRequest("GET", fmt.Sprintf("/images/%s/info", ostreeHash), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				expectedError := errors.New("unknown error")
+				mockImagesService.EXPECT().GetImageByOSTreeCommitHash(ostreeHash).Return(nil, expectedError)
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusInternalServerError))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("Something went wrong."))
+			})
+
+			It("should return error when ostreehash not supplied", func() {
+				req, err := http.NewRequest("GET", "/images//info", nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("OSTreeCommitHash required"))
+			})
+		})
+
+		Context("CreateInstallerForImage", func() {
+			imageName := faker.UUIDHyphenated()
+			image := models.Image{Name: imageName, OrgID: common.DefaultOrgID}
+			res := db.DB.Create(&image)
+			installer := models.Installer{Username: "root", SSHKey: "ssh-rsa d9:f158:00:abcd"}
+
+			It("should create installer successfully", func() {
+				Expect(res.Error).ToNot(HaveOccurred())
+				var buf bytes.Buffer
+				err := json.NewEncoder(&buf).Encode(&installer)
+				Expect(err).ToNot(HaveOccurred())
+
+				req, err := http.NewRequest("POST", fmt.Sprintf("/images/%d/installer", image.ID), &buf)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
+				mockImagesService.EXPECT().CreateInstallerForImage(gomock.Any(), &image).Return(&image, nil, nil)
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusOK))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).ToNot(BeEmpty())
+
+				var resImage models.Image
+				err = json.Unmarshal(respBody, &resImage)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(resImage.ID).To(Equal(image.ID))
+				Expect(resImage.Name).To(Equal(image.Name))
+			})
+
+			It("should return error when error occurred", func() {
+				var buf bytes.Buffer
+				err := json.NewEncoder(&buf).Encode(&installer)
+				Expect(err).ToNot(HaveOccurred())
+
+				req, err := http.NewRequest("POST", fmt.Sprintf("/images/%d/installer", image.ID), &buf)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
+				expectedError := errors.New("unknown error")
+				mockImagesService.EXPECT().CreateInstallerForImage(gomock.Any(), &image).Return(nil, nil, expectedError)
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusInternalServerError))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("Failed to create installer"))
+			})
+		})
+		Context("RetryCreateImage", func() {
+			imageName := faker.UUIDHyphenated()
+			image := models.Image{Name: imageName, OrgID: common.DefaultOrgID}
+			res := db.DB.Create(&image)
+
+			It("should recreate image  successfully", func() {
+				Expect(res.Error).ToNot(HaveOccurred())
+
+				req, err := http.NewRequest("POST", fmt.Sprintf("/images/%d/retry", image.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
+				mockImagesService.EXPECT().RetryCreateImage(gomock.Any(), &image).Return(nil)
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusCreated))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).ToNot(BeEmpty())
+
+				var resImage models.Image
+				err = json.Unmarshal(respBody, &resImage)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(resImage.ID).To(Equal(image.ID))
+				Expect(resImage.Name).To(Equal(image.Name))
+			})
+
+			It("should return error when error occurred", func() {
+				req, err := http.NewRequest("POST", fmt.Sprintf("/images/%d/retry", image.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
+				expectedError := errors.New("unknown error")
+				mockImagesService.EXPECT().RetryCreateImage(gomock.Any(), &image).Return(expectedError)
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusInternalServerError))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("Failed creating image"))
+			})
+		})
+
+		Context("CreateKickStartForImage", func() {
+			imageName := faker.UUIDHyphenated()
+			image := models.Image{Name: imageName, OrgID: common.DefaultOrgID}
+			res := db.DB.Create(&image)
+
+			It("should create kickstart for image successfully", func() {
+				Expect(res.Error).ToNot(HaveOccurred())
+
+				req, err := http.NewRequest("POST", fmt.Sprintf("/images/%d/kickstart", image.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
+				mockImagesService.EXPECT().AddUserInfo(&image).Return(nil)
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusOK))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(BeEmpty())
+			})
+
+			It("should return error when error occurred", func() {
+				req, err := http.NewRequest("POST", fmt.Sprintf("/images/%d/kickstart", image.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
+				expectedError := errors.New("unknown error")
+				mockImagesService.EXPECT().AddUserInfo(&image).Return(expectedError)
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusInternalServerError))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("Something went wrong."))
+			})
+		})
+
+		Context("SendNotificationForImage", func() {
+			imageName := faker.UUIDHyphenated()
+			image := models.Image{Name: imageName, OrgID: common.DefaultOrgID}
+			res := db.DB.Create(&image)
+
+			notification := services.ImageNotification{
+				Version:     services.NotificationConfigVersion,
+				Bundle:      services.NotificationConfigBundle,
+				Application: services.NotificationConfigApplication,
+				EventType:   services.NotificationConfigEventTypeImage,
+				Timestamp:   time.Now().Format(time.RFC3339),
+			}
+
+			It("should send notification successfully", func() {
+				Expect(res.Error).ToNot(HaveOccurred())
+
+				req, err := http.NewRequest("GET", fmt.Sprintf("/images/%d/notify", image.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
+				mockImagesService.EXPECT().SendImageNotification(&image).Return(notification, nil)
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusOK))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).ToNot(BeEmpty())
+
+				var resNotification services.ImageNotification
+				err = json.Unmarshal(respBody, &resNotification)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(resNotification.Version).To(Equal(notification.Version))
+				Expect(resNotification.EventType).To(Equal(notification.EventType))
+			})
+		})
+	})
+})

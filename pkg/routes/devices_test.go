@@ -350,6 +350,77 @@ type validationError struct {
 	Reason string
 }
 
+func TestValidateGetAllDevicesFilterParams(t *testing.T) {
+	RegisterTestingT(t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	tt := []struct {
+		name          string
+		params        string
+		expectedError []validationError
+	}{
+		{
+			name:   "invalid uuid",
+			params: "uuid=9e7",
+			expectedError: []validationError{
+				{Key: "uuid", Reason: "invalid UUID length: 3"},
+			},
+		},
+		{
+			name:   "invalid created_at",
+			params: "created_at=AAAA",
+			expectedError: []validationError{
+				{Key: "created_at", Reason: "parsing time \"AAAA\" as \"2006-01-02\": cannot parse \"AAAA\" as \"2006\""},
+			},
+		},
+		{
+			name:          "valid uuid",
+			params:        "uuid=9e7a7e3c-daa8-41cf-82d0-13e3a0224cf7",
+			expectedError: nil,
+		},
+	}
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	for _, te := range tt {
+		req, err := http.NewRequest("GET", fmt.Sprintf("/devices?%s", te.params), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		w := httptest.NewRecorder()
+
+		mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+		ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{
+			ImageService: mockImageService,
+			Log:          log.NewEntry(log.StandardLogger()),
+		})
+		req = req.WithContext(ctx)
+
+		routes.ValidateGetAllDevicesFilterParams(next).ServeHTTP(w, req)
+
+		if te.expectedError == nil {
+			Expect(w.Code).To(Equal(http.StatusOK))
+			continue
+		}
+		Expect(w.Code).To(Equal(http.StatusBadRequest))
+		resp := w.Result()
+		validationsErrors := []validationError{}
+		err = json.NewDecoder(resp.Body).Decode(&validationsErrors)
+		if err != nil {
+			Expect(err).ToNot(HaveOccurred())
+		}
+		for _, exErr := range te.expectedError {
+			found := false
+			for _, jsErr := range validationsErrors {
+				if jsErr.Key == exErr.Key && jsErr.Reason == exErr.Reason {
+					found = true
+					break
+				}
+			}
+			Expect(found).To(BeTrue(), fmt.Sprintf("in %q: was expected to have %v but not found in %v", te.name, exErr, validationsErrors))
+		}
+	}
+}
+
 func TestValidateGetDevicesViewFilterParams(t *testing.T) {
 	tt := []struct {
 		name          string
