@@ -24,6 +24,8 @@ type ImageSetsServiceInterface interface {
 	GetImageSetsBuildIsoURL(orgID string, imageSetIDS []uint) (map[uint]uint, error)
 	GetImagesViewData(imageSetID uint, imagesLimit int, imagesOffSet int, tx *gorm.DB) (*ImagesViewData, error)
 	GetImageSetImageViewByID(imageSetID uint, imageID uint) (*ImageSetImageIDView, error)
+	GetDeviceIdsByImageSetID(imageSetId uint) (int, []string, error)
+	DeleteImageSet(imageSetID uint) error
 }
 
 // ImagesViewData is the images view data return for images view with filters , limit, offSet
@@ -406,4 +408,72 @@ func (s *ImageSetsService) GetImageSetImageViewByID(imageSetID uint, imageID uin
 	}
 
 	return &imageSetImageIDView, nil
+}
+
+func (s *ImageSetsService) GetDeviceIdsByImageSetID(imageSetID uint) (int, []string, error) {
+	type DeviceInfo struct {
+		DeviceID   uint   `json:"device_id"`
+		DeviceUUID string `json:"device_uuid"`
+	}
+	var deviceInfos []DeviceInfo
+
+	if result := db.DB.Table("image_sets").
+		Where("image_sets.id = ?", imageSetID).
+		Select(`image_sets.id, images.id as "image_id", devices.id as "device_id", devices.uuid as "device_uuid"`).
+		Joins(`JOIN images ON image_sets.id = images.image_set_id`).
+		Joins(`JOIN devices on devices.image_id = images.id`).
+		Find(&deviceInfos); result.Error != nil {
+		s.log.WithFields(log.Fields{"error": result.Error.Error()}).Error("Error getting devices by image set id")
+		return 0, nil, result.Error
+	}
+
+	var DeviceUUIDs []string
+	for _, one := range deviceInfos {
+		DeviceUUIDs = append(DeviceUUIDs, one.DeviceUUID)
+	}
+
+	return len(DeviceUUIDs), DeviceUUIDs, nil
+}
+
+func (s *ImageSetsService) DeleteImageSet(imageSetID uint) error {
+	count, ids, err := s.GetDeviceIdsByImageSetID(imageSetID)
+	if err != nil {
+		s.log.WithFields(log.Fields{"error": err}).Error("Error getting devices by image set id")
+		return err
+	}
+	if count != 0 || len(ids) != 0 {
+		s.log.WithFields(log.Fields{"error": "Image Set in use"}).Error("Error, unable to delete image set in use")
+		err := new(ImageSetInUse)
+		return err
+	}
+
+	var imageSet models.ImageSet
+	result := db.DB.First(&imageSet, imageSetID)
+	if result.Error != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error getting image set by id")
+		return result.Error
+	}
+	result = db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
+	if result.Error != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error getting image set's images")
+		return result.Error
+	}
+
+	if len(imageSet.Images) > 0 {
+		result = db.DB.Delete(&imageSet.Images)
+		if result.Error != nil {
+			s.log.WithFields(
+				log.Fields{"ImageSet_id": imageSetID, "error": result.Error},
+			).Error("Error when deleting image set images")
+			return result.Error
+		}
+	}
+	if result := db.DB.Delete(&models.ImageSet{}, imageSet); result.Error != nil {
+		s.log.WithFields(
+			log.Fields{"ImageSet_id": imageSetID, "error": result.Error},
+		).Error("Error when deleting image set")
+		return result.Error
+	}
+
+	return nil
 }
