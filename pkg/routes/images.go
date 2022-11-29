@@ -756,9 +756,16 @@ func DeleteImage(w http.ResponseWriter, r *http.Request) {
 
 	err := ctxServices.ImageService.DeleteImage(image)
 	if err != nil {
-		err := errors.NewInternalServerError()
-		err.SetTitle("Failed deleting image")
-		respondWithAPIError(w, ctxServices.Log, err)
+		var responseErr errors.APIError
+		switch err.(type) {
+		case *services.ImageNotInErrorState:
+			responseErr = errors.NewBadRequest("Given image is not in ERROR state, it can't be deleted")
+		default:
+			responseErr = errors.NewInternalServerError()
+			responseErr.SetTitle("Failed deleting image")
+		}
+		responseErr.SetTitle("Failed deleting image")
+		respondWithAPIError(w, ctxServices.Log, responseErr)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
