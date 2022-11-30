@@ -1430,7 +1430,7 @@ func (s *ImageService) GetUpdateInfo(image models.Image) ([]models.ImageUpdateAv
 	var imageDiff []models.ImageUpdateAvailable
 	updates := db.DB.Where("Image_set_id = ? and Images.Status = ? and Images.Id < ?",
 		image.ImageSetID, models.ImageStatusSuccess, image.ID).Joins("Commit").
-		Order("Images.updated_at desc").Find(&images)
+		Order("Images.updated_at desc").Limit(1).Find(&images)
 
 	if updates.Error != nil {
 		s.log.WithField("error", updates.Error.Error()).Error("Error retrieving update")
