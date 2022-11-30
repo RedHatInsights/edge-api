@@ -468,7 +468,7 @@ func TestGetImageDetailsByIdWithUpdate(t *testing.T) {
 
 }
 
-func TestGetImageDetailsByIDWithLogError(t *testing.T) {
+func TestGetImageDetailsByIDWithError(t *testing.T) {
 	// The Buffer type implements the Writer interface
 	var buffer bytes.Buffer
 	testLog := log.NewEntry(log.StandardLogger())
@@ -502,6 +502,12 @@ func TestGetImageDetailsByIDWithLogError(t *testing.T) {
 
 	if !strings.Contains(got, expected) {
 		t.Errorf("got %q expected %q", got, expected)
+	}
+
+	if status := rr.Code; status != http.StatusInternalServerError {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusInternalServerError)
+		return
 	}
 }
 
