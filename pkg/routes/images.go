@@ -509,6 +509,8 @@ func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 		upd, err := ctxServices.ImageService.GetUpdateInfo(*image)
 		if err != nil {
 			ctxServices.Log.WithField("error", err.Error()).Error("Error getting update info")
+			respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
+			return
 		}
 		if upd != nil {
 			imgDetail.UpdateAdded = len(upd[len(upd)-1].PackageDiff.Removed)
