@@ -218,7 +218,7 @@ func (s *ImageSetsService) GetImageSetsBuildIsoURL(orgID string, imageSetIDS []u
 		Select(`images.image_set_id, Max(installers.id) as "installer_id"`).
 		Joins("JOIN installers ON images.installer_id = installers.id").
 		Where("images.status = ? AND images.image_set_id in (?)", models.ImageStatusSuccess, imageSetIDS).
-		Where("(installers.image_build_iso_url != '' AND installers.image_build_iso_url IS NOT NULL)").
+		Where("installers.status =  ?", models.ImageStatusSuccess).
 		Group("images.image_set_id").
 		Find(&imageSetsInstallers); result.Error != nil {
 		log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error(
