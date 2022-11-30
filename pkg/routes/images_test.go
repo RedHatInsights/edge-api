@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -465,6 +466,43 @@ func TestGetImageDetailsByIdWithUpdate(t *testing.T) {
 			ir.Image.TotalPackages, testImage.TotalPackages)
 	}
 
+}
+
+func TestGetImageDetailsByIDWithLogError(t *testing.T) {
+	// The Buffer type implements the Writer interface
+	var buffer bytes.Buffer
+	testLog := log.NewEntry(log.StandardLogger())
+	// Set the output to use our local buffer
+	testLog.Logger.SetOutput(&buffer)
+	// An error to be raised by GetUpdateInfo call
+	forcedErr := io.EOF
+
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+	ctrl := gomock.NewController(t)
+
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	mockImageService.EXPECT().GetUpdateInfo(gomock.Any()).Return(nil, forcedErr)
+	ctx := context.WithValue(req.Context(), imageKey, &testImage)
+
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
+	})
+
+	handler := http.HandlerFunc(GetImageDetailsByID)
+	handler.ServeHTTP(rr, req.WithContext(ctx))
+
+	got := buffer.String()
+	expected := "Error getting update info"
+
+	if !strings.Contains(got, expected) {
+		t.Errorf("got %q expected %q", got, expected)
+	}
 }
 
 func TestValidateGetAllFilterParameters(t *testing.T) {
