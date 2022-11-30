@@ -1,6 +1,6 @@
 // FIXME: golangci-lint
 // nolint:revive
-package image
+package utility
 
 import (
 	"context"

@@ -210,11 +210,18 @@ func (e *ImageSetAlreadyExists) Error() string {
 	return ImageSetAlreadyExistsMsg
 }
 
-// ImageSetAlreadyExists indicates the ImageSet attempting to be created already exists
+// ImageNotInErrorState indicates unable to delete an image
 type ImageNotInErrorState struct{}
 
 func (e *ImageNotInErrorState) Error() string {
 	return ImageNotInErrorStateMsg
+}
+
+// ImageSetInUse indicates unable to delete an image set
+type ImageSetInUse struct{}
+
+func (e *ImageSetInUse) Error() string {
+	return "image set is in use"
 }
 
 // DeviceGroupOrgIDDevicesNotFound indicates that devices not found among the device group OrgID

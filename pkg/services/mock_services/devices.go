@@ -284,3 +284,15 @@ func (mr *MockDeviceServiceInterfaceMockRecorder) ProcessPlatformInventoryDelete
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessPlatformInventoryDeleteEvent", reflect.TypeOf((*MockDeviceServiceInterface)(nil).ProcessPlatformInventoryDeleteEvent), message)
 }
+
+// SyncDevicesWithInventory mocks base method
+func (m *MockDeviceServiceInterface) SyncDevicesWithInventory(orgID string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SyncDevicesWithInventory", orgID)
+}
+
+// SyncDevicesWithInventory indicates an expected call of SyncDevicesWithInventory
+func (mr *MockDeviceServiceInterfaceMockRecorder) SyncDevicesWithInventory(orgID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncDevicesWithInventory", reflect.TypeOf((*MockDeviceServiceInterface)(nil).SyncDevicesWithInventory), orgID)
+}

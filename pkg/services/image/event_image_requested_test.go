@@ -13,6 +13,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
+	"github.com/redhatinsights/edge-api/pkg/services/utility"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -25,7 +26,7 @@ var _ = Describe("Event Image Build Requested Test", func() {
 		mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
 
 		ctx = context.Background()
-		ctx = ContextWithLogger(ctx, log.NewEntry(log.StandardLogger()))
+		ctx = utility.ContextWithLogger(ctx, log.NewEntry(log.StandardLogger()))
 	})
 	Describe("consume image build event", func() {
 		When("image build is requested", func() {

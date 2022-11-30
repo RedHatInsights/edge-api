@@ -39,6 +39,7 @@ func MakeImageSetsRouter(sub chi.Router) {
 	sub.Route("/{imageSetID}", func(r chi.Router) {
 		r.Use(ImageSetCtx)
 		r.With(validateFilterParams).With(common.Paginate).Get("/", GetImageSetsByID)
+		r.Delete("/", DeleteImageSet)
 	})
 	sub.Route("/view/{imageSetID}", func(r chi.Router) {
 		r.Use(ImageSetViewCtx)
@@ -670,4 +671,18 @@ func GetImageSetImageView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondWithJSONBody(w, ctxServices.Log, imageSetImageView)
+}
+
+func DeleteImageSet(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	imageSet := getContextImageSet(w, r)
+	if imageSet == nil {
+		return
+	}
+	err := ctxServices.ImageSetService.DeleteImageSet(imageSet.ID)
+	if err != nil {
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("failed to delete image set"))
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }

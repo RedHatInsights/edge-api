@@ -11,6 +11,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/services/utility"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -28,7 +29,7 @@ type EventImageUpdateRequestedBuildHandler struct {
 
 // Consume executes code against the data in the received event
 func (ev EventImageUpdateRequestedBuildHandler) Consume(ctx context.Context) {
-	eventlog := GetLoggerFromContext(ctx)
+	eventlog := utility.GetLoggerFromContext(ctx)
 
 	eventlog.Info("Starting image build")
 

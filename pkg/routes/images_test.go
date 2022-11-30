@@ -364,9 +364,9 @@ func TestGetImageDetailsById(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 
-	if ir.Packages != 0 {
+	if ir.Packages != 1 {
 		t.Errorf("wrong image packages: got %v want %v",
-			ir.Packages, 0)
+			ir.Packages, 1)
 	}
 	if ir.AdditionalPackages != 0 {
 		t.Errorf("wrong image AdditionalPackages: got %v want %v",
@@ -388,6 +388,83 @@ func TestGetImageDetailsById(t *testing.T) {
 		t.Errorf("wrong image status: got %v want %v",
 			ir.Image.ID, testImage.ID)
 	}
+}
+
+func TestGetImageDetailsByIdWithUpdate(t *testing.T) {
+	imaged := make([]models.ImageUpdateAvailable, 5)
+	imaged[4].Image.TotalDevicesWithImage = 4
+	imaged[4].Image.TotalPackages = 3
+
+	req, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rr := httptest.NewRecorder()
+	ctrl := gomock.NewController(t)
+
+	defer ctrl.Finish()
+	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+	mockImageService.EXPECT().GetUpdateInfo(gomock.Any()).Return(imaged, nil)
+	ctx := context.WithValue(req.Context(), imageKey, &testImage)
+
+	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+		ImageService: mockImageService,
+		Log:          log.NewEntry(log.StandardLogger()),
+	})
+
+	handler := http.HandlerFunc(GetImageDetailsByID)
+	handler.ServeHTTP(rr, req.WithContext(ctx))
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v",
+			status, http.StatusOK)
+		return
+	}
+
+	var ir ImageResponse
+	respBody, err := io.ReadAll(rr.Body)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	err = json.Unmarshal(respBody, &ir)
+	if err != nil {
+		t.Errorf(err.Error())
+	}
+
+	if ir.Packages != 1 {
+		t.Errorf("wrong image packages: got %v want %v",
+			ir.Packages, 1)
+	}
+	if ir.AdditionalPackages != 0 {
+		t.Errorf("wrong image AdditionalPackages: got %v want %v",
+			ir.AdditionalPackages, 0)
+	}
+	if ir.UpdateAdded != 0 {
+		t.Errorf("wrong image UpdateAdded: got %v want %v",
+			ir.UpdateAdded, 0)
+	}
+	if ir.UpdateRemoved != 0 {
+		t.Errorf("wrong image UpdateRemoved: got %v want %v",
+			ir.UpdateRemoved, 0)
+	}
+	if ir.UpdateUpdated != 0 {
+		t.Errorf("wrong image UpdateUpdated: got %v want %v",
+			ir.UpdateUpdated, 0)
+	}
+	if ir.Image.ID != testImage.ID {
+		t.Errorf("wrong image status: got %v want %v",
+			ir.Image.ID, testImage.ID)
+	}
+	if ir.Image.TotalDevicesWithImage != testImage.TotalDevicesWithImage {
+		t.Errorf("wrong total devices for image: got %v want %v",
+			ir.Image.TotalDevicesWithImage, testImage.TotalDevicesWithImage)
+	}
+	if ir.Image.TotalPackages != testImage.TotalPackages {
+		t.Errorf("wrong total packages for image: got %v want %v",
+			ir.Image.TotalPackages, testImage.TotalPackages)
+	}
+
 }
 
 func TestValidateGetAllFilterParameters(t *testing.T) {
@@ -802,16 +879,16 @@ func TestDeleteImage(t *testing.T) {
 }
 
 func TestDeleteImageFail(t *testing.T) {
-	errorImage := &models.Image{
+	successImage := &models.Image{
 		Name:   "Image Name",
-		Status: models.ImageStatusError,
+		Status: models.ImageStatusSuccess,
 		OrgID:  common.DefaultOrgID,
 	}
-	result := db.DB.Create(errorImage)
+	result := db.DB.Create(successImage)
 	if result.Error != nil {
 		t.Errorf("saving image error got %s", result.Error)
 	}
-	req, err := http.NewRequest("DELETE", fmt.Sprintf("/images/%v/", errorImage.ID), nil)
+	req, err := http.NewRequest("DELETE", fmt.Sprintf("/images/%v/", successImage.ID), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -820,21 +897,20 @@ func TestDeleteImageFail(t *testing.T) {
 
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	reterr := errors.New("Error")
-	mockImageService.EXPECT().DeleteImage(gomock.Any()).Return(reterr)
+	mockImageService.EXPECT().DeleteImage(gomock.Any()).Return(new(services.ImageNotInErrorState))
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),
 	})
-	ctx = context.WithValue(ctx, imageKey, errorImage)
+	ctx = context.WithValue(ctx, imageKey, successImage)
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
 	handler := http.HandlerFunc(DeleteImage)
 
 	handler.ServeHTTP(rr, req)
-	if status := rr.Code; status != http.StatusInternalServerError {
+	if status := rr.Code; status != http.StatusBadRequest {
 		t.Errorf("handler returned wrong status code: got %v, want %v",
-			status, http.StatusInternalServerError)
+			status, http.StatusBadRequest)
 	}
 }
 
