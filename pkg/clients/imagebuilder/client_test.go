@@ -84,6 +84,18 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(err).To(BeNil())
 		Expect(res.Meta.Count).To(Equal(0))
 	})
+	FIt("test validation of special character package name", func() {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintln(w, `{"meta":{"count":1}}`)
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+		res, err := client.SearchPackage("gcc-c++", "x86_64", "rhel-85")
+		Expect(err).To(BeNil())
+		Expect(res.Meta.Count).To(Equal(1))
+	})
 	It("test validation of empty package name", func() {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
