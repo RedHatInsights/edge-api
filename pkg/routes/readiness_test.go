@@ -31,10 +31,10 @@ func TestReadinessStatus(t *testing.T) {
 
 	// Assert that response body contains expected readiness value
 	var expectedValue ReadinessStatus
-	
+
 	data, err := ioutil.ReadAll(rr.Body)
 	assert.NoError(t, err, "Error encountered while reading response.")
-	
+
 	err = json.Unmarshal(data, &expectedValue)
 	assert.NoError(t, err, "Error encountered while unmarshalling response.")
 	assert.Equal(t, "ready", expectedValue.Readiness, "Readiness value did not match expectation")
