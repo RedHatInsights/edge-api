@@ -103,6 +103,7 @@ func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 		s.Route("/fdo", routes.MakeFDORouter)
 		s.Route("/device-groups", routes.MakeDeviceGroupsRouter)
 		s.Route("/storage", routes.MakeStorageRouter)
+		s.Route("/ready", routes.MakeReadinessRouter)
 	})
 	return route
 }

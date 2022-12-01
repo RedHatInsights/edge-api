@@ -71,6 +71,7 @@ func main() {
 	gen.addSchema("v1.DeviceGroupDetails", &models.DeviceGroupDetails{})
 	gen.addSchema("v1.ValidateUpdateResponse", &routes.ValidateUpdateResponse{})
 	gen.addSchema("v1.APIResponse", &common.APIResponse{})
+	gen.addSchema("v1.Readiness", &routes.ReadinessStatus{})
 
 	type Swagger struct {
 		Components openapi3.Components `json:"components,omitempty" yaml:"components,omitempty"`
