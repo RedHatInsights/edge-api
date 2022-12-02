@@ -261,10 +261,10 @@ func (mr *MockImageServiceInterfaceMockRecorder) GetRollbackImage(image interfac
 }
 
 // GetUpdateInfo mocks base method.
-func (m *MockImageServiceInterface) GetUpdateInfo(image models.Image) ([]models.ImageUpdateAvailable, error) {
+func (m *MockImageServiceInterface) GetUpdateInfo(image models.Image) (*models.ImageUpdateAvailable, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUpdateInfo", image)
-	ret0, _ := ret[0].([]models.ImageUpdateAvailable)
+	ret0, _ := ret[0].(*models.ImageUpdateAvailable)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
