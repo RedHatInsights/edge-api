@@ -42,22 +42,20 @@ objects:
           failureThreshold: 3
           httpGet:
             path: ${READINESS_URI}
-            port: 8000
+            port: 8080
             scheme: HTTP
-          initialDelaySeconds: 35
-          periodSeconds: 5
+          periodSeconds: 30
           successThreshold: 1
-          timeoutSeconds: 120
+          timeoutSeconds: 10
         readinessProbe:
           failureThreshold: 3
           httpGet:
             path: ${READINESS_URI}
-            port: 8000
+            port: 8080
             scheme: HTTP
-          initialDelaySeconds: 35
-          periodSeconds: 5
+          periodSeconds: 30
           successThreshold: 1
-          timeoutSeconds: 120
+          timeoutSeconds: 10
         env:
         - name: CLOWDER_ENABLED
           value: ${CLOWDER_ENABLED}
