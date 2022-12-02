@@ -2,7 +2,7 @@ package routes
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -32,7 +32,7 @@ func TestReadinessStatus(t *testing.T) {
 	// Assert that response body contains expected readiness value
 	var expectedValue ReadinessStatus
 
-	data, err := ioutil.ReadAll(rr.Body)
+	data, err := io.ReadAll(rr.Body)
 	assert.NoError(t, err, "Error encountered while reading response.")
 
 	err = json.Unmarshal(data, &expectedValue)

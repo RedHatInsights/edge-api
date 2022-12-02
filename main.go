@@ -81,6 +81,7 @@ func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 
 	// Unauthenticated routes
 	route.Get("/", routes.StatusOK)
+	route.Get("/ready", routes.GetReadinessStatus)
 	route.Get("/api/edge/v1/openapi.json", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, cfg.OpenAPIFilePath)
 	})
@@ -103,7 +104,6 @@ func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 		s.Route("/fdo", routes.MakeFDORouter)
 		s.Route("/device-groups", routes.MakeDeviceGroupsRouter)
 		s.Route("/storage", routes.MakeStorageRouter)
-		s.Route("/ready", routes.MakeReadinessRouter)
 	})
 	return route
 }
