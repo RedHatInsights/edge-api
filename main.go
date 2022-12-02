@@ -51,7 +51,7 @@ func initDependencies() {
 
 func serveMetrics(port int) *http.Server {
 	metricsRoute := chi.NewRouter()
-	metricsRoute.Get("/", routes.StatusOK)
+	metricsRoute.Get("/", routes.GetReadinessStatus)
 	metricsRoute.Handle("/metrics", promhttp.Handler())
 	server := http.Server{
 		Addr:         fmt.Sprintf(":%d", port),
@@ -81,7 +81,6 @@ func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 
 	// Unauthenticated routes
 	route.Get("/", routes.StatusOK)
-	route.Get("/ready", routes.GetReadinessStatus)
 	route.Get("/api/edge/v1/openapi.json", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, cfg.OpenAPIFilePath)
 	})
