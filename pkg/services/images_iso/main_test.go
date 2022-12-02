@@ -137,17 +137,13 @@ var _ = Describe("Image Iso Kafka Consumer Test", func() {
 					errResult := initConsumer(ctx)
 					Expect(errResult).To(BeNil())
 				})
-			})
-		})
-	})
-	Describe("Should not get Consumer", func() {
-		When("One does not exist yet", func() {
-			Context("One does not exist yet", func() {
-				It("should get error be when there is no Consumer", func() {
+
+				It("should get error when there is no Consumer", func() {
 					consumerGroupID := "imagesisobuild"
-					mockConsumerService.EXPECT().GetConsumer(consumerGroupID).Return(nil, errors.New("failed to get ISO consumer"))
+					expectedError := errors.New("failed to get ISO consumer")
+					mockConsumerService.EXPECT().GetConsumer(consumerGroupID).Return(nil, expectedError)
 					errResult := initConsumer(ctx)
-					Expect(errResult).ToNot(BeNil())
+					Expect(errResult).To(Equal((expectedError)))
 				})
 			})
 		})

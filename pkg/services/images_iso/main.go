@@ -35,7 +35,7 @@ func initConsumer(ctx context.Context) error {
 
 	if cfg.KafkaConfig.Brokers == nil {
 		mslog.Error("No kafka brokers configuration found")
-		return errors.New("no kafka configuration found")
+		return errors.New("no kafka brokers configuration found")
 	}
 
 	consumerGroup := "imagesisobuild"
@@ -140,7 +140,7 @@ func main() {
 	err := initConsumer(ctx)
 	exitCode := 0
 	if err != nil {
-		mslog.WithField("error", err).Error("Error when initializing consumer")
+		mslog.WithField("error", err.Error()).Error("Error when initializing consumer")
 		exitCode = 1
 	}
 	logger.FlushLogger()
