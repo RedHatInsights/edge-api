@@ -90,7 +90,7 @@ var _ = Describe("Image Builder Client Test", func() {
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprintln(w, `{"meta":{"count":1}}`)
 			pkgName := r.URL.Query().Get("search")
-			Expect(pkgName).To(ContainSubstring("gcc-c++"))
+			Expect(pkgName).To(Equal("gcc-c++"))
 			parampkgName := r.URL.RawQuery
 			Expect(parampkgName).To(ContainSubstring("search=gcc-c%2B%2B"))
 
