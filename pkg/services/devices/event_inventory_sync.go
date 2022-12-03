@@ -24,19 +24,17 @@ func (ev EventInventorySyncHandler) Consume(ctx context.Context) {
 
 	if ev.RedHatOrgID == "" || ev.Data.RequestID == "" {
 		eventlog.WithFields(log.Fields{
-			"message":   "Malformed inventory sync request, required data missing",
 			"requestId": ev.Data.RequestID,
 			"orgID":     ev.RedHatOrgID,
-		})
+		}).Error("Malformed device sync request, required data missing")
 		return
 	}
 
 	if ev.RedHatOrgID != ev.Data.Identity.Identity.OrgID {
 		eventlog.WithFields(log.Fields{
-			"message":    "Malformed inventory sync request, required data mis match",
 			"IdentityId": ev.Data.Identity.Identity.OrgID,
 			"orgID":      ev.RedHatOrgID,
-		})
+		}).Error("Malformed device sync request, required data missing")
 		return
 	}
 	// get the services from the context
