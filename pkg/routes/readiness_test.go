@@ -18,10 +18,14 @@ func TestReadinessStatus200(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h := &GoodHandler{}
-	g := &ConfigurableWebGetter{h.fauxUrl, h.Get}
+	goodHandler := &ConfigurableWebGetter{
+		Url: "",
+		GetUrl: func(string) (*http.Response, error) {
+			return nil, nil
+		},
+	}
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(GetReadinessStatus(g))
+	handler := http.HandlerFunc(GetReadinessStatus(goodHandler))
 	ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{
 		Log: log.NewEntry(log.StandardLogger()),
 	})
@@ -48,10 +52,14 @@ func TestReadinessStatus503(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	h := &BadHandler{}
-	g := &ConfigurableWebGetter{h.fauxUrl, h.Get}
+	badHandler := &ConfigurableWebGetter{
+		Url: "",
+		GetUrl: func(string) (*http.Response, error) {
+			return nil, http.ErrServerClosed
+		},
+	}
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(GetReadinessStatus(g))
+	handler := http.HandlerFunc(GetReadinessStatus(badHandler))
 	ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{
 		Log: log.NewEntry(log.StandardLogger()),
 	})
@@ -70,20 +78,4 @@ func TestReadinessStatus503(t *testing.T) {
 	err = json.Unmarshal(data, &expectedValue)
 	assert.NoError(t, err, "Error encountered while unmarshalling response.")
 	assert.Equal(t, "not ready", expectedValue.Readiness, "Readiness value did not match expectation")
-}
-
-type GoodHandler struct {
-	fauxUrl string
-}
-
-func (fh *GoodHandler) Get(url string) (resp *http.Response, err error) {
-	return nil, nil
-}
-
-type BadHandler struct {
-	fauxUrl string
-}
-
-func (fh *BadHandler) Get(url string) (resp *http.Response, err error) {
-	return nil, http.ErrServerClosed
 }
