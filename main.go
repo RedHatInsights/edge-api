@@ -51,7 +51,12 @@ func initDependencies() {
 
 func serveMetrics(port int) *http.Server {
 	metricsRoute := chi.NewRouter()
-	metricsRoute.Get("/", routes.GetReadinessStatus)
+
+	readinessHandlerFunc := &routes.ConfigurableWebGetter{
+		Url:    fmt.Sprintf("%s:%d", config.Get().Hostname, config.Get().WebPort),
+		GetUrl: http.Get,
+	}
+	metricsRoute.Get("/", routes.GetReadinessStatus(readinessHandlerFunc))
 	metricsRoute.Handle("/metrics", promhttp.Handler())
 	server := http.Server{
 		Addr:         fmt.Sprintf(":%d", port),
