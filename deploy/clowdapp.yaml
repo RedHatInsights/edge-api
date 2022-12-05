@@ -335,7 +335,7 @@ parameters:
   value: "1"
 - description: Location of readiness probe
   name: READINESS_URI
-  value: "/ready"
+  value: "/"
 - description: Memory limit of service
   name: MEMORY_LIMIT
   required: false
