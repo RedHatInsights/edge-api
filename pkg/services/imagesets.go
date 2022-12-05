@@ -137,6 +137,7 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 
 	if result := db.OrgDB(orgID, tx, "image_sets").Debug().Table("image_sets").Limit(limit).Offset(offset).
 		Select(`image_sets.id, image_sets.name, image_sets.version, image_sets.updated_at, max(images.id) as "image_id"`).
+		Where(`image_sets.deleted_at IS NULL`).
 		Joins(`JOIN images ON image_sets.id = images.image_set_id`).
 		Group(`image_sets.id, image_sets.name, image_sets.version,image_sets.updated_at`).
 		Find(&imageSetsRows); result.Error != nil {

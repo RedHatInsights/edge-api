@@ -9,18 +9,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type EventDeviceSyncHandlerDummy struct {
+type EventInventorySyncHandlerDummy struct {
 	models.CRCCloudEvent
 	Data models.EdgeBasePayload `json:"data,omitempty"`
 }
 
-type EventDeviceSyncHandler struct {
-	EventDeviceSyncHandlerDummy
+type EventInventorySyncHandler struct {
+	EventInventorySyncHandlerDummy
 }
 
-func (ev EventDeviceSyncHandler) Consume(ctx context.Context) {
+func (ev EventInventorySyncHandler) Consume(ctx context.Context) {
 	eventlog := utility.GetLoggerFromContext(ctx)
-	eventlog.Info("Starting device sync")
+	eventlog.Info("Starting inventory sync")
 
 	if ev.RedHatOrgID == "" || ev.Data.RequestID == "" {
 		eventlog.WithFields(log.Fields{
@@ -34,11 +34,11 @@ func (ev EventDeviceSyncHandler) Consume(ctx context.Context) {
 		eventlog.WithFields(log.Fields{
 			"IdentityId": ev.Data.Identity.Identity.OrgID,
 			"orgID":      ev.RedHatOrgID,
-		}).Error("Malformed device sync request, required data mismatch")
+		}).Error("Malformed device sync request, required data missing")
 		return
 	}
 	// get the services from the context
 	edgeAPIServices := dependencies.ServicesFromContext(ctx)
 	deviceService := edgeAPIServices.DeviceService
-	deviceService.SyncDevicesWithInventory(ev.RedHatOrgID)
+	deviceService.SyncInventoryWithDevices(ev.RedHatOrgID)
 }
