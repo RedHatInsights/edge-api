@@ -52,9 +52,10 @@ func initDependencies() {
 func serveMetrics(port int) *http.Server {
 	metricsRoute := chi.NewRouter()
 	SpecURL := "api/edge/v1/openapi.json"
+	LocalHost := "127.0.0.1"
 
 	readinessHandlerFunc := &routes.ConfigurableWebGetter{
-		URL:    fmt.Sprintf("%s:%d/%s", config.Get().Hostname, config.Get().WebPort, SpecURL),
+		URL:    fmt.Sprintf("%s:%d/%s", LocalHost, config.Get().WebPort, SpecURL),
 		GetURL: http.Get,
 	}
 
