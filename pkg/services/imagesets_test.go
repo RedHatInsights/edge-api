@@ -301,4 +301,38 @@ var _ = Describe("ImageSets Service Test", func() {
 
 		})
 	})
+
+	Describe("Delete Image Set OK Get ImageSet View OK", func() {
+		OrgID := common.DefaultOrgID
+		CommonName := faker.UUIDHyphenated()
+
+		imageSet1 := models.ImageSet{OrgID: OrgID, Name: CommonName + "-" + faker.Name(), Version: 3}
+		db.DB.Create(&imageSet1)
+		image1 := models.Image{OrgID: OrgID, Name: imageSet1.Name, ImageSetID: &imageSet1.ID, Version: 1, Status: models.ImageStatusSuccess}
+		db.DB.Create(&image1)
+		image2 := models.Image{OrgID: OrgID, Name: imageSet1.Name, ImageSetID: &imageSet1.ID, Version: 2, Status: models.ImageStatusSuccess}
+		db.DB.Create(&image2)
+
+		It("Delete Image Set OK", func() {
+			err := service.DeleteImageSet(imageSet1.ID)
+			Expect(err).ToNot(HaveOccurred())
+
+			var tempImageSet models.ImageSet
+			res := db.DB.First(&tempImageSet, imageSet1.ID)
+			Expect(res.Error.Error()).Should(Equal("record not found"))
+
+			var tempImage models.Image
+			res1 := db.DB.First(&tempImage, image1.ID)
+			Expect(res1.Error.Error()).Should(Equal("record not found"))
+			res1 = db.DB.First(&tempImage, image2.ID)
+			Expect(res1.Error.Error()).Should(Equal("record not found"))
+
+			dbFilter := db.DB.Debug().Where("image_sets.name = ? ", imageSet1.Name)
+
+			imageSetsView, err := service.GetImageSetsView(100, 0, dbFilter)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(*imageSetsView)).To(Equal(0))
+
+		})
+	})
 })
