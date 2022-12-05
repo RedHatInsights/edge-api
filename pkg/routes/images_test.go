@@ -392,9 +392,9 @@ func TestGetImageDetailsById(t *testing.T) {
 }
 
 func TestGetImageDetailsByIdWithUpdate(t *testing.T) {
-	imaged := make([]models.ImageUpdateAvailable, 5)
-	imaged[4].Image.TotalDevicesWithImage = 4
-	imaged[4].Image.TotalPackages = 3
+	imaged := models.ImageUpdateAvailable{}
+	imaged.Image.TotalDevicesWithImage = 4
+	imaged.Image.TotalPackages = 3
 
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
@@ -405,7 +405,7 @@ func TestGetImageDetailsByIdWithUpdate(t *testing.T) {
 
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
-	mockImageService.EXPECT().GetUpdateInfo(gomock.Any()).Return(imaged, nil)
+	mockImageService.EXPECT().GetUpdateInfo(gomock.Any()).Return(&imaged, nil)
 	ctx := context.WithValue(req.Context(), imageKey, &testImage)
 
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
