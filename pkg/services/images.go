@@ -51,7 +51,7 @@ type ImageServiceInterface interface {
 	CreateInstallerForImage(context.Context, *models.Image) (*models.Image, chan error, error)
 	GetImageByID(id string) (*models.Image, error)
 	GetImageDevicesCount(imageId uint) (int64, error)
-	GetUpdateInfo(image models.Image) ([]models.ImageUpdateAvailable, error)
+	GetUpdateInfo(image models.Image) (*models.ImageUpdateAvailable, error)
 	AddPackageInfo(image *models.Image) (ImageDetail, error)
 	GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error)
 	CheckImageName(name, orgID string) (bool, error)
@@ -1104,9 +1104,9 @@ func (s *ImageService) AddPackageInfo(image *models.Image) (ImageDetail, error) 
 		return imgDetail, err
 	}
 	if upd != nil {
-		imgDetail.UpdateAdded = len(upd[len(upd)-1].PackageDiff.Removed)
-		imgDetail.UpdateRemoved = len(upd[len(upd)-1].PackageDiff.Added)
-		imgDetail.UpdateUpdated = len(upd[len(upd)-1].PackageDiff.Upgraded)
+		imgDetail.UpdateAdded = len(upd.PackageDiff.Removed)
+		imgDetail.UpdateRemoved = len(upd.PackageDiff.Added)
+		imgDetail.UpdateUpdated = len(upd.PackageDiff.Upgraded)
 	} else {
 		imgDetail.UpdateAdded = 0
 		imgDetail.UpdateRemoved = 0
@@ -1425,53 +1425,58 @@ func (s *ImageService) CheckIfIsLatestVersion(previousImage *models.Image) error
 }
 
 // GetUpdateInfo return package info when has an update to the image
-func (s *ImageService) GetUpdateInfo(image models.Image) ([]models.ImageUpdateAvailable, error) {
-	var images []models.Image
-	var imageDiff []models.ImageUpdateAvailable
-	updates := db.DB.Where("Image_set_id = ? and Images.Status = ? and Images.Id < ?",
-		image.ImageSetID, models.ImageStatusSuccess, image.ID).Joins("Commit").
-		Order("Images.updated_at desc").Limit(1).Find(&images)
-
-	if updates.Error != nil {
-		s.log.WithField("error", updates.Error.Error()).Error("Error retrieving update")
-		return nil, new(UpdateNotFoundError)
-	}
-	if updates.RowsAffected == 0 {
-		s.log.Info("No rows affected")
+func (s *ImageService) GetUpdateInfo(image models.Image) (*models.ImageUpdateAvailable, error) {
+	if image.Status != models.ImageStatusSuccess {
+		// we get update info only for a successfully built image as this information make no sense for other statuses
 		return nil, nil
 	}
-	for _, upd := range images {
-		upd := upd // this will prevent implicit memory aliasing in the loop
-		db.DB.First(&upd.Commit, upd.CommitID)
-		if err := db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages); err != nil {
-			s.log.WithField("error", err.Error()).Error("Error retrieving installed packages")
-			return nil, err
+	var updateFromImage models.Image
+	if result := db.DB.Where("Image_set_id = ? and Images.Status = ? and Images.Id < ?",
+		image.ImageSetID, models.ImageStatusSuccess, image.ID).Joins("Commit").
+		Order("Images.created_at DESC").First(&updateFromImage); result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			// image is not updating from any image
+			s.log.WithField("error", result.Error.Error()).Error("Error retrieving update")
+			return nil, nil
 		}
-		if err := db.DB.Model(&upd).Association("Packages").Find(&upd.Packages); err != nil {
-			s.log.WithField("error", err.Error()).Error("Error retrieving updated packages")
-			return nil, err
-		}
-
-		if err := db.DB.Model(&upd).Association("CustomPackages").Find(&upd.CustomPackages); err != nil {
-			s.log.WithField("error", err.Error()).Error("Error retrieving updated CustomPackages")
-			return nil, err
-		}
-		var delta models.ImageUpdateAvailable
-		imageDevicesCount, err := s.GetImageDevicesCount(image.ID)
-		if err != nil {
-			s.log.WithField("error", err.Error()).Error("Could not find device image info")
-			return nil, err
-		}
-		diff := GetDiffOnUpdate(image, upd)
-		upd.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
-		delta.Image = upd
-		delta.PackageDiff = diff
-		totalPackages := len(image.Commit.InstalledPackages)
-		delta.Image.TotalPackages = totalPackages
-		delta.Image.TotalDevicesWithImage = imageDevicesCount
-		imageDiff = append(imageDiff, delta)
+		return nil, result.Error
 	}
-	return imageDiff, nil
+
+	if result := db.DB.First(&updateFromImage.Commit, updateFromImage.CommitID); result.Error != nil {
+		s.log.WithField("error", result.Error.Error()).Error("Error when retrieving updateFromImage commit")
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, new(ImageCommitNotFound)
+		}
+		return nil, result.Error
+	}
+	if err := db.DB.Model(&updateFromImage.Commit).Association("InstalledPackages").Find(&updateFromImage.Commit.InstalledPackages); err != nil {
+		s.log.WithField("error", err.Error()).Error("Error retrieving installed packages")
+		return nil, err
+	}
+	if err := db.DB.Model(&updateFromImage).Association("Packages").Find(&updateFromImage.Packages); err != nil {
+		s.log.WithField("error", err.Error()).Error("Error retrieving updated packages")
+		return nil, err
+	}
+
+	if err := db.DB.Model(&updateFromImage).Association("CustomPackages").Find(&updateFromImage.CustomPackages); err != nil {
+		s.log.WithField("error", err.Error()).Error("Error retrieving updated CustomPackages")
+		return nil, err
+	}
+	var imageUpdateAvailable models.ImageUpdateAvailable
+	imageDevicesCount, err := s.GetImageDevicesCount(image.ID)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Could not find device image info")
+		return nil, err
+	}
+	diff := GetDiffOnUpdate(image, updateFromImage)
+	updateFromImage.Commit.InstalledPackages = nil // otherwise the frontend will get the whole list of installed packages
+	imageUpdateAvailable.Image = updateFromImage
+	imageUpdateAvailable.PackageDiff = diff
+	totalPackages := len(image.Commit.InstalledPackages)
+	imageUpdateAvailable.Image.TotalPackages = totalPackages
+	imageUpdateAvailable.Image.TotalDevicesWithImage = imageDevicesCount
+
+	return &imageUpdateAvailable, nil
 }
 
 // GetMetadata return package info when has an update to the image

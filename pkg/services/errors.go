@@ -40,6 +40,7 @@ const DeviceHasImageUndefinedMsg = "device has image undefined"
 const DeviceHasNoImageUpdateMsg = "device has no image update"
 const DevicesHasMoreThanOneImageSetMsg = "device has more than one image-set"
 const ImageHasNoImageSetMsg = "Image has no image-set"
+const ImageCommitNotFoundMsg = "Image commit not found"
 const CommitNotFoundMsg = "Commit was not found"
 const CommitNotValidMsg = "is not valid for update"
 const OstreeNotFoundMsg = "Ostree not found"
@@ -364,9 +365,16 @@ func (e *KafkaAllBrokersDown) Error() string {
 	return KafkaAllBrokersDownMsg
 }
 
-// DBError indicates a dbError during search
+// DBCommitError indicates a dbError during search
 type DBCommitError struct{}
 
 func (e *DBCommitError) Error() string {
 	return DBCommitErrorMsg
+}
+
+// ImageCommitNotFound occurs when the image commit cannot be found
+type ImageCommitNotFound struct{}
+
+func (e *ImageCommitNotFound) Error() string {
+	return ImageCommitNotFoundMsg
 }

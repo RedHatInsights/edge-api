@@ -1690,6 +1690,10 @@ var _ = Describe("Image Service Test", func() {
 					ImageSetID: &imageSet.ID,
 					Version:    1,
 					OrgID:      common.DefaultOrgID,
+					Commit: &models.Commit{
+						OrgID: common.DefaultOrgID,
+						Arch:  "x86_64",
+					},
 				}
 				result = db.DB.Create(image1)
 				Expect(result.Error).ToNot(HaveOccurred())
@@ -1731,13 +1735,13 @@ var _ = Describe("Image Service Test", func() {
 				})
 
 				It("GetUpdateInfo of image2 with 2 system and one installPackage", func() {
-					var imageDiff []models.ImageUpdateAvailable
+					var imageDiff *models.ImageUpdateAvailable
 					db.DB.Debug().Create(&devices)
 					totalPackage := len(image2.Commit.InstalledPackages)
 					imageDiff, err := service.GetUpdateInfo(*image2)
-					Expect(imageDiff[0].Image.TotalPackages).To(Equal(totalPackage))
-					Expect(imageDiff[0].Image.TotalDevicesWithImage).To(Equal(int64(2)))
-					Expect(err).To(BeNil())
+					Expect(err).ToNot(HaveOccurred())
+					Expect(imageDiff.Image.TotalPackages).To(Equal(totalPackage))
+					Expect(imageDiff.Image.TotalDevicesWithImage).To(Equal(int64(2)))
 				})
 			})
 
@@ -1769,6 +1773,200 @@ var _ = Describe("Image Service Test", func() {
 					Expect(err1.Error()).To(Equal("cannot find org-id"))
 				})
 			})
+		})
+	})
+
+	Context("AddPackageInfo", func() {
+		imageName := faker.Name()
+		orgID := common.DefaultOrgID
+		imageSet := models.ImageSet{
+			Name:    imageName,
+			Version: 2,
+			OrgID:   orgID,
+		}
+		resImageSet := db.DB.Create(&imageSet)
+		image1 := models.Image{
+			Name:       imageName,
+			Status:     models.ImageStatusSuccess,
+			ImageSetID: &imageSet.ID,
+			Version:    1,
+			OrgID:      orgID,
+			Commit: &models.Commit{
+				OrgID: orgID,
+				Arch:  "x86_64",
+				InstalledPackages: []models.InstalledPackage{
+					{Name: "vim"},
+				},
+			},
+		}
+		resImage1 := db.DB.Create(&image1)
+		image2 := models.Image{
+			Name:       imageName,
+			Status:     models.ImageStatusSuccess,
+			ImageSetID: &imageSet.ID,
+			Version:    2,
+			OrgID:      orgID,
+			Commit: &models.Commit{
+				OrgID: orgID,
+				Arch:  "x86_64",
+				InstalledPackages: []models.InstalledPackage{
+					{Name: "mc"},
+					{Name: "emacs"},
+					{Name: "gcc"},
+				},
+			},
+		}
+		resImage2 := db.DB.Create(&image2)
+		devices := []models.Device{
+			{OrgID: orgID, UUID: faker.UUIDHyphenated(), ImageID: image2.ID},
+			{OrgID: orgID, UUID: faker.UUIDHyphenated(), ImageID: image2.ID},
+		}
+		resDevices := db.DB.Create(devices)
+
+		It("all records created successfully", func() {
+			Expect(resImageSet.Error).ToNot(HaveOccurred())
+			Expect(resImage1.Error).ToNot(HaveOccurred())
+			Expect(resImage2.Error).ToNot(HaveOccurred())
+			Expect(resDevices.Error).ToNot(HaveOccurred())
+		})
+
+		It("should return the correct values", func() {
+			imageDetails, err := service.AddPackageInfo(&image2)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(imageDetails).ToNot(BeNil())
+			totalPackages := len(image2.Commit.InstalledPackages)
+			Expect(imageDetails.Packages).To(Equal(totalPackages))
+			Expect(imageDetails.UpdateAdded).To(Equal(totalPackages))
+			Expect(imageDetails.UpdateRemoved).To(Equal(len(image1.Commit.InstalledPackages)))
+			Expect(imageDetails.UpdateUpdated).To(Equal(0))
+		})
+
+		It("should return error when GetUpdateInfo return error", func() {
+			imageName := faker.Name()
+			imageSet := models.ImageSet{
+				Name:    imageName,
+				Version: 2,
+				OrgID:   orgID,
+			}
+			result := db.DB.Create(&imageSet)
+			Expect(result.Error).ToNot(HaveOccurred())
+			// when image1 is without commit this should return error from GetUpdateInfo
+			image1 := models.Image{
+				Name:       imageName,
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    1,
+				OrgID:      orgID,
+			}
+			result = db.DB.Create(&image1)
+			Expect(result.Error).ToNot(HaveOccurred())
+			image2 := models.Image{
+				Name:       imageName,
+				Status:     models.ImageStatusSuccess,
+				ImageSetID: &imageSet.ID,
+				Version:    2,
+				OrgID:      orgID,
+				Commit: &models.Commit{
+					OrgID: orgID,
+					Arch:  "x86_64",
+					InstalledPackages: []models.InstalledPackage{
+						{Name: "vim"},
+					},
+				},
+			}
+			result = db.DB.Create(&image2)
+			Expect(result.Error).ToNot(HaveOccurred())
+			_, err := service.AddPackageInfo(&image2)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal(services.ImageCommitNotFoundMsg))
+		})
+	})
+
+	Context("GetUpdateInfo", func() {
+		imageName := faker.Name()
+		orgID := common.DefaultOrgID
+		imageSet := models.ImageSet{
+			Name:    imageName,
+			Version: 3,
+			OrgID:   orgID,
+		}
+		resImageSet := db.DB.Create(&imageSet)
+		image1 := models.Image{
+			Name:       imageName,
+			Status:     models.ImageStatusSuccess,
+			ImageSetID: &imageSet.ID,
+			Version:    1,
+			OrgID:      orgID,
+			Commit: &models.Commit{
+				OrgID: orgID,
+				Arch:  "x86_64",
+				InstalledPackages: []models.InstalledPackage{
+					{Name: "vim"},
+				},
+			},
+		}
+		resImage1 := db.DB.Create(&image1)
+		image0 := models.Image{
+			Name:       imageName,
+			Status:     models.ImageStatusError,
+			ImageSetID: &imageSet.ID,
+			Version:    2,
+			OrgID:      orgID,
+		}
+		resImage0 := db.DB.Create(&image0)
+		image2 := models.Image{
+			Name:       imageName,
+			Status:     models.ImageStatusSuccess,
+			ImageSetID: &imageSet.ID,
+			Version:    3,
+			OrgID:      orgID,
+			Commit: &models.Commit{
+				OrgID: orgID,
+				Arch:  "x86_64",
+				InstalledPackages: []models.InstalledPackage{
+					{Name: "mc"},
+					{Name: "emacs"},
+					{Name: "gcc"},
+				},
+			},
+		}
+		resImage2 := db.DB.Create(&image2)
+		devices := []models.Device{
+			{OrgID: orgID, UUID: faker.UUIDHyphenated(), ImageID: image2.ID},
+			{OrgID: orgID, UUID: faker.UUIDHyphenated(), ImageID: image2.ID},
+		}
+		resDevices := db.DB.Create(devices)
+
+		It("all records created successfully", func() {
+			Expect(resImageSet.Error).ToNot(HaveOccurred())
+			Expect(resImage0.Error).ToNot(HaveOccurred())
+			Expect(resImage1.Error).ToNot(HaveOccurred())
+			Expect(resImage2.Error).ToNot(HaveOccurred())
+			Expect(resDevices.Error).ToNot(HaveOccurred())
+		})
+
+		It("should return the correct values", func() {
+			imageUpdateAvailable, err := service.GetUpdateInfo(image2)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(imageUpdateAvailable).ToNot(BeNil())
+			totalPackages := len(image2.Commit.InstalledPackages)
+			Expect(imageUpdateAvailable.Image.TotalPackages).To(Equal(totalPackages))
+			Expect(imageUpdateAvailable.Image.TotalDevicesWithImage).To(Equal(int64(len(devices))))
+			Expect(len(imageUpdateAvailable.PackageDiff.Removed)).To(Equal(totalPackages))
+			Expect(len(imageUpdateAvailable.PackageDiff.Added)).To(Equal(len(image1.Commit.InstalledPackages)))
+			Expect(len(imageUpdateAvailable.PackageDiff.Upgraded)).To(Equal(0))
+		})
+
+		It("should return nil update when image has not success status", func() {
+			imageUpdateAvailable, err := service.GetUpdateInfo(image0)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(imageUpdateAvailable).To(BeNil())
+		})
+
+		It("should return nil update when image has not been updated", func() {
+			imageUpdateAvailable, err := service.GetUpdateInfo(image1)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(imageUpdateAvailable).To(BeNil())
 		})
 	})
 })
