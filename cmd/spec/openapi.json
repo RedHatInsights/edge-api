@@ -14729,14 +14729,6 @@
         },
         "type": "object"
       },
-      "v1.Readiness": {
-        "properties": {
-          "readiness": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
       "v1.Repo": {
         "properties": {
           "CreatedAt": {},
@@ -17936,44 +17928,6 @@
           }
         },
         "summary": "Get an image by ostree hash."
-      }
-    },
-    "/ready": {
-      "get": {
-        "operationId": "GetReadinessStatus",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.Readiness"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "400": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.BadRequest"
-                }
-              }
-            },
-            "description": "The request sent couldn't be processed."
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/v1.InternalServerError"
-                }
-              }
-            },
-            "description": "There was an internal server error."
-          }
-        },
-        "summary": "Return service readiness."
       }
     },
     "/storage/images-repos/{imageID}/content/{repoFilePath}": {
