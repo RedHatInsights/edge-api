@@ -27,7 +27,7 @@ type ReadinessStatus struct {
 // Checks that web server is running and ready.
 func GetReadinessStatus(g WebGetter) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		_, err := g.Get()
 		if err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
