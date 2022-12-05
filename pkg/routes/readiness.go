@@ -2,6 +2,8 @@ package routes
 
 import (
 	"net/http"
+
+	"github.com/redhatinsights/edge-api/pkg/dependencies"
 )
 
 // Add description
@@ -27,16 +29,19 @@ type ReadinessStatus struct {
 // Checks that web server is running and ready.
 func GetReadinessStatus(g WebGetter) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s := dependencies.ServicesFromContext(r.Context())
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		_, err := g.Get()
 		if err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			respondWithJSONBody(w, nil, ReadinessStatus{
+			s.Log.Info("Readiness probe failed.", err)
+			respondWithJSONBody(w, s.Log, ReadinessStatus{
 				Readiness: "not ready",
 			})
 		} else {
 			w.WriteHeader(http.StatusOK)
-			respondWithJSONBody(w, nil, ReadinessStatus{
+			s.Log.Info("Readiness probe succeeded.")
+			respondWithJSONBody(w, s.Log, ReadinessStatus{
 				Readiness: "ready",
 			})
 		}
