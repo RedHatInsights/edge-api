@@ -11,13 +11,13 @@ type WebGetter interface {
 
 // Add description
 type ConfigurableWebGetter struct {
-	Url    string
-	GetUrl func(string) (resp *http.Response, err error)
+	URL    string
+	GetURL func(string) (resp *http.Response, err error)
 }
 
 // Add description
 func (c *ConfigurableWebGetter) Get() (resp *http.Response, err error) {
-	return c.GetUrl(c.Url)
+	return c.GetURL(c.URL)
 }
 
 type ReadinessStatus struct {

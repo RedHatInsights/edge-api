@@ -19,8 +19,8 @@ func TestReadinessStatus200(t *testing.T) {
 	}
 
 	goodHandler := &ConfigurableWebGetter{
-		Url: "",
-		GetUrl: func(string) (*http.Response, error) {
+		URL: "",
+		GetURL: func(string) (*http.Response, error) {
 			return nil, nil
 		},
 	}
@@ -53,8 +53,8 @@ func TestReadinessStatus503(t *testing.T) {
 	}
 
 	badHandler := &ConfigurableWebGetter{
-		Url: "",
-		GetUrl: func(string) (*http.Response, error) {
+		URL: "",
+		GetURL: func(string) (*http.Response, error) {
 			return nil, http.ErrServerClosed
 		},
 	}

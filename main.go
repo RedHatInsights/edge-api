@@ -53,8 +53,8 @@ func serveMetrics(port int) *http.Server {
 	metricsRoute := chi.NewRouter()
 
 	readinessHandlerFunc := &routes.ConfigurableWebGetter{
-		Url:    fmt.Sprintf("%s/%s", config.Get().EdgeAPIBaseURL, config.Get().OpenAPIFilePath),
-		GetUrl: http.Get,
+		URL:    fmt.Sprintf("%s/%s", config.Get().EdgeAPIBaseURL, config.Get().OpenAPIFilePath),
+		GetURL: http.Get,
 	}
 
 	metricsRoute.Get("/", routes.GetReadinessStatus(readinessHandlerFunc))
