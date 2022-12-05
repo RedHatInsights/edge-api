@@ -41,23 +41,21 @@ objects:
         livenessProbe:
           failureThreshold: 3
           httpGet:
-            path: /
+            path: ${READINESS_URI}
             port: 9000
             scheme: HTTP
-          initialDelaySeconds: 35
-          periodSeconds: 5
+          periodSeconds: 30
           successThreshold: 1
-          timeoutSeconds: 120
+          timeoutSeconds: 10
         readinessProbe:
           failureThreshold: 3
           httpGet:
-            path: /
+            path: ${READINESS_URI}
             port: 9000
             scheme: HTTP
-          initialDelaySeconds: 35
-          periodSeconds: 5
+          periodSeconds: 30
           successThreshold: 1
-          timeoutSeconds: 120
+          timeoutSeconds: 10
         env:
         - name: CLOWDER_ENABLED
           value: ${CLOWDER_ENABLED}
@@ -335,6 +333,9 @@ parameters:
   name: CPU_LIMIT
   required: false
   value: "1"
+- description: Location of readiness probe
+  name: READINESS_URI
+  value: "/"
 - description: Memory limit of service
   name: MEMORY_LIMIT
   required: false
