@@ -23,6 +23,7 @@ type EdgeConfig struct {
 	Auth                     bool                      `json:"auth,omitempty"`
 	WebPort                  int                       `json:"web_port,omitempty"`
 	MetricsPort              int                       `json:"metrics_port,omitempty"`
+	MetricsBaseURL           string                    `json:"metrics_api_base_url,omitempty"`
 	Logging                  *loggingConfig            `json:"logging,omitempty"`
 	LogLevel                 string                    `json:"log_level,omitempty"`
 	Debug                    bool                      `json:"debug,omitempty"`
@@ -110,6 +111,7 @@ func Init() {
 	options := viper.New()
 	options.SetDefault("WebPort", 3000)
 	options.SetDefault("MetricsPort", 8080)
+	options.SetDefault("MetricsBaseURL", "http://localhost")
 	options.SetDefault("LogLevel", "DEBUG")
 	options.SetDefault("Auth", false)
 	options.SetDefault("Debug", false)
@@ -187,6 +189,7 @@ func Init() {
 		Auth:            options.GetBool("Auth"),
 		WebPort:         options.GetInt("WebPort"),
 		MetricsPort:     options.GetInt("MetricsPort"),
+		MetricsBaseURL:  options.GetString("MetricsBaseURL"),
 		Debug:           options.GetBool("Debug"),
 		LogLevel:        options.GetString("LOG_LEVEL"),
 		BucketName:      options.GetString("EdgeTarballsBucket"),
@@ -350,6 +353,7 @@ func LogConfigAtStartup(cfg *EdgeConfig) {
 		"Auth":                     cfg.Auth,
 		"WebPort":                  cfg.WebPort,
 		"MetricsPort":              cfg.MetricsPort,
+		"MetricsBaseURL":           cfg.MetricsBaseURL,
 		"LogLevel":                 cfg.LogLevel,
 		"Debug":                    cfg.Debug,
 		"BucketName":               cfg.BucketName,
