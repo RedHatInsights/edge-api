@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"regexp"
 	"testing"
 
@@ -149,6 +150,84 @@ func TestDeleteImageSetError(t *testing.T) {
 	if status := rr.Code; status != http.StatusBadRequest {
 		t.Errorf("handler returned wrong status code: got %v, want %v",
 			status, http.StatusOK)
+
+	}
+}
+
+func TestGetImageSetsDevicesByIDFail(t *testing.T) {
+	imageSetID := &models.ImageSet{}
+	req, err := http.NewRequest("GET", "/devices", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := context.WithValue(req.Context(), imageSetKey, imageSetID)
+	ctrl := gomock.NewController(t)
+
+	defer ctrl.Finish()
+
+	mockImageSetService := mock_services.NewMockImageSetsServiceInterface(ctrl)
+	edgeAPIServices := &dependencies.EdgeAPIServices{
+		ImageSetService: mockImageSetService,
+		Log:             log.NewEntry(log.StandardLogger()),
+	}
+	err = errors.NewInternalServerError()
+	mockImageSetService.EXPECT().GetDeviceIdsByImageSetID(gomock.Any()).Return(0, nil, err)
+
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	ctx = dependencies.ContextWithServices(req.Context(), edgeAPIServices)
+	req = req.WithContext(ctx)
+	handler := http.HandlerFunc(GetImageSetsDevicesByID)
+
+	handler.ServeHTTP(rr, req.WithContext(ctx))
+	if status := rr.Code; status != http.StatusInternalServerError {
+		t.Errorf("handler returned wrong status code: got %v, want %v",
+			status, http.StatusOK)
+	}
+
+}
+func TestGetImageSetsDevicesByID(t *testing.T) {
+	imageSetID := &models.ImageSet{}
+	req, err := http.NewRequest("GET", "/devices", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := context.WithValue(req.Context(), imageSetKey, imageSetID)
+	ctrl := gomock.NewController(t)
+
+	defer ctrl.Finish()
+
+	mockImageSetService := mock_services.NewMockImageSetsServiceInterface(ctrl)
+	edgeAPIServices := &dependencies.EdgeAPIServices{
+		ImageSetService: mockImageSetService,
+		Log:             log.NewEntry(log.StandardLogger()),
+	}
+	deviceIDs := []string{"EXAMPLE1", "EXAMPLE2"}
+	mockImageSetService.EXPECT().GetDeviceIdsByImageSetID(gomock.Any()).Return(len(deviceIDs), deviceIDs, nil)
+
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+	ctx = dependencies.ContextWithServices(req.Context(), edgeAPIServices)
+	req = req.WithContext(ctx)
+	handler := http.HandlerFunc(GetImageSetsDevicesByID)
+
+	handler.ServeHTTP(rr, req.WithContext(ctx))
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v, want %v",
+			status, http.StatusOK)
+	}
+
+	respBody, err := ioutil.ReadAll(rr.Body)
+	jsonBody := ImageSetDevices{}
+	err = json.Unmarshal(respBody, &jsonBody)
+	if err != nil {
+		t.Errorf("failed decoding response body: %s", err.Error())
+	}
+	if jsonBody.Count != len(deviceIDs) || !reflect.DeepEqual(jsonBody.Data, deviceIDs) {
+		t.Errorf("Returned count and body do not match. should have got %v and %v, got %v and %v instead",
+			len(deviceIDs), deviceIDs, jsonBody.Count, jsonBody.Data)
 
 	}
 }
