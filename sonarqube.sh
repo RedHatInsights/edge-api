@@ -11,7 +11,7 @@ COMMIT_SHORT=$(git rev-parse --short=7 HEAD)
 # SonarQube parameters can be found below:
 #   https://sonarqube.corp.redhat.com/documentation/analysis/pull-request/
 if [[ "${PR_CHECK}" = "true" ]]; then
-    export PR_CHECK_OPTS="-Dsonar.pullrequest.branch=${GIT_BRANCH} -Dsonar.pullrequest.key=${ghprbPullId} -Dsonar.newCode.referenceBranch=master";
+    export PR_CHECK_OPTS="-Dsonar.pullrequest.branch=${GIT_BRANCH} -Dsonar.pullrequest.key=${ghprbPullId} -Dsonar.pullrequest.base=master";
 fi
 
 podman run \
