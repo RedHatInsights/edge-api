@@ -1148,6 +1148,30 @@ paths:
                 $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
       summary: Deletes an image-set
+  /images/{ImageSetId}/devices:
+    get:
+      operationId: GetImageSetsDevicesByID
+      parameters:
+        - name: ImageSetId
+          in: path
+          required: true
+          description: ImageSetId
+          schema:
+            type: integer
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.DevicesForImageSet"
+          description: OK
+        "500":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/v1.InternalServerError"
+          description: There was an internal server error.
+      summary: Returns device ids for an image-set
   /images/checkImageName:
     post:
       operationId: checkImageName

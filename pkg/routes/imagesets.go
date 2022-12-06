@@ -40,6 +40,7 @@ func MakeImageSetsRouter(sub chi.Router) {
 		r.Use(ImageSetCtx)
 		r.With(validateFilterParams).With(common.Paginate).Get("/", GetImageSetsByID)
 		r.Delete("/", DeleteImageSet)
+		r.With(common.Paginate).Get("/devices", GetImageSetsDevicesByID)
 	})
 	sub.Route("/view/{imageSetID}", func(r chi.Router) {
 		r.Use(ImageSetViewCtx)
@@ -685,4 +686,25 @@ func DeleteImageSet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+type ImageSetDevices struct {
+	Count int      `json:"Count"`
+	Data  []string `json:"Data"`
+}
+
+func GetImageSetsDevicesByID(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	imageSet := getContextImageSet(w, r)
+	if imageSet == nil {
+		return
+	}
+	count, devices, err := ctxServices.ImageSetService.GetDeviceIdsByImageSetID(imageSet.ID)
+	if err != nil {
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
+		return
+	}
+
+	returnData := ImageSetDevices{Count: count, Data: devices}
+	respondWithJSONBody(w, ctxServices.Log, returnData)
 }
