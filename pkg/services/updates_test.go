@@ -3,15 +3,13 @@
 package services_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"os"
-
-	apiError "github.com/redhatinsights/edge-api/pkg/errors"
-	"github.com/redhatinsights/edge-api/pkg/routes/common"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
@@ -24,9 +22,12 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory/mock_inventory"
 	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
 	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher/mock_playbookdispatcher"
+	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	mock_kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka/mock_kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	apiError "github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 )
@@ -99,6 +100,116 @@ var _ = Describe("UpdateService Basic functions", func() {
 			})
 		})
 	})
+
+	Context("Produce Event", func() {
+		var updateService services.UpdateServiceInterface
+		var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
+		var ctrl *gomock.Controller
+
+		BeforeEach(func() {
+			ctrl = gomock.NewController(GinkgoT())
+			mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
+			updateService = &services.UpdateService{
+				Service:         services.NewService(context.Background(), log.WithField("service", "update")),
+				ProducerService: mockProducerService,
+			}
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
+		})
+
+		It("ProduceEvent is called", func() {
+			edgeEvent := kafkacommon.CreateEdgeEvent(
+				common.DefaultOrgID,
+				models.SourceEdgeEventAPI,
+				faker.UUIDHyphenated(),
+				models.EventTypeEdgeUpdateRepoRequested,
+				"subject",
+				"fake payload",
+			)
+			mockProducerService.EXPECT().ProduceEvent(
+				kafkacommon.TopicFleetmgmtUpdateRepoRequested, models.EventTypeEdgeUpdateRepoRequested, edgeEvent,
+			).Return(nil).Times(1)
+			err := updateService.ProduceEvent(kafkacommon.TopicFleetmgmtUpdateRepoRequested, models.EventTypeEdgeUpdateRepoRequested, edgeEvent)
+			Expect(err).ToNot(HaveOccurred())
+		})
+	})
+
+	Context("SetUpdateErrorStatusWhenInterrupted", func() {
+		var updateService *services.UpdateService
+		var ctrl *gomock.Controller
+		var testLog *log.Entry
+		var logBuffer bytes.Buffer
+		var updateTransaction models.UpdateTransaction
+		var originalLogLevel log.Level
+		orgID := common.DefaultOrgID
+
+		BeforeEach(func() {
+			ctrl = gomock.NewController(GinkgoT())
+
+			updateService = &services.UpdateService{
+				Service: services.NewService(context.Background(), log.WithField("service", "update")),
+			}
+			// configure the logger
+			originalLogLevel = log.GetLevel()
+			testLog = log.NewEntry(log.StandardLogger())
+			log.SetLevel(log.DebugLevel)
+			// Set the output to use our new local logBuffer
+			logBuffer = bytes.Buffer{}
+			testLog.Logger.SetOutput(&logBuffer)
+
+			updateTransaction = models.UpdateTransaction{OrgID: orgID, Status: models.UpdateStatusBuilding}
+			result := db.DB.Create(&updateTransaction)
+			Expect(result.Error).ToNot(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
+			log.SetLevel(originalLogLevel)
+		})
+
+		It("update transaction status set to error when interrupted", func() {
+			intctx, intcancel := context.WithCancel(context.Background())
+			sigint := make(chan os.Signal, 1)
+			sigint <- os.Interrupt
+			updateService.SetUpdateErrorStatusWhenInterrupted(updateTransaction, sigint, intctx, intcancel)
+			Expect(logBuffer.String()).To(ContainSubstring("Select case SIGINT interrupt has been triggered"))
+			Expect(logBuffer.String()).To(ContainSubstring("Update updated with Error status"))
+			result := db.DB.First(&updateTransaction, updateTransaction.ID)
+			Expect(result.Error).ToNot(HaveOccurred())
+			Expect(updateTransaction.Status).To(Equal(models.UpdateStatusError))
+		})
+		It("log error when update transaction not found", func() {
+			updateTransaction = models.UpdateTransaction{OrgID: common.DefaultOrgID, Status: models.UpdateStatusBuilding}
+			intctx, intcancel := context.WithCancel(context.Background())
+			sigint := make(chan os.Signal, 1)
+			sigint <- os.Interrupt
+			updateService.SetUpdateErrorStatusWhenInterrupted(updateTransaction, sigint, intctx, intcancel)
+			Expect(logBuffer.String()).To(ContainSubstring("Select case SIGINT interrupt has been triggered"))
+			Expect(logBuffer.String()).To(ContainSubstring("Error retrieving update"))
+		})
+
+		It("log error when update transaction not found", func() {
+			updateTransaction = models.UpdateTransaction{OrgID: common.DefaultOrgID, Status: models.UpdateStatusBuilding}
+			intctx, intcancel := context.WithCancel(context.Background())
+			sigint := make(chan os.Signal, 1)
+			sigint <- os.Interrupt
+			updateService.SetUpdateErrorStatusWhenInterrupted(updateTransaction, sigint, intctx, intcancel)
+			Expect(logBuffer.String()).To(ContainSubstring("Select case SIGINT interrupt has been triggered"))
+			Expect(logBuffer.String()).To(ContainSubstring("Error retrieving update"))
+		})
+
+		It("when intcancel called exit SetUpdateErrorStatusWhenInterrupted", func() {
+			intctx, intcancel := context.WithCancel(context.Background())
+			sigint := make(chan os.Signal, 1)
+			intcancel()
+			updateService.SetUpdateErrorStatusWhenInterrupted(updateTransaction, sigint, intctx, intcancel)
+			Expect(logBuffer.String()).To(ContainSubstring("Select case context intCtx done has been triggered"))
+			Expect(logBuffer.String()).To(ContainSubstring("exiting SetUpdateErrorStatusWhenInterrupted"))
+		})
+	})
+
 	Describe("update creation", func() {
 		var updateService services.UpdateServiceInterface
 		var mockRepoBuilder *mock_services.MockRepoBuilderInterface
@@ -337,7 +448,69 @@ var _ = Describe("UpdateService Basic functions", func() {
 					Expect(updateTransaction.Devices[0].ID).Should(Equal(device.ID))
 				})
 			})
+			When("EDA feature UpdateRepoRequested is Enabled", func() {
+				var updateService services.UpdateServiceInterface
+				var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
+				var ctrl *gomock.Controller
+				conf := config.Get()
 
+				BeforeEach(func() {
+					ctrl = gomock.NewController(GinkgoT())
+					mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
+					updateService = &services.UpdateService{
+						Service:         services.NewService(context.Background(), log.WithField("service", "update")),
+						ProducerService: mockProducerService,
+					}
+					// enable feature by environment
+					os.Setenv("UPDATE_REPO_REQUESTED", "True")
+				})
+
+				AfterEach(func() {
+					ctrl.Finish()
+					// disable feature by clearing the environment
+					os.Unsetenv("UPDATE_REPO_REQUESTED")
+				})
+
+				It("should create kafka event", func() {
+					mockProducerService.EXPECT().ProduceEvent(
+						kafkacommon.TopicFleetmgmtUpdateRepoRequested, models.EventTypeEdgeUpdateRepoRequested, gomock.Any(),
+					).Return(nil)
+					_, err := updateService.CreateUpdate(update.ID)
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				It("should return error create kafka event failed", func() {
+					expectedErr := errors.New("producer event error")
+					mockProducerService.EXPECT().ProduceEvent(
+						kafkacommon.TopicFleetmgmtUpdateRepoRequested, models.EventTypeEdgeUpdateRepoRequested, gomock.Any(),
+					).Return(expectedErr)
+					_, err := updateService.CreateUpdate(update.ID)
+					Expect(err).To(HaveOccurred())
+					Expect(err.Error()).To(Equal(expectedErr.Error()))
+				})
+
+				When("missing identity in context", func() {
+					var originalAuth bool
+					BeforeEach(func() {
+						originalAuth = conf.Auth
+						conf.Auth = true
+					})
+
+					AfterEach(func() {
+						conf.Auth = originalAuth
+					})
+
+					It("should not ProduceEvent", func() {
+						// Produce event should not be called
+						mockProducerService.EXPECT().ProduceEvent(
+							kafkacommon.TopicFleetmgmtUpdateRepoRequested, models.EventTypeEdgeUpdateRepoRequested, gomock.Any(),
+						).Times(0)
+						_, err := updateService.CreateUpdate(update.ID)
+						Expect(err).To(HaveOccurred())
+						Expect(err.Error()).To(Equal("cannot find org-id"))
+					})
+				})
+			})
 		})
 	})
 	Describe("playbook dispatcher event handling", func() {

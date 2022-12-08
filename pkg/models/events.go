@@ -46,6 +46,10 @@ const (
 	EventTypeEdgeOstreeRepoCompleted string = "com.redhat.console.edge.api.image.repo.completed"
 	// EventTypeEdgeInstallerCompleted indicates an installer has completed
 	EventTypeEdgeInstallerCompleted string = "com.redhat.console.edge.api.image.installer.completed"
+	// EventTypeEdgeUpdateRepoRequested indicates an update transaction repository has been requested
+	EventTypeEdgeUpdateRepoRequested string = "com.redhat.console.edge.api.update.repository.requested"
+	// EventTypeEdgeWriteTemplateRequested indicates an update transaction write template repository has been requested
+	EventTypeEdgeWriteTemplateRequested string = "com.redhat.console.edge.api.write.update.template.requested"
 )
 
 // CRCCloudEvent is a standard event schema that wraps the Edge-specific "Data" payload
@@ -143,4 +147,11 @@ type EdgeOstreeRepoCompletedEventPayload struct {
 type EdgeInstallerCompletedEventPayload struct {
 	EdgeBasePayload
 	NewImage Image `json:"new_image"`
+}
+
+// EdgeUpdateRepoRequestedEventPayload provides update transaction data when requested to build a repository installer
+// for devices update
+type EdgeUpdateRepoRequestedEventPayload struct {
+	EdgeBasePayload
+	Update UpdateTransaction `json:"update"`
 }

@@ -13,12 +13,9 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"sync"
 	"syscall"
 	"text/template"
 	"time"
-
-	"gorm.io/gorm"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/redhatinsights/edge-api/config"
@@ -29,16 +26,18 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
-	log "github.com/sirupsen/logrus"
-)
+	feature "github.com/redhatinsights/edge-api/unleash/features"
+	"github.com/redhatinsights/platform-go-middlewares/request_id"
 
-// WaitGroup is the waitgroup for pending updates
-var WaitGroup sync.WaitGroup
+	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
+)
 
 // UpdateServiceInterface defines the interface that helps
 // handle the business logic of sending updates to a edge device
 type UpdateServiceInterface interface {
 	BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate, orgID string, commit *models.Commit) (*[]models.UpdateTransaction, error)
+	BuildUpdateRepo(orgID string, updateID uint) (*models.UpdateTransaction, error)
 	CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	CreateUpdateAsync(id uint)
 	GetUpdatePlaybook(update *models.UpdateTransaction) (io.ReadCloser, error)
@@ -51,6 +50,7 @@ type UpdateServiceInterface interface {
 	UpdateDevicesFromUpdateTransaction(update models.UpdateTransaction) error
 	ValidateUpdateSelection(orgID string, imageIds []uint) (bool, error)
 	ValidateUpdateDeviceGroup(orgID string, deviceGroupID uint) (bool, error)
+	ProduceEvent(requestedTopic, recordKey string, event models.CRCCloudEvent) error
 }
 
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
@@ -128,54 +128,132 @@ type PlaybookDispatcherEvent struct {
 	Payload   PlaybookDispatcherEventPayload `json:"payload"`
 }
 
+func (s *UpdateService) ProduceEvent(requestedTopic, recordKey string, event models.CRCCloudEvent) error {
+	return s.ProducerService.ProduceEvent(requestedTopic, recordKey, event)
+}
+
 // CreateUpdateAsync is the function that creates an update transaction asynchronously
 func (s *UpdateService) CreateUpdateAsync(id uint) {
 	go s.CreateUpdate(id)
 }
 
+func (s *UpdateService) SetUpdateErrorStatusWhenInterrupted(update models.UpdateTransaction, sigint chan os.Signal, intCtx context.Context, intCancel context.CancelFunc) {
+	s.log.WithField("updateID", update.ID).Debug("entering SetUpdateErrorStatusWhenInterrupted")
+
+	select {
+	case <-sigint:
+		// we caught an interrupt. Mark the image as interrupted.
+		s.log.WithField("updateID", update.ID).Debug("Select case SIGINT interrupt has been triggered")
+
+		// Reload update to get updated status
+		if result := db.DB.First(&update, update.ID); result.Error != nil {
+			s.log.WithField("error", result.Error.Error()).Error("Error retrieving update")
+			// anyway continue and set the status error
+		}
+		if update.Status == models.UpdateStatusBuilding {
+			update.Status = models.UpdateStatusError
+			if tx := db.DB.Omit("DispatchRecords", "Devices", "Commit", "Repo").Save(&update); tx.Error != nil {
+				s.log.WithField("error", tx.Error.Error()).Error("Update failed to save update Error status")
+			} else {
+				s.log.WithField("updateID", update.ID).Debug("Update updated with Error status")
+			}
+		}
+
+		// cancel the context
+		intCancel()
+		return
+	case <-intCtx.Done():
+		// Things finished normally and reached the defer defined above.
+		s.log.WithField("updateID", update.ID).Info("Select case context intCtx done has been triggered")
+	}
+	s.log.WithField("updateID", update.ID).Debug("exiting SetUpdateErrorStatusWhenInterrupted")
+}
+
 // CreateUpdate is the function that creates an update transaction
 func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error) {
-	var update *models.UpdateTransaction
-	db.DB.Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").Find(&update, id)
-	update.Status = models.UpdateStatusBuilding
-	db.DB.Model(&models.UpdateTransaction{}).Where("ID=?", update.ID).Update("Status", update.Status)
-	WaitGroup.Add(1) // Processing one update
-	defer func() {
-		WaitGroup.Done() // Done with one update (successfully or not)
-		s.log.Debug("Done with one update - successfully or not")
-		if err := recover(); err != nil {
-			s.log.WithField("error", err).Error("Error on update")
-		}
-	}()
-
-	go func(update *models.UpdateTransaction) {
-		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
-		sig := <-sigint
-		// Reload update to get updated status
-		db.DB.First(&update, update.ID)
-		if update.Status == models.UpdateStatusBuilding {
-			s.log.WithFields(log.Fields{
-				"signal":   sig,
-				"updateID": update.ID,
-			}).Info("Captured signal marking update as error")
-			update.Status = models.UpdateStatusError
-			tx := db.DB.Save(update)
-			if tx.Error != nil {
-				s.log.WithField("error", tx.Error.Error()).Error("Error saving update")
-			}
-			WaitGroup.Done()
-		}
-	}(update)
-
-	update, err := s.RepoBuilder.BuildUpdateRepo(id)
+	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {
-		db.DB.First(&update, id)
-		update.Status = models.UpdateStatusError
-		db.DB.Save(update)
-		s.log.WithField("error", err.Error()).Error("Error building update repo")
+		s.log.WithField("error", err.Error()).Error("error getting context orgID")
 		return nil, err
 	}
+	var update *models.UpdateTransaction
+	if result := db.Org(orgID, "update_transactions").Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").First(&update, id); result.Error != nil {
+		s.log.WithField("error", result.Error.Error()).Error("error retrieving update-transaction")
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, new(UpdateNotFoundError)
+		}
+		return nil, result.Error
+	}
+
+	update.Status = models.UpdateStatusBuilding
+	if result := db.DB.Model(&models.UpdateTransaction{}).Where("ID=?", id).Update("Status", update.Status); result.Error != nil {
+		s.log.WithField("error", err.Error()).Error("failed to save building status")
+		return nil, err
+	}
+
+	if feature.UpdateRepoRequested.IsEnabled() {
+		s.log.Debug("Creating Update Repo with EDA")
+
+		identity, err := common.GetIdentityFromContext(s.ctx)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("error getting identity from context")
+			return nil, err
+		}
+
+		requestID := request_id.GetReqID(s.ctx)
+		// create payload for UpdateRepoRequested event
+		edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
+			EdgeBasePayload: models.EdgeBasePayload{
+				Identity:       identity,
+				LastHandleTime: time.Now().Format(time.RFC3339),
+				RequestID:      requestID,
+			},
+			Update: *update,
+		}
+		// create the edge event
+		edgeEvent := kafkacommon.CreateEdgeEvent(
+			identity.Identity.OrgID,
+			models.SourceEdgeEventAPI,
+			requestID,
+			models.EventTypeEdgeUpdateRepoRequested,
+			fmt.Sprintf("update: %d, commit: %s", update.ID, update.Commit.OSTreeCommit),
+			edgePayload,
+		)
+
+		// put the event on the bus
+		if err = s.ProduceEvent(
+			kafkacommon.TopicFleetmgmtUpdateRepoRequested, models.EventTypeEdgeUpdateRepoRequested, edgeEvent,
+		); err != nil {
+			log.WithField("request_id", edgeEvent.ID).Error("producing the UpdateRepoRequested event failed")
+			return nil, err
+		}
+
+		return update, nil
+	}
+
+	// EDA disabled continue here
+	update, err = s.BuildUpdateRepo(orgID, id)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("error when building update repo")
+		return nil, err
+	}
+
+	// bellow code wil be refactored in its own function when WriteTemplateRequested event will be implemented
+
+	// setup a context and signal for SIGTERM
+	intctx, intcancel := context.WithCancel(context.Background())
+	sigint := make(chan os.Signal, 1)
+	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
+
+	// this will run at the end of BuildUpdateRepo to tidy up signal and context
+	defer func() {
+		s.log.WithField("updateUDID", update.ID).Debug("Stopping the interrupt context and sigint signal")
+		signal.Stop(sigint)
+		intcancel()
+	}()
+	// This runs alongside and blocks on either a signal or normal completion from defer above
+	// 	if an interrupt, set update status to error
+	go s.SetUpdateErrorStatusWhenInterrupted(*update, sigint, intctx, intcancel)
 
 	var remoteInfo TemplateRemoteInfo
 	remoteInfo.RemoteURL = update.Repo.URL
@@ -273,6 +351,45 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	}
 
 	s.log.WithField("updateID", update.ID).Info("Update was finished")
+	return update, nil
+}
+
+func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.UpdateTransaction, error) {
+	var update *models.UpdateTransaction
+	if result := db.Org(orgID, "update_transactions").Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").First(&update, updateID); result.Error != nil {
+		s.log.WithField("error", result.Error.Error()).Error("error retrieving update-transaction")
+		if result.Error == gorm.ErrRecordNotFound {
+			return nil, new(UpdateNotFoundError)
+		}
+		return nil, result.Error
+	}
+
+	// setup a context and signal for SIGTERM
+	intctx, intcancel := context.WithCancel(context.Background())
+	sigint := make(chan os.Signal, 1)
+	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
+
+	// this will run at the end of BuildUpdateRepo to tidy up signal and context
+	defer func() {
+		s.log.WithField("updateUDID", updateID).Debug("Stopping the interrupt context and sigint signal")
+		signal.Stop(sigint)
+		intcancel()
+	}()
+	// This runs alongside and blocks on either a signal or normal completion from defer above
+	// 	if an interrupt, set update status to error
+	go s.SetUpdateErrorStatusWhenInterrupted(*update, sigint, intctx, intcancel)
+
+	update, err := s.RepoBuilder.BuildUpdateRepo(updateID)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Error building update repo")
+		// set status to error
+		if result := db.DB.Model(&models.UpdateTransaction{}).Where("ID=?", updateID).Update("Status", models.UpdateStatusError); result.Error != nil {
+			s.log.WithField("error", err.Error()).Error("failed to save building error status")
+			return nil, result.Error
+		}
+		return nil, err
+	}
+
 	return update, nil
 }
 
