@@ -8,6 +8,7 @@ import (
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGroupValidateRequest(t *testing.T) {
@@ -157,16 +158,33 @@ func TestDeviceGroupsBeforeCreate(t *testing.T) {
 		},
 	}
 
-	deviceGroupWitOrgID := &DeviceGroup{
-		Name:    deviceGroupNameWithOrgID,
-		Type:    DeviceGroupTypeDefault,
-		OrgID:   orgID,
-		Account: account,
-		Devices: devices,
+	cases := []struct {
+		Name     string
+		Input    DeviceGroup
+		Expected error
+	}{
+		{
+			"Missing orgID",
+			DeviceGroup{},
+			ErrOrgIDIsMandatory,
+		},
+		{
+			"Can be created",
+			DeviceGroup{
+				Name:    deviceGroupNameWithOrgID,
+				Type:    DeviceGroupTypeDefault,
+				OrgID:   orgID,
+				Account: account,
+				Devices: devices,
+			},
+			nil,
+		},
 	}
-	// BeforeCreate make sure DeviceGroup has to orgID
-	err := deviceGroupWitOrgID.BeforeCreate(db.DB)
-	if err != nil {
-		t.Error("Error running BeforeCreate")
+
+	for _, test := range cases {
+		t.Run(test.Name, func(t *testing.T) {
+			got := test.Input.BeforeCreate(db.DB)
+			assert.Equal(t, test.Expected, got)
+		})
 	}
 }
