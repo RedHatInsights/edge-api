@@ -36,6 +36,21 @@ func (m *MockUpdateServiceInterface) EXPECT() *MockUpdateServiceInterfaceMockRec
 	return m.recorder
 }
 
+// BuildUpdateRepo mocks base method.
+func (m *MockUpdateServiceInterface) BuildUpdateRepo(orgID string, updateID uint) (*models.UpdateTransaction, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BuildUpdateRepo", orgID, updateID)
+	ret0, _ := ret[0].(*models.UpdateTransaction)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// BuildUpdateRepo indicates an expected call of BuildUpdateRepo.
+func (mr *MockUpdateServiceInterfaceMockRecorder) BuildUpdateRepo(orgID, updateID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BuildUpdateRepo", reflect.TypeOf((*MockUpdateServiceInterface)(nil).BuildUpdateRepo), orgID, updateID)
+}
+
 // BuildUpdateTransactions mocks base method.
 func (m *MockUpdateServiceInterface) BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate, orgID string, commit *models.Commit) (*[]models.UpdateTransaction, error) {
 	m.ctrl.T.Helper()

@@ -26,6 +26,10 @@ const (
 	TopicPlaybookDispatcherRuns string = "platform.playbook-dispatcher.runs"
 	// TopicInventoryEvents external topic for hosted inventory events
 	TopicInventoryEvents string = "platform.inventory.events"
+	// TopicFleetmgmtUpdateRepoRequested topic name for update repo requested event
+	TopicFleetmgmtUpdateRepoRequested string = "platform.edge.fleetmgmt.update-repo-requested"
+	// TopicFleetmgmtUpdateWriteTemplateRequested topic name for write template playbook event
+	TopicFleetmgmtUpdateWriteTemplateRequested string = "platform.edge.fleetmgmt.update-write-template-requested"
 )
 
 // TopicNotFoundError indicates the account was nil
