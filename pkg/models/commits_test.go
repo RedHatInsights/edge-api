@@ -1,5 +1,3 @@
-// FIXME: golangci-lint
-// nolint:revive,typecheck
 package models
 
 import (
@@ -10,24 +8,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDevicesBeforeCreate(t *testing.T) {
-
+func TestCommitsBeforeCreate(t *testing.T) {
 	cases := []struct {
 		Name     string
-		Input    Device
+		Input    Commit
 		Expected error
 	}{
 		{
 			"Missing orgID",
-			Device{},
+			Commit{},
 			ErrOrgIDIsMandatory,
 		},
 		{
 			"Can be created",
-			Device{
-				OrgID: faker.UUIDHyphenated(),
-				UUID:  faker.UUIDHyphenated(),
-			},
+			Commit{OrgID: faker.UUIDHyphenated()},
 			nil,
 		},
 	}
