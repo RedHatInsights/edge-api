@@ -101,41 +101,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 	})
 
-	Context("Produce Event", func() {
-		var updateService services.UpdateServiceInterface
-		var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
-		var ctrl *gomock.Controller
-
-		BeforeEach(func() {
-			ctrl = gomock.NewController(GinkgoT())
-			mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
-			updateService = &services.UpdateService{
-				Service:         services.NewService(context.Background(), log.WithField("service", "update")),
-				ProducerService: mockProducerService,
-			}
-		})
-
-		AfterEach(func() {
-			ctrl.Finish()
-		})
-
-		It("ProduceEvent is called", func() {
-			edgeEvent := kafkacommon.CreateEdgeEvent(
-				common.DefaultOrgID,
-				models.SourceEdgeEventAPI,
-				faker.UUIDHyphenated(),
-				models.EventTypeEdgeUpdateRepoRequested,
-				"subject",
-				"fake payload",
-			)
-			mockProducerService.EXPECT().ProduceEvent(
-				kafkacommon.TopicFleetmgmtUpdateRepoRequested, models.EventTypeEdgeUpdateRepoRequested, edgeEvent,
-			).Return(nil).Times(1)
-			err := updateService.ProduceEvent(kafkacommon.TopicFleetmgmtUpdateRepoRequested, models.EventTypeEdgeUpdateRepoRequested, edgeEvent)
-			Expect(err).ToNot(HaveOccurred())
-		})
-	})
-
 	Context("SetUpdateErrorStatusWhenInterrupted", func() {
 		var updateService *services.UpdateService
 		var ctrl *gomock.Controller
@@ -180,6 +145,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			Expect(result.Error).ToNot(HaveOccurred())
 			Expect(updateTransaction.Status).To(Equal(models.UpdateStatusError))
 		})
+
 		It("log error when update transaction not found", func() {
 			updateTransaction = models.UpdateTransaction{OrgID: common.DefaultOrgID, Status: models.UpdateStatusBuilding}
 			intctx, intcancel := context.WithCancel(context.Background())
@@ -462,13 +428,13 @@ var _ = Describe("UpdateService Basic functions", func() {
 						ProducerService: mockProducerService,
 					}
 					// enable feature by environment
-					os.Setenv("UPDATE_REPO_REQUESTED", "True")
+					os.Setenv("FEATURE_UPDATE_REPO_REQUESTED", "True")
 				})
 
 				AfterEach(func() {
 					ctrl.Finish()
 					// disable feature by clearing the environment
-					os.Unsetenv("UPDATE_REPO_REQUESTED")
+					os.Unsetenv("FEATURE_UPDATE_REPO_REQUESTED")
 				})
 
 				It("should create kafka event", func() {

@@ -2,6 +2,7 @@ package update
 
 import (
 	"context"
+	"errors"
 
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -13,6 +14,14 @@ import (
 	"gorm.io/gorm"
 )
 
+var ErrEventHandlerValidationError = errors.New("event handler validation error")
+var ErrEventHandlerMissingRequiredData = errors.New("malformed UpdateRepoRequested request, required data missing")
+var ErrEventHandlerRequiredDataMismatch = errors.New("malformed UpdateRepoRequested request, required data mismatch")
+var ErrEventHandlerUpdateIDRequired = errors.New("update repo requested, update ID is required")
+var ErrEventHandlerUpdateOrgIDMismatch = errors.New("malformed UpdateRepoRequested request, event orgID and update orgID mismatch")
+var ErrEventHandlerUpdateDoesNotExist = errors.New("event UpdateRepoRequested update-transaction does not exist")
+var ErrEventHandlerUpdateBadStatus = errors.New("event UpdateRepoRequested update not in building state")
+
 type EventUpdateRepoRequestedHandlerDummy struct {
 	models.CRCCloudEvent
 	Data models.EdgeUpdateRepoRequestedEventPayload `json:"data,omitempty"`
@@ -22,72 +31,54 @@ type EventUpdateRepoRequestedHandler struct {
 	EventUpdateRepoRequestedHandlerDummy
 }
 
-func (ev EventUpdateRepoRequestedHandler) Consume(ctx context.Context) {
-	eventLog := utility.GetLoggerFromContext(ctx)
-	eventLog.Info("Starting UpdateRepoRequested consume")
-
+func (ev EventUpdateRepoRequestedHandler) ValidateEvent() (*models.UpdateTransaction, error) {
 	if ev.RedHatOrgID == "" || ev.Data.RequestID == "" {
-		eventLog.WithFields(log.Fields{
-			"requestId": ev.Data.RequestID,
-			"orgID":     ev.RedHatOrgID,
-		}).Error("Malformed UpdateRepoRequested request, required data missing")
-		return
+		return nil, ErrEventHandlerMissingRequiredData
 	}
 	if ev.RedHatOrgID != ev.Data.Identity.Identity.OrgID {
-		eventLog.WithFields(log.Fields{
-			"requestId":  ev.Data.RequestID,
-			"IdentityId": ev.Data.Identity.Identity.OrgID,
-			"orgID":      ev.RedHatOrgID,
-		}).Error("Malformed UpdateRepoRequested request, required data mismatch")
-		return
+		return nil, ErrEventHandlerRequiredDataMismatch
 	}
 	if ev.Data.Update.ID == 0 {
-		eventLog.WithFields(log.Fields{
-			"requestId":  ev.Data.RequestID,
-			"IdentityId": ev.Data.Identity.Identity.OrgID,
-			"orgID":      ev.RedHatOrgID,
-		}).Error("update repo requested, update ID is required")
-		return
+		return nil, ErrEventHandlerUpdateIDRequired
 	}
 	if ev.RedHatOrgID != ev.Data.Update.OrgID {
-		eventLog.WithFields(log.Fields{
-			"requestId":   ev.Data.RequestID,
-			"orgID":       ev.RedHatOrgID,
-			"UpdateOrgID": ev.Data.Update.OrgID,
-		}).Error("Malformed UpdateRepoRequested request, event orgID and update orgID mismatch")
-		return
+		return nil, ErrEventHandlerUpdateOrgIDMismatch
 	}
 
 	var updateTransaction models.UpdateTransaction
 	if result := db.Org(ev.RedHatOrgID, "").First(&updateTransaction, ev.Data.Update.ID); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			eventLog.WithFields(log.Fields{
-				"requestId": ev.Data.RequestID,
-				"orgID":     ev.RedHatOrgID,
-				"updateID":  ev.Data.Update.ID,
-			}).Error("event UpdateRepoRequested update does not exist")
-			return
+			return nil, ErrEventHandlerUpdateDoesNotExist
 		}
-		eventLog.WithFields(log.Fields{
-			"requestId": ev.Data.RequestID,
-			"orgID":     ev.RedHatOrgID,
-			"updateID":  ev.Data.Update.ID,
-			"error":     result.Error.Error(),
-		}).Error("event UpdateRepoRequested update retrieve error")
-		return
+		return nil, result.Error
 	}
 
 	if updateTransaction.Status != models.UpdateStatusBuilding {
-		eventLog.WithFields(
-			log.Fields{"requestId": ev.Data.RequestID, "orgID": updateTransaction.OrgID, "updateID": updateTransaction.ID},
-		).Error("event UpdateRepoRequested update not in building state")
+		return nil, ErrEventHandlerUpdateBadStatus
+	}
+
+	return &updateTransaction, nil
+}
+
+func (ev EventUpdateRepoRequestedHandler) Consume(ctx context.Context) {
+	eventLog := utility.GetLoggerFromContext(ctx)
+	eventLog.Info("Starting UpdateRepoRequested consume")
+
+	updateTransaction, err := ev.ValidateEvent()
+	if err != nil {
+		eventLog.WithFields(log.Fields{
+			"requestId":   ev.Data.RequestID,
+			"orgID":       ev.RedHatOrgID,
+			"updateID":    ev.Data.Update.ID,
+			"updateOrgID": ev.Data.Update.OrgID,
+			"error":       err.Error(),
+		}).Error("event failed Validation")
 		return
 	}
 
 	// get the services from the context
 	edgeAPIServices := dependencies.ServicesFromContext(ctx)
-	_, err := edgeAPIServices.UpdateService.BuildUpdateRepo(updateTransaction.OrgID, updateTransaction.ID)
-	if err != nil {
+	if _, err = edgeAPIServices.UpdateService.BuildUpdateRepo(updateTransaction.OrgID, updateTransaction.ID); err != nil {
 		eventLog.WithFields(log.Fields{
 			"requestID": ev.Data.RequestID,
 			"orgID":     updateTransaction.OrgID,
@@ -107,7 +98,7 @@ func (ev EventUpdateRepoRequestedHandler) Consume(ctx context.Context) {
 		ev.Subject,
 		ev.Data,
 	)
-	if err = edgeAPIServices.UpdateService.ProduceEvent(
+	if err = edgeAPIServices.ProducerService.ProduceEvent(
 		kafkacommon.TopicFleetmgmtUpdateWriteTemplateRequested, models.EventTypeEdgeWriteTemplateRequested, edgeEvent,
 	); err != nil {
 		log.WithField("request_id", ev.Data.RequestID).Error("producing the WriteTemplate event failed")

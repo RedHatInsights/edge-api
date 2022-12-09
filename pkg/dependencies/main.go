@@ -27,6 +27,7 @@ type EdgeAPIServices struct {
 	OwnershipVoucherService services.OwnershipVoucherServiceInterface
 	DeviceGroupsService     services.DeviceGroupsServiceInterface
 	FilesService            services.FilesService
+	ProducerService         kafkacommon.ProducerServiceInterface
 	ConsumerService         kafkacommon.ConsumerServiceInterface
 	Log                     *log.Entry
 }
@@ -52,6 +53,7 @@ func Init(ctx context.Context) *EdgeAPIServices {
 		OwnershipVoucherService: services.NewOwnershipVoucherService(ctx, log),
 		DeviceGroupsService:     services.NewDeviceGroupsService(ctx, log),
 		FilesService:            services.NewFilesService(log),
+		ProducerService:         kafkacommon.NewProducerService(),
 		ConsumerService:         kafkacommon.NewConsumerService(ctx, log),
 		Log:                     log,
 	}

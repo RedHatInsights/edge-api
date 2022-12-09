@@ -6,15 +6,16 @@ import (
 	"errors"
 	"time"
 
+	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
+	mock_kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka/mock_kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
-	"github.com/redhatinsights/edge-api/pkg/services/utility"
-
-	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	eventReq "github.com/redhatinsights/edge-api/pkg/services/update"
+	"github.com/redhatinsights/edge-api/pkg/services/utility"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
@@ -26,15 +27,18 @@ import (
 var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 	var ctx context.Context
 	var mockUpdateService *mock_services.MockUpdateServiceInterface
+	var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
 	var ctrl *gomock.Controller
 	var logBuffer bytes.Buffer
 	var testLog *log.Entry
 	var updateTransaction models.UpdateTransaction
+	var ident identity.XRHID
 	orgID := common.DefaultOrgID
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 		mockUpdateService = mock_services.NewMockUpdateServiceInterface(ctrl)
+		mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
 		testLog = log.NewEntry(log.StandardLogger())
 		// Set the output to use our new local logBuffer
 		logBuffer = bytes.Buffer{}
@@ -42,12 +46,16 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 
 		ctx = context.Background()
 		ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
-			UpdateService: mockUpdateService,
+			UpdateService:   mockUpdateService,
+			ProducerService: mockProducerService,
 		})
 		ctx = utility.ContextWithLogger(ctx, testLog)
 		updateTransaction = models.UpdateTransaction{OrgID: orgID, Status: models.UpdateStatusBuilding}
 		res := db.DB.Create(&updateTransaction)
 		Expect(res.Error).ToNot(HaveOccurred())
+		var err error
+		ident, err = common.GetIdentityFromContext(ctx)
+		Expect(err).To(BeNil())
 	})
 
 	AfterEach(func() {
@@ -56,9 +64,144 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 
 	Describe("consume UpdateRepoRequested event", func() {
 		When("UpdateRepoRequested is requested", func() {
+			Context("ValidateEvent", func() {
+				It("No Validation Error occurs when all data matches", func() {
+					edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
+						EdgeBasePayload: models.EdgeBasePayload{
+							Identity:       ident,
+							LastHandleTime: time.Now().Format(time.RFC3339),
+							RequestID:      faker.UUIDHyphenated(),
+						},
+						Update: updateTransaction,
+					}
+					event := &eventReq.EventUpdateRepoRequestedHandler{}
+					event.RedHatOrgID = ident.Identity.OrgID
+					event.Data = *edgePayload
+					event.Data = *edgePayload
+					refreshedUpdatedTransaction, err := event.ValidateEvent()
+					Expect(err).ToNot(HaveOccurred())
+					Expect(refreshedUpdatedTransaction.ID).To(Equal(updateTransaction.ID))
+				})
+
+				It("Validation Error when RequestID is empty", func() {
+					edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
+						EdgeBasePayload: models.EdgeBasePayload{
+							Identity:       ident,
+							LastHandleTime: time.Now().Format(time.RFC3339),
+							RequestID:      "",
+						},
+						Update: updateTransaction,
+					}
+					event := &eventReq.EventUpdateRepoRequestedHandler{}
+					event.RedHatOrgID = ident.Identity.OrgID
+					event.Data = *edgePayload
+					_, err := event.ValidateEvent()
+					Expect(err).To(Equal(eventReq.ErrEventHandlerMissingRequiredData))
+				})
+
+				It("Validation Error when OrgID is empty", func() {
+					edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
+						EdgeBasePayload: models.EdgeBasePayload{
+							Identity:       ident,
+							LastHandleTime: time.Now().Format(time.RFC3339),
+							RequestID:      faker.UUIDHyphenated(),
+						},
+						Update: updateTransaction,
+					}
+					event := &eventReq.EventUpdateRepoRequestedHandler{}
+					event.RedHatOrgID = ""
+					event.Data = *edgePayload
+					_, err := event.ValidateEvent()
+					Expect(err).To(Equal(eventReq.ErrEventHandlerMissingRequiredData))
+				})
+
+				It("Validation Error when OrgID is different from identity one", func() {
+					edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
+						EdgeBasePayload: models.EdgeBasePayload{
+							Identity:       ident,
+							LastHandleTime: time.Now().Format(time.RFC3339),
+							RequestID:      faker.UUIDHyphenated(),
+						},
+						Update: updateTransaction,
+					}
+					event := &eventReq.EventUpdateRepoRequestedHandler{}
+					event.RedHatOrgID = faker.UUIDHyphenated()
+					event.Data = *edgePayload
+					_, err := event.ValidateEvent()
+					Expect(err).To(Equal(eventReq.ErrEventHandlerRequiredDataMismatch))
+				})
+
+				It("Validation Error when Update id is not defined", func() {
+					edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
+						EdgeBasePayload: models.EdgeBasePayload{
+							Identity:       ident,
+							LastHandleTime: time.Now().Format(time.RFC3339),
+							RequestID:      faker.UUIDHyphenated(),
+						},
+						Update: models.UpdateTransaction{OrgID: orgID},
+					}
+					event := &eventReq.EventUpdateRepoRequestedHandler{}
+					event.RedHatOrgID = ident.Identity.OrgID
+					event.Data = *edgePayload
+					_, err := event.ValidateEvent()
+					Expect(err).To(Equal(eventReq.ErrEventHandlerUpdateIDRequired))
+				})
+
+				It("Validation Error when event orgID and update ORG mismatch", func() {
+					updateTransaction = models.UpdateTransaction{Model: models.Model{ID: 999}, OrgID: faker.UUIDHyphenated(), Status: models.UpdateStatusBuilding}
+					edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
+						EdgeBasePayload: models.EdgeBasePayload{
+							Identity:       ident,
+							LastHandleTime: time.Now().Format(time.RFC3339),
+							RequestID:      faker.UUIDHyphenated(),
+						},
+						Update: updateTransaction,
+					}
+					event := &eventReq.EventUpdateRepoRequestedHandler{}
+					event.RedHatOrgID = ident.Identity.OrgID
+					event.Data = *edgePayload
+					_, err := event.ValidateEvent()
+					Expect(err).To(Equal(eventReq.ErrEventHandlerUpdateOrgIDMismatch))
+				})
+
+				It("Validation Error when update does not exist", func() {
+					updateTransaction = models.UpdateTransaction{Model: models.Model{ID: 9999999999}, OrgID: orgID, Status: models.UpdateStatusBuilding}
+					edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
+						EdgeBasePayload: models.EdgeBasePayload{
+							Identity:       ident,
+							LastHandleTime: time.Now().Format(time.RFC3339),
+							RequestID:      faker.UUIDHyphenated(),
+						},
+						Update: updateTransaction,
+					}
+					event := &eventReq.EventUpdateRepoRequestedHandler{}
+					event.RedHatOrgID = ident.Identity.OrgID
+					event.Data = *edgePayload
+					_, err := event.ValidateEvent()
+					Expect(err).To(Equal(eventReq.ErrEventHandlerUpdateDoesNotExist))
+				})
+
+				It("Validation Error when update not in building state", func() {
+					updateTransaction = models.UpdateTransaction{OrgID: orgID, Status: models.UpdateStatusError}
+					res := db.DB.Create(&updateTransaction)
+					Expect(res.Error).ToNot(HaveOccurred())
+					edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
+						EdgeBasePayload: models.EdgeBasePayload{
+							Identity:       ident,
+							LastHandleTime: time.Now().Format(time.RFC3339),
+							RequestID:      faker.UUIDHyphenated(),
+						},
+						Update: updateTransaction,
+					}
+					event := &eventReq.EventUpdateRepoRequestedHandler{}
+					event.RedHatOrgID = ident.Identity.OrgID
+					event.Data = *edgePayload
+					_, err := event.ValidateEvent()
+					Expect(err).To(Equal(eventReq.ErrEventHandlerUpdateBadStatus))
+				})
+			})
+
 			It("BuildUpdateRepo and WriteTemplate event is emitted", func() {
-				ident, err := common.GetIdentityFromContext(ctx)
-				Expect(err).To(BeNil())
 				edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
 					EdgeBasePayload: models.EdgeBasePayload{
 						Identity:       ident,
@@ -71,7 +214,7 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				event.RedHatOrgID = ident.Identity.OrgID
 				event.Data = *edgePayload
 				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Return(&updateTransaction, nil)
-				mockUpdateService.EXPECT().ProduceEvent(
+				mockProducerService.EXPECT().ProduceEvent(
 					kafkacommon.TopicFleetmgmtUpdateWriteTemplateRequested, models.EventTypeEdgeWriteTemplateRequested, gomock.Any(),
 				).Return(nil)
 				event.Consume(ctx)
@@ -80,8 +223,6 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 
 			It("when update does not exist, BuildUpdateRepo and Produce WriteTemplate event should not be called", func() {
 				updateTransaction = models.UpdateTransaction{Model: models.Model{ID: 9999999999}, OrgID: orgID, Status: models.UpdateStatusBuilding}
-				ident, err := common.GetIdentityFromContext(ctx)
-				Expect(err).To(BeNil())
 				edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
 					EdgeBasePayload: models.EdgeBasePayload{
 						Identity:       ident,
@@ -94,19 +235,17 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				event.RedHatOrgID = ident.Identity.OrgID
 				event.Data = *edgePayload
 				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Times(0)
-				mockUpdateService.EXPECT().ProduceEvent(
+				mockProducerService.EXPECT().ProduceEvent(
 					kafkacommon.TopicFleetmgmtUpdateWriteTemplateRequested, models.EventTypeEdgeWriteTemplateRequested, gomock.Any(),
 				).Times(0)
 				event.Consume(ctx)
-				Expect(logBuffer.String()).To(ContainSubstring("event UpdateRepoRequested update does not exist"))
+				Expect(logBuffer.String()).To(ContainSubstring(eventReq.ErrEventHandlerUpdateDoesNotExist.Error()))
 			})
 
 			It("when update not in building state, BuildUpdateRepo and Produce WriteTemplate event should not be called", func() {
 				updateTransaction = models.UpdateTransaction{OrgID: orgID, Status: models.UpdateStatusError}
 				res := db.DB.Create(&updateTransaction)
 				Expect(res.Error).ToNot(HaveOccurred())
-				ident, err := common.GetIdentityFromContext(ctx)
-				Expect(err).To(BeNil())
 				edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
 					EdgeBasePayload: models.EdgeBasePayload{
 						Identity:       ident,
@@ -119,16 +258,14 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				event.RedHatOrgID = ident.Identity.OrgID
 				event.Data = *edgePayload
 				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Times(0)
-				mockUpdateService.EXPECT().ProduceEvent(
+				mockProducerService.EXPECT().ProduceEvent(
 					kafkacommon.TopicFleetmgmtUpdateWriteTemplateRequested, models.EventTypeEdgeWriteTemplateRequested, gomock.Any(),
 				).Times(0)
 				event.Consume(ctx)
-				Expect(logBuffer.String()).To(ContainSubstring("event UpdateRepoRequested update not in building state"))
+				Expect(logBuffer.String()).To(ContainSubstring(eventReq.ErrEventHandlerUpdateBadStatus.Error()))
 			})
 
 			It("BuildUpdateRepo passed but WriteTemplate event failed to be emitted", func() {
-				ident, err := common.GetIdentityFromContext(ctx)
-				Expect(err).To(BeNil())
 				edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
 					EdgeBasePayload: models.EdgeBasePayload{
 						Identity:       ident,
@@ -142,7 +279,7 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				event.Data = *edgePayload
 				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Return(&updateTransaction, nil)
 				expectedError := errors.New("producer error")
-				mockUpdateService.EXPECT().ProduceEvent(
+				mockProducerService.EXPECT().ProduceEvent(
 					kafkacommon.TopicFleetmgmtUpdateWriteTemplateRequested, models.EventTypeEdgeWriteTemplateRequested, gomock.Any(),
 				).Return(expectedError)
 				event.Consume(ctx)
@@ -154,8 +291,6 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 			})
 
 			It("should log error when BuildUpdateRepo return error", func() {
-				ident, err := common.GetIdentityFromContext(ctx)
-				Expect(err).To(BeNil())
 				edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
 					EdgeBasePayload: models.EdgeBasePayload{
 						Identity:       ident,
@@ -170,7 +305,7 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				expectedError := errors.New("BuildUpdateRepo error")
 				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Return(nil, expectedError)
 				// ProduceEvent WriteTemplate should not be called
-				mockUpdateService.EXPECT().ProduceEvent(
+				mockProducerService.EXPECT().ProduceEvent(
 					kafkacommon.TopicFleetmgmtUpdateWriteTemplateRequested, models.EventTypeEdgeWriteTemplateRequested, gomock.Any(),
 				).Times(0)
 				event.Consume(ctx)
@@ -178,8 +313,6 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 			})
 
 			It("BuildUpdateRepo should not be called when RequestID is empty", func() {
-				ident, err := common.GetIdentityFromContext(ctx)
-				Expect(err).To(BeNil())
 				edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
 					EdgeBasePayload: models.EdgeBasePayload{
 						Identity:       ident,
@@ -194,12 +327,10 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				// BuildUpdateRepo should not be called
 				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Times(0)
 				event.Consume(ctx)
-				Expect(logBuffer.String()).To(ContainSubstring("Malformed UpdateRepoRequested request, required data missing"))
+				Expect(logBuffer.String()).To(ContainSubstring(eventReq.ErrEventHandlerMissingRequiredData.Error()))
 			})
 
 			It("BuildUpdateRepo should not be called when OrgID is empty", func() {
-				ident, err := common.GetIdentityFromContext(ctx)
-				Expect(err).To(BeNil())
 				edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
 					EdgeBasePayload: models.EdgeBasePayload{
 						Identity:       ident,
@@ -214,12 +345,10 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				// BuildUpdateRepo should not be called
 				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Times(0)
 				event.Consume(ctx)
-				Expect(logBuffer.String()).To(ContainSubstring("Malformed UpdateRepoRequested request, required data missing"))
+				Expect(logBuffer.String()).To(ContainSubstring(eventReq.ErrEventHandlerMissingRequiredData.Error()))
 			})
 
 			It("BuildUpdateRepo should not be called when OrgID is different from identity one", func() {
-				ident, err := common.GetIdentityFromContext(ctx)
-				Expect(err).To(BeNil())
 				edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
 					EdgeBasePayload: models.EdgeBasePayload{
 						Identity:       ident,
@@ -234,12 +363,10 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				// BuildUpdateRepo should not be called
 				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Times(0)
 				event.Consume(ctx)
-				Expect(logBuffer.String()).To(ContainSubstring("Malformed UpdateRepoRequested request, required data mismatch"))
+				Expect(logBuffer.String()).To(ContainSubstring(eventReq.ErrEventHandlerRequiredDataMismatch.Error()))
 			})
 
 			It("BuildUpdateRepo should not be called when Update id is not defined", func() {
-				ident, err := common.GetIdentityFromContext(ctx)
-				Expect(err).To(BeNil())
 				edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
 					EdgeBasePayload: models.EdgeBasePayload{
 						Identity:       ident,
@@ -254,15 +381,13 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				// BuildUpdateRepo should not be called
 				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Times(0)
 				event.Consume(ctx)
-				Expect(logBuffer.String()).To(ContainSubstring("update repo requested, update ID is required"))
+				Expect(logBuffer.String()).To(ContainSubstring(eventReq.ErrEventHandlerUpdateIDRequired.Error()))
 			})
 
 			It("UpdateRepoRequested should not be called when event orgID and update ORG mismatch", func() {
 				updateTransaction = models.UpdateTransaction{OrgID: faker.UUIDHyphenated(), Status: models.UpdateStatusBuilding}
 				res := db.DB.Create(&updateTransaction)
 				Expect(res.Error).ToNot(HaveOccurred())
-				ident, err := common.GetIdentityFromContext(ctx)
-				Expect(err).To(BeNil())
 				edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
 					EdgeBasePayload: models.EdgeBasePayload{
 						Identity:       ident,
@@ -277,7 +402,7 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 				// BuildUpdateRepo should not be called
 				mockUpdateService.EXPECT().BuildUpdateRepo(event.RedHatOrgID, updateTransaction.ID).Times(0)
 				event.Consume(ctx)
-				Expect(logBuffer.String()).To(ContainSubstring("Malformed UpdateRepoRequested request, event orgID and update orgID mismatch"))
+				Expect(logBuffer.String()).To(ContainSubstring(eventReq.ErrEventHandlerUpdateOrgIDMismatch.Error()))
 			})
 		})
 	})

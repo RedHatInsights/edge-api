@@ -50,7 +50,6 @@ type UpdateServiceInterface interface {
 	UpdateDevicesFromUpdateTransaction(update models.UpdateTransaction) error
 	ValidateUpdateSelection(orgID string, imageIds []uint) (bool, error)
 	ValidateUpdateDeviceGroup(orgID string, deviceGroupID uint) (bool, error)
-	ProduceEvent(requestedTopic, recordKey string, event models.CRCCloudEvent) error
 }
 
 // NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
@@ -128,15 +127,12 @@ type PlaybookDispatcherEvent struct {
 	Payload   PlaybookDispatcherEventPayload `json:"payload"`
 }
 
-func (s *UpdateService) ProduceEvent(requestedTopic, recordKey string, event models.CRCCloudEvent) error {
-	return s.ProducerService.ProduceEvent(requestedTopic, recordKey, event)
-}
-
 // CreateUpdateAsync is the function that creates an update transaction asynchronously
 func (s *UpdateService) CreateUpdateAsync(id uint) {
 	go s.CreateUpdate(id)
 }
 
+// SetUpdateErrorStatusWhenInterrupted set the update to error status when instance is interrupted
 func (s *UpdateService) SetUpdateErrorStatusWhenInterrupted(update models.UpdateTransaction, sigint chan os.Signal, intCtx context.Context, intCancel context.CancelFunc) {
 	s.log.WithField("updateID", update.ID).Debug("entering SetUpdateErrorStatusWhenInterrupted")
 
@@ -221,7 +217,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		)
 
 		// put the event on the bus
-		if err = s.ProduceEvent(
+		if err = s.ProducerService.ProduceEvent(
 			kafkacommon.TopicFleetmgmtUpdateRepoRequested, models.EventTypeEdgeUpdateRepoRequested, edgeEvent,
 		); err != nil {
 			log.WithField("request_id", edgeEvent.ID).Error("producing the UpdateRepoRequested event failed")
@@ -238,7 +234,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		return nil, err
 	}
 
-	// bellow code wil be refactored in its own function when WriteTemplateRequested event will be implemented
+	// below code wil be refactored in its own function when WriteTemplateRequested event will be implemented
 
 	// setup a context and signal for SIGTERM
 	intctx, intcancel := context.WithCancel(context.Background())

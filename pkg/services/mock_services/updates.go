@@ -5,9 +5,7 @@
 package mock_services
 
 import (
-	context "context"
 	io "io"
-	os "os"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -139,20 +137,6 @@ func (mr *MockUpdateServiceInterfaceMockRecorder) ProcessPlaybookDispatcherRunEv
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessPlaybookDispatcherRunEvent", reflect.TypeOf((*MockUpdateServiceInterface)(nil).ProcessPlaybookDispatcherRunEvent), message)
 }
 
-// ProduceEvent mocks base method.
-func (m *MockUpdateServiceInterface) ProduceEvent(requestedTopic, recordKey string, event models.CRCCloudEvent) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ProduceEvent", requestedTopic, recordKey, event)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ProduceEvent indicates an expected call of ProduceEvent.
-func (mr *MockUpdateServiceInterfaceMockRecorder) ProduceEvent(requestedTopic, recordKey, event interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProduceEvent", reflect.TypeOf((*MockUpdateServiceInterface)(nil).ProduceEvent), requestedTopic, recordKey, event)
-}
-
 // SendDeviceNotification mocks base method.
 func (m *MockUpdateServiceInterface) SendDeviceNotification(update *models.UpdateTransaction) (services.ImageNotification, error) {
 	m.ctrl.T.Helper()
@@ -166,18 +150,6 @@ func (m *MockUpdateServiceInterface) SendDeviceNotification(update *models.Updat
 func (mr *MockUpdateServiceInterfaceMockRecorder) SendDeviceNotification(update interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendDeviceNotification", reflect.TypeOf((*MockUpdateServiceInterface)(nil).SendDeviceNotification), update)
-}
-
-// SetUpdateErrorStatusWhenInterrupted mocks base method.
-func (m *MockUpdateServiceInterface) SetUpdateErrorStatusWhenInterrupted(update models.UpdateTransaction, sigint chan os.Signal, intCtx context.Context, intCancel context.CancelFunc) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "SetUpdateErrorStatusWhenInterrupted", update, sigint, intCtx, intCancel)
-}
-
-// SetUpdateErrorStatusWhenInterrupted indicates an expected call of SetUpdateErrorStatusWhenInterrupted.
-func (mr *MockUpdateServiceInterfaceMockRecorder) SetUpdateErrorStatusWhenInterrupted(update, sigint, intCtx, intCancel interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetUpdateErrorStatusWhenInterrupted", reflect.TypeOf((*MockUpdateServiceInterface)(nil).SetUpdateErrorStatusWhenInterrupted), update, sigint, intCtx, intCancel)
 }
 
 // SetUpdateStatus mocks base method.
