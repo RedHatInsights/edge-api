@@ -67,6 +67,9 @@ var DeviceSyncDelete = &Flag{Name: "edge-management.device_sync_delete", EnvVar:
 // StorageImagesRepos is the feature flag to use storage.images-repos when updating images or creating ISO artifacts
 var StorageImagesRepos = &Flag{Name: "edge-management.storage_images_repos", EnvVar: "STORAGE_IMAGES_REPOS"}
 
+// UpdateRepoRequested is the feature flag to use for services.UpdateService.CreateUpdate(id) EDA Code
+var UpdateRepoRequested = &Flag{Name: "edge-management.update_repo_requested", EnvVar: "FEATURE_UPDATE_REPO_REQUESTED"}
+
 // (ADD FEATURE FLAGS ABOVE)
 // FEATURE FLAG CHECK CODE
 
