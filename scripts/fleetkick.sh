@@ -70,12 +70,14 @@ edit_isolinux() {
     KICKFILE=$3
 
     [[ -e $CONFIG ]] && file $CONFIG || (echo "ERROR: no $CONFIG file" && exit 1)
+    # Add inst.stage2 if missing (see https://bugzilla.redhat.com/show_bug.cgi?id=2152192)
+    sed -i "/rescue/n;/inst.stage2/n;/LABEL=${VOLID}/ s/$/ inst.stage2=hd:LABEL=${VOLID}/g" $CONFIG
     # Remove an existing inst.ks instruction
     sed -i "/rescue/n;/LABEL=${VOLID}/ s/\<inst.ks[^ ]*//g" $CONFIG
     # Replace an existing inst.ks instruction
-    sed -i "/rescue/n;/LABEL=${VOLID}/ s/\<inst.ks[^ ]*/inst.ks=hd:LABEL=${VOLID}:\/${KICKFILE} None/g" $CONFIG
+    sed -i "/rescue/n;/LABEL=${VOLID}/ s/\<inst.ks[^ ]*/inst.ks=hd:LABEL=${VOLID}:\/${KICKFILE}/g" $CONFIG
     # Inject an inst.ks instruction
-    sed -i "/inst.ks=/n;/rescue/n;/LABEL=${VOLID}/ s/$/ inst.ks=hd:LABEL=${VOLID}:\/${KICKFILE} None/g" $CONFIG
+    sed -i "/inst.ks=/n;/rescue/n;/LABEL=${VOLID}/ s/$/ inst.ks=hd:LABEL=${VOLID}:\/${KICKFILE}/g" $CONFIG
     grep $VOLID $CONFIG
 }
 
@@ -86,12 +88,14 @@ edit_efiboot() {
     KICKFILE=$3
 
     [[ -e $CONFIG ]] && file $CONFIG || (echo "ERROR: no $CONFIG file" && exit 1)
+    # Add inst.stage2 if missing (see https://bugzilla.redhat.com/show_bug.cgi?id=2152192)
+    sed -i "/rescue/n;/inst.stage2/n;/LABEL=${VOLID}/ s/$/ inst.stage2=hd:LABEL=${VOLID}/g" $CONFIG
     # Remove an existing inst.ks instruction
     sed -i "/rescue/n;/LABEL=${VOLID}/ s/\<inst.ks[^ ]*//g" $CONFIG
     # Replace an existing inst.ks instruction
-    sed -i "/rescue/n;/LABEL=${VOLID}/ s/\<inst.ks[^ ]*/inst.ks=hd:LABEL=${VOLID}:\/${KICKFILE} None/g" $CONFIG
+    sed -i "/rescue/n;/LABEL=${VOLID}/ s/\<inst.ks[^ ]*/inst.ks=hd:LABEL=${VOLID}:\/${KICKFILE}/g" $CONFIG
     # Inject an inst.ks instruction
-    sed -i "/inst.ks=/n;/rescue/n;/LABEL=${VOLID}/ s/$/ inst.ks=hd:LABEL=${VOLID}:\/${KICKFILE} None/g" $CONFIG
+    sed -i "/inst.ks=/n;/rescue/n;/LABEL=${VOLID}/ s/$/ inst.ks=hd:LABEL=${VOLID}:\/${KICKFILE}/g" $CONFIG
     grep $VOLID $CONFIG
 }
 
