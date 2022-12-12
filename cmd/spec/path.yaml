@@ -1148,7 +1148,7 @@ paths:
                 $ref: "#/components/schemas/v1.InternalServerError"
           description: There was an internal server error.
       summary: Deletes an image-set
-  /images/{ImageSetId}/devices:
+  /image-sets/{ImageSetId}/devices:
     get:
       operationId: GetImageSetsDevicesByID
       parameters:
