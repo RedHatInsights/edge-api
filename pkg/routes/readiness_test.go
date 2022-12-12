@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
@@ -20,6 +21,7 @@ func TestReadinessStatus200(t *testing.T) {
 
 	resp := &http.Response{
 		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader("working!")),
 	}
 	goodHandler := &ConfigurableWebGetter{
 		URL: "",
@@ -57,6 +59,7 @@ func TestReadinessStatus404(t *testing.T) {
 
 	resp := &http.Response{
 		StatusCode: http.StatusNotFound,
+		Body:       io.NopCloser(strings.NewReader("working!")),
 	}
 	badHandler := &ConfigurableWebGetter{
 		URL: "",
@@ -95,7 +98,9 @@ func TestReadinessStatus503(t *testing.T) {
 	badHandler := &ConfigurableWebGetter{
 		URL: "",
 		GetURL: func(string) (*http.Response, error) {
-			return nil, http.ErrServerClosed
+			return &http.Response{
+				Body: io.NopCloser(strings.NewReader("error!")),
+			}, http.ErrServerClosed
 		},
 	}
 	rr := httptest.NewRecorder()
