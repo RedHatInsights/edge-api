@@ -174,7 +174,7 @@ func main() {
 	for modelsIndex, modelsInterface := range modelsInterfaces {
 		log.Debugf("Migrating Model %d: %s", modelsIndex, modelsInterface.label)
 
-		// err := db.DB.Debug().AutoMigrate( modelsInterface.interfaceInstance )
+		// err := db.DB.AutoMigrate( modelsInterface.interfaceInstance )
 		err := db.DB.AutoMigrate(modelsInterface.interfaceInstance)
 		if err != nil {
 			log.Warningf("database automigrate failure %s", err)
