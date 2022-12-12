@@ -327,6 +327,7 @@ objects:
       - host-inventory
       - playbook-dispatcher
       - ingress
+      - image-builder
     featureFlags: true
 parameters:
 - description: Cpu limit of service
