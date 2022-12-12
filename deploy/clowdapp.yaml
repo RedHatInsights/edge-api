@@ -378,7 +378,7 @@ parameters:
 - description: ImageBuilder service URL
   name: IMAGEBUILDER_URL
   required: false
-  value: "http://image-builder:8080"
+  value: "http://image-builder-service:8000"
 - description: Host Inventory service URL
   name: INVENTORYURL
   required: false
