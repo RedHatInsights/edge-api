@@ -693,7 +693,7 @@ func ResumeCreateImage(w http.ResponseWriter, r *http.Request) {
 
 		// re-grab the image from the database
 		var image *models.Image
-		db.DB.Debug().Preload("Commit.Repo").Joins("Commit").Joins("Installer").First(&image, tempImage.ID)
+		db.DB.Preload("Commit.Repo").Joins("Commit").Joins("Installer").First(&image, tempImage.ID)
 
 		resumeLog := edgeAPIServices.Log.WithField("originalRequestId", image.RequestID)
 		resumeLog.Info("Resuming image build")
