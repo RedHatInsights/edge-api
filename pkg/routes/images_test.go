@@ -567,6 +567,7 @@ func TestValidateGetAllFilterParameters(t *testing.T) {
 		ValidateGetAllImagesSearchParams(next).ServeHTTP(w, req)
 
 		resp := w.Result()
+		defer resp.Body.Close()
 		jsonBody := []validationError{}
 		err = json.NewDecoder(resp.Body).Decode(&jsonBody)
 		if err != nil {
@@ -635,6 +636,7 @@ func TestValidateGetAllQueryParameters(t *testing.T) {
 		ValidateQueryParams("images")(next).ServeHTTP(w, req)
 
 		resp := w.Result()
+		defer resp.Body.Close()
 		jsonBody := []validationError{}
 		err = json.NewDecoder(resp.Body).Decode(&jsonBody)
 		if err != nil {

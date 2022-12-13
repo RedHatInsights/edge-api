@@ -80,9 +80,9 @@ var _ = Describe("UpdateService Basic functions", func() {
 					OrgID: org_id,
 				},
 			}
-			db.DB.Debug().Omit("Devices.*").Create(&updates[0])
-			db.DB.Debug().Omit("Devices.*").Create(&updates[1])
-			db.DB.Debug().Omit("Devices.*").Create(&updates[2])
+			db.DB.Omit("Devices.*").Create(&updates[0])
+			db.DB.Omit("Devices.*").Create(&updates[1])
+			db.DB.Omit("Devices.*").Create(&updates[2])
 
 			It("to return two updates for first device", func() {
 				actual, err := updateService.GetUpdateTransactionsForDevice(&device)
@@ -397,7 +397,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 					var updateTransaction models.UpdateTransaction
 
-					db.DB.Debug().Preload("DispatchRecords").Preload("DispatchRecords.Device").Preload("Devices").First(&updateTransaction, update.ID)
+					db.DB.Preload("DispatchRecords").Preload("DispatchRecords.Device").Preload("Devices").First(&updateTransaction, update.ID)
 
 					Expect(updateTransaction.ID).Should(Equal(update.ID))
 					Expect(updateTransaction.Status).Should(Equal(models.UpdateStatusError))

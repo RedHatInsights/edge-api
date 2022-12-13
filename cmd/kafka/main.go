@@ -28,7 +28,7 @@ func getStaleBuilds(status string, age int) []models.Image {
 	// looks like we ran into a known pgx issue when using ? for parameters in certain prepared SQL statements
 	// 		using Sprintf to predefine the query and pass to Where
 	query := fmt.Sprintf("status = '%s' AND updated_at < NOW() - INTERVAL '%d hours'", status, age)
-	qresult := db.DB.Debug().Where(query).Find(&images)
+	qresult := db.DB.Where(query).Find(&images)
 	if qresult.Error != nil {
 		log.WithField("error", qresult.Error.Error()).Error("Stale builds query failed")
 		return nil
@@ -47,7 +47,7 @@ func getStaleBuilds(status string, age int) []models.Image {
 
 // set the status for a specific image
 func setImageStatus(id uint, status string) error {
-	tx := db.DB.Debug().Model(&models.Image{}).Where("ID = ?", id).Update("Status", status)
+	tx := db.DB.Model(&models.Image{}).Where("ID = ?", id).Update("Status", status)
 	if tx.Error != nil {
 		log.WithField("error", tx.Error.Error()).Error("Error updating image status")
 		return tx.Error
@@ -115,7 +115,7 @@ func main() {
 		// handle image builds in INTERRUPTED status
 		//	this is meant to handle builds that are interrupted when they are interrupted
 		// 	the stale interrupted build routine (above) should never actually find anything while this is running
-		qresult := db.DB.Debug().Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
+		qresult := db.DB.Where(&models.Image{Status: models.ImageStatusInterrupted}).Find(&images)
 		if qresult.RowsAffected > 0 {
 			log.WithField("numImages", qresult.RowsAffected).Info("Found image(s) with interrupted status")
 		}

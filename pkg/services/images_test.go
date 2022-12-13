@@ -1721,14 +1721,14 @@ var _ = Describe("Image Service Test", func() {
 			})
 			Context("Get Devices count image", func() {
 				It("should return device count of image2", func() {
-					db.DB.Debug().Create(&devices)
+					db.DB.Create(&devices)
 					count, err := service.GetImageDevicesCount(image2.ID)
 					Expect(err).To(BeNil())
 					Expect(count).To(Equal(int64(2)))
 
 				})
 				It("should return 0 device of image1", func() {
-					db.DB.Debug().Create(&devices)
+					db.DB.Create(&devices)
 					count, err := service.GetImageDevicesCount(image1.ID)
 					Expect(err).To(BeNil())
 					Expect(count).To(Equal(int64(0)))
@@ -1736,7 +1736,7 @@ var _ = Describe("Image Service Test", func() {
 
 				It("GetUpdateInfo of image2 with 2 system and one installPackage", func() {
 					var imageDiff *models.ImageUpdateAvailable
-					db.DB.Debug().Create(&devices)
+					db.DB.Create(&devices)
 					totalPackage := len(image2.Commit.InstalledPackages)
 					imageDiff, err := service.GetUpdateInfo(*image2)
 					Expect(err).ToNot(HaveOccurred())
