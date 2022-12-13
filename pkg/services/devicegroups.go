@@ -183,7 +183,6 @@ func (s *DeviceGroupsService) GetDeviceImageInfo(images map[int]models.DeviceIma
 			var updAvailable bool
 			var deviceImage models.Image
 			var deviceImageSet models.ImageSet
-			var imagePackageDiff models.PackageDiff
 			var CommitID uint
 			if result := db.Org(orgID, "").First(&deviceImage, imageID); result.Error != nil {
 				return result.Error
@@ -222,8 +221,6 @@ func (s *DeviceGroupsService) GetDeviceImageInfo(images map[int]models.DeviceIma
 					return err
 				}
 
-				imagePackageDiff = GetDiffOnUpdate(deviceImage, *latestImage)
-
 			}
 
 			images[imageID] = models.DeviceImageInfo{
@@ -233,7 +230,6 @@ func (s *DeviceGroupsService) GetDeviceImageInfo(images map[int]models.DeviceIma
 				CreatedAt:       deviceImage.CreatedAt,
 				UpdateAvailable: updAvailable,
 				CommitID:        CommitID,
-				PackageDiff:     imagePackageDiff,
 			}
 		}
 	}
