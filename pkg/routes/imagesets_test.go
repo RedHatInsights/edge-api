@@ -274,6 +274,7 @@ func TestGetAllImageSetsQueryParameters(t *testing.T) {
 		ValidateQueryParams("image-sets")(next).ServeHTTP(w, req)
 
 		resp := w.Result()
+		defer resp.Body.Close()
 		jsonBody := []validationError{}
 		err = json.NewDecoder(resp.Body).Decode(&jsonBody)
 		if err != nil {
@@ -356,6 +357,7 @@ func TestSearchParams(t *testing.T) {
 		validateFilterParams(next).ServeHTTP(w, req)
 
 		resp := w.Result()
+		defer resp.Body.Close()
 		jsonBody := []validationError{}
 		if te.expectedError == nil {
 			if w.Code != http.StatusOK {
@@ -424,6 +426,7 @@ func TestDetailSearchParams(t *testing.T) {
 		validateFilterParams(next).ServeHTTP(w, req)
 
 		resp := w.Result()
+		defer resp.Body.Close()
 		jsonBody := []validationError{}
 		err = json.NewDecoder(resp.Body).Decode(&jsonBody)
 		if err != nil {

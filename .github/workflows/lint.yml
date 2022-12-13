@@ -38,7 +38,7 @@ jobs:
           # Args should be the same as Makefile
           # Workaround from https://github.com/golangci/golangci-lint-action/issues/119
           args: >
-            --enable=errcheck,gocritic,gofmt,goimports,gosec,gosimple,govet,ineffassign,revive,staticcheck,typecheck,unused
+            --enable=errcheck,gocritic,gofmt,goimports,gosec,gosimple,govet,ineffassign,revive,staticcheck,typecheck,unused,bodyclose
             --fix=false
             --max-same-issues=20
             --out-${NO_FUTURE}format=colored-line-number

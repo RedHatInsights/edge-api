@@ -1126,6 +1126,7 @@ func TestValidateGetAllUpdatesQueryParameters(t *testing.T) {
 		ValidateQueryParams("updates")(next).ServeHTTP(w, req)
 
 		resp := w.Result()
+		defer resp.Body.Close()
 		jsonBody := []validationError{}
 		err = json.NewDecoder(resp.Body).Decode(&jsonBody)
 		if err != nil {
