@@ -403,6 +403,7 @@ func TestValidateGetAllDevicesFilterParams(t *testing.T) {
 		}
 		Expect(w.Code).To(Equal(http.StatusBadRequest))
 		resp := w.Result()
+		defer resp.Body.Close()
 		validationsErrors := []validationError{}
 		err = json.NewDecoder(resp.Body).Decode(&validationsErrors)
 		if err != nil {
@@ -476,6 +477,7 @@ func TestValidateGetDevicesViewFilterParams(t *testing.T) {
 		routes.ValidateGetDevicesViewFilterParams(next).ServeHTTP(w, req)
 
 		resp := w.Result()
+		defer resp.Body.Close()
 		jsonBody := []validationError{}
 		err = json.NewDecoder(resp.Body).Decode(&jsonBody)
 		if err != nil {
