@@ -23,7 +23,7 @@ func TestGetOrgID(t *testing.T) {
 }
 
 func TestGetDefaultOrgID(t *testing.T) {
-	var ctx context.Context = context.Background()
+	ctx := context.Background()
 	orgID := faker.UUIDHyphenated()
 
 	cases := []struct {
@@ -82,8 +82,7 @@ func TestGetDefaultOrgID(t *testing.T) {
 }
 
 func TestGetAccountOrOrgIDFromContext(t *testing.T) {
-	var ctx context.Context = context.Background()
-
+	ctx := context.Background()
 	account := faker.UUIDHyphenated()
 	orgID := faker.UUIDHyphenated()
 
