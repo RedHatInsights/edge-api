@@ -646,7 +646,7 @@ func (s *ImageService) processImage(ctx context.Context, id uint) {
 			// we caught an interrupt. Mark the image as interrupted.
 			s.log.WithField("imageID", id).Debug("Select case SIGINT interrupt has been triggered")
 
-			tx := db.DB.Debug().Model(&models.Image{}).Where("ID = ?", id).Update("Status", models.ImageStatusInterrupted)
+			tx := db.DB.Model(&models.Image{}).Where("ID = ?", id).Update("Status", models.ImageStatusInterrupted)
 			s.log.WithField("imageID", id).Debug("Image updated with interrupted status")
 			if tx.Error != nil {
 				s.log.WithField("error", tx.Error.Error()).Error("Error updating image")
@@ -662,7 +662,7 @@ func (s *ImageService) processImage(ctx context.Context, id uint) {
 	}()
 
 	// business as usual from here to end of block
-	db.DB.Debug().Joins("Commit").Joins("Installer").First(&image, id)
+	db.DB.Joins("Commit").Joins("Installer").First(&image, id)
 
 	// Monitor the commit for completion
 	s.log.WithField("imageID", image.ID).Debug("Monitoring commit status for this image")
@@ -969,7 +969,7 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 			// check that if error contain timeout and job stop responding and image's time creation is less than 3 hours
 			if strings.Contains(err.Error(), "running this job stopped responding") {
 				image.Status = models.ImageStatusInterrupted
-				tx := db.DB.Debug().Model(&models.Image{}).Where("ID = ?", image.ID).Update("Status", models.ImageStatusInterrupted)
+				tx := db.DB.Model(&models.Image{}).Where("ID = ?", image.ID).Update("Status", models.ImageStatusInterrupted)
 				if tx.Error != nil {
 					return image, err
 				}
@@ -1270,7 +1270,7 @@ func (s *ImageService) resumeProcessImage(ctx context.Context, image *models.Ima
 			// we caught an interrupt. Mark the image as interrupted.
 			s.log.WithField("imageID", id).Debug("Select case SIGINT interrupt has been triggered")
 
-			tx := db.DB.Debug().Model(&models.Image{}).Where("ID = ?", id).Update("Status", models.ImageStatusInterrupted)
+			tx := db.DB.Model(&models.Image{}).Where("ID = ?", id).Update("Status", models.ImageStatusInterrupted)
 			s.log.WithField("imageID", id).Debug("Image updated with interrupted status")
 			if tx.Error != nil {
 				s.log.WithField("error", tx.Error.Error()).Error("Error updating image")

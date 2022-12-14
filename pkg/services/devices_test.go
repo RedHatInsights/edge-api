@@ -722,7 +722,7 @@ var _ = Describe("DfseviceService", func() {
 				Name:        event.Host.Name,
 				LastSeen:    event.Host.Updated,
 			}
-			result = db.DB.Debug().Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
+			result = db.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&newDevice)
 			err := deviceService.ProcessPlatformInventoryCreateEvent(message)
 			Expect(err).To(BeNil())
 			var savedDevice models.Device
@@ -924,7 +924,7 @@ var _ = Describe("DfseviceService", func() {
 				Type: models.DeviceGroupTypeDefault, OrgID: event.OrgID, Name: faker.UUIDHyphenated(),
 				Devices: []models.Device{device},
 			}
-			result = db.DB.Debug().Omit("Devices.*").Create(&deviceGroup)
+			result = db.DB.Omit("Devices.*").Create(&deviceGroup)
 			Expect(result.Error).To(BeNil())
 
 			// ensure device group created with device included
@@ -1572,7 +1572,7 @@ var _ = Describe("DfseviceService", func() {
 				ImageID: newImage.ID,
 			}
 
-			db.DB.Debug().Create(&device)
+			db.DB.Create(&device)
 
 			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(newImage, nil)
 			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(newImage)).Return(oldImage, nil)
@@ -1628,7 +1628,7 @@ var _ = Describe("DfseviceService", func() {
 				ImageID: image.ID,
 			}
 
-			db.DB.Debug().Create(&device)
+			db.DB.Create(&device)
 
 			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(image, nil)
 			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(image)).Return(image, nil)
@@ -1703,20 +1703,20 @@ var _ = Describe("DfseviceService", func() {
 		})
 		It("should return devices", func() {
 
-			db.DB.Debug().Create(&device)
+			db.DB.Create(&device)
 			count, err := deviceService.GetDevicesCountByImage(img.ID)
 			Expect(err).To(BeNil())
 			Expect(count).To(Equal(int64(3)))
 
 		})
 		It("should return 2", func() {
-			db.DB.Debug().Create(&device)
+			db.DB.Create(&device)
 			count, err := deviceService.GetDevicesCountByImage(img2.ID)
 			Expect(err).To(BeNil())
 			Expect(count).To(Equal(int64(2)))
 		})
 		It("should return 0", func() {
-			db.DB.Debug().Create(&device)
+			db.DB.Create(&device)
 			count, err := deviceService.GetDevicesCountByImage(img3.ID)
 			Expect(err).To(BeNil())
 			Expect(count).To(Equal(int64(0)))

@@ -162,7 +162,7 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 	}
 
 	var imgs []models.Image
-	db.DB.Debug().Where("ID in ?", imageIDS).Find(&imgs)
+	db.DB.Where("ID in ?", imageIDS).Find(&imgs)
 	// build set of image status
 	imageSetToStatus := make(map[uint]string)
 	for _, image := range imgs {
@@ -280,7 +280,7 @@ func (s *ImageSetsService) preloadImageSetImageData(image *models.Image) error {
 			return res.Error
 		}
 	}
-	if err := db.DB.Debug().Model(image.Commit).Association("InstalledPackages").Find(&image.Commit.InstalledPackages); err != nil {
+	if err := db.DB.Model(image.Commit).Association("InstalledPackages").Find(&image.Commit.InstalledPackages); err != nil {
 		s.log.WithField("error", err.Error()).Error("error occurred when preloading image.Commit.InstalledPackages data")
 		return err
 	}
@@ -419,7 +419,7 @@ func (s *ImageSetsService) GetDeviceIdsByImageSetID(imageSetID uint) (int, []str
 	var deviceInfos []DeviceInfo
 
 	if result := db.DB.Table("image_sets").
-		Where("image_sets.id = ?", imageSetID).
+		Where("image_sets.id = ? AND devices.deleted_at is NULL", imageSetID).
 		Select(`image_sets.id, images.id as "image_id", devices.id as "device_id", devices.uuid as "device_uuid"`).
 		Joins(`JOIN images ON image_sets.id = images.image_set_id`).
 		Joins(`JOIN devices on devices.image_id = images.id`).

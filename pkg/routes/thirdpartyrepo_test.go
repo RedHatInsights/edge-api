@@ -166,6 +166,7 @@ func TestGetAllThirdPartyRepoQueryParams(t *testing.T) {
 		ValidateQueryParams("thirdpartyrepo")(next).ServeHTTP(w, req)
 
 		resp := w.Result()
+		defer resp.Body.Close()
 		jsonBody := []validationError{}
 		err = json.NewDecoder(resp.Body).Decode(&jsonBody)
 		if err != nil {
@@ -229,6 +230,7 @@ func TestGetAllThirdPartyRepoFilterParams(t *testing.T) {
 		validateGetAllThirdPartyRepoFilterParams(next).ServeHTTP(w, req)
 
 		resp := w.Result()
+		defer resp.Body.Close()
 		jsonBody := []validationError{}
 		err = json.NewDecoder(resp.Body).Decode(&jsonBody)
 		if err != nil {
