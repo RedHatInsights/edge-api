@@ -73,60 +73,15 @@ func TestGetDefaultOrgID(t *testing.T) {
 		t.Run(test.Name, func(t *testing.T) {
 			config.Init()
 			cfg := config.Get()
+			// Save current config.Auth
+			auth := cfg.Auth
 			cfg.Auth = test.Auth
 			gotOrgID, gotError := GetOrgIDFromContext(test.Context)
 			assert.Equal(t, gotOrgID, test.ExpectedOrgID)
 			assert.Equal(t, gotError, test.ExpectedError)
-		})
-	}
-}
 
-func TestGetAccountOrOrgIDFromContext(t *testing.T) {
-	ctx := context.Background()
-	account := faker.UUIDHyphenated()
-	orgID := faker.UUIDHyphenated()
-
-	cases := []struct {
-		Name            string
-		Context         context.Context
-		Auth            bool
-		ExpectedAccount string
-		ExpectedOrgID   string
-		ExpectedError   error
-	}{
-		{
-			Name: "Cannot find Account from Context",
-			Context: context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{
-				AccountNumber: "",
-				OrgID:         "",
-			}}),
-			Auth:            true,
-			ExpectedAccount: "",
-			ExpectedOrgID:   "",
-			ExpectedError:   errors.New("cannot find account and org-id"),
-		},
-		{
-			Name: "Get Account and OrgID from Context",
-			Context: context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{
-				AccountNumber: account,
-				OrgID:         orgID,
-			}}),
-			Auth:            true,
-			ExpectedAccount: account,
-			ExpectedOrgID:   orgID,
-			ExpectedError:   nil,
-		},
-	}
-
-	for _, test := range cases {
-		t.Run(test.Name, func(t *testing.T) {
-			config.Init()
-			cfg := config.Get()
-			cfg.Auth = test.Auth
-			gotAccount, gotOrgID, gotError := GetAccountOrOrgIDFromContext(test.Context)
-			assert.Equal(t, gotAccount, test.ExpectedAccount)
-			assert.Equal(t, gotOrgID, test.ExpectedOrgID)
-			assert.Equal(t, gotError, test.ExpectedError)
+			// Reset config.Auth
+			cfg.Auth = auth
 		})
 	}
 }
