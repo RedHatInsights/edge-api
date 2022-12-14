@@ -28,8 +28,8 @@ func TestGetDefaultOrgID(t *testing.T) {
 
 	// Reset config.Auth back to its original value
 	defer func(auth bool) {
-        config.Get().Auth = auth
-    }(auth)
+		config.Get().Auth = auth
+	}(auth)
 
 	ctx := context.Background()
 	orgID := faker.UUIDHyphenated()
