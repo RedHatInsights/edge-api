@@ -23,6 +23,14 @@ func TestGetOrgID(t *testing.T) {
 }
 
 func TestGetDefaultOrgID(t *testing.T) {
+	cfg := config.Get()
+	auth := cfg.Auth
+
+	// Reset config.Auth back to its original value
+	defer func(auth bool) {
+        config.Get().Auth = auth
+    }(auth)
+
 	ctx := context.Background()
 	orgID := faker.UUIDHyphenated()
 
@@ -71,17 +79,11 @@ func TestGetDefaultOrgID(t *testing.T) {
 
 	for _, test := range cases {
 		t.Run(test.Name, func(t *testing.T) {
-			config.Init()
-			cfg := config.Get()
 			// Save current config.Auth
-			auth := cfg.Auth
 			cfg.Auth = test.Auth
 			gotOrgID, gotError := GetOrgIDFromContext(test.Context)
 			assert.Equal(t, gotOrgID, test.ExpectedOrgID)
 			assert.Equal(t, gotError, test.ExpectedError)
-
-			// Reset config.Auth
-			cfg.Auth = auth
 		})
 	}
 }
