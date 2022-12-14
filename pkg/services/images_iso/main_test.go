@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/bxcodec/faker/v3"
@@ -133,7 +134,16 @@ var _ = Describe("Image Iso Kafka Consumer Test", func() {
 					mockConsumer.EXPECT().Commit().AnyTimes()
 					kafkaError := kafka.NewError(kafka.ErrAllBrokersDown, "Error", true)
 					mockConsumer.EXPECT().Poll(timeout).Return(&kafkaError).AnyTimes()
-					initConsumer(ctx)
+					errResult := initConsumer(ctx)
+					Expect(errResult).To(BeNil())
+				})
+
+				It("should get error when there is no Consumer", func() {
+					consumerGroupID := "imagesisobuild"
+					expectedError := errors.New("failed to get ISO consumer")
+					mockConsumerService.EXPECT().GetConsumer(consumerGroupID).Return(nil, expectedError)
+					errResult := initConsumer(ctx)
+					Expect(errResult).To(Equal((expectedError)))
 				})
 			})
 		})
