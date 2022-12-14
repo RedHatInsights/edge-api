@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/logger"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
@@ -21,7 +23,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func initConsumer(ctx context.Context) {
+func initConsumer(ctx context.Context) error {
 	edgeAPIServices := dependencies.ServicesFromContext(ctx)
 	mslog := log.WithFields(log.Fields{"app": "edge", "service": "images"})
 
@@ -32,8 +34,8 @@ func initConsumer(ctx context.Context) {
 	db.InitDB()
 
 	if cfg.KafkaConfig.Brokers == nil {
-		mslog.WithField("error", "No kafka configuration found")
-		os.Exit(1)
+		mslog.Error("No kafka brokers configuration found")
+		return errors.New("no kafka brokers configuration found")
 	}
 
 	consumerGroup := "imagesisobuild"
@@ -43,7 +45,7 @@ func initConsumer(ctx context.Context) {
 
 	if err != nil {
 		mslog.WithField("error", err.Error()).Error("Failed to get ISO consumer")
-		os.Exit(1)
+		return errors.New("failed to get ISO consumer")
 	}
 
 	mslog.WithField("consumer", c).Debug("Created ISO Consumer")
@@ -51,7 +53,7 @@ func initConsumer(ctx context.Context) {
 	err = c.SubscribeTopics(topics, nil)
 	if err != nil {
 		mslog.Error("Subscribing to topics failed")
-		os.Exit(1)
+		return errors.New("subscribing to topics failed")
 	}
 
 	mslog.Info("ISO Microservice ready")
@@ -125,14 +127,22 @@ func initConsumer(ctx context.Context) {
 		}
 	}
 	log.Info("Closing consumer\n")
+	return nil
 }
 
 func main() {
 	ctx := context.Background()
+	logger.InitLogger()
 	edgeAPIServices := dependencies.Init(ctx)
 	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 	mslog := log.WithFields(log.Fields{"app": "edge", "service": "images"})
 	ctx = utility.ContextWithLogger(ctx, mslog)
-	initConsumer(ctx)
-
+	err := initConsumer(ctx)
+	exitCode := 0
+	if err != nil {
+		mslog.WithField("error", err.Error()).Error("Error when initializing consumer")
+		exitCode = 1
+	}
+	logger.FlushLogger()
+	os.Exit(exitCode)
 }
