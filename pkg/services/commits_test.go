@@ -38,7 +38,7 @@ var _ = Describe("ValidateDevicesImageSetWithCommit", func() {
 			{OrgID: orgID, Name: "3"},
 			{OrgID: orgID, Name: "4"},
 			{OrgID: orgID, Name: "5"}}
-		db.DB.Debug().Create(&commits)
+		db.DB.Create(&commits)
 
 		images = []models.Image{
 			{OrgID: orgID, CommitID: commits[0].ID, Status: models.ImageStatusSuccess, Version: 1, ImageSetID: &imageSet.ID},
@@ -47,7 +47,7 @@ var _ = Describe("ValidateDevicesImageSetWithCommit", func() {
 			{OrgID: orgID, CommitID: commits[3].ID, Status: models.ImageStatusSuccess, Version: 4, ImageSetID: &imageSet.ID},
 			{OrgID: orgID, CommitID: commits[4].ID, Status: models.ImageStatusSuccess, Version: 5, ImageSetID: &imageSet.ID},
 		}
-		db.DB.Debug().Create(&images)
+		db.DB.Create(&images)
 
 		device = models.Device{
 			OrgID:   orgID,

@@ -52,5 +52,6 @@ func GetReadinessStatus(g WebGetter) http.HandlerFunc {
 				})
 			}
 		}
+		defer resp.Body.Close()
 	})
 }

@@ -338,7 +338,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			s.log.WithField("error", err.Error()).Error("Error saving update")
 			return nil, err
 		}
-		dRecord := db.DB.Debug().Omit("Devices, DispatchRecords.Device").Save(update)
+		dRecord := db.DB.Omit("Devices, DispatchRecords.Device").Save(update)
 		if dRecord.Error != nil {
 			s.log.WithField("error", dRecord.Error).Error("Error saving Dispach Record")
 			return nil, dRecord.Error
@@ -479,7 +479,7 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, orgID str
 // GetUpdateTransactionsForDevice returns all update transactions for a given device
 func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error) {
 	var updates []models.UpdateTransaction
-	result := db.DB.Debug().
+	result := db.DB.
 		Table("update_transactions").
 		Preload("DispatchRecords", func(db *gorm.DB) *gorm.DB {
 			return db.Where("dispatch_records.device_id = ?", device.ID)
@@ -553,7 +553,7 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 		s.log.Error("Playbook status is not on the json schema for this event")
 	}
 
-	result = db.DB.Debug().Omit("Device").Save(&dispatchRecord)
+	result = db.DB.Omit("Device").Save(&dispatchRecord)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -596,7 +596,7 @@ func (s *UpdateService) SetUpdateStatus(update *models.UpdateTransaction) error 
 		update.Status = models.UpdateStatusSuccess
 	}
 	// If there isn't an error and it's not all success, some updates are still happening
-	result := db.DB.Debug().Model(&models.UpdateTransaction{}).Where("ID=?", update.ID).Update("Status", update.Status)
+	result := db.DB.Model(&models.UpdateTransaction{}).Where("ID=?", update.ID).Update("Status", update.Status)
 
 	return result.Error
 }
@@ -794,7 +794,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					UUID:  device.ID,
 					OrgID: orgID,
 				}
-				if result := db.DB.Debug().Omit("Devices.*").Create(&updateDevice); result.Error != nil {
+				if result := db.DB.Omit("Devices.*").Create(&updateDevice); result.Error != nil {
 					return nil, result.Error
 				}
 			}
@@ -805,7 +805,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 				}).Info("Device is disconnected")
 				update.Status = models.UpdateStatusDeviceDisconnected
 				update.Devices = append(update.Devices, *updateDevice)
-				if result := db.DB.Debug().Omit("Devices.*").Create(&update); result.Error != nil {
+				if result := db.DB.Omit("Devices.*").Create(&update); result.Error != nil {
 					return nil, result.Error
 				}
 				continue
@@ -817,7 +817,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 			if updateDevice.OrgID == "" {
 				updateDevice.OrgID = orgID
 			}
-			result := db.DB.Debug().Omit("Devices.*").Save(&updateDevice)
+			result := db.DB.Omit("Devices.*").Save(&updateDevice)
 			if result.Error != nil {
 				return nil, result.Error
 			}

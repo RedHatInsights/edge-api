@@ -92,7 +92,7 @@ var _ = Describe("ImageSets Service Test", func() {
 
 		It("should return image-set view with corresponding installer iso url and error status ", func() {
 
-			dbFilter := db.DB.Debug().Where("image_sets.name = ? ", imageSet1.Name)
+			dbFilter := db.DB.Where("image_sets.name = ? ", imageSet1.Name)
 
 			imageSetsView, err := service.GetImageSetsView(100, 0, dbFilter)
 			Expect(err).ToNot(HaveOccurred())
@@ -327,7 +327,7 @@ var _ = Describe("ImageSets Service Test", func() {
 			res1 = db.DB.First(&tempImage, image2.ID)
 			Expect(res1.Error.Error()).Should(Equal("record not found"))
 
-			dbFilter := db.DB.Debug().Where("image_sets.name = ? ", imageSet1.Name)
+			dbFilter := db.DB.Where("image_sets.name = ? ", imageSet1.Name)
 
 			imageSetsView, err := service.GetImageSetsView(100, 0, dbFilter)
 			Expect(err).ToNot(HaveOccurred())

@@ -232,7 +232,7 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 	}
 
 	var images []models.Image
-	query := db.DB.Debug().Limit(limit).Offset(offset).Where("Image_set_id = ? and Images.Status = ? and Images.Id > ?",
+	query := db.DB.Limit(limit).Offset(offset).Where("Image_set_id = ? and Images.Status = ? and Images.Id > ?",
 		currentImage.ImageSetID, models.ImageStatusSuccess, currentImage.ID,
 	).Joins("Commit").Order("Images.version desc")
 
@@ -953,7 +953,7 @@ func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCre
 	}
 
 	// We should not create a new device if UUID already exists
-	result := db.DB.Debug().Where(&models.Device{UUID: newDevice.UUID}).FirstOrCreate(&newDevice)
+	result := db.DB.Where(&models.Device{UUID: newDevice.UUID}).FirstOrCreate(&newDevice)
 
 	if result.Error != nil {
 		s.log.WithFields(log.Fields{
@@ -1075,7 +1075,7 @@ func (s *DeviceService) SyncDevicesWithInventory(orgID string) {
 					log.Fields{"host_id": device.UUID, "OrgID": device.OrgID},
 				).Debug("Deleting device")
 
-				if result := db.DB.Debug().Delete(&device); result.Error != nil {
+				if result := db.DB.Delete(&device); result.Error != nil {
 					s.log.WithFields(
 						log.Fields{"host_id": device.UUID, "OrgID": device.OrgID, "error": result.Error},
 					).Error("Error when deleting device in device sync")
