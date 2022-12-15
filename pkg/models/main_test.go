@@ -1,5 +1,5 @@
 // FIXME: golangci-lint
-// nolint:revive
+// nolint:gofmt,goimports,revive
 package models
 
 import (

@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:gofmt,goimports,revive
 package db
 
 import (
