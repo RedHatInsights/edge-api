@@ -63,7 +63,7 @@ func tearDown() {
 	sqlDB, err := db.DB.DB()
 
 	if err != nil {
-		log.Info("Failed to open acquire test database", err)
+		log.Info("Failed to acquire test database", err)
 		panic(err)
 	}
 
