@@ -35,7 +35,6 @@ type DeviceImageInfo struct {
 	Version         int
 	Distribution    string
 	CreatedAt       EdgeAPITime
-	PackageDiff     PackageDiff
 	UpdateAvailable bool
 	CommitID        uint
 }
