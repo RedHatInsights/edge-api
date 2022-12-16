@@ -25,7 +25,6 @@ import (
 func MakeDevicesRouter(sub chi.Router) {
 	sub.With(ValidateQueryParams("devices")).With(ValidateGetAllDevicesFilterParams).Get("/", GetDevices)
 	sub.With(ValidateQueryParams("devicesview")).With(common.Paginate).With(ValidateGetDevicesViewFilterParams).Get("/devicesview", GetDevicesView)
-	sub.With(common.Paginate).Get("/db", GetDBDevices)
 	sub.Route("/{DeviceUUID}", func(r chi.Router) {
 		r.Use(DeviceCtx)
 		r.Get("/dbinfo", GetDeviceDBInfo)
@@ -268,25 +267,6 @@ func GetDevices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondWithJSONBody(w, contextServices.Log, inventory)
-}
-
-// GetDBDevices return the device data on EdgeAPI DB
-func GetDBDevices(w http.ResponseWriter, r *http.Request) {
-	contextServices := dependencies.ServicesFromContext(r.Context())
-	var devices []models.Device
-	pagination := common.GetPagination(r)
-	orgID := readOrgID(w, r, contextServices.Log)
-	if orgID == "" {
-		// logs and response handled by readOrgID
-		return
-	}
-	result := db.Org(orgID, "").Limit(pagination.Limit).Offset(pagination.Offset).Find(&devices)
-	if result.Error != nil {
-		contextServices.Log.WithField("error", result.Error.Error()).Debug("Result error")
-		respondWithAPIError(w, contextServices.Log, errors.NewBadRequest(result.Error.Error()))
-		return
-	}
-	respondWithJSONBody(w, contextServices.Log, &devices)
 }
 
 // GetDeviceDBInfo return the device data on EdgeAPI DB
