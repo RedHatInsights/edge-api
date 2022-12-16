@@ -1,19 +1,21 @@
 // FIXME: golangci-lint
-// nolint:revive,typecheck
+// nolint: revive,typecheck
 package db_test
 
 import (
 	"fmt"
-	"github.com/bxcodec/faker/v3"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"os"
+	"time"
+
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
+
+	"github.com/bxcodec/faker/v3"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"gorm.io/gorm"
-	"os"
-	"time"
 )
 
 var _ = Describe("Db", func() {
