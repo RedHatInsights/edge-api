@@ -33,6 +33,7 @@ config.yaml
 
 # sqlite database
 *.db
+*.db-journal
 
 # env variables file
 .env
@@ -52,3 +53,8 @@ openapi.yaml
 
 go/pkg/mod/*
 .cache
+
+# build files
+/build/
+/coverage.json
+/coverage.html
