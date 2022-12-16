@@ -15,6 +15,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	mockUnleash "github.com/redhatinsights/edge-api/unleash"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -44,8 +45,10 @@ var (
 func TestMain(m *testing.M) {
 	setUp()
 	retCode := m.Run()
-	tearDown()
-	os.Exit(retCode)
+	defer func(exitCode int) {
+		tearDown()
+		os.Exit(exitCode)
+	}(retCode)
 }
 
 var dbName string
@@ -109,9 +112,9 @@ func setUp() {
 }
 
 func tearDown() {
-	db.DB.Exec("DELETE FROM commits")
-	db.DB.Exec("DELETE FROM repos")
-	db.DB.Exec("DELETE FROM images")
-	db.DB.Exec("DELETE FROM update_transactions")
-	os.Remove(dbName)
+	log.Info("removing routes main test db")
+	if err := os.Remove(dbName); err != nil {
+		log.Error(err.Error())
+		log.Infof("failed to remove rotes db: %s", dbName)
+	}
 }
