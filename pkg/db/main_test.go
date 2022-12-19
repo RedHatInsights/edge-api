@@ -1,18 +1,18 @@
 // FIXME: golangci-lint
-// nolint:revive
+// nolint:gofmt,goimports,revive
 package db
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/models"
 )
 
-// This will setup the test database and run the tests for whole package
+// This will set up the test database and run the tests for whole package
 func TestMain(m *testing.M) {
 	setupTestDB()
 	retCode := m.Run()
@@ -23,28 +23,29 @@ func TestMain(m *testing.M) {
 var dbName string
 
 func setupTestDB() {
-	config.Init()
-	config.Get().Debug = true
-	time := time.Now().UnixNano()
-	dbName = fmt.Sprintf("%d-services.db", time)
+	dbTimeCreation := time.Now().UnixNano()
+	dbName = fmt.Sprintf("%d-services.db", dbTimeCreation)
 	config.Get().Database.Name = dbName
 	InitDB()
-	err := DB.AutoMigrate(
-		&models.Device{},
-	)
-	if err != nil {
-		panic(err)
-	}
 }
 
 func tearDownTestDB() {
 	sqlDB, err := DB.DB()
 
 	if err != nil {
+		log.Info("Failed to acquire test database", err)
 		panic(err)
 	}
 
-	sqlDB.Close()
+	err = sqlDB.Close()
+	if err != nil {
+		log.Info("Failed to close test database", err)
+		return
+	}
 
-	os.Remove(dbName)
+	err = os.Remove(dbName)
+	if err != nil {
+		log.Info("Failed to remove test database", err)
+		return
+	}
 }

@@ -16,9 +16,8 @@ import (
 // DB ORM variable
 var DB *gorm.DB
 
-// InitDB to configure database connectivity
-func InitDB() {
-	var err error
+// CreateDB create a new application DB
+func CreateDB() (*gorm.DB, error) {
 	var dia gorm.Dialector
 	cfg := config.Get()
 
@@ -35,20 +34,32 @@ func InitDB() {
 		dia = sqlite.Open(cfg.Database.Name)
 	}
 
-	DB, err = gorm.Open(dia, &gorm.Config{})
+	newDB, err := gorm.Open(dia, &gorm.Config{})
 	if err != nil {
 		logger.LogErrorAndPanic("failed to connect database", err)
+		return nil, err
 	}
 
 	if cfg.Database.Type == "pgsql" {
 		var minorVersion string
-		DB.Raw("SELECT version()").Scan(&minorVersion)
-		if err != nil {
-			log.WithFields(log.Fields{"error": err.Error()}).Error("error selecting version")
+		if result := newDB.Raw("SELECT version()").Scan(&minorVersion); result.Error != nil {
+			log.WithFields(log.Fields{"error": result.Error.Error()}).Error("error selecting version")
+			return nil, result.Error
 		}
 
 		log.Infof("Postgres information: '%s'", minorVersion)
 	}
+
+	return newDB, nil
+}
+
+// InitDB to configure database connectivity
+func InitDB() {
+	newDB, err := CreateDB()
+	if err != nil {
+		return
+	}
+	DB = newDB
 }
 
 // AccountOrOrg returns a gorm db transaction with account or orgID filter
