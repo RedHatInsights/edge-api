@@ -25,7 +25,7 @@ import (
 type RepoBuilderInterface interface {
 	BuildUpdateRepo(id uint) (*models.UpdateTransaction, error)
 	ImportRepo(r *models.Repo) (*models.Repo, error)
-	DownloadVersionRepo(c *models.Commit, dest string, external bool) (string, error)
+	DownloadVersionRepo(c *models.Commit, dest string) (string, error)
 	ExtractVersionRepo(c *models.Commit, tarFileName string, dest string) error
 	UploadVersionRepo(c *models.Commit, tarFileName string) error
 }
@@ -81,7 +81,12 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	if err != nil {
 		return nil, err
 	}
-	tarFileName, err := rb.DownloadVersionRepo(update.Commit, path, false)
+	update.Commit.ExternalURL = false
+	tx := db.DB.Save(&update.Commit)
+	if tx.Error != nil {
+		rb.log.WithField("error", tx.Error.Error()).Error("Error update commit")
+	}
+	tarFileName, err := rb.DownloadVersionRepo(update.Commit, path)
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error downloading tar")
 		return nil, fmt.Errorf("error Upload repo repo :: %s", err.Error())
@@ -118,7 +123,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 				"OldCommits":          commit.ID}).
 				Info("Calculate diff from previous commit")
 			commit := commit // this will prevent implicit memory aliasing in the loop
-			tarFileName, err := rb.DownloadVersionRepo(&commit, filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit)), false)
+			tarFileName, err := rb.DownloadVersionRepo(&commit, filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit)))
 			if err != nil {
 				rb.log.WithField("error", err.Error()).Error("Error downloading tar")
 				return nil, fmt.Errorf("error Upload repo repo :: %s", err.Error())
@@ -188,7 +193,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		return nil, err
 	}
 
-	tarFileName, err := rb.DownloadVersionRepo(&cmt, path, true)
+	tarFileName, err := rb.DownloadVersionRepo(&cmt, path)
 	if err != nil {
 		r.Status = models.RepoStatusError
 		result := db.DB.Save(&r)
@@ -237,7 +242,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 }
 
 // DownloadVersionRepo Download and Extract the repo tarball to dest dir
-func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string, external bool) (string, error) {
+func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string) (string, error) {
 	// ensure we weren't passed a nil pointer
 	if c == nil {
 		rb.log.Error("nil pointer to models.Commit provided")
@@ -262,7 +267,7 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string, extern
 	}
 	tarFileName = filepath.Clean(filepath.Join(dest, tarFileName))
 
-	if external {
+	if c.ExternalURL {
 		rb.log.WithFields(log.Fields{"filepath": tarFileName, "imageBuildTarURL": c.ImageBuildTarURL}).Debug("Grabbing tar file")
 		_, err = grab.Get(tarFileName, c.ImageBuildTarURL)
 
@@ -280,7 +285,11 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string, extern
 		}
 	}
 	rb.log.Info("Download finished")
-
+	c.ExternalURL = true
+	tx := db.DB.Save(&c)
+	if tx.Error != nil {
+		rb.log.WithField("error", tx.Error.Error()).Error("Error update commit")
+	}
 	return tarFileName, nil
 }
 
