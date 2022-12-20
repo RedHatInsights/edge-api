@@ -83,11 +83,7 @@ func TestInitLogger(t *testing.T) {
 			writer := &bytes.Buffer{}
 
 			logger.InitLogger(writer)
-
-			log.SetLevel(tt.level)
-
 			logger.FlushLogger()
-			assert.Equal(t, tt.level, log.GetLevel())
 		})
 	}
 }
