@@ -887,7 +887,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(responseError[0].Key).To(Equal("sort_by"))
 			})
 			It("the image set view image version sort is responding as expected", func() {
-				sort_args := []string{"created_at", "updated_at", "name"}
+				sort_args := []string{"created_at", "updated_at", "-updated_at", "-name"}
 				for _, sort_arg := range sort_args {
 					req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets/view?sort_by=%s", sort_arg), nil)
 					Expect(err).ToNot(HaveOccurred())
@@ -903,6 +903,21 @@ var _ = Describe("ImageSets Route Test", func() {
 					if sort_arg == "name" {
 						for i := 0; i < len(imageSetsViewResponse.Data)-1; i++ {
 							Expect(imageSetsViewResponse.Data[i].Name <= imageSetsViewResponse.Data[i+1].Name).To(BeTrue())
+						}
+					}
+					if sort_arg == "-name" {
+						for i := 0; i < len(imageSetsViewResponse.Data)-1; i++ {
+							Expect(imageSetsViewResponse.Data[i].Name >= imageSetsViewResponse.Data[i+1].Name).To(BeTrue())
+						}
+					}
+					if sort_arg == "updated_at" {
+						for i := 0; i < len(imageSetsViewResponse.Data)-1; i++ {
+							Expect(imageSetsViewResponse.Data[i].UpdatedAt.Time.Before(imageSetsViewResponse.Data[i+1].UpdatedAt.Time)).To(BeTrue())
+						}
+					}
+					if sort_arg == "-updated_at" {
+						for i := 0; i < len(imageSetsViewResponse.Data)-1; i++ {
+							Expect(imageSetsViewResponse.Data[i].UpdatedAt.Time.After(imageSetsViewResponse.Data[i+1].UpdatedAt.Time)).To(BeTrue())
 						}
 					}
 				}
