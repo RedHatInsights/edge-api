@@ -319,6 +319,7 @@ func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string) e
 		return err
 	}
 	c.ImageBuildTarURL = repoTarURL
+	c.ExternalURL = false
 	result := db.DB.Save(c)
 	if result.Error != nil {
 		rb.log.WithField("error", result.Error.Error()).Error("Error saving tar file")

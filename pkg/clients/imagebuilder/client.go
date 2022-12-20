@@ -318,7 +318,7 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 	if err != nil {
 		image.Installer.Status = models.ImageStatusError
 		image.Status = models.ImageStatusError
-		image.Commit.ExternalURL = false
+
 	} else {
 		image.Installer.ComposeJobID = cr.ID
 		image.Installer.Status = models.ImageStatusBuilding
