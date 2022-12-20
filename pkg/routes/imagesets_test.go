@@ -900,22 +900,21 @@ var _ = Describe("ImageSets Route Test", func() {
 					respBody, err := ioutil.ReadAll(rr.Body)
 					err = json.Unmarshal(respBody, &imageSetsViewResponse)
 					Expect(err).ToNot(HaveOccurred())
-					if sort_arg == "name" {
+					switch sort_arg {
+					case "name":
 						for i := 0; i < len(imageSetsViewResponse.Data)-1; i++ {
 							Expect(imageSetsViewResponse.Data[i].Name <= imageSetsViewResponse.Data[i+1].Name).To(BeTrue())
 						}
-					}
-					if sort_arg == "-name" {
+					case "-name":
 						for i := 0; i < len(imageSetsViewResponse.Data)-1; i++ {
 							Expect(imageSetsViewResponse.Data[i].Name >= imageSetsViewResponse.Data[i+1].Name).To(BeTrue())
 						}
-					}
-					if sort_arg == "updated_at" {
+
+					case "updated_at":
 						for i := 0; i < len(imageSetsViewResponse.Data)-1; i++ {
 							Expect(imageSetsViewResponse.Data[i].UpdatedAt.Time.Before(imageSetsViewResponse.Data[i+1].UpdatedAt.Time)).To(BeTrue())
 						}
-					}
-					if sort_arg == "-updated_at" {
+					case "-updated_at":
 						for i := 0; i < len(imageSetsViewResponse.Data)-1; i++ {
 							Expect(imageSetsViewResponse.Data[i].UpdatedAt.Time.After(imageSetsViewResponse.Data[i+1].UpdatedAt.Time)).To(BeTrue())
 						}
