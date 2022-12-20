@@ -134,7 +134,7 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 	var imageSetsRows []ImageSetRow
 
 	if result := db.OrgDB(orgID, tx, "image_sets").Debug().Table("image_sets").Limit(limit).Offset(offset).
-		Select(`image_sets.id, image_sets.name, image_sets.version, max(images.id) as "image_id"`).
+		Select(`image_sets.id, image_sets.name, image_sets.version, max(images.id) as "image_id", max(images.updated_at) as "images_updated_at"`).
 		Where(`image_sets.deleted_at IS NULL  AND images.deleted_at IS NULL`).
 		Joins(`JOIN images ON image_sets.id = images.image_set_id`).
 		Group(`image_sets.id, image_sets.name, image_sets.version`).
@@ -180,7 +180,7 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 		imageSetView := models.ImageSetView{
 			ID:        imageSetRow.ID,
 			Name:      imageSetRow.Name,
-			Version:   imageSetRow.Version,
+			Version:   imageSetsImages[imageSetRow.ImageID].Version,
 			UpdatedAt: imageSetsImages[imageSetRow.ImageID].UpdatedAt,
 			Status:    imageSetsImages[imageSetRow.ImageID].Status,
 			ImageID:   imageSetRow.ImageID,
