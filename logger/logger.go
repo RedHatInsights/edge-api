@@ -4,7 +4,7 @@ package logger
 
 import (
 	"fmt"
-	"os"
+	"io"
 	"path"
 	"runtime"
 	"strings"
@@ -24,7 +24,7 @@ var logLevel log.Level
 var hook *lc.Hook
 
 // InitLogger initializes the API logger
-func InitLogger() {
+func InitLogger(writer io.Writer) {
 
 	cfg := config.Get()
 
@@ -59,7 +59,7 @@ func InitLogger() {
 		})
 	}
 
-	log.SetOutput(os.Stdout)
+	log.SetOutput(writer)
 	log.SetLevel(logLevel)
 }
 
@@ -75,7 +75,9 @@ func FlushLogger() {
 
 // LogErrorAndPanic Records the error, flushes the buffer, then panics the container
 func LogErrorAndPanic(msg string, err error) {
-	log.WithFields(log.Fields{"error": err}).Error(msg)
-	FlushLogger()
-	panic(err)
+	if err != nil {
+		log.WithFields(log.Fields{"error": err}).Error(msg)
+		FlushLogger()
+		panic(err)
+	}
 }

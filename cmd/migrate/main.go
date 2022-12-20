@@ -23,7 +23,7 @@ func handlePanic(errorOccurred *bool) {
 
 func main() {
 	config.Init()
-	l.InitLogger()
+	l.InitLogger(os.Stdout)
 	configValues, err := config.GetConfigValues()
 	if err != nil {
 		l.LogErrorAndPanic("error when getting config values", err)

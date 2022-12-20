@@ -45,7 +45,7 @@ func setupDocsMiddleware(handler http.Handler) http.Handler {
 
 func initDependencies() {
 	config.Init()
-	l.InitLogger()
+	l.InitLogger(os.Stdout)
 	db.InitDB()
 }
 

@@ -21,7 +21,7 @@ func handlePanic(errorOccurred *bool) {
 }
 func main() {
 	config.Init()
-	l.InitLogger()
+	l.InitLogger(os.Stdout)
 	cfg := config.Get()
 	log.WithFields(log.Fields{
 		"Hostname":                 cfg.Hostname,

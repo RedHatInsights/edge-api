@@ -132,7 +132,7 @@ func initConsumer(ctx context.Context) error {
 
 func main() {
 	ctx := context.Background()
-	logger.InitLogger()
+	logger.InitLogger(os.Stdout)
 	edgeAPIServices := dependencies.Init(ctx)
 	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 	mslog := log.WithFields(log.Fields{"app": "edge", "service": "images"})

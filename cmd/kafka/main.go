@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -70,7 +71,7 @@ func main() {
 	}
 
 	config.Init()
-	l.InitLogger()
+	l.InitLogger(os.Stdout)
 	cfg := config.Get()
 	config.LogConfigAtStartup(cfg)
 	db.InitDB()

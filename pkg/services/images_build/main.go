@@ -38,7 +38,7 @@ func main() {
 
 	// FIXME: a good opportunity to refactor config
 	config.Init()
-	l.InitLogger()
+	l.InitLogger(os.Stdout)
 	cfg := config.Get()
 	config.LogConfigAtStartup(cfg)
 
