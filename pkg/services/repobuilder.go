@@ -81,11 +81,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	if err != nil {
 		return nil, err
 	}
-	update.Commit.ExternalURL = false
-	tx := db.DB.Save(&update.Commit)
-	if tx.Error != nil {
-		rb.log.WithField("error", tx.Error.Error()).Error("Error update commit")
-	}
+
 	tarFileName, err := rb.DownloadVersionRepo(update.Commit, path)
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error downloading tar")
@@ -285,11 +281,7 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string) (strin
 		}
 	}
 	rb.log.Info("Download finished")
-	c.ExternalURL = true
-	tx := db.DB.Save(&c)
-	if tx.Error != nil {
-		rb.log.WithField("error", tx.Error.Error()).Error("Error update commit")
-	}
+
 	return tarFileName, nil
 }
 
