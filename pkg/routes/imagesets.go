@@ -218,6 +218,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		sort.Slice(img.Images, func(i, j int) bool {
 			return img.Images[i].ID > img.Images[j].ID
 		})
+		imgSet.ImageSetData.Version = img.Images[0].Version
 		imageSetIsoURLSetten := false
 		for _, i := range img.Images {
 			if i.InstallerID != nil {
