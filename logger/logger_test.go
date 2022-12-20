@@ -67,7 +67,7 @@ func TestInitLogger(t *testing.T) {
 		},
 		{
 			name:     "Use Info log level",
-			logLevel: "DEBUG",
+			logLevel: "INFO",
 			level:    log.InfoLevel,
 		},
 	}
@@ -83,6 +83,7 @@ func TestInitLogger(t *testing.T) {
 			writer := &bytes.Buffer{}
 
 			logger.InitLogger(writer)
+			assert.Equal(t, tt.level, log.GetLevel())
 			logger.FlushLogger()
 		})
 	}
