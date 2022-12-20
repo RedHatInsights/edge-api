@@ -19,6 +19,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+
 	"github.com/redhatinsights/edge-api/config"
 
 	l "github.com/redhatinsights/edge-api/logger" // is this one really needed with logrus?

@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/logger"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -21,6 +20,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services/image"
 	"github.com/redhatinsights/edge-api/pkg/services/utility"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 func initConsumer(ctx context.Context) error {

@@ -8,9 +8,10 @@ import (
 	"sync"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 var lock = &sync.Mutex{}

@@ -12,9 +12,10 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/redhatinsights/edge-api/config"
 	lc "github.com/redhatinsights/platform-go-middlewares/logging/cloudwatch"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 // Log is an instance of the global logrus.Logger

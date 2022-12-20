@@ -3,12 +3,14 @@
 package main
 
 import (
-	"github.com/redhatinsights/edge-api/config"
+	"os"
+
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"os"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 func main() {

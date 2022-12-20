@@ -15,11 +15,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 // ClientInterface is an Interface to make request to ImageBuilder

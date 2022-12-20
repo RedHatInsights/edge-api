@@ -5,9 +5,10 @@
 package mock_playbookdispatcher
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	playbookdispatcher "github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
-	reflect "reflect"
 )
 
 // MockClientInterface is a mock of ClientInterface interface

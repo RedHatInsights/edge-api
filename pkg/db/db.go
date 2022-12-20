@@ -5,12 +5,13 @@ package db
 import (
 	"fmt"
 
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/logger"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 // DB ORM variable

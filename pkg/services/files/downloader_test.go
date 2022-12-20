@@ -5,8 +5,9 @@ package files
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/redhatinsights/edge-api/config"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 var _ = Describe("Uploader Test", func() {

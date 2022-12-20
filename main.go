@@ -18,7 +18,6 @@ import (
 	"time"
 
 	redoc "github.com/go-openapi/runtime/middleware"
-	"github.com/redhatinsights/edge-api/config"
 	l "github.com/redhatinsights/edge-api/logger"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -26,6 +25,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	edgeunleash "github.com/redhatinsights/edge-api/unleash"
+
+	"github.com/redhatinsights/edge-api/config"
 
 	"github.com/Unleash/unleash-client-go/v3"
 	"github.com/go-chi/chi"

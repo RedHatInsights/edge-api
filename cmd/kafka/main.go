@@ -10,11 +10,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/redhatinsights/edge-api/config"
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 // NOTE: this is currently designed for a single ibvents replica

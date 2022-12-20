@@ -13,9 +13,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+
+	"github.com/redhatinsights/edge-api/config"
 
 	"github.com/cavaliercoder/grab"
 	log "github.com/sirupsen/logrus"

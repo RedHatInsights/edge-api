@@ -11,12 +11,13 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
-	"github.com/redhatinsights/edge-api/config"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	mock_kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka/mock_kafka"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 var _ = Describe("Kafka Producer Test", func() {

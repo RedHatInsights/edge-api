@@ -5,12 +5,15 @@ package logger_test
 import (
 	"bytes"
 	"errors"
-	"github.com/redhatinsights/edge-api/config"
 	"testing"
 
 	"github.com/redhatinsights/edge-api/logger"
-	log "github.com/sirupsen/logrus"
+
+	"github.com/redhatinsights/edge-api/config"
+
 	"github.com/stretchr/testify/assert"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func TestLogGenericErrorAndPanic(t *testing.T) {
