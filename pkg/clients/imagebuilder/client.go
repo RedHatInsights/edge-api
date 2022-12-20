@@ -318,13 +318,13 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 	if err != nil {
 		image.Installer.Status = models.ImageStatusError
 		image.Status = models.ImageStatusError
-		image.Commit.ExternalURL = false
 	} else {
 		image.Installer.ComposeJobID = cr.ID
 		image.Installer.Status = models.ImageStatusBuilding
 		image.Status = models.ImageStatusBuilding
-		image.Commit.ExternalURL = false
+
 	}
+	image.Commit.ExternalURL = false
 	tx := db.DB.Save(&image)
 	if tx.Error != nil {
 		c.log.WithField("error", tx.Error.Error()).Error("Error saving image")
