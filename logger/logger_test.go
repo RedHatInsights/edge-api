@@ -74,6 +74,10 @@ func TestInitLogger(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			originalLogLevel := config.Get().LogLevel
+			defer func(level string) {
+				config.Get().LogLevel = level
+			}(originalLogLevel)
+
 			config.Get().LogLevel = tt.logLevel
 
 			writer := &bytes.Buffer{}
@@ -84,8 +88,6 @@ func TestInitLogger(t *testing.T) {
 
 			logger.FlushLogger()
 			assert.Equal(t, tt.level, log.GetLevel())
-
-			config.Get().LogLevel = originalLogLevel
 		})
 	}
 }
