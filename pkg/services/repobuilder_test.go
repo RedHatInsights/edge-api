@@ -25,12 +25,19 @@ var testTarFile = "test.tar"
 
 var _ = Describe("RepoBuilder Service Test", func() {
 	var service services.RepoBuilderInterface
+	// var mockFilesService *mock_services.MockFilesService
+	// var mockDownloaderService *mock_services.MockDownloader
+	// var logEntry *log.Entry
+	var ctrl *gomock.Controller
+
 	BeforeEach(func() {
 		var ctx context.Context = context.Background()
-
-		ctrl := gomock.NewController(GinkgoT())
+		ctrl = gomock.NewController(GinkgoT())
+		// mockFilesService = mock_services.NewMockFilesService(ctrl)
+		// mockDownloaderService = mock_services.NewMockDownloader(ctrl)
 		defer ctrl.Finish()
 		service = services.NewRepoBuilder(ctx, log.NewEntry(log.StandardLogger()))
+
 	})
 	Describe("#ExtractVersionRepo", func() {
 		When("is valid", func() {
@@ -54,6 +61,24 @@ var _ = Describe("RepoBuilder Service Test", func() {
 				fileContent, err := readTestFile(filePathExtraction)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(fileContent).To(Equal("Some content to test"))
+			})
+		})
+	})
+
+	Describe("#DownloadVersionRepo", func() {
+		When("is valid", func() {
+			It("should download the repo", func() {
+				filePath := fmt.Sprintf("/tmp/download/")
+				fmt.Print(filePath)
+				commit := &models.Commit{ExternalURL: true, ImageBuildTarURL: "https://repos.fedorapeople.org/pulp/pulp/demo_repos/zoo/bear-4.1-1.noarch.rpm"}
+				// mockFilesService.EXPECT().GetDownloader().Return(nil)
+				// mockDownloaderService.EXPECT().DownloadToPath(commit.ImageBuildTarURL, "repo.tar").Return(nil)
+
+				n, err := service.DownloadVersionRepo(commit, filePath)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(n).To(Equal(fmt.Sprintf("%v%v", filePath, "repo.tar")))
+				os.RemoveAll(filePath)
+
 			})
 		})
 	})
