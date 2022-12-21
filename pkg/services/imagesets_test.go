@@ -96,6 +96,7 @@ var _ = Describe("ImageSets Service Test", func() {
 
 			imageSetsView, err := service.GetImageSetsView(100, 0, dbFilter)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(imageSetsView).ToNot(BeNil())
 			Expect(len(*imageSetsView)).To(Equal(1))
 			imageSetRow := (*imageSetsView)[0]
 
@@ -112,6 +113,7 @@ var _ = Describe("ImageSets Service Test", func() {
 
 			imageSetsView, err := service.GetImageSetsView(100, 0, dbFilter)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(imageSetsView).ToNot(BeNil())
 			Expect(len(*imageSetsView)).To(Equal(1))
 			imageSetRow := (*imageSetsView)[0]
 
@@ -190,6 +192,21 @@ var _ = Describe("ImageSets Service Test", func() {
 			_, err := service.GetImageSetImageViewByID(innerImageSet.ID, image1.ID)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(new(services.ImageSetNotFoundError)))
+		})
+
+		It("GetImageSetsView item updated_at and status should be the same as in ImageSetViewByID latest image", func() {
+			dbFilter := db.DB.Where("image_sets.name = ? ", imageSet1.Name)
+			imageSetsView, err := service.GetImageSetsView(100, 0, dbFilter)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(imageSetsView).ToNot(BeNil())
+			Expect(len(*imageSetsView) > 0).To(BeTrue())
+			for _, imageSetsViewItem := range *imageSetsView {
+				imageSetView, err := service.GetImageSetViewByID(imageSetsViewItem.ID, 100, 0, nil)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(imageSetView).ToNot(BeNil())
+				Expect(imageSetsViewItem.UpdatedAt).To(Equal(imageSetView.LastImageDetails.Image.UpdatedAt))
+				Expect(imageSetsViewItem.Status).To(Equal(imageSetView.LastImageDetails.Image.Status))
+			}
 		})
 	})
 

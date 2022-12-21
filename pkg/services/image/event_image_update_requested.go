@@ -8,9 +8,8 @@ import (
 	"encoding/json"
 
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
-	"github.com/redhatinsights/edge-api/pkg/routes/common"
-
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services/utility"
 	log "github.com/sirupsen/logrus"
 )
@@ -63,6 +62,7 @@ func (ev EventImageUpdateRequestedBuildHandler) Consume(ctx context.Context) {
 		"orgID":     image.OrgID,
 	})
 
+	// process the image
 	// get the services from the context
 	edgeAPIServices := dependencies.ServicesFromContext(ctx)
 	imageService := edgeAPIServices.ImageService
@@ -70,6 +70,4 @@ func (ev EventImageUpdateRequestedBuildHandler) Consume(ctx context.Context) {
 	if err != nil {
 		log.Error("Error processing the image")
 	}
-
-	return
 }

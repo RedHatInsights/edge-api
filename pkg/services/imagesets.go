@@ -125,23 +125,20 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 
 	// ImageSetRow the structure for getting the main data table
 	type ImageSetRow struct {
-		ID        uint               `json:"ID"`
-		Name      string             `json:"Name"`
-		Version   int                `json:"Version"`
-		UpdatedAt models.EdgeAPITime `json:"UpdatedAt"`
-		Status    string             `json:"Status"`
-		ImageID   uint               `json:"ImageID"`
+		ID      uint   `json:"ID"`
+		Name    string `json:"Name"`
+		Version int    `json:"Version"`
+		ImageID uint   `json:"ImageID"`
 	}
 
 	var imageSetsRows []ImageSetRow
 
 	if result := db.OrgDB(orgID, tx, "image_sets").Debug().Table("image_sets").Limit(limit).Offset(offset).
-		Select(`image_sets.id, image_sets.name, image_sets.version, image_sets.updated_at, max(images.id) as "image_id"`).
-		Where(`image_sets.deleted_at IS NULL`).
+		Select(`image_sets.id, image_sets.name, image_sets.version, max(images.id) as "image_id", max(images.updated_at) as "images_updated_at"`).
+		Where(`image_sets.deleted_at IS NULL  AND images.deleted_at IS NULL`).
 		Joins(`JOIN images ON image_sets.id = images.image_set_id`).
-		Group(`image_sets.id, image_sets.name, image_sets.version,image_sets.updated_at`).
+		Group(`image_sets.id, image_sets.name, image_sets.version`).
 		Find(&imageSetsRows); result.Error != nil {
-
 		log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error(
 			"error when getting image sets view data",
 		)
@@ -163,11 +160,11 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 
 	var imgs []models.Image
 	db.DB.Where("ID in ?", imageIDS).Find(&imgs)
-	// build set of image status
-	imageSetToStatus := make(map[uint]string)
+	// build a map of images
+	imageSetsImages := make(map[uint]models.Image)
 	for _, image := range imgs {
-		if _, ok := imageSetToStatus[image.ID]; !ok {
-			imageSetToStatus[image.ID] = image.Status
+		if _, ok := imageSetsImages[image.ID]; !ok {
+			imageSetsImages[image.ID] = image
 		}
 	}
 	imageSetsInstallersMap, err := s.GetImageSetsBuildIsoURL(orgID, imageSetIDS)
@@ -183,9 +180,9 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 		imageSetView := models.ImageSetView{
 			ID:        imageSetRow.ID,
 			Name:      imageSetRow.Name,
-			Version:   imageSetRow.Version,
-			UpdatedAt: imageSetRow.UpdatedAt,
-			Status:    imageSetToStatus[imageSetRow.ImageID],
+			Version:   imageSetsImages[imageSetRow.ImageID].Version,
+			UpdatedAt: imageSetsImages[imageSetRow.ImageID].UpdatedAt,
+			Status:    imageSetsImages[imageSetRow.ImageID].Status,
 			ImageID:   imageSetRow.ImageID,
 		}
 		installerID, ok := imageSetsInstallersMap[imageSetRow.ID]
