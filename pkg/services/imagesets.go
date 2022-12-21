@@ -102,10 +102,16 @@ func (s *ImageSetsService) GetImageSetsViewCount(tx *gorm.DB) (int64, error) {
 
 	var count int64
 
-	if result := db.OrgDB(orgID, tx, "image_sets").Debug().
-		Joins(`JOIN images ON image_sets.id = images.image_set_id`).
-		Model(&models.ImageSet{}).Distinct("image_sets.id").Count(&count); result.Error != nil {
-		s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("Error getting image sets count")
+	// create a sub query of the latest images and their corresponding image sets
+	latestImagesSubQuery := db.Org(orgID, "").Model(&models.Image{}).Select("image_set_id", "max(id) as image_id").Group("image_set_id")
+	if result := db.OrgDB(orgID, tx, "images").Table("(?) as latest_images", latestImagesSubQuery).
+		Joins("JOIN images on images.id = latest_images.image_id").
+		Joins("JOIN image_sets on image_sets.id = latest_images.image_set_id").
+		Where("image_sets.deleted_at IS NULL").
+		Count(&count); result.Error != nil {
+		log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error(
+			"error when getting image sets view data",
+		)
 		return 0, result.Error
 	}
 
@@ -145,7 +151,7 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 		log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error(
 			"error when getting image sets view data",
 		)
-		return nil, err
+		return nil, result.Error
 	}
 	if len(imageSetsRows) == 0 {
 		return &[]models.ImageSetView{}, nil
