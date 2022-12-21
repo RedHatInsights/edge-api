@@ -90,7 +90,7 @@ func imageSetsViewSortFilterHandler(sortTable, defaultSortKey, defaultOrder stri
 		}
 		if sortBy == "updated_at" {
 			sortTable = "images"
-			return tx.Order(fmt.Sprintf("%s_%s %s", sortTable, sortBy, sortOrder))
+			return tx.Order(fmt.Sprintf("%s.%s %s", sortTable, sortBy, sortOrder))
 		}
 		sortTable = "image_sets"
 		return tx.Order(fmt.Sprintf("%s.%s %s", sortTable, sortBy, sortOrder))

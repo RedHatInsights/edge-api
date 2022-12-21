@@ -900,6 +900,7 @@ var _ = Describe("ImageSets Route Test", func() {
 					respBody, err := ioutil.ReadAll(rr.Body)
 					err = json.Unmarshal(respBody, &imageSetsViewResponse)
 					Expect(err).ToNot(HaveOccurred())
+					Expect(len(imageSetsViewResponse.Data) > 2).To(BeTrue())
 					switch sort_arg {
 					case "name":
 						for i := 0; i < len(imageSetsViewResponse.Data)-1; i++ {
