@@ -328,6 +328,7 @@ objects:
       - playbook-dispatcher
       - ingress
       - image-builder
+      - rhsm-api-proxy
     featureFlags: true
 parameters:
 - description: Cpu limit of service
