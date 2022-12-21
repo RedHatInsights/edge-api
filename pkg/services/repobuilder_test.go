@@ -68,7 +68,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 	Describe("#DownloadVersionRepo", func() {
 		When("is valid", func() {
 			It("should download the repo", func() {
-				filePath := fmt.Sprintf("/tmp/download/")
+				filePath := "/tmp/download/"
 				fmt.Print(filePath)
 				commit := &models.Commit{ExternalURL: true, ImageBuildTarURL: "https://repos.fedorapeople.org/pulp/pulp/demo_repos/zoo/bear-4.1-1.noarch.rpm"}
 				// mockFilesService.EXPECT().GetDownloader().Return(nil)
