@@ -140,6 +140,7 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(img).ToNot(BeNil())
 		Expect(img.Commit.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
+		Expect(img.Commit.ExternalURL).To(BeFalse())
 	})
 
 	Context("compose image commit with ChangesRefs values", func() {
@@ -201,6 +202,7 @@ var _ = Describe("Image Builder Client Test", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(img).ToNot(BeNil())
 				Expect(img.Commit.ComposeJobID).To(Equal(composeJobID))
+				Expect(img.Commit.ExternalURL).To(BeFalse())
 			})
 		})
 
@@ -268,6 +270,7 @@ var _ = Describe("Image Builder Client Test", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(img).ToNot(BeNil())
 				Expect(img.Commit.ComposeJobID).To(Equal(composeJobID))
+				Expect(img.Commit.ExternalURL).To(BeFalse())
 			})
 
 			It("parent ref and url are not present in the request when parent repo url is empty", func() {
@@ -306,6 +309,7 @@ var _ = Describe("Image Builder Client Test", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(img).ToNot(BeNil())
 				Expect(img.Commit.ComposeJobID).To(Equal(composeJobID))
+				Expect(img.Commit.ExternalURL).To(BeFalse())
 			})
 		})
 	})
@@ -339,6 +343,7 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(img).ToNot(BeNil())
 		Expect(img.Installer.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
+		Expect(img.Commit.ExternalURL).To(BeFalse())
 	})
 	It("test compose image when ostree parent commit is empty", func() {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -368,6 +373,7 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(img).ToNot(BeNil())
 		Expect(img.Commit.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
+		Expect(img.Commit.ExternalURL).To(BeFalse())
 	})
 
 	Context("edge-management.storage_images_repos  feature", func() {
@@ -422,6 +428,7 @@ var _ = Describe("Image Builder Client Test", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(img).ToNot(BeNil())
 			Expect(img.Commit.ComposeJobID).To(Equal(composeJobID))
+			Expect(img.Commit.ExternalURL).To(BeFalse())
 		})
 
 		It("ComposeInstaller use cert endpoint with rhsm true", func() {
@@ -468,6 +475,7 @@ var _ = Describe("Image Builder Client Test", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(image).ToNot(BeNil())
 			Expect(image.Installer.ComposeJobID).To(Equal(composeJobID))
+			Expect(img.Commit.ExternalURL).To(BeFalse())
 		})
 	})
 
