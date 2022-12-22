@@ -23,6 +23,7 @@ import (
 
 var testFile = "test.txt"
 var testTarFile = "test.tar"
+var ctrl *gomock.Controller
 
 var _ = Describe("RepoBuilder Service Test", func() {
 
@@ -30,10 +31,13 @@ var _ = Describe("RepoBuilder Service Test", func() {
 		var service services.RepoBuilderInterface
 		BeforeEach(func() {
 			var ctx context.Context = context.Background()
-			ctrl := gomock.NewController(GinkgoT())
+			ctrl = gomock.NewController(GinkgoT())
 			defer ctrl.Finish()
 			service = services.NewRepoBuilder(ctx, log.NewEntry(log.StandardLogger()))
 
+		})
+		AfterEach(func() {
+			ctrl.Finish()
 		})
 		When("is valid", func() {
 			It("should extract the tar file", func() {
@@ -80,8 +84,10 @@ var _ = Describe("RepoBuilder Service Test", func() {
 				FilesService: mockFilesService,
 				Log:          &log.Entry{},
 			}
-			defer ctrl.Finish()
 
+		})
+		AfterEach(func() {
+			ctrl.Finish()
 		})
 		When("is valid internal url", func() {
 			It("should download the repo", func() {
