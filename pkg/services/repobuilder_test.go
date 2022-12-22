@@ -66,6 +66,8 @@ var _ = Describe("RepoBuilder Service Test", func() {
 		var mockDownloaderService *mock_services.MockDownloader
 		var downloadservice services.RepoBuilder
 		var fileURL = "https://repos.fedorapeople.org/pulp/pulp/demo_repos/zoo/bear-4.1-1.noarch.rpm"
+		var fileDest = "/tmp/download/"
+		var fileName = "repo.tar"
 		BeforeEach(func() {
 			var ctx context.Context = context.Background()
 
@@ -83,8 +85,6 @@ var _ = Describe("RepoBuilder Service Test", func() {
 		})
 		When("is valid internal url", func() {
 			It("should download the repo", func() {
-				fileDest := "/tmp/download/"
-				fileName := "repo.tar"
 				commit := &models.Commit{ExternalURL: false,
 					ImageBuildTarURL: fileURL}
 
@@ -95,15 +95,12 @@ var _ = Describe("RepoBuilder Service Test", func() {
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(n).ToNot(BeNil())
-
 				Expect(n).To(Equal(fmt.Sprintf("%v%v", fileDest, "repo.tar")))
 			})
 		})
 
 		When("is valid external url", func() {
 			It("should download the repo", func() {
-				fileDest := "/tmp/download/"
-				fileName := "repo.tar"
 				commit := &models.Commit{ExternalURL: true, ImageBuildTarURL: fileURL}
 				n, err := downloadservice.DownloadVersionRepo(commit, fileDest)
 				Expect(err).ToNot(HaveOccurred())
