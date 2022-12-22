@@ -223,7 +223,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 			Preload("Images.Commit").
 			Preload("Images.Installer").
 			Preload("Images.Commit.Repo").
-			Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id`).
+			Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.deleted_at is NULL`).
 			Find(&imageSet)
 	} else {
 		// this code is no longer run, but would be used if sorting by status is re-implemented.
