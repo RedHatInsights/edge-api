@@ -67,19 +67,18 @@ var _ = Describe("RepoBuilder Service Test", func() {
 	Describe("#DownloadVersionRepo", func() {
 		var ctrl *gomock.Controller
 		var mockFilesService *mock_services.MockFilesService
-		var mockDownloaderService *mock_services.MockDownloader
-		var downloadservice services.RepoBuilder
+		// var mockDownloaderService *mock_services.MockDownloader
+		var fdownloadservice services.RepoBuilder
 		var fileURL = "https://repos.fedorapeople.org/pulp/pulp/demo_repos/zoo/bear-4.1-1.noarch.rpm"
 		var fileDest = "/tmp/download/"
 		var fileName = "repo.tar"
 		BeforeEach(func() {
-			var ctx context.Context = context.Background()
 
 			ctrl = gomock.NewController(GinkgoT())
 			mockFilesService = mock_services.NewMockFilesService(ctrl)
-			mockDownloaderService = mock_services.NewMockDownloader(ctrl)
-
-			downloadservice = services.RepoBuilder{
+			defer ctrl.Finish()
+			var ctx context.Context = context.Background()
+			fdownloadservice = services.RepoBuilder{
 				Service:      services.NewService(ctx, log.NewEntry(log.StandardLogger())),
 				FilesService: mockFilesService,
 				Log:          &log.Entry{},
@@ -93,11 +92,16 @@ var _ = Describe("RepoBuilder Service Test", func() {
 			It("should download the repo", func() {
 				commit := &models.Commit{ExternalURL: false,
 					ImageBuildTarURL: fileURL}
-
-				mockDownloaderService.EXPECT().DownloadToPath(commit.ImageBuildTarURL, fmt.Sprintf("%v%v", fileDest, fileName)).Return(nil)
-				mockFilesService.EXPECT().GetDownloader().Return(mockDownloaderService)
-
-				n, err := downloadservice.DownloadVersionRepo(commit, fileDest)
+				fmockDownloaderService := mock_services.NewMockDownloader(ctrl)
+				fmockDownloaderService.EXPECT().DownloadToPath(commit.ImageBuildTarURL, fmt.Sprintf("%v%v", fileDest, fileName)).Return(nil)
+				mockFilesService.EXPECT().GetDownloader().Return(fmockDownloaderService)
+				var ctx context.Context = context.Background()
+				fdownloadservice = services.RepoBuilder{
+					Service:      services.NewService(ctx, log.NewEntry(log.StandardLogger())),
+					FilesService: mockFilesService,
+					Log:          &log.Entry{},
+				}
+				n, err := fdownloadservice.DownloadVersionRepo(commit, fileDest)
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(n).ToNot(BeNil())
@@ -108,7 +112,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 		When("is valid external url", func() {
 			It("should download the repo", func() {
 				commit := &models.Commit{ExternalURL: true, ImageBuildTarURL: fileURL}
-				n, err := downloadservice.DownloadVersionRepo(commit, fileDest)
+				n, err := fdownloadservice.DownloadVersionRepo(commit, fileDest)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(n).To(Equal(fmt.Sprintf("%v%v", fileDest, fileName)))
 				os.RemoveAll(fileDest)
