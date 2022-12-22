@@ -1,5 +1,5 @@
 // FIXME: golangci-lint
-// nolint: revive,typecheck
+// nolint: govet,revive,typecheck
 package db_test
 
 import (

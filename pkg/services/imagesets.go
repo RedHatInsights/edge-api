@@ -426,7 +426,7 @@ func (s *ImageSetsService) GetDeviceIdsByImageSetID(imageSetID uint) (int, []str
 		return 0, nil, result.Error
 	}
 
-	var DeviceUUIDs []string
+	var DeviceUUIDs []string	// nolint:gocritic,gofmt,goimports
 	for _, one := range deviceInfos {
 		DeviceUUIDs = append(DeviceUUIDs, one.DeviceUUID)
 	}

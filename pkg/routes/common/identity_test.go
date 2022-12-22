@@ -15,7 +15,7 @@ import (
 
 func TestGetIdentityInstanceFromContext(t *testing.T) {
 	identity := identity.XRHID{Identity: identity.Identity{OrgID: DefaultOrgID}}
-	identityBytes, _ := json.Marshal(identity)
+	identityBytes, _ := json.Marshal(identity)	// nolint:errcheck,gofmt,goimports
 	base64Identity := base64.StdEncoding.EncodeToString(identityBytes)
 	illegalFirstByte := "X="
 

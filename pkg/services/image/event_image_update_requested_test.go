@@ -1,3 +1,4 @@
+// nolint:revive,typecheck
 package image
 
 import (
