@@ -208,7 +208,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	}
 
 	countResult := imageSetFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Debug().Model(&models.ImageSet{})).
-		Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Image_Sets.deleted_at is NULL`).Distinct("image_sets.id").Count(&count)
+		Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.deleted_at is NULL`).Distinct("image_sets.id").Count(&count)
 
 	if countResult.Error != nil {
 		s.Log.WithField("error", countResult.Error.Error()).Error("Error counting results for image sets list")
