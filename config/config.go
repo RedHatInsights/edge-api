@@ -99,15 +99,15 @@ type loggingConfig struct {
 	Region          string `json:"region,omitempty"`
 }
 
-var config *EdgeConfig
+var Config *EdgeConfig
 
-// DevConfigFile is a wrapper for local dev kafka config
+// DevConfigFile is a wrapper for local dev kafka edgeConfig
 type DevConfigFile struct {
 	Kafka clowder.KafkaConfig
 }
 
-// Init configuration for service
-func Init() {
+// CreateEdgeAPIConfig create a new configuration for Edge API
+func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options := viper.New()
 	options.SetDefault("WebPort", 3000)
 	options.SetDefault("MetricsPort", 8080)
@@ -145,7 +145,7 @@ func Init() {
 	}
 
 	if clowder.IsClowderEnabled() {
-		// FUTURE: refactor config to follow common CRC config code
+		// FUTURE: refactor edgeConfig to follow common CRC edgeConfig code
 		// 		see https://github.com/RedHatInsights/sources-api-go/blob/main/config/config.go
 		cfg := clowder.LoadedConfig
 
@@ -184,7 +184,7 @@ func Init() {
 	options.SetDefault("TenantTranslatorHost", os.Getenv("TENANT_TRANSLATOR_HOST"))
 	options.SetDefault("TenantTranslatorPort", os.Getenv("TENANT_TRANSLATOR_PORT"))
 
-	config = &EdgeConfig{
+	edgeConfig := &EdgeConfig{
 		Hostname:        options.GetString("Hostname"),
 		Auth:            options.GetBool("Auth"),
 		WebPort:         options.GetInt("WebPort"),
@@ -231,13 +231,13 @@ func Init() {
 		TenantTranslatorPort:    options.GetString("TenantTranslatorPort"),
 		ImageBuilderOrgID:       options.GetString("ImageBuilderOrgID"),
 	}
-	if config.TenantTranslatorHost != "" && config.TenantTranslatorPort != "" {
-		config.TenantTranslatorURL = fmt.Sprintf("http://%s:%s", config.TenantTranslatorHost, config.TenantTranslatorPort)
+	if edgeConfig.TenantTranslatorHost != "" && edgeConfig.TenantTranslatorPort != "" {
+		edgeConfig.TenantTranslatorURL = fmt.Sprintf("http://%s:%s", edgeConfig.TenantTranslatorHost, edgeConfig.TenantTranslatorPort)
 	}
 	database := options.GetString("database")
 
 	if database == "pgsql" {
-		config.Database = &dbConfig{
+		edgeConfig.Database = &dbConfig{
 			User:     options.GetString("PGSQL_USER"),
 			Password: options.GetString("PGSQL_PASSWORD"),
 			Hostname: options.GetString("PGSQL_HOSTNAME"),
@@ -246,7 +246,7 @@ func Init() {
 			Type:     "pgsql",
 		}
 	} else {
-		config.Database = &dbConfig{
+		edgeConfig.Database = &dbConfig{
 			Name: options.GetString("DatabaseFile"),
 			Type: "sqlite",
 		}
@@ -256,10 +256,10 @@ func Init() {
 	if clowder.IsClowderEnabled() {
 		cfg := clowder.LoadedConfig
 
-		config.WebPort = *cfg.PublicPort
-		config.MetricsPort = cfg.MetricsPort
+		edgeConfig.WebPort = *cfg.PublicPort
+		edgeConfig.MetricsPort = cfg.MetricsPort
 
-		config.Database = &dbConfig{
+		edgeConfig.Database = &dbConfig{
 			User:     cfg.Database.Username,
 			Password: cfg.Database.Password,
 			Hostname: cfg.Database.Hostname,
@@ -268,60 +268,71 @@ func Init() {
 			Type:     "pgsql",
 		}
 
-		bucket := clowder.ObjectBuckets[config.BucketName]
+		bucket := clowder.ObjectBuckets[edgeConfig.BucketName]
 
-		config.BucketName = bucket.RequestedName
+		edgeConfig.BucketName = bucket.RequestedName
 		if bucket.Region != nil {
-			config.BucketRegion = *bucket.Region
+			edgeConfig.BucketRegion = *bucket.Region
 		}
-		config.AccessKey = *bucket.AccessKey
-		config.SecretKey = *bucket.SecretKey
-		config.Logging = &loggingConfig{
+		edgeConfig.AccessKey = *bucket.AccessKey
+		edgeConfig.SecretKey = *bucket.SecretKey
+		edgeConfig.Logging = &loggingConfig{
 			AccessKeyID:     cfg.Logging.Cloudwatch.AccessKeyId,
 			SecretAccessKey: cfg.Logging.Cloudwatch.SecretAccessKey,
 			LogGroup:        cfg.Logging.Cloudwatch.LogGroup,
 			Region:          cfg.Logging.Cloudwatch.Region,
 		}
 
-		config.KafkaConfig = cfg.Kafka
+		edgeConfig.KafkaConfig = cfg.Kafka
 	}
 
-	// get config from file if running in developer mode
+	// get edgeConfig from file if running in developer mode
 	// this is different than Local due to code in services/files.go
-	if config.Dev {
+	if edgeConfig.Dev {
 		configFile := os.Getenv("EDGEMGMT_CONFIG")
 
 		// SOMETHING CHANGED with upstream SetConfigFile or Unmarshal that caused Unmarshal
 		// to freak out on mixedCase being translated to lowercase by SetConfigFile
 		devConfigFile, err := os.ReadFile(configFile)
 		if err != nil {
-			log.WithField("error", err.Error()).Error("Error reading local dev config file")
+			log.WithField("error", err.Error()).Error("Error reading local dev edgeConfig file")
 		}
 		devConfig := DevConfigFile{}
 		if err := json.Unmarshal(devConfigFile, &devConfig); err != nil {
-			log.WithField("error", err.Error()).Error("Dev config unmarshal error")
+			log.WithField("error", err.Error()).Error("Dev edgeConfig unmarshal error")
 		}
 
-		config.KafkaConfig = &devConfig.Kafka
+		edgeConfig.KafkaConfig = &devConfig.Kafka
 	}
 
-	if config.KafkaConfig != nil {
-		config.KafkaBrokers = make([]clowder.BrokerConfig, len(config.KafkaConfig.Brokers))
-		for i, b := range config.KafkaConfig.Brokers {
-			config.KafkaBrokers[i] = b
+	if edgeConfig.KafkaConfig != nil {
+		edgeConfig.KafkaBrokers = make([]clowder.BrokerConfig, len(edgeConfig.KafkaConfig.Brokers))
+		for i, b := range edgeConfig.KafkaConfig.Brokers {
+			edgeConfig.KafkaBrokers[i] = b
 		}
 	}
+
+	return edgeConfig, nil
+}
+
+// Init configuration for service
+func Init() {
+	newConfig, err := CreateEdgeAPIConfig()
+	if err != nil {
+		return
+	}
+	Config = newConfig
 }
 
 // Get returns an initialized EdgeConfig
 func Get() *EdgeConfig {
-	if config == nil {
+	if Config == nil {
 		var lock = &sync.Mutex{}
 		lock.Lock()
 		defer lock.Unlock()
 		Init()
 	}
-	return config
+	return Config
 }
 
 // GetConfigValues return all configuration values that may be used for logging
@@ -334,16 +345,17 @@ func GetConfigValues() (map[string]interface{}, error) {
 	return configValues, nil
 }
 
+// redactPasswordFromURL replaces passwords from URLs.
 func redactPasswordFromURL(value string) string {
-	url, err := url.Parse(value)
-	if err == nil && url.Host != "" && url.Scheme != "" {
-		value = url.Redacted()
+	parsedUrl, err := url.Parse(value)
+	if err == nil && parsedUrl.Host != "" && parsedUrl.Scheme != "" {
+		value = parsedUrl.Redacted()
 	}
 
 	return value
 }
 
-// LogConfigAtStartup logs specific config fields at startup
+// LogConfigAtStartup logs specific edgeConfig fields at startup
 func LogConfigAtStartup(cfg *EdgeConfig) {
 	// Add EdgeConfig struct fields we want to log at app startup.
 	// This does not walk multi-level types.
