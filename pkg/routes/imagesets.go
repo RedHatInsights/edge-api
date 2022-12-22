@@ -74,6 +74,37 @@ var imageSetFilters = common.ComposeFilters(
 	common.SortFilterHandler("image_sets", "created_at", "DESC"),
 )
 
+// imageSetsViewSortFilterHandler filter and sort handler for images-sets view
+func imageSetsViewSortFilterHandler(sortTable, defaultSortKey, defaultOrder string) common.FilterFunc {
+	return common.FilterFunc(func(r *http.Request, tx *gorm.DB) *gorm.DB {
+		sortBy := defaultSortKey
+		sortOrder := defaultOrder
+		if val := r.URL.Query().Get("sort_by"); val != "" {
+			if strings.HasPrefix(val, "-") {
+				sortOrder = "DESC"
+				sortBy = val[1:]
+			} else {
+				sortOrder = "ASC"
+				sortBy = val
+			}
+		}
+		if sortBy == "updated_at" {
+			sortTable = "images"
+			return tx.Order(fmt.Sprintf("%s.%s %s", sortTable, sortBy, sortOrder))
+		}
+		sortTable = "image_sets"
+		return tx.Order(fmt.Sprintf("%s.%s %s", sortTable, sortBy, sortOrder))
+	})
+}
+
+// imageSetsViewFilters compose filters for image-sets view
+var imageSetsViewFilters = common.ComposeFilters(
+	common.ContainFilterHandler(&common.Filter{QueryParam: "status", DBField: "images.status"}),
+	common.ContainFilterHandler(&common.Filter{QueryParam: "name", DBField: "image_sets.name"}),
+	common.IntegerNumberFilterHandler(&common.Filter{QueryParam: "id", DBField: "image_sets.id"}),
+	imageSetsViewSortFilterHandler("images", "updated_at", "DESC"),
+)
+
 var imageDetailFilters = common.ComposeFilters(
 	common.ContainFilterHandler(&common.Filter{
 		QueryParam: "status",
@@ -192,7 +223,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 			Preload("Images.Commit").
 			Preload("Images.Installer").
 			Preload("Images.Commit.Repo").
-			Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id`).
+			Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.deleted_at is NULL`).
 			Find(&imageSet)
 	} else {
 		// this code is no longer run, but would be used if sorting by status is re-implemented.
@@ -218,6 +249,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		sort.Slice(img.Images, func(i, j int) bool {
 			return img.Images[i].ID > img.Images[j].ID
 		})
+		imgSet.ImageSetData.Version = img.Images[0].Version
 		imageSetIsoURLSetten := false
 		for _, i := range img.Images {
 			if i.InstallerID != nil {
@@ -473,14 +505,14 @@ func GetImageSetsView(w http.ResponseWriter, r *http.Request) {
 
 	pagination := common.GetPagination(r)
 
-	imageSetsCount, err := ctxServices.ImageSetService.GetImageSetsViewCount(imageSetFilters(r, db.DB))
+	imageSetsCount, err := ctxServices.ImageSetService.GetImageSetsViewCount(imageSetsViewFilters(r, db.DB))
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{"error": err.Error(), "orgID": orgID}).Error("error getting image-sets view count")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
 
-	imageSetsViewList, err := ctxServices.ImageSetService.GetImageSetsView(pagination.Limit, pagination.Offset, imageSetFilters(r, db.DB))
+	imageSetsViewList, err := ctxServices.ImageSetService.GetImageSetsView(pagination.Limit, pagination.Offset, imageSetsViewFilters(r, db.DB))
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{"error": err.Error(), "orgID": orgID}).Error("error getting image-sets view")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())

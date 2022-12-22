@@ -48,6 +48,7 @@ type Commit struct {
 	RepoID               *uint              `json:"RepoID"`
 	Repo                 *Repo              `json:"Repo"`
 	ChangesRefs          bool               `gorm:"default:false" json:"ChangesRefs"`
+	ExternalURL          bool               `json:"external"`
 }
 
 // Repo is the delivery mechanism of a Commit over HTTP
