@@ -141,6 +141,7 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 		Joins("JOIN images on images.id = latest_images.image_id").
 		Joins("JOIN image_sets on image_sets.id = latest_images.image_set_id").
 		Select("image_sets.id, image_sets.name, images.version, images.status, images.id as image_id, images.updated_at").
+		Where("image_sets.deleted_at IS NULL").
 		Find(&imageSetsRows); result.Error != nil {
 		log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error(
 			"error when getting image sets view data",
