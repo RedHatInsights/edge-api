@@ -230,7 +230,7 @@ var _ = Describe("ImageSets Service Test", func() {
 			Expect(imageSetsView).ToNot(BeNil())
 			Expect(len(*imageSetsView) > 0).To(BeTrue())
 			for _, imageSetsViewItem := range *imageSetsView {
-				imageSetView, err := service.GetImageSetViewByID(imageSetsViewItem.ID, 100, 0, nil)
+				imageSetView, err := service.GetImageSetViewByID(imageSetsViewItem.ID, 100, 0, nil) // nolint:govet
 				Expect(err).ToNot(HaveOccurred())
 				Expect(imageSetView).ToNot(BeNil())
 				Expect(imageSetsViewItem.UpdatedAt).To(Equal(imageSetView.LastImageDetails.Image.UpdatedAt))

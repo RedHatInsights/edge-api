@@ -1,3 +1,4 @@
+// nolint:govet,revive,typecheck
 package common
 
 import (
