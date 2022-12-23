@@ -30,7 +30,6 @@ var _ = Describe("RepoBuilder Service Test", func() {
 	var ctx context.Context = context.Background()
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
-		// defer ctrl.Finish()
 		service = services.NewRepoBuilder(ctx, log.NewEntry(log.StandardLogger()))
 
 	})
