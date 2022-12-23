@@ -599,10 +599,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		Context("when upload works", func() {
 			It("to build the template for update properly", func() {
-
-				// cfg := config.Get()
-				// cfg.TemplatesPath = fmt.Sprintf("%v/%v/", templatesPath, "../templates")
-
 				t := services.TemplateRemoteInfo{
 					UpdateTransactionID: 1000,
 					RemoteName:          "remote-name",
@@ -641,9 +637,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		Context("when upload works", func() {
 			It("to build the template for rebase properly", func() {
-				// cfg := config.Get()
-				// cfg.TemplatesPath = fmt.Sprintf("%v/%v/", templatesPath, "../templates")
-
 				t := services.TemplateRemoteInfo{
 					UpdateTransactionID: 1000,
 					RemoteName:          "remote-name",
