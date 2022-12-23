@@ -73,7 +73,6 @@ var _ = Describe("RepoBuilder Service Test", func() {
 		var fileDest = "/tmp/download/"
 		var fileName = "repo.tar"
 		BeforeEach(func() {
-
 			ctrl = gomock.NewController(GinkgoT())
 			mockFilesService = mock_services.NewMockFilesService(ctrl)
 			defer ctrl.Finish()
@@ -85,9 +84,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 			}
 
 		})
-		AfterEach(func() {
-			ctrl.Finish()
-		})
+
 		When("is valid internal url", func() {
 			It("should download the repo", func() {
 				commit := &models.Commit{ExternalURL: false,
