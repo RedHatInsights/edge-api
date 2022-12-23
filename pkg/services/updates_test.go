@@ -600,8 +600,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 		Context("when upload works", func() {
 			It("to build the template for update properly", func() {
 
-				cfg := config.Get()
-				cfg.TemplatesPath = fmt.Sprintf("%v/%v/", templatesPath, "../templates")
+				// cfg := config.Get()
+				// cfg.TemplatesPath = fmt.Sprintf("%v/%v/", templatesPath, "../templates")
 
 				t := services.TemplateRemoteInfo{
 					UpdateTransactionID: 1000,
@@ -622,10 +622,10 @@ var _ = Describe("UpdateService Basic functions", func() {
 					ProducerService: mockProducerService,
 				}
 				mockUploader := mock_services.NewMockUploader(ctrl)
-				mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/%s", templatesPath, fname)).Do(func(x, y string) {
+				mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", orgID, fname)).Do(func(x, y string) {
 					actual, err := os.ReadFile(x)
 					Expect(err).ToNot(HaveOccurred())
-					expected, err := os.ReadFile("./../../templates/template_playbook_dispatcher_ostree_upgrade_payload.test.yml")
+					expected, err := os.ReadFile(fmt.Sprintf("%s/%s", templatesPath, "template_playbook_dispatcher_ostree_upgrade_payload.test.yml"))
 					Expect(err).ToNot(HaveOccurred())
 					Expect(string(actual)).To(BeEquivalentTo(string(expected)))
 				}).Return("url", nil)
@@ -641,8 +641,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		Context("when upload works", func() {
 			It("to build the template for rebase properly", func() {
-				cfg := config.Get()
-				cfg.TemplatesPath = fmt.Sprintf("%v/%v/", templatesPath, "../templates")
+				// cfg := config.Get()
+				// cfg.TemplatesPath = fmt.Sprintf("%v/%v/", templatesPath, "../templates")
 
 				t := services.TemplateRemoteInfo{
 					UpdateTransactionID: 1000,
@@ -662,10 +662,10 @@ var _ = Describe("UpdateService Basic functions", func() {
 					ProducerService: mockProducerService,
 				}
 				mockUploader := mock_services.NewMockUploader(ctrl)
-				mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/%s", templatesPath, fname)).Do(func(x, y string) {
+				mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", orgID, fname)).Do(func(x, y string) {
 					actual, err := os.ReadFile(x)
 					Expect(err).ToNot(HaveOccurred())
-					expected, err := os.ReadFile("./../../templates/template_playbook_dispatcher_ostree_rebase_payload.test.yml")
+					expected, err := os.ReadFile(fmt.Sprintf("%s/%s", templatesPath, "template_playbook_dispatcher_ostree_rebase_payload.test.yml"))
 					Expect(err).ToNot(HaveOccurred())
 					Expect(string(actual)).To(BeEquivalentTo(string(expected)))
 				}).Return("url", nil)
