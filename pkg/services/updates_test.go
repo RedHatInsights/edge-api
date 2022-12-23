@@ -34,6 +34,8 @@ import (
 )
 
 var _ = Describe("UpdateService Basic functions", func() {
+	f, _ := os.Getwd()
+	templatesPath := fmt.Sprintf("%s/../templates/", filepath.Dir(f))
 	Describe("creation of the service", func() {
 		Context("returns a correct instance", func() {
 			ctx := context.Background()
@@ -245,9 +247,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 			var update models.UpdateTransaction
 			var cfg *config.EdgeConfig
 			BeforeEach(func() {
-				f, _ := os.Getwd()
 				cfg = config.Get()
-				cfg.TemplatesPath = fmt.Sprintf("%v/%v/", filepath.Dir(f), "../templates")
+				cfg.TemplatesPath = fmt.Sprintf("%v/%v/", templatesPath, "../templates")
 
 				fmt.Printf("\n cfg.TemplatesPath %v \n", cfg.TemplatesPath)
 				uuid = faker.UUIDHyphenated()
@@ -284,8 +285,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 			When("when playbook dispatcher respond with success", func() {
 				It("should create dispatcher records with status created", func() {
-					// cfg := config.Get()
-					// cfg.TemplatesPath = "./../../templates/"
 					fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", update.OrgID, update.ID)
 					tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", update.OrgID, fname)
 
@@ -331,8 +330,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 			When("when playbook dispatcher respond with an error", func() {
 				It("should create dispatcher records with status error and reason failure", func() {
-					// cfg := config.Get()
-					// cfg.TemplatesPath = "./../../templates/"
+
 					fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", update.OrgID, update.ID)
 					tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", update.OrgID, fname)
 
@@ -378,8 +376,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 			When("when playbook dispatcher client got an error", func() {
 				It("should create dispatcher records with status error and reason failure", func() {
-					// cfg := config.Get()
-					// cfg.TemplatesPath = "./../../templates/"
 					fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", update.OrgID, update.ID)
 					tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", update.OrgID, fname)
 
@@ -604,9 +600,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 		Context("when upload works", func() {
 			It("to build the template for update properly", func() {
 
-				f, _ := os.Getwd()
 				cfg := config.Get()
-				cfg.TemplatesPath = fmt.Sprintf("%v/%v/", filepath.Dir(f), "../templates")
+				cfg.TemplatesPath = fmt.Sprintf("%v/%v/", templatesPath, "../templates")
 
 				t := services.TemplateRemoteInfo{
 					UpdateTransactionID: 1000,
@@ -627,7 +622,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					ProducerService: mockProducerService,
 				}
 				mockUploader := mock_services.NewMockUploader(ctrl)
-				mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", orgID, fname)).Do(func(x, y string) {
+				mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/%s", templatesPath, fname)).Do(func(x, y string) {
 					actual, err := os.ReadFile(x)
 					Expect(err).ToNot(HaveOccurred())
 					expected, err := os.ReadFile("./../../templates/template_playbook_dispatcher_ostree_upgrade_payload.test.yml")
@@ -646,9 +641,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		Context("when upload works", func() {
 			It("to build the template for rebase properly", func() {
-				f, _ := os.Getwd()
 				cfg := config.Get()
-				cfg.TemplatesPath = fmt.Sprintf("%v/%v/", filepath.Dir(f), "../templates")
+				cfg.TemplatesPath = fmt.Sprintf("%v/%v/", templatesPath, "../templates")
 
 				t := services.TemplateRemoteInfo{
 					UpdateTransactionID: 1000,
@@ -668,8 +662,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					ProducerService: mockProducerService,
 				}
 				mockUploader := mock_services.NewMockUploader(ctrl)
-				// filePath:=fmt.Sprintf("%s/../templates/%s", filepath.Dir(f), "template_playbook_dispatcher_ostree_upgrade_payload.test.yml")
-				mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", orgID, fname)).Do(func(x, y string) {
+				mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/%s", templatesPath, fname)).Do(func(x, y string) {
 					actual, err := os.ReadFile(x)
 					Expect(err).ToNot(HaveOccurred())
 					expected, err := os.ReadFile("./../../templates/template_playbook_dispatcher_ostree_rebase_payload.test.yml")
