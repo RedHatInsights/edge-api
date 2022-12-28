@@ -4,10 +4,11 @@ package db
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"testing"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
 )

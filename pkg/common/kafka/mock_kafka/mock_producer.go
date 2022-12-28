@@ -5,11 +5,12 @@
 package mock_kafkacommon
 
 import (
+	reflect "reflect"
+
 	kafka "github.com/confluentinc/confluent-kafka-go/kafka"
 	gomock "github.com/golang/mock/gomock"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	models "github.com/redhatinsights/edge-api/pkg/models"
-	reflect "reflect"
 )
 
 // MockProducer is a mock of Producer interface

@@ -18,7 +18,6 @@ import (
 	. "github.com/onsi/gomega"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory/mock_inventory"
 	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
@@ -31,6 +30,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 var _ = Describe("UpdateService Basic functions", func() {

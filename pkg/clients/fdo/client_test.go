@@ -13,9 +13,10 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
+
+	"github.com/redhatinsights/edge-api/config"
 
 	"github.com/redhatinsights/edge-api/pkg/clients/fdo"
 	"github.com/redhatinsights/edge-api/pkg/services"

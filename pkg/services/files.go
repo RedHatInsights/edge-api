@@ -9,8 +9,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/services/files"
+
+	"github.com/redhatinsights/edge-api/config"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"

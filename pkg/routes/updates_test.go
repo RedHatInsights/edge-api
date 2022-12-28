@@ -19,11 +19,12 @@ import (
 	apiError "github.com/redhatinsights/edge-api/pkg/errors"
 
 	"github.com/bxcodec/faker/v3"
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
+
+	"github.com/redhatinsights/edge-api/config"
 
 	"github.com/go-chi/chi"
 	"github.com/golang/mock/gomock"

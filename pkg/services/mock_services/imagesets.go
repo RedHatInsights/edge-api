@@ -5,11 +5,12 @@
 package mock_services
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	models "github.com/redhatinsights/edge-api/pkg/models"
 	services "github.com/redhatinsights/edge-api/pkg/services"
 	gorm "gorm.io/gorm"
-	reflect "reflect"
 )
 
 // MockImageSetsServiceInterface is a mock of ImageSetsServiceInterface interface

@@ -8,9 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 // This will setup the test database and run the tests for whole package
