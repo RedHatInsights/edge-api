@@ -248,9 +248,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			var cfg *config.EdgeConfig
 			BeforeEach(func() {
 				cfg = config.Get()
-				cfg.TemplatesPath = fmt.Sprintf("%v/%v/", templatesPath, "../templates")
-
-				fmt.Printf("\n cfg.TemplatesPath %v \n", cfg.TemplatesPath)
+				cfg.TemplatesPath = fmt.Sprintf("%v", templatesPath)
 				uuid = faker.UUIDHyphenated()
 				device = models.Device{
 					UUID:        uuid,
