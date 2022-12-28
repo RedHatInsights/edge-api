@@ -5,10 +5,11 @@ package main
 import (
 	"os"
 
-	"github.com/redhatinsights/edge-api/config"
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+
+	"github.com/redhatinsights/edge-api/config"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -23,7 +24,7 @@ func handlePanic(errorOccurred *bool) {
 
 func main() {
 	config.Init()
-	l.InitLogger()
+	l.InitLogger(os.Stdout)
 	configValues, err := config.GetConfigValues()
 	if err != nil {
 		l.LogErrorAndPanic("error when getting config values", err)

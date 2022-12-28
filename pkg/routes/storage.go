@@ -11,9 +11,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+
+	"github.com/redhatinsights/edge-api/config"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"

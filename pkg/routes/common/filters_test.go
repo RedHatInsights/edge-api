@@ -13,9 +13,10 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/bxcodec/faker/v3"
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 var dbName string

@@ -3,8 +3,9 @@
 package files
 
 import (
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/logger"
+
+	"github.com/redhatinsights/edge-api/config"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"

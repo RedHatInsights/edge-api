@@ -9,7 +9,6 @@ import (
 	"time"
 
 	version "github.com/knqyf263/go-rpm-version"
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -17,6 +16,8 @@ import (
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 const (

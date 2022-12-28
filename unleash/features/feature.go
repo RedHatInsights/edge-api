@@ -7,6 +7,7 @@ import (
 
 	"github.com/Unleash/unleash-client-go/v3"
 	unleashCTX "github.com/Unleash/unleash-client-go/v3/context"
+
 	"github.com/redhatinsights/edge-api/config"
 )
 

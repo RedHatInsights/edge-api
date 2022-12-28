@@ -19,6 +19,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+
 	"github.com/redhatinsights/edge-api/config"
 
 	l "github.com/redhatinsights/edge-api/logger" // is this one really needed with logrus?
@@ -38,7 +39,7 @@ func main() {
 
 	// FIXME: a good opportunity to refactor config
 	config.Init()
-	l.InitLogger()
+	l.InitLogger(os.Stdout)
 	cfg := config.Get()
 	config.LogConfigAtStartup(cfg)
 

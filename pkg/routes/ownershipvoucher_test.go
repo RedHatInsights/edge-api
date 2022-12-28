@@ -15,9 +15,10 @@ import (
 	"github.com/go-chi/chi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/routes"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 var _ = Describe("Ownershipvoucher", func() {

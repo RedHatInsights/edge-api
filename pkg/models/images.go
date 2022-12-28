@@ -8,9 +8,10 @@ import (
 	"strings"
 
 	"github.com/lib/pq"
-	"github.com/redhatinsights/edge-api/config"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 // ImageSet represents a collection of images

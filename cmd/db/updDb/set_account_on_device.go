@@ -3,16 +3,19 @@
 package main
 
 import (
-	"github.com/redhatinsights/edge-api/config"
+	"os"
+
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 func main() {
 	config.Init()
-	l.InitLogger()
+	l.InitLogger(os.Stdout)
 	cfg := config.Get()
 	log.WithFields(log.Fields{
 		"Hostname":                 cfg.Hostname,

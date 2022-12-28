@@ -4,13 +4,15 @@ package models
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"testing"
 	"time"
 
-	"github.com/redhatinsights/edge-api/config"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/redhatinsights/edge-api/pkg/db"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 func TestMain(m *testing.M) {
