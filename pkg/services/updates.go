@@ -361,21 +361,6 @@ func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.Up
 		return nil, result.Error
 	}
 
-	// setup a context and signal for SIGTERM
-	intctx, intcancel := context.WithCancel(context.Background())
-	sigint := make(chan os.Signal, 1)
-	signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
-
-	// this will run at the end of BuildUpdateRepo to tidy up signal and context
-	defer func() {
-		s.log.WithField("updateUDID", updateID).Debug("Stopping the interrupt context and sigint signal")
-		signal.Stop(sigint)
-		intcancel()
-	}()
-	// This runs alongside and blocks on either a signal or normal completion from defer above
-	// 	if an interrupt, set update status to error
-	go s.SetUpdateErrorStatusWhenInterrupted(*update, sigint, intctx, intcancel)
-
 	update, err := s.RepoBuilder.BuildUpdateRepo(updateID)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error building update repo")
