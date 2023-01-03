@@ -1,7 +1,7 @@
 module github.com/redhatinsights/edge-api
 
 require (
-	github.com/Unleash/unleash-client-go/v3 v3.7.1
+	github.com/Unleash/unleash-client-go/v3 v3.7.2
 	github.com/aws/aws-sdk-go v1.44.171
 	github.com/bxcodec/faker/v3 v3.8.1
 	github.com/cavaliercoder/grab v2.0.0+incompatible
@@ -76,6 +76,7 @@ require (
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/twmb/murmur3 v1.1.5 // indirect
 	go.mongodb.org/mongo-driver v1.8.3 // indirect
