@@ -37,7 +37,7 @@ const (
 type TopicNotFoundError struct{}
 
 func (e *TopicNotFoundError) Error() string {
-	return "Topic is not found in config"
+	return "topic is not found in config"
 }
 
 // NewTopicService returns a new service
