@@ -17,6 +17,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -24,15 +25,19 @@ var testFile = "test.txt"
 var testTarFile = "test.tar"
 
 var _ = Describe("RepoBuilder Service Test", func() {
+	var ctrl *gomock.Controller
 	var service services.RepoBuilderInterface
+	var ctx context.Context = context.Background()
 	BeforeEach(func() {
-		var ctx context.Context = context.Background()
-
-		ctrl := gomock.NewController(GinkgoT())
-		defer ctrl.Finish()
+		ctrl = gomock.NewController(GinkgoT())
 		service = services.NewRepoBuilder(ctx, log.NewEntry(log.StandardLogger()))
+
+	})
+	AfterEach(func() {
+		ctrl.Finish()
 	})
 	Describe("#ExtractVersionRepo", func() {
+
 		When("is valid", func() {
 			It("should extract the tar file", func() {
 				commit := &models.Commit{}
@@ -54,6 +59,49 @@ var _ = Describe("RepoBuilder Service Test", func() {
 				fileContent, err := readTestFile(filePathExtraction)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(fileContent).To(Equal("Some content to test"))
+			})
+		})
+	})
+
+	Describe("#DownloadVersionRepo", func() {
+		var fmockFilesService *mock_services.MockFilesService
+		var fdownloadservice services.RepoBuilder
+		var fileURL = "https://repos.fedorapeople.org/pulp/pulp/demo_repos/zoo/bear-4.1-1.noarch.rpm"
+		var fileDest = "/tmp/download/"
+		var fileName = "repo.tar"
+		BeforeEach(func() {
+			fmockFilesService = mock_services.NewMockFilesService(ctrl)
+			var ctx context.Context = context.Background()
+			fdownloadservice = services.RepoBuilder{
+				Service:      services.NewService(ctx, log.NewEntry(log.StandardLogger())),
+				FilesService: fmockFilesService,
+				Log:          &log.Entry{},
+			}
+
+		})
+		When("is valid internal url", func() {
+			It("should download the repo", func() {
+				commit := &models.Commit{ExternalURL: false,
+					ImageBuildTarURL: fileURL}
+				fmockDownloaderService := mock_services.NewMockDownloader(ctrl)
+				fmockDownloaderService.EXPECT().DownloadToPath(commit.ImageBuildTarURL, fmt.Sprintf("%v%v", fileDest, fileName)).Return(nil)
+				fmockFilesService.EXPECT().GetDownloader().Return(fmockDownloaderService)
+				n, err := fdownloadservice.DownloadVersionRepo(commit, fileDest)
+
+				Expect(err).ToNot(HaveOccurred())
+				Expect(n).ToNot(BeNil())
+				Expect(n).To(Equal(fmt.Sprintf("%v%v", fileDest, "repo.tar")))
+			})
+		})
+
+		When("is valid external url", func() {
+			It("should download the repo", func() {
+				commit := &models.Commit{ExternalURL: true, ImageBuildTarURL: fileURL}
+				n, err := fdownloadservice.DownloadVersionRepo(commit, fileDest)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(n).To(Equal(fmt.Sprintf("%v%v", fileDest, fileName)))
+				os.RemoveAll(fileDest)
+
 			})
 		})
 	})

@@ -1,3 +1,4 @@
+// nolint:govet,revive,typecheck
 package common
 
 import (
@@ -8,8 +9,9 @@ import (
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/magiconair/properties/assert"
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 func TestGetAccount(t *testing.T) {

@@ -13,9 +13,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+
+	"github.com/redhatinsights/edge-api/config"
 
 	"github.com/cavaliercoder/grab"
 	log "github.com/sirupsen/logrus"
@@ -25,7 +26,7 @@ import (
 type RepoBuilderInterface interface {
 	BuildUpdateRepo(id uint) (*models.UpdateTransaction, error)
 	ImportRepo(r *models.Repo) (*models.Repo, error)
-	DownloadVersionRepo(c *models.Commit, dest string, external bool) (string, error)
+	DownloadVersionRepo(c *models.Commit, dest string) (string, error)
 	ExtractVersionRepo(c *models.Commit, tarFileName string, dest string) error
 	UploadVersionRepo(c *models.Commit, tarFileName string) error
 }
@@ -33,18 +34,18 @@ type RepoBuilderInterface interface {
 // RepoBuilder is the implementation of a RepoBuilderInterface
 type RepoBuilder struct {
 	Service
-	filesService FilesService
+	FilesService FilesService
 	repoService  RepoServiceInterface
-	log          *log.Entry
+	Log          *log.Entry
 }
 
 // NewRepoBuilder initializes the repository builder in this package
 func NewRepoBuilder(ctx context.Context, log *log.Entry) RepoBuilderInterface {
 	return &RepoBuilder{
 		Service:      Service{ctx: ctx, log: log.WithField("service", "repobuilder")},
-		filesService: NewFilesService(log),
+		FilesService: NewFilesService(log),
 		repoService:  NewRepoService(ctx, log),
-		log:          log,
+		Log:          log,
 	}
 }
 
@@ -81,7 +82,8 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	if err != nil {
 		return nil, err
 	}
-	tarFileName, err := rb.DownloadVersionRepo(update.Commit, path, false)
+
+	tarFileName, err := rb.DownloadVersionRepo(update.Commit, path)
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error downloading tar")
 		return nil, fmt.Errorf("error Upload repo repo :: %s", err.Error())
@@ -118,7 +120,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 				"OldCommits":          commit.ID}).
 				Info("Calculate diff from previous commit")
 			commit := commit // this will prevent implicit memory aliasing in the loop
-			tarFileName, err := rb.DownloadVersionRepo(&commit, filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit)), false)
+			tarFileName, err := rb.DownloadVersionRepo(&commit, filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit)))
 			if err != nil {
 				rb.log.WithField("error", err.Error()).Error("Error downloading tar")
 				return nil, fmt.Errorf("error Upload repo repo :: %s", err.Error())
@@ -149,7 +151,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
 
 	rb.log.Info("Upload repo")
-	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Clean(filepath.Join(path, "repo")), strconv.FormatUint(uint64(update.ID), 10), "private")
+	repoURL, err := rb.FilesService.GetUploader().UploadRepo(filepath.Clean(filepath.Join(path, "repo")), strconv.FormatUint(uint64(update.ID), 10), "private")
 	rb.log.Info("Finished uploading repo")
 	if err != nil {
 		return nil, err
@@ -188,7 +190,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		return nil, err
 	}
 
-	tarFileName, err := rb.DownloadVersionRepo(&cmt, path, true)
+	tarFileName, err := rb.DownloadVersionRepo(&cmt, path)
 	if err != nil {
 		r.Status = models.RepoStatusError
 		result := db.DB.Save(&r)
@@ -219,7 +221,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		return nil, fmt.Errorf("error extracting repo :: %s", err.Error())
 	}
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
-	repoURL, err := rb.filesService.GetUploader().UploadRepo(filepath.Clean(filepath.Join(path, "repo")), strconv.FormatUint(uint64(r.ID), 10), "public-read")
+	repoURL, err := rb.FilesService.GetUploader().UploadRepo(filepath.Clean(filepath.Join(path, "repo")), strconv.FormatUint(uint64(r.ID), 10), "public-read")
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error uploading repo")
 		return nil, fmt.Errorf("error uploading repo :: %s", err.Error())
@@ -237,7 +239,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 }
 
 // DownloadVersionRepo Download and Extract the repo tarball to dest dir
-func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string, external bool) (string, error) {
+func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string) (string, error) {
 	// ensure we weren't passed a nil pointer
 	if c == nil {
 		rb.log.Error("nil pointer to models.Commit provided")
@@ -262,7 +264,7 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string, extern
 	}
 	tarFileName = filepath.Clean(filepath.Join(dest, tarFileName))
 
-	if external {
+	if c.ExternalURL {
 		rb.log.WithFields(log.Fields{"filepath": tarFileName, "imageBuildTarURL": c.ImageBuildTarURL}).Debug("Grabbing tar file")
 		_, err = grab.Get(tarFileName, c.ImageBuildTarURL)
 
@@ -272,9 +274,8 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string, extern
 		}
 	} else {
 		rb.log.WithFields(log.Fields{"filepath": tarFileName, "imageBuildTarURL": c.ImageBuildTarURL}).Debug("Downloading tar file")
-
-		filesService := NewFilesService(rb.log.WithField("url", c.ImageBuildTarURL))
-		if err := filesService.GetDownloader().DownloadToPath(c.ImageBuildTarURL, tarFileName); err != nil {
+		downloader := rb.FilesService.GetDownloader()
+		if err := downloader.DownloadToPath(c.ImageBuildTarURL, tarFileName); err != nil {
 			rb.log.WithField("error", err.Error()).Error("Error downloading tar file")
 			return "", err
 		}
@@ -318,6 +319,7 @@ func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string) e
 		return err
 	}
 	c.ImageBuildTarURL = repoTarURL
+	c.ExternalURL = false
 	result := db.DB.Save(c)
 	if result.Error != nil {
 		rb.log.WithField("error", result.Error.Error()).Error("Error saving tar file")
@@ -343,7 +345,7 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 		}).Error("Failed to open file")
 		return err
 	}
-	err = rb.filesService.GetExtractor().Extract(tarFile, filepath.Clean(filepath.Join(dest)))
+	err = rb.FilesService.GetExtractor().Extract(tarFile, filepath.Clean(filepath.Join(dest)))
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error extracting tar file")
 		return err

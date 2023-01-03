@@ -27,7 +27,7 @@ objects:
       minReplicas: ${{MIN_REPLICAS}}
       webServices:
         public:
-          enabled: True
+          enabled: true
           apiPath: edge
       podSpec:
         image: ${IMAGE}:${IMAGE_TAG}
@@ -42,7 +42,7 @@ objects:
           failureThreshold: 3
           httpGet:
             path: ${READINESS_URI}
-            port: 9000
+            port: metrics
             scheme: HTTP
           periodSeconds: 30
           successThreshold: 1
@@ -322,11 +322,12 @@ objects:
       partitions: 3
       topicName: platform.inventory.events
     dependencies:
-      - unleash-proxy
+    - unleash-proxy
     optionalDependencies:
-      - host-inventory
-      - playbook-dispatcher
-      - ingress
+    - host-inventory
+    - playbook-dispatcher
+    - ingress
+    - image-builder
     featureFlags: true
 parameters:
 - description: Cpu limit of service
@@ -377,7 +378,7 @@ parameters:
 - description: ImageBuilder service URL
   name: IMAGEBUILDER_URL
   required: false
-  value: "http://image-builder:8080"
+  value: "http://image-builder-service:8000"
 - description: Host Inventory service URL
   name: INVENTORYURL
   required: false

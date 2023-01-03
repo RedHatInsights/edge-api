@@ -67,6 +67,8 @@ var _ = Describe("ImageSets Service Test", func() {
 		// other image set
 		otherImageSet1 := models.ImageSet{OrgID: OrgID, Name: CommonName + "-" + faker.Name(), Version: 1}
 		db.DB.Create(&otherImageSet1)
+		otherImage0 := models.Image{OrgID: OrgID, Name: otherImageSet1.Name, ImageSetID: &otherImageSet1.ID, Version: 1, Status: models.ImageStatusBuilding}
+		db.DB.Create(&otherImage0)
 		otherImage1 := models.Image{OrgID: OrgID, Name: otherImageSet1.Name, ImageSetID: &otherImageSet1.ID, Version: 1, Status: models.ImageStatusSuccess}
 		otherImage1.Installer = &models.Installer{OrgID: OrgID, ImageBuildISOURL: faker.URL(), Status: models.ImageStatusSuccess}
 		db.DB.Create(&otherImage1)
@@ -88,6 +90,33 @@ var _ = Describe("ImageSets Service Test", func() {
 			count, err := service.GetImageSetsViewCount(dbFilter)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(count).To(Equal(int64(2)))
+		})
+
+		It("should return The right image view count  when filtering by status success", func() {
+
+			dbFilter := db.DB.Where("image_sets.name LIKE ? AND images.status =  ?", CommonName+"%", models.ImageStatusSuccess)
+
+			count, err := service.GetImageSetsViewCount(dbFilter)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(count).To(Equal(int64(1)))
+		})
+
+		It("should return The right image view count  when filtering by status error", func() {
+
+			dbFilter := db.DB.Where("image_sets.name LIKE ? AND images.status =  ?", CommonName+"%", models.ImageStatusError)
+
+			count, err := service.GetImageSetsViewCount(dbFilter)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(count).To(Equal(int64(1)))
+		})
+
+		It("should return The right image view count  when filtering by status building", func() {
+
+			dbFilter := db.DB.Where("image_sets.name LIKE ? AND images.status =  ?", CommonName+"%", models.ImageStatusBuilding)
+
+			count, err := service.GetImageSetsViewCount(dbFilter)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(count).To(Equal(int64(0)))
 		})
 
 		It("should return image-set view with corresponding installer iso url and error status ", func() {
@@ -201,7 +230,7 @@ var _ = Describe("ImageSets Service Test", func() {
 			Expect(imageSetsView).ToNot(BeNil())
 			Expect(len(*imageSetsView) > 0).To(BeTrue())
 			for _, imageSetsViewItem := range *imageSetsView {
-				imageSetView, err := service.GetImageSetViewByID(imageSetsViewItem.ID, 100, 0, nil)
+				imageSetView, err := service.GetImageSetViewByID(imageSetsViewItem.ID, 100, 0, nil) // nolint:govet
 				Expect(err).ToNot(HaveOccurred())
 				Expect(imageSetView).ToNot(BeNil())
 				Expect(imageSetsViewItem.UpdatedAt).To(Equal(imageSetView.LastImageDetails.Image.UpdatedAt))

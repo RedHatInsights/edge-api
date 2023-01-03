@@ -102,10 +102,16 @@ func (s *ImageSetsService) GetImageSetsViewCount(tx *gorm.DB) (int64, error) {
 
 	var count int64
 
-	if result := db.OrgDB(orgID, tx, "image_sets").Debug().
-		Joins(`JOIN images ON image_sets.id = images.image_set_id`).
-		Model(&models.ImageSet{}).Distinct("image_sets.id").Count(&count); result.Error != nil {
-		s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("Error getting image sets count")
+	// create a sub query of the latest images and their corresponding image sets
+	latestImagesSubQuery := db.Org(orgID, "").Model(&models.Image{}).Select("image_set_id", "max(id) as image_id").Group("image_set_id")
+	if result := db.OrgDB(orgID, tx, "image_sets").Table("(?) as latest_images", latestImagesSubQuery).
+		Joins("JOIN images on images.id = latest_images.image_id").
+		Joins("JOIN image_sets on image_sets.id = latest_images.image_set_id").
+		Where("image_sets.deleted_at IS NULL").
+		Count(&count); result.Error != nil {
+		log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error(
+			"error when getting image sets view data",
+		)
 		return 0, result.Error
 	}
 
@@ -125,24 +131,28 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 
 	// ImageSetRow the structure for getting the main data table
 	type ImageSetRow struct {
-		ID      uint   `json:"ID"`
-		Name    string `json:"Name"`
-		Version int    `json:"Version"`
-		ImageID uint   `json:"ImageID"`
+		ID        uint               `json:"ID"`
+		Name      string             `json:"Name"`
+		Version   int                `json:"Version"`
+		Status    string             `json:"Status"`
+		ImageID   uint               `json:"ImageID"`
+		UpdatedAt models.EdgeAPITime `json:"UpdatedAt"`
 	}
 
 	var imageSetsRows []ImageSetRow
 
-	if result := db.OrgDB(orgID, tx, "image_sets").Debug().Table("image_sets").Limit(limit).Offset(offset).
-		Select(`image_sets.id, image_sets.name, image_sets.version, max(images.id) as "image_id"`).
-		Where(`image_sets.deleted_at IS NULL  AND images.deleted_at IS NULL`).
-		Joins(`JOIN images ON image_sets.id = images.image_set_id`).
-		Group(`image_sets.id, image_sets.name, image_sets.version`).
+	// create a sub query of the latest images and their corresponding image sets
+	latestImagesSubQuery := db.Org(orgID, "").Model(&models.Image{}).Select("image_set_id", "max(id) as image_id").Group("image_set_id")
+	if result := db.OrgDB(orgID, tx, "image_sets").Debug().Table("(?) as latest_images", latestImagesSubQuery).Limit(limit).Offset(offset).
+		Joins("JOIN images on images.id = latest_images.image_id").
+		Joins("JOIN image_sets on image_sets.id = latest_images.image_set_id").
+		Select("image_sets.id, image_sets.name, images.version, images.status, images.id as image_id, images.updated_at").
+		Where("image_sets.deleted_at IS NULL").
 		Find(&imageSetsRows); result.Error != nil {
 		log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error(
 			"error when getting image sets view data",
 		)
-		return nil, err
+		return nil, result.Error
 	}
 	if len(imageSetsRows) == 0 {
 		return &[]models.ImageSetView{}, nil
@@ -158,15 +168,6 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 		imageIDS = append(imageIDS, imageSetRow.ImageID)
 	}
 
-	var imgs []models.Image
-	db.DB.Where("ID in ?", imageIDS).Find(&imgs)
-	// build a map of images
-	imageSetsImages := make(map[uint]models.Image)
-	for _, image := range imgs {
-		if _, ok := imageSetsImages[image.ID]; !ok {
-			imageSetsImages[image.ID] = image
-		}
-	}
 	imageSetsInstallersMap, err := s.GetImageSetsBuildIsoURL(orgID, imageSetIDS)
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error(), "OrgID": orgID}).Error(
@@ -181,8 +182,8 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 			ID:        imageSetRow.ID,
 			Name:      imageSetRow.Name,
 			Version:   imageSetRow.Version,
-			UpdatedAt: imageSetsImages[imageSetRow.ImageID].UpdatedAt,
-			Status:    imageSetsImages[imageSetRow.ImageID].Status,
+			UpdatedAt: imageSetRow.UpdatedAt,
+			Status:    imageSetRow.Status,
 			ImageID:   imageSetRow.ImageID,
 		}
 		installerID, ok := imageSetsInstallersMap[imageSetRow.ID]
@@ -425,7 +426,7 @@ func (s *ImageSetsService) GetDeviceIdsByImageSetID(imageSetID uint) (int, []str
 		return 0, nil, result.Error
 	}
 
-	var DeviceUUIDs []string
+	var DeviceUUIDs []string	// nolint:gocritic,gofmt,goimports
 	for _, one := range deviceInfos {
 		DeviceUUIDs = append(DeviceUUIDs, one.DeviceUUID)
 	}

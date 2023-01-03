@@ -2,6 +2,7 @@
 package image
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 
@@ -18,20 +20,29 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var _ = Describe("Event Image Build Requested Test", func() {
+var _ = Describe("Event Image Update Requested Test", func() {
 	var ctx context.Context
+	var logBuffer bytes.Buffer
+	var testLog *log.Entry
 	var mockImageService *mock_services.MockImageServiceInterface
 	BeforeEach(func() {
 		ctrl := gomock.NewController(GinkgoT())
 		defer ctrl.Finish()
 		mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
+		testLog = log.NewEntry(log.StandardLogger())
+		// Set the output to use our new local logBuffer
+		logBuffer = bytes.Buffer{}
+		testLog.Logger.SetOutput(&logBuffer)
 
 		ctx = context.Background()
+		ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+			ImageService: mockImageService,
+		})
 		ctx = utility.ContextWithLogger(ctx, log.NewEntry(log.StandardLogger()))
 	})
-	Describe("consume image build event", func() {
-		When("image build is requested", func() {
-			Context("image is processed successfully", func() {
+	Describe("consume image build update event", func() {
+		When("image build update is requested", func() {
+			Context("image update is processed successfully", func() {
 				It("should be ok", func() {
 					image := &models.Image{
 						OrgID:        faker.UUIDHyphenated(),
@@ -45,7 +56,7 @@ var _ = Describe("Event Image Build Requested Test", func() {
 					ident, err := common.GetIdentityFromContext(ctx)
 					Expect(err).To(BeNil())
 
-					edgePayload := &models.EdgeImageRequestedEventPayload{
+					edgePayload := &models.EdgeImageUpdateRequestedEventPayload{
 						EdgeBasePayload: models.EdgeBasePayload{
 							Identity:       ident,
 							LastHandleTime: time.Now().Format(time.RFC3339),
@@ -57,11 +68,12 @@ var _ = Describe("Event Image Build Requested Test", func() {
 
 					mockImageService.EXPECT().SetLog(gomock.Any()).Return()
 					mockImageService.EXPECT().ProcessImage(gomock.Any(), gomock.Any()).Return(nil)
-					event := &EventImageRequestedBuildHandler{}
+					event := &EventImageUpdateRequestedBuildHandler{}
+
 					event.Data = *edgePayload
-					event.Consume(ctx, mockImageService)
+					event.Consume(ctx)
 				})
-				Context("image process errors", func() {
+				Context("image update process errors", func() {
 					It("should not be ok", func() {
 						orgID := faker.UUIDHyphenated()
 
@@ -77,7 +89,7 @@ var _ = Describe("Event Image Build Requested Test", func() {
 						ident, err := common.GetIdentityFromContext(ctx)
 						Expect(err).To(BeNil())
 
-						edgePayload := &models.EdgeImageRequestedEventPayload{
+						edgePayload := &models.EdgeImageUpdateRequestedEventPayload{
 							EdgeBasePayload: models.EdgeBasePayload{
 								Identity:       ident,
 								LastHandleTime: time.Now().Format(time.RFC3339),
@@ -87,10 +99,12 @@ var _ = Describe("Event Image Build Requested Test", func() {
 						}
 
 						mockImageService.EXPECT().SetLog(gomock.Any()).Return()
-						mockImageService.EXPECT().ProcessImage(gomock.Any(), gomock.Any()).Return(errors.New("this failed"))
-						event := &EventImageRequestedBuildHandler{}
+						mockImageService.EXPECT().ProcessImage(gomock.Any(), gomock.Any()).Return(errors.New("error processing the image"))
+						event := &EventImageUpdateRequestedBuildHandler{}
 						event.Data = *edgePayload
-						event.Consume(ctx, mockImageService)
+						event.Consume(ctx)
+						Expect(logBuffer.String()).To(ContainSubstring("Error processing the image"))
+
 					})
 				})
 			})

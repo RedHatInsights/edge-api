@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+
 	"github.com/redhatinsights/edge-api/config"
 )
 

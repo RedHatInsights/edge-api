@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
@@ -28,6 +27,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
+
+	"github.com/redhatinsights/edge-api/config"
 
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"

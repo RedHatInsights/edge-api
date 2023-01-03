@@ -5,12 +5,13 @@ package main
 import (
 	"os"
 
-	"github.com/redhatinsights/edge-api/config"
 	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 func handlePanic(errorOccurred *bool) {
@@ -21,7 +22,7 @@ func handlePanic(errorOccurred *bool) {
 }
 func main() {
 	config.Init()
-	l.InitLogger()
+	l.InitLogger(os.Stdout)
 	cfg := config.Get()
 	log.WithFields(log.Fields{
 		"Hostname":                 cfg.Hostname,

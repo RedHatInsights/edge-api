@@ -11,7 +11,6 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/redhatinsights/edge-api/config"
 	imageBuilderClient "github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder/mock_imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -22,6 +21,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 var _ = Describe("Image Service Test", func() {
@@ -1602,16 +1603,17 @@ var _ = Describe("Image Service Test", func() {
 					}
 					db.DB.Create(&image1)
 					db.DB.Create(&image2)
-					err := service.DeleteImage(&image1)
+					err := service.DeleteImage(&image2)
 					Expect(err).To(BeNil())
 					var tempImage models.Image
-					res := db.DB.First(&tempImage, image1)
+					res := db.DB.First(&tempImage, image2)
 					Expect(res.Error.Error()).Should(Equal("record not found"))
-					res = db.DB.First(&tempImage, image2)
+					res = db.DB.First(&tempImage, image1)
 					Expect(res.Error).To(BeNil())
 					var tempImageSet models.ImageSet
 					res = db.DB.First(&tempImageSet, imageSet)
 					Expect(res.Error).To(BeNil())
+					Expect(tempImageSet.Version).To(Equal(image1.Version))
 				})
 			})
 		})

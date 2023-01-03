@@ -15,11 +15,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 // ClientInterface is an Interface to make request to ImageBuilder
@@ -322,7 +323,9 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 		image.Installer.ComposeJobID = cr.ID
 		image.Installer.Status = models.ImageStatusBuilding
 		image.Status = models.ImageStatusBuilding
+
 	}
+	image.Commit.ExternalURL = false
 	tx := db.DB.Save(&image)
 	if tx.Error != nil {
 		c.log.WithField("error", tx.Error.Error()).Error("Error saving image")
@@ -390,6 +393,7 @@ func (c *Client) GetCommitStatus(image *models.Image) (*models.Image, error) {
 		c.log.Info("Set image commit status with success")
 		image.Commit.Status = models.ImageStatusSuccess
 		image.Commit.ImageBuildTarURL = cs.ImageStatus.UploadStatus.Options.URL
+		image.Commit.ExternalURL = true
 	} else if cs.ImageStatus.Status == imageStatusFailure {
 		c.log.Info("Set image and image commit status with error")
 		image.Commit.Status = models.ImageStatusError
