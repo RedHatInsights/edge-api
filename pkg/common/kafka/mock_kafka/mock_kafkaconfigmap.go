@@ -5,9 +5,10 @@
 package mock_kafkacommon
 
 import (
+	reflect "reflect"
+
 	kafka "github.com/confluentinc/confluent-kafka-go/kafka"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
 // MockKafkaConfigMapServiceInterface is a mock of KafkaConfigMapServiceInterface interface

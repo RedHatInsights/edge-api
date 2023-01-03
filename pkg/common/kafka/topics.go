@@ -3,8 +3,9 @@
 package kafkacommon
 
 import (
-	"github.com/redhatinsights/edge-api/config"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 // TopicServiceInterface is the interface for the service

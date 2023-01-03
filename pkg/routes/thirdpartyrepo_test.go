@@ -12,13 +12,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
+
+	"github.com/redhatinsights/edge-api/config"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/go-chi/chi"

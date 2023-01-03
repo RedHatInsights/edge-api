@@ -5,8 +5,9 @@
 package mock_kafkacommon
 
 import (
-	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockTopicServiceInterface is a mock of TopicServiceInterface interface

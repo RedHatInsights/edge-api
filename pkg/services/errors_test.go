@@ -1,3 +1,4 @@
+// nolint:revive
 package services_test
 
 import (

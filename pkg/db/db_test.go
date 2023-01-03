@@ -1,5 +1,5 @@
 // FIXME: golangci-lint
-// nolint: revive,typecheck
+// nolint: govet,revive,typecheck
 package db_test
 
 import (
@@ -7,10 +7,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
+
+	"github.com/redhatinsights/edge-api/config"
 
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo"

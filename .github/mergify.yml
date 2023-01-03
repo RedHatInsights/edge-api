@@ -57,12 +57,10 @@ pull_request_rules:
       - author~=^dependabot(|-preview)\[bot\]$
       - and: *common-merge-criteria
       - check-success=Lint
-      # - check-success=Travis CI - Pull Request
     actions:
       queue:
         name: edge-api
         method: merge
-        rebase_fallback: none
   #
   # If PR check fails, request resolution (prevent stalling the merge queue)
   - name: Request PR check re-run
@@ -76,7 +74,6 @@ pull_request_rules:
           - or:
               - -check-success=ci.int.devshift.net PR build
               - -check-success=Lint
-              # - -check-success=Travis CI - Pull Request
     actions:
       comment:
         message: "This pull request needs all pr-checks to run successfully. Could you fix it @{{author}}? 🙏"
@@ -90,7 +87,6 @@ pull_request_rules:
       - base=main
       - and: *common-merge-criteria
       - check-success=Lint
-      # - check-success=Travis CI - Pull Request
       - check-success=ci.int.devshift.net PR build
       - label!=work in progress
       - label!=do not merge
@@ -101,7 +97,6 @@ pull_request_rules:
       queue:
         name: edge-api
         method: merge
-        rebase_fallback: none
   #
   # Detect when PR conflicts and add label
   - name: warn on conflicts

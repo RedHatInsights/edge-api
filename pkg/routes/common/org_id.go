@@ -7,8 +7,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
+
+	"github.com/redhatinsights/edge-api/config"
 )
 
 const (
