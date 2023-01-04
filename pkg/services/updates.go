@@ -703,7 +703,7 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 // ValidateUpdateSelection validate the images for update
 func (s *UpdateService) ValidateUpdateSelection(orgID string, imageIds []uint) (bool, error) {
 	var count int64
-	if result := db.Org(orgID, "").Debug().Table("images").Where(`id IN ?`, imageIds).Group("image_set_id").Count(&count); result.Error != nil {
+	if result := db.Org(orgID, "").Table("images").Distinct("image_set_id").Where(`id IN ?`, imageIds).Count(&count); result.Error != nil {
 		return false, result.Error
 	}
 
