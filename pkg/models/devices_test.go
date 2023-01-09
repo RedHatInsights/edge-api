@@ -39,3 +39,20 @@ func TestDevicesBeforeCreate(t *testing.T) {
 		})
 	}
 }
+
+func TestDevicesBeforeCreateNoHaveOrgId(t *testing.T) {
+	orgID := ""
+	account := faker.UUIDHyphenated()
+	devices := &models.Device{
+		Name:    faker.Name(),
+		UUID:    faker.UUIDHyphenated(),
+		OrgID:   orgID,
+		Account: account,
+	}
+
+	err := devices.BeforeCreate(db.DB)
+	if err.Error() != "org_id is mandatory" {
+		t.Error("Device create without OrgID")
+	}
+
+}
