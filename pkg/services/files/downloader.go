@@ -8,12 +8,9 @@ import (
 	url2 "net/url"
 	"os"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	log "github.com/sirupsen/logrus"
-
 	"github.com/redhatinsights/edge-api/config"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // Downloader is the interface that downloads a source into a path
@@ -27,7 +24,7 @@ func NewDownloader(log *log.Entry) Downloader {
 	if cfg.Local {
 		return &HTTPDownloader{log: log}
 	}
-	return &S3Downloader{log: log}
+	return NewS3Downloader(log, GetNewS3Client())
 }
 
 // HTTPDownloader implements Downloader and downloads from a URL through HTTP
@@ -60,9 +57,15 @@ func (d *HTTPDownloader) DownloadToPath(sourceURL string, destinationPath string
 	return err
 }
 
+// NewS3Downloader return a new S3Downloader
+func NewS3Downloader(logger *log.Entry, client S3ClientInterface) *S3Downloader {
+	return &S3Downloader{log: logger, Client: client}
+}
+
 // S3Downloader aws s3 files Downloader, download resources at aws s3 bucket via sdk
 type S3Downloader struct {
-	log *log.Entry
+	log    *log.Entry
+	Client S3ClientInterface
 }
 
 // DownloadToPath download function that puts the source_url  at s3 bucket into the destination_path on the local filesystem
@@ -88,13 +91,7 @@ func (d *S3Downloader) DownloadToPath(sourceURL string, destinationPath string) 
 		}
 	}()
 
-	sess := GetNewS3Session()
-	downloader := s3manager.NewDownloader(sess)
-	_, err = downloader.Download(file,
-		&s3.GetObjectInput{
-			Bucket: aws.String(cfg.BucketName),
-			Key:    aws.String(url.Path),
-		})
+	_, err = d.Client.Download(file, cfg.BucketName, url.Path)
 
 	if err != nil {
 		d.log.WithField("error", err.Error()).Errorf(`Error downloading file : "%s"`, url.Path)

@@ -9,9 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -32,17 +29,16 @@ func NewUploader(log *log.Entry) Uploader {
 		log:     log,
 	}
 	if !cfg.Local {
-		uploader = newS3Uploader(log)
+		uploader = NewS3Uploader(log, GetNewS3Client())
 	}
 	return uploader
 }
 
 // S3Uploader defines the mechanism to upload data to S3
 type S3Uploader struct {
-	Client            *s3.S3
-	S3ManagerUploader *s3manager.Uploader
-	Bucket            string
-	log               *log.Entry
+	Client S3ClientInterface
+	Bucket string
+	log    *log.Entry
 }
 
 // LocalUploader isn't actually an uploader but implements the interface in
@@ -77,18 +73,13 @@ func (u *LocalUploader) UploadFile(fname string, uploadPath string) (string, err
 	return destfile, nil
 }
 
-func newS3Uploader(log *log.Entry) *S3Uploader {
+// NewS3Uploader return a new S3Uploader
+func NewS3Uploader(log *log.Entry, client S3ClientInterface) *S3Uploader {
 	cfg := config.Get()
-	sess := GetNewS3Session()
-	client := s3.New(sess)
-	uploader := s3manager.NewUploader(sess, func(u *s3manager.Uploader) {
-		u.Concurrency = 1
-	})
 	return &S3Uploader{
-		Client:            client,
-		S3ManagerUploader: uploader,
-		Bucket:            cfg.BucketName,
-		log:               log,
+		Client: client,
+		Bucket: cfg.BucketName,
+		log:    log,
 	}
 }
 
@@ -103,7 +94,7 @@ type uploadDetails struct {
 
 func (u *S3Uploader) worker(uploadQueue chan *uploadDetails, acl string) {
 	for p := range uploadQueue {
-		fname, err := p.uploader.uploadFileWithACL(p.fileName, p.uploadPath, acl)
+		fname, err := p.uploader.UploadFileWithACL(p.fileName, p.uploadPath, acl)
 		if err != nil {
 			u.log.WithFields(log.Fields{"fname": fname, "count": p.count, "error": err.Error()}).Error("Error uploading file")
 		}
@@ -170,15 +161,15 @@ func (u *S3Uploader) UploadRepo(src string, account string, acl string) (string,
 	}
 	close(uploadQueue)
 	u.log.Debug("Channel is closed...")
-	region := *u.Client.Config.Region
+	region := config.Get().BucketRegion
 	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s/%s", u.Bucket, region, account, strings.TrimPrefix(src, cfg.RepoTempPath))
 	u.log.WithField("s3URL", s3URL).Info("Files are done uploading...")
 	return s3URL, nil
 }
 
+// UploadFileWithACL  upload a file from local file system to remote s3 bucket location using the acl supplied.
 // uploadFile takes a Filename path as a string and then uploads that to
-// uploadFileWithACL  upload a file from local file system to remote s3 bucket location using the acl supplied.
-func (u *S3Uploader) uploadFileWithACL(fname string, uploadPath string, acl string) (string, error) {
+func (u *S3Uploader) UploadFileWithACL(fname string, uploadPath string, acl string) (string, error) {
 	f, err := os.Open(filepath.Clean(fname))
 	if err != nil {
 		return "", fmt.Errorf("failed to open file %q, %v", fname, err)
@@ -188,12 +179,7 @@ func (u *S3Uploader) uploadFileWithACL(fname string, uploadPath string, acl stri
 	}
 
 	// Upload the file to S3.
-	_, err = u.Client.PutObject(&s3.PutObjectInput{
-		Bucket: aws.String(u.Bucket),
-		Key:    aws.String(uploadPath),
-		Body:   f,
-		ACL:    aws.String(acl),
-	})
+	_, err = u.Client.PutObject(f, u.Bucket, uploadPath, acl)
 
 	if err != nil {
 		u.log.WithField("error", err.Error()).Error("Error uploading to AWS S3")
@@ -203,12 +189,12 @@ func (u *S3Uploader) uploadFileWithACL(fname string, uploadPath string, acl stri
 		u.log.WithField("error", err.Error()).Error("Error closing file")
 		return "", err
 	}
-	region := *u.Client.Config.Region
+	region := config.Get().BucketRegion
 	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", u.Bucket, region, uploadPath)
 	return s3URL, nil
 }
 
 // UploadFile takes a Filename path as a string and then uploads that to the supplied location in s3
 func (u *S3Uploader) UploadFile(fname string, uploadPath string) (string, error) {
-	return u.uploadFileWithACL(fname, uploadPath, "private")
+	return u.UploadFileWithACL(fname, uploadPath, "private")
 }
