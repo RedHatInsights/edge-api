@@ -1,3 +1,4 @@
+// nolint:govet,revive
 package kafkacommon_test
 
 import (
