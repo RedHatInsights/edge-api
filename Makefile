@@ -40,7 +40,7 @@ EXCLUDE_DIRS=-e /test/ -e /cmd/db -e /cmd/kafka \
 CONTAINERFILE_NAME=Dockerfile
 
 .PHONY:	all bonfire-config-local bonfire-config-github build-containers \
-               build-edge-api-container coverage coverage-html coverage-no-fdo \
+               build-edge-api-container clean coverage coverage-html coverage-no-fdo \
                create-ns deploy-app deploy-env fmt generate-docs help lint pre-commit \
                restart-app scale-down scale-up scan_project test test-clean-no-fdo \
                test-no-fdo vet vet-no-fdo
@@ -68,6 +68,9 @@ build-test-container:
 		--no-cache \
 		--tag "$(TEST_CONTAINER_TAG)" \
 		.
+
+clean:
+	golangci-lint cache clean
 
 coverage:
 	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v $(EXCLUDE_DIRS)) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
@@ -105,6 +108,7 @@ help:
 	@echo "build-containers          Builds all the container images"
 	@echo "build-edge-api-container  Builds the edge-api container"
 	@echo "build-test-container      Builds the test container"
+	@echo "clean                     Removes cached golangci files"
 	@echo "coverage                  Runs 'go test' coverage on the project"
 	@echo "coverage-html             Create HTML version of coverage report"
 	@echo "coverage-no-fdo           Runs 'go test' coverage on the project without FDO"
