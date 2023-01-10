@@ -714,11 +714,11 @@ func (s *UpdateService) ValidateUpdateSelection(orgID string, imageIds []uint) (
 func (s *UpdateService) ValidateUpdateDeviceGroup(orgID string, deviceGroupID uint) (bool, error) {
 	var count int64
 
-	if result := db.Org(orgID, "Device_Groups").Model(&models.DeviceGroup{}).Where(`Device_Groups.id = ?`, deviceGroupID).
+	if result := db.Org(orgID, "Device_Groups").Debug().Model(&models.DeviceGroup{}).Where(`Device_Groups.id = ?`, deviceGroupID).
 		Joins(`JOIN Device_Groups_Devices  ON Device_Groups.id = Device_Groups_Devices.device_group_id`).
 		Joins(`JOIN Devices  ON Device_Groups_Devices.device_id = Devices.id`).
 		Where("Devices.image_id IS NOT NULL AND Devices.image_id != 0").
-		Joins(`JOIN Images  ON Devices.image_id = Images.id`).
+		Joins(`JOIN Images  ON Devices.image_id = Images.id`).Distinct("images.image_set_id").
 		Group("image_set_id").Count(&count); result.Error != nil {
 		return false, result.Error
 	}
