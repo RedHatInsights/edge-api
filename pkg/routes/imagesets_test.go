@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -44,7 +44,7 @@ func TestListAllImageSets(t *testing.T) {
 			status, http.StatusOK)
 
 	}
-	respBody, err := ioutil.ReadAll(rr.Body)
+	respBody, err := io.ReadAll(rr.Body)
 	if err != nil {
 		t.Errorf("failed reading response body: %s", err.Error())
 	}
@@ -218,7 +218,7 @@ func TestGetImageSetsDevicesByID(t *testing.T) {
 			status, http.StatusOK)
 	}
 
-	respBody, err := ioutil.ReadAll(rr.Body)
+	respBody, err := io.ReadAll(rr.Body)
 	assert.NoError(t, err)
 
 	jsonBody := ImageSetDevices{}
@@ -540,7 +540,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				handler := http.HandlerFunc(ListAllImageSets)
 				handler.ServeHTTP(w, req)
 				Expect(w.Code).To(Equal(http.StatusOK), fmt.Sprintf("expected status %d, but got %d", w.Code, http.StatusOK))
-				respBody, err := ioutil.ReadAll(w.Body)
+				respBody, err := io.ReadAll(w.Body)
 				Expect(err).To(BeNil())
 				Expect(string(respBody)).To(ContainSubstring(name))
 				Expect(string(respBody)).ToNot(ContainSubstring("image-set-2"))
@@ -556,7 +556,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				handler := http.HandlerFunc(ListAllImageSets)
 				handler.ServeHTTP(w, req)
 				Expect(w.Code).To(Equal(http.StatusOK), fmt.Sprintf("expected status %d, but got %d", w.Code, http.StatusOK))
-				respBody, err := ioutil.ReadAll(w.Body)
+				respBody, err := io.ReadAll(w.Body)
 				Expect(err).To(BeNil())
 				Expect(string(respBody)).To(ContainSubstring("image-set-2"))
 				Expect(string(respBody)).ToNot(ContainSubstring("image-set-1"))
@@ -627,7 +627,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(rr.Code).To(Equal(http.StatusOK))
 
 				var allImageSetsResponse AllImageSetsResponse
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, err := io.ReadAll(rr.Body)
 				Expect(err).ToNot(HaveOccurred())
 
 				err = json.Unmarshal(respBody, &allImageSetsResponse)
@@ -665,7 +665,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				router.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(http.StatusOK))
 				var imageSetDetailsResponse ImageSetDetailsResponse
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, err := io.ReadAll(rr.Body)
 				Expect(err).ToNot(HaveOccurred())
 
 				err = json.Unmarshal(respBody, &imageSetDetailsResponse)
@@ -766,7 +766,7 @@ var _ = Describe("ImageSets Route Test", func() {
 			Expect(rr.Code).To(Equal(http.StatusOK))
 
 			var imageSetsViewResponse ImageSetsViewResponse
-			respBody, err := ioutil.ReadAll(rr.Body)
+			respBody, err := io.ReadAll(rr.Body)
 			Expect(err).ToNot(HaveOccurred())
 
 			err = json.Unmarshal(respBody, &imageSetsViewResponse)
@@ -817,7 +817,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(rr.Code).To(Equal(http.StatusOK))
 
 				var imageSetsViewResponse ImageSetsViewResponse
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, err := io.ReadAll(rr.Body)
 				Expect(err).ToNot(HaveOccurred())
 
 				err = json.Unmarshal(respBody, &imageSetsViewResponse)
@@ -836,7 +836,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(rr.Code).To(Equal(http.StatusOK))
 
 				var imageSetsViewResponse ImageSetsViewResponse
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, err := io.ReadAll(rr.Body)
 				Expect(err).ToNot(HaveOccurred())
 
 				err = json.Unmarshal(respBody, &imageSetsViewResponse)
@@ -854,7 +854,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(rr.Code).To(Equal(http.StatusBadRequest))
 
 				var responseError []validationError
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, err := io.ReadAll(rr.Body)
 				Expect(err).ToNot(HaveOccurred())
 
 				err = json.Unmarshal(respBody, &responseError)
@@ -873,7 +873,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(rr.Code).To(Equal(http.StatusBadRequest))
 
 				var responseError []validationError
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, err := io.ReadAll(rr.Body)
 				Expect(err).ToNot(HaveOccurred())
 
 				err = json.Unmarshal(respBody, &responseError)
@@ -891,7 +891,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(rr.Code).To(Equal(http.StatusBadRequest))
 
 				var responseError []validationError
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, err := io.ReadAll(rr.Body)
 				Expect(err).ToNot(HaveOccurred())
 
 				err = json.Unmarshal(respBody, &responseError)
@@ -911,7 +911,7 @@ var _ = Describe("ImageSets Route Test", func() {
 					Expect(rr.Code).To(Equal(http.StatusOK))
 
 					var imageSetsViewResponse ImageSetsViewResponse
-					respBody, err := ioutil.ReadAll(rr.Body)
+					respBody, err := io.ReadAll(rr.Body)
 					Expect(err).ToNot(HaveOccurred())
 
 					err = json.Unmarshal(respBody, &imageSetsViewResponse)
@@ -1027,7 +1027,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(rr.Code).To(Equal(http.StatusBadRequest))
 
 				var responseError []validationError
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, err := io.ReadAll(rr.Body)
 				Expect(err).ToNot(HaveOccurred())
 
 				err = json.Unmarshal(respBody, &responseError)
@@ -1045,7 +1045,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(rr.Code).To(Equal(http.StatusBadRequest))
 
 				var responseError []validationError
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, err := io.ReadAll(rr.Body)
 				Expect(err).ToNot(HaveOccurred())
 
 				err = json.Unmarshal(respBody, &responseError)
@@ -1076,7 +1076,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(rr.Code).To(Equal(http.StatusBadRequest))
 
 				var responseError []validationError
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, err := io.ReadAll(rr.Body)
 				Expect(err).ToNot(HaveOccurred())
 
 				err = json.Unmarshal(respBody, &responseError)
@@ -1094,7 +1094,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(rr.Code).To(Equal(http.StatusBadRequest))
 
 				var responseError []validationError
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, err := io.ReadAll(rr.Body)
 				Expect(err).ToNot(HaveOccurred())
 
 				err = json.Unmarshal(respBody, &responseError)
@@ -1112,7 +1112,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(rr.Code).To(Equal(http.StatusBadRequest))
 
 				var responseError []validationError
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, err := io.ReadAll(rr.Body)
 				Expect(err).ToNot(HaveOccurred())
 
 				err = json.Unmarshal(respBody, &responseError)
@@ -1130,7 +1130,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(rr.Code).To(Equal(http.StatusBadRequest))
 
 				var responseError []validationError
-				respBody, err := ioutil.ReadAll(rr.Body)
+				respBody, err := io.ReadAll(rr.Body)
 				Expect(err).ToNot(HaveOccurred())
 
 				err = json.Unmarshal(respBody, &responseError)

@@ -4,7 +4,6 @@ package kafkacommon
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -68,7 +67,6 @@ func (p *ProducerService) GetProducerInstance() Producer {
 				"port": *cfg.KafkaBrokers[0].Port}).Debug("Creating a new producer")
 
 			kafkaConfigMap := p.KafkaConfigMap.GetKafkaProducerConfigMap()
-			fmt.Println("KafkaConfigMap: ", kafkaConfigMap)
 			p, err := kafka.NewProducer(&kafkaConfigMap)
 			if err != nil {
 				log.WithField("error", err).Error("Failed to create producer")
