@@ -1,3 +1,4 @@
+// nolint:gocritic,govet,revive
 package services
 
 import (

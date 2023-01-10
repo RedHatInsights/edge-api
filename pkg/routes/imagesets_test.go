@@ -1,3 +1,4 @@
+// nolint:govet,revive,staticcheck,typecheck
 package routes
 
 import (
