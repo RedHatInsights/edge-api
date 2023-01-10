@@ -1,17 +1,15 @@
-// FIXME: golangci-lint
-// nolint:govet,ineffassign,revive,staticcheck
 package services
 
 import (
 	"context"
 	"fmt"
 
-	"gorm.io/gorm"
-
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
+
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 // ImageSetsServiceInterface defines the interface that helps handle
@@ -20,11 +18,11 @@ type ImageSetsServiceInterface interface {
 	GetImageSetsByID(imageSetID int) (*models.ImageSet, error)
 	GetImageSetsViewCount(tx *gorm.DB) (int64, error)
 	GetImageSetsView(limit int, offset int, tx *gorm.DB) (*[]models.ImageSetView, error)
-	GetImageSetViewByID(imageSetID uint, imagesLimit int, imagesOffSet int, imagesDBFilter *gorm.DB) (*ImageSetIDView, error)
+	GetImageSetViewByID(imageSetID uint) (*ImageSetIDView, error)
 	GetImageSetsBuildIsoURL(orgID string, imageSetIDS []uint) (map[uint]uint, error)
 	GetImagesViewData(imageSetID uint, imagesLimit int, imagesOffSet int, tx *gorm.DB) (*ImagesViewData, error)
 	GetImageSetImageViewByID(imageSetID uint, imageID uint) (*ImageSetImageIDView, error)
-	GetDeviceIdsByImageSetID(imageSetId uint) (int, []string, error)
+	GetDeviceIdsByImageSetID(imageSetID uint) (int, []string, error)
 	DeleteImageSet(imageSetID uint) error
 }
 
@@ -48,7 +46,7 @@ type ImageSetImageIDView struct {
 	ImageDetails     ImageDetail     `json:"ImageDetails"`
 }
 
-// NewImageSetsService gives a instance of the main implementation of a ImageSetsServiceInterface
+// NewImageSetsService gives an instance of the main implementation of a ImageSetsServiceInterface
 func NewImageSetsService(ctx context.Context, log *log.Entry) ImageSetsServiceInterface {
 	return &ImageSetsService{
 		Service: Service{ctx: ctx, log: log.WithField("service", "image-sets")},
@@ -161,11 +159,8 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 	// get the latest installer iso url for each image-set
 	// get the image-set ids
 	var imageSetIDS []uint
-	// get image status and avoid slow query
-	var imageIDS []uint
 	for _, imageSetRow := range imageSetsRows {
 		imageSetIDS = append(imageSetIDS, imageSetRow.ID)
-		imageIDS = append(imageIDS, imageSetRow.ImageID)
 	}
 
 	imageSetsInstallersMap, err := s.GetImageSetsBuildIsoURL(orgID, imageSetIDS)
@@ -286,13 +281,10 @@ func (s *ImageSetsService) preloadImageSetImageData(image *models.Image) error {
 }
 
 // GetImageSetViewByID return the data related to image set, data, build iso url, last image and images view.
-func (s *ImageSetsService) GetImageSetViewByID(imageSetID uint, imagesLimit int, imagesOffSet int, imagesDBFilter *gorm.DB) (*ImageSetIDView, error) {
+func (s *ImageSetsService) GetImageSetViewByID(imageSetID uint) (*ImageSetIDView, error) {
 	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {
 		return nil, new(OrgIDNotSet)
-	}
-	if imagesDBFilter == nil {
-		imagesDBFilter = db.DB
 	}
 
 	imageService := NewImageService(s.ctx, s.log)
@@ -426,7 +418,7 @@ func (s *ImageSetsService) GetDeviceIdsByImageSetID(imageSetID uint) (int, []str
 		return 0, nil, result.Error
 	}
 
-	var DeviceUUIDs []string	// nolint:gocritic,gofmt,goimports
+	DeviceUUIDs := make([]string, 0, len(deviceInfos))
 	for _, one := range deviceInfos {
 		DeviceUUIDs = append(DeviceUUIDs, one.DeviceUUID)
 	}
