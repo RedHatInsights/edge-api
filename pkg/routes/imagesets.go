@@ -1,5 +1,3 @@
-// FIXME: golangci-lint
-// nolint:gocritic,govet,revive
 package routes
 
 import (
@@ -12,12 +10,12 @@ import (
 
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
+	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 
 	"github.com/go-chi/chi"
-	"github.com/redhatinsights/edge-api/pkg/errors"
-	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -576,9 +574,8 @@ func GetImageSetViewByID(w http.ResponseWriter, r *http.Request) {
 		// log and response handled by getContextImageSet
 		return
 	}
-	imagesDBFilters := imageDetailFilters(r, db.DB)
-	pagination := common.GetPagination(r)
-	imageSetIDView, err := ctxServices.ImageSetService.GetImageSetViewByID(imageSet.ID, pagination.Limit, pagination.Offset, imagesDBFilters)
+
+	imageSetIDView, err := ctxServices.ImageSetService.GetImageSetViewByID(imageSet.ID)
 	if err != nil {
 		var apiError errors.APIError
 		switch err.(type) {
