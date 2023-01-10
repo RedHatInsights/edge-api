@@ -83,7 +83,7 @@ jobs:
         run: go run cmd/spec/main.go
 
       - name: Set up python3
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
