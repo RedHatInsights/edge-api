@@ -148,7 +148,10 @@ func initConsumerImageBuild(ctx context.Context) {
 				}
 			}
 		}
+		log.Info("Closing consumer\n")
+		c.Close()
 	}
+
 }
 
 func main() {

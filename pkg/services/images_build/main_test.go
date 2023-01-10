@@ -134,6 +134,7 @@ var _ = Describe("Image Iso Kafka Consumer Test", func() {
 					mockConsumer.EXPECT().Commit().Times(1)
 					kafkaError := kafka.NewError(kafka.ErrAllBrokersDown, "Error", true)
 					mockConsumer.EXPECT().Poll(timeout).Return(kafkaError).Times(1)
+					mockConsumer.EXPECT().Close()
 					initConsumerImageBuild(ctx)
 				})
 			})
