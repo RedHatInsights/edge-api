@@ -55,7 +55,7 @@ func TestDeviceBeforeCreateAlreadyExistDevice(t *testing.T) {
 		UUID:  UUId,
 	}
 	err := newDevice.BeforeCreate(db.DB)
-	if err != ErrDeviceExists {
-		t.Error("Cannot create a device that already exists")
-	}
+
+	assert.Error(t, err, "expected error not raised")
+	assert.Equal(t, err, ErrDeviceExists, "Cannot create a device that already exists")
 }
