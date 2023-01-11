@@ -39,3 +39,23 @@ func TestDevicesBeforeCreate(t *testing.T) {
 		})
 	}
 }
+
+func TestDeviceBeforeCreateAlreadyExistDevice(t *testing.T) {
+	UUId := faker.UUIDHyphenated()
+	// create a device to populate database with UUId
+	device := &Device{
+		OrgID: faker.UUIDHyphenated(),
+		UUID:  UUId,
+	}
+	result := db.DB.Create(&device)
+	assert.NoError(t, result.Error)
+	// check if a new device with same UUId could be included
+	newDevice := &Device{
+		OrgID: faker.UUIDHyphenated(),
+		UUID:  UUId,
+	}
+	err := newDevice.BeforeCreate(db.DB)
+
+	assert.Error(t, err, "expected error not raised")
+	assert.Equal(t, err, ErrDeviceExists, "Cannot create a device that already exists")
+}
