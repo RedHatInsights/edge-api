@@ -48,7 +48,7 @@ func TestDeviceBeforeCreateAlreadyExistDevice(t *testing.T) {
 		UUID:  UUId,
 	}
 	result := db.DB.Create(&device)
-	assert.Equal(t, result.Error, nil)
+	assert.NoError(t, result.Error)
 	// check if a new device with same UUId could be included
 	newDevice := &Device{
 		OrgID: faker.UUIDHyphenated(),
