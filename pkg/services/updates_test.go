@@ -1,5 +1,3 @@
-// FIXME: golangci-lint
-// nolint:errcheck,govet,revive,typecheck
 package services_test
 
 import (
@@ -52,16 +50,16 @@ var _ = Describe("UpdateService Basic functions", func() {
 			updateService = services.NewUpdateService(context.Background(), log.NewEntry(log.StandardLogger()))
 		})
 		Context("by device", func() {
-			org_id := faker.UUIDHyphenated()
+			orgID := faker.UUIDHyphenated()
 
 			device := models.Device{
 				UUID:  faker.UUIDHyphenated(),
-				OrgID: org_id,
+				OrgID: orgID,
 			}
 			db.DB.Create(&device)
 			device2 := models.Device{
 				UUID:  faker.UUIDHyphenated(),
-				OrgID: org_id,
+				OrgID: orgID,
 			}
 			db.DB.Create(&device2)
 			updates := []models.UpdateTransaction{
@@ -69,19 +67,19 @@ var _ = Describe("UpdateService Basic functions", func() {
 					Devices: []models.Device{
 						device,
 					},
-					OrgID: org_id,
+					OrgID: orgID,
 				},
 				{
 					Devices: []models.Device{
 						device,
 					},
-					OrgID: org_id,
+					OrgID: orgID,
 				},
 				{
 					Devices: []models.Device{
 						device2,
 					},
-					OrgID: org_id,
+					OrgID: orgID,
 				},
 			}
 			db.DB.Omit("Devices.*").Create(&updates[0])
@@ -90,17 +88,15 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 			It("to return two updates for first device", func() {
 				actual, err := updateService.GetUpdateTransactionsForDevice(&device)
-
+				Expect(err).ToNot(HaveOccurred())
 				Expect(actual).ToNot(BeNil())
 				Expect(*actual).To(HaveLen(2))
-				Expect(err).ToNot(HaveOccurred())
 			})
 			It("to return one update for second device", func() {
 				actual, err := updateService.GetUpdateTransactionsForDevice(&device2)
-
+				Expect(err).ToNot(HaveOccurred())
 				Expect(actual).ToNot(BeNil())
 				Expect(*actual).To(HaveLen(1))
-				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 	})
@@ -142,7 +138,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			intctx, intcancel := context.WithCancel(context.Background())
 			sigint := make(chan os.Signal, 1)
 			sigint <- os.Interrupt
-			updateService.SetUpdateErrorStatusWhenInterrupted(updateTransaction, sigint, intctx, intcancel)
+			updateService.SetUpdateErrorStatusWhenInterrupted(intctx, updateTransaction, sigint, intcancel)
 			Expect(logBuffer.String()).To(ContainSubstring("Select case SIGINT interrupt has been triggered"))
 			Expect(logBuffer.String()).To(ContainSubstring("Update updated with Error status"))
 			result := db.DB.First(&updateTransaction, updateTransaction.ID)
@@ -155,7 +151,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			intctx, intcancel := context.WithCancel(context.Background())
 			sigint := make(chan os.Signal, 1)
 			sigint <- os.Interrupt
-			updateService.SetUpdateErrorStatusWhenInterrupted(updateTransaction, sigint, intctx, intcancel)
+			updateService.SetUpdateErrorStatusWhenInterrupted(intctx, updateTransaction, sigint, intcancel)
 			Expect(logBuffer.String()).To(ContainSubstring("Select case SIGINT interrupt has been triggered"))
 			Expect(logBuffer.String()).To(ContainSubstring("Error retrieving update"))
 		})
@@ -165,7 +161,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			intctx, intcancel := context.WithCancel(context.Background())
 			sigint := make(chan os.Signal, 1)
 			sigint <- os.Interrupt
-			updateService.SetUpdateErrorStatusWhenInterrupted(updateTransaction, sigint, intctx, intcancel)
+			updateService.SetUpdateErrorStatusWhenInterrupted(intctx, updateTransaction, sigint, intcancel)
 			Expect(logBuffer.String()).To(ContainSubstring("Select case SIGINT interrupt has been triggered"))
 			Expect(logBuffer.String()).To(ContainSubstring("Error retrieving update"))
 		})
@@ -174,7 +170,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			intctx, intcancel := context.WithCancel(context.Background())
 			sigint := make(chan os.Signal, 1)
 			intcancel()
-			updateService.SetUpdateErrorStatusWhenInterrupted(updateTransaction, sigint, intctx, intcancel)
+			updateService.SetUpdateErrorStatusWhenInterrupted(intctx, updateTransaction, sigint, intcancel)
 			Expect(logBuffer.String()).To(ContainSubstring("Select case context intCtx done has been triggered"))
 			Expect(logBuffer.String()).To(ContainSubstring("exiting SetUpdateErrorStatusWhenInterrupted"))
 		})
@@ -210,17 +206,17 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		Context("send notification", func() {
 			uuid := faker.UUIDHyphenated()
-			org_id := faker.UUIDHyphenated()
+			orgID := faker.UUIDHyphenated()
 			device := models.Device{
 				UUID:  uuid,
-				OrgID: org_id,
+				OrgID: orgID,
 			}
 			db.DB.Create(&device)
 			update = models.UpdateTransaction{
 				Devices: []models.Device{
 					device,
 				},
-				OrgID:  org_id,
+				OrgID:  orgID,
 				Status: models.UpdateStatusBuilding,
 			}
 			db.DB.Create(&update)
@@ -429,13 +425,15 @@ var _ = Describe("UpdateService Basic functions", func() {
 						ProducerService: mockProducerService,
 					}
 					// enable feature by environment
-					os.Setenv("FEATURE_UPDATE_REPO_REQUESTED", "True")
+					err := os.Setenv("FEATURE_UPDATE_REPO_REQUESTED", "True")
+					Expect(err).ToNot(HaveOccurred())
 				})
 
 				AfterEach(func() {
 					ctrl.Finish()
 					// disable feature by clearing the environment
-					os.Unsetenv("FEATURE_UPDATE_REPO_REQUESTED")
+					err := os.Unsetenv("FEATURE_UPDATE_REPO_REQUESTED")
+					Expect(err).ToNot(HaveOccurred())
 				})
 
 				It("should create kafka event", func() {
@@ -498,10 +496,12 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 		Context("when record is found and status is success", func() {
 			uuid := faker.UUIDHyphenated()
-			org_id := faker.UUIDHyphenated()
+			orgID := faker.UUIDHyphenated()
+			image := models.Image{OrgID: orgID, Name: faker.Name(), Commit: &models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}}
+			db.DB.Create(&image)
 			device := models.Device{
 				UUID:  uuid,
-				OrgID: org_id,
+				OrgID: orgID,
 			}
 			db.DB.Create(&device)
 			d := &models.DispatchRecord{
@@ -512,7 +512,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 			db.DB.Omit("Devices.*").Create(d)
 			u := &models.UpdateTransaction{
 				DispatchRecords: []models.DispatchRecord{*d},
-				OrgID:           org_id,
+				OrgID:           orgID,
+				Commit:          image.Commit,
 			}
 			db.DB.Omit("Devices.*").Create(u)
 
@@ -520,18 +521,20 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Payload: services.PlaybookDispatcherEventPayload{
 					ID:     d.PlaybookDispatcherID,
 					Status: services.PlaybookStatusSuccess,
-					OrgID:  org_id,
+					OrgID:  orgID,
 				},
 			}
 			message, _ := json.Marshal(event)
 
 			It("should update status when record is found", func() {
-				updateService.ProcessPlaybookDispatcherRunEvent(message)
+				err := updateService.ProcessPlaybookDispatcherRunEvent(message)
+				Expect(err).ToNot(HaveOccurred())
 				db.DB.First(&d, d.ID)
 				Expect(d.Status).To(Equal(models.DispatchRecordStatusComplete))
 			})
 			It("should update status of the dispatch record", func() {
-				updateService.ProcessPlaybookDispatcherRunEvent(message)
+				err := updateService.ProcessPlaybookDispatcherRunEvent(message)
+				Expect(err).ToNot(HaveOccurred())
 				db.DB.First(&u, u.ID)
 				Expect(u.Status).To(Equal(models.UpdateStatusSuccess))
 			})
@@ -570,10 +573,10 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 		It("should give error when dispatch record is not found", func() {
 			uuid := faker.UUIDHyphenated()
-			org_id := faker.UUIDHyphenated()
+			orgID := faker.UUIDHyphenated()
 			device := models.Device{
 				UUID:  uuid,
-				OrgID: org_id,
+				OrgID: orgID,
 			}
 			db.DB.Create(&device)
 			d := &models.DispatchRecord{
@@ -705,7 +708,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 			}
 			db.DB.Create(u)
 			It("should keep update status", func() {
-				updateService.SetUpdateStatus(u)
+				err := updateService.SetUpdateStatus(u)
+				Expect(err).ToNot(HaveOccurred())
 				db.DB.First(&u, u.ID)
 				Expect(u.Status).To(Equal(models.UpdateStatusBuilding))
 			})
@@ -727,7 +731,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 			}
 			db.DB.Create(u)
 			It("should set the update status as error", func() {
-				updateService.SetUpdateStatus(u)
+				err := updateService.SetUpdateStatus(u)
+				Expect(err).ToNot(HaveOccurred())
 				db.DB.First(&u, u.ID)
 				Expect(u.Status).To(Equal(models.UpdateStatusError))
 			})
@@ -749,7 +754,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 			}
 			db.DB.Create(u)
 			It("should set the update status as error", func() {
-				updateService.SetUpdateStatus(u)
+				err := updateService.SetUpdateStatus(u)
+				Expect(err).ToNot(HaveOccurred())
 				db.DB.First(&u, u.ID)
 				Expect(u.Status).To(Equal(models.UpdateStatusSuccess))
 			})
@@ -761,28 +767,28 @@ var _ = Describe("UpdateService Basic functions", func() {
 		var device models.Device
 		var currentImage models.Image
 		var newImage models.Image
-		var org_id string
+		var orgID string
 		var imageSet models.ImageSet
 		BeforeEach(func() {
 
-			org_id = faker.UUIDHyphenated()
-			imageSet = models.ImageSet{OrgID: org_id, Name: faker.UUIDHyphenated()}
+			orgID = faker.UUIDHyphenated()
+			imageSet = models.ImageSet{OrgID: orgID, Name: faker.UUIDHyphenated()}
 			db.DB.Create(&imageSet)
-			currentCommit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated()}
+			currentCommit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}
 			db.DB.Create(&currentCommit)
-			currentImage = models.Image{OrgID: org_id, CommitID: currentCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
+			currentImage = models.Image{OrgID: orgID, CommitID: currentCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
 			db.DB.Create(&currentImage)
 
-			newCommit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated()}
+			newCommit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}
 			db.DB.Create(&newCommit)
-			newImage = models.Image{OrgID: org_id, CommitID: newCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
+			newImage = models.Image{OrgID: orgID, CommitID: newCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
 			db.DB.Create(&newImage)
 
-			device = models.Device{OrgID: org_id, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated()}
+			device = models.Device{OrgID: orgID, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated()}
 			db.DB.Create(&device)
 			update = models.UpdateTransaction{
 
-				OrgID:    org_id,
+				OrgID:    orgID,
 				Devices:  []models.Device{device},
 				CommitID: newCommit.ID,
 				Status:   models.UpdateStatusBuilding,
@@ -828,22 +834,22 @@ var _ = Describe("UpdateService Basic functions", func() {
 			})
 
 			It("should update device image_id to update one and UpdateAvailable to true  ", func() {
-				commit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated()}
+				commit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}
 				result := db.DB.Create(&commit)
 				Expect(result.Error).To(BeNil())
-				image := models.Image{OrgID: org_id, CommitID: commit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
+				image := models.Image{OrgID: orgID, CommitID: commit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
 				result = db.DB.Create(&image)
 				Expect(result.Error).To(BeNil())
 
 				// create a new image,  without commit as we do not need it for the current function
-				lastImage := models.Image{OrgID: org_id, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
+				lastImage := models.Image{OrgID: orgID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess}
 				result = db.DB.Create(&lastImage)
 				Expect(result.Error).To(BeNil())
 
 				// create a new update with commit and image, knowing that we have a new image
 				update := models.UpdateTransaction{
 
-					OrgID:    org_id,
+					OrgID:    orgID,
 					Devices:  []models.Device{device},
 					CommitID: commit.ID,
 					Status:   models.UpdateStatusSuccess,
@@ -866,7 +872,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 	})
 	Describe("Update Devices from version 1 to version 3", func() {
 
-		org_id := faker.UUIDHyphenated()
+		orgID := faker.UUIDHyphenated()
 		var updateService services.UpdateServiceInterface
 
 		var mockImageService *mock_services.MockImageServiceInterface
@@ -894,25 +900,25 @@ var _ = Describe("UpdateService Basic functions", func() {
 			}
 		})
 
-		imageSet := models.ImageSet{OrgID: org_id, Name: faker.UUIDHyphenated()}
+		imageSet := models.ImageSet{OrgID: orgID, Name: faker.UUIDHyphenated()}
 		db.DB.Create(&imageSet)
 
-		currentCommit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated()}
+		currentCommit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}
 		db.DB.Create(&currentCommit)
-		currentImage := models.Image{OrgID: org_id, CommitID: currentCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-86"}
+		currentImage := models.Image{OrgID: orgID, CommitID: currentCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-86"}
 		db.DB.Create(&currentImage)
 
-		commit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated(), ChangesRefs: true}
+		commit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated(), ChangesRefs: true}
 		db.DB.Create(&commit)
-		image := models.Image{OrgID: org_id, CommitID: commit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
+		image := models.Image{OrgID: orgID, CommitID: commit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
 		db.DB.Create(&image)
 
-		latestCommit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated(), ChangesRefs: false}
+		latestCommit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated(), ChangesRefs: false}
 		db.DB.Create(&latestCommit)
-		latestImage := models.Image{OrgID: org_id, CommitID: latestCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
+		latestImage := models.Image{OrgID: orgID, CommitID: latestCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
 		db.DB.Create(&latestImage)
 
-		device := models.Device{OrgID: org_id, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated()}
+		device := models.Device{OrgID: orgID, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated()}
 		db.DB.Create(&device)
 
 		repo := models.Repo{Status: models.RepoStatusSuccess, URL: "www.redhat.com"}
@@ -920,7 +926,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		update := models.UpdateTransaction{
 
-			OrgID:    org_id,
+			OrgID:    orgID,
 			Devices:  []models.Device{device},
 			CommitID: latestCommit.ID,
 			Commit:   &latestCommit,
@@ -944,7 +950,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 							{Checksum: currentCommit.OSTreeCommit, Booted: true},
 						},
 					},
-						OrgID: org_id,
+						OrgID: orgID,
 					},
 				}}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(device.UUID).Return(resp, nil)
@@ -955,7 +961,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 
-				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, org_id, &commit)
+				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &commit)
 				Expect(err).To(BeNil())
 				for _, u := range *upd {
 					Expect(u.ChangesRefs).To(BeTrue())
@@ -965,7 +971,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 	})
 
 	Describe("Update Devices to same distribution", func() {
-		org_id := faker.UUIDHyphenated()
+		orgID := faker.UUIDHyphenated()
 		var updateService services.UpdateServiceInterface
 		var mockImageService *mock_services.MockImageServiceInterface
 		var mockInventoryClient *mock_inventory.MockClientInterface
@@ -992,25 +998,25 @@ var _ = Describe("UpdateService Basic functions", func() {
 			}
 		})
 
-		imageSet := models.ImageSet{OrgID: org_id, Name: faker.UUIDHyphenated()}
+		imageSet := models.ImageSet{OrgID: orgID, Name: faker.UUIDHyphenated()}
 		db.DB.Create(&imageSet)
 
-		currentCommit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated()}
+		currentCommit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}
 		db.DB.Create(&currentCommit)
-		currentImage := models.Image{OrgID: org_id, CommitID: currentCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
+		currentImage := models.Image{OrgID: orgID, CommitID: currentCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
 		db.DB.Create(&currentImage)
 
-		commit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated(), ChangesRefs: false}
+		commit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated(), ChangesRefs: false}
 		db.DB.Create(&commit)
-		image := models.Image{OrgID: org_id, CommitID: commit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
+		image := models.Image{OrgID: orgID, CommitID: commit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
 		db.DB.Create(&image)
 
-		latestCommit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated(), ChangesRefs: false}
+		latestCommit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated(), ChangesRefs: false}
 		db.DB.Create(&latestCommit)
-		latestImage := models.Image{OrgID: org_id, CommitID: latestCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
+		latestImage := models.Image{OrgID: orgID, CommitID: latestCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
 		db.DB.Create(&latestImage)
 
-		device := models.Device{OrgID: org_id, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated()}
+		device := models.Device{OrgID: orgID, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated()}
 		db.DB.Create(&device)
 
 		repo := models.Repo{Status: models.RepoStatusSuccess, URL: "www.redhat.com"}
@@ -1018,7 +1024,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		update := models.UpdateTransaction{
 
-			OrgID:    org_id,
+			OrgID:    orgID,
 			Devices:  []models.Device{device},
 			CommitID: latestCommit.ID,
 			Commit:   &latestCommit,
@@ -1042,7 +1048,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 							{Checksum: currentCommit.OSTreeCommit, Booted: true},
 						},
 					},
-						OrgID: org_id,
+						OrgID: orgID,
 					},
 				}}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(device.UUID).Return(resp, nil)
@@ -1053,7 +1059,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 
-				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, org_id, &commit)
+				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &commit)
 				Expect(err).To(BeNil())
 				for _, u := range *upd {
 					Expect(u.ChangesRefs).To(BeFalse())
@@ -1063,7 +1069,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 	})
 
 	Describe("Update Devices from 1 to 2", func() {
-		org_id := faker.UUIDHyphenated()
+		orgID := faker.UUIDHyphenated()
 		var updateService services.UpdateServiceInterface
 
 		var mockImageService *mock_services.MockImageServiceInterface
@@ -1091,27 +1097,27 @@ var _ = Describe("UpdateService Basic functions", func() {
 			}
 		})
 
-		imageSet := models.ImageSet{OrgID: org_id, Name: faker.UUIDHyphenated()}
+		imageSet := models.ImageSet{OrgID: orgID, Name: faker.UUIDHyphenated()}
 		db.DB.Create(&imageSet)
 
-		currentCommit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated()}
+		currentCommit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}
 		db.DB.Create(&currentCommit)
-		currentImage := models.Image{OrgID: org_id, CommitID: currentCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-86"}
+		currentImage := models.Image{OrgID: orgID, CommitID: currentCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-86"}
 		db.DB.Create(&currentImage)
 
-		commit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated(), ChangesRefs: false}
+		commit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated(), ChangesRefs: false}
 		db.DB.Create(&commit)
-		image := models.Image{OrgID: org_id, CommitID: commit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
+		image := models.Image{OrgID: orgID, CommitID: commit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
 		db.DB.Create(&image)
 
-		device := models.Device{OrgID: org_id, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated()}
+		device := models.Device{OrgID: orgID, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated()}
 		db.DB.Create(&device)
 
 		repo := models.Repo{Status: models.RepoStatusSuccess, URL: "www.redhat.com"}
 		db.DB.Create(&repo)
 
 		update := models.UpdateTransaction{
-			OrgID:    org_id,
+			OrgID:    orgID,
 			Devices:  []models.Device{device},
 			CommitID: commit.ID,
 			Commit:   &commit,
@@ -1135,7 +1141,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 							{Checksum: currentCommit.OSTreeCommit, Booted: true},
 						},
 					},
-						OrgID: org_id,
+						OrgID: orgID,
 					},
 				}}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(device.UUID).Return(resp, nil)
@@ -1145,7 +1151,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 
-				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, org_id, &commit)
+				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &commit)
 				Expect(err).To(BeNil())
 				for _, u := range *upd {
 					Expect(u.ChangesRefs).To(BeTrue())
@@ -1155,7 +1161,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 	})
 
 	Describe("Update Devices from 1 to 2 but the latest is version 3", func() {
-		org_id := faker.UUIDHyphenated()
+		orgID := faker.UUIDHyphenated()
 		var updateService services.UpdateServiceInterface
 
 		var mockImageService *mock_services.MockImageServiceInterface
@@ -1183,32 +1189,32 @@ var _ = Describe("UpdateService Basic functions", func() {
 			}
 		})
 
-		imageSet := models.ImageSet{OrgID: org_id, Name: faker.UUIDHyphenated()}
+		imageSet := models.ImageSet{OrgID: orgID, Name: faker.UUIDHyphenated()}
 		db.DB.Create(&imageSet)
 
-		currentCommit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated()}
+		currentCommit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}
 		db.DB.Create(&currentCommit)
-		currentImage := models.Image{OrgID: org_id, CommitID: currentCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
+		currentImage := models.Image{OrgID: orgID, CommitID: currentCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
 		db.DB.Create(&currentImage)
 
-		commit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated(), ChangesRefs: false}
+		commit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated(), ChangesRefs: false}
 		db.DB.Create(&commit)
-		image := models.Image{OrgID: org_id, CommitID: commit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
+		image := models.Image{OrgID: orgID, CommitID: commit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
 		db.DB.Create(&image)
 
-		latestcommit := models.Commit{OrgID: org_id, OSTreeCommit: faker.UUIDHyphenated(), ChangesRefs: false}
+		latestcommit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated(), ChangesRefs: false}
 		db.DB.Create(&latestcommit)
-		latestimage := models.Image{OrgID: org_id, CommitID: commit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
+		latestimage := models.Image{OrgID: orgID, CommitID: commit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
 		db.DB.Create(&latestimage)
 
-		device := models.Device{OrgID: org_id, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated()}
+		device := models.Device{OrgID: orgID, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated()}
 		db.DB.Create(&device)
 
 		repo := models.Repo{Status: models.RepoStatusSuccess, URL: "www.redhat.com"}
 		db.DB.Create(&repo)
 
 		update := models.UpdateTransaction{
-			OrgID:    org_id,
+			OrgID:    orgID,
 			Devices:  []models.Device{device},
 			CommitID: commit.ID,
 			Commit:   &commit,
@@ -1232,7 +1238,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 							{Checksum: currentCommit.OSTreeCommit, Booted: true},
 						},
 					},
-						OrgID: org_id,
+						OrgID: orgID,
 					},
 				}}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(device.UUID).Return(resp, nil)
@@ -1242,7 +1248,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 
-				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, org_id, &commit)
+				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &commit)
 				Expect(err).To(BeNil())
 				for _, u := range *upd {
 					Expect(u.ChangesRefs).To(BeFalse())
@@ -1252,8 +1258,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 	})
 
 	Describe("Create Update Transaction", func() {
-		orgId := common.DefaultOrgID
-		rhcClientId := faker.UUIDHyphenated()
+		orgID := common.DefaultOrgID
+		rhcClientID := faker.UUIDHyphenated()
 		dist := "rhel-85"
 		updateDist := "rhel-86"
 		var imageSet models.ImageSet
@@ -1288,19 +1294,19 @@ var _ = Describe("UpdateService Basic functions", func() {
 				WaitForReboot:   0,
 			}
 
-			imageSet = models.ImageSet{OrgID: orgId, Name: faker.UUIDHyphenated()}
+			imageSet = models.ImageSet{OrgID: orgID, Name: faker.UUIDHyphenated()}
 			db.DB.Create(&imageSet)
-			currentCommit = models.Commit{OrgID: orgId, OSTreeCommit: faker.UUIDHyphenated()}
+			currentCommit = models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}
 			db.DB.Create(&currentCommit)
-			currentImage = models.Image{OrgID: orgId, CommitID: currentCommit.ID, ImageSetID: &imageSet.ID, Distribution: dist, Status: models.ImageStatusSuccess}
+			currentImage = models.Image{OrgID: orgID, CommitID: currentCommit.ID, ImageSetID: &imageSet.ID, Distribution: dist, Status: models.ImageStatusSuccess}
 			db.DB.Create(&currentImage)
-			newCommit = models.Commit{OrgID: orgId, OSTreeCommit: faker.UUIDHyphenated()}
+			newCommit = models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}
 			db.DB.Create(&newCommit)
-			newImage = models.Image{OrgID: orgId, CommitID: newCommit.ID, ImageSetID: &imageSet.ID, Distribution: updateDist, Status: models.ImageStatusSuccess}
+			newImage = models.Image{OrgID: orgID, CommitID: newCommit.ID, ImageSetID: &imageSet.ID, Distribution: updateDist, Status: models.ImageStatusSuccess}
 			db.DB.Create(&newImage)
-			device = models.Device{OrgID: orgId, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated(), RHCClientID: rhcClientId}
+			device = models.Device{OrgID: orgID, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated(), RHCClientID: rhcClientID}
 			db.DB.Create(&device)
-			device2 = models.Device{OrgID: orgId, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated()}
+			device2 = models.Device{OrgID: orgID, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated()}
 			db.DB.Create(&device2)
 		})
 
@@ -1311,7 +1317,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 				responseInventory := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
 					{ID: device.UUID, Ostree: inventory.SystemProfile{
-						RHCClientID: rhcClientId,
+						RHCClientID: rhcClientID,
 					}},
 				}}
 				mockInventory.EXPECT().ReturnDevicesByID(device.UUID).
@@ -1341,7 +1347,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				devicesUpdate.DevicesUUID = []string{device.UUID}
 				responseInventory := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
 					{ID: device.UUID, Ostree: inventory.SystemProfile{
-						RHCClientID: rhcClientId,
+						RHCClientID: rhcClientID,
 					}},
 				}}
 				mockInventory.EXPECT().ReturnDevicesByID(device.UUID).
@@ -1349,7 +1355,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 
-				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgId, &newCommit)
+				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &newCommit)
 				Expect(err).To(BeNil())
 				Expect(len(*updates)).Should(Equal(1))
 				Expect((*updates)[0].ChangesRefs).To(BeFalse())
@@ -1357,19 +1363,19 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 			It("when current image dist and update image dist has different refs ChangesRefs should be true", func() {
 				updateDist = "rhel-90"
-				rhcClientId := faker.UUIDHyphenated()
-				newCommit2 := models.Commit{OrgID: orgId, OSTreeCommit: faker.UUIDHyphenated()}
+				rhcClientID := faker.UUIDHyphenated()
+				newCommit2 := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}
 				db.DB.Create(&newCommit2)
-				newImage2 := models.Image{OrgID: orgId, CommitID: newCommit2.ID, ImageSetID: &imageSet.ID, Distribution: updateDist, Status: models.ImageStatusSuccess}
+				newImage2 := models.Image{OrgID: orgID, CommitID: newCommit2.ID, ImageSetID: &imageSet.ID, Distribution: updateDist, Status: models.ImageStatusSuccess}
 				db.DB.Create(&newImage2)
-				device = models.Device{OrgID: orgId, ImageID: newImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated(), RHCClientID: rhcClientId}
+				device = models.Device{OrgID: orgID, ImageID: newImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated(), RHCClientID: rhcClientID}
 				db.DB.Create(&device)
 
 				var devicesUpdate models.DevicesUpdate
 				devicesUpdate.DevicesUUID = []string{device.UUID}
 				responseInventory := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
 					{ID: device.UUID, Ostree: inventory.SystemProfile{
-						RHCClientID:          rhcClientId,
+						RHCClientID:          rhcClientID,
 						RpmOstreeDeployments: []inventory.OSTree{{Booted: true, Checksum: newCommit.OSTreeCommit}},
 					}},
 				}}
@@ -1378,7 +1384,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 
-				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgId, &newCommit2)
+				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &newCommit2)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(len(*updates)).Should(Equal(1))
 				Expect((*updates)[0].ChangesRefs).To(BeTrue())
@@ -1419,7 +1425,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 				responseInventory := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
 					{ID: device.UUID, Ostree: inventory.SystemProfile{
-						RHCClientID: rhcClientId,
+						RHCClientID: rhcClientID,
 					}},
 				}}
 				mockInventory.EXPECT().ReturnDevicesByID(device.UUID).
