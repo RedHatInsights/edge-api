@@ -10,36 +10,23 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/redhatinsights/edge-api/config"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
+	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/image"
 	"github.com/redhatinsights/edge-api/pkg/services/utility"
 	log "github.com/sirupsen/logrus"
-
-	"github.com/confluentinc/confluent-kafka-go/kafka"
-
-	"github.com/redhatinsights/edge-api/config"
-
-	l "github.com/redhatinsights/edge-api/logger" // is this one really needed with logrus?
-	"github.com/redhatinsights/edge-api/pkg/db"
 )
 
-func main() {
-	// create a new context
-	ctx := context.Background()
-	// Init edge api services and attach them to the context
-	edgeAPIServices := dependencies.Init(ctx)
-	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
-	// create a base logger with fields to pass through the entire flow
+func initConsumerImageBuild(ctx context.Context) {
+	edgeAPIServices := dependencies.ServicesFromContext(ctx)
 	mslog := log.WithFields(log.Fields{"app": "edge", "service": "images"})
 
 	mslog.Info("Microservice started")
-
-	// FIXME: a good opportunity to refactor config
-	config.Init()
-	l.InitLogger(os.Stdout)
 	cfg := config.Get()
 	config.LogConfigAtStartup(cfg)
 
@@ -161,8 +148,17 @@ func main() {
 				}
 			}
 		}
-
 		log.Info("Closing consumer\n")
 		c.Close()
 	}
+
+}
+
+func main() {
+	ctx := context.Background()
+	edgeAPIServices := dependencies.Init(ctx)
+	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+	mslog := log.WithFields(log.Fields{"app": "edge", "service": "images"})
+	ctx = utility.ContextWithLogger(ctx, mslog)
+	initConsumerImageBuild(ctx)
 }
