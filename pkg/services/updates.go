@@ -1,6 +1,4 @@
 // Package services handles all service-related features
-// FIXME: golangci-lint
-// nolint:errcheck,gocritic,govet,revive
 package services
 
 import (
@@ -35,7 +33,7 @@ import (
 )
 
 // UpdateServiceInterface defines the interface that helps
-// handle the business logic of sending updates to a edge device
+// handle the business logic of sending updates to an edge device
 type UpdateServiceInterface interface {
 	BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate, orgID string, commit *models.Commit) (*[]models.UpdateTransaction, error)
 	BuildUpdateRepo(orgID string, updateID uint) (*models.UpdateTransaction, error)
@@ -53,7 +51,7 @@ type UpdateServiceInterface interface {
 	ValidateUpdateDeviceGroup(orgID string, deviceGroupID uint) (bool, error)
 }
 
-// NewUpdateService gives a instance of the main implementation of a UpdateServiceInterface
+// NewUpdateService gives an instance of the main implementation of a UpdateServiceInterface
 func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterface {
 	return &UpdateService{
 		Service:         Service{ctx: ctx, log: log.WithField("service", "update")},
@@ -122,7 +120,7 @@ type PlaybookDispatcherEventPayload struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// PlaybookDispatcherEvent is the event that gets sent to the Kafka broker when a update finishes
+// PlaybookDispatcherEvent is the event that gets sent to the Kafka broker when an update finishes
 type PlaybookDispatcherEvent struct {
 	EventType string                         `json:"event_type"`
 	Payload   PlaybookDispatcherEventPayload `json:"payload"`
@@ -130,11 +128,16 @@ type PlaybookDispatcherEvent struct {
 
 // CreateUpdateAsync is the function that creates an update transaction asynchronously
 func (s *UpdateService) CreateUpdateAsync(id uint) {
-	go s.CreateUpdate(id)
+	go func(updateID uint) {
+		_, err := s.CreateUpdate(updateID)
+		if err != nil {
+			s.log.WithFields(log.Fields{"updateID": updateID, "error": err.Error()}).Error("error occurred when creating update")
+		}
+	}(id)
 }
 
 // SetUpdateErrorStatusWhenInterrupted set the update to error status when instance is interrupted
-func (s *UpdateService) SetUpdateErrorStatusWhenInterrupted(update models.UpdateTransaction, sigint chan os.Signal, intCtx context.Context, intCancel context.CancelFunc) {
+func (s *UpdateService) SetUpdateErrorStatusWhenInterrupted(intCtx context.Context, update models.UpdateTransaction, sigint chan os.Signal, intCancel context.CancelFunc) {
 	s.log.WithField("updateID", update.ID).Debug("entering SetUpdateErrorStatusWhenInterrupted")
 
 	select {
@@ -160,7 +163,7 @@ func (s *UpdateService) SetUpdateErrorStatusWhenInterrupted(update models.Update
 		intCancel()
 		return
 	case <-intCtx.Done():
-		// Things finished normally and reached the defer defined above.
+		// Things finished normally and reached the "defer" defined above.
 		s.log.WithField("updateID", update.ID).Info("Select case context intCtx done has been triggered")
 	}
 	s.log.WithField("updateID", update.ID).Debug("exiting SetUpdateErrorStatusWhenInterrupted")
@@ -184,8 +187,8 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 
 	update.Status = models.UpdateStatusBuilding
 	if result := db.DB.Model(&models.UpdateTransaction{}).Where("ID=?", id).Update("Status", update.Status); result.Error != nil {
-		s.log.WithField("error", err.Error()).Error("failed to save building status")
-		return nil, err
+		s.log.WithField("error", result.Error.Error()).Error("failed to save building status")
+		return nil, result.Error
 	}
 
 	if feature.UpdateRepoRequested.IsEnabled() {
@@ -250,7 +253,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	}()
 	// This runs alongside and blocks on either a signal or normal completion from defer above
 	// 	if an interrupt, set update status to error
-	go s.SetUpdateErrorStatusWhenInterrupted(*update, sigint, intctx, intcancel)
+	go s.SetUpdateErrorStatusWhenInterrupted(intctx, *update, sigint, intcancel)
 
 	var remoteInfo TemplateRemoteInfo
 	remoteInfo.RemoteURL = update.Repo.URL
@@ -273,6 +276,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	indent, err := common.GetIdentityFromContext(s.ctx)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error getting context RHidentity")
+		return nil, err
 	}
 	identity := indent.Identity
 	// ensure identity org_id is the same as the update transaction
@@ -299,7 +303,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			s.log.WithField("error", err.Error()).Error("Error on playbook-dispatcher execution")
 			update.Status = models.UpdateStatusError
 
-			update.DispatchRecords = append(dispatchRecords, models.DispatchRecord{
+			update.DispatchRecords = append(update.DispatchRecords, models.DispatchRecord{
 				DeviceID:    device.ID,
 				PlaybookURL: playbookURL,
 				Status:      models.DispatchRecordStatusError,
@@ -374,7 +378,7 @@ func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.Up
 	}()
 	// This runs alongside and blocks on either a signal or normal completion from defer above
 	// 	if an interrupt, set update status to error
-	go s.SetUpdateErrorStatusWhenInterrupted(*update, sigint, intctx, intcancel)
+	go s.SetUpdateErrorStatusWhenInterrupted(intctx, *update, sigint, intcancel)
 
 	update, err := s.RepoBuilder.BuildUpdateRepo(updateID)
 	if err != nil {
@@ -400,9 +404,7 @@ func (s *UpdateService) GetUpdatePlaybook(update *models.UpdateTransaction) (io.
 
 func (s *UpdateService) getPlaybookURL(updateID uint) string {
 	cfg := config.Get()
-	url := fmt.Sprintf("%s/api/edge/v1/updates/%d/update-playbook.yml",
-		cfg.EdgeAPIBaseURL, updateID)
-	return url
+	return fmt.Sprintf("%s/api/edge/v1/updates/%d/update-playbook.yml", cfg.EdgeAPIBaseURL, updateID)
 }
 
 // WriteTemplate is the function that writes the template to a file
@@ -596,7 +598,7 @@ func (s *UpdateService) SetUpdateStatus(update *models.UpdateTransaction) error 
 	if allSuccess {
 		update.Status = models.UpdateStatusSuccess
 	}
-	// If there isn't an error and it's not all success, some updates are still happening
+	// If there isn't an error, and it's not all success, some updates are still happening
 	result := db.DB.Model(&models.UpdateTransaction{}).Where("ID=?", update.ID).Update("Status", update.Status)
 
 	return result.Error
@@ -631,7 +633,7 @@ func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (Ima
 	perr := p.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Key:            []byte(recordKey),
-		Value:          []byte(recordValue),
+		Value:          recordValue,
 	}, nil)
 
 	if perr != nil {
@@ -714,11 +716,11 @@ func (s *UpdateService) ValidateUpdateSelection(orgID string, imageIds []uint) (
 func (s *UpdateService) ValidateUpdateDeviceGroup(orgID string, deviceGroupID uint) (bool, error) {
 	var count int64
 
-	if result := db.Org(orgID, "Device_Groups").Model(&models.DeviceGroup{}).Where(`Device_Groups.id = ?`, deviceGroupID).
+	if result := db.Org(orgID, "Device_Groups").Debug().Model(&models.DeviceGroup{}).Where(`Device_Groups.id = ?`, deviceGroupID).
 		Joins(`JOIN Device_Groups_Devices  ON Device_Groups.id = Device_Groups_Devices.device_group_id`).
 		Joins(`JOIN Devices  ON Device_Groups_Devices.device_id = Devices.id`).
 		Where("Devices.image_id IS NOT NULL AND Devices.image_id != 0").
-		Joins(`JOIN Images  ON Devices.image_id = Images.id`).
+		Joins(`JOIN Images  ON Devices.image_id = Images.id`).Distinct("images.image_set_id").
 		Group("image_set_id").Count(&count); result.Error != nil {
 		return false, result.Error
 	}
@@ -736,19 +738,19 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 	if len(devicesUpdate.DevicesUUID) > 0 {
 		for _, UUID := range devicesUpdate.DevicesUUID {
 			inv, err = s.Inventory.ReturnDevicesByID(UUID)
-			if inv.Count > 0 {
-				ii = append(ii, inv)
-			}
 			if err != nil {
 				err := errors.NewNotFound(fmt.Sprintf("No devices found for UUID %s", UUID))
 				return nil, err
 			}
+			if inv.Count > 0 {
+				ii = append(ii, inv)
+			}
 		}
 	}
 
-	s.log.WithField("inventoryDevice", inv).Debug("Device retrieved from inventory")
+	s.log.WithField("inventoryDevice", inv).Debug("Device retrieved from inventoryResponse")
 	var updates []models.UpdateTransaction
-	for _, inventory := range ii {
+	for _, inventoryResponse := range ii {
 		// Create the models.UpdateTransaction
 		update := models.UpdateTransaction{
 			OrgID:    orgID,
@@ -774,7 +776,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 
 		var repo *models.Repo
 
-		for _, device := range inventory.Result {
+		for _, device := range inventoryResponse.Result {
 			//  Check for the existence of a Repo that already has this commit and don't duplicate
 			var updateDevice *models.Device
 			dbDevice := db.DB.Where("uuid = ?", device.ID).First(&updateDevice)
@@ -784,7 +786,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 						"error":      dbDevice.Error.Error(),
 						"deviceUUID": device.ID,
 					}).Error("Error retrieving device record from database")
-					err = errors.NewBadRequest(err.Error())
+					err = errors.NewBadRequest(dbDevice.Error.Error())
 					return nil, err
 				}
 				s.log.WithFields(log.Fields{
@@ -848,27 +850,25 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					result := db.DB.Where("os_tree_commit = ?", deployment.Checksum).First(&oldCommit)
 					if result.Error != nil {
 						if result.Error.Error() != "record not found" {
-							s.log.WithField("error", err.Error()).Error("Error returning old commit for this ostree checksum")
-							err := errors.NewBadRequest(err.Error())
-
+							s.log.WithField("error", result.Error.Error()).Error("Error returning old commit for this ostree checksum")
+							err := errors.NewBadRequest(result.Error.Error())
 							return nil, err
 						}
 					}
 					if result.RowsAffected == 0 {
 						s.log.Debug("No old commits found")
-					} else {
-						if !contains(oldCommits, oldCommit) {
-							oldCommits = append(oldCommits, oldCommit)
-						}
+					} else if !contains(oldCommits, oldCommit) {
+						oldCommits = append(oldCommits, oldCommit)
 					}
 					currentImage, cError := s.ImageService.GetImageByOSTreeCommitHash(deployment.Checksum)
 					if cError != nil {
-						s.log.WithField("error", err.Error()).Error("Error returning current image ostree checksum")
-
+						s.log.WithField("error", cError.Error()).Error("Error returning current image ostree checksum")
+						return nil, cError
 					}
 					updatedImage, uError := s.ImageService.GetImageByOSTreeCommitHash(commit.OSTreeCommit)
 					if uError != nil {
-						s.log.WithField("error", err.Error()).Error("Error returning current image ostree checksum")
+						s.log.WithField("error", uError.Error()).Error("Error returning current image ostree checksum")
+						return nil, uError
 					}
 					if config.DistributionsRefs[currentImage.Distribution] != config.DistributionsRefs[updatedImage.Distribution] {
 						update.ChangesRefs = true

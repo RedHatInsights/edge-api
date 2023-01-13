@@ -71,7 +71,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 		var fileName = "repo.tar"
 		BeforeEach(func() {
 			fmockFilesService = mock_services.NewMockFilesService(ctrl)
-			var ctx context.Context = context.Background()
+			var ctx context.Context = context.Background()	// nolint:gofmt,goimports,govet
 			fdownloadservice = services.RepoBuilder{
 				Service:      services.NewService(ctx, log.NewEntry(log.StandardLogger())),
 				FilesService: fmockFilesService,

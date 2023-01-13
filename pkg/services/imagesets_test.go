@@ -1,5 +1,4 @@
-// FIXME: golangci-lint
-// nolint:revive,typecheck
+// nolint:govet,revive,typecheck
 package services_test
 
 import (
@@ -182,8 +181,7 @@ var _ = Describe("ImageSets Service Test", func() {
 		db.DB.Create(&otherImage1)
 
 		It("GetImageSetViewByID returns ImageSet details as expected", func() {
-			imagesOrderByDB := db.DB.Order("images.created_at DESC")
-			imageSetIDView, err := service.GetImageSetViewByID(imageSet1.ID, 30, 0, imagesOrderByDB)
+			imageSetIDView, err := service.GetImageSetViewByID(imageSet1.ID)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(imageSetIDView.ImageSet.ID).To(Equal(imageSet1.ID))
 			Expect(imageSetIDView.ImageBuildIsoURL).To(Equal(fmt.Sprintf("/api/edge/v1/storage/isos/%d", image2.Installer.ID)))
@@ -230,7 +228,7 @@ var _ = Describe("ImageSets Service Test", func() {
 			Expect(imageSetsView).ToNot(BeNil())
 			Expect(len(*imageSetsView) > 0).To(BeTrue())
 			for _, imageSetsViewItem := range *imageSetsView {
-				imageSetView, err := service.GetImageSetViewByID(imageSetsViewItem.ID, 100, 0, nil) // nolint:govet
+				imageSetView, err := service.GetImageSetViewByID(imageSetsViewItem.ID)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(imageSetView).ToNot(BeNil())
 				Expect(imageSetsViewItem.UpdatedAt).To(Equal(imageSetView.LastImageDetails.Image.UpdatedAt))

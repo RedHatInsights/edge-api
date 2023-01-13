@@ -9,11 +9,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/services/files"
 
-	"github.com/redhatinsights/edge-api/config"
-
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
 	log "github.com/sirupsen/logrus"
@@ -53,7 +51,7 @@ type FilesService interface {
 
 // S3FilesService contains S3 files-related information
 type S3FilesService struct {
-	Client *s3.S3
+	Client files.S3ClientInterface
 	Bucket string
 	BasicFileService
 }
@@ -63,34 +61,19 @@ type LocalFilesService struct {
 	BasicFileService
 }
 
-// GetNewS3Client return anew AWS s3 client
-func GetNewS3Client() *s3.S3 {
-	sess := files.GetNewS3Session()
-	return s3.New(sess)
-}
-
 // NewFilesService creates a new service to handle files
 func NewFilesService(log *log.Entry) FilesService {
 	cfg := config.Get()
+	basicFileService := BasicFileService{
+		extractor:  files.NewExtractor(log),
+		uploader:   files.NewUploader(log),
+		downloader: files.NewDownloader(log),
+	}
 	if cfg.Local {
-		return &LocalFilesService{
-			BasicFileService{
-				extractor:  files.NewExtractor(log),
-				uploader:   files.NewUploader(log),
-				downloader: files.NewDownloader(log),
-			},
-		}
+		return &LocalFilesService{basicFileService}
 	}
-	client := GetNewS3Client()
-	return &S3FilesService{
-		Client: client,
-		Bucket: cfg.BucketName,
-		BasicFileService: BasicFileService{
-			extractor:  files.NewExtractor(log),
-			uploader:   files.NewUploader(log),
-			downloader: files.NewDownloader(log),
-		},
-	}
+
+	return NewS3FilesServices(files.GetNewS3Client(), basicFileService)
 }
 
 // GetFile returns the file given a path
@@ -109,12 +92,18 @@ func (s *LocalFilesService) GetSignedURL(path string) (string, error) {
 	return path, nil
 }
 
+// NewS3FilesServices return a new FilesService with s3 client
+func NewS3FilesServices(client files.S3ClientInterface, basicFileService BasicFileService) FilesService {
+	return &S3FilesService{
+		Client:           client,
+		Bucket:           config.Get().BucketName,
+		BasicFileService: basicFileService,
+	}
+}
+
 // GetFile returns the file given a path
 func (s *S3FilesService) GetFile(path string) (io.ReadCloser, error) {
-	o, err := s.Client.GetObject(&s3.GetObjectInput{
-		Bucket: aws.String(s.Bucket),
-		Key:    aws.String(path),
-	})
+	o, err := s.Client.GetObject(s.Bucket, path)
 
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
@@ -137,13 +126,6 @@ const defaultURLSignatureExpiry = 120
 
 // GetSignedURL return and aws s3 bucket signed url
 func (s *S3FilesService) GetSignedURL(path string) (string, error) {
-
 	cfg := config.Get()
-	client := GetNewS3Client()
-	req, _ := client.GetObjectRequest(&s3.GetObjectInput{
-		Bucket: aws.String(cfg.BucketName),
-		Key:    aws.String(path),
-	})
-
-	return req.Presign(defaultURLSignatureExpiry * time.Minute)
+	return s.Client.GetSignedURL(cfg.BucketName, path, defaultURLSignatureExpiry*time.Minute)
 }
