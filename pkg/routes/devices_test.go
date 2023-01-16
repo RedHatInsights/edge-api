@@ -18,6 +18,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory/mock_inventory"
+	"github.com/redhatinsights/edge-api/pkg/common/test"
 	log "github.com/sirupsen/logrus"
 
 	. "github.com/onsi/ginkgo"
@@ -271,72 +272,12 @@ var _ = Describe("Devices Router Integration", func() {
 		var imageSet *models.ImageSet
 
 		BeforeEach(func() {
-			orgID := common.DefaultOrgID
+			seeder := test.NewSeeder()
 
-			imageSet = &models.ImageSet{
-				Name:    fmt.Sprintf("image-test-%s", faker.UUIDHyphenated()),
-				Version: 1,
-				OrgID:   orgID,
-			}
-			db.DB.Create(imageSet)
+			image, imageSet = seeder.CreateImage()
+			device = seeder.WithImageID(image.ID).CreateDevice()
 
-			image = &models.Image{
-				Commit: &models.Commit{
-					OSTreeCommit: faker.UUIDHyphenated(),
-					InstalledPackages: []models.InstalledPackage{
-						{
-							Name:    "ansible",
-							Version: "1.0.0",
-						},
-						{
-							Name:    "yum",
-							Version: "2:6.0-1",
-						},
-					},
-					OrgID: orgID,
-				},
-				Version:    1,
-				Status:     models.ImageStatusSuccess,
-				ImageSetID: &imageSet.ID,
-				OrgID:      orgID,
-			}
-
-			db.DB.Create(image.Commit)
-			db.DB.Create(image)
-
-			device = &models.Device{
-				UUID:            faker.UUIDHyphenated(),
-				RHCClientID:     faker.UUIDHyphenated(),
-				UpdateAvailable: false,
-				ImageID:         image.ID,
-				OrgID:           orgID,
-			}
-
-			db.DB.Create(&device)
-
-			imageUpdate = &models.Image{
-				Commit: &models.Commit{
-					OSTreeCommit: faker.UUIDHyphenated(),
-					InstalledPackages: []models.InstalledPackage{
-						{
-							Name:    "ansible",
-							Version: "1.0.0",
-						},
-						{
-							Name:    "yum",
-							Version: "2:6.0-1",
-						},
-					},
-					OrgID: orgID,
-				},
-				Version:    2,
-				Status:     models.ImageStatusSuccess,
-				ImageSetID: &imageSet.ID,
-				OrgID:      orgID,
-			}
-
-			db.DB.Create(imageUpdate.Commit)
-			db.DB.Create(imageUpdate)
+			imageUpdate, _ = seeder.WithImageSetID(imageSet.ID).CreateImage()
 		})
 
 		When("when device exist", func() {

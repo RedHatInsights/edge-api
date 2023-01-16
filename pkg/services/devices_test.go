@@ -19,6 +19,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory/mock_inventory"
+	"github.com/redhatinsights/edge-api/pkg/common/test"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
@@ -26,6 +27,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 	log "github.com/sirupsen/logrus"
 )
+
+var seeder = test.NewSeeder()
 
 var _ = Describe("DfseviceService", func() {
 	var ctrl *gomock.Controller
@@ -243,58 +246,21 @@ var _ = Describe("DfseviceService", func() {
 				}}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
-				imageSet := &models.ImageSet{
-					Name:    "test",
-					Version: 1,
-					OrgID:   orgID,
-				}
-				db.DB.Create(imageSet)
-				oldImage := &models.Image{
-					Commit: &models.Commit{
-						OSTreeCommit: checksum,
-						InstalledPackages: []models.InstalledPackage{
-							{
-								Name:    "ansible",
-								Version: "1.0.0",
-							},
-							{
-								Name:    "yum",
-								Version: "2:6.0-1",
-							},
-						},
-						OrgID: orgID,
+				_, imageSet := seeder.WithOstreeCommit(checksum).CreateImage()
+				newImage, _ := seeder.WithInstalledPackages([]models.InstalledPackage{
+					{
+						Name:    "yum",
+						Version: "3:6.0-1",
 					},
-					Status:     models.ImageStatusSuccess,
-					ImageSetID: &imageSet.ID,
-					OrgID:      orgID,
-				}
-				db.DB.Create(oldImage.Commit)
-				db.DB.Create(oldImage)
-				newImage := &models.Image{
-					Commit: &models.Commit{
-						OSTreeCommit: fmt.Sprintf("a-new-%s", checksum),
-						InstalledPackages: []models.InstalledPackage{
-							{
-								Name:    "yum",
-								Version: "3:6.0-1",
-							},
-							{
-								Name:    "vim",
-								Version: "2.0.0",
-							},
-							{
-								Name:    "git",
-								Version: "2.0.0",
-							},
-						},
-						OrgID: orgID,
+					{
+						Name:    "vim",
+						Version: "2.0.0",
 					},
-					Status:     models.ImageStatusSuccess,
-					ImageSetID: &imageSet.ID,
-					OrgID:      orgID,
-				}
-				db.DB.Create(newImage.Commit)
-				db.DB.Create(newImage)
+					{
+						Name:    "git",
+						Version: "2.0.0",
+					},
+				}).WithImageSetID(imageSet.ID).CreateImage()
 
 				updatesAvailable, countUpdatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false, 10, 0)
 
@@ -320,77 +286,29 @@ var _ = Describe("DfseviceService", func() {
 				}}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
-				imageSet := &models.ImageSet{
-					Name:  faker.Name(),
-					OrgID: orgID,
-				}
-				db.DB.Create(imageSet)
-				oldImage := &models.Image{
-					Commit: &models.Commit{
-						OSTreeCommit: checksum,
-						InstalledPackages: []models.InstalledPackage{
-							{
-								Name:    "ansible",
-								Version: "1.0.0",
-							},
-							{
-								Name:    "yum",
-								Version: "2:6.0-1",
-							},
-						},
-						OrgID: orgID,
+				_, imageSet := seeder.WithOstreeCommit(checksum).CreateImage()
+
+				seeder.WithInstalledPackages([]models.InstalledPackage{
+					{
+						Name:    "yum",
+						Version: "3:6.0-1",
 					},
-					Status:     models.ImageStatusSuccess,
-					ImageSetID: &imageSet.ID,
-					OrgID:      orgID,
-					Version:    1,
-				}
-				db.DB.Create(oldImage.Commit)
-				db.DB.Create(oldImage)
-				newImage := &models.Image{
-					Commit: &models.Commit{
-						OSTreeCommit: fmt.Sprintf("a-new-%s", checksum),
-						InstalledPackages: []models.InstalledPackage{
-							{
-								Name:    "yum",
-								Version: "3:6.0-1",
-							},
-							{
-								Name:    "vim",
-								Version: "2.0.0",
-							},
-						},
-						OrgID: orgID,
+					{
+						Name:    "vim",
+						Version: "2.0.0",
 					},
-					Status:     models.ImageStatusSuccess,
-					ImageSetID: &imageSet.ID,
-					OrgID:      orgID,
-					Version:    2,
-				}
-				db.DB.Create(newImage.Commit)
-				db.DB.Create(newImage)
-				thirdImage := &models.Image{
-					Commit: &models.Commit{
-						OSTreeCommit: fmt.Sprintf("a-third-%s", checksum),
-						InstalledPackages: []models.InstalledPackage{
-							{
-								Name:    "yum",
-								Version: "3:6.0-1",
-							},
-							{
-								Name:    "puppet",
-								Version: "2.0.0",
-							},
-						},
-						OrgID: orgID,
+				}).WithImageSetID(imageSet.ID).WithVersion(2).CreateImage()
+
+				thirdImage, _ := seeder.WithInstalledPackages([]models.InstalledPackage{
+					{
+						Name:    "yum",
+						Version: "3:6.0-1",
 					},
-					Status:     models.ImageStatusSuccess,
-					ImageSetID: &imageSet.ID,
-					OrgID:      orgID,
-					Version:    3,
-				}
-				db.DB.Create(thirdImage.Commit)
-				db.DB.Create(thirdImage)
+					{
+						Name:    "puppet",
+						Version: "2.0.0",
+					},
+				}).WithImageSetID(imageSet.ID).WithVersion(3).CreateImage()
 
 				updatesAvailable, countUpdatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true, 10, 0)
 
@@ -428,15 +346,7 @@ var _ = Describe("DfseviceService", func() {
 				}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
-				oldImage := &models.Image{
-					Commit: &models.Commit{
-						OSTreeCommit: checksum,
-						OrgID:        orgID,
-					},
-					Status: models.ImageStatusSuccess,
-					OrgID:  orgID,
-				}
-				db.DB.Create(oldImage)
+				seeder.WithOstreeCommit(checksum).CreateImage()
 
 				updatesAvailable, countUpdatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false, 10, 0)
 				Expect(err).To(BeNil())
@@ -566,42 +476,13 @@ var _ = Describe("DfseviceService", func() {
 						OrgID: orgID,
 					},
 				}}
-				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(1)
-				imageSet := &models.ImageSet{
-					Name:    "test",
-					Version: 2,
-					OrgID:   orgID,
-				}
-				db.DB.Create(imageSet)
-				oldImage := &models.Image{
-					Commit: &models.Commit{
-						OSTreeCommit: fmt.Sprintf("a-old-%s", checksum),
-						OrgID:        orgID,
-					},
-					Status:     models.ImageStatusSuccess,
-					ImageSetID: &imageSet.ID,
-					Version:    1,
-					OrgID:      orgID,
-				}
-				db.DB.Create(oldImage.Commit)
-				db.DB.Create(oldImage)
-				newImage := &models.Image{
-					Commit: &models.Commit{
-						OSTreeCommit: checksum,
-						OrgID:        orgID,
-						InstalledPackages: []models.InstalledPackage{
-							{Name: "vim"},
-						},
-					},
-					Status:     models.ImageStatusSuccess,
-					ImageSetID: &imageSet.ID,
-					Version:    2,
-					OrgID:      orgID,
-				}
-				db.DB.Create(newImage.Commit)
-				db.DB.Create(newImage)
-				fmt.Printf("New image was created with id %d\n", newImage.ID)
-				fmt.Printf("New image was created with image set id %d\n", *newImage.ImageSetID)
+				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(2)
+
+				oldImage, imageSet := seeder.WithOstreeCommit(checksum).CreateImage()
+				newImage, _ := seeder.WithImageSetID(imageSet.ID).WithVersion(2).
+					WithInstalledPackages([]models.InstalledPackage{
+						{Name: "vim"},
+					}).CreateImage()
 
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(newImage, nil)
 				mockImageService.EXPECT().GetRollbackImage(gomock.Eq(newImage)).Return(oldImage, nil)
@@ -976,35 +857,9 @@ var _ = Describe("DfseviceService", func() {
 			defer GinkgoRecover()
 			orgID = common.DefaultOrgID
 
-			imageSet := &models.ImageSet{
-				Name:    "test",
-				Version: 2,
-				OrgID:   orgID,
-			}
-			result := db.DB.Create(imageSet)
-			Expect(result.Error).ToNot(HaveOccurred())
-			imageV1 = &models.Image{
-				Commit: &models.Commit{
-					OSTreeCommit: faker.UUIDHyphenated(),
-					OrgID:        orgID,
-				},
-				Status:     models.ImageStatusSuccess,
-				ImageSetID: &imageSet.ID,
-				Version:    1,
-				OrgID:      orgID,
-			}
-			result = db.DB.Create(imageV1.Commit)
-			Expect(result.Error).ToNot(HaveOccurred())
-			result = db.DB.Create(imageV1)
-			Expect(result.Error).ToNot(HaveOccurred())
+			imageV1, _ = seeder.CreateImage()
+			deviceWithImage = *seeder.WithImageID(imageV1.ID).CreateDevice()
 
-			deviceWithImage = models.Device{
-				OrgID:   orgID,
-				ImageID: imageV1.ID, UUID: faker.UUIDHyphenated(),
-			}
-
-			result = db.DB.Create(&deviceWithImage)
-			Expect(result.Error).To(BeNil())
 			dispatchRecord = &models.DispatchRecord{
 				PlaybookDispatcherID: faker.UUIDHyphenated(),
 				Status:               models.DispatchRecordStatusComplete,
@@ -1087,32 +942,11 @@ var _ = Describe("DfseviceService", func() {
 			It("should return devices", func() {
 				defer GinkgoRecover()
 				orgID := common.DefaultOrgID
-				var imageV1 *models.Image
 
-				imageSet := &models.ImageSet{
-					Name:    "test",
-					Version: 2,
-					OrgID:   orgID,
-				}
-				result := db.DB.Create(imageSet)
-				Expect(result.Error).ToNot(HaveOccurred())
-				imageV1 = &models.Image{
-					Commit: &models.Commit{
-						OSTreeCommit: faker.UUIDHyphenated(),
-						OrgID:        orgID,
-					},
-					Status:     models.ImageStatusSuccess,
-					ImageSetID: &imageSet.ID,
-					Version:    1,
-					OrgID:      common.DefaultOrgID,
-				}
-				result = db.DB.Create(imageV1.Commit)
-				Expect(result.Error).ToNot(HaveOccurred())
-				result = db.DB.Create(imageV1)
-				Expect(result.Error).ToNot(HaveOccurred())
+				imageV1, _ := seeder.CreateImage()
 
 				deviceUnresponsive := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
-				result = db.DB.Create(&deviceUnresponsive)
+				result := db.DB.Create(&deviceUnresponsive)
 				Expect(result.Error).To(BeNil())
 
 				deviceSuccess := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
@@ -1299,35 +1133,8 @@ var _ = Describe("DfseviceService", func() {
 
 			It("should sync devices with inventory", func() {
 				defer GinkgoRecover()
-				orgID := common.DefaultOrgID
-				var imageV1 *models.Image
+				seeder.CreateDevice()
 
-				imageSet := &models.ImageSet{
-					Name:    "test",
-					Version: 2,
-					OrgID:   orgID,
-				}
-				result := db.DB.Create(imageSet)
-				Expect(result.Error).ToNot(HaveOccurred())
-				imageV1 = &models.Image{
-					Commit: &models.Commit{
-						OSTreeCommit: faker.UUIDHyphenated(),
-						OrgID:        orgID,
-					},
-					Status:     models.ImageStatusSuccess,
-					ImageSetID: &imageSet.ID,
-					Version:    1,
-					OrgID:      common.DefaultOrgID,
-				}
-				result = db.DB.Create(imageV1.Commit)
-				Expect(result.Error).ToNot(HaveOccurred())
-				result = db.DB.Create(imageV1)
-				Expect(result.Error).ToNot(HaveOccurred())
-
-				deviceWithImage := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
-
-				result = db.DB.Create(&deviceWithImage)
-				Expect(result.Error).To(BeNil())
 				invResult := []inventory.Device{}
 				resp := inventory.Response{
 					Total:  0,
@@ -1360,34 +1167,8 @@ var _ = Describe("DfseviceService", func() {
 			It("should sync inventory with devices", func() {
 				defer GinkgoRecover()
 				orgID := common.DefaultOrgID
-				var imageV1 *models.Image
+				deviceWithImage := seeder.CreateDevice()
 
-				imageSet := &models.ImageSet{
-					Name:    "test",
-					Version: 2,
-					OrgID:   orgID,
-				}
-				result := db.DB.Create(imageSet)
-				Expect(result.Error).ToNot(HaveOccurred())
-				imageV1 = &models.Image{
-					Commit: &models.Commit{
-						OSTreeCommit: faker.UUIDHyphenated(),
-						OrgID:        orgID,
-					},
-					Status:     models.ImageStatusSuccess,
-					ImageSetID: &imageSet.ID,
-					Version:    1,
-					OrgID:      common.DefaultOrgID,
-				}
-				result = db.DB.Create(imageV1.Commit)
-				Expect(result.Error).ToNot(HaveOccurred())
-				result = db.DB.Create(imageV1)
-				Expect(result.Error).ToNot(HaveOccurred())
-
-				deviceWithImage := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
-
-				result = db.DB.Create(&deviceWithImage)
-				Expect(result.Error).To(BeNil())
 				invDevice := inventory.Device{
 					ID:    deviceWithImage.UUID,
 					OrgID: orgID,
@@ -1527,56 +1308,12 @@ var _ = Describe("DfseviceService", func() {
 					OrgID: orgID,
 				},
 			}}
-			imageSet := &models.ImageSet{
-				Name:    "test",
-				Version: 2,
-				OrgID:   orgID,
-			}
-			db.DB.Create(imageSet)
-			oldImage := &models.Image{
-				Commit: &models.Commit{
-					OSTreeCommit: fmt.Sprintf("a-old-%s", checksum),
-					OrgID:        orgID,
-				},
-				Status:     models.ImageStatusSuccess,
-				ImageSetID: &imageSet.ID,
-				Version:    1,
-				OrgID:      orgID,
-			}
-			db.DB.Create(oldImage.Commit)
-			db.DB.Create(oldImage)
-			newImage := &models.Image{
-				Commit: &models.Commit{
-					OSTreeCommit: checksum,
-					OrgID:        orgID,
-					InstalledPackages: []models.InstalledPackage{
-						{Name: "vim"},
-						{Name: "emacs"},
-					},
-				},
-				Status:     models.ImageStatusSuccess,
-				ImageSetID: &imageSet.ID,
-				Version:    2,
-				OrgID:      orgID,
-			}
-			db.DB.Create(newImage.Commit)
-			db.DB.Create(newImage)
-			updImage := &models.Image{
-				Commit: &models.Commit{
-					OSTreeCommit: checksum,
-					OrgID:        orgID,
-					InstalledPackages: []models.InstalledPackage{
-						{Name: "vim"},
-						{Name: "emacs"},
-					},
-				},
-				Status:     models.ImageStatusSuccess,
-				ImageSetID: &imageSet.ID,
-				Version:    32,
-				OrgID:      orgID,
-			}
-			db.DB.Create(updImage.Commit)
-			db.DB.Create(updImage)
+			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).
+				Return(resp, nil).Times(1)
+
+			oldImage, imageSet := seeder.CreateImage()
+			newImage, _ := seeder.WithImageSetID(imageSet.ID).WithVersion(2).CreateImage()
+			seeder.WithImageSetID(imageSet.ID).WithVersion(3).CreateImage()
 
 			device := models.Device{
 				OrgID:   "00000000",
@@ -1615,32 +1352,10 @@ var _ = Describe("DfseviceService", func() {
 					OrgID: orgID,
 				},
 			}}
-			imageSet := &models.ImageSet{
-				Name:    "test",
-				Version: 1,
-				OrgID:   orgID,
-			}
-			db.DB.Create(imageSet)
-
-			image := &models.Image{
-				Commit: &models.Commit{
-					OSTreeCommit: checksum,
-					OrgID:        orgID,
-				},
-				Status:     models.ImageStatusSuccess,
-				ImageSetID: &imageSet.ID,
-				Version:    1,
-				OrgID:      orgID,
-			}
-			db.DB.Create(image.Commit)
-			db.DB.Create(image)
-			device := models.Device{
-				OrgID:   "00000000",
-				UUID:    faker.UUIDHyphenated(),
-				ImageID: image.ID,
-			}
-
-			db.DB.Create(&device)
+			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).
+				Return(resp, nil).Times(1)
+			image, _ := seeder.WithOstreeCommit(checksum).WithInstalledPackages([]models.InstalledPackage{}).CreateImage()
+			seeder.WithImageID(image.ID).CreateDevice()
 
 			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(image, nil)
 
@@ -1900,33 +1615,9 @@ var _ = Describe("DfseviceService", func() {
 		var img3 *models.Image
 		var device []models.Device
 		BeforeEach(func() {
-			imageSet = &models.ImageSet{
-				Name:    "test",
-				Version: 1,
-				OrgID:   orgID,
-			}
-			db.DB.Create(imageSet)
-			img = &models.Image{
-				Status:     models.ImageStatusSuccess,
-				ImageSetID: &imageSet.ID,
-				Version:    1,
-				OrgID:      orgID,
-			}
-			db.DB.Create(&img)
-			img2 = &models.Image{
-				Status:     models.ImageStatusSuccess,
-				ImageSetID: &imageSet.ID,
-				Version:    2,
-				OrgID:      orgID,
-			}
-			db.DB.Create(&img2)
-			img3 = &models.Image{
-				Status:     models.ImageStatusSuccess,
-				ImageSetID: &imageSet.ID,
-				Version:    3,
-				OrgID:      orgID,
-			}
-			db.DB.Create(&img3)
+			img, imageSet = seeder.CreateImage()
+			img2, _ = seeder.WithImageSetID(imageSet.ID).CreateImage()
+			img3, _ = seeder.WithImageSetID(imageSet.ID).CreateImage()
 			device = []models.Device{
 				{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: img.ID},
 				{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: img.ID},
@@ -1936,7 +1627,6 @@ var _ = Describe("DfseviceService", func() {
 			}
 		})
 		It("should return devices", func() {
-
 			db.DB.Create(&device)
 			count, err := deviceService.GetDevicesCountByImage(img.ID)
 			Expect(err).To(BeNil())
@@ -1977,56 +1667,12 @@ var _ = Describe("DfseviceService", func() {
 					OrgID: orgID,
 				},
 			}}
-			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(1)
-			imageSet = &models.ImageSet{
-				Name:    "test pag",
-				Version: 2,
-				OrgID:   orgID,
-			}
-			db.DB.Create(imageSet)
-			oldImage = &models.Image{
-				Commit: &models.Commit{
-					OSTreeCommit: checksum,
-					OrgID:        orgID,
-				},
-				Status:     models.ImageStatusSuccess,
-				ImageSetID: &imageSet.ID,
-				Version:    1,
-				OrgID:      orgID,
-			}
-			db.DB.Create(oldImage.Commit)
-			db.DB.Create(oldImage)
+			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(2)
 
-			newImage = &models.Image{
-				Commit: &models.Commit{
-					OSTreeCommit: fmt.Sprintf("1-old-%s", checksum),
-					OrgID:        orgID,
-					InstalledPackages: []models.InstalledPackage{
-						{Name: "vim"},
-					},
-				},
-				Status:     models.ImageStatusSuccess,
-				ImageSetID: &imageSet.ID,
-				Version:    2,
-				OrgID:      orgID,
-			}
-			db.DB.Create(newImage.Commit)
-			db.DB.Create(newImage)
-			newImage2 = &models.Image{
-				Commit: &models.Commit{
-					OSTreeCommit: fmt.Sprintf("2-old-%s", checksum),
-					OrgID:        orgID,
-					InstalledPackages: []models.InstalledPackage{
-						{Name: "vim"},
-					},
-				},
-				Status:     models.ImageStatusSuccess,
-				ImageSetID: &imageSet.ID,
-				Version:    3,
-				OrgID:      orgID,
-			}
-			db.DB.Create(newImage2.Commit)
-			db.DB.Create(newImage2)
+			oldImage, imageSet = seeder.WithOstreeCommit(checksum).CreateImage()
+
+			newImage, _ = seeder.WithVersion(2).WithImageSetID(imageSet.ID).CreateImage()
+			newImage2, _ = seeder.WithVersion(3).WithImageSetID(imageSet.ID).CreateImage()
 		})
 
 		It("should return first result", func() {
