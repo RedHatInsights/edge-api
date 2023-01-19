@@ -68,6 +68,7 @@ type PackageDiff struct {
 type ImageInfo struct {
 	Image            Image                   `json:"Image"`
 	UpdatesAvailable *[]ImageUpdateAvailable `json:"UpdatesAvailable,omitempty"`
+	Count            int64                   `json:"Count"`
 	Rollback         *Image                  `json:"RollbackImage,omitempty"`
 }
 
