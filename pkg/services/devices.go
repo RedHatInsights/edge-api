@@ -5,6 +5,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strconv"
 	"time"
 
@@ -383,8 +384,15 @@ func (s *DeviceService) GetDeviceImageInfo(device inventory.Device, limit int, o
 	if currentImage.Version > 1 {
 		rollback, err = s.ImageService.GetRollbackImage(currentImage)
 		if err != nil {
-			s.log.WithField("error", err.Error()).Error("Could not find rollback image info")
-			return nil, new(ImageNotFoundError)
+			// earlier images may be of status error, have to continue if no image found
+			if !errors.Is(err, &ImageNotFoundError{}) {
+				s.log.WithField("error", err.Error()).Error("Could not find rollback image info")
+				return nil, err
+			}
+			// rollback image not found
+			// do not want to depend on the returned value from GetRollbackImage
+			// set it explicitly to nil
+			rollback = nil
 		}
 	}
 
