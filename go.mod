@@ -2,12 +2,12 @@ module github.com/redhatinsights/edge-api
 
 require (
 	github.com/Unleash/unleash-client-go/v3 v3.7.2
-	github.com/aws/aws-sdk-go v1.44.180
+	github.com/aws/aws-sdk-go v1.44.184
 	github.com/bxcodec/faker/v3 v3.8.1
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/fedora-iot/fido-device-onboard-rs/libfdo-data-go v0.0.0-20211210154920-5c241beb5c4e
-	github.com/getkin/kin-openapi v0.112.0
+	github.com/getkin/kin-openapi v0.113.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-openapi/runtime v0.25.0
@@ -17,12 +17,12 @@ require (
 	github.com/lib/pq v1.10.7
 	github.com/magiconair/properties v1.8.7
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.24.2
+	github.com/onsi/gomega v1.25.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/redhatinsights/app-common-go v1.6.4
 	github.com/redhatinsights/platform-go-middlewares v0.20.0
 	github.com/sirupsen/logrus v1.9.0
-	github.com/spf13/viper v1.14.0
+	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.1
 	gorm.io/driver/postgres v1.4.6
 	gorm.io/driver/sqlite v1.4.4
@@ -66,24 +66,24 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
-	github.com/pelletier/go-toml v1.9.5 // indirect
-	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
+	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
+	github.com/perimeterx/marshmallow v1.1.4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
-	github.com/spf13/afero v1.9.2 // indirect
+	github.com/spf13/afero v1.9.3 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
-	github.com/subosito/gotenv v1.4.1 // indirect
+	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/twmb/murmur3 v1.1.5 // indirect
 	go.mongodb.org/mongo-driver v1.8.3 // indirect
 	golang.org/x/crypto v0.4.0 // indirect
-	golang.org/x/net v0.4.0 // indirect
-	golang.org/x/sys v0.3.0 // indirect
-	golang.org/x/text v0.5.0 // indirect
+	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/sys v0.4.0 // indirect
+	golang.org/x/text v0.6.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
