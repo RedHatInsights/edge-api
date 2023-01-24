@@ -26,14 +26,14 @@ import (
 )
 
 var _ = Describe("Image Service Test", func() {
+	var ctrl *gomock.Controller
 	var service services.ImageService
 	var hash string
 	var mockImageBuilderClient *mock_imagebuilder.MockClientInterface
 	var mockRepoService *mock_services.MockRepoServiceInterface
 
 	BeforeEach(func() {
-		ctrl := gomock.NewController(GinkgoT())
-		defer ctrl.Finish()
+		ctrl = gomock.NewController(GinkgoT())
 		mockImageBuilderClient = mock_imagebuilder.NewMockClientInterface(ctrl)
 		mockRepoService = mock_services.NewMockRepoServiceInterface(ctrl)
 		service = services.ImageService{
@@ -42,6 +42,11 @@ var _ = Describe("Image Service Test", func() {
 			RepoService:  mockRepoService,
 		}
 	})
+
+	AfterEach(func() {
+		ctrl.Finish()
+	})
+
 	Describe("get image", func() {
 		When("image is not found", func() {
 			Context("by id", func() {
@@ -1413,7 +1418,7 @@ var _ = Describe("Image Service Test", func() {
 				Expect(image.ImageSetID).To(BeNil())
 			})
 		})
-		When("When image-builder SearchPackage fail", func() {
+		When("When image-builder Validation fail", func() {
 			It("image does not create because empty architecture", func() {
 				arch := &models.Commit{Arch: ""}
 				dist := "rhel-85"
@@ -1423,19 +1428,18 @@ var _ = Describe("Image Service Test", func() {
 					},
 				}
 				image := models.Image{OrgID: orgID, Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
-				expectedErr := fmt.Errorf("value is not one of the allowed values")
-				imageBuilder := &imageBuilderClient.SearchPackageResult{}
-				mockImageBuilderClient.EXPECT().SearchPackage("vim-common", "", "rhel-85").Return(imageBuilder, expectedErr)
+				// search function is not called
+				mockImageBuilderClient.EXPECT().SearchPackage(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 				err := service.CreateImage(&image)
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal(expectedErr.Error()))
+				Expect(err.Error()).To(Equal("value is not one of the allowed values"))
 				// image is not created
 				Expect(image.ID).To(Equal(uint(0)))
 				// But imageSet is not Created
 				Expect(image.ImageSetID).To(BeNil())
 			})
 		})
-		When("When image-builder SearchPackage fail", func() {
+		When("When image-builder Validation fail", func() {
 			It("image does not create because empty distribution", func() {
 				arch := &models.Commit{Arch: "x86_64"}
 				dist := ""
@@ -1445,12 +1449,11 @@ var _ = Describe("Image Service Test", func() {
 					},
 				}
 				image := models.Image{OrgID: orgID, Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
-				expectedErr := fmt.Errorf("value is not one of the allowed values")
-				imageBuilder := &imageBuilderClient.SearchPackageResult{}
-				mockImageBuilderClient.EXPECT().SearchPackage("vim-common", "x86_64", "").Return(imageBuilder, expectedErr)
+				// search function is not called
+				mockImageBuilderClient.EXPECT().SearchPackage(gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
 				err := service.CreateImage(&image)
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal(expectedErr.Error()))
+				Expect(err.Error()).To(Equal("value is not one of the allowed values"))
 				// image is not created
 				Expect(image.ID).To(Equal(uint(0)))
 				// But imageSet is not Created

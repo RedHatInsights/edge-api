@@ -727,9 +727,17 @@ var _ = Describe("Update routes", func() {
 	})
 
 	Context("ValidateGetUpdatesFilterParams", func() {
-		ctrl := gomock.NewController(GinkgoT())
-		defer ctrl.Finish()
-		mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+		var ctrl *gomock.Controller
+		var mockImageService *mock_services.MockImageServiceInterface
+
+		BeforeEach(func() {
+			ctrl = gomock.NewController(GinkgoT())
+			mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
+		})
 
 		It("filters and sort_by working as expected", func() {
 
