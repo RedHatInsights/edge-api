@@ -28,14 +28,14 @@ import (
 )
 
 var _ = Describe("DfseviceService", func() {
+	var ctrl *gomock.Controller
 	var mockInventoryClient *mock_inventory.MockClientInterface
 	var deviceService services.DeviceService
 	var mockImageService *mock_services.MockImageServiceInterface
 	var uuid string
 	orgID := faker.UUIDHyphenated()
 	BeforeEach(func() {
-		ctrl := gomock.NewController(GinkgoT())
-		defer ctrl.Finish()
+		ctrl = gomock.NewController(GinkgoT())
 		uuid = faker.UUIDHyphenated()
 		mockInventoryClient = mock_inventory.NewMockClientInterface(ctrl)
 		mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
@@ -46,6 +46,10 @@ var _ = Describe("DfseviceService", func() {
 			ImageService: mockImageService,
 		}
 	})
+	AfterEach(func() {
+		ctrl.Finish()
+	})
+
 	Context("get last deployment", func() {
 		var device inventory.Device
 		BeforeEach(func() {
@@ -562,7 +566,7 @@ var _ = Describe("DfseviceService", func() {
 						OrgID: orgID,
 					},
 				}}
-				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(2)
+				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(1)
 				imageSet := &models.ImageSet{
 					Name:    "test",
 					Version: 2,
@@ -1523,8 +1527,6 @@ var _ = Describe("DfseviceService", func() {
 					OrgID: orgID,
 				},
 			}}
-			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).
-				Return(resp, nil).Times(1)
 			imageSet := &models.ImageSet{
 				Name:    "test",
 				Version: 2,
@@ -1613,8 +1615,6 @@ var _ = Describe("DfseviceService", func() {
 					OrgID: orgID,
 				},
 			}}
-			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).
-				Return(resp, nil).Times(1)
 			imageSet := &models.ImageSet{
 				Name:    "test",
 				Version: 1,
@@ -1643,7 +1643,6 @@ var _ = Describe("DfseviceService", func() {
 			db.DB.Create(&device)
 
 			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(image, nil)
-			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(image)).Return(image, nil)
 
 			imageInfo, err := deviceService.GetDeviceImageInfo(resp.Result[0], 10, 0)
 			Expect(err).To(BeNil())
@@ -1978,7 +1977,7 @@ var _ = Describe("DfseviceService", func() {
 					OrgID: orgID,
 				},
 			}}
-			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(2)
+			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(1)
 			imageSet = &models.ImageSet{
 				Name:    "test pag",
 				Version: 2,
@@ -2032,7 +2031,6 @@ var _ = Describe("DfseviceService", func() {
 
 		It("should return first result", func() {
 			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(oldImage, nil)
-			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(newImage)).Return(oldImage, nil)
 
 			imageInfo, err := deviceService.GetDeviceImageInfoByUUID(uuid, 1, 0)
 
@@ -2043,7 +2041,6 @@ var _ = Describe("DfseviceService", func() {
 		})
 		It("should return last result", func() {
 			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(oldImage, nil)
-			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(newImage2)).Return(oldImage, nil)
 
 			imageInfo, err := deviceService.GetDeviceImageInfoByUUID(uuid, 1, 1)
 			Expect(err).To(BeNil())
@@ -2052,7 +2049,6 @@ var _ = Describe("DfseviceService", func() {
 		})
 		It("should return all result", func() {
 			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(oldImage, nil)
-			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(oldImage)).Return(oldImage, nil)
 
 			imageInfo, err := deviceService.GetDeviceImageInfoByUUID(uuid, 10, 0)
 			Expect(err).To(BeNil())
@@ -2060,7 +2056,6 @@ var _ = Describe("DfseviceService", func() {
 		})
 		It("should return last result", func() {
 			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(oldImage, nil)
-			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(oldImage)).Return(oldImage, nil)
 
 			imageInfo, err := deviceService.GetDeviceImageInfoByUUID(uuid, -1, 1)
 			Expect(err).To(BeNil())
@@ -2069,7 +2064,6 @@ var _ = Describe("DfseviceService", func() {
 		})
 		It("should return last result", func() {
 			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(oldImage, nil)
-			mockImageService.EXPECT().GetRollbackImage(gomock.Eq(oldImage)).Return(oldImage, nil)
 
 			imageInfo, err := deviceService.GetDeviceImageInfoByUUID(uuid, -1, 0)
 			Expect(err).To(BeNil())
