@@ -1653,6 +1653,229 @@ var _ = Describe("DfseviceService", func() {
 			Expect(imageInfo.Image.TotalDevicesWithImage).To(Equal(int64(1)))
 
 		})
+
+		Context("GetDeviceImageInfo with first image status", func() {
+			var ctrl *gomock.Controller
+			var mockInventoryClient *mock_inventory.MockClientInterface
+			var deviceService services.DeviceService
+			var orgID string
+
+			BeforeEach(func() {
+				orgID = common.DefaultOrgID
+				ctrl = gomock.NewController(GinkgoT())
+				uuid = faker.UUIDHyphenated()
+				mockInventoryClient = mock_inventory.NewMockClientInterface(ctrl)
+				mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
+				ctx := context.Background()
+				logger := log.NewEntry(log.StandardLogger())
+				deviceService = services.DeviceService{
+					Service:   services.NewService(ctx, logger),
+					Inventory: mockInventoryClient,
+					ImageService: &services.ImageService{
+						Service: services.NewService(ctx, logger),
+					},
+				}
+			})
+
+			AfterEach(func() {
+				ctrl.Finish()
+			})
+
+			It("should GetDeviceImageInfo successfully when first version succeed", func() {
+				checksum := faker.UUIDHyphenated()
+				imageName := faker.Name()
+				deviceUUID := faker.UUIDHyphenated()
+				inventoryDevice := inventory.Device{
+					ID: deviceUUID, Ostree: inventory.SystemProfile{
+						RHCClientID: faker.UUIDHyphenated(),
+						RpmOstreeDeployments: []inventory.OSTree{
+							{Checksum: checksum, Booted: true},
+						},
+					},
+					OrgID: orgID,
+				}
+
+				imageSet := &models.ImageSet{
+					Name:    imageName,
+					Version: 2,
+					OrgID:   orgID,
+				}
+				err := db.DB.Create(imageSet).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				oldImage := &models.Image{
+					Commit: &models.Commit{
+						OSTreeCommit: faker.UUIDHyphenated(),
+						OrgID:        orgID,
+					},
+					Status:     models.ImageStatusSuccess,
+					ImageSetID: &imageSet.ID,
+					Version:    1,
+					OrgID:      orgID,
+				}
+				err = db.DB.Create(oldImage).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				image := &models.Image{
+					Commit: &models.Commit{
+						OSTreeCommit: checksum,
+						OrgID:        orgID,
+					},
+					Status:     models.ImageStatusSuccess,
+					ImageSetID: &imageSet.ID,
+					Version:    2,
+					OrgID:      orgID,
+				}
+				err = db.DB.Create(image).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				device := models.Device{
+					OrgID:   orgID,
+					UUID:    deviceUUID,
+					ImageID: image.ID,
+				}
+				err = db.DB.Create(&device).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				imageInfo, err := deviceService.GetDeviceImageInfo(inventoryDevice, 10, 0)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(imageInfo.Image).ToNot(BeNil())
+				Expect(imageInfo.Image.ID).To(Equal(image.ID))
+				Expect(imageInfo.Rollback).ToNot(BeNil())
+				Expect(imageInfo.Rollback.ID).To(Equal(oldImage.ID))
+			})
+
+			It("should GetDeviceImageInfo successfully when first version failed", func() {
+				checksum := faker.UUIDHyphenated()
+				imageName := faker.Name()
+				deviceUUID := faker.UUIDHyphenated()
+				inventoryDevice := inventory.Device{
+					ID: deviceUUID, Ostree: inventory.SystemProfile{
+						RHCClientID: faker.UUIDHyphenated(),
+						RpmOstreeDeployments: []inventory.OSTree{
+							{Checksum: checksum, Booted: true},
+						},
+					},
+					OrgID: orgID,
+				}
+
+				imageSet := &models.ImageSet{
+					Name:    imageName,
+					Version: 2,
+					OrgID:   orgID,
+				}
+				err := db.DB.Create(imageSet).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				oldImage := &models.Image{
+					Commit: &models.Commit{
+						OSTreeCommit: faker.UUIDHyphenated(),
+						OrgID:        orgID,
+					},
+					Status:     models.ImageStatusError,
+					ImageSetID: &imageSet.ID,
+					Version:    1,
+					OrgID:      orgID,
+				}
+				err = db.DB.Create(oldImage).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				image := &models.Image{
+					Commit: &models.Commit{
+						OSTreeCommit: checksum,
+						OrgID:        orgID,
+					},
+					Status:     models.ImageStatusSuccess,
+					ImageSetID: &imageSet.ID,
+					Version:    2,
+					OrgID:      orgID,
+				}
+				err = db.DB.Create(image).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				device := models.Device{
+					OrgID:   orgID,
+					UUID:    deviceUUID,
+					ImageID: image.ID,
+				}
+				err = db.DB.Create(&device).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				imageInfo, err := deviceService.GetDeviceImageInfo(inventoryDevice, 10, 0)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(imageInfo.Image).ToNot(BeNil())
+				Expect(imageInfo.Image.ID).To(Equal(image.ID))
+				Expect(imageInfo.Rollback).To(BeNil())
+			})
+
+			It("should return error when GetRollbackImage fail", func() {
+				deviceService.ImageService = mockImageService
+
+				expectedError := errors.New("error when getting roll back image")
+
+				checksum := faker.UUIDHyphenated()
+				imageName := faker.Name()
+				deviceUUID := faker.UUIDHyphenated()
+				inventoryDevice := inventory.Device{
+					ID: deviceUUID, Ostree: inventory.SystemProfile{
+						RHCClientID: faker.UUIDHyphenated(),
+						RpmOstreeDeployments: []inventory.OSTree{
+							{Checksum: checksum, Booted: true},
+						},
+					},
+					OrgID: orgID,
+				}
+
+				imageSet := &models.ImageSet{
+					Name:    imageName,
+					Version: 2,
+					OrgID:   orgID,
+				}
+				err := db.DB.Create(imageSet).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				oldImage := &models.Image{
+					Commit: &models.Commit{
+						OSTreeCommit: faker.UUIDHyphenated(),
+						OrgID:        orgID,
+					},
+					Status:     models.ImageStatusError,
+					ImageSetID: &imageSet.ID,
+					Version:    1,
+					OrgID:      orgID,
+				}
+				err = db.DB.Create(oldImage).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				image := &models.Image{
+					Commit: &models.Commit{
+						OSTreeCommit: checksum,
+						OrgID:        orgID,
+					},
+					Status:     models.ImageStatusSuccess,
+					ImageSetID: &imageSet.ID,
+					Version:    2,
+					OrgID:      orgID,
+				}
+				err = db.DB.Create(image).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				device := models.Device{
+					OrgID:   orgID,
+					UUID:    deviceUUID,
+					ImageID: image.ID,
+				}
+				err = db.DB.Create(&device).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImageService.EXPECT().GetImageByOSTreeCommitHash(checksum).Return(image, nil)
+				mockImageService.EXPECT().GetRollbackImage(image).Return(nil, expectedError)
+
+				_, err = deviceService.GetDeviceImageInfo(inventoryDevice, 10, 0)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(expectedError))
+			})
+		})
 	})
 	Context("Validate if can update device", func() {
 		It("should return true when same refs", func() {
