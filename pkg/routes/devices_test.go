@@ -243,8 +243,8 @@ var _ = Describe("Devices Router Integration", func() {
 				next.ServeHTTP(w, r.WithContext(ctxServices))
 			})
 		})
-
 		router.Route("/devices", MakeDevicesRouter)
+		
 	})
 
 	AfterEach(func() {
