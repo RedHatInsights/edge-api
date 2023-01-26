@@ -1033,7 +1033,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		latestCommit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated(), ChangesRefs: false}
 		db.DB.Create(&latestCommit)
-		latestImage := models.Image{OrgID: orgID, CommitID: latestCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-91"}
+		latestImage := models.Image{OrgID: orgID, CommitID: latestCommit.ID, ImageSetID: &imageSet.ID, Status: models.ImageStatusSuccess, Distribution: "rhel-90"}
 		db.DB.Create(&latestImage)
 
 		device := models.Device{OrgID: orgID, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated()}

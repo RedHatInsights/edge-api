@@ -119,6 +119,7 @@ var _ = Describe("Devices Router", func() {
 			It("should give an error", func() {
 				recorder := httptest.NewRecorder()
 				router.ServeHTTP(recorder, req)
+				Expect(recorder.Code).To(Equal(http.StatusBadRequest))
 				respBody, err := io.ReadAll(recorder.Body)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(string(respBody)).To(ContainSubstring("DeviceUUID must be sent"))
