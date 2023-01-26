@@ -50,7 +50,7 @@ func (ev EventImageISORequestedBuildHandler) Consume(ctx context.Context) {
 		return
 	}
 	eventlog.WithFields(log.Fields{
-		"message":   "Image ISO request recieved",
+		"message":   "Image ISO request received",
 		"requestId": image.RequestID,
 		"orgID":     image.OrgID,
 	})
