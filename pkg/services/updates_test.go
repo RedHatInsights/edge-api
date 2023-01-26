@@ -188,7 +188,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		BeforeEach(func() {
 			ctrl = gomock.NewController(GinkgoT())
-			defer ctrl.Finish()
 			mockRepoBuilder = mock_services.NewMockRepoBuilderInterface(ctrl)
 			mockFilesService = mock_services.NewMockFilesService(ctrl)
 			mockPlaybookClient = mock_playbookdispatcher.NewMockClientInterface(ctrl)
@@ -202,6 +201,10 @@ var _ = Describe("UpdateService Basic functions", func() {
 				ProducerService: mockProducerService,
 				WaitForReboot:   0,
 			}
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
 		})
 
 		Context("send notification", func() {
@@ -486,7 +489,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		BeforeEach(func() {
 			ctrl = gomock.NewController(GinkgoT())
-			defer ctrl.Finish()
 			mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
 			updateService = &services.UpdateService{
 				Service:         services.NewService(context.Background(), log.WithField("service", "update")),
@@ -494,6 +496,11 @@ var _ = Describe("UpdateService Basic functions", func() {
 			}
 
 		})
+
+		AfterEach(func() {
+			ctrl.Finish()
+		})
+
 		Context("when record is found and status is success", func() {
 			uuid := faker.UUIDHyphenated()
 			orgID := faker.UUIDHyphenated()
@@ -683,7 +690,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		BeforeEach(func() {
 			ctrl = gomock.NewController(GinkgoT())
-			defer ctrl.Finish()
 			mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
 			updateService = &services.UpdateService{
 				Service:         services.NewService(context.Background(), log.WithField("service", "update")),
@@ -691,6 +697,11 @@ var _ = Describe("UpdateService Basic functions", func() {
 			}
 
 		})
+
+		AfterEach(func() {
+			ctrl.Finish()
+		})
+
 		Context("when update is still processing", func() {
 			d1 := &models.DispatchRecord{
 				PlaybookDispatcherID: faker.UUIDHyphenated(),
@@ -874,7 +885,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		orgID := faker.UUIDHyphenated()
 		var updateService services.UpdateServiceInterface
-
+		var ctrl *gomock.Controller
 		var mockImageService *mock_services.MockImageServiceInterface
 		var mockInventoryClient *mock_inventory.MockClientInterface
 		var mockRepoBuilder *mock_services.MockRepoBuilderInterface
@@ -882,8 +893,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		var mockProducer *mock_kafkacommon.MockProducer
 
 		BeforeEach(func() {
-			ctrl := gomock.NewController(GinkgoT())
-			defer ctrl.Finish()
+			ctrl = gomock.NewController(GinkgoT())
 			mockRepoBuilder = mock_services.NewMockRepoBuilderInterface(ctrl)
 			mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
 			mockInventoryClient = mock_inventory.NewMockClientInterface(ctrl)
@@ -898,6 +908,10 @@ var _ = Describe("UpdateService Basic functions", func() {
 				ProducerService: mockProducerService,
 				WaitForReboot:   0,
 			}
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
 		})
 
 		imageSet := models.ImageSet{OrgID: orgID, Name: faker.UUIDHyphenated()}
@@ -956,13 +970,15 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockInventoryClient.EXPECT().ReturnDevicesByID(device.UUID).Return(resp, nil)
 
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(currentCommit.OSTreeCommit).Return(&currentImage, nil)
-				mockImageService.EXPECT().GetImageByOSTreeCommitHash(commit.OSTreeCommit).Return(&image, nil)
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(latestCommit.OSTreeCommit).Return(&latestImage, nil)
+
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 
-				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &commit)
+				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &latestCommit)
 				Expect(err).To(BeNil())
+				Expect(upd).ToNot(BeNil())
+				Expect(len(*upd) > 0).To(BeTrue())
 				for _, u := range *upd {
 					Expect(u.ChangesRefs).To(BeTrue())
 				}
@@ -972,6 +988,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 	Describe("Update Devices to same distribution", func() {
 		orgID := faker.UUIDHyphenated()
+		var ctrl *gomock.Controller
 		var updateService services.UpdateServiceInterface
 		var mockImageService *mock_services.MockImageServiceInterface
 		var mockInventoryClient *mock_inventory.MockClientInterface
@@ -980,8 +997,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		var mockProducer *mock_kafkacommon.MockProducer
 
 		BeforeEach(func() {
-			ctrl := gomock.NewController(GinkgoT())
-			defer ctrl.Finish()
+			ctrl = gomock.NewController(GinkgoT())
 			mockRepoBuilder = mock_services.NewMockRepoBuilderInterface(ctrl)
 			mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
 			mockInventoryClient = mock_inventory.NewMockClientInterface(ctrl)
@@ -996,6 +1012,10 @@ var _ = Describe("UpdateService Basic functions", func() {
 				ProducerService: mockProducerService,
 				WaitForReboot:   0,
 			}
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
 		})
 
 		imageSet := models.ImageSet{OrgID: orgID, Name: faker.UUIDHyphenated()}
@@ -1038,7 +1058,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		devicesUpdate.DevicesUUID = append(devicesUpdate.DevicesUUID, device.UUID)
 		devicesUpdate.CommitID = latestCommit.ID
 
-		Context("when update change Refs success", func() {
+		Context("when update do not change Refs success", func() {
 
 			It("initialisation should pass", func() {
 				resp := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
@@ -1054,13 +1074,14 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockInventoryClient.EXPECT().ReturnDevicesByID(device.UUID).Return(resp, nil)
 
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(currentCommit.OSTreeCommit).Return(&currentImage, nil)
-				mockImageService.EXPECT().GetImageByOSTreeCommitHash(commit.OSTreeCommit).Return(&image, nil)
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(latestCommit.OSTreeCommit).Return(&latestImage, nil)
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 
-				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &commit)
+				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &latestCommit)
 				Expect(err).To(BeNil())
+				Expect(upd).ToNot(BeNil())
+				Expect(len(*upd) > 0).To(BeTrue())
 				for _, u := range *upd {
 					Expect(u.ChangesRefs).To(BeFalse())
 				}
@@ -1071,7 +1092,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 	Describe("Update Devices from 1 to 2", func() {
 		orgID := faker.UUIDHyphenated()
 		var updateService services.UpdateServiceInterface
-
+		var ctrl *gomock.Controller
 		var mockImageService *mock_services.MockImageServiceInterface
 		var mockInventoryClient *mock_inventory.MockClientInterface
 		var mockRepoBuilder *mock_services.MockRepoBuilderInterface
@@ -1079,8 +1100,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		var mockProducer *mock_kafkacommon.MockProducer
 
 		BeforeEach(func() {
-			ctrl := gomock.NewController(GinkgoT())
-			defer ctrl.Finish()
+			ctrl = gomock.NewController(GinkgoT())
 			mockRepoBuilder = mock_services.NewMockRepoBuilderInterface(ctrl)
 			mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
 			mockInventoryClient = mock_inventory.NewMockClientInterface(ctrl)
@@ -1095,6 +1115,10 @@ var _ = Describe("UpdateService Basic functions", func() {
 				ProducerService: mockProducerService,
 				WaitForReboot:   0,
 			}
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
 		})
 
 		imageSet := models.ImageSet{OrgID: orgID, Name: faker.UUIDHyphenated()}
@@ -1163,7 +1187,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 	Describe("Update Devices from 1 to 2 but the latest is version 3", func() {
 		orgID := faker.UUIDHyphenated()
 		var updateService services.UpdateServiceInterface
-
+		var ctrl *gomock.Controller
 		var mockImageService *mock_services.MockImageServiceInterface
 		var mockInventoryClient *mock_inventory.MockClientInterface
 		var mockRepoBuilder *mock_services.MockRepoBuilderInterface
@@ -1171,8 +1195,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		var mockProducer *mock_kafkacommon.MockProducer
 
 		BeforeEach(func() {
-			ctrl := gomock.NewController(GinkgoT())
-			defer ctrl.Finish()
+			ctrl = gomock.NewController(GinkgoT())
 			mockRepoBuilder = mock_services.NewMockRepoBuilderInterface(ctrl)
 			mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
 			mockInventoryClient = mock_inventory.NewMockClientInterface(ctrl)
@@ -1187,6 +1210,10 @@ var _ = Describe("UpdateService Basic functions", func() {
 				ProducerService: mockProducerService,
 				WaitForReboot:   0,
 			}
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
 		})
 
 		imageSet := models.ImageSet{OrgID: orgID, Name: faker.UUIDHyphenated()}
@@ -1262,6 +1289,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		rhcClientID := faker.UUIDHyphenated()
 		dist := "rhel-85"
 		updateDist := "rhel-86"
+		var ctrl *gomock.Controller
 		var imageSet models.ImageSet
 		var currentCommit models.Commit
 		var currentImage models.Image
@@ -1277,8 +1305,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		var mockProducer *mock_kafkacommon.MockProducer
 
 		BeforeEach(func() {
-			ctrl := gomock.NewController(GinkgoT())
-			defer ctrl.Finish()
+			ctrl = gomock.NewController(GinkgoT())
 			mockRepoBuilder = mock_services.NewMockRepoBuilderInterface(ctrl)
 			mockInventory = mock_inventory.NewMockClientInterface(ctrl)
 			mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
@@ -1308,6 +1335,10 @@ var _ = Describe("UpdateService Basic functions", func() {
 			db.DB.Create(&device)
 			device2 = models.Device{OrgID: orgID, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated()}
 			db.DB.Create(&device2)
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
 		})
 
 		Context("when device has rhc_client_id", func() {

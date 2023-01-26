@@ -786,10 +786,10 @@ var _ = Describe("ImageSets Route Test", func() {
 
 		Context("Filter image-sets view", func() {
 			var router chi.Router
+			var ctrl *gomock.Controller
 
 			BeforeEach(func() {
-				ctrl := gomock.NewController(GinkgoT())
-				defer ctrl.Finish()
+				ctrl = gomock.NewController(GinkgoT())
 				imageSetsService := services.ImageSetsService{
 					Service: services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
 				}
@@ -806,6 +806,10 @@ var _ = Describe("ImageSets Route Test", func() {
 					})
 				})
 				router.Route("/image-sets", MakeImageSetsRouter)
+			})
+
+			AfterEach(func() {
+				ctrl.Finish()
 			})
 
 			It("Should filter when the image-set exists", func() {

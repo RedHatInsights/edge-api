@@ -35,12 +35,12 @@ var _ = Describe("Devices Router", func() {
 	var deviceUUID string
 	var mockDeviceService *mock_services.MockDeviceServiceInterface
 	var router chi.Router
+	var ctrl *gomock.Controller
 
 	BeforeEach(func() {
 		// Given
 		deviceUUID = faker.UUIDHyphenated()
-		ctrl := gomock.NewController(GinkgoT())
-		defer ctrl.Finish()
+		ctrl = gomock.NewController(GinkgoT())
 
 		mockDeviceService = mock_services.NewMockDeviceServiceInterface(ctrl)
 		mockServices := &dependencies.EdgeAPIServices{
@@ -57,6 +57,11 @@ var _ = Describe("Devices Router", func() {
 		})
 		router.Route("/devices", MakeDevicesRouter)
 	})
+
+	AfterEach(func() {
+		ctrl.Finish()
+	})
+
 	Context("get available updates", func() {
 		var req *http.Request
 
@@ -67,10 +72,12 @@ var _ = Describe("Devices Router", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("should give an error", func() {
-				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), false, 30, 0).Return(nil, int64(0), new(services.DeviceNotFoundError))
 				recorder := httptest.NewRecorder()
 				router.ServeHTTP(recorder, req)
 				Expect(recorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(recorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("DeviceUUID must be sent"))
 			})
 		})
 		When("device UUID is passed", func() {
@@ -110,10 +117,12 @@ var _ = Describe("Devices Router", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("should give an error", func() {
-				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), true, 30, 0).Return(nil, int64(0), new(services.DeviceNotFoundError))
 				recorder := httptest.NewRecorder()
 				router.ServeHTTP(recorder, req)
 				Expect(recorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(recorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring("DeviceUUID must be sent"))
 			})
 		})
 		When("device UUID is passed", func() {
@@ -169,11 +178,11 @@ var _ = Describe("Devices View Router", func() {
 	var mockDeviceService *mock_services.MockDeviceServiceInterface
 	var router chi.Router
 	var mockServices *dependencies.EdgeAPIServices
+	var ctrl *gomock.Controller
 
 	BeforeEach(func() {
 		// Given
-		ctrl := gomock.NewController(GinkgoT())
-		defer ctrl.Finish()
+		ctrl = gomock.NewController(GinkgoT())
 
 		mockDeviceService = mock_services.NewMockDeviceServiceInterface(ctrl)
 		mockServices = &dependencies.EdgeAPIServices{
@@ -190,6 +199,11 @@ var _ = Describe("Devices View Router", func() {
 		})
 		router.Route("/devicesview", MakeDevicesRouter)
 	})
+
+	AfterEach(func() {
+		ctrl.Finish()
+	})
+
 	Context("get devicesview", func() {
 
 		When("when devices are not found", func() {
