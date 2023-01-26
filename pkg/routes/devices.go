@@ -159,7 +159,7 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 		latest = true
 	}
 	pagination := common.GetPagination(r)
-	result, err := contextServices.DeviceService.GetUpdateAvailableForDeviceByUUID(dc.DeviceUUID, latest, pagination.Limit, pagination.Offset)
+	result, _, err := contextServices.DeviceService.GetUpdateAvailableForDeviceByUUID(dc.DeviceUUID, latest, pagination.Limit, pagination.Offset)
 	if err != nil {
 		var apiError errors.APIError
 		switch err.(type) {

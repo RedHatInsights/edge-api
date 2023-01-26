@@ -3,7 +3,9 @@
 package image_test
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"time"
 
 	"github.com/bxcodec/faker/v3"
@@ -20,19 +22,32 @@ import (
 )
 
 var _ = Describe("Event Image ISO Event Test", func() {
+	var ctrl *gomock.Controller
 	var ctx context.Context
+	var logBuffer bytes.Buffer
+	var testLog *log.Entry
+
 	var mockImageService *mock_services.MockImageServiceInterface
 	BeforeEach(func() {
-		ctrl := gomock.NewController(GinkgoT())
-		defer ctrl.Finish()
+		ctrl = gomock.NewController(GinkgoT())
 		mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
+		testLog = log.NewEntry(log.StandardLogger())
+		// Set the output to use our new local logBuffer
+		logBuffer = bytes.Buffer{}
+		testLog.Logger.SetOutput(&logBuffer)
+		testLog.Logger.SetLevel(log.DebugLevel)
 
 		ctx = context.Background()
 		ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 			ImageService: mockImageService,
 		})
-		ctx = utility.ContextWithLogger(ctx, log.NewEntry(log.StandardLogger()))
+		ctx = utility.ContextWithLogger(ctx, testLog)
 	})
+
+	AfterEach(func() {
+		ctrl.Finish()
+	})
+
 	Describe("consume image iso event", func() {
 		When("image iso is requested", func() {
 			Context("when image does not exist", func() {
@@ -46,6 +61,7 @@ var _ = Describe("Event Image ISO Event Test", func() {
 						OutputTypes:  []string{models.ImageTypeInstaller},
 						Version:      1,
 						Name:         faker.Name(),
+						RequestID:    faker.UUIDHyphenated(),
 					}
 
 					ident, err := common.GetIdentityFromContext(ctx)
@@ -65,7 +81,7 @@ var _ = Describe("Event Image ISO Event Test", func() {
 					event := &eventImageReq.EventImageISORequestedBuildHandler{}
 					event.Data = *edgePayload
 					event.Consume(ctx)
-
+					Expect(logBuffer.String()).To(ContainSubstring("Processing iso image build is done"))
 				})
 			})
 			Context("when image passed is nil", func() {
@@ -98,6 +114,7 @@ var _ = Describe("Event Image ISO Event Test", func() {
 						OutputTypes:  []string{models.ImageTypeInstaller},
 						Version:      1,
 						Name:         faker.Name(),
+						RequestID:    faker.UUIDHyphenated(),
 					}
 
 					ident, err := common.GetIdentityFromContext(ctx)
@@ -112,13 +129,14 @@ var _ = Describe("Event Image ISO Event Test", func() {
 						NewImage: *image,
 					}
 					Expect(edgePayload).ToNot(BeNil())
-
-					mockImageService.EXPECT().AddUserInfo(gomock.Any()).Return(err)
+					expectedError := errors.New("error occurred when adding user info")
+					mockImageService.EXPECT().AddUserInfo(gomock.Any()).Return(expectedError)
 					mockImageService.EXPECT().SetErrorStatusOnImage(gomock.Any(), gomock.Any())
 					event := &eventImageReq.EventImageISORequestedBuildHandler{}
 					event.Data = *edgePayload
 					event.Consume(ctx)
-
+					Expect(logBuffer.String()).To(ContainSubstring(expectedError.Error()))
+					Expect(logBuffer.String()).To(ContainSubstring("Failed creating installer for image"))
 				})
 			})
 		})

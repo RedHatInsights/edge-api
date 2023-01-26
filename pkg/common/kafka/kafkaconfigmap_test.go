@@ -42,8 +42,7 @@ func TestGetKafkaProducerConfigMap(t *testing.T) {
 		"sasl.username":     "something",
 		"sasl.password":     "something",
 	}
-	brokerSlice := []clowder.BrokerConfig{brokerConfig}
-	cfg.KafkaBrokers = brokerSlice
+	cfg.KafkaBrokers = []clowder.BrokerConfig{brokerConfig}
 
 	// Reset config.kafkaconfig back to its original value
 	defer func(conf *v1.KafkaConfig) {

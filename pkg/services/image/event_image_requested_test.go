@@ -19,16 +19,22 @@ import (
 )
 
 var _ = Describe("Event Image Build Requested Test", func() {
+	var ctrl *gomock.Controller
 	var ctx context.Context
 	var mockImageService *mock_services.MockImageServiceInterface
 	BeforeEach(func() {
-		ctrl := gomock.NewController(GinkgoT())
-		defer ctrl.Finish()
+		ctrl = gomock.NewController(GinkgoT())
+
 		mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
 
 		ctx = context.Background()
 		ctx = utility.ContextWithLogger(ctx, log.NewEntry(log.StandardLogger()))
 	})
+
+	AfterEach(func() {
+		ctrl.Finish()
+	})
+
 	Describe("consume image build event", func() {
 		When("image build is requested", func() {
 			Context("image is processed successfully", func() {
