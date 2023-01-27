@@ -540,8 +540,8 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 	case PlaybookStatusSuccess:
 		// TODO: We might wanna check if it's really success by checking the running hash on the device here
 		dispatchRecord.Status = models.DispatchRecordStatusComplete
-		dispatchRecord.Device.AvailableHash = os.DevNull
 		dispatchRecord.Device.CurrentHash = dispatchRecord.Device.AvailableHash
+		dispatchRecord.Device.AvailableHash = os.DevNull
 	case PlaybookStatusRunning:
 		dispatchRecord.Status = models.DispatchRecordStatusRunning
 	case PlaybookStatusTimeout:
@@ -557,6 +557,12 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 	}
 
 	result = db.DB.Omit("Device").Save(&dispatchRecord)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	// since it's using Omit, the device is not being saved, then it's required to explicit save the device
+	result = db.DB.Save(&dispatchRecord.Device)
 	if result.Error != nil {
 		return result.Error
 	}

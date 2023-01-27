@@ -504,11 +504,15 @@ var _ = Describe("UpdateService Basic functions", func() {
 		Context("when record is found and status is success", func() {
 			uuid := faker.UUIDHyphenated()
 			orgID := faker.UUIDHyphenated()
+			availableHash := faker.UUIDHyphenated()
+			currentHash := faker.UUIDHyphenated()
 			image := models.Image{OrgID: orgID, Name: faker.Name(), Commit: &models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}}
 			db.DB.Create(&image)
 			device := models.Device{
-				UUID:  uuid,
-				OrgID: orgID,
+				UUID:          uuid,
+				OrgID:         orgID,
+				AvailableHash: availableHash,
+				CurrentHash:   currentHash,
 			}
 			db.DB.Create(&device)
 			d := &models.DispatchRecord{
@@ -536,8 +540,10 @@ var _ = Describe("UpdateService Basic functions", func() {
 			It("should update status when record is found", func() {
 				err := updateService.ProcessPlaybookDispatcherRunEvent(message)
 				Expect(err).ToNot(HaveOccurred())
-				db.DB.First(&d, d.ID)
+				db.DB.Preload("Device").First(&d, d.ID)
 				Expect(d.Status).To(Equal(models.DispatchRecordStatusComplete))
+				Expect(d.Device.AvailableHash).To(Equal(os.DevNull))
+				Expect(d.Device.CurrentHash).To(Equal(availableHash))
 			})
 			It("should update status of the dispatch record", func() {
 				err := updateService.ProcessPlaybookDispatcherRunEvent(message)
