@@ -790,6 +790,69 @@ var _ = Describe("Image Service Test", func() {
 				Expect(image.Commit.OSTreeParentCommit).To(Equal(expectedURL))
 			})
 		})
+
+		Context("image update when changing image name", func() {
+			var imageSet models.ImageSet
+			var image models.Image
+			var orgID string
+			var imageName string
+			BeforeEach(func() {
+				orgID = common.DefaultOrgID
+				imageName = faker.Name()
+				imageSet = models.ImageSet{OrgID: orgID, Name: imageName}
+				err := db.DB.Create(&imageSet).Error
+				Expect(err).ToNot(HaveOccurred())
+				image = models.Image{
+					OrgID:        orgID,
+					ImageSetID:   &imageSet.ID,
+					Name:         imageName,
+					Commit:       &models.Commit{OrgID: orgID},
+					OutputTypes:  []string{models.ImageTypeCommit},
+					Version:      1,
+					Distribution: "rhel-90",
+				}
+				err = db.DB.Create(&image).Error
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("when not supplying a name the old previous name should be preserved", func() {
+				updateImage := models.Image{
+					OrgID:        orgID,
+					ImageSetID:   &imageSet.ID,
+					Name:         "",
+					Commit:       &models.Commit{},
+					OutputTypes:  []string{models.ImageTypeCommit},
+					Distribution: "rhel-90",
+				}
+
+				// simulate image-builder error, as not important in the current scenario
+				expectedErr := fmt.Errorf("failed creating commit for image")
+				mockImageBuilderClient.EXPECT().ComposeCommit(&updateImage).Return(&updateImage, expectedErr)
+
+				actualErr := service.UpdateImage(&updateImage, &image)
+				Expect(actualErr).To(HaveOccurred())
+				Expect(actualErr).To(MatchError(expectedErr))
+				Expect(updateImage.Name).To(Equal(image.Name))
+			})
+
+			It("should return error when trying to change the name", func() {
+				updateImage := models.Image{
+					OrgID:        orgID,
+					ImageSetID:   &imageSet.ID,
+					Name:         faker.Name(),
+					Commit:       &models.Commit{},
+					OutputTypes:  []string{models.ImageTypeCommit},
+					Distribution: "rhel-90",
+				}
+				Expect(updateImage.Name).ToNot(Equal(image.Name))
+
+				expectedError := new(services.ImageNameChangeIsProhibited)
+
+				actualErr := service.UpdateImage(&updateImage, &image)
+				Expect(actualErr).To(HaveOccurred())
+				Expect(actualErr).To(MatchError(expectedError))
+			})
+		})
 	})
 	Describe("should set status properly on a built image", func() {
 		Context("when image is type of rhel for edge commit", func() {

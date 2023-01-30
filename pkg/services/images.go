@@ -307,6 +307,13 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	// otherwise image will be orphaned from its imageSet if previous build failed
 	image.ImageSetID = previousImage.ImageSetID
 	image.OrgID = previousImage.OrgID
+	if image.Name == "" {
+		// set the name to previous image name, as it must be obvious that it should be the same.
+		image.Name = previousImage.Name
+	} else if image.Name != previousImage.Name {
+		// as we are updating image version, do not allow image to change its name, as the name may be used as image ref.
+		return new(ImageNameChangeIsProhibited)
+	}
 
 	var currentImageSet models.ImageSet
 	result := db.DB.Where("Id = ?", previousImage.ImageSetID).First(&currentImageSet)
