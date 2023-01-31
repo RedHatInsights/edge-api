@@ -425,3 +425,5 @@ parameters:
   name: TENANT_TRANSLATOR_PORT
   required: false
   value: '8892'
+- name: LINT_ANNOTATION
+  value: 'ignore-check.kube-linter.io/minimum-three-replicas'

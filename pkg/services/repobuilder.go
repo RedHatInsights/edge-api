@@ -1,5 +1,3 @@
-// FIXME: golangci-lint
-// nolint:dupword,gocritic,govet,revive
 package services
 
 import (
@@ -13,14 +11,16 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 
-	"github.com/redhatinsights/edge-api/config"
-
 	"github.com/cavaliercoder/grab"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
+
+var BuildCommand = exec.Command
 
 // RepoBuilderInterface defines the interface of a repository builder
 type RepoBuilderInterface interface {
@@ -29,6 +29,7 @@ type RepoBuilderInterface interface {
 	DownloadVersionRepo(c *models.Commit, dest string) (string, error)
 	ExtractVersionRepo(c *models.Commit, tarFileName string, dest string) error
 	UploadVersionRepo(c *models.Commit, tarFileName string) error
+	RepoPullLocalStaticDeltas(u *models.Commit, o *models.Commit, uprepo string, oldrepo string) error
 }
 
 // RepoBuilder is the implementation of a RepoBuilderInterface
@@ -53,13 +54,17 @@ func NewRepoBuilder(ctx context.Context, log *log.Entry) RepoBuilderInterface {
 // with static deltas generated between them all
 func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, error) {
 	var update *models.UpdateTransaction
-	db.DB.Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").Find(&update, id)
+	// TODO in the current implementation the Preload("OldCommits") is missing, this need to be fixed and investigated
+	if err := db.DB.Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").First(&update, id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			rb.log.WithField("updateID", id).Error("update transaction does not exist")
+			return nil, new(UpdateNotFoundError)
+		}
+		rb.log.WithField("error", err.Error()).Error("error occurred retrieving update-transaction")
+		return nil, err
+	}
 
 	rb.log.Info("Starts building update repo...")
-	if update == nil {
-		rb.log.Error("nil pointer to models.UpdateTransaction provided")
-		return nil, errors.New("invalid models.UpdateTransaction Provided: nil pointer")
-	}
 	if update.Commit == nil {
 		rb.log.Error("nil pointer to models.UpdateTransaction.Commit provided")
 		return nil, errors.New("invalid models.UpdateTransaction.Commit Provided: nil pointer")
@@ -74,7 +79,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	cfg := config.Get()
 	path := filepath.Clean(filepath.Join(cfg.RepoTempPath, "upd/", strconv.FormatUint(uint64(update.ID), 10)))
 	rb.log.WithField("path", path).Debug("Update path will be created")
-	err := os.MkdirAll(path, os.FileMode(int(0755)))
+	err := os.MkdirAll(path, os.FileMode(0755))
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +91,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	tarFileName, err := rb.DownloadVersionRepo(update.Commit, path)
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error downloading tar")
-		return nil, fmt.Errorf("error Upload repo repo :: %s", err.Error())
+		return nil, fmt.Errorf("error download repo repo :: %s", err.Error())
 	}
 	err = rb.ExtractVersionRepo(update.Commit, tarFileName, path)
 	if err != nil {
@@ -95,12 +100,13 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	}
 
 	if len(update.OldCommits) > 0 {
+		// IMPORTANT this code is never reached as there is no Preload("OldCommits") in update query.
 		rb.log.WithFields(log.Fields{
 			"updateID":   update.ID,
 			"OldCommits": len(update.OldCommits)}).
 			Info("Old commits found to this commit")
 		stagePath := filepath.Clean(filepath.Join(path, "staging"))
-		err = os.MkdirAll(stagePath, os.FileMode(int(0755)))
+		err = os.MkdirAll(stagePath, os.FileMode(0755))
 		if err != nil {
 			rb.log.WithField("error", err.Error()).Error("Error making dir")
 			return nil, fmt.Errorf("error mkdir :: %s", err.Error())
@@ -131,7 +137,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 				return nil, err
 			}
 			// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
-			err = rb.repoPullLocalStaticDeltas(update.Commit, &commit, filepath.Clean(filepath.Join(path, "repo")),
+			err = rb.RepoPullLocalStaticDeltas(update.Commit, &commit, filepath.Clean(filepath.Join(path, "repo")),
 				filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit, "repo")))
 			if err != nil {
 				rb.log.WithField("error", err.Error()).Error("Error pulling static deltas")
@@ -173,14 +179,14 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 
 	var cmt models.Commit
-	cmtDB := db.DB.Where("repo_id = ?", r.ID).Find(&cmt)
+	cmtDB := db.DB.Where("repo_id = ?", r.ID).First(&cmt)
 	if cmtDB.Error != nil {
 		return nil, cmtDB.Error
 	}
 	cfg := config.Get()
 	path := filepath.Clean(filepath.Join(cfg.RepoTempPath, strconv.FormatUint(uint64(r.ID), 10)))
 	rb.log.WithField("path", path).Debug("Importing repo...")
-	err := os.MkdirAll(path, os.FileMode(int(0755)))
+	err := os.MkdirAll(path, os.FileMode(0755))
 	if err != nil {
 		rb.log.Error(err)
 		return nil, err
@@ -248,7 +254,7 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string) (strin
 	rb.log = rb.log.WithField("commitID", c.ID)
 	rb.log.Info("Downloading repo")
 
-	err := os.MkdirAll(dest, os.FileMode(int(0755)))
+	err := os.MkdirAll(dest, os.FileMode(0755))
 	if err != nil {
 		return "", err
 	}
@@ -285,12 +291,11 @@ func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string) (strin
 	return tarFileName, nil
 }
 
-func (rb *RepoBuilder) uploadTarRepo(OrgID, imageName string, repoID int) (string, error) {
+func (rb *RepoBuilder) uploadTarRepo(orgID, imageName string, repoID int) (string, error) {
 	rb.log.Info("Start upload tar repo")
-	uploadPath := fmt.Sprintf("v2/%s/tar/%v/%s", OrgID, repoID, imageName)
+	uploadPath := fmt.Sprintf("v2/%s/tar/%v/%s", orgID, repoID, imageName)
 	uploadPath = filepath.Clean(uploadPath)
-	filesService := NewFilesService(rb.log)
-	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
+	url, err := rb.FilesService.GetUploader().UploadFile(imageName, uploadPath)
 
 	if err != nil {
 		return "error", fmt.Errorf("error uploading the Tar :: %s :: %s", uploadPath, err.Error())
@@ -308,7 +313,7 @@ func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string) e
 	}
 	if c.RepoID == nil {
 		rb.log.Error("nil pointer to models.Commit.RepoID provided")
-		return errors.New("invalid Commit Provided: nil pointer")
+		return errors.New("invalid Commit.RepoID Provided: nil pointer")
 	}
 	repoID := int(*c.RepoID)
 	rb.log = rb.log.WithFields(log.Fields{"commitID": c.ID, "filepath": tarFileName, "repoID": repoID})
@@ -345,7 +350,7 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 		}).Error("Failed to open file")
 		return err
 	}
-	err = rb.FilesService.GetExtractor().Extract(tarFile, filepath.Clean(filepath.Join(dest)))
+	err = rb.FilesService.GetExtractor().Extract(tarFile, filepath.Clean(dest))
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error extracting tar file")
 		return err
@@ -394,7 +399,7 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 // RepoPullLocalStaticDeltas pull local repo into the new update repo and compute static deltas
 // uprepo should be where the update commit lives, u is the update commit
 // oldrepo should be where the old commit lives, o is the commit to be merged
-func (rb *RepoBuilder) repoPullLocalStaticDeltas(u *models.Commit, o *models.Commit, uprepo string, oldrepo string) error {
+func (rb *RepoBuilder) RepoPullLocalStaticDeltas(u *models.Commit, o *models.Commit, uprepo string, oldrepo string) error {
 	err := os.Chdir(uprepo)
 	if err != nil {
 		return err
@@ -410,24 +415,14 @@ func (rb *RepoBuilder) repoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 	}
 
 	// pull the local repo at the exact rev (which was HEAD of o.OSTreeRef)
-	cmd := &exec.Cmd{
-		Path: "/usr/bin/ostree",
-		Args: []string{
-			"--repo", uprepo, "pull-local", oldrepo, oldRevParse,
-		},
-	}
+	cmd := BuildCommand("/usr/bin/ostree", "--repo", uprepo, "pull-local", oldrepo, oldRevParse)
 	err = cmd.Run()
 	if err != nil {
 		return err
 	}
 
 	// generate static delta
-	cmd = &exec.Cmd{
-		Path: "/usr/bin/ostree",
-		Args: []string{
-			"--repo", uprepo, "static-delta", "generate", "--from", oldRevParse, "--to", updateRevParse,
-		},
-	}
+	cmd = BuildCommand("/usr/bin/ostree", "--repo", uprepo, "static-delta", "generate", "--from", oldRevParse, "--to", updateRevParse)
 	err = cmd.Run()
 	if err != nil {
 		return err
@@ -438,7 +433,7 @@ func (rb *RepoBuilder) repoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 
 // RepoRevParse Handle the RevParse separate since we need the stdout parsed
 func RepoRevParse(path string, ref string) (string, error) {
-	cmd := exec.Command("ostree", "rev-parse", "--repo", path, ref)
+	cmd := BuildCommand("ostree", "rev-parse", "--repo", path, ref)
 
 	var res bytes.Buffer
 	cmd.Stdout = &res

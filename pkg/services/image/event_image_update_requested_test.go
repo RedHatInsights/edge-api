@@ -21,25 +21,31 @@ import (
 )
 
 var _ = Describe("Event Image Update Requested Test", func() {
+	var ctrl *gomock.Controller
 	var ctx context.Context
 	var logBuffer bytes.Buffer
 	var testLog *log.Entry
 	var mockImageService *mock_services.MockImageServiceInterface
 	BeforeEach(func() {
-		ctrl := gomock.NewController(GinkgoT())
-		defer ctrl.Finish()
+		ctrl = gomock.NewController(GinkgoT())
 		mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
 		testLog = log.NewEntry(log.StandardLogger())
 		// Set the output to use our new local logBuffer
 		logBuffer = bytes.Buffer{}
 		testLog.Logger.SetOutput(&logBuffer)
+		testLog.Logger.SetLevel(log.DebugLevel)
 
 		ctx = context.Background()
 		ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 			ImageService: mockImageService,
 		})
-		ctx = utility.ContextWithLogger(ctx, log.NewEntry(log.StandardLogger()))
+		ctx = utility.ContextWithLogger(ctx, testLog)
 	})
+
+	AfterEach(func() {
+		ctrl.Finish()
+	})
+
 	Describe("consume image build update event", func() {
 		When("image build update is requested", func() {
 			Context("image update is processed successfully", func() {
@@ -66,12 +72,12 @@ var _ = Describe("Event Image Update Requested Test", func() {
 					}
 					Expect(edgePayload).ToNot(BeNil())
 
-					mockImageService.EXPECT().SetLog(gomock.Any()).Return()
 					mockImageService.EXPECT().ProcessImage(gomock.Any(), gomock.Any()).Return(nil)
 					event := &EventImageUpdateRequestedBuildHandler{}
 
 					event.Data = *edgePayload
 					event.Consume(ctx)
+					Expect(logBuffer.String()).ToNot(ContainSubstring("Error processing the image"))
 				})
 				Context("image update process errors", func() {
 					It("should not be ok", func() {
@@ -98,7 +104,6 @@ var _ = Describe("Event Image Update Requested Test", func() {
 							NewImage: *image,
 						}
 
-						mockImageService.EXPECT().SetLog(gomock.Any()).Return()
 						mockImageService.EXPECT().ProcessImage(gomock.Any(), gomock.Any()).Return(errors.New("error processing the image"))
 						event := &EventImageUpdateRequestedBuildHandler{}
 						event.Data = *edgePayload

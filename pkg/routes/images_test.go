@@ -1383,6 +1383,83 @@ var _ = Describe("Images Route Tests", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(string(respBody)).To(ContainSubstring("Failed creating image"))
 			})
+
+			It("should accept empty update image name", func() {
+				updateImage := models.Image{
+					Name:         "",
+					Distribution: "rhel-85",
+					OutputTypes:  []string{models.ImageTypeCommit},
+					Commit: &models.Commit{Arch: "x86_64",
+						InstalledPackages: []models.InstalledPackage{
+							{Name: packageName},
+						},
+					},
+				}
+				Expect(updateImage.Name).To(BeEmpty())
+				var buf bytes.Buffer
+				err := json.NewEncoder(&buf).Encode(&updateImage)
+				Expect(err).ToNot(HaveOccurred())
+
+				req, err := http.NewRequest("POST", fmt.Sprintf("/images/%d/update", image.ID), &buf)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
+				// we cannot predict the instance value of first argument, we know that it's updateImage
+				// but as it's un-marshaled it's using another pointer.
+				mockImagesService.EXPECT().UpdateImage(gomock.AssignableToTypeOf(&updateImage), &image).Return(nil)
+				// same here for context and updateImage
+				mockImagesService.EXPECT().ProcessImage(gomock.Any(), gomock.AssignableToTypeOf(&updateImage))
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusOK))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).ToNot(BeEmpty())
+
+				var resUpdateImage models.Image
+				err = json.Unmarshal(respBody, &resUpdateImage)
+				Expect(err).ToNot(HaveOccurred())
+				// the updateImage Name should equal the previousImage name
+				Expect(resUpdateImage.Name).To(Equal(image.Name))
+			})
+
+			It("should return error when update image name is not empty and is different from previous image name", func() {
+				// the image service has a unittest that check and return ImageNameChangeIsProhibited error when trying
+				// to change the image name in this unittest we check that the user receive the appropriate validation error message
+				updateImage := models.Image{
+					Name:         faker.UUIDHyphenated(),
+					Distribution: "rhel-85",
+					OutputTypes:  []string{models.ImageTypeCommit},
+					Commit: &models.Commit{Arch: "x86_64",
+						InstalledPackages: []models.InstalledPackage{
+							{Name: packageName},
+						},
+					},
+				}
+				Expect(updateImage.Name).ToNot(BeEmpty())
+				Expect(updateImage.Name).ToNot(Equal(image.Name))
+				var buf bytes.Buffer
+				err := json.NewEncoder(&buf).Encode(&updateImage)
+				Expect(err).ToNot(HaveOccurred())
+
+				req, err := http.NewRequest("POST", fmt.Sprintf("/images/%d/update", image.ID), &buf)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
+				// we cannot predict the instance value of first argument, we know that it's updateImage
+				// but as it's un-marshaled it's using another pointer.
+				mockImagesService.EXPECT().UpdateImage(gomock.AssignableToTypeOf(&updateImage), &image).Return(new(services.ImageNameChangeIsProhibited))
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring(services.ImageNameChangeIsProhibitedMsg))
+			})
 		})
 		Context("GetImageByOSTree", func() {
 			imageName := faker.UUIDHyphenated()

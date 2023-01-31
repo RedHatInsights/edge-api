@@ -5,6 +5,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strconv"
 	"time"
 
@@ -40,12 +41,12 @@ type DeviceServiceInterface interface {
 	GetDeviceByUUID(deviceUUID string) (*models.Device, error)
 	// Device by UUID methods
 	GetDeviceDetailsByUUID(deviceUUID string, imagesLimit int, imagesOffSet int) (*models.DeviceDetails, error)
-	GetUpdateAvailableForDeviceByUUID(deviceUUID string, latest bool, imagesLimit int, imagesOffSet int) ([]models.ImageUpdateAvailable, error)
+	GetUpdateAvailableForDeviceByUUID(deviceUUID string, latest bool, imagesLimit int, imagesOffSet int) ([]models.ImageUpdateAvailable, int64, error)
 	GetDeviceImageInfoByUUID(deviceUUID string, imagesLimit int, imagesOffSet int) (*models.ImageInfo, error)
 	GetLatestCommitFromDevices(orgID string, devicesUUID []string) (uint, error)
 	// Device Object Methods
 	GetDeviceDetails(device inventory.Device, imagesLimit int, imagesOffSet int) (*models.DeviceDetails, error)
-	GetUpdateAvailableForDevice(device inventory.Device, latest bool, imagesLimit int, imagesOffSet int) ([]models.ImageUpdateAvailable, error)
+	GetUpdateAvailableForDevice(device inventory.Device, latest bool, imagesLimit int, imagesOffSet int) ([]models.ImageUpdateAvailable, int64, error)
 	GetDeviceImageInfo(device inventory.Device, imagesLimit int, imagesOffSet int) (*models.ImageInfo, error)
 	GetDeviceLastDeployment(device inventory.Device) *inventory.OSTree
 	GetDeviceLastBootedDeployment(device inventory.Device) *inventory.OSTree
@@ -202,34 +203,35 @@ func (s *DeviceService) GetDeviceDetailsByUUID(deviceUUID string, limit int, off
 }
 
 // GetUpdateAvailableForDeviceByUUID returns if it exists an update for the current image at the device given its UUID.
-func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string, latest bool, limit int, offset int) ([]models.ImageUpdateAvailable, error) {
+func (s *DeviceService) GetUpdateAvailableForDeviceByUUID(deviceUUID string, latest bool, limit int, offset int) ([]models.ImageUpdateAvailable, int64, error) {
 	// s.log = s.log.WithField("deviceUUID", deviceUUID)
 	resp, err := s.Inventory.ReturnDevicesByID(deviceUUID)
 	if err != nil || resp.Total != 1 {
-		return nil, new(DeviceNotFoundError)
+		return nil, 0, new(DeviceNotFoundError)
 	}
 	return s.GetUpdateAvailableForDevice(resp.Result[len(resp.Result)-1], latest, limit, offset)
 }
 
 // GetUpdateAvailableForDevice returns if it exists an update for the current image at the device.
-func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, latest bool, limit int, offset int) ([]models.ImageUpdateAvailable, error) {
+func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, latest bool, limit int, offset int) ([]models.ImageUpdateAvailable, int64, error) {
 	var imageDiff []models.ImageUpdateAvailable
+	var count int64
 	lastDeployment := s.GetDeviceLastBootedDeployment(device)
 	if lastDeployment == nil {
-		return nil, new(DeviceNotFoundError)
+		return nil, 0, new(DeviceNotFoundError)
 	}
 
 	var currentImage models.Image
 	result := db.DB.Model(&models.Image{}).Joins("Commit").Where("OS_Tree_Commit = ?", lastDeployment.Checksum).First(&currentImage)
 	if result.Error != nil || result.RowsAffected == 0 {
 		s.log.WithField("error", result.Error.Error()).Error("Could not find device")
-		return nil, new(DeviceNotFoundError)
+		return nil, 0, new(DeviceNotFoundError)
 	}
 
 	err := db.DB.Model(&currentImage.Commit).Association("InstalledPackages").Find(&currentImage.Commit.InstalledPackages)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Could not find device")
-		return nil, new(DeviceNotFoundError)
+		return nil, 0, new(DeviceNotFoundError)
 	}
 
 	var images []models.Image
@@ -245,10 +247,19 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 	}
 
 	if updates.Error != nil {
-		return nil, new(UpdateNotFoundError)
+		return nil, 0, new(UpdateNotFoundError)
 	}
 	if updates.RowsAffected == 0 {
-		return imageDiff, nil
+		return imageDiff, 0, nil
+	}
+
+	resultCount := db.DB.Model(&models.Image{}).Where("Image_set_id = ? and Images.Status = ? and Images.Id > ?",
+		currentImage.ImageSetID, models.ImageStatusSuccess, currentImage.ID,
+	).Joins("Commit").Count(&count)
+
+	if resultCount.Error != nil {
+		s.log.WithField("error", resultCount.Error.Error()).Error("Error getting image update available count")
+		return nil, 0, resultCount.Error
 	}
 
 	for _, upd := range images {
@@ -257,22 +268,22 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 
 		if err := db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages); err != nil {
 			s.log.WithField("error", err.Error()).Error("Could not find installed packages")
-			return nil, err
+			return nil, 0, err
 		}
 
 		if err := db.DB.Model(&upd).Association("Packages").Find(&upd.Packages); err != nil {
 			s.log.WithField("error", err.Error()).Error("Could not find packages")
-			return nil, err
+			return nil, 0, err
 		}
 		if err := db.DB.Model(&upd).Association("CustomPackages").Find(&upd.CustomPackages); err != nil {
 			s.log.WithField("error", err.Error()).Error("Could not find custom packages")
-			return nil, err
+			return nil, 0, err
 		}
 		var delta models.ImageUpdateAvailable
 		devicesCountByImage, err := s.GetDevicesCountByImage(upd.ID)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Could not find device image info")
-			return nil, new(ImageNotFoundError)
+			return nil, 0, new(ImageNotFoundError)
 		}
 		diff := GetDiffOnUpdate(currentImage, upd)
 		totalPackages := len(upd.Commit.InstalledPackages)
@@ -282,10 +293,11 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 		delta.PackageDiff = diff
 		delta.Image.TotalDevicesWithImage = devicesCountByImage
 		delta.CanUpdate = s.CanUpdate(currentImage.Distribution, upd.Distribution)
-		imageDiff = append(imageDiff, delta)
 
+		imageDiff = append(imageDiff, delta)
 	}
-	return imageDiff, nil
+
+	return imageDiff, count, nil
 }
 
 func getPackageDiff(a, b []models.InstalledPackage) []models.InstalledPackage {
@@ -372,18 +384,25 @@ func (s *DeviceService) GetDeviceImageInfo(device inventory.Device, limit int, o
 	if currentImage.Version > 1 {
 		rollback, err = s.ImageService.GetRollbackImage(currentImage)
 		if err != nil {
-			s.log.WithField("error", err.Error()).Error("Could not find rollback image info")
-			return nil, new(ImageNotFoundError)
+			// earlier images may be of status error, have to continue if no image found
+			if !errors.Is(err, &ImageNotFoundError{}) {
+				s.log.WithField("error", err.Error()).Error("Could not find rollback image info")
+				return nil, err
+			}
+			// rollback image not found
+			// do not want to depend on the returned value from GetRollbackImage
+			// set it explicitly to nil
+			rollback = nil
 		}
 	}
 
-	updateAvailable, err := s.GetUpdateAvailableForDevice(device, false, limit, offset) // false = get all updates
+	updateAvailable, countUpdateAvailable, err := s.GetUpdateAvailableForDevice(device, false, limit, offset) // false = get all updates
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Could not find updates available to get image info")
 		return nil, err
 	} else if updateAvailable != nil {
 		ImageInfo.UpdatesAvailable = &updateAvailable
-
+		ImageInfo.Count = countUpdateAvailable
 	}
 	ImageInfo.Rollback = rollback
 	ImageInfo.Image = *currentImage
