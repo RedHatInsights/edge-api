@@ -41,6 +41,7 @@ const DeviceHasNoImageUpdateMsg = "device has no image update"
 const DevicesHasMoreThanOneImageSetMsg = "device has more than one image-set"
 const ImageHasNoImageSetMsg = "Image has no image-set"
 const ImageCommitNotFoundMsg = "Image commit not found"
+const ImageNameChangeIsProhibitedMsg = "image name change is prohibited in the current context"
 const CommitNotFoundMsg = "Commit was not found"
 const CommitNotValidMsg = "is not valid for update"
 const OstreeNotFoundMsg = "Ostree not found"
@@ -216,6 +217,14 @@ type ImageNotInErrorState struct{}
 
 func (e *ImageNotInErrorState) Error() string {
 	return ImageNotInErrorStateMsg
+}
+
+// ImageNameChangeIsProhibited indicates that the image name was about to change, but this is not allowed
+// mainly this happens when updating an image
+type ImageNameChangeIsProhibited struct{}
+
+func (e *ImageNameChangeIsProhibited) Error() string {
+	return ImageNameChangeIsProhibitedMsg
 }
 
 // ImageSetInUse indicates unable to delete an image set
