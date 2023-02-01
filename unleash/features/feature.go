@@ -54,6 +54,9 @@ var ImageCompletionEventsEDA = &Flag{Name: "edge-management.completion_events", 
 // ImageCreateISOEDA is the feature flag for routes.CreateCommit() EDA code
 var ImageCreateISOEDA = &Flag{Name: "edge-management.image_create_iso", EnvVar: "FEATURE_IMAGECREATE_ISO"}
 
+// BuildUpdateRepoWithOldCommits is the feature flag for services.BuildUpdateRepo() to enable oldCommits feature
+var BuildUpdateRepoWithOldCommits = &Flag{Name: "edge-management.build_update_repo_with_old_commits", EnvVar: "FEATURE_BUILD_UPDATE_REPO_WITH_OLD_COMMITS"}
+
 // DEVICE FEATURE FLAGS
 
 // DeviceSync is the feature flag for routes.CreateImageUpdate() EDA code

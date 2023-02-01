@@ -14,6 +14,7 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 
 	"github.com/cavaliercoder/grab"
 	log "github.com/sirupsen/logrus"
@@ -54,8 +55,7 @@ func NewRepoBuilder(ctx context.Context, log *log.Entry) RepoBuilderInterface {
 // with static deltas generated between them all
 func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, error) {
 	var update *models.UpdateTransaction
-	// TODO in the current implementation the Preload("OldCommits") is missing, this need to be fixed and investigated
-	if err := db.DB.Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").First(&update, id).Error; err != nil {
+	if err := db.DB.Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").Preload("OldCommits").First(&update, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			rb.log.WithField("updateID", id).Error("update transaction does not exist")
 			return nil, new(UpdateNotFoundError)
@@ -99,8 +99,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		return nil, fmt.Errorf("error extracting repo :: %s", err.Error())
 	}
 
-	if len(update.OldCommits) > 0 {
-		// IMPORTANT this code is never reached as there is no Preload("OldCommits") in update query.
+	if feature.BuildUpdateRepoWithOldCommits.IsEnabled() && len(update.OldCommits) > 0 {
 		rb.log.WithFields(log.Fields{
 			"updateID":   update.ID,
 			"OldCommits": len(update.OldCommits)}).
@@ -126,19 +125,20 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 				"OldCommits":          commit.ID}).
 				Info("Calculate diff from previous commit")
 			commit := commit // this will prevent implicit memory aliasing in the loop
-			tarFileName, err := rb.DownloadVersionRepo(&commit, filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit)))
+			stageCommitPath := filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit))
+			tarFileName, err := rb.DownloadVersionRepo(&commit, stageCommitPath)
 			if err != nil {
 				rb.log.WithField("error", err.Error()).Error("Error downloading tar")
 				return nil, fmt.Errorf("error Upload repo repo :: %s", err.Error())
 			}
-			err = rb.ExtractVersionRepo(update.Commit, tarFileName, path)
+			err = rb.ExtractVersionRepo(update.Commit, tarFileName, stageCommitPath)
 			if err != nil {
 				rb.log.WithField("error", err.Error()).Error("Error extracting repo")
 				return nil, err
 			}
 			// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
 			err = rb.RepoPullLocalStaticDeltas(update.Commit, &commit, filepath.Clean(filepath.Join(path, "repo")),
-				filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit, "repo")))
+				filepath.Clean(filepath.Join(stageCommitPath, "repo")))
 			if err != nil {
 				rb.log.WithField("error", err.Error()).Error("Error pulling static deltas")
 				return nil, err
