@@ -796,9 +796,7 @@ func TestBuildUpdateRepoWithOldCommits(t *testing.T) {
 			g.Expect(testCase.TestHelper.Executed).To(BeTrue())
 			g.Expect(testCase.TestHelper.ExistStatus).To(Equal(testCase.ExpectedExistStatus))
 			g.Expect(testCase.TestHelper.Output).To(Equal(testCase.ExpectedOutput))
-			if testCase.ExpectedCommand != "" {
-				g.Expect(testCase.TestHelper.Command).To(Equal(testCase.ExpectedCommand))
-			}
+			g.Expect(testCase.TestHelper.Command).To(Equal(testCase.ExpectedCommand))
 		})
 	}
 }
@@ -971,9 +969,7 @@ func TestBuildUpdateRepoWithOldCommitsStaticDeltaError(t *testing.T) {
 			g.Expect(testCase.TestHelper.Executed).To(BeTrue())
 			g.Expect(testCase.TestHelper.ExistStatus).To(Equal(testCase.ExpectedExistStatus))
 			g.Expect(testCase.TestHelper.Output).To(Equal(testCase.ExpectedOutput))
-			if testCase.ExpectedCommand != "" {
-				g.Expect(testCase.TestHelper.Command).To(Equal(testCase.ExpectedCommand))
-			}
+			g.Expect(testCase.TestHelper.Command).To(Equal(testCase.ExpectedCommand))
 		})
 	}
 }
