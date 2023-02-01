@@ -892,6 +892,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					result := db.DB.Create(&repo)
 					if result.Error != nil {
 						s.log.WithField("error", result.Error.Error()).Debug("Result error")
+						return nil, result.Error
 					}
 					s.log.WithFields(log.Fields{
 						"repoURL": repo.URL,
