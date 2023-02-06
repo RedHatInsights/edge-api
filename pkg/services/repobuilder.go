@@ -415,14 +415,14 @@ func (rb *RepoBuilder) RepoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 	}
 
 	// pull the local repo at the exact rev (which was HEAD of o.OSTreeRef)
-	cmd := BuildCommand("/usr/bin/ostree", "--repo", uprepo, "pull-local", oldrepo, oldRevParse)
+	cmd := BuildCommand("/usr/bin/ostree", "pull-local", "--repo", uprepo, oldrepo, oldRevParse)
 	err = cmd.Run()
 	if err != nil {
 		return err
 	}
 
 	// generate static delta
-	cmd = BuildCommand("/usr/bin/ostree", "--repo", uprepo, "static-delta", "generate", "--from", oldRevParse, "--to", updateRevParse)
+	cmd = BuildCommand("/usr/bin/ostree", "static-delta", "generate", "--repo", uprepo, "--from", oldRevParse, "--to", updateRevParse)
 	err = cmd.Run()
 	if err != nil {
 		return err
