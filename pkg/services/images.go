@@ -1090,6 +1090,7 @@ func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) er
 }
 
 // ImageDetail return the structure to inform package info to images
+// nolint: unused // golangci-lint does not parse well this block, it says Image not used, but it's used
 type ImageDetail struct {
 	Image              *models.Image `json:"image"`
 	AdditionalPackages int           `json:"additional_packages"`
