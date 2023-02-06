@@ -765,14 +765,14 @@ func TestBuildUpdateRepoWithOldCommits(t *testing.T) {
 			TestHelper:          NewMockTestExecHelper(t, "pull-local", 0),
 			ExpectedOutput:      "pull-local",
 			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree --repo %s pull-local %s %s", updateRepoPath, updateOldCommitRepoPath, oldCommitRevision),
+			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree pull-local --repo %s %s %s", updateRepoPath, updateOldCommitRepoPath, oldCommitRevision),
 		},
 		{
 			name:                "run ostree command static-delta successfully",
 			TestHelper:          NewMockTestExecHelper(t, "static-delta", 0),
 			ExpectedOutput:      "static-delta",
 			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree --repo %s static-delta generate --from %s --to %s", updateRepoPath, oldCommitRevision, updateCommitRevision),
+			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree static-delta generate --repo %s --from %s --to %s", updateRepoPath, oldCommitRevision, updateCommitRevision),
 		},
 	}
 	// chain TestExecHelper, so that each mock can initiate the next exec command helper
@@ -940,14 +940,14 @@ func TestBuildUpdateRepoWithOldCommitsStaticDeltaError(t *testing.T) {
 			TestHelper:          NewMockTestExecHelper(t, "pull-local", 0),
 			ExpectedOutput:      "pull-local",
 			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree --repo %s pull-local %s %s", updateRepoPath, updateOldCommitRepoPath, oldCommitRevision),
+			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree pull-local --repo %s %s %s", updateRepoPath, updateOldCommitRepoPath, oldCommitRevision),
 		},
 		{
 			name:                "run ostree command static-delta successfully",
 			TestHelper:          NewMockTestExecHelper(t, "static-delta", 1),
 			ExpectedOutput:      "static-delta",
 			ExpectedExistStatus: 1,
-			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree --repo %s static-delta generate --from %s --to %s", updateRepoPath, oldCommitRevision, updateCommitRevision),
+			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree static-delta generate --repo %s --from %s --to %s", updateRepoPath, oldCommitRevision, updateCommitRevision),
 		},
 	}
 	// chain TestExecHelper, so that each mock can initiate the next exec command helper
@@ -1303,14 +1303,14 @@ func TestRepoPullLocalStaticDeltas(t *testing.T) {
 			TestHelper:          NewMockTestExecHelper(t, "pull-local", 0),
 			ExpectedOutput:      "pull-local",
 			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree --repo %s pull-local %s %s", updateRepoPath, oldRepoPath, oldCommitRevision),
+			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree pull-local --repo %s %s %s", updateRepoPath, oldRepoPath, oldCommitRevision),
 		},
 		{
 			name:                "should run ostree command static-delta successfully",
 			TestHelper:          NewMockTestExecHelper(t, "static-delta", 0),
 			ExpectedOutput:      "static-delta",
 			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree --repo %s static-delta generate --from %s --to %s", updateRepoPath, oldCommitRevision, updateCommitRevision),
+			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree static-delta generate --repo %s --from %s --to %s", updateRepoPath, oldCommitRevision, updateCommitRevision),
 		},
 	}
 	// chain TestHelper, so that each mock can initiate the next exec command helper
@@ -1527,7 +1527,7 @@ func TestRepoPullLocalStaticDeltasFailsWhenPullLocalFail(t *testing.T) {
 			TestHelper:          NewMockTestExecHelper(t, "pull-local", 2),
 			ExpectedOutput:      "pull-local",
 			ExpectedExistStatus: 2,
-			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree --repo %s pull-local %s %s", updateRepoPath, oldRepoPath, oldCommitRevision),
+			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree pull-local --repo %s %s %s", updateRepoPath, oldRepoPath, oldCommitRevision),
 		},
 	}
 	// chain TestHelper, so that each mock can initiate the next exec command helper
@@ -1613,14 +1613,14 @@ func TestRepoPullLocalStaticDeltasFailsWhenStaticDeltaFails(t *testing.T) {
 			TestHelper:          NewMockTestExecHelper(t, "pull-local", 0),
 			ExpectedOutput:      "pull-local",
 			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree --repo %s pull-local %s %s", updateRepoPath, oldRepoPath, oldCommitRevision),
+			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree pull-local --repo %s %s %s", updateRepoPath, oldRepoPath, oldCommitRevision),
 		},
 		{
 			name:                "should run ostree command static-delta successfully",
 			TestHelper:          NewMockTestExecHelper(t, "static-delta", 3),
 			ExpectedOutput:      "static-delta",
 			ExpectedExistStatus: 3,
-			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree --repo %s static-delta generate --from %s --to %s", updateRepoPath, oldCommitRevision, updateCommitRevision),
+			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree static-delta generate --repo %s --from %s --to %s", updateRepoPath, oldCommitRevision, updateCommitRevision),
 		},
 	}
 	// chain TestHelper, so that each mock can initiate the next exec command helper
