@@ -143,6 +143,44 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(img.Commit.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
 		Expect(img.Commit.ExternalURL).To(BeFalse())
 	})
+	It("test get thirds party repo without orgId", func() {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprintln(w, `{"id": "compose-job-id-returned-from-image-builder"}`)
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+
+		pkgs := []models.Package{
+			{
+				Name: "vim",
+			},
+			{
+				Name: "ansible",
+			},
+		}
+		img := &models.Image{Distribution: "rhel-8",
+			Packages: pkgs,
+			Commit: &models.Commit{
+				Arch: "x86_64",
+				Repo: &models.Repo{},
+			},
+			ThirdPartyRepositories: []models.ThirdPartyRepo{
+				{
+					Name: "repo test",
+					URL:  "https://repo.com",
+				},
+				{
+					Name: "repo test2",
+					URL:  "https://repo2.com",
+				},
+			},
+		}
+		result, err := client.GetImageThirdPartyRepos(img)
+		Expect(result).To(BeNil())
+		Expect(err).To(HaveOccurred())
+	})
 
 	Context("compose image commit with ChangesRefs values", func() {
 		dist := "rhel-86"
