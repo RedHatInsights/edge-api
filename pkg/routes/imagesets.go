@@ -121,18 +121,6 @@ var imageDetailFilters = common.ComposeFilters(
 	common.SortFilterHandler("images", "created_at", "DESC"),
 )
 
-var imageStatusFilters = common.ComposeFilters(
-	common.ContainFilterHandler(&common.Filter{
-		QueryParam: "status",
-		DBField:    "images.status",
-	}),
-	common.ContainFilterHandler(&common.Filter{
-		QueryParam: "name",
-		DBField:    "image_sets.name",
-	}),
-	common.SortFilterHandler("images", "created_at", "DESC"),
-)
-
 // ImageSetCtx provides the handler for Image Sets
 func ImageSetCtx(next http.Handler) http.Handler {
 
@@ -218,29 +206,15 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, s.Log, errors.NewInternalServerError())
 		return
 	}
+	result = imageSetFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Debug().Model(&models.ImageSet{})).Distinct("image_sets.*").
+		Limit(pagination.Limit).Offset(pagination.Offset).
+		Preload("Images").
+		Preload("Images.Commit").
+		Preload("Images.Installer").
+		Preload("Images.Commit.Repo").
+		Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.deleted_at is NULL`).
+		Find(&imageSet)
 
-	if r.URL.Query().Get("sort_by") != "-status" && r.URL.Query().Get("sort_by") != "status" {
-		result = imageSetFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Debug().Model(&models.ImageSet{})).Distinct("image_sets.*").
-			Limit(pagination.Limit).Offset(pagination.Offset).
-			Preload("Images").
-			Preload("Images.Commit").
-			Preload("Images.Installer").
-			Preload("Images.Commit.Repo").
-			Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.deleted_at is NULL`).
-			Find(&imageSet)
-	} else {
-		// this code is no longer run, but would be used if sorting by status is re-implemented.
-		result = imageStatusFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Debug().Model(&models.ImageSet{})).Distinct("image_sets.*").
-			Limit(pagination.Limit).Offset(pagination.Offset).
-			Preload("Images", "lower(status) in (?)", strings.ToLower(r.URL.Query().Get("status"))).
-			Preload("Images.Commit").
-			Preload("Images.Installer").
-			Preload("Images.Commit.Repo").
-			Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id`).
-			Joins("Commit").Joins("Installer").
-			Find(&imageSet)
-
-	}
 	if result.Error != nil {
 		s.Log.WithField("error", result.Error.Error()).Error("error while getting Image-sets")
 		respondWithAPIError(w, s.Log, errors.NewInternalServerError())
