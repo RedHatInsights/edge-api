@@ -24,15 +24,15 @@ func TestGetKafkaProducerConfigMap(t *testing.T) {
 	proto := "SASL_SSL"
 	port := 80
 	brokerConfig := clowder.BrokerConfig{
-		Authtype: &authType,
-		Cacert:   &dummyString,
-		Hostname: "192.168.1.7",
-		Port:     &port,
+		Authtype:         &authType,
+		Cacert:           &dummyString,
+		Hostname:         "192.168.1.7",
+		Port:             &port,
+		SecurityProtocol: &proto,
 		Sasl: &clowder.KafkaSASLConfig{
-			SaslMechanism:    &mech,
-			SecurityProtocol: &proto,
-			Username:         &dummyString,
-			Password:         &dummyString,
+			SaslMechanism: &mech,
+			Username:      &dummyString,
+			Password:      &dummyString,
 		},
 	}
 	kafkaConfigMap := kafka.ConfigMap{
@@ -88,15 +88,15 @@ func TestGetKafkaConsumerConfigMap(t *testing.T) {
 	proto := "SASL_SSL"
 	port := 80
 	brokerConfig := clowder.BrokerConfig{
-		Authtype: &authType,
-		Cacert:   &dummyString,
-		Hostname: "192.168.1.7",
-		Port:     &port,
+		Authtype:         &authType,
+		Cacert:           &dummyString,
+		Hostname:         "192.168.1.7",
+		Port:             &port,
+		SecurityProtocol: &proto,
 		Sasl: &clowder.KafkaSASLConfig{
-			SaslMechanism:    &mech,
-			SecurityProtocol: &proto,
-			Username:         &dummyString,
-			Password:         &dummyString,
+			SaslMechanism: &mech,
+			Username:      &dummyString,
+			Password:      &dummyString,
 		},
 	}
 	kafkaConfigMap := kafka.ConfigMap{
