@@ -18,7 +18,7 @@ func TestGetKafkaProducerConfigMap(t *testing.T) {
 
 	conf := cfg.KafkaConfig
 
-	authType := clowder.BrokerConfigAuthtype("Auth")
+	authType := clowder.BrokerConfigAuthtype("sasl")
 	dummyString := "something"
 	mech := "PLAIN"
 	proto := "SASL_SSL"
@@ -82,7 +82,7 @@ func TestGetKafkaConsumerConfigMap(t *testing.T) {
 
 	conf := cfg.KafkaConfig
 
-	authType := clowder.BrokerConfigAuthtype("Auth")
+	authType := clowder.BrokerConfigAuthtype("sasl")
 	dummyString := "something"
 	mech := "PLAIN"
 	proto := "SASL_SSL"
