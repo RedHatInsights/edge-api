@@ -9,6 +9,8 @@ import (
 	v1 "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	"github.com/redhatinsights/edge-api/config"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
+
+	"github.com/bxcodec/faker/v3"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,21 +20,21 @@ func TestGetKafkaProducerConfigMap(t *testing.T) {
 
 	conf := cfg.KafkaConfig
 
-	authType := clowder.BrokerConfigAuthtype("Auth")
+	authType := clowder.BrokerConfigAuthtype("sasl")
 	dummyString := "something"
 	mech := "PLAIN"
 	proto := "SASL_SSL"
 	port := 80
 	brokerConfig := clowder.BrokerConfig{
-		Authtype: &authType,
-		Cacert:   &dummyString,
-		Hostname: "192.168.1.7",
-		Port:     &port,
+		Authtype:         &authType,
+		Cacert:           &dummyString,
+		Hostname:         "192.168.1.7",
+		Port:             &port,
+		SecurityProtocol: &proto,
 		Sasl: &clowder.KafkaSASLConfig{
-			SaslMechanism:    &mech,
-			SecurityProtocol: &proto,
-			Username:         &dummyString,
-			Password:         &dummyString,
+			SaslMechanism: &mech,
+			Username:      &dummyString,
+			Password:      &dummyString,
 		},
 	}
 	kafkaConfigMap := kafka.ConfigMap{
@@ -82,21 +84,21 @@ func TestGetKafkaConsumerConfigMap(t *testing.T) {
 
 	conf := cfg.KafkaConfig
 
-	authType := clowder.BrokerConfigAuthtype("Auth")
+	authType := clowder.BrokerConfigAuthtype("sasl")
 	dummyString := "something"
 	mech := "PLAIN"
 	proto := "SASL_SSL"
 	port := 80
 	brokerConfig := clowder.BrokerConfig{
-		Authtype: &authType,
-		Cacert:   &dummyString,
-		Hostname: "192.168.1.7",
-		Port:     &port,
+		Authtype:         &authType,
+		Cacert:           &dummyString,
+		Hostname:         "192.168.1.7",
+		Port:             &port,
+		SecurityProtocol: &proto,
 		Sasl: &clowder.KafkaSASLConfig{
-			SaslMechanism:    &mech,
-			SecurityProtocol: &proto,
-			Username:         &dummyString,
-			Password:         &dummyString,
+			SaslMechanism: &mech,
+			Username:      &dummyString,
+			Password:      &dummyString,
 		},
 	}
 	kafkaConfigMap := kafka.ConfigMap{
@@ -143,6 +145,120 @@ func TestGetKafkaConsumerConfigMap(t *testing.T) {
 			consumerGroupID := "imagesisobuild"
 			configMap := service.GetKafkaConsumerConfigMap(consumerGroupID)
 			assert.Equal(t, configMap, test.ExpectedRequest)
+		})
+	}
+}
+
+func TestGetKafkaProducerConfigMapSecurityProtocol(t *testing.T) {
+	var service kafkacommon.KafkaConfigMapServiceInterface
+	cfg := config.Get()
+	originalKafkaBrokerConf := cfg.KafkaBrokers
+	defer func(conf []clowder.BrokerConfig) {
+		config.Get().KafkaBrokers = conf
+	}(originalKafkaBrokerConf)
+
+	authTypeSasl := clowder.BrokerConfigAuthtype("sasl")
+	authTypeMtls := clowder.BrokerConfigAuthtype("mtls")
+	dummyString := faker.UUIDHyphenated()
+	mech := "PLAIN"
+	SecurityProtocols := []string{faker.UUIDHyphenated(), faker.UUIDHyphenated()}
+	port := 80
+
+	testCases := []struct {
+		Name                     string
+		BrokerConfig             clowder.BrokerConfig
+		ExpectedSecurityProtocol string
+	}{
+		{
+			Name: "should get security protocol from broker config",
+			BrokerConfig: clowder.BrokerConfig{
+				Authtype:         &authTypeSasl,
+				Cacert:           &dummyString,
+				Hostname:         "192.168.1.7",
+				Port:             &port,
+				SecurityProtocol: &SecurityProtocols[0],
+				Sasl: &clowder.KafkaSASLConfig{
+					SaslMechanism: &mech,
+					Username:      &dummyString,
+					Password:      &dummyString,
+				},
+			},
+			ExpectedSecurityProtocol: SecurityProtocols[0],
+		},
+		{
+			Name: "should get security protocol from broker sasl config",
+			BrokerConfig: clowder.BrokerConfig{
+				Authtype: &authTypeSasl,
+				Cacert:   &dummyString,
+				Hostname: "192.168.1.7",
+				Port:     &port,
+				Sasl: &clowder.KafkaSASLConfig{
+					SaslMechanism:    &mech,
+					Username:         &dummyString,
+					Password:         &dummyString,
+					SecurityProtocol: &SecurityProtocols[1], // nolint: staticcheck
+				},
+			},
+			ExpectedSecurityProtocol: SecurityProtocols[1],
+		},
+		{
+			Name: "should not get security protocol if no defined in broker or sasl config",
+			BrokerConfig: clowder.BrokerConfig{
+				Authtype: &authTypeSasl,
+				Cacert:   &dummyString,
+				Hostname: "192.168.1.7",
+				Port:     &port,
+				Sasl: &clowder.KafkaSASLConfig{
+					SaslMechanism: &mech,
+					Username:      &dummyString,
+					Password:      &dummyString,
+				},
+			},
+			ExpectedSecurityProtocol: "",
+		},
+		{
+			Name: "should not get security protocol when defined in sasl config and auth type mtls",
+			BrokerConfig: clowder.BrokerConfig{
+				Authtype: &authTypeMtls,
+				Cacert:   &dummyString,
+				Hostname: "192.168.1.7",
+				Port:     &port,
+				Sasl: &clowder.KafkaSASLConfig{
+					SaslMechanism:    &mech,
+					Username:         &dummyString,
+					Password:         &dummyString,
+					SecurityProtocol: &SecurityProtocols[1], // nolint: staticcheck
+				},
+			},
+			ExpectedSecurityProtocol: "",
+		},
+		{
+			Name: "should get security protocol when defined in broker config and auth type mtls",
+			BrokerConfig: clowder.BrokerConfig{
+				Authtype:         &authTypeMtls,
+				Cacert:           &dummyString,
+				Hostname:         "192.168.1.7",
+				Port:             &port,
+				SecurityProtocol: &SecurityProtocols[0],
+				Sasl: &clowder.KafkaSASLConfig{
+					SaslMechanism: &mech,
+					Username:      &dummyString,
+					Password:      &dummyString,
+				},
+			},
+			ExpectedSecurityProtocol: SecurityProtocols[0],
+		},
+	}
+
+	service = kafkacommon.NewKafkaConfigMapService()
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			config.Get().KafkaBrokers = []clowder.BrokerConfig{testCase.BrokerConfig}
+
+			configMap := service.GetKafkaProducerConfigMap()
+			securityProtocol, err := configMap.Get("security.protocol", "")
+			assert.NoError(t, err, "cannot get security protocol from configMap, occur when as type mismatch")
+			assert.Equal(t, securityProtocol, testCase.ExpectedSecurityProtocol)
 		})
 	}
 }
