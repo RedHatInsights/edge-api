@@ -415,20 +415,23 @@ func (rb *RepoBuilder) RepoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 	}
 
 	// pull the local repo at the exact rev (which was HEAD of o.OSTreeRef)
-	cmd := BuildCommand("/usr/bin/ostree", "--repo", uprepo, "pull-local", oldrepo, oldRevParse)
-	err = cmd.Run()
-	if err != nil {
+	cmd := BuildCommand("/usr/bin/ostree", "pull-local", "--repo", uprepo, oldrepo, oldRevParse)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		rb.log.WithFields(
+			log.Fields{"error": err.Error(), "OSTreeCommit": oldRevParse, "output": output},
+		).Error("error occurred while running pull-local command")
 		return err
 	}
 
 	// generate static delta
-	cmd = BuildCommand("/usr/bin/ostree", "--repo", uprepo, "static-delta", "generate", "--from", oldRevParse, "--to", updateRevParse)
-	err = cmd.Run()
-	if err != nil {
+	cmd = BuildCommand("/usr/bin/ostree", "static-delta", "generate", "--repo", uprepo, "--from", oldRevParse, "--to", updateRevParse)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		rb.log.WithFields(
+			log.Fields{"error": err.Error(), "OSTreeCommit": oldRevParse, "output": output},
+		).Error("error occurred while running static-delta command")
 		return err
 	}
 	return nil
-
 }
 
 // RepoRevParse Handle the RevParse separate since we need the stdout parsed
