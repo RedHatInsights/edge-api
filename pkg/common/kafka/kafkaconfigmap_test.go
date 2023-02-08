@@ -157,7 +157,8 @@ func TestGetKafkaProducerConfigMapSecurityProtocol(t *testing.T) {
 		config.Get().KafkaBrokers = conf
 	}(originalKafkaBrokerConf)
 
-	authType := clowder.BrokerConfigAuthtype("sasl")
+	authTypeSasl := clowder.BrokerConfigAuthtype("sasl")
+	authTypeMtls := clowder.BrokerConfigAuthtype("mtls")
 	dummyString := faker.UUIDHyphenated()
 	mech := "PLAIN"
 	SecurityProtocols := []string{faker.UUIDHyphenated(), faker.UUIDHyphenated()}
@@ -171,7 +172,7 @@ func TestGetKafkaProducerConfigMapSecurityProtocol(t *testing.T) {
 		{
 			Name: "should get security protocol from broker config",
 			BrokerConfig: clowder.BrokerConfig{
-				Authtype:         &authType,
+				Authtype:         &authTypeSasl,
 				Cacert:           &dummyString,
 				Hostname:         "192.168.1.7",
 				Port:             &port,
@@ -187,7 +188,7 @@ func TestGetKafkaProducerConfigMapSecurityProtocol(t *testing.T) {
 		{
 			Name: "should get security protocol from broker sasl config",
 			BrokerConfig: clowder.BrokerConfig{
-				Authtype: &authType,
+				Authtype: &authTypeSasl,
 				Cacert:   &dummyString,
 				Hostname: "192.168.1.7",
 				Port:     &port,
@@ -203,7 +204,7 @@ func TestGetKafkaProducerConfigMapSecurityProtocol(t *testing.T) {
 		{
 			Name: "should not get security protocol if no defined in broker or sasl config",
 			BrokerConfig: clowder.BrokerConfig{
-				Authtype: &authType,
+				Authtype: &authTypeSasl,
 				Cacert:   &dummyString,
 				Hostname: "192.168.1.7",
 				Port:     &port,
@@ -214,6 +215,38 @@ func TestGetKafkaProducerConfigMapSecurityProtocol(t *testing.T) {
 				},
 			},
 			ExpectedSecurityProtocol: "",
+		},
+		{
+			Name: "should not get security protocol when defined in sasl config and auth type mtls",
+			BrokerConfig: clowder.BrokerConfig{
+				Authtype: &authTypeMtls,
+				Cacert:   &dummyString,
+				Hostname: "192.168.1.7",
+				Port:     &port,
+				Sasl: &clowder.KafkaSASLConfig{
+					SaslMechanism:    &mech,
+					Username:         &dummyString,
+					Password:         &dummyString,
+					SecurityProtocol: &SecurityProtocols[1], // nolint: staticcheck
+				},
+			},
+			ExpectedSecurityProtocol: "",
+		},
+		{
+			Name: "should get security protocol when defined in broker config and auth type mtls",
+			BrokerConfig: clowder.BrokerConfig{
+				Authtype:         &authTypeMtls,
+				Cacert:           &dummyString,
+				Hostname:         "192.168.1.7",
+				Port:             &port,
+				SecurityProtocol: &SecurityProtocols[0],
+				Sasl: &clowder.KafkaSASLConfig{
+					SaslMechanism: &mech,
+					Username:      &dummyString,
+					Password:      &dummyString,
+				},
+			},
+			ExpectedSecurityProtocol: SecurityProtocols[0],
 		},
 	}
 
