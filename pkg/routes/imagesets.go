@@ -194,7 +194,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	latestImagesSubQuery := db.Org(orgID, "").Model(&models.Image{}).Select("image_set_id", "max(id) as image_id").Group("image_set_id")
+	latestImagesSubQuery := db.Org(orgID, "").Model(&models.Image{}).Select("image_set_id", "deleted_at", "max(id) as image_id").Group("image_set_id")
 	countResult := imageSetFilters(r, db.OrgDB(orgID, db.DB, "image_sets")).Table("(?) as latest_images", latestImagesSubQuery).
 		Joins("JOIN images on images.id = latest_images.image_id").
 		Joins("JOIN image_sets on image_sets.id = latest_images.image_set_id").
@@ -206,13 +206,16 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, s.Log, errors.NewInternalServerError())
 		return
 	}
-	result = imageSetFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Debug().Model(&models.ImageSet{})).Distinct("image_sets.*").
+
+	result = imageSetFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Debug().Model(&models.ImageSet{})).Table("(?) as latest_images", latestImagesSubQuery).
+		Distinct("image_sets.*").
 		Limit(pagination.Limit).Offset(pagination.Offset).
 		Preload("Images").
 		Preload("Images.Commit").
 		Preload("Images.Installer").
 		Preload("Images.Commit.Repo").
-		Joins(`JOIN Images ON Image_Sets.id = Images.image_set_id AND Images.deleted_at is NULL`).
+		Joins("JOIN images on images.id = latest_images.image_id").
+		Joins("JOIN image_sets on image_sets.id = latest_images.image_set_id").
 		Find(&imageSet)
 
 	if result.Error != nil {
@@ -220,6 +223,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, s.Log, errors.NewInternalServerError())
 		return
 	}
+
 	for idx, img := range imageSet {
 		var imgSet ImageSetInstallerURL
 		imgSet.ImageSetData = imageSet[idx]
