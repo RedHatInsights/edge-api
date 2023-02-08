@@ -143,15 +143,7 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(img.Commit.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
 		Expect(img.Commit.ExternalURL).To(BeFalse())
 	})
-	It("test get thirds party repo without orgId", func() {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusCreated)
-			fmt.Fprintln(w, `{"id": "compose-job-id-returned-from-image-builder"}`)
-		}))
-		defer ts.Close()
-		config.Get().ImageBuilderConfig.URL = ts.URL
-
+	It("test error while get thirds party repo without orgId", func() {
 		pkgs := []models.Package{
 			{
 				Name: "vim",
