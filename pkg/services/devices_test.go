@@ -19,7 +19,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory/mock_inventory"
-	"github.com/redhatinsights/edge-api/pkg/common/test"
+	"github.com/redhatinsights/edge-api/pkg/common/seeder"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
@@ -27,8 +27,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 	log "github.com/sirupsen/logrus"
 )
-
-var seeder = test.NewSeeder()
 
 var _ = Describe("DfseviceService", func() {
 	var ctrl *gomock.Controller
@@ -246,8 +244,8 @@ var _ = Describe("DfseviceService", func() {
 				}}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
-				_, imageSet := seeder.WithOstreeCommit(checksum).CreateImage()
-				newImage, _ := seeder.WithInstalledPackages([]models.InstalledPackage{
+				_, imageSet := seeder.Images().WithOstreeCommit(checksum).Create()
+				newImage, _ := seeder.Images().WithInstalledPackages([]models.InstalledPackage{
 					{
 						Name:    "yum",
 						Version: "3:6.0-1",
@@ -260,7 +258,7 @@ var _ = Describe("DfseviceService", func() {
 						Name:    "git",
 						Version: "2.0.0",
 					},
-				}).WithImageSetID(imageSet.ID).CreateImage()
+				}).WithImageSetID(imageSet.ID).Create()
 
 				updatesAvailable, countUpdatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false, 10, 0)
 
@@ -286,9 +284,9 @@ var _ = Describe("DfseviceService", func() {
 				}}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
-				_, imageSet := seeder.WithOstreeCommit(checksum).CreateImage()
+				_, imageSet := seeder.Images().WithOstreeCommit(checksum).Create()
 
-				seeder.WithInstalledPackages([]models.InstalledPackage{
+				seeder.Images().WithInstalledPackages([]models.InstalledPackage{
 					{
 						Name:    "yum",
 						Version: "3:6.0-1",
@@ -297,9 +295,9 @@ var _ = Describe("DfseviceService", func() {
 						Name:    "vim",
 						Version: "2.0.0",
 					},
-				}).WithImageSetID(imageSet.ID).WithVersion(2).CreateImage()
+				}).WithImageSetID(imageSet.ID).WithVersion(2).Create()
 
-				thirdImage, _ := seeder.WithInstalledPackages([]models.InstalledPackage{
+				thirdImage, _ := seeder.Images().WithInstalledPackages([]models.InstalledPackage{
 					{
 						Name:    "yum",
 						Version: "3:6.0-1",
@@ -308,7 +306,7 @@ var _ = Describe("DfseviceService", func() {
 						Name:    "puppet",
 						Version: "2.0.0",
 					},
-				}).WithImageSetID(imageSet.ID).WithVersion(3).CreateImage()
+				}).WithImageSetID(imageSet.ID).WithVersion(3).Create()
 
 				updatesAvailable, countUpdatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, true, 10, 0)
 
@@ -346,7 +344,7 @@ var _ = Describe("DfseviceService", func() {
 				}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil)
 
-				seeder.WithOstreeCommit(checksum).CreateImage()
+				seeder.Images().WithOstreeCommit(checksum).Create()
 
 				updatesAvailable, countUpdatesAvailable, err := deviceService.GetUpdateAvailableForDeviceByUUID(uuid, false, 10, 0)
 				Expect(err).To(BeNil())
@@ -478,11 +476,11 @@ var _ = Describe("DfseviceService", func() {
 				}}
 				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(1)
 
-				oldImage, imageSet := seeder.WithOstreeCommit(checksum).CreateImage()
-				newImage, _ := seeder.WithImageSetID(imageSet.ID).WithVersion(2).
+				oldImage, imageSet := seeder.Images().WithOstreeCommit(checksum).Create()
+				newImage, _ := seeder.Images().WithImageSetID(imageSet.ID).WithVersion(2).
 					WithInstalledPackages([]models.InstalledPackage{
 						{Name: "vim"},
-					}).CreateImage()
+					}).Create()
 
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(newImage, nil)
 				mockImageService.EXPECT().GetRollbackImage(gomock.Eq(newImage)).Return(oldImage, nil)
@@ -857,8 +855,8 @@ var _ = Describe("DfseviceService", func() {
 			defer GinkgoRecover()
 			orgID = common.DefaultOrgID
 
-			imageV1, _ = seeder.CreateImage()
-			deviceWithImage = *seeder.WithImageID(imageV1.ID).CreateDevice()
+			imageV1, _ = seeder.Images().Create()
+			deviceWithImage = *seeder.Devices().WithImageID(imageV1.ID).Create()
 
 			dispatchRecord = &models.DispatchRecord{
 				PlaybookDispatcherID: faker.UUIDHyphenated(),
@@ -943,7 +941,7 @@ var _ = Describe("DfseviceService", func() {
 				defer GinkgoRecover()
 				orgID := common.DefaultOrgID
 
-				imageV1, _ := seeder.CreateImage()
+				imageV1, _ := seeder.Images().Create()
 
 				deviceUnresponsive := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
 				result := db.DB.Create(&deviceUnresponsive)
@@ -1133,7 +1131,7 @@ var _ = Describe("DfseviceService", func() {
 
 			It("should sync devices with inventory", func() {
 				defer GinkgoRecover()
-				seeder.CreateDevice()
+				seeder.Devices().Create()
 
 				invResult := []inventory.Device{}
 				resp := inventory.Response{
@@ -1167,7 +1165,7 @@ var _ = Describe("DfseviceService", func() {
 			It("should sync inventory with devices", func() {
 				defer GinkgoRecover()
 				orgID := common.DefaultOrgID
-				deviceWithImage := seeder.CreateDevice()
+				deviceWithImage := seeder.Devices().Create()
 
 				invDevice := inventory.Device{
 					ID:    deviceWithImage.UUID,
@@ -1309,9 +1307,9 @@ var _ = Describe("DfseviceService", func() {
 				},
 			}}
 
-			oldImage, imageSet := seeder.CreateImage()
-			newImage, _ := seeder.WithImageSetID(imageSet.ID).WithVersion(2).CreateImage()
-			seeder.WithImageSetID(imageSet.ID).WithVersion(3).CreateImage()
+			oldImage, imageSet := seeder.Images().Create()
+			newImage, _ := seeder.Images().WithImageSetID(imageSet.ID).WithVersion(2).Create()
+			seeder.Images().WithImageSetID(imageSet.ID).WithVersion(3).Create()
 
 			device := models.Device{
 				OrgID:   "00000000",
@@ -1350,8 +1348,8 @@ var _ = Describe("DfseviceService", func() {
 					OrgID: orgID,
 				},
 			}}
-			image, _ := seeder.WithOstreeCommit(checksum).WithInstalledPackages([]models.InstalledPackage{}).CreateImage()
-			seeder.WithImageID(image.ID).CreateDevice()
+			image, _ := seeder.Images().WithOstreeCommit(checksum).WithInstalledPackages([]models.InstalledPackage{}).Create()
+			seeder.Devices().WithImageID(image.ID).Create()
 
 			mockImageService.EXPECT().GetImageByOSTreeCommitHash(gomock.Eq(checksum)).Return(image, nil)
 
@@ -1611,9 +1609,9 @@ var _ = Describe("DfseviceService", func() {
 		var img3 *models.Image
 		var device []models.Device
 		BeforeEach(func() {
-			img, imageSet = seeder.CreateImage()
-			img2, _ = seeder.WithImageSetID(imageSet.ID).CreateImage()
-			img3, _ = seeder.WithImageSetID(imageSet.ID).CreateImage()
+			img, imageSet = seeder.Images().Create()
+			img2, _ = seeder.Images().WithImageSetID(imageSet.ID).Create()
+			img3, _ = seeder.Images().WithImageSetID(imageSet.ID).Create()
 			device = []models.Device{
 				{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: img.ID},
 				{OrgID: "00000000", UUID: faker.UUIDHyphenated(), ImageID: img.ID},
@@ -1665,10 +1663,10 @@ var _ = Describe("DfseviceService", func() {
 			}}
 			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(1)
 
-			oldImage, imageSet = seeder.WithOstreeCommit(checksum).CreateImage()
+			oldImage, imageSet = seeder.Images().WithOstreeCommit(checksum).Create()
 
-			newImage, _ = seeder.WithVersion(2).WithImageSetID(imageSet.ID).CreateImage()
-			newImage2, _ = seeder.WithVersion(3).WithImageSetID(imageSet.ID).CreateImage()
+			newImage, _ = seeder.Images().WithVersion(2).WithImageSetID(imageSet.ID).Create()
+			newImage2, _ = seeder.Images().WithVersion(3).WithImageSetID(imageSet.ID).Create()
 		})
 
 		It("should return first result", func() {

@@ -18,7 +18,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory/mock_inventory"
-	"github.com/redhatinsights/edge-api/pkg/common/test"
+	"github.com/redhatinsights/edge-api/pkg/common/seeder"
 	log "github.com/sirupsen/logrus"
 
 	. "github.com/onsi/ginkgo"
@@ -272,12 +272,10 @@ var _ = Describe("Devices Router Integration", func() {
 		var imageSet *models.ImageSet
 
 		BeforeEach(func() {
-			seeder := test.NewSeeder()
+			image, imageSet = seeder.Images().Create()
+			device = seeder.Devices().WithImageID(image.ID).Create()
 
-			image, imageSet = seeder.CreateImage()
-			device = seeder.WithImageID(image.ID).CreateDevice()
-
-			imageUpdate, _ = seeder.WithImageSetID(imageSet.ID).CreateImage()
+			imageUpdate, _ = seeder.Images().WithImageSetID(imageSet.ID).Create()
 		})
 
 		When("when device exist", func() {
