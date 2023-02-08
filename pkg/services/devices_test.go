@@ -476,7 +476,7 @@ var _ = Describe("DfseviceService", func() {
 						OrgID: orgID,
 					},
 				}}
-				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(2)
+				mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(1)
 
 				oldImage, imageSet := seeder.WithOstreeCommit(checksum).CreateImage()
 				newImage, _ := seeder.WithImageSetID(imageSet.ID).WithVersion(2).
@@ -1308,8 +1308,6 @@ var _ = Describe("DfseviceService", func() {
 					OrgID: orgID,
 				},
 			}}
-			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).
-				Return(resp, nil).Times(1)
 
 			oldImage, imageSet := seeder.CreateImage()
 			newImage, _ := seeder.WithImageSetID(imageSet.ID).WithVersion(2).CreateImage()
@@ -1352,8 +1350,6 @@ var _ = Describe("DfseviceService", func() {
 					OrgID: orgID,
 				},
 			}}
-			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).
-				Return(resp, nil).Times(1)
 			image, _ := seeder.WithOstreeCommit(checksum).WithInstalledPackages([]models.InstalledPackage{}).CreateImage()
 			seeder.WithImageID(image.ID).CreateDevice()
 
@@ -1667,7 +1663,7 @@ var _ = Describe("DfseviceService", func() {
 					OrgID: orgID,
 				},
 			}}
-			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(2)
+			mockInventoryClient.EXPECT().ReturnDevicesByID(gomock.Eq(uuid)).Return(resp, nil).Times(1)
 
 			oldImage, imageSet = seeder.WithOstreeCommit(checksum).CreateImage()
 
