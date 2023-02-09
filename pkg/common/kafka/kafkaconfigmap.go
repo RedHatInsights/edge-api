@@ -31,14 +31,26 @@ func (k *KafkaConfigMapService) GetKafkaProducerConfigMap() kafka.ConfigMap {
 	cfg := config.Get()
 	kafkaConfigMap := kafka.ConfigMap{}
 
-	if cfg.KafkaBrokers != nil {
+	if len(cfg.KafkaBrokers) > 0 {
 		kafkaConfigMap.SetKey("bootstrap.servers", fmt.Sprintf("%s:%d", cfg.KafkaBrokers[0].Hostname, *cfg.KafkaBrokers[0].Port))
-		if cfg.KafkaBrokers[0].Sasl != nil {
+		var securityProtocol string
+		if cfg.KafkaBrokers[0].SecurityProtocol != nil {
+			securityProtocol = *cfg.KafkaBrokers[0].SecurityProtocol
+		}
+		if cfg.KafkaBrokers[0].Authtype != nil && *cfg.KafkaBrokers[0].Authtype == "sasl" && cfg.KafkaBrokers[0].Sasl != nil {
 			kafkaConfigMap.SetKey("sasl.mechanisms", *cfg.KafkaBrokers[0].Sasl.SaslMechanism)
-			kafkaConfigMap.SetKey("security.protocol", *cfg.KafkaBrokers[0].Sasl.SecurityProtocol)
 			kafkaConfigMap.SetKey("sasl.username", *cfg.KafkaBrokers[0].Sasl.Username)
 			kafkaConfigMap.SetKey("sasl.password", *cfg.KafkaBrokers[0].Sasl.Password)
+			if securityProtocol == "" && cfg.KafkaBrokers[0].Sasl.SecurityProtocol != nil && *cfg.KafkaBrokers[0].Sasl.SecurityProtocol != "" { // nolint: staticcheck
+				// seems we still in transition period and no security protocol was defined in parent
+				// set it from sasl config
+				securityProtocol = *cfg.KafkaBrokers[0].Sasl.SecurityProtocol // nolint: staticcheck
+			}
 		}
+		if securityProtocol != "" {
+			kafkaConfigMap.SetKey("security.protocol", securityProtocol)
+		}
+
 	}
 	return kafkaConfigMap
 }
