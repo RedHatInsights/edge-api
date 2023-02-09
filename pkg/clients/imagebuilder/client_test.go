@@ -143,7 +143,7 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(img.Commit.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
 		Expect(img.Commit.ExternalURL).To(BeFalse())
 	})
-	It("test error while get thirds party repo without orgId", func() {
+	It("should return error when image has org_id undefined", func() {
 		pkgs := []models.Package{
 			{
 				Name: "vim",
@@ -172,6 +172,7 @@ var _ = Describe("Image Builder Client Test", func() {
 		result, err := client.GetImageThirdPartyRepos(img)
 		Expect(result).To(BeNil())
 		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("error retrieving orgID  information, image orgID undefined"))
 	})
 
 	Context("compose image commit with ChangesRefs values", func() {
