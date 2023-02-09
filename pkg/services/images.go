@@ -1610,17 +1610,29 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 
 		s.log.WithField("message", recordValue).Info("Preparing record for producer")
 
+		// create a delivery channel to catch delivery errors
+		deliveryChan := make(chan kafka.Event)
+		defer close(deliveryChan)
+
 		// send the message
 		perr := p.Produce(&kafka.Message{
 			TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 			Key:            []byte(recordKey),
 			Value:          []byte(recordValue),
-		}, nil)
+		}, deliveryChan)
 
 		if perr != nil {
-			s.log.WithField("message", perr.Error()).Error("Error on produce")
+			s.log.WithFields(log.Fields{"message": perr.Error(), "topic": topic}).Error("Error on produce")
+			return notify, perr
+		}
+
+		// wait for notification delivery
+		err = WaitNotificationDelivery(deliveryChan, kafkacommon.DefaultDeliveryTimeout)
+		if err != nil {
+			s.log.WithFields(log.Fields{"message": err.Error(), "topic": topic}).Error("SendNotification message delivery failed")
 			return notify, err
 		}
+
 		p.Close()
 		s.log.WithField("message", topic).Info("SendNotification message was produced to topic")
 		fmt.Printf("SendNotification message was produced to topic %s!\n", topic)
