@@ -3,10 +3,12 @@
 package imagebuilder
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,13 +16,15 @@ import (
 	"time"
 
 	"github.com/bxcodec/faker/v3"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	log "github.com/sirupsen/logrus"
+	// "github.com/redhatinsights/edge-api/pkg/clients/imagebuilder/mock_imagebuilder"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
 )
@@ -28,6 +32,19 @@ import (
 func TestModels(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Image Builder Client Suite")
+}
+
+// Custom type that allows setting the func that our Mock Do func will run instead
+type MockDoType func(req *http.Request) (*http.Response, error)
+
+// MockClient is the mock client
+type MockClient struct {
+	MockDo MockDoType
+}
+
+// Overriding what the Do function should "do" in our MockClient
+func (m *MockClient) Do(req *http.Request) (*http.Response, error) {
+	return m.MockDo(req)
 }
 
 var _ = Describe("Image Builder Client Test", func() {
@@ -517,4 +534,76 @@ var _ = Describe("Image Builder Client Test", func() {
 			})
 		})
 	})
+
+	Describe("get metadata information", func() {
+
+		Context("when pakages exists", func() {
+			BeforeEach(func() {
+				pkgs := []models.InstalledPackage{}
+				pkgs = append(pkgs, models.InstalledPackage{Name: "rhc",
+					Version: "1",
+					Epoch:   "1",
+					Release: "1",
+					Arch:    "x86_64"})
+				img := &models.Image{Distribution: "rhel-8",
+					Commit: &models.Commit{
+						Arch:              "x86_64",
+						Repo:              &models.Repo{},
+						ComposeJobID:      faker.UUIDHyphenated(),
+						InstalledPackages: pkgs,
+					}}
+				db.DB.Save(img.Commit.InstalledPackages)
+				db.DB.Save(img.Commit)
+				db.DB.Save(img)
+
+			})
+
+			It("should not create new packages into db", func() {
+				pkgs := []models.Package{}
+				img := &models.Image{Distribution: "rhel-8",
+					Packages: pkgs,
+					Commit: &models.Commit{
+						OrgID:        faker.UUIDHyphenated(),
+						Arch:         "x86_64",
+						Repo:         &models.Repo{},
+						ComposeJobID: faker.UUIDHyphenated(),
+					}}
+
+				// build our response JSON
+				jsonResponse := `{
+				"ostree_commit": "mock-repo",
+				"packages": [
+					{"arch": "x86_64", "name": "rhc", "release": "1", "sigmd5": "a", "signature": "b", "type": "rpm", "version": "1", "epoch":"1"
+					}, 
+					{"arch": "x86_64", "name": "NetworkManager", "release": "3.el9", "sigmd5": "c", "signature": "d", "type": "rpm", "version": "1.18.2"
+					},
+					{"arch": "x86_64", "name": "ModemManager", "release": "3.el9", "sigmd5": "c", "signature": "d", "type": "rpm", "version": "1.18.2"
+					}]
+				}`
+
+				// create a new reader with that JSON
+				r := ioutil.NopCloser(bytes.NewReader([]byte(jsonResponse)))
+
+				Abc = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				img, a := client.GetMetadata(img)
+
+				Expect(a).ToNot(HaveOccurred())
+				Expect(img).ToNot(BeNil())
+				Expect(len(img.Commit.InstalledPackages)).To(Equal(2))
+				var s int64
+				db.DB.Model(models.CommitInstalledPackages{}).Where("Commit_Id=?", img.Commit.ID).Debug().Count(&s)
+				Expect(int(s)).To(Equal(3))
+				Expect(len(img.Commit.InstalledPackages)).To(Equal(2))
+			})
+		})
+	})
+
 })
