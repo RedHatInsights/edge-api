@@ -175,6 +175,39 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(err.Error()).To(Equal("error retrieving orgID  information, image orgID undefined"))
 	})
 
+	It("should return error when custom repositories id are not valid/not found", func() {
+		pkgs := []models.Package{
+			{
+				Name: "vim",
+			},
+			{
+				Name: "ansible",
+			},
+		}
+		img := &models.Image{Distribution: "rhel-8",
+			Packages: pkgs,
+			OrgID:    "Fake org_id",
+			Commit: &models.Commit{
+				Arch: "x86_64",
+				Repo: &models.Repo{},
+			},
+			ThirdPartyRepositories: []models.ThirdPartyRepo{
+				{
+					Name: "repo test",
+					URL:  "https://repo.com",
+				},
+				{
+					Name: "repo test2",
+					URL:  "https://repo2.com",
+				},
+			},
+		}
+		result, err := client.GetImageThirdPartyRepos(img)
+		Expect(result).To(BeNil())
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("enter valid third party repository id"))
+	})
+
 	Context("compose image commit with ChangesRefs values", func() {
 		dist := "rhel-86"
 		repoURL := faker.URL()
