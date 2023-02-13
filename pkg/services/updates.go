@@ -636,6 +636,10 @@ func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (Ima
 
 	// send the message
 	p := s.ProducerService.GetProducerInstance()
+	if p == nil {
+		s.log.Error("kafka producer instance is undefined")
+		return notify, new(KafkaProducerInstanceUndefined)
+	}
 	perr := p.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Key:            []byte(recordKey),
