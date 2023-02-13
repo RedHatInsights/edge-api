@@ -42,12 +42,10 @@ type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-var (
-	Abc HTTPClient
-)
+var mockClient HTTPClient
 
 func init() {
-	Abc = &http.Client{}
+	mockClient = &http.Client{}
 }
 
 // InitClient initializes the client for Image Builder
@@ -433,9 +431,8 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 		req.Header.Add(key, value)
 	}
 	req.Header.Add("Content-Type", "application/json")
-	// var client HTTPClient
-	// client = &http.Client{}
-	res, err := Abc.Do(req)
+
+	res, err := mockClient.Do(req)
 
 	if err != nil {
 		c.log.WithField("error", err.Error()).Error("Image Builder GetMetadata Request Error")
@@ -463,13 +460,14 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	}
 	var dupPackages []uint
 	for n := range metadata.InstalledPackages {
-
+		//MUST BE REFACTORED Query can make process slow
 		var result *models.InstalledPackage
 		db.DB.Table("Installed_Packages").Select("Id, name,release, arch, version, epoch").
 			Where("name = ? and release = ? and arch =? and version =? and epoch = ?",
 				metadata.InstalledPackages[n].Name, metadata.InstalledPackages[n].Release,
 				metadata.InstalledPackages[n].Arch, metadata.InstalledPackages[n].Version, metadata.InstalledPackages[n].Epoch).
 			Find(&result)
+			//IMPROVE RESULT VALIDATION
 		if result.Name == "" {
 			pkg := models.InstalledPackage{
 				Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,
@@ -484,6 +482,7 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	}
 	image.Commit.OSTreeCommit = metadata.OstreeCommit
 	db.DB.Debug().Omit("Image.InstalledPackages.*").Save(image.Commit)
+	//MUST BE REFACTORED insert in batch
 	for i := range dupPackages {
 		c := &models.CommitInstalledPackages{InstalledPackageId: dupPackages[i], CommitId: image.Commit.ID}
 		db.DB.Debug().Create(&c)
