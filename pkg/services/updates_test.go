@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 
 	"github.com/bxcodec/faker/v3"
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -35,6 +36,19 @@ import (
 var _ = Describe("UpdateService Basic functions", func() {
 	f, _ := os.Getwd()
 	templatesPath := fmt.Sprintf("%s/../templates/", filepath.Dir(f))
+
+	var originalWaitNotificationDelivery func(deliveryChan chan kafka.Event, timeout int) error
+
+	BeforeEach(func() {
+		originalWaitNotificationDelivery = services.WaitNotificationDelivery
+		services.WaitNotificationDelivery = func(deliveryChan chan kafka.Event, timeout int) error { return nil }
+	})
+
+	AfterEach(func() {
+		// restore the original function
+		services.WaitNotificationDelivery = originalWaitNotificationDelivery
+	})
+
 	Describe("creation of the service", func() {
 		Context("returns a correct instance", func() {
 			ctx := context.Background()
@@ -238,6 +252,18 @@ var _ = Describe("UpdateService Basic functions", func() {
 				_, err2 := updateService.SendDeviceNotification(&update)
 				Expect(err2).To(HaveOccurred())
 				Expect(err).To(Equal(err2))
+			})
+
+			It("should return error when notification delivery fails", func() {
+				expectedError := errors.New("expected notification delivery error")
+				services.WaitNotificationDelivery = func(deliveryChan chan kafka.Event, timeout int) error {
+					return expectedError
+				}
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				_, err := updateService.SendDeviceNotification(&update)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(expectedError))
 			})
 		})
 
