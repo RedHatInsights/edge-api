@@ -45,6 +45,8 @@ type EdgeConfig struct {
 	UploadWorkers            int                       `json:"upload_workers,omitempty"`
 	KafkaConfig              *clowder.KafkaConfig      `json:"kafka,omitempty"`
 	KafkaBrokers             []clowder.BrokerConfig    `json:"kafka_brokers,omitempty"`
+	KafkaBroker              *clowder.BrokerConfig     `json:"kafka_broker,omitempty"`
+	KafkaBrokerCaCertPath    string                    `json:"kafka_broker_ca_cert_path,omitempty"`
 	KafkaTopics              map[string]string         `json:"kafka_topics,omitempty"`
 	FDO                      *fdoConfig                `json:"fdo,omitempty"`
 	Local                    bool                      `json:"local,omitempty"`
@@ -309,6 +311,24 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		edgeConfig.KafkaBrokers = make([]clowder.BrokerConfig, len(edgeConfig.KafkaConfig.Brokers))
 		for i, b := range edgeConfig.KafkaConfig.Brokers {
 			edgeConfig.KafkaBrokers[i] = b
+		}
+
+		if len(edgeConfig.KafkaBrokers) > 0 {
+			if edgeConfig.KafkaBroker == nil {
+				// the config KafkaBroker is the first kafka broker
+				edgeConfig.KafkaBroker = &edgeConfig.KafkaBrokers[0]
+			}
+		}
+
+		// write the first kafka broker caCert if defined
+		if edgeConfig.KafkaBroker != nil && edgeConfig.KafkaBroker.Cacert != nil && *edgeConfig.KafkaBroker.Cacert != "" {
+			caCertFilePath, err := clowder.LoadedConfig.KafkaCa(*edgeConfig.KafkaBroker)
+			if err != nil {
+				log.WithField("error", err.Error()).Error("clowder failed to write first broker caCert to file")
+				// continue anyway
+			} else {
+				edgeConfig.KafkaBrokerCaCertPath = caCertFilePath
+			}
 		}
 	}
 

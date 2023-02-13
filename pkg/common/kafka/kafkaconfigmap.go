@@ -31,20 +31,30 @@ func (k *KafkaConfigMapService) GetKafkaProducerConfigMap() kafka.ConfigMap {
 	cfg := config.Get()
 	kafkaConfigMap := kafka.ConfigMap{}
 
-	if len(cfg.KafkaBrokers) > 0 {
-		kafkaConfigMap.SetKey("bootstrap.servers", fmt.Sprintf("%s:%d", cfg.KafkaBrokers[0].Hostname, *cfg.KafkaBrokers[0].Port))
+	// use the first kafka broker from config
+	if cfg.KafkaBroker != nil {
+		kafkaConfigMap.SetKey("bootstrap.servers", fmt.Sprintf("%s:%d", cfg.KafkaBroker.Hostname, *cfg.KafkaBroker.Port))
 		var securityProtocol string
-		if cfg.KafkaBrokers[0].SecurityProtocol != nil {
-			securityProtocol = *cfg.KafkaBrokers[0].SecurityProtocol
+		if cfg.KafkaBroker.SecurityProtocol != nil {
+			securityProtocol = *cfg.KafkaBroker.SecurityProtocol
 		}
-		if cfg.KafkaBrokers[0].Authtype != nil && *cfg.KafkaBrokers[0].Authtype == "sasl" && cfg.KafkaBrokers[0].Sasl != nil {
-			kafkaConfigMap.SetKey("sasl.mechanisms", *cfg.KafkaBrokers[0].Sasl.SaslMechanism)
-			kafkaConfigMap.SetKey("sasl.username", *cfg.KafkaBrokers[0].Sasl.Username)
-			kafkaConfigMap.SetKey("sasl.password", *cfg.KafkaBrokers[0].Sasl.Password)
-			if securityProtocol == "" && cfg.KafkaBrokers[0].Sasl.SecurityProtocol != nil && *cfg.KafkaBrokers[0].Sasl.SecurityProtocol != "" { // nolint: staticcheck
+		if cfg.KafkaBrokerCaCertPath != "" {
+			kafkaConfigMap.SetKey("ssl.ca.location", cfg.KafkaBrokerCaCertPath)
+		}
+		if cfg.KafkaBroker.Authtype != nil && *cfg.KafkaBroker.Authtype == "sasl" && cfg.KafkaBroker.Sasl != nil {
+			if cfg.KafkaBroker.Sasl.SaslMechanism != nil {
+				kafkaConfigMap.SetKey("sasl.mechanisms", *cfg.KafkaBroker.Sasl.SaslMechanism)
+			}
+			if cfg.KafkaBroker.Sasl.Username != nil {
+				kafkaConfigMap.SetKey("sasl.username", *cfg.KafkaBroker.Sasl.Username)
+			}
+			if cfg.KafkaBroker.Sasl.Password != nil {
+				kafkaConfigMap.SetKey("sasl.password", *cfg.KafkaBroker.Sasl.Password)
+			}
+			if securityProtocol == "" && cfg.KafkaBroker.Sasl.SecurityProtocol != nil && *cfg.KafkaBroker.Sasl.SecurityProtocol != "" { // nolint: staticcheck
 				// seems we still in transition period and no security protocol was defined in parent
 				// set it from sasl config
-				securityProtocol = *cfg.KafkaBrokers[0].Sasl.SecurityProtocol // nolint: staticcheck
+				securityProtocol = *cfg.KafkaBroker.Sasl.SecurityProtocol // nolint: staticcheck
 			}
 		}
 		if securityProtocol != "" {

@@ -19,6 +19,7 @@ func TestGetKafkaProducerConfigMap(t *testing.T) {
 	cfg := config.Get()
 
 	conf := cfg.KafkaConfig
+	originalKafkaBroker := cfg.KafkaBroker
 
 	authType := clowder.BrokerConfigAuthtype("sasl")
 	dummyString := "something"
@@ -44,12 +45,13 @@ func TestGetKafkaProducerConfigMap(t *testing.T) {
 		"sasl.username":     "something",
 		"sasl.password":     "something",
 	}
-	cfg.KafkaBrokers = []clowder.BrokerConfig{brokerConfig}
+	cfg.KafkaBroker = &brokerConfig
 
 	// Reset config.kafkaconfig back to its original value
-	defer func(conf *v1.KafkaConfig) {
+	defer func(conf *v1.KafkaConfig, kafkaBroker *clowder.BrokerConfig) {
 		config.Get().KafkaConfig = conf
-	}(conf)
+		config.Get().KafkaBroker = kafkaBroker
+	}(conf, originalKafkaBroker)
 
 	ctx := context.Background()
 	cfg.KafkaConfig = &v1.KafkaConfig{}
@@ -83,6 +85,7 @@ func TestGetKafkaConsumerConfigMap(t *testing.T) {
 	cfg := config.Get()
 
 	conf := cfg.KafkaConfig
+	originalKafkaBroker := cfg.KafkaBroker
 
 	authType := clowder.BrokerConfigAuthtype("sasl")
 	dummyString := "something"
@@ -114,11 +117,13 @@ func TestGetKafkaConsumerConfigMap(t *testing.T) {
 	}
 	brokerSlice := []clowder.BrokerConfig{brokerConfig}
 	cfg.KafkaBrokers = brokerSlice
+	cfg.KafkaBroker = &brokerConfig
 
 	// Reset config.kafkaconfig back to its original value
-	defer func(conf *v1.KafkaConfig) {
+	defer func(conf *v1.KafkaConfig, kafkaBroker *clowder.BrokerConfig) {
 		config.Get().KafkaConfig = conf
-	}(conf)
+		config.Get().KafkaBroker = kafkaBroker
+	}(conf, originalKafkaBroker)
 
 	ctx := context.Background()
 	cfg.KafkaConfig = &v1.KafkaConfig{}
@@ -152,9 +157,9 @@ func TestGetKafkaConsumerConfigMap(t *testing.T) {
 func TestGetKafkaProducerConfigMapSecurityProtocol(t *testing.T) {
 	var service kafkacommon.KafkaConfigMapServiceInterface
 	cfg := config.Get()
-	originalKafkaBrokerConf := cfg.KafkaBrokers
-	defer func(conf []clowder.BrokerConfig) {
-		config.Get().KafkaBrokers = conf
+	originalKafkaBrokerConf := cfg.KafkaBroker
+	defer func(KafkaBrokerConf *clowder.BrokerConfig) {
+		config.Get().KafkaBroker = KafkaBrokerConf
 	}(originalKafkaBrokerConf)
 
 	authTypeSasl := clowder.BrokerConfigAuthtype("sasl")
@@ -253,12 +258,68 @@ func TestGetKafkaProducerConfigMapSecurityProtocol(t *testing.T) {
 	service = kafkacommon.NewKafkaConfigMapService()
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(t *testing.T) {
-			config.Get().KafkaBrokers = []clowder.BrokerConfig{testCase.BrokerConfig}
+			config.Get().KafkaBroker = &testCase.BrokerConfig
 
 			configMap := service.GetKafkaProducerConfigMap()
 			securityProtocol, err := configMap.Get("security.protocol", "")
 			assert.NoError(t, err, "cannot get security protocol from configMap, occur when as type mismatch")
 			assert.Equal(t, securityProtocol, testCase.ExpectedSecurityProtocol)
+		})
+	}
+}
+
+func TestGetKafkaProducerConfigMapCaCert(t *testing.T) {
+	var service kafkacommon.KafkaConfigMapServiceInterface
+	cfg := config.Get()
+	originalKafkaBrokerConf := cfg.KafkaBroker
+	originalKafkaBrokerConfCaCertPath := cfg.KafkaBrokerCaCertPath
+	defer func(conf *clowder.BrokerConfig, caCertPath string) {
+		config.Get().KafkaBroker = conf
+		config.Get().KafkaBrokerCaCertPath = caCertPath
+	}(originalKafkaBrokerConf, originalKafkaBrokerConfCaCertPath)
+
+	authTypeSasl := clowder.BrokerConfigAuthtype("sasl")
+	dummyString := faker.UUIDHyphenated()
+	port := 80
+	caCertPath := faker.UUIDHyphenated()
+
+	testCases := []struct {
+		Name                   string
+		BrokerConfig           clowder.BrokerConfig
+		BrokerConfigCaCertPath string
+		ExpectedCaLocation     string
+	}{
+		{
+			Name: "should get security protocol from broker config",
+			BrokerConfig: clowder.BrokerConfig{
+				Authtype: &authTypeSasl,
+				Cacert:   &dummyString,
+				Hostname: "192.168.1.7",
+				Port:     &port,
+			},
+			BrokerConfigCaCertPath: caCertPath,
+			ExpectedCaLocation:     caCertPath,
+		},
+		{
+			Name: "should get security protocol from broker sasl config",
+			BrokerConfig: clowder.BrokerConfig{
+				Hostname: "192.168.1.7",
+				Port:     &port,
+			},
+			ExpectedCaLocation: "",
+		},
+	}
+
+	service = kafkacommon.NewKafkaConfigMapService()
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			config.Get().KafkaBroker = &testCase.BrokerConfig
+			config.Get().KafkaBrokerCaCertPath = testCase.BrokerConfigCaCertPath
+
+			configMap := service.GetKafkaProducerConfigMap()
+			caLocation, err := configMap.Get("ssl.ca.location", "")
+			assert.NoError(t, err, "cannot get ssl ca location from configMap, occurs when as type mismatch")
+			assert.Equal(t, caLocation, testCase.ExpectedCaLocation)
 		})
 	}
 }
