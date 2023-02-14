@@ -589,7 +589,7 @@ var _ = Describe("Image Builder Client Test", func() {
 				// create a new reader with that JSON
 				r := ioutil.NopCloser(bytes.NewReader([]byte(jsonResponse)))
 
-				mockClient = &MockClient{
+				ImageBuilderHTTPClient = &MockClient{
 					MockDo: func(*http.Request) (*http.Response, error) {
 						return &http.Response{
 							StatusCode: 200,
@@ -633,7 +633,7 @@ var _ = Describe("Image Builder Client Test", func() {
 				// create a new reader with that JSON
 				r := ioutil.NopCloser(bytes.NewReader([]byte(jsonResponse)))
 
-				mockClient = &MockClient{
+				ImageBuilderHTTPClient = &MockClient{
 					MockDo: func(*http.Request) (*http.Response, error) {
 						return &http.Response{
 							StatusCode: 200,

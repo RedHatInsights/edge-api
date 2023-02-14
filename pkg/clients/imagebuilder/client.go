@@ -31,6 +31,7 @@ type ClientInterface interface {
 	GetInstallerStatus(image *models.Image) (*models.Image, error)
 	GetMetadata(image *models.Image) (*models.Image, error)
 	SearchPackage(packageName string, arch string, dist string) (*models.SearchPackageResult, error)
+	ValidatePackages(pkg InstalledPackage) (uint, error)
 }
 
 // Client is the implementation of an ClientInterface
@@ -42,10 +43,10 @@ type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-var mockClient HTTPClient
+var ImageBuilderHTTPClient HTTPClient
 
 func init() {
-	mockClient = &http.Client{}
+	ImageBuilderHTTPClient = &http.Client{}
 }
 
 // InitClient initializes the client for Image Builder
@@ -432,7 +433,7 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	}
 	req.Header.Add("Content-Type", "application/json")
 
-	res, err := mockClient.Do(req)
+	res, err := ImageBuilderHTTPClient.Do(req)
 
 	if err != nil {
 		c.log.WithField("error", err.Error()).Error("Image Builder GetMetadata Request Error")
@@ -462,8 +463,8 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	for n := range metadata.InstalledPackages {
 
 		if feature.DedupPackage.IsEnabled() {
-			pkg := validatePackages(metadata.InstalledPackages[n])
-			if pkg != 0 {
+			pkg, err := c.ValidatePackages(metadata.InstalledPackages[n])
+			if pkg != 0 && err == nil {
 				dupPackages = append(dupPackages, pkg)
 
 			} else {
@@ -584,16 +585,20 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*m
 	return &searchResult, nil
 }
 
-func validatePackages(pkg InstalledPackage) uint {
+func (c *Client) ValidatePackages(pkg InstalledPackage) (uint, error) {
 	// think to use (Where("name ,release" in ((?,?)) )
 	var result *models.InstalledPackage
-	db.DB.Table("Installed_Packages").Select("ID, name,release, arch, version, epoch").
+	err := db.DB.Table("Installed_Packages").Select("ID, name,release, arch, version, epoch").
 		Where("name = ? and release = ? and arch =? and version =? and epoch = ?",
 			pkg.Name, pkg.Release, pkg.Arch, pkg.Version, pkg.Epoch).
 		Find(&result)
-
-	if result.Name != "" {
-		return result.ID
+	if err.Error != nil {
+		c.log.WithField("error", err.Error.Error()).Error(new(PackageRequestError))
+		return 0, err.Error
+	} else {
+		if result.Name != "" {
+			return result.ID, nil
+		}
+		return 0, nil
 	}
-	return 0
 }

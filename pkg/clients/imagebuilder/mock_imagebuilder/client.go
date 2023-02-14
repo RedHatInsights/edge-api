@@ -6,6 +6,7 @@ package mock_imagebuilder
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	imagebuilder "github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	models "github.com/redhatinsights/edge-api/pkg/models"
 	http "net/http"
 	reflect "reflect"
@@ -122,6 +123,21 @@ func (m *MockClientInterface) SearchPackage(packageName, arch, dist string) (*mo
 func (mr *MockClientInterfaceMockRecorder) SearchPackage(packageName, arch, dist interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchPackage", reflect.TypeOf((*MockClientInterface)(nil).SearchPackage), packageName, arch, dist)
+}
+
+// ValidatePackages mocks base method
+func (m *MockClientInterface) ValidatePackages(pkg imagebuilder.InstalledPackage) (uint, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidatePackages", pkg)
+	ret0, _ := ret[0].(uint)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ValidatePackages indicates an expected call of ValidatePackages
+func (mr *MockClientInterfaceMockRecorder) ValidatePackages(pkg interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidatePackages", reflect.TypeOf((*MockClientInterface)(nil).ValidatePackages), pkg)
 }
 
 // MockHTTPClient is a mock of HTTPClient interface
