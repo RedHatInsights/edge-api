@@ -26,8 +26,8 @@ func NewKafkaConfigMapService() KafkaConfigMapServiceInterface {
 	return &KafkaConfigMapService{}
 }
 
-// GetKafkaProducerConfigMap returns the correct kafka auth based on the environment and given config
-func (k *KafkaConfigMapService) GetKafkaProducerConfigMap() kafka.ConfigMap {
+// getKafkaCommonConfigMap returns the kafka configMap common to producer and consumer
+func (k *KafkaConfigMapService) getKafkaCommonConfigMap() kafka.ConfigMap {
 	cfg := config.Get()
 	kafkaConfigMap := kafka.ConfigMap{}
 
@@ -65,10 +65,22 @@ func (k *KafkaConfigMapService) GetKafkaProducerConfigMap() kafka.ConfigMap {
 	return kafkaConfigMap
 }
 
+// GetKafkaProducerConfigMap returns the correct kafka auth based on the environment and given config
+func (k *KafkaConfigMapService) GetKafkaProducerConfigMap() kafka.ConfigMap {
+	cfg := config.Get()
+	kafkaConfigMap := k.getKafkaCommonConfigMap()
+
+	kafkaConfigMap.SetKey("request.required.acks", cfg.KafkaRequestRequiredAcks)
+	kafkaConfigMap.SetKey("message.send.max.retries", cfg.KafkaMessageSendMaxRetries)
+	kafkaConfigMap.SetKey("retry.backoff.ms", cfg.KafkaRetryBackoffMs)
+
+	return kafkaConfigMap
+}
+
 // GetKafkaConsumerConfigMap returns the correct kafka auth based on the environment and given config
 func (k *KafkaConfigMapService) GetKafkaConsumerConfigMap(consumerGroup string) kafka.ConfigMap {
 	cfg := config.Get()
-	kafkaConfigMap := k.GetKafkaProducerConfigMap()
+	kafkaConfigMap := k.getKafkaCommonConfigMap()
 	kafkaConfigMap.SetKey("group.id", consumerGroup)
 
 	if cfg.KafkaBrokers != nil {
