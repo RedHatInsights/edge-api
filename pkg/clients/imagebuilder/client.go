@@ -481,7 +481,7 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 			var cip []models.CommitInstalledPackages
 			if len(dupPackages) > 0 {
 				for i := range dupPackages {
-					//build batch
+					// build batch
 					cip = append(cip, models.CommitInstalledPackages{InstalledPackageId: dupPackages[i], CommitId: image.Commit.ID})
 				}
 
@@ -585,7 +585,7 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*m
 }
 
 func validatePackages(pkg InstalledPackage) uint {
-	//think to use (Where("name ,release" in ((?,?)) )
+	// think to use (Where("name ,release" in ((?,?)) )
 	var result *models.InstalledPackage
 	db.DB.Table("Installed_Packages").Select("ID, name,release, arch, version, epoch").
 		Where("name = ? and release = ? and arch =? and version =? and epoch = ?",
