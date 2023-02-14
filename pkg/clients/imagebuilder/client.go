@@ -461,7 +461,7 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	var dupPackages []uint
 	for n := range metadata.InstalledPackages {
 
-		if !feature.DedupPackage.IsEnabled() {
+		if feature.DedupPackage.IsEnabled() {
 			pkg := validatePackages(metadata.InstalledPackages[n])
 			if pkg != 0 {
 				dupPackages = append(dupPackages, pkg)
