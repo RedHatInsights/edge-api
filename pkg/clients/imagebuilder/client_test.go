@@ -539,6 +539,8 @@ var _ = Describe("Image Builder Client Test", func() {
 
 		Context("when pakages exists", func() {
 			BeforeEach(func() {
+				err := os.Setenv("DEDUP_INSTALLED_PACKAGES", "True")
+				Expect(err).ToNot(HaveOccurred())
 				pkgs := []models.InstalledPackage{}
 				pkgs = append(pkgs, models.InstalledPackage{Name: "rhc",
 					Version: "1",
@@ -557,7 +559,10 @@ var _ = Describe("Image Builder Client Test", func() {
 				db.DB.Save(img)
 
 			})
-
+			AfterEach(func() {
+				// disable the feature
+				os.Unsetenv("DEDUP_INSTALLED_PACKAGES")
+			})
 			It("should not create new packages RHC into db", func() {
 				pkgs := []models.Package{}
 				img := &models.Image{Distribution: "rhel-8",
