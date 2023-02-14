@@ -460,15 +460,37 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	}
 	var dupPackages []uint
 	for n := range metadata.InstalledPackages {
-		//MUST BE REFACTORED Query can make process slow
-		var result *models.InstalledPackage
-		db.DB.Table("Installed_Packages").Select("Id, name,release, arch, version, epoch").
-			Where("name = ? and release = ? and arch =? and version =? and epoch = ?",
-				metadata.InstalledPackages[n].Name, metadata.InstalledPackages[n].Release,
-				metadata.InstalledPackages[n].Arch, metadata.InstalledPackages[n].Version, metadata.InstalledPackages[n].Epoch).
-			Find(&result)
-			//IMPROVE RESULT VALIDATION
-		if result.Name == "" {
+
+		if !feature.DedupPackage.IsEnabled() {
+			pkg := validatePackages(metadata.InstalledPackages[n])
+			if pkg != 0 {
+				dupPackages = append(dupPackages, pkg)
+
+			} else {
+				pkg := models.InstalledPackage{
+					Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,
+					Release: metadata.InstalledPackages[n].Release, Sigmd5: metadata.InstalledPackages[n].Sigmd5,
+					Signature: metadata.InstalledPackages[n].Signature, Type: metadata.InstalledPackages[n].Type,
+					Version: metadata.InstalledPackages[n].Version, Epoch: metadata.InstalledPackages[n].Epoch,
+				}
+				image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
+			}
+
+			db.DB.Debug().Omit("Image.InstalledPackages.*").Save(image.Commit)
+
+			var cip []models.CommitInstalledPackages
+			if len(dupPackages) > 0 {
+				for i := range dupPackages {
+					//build batch
+					cip = append(cip, models.CommitInstalledPackages{InstalledPackageId: dupPackages[i], CommitId: image.Commit.ID})
+				}
+
+				if len(cip) > 0 {
+					db.DB.Create(&cip)
+				}
+			}
+
+		} else {
 			pkg := models.InstalledPackage{
 				Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,
 				Release: metadata.InstalledPackages[n].Release, Sigmd5: metadata.InstalledPackages[n].Sigmd5,
@@ -476,17 +498,9 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 				Version: metadata.InstalledPackages[n].Version, Epoch: metadata.InstalledPackages[n].Epoch,
 			}
 			image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
-		} else {
-			dupPackages = append(dupPackages, result.ID)
 		}
 	}
 	image.Commit.OSTreeCommit = metadata.OstreeCommit
-	db.DB.Debug().Omit("Image.InstalledPackages.*").Save(image.Commit)
-	//MUST BE REFACTORED insert in batch
-	for i := range dupPackages {
-		c := &models.CommitInstalledPackages{InstalledPackageId: dupPackages[i], CommitId: image.Commit.ID}
-		db.DB.Debug().Create(&c)
-	}
 
 	c.log.Info("Done with metadata for image")
 	return image, nil
@@ -568,4 +582,18 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*m
 		return nil, err
 	}
 	return &searchResult, nil
+}
+
+func validatePackages(pkg InstalledPackage) uint {
+	//think to use (Where("name ,release" in ((?,?)) )
+	var result *models.InstalledPackage
+	db.DB.Table("Installed_Packages").Select("ID, name,release, arch, version, epoch").
+		Where("name = ? and release = ? and arch =? and version =? and epoch = ?",
+			pkg.Name, pkg.Release, pkg.Arch, pkg.Version, pkg.Epoch).
+		Find(&result)
+
+	if result.Name != "" {
+		return result.ID
+	}
+	return 0
 }
