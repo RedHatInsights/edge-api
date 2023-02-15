@@ -239,6 +239,13 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Expect(err2).To(HaveOccurred())
 				Expect(err).To(Equal(err2))
 			})
+			It("should return error when producer is undefined", func() {
+				expectedError := new(services.KafkaProducerInstanceUndefined)
+				mockProducerService.EXPECT().GetProducerInstance().Return(nil)
+				_, err := updateService.SendDeviceNotification(&update)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(expectedError))
+			})
 		})
 
 		Context("#CreateUpdate", func() {
