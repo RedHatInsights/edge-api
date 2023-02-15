@@ -6,7 +6,6 @@ package mock_imagebuilder
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	imagebuilder "github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	models "github.com/redhatinsights/edge-api/pkg/models"
 	http "net/http"
 	reflect "reflect"
@@ -126,10 +125,10 @@ func (mr *MockClientInterfaceMockRecorder) SearchPackage(packageName, arch, dist
 }
 
 // ValidatePackages mocks base method
-func (m *MockClientInterface) ValidatePackages(pkg imagebuilder.InstalledPackage) (uint, error) {
+func (m *MockClientInterface) ValidatePackages(pkg []string) (map[uint]*models.InstalledPackage, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ValidatePackages", pkg)
-	ret0, _ := ret[0].(uint)
+	ret0, _ := ret[0].(map[uint]*models.InstalledPackage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

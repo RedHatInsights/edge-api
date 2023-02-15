@@ -31,7 +31,7 @@ type ClientInterface interface {
 	GetInstallerStatus(image *models.Image) (*models.Image, error)
 	GetMetadata(image *models.Image) (*models.Image, error)
 	SearchPackage(packageName string, arch string, dist string) (*models.SearchPackageResult, error)
-	ValidatePackages(pkg InstalledPackage) (uint, error)
+	ValidatePackages(pkg []string) (map[uint]*models.InstalledPackage, error)
 }
 
 // Client is the implementation of an ClientInterface
@@ -460,13 +460,31 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 		return nil, err
 	}
 	var dupPackages []uint
+	var metadataPackages []string
+	for n := range metadata.InstalledPackages {
+		metadataPackages = append(metadataPackages, fmt.Sprintf("%s-%s-%s", metadata.InstalledPackages[n].Name, metadata.InstalledPackages[n].Release, metadata.InstalledPackages[n].Version))
+	}
+
+	var pkg map[uint]*models.InstalledPackage
+	var cip []models.CommitInstalledPackages
+
+	concatPkg := make(map[string]string)
+
+	if feature.DedupPackage.IsEnabled() {
+		pkg, err = c.ValidatePackages(metadataPackages)
+		if len(pkg) > 0 && err == nil {
+			for key := range pkg {
+				dupPackages = append(dupPackages, key)
+				concatPkg[pkg[key].Name] = pkg[key].Release
+			}
+		}
+	}
+
 	for n := range metadata.InstalledPackages {
 
 		if feature.DedupPackage.IsEnabled() {
-			pkg, err := c.ValidatePackages(metadata.InstalledPackages[n])
-			if pkg != 0 && err == nil {
-				dupPackages = append(dupPackages, pkg)
-
+			if concatPkg[metadata.InstalledPackages[n].Name] != "" {
+				continue
 			} else {
 				pkg := models.InstalledPackage{
 					Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,
@@ -475,20 +493,9 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 					Version: metadata.InstalledPackages[n].Version, Epoch: metadata.InstalledPackages[n].Epoch,
 				}
 				image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
-			}
 
-			db.DB.Debug().Omit("Image.InstalledPackages.*").Save(image.Commit)
+				db.DB.Debug().Omit("Image.InstalledPackages.*").Save(image.Commit)
 
-			var cip []models.CommitInstalledPackages
-			if len(dupPackages) > 0 {
-				for i := range dupPackages {
-					// build batch
-					cip = append(cip, models.CommitInstalledPackages{InstalledPackageId: dupPackages[i], CommitId: image.Commit.ID})
-				}
-
-				if len(cip) > 0 {
-					db.DB.Create(&cip)
-				}
 			}
 
 		} else {
@@ -502,6 +509,18 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 		}
 	}
 	image.Commit.OSTreeCommit = metadata.OstreeCommit
+
+	if feature.DedupPackage.IsEnabled() &&
+		len(dupPackages) > 0 {
+		for i := range dupPackages {
+			// build batch
+			cip = append(cip, models.CommitInstalledPackages{InstalledPackageId: dupPackages[i], CommitId: image.Commit.ID})
+		}
+
+		if len(cip) > 0 {
+			db.DB.Create(&cip)
+		}
+	}
 
 	c.log.Info("Done with metadata for image")
 	return image, nil
@@ -585,20 +604,27 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*m
 	return &searchResult, nil
 }
 
-func (c *Client) ValidatePackages(pkg InstalledPackage) (uint, error) {
-	// think to use (Where("name ,release" in ((?,?)) )
-	var result *models.InstalledPackage
-	err := db.DB.Table("Installed_Packages").Select("ID, name,release, arch, version, epoch").
-		Where("name = ? and release = ? and arch =? and version =? and epoch = ?",
-			pkg.Name, pkg.Release, pkg.Arch, pkg.Version, pkg.Epoch).
+func (c *Client) ValidatePackages(pkgs []string) (map[uint]*models.InstalledPackage, error) {
+	var result []models.InstalledPackage
+	var installedPackageId []uint
+	setOfPackages := make(map[uint]*models.InstalledPackage)
+
+	err := db.DB.Debug().Table("Installed_Packages").Select("ID, name,release, arch, version, epoch").
+		Where("( (name || '-' || release || '-' ||  version)) in (?)", pkgs).
+		// Where("name = ? and release = ? and arch =? and version =? and epoch = ?",
+		// pkg.Name, pkg.Release, pkg.Arch, pkg.Version, pkg.Epoch).
 		Find(&result)
 	if err.Error != nil {
 		c.log.WithField("error", err.Error.Error()).Error(new(PackageRequestError))
-		return 0, err.Error
+		return nil, err.Error
 	} else {
-		if result.Name != "" {
-			return result.ID, nil
+		if len(result) > 0 {
+			for n := range result {
+				installedPackageId = append(installedPackageId, result[n].ID)
+				setOfPackages[result[n].ID] = &result[n]
+			}
+			return setOfPackages, nil
 		}
-		return 0, nil
+		return nil, nil
 	}
 }
