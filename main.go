@@ -25,10 +25,12 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	edgeunleash "github.com/redhatinsights/edge-api/unleash"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 
 	"github.com/redhatinsights/edge-api/config"
 
 	"github.com/Unleash/unleash-client-go/v3"
+	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -167,6 +169,18 @@ func main() {
 	initDependencies()
 
 	cfg := config.Get()
+
+	if feature.GlitchtipLogging.IsEnabled() {
+		// Set up Sentry client for GlitchTip error tracking
+		sentry.Init(sentry.ClientOptions{
+			Dsn: cfg.GlitchtipDsn,
+		})
+		// Flush client after main exits
+		defer sentry.Flush(2 * time.Second)
+		// Report captured errors to GlitchTip
+		defer sentry.Recover()
+	}
+
 	if cfg.Debug {
 		if buildInfo, ok := debug.ReadBuildInfo(); ok {
 			b := new(bytes.Buffer)

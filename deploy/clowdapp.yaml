@@ -16,6 +16,12 @@ objects:
     name: image-builder-org-id
   stringData:
     key: ${IMAGE_BUILDER_ORG_ID}
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: glitchtip-dsn
+  stringData:
+    key: ${GLITCHTIP_DSN}
 - apiVersion: cloud.redhat.com/v1alpha1
   kind: ClowdApp
   metadata:
@@ -87,6 +93,11 @@ objects:
             secretKeyRef:
               key: key
               name: image-builder-org-id
+        - name: GLITCHTIPDSN
+          valueFrom:
+            secretKeyRef:
+              key: key
+              name: glitchtip-dsn
         - name: EDGEAPIBASEURL
           value: ${EDGEAPIBASEURL}
         - name: EDGECERTAPIBASEURL
