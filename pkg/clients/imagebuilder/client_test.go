@@ -175,6 +175,38 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(err.Error()).To(Equal("error retrieving orgID  information, image orgID undefined"))
 	})
 
+	It("should retrieve and return third party repos from database and return valid list", func() {
+		pkgs := []models.Package{
+			{
+				Name: "vim",
+			},
+			{
+				Name: "ansible",
+			},
+		}
+		OrgId := faker.UUIDHyphenated()
+		thirdPartyRepo := models.ThirdPartyRepo{
+			Name:  faker.UUIDHyphenated(),
+			URL:   faker.URL(),
+			OrgID: OrgId,
+		}
+		db.DB.Create(&thirdPartyRepo)
+		img := &models.Image{Distribution: "rhel-8",
+			Packages: pkgs,
+			OrgID:    OrgId,
+			Commit: &models.Commit{
+				Arch: "x86_64",
+				Repo: &models.Repo{},
+			},
+			ThirdPartyRepositories: []models.ThirdPartyRepo{
+				thirdPartyRepo,
+			},
+		}
+		result, err := client.GetImageThirdPartyRepos(img)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result[0].BaseURL).To(Equal(thirdPartyRepo.URL))
+	})
+
 	It("should return error when custom repositories id are not valid/not found", func() {
 		pkgs := []models.Package{
 			{
@@ -186,7 +218,7 @@ var _ = Describe("Image Builder Client Test", func() {
 		}
 		img := &models.Image{Distribution: "rhel-8",
 			Packages: pkgs,
-			OrgID:    "Fake org_id",
+			OrgID:    "org_id",
 			Commit: &models.Commit{
 				Arch: "x86_64",
 				Repo: &models.Repo{},
