@@ -719,6 +719,26 @@ var _ = Describe("Image Builder Client Test", func() {
 			Expect(a).NotTo(BeNil())
 			Expect(a[1].Name).To(Equal("rhc"))
 		})
+
+		It("should return nil ", func() {
+
+			var metadata Metadata
+			var installedPackage InstalledPackage
+			installedPackage.Name = "rhc"
+			installedPackage.Version = "1"
+			installedPackage.Release = "1"
+
+			metadata.InstalledPackages = append(metadata.InstalledPackages, installedPackage)
+			var metadataPackages []string
+			for n := range metadata.InstalledPackages {
+				metadataPackages = append(metadataPackages,
+					fmt.Sprintf("%s-%s-%s", metadata.InstalledPackages[n].Name, metadata.InstalledPackages[n].Release, metadata.InstalledPackages[n].Version))
+			}
+
+			a, err := client.ValidatePackages(metadataPackages)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(a).To(BeNil())
+		})
 	})
 
 })
