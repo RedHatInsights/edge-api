@@ -650,6 +650,74 @@ var _ = Describe("Image Builder Client Test", func() {
 				Expect(int(s)).To(Equal(2))
 				Expect(len(img.Commit.InstalledPackages)).To(Equal(2))
 			})
+
+			It("should return an error ", func() {
+				pkgs := []models.Package{}
+				img := &models.Image{Distribution: "rhel-8",
+					Packages: pkgs,
+					Commit: &models.Commit{
+						OrgID:        faker.UUIDHyphenated(),
+						Arch:         "x86_64",
+						Repo:         &models.Repo{},
+						ComposeJobID: faker.UUIDHyphenated(),
+					}}
+
+				// build our response JSON
+				jsonResponse := `{}`
+
+				// create a new reader with that JSON
+				r := ioutil.NopCloser(bytes.NewReader([]byte(jsonResponse)))
+
+				ImageBuilderHTTPClient = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 500,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				img, err := client.GetMetadata(img)
+
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("image metadata not found"))
+			})
+		})
+	})
+
+	Describe("Validates Package", func() {
+		It("should return an existent package ", func() {
+			pkgs := []models.InstalledPackage{}
+			pkgs = append(pkgs, models.InstalledPackage{Name: "rhc",
+				Version: "1", Epoch: "1", Release: "1", Arch: "x86_64"})
+			img := &models.Image{Distribution: "rhel-8",
+				Commit: &models.Commit{
+					Arch:              "x86_64",
+					Repo:              &models.Repo{},
+					ComposeJobID:      faker.UUIDHyphenated(),
+					InstalledPackages: pkgs,
+				}}
+			db.DB.Save(img.Commit.InstalledPackages)
+			db.DB.Save(img.Commit)
+			db.DB.Save(img)
+
+			var metadata Metadata
+			var installedPackage InstalledPackage
+			installedPackage.Name = "rhc"
+			installedPackage.Version = "1"
+			installedPackage.Release = "1"
+
+			metadata.InstalledPackages = append(metadata.InstalledPackages, installedPackage)
+			var metadataPackages []string
+			for n := range metadata.InstalledPackages {
+				metadataPackages = append(metadataPackages,
+					fmt.Sprintf("%s-%s-%s", metadata.InstalledPackages[n].Name, metadata.InstalledPackages[n].Release, metadata.InstalledPackages[n].Version))
+			}
+
+			a, err := client.ValidatePackages(metadataPackages)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(a).NotTo(BeNil())
+			Expect(a[1].Name).To(Equal("rhc"))
 		})
 	})
 
