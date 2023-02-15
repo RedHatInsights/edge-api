@@ -20,8 +20,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	// "github.com/redhatinsights/edge-api/pkg/clients/imagebuilder/mock_imagebuilder"
-
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
@@ -604,7 +602,7 @@ var _ = Describe("Image Builder Client Test", func() {
 				Expect(img).ToNot(BeNil())
 				Expect(len(img.Commit.InstalledPackages)).To(Equal(2))
 				var s int64
-				db.DB.Model(models.CommitInstalledPackages{}).Where("Commit_Id=?", img.Commit.ID).Debug().Count(&s)
+				db.DB.Model(models.CommitInstalledPackages{}).Where("Commit_Id=?", img.Commit.ID).Count(&s)
 				Expect(int(s)).To(Equal(3))
 				Expect(len(img.Commit.InstalledPackages)).To(Equal(2))
 			})
@@ -648,7 +646,7 @@ var _ = Describe("Image Builder Client Test", func() {
 				Expect(img).ToNot(BeNil())
 				Expect(len(img.Commit.InstalledPackages)).To(Equal(2))
 				var s int64
-				db.DB.Model(models.CommitInstalledPackages{}).Where("Commit_Id=?", img.Commit.ID).Debug().Count(&s)
+				db.DB.Model(models.CommitInstalledPackages{}).Where("Commit_Id=?", img.Commit.ID).Count(&s)
 				Expect(int(s)).To(Equal(2))
 				Expect(len(img.Commit.InstalledPackages)).To(Equal(2))
 			})

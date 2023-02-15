@@ -42,7 +42,7 @@ type Commit struct {
 	BuildNumber          uint               `json:"BuildNumber"`
 	BlueprintToml        string             `json:"BlueprintToml"`
 	Arch                 string             `json:"Arch"`
-	InstalledPackages    []InstalledPackage `faker:"-" json:"InstalledPackages,omitempty" gorm:"many2many:commit_installed_packages;"`
+	InstalledPackages    []InstalledPackage `json:"InstalledPackages,omitempty" gorm:"many2many:commit_installed_packages;"`
 	ComposeJobID         string             `json:"ComposeJobID"`
 	Status               string             `json:"Status"`
 	RepoID               *uint              `json:"RepoID"`
@@ -75,7 +75,7 @@ type InstalledPackage struct {
 	Type      string   `json:"type"`
 	Version   string   `json:"version"`
 	Epoch     string   `json:"epoch,omitempty"`
-	Commits   []Commit `faker:"-" gorm:"many2many:commit_installed_packages;save_association:false"`
+	Commits   []Commit `gorm:"many2many:commit_installed_packages;save_association:false"`
 }
 
 type CommitInstalledPackages struct {
