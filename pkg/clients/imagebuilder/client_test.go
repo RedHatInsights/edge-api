@@ -678,7 +678,7 @@ var _ = Describe("Image Builder Client Test", func() {
 				}
 
 				img, err := client.GetMetadata(img)
-
+				Expect(img).To(BeNil())
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal("image metadata not found"))
 			})
