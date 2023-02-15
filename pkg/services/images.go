@@ -288,7 +288,8 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	}
 	err := s.CheckIfIsLatestVersion(previousImage)
 	if err != nil {
-		return errors.NewBadRequest("only the latest updated image can be modified")
+		s.log.WithField("error", err).Error("Error, not the latest image")
+		return new(ImageOnlyLatestCanModify)
 	}
 	packages := image.Packages
 	for _, p := range packages {

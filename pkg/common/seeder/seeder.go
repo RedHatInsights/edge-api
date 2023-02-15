@@ -26,6 +26,7 @@ func Images() *Image {
 				Version: "2:6.0-1",
 			},
 		},
+		repoURL: faker.URL(),
 	}
 }
 
@@ -39,6 +40,7 @@ type Image struct {
 	ostreeHashCommit  string
 	version           int
 	installedPackages []models.InstalledPackage
+	repoURL           string
 }
 
 func (i *Image) WithImageSetID(imageSetID uint) *Image {
@@ -61,6 +63,11 @@ func (i *Image) WithVersion(version int) *Image {
 	return i
 }
 
+func (i *Image) WithRepoURL(repoURL string) *Image {
+	i.repoURL = repoURL
+	return i
+}
+
 func (i *Image) Create() (*models.Image, *models.ImageSet) {
 	var imageSet *models.ImageSet
 
@@ -76,15 +83,24 @@ func (i *Image) Create() (*models.Image, *models.ImageSet) {
 	}
 
 	image := &models.Image{
+		Name: imageSet.Name,
 		Commit: &models.Commit{
+			Arch:              "x86_64",
 			OSTreeCommit:      i.ostreeHashCommit,
 			InstalledPackages: i.installedPackages,
 			OrgID:             orgID,
+			Repo: &models.Repo{
+				URL:    i.repoURL,
+				Status: models.RepoStatusSuccess,
+			},
 		},
-		Version:    i.version,
-		Status:     models.ImageStatusSuccess,
-		ImageSetID: &imageSet.ID,
-		OrgID:      orgID,
+		Version:      i.version,
+		Status:       models.ImageStatusSuccess,
+		ImageSetID:   &imageSet.ID,
+		OrgID:        orgID,
+		Account:      common.DefaultAccount,
+		Distribution: "rhel-91",
+		OutputTypes:  []string{models.ImageTypeCommit},
 	}
 
 	db.DB.Create(image.Commit)
