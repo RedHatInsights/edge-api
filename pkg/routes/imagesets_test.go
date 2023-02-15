@@ -529,6 +529,28 @@ var _ = Describe("ImageSets Route Test", func() {
 			}
 			db.DB.Create(&imageSuccess)
 			db.DB.Create(&imageError)
+
+			imageSet3 := &models.ImageSet{
+				Name:  "image-set-3",
+				OrgID: common.DefaultOrgID,
+			}
+			db.DB.Create(&imageSet3)
+
+			imageSuccess1 := models.Image{
+				Name:       "image-success-saurabh-1",
+				ImageSetID: &imageSet3.ID,
+				OrgID:      common.DefaultOrgID,
+				Status:     models.ImageStatusSuccess,
+			}
+			imageError1 := models.Image{
+				Name:       "image-error-saurabh-1",
+				ImageSetID: &imageSet3.ID,
+				OrgID:      common.DefaultOrgID,
+				Status:     models.ImageStatusError,
+			}
+			db.DB.Create(&imageError1)
+			db.DB.Create(&imageSuccess1)
+
 		})
 		When("filter by name", func() {
 			It("should return given image-set", func() {
@@ -560,6 +582,23 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(err).To(BeNil())
 				Expect(string(respBody)).To(ContainSubstring("image-set-2"))
 				Expect(string(respBody)).ToNot(ContainSubstring("image-set-1"))
+			})
+		})
+		When("filter by status", func() {
+			It("should return image-sets with SUCCESS status", func() {
+				status := "SUCCESS"
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets?status=%s", status), nil)
+				Expect(err).ToNot(HaveOccurred())
+				w := httptest.NewRecorder()
+				req = req.WithContext(dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{}))
+				handler := http.HandlerFunc(ListAllImageSets)
+				handler.ServeHTTP(w, req)
+				Expect(w.Code).To(Equal(http.StatusOK), fmt.Sprintf("expected status %d, but got %d", w.Code, http.StatusOK))
+				respBody, err := io.ReadAll(w.Body)
+				Expect(err).To(BeNil())
+				Expect(string(respBody)).To(ContainSubstring("image-set-1"))
+				Expect(string(respBody)).To(ContainSubstring("image-set-3"))
+				Expect(string(respBody)).ToNot(ContainSubstring("image-set-2"))
 			})
 		})
 	})
