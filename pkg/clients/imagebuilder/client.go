@@ -440,7 +440,6 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 		return nil, err
 	}
 	respBody, err := io.ReadAll(res.Body)
-	fmt.Printf("\n body %v", respBody)
 	if err != nil {
 		return nil, err
 	}
@@ -459,6 +458,7 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 		c.log.WithField("response", metadata).Error("Error while trying to unmarshal Image Builder GetMetadata Response")
 		return nil, err
 	}
+
 	var dupPackages []uint
 	var metadataPackages []string
 	for n := range metadata.InstalledPackages {
@@ -494,7 +494,7 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 				}
 				image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
 
-				db.DB.Debug().Omit("Image.InstalledPackages.*").Save(image.Commit)
+				db.DB.Omit("Image.InstalledPackages.*").Save(image.Commit)
 
 			}
 
@@ -513,13 +513,15 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	if feature.DedupPackage.IsEnabled() &&
 		len(dupPackages) > 0 {
 		for i := range dupPackages {
-			// build batch
 			cip = append(cip, models.CommitInstalledPackages{InstalledPackageId: dupPackages[i], CommitId: image.Commit.ID})
 		}
 
-		if len(cip) > 0 {
-			db.DB.Create(&cip)
+		err := db.DB.Create(&cip)
+		if err.Error != nil {
+			c.log.WithField("error", err.Error.Error()).Error(new(PackageRequestError))
+			return nil, err.Error
 		}
+
 	}
 
 	c.log.Info("Done with metadata for image")
@@ -608,10 +610,8 @@ func (c *Client) ValidatePackages(pkgs []string) (map[uint]*models.InstalledPack
 	var result []models.InstalledPackage
 	setOfPackages := make(map[uint]*models.InstalledPackage)
 
-	err := db.DB.Debug().Table("Installed_Packages").Select("ID, name,release, arch, version, epoch").
+	err := db.DB.Table("Installed_Packages").Select("ID, name,release, arch, version, epoch").
 		Where("( (name || '-' || release || '-' ||  version)) in (?)", pkgs).
-		// Where("name = ? and release = ? and arch =? and version =? and epoch = ?",
-		// pkg.Name, pkg.Release, pkg.Arch, pkg.Version, pkg.Epoch).
 		Find(&result)
 	if err.Error != nil {
 		c.log.WithField("error", err.Error.Error()).Error(new(PackageRequestError))
