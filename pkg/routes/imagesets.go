@@ -194,11 +194,10 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	latestImagesSubQuery := db.Org(orgID, "").Model(&models.Image{}).Select("image_set_id", "deleted_at", "max(id) as image_id").Group("image_set_id")
+	latestImagesSubQuery := db.Org(orgID, "").Model(&models.Image{}).Select("image_set_id", "deleted_at", "max(id) as image_id").Group("image_set_id, deleted_at")
 	countResult := imageSetFilters(r, db.OrgDB(orgID, db.DB, "image_sets")).Table("(?) as latest_images", latestImagesSubQuery).
 		Joins("JOIN images on images.id = latest_images.image_id").
 		Joins("JOIN image_sets on image_sets.id = latest_images.image_set_id").
-		Group("images.deleted_at").
 		Where("image_sets.deleted_at IS NULL").
 		Count(&count)
 
