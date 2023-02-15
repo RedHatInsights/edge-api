@@ -606,7 +606,6 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*m
 
 func (c *Client) ValidatePackages(pkgs []string) (map[uint]*models.InstalledPackage, error) {
 	var result []models.InstalledPackage
-	var installedPackageId []uint
 	setOfPackages := make(map[uint]*models.InstalledPackage)
 
 	err := db.DB.Debug().Table("Installed_Packages").Select("ID, name,release, arch, version, epoch").
@@ -620,7 +619,6 @@ func (c *Client) ValidatePackages(pkgs []string) (map[uint]*models.InstalledPack
 	} else {
 		if len(result) > 0 {
 			for n := range result {
-				installedPackageId = append(installedPackageId, result[n].ID)
 				setOfPackages[result[n].ID] = &result[n]
 			}
 			return setOfPackages, nil
