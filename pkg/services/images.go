@@ -80,6 +80,7 @@ func NewImageService(ctx context.Context, log *log.Entry) ImageServiceInterface 
 		RepoBuilder:     NewRepoBuilder(ctx, log),
 		RepoService:     NewRepoService(ctx, log),
 		ProducerService: kafkacommon.NewProducerService(),
+		TopicService:    kafkacommon.NewTopicService(),
 	}
 }
 
@@ -91,6 +92,7 @@ type ImageService struct {
 	RepoBuilder     RepoBuilderInterface
 	RepoService     RepoServiceInterface
 	ProducerService kafkacommon.ProducerServiceInterface
+	TopicService    kafkacommon.TopicServiceInterface
 }
 
 // GetImageReposFromDB return ThirdParty repo of image by OrgID
@@ -1567,13 +1569,17 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 		var recipients []RecipientNotification
 		var recipient RecipientNotification
 
-		topic := NotificationTopic
-
 		// GetProducerInstance Producer instance
 		p := s.ProducerService.GetProducerInstance()
 		if p == nil {
 			s.log.Error("kafka producer instance is undefined")
 			return notify, new(KafkaProducerInstanceUndefined)
+		}
+
+		topic, err := s.TopicService.GetTopic(NotificationTopic)
+		if err != nil {
+			s.log.WithFields(log.Fields{"error": err.Error(), "topic": NotificationTopic}).Error("Unable to lookup requested topic name")
+			return notify, err
 		}
 
 		type metadata struct {
