@@ -3,13 +3,13 @@
   become: true
   hosts: localhost
   vars:
-    update_number: "@@ .UpdateNumber @@"
-    repo_url: "@@ .RepoURL @@"
-    repo_content_url: "@@ .RepoContentURL @@"
-    ostree_remote_name: "@@ .GoTemplateRemoteName @@"
-    ostree_changes_refs: "@@ .RemoteOstreeUpdate @@"
-    os_tree_ref: "@@ .OSTreeRef @@"
-    ostree_gpg_verify: "@@ .GoTemplateGpgVerify @@"
+    update_number: "1000"
+    repo_url: "http://cert.localhost:3000/api/edge/v1/storage/update-repos/1000"
+    repo_content_url: "http://cert.localhost:3000/api/edge/v1/storage/update-repos/1000"
+    ostree_remote_name: "remote-name"
+    ostree_changes_refs: "true"
+    os_tree_ref: "rhel/9/x86_64/edge"
+    ostree_gpg_verify: "true"
     ostree_gpg_keypath: "/etc/pki/rpm-gpg/"
     ostree_remote_template: |
       [remote "{{ ostree_remote_name }}"]

@@ -641,6 +641,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					RemoteName:          "remote-name",
 					RemoteOstreeUpdate:  "false",
 					OSTreeRef:           "rhel/8/x86_64/edge",
+					GpgVerify:           "false",
 				}
 				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", orgID, t.UpdateTransactionID)
 				tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", orgID, fname)
@@ -673,12 +674,57 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 
 		Context("when upload works", func() {
+			BeforeEach(func() {
+				err := os.Setenv("SOURCES_ENV", "true")
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				os.Unsetenv("SOURCES_ENV")
+			})
+			It("to build the template for PROD rebase properly", func() {
+				t := services.TemplateRemoteInfo{
+					UpdateTransactionID: 1000,
+					RemoteName:          "remote-name",
+					RemoteOstreeUpdate:  "true",
+					OSTreeRef:           "rhel/9/x86_64/edge",
+					GpgVerify:           "true",
+				}
+				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", orgID, t.UpdateTransactionID)
+				tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", orgID, fname)
+				ctrl := gomock.NewController(GinkgoT())
+				defer ctrl.Finish()
+				mockFilesService := mock_services.NewMockFilesService(ctrl)
+				mockProducerService := mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
+				updateService := &services.UpdateService{
+					Service:         services.NewService(context.Background(), log.WithField("service", "update")),
+					FilesService:    mockFilesService,
+					ProducerService: mockProducerService,
+				}
+				mockUploader := mock_services.NewMockUploader(ctrl)
+				mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", orgID, fname)).Do(func(x, y string) {
+					actual, err := os.ReadFile(x)
+					Expect(err).ToNot(HaveOccurred())
+					expected, err := os.ReadFile(fmt.Sprintf("%s/%s", templatesPath, "template_playbook_dispatcher_ostree_rebase_payload_prod.test.yml"))
+					Expect(err).ToNot(HaveOccurred())
+					Expect(string(actual)).To(BeEquivalentTo(string(expected)))
+				}).Return("url", nil)
+				mockFilesService.EXPECT().GetUploader().Return(mockUploader)
+
+				url, err := updateService.WriteTemplate(t, orgID)
+
+				Expect(err).ToNot(HaveOccurred())
+				Expect(url).ToNot(BeNil())
+				Expect(url).To(BeEquivalentTo("http://localhost:3000/api/edge/v1/updates/1000/update-playbook.yml"))
+			})
+
 			It("to build the template for rebase properly", func() {
 				t := services.TemplateRemoteInfo{
 					UpdateTransactionID: 1000,
 					RemoteName:          "remote-name",
 					RemoteOstreeUpdate:  "true",
 					OSTreeRef:           "rhel/9/x86_64/edge",
+					GpgVerify:           "false",
 				}
 				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", orgID, t.UpdateTransactionID)
 				tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", orgID, fname)

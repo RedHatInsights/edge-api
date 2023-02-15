@@ -262,7 +262,11 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	remoteInfo.RemoteName = "rhel-edge"
 	remoteInfo.ContentURL = update.Repo.URL
 	remoteInfo.UpdateTransactionID = update.ID
-	remoteInfo.GpgVerify = "false"
+	if os.Getenv("SOURCES_ENV") == "prod" {
+		remoteInfo.GpgVerify = "true"
+	} else {
+		remoteInfo.GpgVerify = "false"
+	}
 	remoteInfo.OSTreeRef = update.Commit.OSTreeRef
 	remoteInfo.RemoteOstreeUpdate = fmt.Sprint(update.ChangesRefs)
 
@@ -435,9 +439,10 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, orgID str
 		// this is raising when updating major version eg: rhel-8.6 -> rhel-9.0
 		// this need more investigations.
 		// RepoContentURL:     fmt.Sprintf("%s/content", repoURL),
-		RepoContentURL:     repoURL,
-		RemoteOstreeUpdate: templateInfo.RemoteOstreeUpdate,
-		OSTreeRef:          templateInfo.OSTreeRef,
+		RepoContentURL:      repoURL,
+		RemoteOstreeUpdate:  templateInfo.RemoteOstreeUpdate,
+		OSTreeRef:           templateInfo.OSTreeRef,
+		GoTemplateGpgVerify: templateInfo.GpgVerify,
 	}
 
 	// TODO change the same time as line 231
