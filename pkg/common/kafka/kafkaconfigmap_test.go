@@ -39,11 +39,14 @@ func TestGetKafkaProducerConfigMap(t *testing.T) {
 		},
 	}
 	kafkaConfigMap := kafka.ConfigMap{
-		"bootstrap.servers": "192.168.1.7:80",
-		"sasl.mechanisms":   "PLAIN",
-		"security.protocol": "SASL_SSL",
-		"sasl.username":     "something",
-		"sasl.password":     "something",
+		"bootstrap.servers":        "192.168.1.7:80",
+		"sasl.mechanisms":          "PLAIN",
+		"security.protocol":        "SASL_SSL",
+		"sasl.username":            "something",
+		"sasl.password":            "something",
+		"request.required.acks":    -1,
+		"message.send.max.retries": 15,
+		"retry.backoff.ms":         100,
 	}
 	cfg.KafkaBroker = &brokerConfig
 
