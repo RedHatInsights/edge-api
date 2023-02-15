@@ -321,6 +321,9 @@ objects:
     - replicas: 3
       partitions: 3
       topicName: platform.inventory.events
+    - replicas: 3
+      partitions: 3
+      topicName: platform.notifications.ingress
     dependencies:
     - unleash-proxy
     optionalDependencies:
