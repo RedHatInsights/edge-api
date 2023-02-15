@@ -4,6 +4,7 @@ package services_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -13,8 +14,9 @@ import (
 	. "github.com/onsi/gomega"
 	imageBuilderClient "github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder/mock_imagebuilder"
+	mock_kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka/mock_kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/edge-api/pkg/errors"
+	apiErrors "github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -31,15 +33,20 @@ var _ = Describe("Image Service Test", func() {
 	var hash string
 	var mockImageBuilderClient *mock_imagebuilder.MockClientInterface
 	var mockRepoService *mock_services.MockRepoServiceInterface
+	var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
+	var mockProducer *mock_kafkacommon.MockProducer
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 		mockImageBuilderClient = mock_imagebuilder.NewMockClientInterface(ctrl)
 		mockRepoService = mock_services.NewMockRepoServiceInterface(ctrl)
+		mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
+		mockProducer = mock_kafkacommon.NewMockProducer(ctrl)
 		service = services.ImageService{
-			Service:      services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
-			ImageBuilder: mockImageBuilderClient,
-			RepoService:  mockRepoService,
+			Service:         services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+			ImageBuilder:    mockImageBuilderClient,
+			RepoService:     mockRepoService,
+			ProducerService: mockProducerService,
 		}
 	})
 
@@ -1152,6 +1159,64 @@ var _ = Describe("Image Service Test", func() {
 			})
 
 		})
+
+		Context("clowder enabled", func() {
+			const ClowderEnvConfigName = "ACG_CONFIG"
+			var imageSet models.ImageSet
+			var image models.Image
+			var orgID string
+			BeforeEach(func() {
+				orgID = faker.UUIDHyphenated()
+				err := os.Setenv(ClowderEnvConfigName, "any value here will set the clowder as enabled")
+				Expect(err).ToNot(HaveOccurred())
+				imageSet = models.ImageSet{
+					Name:    faker.UUIDHyphenated(),
+					Version: 1,
+					OrgID:   orgID,
+				}
+				err = db.DB.Create(&imageSet).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				image = models.Image{
+					ImageSetID: &imageSet.ID,
+					Version:    1,
+					OrgID:      orgID,
+				}
+				err = db.DB.Create(&image).Error
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				err := os.Unsetenv(ClowderEnvConfigName)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should produce a notification message for image", func() {
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockProducer.EXPECT().Produce(gomock.Any(), nil).Return(nil)
+				notify, err := service.SendImageNotification(&image)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(notify.EventType).To(Equal("image-creation"))
+				Expect(notify.OrgID).To(Equal(orgID))
+			})
+			It("should return error when produce fail", func() {
+				expectedError := errors.New("producer produce expected error")
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockProducer.EXPECT().Produce(gomock.Any(), nil).Return(expectedError)
+				_, err := service.SendImageNotification(&image)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(expectedError))
+			})
+			It("should return error when produce fail", func() {
+				expectedError := new(services.KafkaProducerInstanceUndefined)
+				mockProducerService.EXPECT().GetProducerInstance().Return(nil)
+				// produce function should not be called
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Times(0)
+				_, err := service.SendImageNotification(&image)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(expectedError))
+			})
+		})
 	})
 	Describe("Devices update availability from image set", func() {
 		Context("should set device update availability", func() {
@@ -1327,7 +1392,7 @@ var _ = Describe("Image Service Test", func() {
 				}
 				error := service.ValidateImagePackage(package_name, &image)
 				Expect(error).To(HaveOccurred())
-				Expect(error).To(BeAssignableToTypeOf(new(errors.BadRequest)))
+				Expect(error).To(BeAssignableToTypeOf(new(apiErrors.BadRequest)))
 			})
 		})
 		When("When there's no valid distribution", func() {
@@ -1338,7 +1403,7 @@ var _ = Describe("Image Service Test", func() {
 				}
 				error := service.ValidateImagePackage(package_name, &image)
 				Expect(error).To(HaveOccurred())
-				Expect(error).To(BeAssignableToTypeOf(new(errors.BadRequest)))
+				Expect(error).To(BeAssignableToTypeOf(new(apiErrors.BadRequest)))
 			})
 		})
 		When("When SearchPackage fails to find a package", func() {
