@@ -493,9 +493,6 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 					Version: metadata.InstalledPackages[n].Version, Epoch: metadata.InstalledPackages[n].Epoch,
 				}
 				image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
-
-				db.DB.Omit("Image.InstalledPackages.*").Save(image.Commit)
-
 			}
 
 		} else {
@@ -508,10 +505,12 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 			image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
 		}
 	}
-	image.Commit.OSTreeCommit = metadata.OstreeCommit
 
+	image.Commit.OSTreeCommit = metadata.OstreeCommit
+	db.DB.Omit("Image.InstalledPackages.*").Save(image.Commit)
 	if feature.DedupPackage.IsEnabled() &&
 		len(dupPackages) > 0 {
+
 		for i := range dupPackages {
 			cip = append(cip, models.CommitInstalledPackages{InstalledPackageId: dupPackages[i], CommitId: image.Commit.ID})
 		}
