@@ -967,6 +967,10 @@ var _ = Describe("DfseviceService", func() {
 				result = db.DB.Create(&deviceRunning)
 				Expect(result.Error).To(BeNil())
 
+				deviceCreated := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
+				result = db.DB.Create(&deviceCreated)
+				Expect(result.Error).To(BeNil())
+
 				dispatchRecord := &models.DispatchRecord{
 					PlaybookDispatcherID: faker.UUIDHyphenated(),
 					Status:               models.DispatchRecordStatusError,
@@ -1045,6 +1049,22 @@ var _ = Describe("DfseviceService", func() {
 				}
 				db.DB.Omit("Devices.*").Create(&update5)
 
+				dispatchRecord6 := &models.DispatchRecord{
+					PlaybookDispatcherID: faker.UUIDHyphenated(),
+					Status:               models.DispatchRecordStatusCreated,
+					DeviceID:             deviceCreated.ID,
+				}
+				db.DB.Omit("Devices.*").Create(dispatchRecord6)
+
+				update6 := models.UpdateTransaction{
+					DispatchRecords: []models.DispatchRecord{*dispatchRecord6},
+					Devices: []models.Device{
+						deviceCreated,
+					},
+					OrgID:  orgID,
+					Status: models.UpdateStatusCreated,
+				}
+				db.DB.Omit("Devices.*").Create(&update6)
 				invResult := []inventory.Device{
 					{
 						ID:    deviceUnresponsive.UUID,
@@ -1070,10 +1090,14 @@ var _ = Describe("DfseviceService", func() {
 						ID:    deviceRunning.UUID,
 						OrgID: orgID,
 					},
+					{
+						ID:    deviceCreated.UUID,
+						OrgID: orgID,
+					},
 				}
 				resp := inventory.Response{
-					Total:  6,
-					Count:  6,
+					Total:  7,
+					Count:  7,
 					Result: invResult,
 				}
 				// calls to inventory are now in go routines.
@@ -1102,7 +1126,7 @@ var _ = Describe("DfseviceService", func() {
 				wg2.Wait()
 				Expect(err).To(BeNil())
 				Expect(devices).ToNot(BeNil())
-				Expect(len(devices.Devices)).To(Equal(6))
+				Expect(len(devices.Devices)).To(Equal(7))
 
 				Expect(devices.Devices[0].DispatcherStatus).To(Equal(models.UpdateStatusDeviceUnresponsive))
 				Expect(devices.Devices[0].Status).To(Equal(models.DeviceViewStatusRunning))
@@ -1127,6 +1151,83 @@ var _ = Describe("DfseviceService", func() {
 				Expect(devices.Devices[5].DispatcherStatus).To(BeEmpty())
 				Expect(devices.Devices[5].Status).To(Equal(models.DeviceViewStatusRunning))
 				Expect(devices.Devices[5].DispatcherReason).To(BeEmpty())
+
+				Expect(devices.Devices[6].DispatcherStatus).To(Equal(models.DispatchRecordStatusCreated))
+				Expect(devices.Devices[6].Status).To(Equal(models.DeviceViewStatusUpdating))
+				Expect(devices.Devices[6].DispatcherReason).To(BeEmpty())
+
+			})
+
+			It("should return device async", func() {
+				defer GinkgoRecover()
+				orgID := common.DefaultOrgID
+
+				imageV1, _ := seeder.Images().Create()
+
+				deviceBuilding := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
+				result := db.DB.Create(&deviceBuilding)
+				Expect(result.Error).To(BeNil())
+
+				dispatchRecord6 := &models.DispatchRecord{
+					PlaybookDispatcherID: faker.UUIDHyphenated(),
+					Status:               models.DispatchRecordStatusCreated,
+					DeviceID:             deviceBuilding.ID,
+				}
+				db.DB.Omit("Devices.*").Create(dispatchRecord6)
+
+				update6 := models.UpdateTransaction{
+					DispatchRecords: []models.DispatchRecord{*dispatchRecord6},
+					Devices: []models.Device{
+						deviceBuilding,
+					},
+					OrgID:  orgID,
+					Status: models.UpdateStatusCreated,
+				}
+				db.DB.Omit("Devices.*").Create(&update6)
+				invResult := []inventory.Device{
+
+					{
+						ID:    deviceBuilding.UUID,
+						OrgID: orgID,
+					},
+				}
+				resp := inventory.Response{
+					Total:  1,
+					Count:  1,
+					Result: invResult,
+				}
+				// calls to inventory are now in go routines.
+				// in order for the mocks to stay active for the duration of the tests, wait groups were added
+				// these calls to inventory can happen more than once so the `AnyTimes()` param was added
+				// each call was added to a unique wait group in the `Do` wrapper
+				wg := sync.WaitGroup{}
+				mockInventoryClient.EXPECT().ReturnDevices(gomock.Any()).Return(resp, nil).AnyTimes().Do(func(arg interface{}) {
+					wg.Add(1)
+					defer wg.Done()
+				})
+				wg2 := sync.WaitGroup{}
+				mockInventoryClient.EXPECT().ReturnDeviceListByID(gomock.Any()).Return(resp, nil).AnyTimes().Do(func(arg interface{}) {
+					wg2.Add(1)
+					defer wg2.Done()
+				})
+
+				deviceService := services.DeviceService{
+					Service:   services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+					Inventory: mockInventoryClient,
+				}
+
+				dbFilter := db.DB.Model(models.Device{}).Where("devices.image_id = ?", imageV1.ID).Order("devices.created_at ASC")
+				devices, err := deviceService.GetDevicesView(0, 0, dbFilter)
+				wg.Wait()
+				wg2.Wait()
+				Expect(err).To(BeNil())
+				Expect(devices).ToNot(BeNil())
+				Expect(len(devices.Devices)).To(Equal(1))
+
+				Expect(devices.Devices[0].DispatcherStatus).To(Equal(models.DispatchRecordStatusCreated))
+				Expect(devices.Devices[0].Status).To(Equal(models.DeviceViewStatusUpdating))
+				Expect(devices.Devices[0].DispatcherReason).To(BeEmpty())
+
 			})
 
 			It("should sync devices with inventory", func() {
