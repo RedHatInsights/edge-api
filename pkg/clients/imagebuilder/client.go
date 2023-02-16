@@ -483,7 +483,7 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	for n := range metadata.InstalledPackages {
 
 		if feature.DedupPackage.IsEnabled() {
-			if packagesExistsMap[metadata.InstalledPackages[n].Name] == true {
+			if packagesExistsMap[metadata.InstalledPackages[n].Name] {
 				continue
 			} else {
 				pkg := models.InstalledPackage{
