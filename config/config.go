@@ -65,6 +65,7 @@ type EdgeConfig struct {
 	TenantTranslatorPort       string                    `json:"tenant_translator_port,omitempty"`
 	TenantTranslatorURL        string                    `json:"tenant_translator_url,omitempty"`
 	ImageBuilderOrgID          string                    `json:"image_builder_org_id,omitempty"`
+	GpgVerify                  string                    `json:"gpg_verify,omitempty"`
 }
 
 type dbConfig struct {
@@ -179,8 +180,10 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("FeatureFlagsService", os.Getenv("FEATURE_FLAGS_SERVICE"))
 
 	if os.Getenv("SOURCES_ENV") == "prod" {
+		options.SetDefault("GpgVerify", "true")
 		options.SetDefault("FeatureFlagsEnvironment", "production")
 	} else {
+		options.SetDefault("GpgVerify", "false")
 		options.SetDefault("FeatureFlagsEnvironment", "development")
 	}
 
@@ -241,6 +244,7 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		KafkaRequestRequiredAcks:   options.GetInt("KafkaRequestRequiredAcks"),
 		KafkaMessageSendMaxRetries: options.GetInt("KafkaMessageSendMaxRetries"),
 		KafkaRetryBackoffMs:        options.GetInt("KafkaRetryBackoffMs"),
+		GpgVerify:                  options.GetString("GpgVerify"),
 	}
 	if edgeConfig.TenantTranslatorHost != "" && edgeConfig.TenantTranslatorPort != "" {
 		edgeConfig.TenantTranslatorURL = fmt.Sprintf("http://%s:%s", edgeConfig.TenantTranslatorHost, edgeConfig.TenantTranslatorPort)

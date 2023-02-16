@@ -675,13 +675,10 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		Context("when upload works", func() {
 			BeforeEach(func() {
-				err := os.Setenv("SOURCES_ENV", "true")
-				Expect(err).ToNot(HaveOccurred())
+				config.Get().GpgVerify = "true"
+
 			})
 
-			AfterEach(func() {
-				os.Unsetenv("SOURCES_ENV")
-			})
 			It("to build the template for PROD rebase properly", func() {
 				t := services.TemplateRemoteInfo{
 					UpdateTransactionID: 1000,

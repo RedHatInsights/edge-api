@@ -262,11 +262,8 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	remoteInfo.RemoteName = "rhel-edge"
 	remoteInfo.ContentURL = update.Repo.URL
 	remoteInfo.UpdateTransactionID = update.ID
-	if os.Getenv("SOURCES_ENV") == "prod" {
-		remoteInfo.GpgVerify = "true"
-	} else {
-		remoteInfo.GpgVerify = "false"
-	}
+	remoteInfo.GpgVerify = config.Get().GpgVerify
+
 	remoteInfo.OSTreeRef = update.Commit.OSTreeRef
 	remoteInfo.RemoteOstreeUpdate = fmt.Sprint(update.ChangesRefs)
 
