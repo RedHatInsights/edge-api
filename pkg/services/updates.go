@@ -61,6 +61,7 @@ func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterfac
 		Inventory:       inventory.InitClient(ctx, log),
 		PlaybookClient:  playbookdispatcher.InitClient(ctx, log),
 		ProducerService: kafkacommon.NewProducerService(),
+		TopicService:    kafkacommon.NewTopicService(),
 		WaitForReboot:   time.Minute * 5,
 	}
 }
@@ -75,6 +76,7 @@ type UpdateService struct {
 	Inventory       inventory.ClientInterface
 	PlaybookClient  playbookdispatcher.ClientInterface
 	ProducerService kafkacommon.ProducerServiceInterface
+	TopicService    kafkacommon.TopicServiceInterface
 	WaitForReboot   time.Duration
 }
 
@@ -613,7 +615,6 @@ func (s *UpdateService) SetUpdateStatus(update *models.UpdateTransaction) error 
 // SendDeviceNotification connects to platform.notifications.ingress on image topic
 func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (ImageNotification, error) {
 	s.log.WithField("message", i).Info("SendImageNotification::Starts")
-	topic := NotificationTopic
 	events := []EventNotification{{Metadata: make(map[string]string), Payload: fmt.Sprintf("{  \"UpdateID\" : \"%v\"}", i.ID)}}
 	users := []string{NotificationConfigUser}
 	recipients := []RecipientNotification{{IgnoreUserPreferences: false, OnlyAdmins: false, Users: users}}
@@ -640,6 +641,13 @@ func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (Ima
 		s.log.Error("kafka producer instance is undefined")
 		return notify, new(KafkaProducerInstanceUndefined)
 	}
+
+	topic, err := s.TopicService.GetTopic(NotificationTopic)
+	if err != nil {
+		s.log.WithFields(log.Fields{"error": err.Error(), "topic": NotificationTopic}).Error("Unable to lookup requested topic name")
+		return notify, err
+	}
+
 	perr := p.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Key:            []byte(recordKey),
