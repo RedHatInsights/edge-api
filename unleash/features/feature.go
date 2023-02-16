@@ -23,6 +23,11 @@ type Flag struct {
 	EnvVar string
 }
 
+// GLITCHTIP LOGGING FLAGS
+
+// GlitchtipLogging is the feature flag for reporting errors to GlitchTip
+var GlitchtipLogging = &Flag{Name: "edge-management.glitchtip_logging", EnvVar: "GLITCHTIP_LOGGING"}
+
 // KAFKA LOGGING FLAGS
 
 // KafkaLogging is the feature flag for logging kafka messages
