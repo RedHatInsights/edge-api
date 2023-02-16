@@ -826,7 +826,7 @@ func ReturnDevicesView(storedDevices []models.Device, orgID string) ([]models.De
 				}
 			}
 
-			if updateStatus == models.UpdateStatusBuilding {
+			if updateStatus == models.UpdateStatusBuilding || updateStatus == models.UpdateStatusCreated {
 				deviceInfo.Status = models.DeviceViewStatusUpdating
 			} else if updateStatus == models.UpdateStatusDeviceDisconnected {
 				deviceInfo.DispatcherStatus = models.UpdateStatusDeviceUnresponsive
