@@ -285,7 +285,8 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 		var apiError errors.APIError
 		switch err.(type) {
 		case *services.PackageNameDoesNotExist, *services.ThirdPartyRepositoryInfoIsInvalid, *services.ThirdPartyRepositoryNotFound,
-			*services.ImageNameAlreadyExists, *services.ImageSetAlreadyExists, *services.ImageNameChangeIsProhibited:
+			*services.ImageNameAlreadyExists, *services.ImageSetAlreadyExists, *services.ImageNameChangeIsProhibited,
+			*services.ImageOnlyLatestCanModify:
 			apiError = errors.NewBadRequest(err.Error())
 		default:
 			apiError = errors.NewInternalServerError()

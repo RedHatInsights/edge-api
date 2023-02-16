@@ -66,6 +66,7 @@ type EdgeConfig struct {
 	TenantTranslatorURL        string                    `json:"tenant_translator_url,omitempty"`
 	ImageBuilderOrgID          string                    `json:"image_builder_org_id,omitempty"`
 	GpgVerify                  string                    `json:"gpg_verify,omitempty"`
+	GlitchtipDsn               string                    `json:"glitchtip_dsn,omitempty"`
 }
 
 type dbConfig struct {
@@ -245,6 +246,7 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		KafkaMessageSendMaxRetries: options.GetInt("KafkaMessageSendMaxRetries"),
 		KafkaRetryBackoffMs:        options.GetInt("KafkaRetryBackoffMs"),
 		GpgVerify:                  options.GetString("GpgVerify"),
+		GlitchtipDsn:               options.GetString("GlitchtipDsn"),
 	}
 	if edgeConfig.TenantTranslatorHost != "" && edgeConfig.TenantTranslatorPort != "" {
 		edgeConfig.TenantTranslatorURL = fmt.Sprintf("http://%s:%s", edgeConfig.TenantTranslatorHost, edgeConfig.TenantTranslatorPort)
@@ -416,6 +418,7 @@ func LogConfigAtStartup(cfg *EdgeConfig) {
 		"EdgeAPIServicePort":       cfg.EdgeAPIServicePort,
 		"EdgeCertAPIURL":           cfg.EdgeCertAPIBaseURL,
 		"ImageBuilderOrgID":        cfg.ImageBuilderOrgID,
+		"GlitchtipDsn":             cfg.GlitchtipDsn,
 	}
 
 	// loop through the key/value pairs
