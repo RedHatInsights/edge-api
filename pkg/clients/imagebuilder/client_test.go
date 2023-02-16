@@ -739,6 +739,19 @@ var _ = Describe("Image Builder Client Test", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(a).To(BeNil())
 		})
+
+		It("should return error ", func() {
+
+			var metadataPackages []string
+			// for n := range metadata.InstalledPackages {
+			// 	metadataPackages = append(metadataPackages,
+			// 		fmt.Sprintf("%s-%s-%s", metadata.InstalledPackages[n].Name, metadata.InstalledPackages[n].Release, metadata.InstalledPackages[n].Version))
+			// }
+
+			a, err := client.ValidatePackages(metadataPackages)
+			Expect(err.Error()).To(HaveOccurred())
+			Expect(a).To(BeNil())
+		})
 	})
 
 })
