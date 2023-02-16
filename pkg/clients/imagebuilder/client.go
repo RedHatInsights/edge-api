@@ -468,14 +468,14 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	var pkg map[uint]*models.InstalledPackage
 	var cip []models.CommitInstalledPackages
 
-	concatPkg := make(map[string]string)
+	packagesExistsMap := make(map[string]bool)
 
 	if feature.DedupPackage.IsEnabled() {
 		pkg, err = c.ValidatePackages(metadataPackages)
 		if len(pkg) > 0 && err == nil {
 			for key := range pkg {
 				dupPackages = append(dupPackages, key)
-				concatPkg[pkg[key].Name] = pkg[key].Release
+				packagesExistsMap[pkg[key].Name] = true
 			}
 		}
 	}
@@ -483,7 +483,7 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	for n := range metadata.InstalledPackages {
 
 		if feature.DedupPackage.IsEnabled() {
-			if concatPkg[metadata.InstalledPackages[n].Name] != "" {
+			if packagesExistsMap[metadata.InstalledPackages[n].Name] == true {
 				continue
 			} else {
 				pkg := models.InstalledPackage{
