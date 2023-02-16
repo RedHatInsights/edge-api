@@ -676,7 +676,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 		Context("when upload works", func() {
 			BeforeEach(func() {
 				config.Get().GpgVerify = "true"
-
 			})
 
 			It("to build the template for PROD rebase properly", func() {
@@ -685,7 +684,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					RemoteName:          "remote-name",
 					RemoteOstreeUpdate:  "true",
 					OSTreeRef:           "rhel/9/x86_64/edge",
-					GpgVerify:           "true",
+					GpgVerify:           config.Get().GpgVerify,
 				}
 				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", orgID, t.UpdateTransactionID)
 				tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", orgID, fname)
