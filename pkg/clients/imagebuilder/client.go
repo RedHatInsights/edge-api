@@ -609,12 +609,11 @@ func (c *Client) ValidatePackages(pkgs []string) (map[uint]*models.InstalledPack
 	var result []models.InstalledPackage
 	setOfPackages := make(map[uint]*models.InstalledPackage)
 
-	err := db.DB.Table("Installed_Packages").Select("ID, name,release, arch, version, epoch").
+	if err := db.DB.Table("Installed_Packages").Select("ID, name,release, arch, version, epoch").
 		Where("( (name || '-' || release || '-' ||  version)) in (?)", pkgs).
-		Find(&result)
-	if err.Error != nil {
-		c.log.WithField("error", err.Error.Error()).Error(new(PackageRequestError))
-		return nil, err.Error
+		Find(&result).Error; err != nil {
+		c.log.WithField("error", err.Error())
+		return nil, err
 	} else {
 		if len(result) > 0 {
 			for n := range result {
