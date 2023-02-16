@@ -674,8 +674,10 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 
 		Context("when upload works", func() {
+			var cfg *config.EdgeConfig
 			BeforeEach(func() {
-				config.Get().GpgVerify = "true"
+				os.Setenv("SOURCES_ENV", "prod")
+				cfg, _ = config.CreateEdgeAPIConfig()
 			})
 
 			It("to build the template for PROD rebase properly", func() {
@@ -684,7 +686,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					RemoteName:          "remote-name",
 					RemoteOstreeUpdate:  "true",
 					OSTreeRef:           "rhel/9/x86_64/edge",
-					GpgVerify:           config.Get().GpgVerify,
+					GpgVerify:           cfg.GpgVerify,
 				}
 				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", orgID, t.UpdateTransactionID)
 				tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", orgID, fname)
