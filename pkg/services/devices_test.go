@@ -1164,21 +1164,21 @@ var _ = Describe("DfseviceService", func() {
 
 				imageV1, _ := seeder.Images().Create()
 
-				deviceBuilding := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
-				result := db.DB.Create(&deviceBuilding)
+				deviceUpdating := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
+				result := db.DB.Create(&deviceUpdating)
 				Expect(result.Error).To(BeNil())
 
-				dispatchRecord6 := &models.DispatchRecord{
+				dispatchRecord := &models.DispatchRecord{
 					PlaybookDispatcherID: faker.UUIDHyphenated(),
 					Status:               models.DispatchRecordStatusCreated,
-					DeviceID:             deviceBuilding.ID,
+					DeviceID:             deviceUpdating.ID,
 				}
-				db.DB.Omit("Devices.*").Create(dispatchRecord6)
+				db.DB.Omit("Devices.*").Create(dispatchRecord)
 
 				update6 := models.UpdateTransaction{
-					DispatchRecords: []models.DispatchRecord{*dispatchRecord6},
+					DispatchRecords: []models.DispatchRecord{*dispatchRecord},
 					Devices: []models.Device{
-						deviceBuilding,
+						deviceUpdating,
 					},
 					OrgID:  orgID,
 					Status: models.UpdateStatusCreated,
@@ -1187,7 +1187,7 @@ var _ = Describe("DfseviceService", func() {
 				invResult := []inventory.Device{
 
 					{
-						ID:    deviceBuilding.UUID,
+						ID:    deviceUpdating.UUID,
 						OrgID: orgID,
 					},
 				}
