@@ -741,15 +741,9 @@ var _ = Describe("Image Builder Client Test", func() {
 		})
 
 		It("should return error ", func() {
-
-			var metadataPackages []string
-			// for n := range metadata.InstalledPackages {
-			// 	metadataPackages = append(metadataPackages,
-			// 		fmt.Sprintf("%s-%s-%s", metadata.InstalledPackages[n].Name, metadata.InstalledPackages[n].Release, metadata.InstalledPackages[n].Version))
-			// }
-
-			a, err := client.ValidatePackages(metadataPackages)
-			Expect(err.Error()).To(HaveOccurred())
+			db.DB.Exec("ALTER TABLE installed_packages DROP COLUMN name")
+			a, err := client.ValidatePackages([]string{})
+			Expect(err).ToNot(BeNil())
 			Expect(a).To(BeNil())
 		})
 	})

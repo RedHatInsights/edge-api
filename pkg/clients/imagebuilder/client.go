@@ -606,18 +606,18 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*m
 }
 
 func (c *Client) ValidatePackages(pkgs []string) (map[uint]*models.InstalledPackage, error) {
-	var result []models.InstalledPackage
+	var result []*models.InstalledPackage
 	setOfPackages := make(map[uint]*models.InstalledPackage)
 
-	if err := db.DB.Table("Installed_Packages").Select("ID, name,release, arch, version, epoch").
+	if err := db.DB.Table("Installed_Packages").
 		Where("( (name || '-' || release || '-' ||  version)) in (?)", pkgs).
-		Find(&result).Error; err != nil {
-		c.log.WithField("error", err.Error())
-		return nil, err
+		Find(&result); err.Error != nil {
+		c.log.WithField("error", err.Error)
+		return nil, err.Error
 	} else {
 		if len(result) > 0 {
 			for n := range result {
-				setOfPackages[result[n].ID] = &result[n]
+				setOfPackages[result[n].ID] = result[n]
 			}
 			return setOfPackages, nil
 		}
