@@ -35,6 +35,7 @@ var _ = Describe("Image Service Test", func() {
 	var mockRepoService *mock_services.MockRepoServiceInterface
 	var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
 	var mockProducer *mock_kafkacommon.MockProducer
+	var mockTopicService *mock_kafkacommon.MockTopicServiceInterface
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
@@ -42,11 +43,13 @@ var _ = Describe("Image Service Test", func() {
 		mockRepoService = mock_services.NewMockRepoServiceInterface(ctrl)
 		mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
 		mockProducer = mock_kafkacommon.NewMockProducer(ctrl)
+		mockTopicService = mock_kafkacommon.NewMockTopicServiceInterface(ctrl)
 		service = services.ImageService{
 			Service:         services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
 			ImageBuilder:    mockImageBuilderClient,
 			RepoService:     mockRepoService,
 			ProducerService: mockProducerService,
+			TopicService:    mockTopicService,
 		}
 	})
 
@@ -1193,6 +1196,7 @@ var _ = Describe("Image Service Test", func() {
 
 			It("should produce a notification message for image", func() {
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 				mockProducer.EXPECT().Produce(gomock.Any(), nil).Return(nil)
 				notify, err := service.SendImageNotification(&image)
 				Expect(err).ToNot(HaveOccurred())
@@ -1202,14 +1206,29 @@ var _ = Describe("Image Service Test", func() {
 			It("should return error when produce fail", func() {
 				expectedError := errors.New("producer produce expected error")
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 				mockProducer.EXPECT().Produce(gomock.Any(), nil).Return(expectedError)
 				_, err := service.SendImageNotification(&image)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(Equal(expectedError))
 			})
-			It("should return error when produce fail", func() {
+
+			It("should return error when GetTopic fail", func() {
+				expectedError := errors.New("topic-service GetTopic expected error")
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return("", expectedError)
+				// produce function should not be called
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Times(0)
+				_, err := service.SendImageNotification(&image)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(expectedError))
+			})
+
+			It("should return error when producer is not defined", func() {
 				expectedError := new(services.KafkaProducerInstanceUndefined)
 				mockProducerService.EXPECT().GetProducerInstance().Return(nil)
+				// GetTopic should not be called
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Times(0)
 				// produce function should not be called
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Times(0)
 				_, err := service.SendImageNotification(&image)
