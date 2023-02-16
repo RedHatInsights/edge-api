@@ -51,6 +51,7 @@ const CommitImageNotFoundMsg = "Commit image was not found"
 const SomeDevicesDoesNotExistsMsg = "image-set not found for all devices"
 const KafkaAllBrokersDownMsg = "Cannot connect to any Kafka brokers"
 const DBCommitErrorMsg = "Error searching for ImageSet of Device Images"
+const KafkaProducerInstanceUndefinedMsg = "kafka producer instance is undefined"
 
 // DeviceNotFoundError indicates the device was not found
 type DeviceNotFoundError struct{}
@@ -380,6 +381,13 @@ type KafkaAllBrokersDown struct{}
 
 func (e *KafkaAllBrokersDown) Error() string {
 	return KafkaAllBrokersDownMsg
+}
+
+// KafkaProducerInstanceUndefined indicates that we were not able to get a kafka producer instance
+type KafkaProducerInstanceUndefined struct{}
+
+func (e *KafkaProducerInstanceUndefined) Error() string {
+	return KafkaProducerInstanceUndefinedMsg
 }
 
 // DBCommitError indicates a dbError during search

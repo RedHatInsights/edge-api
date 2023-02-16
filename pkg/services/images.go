@@ -75,10 +75,12 @@ type ImageServiceInterface interface {
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
 func NewImageService(ctx context.Context, log *log.Entry) ImageServiceInterface {
 	return &ImageService{
-		Service:      Service{ctx: ctx, log: log.WithField("service", "image")},
-		ImageBuilder: imagebuilder.InitClient(ctx, log),
-		RepoBuilder:  NewRepoBuilder(ctx, log),
-		RepoService:  NewRepoService(ctx, log),
+		Service:         Service{ctx: ctx, log: log.WithField("service", "image")},
+		ImageBuilder:    imagebuilder.InitClient(ctx, log),
+		RepoBuilder:     NewRepoBuilder(ctx, log),
+		RepoService:     NewRepoService(ctx, log),
+		ProducerService: kafkacommon.NewProducerService(),
+		TopicService:    kafkacommon.NewTopicService(),
 	}
 }
 
@@ -86,9 +88,11 @@ func NewImageService(ctx context.Context, log *log.Entry) ImageServiceInterface 
 type ImageService struct {
 	Service
 
-	ImageBuilder imagebuilder.ClientInterface
-	RepoBuilder  RepoBuilderInterface
-	RepoService  RepoServiceInterface
+	ImageBuilder    imagebuilder.ClientInterface
+	RepoBuilder     RepoBuilderInterface
+	RepoService     RepoServiceInterface
+	ProducerService kafkacommon.ProducerServiceInterface
+	TopicService    kafkacommon.TopicServiceInterface
 }
 
 // GetImageReposFromDB return ThirdParty repo of image by OrgID
@@ -1565,21 +1569,18 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 		var event EventNotification
 		var recipients []RecipientNotification
 		var recipient RecipientNotification
-		brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
 
-		for i, b := range clowder.LoadedConfig.Kafka.Brokers {
-			brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
-			fmt.Println(brokers[i])
+		// GetProducerInstance Producer instance
+		p := s.ProducerService.GetProducerInstance()
+		if p == nil {
+			s.log.Error("kafka producer instance is undefined")
+			return notify, new(KafkaProducerInstanceUndefined)
 		}
 
-		topic := NotificationTopic
-
-		// Create Producer instance
-		p, err := kafka.NewProducer(&kafka.ConfigMap{
-			"bootstrap.servers": brokers[0]})
+		topic, err := s.TopicService.GetTopic(NotificationTopic)
 		if err != nil {
-			s.log.WithField("message", err.Error()).Error("producer")
-			os.Exit(1)
+			s.log.WithFields(log.Fields{"error": err.Error(), "topic": NotificationTopic}).Error("Unable to lookup requested topic name")
+			return notify, err
 		}
 
 		type metadata struct {
@@ -1612,17 +1613,14 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 		s.log.WithField("message", recordValue).Info("Preparing record for producer")
 
 		// send the message
-		perr := p.Produce(&kafka.Message{
+		if err := p.Produce(&kafka.Message{
 			TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 			Key:            []byte(recordKey),
 			Value:          []byte(recordValue),
-		}, nil)
-
-		if perr != nil {
-			s.log.WithField("message", perr.Error()).Error("Error on produce")
+		}, nil); err != nil {
+			s.log.WithField("message", err.Error()).Error("Error on produce")
 			return notify, err
 		}
-		p.Close()
 		s.log.WithField("message", topic).Info("SendNotification message was produced to topic")
 		fmt.Printf("SendNotification message was produced to topic %s!\n", topic)
 		return notify, nil
