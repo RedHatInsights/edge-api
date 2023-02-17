@@ -418,6 +418,7 @@ func LogConfigAtStartup(cfg *EdgeConfig) {
 		"EdgeAPIServicePort":       cfg.EdgeAPIServicePort,
 		"EdgeCertAPIURL":           cfg.EdgeCertAPIBaseURL,
 		"ImageBuilderOrgID":        cfg.ImageBuilderOrgID,
+		"GlitchtipDsn":             cfg.GlitchtipDsn,
 	}
 
 	// loop through the key/value pairs
