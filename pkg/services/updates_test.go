@@ -1639,6 +1639,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Repo:            &models.Repo{URL: "http://rh.com"},
 			}
 		})
+
 		AfterEach(func() {
 			config.Get().GpgVerify = "false"
 		})
