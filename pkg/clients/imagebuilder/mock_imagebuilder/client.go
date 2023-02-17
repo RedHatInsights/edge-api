@@ -125,10 +125,10 @@ func (mr *MockClientInterfaceMockRecorder) SearchPackage(packageName, arch, dist
 }
 
 // ValidatePackages mocks base method
-func (m *MockClientInterface) ValidatePackages(pkg []string) (map[uint]*models.InstalledPackage, error) {
+func (m *MockClientInterface) ValidatePackages(pkg []string) (map[string]*models.InstalledPackage, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ValidatePackages", pkg)
-	ret0, _ := ret[0].(map[uint]*models.InstalledPackage)
+	ret0, _ := ret[0].(map[string]*models.InstalledPackage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

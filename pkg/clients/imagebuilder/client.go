@@ -31,7 +31,7 @@ type ClientInterface interface {
 	GetInstallerStatus(image *models.Image) (*models.Image, error)
 	GetMetadata(image *models.Image) (*models.Image, error)
 	SearchPackage(packageName string, arch string, dist string) (*models.SearchPackageResult, error)
-	ValidatePackages(pkg []string) (map[uint]*models.InstalledPackage, error)
+	ValidatePackages(pkg []string) (map[string]*models.InstalledPackage, error)
 }
 
 // Client is the implementation of an ClientInterface
@@ -459,33 +459,23 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 		return nil, err
 	}
 
-	var dupPackages []uint
+	// var dupPackages []uint
 	var metadataPackages []string
 	for n := range metadata.InstalledPackages {
 		metadataPackages = append(metadataPackages, fmt.Sprintf("%s-%s-%s", metadata.InstalledPackages[n].Name, metadata.InstalledPackages[n].Release, metadata.InstalledPackages[n].Version))
 	}
 
-	var pkg map[uint]*models.InstalledPackage
+	var packagesExistsMap map[string]*models.InstalledPackage
 	var cip []models.CommitInstalledPackages
 
-	packagesExistsMap := make(map[string]bool)
-
 	if feature.DedupPackage.IsEnabled() {
-		pkg, err = c.ValidatePackages(metadataPackages)
-		if len(pkg) > 0 && err == nil {
-			for key := range pkg {
-				dupPackages = append(dupPackages, key)
-				packagesExistsMap[pkg[key].Name] = true
-			}
-		}
+		packagesExistsMap, err = c.ValidatePackages(metadataPackages)
+
 	}
 
 	for n := range metadata.InstalledPackages {
-
 		if feature.DedupPackage.IsEnabled() {
-			if packagesExistsMap[metadata.InstalledPackages[n].Name] {
-				continue
-			} else {
+			if packagesExistsMap[metadata.InstalledPackages[n].Name] == nil {
 				pkg := models.InstalledPackage{
 					Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,
 					Release: metadata.InstalledPackages[n].Release, Sigmd5: metadata.InstalledPackages[n].Sigmd5,
@@ -496,6 +486,7 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 			}
 
 		} else {
+			fmt.Printf("\n passei aqui: %v\n", n)
 			pkg := models.InstalledPackage{
 				Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,
 				Release: metadata.InstalledPackages[n].Release, Sigmd5: metadata.InstalledPackages[n].Sigmd5,
@@ -509,10 +500,9 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	image.Commit.OSTreeCommit = metadata.OstreeCommit
 	db.DB.Omit("Image.InstalledPackages.*").Save(image.Commit)
 	if feature.DedupPackage.IsEnabled() &&
-		len(dupPackages) > 0 {
-
-		for i := range dupPackages {
-			cip = append(cip, models.CommitInstalledPackages{InstalledPackageId: dupPackages[i], CommitId: image.Commit.ID})
+		len(packagesExistsMap) > 0 {
+		for i := range packagesExistsMap {
+			cip = append(cip, models.CommitInstalledPackages{InstalledPackageId: packagesExistsMap[i].ID, CommitId: image.Commit.ID})
 		}
 
 		err := db.DB.Create(&cip)
@@ -605,9 +595,9 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*m
 	return &searchResult, nil
 }
 
-func (c *Client) ValidatePackages(pkgs []string) (map[uint]*models.InstalledPackage, error) {
-	var result []*models.InstalledPackage
-	setOfPackages := make(map[uint]*models.InstalledPackage)
+func (c *Client) ValidatePackages(pkgs []string) (map[string]*models.InstalledPackage, error) {
+	var result []models.InstalledPackage
+	setOfPackages := make(map[string]*models.InstalledPackage)
 
 	if err := db.DB.Table("Installed_Packages").
 		Where("( (name || '-' || release || '-' ||  version)) in (?)", pkgs).
@@ -615,12 +605,9 @@ func (c *Client) ValidatePackages(pkgs []string) (map[uint]*models.InstalledPack
 		c.log.WithField("error", err.Error)
 		return nil, err.Error
 	} else {
-		if len(result) > 0 {
-			for n := range result {
-				setOfPackages[result[n].ID] = result[n]
-			}
-			return setOfPackages, nil
+		for n := range result {
+			setOfPackages[result[n].Name] = &result[n]
 		}
-		return nil, nil
+		return setOfPackages, nil
 	}
 }
