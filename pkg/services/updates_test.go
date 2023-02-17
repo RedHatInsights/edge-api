@@ -1627,4 +1627,30 @@ var _ = Describe("UpdateService Basic functions", func() {
 			})
 		})
 	})
+
+	Describe("Test build remote info", func() {
+		var update *models.UpdateTransaction
+		BeforeEach(func() {
+
+			orgID := faker.UUIDHyphenated()
+			update = &models.UpdateTransaction{
+				DispatchRecords: []models.DispatchRecord{},
+				OrgID:           orgID,
+				Commit:          &models.Commit{OSTreeRef: "ref"},
+				Repo:            &models.Repo{URL: "http://rh.com"},
+			}
+
+		})
+		It("should return template with gpg false", func() {
+			config.Get().GpgVerify = "false"
+			remoteInfo := services.NewTemplateRemoteInfo(update)
+			Expect(remoteInfo.GpgVerify).To(Equal("false"))
+		})
+		It("should return template with gpg true", func() {
+			config.Get().GpgVerify = "true"
+			remoteInfo := services.NewTemplateRemoteInfo(update)
+			Expect(remoteInfo.GpgVerify).To(Equal("true"))
+
+		})
+	})
 })

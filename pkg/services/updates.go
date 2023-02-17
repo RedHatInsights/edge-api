@@ -258,7 +258,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	go s.SetUpdateErrorStatusWhenInterrupted(intctx, *update, sigint, intcancel)
 
 	var remoteInfo TemplateRemoteInfo
-	remoteInfo = templateRemoteInfo(update)
+	remoteInfo = NewTemplateRemoteInfo(update)
 
 	playbookURL, err := s.WriteTemplate(remoteInfo, update.OrgID)
 
@@ -351,7 +351,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	return update, nil
 }
 
-func templateRemoteInfo(update *models.UpdateTransaction) TemplateRemoteInfo {
+func NewTemplateRemoteInfo(update *models.UpdateTransaction) TemplateRemoteInfo {
 
 	return TemplateRemoteInfo{
 		RemoteURL:           update.Repo.URL,
