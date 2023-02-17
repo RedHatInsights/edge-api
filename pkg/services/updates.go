@@ -257,8 +257,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	// 	if an interrupt, set update status to error
 	go s.SetUpdateErrorStatusWhenInterrupted(intctx, *update, sigint, intcancel)
 
-	var remoteInfo TemplateRemoteInfo
-	remoteInfo = NewTemplateRemoteInfo(update)
+	remoteInfo := NewTemplateRemoteInfo(update)
 
 	playbookURL, err := s.WriteTemplate(remoteInfo, update.OrgID)
 
