@@ -258,14 +258,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	go s.SetUpdateErrorStatusWhenInterrupted(intctx, *update, sigint, intcancel)
 
 	var remoteInfo TemplateRemoteInfo
-	remoteInfo.RemoteURL = update.Repo.URL
-	remoteInfo.RemoteName = "rhel-edge"
-	remoteInfo.ContentURL = update.Repo.URL
-	remoteInfo.UpdateTransactionID = update.ID
-	remoteInfo.GpgVerify = config.Get().GpgVerify
-
-	remoteInfo.OSTreeRef = update.Commit.OSTreeRef
-	remoteInfo.RemoteOstreeUpdate = fmt.Sprint(update.ChangesRefs)
+	remoteInfo = templateRemoteInfo(update)
 
 	playbookURL, err := s.WriteTemplate(remoteInfo, update.OrgID)
 
@@ -358,6 +351,18 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	return update, nil
 }
 
+func templateRemoteInfo(update *models.UpdateTransaction) TemplateRemoteInfo {
+
+	return TemplateRemoteInfo{
+		RemoteURL:           update.Repo.URL,
+		RemoteName:          "rhel-edge",
+		ContentURL:          update.Repo.URL,
+		UpdateTransactionID: update.ID,
+		GpgVerify:           config.Get().GpgVerify,
+		OSTreeRef:           update.Commit.OSTreeRef,
+		RemoteOstreeUpdate:  fmt.Sprint(update.ChangesRefs),
+	}
+}
 func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.UpdateTransaction, error) {
 	var update *models.UpdateTransaction
 	if result := db.Org(orgID, "update_transactions").Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").First(&update, updateID); result.Error != nil {

@@ -679,7 +679,10 @@ var _ = Describe("UpdateService Basic functions", func() {
 				os.Setenv("SOURCES_ENV", "prod")
 				cfg, _ = config.CreateEdgeAPIConfig()
 			})
-
+			AfterEach(func() {
+				os.Setenv("SOURCES_ENV", "test")
+				cfg, _ = config.CreateEdgeAPIConfig()
+			})
 			It("to build the template for PROD rebase properly", func() {
 				t := services.TemplateRemoteInfo{
 					UpdateTransactionID: 1000,
