@@ -470,7 +470,10 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 
 	if feature.DedupPackage.IsEnabled() {
 		packagesExistsMap, err = c.ValidatePackages(metadataPackages)
-
+		if err != nil {
+			c.log.WithField("error", err.Error).Error(new(PackageRequestError))
+			return nil, err
+		}
 	}
 
 	for n := range metadata.InstalledPackages {
