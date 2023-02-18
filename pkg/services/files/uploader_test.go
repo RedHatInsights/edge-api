@@ -196,7 +196,7 @@ var _ = Describe("Uploader Test", func() {
 					uploadPath := faker.UUIDHyphenated() + "/" + faker.UUIDHyphenated()
 
 					sourceFileName := fmt.Sprintf("uploader-%d.target-file", time.Now().UnixNano())
-					sourceFilePath := os.TempDir() + string(os.PathSeparator) + sourceFileName
+					sourceFilePath := filepath.Join(os.TempDir(), sourceFileName)
 
 					// should not call S3Client PuObject
 					s3Client.EXPECT().PutObject(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(0)
