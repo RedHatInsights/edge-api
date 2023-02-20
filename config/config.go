@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	log "github.com/sirupsen/logrus"
@@ -68,6 +69,8 @@ type EdgeConfig struct {
 	ImageBuilderOrgID          string                    `json:"image_builder_org_id,omitempty"`
 	GpgVerify                  string                    `json:"gpg_verify,omitempty"`
 	GlitchtipDsn               string                    `json:"glitchtip_dsn,omitempty"`
+	HTTPClientTimeout          time.Duration             `json:"-"`
+	TlsCAPath                  string                    `json:"-"`
 }
 
 type dbConfig struct {
@@ -150,6 +153,8 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("KafkaRequestRequiredAcks", -1)
 	options.SetDefault("KafkaMessageSendMaxRetries", 15)
 	options.SetDefault("KafkaRetryBackoffMs", 100)
+	options.SetDefault("TlsCAPath", "")
+	options.SetDefault("HTTPClientTimeout", 10)
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
@@ -198,17 +203,19 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("TenantTranslatorPort", os.Getenv("TENANT_TRANSLATOR_PORT"))
 
 	edgeConfig := &EdgeConfig{
-		Hostname:        options.GetString("Hostname"),
-		Auth:            options.GetBool("Auth"),
-		WebPort:         options.GetInt("WebPort"),
-		MetricsPort:     options.GetInt("MetricsPort"),
-		MetricsBaseURL:  options.GetString("MetricsBaseURL"),
-		Debug:           options.GetBool("Debug"),
-		LogLevel:        options.GetString("LOG_LEVEL"),
-		BucketName:      options.GetString("EdgeTarballsBucket"),
-		BucketRegion:    options.GetString("BucketRegion"),
-		RepoTempPath:    options.GetString("RepoTempPath"),
-		OpenAPIFilePath: options.GetString("OpenAPIFilePath"),
+		Hostname:          options.GetString("Hostname"),
+		Auth:              options.GetBool("Auth"),
+		WebPort:           options.GetInt("WebPort"),
+		MetricsPort:       options.GetInt("MetricsPort"),
+		MetricsBaseURL:    options.GetString("MetricsBaseURL"),
+		Debug:             options.GetBool("Debug"),
+		LogLevel:          options.GetString("LOG_LEVEL"),
+		BucketName:        options.GetString("EdgeTarballsBucket"),
+		BucketRegion:      options.GetString("BucketRegion"),
+		RepoTempPath:      options.GetString("RepoTempPath"),
+		OpenAPIFilePath:   options.GetString("OpenAPIFilePath"),
+		TlsCAPath:         options.GetString("TlsCAPath"),
+		HTTPClientTimeout: time.Duration(options.GetInt("HTTPClientTimeout")),
 		ImageBuilderConfig: &imageBuilderConfig{
 			URL: options.GetString("ImageBuilderUrl"),
 		},
@@ -288,7 +295,23 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		}
 
 		bucket := clowder.ObjectBuckets[edgeConfig.BucketName]
+		broker := cfg.Kafka.Brokers[0]
+		// Kafka
+		options.SetDefault("KafkaBrokers", clowder.KafkaServers)
+		options.SetDefault("KafkaTrackerTopic", clowder.KafkaTopics["platform.payload-status"].Name)
+		if broker.Cacert != nil {
+			caPath, err := cfg.KafkaCa(broker)
+			if err != nil {
+				panic("Kafka CA failed to write")
+			}
+			options.Set("KafkaCA", caPath)
+		}
 
+		// TLS
+		options.SetDefault("TlsCAPath", cfg.TlsCAPath)
+		// Ports
+		options.SetDefault("WebPort", cfg.PublicPort)
+		options.SetDefault("MetricsPort", cfg.MetricsPort)
 		edgeConfig.BucketName = bucket.RequestedName
 		if bucket.Region != nil {
 			edgeConfig.BucketRegion = *bucket.Region
