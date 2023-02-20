@@ -295,23 +295,7 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		}
 
 		bucket := clowder.ObjectBuckets[edgeConfig.BucketName]
-		broker := cfg.Kafka.Brokers[0]
-		// Kafka
-		options.SetDefault("KafkaBrokers", clowder.KafkaServers)
-		options.SetDefault("KafkaTrackerTopic", clowder.KafkaTopics["platform.payload-status"].Name)
-		if broker.Cacert != nil {
-			caPath, err := cfg.KafkaCa(broker)
-			if err != nil {
-				panic("Kafka CA failed to write")
-			}
-			options.Set("KafkaCA", caPath)
-		}
 
-		// TLS
-		options.SetDefault("TlsCAPath", cfg.TlsCAPath)
-		// Ports
-		options.SetDefault("WebPort", cfg.PublicPort)
-		options.SetDefault("MetricsPort", cfg.MetricsPort)
 		edgeConfig.BucketName = bucket.RequestedName
 		if bucket.Region != nil {
 			edgeConfig.BucketRegion = *bucket.Region
