@@ -85,6 +85,18 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(err).To(BeNil())
 		Expect(res.Meta.Count).To(Equal(0))
 	})
+	It("test web service error while search a package", func() {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintln(w, `{"error":{"count":0}}`)
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+		_, err := client.SearchPackage("badpackage", "x86_64", "rhel-85")
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("image builder search packages request error"))
+	})
 	It("test validation of special character package name", func() {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
