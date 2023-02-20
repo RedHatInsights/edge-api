@@ -70,7 +70,7 @@ type EdgeConfig struct {
 	GpgVerify                  string                    `json:"gpg_verify,omitempty"`
 	GlitchtipDsn               string                    `json:"glitchtip_dsn,omitempty"`
 	HTTPClientTimeout          time.Duration             `json:"-"`
-	TlsCAPath                  string                    `json:"-"`
+	TlsCAPath                  string                    `json:"Tls_CA_path,omitempty"`
 }
 
 type dbConfig struct {
@@ -445,6 +445,7 @@ func LogConfigAtStartup(cfg *EdgeConfig) {
 		"ImageBuilderOrgID":        cfg.ImageBuilderOrgID,
 		"GlitchtipDsn":             cfg.GlitchtipDsn,
 		"ContentSourcesURL":        cfg.ContentSourcesURL,
+		"TlsCAPath":                cfg.TlsCAPath,
 	}
 
 	// loop through the key/value pairs

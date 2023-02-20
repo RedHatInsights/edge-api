@@ -58,5 +58,3 @@ go/pkg/mod/*
 /build/
 /coverage.json
 /coverage.html
-
-rebase.sh
