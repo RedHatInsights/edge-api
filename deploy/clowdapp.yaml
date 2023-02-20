@@ -22,6 +22,12 @@ objects:
     name: glitchtip-dsn
   stringData:
     dsn: ${GLITCHTIP_DSN}
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: tls-CA-path
+  stringData:
+    dsn: ${TLS_CA_PATH}
 - apiVersion: cloud.redhat.com/v1alpha1
   kind: ClowdApp
   metadata:
