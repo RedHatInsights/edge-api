@@ -153,7 +153,6 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("KafkaRequestRequiredAcks", -1)
 	options.SetDefault("KafkaMessageSendMaxRetries", 15)
 	options.SetDefault("KafkaRetryBackoffMs", 100)
-	options.SetDefault("TlsCAPath", "")
 	options.SetDefault("HTTPClientTimeout", 10)
 	options.AutomaticEnv()
 
