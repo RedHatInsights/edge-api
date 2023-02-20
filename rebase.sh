@@ -7,3 +7,6 @@ git push -f origin main
 #Djebran approach:
 #git remote update
 #git pull upstream main
+#git merge upstream/main
+ 
+
