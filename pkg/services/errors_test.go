@@ -56,6 +56,7 @@ func TestDeviceNotFoundError(t *testing.T) {
 		{new(services.CommitImageNotFound), services.CommitImageNotFoundMsg},
 		{new(services.SomeDevicesDoesNotExists), services.SomeDevicesDoesNotExistsMsg},
 		{new(services.KafkaAllBrokersDown), services.KafkaAllBrokersDownMsg},
+		{new(services.KafkaProducerInstanceUndefined), services.KafkaProducerInstanceUndefinedMsg},
 		{new(services.DBCommitError), services.DBCommitErrorMsg},
 	}
 

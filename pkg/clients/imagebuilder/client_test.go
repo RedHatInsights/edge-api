@@ -143,6 +143,102 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(img.Commit.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
 		Expect(img.Commit.ExternalURL).To(BeFalse())
 	})
+	It("should return error when image has org_id undefined", func() {
+		pkgs := []models.Package{
+			{
+				Name: "vim",
+			},
+			{
+				Name: "ansible",
+			},
+		}
+		img := &models.Image{Distribution: "rhel-8",
+			Packages: pkgs,
+			Commit: &models.Commit{
+				Arch: "x86_64",
+				Repo: &models.Repo{},
+			},
+			ThirdPartyRepositories: []models.ThirdPartyRepo{
+				{
+					Name: "repo test",
+					URL:  "https://repo.com",
+				},
+				{
+					Name: "repo test2",
+					URL:  "https://repo2.com",
+				},
+			},
+		}
+		result, err := client.GetImageThirdPartyRepos(img)
+		Expect(result).To(BeNil())
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("error retrieving orgID  information, image orgID undefined"))
+	})
+
+	It("should retrieve and return third party repos from database and return valid list", func() {
+		pkgs := []models.Package{
+			{
+				Name: "vim",
+			},
+			{
+				Name: "ansible",
+			},
+		}
+		OrgId := faker.UUIDHyphenated()
+		thirdPartyRepo := models.ThirdPartyRepo{
+			Name:  faker.UUIDHyphenated(),
+			URL:   faker.URL(),
+			OrgID: OrgId,
+		}
+		db.DB.Create(&thirdPartyRepo)
+		img := &models.Image{Distribution: "rhel-8",
+			Packages: pkgs,
+			OrgID:    OrgId,
+			Commit: &models.Commit{
+				Arch: "x86_64",
+				Repo: &models.Repo{},
+			},
+			ThirdPartyRepositories: []models.ThirdPartyRepo{
+				thirdPartyRepo,
+			},
+		}
+		result, err := client.GetImageThirdPartyRepos(img)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result[0].BaseURL).To(Equal(thirdPartyRepo.URL))
+	})
+
+	It("should return error when custom repositories id are not valid/not found", func() {
+		pkgs := []models.Package{
+			{
+				Name: "vim",
+			},
+			{
+				Name: "ansible",
+			},
+		}
+		img := &models.Image{Distribution: "rhel-8",
+			Packages: pkgs,
+			OrgID:    "org_id",
+			Commit: &models.Commit{
+				Arch: "x86_64",
+				Repo: &models.Repo{},
+			},
+			ThirdPartyRepositories: []models.ThirdPartyRepo{
+				{
+					Name: "repo test",
+					URL:  "https://repo.com",
+				},
+				{
+					Name: "repo test2",
+					URL:  "https://repo2.com",
+				},
+			},
+		}
+		result, err := client.GetImageThirdPartyRepos(img)
+		Expect(result).To(BeNil())
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("enter valid third party repository id"))
+	})
 
 	Context("compose image commit with ChangesRefs values", func() {
 		dist := "rhel-86"

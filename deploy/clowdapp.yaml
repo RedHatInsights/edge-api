@@ -16,6 +16,12 @@ objects:
     name: image-builder-org-id
   stringData:
     key: ${IMAGE_BUILDER_ORG_ID}
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    name: glitchtip-dsn
+  stringData:
+    dsn: ${GLITCHTIP_DSN}
 - apiVersion: cloud.redhat.com/v1alpha1
   kind: ClowdApp
   metadata:
@@ -87,6 +93,11 @@ objects:
             secretKeyRef:
               key: key
               name: image-builder-org-id
+        - name: GLITCHTIPDSN
+          valueFrom:
+            secretKeyRef:
+              key: dsn
+              name: glitchtip-dsn
         - name: EDGEAPIBASEURL
           value: ${EDGEAPIBASEURL}
         - name: EDGECERTAPIBASEURL
@@ -177,6 +188,8 @@ objects:
             cpu: 125m
             memory: 128Mi
     - name: ibvents
+      annotations:
+        ${LINT_ANNOTATION}: "minimum three replicas not required"
       minReplicas: 1
       podSpec:
         image: ${IMAGE}:${IMAGE_TAG}
@@ -321,6 +334,9 @@ objects:
     - replicas: 3
       partitions: 3
       topicName: platform.inventory.events
+    - replicas: 3
+      partitions: 3
+      topicName: platform.notifications.ingress
     dependencies:
     - unleash-proxy
     optionalDependencies:

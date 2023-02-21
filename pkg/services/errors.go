@@ -28,6 +28,7 @@ const ImageUnDefinedMsg = "image-set is undefined"
 const DeviceGroupNotFoundMsg = "device group was not found"
 const ImageSetAlreadyExistsMsg = "image set already exists"
 const ImageNotInErrorStateMsg = "image is not in error state"
+const ImageOnlyLatestCanModifyMsg = "only the latest updated image can be modified"
 const DeviceGroupOrgIDDevicesNotFoundMsg = "devices not found among the device group orgID"
 const DeviceGroupDevicesNotFoundMsg = "devices not found in device group"
 const DeviceGroupAccountOrIDUndefinedMsg = "account or deviceGroupID undefined"
@@ -50,6 +51,7 @@ const CommitImageNotFoundMsg = "Commit image was not found"
 const SomeDevicesDoesNotExistsMsg = "image-set not found for all devices"
 const KafkaAllBrokersDownMsg = "Cannot connect to any Kafka brokers"
 const DBCommitErrorMsg = "Error searching for ImageSet of Device Images"
+const KafkaProducerInstanceUndefinedMsg = "kafka producer instance is undefined"
 
 // DeviceNotFoundError indicates the device was not found
 type DeviceNotFoundError struct{}
@@ -70,6 +72,13 @@ type ImageNotFoundError struct{}
 
 func (e *ImageNotFoundError) Error() string {
 	return ImageNotFoundErrorMsg
+}
+
+// ImageOnlyLatestCanModify indicates only the latest image can be modified
+type ImageOnlyLatestCanModify struct{}
+
+func (e *ImageOnlyLatestCanModify) Error() string {
+	return ImageOnlyLatestCanModifyMsg
 }
 
 // ImageSetNotFoundError indicates the image-set was not found
@@ -372,6 +381,13 @@ type KafkaAllBrokersDown struct{}
 
 func (e *KafkaAllBrokersDown) Error() string {
 	return KafkaAllBrokersDownMsg
+}
+
+// KafkaProducerInstanceUndefined indicates that we were not able to get a kafka producer instance
+type KafkaProducerInstanceUndefined struct{}
+
+func (e *KafkaProducerInstanceUndefined) Error() string {
+	return KafkaProducerInstanceUndefinedMsg
 }
 
 // DBCommitError indicates a dbError during search
