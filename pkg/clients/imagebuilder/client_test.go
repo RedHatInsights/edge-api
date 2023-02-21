@@ -85,7 +85,7 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(err).To(BeNil())
 		Expect(res.Meta.Count).To(Equal(0))
 	})
-	It("test web service error while search a package", func() {
+	It("test web service when package search returns StatusBadRequest", func() {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
