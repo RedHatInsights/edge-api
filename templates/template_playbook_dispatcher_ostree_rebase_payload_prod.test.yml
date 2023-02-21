@@ -9,7 +9,7 @@
     ostree_remote_name: "remote-name"
     ostree_changes_refs: "true"
     os_tree_ref: "rhel/9/x86_64/edge"
-    ostree_gpg_verify: "false"
+    ostree_gpg_verify: "true"
     ostree_gpg_keypath: "/etc/pki/rpm-gpg/"
     ostree_remote_template: |
       [remote "{{ ostree_remote_name }}"]
