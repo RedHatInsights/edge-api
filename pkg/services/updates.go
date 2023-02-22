@@ -257,14 +257,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	// 	if an interrupt, set update status to error
 	go s.SetUpdateErrorStatusWhenInterrupted(intctx, *update, sigint, intcancel)
 
-	var remoteInfo TemplateRemoteInfo
-	remoteInfo.RemoteURL = update.Repo.URL
-	remoteInfo.RemoteName = "rhel-edge"
-	remoteInfo.ContentURL = update.Repo.URL
-	remoteInfo.UpdateTransactionID = update.ID
-	remoteInfo.GpgVerify = "false"
-	remoteInfo.OSTreeRef = update.Commit.OSTreeRef
-	remoteInfo.RemoteOstreeUpdate = fmt.Sprint(update.ChangesRefs)
+	remoteInfo := NewTemplateRemoteInfo(update)
 
 	playbookURL, err := s.WriteTemplate(remoteInfo, update.OrgID)
 
@@ -357,6 +350,18 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	return update, nil
 }
 
+func NewTemplateRemoteInfo(update *models.UpdateTransaction) TemplateRemoteInfo {
+
+	return TemplateRemoteInfo{
+		RemoteURL:           update.Repo.URL,
+		RemoteName:          "rhel-edge",
+		ContentURL:          update.Repo.URL,
+		UpdateTransactionID: update.ID,
+		GpgVerify:           config.Get().GpgVerify,
+		OSTreeRef:           update.Commit.OSTreeRef,
+		RemoteOstreeUpdate:  fmt.Sprint(update.ChangesRefs),
+	}
+}
 func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.UpdateTransaction, error) {
 	var update *models.UpdateTransaction
 	if result := db.Org(orgID, "update_transactions").Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").First(&update, updateID); result.Error != nil {
@@ -435,9 +440,10 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, orgID str
 		// this is raising when updating major version eg: rhel-8.6 -> rhel-9.0
 		// this need more investigations.
 		// RepoContentURL:     fmt.Sprintf("%s/content", repoURL),
-		RepoContentURL:     repoURL,
-		RemoteOstreeUpdate: templateInfo.RemoteOstreeUpdate,
-		OSTreeRef:          templateInfo.OSTreeRef,
+		RepoContentURL:      repoURL,
+		RemoteOstreeUpdate:  templateInfo.RemoteOstreeUpdate,
+		OSTreeRef:           templateInfo.OSTreeRef,
+		GoTemplateGpgVerify: templateInfo.GpgVerify,
 	}
 
 	// TODO change the same time as line 231
