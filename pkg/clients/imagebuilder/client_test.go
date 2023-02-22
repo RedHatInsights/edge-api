@@ -33,6 +33,8 @@ func TestModels(t *testing.T) {
 var _ = Describe("Image Builder Client Test", func() {
 	var client *Client
 	var dbName string
+	var originalImageBuilderURL string
+	conf := config.Get()
 	BeforeEach(func() {
 		config.Init()
 		config.Get().Debug = true
@@ -54,9 +56,13 @@ var _ = Describe("Image Builder Client Test", func() {
 			panic(err)
 		}
 		client = InitClient(context.Background(), log.NewEntry(log.StandardLogger()))
+		// save the original image builder url
+		originalImageBuilderURL = conf.ImageBuilderConfig.URL
 	})
 	AfterEach(func() {
 		os.Remove(dbName)
+		// restore the original image builder url
+		conf.ImageBuilderConfig.URL = originalImageBuilderURL
 	})
 	It("should init client", func() {
 		Expect(client).ToNot(BeNil())
@@ -84,6 +90,18 @@ var _ = Describe("Image Builder Client Test", func() {
 		res, err := client.SearchPackage("badrpm", "x86_64", "rhel-85")
 		Expect(err).To(BeNil())
 		Expect(res.Meta.Count).To(Equal(0))
+	})
+	It("test web service when package search returns StatusBadRequest", func() {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintln(w, `{"error":{"count":0}}`)
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+		_, err := client.SearchPackage("badpackage", "x86_64", "rhel-85")
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("image builder search packages request error"))
 	})
 	It("test validation of special character package name", func() {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
