@@ -608,19 +608,19 @@ var _ = Describe("ImageSets Route Test", func() {
 			Image1 := models.Image{
 				ImageSetID: &imageSet1.ID,
 				OrgID:      common.DefaultOrgID,
-				Name:       "imageName-1",
+				Name:       "imageSet-1",
 				Status:     models.ImageStatusSuccess,
 			}
 			Image2 := models.Image{
 				ImageSetID: &imageSet3.ID,
 				OrgID:      common.DefaultOrgID,
-				Name:       "imageName-2",
+				Name:       "imageSet-3",
 				Status:     models.ImageStatusSuccess,
 			}
 			Image3 := models.Image{
 				ImageSetID: &imageSet2.ID,
 				OrgID:      common.DefaultOrgID,
-				Name:       "some-other-name",
+				Name:       "imageSet-2",
 				Status:     models.ImageStatusError,
 			}
 			db.DB.Create(&Image1)
