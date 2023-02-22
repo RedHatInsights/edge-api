@@ -33,6 +33,8 @@ func TestModels(t *testing.T) {
 var _ = Describe("Image Builder Client Test", func() {
 	var client *Client
 	var dbName string
+	var originalImageBuilderURL string
+	conf := config.Get()
 	BeforeEach(func() {
 		config.Init()
 		config.Get().Debug = true
@@ -54,9 +56,13 @@ var _ = Describe("Image Builder Client Test", func() {
 			panic(err)
 		}
 		client = InitClient(context.Background(), log.NewEntry(log.StandardLogger()))
+		// save the original image builder url
+		originalImageBuilderURL = conf.ImageBuilderConfig.URL
 	})
 	AfterEach(func() {
 		os.Remove(dbName)
+		// restore the original image builder url
+		conf.ImageBuilderConfig.URL = originalImageBuilderURL
 	})
 	It("should init client", func() {
 		Expect(client).ToNot(BeNil())
