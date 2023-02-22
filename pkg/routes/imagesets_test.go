@@ -537,13 +537,13 @@ var _ = Describe("ImageSets Route Test", func() {
 			db.DB.Create(&imageSet3)
 
 			imageSuccess1 := models.Image{
-				Name:       "image-success-saurabh-1",
+				Name:       "image-success-1",
 				ImageSetID: &imageSet3.ID,
 				OrgID:      common.DefaultOrgID,
 				Status:     models.ImageStatusSuccess,
 			}
 			imageError1 := models.Image{
-				Name:       "image-error-saurabh-1",
+				Name:       "image-error-1",
 				ImageSetID: &imageSet3.ID,
 				OrgID:      common.DefaultOrgID,
 				Status:     models.ImageStatusError,
@@ -584,10 +584,54 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(string(respBody)).ToNot(ContainSubstring("image-set-1"))
 			})
 		})
-		When("filter by status", func() {
+
+	})
+	Context("Image-sets filter", func() {
+		BeforeEach(func() {
+			imageSet1 := &models.ImageSet{
+				Name:  "imageSet-1",
+				OrgID: common.DefaultOrgID,
+			}
+			imageSet2 := &models.ImageSet{
+				Name:  "imageSet-2",
+				OrgID: common.DefaultOrgID,
+			}
+			imageSet3 := &models.ImageSet{
+				Name:  "imageSet-3",
+				OrgID: common.DefaultOrgID,
+			}
+			db.DB.Create(&imageSet1)
+			db.DB.Create(&imageSet3)
+			db.DB.Create(&imageSet2)
+
+			// create some image sets with the status "SUCCESS"
+			Image1 := models.Image{
+				ImageSetID: &imageSet1.ID,
+				OrgID:      common.DefaultOrgID,
+				Name:       "imageName-1",
+				Status:     models.ImageStatusSuccess,
+			}
+			Image2 := models.Image{
+				ImageSetID: &imageSet3.ID,
+				OrgID:      common.DefaultOrgID,
+				Name:       "imageName-2",
+				Status:     models.ImageStatusSuccess,
+			}
+			Image3 := models.Image{
+				ImageSetID: &imageSet2.ID,
+				OrgID:      common.DefaultOrgID,
+				Name:       "some-other-name",
+				Status:     models.ImageStatusError,
+			}
+			db.DB.Create(&Image1)
+			db.DB.Create(&Image2)
+			db.DB.Create(&Image3)
+
+		})
+		When("filter by statuss", func() {
 			It("should return image-sets with SUCCESS status", func() {
-				status := "SUCCESS"
-				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets?status=%s", status), nil)
+				status := "success"
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets?status=%s&name=imageSet", status), nil)
 				Expect(err).ToNot(HaveOccurred())
 				w := httptest.NewRecorder()
 				req = req.WithContext(dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{}))
@@ -595,10 +639,28 @@ var _ = Describe("ImageSets Route Test", func() {
 				handler.ServeHTTP(w, req)
 				Expect(w.Code).To(Equal(http.StatusOK), fmt.Sprintf("expected status %d, but got %d", w.Code, http.StatusOK))
 				respBody, err := io.ReadAll(w.Body)
+				Expect(err).ToNot(HaveOccurred())
+
+				type ImageSetsResponse struct {
+					Count int                    `json:"Count"`
+					Data  []ImageSetInstallerURL `json:"Data"`
+				}
+				var response ImageSetsResponse
+
+				// unmarshaling the response body into the struct
+				err = json.Unmarshal(respBody, &response)
 				Expect(err).To(BeNil())
-				Expect(string(respBody)).To(ContainSubstring("image-set-1"))
-				Expect(string(respBody)).To(ContainSubstring("image-set-3"))
-				Expect(string(respBody)).ToNot(ContainSubstring("image-set-2"))
+				Expect(len(response.Data)).To(Equal(2))
+
+				// iteratating over the image sets and find the ones with the desired imagesets
+				var count int
+				for _, imageSet := range response.Data {
+					if imageSet.ImageSetData.Name == "imageSet-1" || imageSet.ImageSetData.Name == "imageSet-3" {
+						count += 1
+					}
+				}
+				Expect(count).To(Equal(2))
+
 			})
 		})
 	})
