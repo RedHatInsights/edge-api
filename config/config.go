@@ -173,7 +173,7 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 			}
 			options.SetDefault("FeatureFlagsBearerToken", clientAccessToken)
 		}
-		if *cfg.Metadata.EnvName == "prod" {
+		if cfg.Metadata != nil && *cfg.Metadata.Name == "prod" {
 			options.SetDefault("GpgVerify", "true")
 		}
 	} else {
