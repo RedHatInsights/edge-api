@@ -676,12 +676,12 @@ var _ = Describe("UpdateService Basic functions", func() {
 		Context("when upload works", func() {
 			var cfg *config.EdgeConfig
 			BeforeEach(func() {
-				os.Setenv("SOURCES_ENV", "prod")
 				cfg, _ = config.CreateEdgeAPIConfig()
+				cfg.GpgVerify = "true"
 			})
 			AfterEach(func() {
-				os.Setenv("SOURCES_ENV", "test")
 				cfg, _ = config.CreateEdgeAPIConfig()
+				cfg.GpgVerify = "false"
 			})
 			It("to build the template for PROD rebase properly", func() {
 				t := services.TemplateRemoteInfo{

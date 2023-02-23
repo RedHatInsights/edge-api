@@ -173,18 +173,20 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 			}
 			options.SetDefault("FeatureFlagsBearerToken", clientAccessToken)
 		}
+		if *cfg.Metadata.EnvName == "prod" {
+			options.SetDefault("GpgVerify", "true")
+		}
 	} else {
 		options.SetDefault("FeatureFlagsUrl", os.Getenv("UNLEASH_URL"))
 		options.SetDefault("FeatureFlagsAPIToken", os.Getenv("UNLEASH_TOKEN"))
 		options.SetDefault("FeatureFlagsBearerToken", options.GetString("UNLEASH_TOKEN"))
+		options.SetDefault("GpgVerify", "false")
 	}
 	options.SetDefault("FeatureFlagsService", os.Getenv("FEATURE_FLAGS_SERVICE"))
 
 	if os.Getenv("SOURCES_ENV") == "prod" {
-		options.SetDefault("GpgVerify", "true")
 		options.SetDefault("FeatureFlagsEnvironment", "production")
 	} else {
-		options.SetDefault("GpgVerify", "false")
 		options.SetDefault("FeatureFlagsEnvironment", "development")
 	}
 
