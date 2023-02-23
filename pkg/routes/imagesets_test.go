@@ -587,17 +587,19 @@ var _ = Describe("ImageSets Route Test", func() {
 
 	})
 	Context("Image-sets filter", func() {
+		var namePrefix string
 		BeforeEach(func() {
+			namePrefix = faker.UUIDHyphenated()
 			imageSet1 := &models.ImageSet{
-				Name:  "imageSet-1",
+				Name:  namePrefix + "imageSet-1",
 				OrgID: common.DefaultOrgID,
 			}
 			imageSet2 := &models.ImageSet{
-				Name:  "imageSet-2",
+				Name:  namePrefix + "imageSet-2",
 				OrgID: common.DefaultOrgID,
 			}
 			imageSet3 := &models.ImageSet{
-				Name:  "imageSet-3",
+				Name:  namePrefix + "imageSet-3",
 				OrgID: common.DefaultOrgID,
 			}
 			db.DB.Create(&imageSet1)
@@ -608,30 +610,24 @@ var _ = Describe("ImageSets Route Test", func() {
 			Image1 := models.Image{
 				ImageSetID: &imageSet1.ID,
 				OrgID:      common.DefaultOrgID,
-				Name:       "imageSet-1",
+				Name:       namePrefix + "imageSet-1",
 				Status:     models.ImageStatusSuccess,
 			}
 			Image2 := models.Image{
 				ImageSetID: &imageSet3.ID,
 				OrgID:      common.DefaultOrgID,
-				Name:       "imageSet-3",
+				Name:       namePrefix + "imageSet-3",
 				Status:     models.ImageStatusSuccess,
 			}
-			Image3 := models.Image{
-				ImageSetID: &imageSet2.ID,
-				OrgID:      common.DefaultOrgID,
-				Name:       "imageSet-2",
-				Status:     models.ImageStatusError,
-			}
+
 			db.DB.Create(&Image1)
 			db.DB.Create(&Image2)
-			db.DB.Create(&Image3)
 
 		})
-		When("filter by statuss", func() {
+		When("filter by status", func() {
 			It("should return image-sets with SUCCESS status", func() {
 				status := "success"
-				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets?status=%s&name=imageSet", status), nil)
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets?status=%s&name=%s", status, namePrefix), nil)
 				Expect(err).ToNot(HaveOccurred())
 				w := httptest.NewRecorder()
 				req = req.WithContext(dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{}))
@@ -655,7 +651,7 @@ var _ = Describe("ImageSets Route Test", func() {
 				// iteratating over the image sets and find the ones with the desired imagesets
 				var count int
 				for _, imageSet := range response.Data {
-					if imageSet.ImageSetData.Name == "imageSet-1" || imageSet.ImageSetData.Name == "imageSet-3" {
+					if imageSet.ImageSetData.Name == namePrefix+"imageSet-1" || imageSet.ImageSetData.Name == namePrefix+"imageSet-3" {
 						count += 1
 					}
 				}
