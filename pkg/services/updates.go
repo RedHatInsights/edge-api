@@ -387,6 +387,7 @@ func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.Up
 	// 	if an interrupt, set update status to error
 	go s.SetUpdateErrorStatusWhenInterrupted(intctx, *update, sigint, intcancel)
 
+	updateRepoID := update.RepoID
 	update, err := s.RepoBuilder.BuildUpdateRepo(updateID)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error building update repo")
@@ -394,6 +395,13 @@ func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.Up
 		if result := db.DB.Model(&models.UpdateTransaction{}).Where("ID=?", updateID).Update("Status", models.UpdateStatusError); result.Error != nil {
 			s.log.WithField("error", err.Error()).Error("failed to save building error status")
 			return nil, result.Error
+		}
+		// set repo status to error
+		if updateRepoID != nil {
+			if err := db.DB.Model(&models.Repo{}).Where("ID", updateRepoID).Update("Status", models.RepoStatusError).Error; err != nil {
+				s.log.WithField("error", err.Error()).Error("failed to save update repository error status")
+				return nil, err
+			}
 		}
 		return nil, err
 	}
