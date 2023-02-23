@@ -26,6 +26,8 @@ objects:
   kind: ClowdApp
   metadata:
     name: edge-api
+    annotations:
+      ${LINT_ANNOTATION}: "minimum three replicas not required"
   spec:
     envName: ${ENV_NAME}
     deployments:
@@ -188,8 +190,6 @@ objects:
             cpu: 125m
             memory: 128Mi
     - name: ibvents
-      annotations:
-        ${LINT_ANNOTATION}: "minimum three replicas not required"
       minReplicas: 1
       podSpec:
         image: ${IMAGE}:${IMAGE_TAG}
