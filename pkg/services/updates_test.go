@@ -295,11 +295,20 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 			When("when build repo fail", func() {
 				It("should return error when can't build repo", func() {
-					mockRepoBuilder.EXPECT().BuildUpdateRepo(update.ID).Return(nil, errors.New("error building repo"))
+					expectedError := errors.New("error building repo")
+					mockRepoBuilder.EXPECT().BuildUpdateRepo(update.ID).Return(nil, expectedError)
 					actual, err := updateService.CreateUpdate(update.ID)
 
-					Expect(actual).To(BeNil())
 					Expect(err).To(HaveOccurred())
+					Expect(err).To(MatchError(expectedError))
+					Expect(actual).To(BeNil())
+
+					// reload update from db
+					err = db.DB.Preload("Repo").First(&update, update.ID).Error
+					Expect(err).ToNot(HaveOccurred())
+					Expect(update.Status).To(Equal(models.UpdateStatusError))
+					Expect(update.Repo).ToNot(BeNil())
+					Expect(update.Repo.Status).To(Equal(models.RepoStatusError))
 				})
 			})
 
