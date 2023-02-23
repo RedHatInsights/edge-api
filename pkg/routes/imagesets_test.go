@@ -529,28 +529,6 @@ var _ = Describe("ImageSets Route Test", func() {
 			}
 			db.DB.Create(&imageSuccess)
 			db.DB.Create(&imageError)
-
-			imageSet3 := &models.ImageSet{
-				Name:  "image-set-3",
-				OrgID: common.DefaultOrgID,
-			}
-			db.DB.Create(&imageSet3)
-
-			imageSuccess1 := models.Image{
-				Name:       "image-success-1",
-				ImageSetID: &imageSet3.ID,
-				OrgID:      common.DefaultOrgID,
-				Status:     models.ImageStatusSuccess,
-			}
-			imageError1 := models.Image{
-				Name:       "image-error-1",
-				ImageSetID: &imageSet3.ID,
-				OrgID:      common.DefaultOrgID,
-				Status:     models.ImageStatusError,
-			}
-			db.DB.Create(&imageError1)
-			db.DB.Create(&imageSuccess1)
-
 		})
 		When("filter by name", func() {
 			It("should return given image-set", func() {
