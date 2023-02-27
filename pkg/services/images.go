@@ -186,12 +186,6 @@ func (s *ImageService) CreateImage(image *models.Image) error {
 		return err
 	}
 	image.ThirdPartyRepositories = *imagesrepos
-	// Send Image creation to notification
-	notify, errNotify := s.SendImageNotification(image)
-	if errNotify != nil {
-		s.log.WithField("message", errNotify.Error()).Error("Error sending notification")
-		s.log.WithField("message", notify).Error("Notify Error")
-	}
 
 	// TODO: REFACTOR... ImageSet should be created first and an image created from it
 	imageSet, err := s.getImageSetForNewImage(image.OrgID, image)
@@ -231,6 +225,13 @@ func (s *ImageService) CreateImage(image *models.Image) error {
 
 	if result := db.DB.Create(&image); result.Error != nil {
 		return result.Error
+	}
+
+	// Send Image creation to notification
+	notify, errNotify := s.SendImageNotification(image)
+	if errNotify != nil {
+		s.log.WithField("message", errNotify.Error()).Error("Error sending notification")
+		s.log.WithField("message", notify).Error("Notify Error")
 	}
 
 	return nil
