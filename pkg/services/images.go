@@ -1590,7 +1590,12 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 
 		event.Metadata = emptyJSON.metaMap
 
-		event.Payload = fmt.Sprintf(`{"ImageId":"%v","ImageSetID":"%v"}`, i.ID, i.ImageSetID)
+		var imageSetID uint
+		if i.ImageSetID != nil {
+			imageSetID = *i.ImageSetID
+		}
+
+		event.Payload = fmt.Sprintf(`{"ImageId":"%v","ImageSetID":"%v"}`, i.ID, imageSetID)
 		events = append(events, event)
 
 		recipient.IgnoreUserPreferences = false
