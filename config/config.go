@@ -69,7 +69,7 @@ type EdgeConfig struct {
 	ImageBuilderOrgID          string                    `json:"image_builder_org_id,omitempty"`
 	GpgVerify                  string                    `json:"gpg_verify,omitempty"`
 	GlitchtipDsn               string                    `json:"glitchtip_dsn,omitempty"`
-	HTTPClientTimeout          time.Duration             `json:"-"`
+	HTTPClientTimeout          time.Duration             `json:"HTTP_client_timeout,omitempty"`
 	TlsCAPath                  string                    `json:"Tls_CA_path,omitempty"`
 }
 
@@ -213,7 +213,6 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		BucketRegion:      options.GetString("BucketRegion"),
 		RepoTempPath:      options.GetString("RepoTempPath"),
 		OpenAPIFilePath:   options.GetString("OpenAPIFilePath"),
-		TlsCAPath:         options.GetString("TlsCAPath"),
 		HTTPClientTimeout: time.Duration(options.GetInt("HTTPClientTimeout")),
 		ImageBuilderConfig: &imageBuilderConfig{
 			URL: options.GetString("ImageBuilderUrl"),
@@ -309,6 +308,9 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		}
 
 		edgeConfig.KafkaConfig = cfg.Kafka
+		if cfg.TlsCAPath != nil {
+			edgeConfig.TlsCAPath = *cfg.TlsCAPath
+		}
 	}
 
 	// get edgeConfig from file if running in developer mode
