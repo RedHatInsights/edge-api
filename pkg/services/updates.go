@@ -352,8 +352,6 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 
 func NewTemplateRemoteInfo(update *models.UpdateTransaction) TemplateRemoteInfo {
 	gpg_verify := "false"
-	fmt.Printf("\n >>>> feature.EnableGPGVerify.IsEnabled() %v\n", feature.EnableGPGVerify.IsEnabled())
-
 	if feature.EnableGPGVerify.IsEnabled() {
 		gpg_verify = "true"
 	}

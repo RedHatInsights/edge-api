@@ -1629,7 +1629,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		var update *models.UpdateTransaction
 
 		BeforeEach(func() {
-			os.Setenv("ENABLE_GPG_VERIFY", "false")
+			os.Unsetenv("ENABLE_GPG_VERIFY")
 			orgID := faker.UUIDHyphenated()
 			update = &models.UpdateTransaction{
 				DispatchRecords: []models.DispatchRecord{},
@@ -1637,9 +1637,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Commit:          &models.Commit{OSTreeRef: "ref"},
 				Repo:            &models.Repo{URL: "http://rh.com"},
 			}
-		})
-		AfterEach(func() {
-			os.Unsetenv("ENABLE_GPG_VERIFY")
 		})
 
 		It("should return template with gpg false", func() {
