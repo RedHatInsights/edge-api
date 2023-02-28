@@ -216,6 +216,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 			device := models.Device{
 				UUID:  uuid,
 				OrgID: orgID,
+				// set name with some chars that need to be escaped
+				Name: faker.Name() + `some "chars", must be "escaped"`,
 			}
 			db.DB.Create(&device)
 			update = models.UpdateTransaction{
@@ -223,6 +225,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					device,
 				},
 				OrgID:  orgID,
+				Commit: &models.Commit{OrgID: orgID},
 				Status: models.UpdateStatusBuilding,
 			}
 			db.DB.Create(&update)
@@ -260,6 +263,24 @@ var _ = Describe("UpdateService Basic functions", func() {
 				_, err := updateService.SendDeviceNotification(&update)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(Equal(expectedError))
+			})
+			It("should send notification with the device Name in the payload with ID key", func() {
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
+				notify, err := updateService.SendDeviceNotification(&update)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(notify.EventType).To(Equal("update-devices"))
+				Expect(notify.Events).To(HaveLen(1))
+				type NotificationPayLoad struct {
+					ID string `json:"ID"`
+				}
+				expectedNotificationPayload := NotificationPayLoad{ID: device.Name}
+				var notificationPayload NotificationPayLoad
+				err = json.Unmarshal([]byte(notify.Events[0].Payload), &notificationPayload)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(notificationPayload).To(Equal(expectedNotificationPayload))
+				Expect(notify.Context).To(Equal(fmt.Sprintf(`{"CommitID":"%v","UpdateID":"%v"}`, update.CommitID, update.ID)))
 			})
 		})
 
