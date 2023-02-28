@@ -36,8 +36,9 @@ func GetOutgoingHeaders(ctx context.Context) map[string]string {
 
 func ConfigureHttpClient(client *http.Client) *http.Client {
 	cfg := config.Get()
+	client.Timeout = time.Second * cfg.HTTPClientTimeout
 	if cfg.TlsCAPath == "" {
-		return &http.Client{Timeout: time.Second * cfg.HTTPClientTimeout}
+		return client
 	}
 	rootCAs, _ := x509.SystemCertPool()
 	if rootCAs == nil {
@@ -61,6 +62,5 @@ func ConfigureHttpClient(client *http.Client) *http.Client {
 		RootCAs:            rootCAs,
 	}
 	client.Transport = &http.Transport{TLSClientConfig: httpConfig}
-	client.Timeout = time.Second * cfg.HTTPClientTimeout
 	return client
 }
