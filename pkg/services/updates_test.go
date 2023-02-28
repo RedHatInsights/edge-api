@@ -675,10 +675,10 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		Context("when upload works", func() {
 			BeforeEach(func() {
-				os.Setenv("ENABLE_GPG_VERIFY", "true")
+				os.Setenv("ENABLE_GPG_VERIFY", "True")
 			})
 			AfterEach(func() {
-				os.Setenv("ENABLE_GPG_VERIFY", "false")
+				os.Unsetenv("ENABLE_GPG_VERIFY")
 			})
 			It("to build the template for PROD rebase properly", func() {
 				t := services.TemplateRemoteInfo{
@@ -1625,9 +1625,11 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 	})
 
-	Describe("Test build remote info feature flag disable", func() {
+	Context("Test build remote info feature flag disable", func() {
 		var update *models.UpdateTransaction
+
 		BeforeEach(func() {
+			os.Setenv("ENABLE_GPG_VERIFY", "false")
 			orgID := faker.UUIDHyphenated()
 			update = &models.UpdateTransaction{
 				DispatchRecords: []models.DispatchRecord{},
@@ -1635,6 +1637,9 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Commit:          &models.Commit{OSTreeRef: "ref"},
 				Repo:            &models.Repo{URL: "http://rh.com"},
 			}
+		})
+		AfterEach(func() {
+			os.Unsetenv("ENABLE_GPG_VERIFY")
 		})
 
 		It("should return template with gpg false", func() {
@@ -1642,9 +1647,11 @@ var _ = Describe("UpdateService Basic functions", func() {
 			Expect(remoteInfo.GpgVerify).To(Equal("false"))
 		})
 	})
+
 	Context("Test build remote info with feature flag enable", func() {
 		var update *models.UpdateTransaction
 		BeforeEach(func() {
+			os.Setenv("ENABLE_GPG_VERIFY", "True")
 			orgID := faker.UUIDHyphenated()
 			update = &models.UpdateTransaction{
 				DispatchRecords: []models.DispatchRecord{},
@@ -1653,10 +1660,9 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Repo:            &models.Repo{URL: "http://rh.com"},
 			}
 
-			os.Setenv("ENABLE_GPG_VERIFY", "true")
 		})
 		AfterEach(func() {
-			os.Setenv("ENABLE_GPG_VERIFY", "false")
+			os.Unsetenv("ENABLE_GPG_VERIFY")
 		})
 
 		It("should return template with gpg true", func() {

@@ -352,10 +352,11 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 
 func NewTemplateRemoteInfo(update *models.UpdateTransaction) TemplateRemoteInfo {
 	gpg_verify := "false"
-	if !feature.EnableGPGVerigy.IsEnabled() {
+	fmt.Printf("\n >>>> feature.EnableGPGVerify.IsEnabled() %v\n", feature.EnableGPGVerify.IsEnabled())
+
+	if feature.EnableGPGVerify.IsEnabled() {
 		gpg_verify = "true"
 	}
-	fmt.Printf("\n gpg verify %v\n", gpg_verify)
 	return TemplateRemoteInfo{
 		RemoteURL:           update.Repo.URL,
 		RemoteName:          "rhel-edge",

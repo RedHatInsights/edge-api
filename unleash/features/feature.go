@@ -79,8 +79,8 @@ var StorageImagesRepos = &Flag{Name: "edge-management.storage_images_repos", Env
 // UpdateRepoRequested is the feature flag to use for services.UpdateService.CreateUpdate(id) EDA Code
 var UpdateRepoRequested = &Flag{Name: "edge-management.update_repo_requested", EnvVar: "FEATURE_UPDATE_REPO_REQUESTED"}
 
-// EnableGPGVerigy is the feature flag to use for enable gpg verificarion
-var EnableGPGVerigy = &Flag{Name: "edge-management.gpg_verify", EnvVar: "ENABLE_GPG_VERIFY"}
+// EnableGPGVerify is the feature flag to use for enable gpg verification
+var EnableGPGVerify = &Flag{Name: "edge-management.gpg_verify", EnvVar: "ENABLE_GPG_VERIFY"}
 
 // (ADD FEATURE FLAGS ABOVE)
 // FEATURE FLAG CHECK CODE
