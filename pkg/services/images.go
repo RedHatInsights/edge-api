@@ -12,8 +12,8 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"os/signal"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -81,6 +81,7 @@ func NewImageService(ctx context.Context, log *log.Entry) ImageServiceInterface 
 		RepoService:     NewRepoService(ctx, log),
 		ProducerService: kafkacommon.NewProducerService(),
 		TopicService:    kafkacommon.NewTopicService(),
+		FilesService:    NewFilesService(log),
 	}
 }
 
@@ -93,6 +94,7 @@ type ImageService struct {
 	RepoService     RepoServiceInterface
 	ProducerService kafkacommon.ProducerServiceInterface
 	TopicService    kafkacommon.TopicServiceInterface
+	FilesService    FilesService
 }
 
 // GetImageReposFromDB return ThirdParty repo of image by OrgID
@@ -184,12 +186,6 @@ func (s *ImageService) CreateImage(image *models.Image) error {
 		return err
 	}
 	image.ThirdPartyRepositories = *imagesrepos
-	// Send Image creation to notification
-	notify, errNotify := s.SendImageNotification(image)
-	if errNotify != nil {
-		s.log.WithField("message", errNotify.Error()).Error("Error sending notification")
-		s.log.WithField("message", notify).Error("Notify Error")
-	}
 
 	// TODO: REFACTOR... ImageSet should be created first and an image created from it
 	imageSet, err := s.getImageSetForNewImage(image.OrgID, image)
@@ -229,6 +225,13 @@ func (s *ImageService) CreateImage(image *models.Image) error {
 
 	if result := db.DB.Create(&image); result.Error != nil {
 		return result.Error
+	}
+
+	// Send Image creation to notification
+	notify, errNotify := s.SendImageNotification(image)
+	if errNotify != nil {
+		s.log.WithField("message", errNotify.Error()).Error("Error sending notification")
+		s.log.WithField("message", notify).Error("Notify Error")
 	}
 
 	return nil
@@ -438,8 +441,7 @@ func (s *ImageService) processInstaller(ctx context.Context, image *models.Image
 		if feature.ImageCreateISOEDA.IsEnabled() {
 			s.log.Debug("Creating image iso with EDA")
 
-			ctx := context.Background()
-			ident, errident := common.GetIdentityFromContext(ctx)
+			ident, errident := common.GetIdentityInstanceFromContext(ctx)
 			if errident != nil {
 				s.log.WithField("error", errident.Error()).Error("Failed retrieving identity from context")
 				return errident
@@ -459,7 +461,7 @@ func (s *ImageService) processInstaller(ctx context.Context, image *models.Image
 				models.EventTypeEdgeImageISORequested, image.Name, edgePayload)
 
 			// put the event on the bus
-			if err := kafkacommon.NewProducerService().ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageISORequested, edgeEvent); err != nil {
+			if err := s.ProducerService.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageISORequested, edgeEvent); err != nil {
 				log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
 				return err
 			}
@@ -501,7 +503,7 @@ func (s *ImageService) processInstaller(ctx context.Context, image *models.Image
 			models.EventTypeEdgeInstallerCompleted, image.Name, edgePayload)
 
 		// put the event on the bus
-		if err := kafkacommon.NewProducerService().ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeInstallerCompleted, edgeEvent); err != nil {
+		if err := s.ProducerService.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeInstallerCompleted, edgeEvent); err != nil {
 			log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
 
 			return err
@@ -769,7 +771,7 @@ func (s *ImageService) CreateRepoForImage(ctx context.Context, img *models.Image
 			img.RequestID, models.EventTypeEdgeOstreeRepoCompleted, img.Name, edgePayload)
 
 		// put the event on the bus
-		if err := kafkacommon.NewProducerService().ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeOstreeRepoCompleted, edgeEvent); err != nil {
+		if err := s.ProducerService.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeOstreeRepoCompleted, edgeEvent); err != nil {
 			log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
 
 			return nil, err
@@ -869,7 +871,7 @@ func (s *ImageService) addSSHKeyToKickstart(sshKey string, username string, kick
 	td := UnameSSH{sshKey, username}
 
 	s.log.WithField("templatesPath", cfg.TemplatesPath).Debug("Opening file")
-	t, err := template.ParseFiles(cfg.TemplatesPath + "templateKickstart.ks")
+	t, err := template.ParseFiles(path.Join(cfg.TemplatesPath, "templateKickstart.ks"))
 	if err != nil {
 		return err
 	}
@@ -932,8 +934,8 @@ func (s *ImageService) uploadISO(image *models.Image, imageName string) error {
 
 	uploadPath := fmt.Sprintf("%s/isos/%s.iso", image.OrgID, image.Name)
 	s.log.WithField("path", uploadPath).Debug("Uploading ISO...")
-	filesService := NewFilesService(s.log)
-	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
+
+	url, err := s.FilesService.GetUploader().UploadFile(imageName, uploadPath)
 
 	if err != nil {
 		return fmt.Errorf("error uploading the ISO :: %s :: %s", uploadPath, err.Error())
@@ -1046,12 +1048,8 @@ func (s *ImageService) exeInjectionScript(kickstart string, image string, imageI
 		return err
 	}
 
-	cmd := &exec.Cmd{
-		Path: fleetBashScript,
-		Args: []string{
-			fleetBashScript, kickstart, image, image, workDir,
-		},
-	}
+	cmd := BuildCommand(fleetBashScript, kickstart, image, image, workDir)
+
 	output, err := cmd.Output()
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error executing fleetkick")
@@ -1592,7 +1590,12 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 
 		event.Metadata = emptyJSON.metaMap
 
-		event.Payload = fmt.Sprintf(`{"ImageId":"%v","ImageSetID":"%v"}`, i.ID, i.ImageSetID)
+		var imageSetID uint
+		if i.ImageSetID != nil {
+			imageSetID = *i.ImageSetID
+		}
+
+		event.Payload = fmt.Sprintf(`{"ImageId":"%v","ImageSetID":"%v"}`, i.ID, imageSetID)
 		events = append(events, event)
 
 		recipient.IgnoreUserPreferences = false

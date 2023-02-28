@@ -562,6 +562,81 @@ var _ = Describe("ImageSets Route Test", func() {
 				Expect(string(respBody)).ToNot(ContainSubstring("image-set-1"))
 			})
 		})
+
+	})
+	Context("Image-sets filter", func() {
+		var namePrefix string
+		BeforeEach(func() {
+			namePrefix = faker.UUIDHyphenated()
+			imageSet1 := &models.ImageSet{
+				Name:  namePrefix + "imageSet-1",
+				OrgID: common.DefaultOrgID,
+			}
+			imageSet2 := &models.ImageSet{
+				Name:  namePrefix + "imageSet-2",
+				OrgID: common.DefaultOrgID,
+			}
+			imageSet3 := &models.ImageSet{
+				Name:  namePrefix + "imageSet-3",
+				OrgID: common.DefaultOrgID,
+			}
+			db.DB.Create(&imageSet1)
+			db.DB.Create(&imageSet3)
+			db.DB.Create(&imageSet2)
+
+			// create some image sets with the status "SUCCESS"
+			Image1 := models.Image{
+				ImageSetID: &imageSet1.ID,
+				OrgID:      common.DefaultOrgID,
+				Name:       namePrefix + "imageSet-1",
+				Status:     models.ImageStatusSuccess,
+			}
+			Image2 := models.Image{
+				ImageSetID: &imageSet3.ID,
+				OrgID:      common.DefaultOrgID,
+				Name:       namePrefix + "imageSet-3",
+				Status:     models.ImageStatusSuccess,
+			}
+
+			db.DB.Create(&Image1)
+			db.DB.Create(&Image2)
+
+		})
+		When("filter by status", func() {
+			It("should return image-sets with SUCCESS status", func() {
+				status := "success"
+				req, err := http.NewRequest("GET", fmt.Sprintf("/image-sets?status=%s&name=%s", status, namePrefix), nil)
+				Expect(err).ToNot(HaveOccurred())
+				w := httptest.NewRecorder()
+				req = req.WithContext(dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{}))
+				handler := http.HandlerFunc(ListAllImageSets)
+				handler.ServeHTTP(w, req)
+				Expect(w.Code).To(Equal(http.StatusOK), fmt.Sprintf("expected status %d, but got %d", w.Code, http.StatusOK))
+				respBody, err := io.ReadAll(w.Body)
+				Expect(err).ToNot(HaveOccurred())
+
+				type ImageSetsResponse struct {
+					Count int                    `json:"Count"`
+					Data  []ImageSetInstallerURL `json:"Data"`
+				}
+				var response ImageSetsResponse
+
+				// unmarshaling the response body into the struct
+				err = json.Unmarshal(respBody, &response)
+				Expect(err).To(BeNil())
+				Expect(len(response.Data)).To(Equal(2))
+
+				// iteratating over the image sets and find the ones with the desired imagesets
+				var count int
+				for _, imageSet := range response.Data {
+					if imageSet.ImageSetData.Name == namePrefix+"imageSet-1" || imageSet.ImageSetData.Name == namePrefix+"imageSet-3" {
+						count += 1
+					}
+				}
+				Expect(count).To(Equal(2))
+
+			})
+		})
 	})
 
 	Context("Installer ISO url", func() {
