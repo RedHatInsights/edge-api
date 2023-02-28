@@ -6,12 +6,12 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/redhatinsights/edge-api/config"
-	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	log "github.com/sirupsen/logrus"
@@ -36,28 +36,30 @@ func GetOutgoingHeaders(ctx context.Context) map[string]string {
 
 func ConfigureHttpClient(client *http.Client) *http.Client {
 	cfg := config.Get()
-	client.Timeout = time.Second * cfg.HTTPClientTimeout
+	timeout, err := time.ParseDuration(fmt.Sprintf("%ds", cfg.HTTPClientTimeout))
+	if err != nil {
+		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to parse duration")
+		return client
+	}
+	client.Timeout = timeout
 	if cfg.TlsCAPath == "" {
 		return client
 	}
-	rootCAs, _ := x509.SystemCertPool()
-	if rootCAs == nil {
+	rootCAs, err := x509.SystemCertPool()
+	if err != nil {
+		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to cert from system cert pool")
 		rootCAs = x509.NewCertPool()
 	}
-
 	certs, err := os.ReadFile(cfg.TlsCAPath)
 	if err != nil {
-		l.LogErrorAndPanic("Failed to append CA to RootCAs", err)
+		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to append CA to RootCAs")
+		return client
 	}
-
 	if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
-
-		log.Info("No certs appended, using system certs only")
+		log.Warn("adding certificate from PEM failed")
 	}
-
-	// disable "G402 (CWE-295): TLS MinVersion too low. (Confidence: HIGH, Severity: HIGH)"
-	// #nosec G402
 	httpConfig := &tls.Config{
+		MinVersion:         tls.VersionTLS12,
 		InsecureSkipVerify: false,
 		RootCAs:            rootCAs,
 	}

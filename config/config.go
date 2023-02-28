@@ -11,7 +11,6 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-	"time"
 
 	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 	log "github.com/sirupsen/logrus"
@@ -69,7 +68,7 @@ type EdgeConfig struct {
 	ImageBuilderOrgID          string                    `json:"image_builder_org_id,omitempty"`
 	GpgVerify                  string                    `json:"gpg_verify,omitempty"`
 	GlitchtipDsn               string                    `json:"glitchtip_dsn,omitempty"`
-	HTTPClientTimeout          time.Duration             `json:"HTTP_client_timeout,omitempty"`
+	HTTPClientTimeout          int                       `json:"HTTP_client_timeout,omitempty"`
 	TlsCAPath                  string                    `json:"Tls_CA_path,omitempty"`
 }
 
@@ -153,7 +152,7 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("KafkaRequestRequiredAcks", -1)
 	options.SetDefault("KafkaMessageSendMaxRetries", 15)
 	options.SetDefault("KafkaRetryBackoffMs", 100)
-	options.SetDefault("HTTPClientTimeout", 10)
+	options.SetDefault("HTTPClientTimeout", 30)
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
@@ -213,7 +212,7 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		BucketRegion:      options.GetString("BucketRegion"),
 		RepoTempPath:      options.GetString("RepoTempPath"),
 		OpenAPIFilePath:   options.GetString("OpenAPIFilePath"),
-		HTTPClientTimeout: time.Duration(options.GetInt("HTTPClientTimeout")),
+		HTTPClientTimeout: options.GetInt("HTTPClientTimeout"),
 		ImageBuilderConfig: &imageBuilderConfig{
 			URL: options.GetString("ImageBuilderUrl"),
 		},
