@@ -1642,7 +1642,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			Expect(remoteInfo.GpgVerify).To(Equal("false"))
 		})
 	})
-	Describe("Test build remote info with feature flag enable", func() {
+	Context("Test build remote info with feature flag enable", func() {
 		var update *models.UpdateTransaction
 		BeforeEach(func() {
 			orgID := faker.UUIDHyphenated()
