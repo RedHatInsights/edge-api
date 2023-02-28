@@ -25,7 +25,10 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder/mock_imagebuilder"
+	"github.com/redhatinsights/edge-api/pkg/common/seeder"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
+	EdgeErrors "github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
@@ -1383,6 +1386,83 @@ var _ = Describe("Images Route Tests", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(string(respBody)).To(ContainSubstring("Failed creating image"))
 			})
+
+			It("should accept empty update image name", func() {
+				updateImage := models.Image{
+					Name:         "",
+					Distribution: "rhel-85",
+					OutputTypes:  []string{models.ImageTypeCommit},
+					Commit: &models.Commit{Arch: "x86_64",
+						InstalledPackages: []models.InstalledPackage{
+							{Name: packageName},
+						},
+					},
+				}
+				Expect(updateImage.Name).To(BeEmpty())
+				var buf bytes.Buffer
+				err := json.NewEncoder(&buf).Encode(&updateImage)
+				Expect(err).ToNot(HaveOccurred())
+
+				req, err := http.NewRequest("POST", fmt.Sprintf("/images/%d/update", image.ID), &buf)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
+				// we cannot predict the instance value of first argument, we know that it's updateImage
+				// but as it's un-marshaled it's using another pointer.
+				mockImagesService.EXPECT().UpdateImage(gomock.AssignableToTypeOf(&updateImage), &image).Return(nil)
+				// same here for context and updateImage
+				mockImagesService.EXPECT().ProcessImage(gomock.Any(), gomock.AssignableToTypeOf(&updateImage))
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusOK))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).ToNot(BeEmpty())
+
+				var resUpdateImage models.Image
+				err = json.Unmarshal(respBody, &resUpdateImage)
+				Expect(err).ToNot(HaveOccurred())
+				// the updateImage Name should equal the previousImage name
+				Expect(resUpdateImage.Name).To(Equal(image.Name))
+			})
+
+			It("should return error when update image name is not empty and is different from previous image name", func() {
+				// the image service has a unittest that check and return ImageNameChangeIsProhibited error when trying
+				// to change the image name in this unittest we check that the user receive the appropriate validation error message
+				updateImage := models.Image{
+					Name:         faker.UUIDHyphenated(),
+					Distribution: "rhel-85",
+					OutputTypes:  []string{models.ImageTypeCommit},
+					Commit: &models.Commit{Arch: "x86_64",
+						InstalledPackages: []models.InstalledPackage{
+							{Name: packageName},
+						},
+					},
+				}
+				Expect(updateImage.Name).ToNot(BeEmpty())
+				Expect(updateImage.Name).ToNot(Equal(image.Name))
+				var buf bytes.Buffer
+				err := json.NewEncoder(&buf).Encode(&updateImage)
+				Expect(err).ToNot(HaveOccurred())
+
+				req, err := http.NewRequest("POST", fmt.Sprintf("/images/%d/update", image.ID), &buf)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
+				// we cannot predict the instance value of first argument, we know that it's updateImage
+				// but as it's un-marshaled it's using another pointer.
+				mockImagesService.EXPECT().UpdateImage(gomock.AssignableToTypeOf(&updateImage), &image).Return(new(services.ImageNameChangeIsProhibited))
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring(services.ImageNameChangeIsProhibitedMsg))
+			})
 		})
 		Context("GetImageByOSTree", func() {
 			imageName := faker.UUIDHyphenated()
@@ -1653,5 +1733,146 @@ var _ = Describe("Images Route Tests", func() {
 				Expect(resNotification.EventType).To(Equal(notification.EventType))
 			})
 		})
+	})
+})
+
+var _ = Describe("Images Route Integration Tests", func() {
+
+	var ctrl *gomock.Controller
+	var router chi.Router
+	var mockImageBuilder *mock_imagebuilder.MockClientInterface
+	var edgeAPIServices *dependencies.EdgeAPIServices
+
+	BeforeEach(func() {
+		ctrl = gomock.NewController(GinkgoT())
+		ctx := context.Background()
+		log := log.NewEntry(log.StandardLogger())
+
+		mockImageBuilder = mock_imagebuilder.NewMockClientInterface(ctrl)
+
+		imageService := &services.ImageService{
+			ImageBuilder: mockImageBuilder,
+			RepoBuilder:  services.NewRepoBuilder(ctx, log),
+			RepoService:  services.NewRepoService(ctx, log),
+			Service:      services.NewService(ctx, log),
+		}
+
+		edgeAPIServices = &dependencies.EdgeAPIServices{
+			ImageService: imageService,
+			Log:          log,
+		}
+
+		router = chi.NewRouter()
+		router.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ctx := dependencies.ContextWithServices(r.Context(), edgeAPIServices)
+				next.ServeHTTP(w, r.WithContext(ctx))
+			})
+		})
+		router.Route("/images", MakeImagesRouter)
+
+		mockImageBuilder.EXPECT().GetCommitStatus(gomock.Any()).DoAndReturn(func(image *models.Image) (*models.Image, error) {
+			return image, nil
+		}).AnyTimes()
+	})
+
+	AfterEach(func() {
+		ctrl.Finish()
+	})
+
+	Context("POST /images/{imageId}/update", func() {
+		When("using the latest image with valid information", func() {
+			It("should create image update successfully", func() {
+				repoURL := faker.URL()
+				image, imageSet := seeder.Images().WithRepoURL(repoURL).Create()
+
+				updateImage := models.Image{
+					Name:         image.Name,
+					Distribution: "rhel-91",
+					OutputTypes:  []string{models.ImageTypeCommit},
+					Commit: &models.Commit{Arch: "x86_64",
+						InstalledPackages: []models.InstalledPackage{
+							{Name: "vim"},
+						},
+					},
+				}
+
+				composeImage := updateImage
+				composeImage.Commit.OSTreeParentCommit = repoURL
+				composeImage.Commit.OSTreeRef = "rhel/9/x86_64/edge"
+				composeImage.Commit.OSTreeParentRef = "rhel/9/x86_64/edge"
+				composeImage.OrgID = common.DefaultOrgID
+				composeImage.Account = common.DefaultAccount
+				composeImage.ImageSetID = &imageSet.ID
+
+				var body bytes.Buffer
+				err := json.NewEncoder(&body).Encode(&updateImage)
+				Expect(err).ToNot(HaveOccurred())
+
+				req, err := http.NewRequest("POST", fmt.Sprintf("/images/%d/update", image.ID), &body)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockImageBuilder.EXPECT().ComposeCommit(gomock.Eq(&composeImage)).DoAndReturn(func(image *models.Image) (*models.Image, error) {
+					return image, nil
+				})
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusOK))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).ToNot(BeEmpty())
+
+				var resImage models.Image
+				err = json.Unmarshal(respBody, &resImage)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(resImage.Name).To(Equal(updateImage.Name))
+				Expect(*resImage.ImageSetID).To(Equal(imageSet.ID))
+				Expect(resImage.OrgID).To(Equal(imageSet.OrgID))
+				Expect(resImage.Status).To(Equal(models.ImageStatusBuilding))
+				Expect(resImage.Commit.Status).To(Equal(models.ImageStatusBuilding))
+			})
+		})
+
+		When("using previous of the latest image", func() {
+			It("should not allow update", func() {
+				repoURL := faker.URL()
+				image, imageSet := seeder.Images().WithRepoURL(repoURL).Create()
+				seeder.Images().WithVersion(2).WithImageSetID(imageSet.ID).Create()
+
+				updateImage := models.Image{
+					Name:         image.Name,
+					Distribution: "rhel-91",
+					OutputTypes:  []string{models.ImageTypeCommit},
+					Commit: &models.Commit{Arch: "x86_64",
+						InstalledPackages: []models.InstalledPackage{
+							{Name: "vim"},
+						},
+					},
+				}
+
+				var body bytes.Buffer
+				err := json.NewEncoder(&body).Encode(&updateImage)
+				Expect(err).ToNot(HaveOccurred())
+
+				req, err := http.NewRequest("POST", fmt.Sprintf("/images/%d/update", image.ID), &body)
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).ToNot(BeEmpty())
+
+				var resError EdgeErrors.BadRequest
+				err = json.Unmarshal(respBody, &resError)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(resError.Title).To(Equal(services.ImageOnlyLatestCanModifyMsg))
+			})
+		})
+
 	})
 })

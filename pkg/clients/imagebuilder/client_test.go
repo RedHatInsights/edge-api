@@ -33,6 +33,8 @@ func TestModels(t *testing.T) {
 var _ = Describe("Image Builder Client Test", func() {
 	var client *Client
 	var dbName string
+	var originalImageBuilderURL string
+	conf := config.Get()
 	BeforeEach(func() {
 		config.Init()
 		config.Get().Debug = true
@@ -54,9 +56,13 @@ var _ = Describe("Image Builder Client Test", func() {
 			panic(err)
 		}
 		client = InitClient(context.Background(), log.NewEntry(log.StandardLogger()))
+		// save the original image builder url
+		originalImageBuilderURL = conf.ImageBuilderConfig.URL
 	})
 	AfterEach(func() {
 		os.Remove(dbName)
+		// restore the original image builder url
+		conf.ImageBuilderConfig.URL = originalImageBuilderURL
 	})
 	It("should init client", func() {
 		Expect(client).ToNot(BeNil())
@@ -84,6 +90,18 @@ var _ = Describe("Image Builder Client Test", func() {
 		res, err := client.SearchPackage("badrpm", "x86_64", "rhel-85")
 		Expect(err).To(BeNil())
 		Expect(res.Meta.Count).To(Equal(0))
+	})
+	It("test web service when package search returns StatusBadRequest", func() {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintln(w, `{"error":{"count":0}}`)
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+		_, err := client.SearchPackage("badpackage", "x86_64", "rhel-85")
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("image builder search packages request error"))
 	})
 	It("test validation of special character package name", func() {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -142,6 +160,102 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(img).ToNot(BeNil())
 		Expect(img.Commit.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
 		Expect(img.Commit.ExternalURL).To(BeFalse())
+	})
+	It("should return error when image has org_id undefined", func() {
+		pkgs := []models.Package{
+			{
+				Name: "vim",
+			},
+			{
+				Name: "ansible",
+			},
+		}
+		img := &models.Image{Distribution: "rhel-8",
+			Packages: pkgs,
+			Commit: &models.Commit{
+				Arch: "x86_64",
+				Repo: &models.Repo{},
+			},
+			ThirdPartyRepositories: []models.ThirdPartyRepo{
+				{
+					Name: "repo test",
+					URL:  "https://repo.com",
+				},
+				{
+					Name: "repo test2",
+					URL:  "https://repo2.com",
+				},
+			},
+		}
+		result, err := client.GetImageThirdPartyRepos(img)
+		Expect(result).To(BeNil())
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("error retrieving orgID  information, image orgID undefined"))
+	})
+
+	It("should retrieve and return third party repos from database and return valid list", func() {
+		pkgs := []models.Package{
+			{
+				Name: "vim",
+			},
+			{
+				Name: "ansible",
+			},
+		}
+		OrgId := faker.UUIDHyphenated()
+		thirdPartyRepo := models.ThirdPartyRepo{
+			Name:  faker.UUIDHyphenated(),
+			URL:   faker.URL(),
+			OrgID: OrgId,
+		}
+		db.DB.Create(&thirdPartyRepo)
+		img := &models.Image{Distribution: "rhel-8",
+			Packages: pkgs,
+			OrgID:    OrgId,
+			Commit: &models.Commit{
+				Arch: "x86_64",
+				Repo: &models.Repo{},
+			},
+			ThirdPartyRepositories: []models.ThirdPartyRepo{
+				thirdPartyRepo,
+			},
+		}
+		result, err := client.GetImageThirdPartyRepos(img)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result[0].BaseURL).To(Equal(thirdPartyRepo.URL))
+	})
+
+	It("should return error when custom repositories id are not valid/not found", func() {
+		pkgs := []models.Package{
+			{
+				Name: "vim",
+			},
+			{
+				Name: "ansible",
+			},
+		}
+		img := &models.Image{Distribution: "rhel-8",
+			Packages: pkgs,
+			OrgID:    "org_id",
+			Commit: &models.Commit{
+				Arch: "x86_64",
+				Repo: &models.Repo{},
+			},
+			ThirdPartyRepositories: []models.ThirdPartyRepo{
+				{
+					Name: "repo test",
+					URL:  "https://repo.com",
+				},
+				{
+					Name: "repo test2",
+					URL:  "https://repo2.com",
+				},
+			},
+		}
+		result, err := client.GetImageThirdPartyRepos(img)
+		Expect(result).To(BeNil())
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("enter valid third party repository id"))
 	})
 
 	Context("compose image commit with ChangesRefs values", func() {

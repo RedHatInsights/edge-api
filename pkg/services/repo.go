@@ -4,6 +4,7 @@ package services
 
 import (
 	"context"
+	"errors"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -31,6 +32,10 @@ type RepoService struct {
 
 // GetRepoByID receives RepoID uint and get a *models.Repo back
 func (s *RepoService) GetRepoByID(repoID *uint) (*models.Repo, error) {
+	if repoID == nil {
+		s.log.Error("Image Repository is undefined")
+		return nil, errors.New("image repository is undefined")
+	}
 	s.log.Debug("Retrieving repo by ID")
 	var repo models.Repo
 	result := db.DB.First(&repo, repoID)

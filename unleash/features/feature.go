@@ -1,5 +1,7 @@
 // FIXME: golangci-lint
 // nolint:revive,typecheck
+
+// Package feature configures and handles feature flags for use in the application
 package feature
 
 import (
@@ -22,6 +24,11 @@ type Flag struct {
 	Name   string
 	EnvVar string
 }
+
+// GLITCHTIP LOGGING FLAGS
+
+// GlitchtipLogging is the feature flag for reporting errors to GlitchTip
+var GlitchtipLogging = &Flag{Name: "edge-management.glitchtip_logging", EnvVar: "GLITCHTIP_LOGGING"}
 
 // KAFKA LOGGING FLAGS
 
@@ -54,6 +61,9 @@ var ImageCompletionEventsEDA = &Flag{Name: "edge-management.completion_events", 
 // ImageCreateISOEDA is the feature flag for routes.CreateCommit() EDA code
 var ImageCreateISOEDA = &Flag{Name: "edge-management.image_create_iso", EnvVar: "FEATURE_IMAGECREATE_ISO"}
 
+// BuildUpdateRepoWithOldCommits is the feature flag for services.BuildUpdateRepo() to enable oldCommits feature
+var BuildUpdateRepoWithOldCommits = &Flag{Name: "edge-management.build_update_repo_with_old_commits", EnvVar: "FEATURE_BUILD_UPDATE_REPO_WITH_OLD_COMMITS"}
+
 // DEVICE FEATURE FLAGS
 
 // DeviceSync is the feature flag for routes.CreateImageUpdate() EDA code
@@ -70,6 +80,9 @@ var StorageImagesRepos = &Flag{Name: "edge-management.storage_images_repos", Env
 
 // UpdateRepoRequested is the feature flag to use for services.UpdateService.CreateUpdate(id) EDA Code
 var UpdateRepoRequested = &Flag{Name: "edge-management.update_repo_requested", EnvVar: "FEATURE_UPDATE_REPO_REQUESTED"}
+
+// ContentSources is a feature flag to use for code related to Parity and custom repositories
+var ContentSources = &Flag{Name: "edge-management.content_sources", EnvVar: "FEATURE_CONTENT_SOURCES"}
 
 // (ADD FEATURE FLAGS ABOVE)
 // FEATURE FLAG CHECK CODE

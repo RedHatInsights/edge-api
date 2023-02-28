@@ -26,27 +26,61 @@ func NewKafkaConfigMapService() KafkaConfigMapServiceInterface {
 	return &KafkaConfigMapService{}
 }
 
-// GetKafkaProducerConfigMap returns the correct kafka auth based on the environment and given config
-func (k *KafkaConfigMapService) GetKafkaProducerConfigMap() kafka.ConfigMap {
+// getKafkaCommonConfigMap returns the kafka configMap common to producer and consumer
+func (k *KafkaConfigMapService) getKafkaCommonConfigMap() kafka.ConfigMap {
 	cfg := config.Get()
 	kafkaConfigMap := kafka.ConfigMap{}
 
-	if cfg.KafkaBrokers != nil {
-		kafkaConfigMap.SetKey("bootstrap.servers", fmt.Sprintf("%s:%d", cfg.KafkaBrokers[0].Hostname, *cfg.KafkaBrokers[0].Port))
-		if cfg.KafkaBrokers[0].Sasl != nil {
-			kafkaConfigMap.SetKey("sasl.mechanisms", *cfg.KafkaBrokers[0].Sasl.SaslMechanism)
-			kafkaConfigMap.SetKey("security.protocol", *cfg.KafkaBrokers[0].Sasl.SecurityProtocol)
-			kafkaConfigMap.SetKey("sasl.username", *cfg.KafkaBrokers[0].Sasl.Username)
-			kafkaConfigMap.SetKey("sasl.password", *cfg.KafkaBrokers[0].Sasl.Password)
+	// use the first kafka broker from config
+	if cfg.KafkaBroker != nil {
+		kafkaConfigMap.SetKey("bootstrap.servers", fmt.Sprintf("%s:%d", cfg.KafkaBroker.Hostname, *cfg.KafkaBroker.Port))
+		var securityProtocol string
+		if cfg.KafkaBroker.SecurityProtocol != nil {
+			securityProtocol = *cfg.KafkaBroker.SecurityProtocol
 		}
+		if cfg.KafkaBrokerCaCertPath != "" {
+			kafkaConfigMap.SetKey("ssl.ca.location", cfg.KafkaBrokerCaCertPath)
+		}
+		if cfg.KafkaBroker.Authtype != nil && *cfg.KafkaBroker.Authtype == "sasl" && cfg.KafkaBroker.Sasl != nil {
+			if cfg.KafkaBroker.Sasl.SaslMechanism != nil {
+				kafkaConfigMap.SetKey("sasl.mechanisms", *cfg.KafkaBroker.Sasl.SaslMechanism)
+			}
+			if cfg.KafkaBroker.Sasl.Username != nil {
+				kafkaConfigMap.SetKey("sasl.username", *cfg.KafkaBroker.Sasl.Username)
+			}
+			if cfg.KafkaBroker.Sasl.Password != nil {
+				kafkaConfigMap.SetKey("sasl.password", *cfg.KafkaBroker.Sasl.Password)
+			}
+			if securityProtocol == "" && cfg.KafkaBroker.Sasl.SecurityProtocol != nil && *cfg.KafkaBroker.Sasl.SecurityProtocol != "" { // nolint: staticcheck
+				// seems we still in transition period and no security protocol was defined in parent
+				// set it from sasl config
+				securityProtocol = *cfg.KafkaBroker.Sasl.SecurityProtocol // nolint: staticcheck
+			}
+		}
+		if securityProtocol != "" {
+			kafkaConfigMap.SetKey("security.protocol", securityProtocol)
+		}
+
 	}
+	return kafkaConfigMap
+}
+
+// GetKafkaProducerConfigMap returns the correct kafka auth based on the environment and given config
+func (k *KafkaConfigMapService) GetKafkaProducerConfigMap() kafka.ConfigMap {
+	cfg := config.Get()
+	kafkaConfigMap := k.getKafkaCommonConfigMap()
+
+	kafkaConfigMap.SetKey("request.required.acks", cfg.KafkaRequestRequiredAcks)
+	kafkaConfigMap.SetKey("message.send.max.retries", cfg.KafkaMessageSendMaxRetries)
+	kafkaConfigMap.SetKey("retry.backoff.ms", cfg.KafkaRetryBackoffMs)
+
 	return kafkaConfigMap
 }
 
 // GetKafkaConsumerConfigMap returns the correct kafka auth based on the environment and given config
 func (k *KafkaConfigMapService) GetKafkaConsumerConfigMap(consumerGroup string) kafka.ConfigMap {
 	cfg := config.Get()
-	kafkaConfigMap := k.GetKafkaProducerConfigMap()
+	kafkaConfigMap := k.getKafkaCommonConfigMap()
 	kafkaConfigMap.SetKey("group.id", consumerGroup)
 
 	if cfg.KafkaBrokers != nil {

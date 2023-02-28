@@ -284,7 +284,9 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 		ctxServices.Log.WithField("error", err.Error()).Error("Failed creating an update to an image")
 		var apiError errors.APIError
 		switch err.(type) {
-		case *services.PackageNameDoesNotExist, *services.ThirdPartyRepositoryInfoIsInvalid, *services.ThirdPartyRepositoryNotFound, *services.ImageNameAlreadyExists, *services.ImageSetAlreadyExists:
+		case *services.PackageNameDoesNotExist, *services.ThirdPartyRepositoryInfoIsInvalid, *services.ThirdPartyRepositoryNotFound,
+			*services.ImageNameAlreadyExists, *services.ImageSetAlreadyExists, *services.ImageNameChangeIsProhibited,
+			*services.ImageOnlyLatestCanModify:
 			apiError = errors.NewBadRequest(err.Error())
 		default:
 			apiError = errors.NewInternalServerError()
@@ -344,6 +346,15 @@ func initImageCreateRequest(w http.ResponseWriter, r *http.Request) (*models.Ima
 	if err := readRequestJSONBody(w, r, ctxServices.Log, &image); err != nil {
 		return nil, err
 	}
+
+	if image.Name == "" {
+		// look if a previous image exists, to handle image name properly.
+		if previousImage, ok := r.Context().Value(imageKey).(*models.Image); ok && previousImage != nil {
+			// when updating from a previousImage and we do not supply an image name set it by default to previousImage.Name
+			image.Name = previousImage.Name
+		}
+	}
+
 	if err := image.ValidateRequest(); err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Info("Error validating image")
 		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
