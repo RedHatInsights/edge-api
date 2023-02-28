@@ -1,5 +1,7 @@
 // FIXME: golangci-lint
 // nolint:revive,typecheck
+
+// Package feature configures and handles feature flags for use in the application
 package feature
 
 import (
@@ -81,6 +83,9 @@ var UpdateRepoRequested = &Flag{Name: "edge-management.update_repo_requested", E
 
 // EnableGPGVerify is the feature flag to use for enable gpg verification
 var EnableGPGVerify = &Flag{Name: "edge-management.gpg_verify", EnvVar: "ENABLE_GPG_VERIFY"}
+
+// ContentSources is a feature flag to use for code related to Parity and custom repositories
+var ContentSources = &Flag{Name: "edge-management.content_sources", EnvVar: "FEATURE_CONTENT_SOURCES"}
 
 // (ADD FEATURE FLAGS ABOVE)
 // FEATURE FLAG CHECK CODE

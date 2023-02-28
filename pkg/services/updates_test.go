@@ -216,6 +216,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 			device := models.Device{
 				UUID:  uuid,
 				OrgID: orgID,
+				// set name with some chars that need to be escaped
+				Name: faker.Name() + `some "chars", must be "escaped"`,
 			}
 			db.DB.Create(&device)
 			update = models.UpdateTransaction{
@@ -223,6 +225,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					device,
 				},
 				OrgID:  orgID,
+				Commit: &models.Commit{OrgID: orgID},
 				Status: models.UpdateStatusBuilding,
 			}
 			db.DB.Create(&update)
@@ -261,6 +264,24 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(Equal(expectedError))
 			})
+			It("should send notification with the device Name in the payload with ID key", func() {
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
+				notify, err := updateService.SendDeviceNotification(&update)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(notify.EventType).To(Equal("update-devices"))
+				Expect(notify.Events).To(HaveLen(1))
+				type NotificationPayLoad struct {
+					ID string `json:"ID"`
+				}
+				expectedNotificationPayload := NotificationPayLoad{ID: device.Name}
+				var notificationPayload NotificationPayLoad
+				err = json.Unmarshal([]byte(notify.Events[0].Payload), &notificationPayload)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(notificationPayload).To(Equal(expectedNotificationPayload))
+				Expect(notify.Context).To(Equal(fmt.Sprintf(`{"CommitID":"%v","UpdateID":"%v"}`, update.CommitID, update.ID)))
+			})
 		})
 
 		Context("#CreateUpdate", func() {
@@ -295,11 +316,20 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 			When("when build repo fail", func() {
 				It("should return error when can't build repo", func() {
-					mockRepoBuilder.EXPECT().BuildUpdateRepo(update.ID).Return(nil, errors.New("error building repo"))
+					expectedError := errors.New("error building repo")
+					mockRepoBuilder.EXPECT().BuildUpdateRepo(update.ID).Return(nil, expectedError)
 					actual, err := updateService.CreateUpdate(update.ID)
 
-					Expect(actual).To(BeNil())
 					Expect(err).To(HaveOccurred())
+					Expect(err).To(MatchError(expectedError))
+					Expect(actual).To(BeNil())
+
+					// reload update from db
+					err = db.DB.Preload("Repo").First(&update, update.ID).Error
+					Expect(err).ToNot(HaveOccurred())
+					Expect(update.Status).To(Equal(models.UpdateStatusError))
+					Expect(update.Repo).ToNot(BeNil())
+					Expect(update.Repo.Status).To(Equal(models.RepoStatusError))
 				})
 			})
 

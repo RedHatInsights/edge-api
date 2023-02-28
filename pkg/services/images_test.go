@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/bxcodec/faker/v3"
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -266,6 +267,38 @@ var _ = Describe("Image Service Test", func() {
 				}
 				error := service.CreateImage(&image)
 				Expect(error).To(MatchError(new(services.ThirdPartyRepositoryNotFound)))
+			})
+
+			Context("send Create Image notification", func() {
+				var image models.Image
+				var orgID string
+				BeforeEach(func() {
+					orgID = faker.UUIDHyphenated()
+					err := os.Setenv("ACG_CONFIG", "true")
+					Expect(err).ToNot(HaveOccurred())
+					image = models.Image{
+						Name:         faker.UUIDHyphenated(),
+						OrgID:        orgID,
+						Distribution: "rhel-91",
+						ImageType:    models.ImageTypeCommit,
+						OutputTypes:  []string{models.ImageTypeCommit},
+						Commit:       &models.Commit{OrgID: orgID},
+					}
+				})
+
+				AfterEach(func() {
+					err := os.Unsetenv("ACG_CONFIG")
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				It("should send Create Image notification", func() {
+					mockImageBuilderClient.EXPECT().ComposeCommit(&image).Return(&image, nil)
+					mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+					mockProducer.EXPECT().Produce(gomock.AssignableToTypeOf(&kafka.Message{}), nil).Return(nil)
+					mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
+					err := service.CreateImage(&image)
+					Expect(err).ToNot(HaveOccurred())
+				})
 			})
 		})
 	})

@@ -186,12 +186,6 @@ func (s *ImageService) CreateImage(image *models.Image) error {
 		return err
 	}
 	image.ThirdPartyRepositories = *imagesrepos
-	// Send Image creation to notification
-	notify, errNotify := s.SendImageNotification(image)
-	if errNotify != nil {
-		s.log.WithField("message", errNotify.Error()).Error("Error sending notification")
-		s.log.WithField("message", notify).Error("Notify Error")
-	}
 
 	// TODO: REFACTOR... ImageSet should be created first and an image created from it
 	imageSet, err := s.getImageSetForNewImage(image.OrgID, image)
@@ -231,6 +225,13 @@ func (s *ImageService) CreateImage(image *models.Image) error {
 
 	if result := db.DB.Create(&image); result.Error != nil {
 		return result.Error
+	}
+
+	// Send Image creation to notification
+	notify, errNotify := s.SendImageNotification(image)
+	if errNotify != nil {
+		s.log.WithField("message", errNotify.Error()).Error("Error sending notification")
+		s.log.WithField("message", notify).Error("Notify Error")
 	}
 
 	return nil
@@ -1589,7 +1590,12 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 
 		event.Metadata = emptyJSON.metaMap
 
-		event.Payload = fmt.Sprintf(`{"ImageId":"%v","ImageSetID":"%v"}`, i.ID, i.ImageSetID)
+		var imageSetID uint
+		if i.ImageSetID != nil {
+			imageSetID = *i.ImageSetID
+		}
+
+		event.Payload = fmt.Sprintf(`{"ImageId":"%v","ImageSetID":"%v"}`, i.ID, imageSetID)
 		events = append(events, event)
 
 		recipient.IgnoreUserPreferences = false

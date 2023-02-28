@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"text/template"
 	"time"
@@ -391,13 +392,21 @@ func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.Up
 	// 	if an interrupt, set update status to error
 	go s.SetUpdateErrorStatusWhenInterrupted(intctx, *update, sigint, intcancel)
 
+	updateRepoID := update.RepoID
 	update, err := s.RepoBuilder.BuildUpdateRepo(updateID)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error building update repo")
 		// set status to error
-		if result := db.DB.Model(&models.UpdateTransaction{}).Where("ID=?", updateID).Update("Status", models.UpdateStatusError); result.Error != nil {
+		if result := db.DB.Model(&models.UpdateTransaction{}).Where("id=?", updateID).Update("Status", models.UpdateStatusError); result.Error != nil {
 			s.log.WithField("error", err.Error()).Error("failed to save building error status")
 			return nil, result.Error
+		}
+		// set repo status to error
+		if updateRepoID != nil {
+			if err := db.DB.Model(&models.Repo{}).Where("id=?", updateRepoID).Update("Status", models.RepoStatusError).Error; err != nil {
+				s.log.WithField("error", err.Error()).Error("failed to save update repository error status")
+				return nil, err
+			}
 		}
 		return nil, err
 	}
@@ -625,7 +634,27 @@ func (s *UpdateService) SetUpdateStatus(update *models.UpdateTransaction) error 
 // SendDeviceNotification connects to platform.notifications.ingress on image topic
 func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (ImageNotification, error) {
 	s.log.WithField("message", i).Info("SendImageNotification::Starts")
-	events := []EventNotification{{Metadata: make(map[string]string), Payload: fmt.Sprintf("{  \"UpdateID\" : \"%v\"}", i.ID)}}
+	// notification template of notifications-backend service need device name as ID
+	// join devices names of updateTransaction, in the current scenario updateTransaction may have only one device,
+	// because the initial updateTransaction will be split per device (eg for each device we are creating an updateTransaction)
+	// build a list of devices name to make sure we are always consistent, and we can send notifications event with multi-devices
+	deviceNames := make([]string, 0, len(i.Devices))
+	for _, device := range i.Devices {
+		deviceNames = append(deviceNames, device.Name)
+	}
+	notificationDeviceName := strings.Join(deviceNames, ", ")
+	// marshal data as device name may need escaping
+	type NotificationPayLoad struct {
+		ID string `json:"ID"`
+	}
+	notificationPayLoad := NotificationPayLoad{ID: notificationDeviceName}
+	payload, err := json.Marshal(notificationPayLoad)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("error occurred while marshalling notification payload")
+		return ImageNotification{}, err
+	}
+
+	events := []EventNotification{{Metadata: make(map[string]string), Payload: string(payload)}}
 	users := []string{NotificationConfigUser}
 	recipients := []RecipientNotification{{IgnoreUserPreferences: false, OnlyAdmins: false, Users: users}}
 
@@ -636,7 +665,7 @@ func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (Ima
 		EventType:   NotificationConfigEventTypeDevice,
 		Timestamp:   time.Now().Format(time.RFC3339),
 		OrgID:       i.OrgID,
-		Context:     fmt.Sprintf("{  \"CommitID\" : \"%v\"}", i.CommitID),
+		Context:     fmt.Sprintf(`{"CommitID":"%v","UpdateID":"%v"}`, i.CommitID, i.ID),
 		Events:      events,
 		Recipients:  recipients,
 	}
@@ -788,14 +817,6 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 
 		// Get the models.Commit from the Commit ID passed in via JSON
 		update.Commit = commit
-
-		notify, errNotify := s.SendDeviceNotification(&update)
-		if errNotify != nil {
-			s.log.WithField("message", errNotify.Error()).Error("Error to send device notification")
-			s.log.WithField("message", notify).Error("Notify Error")
-
-		}
-
 		update.DispatchRecords = []models.DispatchRecord{}
 
 		devices := update.Devices
@@ -939,6 +960,12 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 			updates = append(updates, update)
 		}
 		s.log.WithField("updateID", update.ID).Info("Update has been created")
+
+		notify, errNotify := s.SendDeviceNotification(&update)
+		if errNotify != nil {
+			s.log.WithField("message", errNotify.Error()).Error("Error to send device notification")
+			s.log.WithField("message", notify).Error("Notify Error")
+		}
 	}
 	return &updates, nil
 }
