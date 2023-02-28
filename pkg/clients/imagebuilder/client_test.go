@@ -160,7 +160,7 @@ var _ = Describe("Image Builder Client Test", func() {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			//Added an invalid char to fail json parser
+			// Added an invalid char to fail json parser
 			fmt.Fprintln(w, `{"image_status":{"status": "success", "reason":"invalid status"}_`)
 		}))
 		defer ts.Close()
