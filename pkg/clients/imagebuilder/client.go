@@ -459,10 +459,10 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 		return nil, err
 	}
 
-	// var dupPackages []uint
 	var metadataPackages []string
 	for n := range metadata.InstalledPackages {
-		metadataPackages = append(metadataPackages, fmt.Sprintf("%s-%s-%s", metadata.InstalledPackages[n].Name, metadata.InstalledPackages[n].Release, metadata.InstalledPackages[n].Version))
+		metadataPackages = append(metadataPackages,
+			fmt.Sprintf("%s-%s-%s", metadata.InstalledPackages[n].Name, metadata.InstalledPackages[n].Release, metadata.InstalledPackages[n].Version))
 	}
 
 	var packagesExistsMap map[string]*models.InstalledPackage
