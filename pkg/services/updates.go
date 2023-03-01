@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"text/template"
 	"time"
@@ -61,6 +62,7 @@ func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterfac
 		Inventory:       inventory.InitClient(ctx, log),
 		PlaybookClient:  playbookdispatcher.InitClient(ctx, log),
 		ProducerService: kafkacommon.NewProducerService(),
+		TopicService:    kafkacommon.NewTopicService(),
 		WaitForReboot:   time.Minute * 5,
 	}
 }
@@ -75,6 +77,7 @@ type UpdateService struct {
 	Inventory       inventory.ClientInterface
 	PlaybookClient  playbookdispatcher.ClientInterface
 	ProducerService kafkacommon.ProducerServiceInterface
+	TopicService    kafkacommon.TopicServiceInterface
 	WaitForReboot   time.Duration
 }
 
@@ -255,14 +258,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	// 	if an interrupt, set update status to error
 	go s.SetUpdateErrorStatusWhenInterrupted(intctx, *update, sigint, intcancel)
 
-	var remoteInfo TemplateRemoteInfo
-	remoteInfo.RemoteURL = update.Repo.URL
-	remoteInfo.RemoteName = "rhel-edge"
-	remoteInfo.ContentURL = update.Repo.URL
-	remoteInfo.UpdateTransactionID = update.ID
-	remoteInfo.GpgVerify = "false"
-	remoteInfo.OSTreeRef = update.Commit.OSTreeRef
-	remoteInfo.RemoteOstreeUpdate = fmt.Sprint(update.ChangesRefs)
+	remoteInfo := NewTemplateRemoteInfo(update)
 
 	playbookURL, err := s.WriteTemplate(remoteInfo, update.OrgID)
 
@@ -355,6 +351,18 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	return update, nil
 }
 
+func NewTemplateRemoteInfo(update *models.UpdateTransaction) TemplateRemoteInfo {
+
+	return TemplateRemoteInfo{
+		RemoteURL:           update.Repo.URL,
+		RemoteName:          "rhel-edge",
+		ContentURL:          update.Repo.URL,
+		UpdateTransactionID: update.ID,
+		GpgVerify:           config.Get().GpgVerify,
+		OSTreeRef:           update.Commit.OSTreeRef,
+		RemoteOstreeUpdate:  fmt.Sprint(update.ChangesRefs),
+	}
+}
 func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.UpdateTransaction, error) {
 	var update *models.UpdateTransaction
 	if result := db.Org(orgID, "update_transactions").Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").First(&update, updateID); result.Error != nil {
@@ -380,13 +388,21 @@ func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.Up
 	// 	if an interrupt, set update status to error
 	go s.SetUpdateErrorStatusWhenInterrupted(intctx, *update, sigint, intcancel)
 
+	updateRepoID := update.RepoID
 	update, err := s.RepoBuilder.BuildUpdateRepo(updateID)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error building update repo")
 		// set status to error
-		if result := db.DB.Model(&models.UpdateTransaction{}).Where("ID=?", updateID).Update("Status", models.UpdateStatusError); result.Error != nil {
+		if result := db.DB.Model(&models.UpdateTransaction{}).Where("id=?", updateID).Update("Status", models.UpdateStatusError); result.Error != nil {
 			s.log.WithField("error", err.Error()).Error("failed to save building error status")
 			return nil, result.Error
+		}
+		// set repo status to error
+		if updateRepoID != nil {
+			if err := db.DB.Model(&models.Repo{}).Where("id=?", updateRepoID).Update("Status", models.RepoStatusError).Error; err != nil {
+				s.log.WithField("error", err.Error()).Error("failed to save update repository error status")
+				return nil, err
+			}
 		}
 		return nil, err
 	}
@@ -433,9 +449,10 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, orgID str
 		// this is raising when updating major version eg: rhel-8.6 -> rhel-9.0
 		// this need more investigations.
 		// RepoContentURL:     fmt.Sprintf("%s/content", repoURL),
-		RepoContentURL:     repoURL,
-		RemoteOstreeUpdate: templateInfo.RemoteOstreeUpdate,
-		OSTreeRef:          templateInfo.OSTreeRef,
+		RepoContentURL:      repoURL,
+		RemoteOstreeUpdate:  templateInfo.RemoteOstreeUpdate,
+		OSTreeRef:           templateInfo.OSTreeRef,
+		GoTemplateGpgVerify: templateInfo.GpgVerify,
 	}
 
 	// TODO change the same time as line 231
@@ -613,8 +630,27 @@ func (s *UpdateService) SetUpdateStatus(update *models.UpdateTransaction) error 
 // SendDeviceNotification connects to platform.notifications.ingress on image topic
 func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (ImageNotification, error) {
 	s.log.WithField("message", i).Info("SendImageNotification::Starts")
-	topic := NotificationTopic
-	events := []EventNotification{{Metadata: make(map[string]string), Payload: fmt.Sprintf("{  \"UpdateID\" : \"%v\"}", i.ID)}}
+	// notification template of notifications-backend service need device name as ID
+	// join devices names of updateTransaction, in the current scenario updateTransaction may have only one device,
+	// because the initial updateTransaction will be split per device (eg for each device we are creating an updateTransaction)
+	// build a list of devices name to make sure we are always consistent, and we can send notifications event with multi-devices
+	deviceNames := make([]string, 0, len(i.Devices))
+	for _, device := range i.Devices {
+		deviceNames = append(deviceNames, device.Name)
+	}
+	notificationDeviceName := strings.Join(deviceNames, ", ")
+	// marshal data as device name may need escaping
+	type NotificationPayLoad struct {
+		ID string `json:"ID"`
+	}
+	notificationPayLoad := NotificationPayLoad{ID: notificationDeviceName}
+	payload, err := json.Marshal(notificationPayLoad)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("error occurred while marshalling notification payload")
+		return ImageNotification{}, err
+	}
+
+	events := []EventNotification{{Metadata: make(map[string]string), Payload: string(payload)}}
 	users := []string{NotificationConfigUser}
 	recipients := []RecipientNotification{{IgnoreUserPreferences: false, OnlyAdmins: false, Users: users}}
 
@@ -625,7 +661,7 @@ func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (Ima
 		EventType:   NotificationConfigEventTypeDevice,
 		Timestamp:   time.Now().Format(time.RFC3339),
 		OrgID:       i.OrgID,
-		Context:     fmt.Sprintf("{  \"CommitID\" : \"%v\"}", i.CommitID),
+		Context:     fmt.Sprintf(`{"CommitID":"%v","UpdateID":"%v"}`, i.CommitID, i.ID),
 		Events:      events,
 		Recipients:  recipients,
 	}
@@ -636,6 +672,17 @@ func (s *UpdateService) SendDeviceNotification(i *models.UpdateTransaction) (Ima
 
 	// send the message
 	p := s.ProducerService.GetProducerInstance()
+	if p == nil {
+		s.log.Error("kafka producer instance is undefined")
+		return notify, new(KafkaProducerInstanceUndefined)
+	}
+
+	topic, err := s.TopicService.GetTopic(NotificationTopic)
+	if err != nil {
+		s.log.WithFields(log.Fields{"error": err.Error(), "topic": NotificationTopic}).Error("Unable to lookup requested topic name")
+		return notify, err
+	}
+
 	perr := p.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Key:            []byte(recordKey),
@@ -766,14 +813,6 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 
 		// Get the models.Commit from the Commit ID passed in via JSON
 		update.Commit = commit
-
-		notify, errNotify := s.SendDeviceNotification(&update)
-		if errNotify != nil {
-			s.log.WithField("message", errNotify.Error()).Error("Error to send device notification")
-			s.log.WithField("message", notify).Error("Notify Error")
-
-		}
-
 		update.DispatchRecords = []models.DispatchRecord{}
 
 		devices := update.Devices
@@ -917,6 +956,12 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 			updates = append(updates, update)
 		}
 		s.log.WithField("updateID", update.ID).Info("Update has been created")
+
+		notify, errNotify := s.SendDeviceNotification(&update)
+		if errNotify != nil {
+			s.log.WithField("message", errNotify.Error()).Error("Error to send device notification")
+			s.log.WithField("message", notify).Error("Notify Error")
+		}
 	}
 	return &updates, nil
 }

@@ -28,7 +28,7 @@ podman run \
  -Dsonar.go.tests.reportPaths=/usr/src/coverage.json \
  -Dsonar.go.coverage.reportPaths=/usr/src/coverage.txt \
  -Dsonar.exclusions=**/*_test.go,**/*.html,**/*.yml,**/*.yaml,**/*.json,**/*suite*,**/cmd/db*,**/cmd/kafka*,**/unleash*,**/errors*,**/mock_*" \
-images.paas.redhat.com/alm/sonar-scanner-alpine:4.7.0.2747-5ec0a15 -X
+images.paas.redhat.com/alm/sonar-scanner-alpine:latest -X
 
 mkdir -p "${WORKSPACE}/artifacts"
 cat << @EOF > "${WORKSPACE}/artifacts/junit-dummy.xml"

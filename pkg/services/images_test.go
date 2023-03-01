@@ -3,23 +3,40 @@
 package services_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"os/exec"
+	"path"
+	"strings"
+	"testing"
+	"time"
 
 	"github.com/bxcodec/faker/v3"
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	imageBuilderClient "github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder/mock_imagebuilder"
+	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
+	mock_kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka/mock_kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/edge-api/pkg/errors"
+	apiErrors "github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	"github.com/redhatinsights/edge-api/pkg/services/mock_files"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -31,15 +48,29 @@ var _ = Describe("Image Service Test", func() {
 	var hash string
 	var mockImageBuilderClient *mock_imagebuilder.MockClientInterface
 	var mockRepoService *mock_services.MockRepoServiceInterface
+	var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
+	var mockProducer *mock_kafkacommon.MockProducer
+	var mockTopicService *mock_kafkacommon.MockTopicServiceInterface
+	var mockFilesService *mock_services.MockFilesService
+	var mockRepoBuilder *mock_services.MockRepoBuilderInterface
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 		mockImageBuilderClient = mock_imagebuilder.NewMockClientInterface(ctrl)
 		mockRepoService = mock_services.NewMockRepoServiceInterface(ctrl)
+		mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
+		mockProducer = mock_kafkacommon.NewMockProducer(ctrl)
+		mockTopicService = mock_kafkacommon.NewMockTopicServiceInterface(ctrl)
+		mockFilesService = mock_services.NewMockFilesService(ctrl)
+		mockRepoBuilder = mock_services.NewMockRepoBuilderInterface(ctrl)
 		service = services.ImageService{
-			Service:      services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
-			ImageBuilder: mockImageBuilderClient,
-			RepoService:  mockRepoService,
+			Service:         services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+			ImageBuilder:    mockImageBuilderClient,
+			RepoService:     mockRepoService,
+			ProducerService: mockProducerService,
+			TopicService:    mockTopicService,
+			FilesService:    mockFilesService,
+			RepoBuilder:     mockRepoBuilder,
 		}
 	})
 
@@ -236,6 +267,38 @@ var _ = Describe("Image Service Test", func() {
 				}
 				error := service.CreateImage(&image)
 				Expect(error).To(MatchError(new(services.ThirdPartyRepositoryNotFound)))
+			})
+
+			Context("send Create Image notification", func() {
+				var image models.Image
+				var orgID string
+				BeforeEach(func() {
+					orgID = faker.UUIDHyphenated()
+					err := os.Setenv("ACG_CONFIG", "true")
+					Expect(err).ToNot(HaveOccurred())
+					image = models.Image{
+						Name:         faker.UUIDHyphenated(),
+						OrgID:        orgID,
+						Distribution: "rhel-91",
+						ImageType:    models.ImageTypeCommit,
+						OutputTypes:  []string{models.ImageTypeCommit},
+						Commit:       &models.Commit{OrgID: orgID},
+					}
+				})
+
+				AfterEach(func() {
+					err := os.Unsetenv("ACG_CONFIG")
+					Expect(err).ToNot(HaveOccurred())
+				})
+
+				It("should send Create Image notification", func() {
+					mockImageBuilderClient.EXPECT().ComposeCommit(&image).Return(&image, nil)
+					mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+					mockProducer.EXPECT().Produce(gomock.AssignableToTypeOf(&kafka.Message{}), nil).Return(nil)
+					mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
+					err := service.CreateImage(&image)
+					Expect(err).ToNot(HaveOccurred())
+				})
 			})
 		})
 	})
@@ -1152,6 +1215,80 @@ var _ = Describe("Image Service Test", func() {
 			})
 
 		})
+
+		Context("clowder enabled", func() {
+			const ClowderEnvConfigName = "ACG_CONFIG"
+			var imageSet models.ImageSet
+			var image models.Image
+			var orgID string
+			BeforeEach(func() {
+				orgID = faker.UUIDHyphenated()
+				err := os.Setenv(ClowderEnvConfigName, "any value here will set the clowder as enabled")
+				Expect(err).ToNot(HaveOccurred())
+				imageSet = models.ImageSet{
+					Name:    faker.UUIDHyphenated(),
+					Version: 1,
+					OrgID:   orgID,
+				}
+				err = db.DB.Create(&imageSet).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				image = models.Image{
+					ImageSetID: &imageSet.ID,
+					Version:    1,
+					OrgID:      orgID,
+				}
+				err = db.DB.Create(&image).Error
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				err := os.Unsetenv(ClowderEnvConfigName)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should produce a notification message for image", func() {
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
+				mockProducer.EXPECT().Produce(gomock.Any(), nil).Return(nil)
+				notify, err := service.SendImageNotification(&image)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(notify.EventType).To(Equal("image-creation"))
+				Expect(notify.OrgID).To(Equal(orgID))
+			})
+			It("should return error when produce fail", func() {
+				expectedError := errors.New("producer produce expected error")
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
+				mockProducer.EXPECT().Produce(gomock.Any(), nil).Return(expectedError)
+				_, err := service.SendImageNotification(&image)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(expectedError))
+			})
+
+			It("should return error when GetTopic fail", func() {
+				expectedError := errors.New("topic-service GetTopic expected error")
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return("", expectedError)
+				// produce function should not be called
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Times(0)
+				_, err := service.SendImageNotification(&image)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(expectedError))
+			})
+
+			It("should return error when producer is not defined", func() {
+				expectedError := new(services.KafkaProducerInstanceUndefined)
+				mockProducerService.EXPECT().GetProducerInstance().Return(nil)
+				// GetTopic should not be called
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Times(0)
+				// produce function should not be called
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Times(0)
+				_, err := service.SendImageNotification(&image)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(expectedError))
+			})
+		})
 	})
 	Describe("Devices update availability from image set", func() {
 		Context("should set device update availability", func() {
@@ -1327,7 +1464,7 @@ var _ = Describe("Image Service Test", func() {
 				}
 				error := service.ValidateImagePackage(package_name, &image)
 				Expect(error).To(HaveOccurred())
-				Expect(error).To(BeAssignableToTypeOf(new(errors.BadRequest)))
+				Expect(error).To(BeAssignableToTypeOf(new(apiErrors.BadRequest)))
 			})
 		})
 		When("When there's no valid distribution", func() {
@@ -1338,7 +1475,7 @@ var _ = Describe("Image Service Test", func() {
 				}
 				error := service.ValidateImagePackage(package_name, &image)
 				Expect(error).To(HaveOccurred())
-				Expect(error).To(BeAssignableToTypeOf(new(errors.BadRequest)))
+				Expect(error).To(BeAssignableToTypeOf(new(apiErrors.BadRequest)))
 			})
 		})
 		When("When SearchPackage fails to find a package", func() {
@@ -2037,4 +2174,493 @@ var _ = Describe("Image Service Test", func() {
 			Expect(imageUpdateAvailable).To(BeNil())
 		})
 	})
+
+	Context("CreateRepoForImage", func() {
+		var image *models.Image
+		var orgID string
+
+		BeforeEach(func() {
+
+			orgID = faker.UUIDHyphenated()
+			image = &models.Image{
+				OrgID:     orgID,
+				Name:      faker.UUIDHyphenated(),
+				RequestID: faker.UUIDHyphenated(),
+				Installer: &models.Installer{OrgID: orgID},
+				Commit:    &models.Commit{OrgID: orgID},
+			}
+			err := db.DB.Create(image).Error
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should create image repo successfully", func() {
+			expectedRepo := models.Repo{URL: faker.URL(), Status: models.RepoStatusSuccess}
+			err := db.DB.Create(&expectedRepo).Error
+			Expect(err).ToNot(HaveOccurred())
+			mockRepoBuilder.EXPECT().ImportRepo(gomock.AssignableToTypeOf(&models.Repo{})).Return(&expectedRepo, nil)
+			repo, err := service.CreateRepoForImage(context.Background(), image)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(repo.ID).To(Equal(expectedRepo.ID))
+		})
+
+		It("should return error when ImportRepo fails", func() {
+			expecteError := errors.New("expected RepoBuilder.ImportRepo error")
+			mockRepoBuilder.EXPECT().ImportRepo(gomock.AssignableToTypeOf(&models.Repo{})).Return(nil, expecteError)
+			_, err := service.CreateRepoForImage(context.Background(), image)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(expecteError))
+		})
+
+		Context("feature.ImageCompletionEventsEDA.IsEnabled()", func() {
+			var ctx context.Context
+			var requestID string
+			BeforeEach(func() {
+				requestID = faker.UUIDHyphenated()
+				ctx = context.Background()
+				ctx = context.WithValue(ctx, request_id.RequestIDKey, requestID)
+				identityBytes, err := json.Marshal(&identity.XRHID{Identity: identity.Identity{OrgID: orgID}})
+				base64Identity := base64.StdEncoding.EncodeToString(identityBytes)
+				Expect(err).ToNot(HaveOccurred())
+				ctx = common.SetOriginalIdentity(ctx, base64Identity)
+
+				service = services.ImageService{
+					Service:         services.NewService(ctx, log.NewEntry(log.StandardLogger())),
+					RepoBuilder:     mockRepoBuilder,
+					ProducerService: mockProducerService,
+				}
+				// enable feature edge-management.completion_events
+				os.Setenv("FEATURE_COMPLETION_EVENTS", "True")
+			})
+
+			AfterEach(func() {
+				// disable feature edge-management.completion_events
+				os.Unsetenv("FEATURE_COMPLETION_EVENTS")
+			})
+
+			It("should produce event models.EventTypeEdgeOstreeRepoCompleted", func() {
+				expectedRepo := models.Repo{URL: faker.URL(), Status: models.RepoStatusSuccess}
+				err := db.DB.Create(&expectedRepo).Error
+				Expect(err).ToNot(HaveOccurred())
+				mockRepoBuilder.EXPECT().ImportRepo(gomock.AssignableToTypeOf(&models.Repo{})).Return(&expectedRepo, nil)
+				mockProducerService.EXPECT().ProduceEvent(
+					kafkacommon.TopicFleetmgmtImageBuild,
+					models.EventTypeEdgeOstreeRepoCompleted,
+					gomock.AssignableToTypeOf(models.CRCCloudEvent{}),
+				).Return(nil)
+				repo, err := service.CreateRepoForImage(ctx, image)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(repo.ID).To(Equal(expectedRepo.ID))
+			})
+
+			It("should return error when event produce models.EventTypeEdgeOstreeRepoCompleted fails", func() {
+				expectedRepo := models.Repo{URL: faker.URL(), Status: models.RepoStatusSuccess}
+				err := db.DB.Create(&expectedRepo).Error
+				Expect(err).ToNot(HaveOccurred())
+				mockRepoBuilder.EXPECT().ImportRepo(gomock.AssignableToTypeOf(&models.Repo{})).Return(&expectedRepo, nil)
+				expectedError := errors.New("event produce models.EventTypeEdgeOstreeRepoCompleted error")
+				mockProducerService.EXPECT().ProduceEvent(
+					kafkacommon.TopicFleetmgmtImageBuild,
+					models.EventTypeEdgeOstreeRepoCompleted,
+					gomock.AssignableToTypeOf(models.CRCCloudEvent{}),
+				).Return(expectedError)
+				_, err = service.CreateRepoForImage(ctx, image)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(expectedError))
+			})
+
+			It("should return error when identity not found ", func() {
+				expectedRepo := models.Repo{URL: faker.URL(), Status: models.RepoStatusSuccess}
+				err := db.DB.Create(&expectedRepo).Error
+				Expect(err).ToNot(HaveOccurred())
+				mockRepoBuilder.EXPECT().ImportRepo(gomock.AssignableToTypeOf(&models.Repo{})).Return(&expectedRepo, nil)
+				_, err = service.CreateRepoForImage(context.Background(), image)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("no identity found"))
+			})
+		})
+	})
+
+	Context("SetErrorStatusOnImage", func() {
+		var image *models.Image
+		var orgID string
+
+		BeforeEach(func() {
+			orgID = faker.UUIDHyphenated()
+			image = &models.Image{
+				OrgID:     orgID,
+				Name:      faker.UUIDHyphenated(),
+				RequestID: faker.UUIDHyphenated(),
+				Installer: &models.Installer{OrgID: orgID},
+				Commit:    &models.Commit{OrgID: orgID},
+			}
+			err := db.DB.Create(image).Error
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should set all statuses as error", func() {
+			someError := errors.New("some error happened when building image")
+			service.SetErrorStatusOnImage(someError, image)
+			// reload image from db
+			err := db.DB.Preload("Commit").Preload("Installer").First(image, image.ID).Error
+			Expect(err).ToNot(HaveOccurred())
+			Expect(image.Status).To(Equal(models.ImageStatusError))
+			Expect(image.Commit.Status).To(Equal(models.ImageStatusError))
+			Expect(image.Installer.Status).To(Equal(models.ImageStatusError))
+		})
+
+	})
+
+	Context("CreateInstallerForImage", func() {
+		var image *models.Image
+		var orgID string
+
+		BeforeEach(func() {
+			orgID = faker.UUIDHyphenated()
+			image = &models.Image{
+				OrgID:     orgID,
+				Name:      faker.UUIDHyphenated(),
+				RequestID: faker.UUIDHyphenated(),
+				Installer: &models.Installer{OrgID: orgID, Username: faker.UUIDHyphenated(), SSHKey: "ssh-rsa dd:00:eeff:10"},
+				Commit: &models.Commit{
+					OrgID:            orgID,
+					OSTreeCommit:     faker.UUIDHyphenated(),
+					ImageBuildTarURL: faker.URL(),
+					Status:           models.ImageStatusSuccess,
+				},
+			}
+			err := db.DB.Create(image).Error
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			services.BuildCommand = exec.Command
+		})
+
+		// as ginkgo does not support mocking exec.Command
+		// for CreateInstallerForImage successfully test (when feature.ImageCreateISOEDA is disabled), please look at TestCreateInstallerForImageSuccessful
+
+		It("should run ComposeInstaller successfully and run GetInstallerStatus fails", func() {
+			mockImageBuilderClient.EXPECT().ComposeInstaller(image).Return(image, nil)
+			expectedError := errors.New("expected installer status error")
+			mockImageBuilderClient.EXPECT().GetInstallerStatus(image).DoAndReturn(
+				func(builderImage *models.Image) (*models.Image, error) {
+					builderImage.Status = models.ImageStatusError
+					builderImage.Installer.Status = models.ImageStatusError
+					return builderImage, expectedError
+				})
+
+			installerImage, errorChan, err := service.CreateInstallerForImage(context.Background(), image)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(errorChan).ToNot(BeNil())
+			Expect(installerImage).To(Equal(image))
+
+			var installerStatusErr error
+			select {
+			case err := <-errorChan:
+				installerStatusErr = err
+			case <-time.After(30 * time.Second):
+				installerStatusErr = errors.New("installer channel reading timeout")
+			}
+			Expect(installerStatusErr).To(HaveOccurred())
+			Expect(installerStatusErr).To(Equal(expectedError))
+			Expect(image.Status).To(Equal(models.ImageStatusError))
+			Expect(image.Installer.Status).To(Equal(models.ImageStatusError))
+		})
+
+		It("should return error when ComposeInstaller fails", func() {
+			expectedError := errors.New("expected ComposeInstaller error")
+			mockImageBuilderClient.EXPECT().ComposeInstaller(image).Return(nil, expectedError)
+
+			_, _, err := service.CreateInstallerForImage(context.Background(), image)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(expectedError))
+		})
+
+		Context("feature.ImageCreateISOEDA.IsEnabled()", func() {
+			var ctx context.Context
+			var requestID string
+			BeforeEach(func() {
+				requestID = faker.UUIDHyphenated()
+				ctx = context.Background()
+				ctx = context.WithValue(ctx, request_id.RequestIDKey, requestID)
+				identityBytes, err := json.Marshal(&identity.XRHID{Identity: identity.Identity{OrgID: orgID}})
+				base64Identity := base64.StdEncoding.EncodeToString(identityBytes)
+				Expect(err).ToNot(HaveOccurred())
+				ctx = common.SetOriginalIdentity(ctx, base64Identity)
+
+				service = services.ImageService{
+					Service:         services.NewService(ctx, log.NewEntry(log.StandardLogger())),
+					ImageBuilder:    mockImageBuilderClient,
+					ProducerService: mockProducerService,
+					TopicService:    mockTopicService,
+				}
+				// enable feature edge-management.image_create_iso
+				os.Setenv("FEATURE_IMAGECREATE_ISO", "True")
+				// enable feature edge-management.completion_events
+				os.Setenv("FEATURE_COMPLETION_EVENTS", "True")
+			})
+
+			AfterEach(func() {
+				// disable features edge-management.image_create_iso and edge-management.completion_events
+				os.Unsetenv("FEATURE_IMAGECREATE_ISO")
+				os.Unsetenv("FEATURE_COMPLETION_EVENTS")
+			})
+
+			It("should produce EventTypeEdgeImageISORequested models.EventTypeEdgeInstallerCompleted", func() {
+
+				mockImageBuilderClient.EXPECT().ComposeInstaller(image).Return(image, nil)
+				mockImageBuilderClient.EXPECT().GetInstallerStatus(image).DoAndReturn(
+					func(builderImage *models.Image) (*models.Image, error) {
+						// simulate that Installer status was successful and set the appropriate statuses and data
+						builderImage.Status = models.ImageStatusSuccess
+						builderImage.Installer.Status = models.ImageStatusSuccess
+						builderImage.Installer.ImageBuildISOURL = faker.UUIDHyphenated()
+						return builderImage, nil
+					})
+				mockProducerService.EXPECT().ProduceEvent(
+					kafkacommon.TopicFleetmgmtImageBuild,
+					models.EventTypeEdgeImageISORequested,
+					gomock.AssignableToTypeOf(models.CRCCloudEvent{}),
+				).Return(nil)
+
+				mockProducerService.EXPECT().ProduceEvent(
+					kafkacommon.TopicFleetmgmtImageBuild,
+					models.EventTypeEdgeInstallerCompleted,
+					gomock.AssignableToTypeOf(models.CRCCloudEvent{}),
+				).Return(nil)
+
+				installerImage, errorChan, err := service.CreateInstallerForImage(ctx, image)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(errorChan).ToNot(BeNil())
+				Expect(installerImage).To(Equal(image))
+
+				var installerStatusErr error
+				select {
+				case err := <-errorChan:
+					installerStatusErr = err
+				case <-time.After(30 * time.Second):
+					installerStatusErr = errors.New("installer channel reading timeout")
+				}
+
+				Expect(installerStatusErr).ToNot(HaveOccurred())
+				Expect(image.Status).To(Equal(models.ImageStatusSuccess))
+				Expect(image.Installer.Status).To(Equal(models.ImageStatusSuccess))
+			})
+
+			It("should return installer error when produce EventTypeEdgeImageISORequested fails", func() {
+
+				mockImageBuilderClient.EXPECT().ComposeInstaller(image).Return(image, nil)
+				mockImageBuilderClient.EXPECT().GetInstallerStatus(image).DoAndReturn(
+					func(builderImage *models.Image) (*models.Image, error) {
+						// simulate that Installer status was successful and set the appropriate statuses and data
+						builderImage.Status = models.ImageStatusSuccess
+						builderImage.Installer.Status = models.ImageStatusSuccess
+						builderImage.Installer.ImageBuildISOURL = faker.UUIDHyphenated()
+						return builderImage, nil
+					})
+				expectedError := errors.New("expected produce EventTypeEdgeImageISORequested error")
+				mockProducerService.EXPECT().ProduceEvent(
+					kafkacommon.TopicFleetmgmtImageBuild,
+					models.EventTypeEdgeImageISORequested,
+					gomock.AssignableToTypeOf(models.CRCCloudEvent{}),
+				).Return(expectedError)
+
+				installerImage, errorChan, err := service.CreateInstallerForImage(ctx, image)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(errorChan).ToNot(BeNil())
+				Expect(installerImage).To(Equal(image))
+
+				var installerStatusErr error
+				select {
+				case err := <-errorChan:
+					installerStatusErr = err
+				case <-time.After(30 * time.Second):
+					installerStatusErr = errors.New("installer channel reading timeout")
+				}
+
+				Expect(installerStatusErr).To(HaveOccurred())
+				Expect(installerStatusErr).To(MatchError(expectedError))
+				Expect(image.Status).To(Equal(models.ImageStatusSuccess))
+				Expect(image.Installer.Status).To(Equal(models.ImageStatusSuccess))
+			})
+
+			It("should return installer error when produce EventTypeEdgeInstallerCompleted fails", func() {
+				mockImageBuilderClient.EXPECT().ComposeInstaller(image).Return(image, nil)
+				mockImageBuilderClient.EXPECT().GetInstallerStatus(image).DoAndReturn(
+					func(builderImage *models.Image) (*models.Image, error) {
+						// simulate that Installer status was successful and set the appropriate statuses and data
+						builderImage.Status = models.ImageStatusSuccess
+						builderImage.Installer.Status = models.ImageStatusSuccess
+						builderImage.Installer.ImageBuildISOURL = faker.UUIDHyphenated()
+						return builderImage, nil
+					})
+
+				mockProducerService.EXPECT().ProduceEvent(
+					kafkacommon.TopicFleetmgmtImageBuild,
+					models.EventTypeEdgeImageISORequested,
+					gomock.AssignableToTypeOf(models.CRCCloudEvent{}),
+				).Return(nil)
+
+				expectedError := errors.New("expected produce EventTypeEdgeInstallerCompleted error")
+				mockProducerService.EXPECT().ProduceEvent(
+					kafkacommon.TopicFleetmgmtImageBuild,
+					models.EventTypeEdgeInstallerCompleted,
+					gomock.AssignableToTypeOf(models.CRCCloudEvent{}),
+				).Return(expectedError)
+
+				installerImage, errorChan, err := service.CreateInstallerForImage(ctx, image)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(errorChan).ToNot(BeNil())
+				Expect(installerImage).To(Equal(image))
+
+				var installerStatusErr error
+				select {
+				case err := <-errorChan:
+					installerStatusErr = err
+				case <-time.After(30 * time.Second):
+					installerStatusErr = errors.New("installer channel reading timeout")
+				}
+
+				Expect(installerStatusErr).To(HaveOccurred())
+				Expect(installerStatusErr).To(MatchError(expectedError))
+				Expect(image.Status).To(Equal(models.ImageStatusSuccess))
+				Expect(image.Installer.Status).To(Equal(models.ImageStatusSuccess))
+			})
+			Context("without identity", func() {
+				var ctx context.Context
+				BeforeEach(func() {
+					ctx = context.Background()
+					service = services.ImageService{
+						Service:         services.NewService(ctx, log.NewEntry(log.StandardLogger())),
+						ImageBuilder:    mockImageBuilderClient,
+						ProducerService: mockProducerService,
+						TopicService:    mockTopicService,
+					}
+				})
+
+				It("should return installer err when missing identity", func() {
+					mockImageBuilderClient.EXPECT().ComposeInstaller(image).Return(image, nil)
+					mockImageBuilderClient.EXPECT().GetInstallerStatus(image).DoAndReturn(
+						func(builderImage *models.Image) (*models.Image, error) {
+							// simulate that Installer status was successful and set the appropriate statuses and data
+							builderImage.Status = models.ImageStatusSuccess
+							builderImage.Installer.Status = models.ImageStatusSuccess
+							builderImage.Installer.ImageBuildISOURL = faker.UUIDHyphenated()
+							return builderImage, nil
+						})
+
+					installerImage, errorChan, err := service.CreateInstallerForImage(ctx, image)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(errorChan).ToNot(BeNil())
+					Expect(installerImage).To(Equal(image))
+
+					var installerStatusErr error
+					select {
+					case err := <-errorChan:
+						installerStatusErr = err
+					case <-time.After(30 * time.Second):
+						installerStatusErr = errors.New("installer channel reading timeout")
+					}
+					Expect(installerStatusErr).To(HaveOccurred())
+					Expect(installerStatusErr.Error()).To(Equal("no identity found"))
+					Expect(image.Status).To(Equal(models.ImageStatusSuccess))
+					Expect(image.Installer.Status).To(Equal(models.ImageStatusSuccess))
+				})
+			})
+		})
+	})
 })
+
+func TestCreateInstallerForImageSuccessfully(t *testing.T) {
+	// feature.ImageCreateISOEDA is disabled
+	g := NewGomegaWithT(t)
+	currentDir, err := os.Getwd()
+	g.Expect(err).ToNot(HaveOccurred())
+	// set the templates path
+	originalTemplatesPath := config.Get().TemplatesPath
+	config.Get().TemplatesPath = path.Join(currentDir, "..", "..", "templates")
+	defer func(templatePath string) {
+		// restore template path
+		config.Get().TemplatesPath = templatePath
+	}(originalTemplatesPath)
+
+	orgID := faker.UUIDHyphenated()
+	image := &models.Image{
+		OrgID:     orgID,
+		Name:      faker.UUIDHyphenated(),
+		Installer: &models.Installer{OrgID: orgID, Username: faker.UUIDHyphenated(), SSHKey: "ssh-rsa dd:00:eeff:10"},
+		Commit: &models.Commit{
+			OrgID:            orgID,
+			OSTreeCommit:     faker.UUIDHyphenated(),
+			ImageBuildTarURL: faker.URL(),
+			Status:           models.ImageStatusSuccess,
+		},
+	}
+	err = db.DB.Create(image).Error
+	g.Expect(err).ToNot(HaveOccurred())
+
+	ctrl := gomock.NewController(GinkgoT())
+	mockImageBuilderClient := mock_imagebuilder.NewMockClientInterface(ctrl)
+	mockFilesService := mock_services.NewMockFilesService(ctrl)
+	mockUploader := mock_files.NewMockUploader(ctrl)
+	service := services.ImageService{
+		Service:      services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
+		ImageBuilder: mockImageBuilderClient,
+		FilesService: mockFilesService,
+	}
+	defer func() {
+		// restore the original exec command builder
+		services.BuildCommand = exec.Command
+		ctrl.Finish()
+	}()
+
+	// create a server to serve the iso, for testing we return an empty file.
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		emptyFileReader := bytes.NewReader([]byte{})
+		_, _ = io.Copy(w, emptyFileReader)
+	}))
+	defer ts.Close()
+
+	mockImageBuilderClient.EXPECT().ComposeInstaller(image).Return(image, nil)
+	mockImageBuilderClient.EXPECT().GetInstallerStatus(image).DoAndReturn(func(builderImage *models.Image) (*models.Image, error) {
+		// simulate that Installer status was successful and set the appropriate statuses and data
+		builderImage.Status = models.ImageStatusSuccess
+		builderImage.Installer.Status = models.ImageStatusSuccess
+		builderImage.Installer.ImageBuildISOURL = ts.URL
+		return builderImage, nil
+	})
+
+	expectedUploadUrl := faker.URL()
+	mockFilesService.EXPECT().GetUploader().Return(mockUploader)
+	fleetCommandScript := "/usr/local/bin/fleetkick.sh"
+	workDir := fmt.Sprintf("/var/tmp/workdir%d", image.ID)
+	imagePath := fmt.Sprintf("/var/tmp/%s", image.Name)
+	kickstartPath := fmt.Sprintf("/var/tmp/finalKickstart-%s_%d.ks", image.OrgID, image.ID)
+	expectedCommand := strings.Join([]string{fleetCommandScript, kickstartPath, imagePath, imagePath, workDir}, " ")
+	testMockExecHelper := NewMockTestExecHelper(t, "", 0)
+	services.BuildCommand = testMockExecHelper.MockExecCommand
+
+	mockUploader.EXPECT().UploadFile(gomock.Any(), gomock.Any()).Return(expectedUploadUrl, nil)
+
+	installerImage, errorChan, err := service.CreateInstallerForImage(context.Background(), image)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(errorChan).ToNot(BeNil())
+	g.Expect(installerImage).To(Equal(image))
+
+	var installerStatusErr error
+	select {
+	case err := <-errorChan:
+		installerStatusErr = err
+	case <-time.After(30 * time.Second):
+		installerStatusErr = errors.New("installer channel reading timeout")
+	}
+
+	g.Expect(testMockExecHelper.Executed).To(BeTrue())
+	g.Expect(testMockExecHelper.ExistStatus).To(Equal(0))
+	g.Expect(testMockExecHelper.Command).To(Equal(expectedCommand))
+
+	g.Expect(installerStatusErr).ToNot(HaveOccurred())
+	g.Expect(image.Status).To(Equal(models.ImageStatusSuccess))
+	g.Expect(image.Installer.Status).To(Equal(models.ImageStatusSuccess))
+	g.Expect(image.Installer.ImageBuildISOURL).To(Equal(expectedUploadUrl))
+}

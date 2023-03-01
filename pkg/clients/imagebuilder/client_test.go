@@ -48,6 +48,8 @@ func (m *MockClient) Do(req *http.Request) (*http.Response, error) {
 var _ = Describe("Image Builder Client Test", func() {
 	var client *Client
 	var dbName string
+	var originalImageBuilderURL string
+	conf := config.Get()
 	BeforeEach(func() {
 		config.Init()
 		config.Get().Debug = true
@@ -69,9 +71,13 @@ var _ = Describe("Image Builder Client Test", func() {
 			panic(err)
 		}
 		client = InitClient(context.Background(), log.NewEntry(log.StandardLogger()))
+		// save the original image builder url
+		originalImageBuilderURL = conf.ImageBuilderConfig.URL
 	})
 	AfterEach(func() {
 		os.Remove(dbName)
+		// restore the original image builder url
+		conf.ImageBuilderConfig.URL = originalImageBuilderURL
 	})
 	It("should init client", func() {
 		Expect(client).ToNot(BeNil())
@@ -99,6 +105,18 @@ var _ = Describe("Image Builder Client Test", func() {
 		res, err := client.SearchPackage("badrpm", "x86_64", "rhel-85")
 		Expect(err).To(BeNil())
 		Expect(res.Meta.Count).To(Equal(0))
+	})
+	It("test web service when package search returns StatusBadRequest", func() {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintln(w, `{"error":{"count":0}}`)
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+		_, err := client.SearchPackage("badpackage", "x86_64", "rhel-85")
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("image builder search packages request error"))
 	})
 	It("test validation of special character package name", func() {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -129,6 +147,75 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(err.Error()).To(Equal("mandatory fields should not be empty"))
 		Expect(res).To(BeNil())
 	})
+	It("test GetComposeStatus with valid parameters", func() {
+		jobId := faker.UUIDHyphenated()
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintln(w, `{"image_status":{"status": "success", "reason":"success"}}`)
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+		res, err := client.GetComposeStatus(jobId)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(res.ImageStatus.Status).To(Equal(imageStatusSuccess))
+	})
+	It("test GetComposeStatus with failed status", func() {
+		jobId := faker.UUIDHyphenated()
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			fmt.Fprintln(w, `{"image_status":{"status": "failure", "reason":"Worker running this job stopped responding"}}`)
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+		res, err := client.GetComposeStatus(jobId)
+		Expect(res).To(BeNil())
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("worker running this job stopped responding"))
+	})
+	It("test GetComposeStatus error on request", func() {
+		jobId := faker.UUIDHyphenated()
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintln(w, `{"image_status":{"status": "success", "reason":"success"}}`)
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+		res, err := client.GetComposeStatus(jobId)
+		Expect(res).To(BeNil())
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("request for status was not successful"))
+	})
+	It("test GetComposeStatus error on parser Json to Object", func() {
+		jobId := faker.UUIDHyphenated()
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			// Added an invalid char to fail json parser
+			fmt.Fprintln(w, `{"image_status":{"status": "success", "reason":"invalid status"}_`)
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+		res, err := client.GetComposeStatus(jobId)
+		Expect(res).To(BeNil())
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("invalid character '_' after object key:value pair"))
+	})
+	It("test GetComposeStatus error on empty body response", func() {
+		jobId := faker.UUIDHyphenated()
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+		res, err := client.GetComposeStatus(jobId)
+		Expect(res).To(BeNil())
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("unexpected end of JSON input"))
+	})
 	It("test compose image", func() {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
@@ -157,6 +244,102 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(img).ToNot(BeNil())
 		Expect(img.Commit.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
 		Expect(img.Commit.ExternalURL).To(BeFalse())
+	})
+	It("should return error when image has org_id undefined", func() {
+		pkgs := []models.Package{
+			{
+				Name: "vim",
+			},
+			{
+				Name: "ansible",
+			},
+		}
+		img := &models.Image{Distribution: "rhel-8",
+			Packages: pkgs,
+			Commit: &models.Commit{
+				Arch: "x86_64",
+				Repo: &models.Repo{},
+			},
+			ThirdPartyRepositories: []models.ThirdPartyRepo{
+				{
+					Name: "repo test",
+					URL:  "https://repo.com",
+				},
+				{
+					Name: "repo test2",
+					URL:  "https://repo2.com",
+				},
+			},
+		}
+		result, err := client.GetImageThirdPartyRepos(img)
+		Expect(result).To(BeNil())
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("error retrieving orgID  information, image orgID undefined"))
+	})
+
+	It("should retrieve and return third party repos from database and return valid list", func() {
+		pkgs := []models.Package{
+			{
+				Name: "vim",
+			},
+			{
+				Name: "ansible",
+			},
+		}
+		OrgId := faker.UUIDHyphenated()
+		thirdPartyRepo := models.ThirdPartyRepo{
+			Name:  faker.UUIDHyphenated(),
+			URL:   faker.URL(),
+			OrgID: OrgId,
+		}
+		db.DB.Create(&thirdPartyRepo)
+		img := &models.Image{Distribution: "rhel-8",
+			Packages: pkgs,
+			OrgID:    OrgId,
+			Commit: &models.Commit{
+				Arch: "x86_64",
+				Repo: &models.Repo{},
+			},
+			ThirdPartyRepositories: []models.ThirdPartyRepo{
+				thirdPartyRepo,
+			},
+		}
+		result, err := client.GetImageThirdPartyRepos(img)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result[0].BaseURL).To(Equal(thirdPartyRepo.URL))
+	})
+
+	It("should return error when custom repositories id are not valid/not found", func() {
+		pkgs := []models.Package{
+			{
+				Name: "vim",
+			},
+			{
+				Name: "ansible",
+			},
+		}
+		img := &models.Image{Distribution: "rhel-8",
+			Packages: pkgs,
+			OrgID:    "org_id",
+			Commit: &models.Commit{
+				Arch: "x86_64",
+				Repo: &models.Repo{},
+			},
+			ThirdPartyRepositories: []models.ThirdPartyRepo{
+				{
+					Name: "repo test",
+					URL:  "https://repo.com",
+				},
+				{
+					Name: "repo test2",
+					URL:  "https://repo2.com",
+				},
+			},
+		}
+		result, err := client.GetImageThirdPartyRepos(img)
+		Expect(result).To(BeNil())
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("enter valid third party repository id"))
 	})
 
 	Context("compose image commit with ChangesRefs values", func() {

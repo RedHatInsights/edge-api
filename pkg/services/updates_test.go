@@ -183,6 +183,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		var mockPlaybookClient *mock_playbookdispatcher.MockClientInterface
 		var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
 		var mockProducer *mock_kafkacommon.MockProducer
+		var mockTopicService *mock_kafkacommon.MockTopicServiceInterface
 		var update models.UpdateTransaction
 		var ctrl *gomock.Controller
 
@@ -193,12 +194,14 @@ var _ = Describe("UpdateService Basic functions", func() {
 			mockPlaybookClient = mock_playbookdispatcher.NewMockClientInterface(ctrl)
 			mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
 			mockProducer = mock_kafkacommon.NewMockProducer(ctrl)
+			mockTopicService = mock_kafkacommon.NewMockTopicServiceInterface(ctrl)
 			updateService = &services.UpdateService{
 				Service:         services.NewService(context.Background(), log.WithField("service", "update")),
 				FilesService:    mockFilesService,
 				RepoBuilder:     mockRepoBuilder,
 				PlaybookClient:  mockPlaybookClient,
 				ProducerService: mockProducerService,
+				TopicService:    mockTopicService,
 				WaitForReboot:   0,
 			}
 		})
@@ -213,6 +216,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 			device := models.Device{
 				UUID:  uuid,
 				OrgID: orgID,
+				// set name with some chars that need to be escaped
+				Name: faker.Name() + `some "chars", must be "escaped"`,
 			}
 			db.DB.Create(&device)
 			update = models.UpdateTransaction{
@@ -220,12 +225,14 @@ var _ = Describe("UpdateService Basic functions", func() {
 					device,
 				},
 				OrgID:  orgID,
+				Commit: &models.Commit{OrgID: orgID},
 				Status: models.UpdateStatusBuilding,
 			}
 			db.DB.Create(&update)
 			It("should send the notification", func() {
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 				notify, err := updateService.SendDeviceNotification(&update)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(notify.Version).To(Equal("v1.1.0"))
@@ -235,9 +242,45 @@ var _ = Describe("UpdateService Basic functions", func() {
 				err := errors.New("error producing message")
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(err)
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 				_, err2 := updateService.SendDeviceNotification(&update)
 				Expect(err2).To(HaveOccurred())
 				Expect(err).To(Equal(err2))
+			})
+			It("should return error when producer is undefined", func() {
+				expectedError := new(services.KafkaProducerInstanceUndefined)
+				mockProducerService.EXPECT().GetProducerInstance().Return(nil)
+				_, err := updateService.SendDeviceNotification(&update)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(expectedError))
+			})
+			It("should return error when GetTopic fail", func() {
+				expectedError := errors.New("topic-service GetTopic expected error")
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return("", expectedError)
+				// produce function should not be called
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Times(0)
+				_, err := updateService.SendDeviceNotification(&update)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(expectedError))
+			})
+			It("should send notification with the device Name in the payload with ID key", func() {
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
+				notify, err := updateService.SendDeviceNotification(&update)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(notify.EventType).To(Equal("update-devices"))
+				Expect(notify.Events).To(HaveLen(1))
+				type NotificationPayLoad struct {
+					ID string `json:"ID"`
+				}
+				expectedNotificationPayload := NotificationPayLoad{ID: device.Name}
+				var notificationPayload NotificationPayLoad
+				err = json.Unmarshal([]byte(notify.Events[0].Payload), &notificationPayload)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(notificationPayload).To(Equal(expectedNotificationPayload))
+				Expect(notify.Context).To(Equal(fmt.Sprintf(`{"CommitID":"%v","UpdateID":"%v"}`, update.CommitID, update.ID)))
 			})
 		})
 
@@ -273,11 +316,20 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 			When("when build repo fail", func() {
 				It("should return error when can't build repo", func() {
-					mockRepoBuilder.EXPECT().BuildUpdateRepo(update.ID).Return(nil, errors.New("error building repo"))
+					expectedError := errors.New("error building repo")
+					mockRepoBuilder.EXPECT().BuildUpdateRepo(update.ID).Return(nil, expectedError)
 					actual, err := updateService.CreateUpdate(update.ID)
 
-					Expect(actual).To(BeNil())
 					Expect(err).To(HaveOccurred())
+					Expect(err).To(MatchError(expectedError))
+					Expect(actual).To(BeNil())
+
+					// reload update from db
+					err = db.DB.Preload("Repo").First(&update, update.ID).Error
+					Expect(err).ToNot(HaveOccurred())
+					Expect(update.Status).To(Equal(models.UpdateStatusError))
+					Expect(update.Repo).ToNot(BeNil())
+					Expect(update.Repo.Status).To(Equal(models.RepoStatusError))
 				})
 			})
 
@@ -619,6 +671,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					RemoteName:          "remote-name",
 					RemoteOstreeUpdate:  "false",
 					OSTreeRef:           "rhel/8/x86_64/edge",
+					GpgVerify:           "false",
 				}
 				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", orgID, t.UpdateTransactionID)
 				tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", orgID, fname)
@@ -651,12 +704,58 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 
 		Context("when upload works", func() {
+			var cfg *config.EdgeConfig
+			BeforeEach(func() {
+				os.Setenv("SOURCES_ENV", "prod")
+				cfg, _ = config.CreateEdgeAPIConfig()
+			})
+			AfterEach(func() {
+				os.Setenv("SOURCES_ENV", "test")
+				cfg, _ = config.CreateEdgeAPIConfig()
+			})
+			It("to build the template for PROD rebase properly", func() {
+				t := services.TemplateRemoteInfo{
+					UpdateTransactionID: 1000,
+					RemoteName:          "remote-name",
+					RemoteOstreeUpdate:  "true",
+					OSTreeRef:           "rhel/9/x86_64/edge",
+					GpgVerify:           cfg.GpgVerify,
+				}
+				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", orgID, t.UpdateTransactionID)
+				tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", orgID, fname)
+				ctrl := gomock.NewController(GinkgoT())
+				defer ctrl.Finish()
+				mockFilesService := mock_services.NewMockFilesService(ctrl)
+				mockProducerService := mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
+				updateService := &services.UpdateService{
+					Service:         services.NewService(context.Background(), log.WithField("service", "update")),
+					FilesService:    mockFilesService,
+					ProducerService: mockProducerService,
+				}
+				mockUploader := mock_services.NewMockUploader(ctrl)
+				mockUploader.EXPECT().UploadFile(tmpfilepath, fmt.Sprintf("%s/playbooks/%s", orgID, fname)).Do(func(x, y string) {
+					actual, err := os.ReadFile(x)
+					Expect(err).ToNot(HaveOccurred())
+					expected, err := os.ReadFile(fmt.Sprintf("%s/%s", templatesPath, "template_playbook_dispatcher_ostree_rebase_payload_prod.test.yml"))
+					Expect(err).ToNot(HaveOccurred())
+					Expect(string(actual)).To(BeEquivalentTo(string(expected)))
+				}).Return("url", nil)
+				mockFilesService.EXPECT().GetUploader().Return(mockUploader)
+
+				url, err := updateService.WriteTemplate(t, orgID)
+
+				Expect(err).ToNot(HaveOccurred())
+				Expect(url).ToNot(BeNil())
+				Expect(url).To(BeEquivalentTo("http://localhost:3000/api/edge/v1/updates/1000/update-playbook.yml"))
+			})
+
 			It("to build the template for rebase properly", func() {
 				t := services.TemplateRemoteInfo{
 					UpdateTransactionID: 1000,
 					RemoteName:          "remote-name",
 					RemoteOstreeUpdate:  "true",
 					OSTreeRef:           "rhel/9/x86_64/edge",
+					GpgVerify:           "false",
 				}
 				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", orgID, t.UpdateTransactionID)
 				tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", orgID, fname)
@@ -897,6 +996,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		var mockRepoBuilder *mock_services.MockRepoBuilderInterface
 		var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
 		var mockProducer *mock_kafkacommon.MockProducer
+		var mockTopicService *mock_kafkacommon.MockTopicServiceInterface
 
 		BeforeEach(func() {
 			ctrl = gomock.NewController(GinkgoT())
@@ -905,6 +1005,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			mockInventoryClient = mock_inventory.NewMockClientInterface(ctrl)
 			mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
 			mockProducer = mock_kafkacommon.NewMockProducer(ctrl)
+			mockTopicService = mock_kafkacommon.NewMockTopicServiceInterface(ctrl)
 
 			updateService = &services.UpdateService{
 				Service:         services.NewService(context.Background(), log.WithField("service", "update")),
@@ -912,6 +1013,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Inventory:       mockInventoryClient,
 				ImageService:    mockImageService,
 				ProducerService: mockProducerService,
+				TopicService:    mockTopicService,
 				WaitForReboot:   0,
 			}
 		})
@@ -980,6 +1082,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 
 				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &latestCommit)
 				Expect(err).To(BeNil())
@@ -1001,6 +1104,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		var mockRepoBuilder *mock_services.MockRepoBuilderInterface
 		var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
 		var mockProducer *mock_kafkacommon.MockProducer
+		var mockTopicService *mock_kafkacommon.MockTopicServiceInterface
 
 		BeforeEach(func() {
 			ctrl = gomock.NewController(GinkgoT())
@@ -1009,6 +1113,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			mockInventoryClient = mock_inventory.NewMockClientInterface(ctrl)
 			mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
 			mockProducer = mock_kafkacommon.NewMockProducer(ctrl)
+			mockTopicService = mock_kafkacommon.NewMockTopicServiceInterface(ctrl)
 
 			updateService = &services.UpdateService{
 				Service:         services.NewService(context.Background(), log.WithField("service", "update")),
@@ -1016,6 +1121,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Inventory:       mockInventoryClient,
 				ImageService:    mockImageService,
 				ProducerService: mockProducerService,
+				TopicService:    mockTopicService,
 				WaitForReboot:   0,
 			}
 		})
@@ -1083,6 +1189,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(latestCommit.OSTreeCommit).Return(&latestImage, nil)
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 
 				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &latestCommit)
 				Expect(err).To(BeNil())
@@ -1103,6 +1210,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		var mockInventoryClient *mock_inventory.MockClientInterface
 		var mockRepoBuilder *mock_services.MockRepoBuilderInterface
 		var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
+		var mockTopicService *mock_kafkacommon.MockTopicServiceInterface
 		var mockProducer *mock_kafkacommon.MockProducer
 
 		BeforeEach(func() {
@@ -1112,6 +1220,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			mockInventoryClient = mock_inventory.NewMockClientInterface(ctrl)
 			mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
 			mockProducer = mock_kafkacommon.NewMockProducer(ctrl)
+			mockTopicService = mock_kafkacommon.NewMockTopicServiceInterface(ctrl)
 
 			updateService = &services.UpdateService{
 				Service:         services.NewService(context.Background(), log.WithField("service", "update")),
@@ -1119,6 +1228,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Inventory:       mockInventoryClient,
 				ImageService:    mockImageService,
 				ProducerService: mockProducerService,
+				TopicService:    mockTopicService,
 				WaitForReboot:   0,
 			}
 		})
@@ -1180,6 +1290,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(commit.OSTreeCommit).Return(&image, nil)
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 
 				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &commit)
 				Expect(err).To(BeNil())
@@ -1199,6 +1310,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		var mockRepoBuilder *mock_services.MockRepoBuilderInterface
 		var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
 		var mockProducer *mock_kafkacommon.MockProducer
+		var mockTopicService *mock_kafkacommon.MockTopicServiceInterface
 
 		BeforeEach(func() {
 			ctrl = gomock.NewController(GinkgoT())
@@ -1207,6 +1319,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			mockInventoryClient = mock_inventory.NewMockClientInterface(ctrl)
 			mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
 			mockProducer = mock_kafkacommon.NewMockProducer(ctrl)
+			mockTopicService = mock_kafkacommon.NewMockTopicServiceInterface(ctrl)
 
 			updateService = &services.UpdateService{
 				Service:         services.NewService(context.Background(), log.WithField("service", "update")),
@@ -1214,6 +1327,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Inventory:       mockInventoryClient,
 				ImageService:    mockImageService,
 				ProducerService: mockProducerService,
+				TopicService:    mockTopicService,
 				WaitForReboot:   0,
 			}
 		})
@@ -1280,6 +1394,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockImageService.EXPECT().GetImageByOSTreeCommitHash(commit.OSTreeCommit).Return(&image, nil)
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 
 				upd, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &commit)
 				Expect(err).To(BeNil())
@@ -1309,6 +1424,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		var mockInventory *mock_inventory.MockClientInterface
 		var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
 		var mockProducer *mock_kafkacommon.MockProducer
+		var mockTopicService *mock_kafkacommon.MockTopicServiceInterface
 
 		BeforeEach(func() {
 			ctrl = gomock.NewController(GinkgoT())
@@ -1316,6 +1432,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			mockInventory = mock_inventory.NewMockClientInterface(ctrl)
 			mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
 			mockProducer = mock_kafkacommon.NewMockProducer(ctrl)
+			mockTopicService = mock_kafkacommon.NewMockTopicServiceInterface(ctrl)
 
 			ctx := context.Background()
 			updateService = &services.UpdateService{
@@ -1324,6 +1441,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Inventory:       mockInventory,
 				ImageService:    services.NewImageService(ctx, log.WithField("service", "image")),
 				ProducerService: mockProducerService,
+				TopicService:    mockTopicService,
 				WaitForReboot:   0,
 			}
 
@@ -1361,6 +1479,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					Return(responseInventory, nil)
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 
 				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultOrgID, &newCommit)
 
@@ -1391,6 +1510,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					Return(responseInventory, nil)
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 
 				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &newCommit)
 				Expect(err).To(BeNil())
@@ -1420,6 +1540,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					Return(responseInventory, nil)
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 
 				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, orgID, &newCommit2)
 				Expect(err).ToNot(HaveOccurred())
@@ -1440,6 +1561,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					Return(responseInventory, nil)
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil)
 
 				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultOrgID, &newCommit)
 
@@ -1477,6 +1599,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
 				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
 				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil).Times(2)
 
 				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultOrgID, &newCommit)
 
@@ -1532,6 +1655,34 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Expect(err.(apiError.APIError).GetStatus()).To(Equal(404))
 				Expect(updates).Should(BeNil())
 			})
+		})
+	})
+
+	Describe("Test build remote info", func() {
+		var update *models.UpdateTransaction
+		BeforeEach(func() {
+			orgID := faker.UUIDHyphenated()
+			update = &models.UpdateTransaction{
+				DispatchRecords: []models.DispatchRecord{},
+				OrgID:           orgID,
+				Commit:          &models.Commit{OSTreeRef: "ref"},
+				Repo:            &models.Repo{URL: "http://rh.com"},
+			}
+		})
+
+		AfterEach(func() {
+			config.Get().GpgVerify = "false"
+		})
+		It("should return template with gpg false", func() {
+			config.Get().GpgVerify = "false"
+			remoteInfo := services.NewTemplateRemoteInfo(update)
+			Expect(remoteInfo.GpgVerify).To(Equal("false"))
+		})
+		It("should return template with gpg true", func() {
+			config.Get().GpgVerify = "true"
+			remoteInfo := services.NewTemplateRemoteInfo(update)
+			Expect(remoteInfo.GpgVerify).To(Equal("true"))
+
 		})
 	})
 })

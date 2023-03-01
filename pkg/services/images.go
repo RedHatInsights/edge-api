@@ -12,8 +12,8 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"os/signal"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -75,10 +75,13 @@ type ImageServiceInterface interface {
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
 func NewImageService(ctx context.Context, log *log.Entry) ImageServiceInterface {
 	return &ImageService{
-		Service:      Service{ctx: ctx, log: log.WithField("service", "image")},
-		ImageBuilder: imagebuilder.InitClient(ctx, log),
-		RepoBuilder:  NewRepoBuilder(ctx, log),
-		RepoService:  NewRepoService(ctx, log),
+		Service:         Service{ctx: ctx, log: log.WithField("service", "image")},
+		ImageBuilder:    imagebuilder.InitClient(ctx, log),
+		RepoBuilder:     NewRepoBuilder(ctx, log),
+		RepoService:     NewRepoService(ctx, log),
+		ProducerService: kafkacommon.NewProducerService(),
+		TopicService:    kafkacommon.NewTopicService(),
+		FilesService:    NewFilesService(log),
 	}
 }
 
@@ -86,9 +89,12 @@ func NewImageService(ctx context.Context, log *log.Entry) ImageServiceInterface 
 type ImageService struct {
 	Service
 
-	ImageBuilder imagebuilder.ClientInterface
-	RepoBuilder  RepoBuilderInterface
-	RepoService  RepoServiceInterface
+	ImageBuilder    imagebuilder.ClientInterface
+	RepoBuilder     RepoBuilderInterface
+	RepoService     RepoServiceInterface
+	ProducerService kafkacommon.ProducerServiceInterface
+	TopicService    kafkacommon.TopicServiceInterface
+	FilesService    FilesService
 }
 
 // GetImageReposFromDB return ThirdParty repo of image by OrgID
@@ -180,12 +186,6 @@ func (s *ImageService) CreateImage(image *models.Image) error {
 		return err
 	}
 	image.ThirdPartyRepositories = *imagesrepos
-	// Send Image creation to notification
-	notify, errNotify := s.SendImageNotification(image)
-	if errNotify != nil {
-		s.log.WithField("message", errNotify.Error()).Error("Error sending notification")
-		s.log.WithField("message", notify).Error("Notify Error")
-	}
 
 	// TODO: REFACTOR... ImageSet should be created first and an image created from it
 	imageSet, err := s.getImageSetForNewImage(image.OrgID, image)
@@ -225,6 +225,13 @@ func (s *ImageService) CreateImage(image *models.Image) error {
 
 	if result := db.DB.Create(&image); result.Error != nil {
 		return result.Error
+	}
+
+	// Send Image creation to notification
+	notify, errNotify := s.SendImageNotification(image)
+	if errNotify != nil {
+		s.log.WithField("message", errNotify.Error()).Error("Error sending notification")
+		s.log.WithField("message", notify).Error("Notify Error")
 	}
 
 	return nil
@@ -288,7 +295,8 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	}
 	err := s.CheckIfIsLatestVersion(previousImage)
 	if err != nil {
-		return errors.NewBadRequest("only the latest updated image can be modified")
+		s.log.WithField("error", err).Error("Error, not the latest image")
+		return new(ImageOnlyLatestCanModify)
 	}
 	packages := image.Packages
 	for _, p := range packages {
@@ -433,8 +441,7 @@ func (s *ImageService) processInstaller(ctx context.Context, image *models.Image
 		if feature.ImageCreateISOEDA.IsEnabled() {
 			s.log.Debug("Creating image iso with EDA")
 
-			ctx := context.Background()
-			ident, errident := common.GetIdentityFromContext(ctx)
+			ident, errident := common.GetIdentityInstanceFromContext(ctx)
 			if errident != nil {
 				s.log.WithField("error", errident.Error()).Error("Failed retrieving identity from context")
 				return errident
@@ -454,7 +461,7 @@ func (s *ImageService) processInstaller(ctx context.Context, image *models.Image
 				models.EventTypeEdgeImageISORequested, image.Name, edgePayload)
 
 			// put the event on the bus
-			if err := kafkacommon.NewProducerService().ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageISORequested, edgeEvent); err != nil {
+			if err := s.ProducerService.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageISORequested, edgeEvent); err != nil {
 				log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
 				return err
 			}
@@ -496,7 +503,7 @@ func (s *ImageService) processInstaller(ctx context.Context, image *models.Image
 			models.EventTypeEdgeInstallerCompleted, image.Name, edgePayload)
 
 		// put the event on the bus
-		if err := kafkacommon.NewProducerService().ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeInstallerCompleted, edgeEvent); err != nil {
+		if err := s.ProducerService.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeInstallerCompleted, edgeEvent); err != nil {
 			log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
 
 			return err
@@ -764,7 +771,7 @@ func (s *ImageService) CreateRepoForImage(ctx context.Context, img *models.Image
 			img.RequestID, models.EventTypeEdgeOstreeRepoCompleted, img.Name, edgePayload)
 
 		// put the event on the bus
-		if err := kafkacommon.NewProducerService().ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeOstreeRepoCompleted, edgeEvent); err != nil {
+		if err := s.ProducerService.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeOstreeRepoCompleted, edgeEvent); err != nil {
 			log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
 
 			return nil, err
@@ -864,7 +871,7 @@ func (s *ImageService) addSSHKeyToKickstart(sshKey string, username string, kick
 	td := UnameSSH{sshKey, username}
 
 	s.log.WithField("templatesPath", cfg.TemplatesPath).Debug("Opening file")
-	t, err := template.ParseFiles(cfg.TemplatesPath + "templateKickstart.ks")
+	t, err := template.ParseFiles(path.Join(cfg.TemplatesPath, "templateKickstart.ks"))
 	if err != nil {
 		return err
 	}
@@ -927,8 +934,8 @@ func (s *ImageService) uploadISO(image *models.Image, imageName string) error {
 
 	uploadPath := fmt.Sprintf("%s/isos/%s.iso", image.OrgID, image.Name)
 	s.log.WithField("path", uploadPath).Debug("Uploading ISO...")
-	filesService := NewFilesService(s.log)
-	url, err := filesService.GetUploader().UploadFile(imageName, uploadPath)
+
+	url, err := s.FilesService.GetUploader().UploadFile(imageName, uploadPath)
 
 	if err != nil {
 		return fmt.Errorf("error uploading the ISO :: %s :: %s", uploadPath, err.Error())
@@ -1041,12 +1048,8 @@ func (s *ImageService) exeInjectionScript(kickstart string, image string, imageI
 		return err
 	}
 
-	cmd := &exec.Cmd{
-		Path: fleetBashScript,
-		Args: []string{
-			fleetBashScript, kickstart, image, image, workDir,
-		},
-	}
+	cmd := BuildCommand(fleetBashScript, kickstart, image, image, workDir)
+
 	output, err := cmd.Output()
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error executing fleetkick")
@@ -1564,21 +1567,18 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 		var event EventNotification
 		var recipients []RecipientNotification
 		var recipient RecipientNotification
-		brokers := make([]string, len(clowder.LoadedConfig.Kafka.Brokers))
 
-		for i, b := range clowder.LoadedConfig.Kafka.Brokers {
-			brokers[i] = fmt.Sprintf("%s:%d", b.Hostname, *b.Port)
-			fmt.Println(brokers[i])
+		// GetProducerInstance Producer instance
+		p := s.ProducerService.GetProducerInstance()
+		if p == nil {
+			s.log.Error("kafka producer instance is undefined")
+			return notify, new(KafkaProducerInstanceUndefined)
 		}
 
-		topic := NotificationTopic
-
-		// Create Producer instance
-		p, err := kafka.NewProducer(&kafka.ConfigMap{
-			"bootstrap.servers": brokers[0]})
+		topic, err := s.TopicService.GetTopic(NotificationTopic)
 		if err != nil {
-			s.log.WithField("message", err.Error()).Error("producer")
-			os.Exit(1)
+			s.log.WithFields(log.Fields{"error": err.Error(), "topic": NotificationTopic}).Error("Unable to lookup requested topic name")
+			return notify, err
 		}
 
 		type metadata struct {
@@ -1590,7 +1590,12 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 
 		event.Metadata = emptyJSON.metaMap
 
-		event.Payload = fmt.Sprintf(`{"ImageId":"%v","ImageSetID":"%v"}`, i.ID, i.ImageSetID)
+		var imageSetID uint
+		if i.ImageSetID != nil {
+			imageSetID = *i.ImageSetID
+		}
+
+		event.Payload = fmt.Sprintf(`{"ImageId":"%v","ImageSetID":"%v"}`, i.ID, imageSetID)
 		events = append(events, event)
 
 		recipient.IgnoreUserPreferences = false
@@ -1611,17 +1616,14 @@ func (s *ImageService) SendImageNotification(i *models.Image) (ImageNotification
 		s.log.WithField("message", recordValue).Info("Preparing record for producer")
 
 		// send the message
-		perr := p.Produce(&kafka.Message{
+		if err := p.Produce(&kafka.Message{
 			TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 			Key:            []byte(recordKey),
 			Value:          []byte(recordValue),
-		}, nil)
-
-		if perr != nil {
-			s.log.WithField("message", perr.Error()).Error("Error on produce")
+		}, nil); err != nil {
+			s.log.WithField("message", err.Error()).Error("Error on produce")
 			return notify, err
 		}
-		p.Close()
 		s.log.WithField("message", topic).Info("SendNotification message was produced to topic")
 		fmt.Printf("SendNotification message was produced to topic %s!\n", topic)
 		return notify, nil

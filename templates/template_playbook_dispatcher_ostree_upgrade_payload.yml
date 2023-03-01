@@ -9,7 +9,7 @@
     ostree_remote_name: "@@ .GoTemplateRemoteName @@"
     ostree_changes_refs: "@@ .RemoteOstreeUpdate @@"
     os_tree_ref: "@@ .OSTreeRef @@"
-    ostree_gpg_verify: "false"
+    ostree_gpg_verify: "@@ .GoTemplateGpgVerify @@"
     ostree_gpg_keypath: "/etc/pki/rpm-gpg/"
     ostree_remote_template: |
       [remote "{{ ostree_remote_name }}"]
@@ -19,27 +19,27 @@
       contenturl={{ repo_content_url }}
       tls-client-key-path=/etc/pki/consumer/key.pem
       tls-client-cert-path=/etc/pki/consumer/cert.pem
-    insights_signature_exclude: "/vars/insights_signature,/vars/update_number,/vars/ostree_remote_name,/vars/ostree_changes_refs,/vars/os_tree_ref,/vars/repo_url,/vars/repo_content_url"
+    insights_signature_exclude: "/vars/insights_signature,/vars/update_number,/vars/ostree_remote_name,/vars/ostree_changes_refs,/vars/os_tree_ref,/vars/repo_url,/vars/repo_content_url,/vars/ostree_gpg_verify"
     insights_signature: !!binary |
       TFMwdExTMUNSVWRKVGlCUVIxQWdVMGxIVGtGVVZWSkZMUzB0TFMwS1ZtVnljMmx2YmpvZ1IyNTFV
-      RWNnZGpFS0NtbFJTVlpCZDFWQldUQmpRV1ZqZG5jMU9FUXJhalZ3VGtGUmFUZHBRUzh2WWpKcFNu
-      RkRWVFZ0UkVOM1dGcGFhbFZqWm1WT1kyZE9UVGs0Tm1KeldHTUtVM0F3Y1V0TllrOUdNRkY2UWta
-      WFRXVlFSRk5YV210ME4zZG9aa0ZIYWxOUWJWbExSMVo1Vm1nM1JXdHZiV2hHTm1WMFFsRkROVGRM
-      YlVrMVJVbFlid3BYTld3clQwRlBWM0pUU2tZelpYQXpTbE41V0hWU05XdDZXR2gyWTFCdE1DOWxO
-      RFJNU21zM1lXeFJiRWRtVUhsUlpqbGtaMjVzZEU1SWJWbFVjQ3RHQ25GU2RXUXZNblZ2TlRCclRr
-      WXhhRWszYTBoNFZESktTVmhsZHpKMmJuaG1hVkU0ZUZNNGNYa3ZhRkU0WWpkMFRVbHJWVWhGT1ha
-      clQweFVhRTB5YzFNS05uRkxSbXBSZFhwQldWWmhlaTltVlhCMVVscE9kRTFLYlZkRFZtZENVRGx0
-      UkdWYWNGTlBiVUpsYm10NlNVaGhhMUZqVFdVMGR6SnlVM1J3U3pWVVNncGtUR0ZVU0RoRlNWSnlW
-      RkZKYVV4UGFVZG5TVWxSVWtsRE9HSkdiSGx4VUZvMFNWTndTa2hvYkhKVE9YZGxTREZ6VkhGSWFH
-      OXhhVkphUW1oNlYzRlZDa2t4TmpZd1RteENLelpMUXpWS0wxWnFOVnBqS3pKUFZqY3dPRVpVT0Za
-      TmQyWkZjWE5UZG5SSk5FaEtTbkExZUd0WldXOW5OREJ5VmpsNVUyaHFRVTBLWVhKbFkzWkNhRGhx
-      VWxSWFRGaFJRV3MxWTJSMU9GSk5SRmRFZDFoVmIzTjJUamxCWlhKV2IwNTNLMDVVZVVSTVYzWTFP
-      V3RIVFhCMVpEVkxXRVV2Y3dwRk5qSnJUa3BLVkRaVlRraE9RVEpuTTNoc2VuQm1hRFZGUTBsbU5Y
-      Uk1jbGxyTURkbmVUQmhjakpXU2pobk1UVm1UMHhwZW5ObGRtNTBVRkJ0VUZGTkNtNDJSMkZVUWtG
-      b1VHMTBkV2d3UTFGRmVtVTFhRXR1ZGtObUsxUmpkVkZSZGxSclRtNUZVbGh2VTAxblJYTlViamR1
-      TVRZeGFVeFRMM2d2TDNKNFdta0tWMGd3UVhOa1RUaERWMmxOZWpoelNHcDRUVWhDV1ZwcVExbG9O
-      SGRyY1ZoblRFdDZMMU5aWlhOSWFFeENWRGRKZVhWalExTktWVWN3Ymt4VE9IZ3llZ3BOWXpaQlJr
-      TjVNMFE1Y3owS1BVZDBNRGNLTFMwdExTMUZUa1FnVUVkUUlGTkpSMDVCVkZWU1JTMHRMUzB0Q2c9
+      RWNnZGpFS0NtbFJTVlpCZDFWQldTOVZaSFJqZG5jMU9FUXJhalZ3VGtGUmFuUkdVUzhyUzJwMVVu
+      WXdaRVJuWmpBemFHVkVWUzg1ZGpsRmFtaGhTVWxJT0VwSU1rUUtRMXBMVTFsRldHeFVkRlpzVEdK
+      RFprOXlORFZqWWs1dU5tVmlaVVVyTUdSMllVbDJUelZIUjNCUGVtTndWak56UkM5MGJEaGxWVTQy
+      T0RsNVJHOUpjQXA0VW5ScFVtUlVZVlJqVDFFeE5XYzBTRGxxTkdvek5uTkhWbVpSUWxsdk9XSm1P
+      SEpwVmpkbVNEVnZSMWRMUVVGeFIyZEpOa2hQWnpGUGNtUlNlblEzQ2psd05XZEtkMlI0VW1ablNI
+      WlFTMWhtV2xwMk5reFNSV1pzWjAxblZuUnZVelZ6YmtVdlFqUkxkM0ZDZW1aNWVraGlWalZsV1N0
+      Q1UwZFBUbWwzVW1JS2IwWnBla1JPT1ZJMFpYVllkWFpyT1ZWa2QwZzRkR1pPZUZReGVreGpaWE5W
+      TWsxNkswTTRlRXRaTTB4Qk5rcFBaRGhtT1RRM1pFZ3hObmxOY20xVVVBcEdZVkkyTDJ0bFVWUm5S
+      VXh5TUdGcFZFczBiVFZZZURBMFQxUmhkVmg0Y213MlZUZEVPRXh0ZERWNGJIZGtWWHBoTWxNelpt
+      ZHRka3hLUkhCa1dqZERDa3hoVFZrck1FMVhMMk5uZEV0YVdrMXVNVUo2UkVGVEsyeFhWbHAyZW1s
+      R05sQk5SVTlwTVVSYVIzaG9Wa1U1YkVsM2RtaFNhVUp6ZVhWcVVGWTNRbXdLTW1OU2IxWjBTRTkx
+      TDI5cmRHa3dSVGc0VTBWdWNrdFVUSEp6YTJaaGFFOTVlRmhvUW1wallXNUhlbGRZWlZCMk5Vb3ZW
+      elJvWTFCNGFYSlROWE5UV1Fwc2JXUXJlWEF6YjFCb2RHdE5ibGxQTURsWGVVVlllRzFTUkcxRFZW
+      VnZSbkZVY0RKNGNHVnRjekpaZFhadVFqQlNOVUpFTkROQ2JqaG9OQ3RaTURGeUNuZzFSbTFJTTJW
+      V0t5dHNPVWxVT1ZRM2VYVjFRMU5vVkVSVE5HcGpiRXg1S3pWdksyOWlaSE4yWVZWWU9UbFJZbUpE
+      YVRoNVYxQXJlWEo1WnpWdU4wd0tSMmRzYTBkcVlXSTRMMHM1VVhwME0wVlRjbWh5TTJwYWMxZDJj
+      Vk15VGpsT1dtVkVMM3BZZHpSUldYbFVNVnB1VlhCM2EyaG1lV3BIVURCRk9WcEhVZ3B5TjJKVGVE
+      VXhTVUZsZHowS1BUazNXaThLTFMwdExTMUZUa1FnVUVkUUlGTkpSMDVCVkZWU1JTMHRMUzB0Q2c9
       PQ==
   tasks:
     - name: apply templated ostree remote config

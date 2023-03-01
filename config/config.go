@@ -19,47 +19,54 @@ import (
 
 // EdgeConfig represents the runtime configuration
 type EdgeConfig struct {
-	Hostname                 string                    `json:"hostname,omitempty"`
-	Auth                     bool                      `json:"auth,omitempty"`
-	WebPort                  int                       `json:"web_port,omitempty"`
-	MetricsPort              int                       `json:"metrics_port,omitempty"`
-	MetricsBaseURL           string                    `json:"metrics_api_base_url,omitempty"`
-	Logging                  *loggingConfig            `json:"logging,omitempty"`
-	LogLevel                 string                    `json:"log_level,omitempty"`
-	Debug                    bool                      `json:"debug,omitempty"`
-	Database                 *dbConfig                 `json:"database,omitempty"`
-	BucketName               string                    `json:"bucket_name,omitempty"`
-	BucketRegion             string                    `json:"bucket_region,omitempty"`
-	AccessKey                string                    `json:"-"`
-	SecretKey                string                    `json:"-"`
-	RepoTempPath             string                    `json:"repo_temp_path,omitempty"`
-	OpenAPIFilePath          string                    `json:"openapi_file_path,omitempty"`
-	ImageBuilderConfig       *imageBuilderConfig       `json:"image_builder,omitempty"`
-	InventoryConfig          *inventoryConfig          `json:"inventory,omitempty"`
-	PlaybookDispatcherConfig *playbookDispatcherConfig `json:"playbook_dispatcher,omitempty"`
-	TemplatesPath            string                    `json:"templates_path,omitempty"`
-	EdgeAPIBaseURL           string                    `json:"edge_api_base_url,omitempty"`
-	EdgeCertAPIBaseURL       string                    `json:"edge_cert_api_base_url,omitempty"`
-	EdgeAPIServiceHost       string                    `json:"edge_api_service_host,omitempty"`
-	EdgeAPIServicePort       int                       `json:"edge_api_service_port,omitempty"`
-	UploadWorkers            int                       `json:"upload_workers,omitempty"`
-	KafkaConfig              *clowder.KafkaConfig      `json:"kafka,omitempty"`
-	KafkaBrokers             []clowder.BrokerConfig    `json:"kafka_brokers,omitempty"`
-	KafkaTopics              map[string]string         `json:"kafka_topics,omitempty"`
-	FDO                      *fdoConfig                `json:"fdo,omitempty"`
-	Local                    bool                      `json:"local,omitempty"`
-	Dev                      bool                      `json:"dev,omitempty"`
-	UnleashURL               string                    `json:"unleash_url,omitempty"`
-	UnleashSecretName        string                    `json:"unleash_secret_name,omitempty"`
-	FeatureFlagsEnvironment  string                    `json:"featureflags_environment,omitempty"`
-	FeatureFlagsURL          string                    `json:"featureflags_url,omitempty"`
-	FeatureFlagsAPIToken     string                    `json:"featureflags_api_token,omitempty"`
-	FeatureFlagsService      string                    `json:"featureflags_service,omitempty"`
-	FeatureFlagsBearerToken  string                    `json:"featureflags_bearer_token,omitempty"`
-	TenantTranslatorHost     string                    `json:"tenant_translator_host,omitempty"`
-	TenantTranslatorPort     string                    `json:"tenant_translator_port,omitempty"`
-	TenantTranslatorURL      string                    `json:"tenant_translator_url,omitempty"`
-	ImageBuilderOrgID        string                    `json:"image_builder_org_id,omitempty"`
+	Hostname                   string                    `json:"hostname,omitempty"`
+	Auth                       bool                      `json:"auth,omitempty"`
+	WebPort                    int                       `json:"web_port,omitempty"`
+	MetricsPort                int                       `json:"metrics_port,omitempty"`
+	MetricsBaseURL             string                    `json:"metrics_api_base_url,omitempty"`
+	Logging                    *loggingConfig            `json:"logging,omitempty"`
+	LogLevel                   string                    `json:"log_level,omitempty"`
+	Debug                      bool                      `json:"debug,omitempty"`
+	Database                   *dbConfig                 `json:"database,omitempty"`
+	BucketName                 string                    `json:"bucket_name,omitempty"`
+	BucketRegion               string                    `json:"bucket_region,omitempty"`
+	AccessKey                  string                    `json:"-"`
+	SecretKey                  string                    `json:"-"`
+	RepoTempPath               string                    `json:"repo_temp_path,omitempty"`
+	OpenAPIFilePath            string                    `json:"openapi_file_path,omitempty"`
+	ImageBuilderConfig         *imageBuilderConfig       `json:"image_builder,omitempty"`
+	InventoryConfig            *inventoryConfig          `json:"inventory,omitempty"`
+	PlaybookDispatcherConfig   *playbookDispatcherConfig `json:"playbook_dispatcher,omitempty"`
+	TemplatesPath              string                    `json:"templates_path,omitempty"`
+	EdgeAPIBaseURL             string                    `json:"edge_api_base_url,omitempty"`
+	EdgeCertAPIBaseURL         string                    `json:"edge_cert_api_base_url,omitempty"`
+	EdgeAPIServiceHost         string                    `json:"edge_api_service_host,omitempty"`
+	EdgeAPIServicePort         int                       `json:"edge_api_service_port,omitempty"`
+	UploadWorkers              int                       `json:"upload_workers,omitempty"`
+	KafkaConfig                *clowder.KafkaConfig      `json:"kafka,omitempty"`
+	KafkaBrokers               []clowder.BrokerConfig    `json:"kafka_brokers,omitempty"`
+	KafkaBroker                *clowder.BrokerConfig     `json:"kafka_broker,omitempty"`
+	KafkaBrokerCaCertPath      string                    `json:"kafka_broker_ca_cert_path,omitempty"`
+	KafkaRequestRequiredAcks   int                       `json:"kafka_request_required_acks,omitempty"`
+	KafkaMessageSendMaxRetries int                       `json:"kafka_message_send_max_retries,omitempty"`
+	KafkaRetryBackoffMs        int                       `json:"kafka_retry_backoff_ms,omitempty"`
+	KafkaTopics                map[string]string         `json:"kafka_topics,omitempty"`
+	FDO                        *fdoConfig                `json:"fdo,omitempty"`
+	Local                      bool                      `json:"local,omitempty"`
+	Dev                        bool                      `json:"dev,omitempty"`
+	UnleashURL                 string                    `json:"unleash_url,omitempty"`
+	UnleashSecretName          string                    `json:"unleash_secret_name,omitempty"`
+	FeatureFlagsEnvironment    string                    `json:"featureflags_environment,omitempty"`
+	FeatureFlagsURL            string                    `json:"featureflags_url,omitempty"`
+	FeatureFlagsAPIToken       string                    `json:"featureflags_api_token,omitempty"`
+	FeatureFlagsService        string                    `json:"featureflags_service,omitempty"`
+	FeatureFlagsBearerToken    string                    `json:"featureflags_bearer_token,omitempty"`
+	TenantTranslatorHost       string                    `json:"tenant_translator_host,omitempty"`
+	TenantTranslatorPort       string                    `json:"tenant_translator_port,omitempty"`
+	TenantTranslatorURL        string                    `json:"tenant_translator_url,omitempty"`
+	ImageBuilderOrgID          string                    `json:"image_builder_org_id,omitempty"`
+	GpgVerify                  string                    `json:"gpg_verify,omitempty"`
+	GlitchtipDsn               string                    `json:"glitchtip_dsn,omitempty"`
 }
 
 type dbConfig struct {
@@ -138,6 +145,9 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("Local", false)
 	options.SetDefault("Dev", false)
 	options.SetDefault("EDGEMGMT_CONFIGPATH", "/tmp/edgemgmt_config.json")
+	options.SetDefault("KafkaRequestRequiredAcks", -1)
+	options.SetDefault("KafkaMessageSendMaxRetries", 15)
+	options.SetDefault("KafkaRetryBackoffMs", 100)
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
@@ -170,6 +180,7 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	}
 	options.SetDefault("FeatureFlagsService", os.Getenv("FEATURE_FLAGS_SERVICE"))
 
+	options.SetDefault("GpgVerify", "false")
 	if os.Getenv("SOURCES_ENV") == "prod" {
 		options.SetDefault("FeatureFlagsEnvironment", "production")
 	} else {
@@ -218,18 +229,23 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 			APIVersion:          options.GetString("FDOApiVersion"),
 			AuthorizationBearer: options.GetString("FDOAuthorizationBearer"),
 		},
-		Local:                   options.GetBool("Local"),
-		Dev:                     options.GetBool("Dev"),
-		UnleashURL:              options.GetString("FeatureFlagsUrl"),
-		UnleashSecretName:       options.GetString("FeatureFlagsBearerToken"),
-		FeatureFlagsEnvironment: options.GetString("FeatureFlagsEnvironment"),
-		FeatureFlagsURL:         options.GetString("FeatureFlagsUrl"),
-		FeatureFlagsAPIToken:    options.GetString("FeatureFlagsAPIToken"),
-		FeatureFlagsBearerToken: options.GetString("FeatureFlagsBearerToken"),
-		FeatureFlagsService:     options.GetString("FeatureFlagsService"),
-		TenantTranslatorHost:    options.GetString("TenantTranslatorHost"),
-		TenantTranslatorPort:    options.GetString("TenantTranslatorPort"),
-		ImageBuilderOrgID:       options.GetString("ImageBuilderOrgID"),
+		Local:                      options.GetBool("Local"),
+		Dev:                        options.GetBool("Dev"),
+		UnleashURL:                 options.GetString("FeatureFlagsUrl"),
+		UnleashSecretName:          options.GetString("FeatureFlagsBearerToken"),
+		FeatureFlagsEnvironment:    options.GetString("FeatureFlagsEnvironment"),
+		FeatureFlagsURL:            options.GetString("FeatureFlagsUrl"),
+		FeatureFlagsAPIToken:       options.GetString("FeatureFlagsAPIToken"),
+		FeatureFlagsBearerToken:    options.GetString("FeatureFlagsBearerToken"),
+		FeatureFlagsService:        options.GetString("FeatureFlagsService"),
+		TenantTranslatorHost:       options.GetString("TenantTranslatorHost"),
+		TenantTranslatorPort:       options.GetString("TenantTranslatorPort"),
+		ImageBuilderOrgID:          options.GetString("ImageBuilderOrgID"),
+		KafkaRequestRequiredAcks:   options.GetInt("KafkaRequestRequiredAcks"),
+		KafkaMessageSendMaxRetries: options.GetInt("KafkaMessageSendMaxRetries"),
+		KafkaRetryBackoffMs:        options.GetInt("KafkaRetryBackoffMs"),
+		GpgVerify:                  options.GetString("GpgVerify"),
+		GlitchtipDsn:               options.GetString("GlitchtipDsn"),
 	}
 	if edgeConfig.TenantTranslatorHost != "" && edgeConfig.TenantTranslatorPort != "" {
 		edgeConfig.TenantTranslatorURL = fmt.Sprintf("http://%s:%s", edgeConfig.TenantTranslatorHost, edgeConfig.TenantTranslatorPort)
@@ -310,6 +326,24 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		for i, b := range edgeConfig.KafkaConfig.Brokers {
 			edgeConfig.KafkaBrokers[i] = b
 		}
+
+		if len(edgeConfig.KafkaBrokers) > 0 {
+			if edgeConfig.KafkaBroker == nil {
+				// the config KafkaBroker is the first kafka broker
+				edgeConfig.KafkaBroker = &edgeConfig.KafkaBrokers[0]
+			}
+		}
+
+		// write the first kafka broker caCert if defined
+		if edgeConfig.KafkaBroker != nil && edgeConfig.KafkaBroker.Cacert != nil && *edgeConfig.KafkaBroker.Cacert != "" {
+			caCertFilePath, err := clowder.LoadedConfig.KafkaCa(*edgeConfig.KafkaBroker)
+			if err != nil {
+				log.WithField("error", err.Error()).Error("clowder failed to write first broker caCert to file")
+				// continue anyway
+			} else {
+				edgeConfig.KafkaBrokerCaCertPath = caCertFilePath
+			}
+		}
 	}
 
 	return edgeConfig, nil
@@ -383,6 +417,7 @@ func LogConfigAtStartup(cfg *EdgeConfig) {
 		"EdgeAPIServicePort":       cfg.EdgeAPIServicePort,
 		"EdgeCertAPIURL":           cfg.EdgeCertAPIBaseURL,
 		"ImageBuilderOrgID":        cfg.ImageBuilderOrgID,
+		"GlitchtipDsn":             cfg.GlitchtipDsn,
 	}
 
 	// loop through the key/value pairs

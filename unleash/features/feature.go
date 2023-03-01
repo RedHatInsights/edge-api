@@ -1,5 +1,7 @@
 // FIXME: golangci-lint
 // nolint:revive,typecheck
+
+// Package feature configures and handles feature flags for use in the application
 package feature
 
 import (
@@ -22,6 +24,11 @@ type Flag struct {
 	Name   string
 	EnvVar string
 }
+
+// GLITCHTIP LOGGING FLAGS
+
+// GlitchtipLogging is the feature flag for reporting errors to GlitchTip
+var GlitchtipLogging = &Flag{Name: "edge-management.glitchtip_logging", EnvVar: "GLITCHTIP_LOGGING"}
 
 // KAFKA LOGGING FLAGS
 
@@ -76,6 +83,9 @@ var DedupPackage = &Flag{Name: "edge-management.dedup_installed_packages", EnvVa
 
 // UpdateRepoRequested is the feature flag to use for services.UpdateService.CreateUpdate(id) EDA Code
 var UpdateRepoRequested = &Flag{Name: "edge-management.update_repo_requested", EnvVar: "FEATURE_UPDATE_REPO_REQUESTED"}
+
+// ContentSources is a feature flag to use for code related to Parity and custom repositories
+var ContentSources = &Flag{Name: "edge-management.content_sources", EnvVar: "FEATURE_CONTENT_SOURCES"}
 
 // (ADD FEATURE FLAGS ABOVE)
 // FEATURE FLAG CHECK CODE

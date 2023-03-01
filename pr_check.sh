@@ -47,7 +47,7 @@ source $CICD_ROOT/post_test_results.sh
 CONTAINER_NAME="edge-pr-check-$ghprbPullId"
 
 # Run coverage using same version of Go as the App
-podman run --user root --rm -i \
+podman run --user root --rm --replace -i \
     --name $CONTAINER_NAME \
     -v $PWD:/usr/src:z \
     registry.access.redhat.com/ubi8/go-toolset:1.18.4-8 \
