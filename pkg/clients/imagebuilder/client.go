@@ -459,16 +459,16 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 		return nil, err
 	}
 
-	var metadataPackages []string
-	for n := range metadata.InstalledPackages {
-		metadataPackages = append(metadataPackages,
-			fmt.Sprintf("%s-%s-%s", metadata.InstalledPackages[n].Name, metadata.InstalledPackages[n].Release, metadata.InstalledPackages[n].Version))
-	}
-
 	var packagesExistsMap map[string]*models.InstalledPackage
 	var cip []models.CommitInstalledPackages
 
 	if feature.DedupPackage.IsEnabled() {
+		var metadataPackages []string
+		for n := range metadata.InstalledPackages {
+			metadataPackages = append(metadataPackages,
+				fmt.Sprintf("%s-%s-%s", metadata.InstalledPackages[n].Name, metadata.InstalledPackages[n].Release, metadata.InstalledPackages[n].Version))
+		}
+
 		packagesExistsMap, err = c.ValidatePackages(metadataPackages)
 		if err != nil {
 			c.log.WithField("error", err.Error).Error(new(PackageRequestError))
@@ -489,7 +489,6 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 			}
 
 		} else {
-			fmt.Printf("\n passei aqui: %v\n", n)
 			pkg := models.InstalledPackage{
 				Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,
 				Release: metadata.InstalledPackages[n].Release, Sigmd5: metadata.InstalledPackages[n].Sigmd5,
