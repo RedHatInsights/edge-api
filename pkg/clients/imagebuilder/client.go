@@ -500,19 +500,21 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	}
 
 	image.Commit.OSTreeCommit = metadata.OstreeCommit
-	db.DB.Omit("Image.InstalledPackages.*").Save(image.Commit)
-	if feature.DedupPackage.IsEnabled() &&
-		len(packagesExistsMap) > 0 {
-		for i := range packagesExistsMap {
-			cip = append(cip, models.CommitInstalledPackages{InstalledPackageId: packagesExistsMap[i].ID, CommitId: image.Commit.ID})
-		}
 
-		err := db.DB.Create(&cip)
-		if err.Error != nil {
-			c.log.WithField("error", err.Error.Error()).Error(new(PackageRequestError))
-			return nil, err.Error
-		}
+	if feature.DedupPackage.IsEnabled() {
+		db.DB.Omit("Image.InstalledPackages.*").Save(image.Commit)
+		if len(packagesExistsMap) > 0 {
 
+			for i := range packagesExistsMap {
+				cip = append(cip, models.CommitInstalledPackages{InstalledPackageId: packagesExistsMap[i].ID, CommitId: image.Commit.ID})
+			}
+
+			err := db.DB.Create(&cip)
+			if err.Error != nil {
+				c.log.WithField("error", err.Error.Error()).Error(new(PackageRequestError))
+				return nil, err.Error
+			}
+		}
 	}
 
 	c.log.Info("Done with metadata for image")
