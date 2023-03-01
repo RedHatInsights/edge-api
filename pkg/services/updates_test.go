@@ -704,11 +704,14 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 
 		Context("when upload works", func() {
+			var cfg *config.EdgeConfig
 			BeforeEach(func() {
-				os.Setenv("ENABLE_GPG_VERIFY", "True")
+				os.Setenv("SOURCES_ENV", "prod")
+				cfg, _ = config.CreateEdgeAPIConfig()
 			})
 			AfterEach(func() {
-				os.Unsetenv("ENABLE_GPG_VERIFY")
+				os.Setenv("SOURCES_ENV", "test")
+				cfg, _ = config.CreateEdgeAPIConfig()
 			})
 			It("to build the template for PROD rebase properly", func() {
 				t := services.TemplateRemoteInfo{
@@ -716,7 +719,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 					RemoteName:          "remote-name",
 					RemoteOstreeUpdate:  "true",
 					OSTreeRef:           "rhel/9/x86_64/edge",
-					GpgVerify:           "true",
+					GpgVerify:           cfg.GpgVerify,
 				}
 				fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", orgID, t.UpdateTransactionID)
 				tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", orgID, fname)
@@ -1655,11 +1658,9 @@ var _ = Describe("UpdateService Basic functions", func() {
 		})
 	})
 
-	Context("Test build remote info feature flag disable", func() {
+	Describe("Test build remote info", func() {
 		var update *models.UpdateTransaction
-
 		BeforeEach(func() {
-			os.Unsetenv("ENABLE_GPG_VERIFY")
 			orgID := faker.UUIDHyphenated()
 			update = &models.UpdateTransaction{
 				DispatchRecords: []models.DispatchRecord{},
@@ -1669,30 +1670,16 @@ var _ = Describe("UpdateService Basic functions", func() {
 			}
 		})
 
+		AfterEach(func() {
+			config.Get().GpgVerify = "false"
+		})
 		It("should return template with gpg false", func() {
+			config.Get().GpgVerify = "false"
 			remoteInfo := services.NewTemplateRemoteInfo(update)
 			Expect(remoteInfo.GpgVerify).To(Equal("false"))
 		})
-	})
-
-	Context("Test build remote info with feature flag enable", func() {
-		var update *models.UpdateTransaction
-		BeforeEach(func() {
-			os.Setenv("ENABLE_GPG_VERIFY", "True")
-			orgID := faker.UUIDHyphenated()
-			update = &models.UpdateTransaction{
-				DispatchRecords: []models.DispatchRecord{},
-				OrgID:           orgID,
-				Commit:          &models.Commit{OSTreeRef: "ref"},
-				Repo:            &models.Repo{URL: "http://rh.com"},
-			}
-
-		})
-		AfterEach(func() {
-			os.Unsetenv("ENABLE_GPG_VERIFY")
-		})
-
 		It("should return template with gpg true", func() {
+			config.Get().GpgVerify = "true"
 			remoteInfo := services.NewTemplateRemoteInfo(update)
 			Expect(remoteInfo.GpgVerify).To(Equal("true"))
 
