@@ -352,20 +352,16 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 }
 
 func NewTemplateRemoteInfo(update *models.UpdateTransaction) TemplateRemoteInfo {
-	gpgVerify := "false"
-	if feature.EnableGPGVerify.IsEnabled() {
-		gpgVerify = "true"
-	}
+
 	return TemplateRemoteInfo{
 		RemoteURL:           update.Repo.URL,
 		RemoteName:          "rhel-edge",
 		ContentURL:          update.Repo.URL,
 		UpdateTransactionID: update.ID,
-		GpgVerify:           gpgVerify,
+		GpgVerify:           config.Get().GpgVerify,
 		OSTreeRef:           update.Commit.OSTreeRef,
 		RemoteOstreeUpdate:  fmt.Sprint(update.ChangesRefs),
 	}
-
 }
 func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.UpdateTransaction, error) {
 	var update *models.UpdateTransaction
