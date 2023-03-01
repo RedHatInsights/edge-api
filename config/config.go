@@ -180,11 +180,10 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	}
 	options.SetDefault("FeatureFlagsService", os.Getenv("FEATURE_FLAGS_SERVICE"))
 
+	options.SetDefault("GpgVerify", "false")
 	if os.Getenv("SOURCES_ENV") == "prod" {
-		options.SetDefault("GpgVerify", "true")
 		options.SetDefault("FeatureFlagsEnvironment", "production")
 	} else {
-		options.SetDefault("GpgVerify", "false")
 		options.SetDefault("FeatureFlagsEnvironment", "development")
 	}
 
