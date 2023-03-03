@@ -61,6 +61,7 @@ type EdgeConfig struct {
 	FeatureFlagsAPIToken       string                    `json:"featureflags_api_token,omitempty"`
 	FeatureFlagsService        string                    `json:"featureflags_service,omitempty"`
 	FeatureFlagsBearerToken    string                    `json:"featureflags_bearer_token,omitempty"`
+	ContentSourcesURL          string                    `json:"content_sources_url,omitempty"`
 	TenantTranslatorHost       string                    `json:"tenant_translator_host,omitempty"`
 	TenantTranslatorPort       string                    `json:"tenant_translator_port,omitempty"`
 	TenantTranslatorURL        string                    `json:"tenant_translator_url,omitempty"`
@@ -137,6 +138,7 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("EdgeAPIBaseURL", "http://localhost:3000")
 	options.SetDefault("EdgeCertAPIBaseURL", "http://cert.localhost:3000")
 	options.SetDefault("EdgeAPIServiceHost", "localhost")
+	options.SetDefault("ContentSourcesURL", "http://content-sources:8000")
 	options.SetDefault("EdgeAPIServicePort", "3000")
 	options.SetDefault("UploadWorkers", 100)
 	options.SetDefault("FDOHostURL", "https://fdo.redhat.com")
@@ -239,6 +241,7 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		FeatureFlagsBearerToken:    options.GetString("FeatureFlagsBearerToken"),
 		FeatureFlagsService:        options.GetString("FeatureFlagsService"),
 		TenantTranslatorHost:       options.GetString("TenantTranslatorHost"),
+		ContentSourcesURL:          options.GetString("CONTENT_SOURCES_URL"),
 		TenantTranslatorPort:       options.GetString("TenantTranslatorPort"),
 		ImageBuilderOrgID:          options.GetString("ImageBuilderOrgID"),
 		KafkaRequestRequiredAcks:   options.GetInt("KafkaRequestRequiredAcks"),
@@ -418,6 +421,7 @@ func LogConfigAtStartup(cfg *EdgeConfig) {
 		"EdgeCertAPIURL":           cfg.EdgeCertAPIBaseURL,
 		"ImageBuilderOrgID":        cfg.ImageBuilderOrgID,
 		"GlitchtipDsn":             cfg.GlitchtipDsn,
+		"ContentSourcesURL":        cfg.ContentSourcesURL,
 	}
 
 	// loop through the key/value pairs

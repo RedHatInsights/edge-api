@@ -180,3 +180,22 @@ func TestKafkaBroker(t *testing.T) {
 		})
 	}
 }
+
+func TestContentSourcesURL(t *testing.T) {
+	contentSourceURLEnvName := "CONTENT_SOURCES_URL"
+	initialContentSourceEnv := os.Getenv(contentSourceURLEnvName)
+
+	// restore initial content source env value
+	defer func(envName, envValue string) {
+		err := os.Setenv(envName, envValue)
+		assert.NoError(t, err)
+	}(contentSourceURLEnvName, initialContentSourceEnv)
+
+	expectedContentSourcesURl := faker.URL()
+	err := os.Setenv(contentSourceURLEnvName, expectedContentSourcesURl)
+	assert.NoError(t, err)
+
+	conf, err := CreateEdgeAPIConfig()
+	assert.NoError(t, err)
+	assert.Equal(t, expectedContentSourcesURl, conf.ContentSourcesURL)
+}
