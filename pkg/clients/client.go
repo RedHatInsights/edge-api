@@ -38,7 +38,7 @@ func ConfigureHttpClient(client *http.Client) *http.Client {
 	cfg := config.Get()
 	timeout, err := time.ParseDuration(fmt.Sprintf("%ds", cfg.HTTPClientTimeout))
 	if err != nil {
-		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to parse duration")
+		log.WithFields(log.Fields{"error": err.Error(), "timeout": timeout}).Error("Failed to parse duration")
 		return client
 	}
 	client.Timeout = timeout
@@ -47,16 +47,17 @@ func ConfigureHttpClient(client *http.Client) *http.Client {
 	}
 	rootCAs, err := x509.SystemCertPool()
 	if err != nil {
-		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to cert from system cert pool")
+		log.WithFields(log.Fields{"error": err.Error()}).Error("failed to get system cert pool")
 		rootCAs = x509.NewCertPool()
 	}
 	certs, err := os.ReadFile(cfg.TlsCAPath)
 	if err != nil {
-		log.WithFields(log.Fields{"error": err.Error()}).Error("Failed to append CA to RootCAs")
+		log.WithFields(log.Fields{"error": err.Error()}).Error("failed to read TlsCaPath")
 		return client
 	}
 	if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
 		log.Warn("adding certificate from PEM failed")
+		log.WithFields(log.Fields{"certs": certs})
 	}
 	httpConfig := &tls.Config{
 		MinVersion:         tls.VersionTLS12,
