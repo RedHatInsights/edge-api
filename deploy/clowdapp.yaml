@@ -81,6 +81,8 @@ objects:
           value: ${INVENTORYURL}
         - name: PLAYBOOKDISPATCHERURL
           value: ${PLAYBOOKDISPATCHERURL}
+        - name: CONTENT_SOURCES_URL
+          value: ${CONTENT_SOURCES_URL}
         - name: FDO_HOST_URL
           value: ${FDO_HOST_URL}
         - name: FDO_API_VERSION
@@ -149,6 +151,8 @@ objects:
           value: ${INVENTORYURL}
         - name: PLAYBOOKDISPATCHERURL
           value: ${PLAYBOOKDISPATCHERURL}
+        - name: CONTENT_SOURCES_URL
+          value: ${CONTENT_SOURCES_URL}
         - name: FDO_HOST_URL
           value: ${FDO_HOST_URL}
         - name: FDO_API_VERSION
@@ -212,6 +216,8 @@ objects:
           value: ${INVENTORYURL}
         - name: PLAYBOOKDISPATCHERURL
           value: ${PLAYBOOKDISPATCHERURL}
+        - name: CONTENT_SOURCES_URL
+          value: ${CONTENT_SOURCES_URL}
         - name: FDO_HOST_URL
           value: ${FDO_HOST_URL}
         - name: FDO_API_VERSION
@@ -275,6 +281,8 @@ objects:
           value: ${INVENTORYURL}
         - name: PLAYBOOKDISPATCHERURL
           value: ${PLAYBOOKDISPATCHERURL}
+        - name: CONTENT_SOURCES_URL
+          value: ${CONTENT_SOURCES_URL}
         - name: FDO_HOST_URL
           value: ${FDO_HOST_URL}
         - name: FDO_API_VERSION
@@ -403,6 +411,10 @@ parameters:
   name: PLAYBOOKDISPATCHERURL
   required: false
   value: "http://host-playbook-dispatcher:8080/"
+- description: Content sources service URL
+  name: CONTENT_SOURCES_URL
+  required: false
+  value: "http://content-sources:8000"
 - description: Edge-api Base URL
   name: EDGEAPIBASEURL
   required: false
