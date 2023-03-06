@@ -67,14 +67,36 @@ type Package struct {
 // InstalledPackage represents installed packages a image has
 type InstalledPackage struct {
 	Model
-	Name      string `json:"name"`
-	Arch      string `json:"arch"`
-	Release   string `json:"release"`
-	Sigmd5    string `json:"sigmd5"`
-	Signature string `json:"signature"`
-	Type      string `json:"type"`
-	Version   string `json:"version"`
-	Epoch     string `json:"epoch,omitempty"`
+	Name      string   `json:"name"`
+	Arch      string   `json:"arch"`
+	Release   string   `json:"release"`
+	Sigmd5    string   `json:"sigmd5"`
+	Signature string   `json:"signature"`
+	Type      string   `json:"type"`
+	Version   string   `json:"version"`
+	Epoch     string   `json:"epoch,omitempty"`
+	Commits   []Commit `gorm:"many2many:commit_installed_packages;save_association:false"`
+}
+
+type CommitInstalledPackages struct {
+	InstalledPackageId uint
+	CommitId           uint
+}
+
+// SearchPackageResult contains Meta of a MetaCount
+type SearchPackageResult struct {
+	Meta MetaCount       `json:"meta"`
+	Data []SearchPackage `json:"data"`
+}
+
+// MetaCount contains Count of a SearchPackageResult
+type MetaCount struct {
+	Count int `json:"count"`
+}
+
+// SearchPackage contains Name of package
+type SearchPackage struct {
+	Name string `json:"name"`
 }
 
 // BeforeCreate method is called before creating Commits, it make sure org_id is not empty

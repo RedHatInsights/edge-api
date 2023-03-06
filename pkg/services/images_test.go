@@ -1487,8 +1487,8 @@ var _ = Describe("Image Service Test", func() {
 					Commit:       &models.Commit{Arch: arch},
 					Distribution: dist,
 				}
-				imageBuilder := &imageBuilderClient.SearchPackageResult{}
-				var s imageBuilderClient.SearchPackage
+				imageBuilder := &models.SearchPackageResult{}
+				var s models.SearchPackage
 				s.Name = package_name
 				imageBuilder.Data = append(imageBuilder.Data, s)
 				imageBuilder.Meta.Count = 1
@@ -1508,8 +1508,8 @@ var _ = Describe("Image Service Test", func() {
 					Commit:       &models.Commit{Arch: arch},
 					Distribution: dist,
 				}
-				imageBuilder := &imageBuilderClient.SearchPackageResult{}
-				var s imageBuilderClient.SearchPackage
+				imageBuilder := &models.SearchPackageResult{}
+				var s models.SearchPackage
 				s.Name = package_name
 				imageBuilder.Data = append(imageBuilder.Data, s)
 				imageBuilder.Meta.Count = 0
@@ -1530,8 +1530,8 @@ var _ = Describe("Image Service Test", func() {
 					Commit:       &models.Commit{Arch: arch},
 					Distribution: dist,
 				}
-				imageBuilder := &imageBuilderClient.SearchPackageResult{}
-				var s imageBuilderClient.SearchPackage
+				imageBuilder := &models.SearchPackageResult{}
+				var s models.SearchPackage
 				s.Name = package_name
 				imageBuilder.Data = append(imageBuilder.Data, s)
 				imageBuilder.Meta.Count = 1
@@ -1552,8 +1552,8 @@ var _ = Describe("Image Service Test", func() {
 					Commit:       &models.Commit{Arch: arch},
 					Distribution: dist,
 				}
-				imageBuilder := &imageBuilderClient.SearchPackageResult{}
-				var s imageBuilderClient.SearchPackage
+				imageBuilder := &models.SearchPackageResult{}
+				var s models.SearchPackage
 				s.Name = package_name
 				imageBuilder.Data = append(imageBuilder.Data, s)
 				imageBuilder.Meta.Count = 1
@@ -1581,8 +1581,8 @@ var _ = Describe("Image Service Test", func() {
 				}
 				image := models.Image{OrgID: orgID, Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
 				expectedErr := fmt.Errorf("failed to create commit for image")
-				imageBuilder := &imageBuilderClient.SearchPackageResult{}
-				var s imageBuilderClient.SearchPackage
+				imageBuilder := &models.SearchPackageResult{}
+				var s models.SearchPackage
 				s.Name = "vim-common"
 				imageBuilder.Data = append(imageBuilder.Data, s)
 				imageBuilder.Meta.Count = 1
@@ -1606,7 +1606,7 @@ var _ = Describe("Image Service Test", func() {
 				}
 				image := models.Image{OrgID: orgID, Distribution: dist, Name: imageName, Packages: pkgs, Commit: arch}
 				expectedErr := fmt.Errorf("package name doesn't exist")
-				imageBuilder := &imageBuilderClient.SearchPackageResult{}
+				imageBuilder := &models.SearchPackageResult{}
 				imageBuilder.Meta.Count = 0
 				mockImageBuilderClient.EXPECT().SearchPackage("badrpm", "x86_64", "rhel-85").Return(imageBuilder, expectedErr)
 				err := service.CreateImage(&image)
@@ -1696,7 +1696,7 @@ var _ = Describe("Image Service Test", func() {
 			result = db.DB.Save(previousImage)
 			Expect(result.Error).To(Not(HaveOccurred()))
 			expectedErr := fmt.Errorf("package name doesn't exist")
-			imageBuilder := &imageBuilderClient.SearchPackageResult{}
+			imageBuilder := &models.SearchPackageResult{}
 			imageBuilder.Meta.Count = 0
 			mockImageBuilderClient.EXPECT().SearchPackage("badrpm", "x86_64", "rhel-85").Return(imageBuilder, expectedErr)
 			actualErr := service.UpdateImage(image, previousImage)

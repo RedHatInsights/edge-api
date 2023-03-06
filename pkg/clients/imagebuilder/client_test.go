@@ -3,10 +3,12 @@
 package imagebuilder
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,13 +16,13 @@ import (
 	"time"
 
 	"github.com/bxcodec/faker/v3"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
 )
@@ -28,6 +30,19 @@ import (
 func TestModels(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Image Builder Client Suite")
+}
+
+// Custom type that allows setting the func that our Mock Do func will run instead
+type MockDoType func(req *http.Request) (*http.Response, error)
+
+// MockClient is the mock client
+type MockClient struct {
+	MockDo MockDoType
+}
+
+// Overriding what the Do function should "do" in our MockClient
+func (m *MockClient) Do(req *http.Request) (*http.Response, error) {
+	return m.MockDo(req)
 }
 
 var _ = Describe("Image Builder Client Test", func() {
@@ -700,4 +715,296 @@ var _ = Describe("Image Builder Client Test", func() {
 			})
 		})
 	})
+
+	Describe("get metadata information", func() {
+
+		Context("when pakages exists", func() {
+			BeforeEach(func() {
+				err := os.Setenv("DEDUP_INSTALLED_PACKAGES", "True")
+				Expect(err).ToNot(HaveOccurred())
+				pkgs := []models.InstalledPackage{}
+				pkgs = append(pkgs, models.InstalledPackage{Name: "rhc",
+					Version: "1",
+					Epoch:   "1",
+					Release: "1",
+					Arch:    "x86_64"})
+				img := &models.Image{Distribution: "rhel-8",
+					Commit: &models.Commit{
+						Arch:              "x86_64",
+						Repo:              &models.Repo{},
+						ComposeJobID:      faker.UUIDHyphenated(),
+						InstalledPackages: pkgs,
+					}}
+				db.DB.Save(img.Commit.InstalledPackages)
+				db.DB.Save(img.Commit)
+				db.DB.Save(img)
+
+			})
+			AfterEach(func() {
+				// disable the feature
+				os.Unsetenv("DEDUP_INSTALLED_PACKAGES")
+			})
+			It("should not create new packages RHC into db", func() {
+				pkgs := []models.Package{}
+				img := &models.Image{Distribution: "rhel-8",
+					Packages: pkgs,
+					Commit: &models.Commit{
+						OrgID:        faker.UUIDHyphenated(),
+						Arch:         "x86_64",
+						Repo:         &models.Repo{},
+						ComposeJobID: faker.UUIDHyphenated(),
+					}}
+
+				// build our response JSON
+				jsonResponse := `{
+				"ostree_commit": "mock-repo",
+				"packages": [
+					{"arch": "x86_64", "name": "rhc", "release": "1", "sigmd5": "a", "signature": "b", "type": "rpm", "version": "1", "epoch":"1"
+					}, 
+					{"arch": "x86_64", "name": "NetworkManager", "release": "3.el9", "sigmd5": "c", "signature": "d", "type": "rpm", "version": "1.18.2"
+					},
+					{"arch": "x86_64", "name": "ModemManager", "release": "3.el9", "sigmd5": "c", "signature": "d", "type": "rpm", "version": "1.18.2"
+					}]
+				}`
+
+				// create a new reader with that JSON
+				r := ioutil.NopCloser(bytes.NewReader([]byte(jsonResponse)))
+
+				ImageBuilderHTTPClient = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				img, a := client.GetMetadata(img)
+
+				Expect(a).ToNot(HaveOccurred())
+				Expect(img).ToNot(BeNil())
+				Expect(len(img.Commit.InstalledPackages)).To(Equal(2))
+				var s int64
+				db.DB.Model(models.CommitInstalledPackages{}).Where("Commit_Id=?", img.Commit.ID).Count(&s)
+				Expect(int(s)).To(Equal(3))
+				Expect(len(img.Commit.InstalledPackages)).To(Equal(2))
+			})
+
+			It("should create new packages  into db", func() {
+				pkgs := []models.Package{}
+				img := &models.Image{Distribution: "rhel-8",
+					Packages: pkgs,
+					Commit: &models.Commit{
+						OrgID:        faker.UUIDHyphenated(),
+						Arch:         "x86_64",
+						Repo:         &models.Repo{},
+						ComposeJobID: faker.UUIDHyphenated(),
+					}}
+
+				// build our response JSON
+				jsonResponse := `{
+				"ostree_commit": "mock-repo",
+				"packages": [
+					{"arch": "x86_64", "name": "NetworkManager", "release": "3.el9", "sigmd5": "c", "signature": "d", "type": "rpm", "version": "1.18.2"
+					},
+					{"arch": "x86_64", "name": "ModemManager", "release": "3.el9", "sigmd5": "c", "signature": "d", "type": "rpm", "version": "1.18.2"
+					}]
+				}`
+
+				// create a new reader with that JSON
+				r := ioutil.NopCloser(bytes.NewReader([]byte(jsonResponse)))
+
+				ImageBuilderHTTPClient = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				img, a := client.GetMetadata(img)
+
+				Expect(a).ToNot(HaveOccurred())
+				Expect(img).ToNot(BeNil())
+				Expect(len(img.Commit.InstalledPackages)).To(Equal(2))
+				var s int64
+				db.DB.Model(models.CommitInstalledPackages{}).Where("Commit_Id=?", img.Commit.ID).Count(&s)
+				Expect(int(s)).To(Equal(2))
+				Expect(len(img.Commit.InstalledPackages)).To(Equal(2))
+			})
+
+			It("should return an error ", func() {
+				pkgs := []models.Package{}
+				img := &models.Image{Distribution: "rhel-8",
+					Packages: pkgs,
+					Commit: &models.Commit{
+						OrgID:        faker.UUIDHyphenated(),
+						Arch:         "x86_64",
+						Repo:         &models.Repo{},
+						ComposeJobID: faker.UUIDHyphenated(),
+					}}
+
+				// build our response JSON
+				jsonResponse := `{}`
+
+				// create a new reader with that JSON
+				r := ioutil.NopCloser(bytes.NewReader([]byte(jsonResponse)))
+
+				ImageBuilderHTTPClient = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 500,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				img, err := client.GetMetadata(img)
+				Expect(img).To(BeNil())
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("image metadata not found"))
+			})
+		})
+	})
+
+	Describe("Validates Package", func() {
+		AfterEach(func() {
+			db.DB.Exec("ALTER TABLE installed_packages Create COLUMN name")
+			os.Unsetenv("DEDUP_INSTALLED_PACKAGES")
+		})
+		It("should return an existent package ", func() {
+			pkgs := []models.InstalledPackage{}
+			pkgs = append(pkgs, models.InstalledPackage{Name: "rhc",
+				Version: "1", Epoch: "1", Release: "1", Arch: "x86_64"})
+			img := &models.Image{Distribution: "rhel-8",
+				Commit: &models.Commit{
+					Arch:              "x86_64",
+					Repo:              &models.Repo{},
+					ComposeJobID:      faker.UUIDHyphenated(),
+					InstalledPackages: pkgs,
+				}}
+			db.DB.Save(img.Commit.InstalledPackages)
+			db.DB.Save(img.Commit)
+			db.DB.Save(img)
+
+			var metadata Metadata
+			var installedPackage InstalledPackage
+			installedPackage.Name = "rhc"
+			installedPackage.Version = "1"
+			installedPackage.Release = "1"
+
+			metadata.InstalledPackages = append(metadata.InstalledPackages, installedPackage)
+			var metadataPackages []string
+			for n := range metadata.InstalledPackages {
+				metadataPackages = append(metadataPackages,
+					fmt.Sprintf("%s-%s-%s", metadata.InstalledPackages[n].Name, metadata.InstalledPackages[n].Release, metadata.InstalledPackages[n].Version))
+			}
+
+			a, err := client.ValidatePackages(metadataPackages)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(a).NotTo(BeNil())
+			Expect(a["rhc"].Name).To(Equal("rhc"))
+		})
+
+		It("should return nil ", func() {
+
+			var metadata Metadata
+			var installedPackage InstalledPackage
+			installedPackage.Name = "rhc"
+			installedPackage.Version = "1"
+			installedPackage.Release = "1"
+
+			metadata.InstalledPackages = append(metadata.InstalledPackages, installedPackage)
+			var metadataPackages []string
+			for n := range metadata.InstalledPackages {
+				metadataPackages = append(metadataPackages,
+					fmt.Sprintf("%s-%s-%s", metadata.InstalledPackages[n].Name, metadata.InstalledPackages[n].Release, metadata.InstalledPackages[n].Version))
+			}
+
+			a, err := client.ValidatePackages(metadataPackages)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(a)).To(Equal(0))
+		})
+
+		It("should return error ", func() {
+			db.DB.Exec("ALTER TABLE installed_packages DROP COLUMN name")
+			a, err := client.ValidatePackages([]string{})
+			Expect(err).ToNot(BeNil())
+			Expect(a).To(BeNil())
+		})
+	})
+
+	Describe("get metadata if disabled featureinformation", func() {
+
+		Context("when pakages exists", func() {
+			BeforeEach(func() {
+				os.Unsetenv("DEDUP_INSTALLED_PACKAGES")
+				pkgs := []models.InstalledPackage{}
+				pkgs = append(pkgs, models.InstalledPackage{Name: "rhc",
+					Version: "1",
+					Epoch:   "1",
+					Release: "1",
+					Arch:    "x86_64"})
+				img := &models.Image{Distribution: "rhel-8",
+					Commit: &models.Commit{
+						Arch:              "x86_64",
+						Repo:              &models.Repo{},
+						ComposeJobID:      faker.UUIDHyphenated(),
+						InstalledPackages: pkgs,
+					}}
+				db.DB.Save(img.Commit.InstalledPackages)
+				db.DB.Save(img.Commit)
+				db.DB.Save(img)
+
+			})
+			AfterEach(func() {
+				// disable the feature
+				os.Unsetenv("DEDUP_INSTALLED_PACKAGES")
+			})
+			It("should duplicates packages RHC into db", func() {
+				pkgs := []models.Package{}
+				img := &models.Image{Distribution: "rhel-8",
+					Packages: pkgs,
+					Commit: &models.Commit{
+						OrgID:        faker.UUIDHyphenated(),
+						Arch:         "x86_64",
+						Repo:         &models.Repo{},
+						ComposeJobID: faker.UUIDHyphenated(),
+					}}
+
+				// build our response JSON
+				jsonResponse := `{
+				"ostree_commit": "mock-repo",
+				"packages": [
+					{"arch": "x86_64", "name": "rhc", "release": "1", "sigmd5": "a", "signature": "b", "type": "rpm", "version": "1", "epoch":"1"
+					}, 
+					{"arch": "x86_64", "name": "NetworkManager", "release": "3.el9", "sigmd5": "c", "signature": "d", "type": "rpm", "version": "1.18.2"
+					},
+					{"arch": "x86_64", "name": "ModemManager", "release": "3.el9", "sigmd5": "c", "signature": "d", "type": "rpm", "version": "1.18.2"
+					}]
+				}`
+
+				// create a new reader with that JSON
+				r := ioutil.NopCloser(bytes.NewReader([]byte(jsonResponse)))
+
+				ImageBuilderHTTPClient = &MockClient{
+					MockDo: func(*http.Request) (*http.Response, error) {
+						return &http.Response{
+							StatusCode: 200,
+							Body:       r,
+						}, nil
+					},
+				}
+
+				img, a := client.GetMetadata(img)
+
+				Expect(a).ToNot(HaveOccurred())
+				Expect(img).ToNot(BeNil())
+				Expect(len(img.Commit.InstalledPackages)).To(Equal(3))
+
+			})
+		})
+	})
+
 })

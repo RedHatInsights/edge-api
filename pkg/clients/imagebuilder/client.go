@@ -30,13 +30,23 @@ type ClientInterface interface {
 	GetCommitStatus(image *models.Image) (*models.Image, error)
 	GetInstallerStatus(image *models.Image) (*models.Image, error)
 	GetMetadata(image *models.Image) (*models.Image, error)
-	SearchPackage(packageName string, arch string, dist string) (*SearchPackageResult, error)
+	SearchPackage(packageName string, arch string, dist string) (*models.SearchPackageResult, error)
+	ValidatePackages(pkg []string) (map[string]*models.InstalledPackage, error)
 }
 
 // Client is the implementation of an ClientInterface
 type Client struct {
 	ctx context.Context
 	log *log.Entry
+}
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+var ImageBuilderHTTPClient HTTPClient
+
+func init() {
+	ImageBuilderHTTPClient = &http.Client{}
 }
 
 // InitClient initializes the client for Image Builder
@@ -135,22 +145,6 @@ type ComposeResult struct {
 // S3UploadStatus contains the URL to the S3 Bucket
 type S3UploadStatus struct {
 	URL string `json:"url"`
-}
-
-// MetaCount contains Count of a SearchPackageResult
-type MetaCount struct {
-	Count int `json:"count"`
-}
-
-// SearchPackage contains Name of package
-type SearchPackage struct {
-	Name string `json:"name"`
-}
-
-// SearchPackageResult contains Meta of a MetaCount
-type SearchPackageResult struct {
-	Meta MetaCount       `json:"meta"`
-	Data []SearchPackage `json:"data"`
 }
 
 // PackageRequestError indicates request search packages from Image Builder
@@ -438,8 +432,9 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 		req.Header.Add(key, value)
 	}
 	req.Header.Add("Content-Type", "application/json")
-	client := &http.Client{}
-	res, err := client.Do(req)
+
+	res, err := ImageBuilderHTTPClient.Do(req)
+
 	if err != nil {
 		c.log.WithField("error", err.Error()).Error("Image Builder GetMetadata Request Error")
 		return nil, err
@@ -463,16 +458,65 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 		c.log.WithField("response", metadata).Error("Error while trying to unmarshal Image Builder GetMetadata Response")
 		return nil, err
 	}
-	for n := range metadata.InstalledPackages {
-		pkg := models.InstalledPackage{
-			Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,
-			Release: metadata.InstalledPackages[n].Release, Sigmd5: metadata.InstalledPackages[n].Sigmd5,
-			Signature: metadata.InstalledPackages[n].Signature, Type: metadata.InstalledPackages[n].Type,
-			Version: metadata.InstalledPackages[n].Version, Epoch: metadata.InstalledPackages[n].Epoch,
+
+	var packagesExistsMap map[string]*models.InstalledPackage
+	var cip []models.CommitInstalledPackages
+
+	if feature.DedupPackage.IsEnabled() {
+		var metadataPackages []string
+		for n := range metadata.InstalledPackages {
+			metadataPackages = append(metadataPackages,
+				fmt.Sprintf("%s-%s-%s", metadata.InstalledPackages[n].Name, metadata.InstalledPackages[n].Release, metadata.InstalledPackages[n].Version))
 		}
-		image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
+
+		packagesExistsMap, err = c.ValidatePackages(metadataPackages)
+		if err != nil {
+			c.log.WithField("error", err.Error).Error(new(PackageRequestError))
+			return nil, err
+		}
 	}
+
+	for n := range metadata.InstalledPackages {
+		if feature.DedupPackage.IsEnabled() {
+			if packagesExistsMap[metadata.InstalledPackages[n].Name] == nil {
+				pkg := models.InstalledPackage{
+					Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,
+					Release: metadata.InstalledPackages[n].Release, Sigmd5: metadata.InstalledPackages[n].Sigmd5,
+					Signature: metadata.InstalledPackages[n].Signature, Type: metadata.InstalledPackages[n].Type,
+					Version: metadata.InstalledPackages[n].Version, Epoch: metadata.InstalledPackages[n].Epoch,
+				}
+				image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
+			}
+
+		} else {
+			pkg := models.InstalledPackage{
+				Arch: metadata.InstalledPackages[n].Arch, Name: metadata.InstalledPackages[n].Name,
+				Release: metadata.InstalledPackages[n].Release, Sigmd5: metadata.InstalledPackages[n].Sigmd5,
+				Signature: metadata.InstalledPackages[n].Signature, Type: metadata.InstalledPackages[n].Type,
+				Version: metadata.InstalledPackages[n].Version, Epoch: metadata.InstalledPackages[n].Epoch,
+			}
+			image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
+		}
+	}
+
 	image.Commit.OSTreeCommit = metadata.OstreeCommit
+
+	if feature.DedupPackage.IsEnabled() {
+		db.DB.Omit("Image.InstalledPackages.*").Save(image.Commit)
+		if len(packagesExistsMap) > 0 {
+
+			for i := range packagesExistsMap {
+				cip = append(cip, models.CommitInstalledPackages{InstalledPackageId: packagesExistsMap[i].ID, CommitId: image.Commit.ID})
+			}
+
+			err := db.DB.Create(&cip)
+			if err.Error != nil {
+				c.log.WithField("error", err.Error.Error()).Error(new(PackageRequestError))
+				return nil, err.Error
+			}
+		}
+	}
+
 	c.log.Info("Done with metadata for image")
 	return image, nil
 }
@@ -512,7 +556,7 @@ func (c *Client) GetImageThirdPartyRepos(image *models.Image) ([]Repository, err
 }
 
 // SearchPackage validate package name with Image Builder API
-func (c *Client) SearchPackage(packageName string, arch string, dist string) (*SearchPackageResult, error) {
+func (c *Client) SearchPackage(packageName string, arch string, dist string) (*models.SearchPackageResult, error) {
 	c.log.Infof("Searching rhel package")
 	cfg := config.Get()
 	if packageName == "" || arch == "" || dist == "" {
@@ -546,11 +590,28 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*S
 		}).Error(new(PackageRequestError))
 		return nil, new(PackageRequestError)
 	}
-	var searchResult SearchPackageResult
+	var searchResult models.SearchPackageResult
 	err = json.Unmarshal(respBody, &searchResult)
 	if err != nil {
 		c.log.WithField("error", err.Error()).Error(new(PackageRequestError))
 		return nil, err
 	}
 	return &searchResult, nil
+}
+
+func (c *Client) ValidatePackages(pkgs []string) (map[string]*models.InstalledPackage, error) {
+	var result []models.InstalledPackage
+	setOfPackages := make(map[string]*models.InstalledPackage)
+
+	if err := db.DB.Table("Installed_Packages").
+		Where("( (name || '-' || release || '-' ||  version)) in (?)", pkgs).
+		Find(&result); err.Error != nil {
+		c.log.WithField("error", err.Error)
+		return nil, err.Error
+	} else {
+		for n := range result {
+			setOfPackages[result[n].Name] = &result[n]
+		}
+		return setOfPackages, nil
+	}
 }
