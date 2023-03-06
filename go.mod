@@ -8,7 +8,7 @@ require (
 	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/fedora-iot/fido-device-onboard-rs/libfdo-data-go v0.0.0-20211210154920-5c241beb5c4e
 	github.com/getkin/kin-openapi v0.114.0
-	github.com/getsentry/sentry-go v0.18.0
+	github.com/getsentry/sentry-go v0.19.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-openapi/runtime v0.25.0
