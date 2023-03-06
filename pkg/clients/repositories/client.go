@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	url2 "net/url"
@@ -72,17 +73,31 @@ func InitClient(ctx context.Context, log *log.Entry) *Client {
 	return &Client{ctx: ctx, log: log}
 }
 
+// DefaultLimit The default data list Limit to be returned
 const DefaultLimit = 20
 
+// APIPath The content-sources base api path
+const APIPath = "/api/content-sources"
+
+// APIVersion The content-sources api version
+const APIVersion = "v1"
+
+// APIRepositoriesPath The api repositories path
+var APIRepositoriesPath = "repositories"
+
+// IOReadAll The io body reader
+var IOReadAll = io.ReadAll
+
 var ErrRepositoryRequestResponse = errors.New("repository request error response")
+var ErrParsingRawURL = errors.New("error occurred while parsing raw url")
 
 // GetBaseURL return the base url of content sources service
 func (c *Client) GetBaseURL() (*url2.URL, error) {
-	baseURL := config.Get().ContentSourcesURL + "/api/content-sources"
+	baseURL := config.Get().ContentSourcesURL + APIPath
 	url, err := url2.Parse(baseURL)
 	if err != nil {
-		c.log.WithField("url", baseURL).Error("failed to parse content-sources base url")
-		return nil, err
+		c.log.WithFields(log.Fields{"url": baseURL, "error": err.Error()}).Error("failed to parse content-sources base url")
+		return nil, ErrParsingRawURL
 	}
 	return url, nil
 }
@@ -93,11 +108,11 @@ func (c *Client) ListRepositories(requestParams ListRepositoriesParams, filters 
 	if err != nil {
 		return nil, err
 	}
-	repositoriesRawURL := url.String() + "/v1/repositories/"
+	repositoriesRawURL := url.String() + fmt.Sprintf("/%s/%s/", APIVersion, APIRepositoriesPath)
 	repositoriesURL, err := url.Parse(repositoriesRawURL)
 	if err != nil {
 		c.log.WithFields(log.Fields{"url": repositoriesRawURL, "error": err.Error()}).Error("failed to parse repositories url")
-		return nil, err
+		return nil, ErrParsingRawURL
 	}
 
 	queryValues := repositoriesURL.Query()
@@ -138,7 +153,7 @@ func (c *Client) ListRepositories(requestParams ListRepositoriesParams, filters 
 	}
 	defer res.Body.Close()
 
-	body, err := io.ReadAll(res.Body)
+	body, err := IOReadAll(res.Body)
 	if err != nil {
 		c.log.WithFields(log.Fields{"statusCode": res.StatusCode, "error": err.Error()}).Error("content source repositories response error")
 		return nil, err
