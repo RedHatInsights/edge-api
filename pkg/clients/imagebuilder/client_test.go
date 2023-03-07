@@ -786,7 +786,7 @@ var _ = Describe("Image Builder Client Test", func() {
 				Expect(len(img.Commit.InstalledPackages)).To(Equal(3))
 			})
 
-			It("should create new packages  into db", func() {
+			It("should create new packages into db", func() {
 				pkgs := []models.Package{}
 				img := &models.Image{Distribution: "rhel-8",
 					Packages: pkgs,
