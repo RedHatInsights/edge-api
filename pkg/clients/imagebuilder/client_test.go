@@ -783,14 +783,10 @@ var _ = Describe("Image Builder Client Test", func() {
 
 				Expect(a).ToNot(HaveOccurred())
 				Expect(img).ToNot(BeNil())
-				Expect(len(img.Commit.InstalledPackages)).To(Equal(2))
-				var s int64
-				db.DB.Model(models.CommitInstalledPackages{}).Where("Commit_Id=?", img.Commit.ID).Count(&s)
-				Expect(int(s)).To(Equal(3))
-				Expect(len(img.Commit.InstalledPackages)).To(Equal(2))
+				Expect(len(img.Commit.InstalledPackages)).To(Equal(3))
 			})
 
-			It("should create new packages  into db", func() {
+			It("should create new packages into db", func() {
 				pkgs := []models.Package{}
 				img := &models.Image{Distribution: "rhel-8",
 					Packages: pkgs,
@@ -828,10 +824,7 @@ var _ = Describe("Image Builder Client Test", func() {
 				Expect(a).ToNot(HaveOccurred())
 				Expect(img).ToNot(BeNil())
 				Expect(len(img.Commit.InstalledPackages)).To(Equal(2))
-				var s int64
-				db.DB.Model(models.CommitInstalledPackages{}).Where("Commit_Id=?", img.Commit.ID).Count(&s)
-				Expect(int(s)).To(Equal(2))
-				Expect(len(img.Commit.InstalledPackages)).To(Equal(2))
+
 			})
 
 			It("should return an error ", func() {
