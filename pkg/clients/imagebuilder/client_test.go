@@ -20,10 +20,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-<<<<<<< HEAD
-=======
-	"github.com/redhatinsights/edge-api/pkg/clients"
->>>>>>> 4b62dc7e (add unit test to clients_test)
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	log "github.com/sirupsen/logrus"
@@ -711,7 +707,6 @@ var _ = Describe("Image Builder Client Test", func() {
 							},
 						}},
 				}
-				clients.ConfigureHttpClient(&http.Client{})
 				cr, err := client.compose(req)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(cr).ToNot(BeNil())
@@ -783,7 +778,6 @@ var _ = Describe("Image Builder Client Test", func() {
 						}, nil
 					},
 				}
-
 				img, a := client.GetMetadata(img)
 
 				Expect(a).ToNot(HaveOccurred())

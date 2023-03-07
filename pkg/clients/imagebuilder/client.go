@@ -46,7 +46,7 @@ type HTTPClient interface {
 var ImageBuilderHTTPClient HTTPClient
 
 func init() {
-	ImageBuilderHTTPClient = &http.Client{}
+	ImageBuilderHTTPClient = clients.ConfigureHttpClient(&http.Client{})
 }
 
 // InitClient initializes the client for Image Builder
@@ -434,8 +434,6 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 	req.Header.Add("Content-Type", "application/json")
 
 	res, err := ImageBuilderHTTPClient.Do(req)
-	client := clients.ConfigureHttpClient(&http.Client{})
-	res, err = client.Do(req)
 
 	if err != nil {
 		c.log.WithField("error", err.Error()).Error("Image Builder GetMetadata Request Error")
