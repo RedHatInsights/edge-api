@@ -486,7 +486,8 @@ func (c *Client) GetMetadata(image *models.Image) (*models.Image, error) {
 				}
 				image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, pkg)
 			} else {
-				image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, *packagesExistsMap[metadata.InstalledPackages[n].Name])
+				record := packagesExistsMap[metadata.InstalledPackages[n].Name]
+				image.Commit.InstalledPackages = append(image.Commit.InstalledPackages, *record)
 
 			}
 
@@ -588,8 +589,10 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*m
 func (c *Client) ValidatePackages(pkgs []string) (map[string]*models.InstalledPackage, error) {
 	var result []models.InstalledPackage
 	setOfPackages := make(map[string]*models.InstalledPackage)
-	if err := db.DB.Table("Installed_Packages").
-		Where("( (name || '-' || release || '-' ||  version)) in (?)", pkgs).
+	if err := db.DB.Model(&models.InstalledPackage{}).
+		Select("DISTINCT Name, Arch, Release, Sigmd5, Signature, created_at, Max(id) ID").
+		Where("(name || '-' || release || '-' ||  version) in (?)", pkgs).
+		Group("Name, Arch, Release, Sigmd5, Signature, Created_at").Order("created_at DESC").
 		Find(&result); err.Error != nil {
 		c.log.WithField("error", err.Error)
 		return nil, err.Error
