@@ -98,9 +98,12 @@ func TestListRepositories(t *testing.T) {
 			IOReadAll:  io.ReadAll,
 			Params:     repositories.ListRepositoriesParams{Limit: 40, Offset: 41, SortBy: "name", SortType: "asc"},
 			Filters:    defaultFilters,
-			Response: repositories.ListRepositoriesResponse{Data: []repositories.Repository{
-				{Name: repoName},
-			}},
+			Response: repositories.ListRepositoriesResponse{
+				Data: []repositories.Repository{
+					{Name: repoName},
+				},
+				Meta: repositories.ListRepositoriesMeta{Count: 1, Limit: 40, Offset: 41},
+			},
 			ExpectedError: nil,
 			ExpectedURLParams: map[string]string{
 				"limit":   strconv.Itoa(40),
@@ -215,12 +218,95 @@ func TestListRepositories(t *testing.T) {
 			client := repositories.InitClient(context.Background(), log.NewEntry(log.StandardLogger()))
 			assert.NotNil(t, client)
 
-			repos, err := client.ListRepositories(testCase.Params, testCase.Filters)
+			response, err := client.ListRepositories(testCase.Params, testCase.Filters)
 			if testCase.ExpectedError == nil {
 				assert.NoError(t, err)
-				assert.Equal(t, repos, testCase.Response.Data)
+				assert.Equal(t, response.Data, testCase.Response.Data)
+				assert.Equal(t, response.Meta.Count, testCase.Response.Meta.Count)
+				assert.Equal(t, response.Meta.Limit, testCase.Response.Meta.Limit)
+				assert.Equal(t, response.Meta.Offset, testCase.Response.Meta.Offset)
 			} else {
 				assert.ErrorContains(t, err, testCase.ExpectedError.Error())
+			}
+		})
+	}
+}
+
+func TestGetRepositoryByName(t *testing.T) {
+	initialContentSourceURL := config.Get().ContentSourcesURL
+	// restore the initial content sources url
+	defer func(contentSourcesURL string) {
+		config.Get().ContentSourcesURL = contentSourcesURL
+	}(initialContentSourceURL)
+	repoName := faker.UUIDHyphenated()
+	testCases := []struct {
+		Name              string
+		HTTPStatus        int
+		RepoName          string
+		Repository        *repositories.Repository
+		ExpectedURLParams map[string]string
+		ExpectedError     error
+	}{
+		{
+			Name:              "should return repository successfully",
+			RepoName:          repoName,
+			Repository:        &repositories.Repository{Name: repoName},
+			HTTPStatus:        http.StatusOK,
+			ExpectedURLParams: map[string]string{"limit": strconv.Itoa(1), "offset": strconv.Itoa(0), "name": repoName},
+			ExpectedError:     nil,
+		},
+		{
+			Name:              "should return error when repository not found",
+			RepoName:          repoName,
+			Repository:        nil,
+			HTTPStatus:        http.StatusOK,
+			ExpectedURLParams: map[string]string{"limit": strconv.Itoa(1), "offset": strconv.Itoa(0), "name": repoName},
+			ExpectedError:     repositories.ErrRepositoryNoFound,
+		},
+		{
+			Name:          "should return error when repo name is empty",
+			RepoName:      "",
+			ExpectedError: repositories.ErrRepositoryNameIsMandatory,
+		},
+		{
+			Name:          "should return error when ListRepositories fails",
+			RepoName:      repoName,
+			HTTPStatus:    http.StatusBadRequest,
+			ExpectedError: repositories.ErrRepositoryRequestResponse,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				urlQueryValues := r.URL.Query()
+				for key, value := range testCase.ExpectedURLParams {
+					assert.Equal(t, value, urlQueryValues.Get(key))
+				}
+				w.WriteHeader(testCase.HTTPStatus)
+				response := repositories.ListRepositoriesResponse{Data: []repositories.Repository{}}
+				if testCase.Repository != nil {
+					response.Data = append(response.Data, *testCase.Repository)
+				}
+				err := json.NewEncoder(w).Encode(&response)
+				assert.NoError(t, err)
+			}))
+			defer ts.Close()
+			config.Get().ContentSourcesURL = ts.URL
+
+			client := repositories.InitClient(context.Background(), log.NewEntry(log.StandardLogger()))
+			assert.NotNil(t, client)
+
+			repository, err := client.GetRepositoryByName(testCase.RepoName)
+			if testCase.ExpectedError == nil {
+				assert.NoError(t, err)
+				assert.NotNil(t, repository)
+				assert.NotNil(t, testCase.Repository)
+				assert.Equal(t, *testCase.Repository, *repository)
+			} else {
+				assert.Error(t, err)
+				assert.ErrorIs(t, err, testCase.ExpectedError)
 			}
 		})
 	}

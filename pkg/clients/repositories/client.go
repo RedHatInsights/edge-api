@@ -42,8 +42,15 @@ type ListRepositoriesParams struct {
 	SortType string
 }
 
+type ListRepositoriesMeta struct {
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
+	Count  int `json:"count"`
+}
+
 type ListRepositoriesResponse struct {
-	Data []Repository `json:"data"`
+	Data []Repository         `json:"data"`
+	Meta ListRepositoriesMeta `json:"meta"`
 }
 
 type ListRepositoriesFilters map[string]string
@@ -59,7 +66,8 @@ func (filters ListRepositoriesFilters) Add(name, value string) {
 // ClientInterface is an Interface to make request to content sources repositories
 type ClientInterface interface {
 	GetBaseURL() (*url2.URL, error)
-	ListRepositories(requestParams ListRepositoriesParams, filters ListRepositoriesFilters) ([]Repository, error)
+	GetRepositoryByName(name string) (*Repository, error)
+	ListRepositories(requestParams ListRepositoriesParams, filters ListRepositoriesFilters) (*ListRepositoriesResponse, error)
 }
 
 // Client is the implementation of an ClientInterface
@@ -90,6 +98,8 @@ var IOReadAll = io.ReadAll
 
 var ErrRepositoryRequestResponse = errors.New("repository request error response")
 var ErrParsingRawURL = errors.New("error occurred while parsing raw url")
+var ErrRepositoryNameIsMandatory = errors.New("repository name is mandatory")
+var ErrRepositoryNoFound = errors.New("repository not found")
 
 // GetBaseURL return the base url of content sources service
 func (c *Client) GetBaseURL() (*url2.URL, error) {
@@ -102,8 +112,26 @@ func (c *Client) GetBaseURL() (*url2.URL, error) {
 	return url, nil
 }
 
+// GetRepositoryByName return the content-sources repository filtering by name
+func (c *Client) GetRepositoryByName(name string) (*Repository, error) {
+	if name == "" {
+		c.log.Error("repository name is mandatory")
+		return nil, ErrRepositoryNameIsMandatory
+	}
+	repos, err := c.ListRepositories(ListRepositoriesParams{Limit: 1}, ListRepositoriesFilters{"name": name})
+	if err != nil {
+		c.log.WithFields(log.Fields{"repository-name": name, "error": err.Error()}).Error("failed when calling to ListRepositories")
+		return nil, err
+	}
+	if len(repos.Data) == 0 {
+		c.log.WithField("repository-name", name).Error("repository not found")
+		return nil, ErrRepositoryNoFound
+	}
+	return &repos.Data[0], nil
+}
+
 // ListRepositories return the list of content source repositories
-func (c *Client) ListRepositories(requestParams ListRepositoriesParams, filters ListRepositoriesFilters) ([]Repository, error) {
+func (c *Client) ListRepositories(requestParams ListRepositoriesParams, filters ListRepositoriesFilters) (*ListRepositoriesResponse, error) {
 	url, err := c.GetBaseURL()
 	if err != nil {
 		return nil, err
@@ -169,5 +197,5 @@ func (c *Client) ListRepositories(requestParams ListRepositoriesParams, filters 
 		c.log.WithField("error", err.Error()).Error("error occurred when unmarshalling response body")
 		return nil, err
 	}
-	return response.Data, nil
+	return &response, nil
 }
