@@ -312,9 +312,6 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		}
 
 		edgeConfig.KafkaConfig = cfg.Kafka
-		if cfg.TlsCAPath != nil {
-			edgeConfig.TlsCAPath = *cfg.TlsCAPath
-		}
 	}
 
 	// get edgeConfig from file if running in developer mode

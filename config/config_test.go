@@ -202,34 +202,33 @@ func TestContentSourcesURL(t *testing.T) {
 }
 
 func TestTLSCAPath(t *testing.T) {
-	TlsCAPath := "/tmp/tls_path.txt"
-	originalClowderEnvConfig := os.Getenv("ACG_CONFIG")
-	initialTlsCAPath := os.Getenv(TlsCAPath)
-	var clowderConfig *clowder.AppConfig
-	clowder.LoadedConfig = clowderConfig
-
-	// restore initial content source env value
-	defer func(envName, envValue string, clowderEnvConfig string) {
-		err := os.Setenv(envName, envValue)
+	// restore initial clowder config
+	defer func(clowderLoadedConfig *clowder.AppConfig) {
+		clowder.LoadedConfig = clowderLoadedConfig
+		err := os.Unsetenv("ACG_CONFIG")
 		assert.NoError(t, err)
-		if clowderEnvConfig == "true" {
-			err := os.Unsetenv("ACG_CONFIG")
-			assert.NoError(t, err)
-		}
-	}(TlsCAPath, initialTlsCAPath, originalClowderEnvConfig)
+	}(clowder.LoadedConfig)
+
+	publicPort := 3000
+	bucketName := faker.UUIDHyphenated()
+	bucketAccessKey := faker.UUIDHyphenated()
+	bucketSecretKey := faker.UUIDHyphenated()
+	err := os.Setenv("EDGETARBALLSBUCKET", bucketName)
+	assert.NoError(t, err)
+	clowder.ObjectBuckets = map[string]clowder.ObjectStoreBucket{bucketName: {AccessKey: &bucketAccessKey, SecretKey: &bucketSecretKey}}
 
 	expectedTlsCAPath := "/tmp/tls_path.txt"
-	clowderConfig = &clowder.AppConfig{
-		Database: &clowder.DatabaseConfig{},
-		Logging:  clowder.LoggingConfig{Cloudwatch: &clowder.CloudWatchConfig{}},
+
+	clowderConfig := &clowder.AppConfig{
+		Database:   &clowder.DatabaseConfig{},
+		Logging:    clowder.LoggingConfig{Cloudwatch: &clowder.CloudWatchConfig{}},
+		TlsCAPath:  &expectedTlsCAPath,
+		PublicPort: &publicPort,
 	}
 	clowder.LoadedConfig = clowderConfig
 
-	err := os.Setenv(TlsCAPath, initialTlsCAPath)
+	err = os.Setenv("ACG_CONFIG", "True")
 	assert.NoError(t, err)
-
-	error := os.Setenv("ACG_CONFIG", "true")
-	assert.NoError(t, error)
 
 	conf, err := CreateEdgeAPIConfig()
 	assert.NoError(t, err)

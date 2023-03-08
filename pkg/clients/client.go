@@ -56,8 +56,7 @@ func ConfigureHttpClient(client *http.Client) *http.Client {
 		return client
 	}
 	if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
-		log.Warn("adding certificate from PEM failed")
-		log.WithFields(log.Fields{"certs": certs})
+		log.WithFields(log.Fields{"certs": certs, "tlsCAPath": cfg.TlsCAPath}).Warn("adding certificate from PEM failed")
 	}
 	httpConfig := &tls.Config{
 		MinVersion:         tls.VersionTLS12,
