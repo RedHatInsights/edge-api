@@ -153,6 +153,7 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("KafkaMessageSendMaxRetries", 15)
 	options.SetDefault("KafkaRetryBackoffMs", 100)
 	options.SetDefault("HTTPClientTimeout", 30)
+	options.SetDefault("TlsCAPath", "/tmp/tls_path.txt")
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
@@ -253,6 +254,7 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		KafkaRetryBackoffMs:        options.GetInt("KafkaRetryBackoffMs"),
 		GpgVerify:                  options.GetString("GpgVerify"),
 		GlitchtipDsn:               options.GetString("GlitchtipDsn"),
+		TlsCAPath:                  options.GetString("/tmp/tls_path.txt"),
 	}
 	if edgeConfig.TenantTranslatorHost != "" && edgeConfig.TenantTranslatorPort != "" {
 		edgeConfig.TenantTranslatorURL = fmt.Sprintf("http://%s:%s", edgeConfig.TenantTranslatorHost, edgeConfig.TenantTranslatorPort)
@@ -278,6 +280,9 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	// TODO: consolidate this with the clowder block above and refactor to use default, etc.
 	if clowder.IsClowderEnabled() {
 		cfg := clowder.LoadedConfig
+		if cfg.TlsCAPath != nil {
+			edgeConfig.TlsCAPath = *cfg.TlsCAPath
+		}
 
 		edgeConfig.WebPort = *cfg.PublicPort
 		edgeConfig.MetricsPort = cfg.MetricsPort

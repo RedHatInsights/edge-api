@@ -131,6 +131,7 @@ func TestKafkaBroker(t *testing.T) {
 					Brokers: []clowder.BrokerConfig{kafkaBroker},
 				},
 			},
+
 			ExpectedKafkaBroker: &kafkaBroker,
 		},
 
@@ -198,4 +199,39 @@ func TestContentSourcesURL(t *testing.T) {
 	conf, err := CreateEdgeAPIConfig()
 	assert.NoError(t, err)
 	assert.Equal(t, expectedContentSourcesURl, conf.ContentSourcesURL)
+}
+
+func TestTLSCAPath(t *testing.T) {
+	TlsCAPath := "/tmp/tls_path.txt"
+	originalClowderEnvConfig := os.Getenv("ACG_CONFIG")
+	initialTlsCAPath := os.Getenv(TlsCAPath)
+	var clowderConfig *clowder.AppConfig
+	clowder.LoadedConfig = clowderConfig
+
+	// restore initial content source env value
+	defer func(envName, envValue string, clowderEnvConfig string) {
+		err := os.Setenv(envName, envValue)
+		assert.NoError(t, err)
+		if clowderEnvConfig == "true" {
+			err := os.Unsetenv("ACG_CONFIG")
+			assert.NoError(t, err)
+		}
+	}(TlsCAPath, initialTlsCAPath, originalClowderEnvConfig)
+
+	expectedTlsCAPath := "/tmp/tls_path.txt"
+	clowderConfig = &clowder.AppConfig{
+		Database: &clowder.DatabaseConfig{},
+		Logging:  clowder.LoggingConfig{Cloudwatch: &clowder.CloudWatchConfig{}},
+	}
+	clowder.LoadedConfig = clowderConfig
+
+	err := os.Setenv(TlsCAPath, initialTlsCAPath)
+	assert.NoError(t, err)
+
+	error := os.Setenv("ACG_CONFIG", "true")
+	assert.NoError(t, error)
+
+	conf, err := CreateEdgeAPIConfig()
+	assert.NoError(t, err)
+	assert.Equal(t, expectedTlsCAPath, conf.TlsCAPath)
 }
