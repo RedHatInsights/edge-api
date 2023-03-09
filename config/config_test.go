@@ -131,6 +131,7 @@ func TestKafkaBroker(t *testing.T) {
 					Brokers: []clowder.BrokerConfig{kafkaBroker},
 				},
 			},
+
 			ExpectedKafkaBroker: &kafkaBroker,
 		},
 
@@ -198,4 +199,38 @@ func TestContentSourcesURL(t *testing.T) {
 	conf, err := CreateEdgeAPIConfig()
 	assert.NoError(t, err)
 	assert.Equal(t, expectedContentSourcesURl, conf.ContentSourcesURL)
+}
+
+func TestTLSCAPath(t *testing.T) {
+	// restore initial clowder config
+	defer func(clowderLoadedConfig *clowder.AppConfig) {
+		clowder.LoadedConfig = clowderLoadedConfig
+		err := os.Unsetenv("ACG_CONFIG")
+		assert.NoError(t, err)
+	}(clowder.LoadedConfig)
+
+	publicPort := 3000
+	bucketName := faker.UUIDHyphenated()
+	bucketAccessKey := faker.UUIDHyphenated()
+	bucketSecretKey := faker.UUIDHyphenated()
+	err := os.Setenv("EDGETARBALLSBUCKET", bucketName)
+	assert.NoError(t, err)
+	clowder.ObjectBuckets = map[string]clowder.ObjectStoreBucket{bucketName: {AccessKey: &bucketAccessKey, SecretKey: &bucketSecretKey}}
+
+	expectedTlsCAPath := "/tmp/tls_path.txt"
+
+	clowderConfig := &clowder.AppConfig{
+		Database:   &clowder.DatabaseConfig{},
+		Logging:    clowder.LoggingConfig{Cloudwatch: &clowder.CloudWatchConfig{}},
+		TlsCAPath:  &expectedTlsCAPath,
+		PublicPort: &publicPort,
+	}
+	clowder.LoadedConfig = clowderConfig
+
+	err = os.Setenv("ACG_CONFIG", "True")
+	assert.NoError(t, err)
+
+	conf, err := CreateEdgeAPIConfig()
+	assert.NoError(t, err)
+	assert.Equal(t, expectedTlsCAPath, conf.TlsCAPath)
 }

@@ -3,6 +3,9 @@ package clients_test
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"os"
+	"time"
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients"
@@ -73,6 +76,56 @@ var _ = Describe("Clients", func() {
 			err := json.Unmarshal([]byte(headerIdentity), &identity)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(identity.Identity.OrgID).To(Equal(orgID))
+		})
+	})
+	Context("ConfigureHttpClient", func() {
+		var orgID string
+		var requestID string
+		var ctx context.Context
+		var originalAuth bool
+		var client http.Client
+		var originalTLScaPATH string
+
+		BeforeEach(func() {
+			originalAuth = config.Get().Auth
+			orgID = faker.UUIDHyphenated()
+			originalTLScaPATH = config.Get().TlsCAPath
+			requestID = faker.UUIDHyphenated()
+			ctx = context.Background()
+			ctx = context.WithValue(ctx, request_id.RequestIDKey, requestID)
+			content, err := json.Marshal(&identity.XRHID{Identity: identity.Identity{OrgID: orgID}})
+			Expect(err).ToNot(HaveOccurred())
+			ctx = common.SetOriginalIdentity(ctx, string(content))
+
+		})
+
+		AfterEach(func() {
+			config.Get().Auth = originalAuth
+			config.Get().TlsCAPath = originalTLScaPATH
+		})
+
+		It("should get client when TLS path is empty", func() {
+			config.Get().HTTPClientTimeout = 30
+			clientWithTLSPath := clients.ConfigureHttpClient(&client)
+			Expect(clientWithTLSPath.Timeout).To(Equal(30 * time.Second))
+		})
+		It("should get client when TLS path doesnt exist", func() {
+			config.Get().TlsCAPath = "/test_TLS"
+			clientWithTLSPath := clients.ConfigureHttpClient(&client)
+			Expect(clientWithTLSPath.Transport).To(BeNil())
+
+		})
+		It("should get client when TLS path that exist", func() {
+			file, err := os.CreateTemp("", "*-tls_file.txt")
+			Expect(err).To(BeNil())
+			config.Get().TlsCAPath = file.Name()
+			clientWithTLSPath := clients.ConfigureHttpClient(&client)
+			Expect(clientWithTLSPath.Transport).ToNot(BeNil())
+			Expect(clientWithTLSPath.Timeout, 30*time.Second)
+			transport, ok := client.Transport.(*http.Transport)
+			Expect(ok).To(BeTrue())
+			Expect(transport.TLSClientConfig).ToNot(BeNil())
+			Expect(transport.TLSClientConfig.RootCAs).ToNot(BeNil())
 		})
 	})
 })

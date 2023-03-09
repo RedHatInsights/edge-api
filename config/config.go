@@ -68,6 +68,8 @@ type EdgeConfig struct {
 	ImageBuilderOrgID          string                    `json:"image_builder_org_id,omitempty"`
 	GpgVerify                  string                    `json:"gpg_verify,omitempty"`
 	GlitchtipDsn               string                    `json:"glitchtip_dsn,omitempty"`
+	HTTPClientTimeout          int                       `json:"HTTP_client_timeout,omitempty"`
+	TlsCAPath                  string                    `json:"Tls_CA_path,omitempty"`
 }
 
 type dbConfig struct {
@@ -150,6 +152,8 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("KafkaRequestRequiredAcks", -1)
 	options.SetDefault("KafkaMessageSendMaxRetries", 15)
 	options.SetDefault("KafkaRetryBackoffMs", 100)
+	options.SetDefault("HTTPClientTimeout", 30)
+	options.SetDefault("TlsCAPath", "/tmp/tls_path.txt")
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
@@ -198,17 +202,18 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("TenantTranslatorPort", os.Getenv("TENANT_TRANSLATOR_PORT"))
 
 	edgeConfig := &EdgeConfig{
-		Hostname:        options.GetString("Hostname"),
-		Auth:            options.GetBool("Auth"),
-		WebPort:         options.GetInt("WebPort"),
-		MetricsPort:     options.GetInt("MetricsPort"),
-		MetricsBaseURL:  options.GetString("MetricsBaseURL"),
-		Debug:           options.GetBool("Debug"),
-		LogLevel:        options.GetString("LOG_LEVEL"),
-		BucketName:      options.GetString("EdgeTarballsBucket"),
-		BucketRegion:    options.GetString("BucketRegion"),
-		RepoTempPath:    options.GetString("RepoTempPath"),
-		OpenAPIFilePath: options.GetString("OpenAPIFilePath"),
+		Hostname:          options.GetString("Hostname"),
+		Auth:              options.GetBool("Auth"),
+		WebPort:           options.GetInt("WebPort"),
+		MetricsPort:       options.GetInt("MetricsPort"),
+		MetricsBaseURL:    options.GetString("MetricsBaseURL"),
+		Debug:             options.GetBool("Debug"),
+		LogLevel:          options.GetString("LOG_LEVEL"),
+		BucketName:        options.GetString("EdgeTarballsBucket"),
+		BucketRegion:      options.GetString("BucketRegion"),
+		RepoTempPath:      options.GetString("RepoTempPath"),
+		OpenAPIFilePath:   options.GetString("OpenAPIFilePath"),
+		HTTPClientTimeout: options.GetInt("HTTPClientTimeout"),
 		ImageBuilderConfig: &imageBuilderConfig{
 			URL: options.GetString("ImageBuilderUrl"),
 		},
@@ -249,6 +254,7 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		KafkaRetryBackoffMs:        options.GetInt("KafkaRetryBackoffMs"),
 		GpgVerify:                  options.GetString("GpgVerify"),
 		GlitchtipDsn:               options.GetString("GlitchtipDsn"),
+		TlsCAPath:                  options.GetString("/tmp/tls_path.txt"),
 	}
 	if edgeConfig.TenantTranslatorHost != "" && edgeConfig.TenantTranslatorPort != "" {
 		edgeConfig.TenantTranslatorURL = fmt.Sprintf("http://%s:%s", edgeConfig.TenantTranslatorHost, edgeConfig.TenantTranslatorPort)
@@ -274,6 +280,9 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	// TODO: consolidate this with the clowder block above and refactor to use default, etc.
 	if clowder.IsClowderEnabled() {
 		cfg := clowder.LoadedConfig
+		if cfg.TlsCAPath != nil {
+			edgeConfig.TlsCAPath = *cfg.TlsCAPath
+		}
 
 		edgeConfig.WebPort = *cfg.PublicPort
 		edgeConfig.MetricsPort = cfg.MetricsPort
@@ -422,6 +431,7 @@ func LogConfigAtStartup(cfg *EdgeConfig) {
 		"ImageBuilderOrgID":        cfg.ImageBuilderOrgID,
 		"GlitchtipDsn":             cfg.GlitchtipDsn,
 		"ContentSourcesURL":        cfg.ContentSourcesURL,
+		"TlsCAPath":                cfg.TlsCAPath,
 	}
 
 	// loop through the key/value pairs

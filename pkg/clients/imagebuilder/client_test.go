@@ -778,7 +778,6 @@ var _ = Describe("Image Builder Client Test", func() {
 						}, nil
 					},
 				}
-
 				img, a := client.GetMetadata(img)
 
 				Expect(a).ToNot(HaveOccurred())
