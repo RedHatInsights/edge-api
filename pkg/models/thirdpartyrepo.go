@@ -19,17 +19,17 @@ ThirdPartyRepo is a record of Third Party Repository or we can call it as Custom
 */
 type ThirdPartyRepo struct {
 	Model
-	Name             string `json:"Name" gorm:"index"`
-	URL              string `json:"URL"`
-	Description      string `json:"Description,omitempty"`
-	UUID             string `json:"content_source_UUID,omitempty" gorm:"index"`
-	DistributionArch string `json:"distribution_arch,omitempty"`
-	// DistributionVersion string  `json:"distribution_version,omitempty"`
-	GpgKey       string  `json:"gpg_key,omitempty"`
-	PackageCount int     `json:"package_count,omitempty"`
-	Account      string  `json:"account"`
-	OrgID        string  `json:"org_id" gorm:"index;<-:create"`
-	Images       []Image `faker:"-" json:"Images,omitempty" gorm:"many2many:images_repos;"`
+	Name                string    `json:"Name" gorm:"index"`
+	URL                 string    `json:"URL"`
+	Description         string    `json:"Description,omitempty"`
+	UUID                string    `json:"content_source_UUID,omitempty" gorm:"index"`
+	DistributionArch    string    `json:"distribution_arch,omitempty"`
+	DistributionVersion *[]string `json:"distribution_version,omitempty" gorm:"-"`
+	GpgKey              string    `json:"gpg_key,omitempty"`
+	PackageCount        int       `json:"package_count,omitempty"`
+	Account             string    `json:"account"`
+	OrgID               string    `json:"org_id" gorm:"index;<-:create"`
+	Images              []Image   `faker:"-" json:"Images,omitempty" gorm:"many2many:images_repos;"`
 }
 
 const (
