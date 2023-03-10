@@ -22,7 +22,7 @@ type ThirdPartyRepo struct {
 	Name                string    `json:"Name" gorm:"index"`
 	URL                 string    `json:"URL"`
 	Description         string    `json:"Description,omitempty"`
-	UUID                string    `json:"content_source_UUID,omitempty" gorm:"index"`
+	UUID                string    `json:"uuid,omitempty" gorm:"index"`
 	DistributionArch    string    `json:"distribution_arch,omitempty"`
 	DistributionVersion *[]string `json:"distribution_version,omitempty" gorm:"-"`
 	GpgKey              string    `json:"gpg_key,omitempty"`
