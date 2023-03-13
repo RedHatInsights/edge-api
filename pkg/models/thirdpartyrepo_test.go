@@ -7,6 +7,7 @@ import (
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/redhatinsights/edge-api/pkg/db"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,6 +25,29 @@ func TestValidateRepoURL(t *testing.T) {
 	}
 }
 
+func TestCreateCSThirdparty(t *testing.T) {
+
+	csRepo := ThirdPartyRepo{
+		Name:                "csRepo",
+		URL:                 faker.URL(),
+		UUID:                faker.UUIDHyphenated(),
+		DistributionVersion: &[]string{"Any"},
+		DistributionArch:    "any",
+		GpgKey:              "any",
+		PackageCount:        1,
+		OrgID:               faker.ID,
+	}
+
+	err := db.DB.Create(&csRepo)
+	assert.Equal(t, err.Error, nil)
+	assert.NotEmpty(t, csRepo.UUID)
+	assert.NotEmpty(t, csRepo.DistributionArch)
+	assert.NotEmpty(t, csRepo.GpgKey)
+	assert.NotEmpty(t, csRepo.PackageCount)
+
+	assert.NotEmpty(t, csRepo.DistributionVersion)
+
+}
 func TestValidateRequestFunction(t *testing.T) {
 	cases := []struct {
 		Name     string
