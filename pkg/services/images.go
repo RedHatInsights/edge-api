@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
+	"github.com/redhatinsights/edge-api/pkg/clients/repositories"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
@@ -51,6 +52,7 @@ type ImageServiceInterface interface {
 	CreateRepoForImage(context.Context, *models.Image) (*models.Repo, error)
 	CreateInstallerForImage(context.Context, *models.Image) (*models.Image, chan error, error)
 	GetImageByID(id string) (*models.Image, error)
+	GetImageByIDExtended(imageID uint, gormDB *gorm.DB) (*models.Image, error)
 	GetImageDevicesCount(imageId uint) (int64, error)
 	GetUpdateInfo(image models.Image) (*models.ImageUpdateAvailable, error)
 	AddPackageInfo(image *models.Image) (ImageDetail, error)
@@ -82,6 +84,7 @@ func NewImageService(ctx context.Context, log *log.Entry) ImageServiceInterface 
 		ProducerService: kafkacommon.NewProducerService(),
 		TopicService:    kafkacommon.NewTopicService(),
 		FilesService:    NewFilesService(log),
+		Repositories:    repositories.InitClient(ctx, log),
 	}
 }
 
@@ -95,6 +98,7 @@ type ImageService struct {
 	ProducerService kafkacommon.ProducerServiceInterface
 	TopicService    kafkacommon.TopicServiceInterface
 	FilesService    FilesService
+	Repositories    repositories.ClientInterface
 }
 
 // GetImageReposFromDB return ThirdParty repo of image by OrgID
@@ -1141,6 +1145,32 @@ func (s *ImageService) addImageExtraData(image *models.Image) (*models.Image, er
 		return nil, err
 	}
 	return image, nil
+}
+
+// GetImageByIDExtended retrieves an image by its identifier and use the supplied gormDB instance
+// This is more customisable function version, that will get only the needed data, if gormDB is nil, we get an image without
+// any related data (Commit, Installer , ThirdPartyRepositories, CustomPackages, Packages ...)
+func (s *ImageService) GetImageByIDExtended(imageID uint, gormDB *gorm.DB) (*models.Image, error) {
+	var image models.Image
+	orgID, err := common.GetOrgIDFromContext(s.ctx)
+	if err != nil {
+		s.log.WithField("error", err).Error("Error retrieving org_id")
+		return nil, new(OrgIDNotSet)
+	}
+
+	if gormDB == nil {
+		gormDB = db.DB
+	}
+	dbQuery := db.OrgDB(orgID, gormDB, "images")
+
+	if err := dbQuery.Debug().First(&image, imageID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, new(ImageNotFoundError)
+		}
+		return nil, err
+	}
+
+	return &image, nil
 }
 
 // GetImageByID retrieves an image by its identifier

@@ -170,6 +170,21 @@ func (mr *MockImageServiceInterfaceMockRecorder) GetImageByID(id interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageByID", reflect.TypeOf((*MockImageServiceInterface)(nil).GetImageByID), id)
 }
 
+// GetImageByIDExtended mocks base method.
+func (m *MockImageServiceInterface) GetImageByIDExtended(imageID uint, gormDB *gorm.DB) (*models.Image, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetImageByIDExtended", imageID, gormDB)
+	ret0, _ := ret[0].(*models.Image)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetImageByIDExtended indicates an expected call of GetImageByIDExtended.
+func (mr *MockImageServiceInterfaceMockRecorder) GetImageByIDExtended(imageID, gormDB interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageByIDExtended", reflect.TypeOf((*MockImageServiceInterface)(nil).GetImageByIDExtended), imageID, gormDB)
+}
+
 // GetImageByOSTreeCommitHash mocks base method.
 func (m *MockImageServiceInterface) GetImageByOSTreeCommitHash(commitHash string) (*models.Image, error) {
 	m.ctrl.T.Helper()

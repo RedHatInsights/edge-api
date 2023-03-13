@@ -79,6 +79,88 @@ var _ = Describe("Image Service Test", func() {
 	})
 
 	Describe("get image", func() {
+		Context("#GetImageByIDExtended", func() {
+			var image models.Image
+			var orgID string
+
+			BeforeEach(func() {
+				orgID = common.DefaultOrgID
+				image = models.Image{
+					OrgID: orgID,
+					Name:  faker.UUIDHyphenated(),
+					ThirdPartyRepositories: []models.ThirdPartyRepo{
+						{Name: faker.Name(), URL: faker.URL(), OrgID: orgID},
+						{Name: faker.Name(), URL: faker.URL(), OrgID: orgID},
+					},
+					CustomPackages: []models.Package{
+						{Name: "nano"},
+						{Name: "vim"},
+					},
+					Commit: &models.Commit{OrgID: orgID},
+				}
+				err := db.DB.Create(&image).Error
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should return the image with requested db extensions when defined", func() {
+				resultImage, err := service.GetImageByIDExtended(
+					image.ID, db.DB.Preload("ThirdPartyRepositories").Preload("CustomPackages").Joins("Commit"),
+				)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(resultImage).ToNot(BeNil())
+				Expect(resultImage.ID).To(Equal(image.ID))
+				Expect(len(resultImage.ThirdPartyRepositories) > 0).To(BeTrue())
+				Expect(len(resultImage.ThirdPartyRepositories)).To(Equal(len(image.ThirdPartyRepositories)))
+				Expect(len(resultImage.CustomPackages) > 0).To(BeTrue())
+				Expect(len(resultImage.CustomPackages)).To(Equal(len(image.CustomPackages)))
+				Expect(resultImage.Commit).ToNot(BeNil())
+				Expect(resultImage.Commit.ID).To(Equal(image.Commit.ID))
+			})
+
+			It("should return the image without requested db extensions when not defined", func() {
+				resultImage, err := service.GetImageByIDExtended(image.ID, nil)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(resultImage).ToNot(BeNil())
+				Expect(resultImage.ID).To(Equal(image.ID))
+				Expect(len(resultImage.ThirdPartyRepositories) == 0).To(BeTrue())
+				Expect(len(resultImage.CustomPackages) == 0).To(BeTrue())
+			})
+
+			It("should return error when orgID is not defined", func() {
+				originalAuth := config.Get().Auth
+				// restore auth
+				defer func(auth bool) {
+					config.Get().Auth = auth
+				}(originalAuth)
+				config.Get().Auth = true
+				// create a service with identity with empty orgID
+				ctx := context.WithValue(context.Background(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: ""}})
+
+				service = services.ImageService{
+					Service: services.NewService(ctx, log.NewEntry(log.StandardLogger())),
+				}
+
+				_, err := service.GetImageByIDExtended(image.ID, nil)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal("Org ID is not set"))
+			})
+
+			It("should return error when image does not exist", func() {
+				_, err := service.GetImageByIDExtended(uint(99999999), nil)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal(services.ImageNotFoundErrorMsg))
+			})
+
+			It("should return error on query failure", func() {
+				collectionName := "this_collection_does_not_exit"
+				expectedErrorMessage := fmt.Sprintf("%s: unsupported relations for schema Image", collectionName)
+
+				_, err := service.GetImageByIDExtended(image.ID, db.DB.Preload(collectionName))
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal(expectedErrorMessage))
+			})
+		})
+
 		When("image is not found", func() {
 			Context("by id", func() {
 				var image *models.Image
