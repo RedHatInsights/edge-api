@@ -50,11 +50,26 @@ func (mr *MockClientInterfaceMockRecorder) GetBaseURL() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBaseURL", reflect.TypeOf((*MockClientInterface)(nil).GetBaseURL))
 }
 
+// GetRepositoryByName mocks base method.
+func (m *MockClientInterface) GetRepositoryByName(name string) (*repositories.Repository, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRepositoryByName", name)
+	ret0, _ := ret[0].(*repositories.Repository)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRepositoryByName indicates an expected call of GetRepositoryByName.
+func (mr *MockClientInterfaceMockRecorder) GetRepositoryByName(name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRepositoryByName", reflect.TypeOf((*MockClientInterface)(nil).GetRepositoryByName), name)
+}
+
 // ListRepositories mocks base method.
-func (m *MockClientInterface) ListRepositories(requestParams repositories.ListRepositoriesParams, filters repositories.ListRepositoriesFilters) ([]repositories.Repository, error) {
+func (m *MockClientInterface) ListRepositories(requestParams repositories.ListRepositoriesParams, filters repositories.ListRepositoriesFilters) (*repositories.ListRepositoriesResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListRepositories", requestParams, filters)
-	ret0, _ := ret[0].([]repositories.Repository)
+	ret0, _ := ret[0].(*repositories.ListRepositoriesResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

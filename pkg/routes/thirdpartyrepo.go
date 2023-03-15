@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/redhatinsights/edge-api/pkg/clients/repositories"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
@@ -17,6 +19,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"gorm.io/gorm"
+
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 )
 
 type tprepoTypeKey int
@@ -144,8 +148,148 @@ func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRe
 	return tprepo, nil
 }
 
+func contentSourcesListRepositories(w http.ResponseWriter, r *http.Request) (*repositories.ListRepositoriesResponse, error) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	pagination := common.GetPagination(r)
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID, return an arbitrary error
+		return nil, errors.NewBadRequest("undefined org id")
+	}
+
+	// define the repositories parameters with the defined pagination fields, by default sort_by name ascending
+	params := repositories.ListRepositoriesParams{Limit: pagination.Limit, Offset: pagination.Offset, SortBy: "name", SortType: "asc"}
+	sortBy := r.URL.Query().Get("sort_by")
+	if sortBy != "" {
+		if strings.HasPrefix(sortBy, "-") {
+			params.SortType = "desc"
+			// remove the first char "-" from the sortBy
+			sortBy = sortBy[1:]
+		} else {
+			params.SortType = "asc"
+		}
+		params.SortBy = sortBy
+	}
+
+	// define the repositories filters
+	paramsFilters := repositories.NewListRepositoryFilters()
+	name := r.URL.Query().Get("name")
+	if name != "" {
+		paramsFilters.Add("name", name)
+	}
+
+	// get the content-sources repositories
+	response, err := ctxServices.RepositoriesService.ListRepositories(params, paramsFilters)
+	if err != nil {
+		// any error received from this function must be considered as internal server error
+		ctxServices.Log.WithField("error", err).Error("err when retrieving repos")
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
+		return nil, err
+	}
+
+	return response, err
+}
+
+func getImageFromURLParam(w http.ResponseWriter, r *http.Request, gormDB *gorm.DB) (*models.Image, error) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	imageIDString := r.URL.Query().Get("imageID")
+	if imageIDString == "" {
+		// when imageID not defined return a nil image
+		return nil, nil
+	}
+
+	var image *models.Image
+
+	imageID, err := strconv.ParseUint(imageIDString, 10, 64)
+	if err != nil {
+		ctxServices.Log.WithField("error", err).Error("error occurred  while converting imageID to integer")
+		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("image_id must be of type integer"))
+		return nil, err
+	}
+
+	image, err = ctxServices.ImageService.GetImageByIDExtended(uint(imageID), gormDB)
+	if err != nil {
+		ctxServices.Log.WithField("error", err.Error()).Error("error occurred while getting imageByID")
+		var apiError errors.APIError
+		switch err.(type) {
+		case *services.ImageNotFoundError:
+			apiError = errors.NewNotFound("requested image not found")
+		default:
+			apiError = errors.NewInternalServerError()
+		}
+		respondWithAPIError(w, ctxServices.Log, apiError)
+		return nil, err
+	}
+
+	return image, nil
+}
+
+// GetAllContentSourcesRepositories return all the content source repositories
+// if imageID is given in the url return the image of the corresponding repositories
+func GetAllContentSourcesRepositories(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	response, err := contentSourcesListRepositories(w, r)
+	if err != nil {
+		// contentSourcesListRepositories already logged and returned the needed info
+		return
+	}
+
+	image, err := getImageFromURLParam(w, r, db.DB.Preload("ThirdPartyRepositories"))
+	if err != nil {
+		// getImageFromURLParam already logged and responded to request
+		return
+	}
+
+	// create a map of the image (if defined) for repos UUID to repo id and define the maximum id value
+	var imageRepositoriesUUID = make(map[string]uint)
+	maxImageRepoIDValue := uint(0)
+	if image != nil {
+		for _, repo := range image.ThirdPartyRepositories {
+			if repo.UUID != "" {
+				imageRepositoriesUUID[repo.UUID] = repo.ID
+				if repo.ID > maxImageRepoIDValue {
+					maxImageRepoIDValue = repo.ID
+				}
+			}
+		}
+	}
+
+	repos := make([]models.ThirdPartyRepo, 0, len(response.Data))
+	for ind, ContentSourcesRepo := range response.Data {
+		// calculate the id to set , that will not have a conflict with the saved one on db,
+		// use an ID superior of any known one in the current context, add overall repos count so that we will not conflict with
+		// ids used on different pages even if we change pagination.Limit when changing pages
+		virtualIDValue := maxImageRepoIDValue + uint(response.Meta.Count+ind)
+		edgeRepo := models.ThirdPartyRepo{
+			Model:               models.Model{ID: virtualIDValue},
+			Name:                ContentSourcesRepo.Name,
+			URL:                 ContentSourcesRepo.URL,
+			UUID:                ContentSourcesRepo.UUID.String(),
+			OrgID:               ContentSourcesRepo.OrgID,
+			DistributionArch:    ContentSourcesRepo.DistributionArch,
+			DistributionVersion: &ContentSourcesRepo.DistributionVersions,
+			GpgKey:              ContentSourcesRepo.GpgKey,
+			PackageCount:        ContentSourcesRepo.PackageCount,
+		}
+
+		if realIDValue, ok := imageRepositoriesUUID[ContentSourcesRepo.UUID.String()]; ok {
+			edgeRepo.ID = realIDValue
+			// to support compatibility return the image also
+			edgeRepo.Images = []models.Image{*image}
+		}
+
+		repos = append(repos, edgeRepo)
+	}
+
+	respondWithJSONBody(w, ctxServices.Log, map[string]interface{}{"data": repos, "count": response.Meta.Count})
+}
+
 // GetAllThirdPartyRepo return all the ThirdPartyRepo
 func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
+	if feature.ContentSources.IsEnabled() {
+		GetAllContentSourcesRepositories(w, r)
+		return
+	}
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	var tprepo []models.ThirdPartyRepo
 	var count int64
