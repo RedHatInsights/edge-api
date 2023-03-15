@@ -194,7 +194,7 @@ func getImageFromURLParam(w http.ResponseWriter, r *http.Request, gormDB *gorm.D
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	imageIDString := r.URL.Query().Get("imageID")
 	if imageIDString == "" {
-		// when imageID not Defined return a nil image
+		// when imageID not defined return a nil image
 		return nil, nil
 	}
 
@@ -240,7 +240,7 @@ func GetAllContentSourcesRepositories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// create a map of the image (if defined) for repos uuid to repos id and define the maximum id value
+	// create a map of the image (if defined) for repos UUID to repo id and define the maximum id value
 	var imageRepositoriesUUID = make(map[string]uint)
 	maxImageRepoIDValue := uint(0)
 	if image != nil {
@@ -256,16 +256,20 @@ func GetAllContentSourcesRepositories(w http.ResponseWriter, r *http.Request) {
 
 	repos := make([]models.ThirdPartyRepo, 0, len(response.Data))
 	for ind, ContentSourcesRepo := range response.Data {
-		// calculate the id to set , to not have conflict with the saved one on db,
+		// calculate the id to set , that will not have a conflict with the saved one on db,
 		// use an ID superior of any known one in the current context, add overall repos count so that we will not conflict with
 		// ids used on different pages even if we change pagination.Limit when changing pages
 		virtualIDValue := maxImageRepoIDValue + uint(response.Meta.Count+ind)
 		edgeRepo := models.ThirdPartyRepo{
-			Model: models.Model{ID: virtualIDValue},
-			Name:  ContentSourcesRepo.Name,
-			URL:   ContentSourcesRepo.URL,
-			UUID:  ContentSourcesRepo.UUID.String(),
-			OrgID: ContentSourcesRepo.OrgID,
+			Model:               models.Model{ID: virtualIDValue},
+			Name:                ContentSourcesRepo.Name,
+			URL:                 ContentSourcesRepo.URL,
+			UUID:                ContentSourcesRepo.UUID.String(),
+			OrgID:               ContentSourcesRepo.OrgID,
+			DistributionArch:    ContentSourcesRepo.DistributionArch,
+			DistributionVersion: &ContentSourcesRepo.DistributionVersions,
+			GpgKey:              ContentSourcesRepo.GpgKey,
+			PackageCount:        ContentSourcesRepo.PackageCount,
 		}
 
 		if realIDValue, ok := imageRepositoriesUUID[ContentSourcesRepo.UUID.String()]; ok {

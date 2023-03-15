@@ -1147,8 +1147,8 @@ func (s *ImageService) addImageExtraData(image *models.Image) (*models.Image, er
 	return image, nil
 }
 
-// GetImageByIDExtended retrieves an image by its identifier and use the supplied gormDB instance
-// This is more customisable function version, that will get only the needed data, if gormDB is nil, we get an image without
+// GetImageByIDExtended retrieves an image by its identifier and uses the supplied gormDB instance
+// This is more customizable function version, that will get only the needed data, if gormDB is nil, we get an image without
 // any related data (Commit, Installer , ThirdPartyRepositories, CustomPackages, Packages ...)
 func (s *ImageService) GetImageByIDExtended(imageID uint, gormDB *gorm.DB) (*models.Image, error) {
 	var image models.Image
