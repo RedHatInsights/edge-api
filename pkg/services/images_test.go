@@ -22,10 +22,13 @@ import (
 	"github.com/bxcodec/faker/v3"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	imageBuilderClient "github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder/mock_imagebuilder"
+	"github.com/redhatinsights/edge-api/pkg/clients/repositories"
+	"github.com/redhatinsights/edge-api/pkg/clients/repositories/mock_repositories"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	mock_kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka/mock_kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -53,6 +56,7 @@ var _ = Describe("Image Service Test", func() {
 	var mockTopicService *mock_kafkacommon.MockTopicServiceInterface
 	var mockFilesService *mock_services.MockFilesService
 	var mockRepoBuilder *mock_services.MockRepoBuilderInterface
+	var mockRepositories *mock_repositories.MockClientInterface
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
@@ -63,6 +67,7 @@ var _ = Describe("Image Service Test", func() {
 		mockTopicService = mock_kafkacommon.NewMockTopicServiceInterface(ctrl)
 		mockFilesService = mock_services.NewMockFilesService(ctrl)
 		mockRepoBuilder = mock_services.NewMockRepoBuilderInterface(ctrl)
+		mockRepositories = mock_repositories.NewMockClientInterface(ctrl)
 		service = services.ImageService{
 			Service:         services.NewService(context.Background(), log.NewEntry(log.StandardLogger())),
 			ImageBuilder:    mockImageBuilderClient,
@@ -71,6 +76,7 @@ var _ = Describe("Image Service Test", func() {
 			TopicService:    mockTopicService,
 			FilesService:    mockFilesService,
 			RepoBuilder:     mockRepoBuilder,
+			Repositories:    mockRepositories,
 		}
 	})
 
@@ -1259,6 +1265,204 @@ var _ = Describe("Image Service Test", func() {
 				_, err := services.GetImageReposFromDB(orgID1, []models.ThirdPartyRepo{repo1, repo2})
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(new(services.ThirdPartyRepositoryNotFound).Error()))
+			})
+		})
+	})
+
+	Describe("content-sources repositories", func() {
+		var orgID string
+		var image models.Image
+		// edge management third-pary repos
+		var emRepos []models.ThirdPartyRepo
+		// content-sources custom repos
+		var csRepos []repositories.Repository
+		var existingEMRepo models.ThirdPartyRepo
+		var otherEMRepo models.ThirdPartyRepo
+
+		BeforeEach(func() {
+			orgID = faker.UUIDHyphenated()
+			// set content-sources feature enabled
+			err := os.Setenv("FEATURE_CONTENT_SOURCES", "true")
+			Expect(err).ToNot(HaveOccurred())
+			existingEMRepo = models.ThirdPartyRepo{
+				OrgID: orgID, Name: faker.UUIDHyphenated(), UUID: faker.UUIDHyphenated(), URL: faker.URL(),
+			}
+			err = db.DB.Create(&existingEMRepo).Error
+			Expect(err).ToNot(HaveOccurred())
+			// other emRepo does not exist in db
+			otherEMRepo = models.ThirdPartyRepo{OrgID: orgID, Name: faker.UUIDHyphenated(), UUID: faker.UUIDHyphenated(), URL: faker.URL()}
+			emRepos = []models.ThirdPartyRepo{
+				existingEMRepo,
+				otherEMRepo,
+			}
+			csRepos = []repositories.Repository{
+				// add an existing one, but change some data
+				{
+					UUID: uuid.MustParse(existingEMRepo.UUID), Name: faker.UUIDHyphenated(), URL: faker.URL(),
+					DistributionArch: faker.UUIDHyphenated(), GpgKey: faker.UUIDHyphenated(), PackageCount: 200,
+				},
+				// add the other that do not exist in db
+				{
+					UUID: uuid.New(), Name: otherEMRepo.Name, URL: faker.URL(), DistributionArch: faker.UUIDHyphenated(),
+					GpgKey: faker.UUIDHyphenated(), PackageCount: 160,
+				},
+			}
+
+			image = models.Image{
+				OrgID:                  orgID,
+				Name:                   faker.UUIDHyphenated(),
+				Commit:                 &models.Commit{OrgID: orgID},
+				ImageType:              models.ImageTypeCommit,
+				ThirdPartyRepositories: emRepos,
+			}
+		})
+
+		AfterEach(func() {
+			// disable content-sources feature enabled
+			err := os.Unsetenv("FEATURE_CONTENT_SOURCES")
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		Context("#SetImageContentSourcesRepositories", func() {
+			It("should set the image third-party repos successfully", func() {
+				mockRepositories.EXPECT().GetRepositoryByName(emRepos[0].Name).Return(&csRepos[0], nil)
+				mockRepositories.EXPECT().GetRepositoryByName(emRepos[1].Name).Return(&csRepos[1], nil)
+
+				err := service.SetImageContentSourcesRepositories(&image)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(image.ThirdPartyRepositories)).To(Equal(2))
+				// The existing repo has not changed id and UUID
+				Expect(image.ThirdPartyRepositories[0].ID).To(Equal(existingEMRepo.ID))
+				Expect(image.ThirdPartyRepositories[0].UUID).To(Equal(existingEMRepo.UUID))
+				// the other repo has been saved
+				Expect(image.ThirdPartyRepositories[1].ID > 0).To(BeTrue())
+
+				// check that the existing repo has been updated and the newly created has the expected data
+				for ind := range []int{0, 1} {
+					Expect(image.ThirdPartyRepositories[ind].Name).To(Equal(csRepos[ind].Name))
+					Expect(image.ThirdPartyRepositories[ind].UUID).To(Equal(csRepos[ind].UUID.String()))
+					Expect(image.ThirdPartyRepositories[ind].URL).To(Equal(csRepos[ind].URL))
+					Expect(image.ThirdPartyRepositories[ind].DistributionArch).To(Equal(csRepos[ind].DistributionArch))
+					Expect(image.ThirdPartyRepositories[ind].GpgKey).To(Equal(csRepos[ind].GpgKey))
+					Expect(image.ThirdPartyRepositories[ind].PackageCount).To(Equal(csRepos[ind].PackageCount))
+				}
+			})
+
+			It("should do nothing when image has no third-party repos", func() {
+				image := models.Image{OrgID: orgID, Name: faker.Name(), ThirdPartyRepositories: []models.ThirdPartyRepo{}}
+				err := service.SetImageContentSourcesRepositories(&image)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(image.ThirdPartyRepositories)).To(Equal(0))
+			})
+
+			It("should return error when image is nil", func() {
+				err := service.SetImageContentSourcesRepositories(nil)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal(services.ImageUnDefinedMsg))
+			})
+			It("should return error when image org is not defined", func() {
+				err := service.SetImageContentSourcesRepositories(
+					&models.Image{OrgID: "", Name: faker.Name(), ThirdPartyRepositories: []models.ThirdPartyRepo{existingEMRepo}},
+				)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal(services.OrgIDNotSetMsg))
+			})
+
+			It("should return error when repository.GetRepositoryByName fails", func() {
+				image := models.Image{OrgID: orgID, Name: faker.Name(), ThirdPartyRepositories: []models.ThirdPartyRepo{otherEMRepo}}
+				mockRepositories.EXPECT().GetRepositoryByName(image.ThirdPartyRepositories[0].Name).Return(nil, repositories.ErrRepositoryNoFound)
+
+				err := service.SetImageContentSourcesRepositories(&image)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(repositories.ErrRepositoryNoFound))
+			})
+		})
+
+		Context("CreateImage", func() {
+
+			It("CreateImage should call SetImageContentSourcesRepositories successfully", func() {
+				expectedError := errors.New("simulate compose commit error as the call should happen before calling ComposeCommit")
+				mockImageBuilderClient.EXPECT().ComposeCommit(&image).Return(&image, expectedError)
+
+				mockRepositories.EXPECT().GetRepositoryByName(emRepos[0].Name).Return(&csRepos[0], nil)
+				mockRepositories.EXPECT().GetRepositoryByName(emRepos[1].Name).Return(&csRepos[1], nil)
+
+				err := service.CreateImage(&image)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(expectedError))
+				Expect(len(image.ThirdPartyRepositories)).To(Equal(2))
+				// check that the existing repo has been updated and the newly created has the expected data
+				for ind := range []int{0, 1} {
+					Expect(image.ThirdPartyRepositories[ind].Name).To(Equal(csRepos[ind].Name))
+					Expect(image.ThirdPartyRepositories[ind].UUID).To(Equal(csRepos[ind].UUID.String()))
+					Expect(image.ThirdPartyRepositories[ind].URL).To(Equal(csRepos[ind].URL))
+					Expect(image.ThirdPartyRepositories[ind].DistributionArch).To(Equal(csRepos[ind].DistributionArch))
+					Expect(image.ThirdPartyRepositories[ind].GpgKey).To(Equal(csRepos[ind].GpgKey))
+					Expect(image.ThirdPartyRepositories[ind].PackageCount).To(Equal(csRepos[ind].PackageCount))
+				}
+			})
+
+			It("CreateImage should return error when SetImageContentSourcesRepositories fails", func() {
+				expectedError := repositories.ErrRepositoryNoFound
+				mockRepositories.EXPECT().GetRepositoryByName(emRepos[0].Name).Return(nil, expectedError)
+
+				err := service.CreateImage(&image)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(expectedError))
+			})
+		})
+
+		Context("UpdateImage", func() {
+			var previousImage models.Image
+			BeforeEach(func() {
+				imageSet := models.ImageSet{OrgID: orgID, Name: image.Name}
+				err := db.DB.Create(&imageSet).Error
+				Expect(err).ToNot(HaveOccurred())
+				previousImage = models.Image{
+					OrgID:      orgID,
+					Name:       image.Name,
+					ImageSetID: &imageSet.ID,
+					Commit: &models.Commit{OrgID: orgID,
+						Status:           models.ImageStatusSuccess,
+						ImageBuildTarURL: faker.URL(),
+						OSTreeCommit:     faker.UUIDHyphenated(),
+						OSTreeRef:        config.DistributionsRefs["rhel-91"],
+						Repo:             &models.Repo{URL: faker.URL(), Status: models.RepoStatusSuccess},
+					},
+				}
+				err = db.DB.Create(&previousImage).Error
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should call SetImageContentSourcesRepositories successfully", func() {
+				expectedError := errors.New("simulate compose commit error as the call should happen before calling ComposeCommit")
+				mockImageBuilderClient.EXPECT().ComposeCommit(&image).Return(&image, expectedError)
+
+				mockRepositories.EXPECT().GetRepositoryByName(emRepos[0].Name).Return(&csRepos[0], nil)
+				mockRepositories.EXPECT().GetRepositoryByName(emRepos[1].Name).Return(&csRepos[1], nil)
+
+				err := service.UpdateImage(&image, &previousImage)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(expectedError))
+				Expect(len(image.ThirdPartyRepositories)).To(Equal(2))
+				// check that the existing repo has been updated and the newly created has the expected data
+				for ind := range []int{0, 1} {
+					Expect(image.ThirdPartyRepositories[ind].Name).To(Equal(csRepos[ind].Name))
+					Expect(image.ThirdPartyRepositories[ind].UUID).To(Equal(csRepos[ind].UUID.String()))
+					Expect(image.ThirdPartyRepositories[ind].URL).To(Equal(csRepos[ind].URL))
+					Expect(image.ThirdPartyRepositories[ind].DistributionArch).To(Equal(csRepos[ind].DistributionArch))
+					Expect(image.ThirdPartyRepositories[ind].GpgKey).To(Equal(csRepos[ind].GpgKey))
+					Expect(image.ThirdPartyRepositories[ind].PackageCount).To(Equal(csRepos[ind].PackageCount))
+				}
+			})
+
+			It("should return error when SetImageContentSourcesRepositories fails", func() {
+				expectedError := repositories.ErrRepositoryNoFound
+				mockRepositories.EXPECT().GetRepositoryByName(emRepos[0].Name).Return(nil, expectedError)
+
+				err := service.UpdateImage(&image, &previousImage)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(expectedError))
 			})
 		})
 	})

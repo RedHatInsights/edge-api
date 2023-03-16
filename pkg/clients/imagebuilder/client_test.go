@@ -293,6 +293,13 @@ var _ = Describe("Image Builder Client Test", func() {
 			OrgID: OrgId,
 		}
 		db.DB.Create(&thirdPartyRepo)
+		thirdPartyRepo2 := models.ThirdPartyRepo{
+			Name:   faker.UUIDHyphenated(),
+			URL:    faker.URL(),
+			OrgID:  OrgId,
+			GpgKey: "some dummy data",
+		}
+		db.DB.Create(&thirdPartyRepo2)
 		img := &models.Image{Distribution: "rhel-8",
 			Packages: pkgs,
 			OrgID:    OrgId,
@@ -302,11 +309,20 @@ var _ = Describe("Image Builder Client Test", func() {
 			},
 			ThirdPartyRepositories: []models.ThirdPartyRepo{
 				thirdPartyRepo,
+				thirdPartyRepo2,
 			},
 		}
 		result, err := client.GetImageThirdPartyRepos(img)
 		Expect(err).ToNot(HaveOccurred())
+		Expect(len(result)).To(Equal(2))
 		Expect(result[0].BaseURL).To(Equal(thirdPartyRepo.URL))
+		Expect(result[0].CheckGPG).To(BeNil())
+		Expect(result[0].GPGKey).To(BeNil())
+		Expect(result[1].BaseURL).To(Equal(thirdPartyRepo2.URL))
+		Expect(result[1].GPGKey).ToNot(BeNil())
+		Expect(*result[1].GPGKey).To(Equal(thirdPartyRepo2.GpgKey))
+		Expect(result[1].CheckGPG).ToNot(BeNil())
+		Expect(*result[1].CheckGPG).To(BeTrue())
 	})
 
 	It("should return error when custom repositories id are not valid/not found", func() {
@@ -340,6 +356,71 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(result).To(BeNil())
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(Equal("enter valid third party repository id"))
+	})
+
+	It("compose image should send thirdparty repos", func() {
+		composeJobID := faker.UUIDHyphenated()
+		dist := "rhel-91"
+		orgID := faker.UUIDHyphenated()
+		thirdPartyRepo1 := models.ThirdPartyRepo{
+			Name:  faker.UUIDHyphenated(),
+			URL:   faker.URL(),
+			OrgID: orgID,
+		}
+		db.DB.Create(&thirdPartyRepo1)
+		thirdPartyRepo2 := models.ThirdPartyRepo{
+			Name:   faker.UUIDHyphenated(),
+			URL:    faker.URL(),
+			OrgID:  orgID,
+			GpgKey: "some dummy data",
+		}
+		db.DB.Create(&thirdPartyRepo2)
+
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var composeRequest ComposeRequest
+			body, err := io.ReadAll(r.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(body).ToNot(BeNil())
+			err = json.Unmarshal(body, &composeRequest)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(composeRequest.Customizations).ToNot(BeNil())
+			Expect(composeRequest.Customizations.PayloadRepositories).ToNot(BeNil())
+			payloadRepositories := *composeRequest.Customizations.PayloadRepositories
+
+			Expect(len(payloadRepositories)).To(Equal(2))
+			Expect(payloadRepositories[0].BaseURL).To(Equal(thirdPartyRepo1.URL))
+			Expect(payloadRepositories[0].GPGKey).To(BeNil())
+			Expect(payloadRepositories[0].CheckGPG).To(BeNil())
+
+			Expect(payloadRepositories[1].BaseURL).To(Equal(thirdPartyRepo2.URL))
+			Expect(payloadRepositories[1].GPGKey).ToNot(BeNil())
+			Expect(*payloadRepositories[1].GPGKey).To(Equal(thirdPartyRepo2.GpgKey))
+			Expect(payloadRepositories[1].CheckGPG).ToNot(BeNil())
+			Expect(*payloadRepositories[1].CheckGPG).To(BeTrue())
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			_, err = fmt.Fprintf(w, `{"id": "%s"}`, composeJobID)
+			Expect(err).ToNot(HaveOccurred())
+		}))
+		defer ts.Close()
+
+		config.Get().ImageBuilderConfig.URL = ts.URL
+		img := &models.Image{
+			Distribution: dist,
+			OrgID:        orgID,
+			Commit: &models.Commit{
+				Arch:      "x86_64",
+				Repo:      &models.Repo{},
+				OSTreeRef: config.DistributionsRefs[dist],
+			},
+			ThirdPartyRepositories: []models.ThirdPartyRepo{thirdPartyRepo1, thirdPartyRepo2},
+		}
+
+		img, err := client.ComposeCommit(img)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(img).ToNot(BeNil())
+		Expect(img.Commit.ComposeJobID).To(Equal(composeJobID))
 	})
 
 	Context("compose image commit with ChangesRefs values", func() {
