@@ -21,7 +21,7 @@ jobs:
       - name: Display build environment
         run: printenv
 
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         name: Set up Go 1.x
         with:
           go-version: 1.18
@@ -71,7 +71,7 @@ jobs:
     name: OpenAPI
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         name: Set up Go 1.x
         with:
           go-version: 1.18
