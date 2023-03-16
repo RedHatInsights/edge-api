@@ -46,7 +46,7 @@ type HTTPClient interface {
 var ImageBuilderHTTPClient HTTPClient
 
 func init() {
-	ImageBuilderHTTPClient = clients.ConfigureHttpClient(&http.Client{})
+	ImageBuilderHTTPClient = clients.ConfigureClientWithTlsPath(&http.Client{})
 }
 
 // InitClient initializes the client for Image Builder
@@ -189,7 +189,7 @@ func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 	}
 	req.Header.Add("Content-Type", "application/json")
 
-	client := clients.ConfigureHttpClient(&http.Client{})
+	client := clients.ConfigureClientWithTlsPath(&http.Client{})
 	res, err := client.Do(req)
 	if err != nil {
 		c.log.WithField("error", err.Error()).Error("Image Builder Compose Request Error")
@@ -345,7 +345,7 @@ func (c *Client) GetComposeStatus(jobID string) (*ComposeStatus, error) {
 		req.Header.Add(key, value)
 	}
 	req.Header.Add("Content-Type", "application/json")
-	client := clients.ConfigureHttpClient(&http.Client{})
+	client := clients.ConfigureClientWithTlsPath(&http.Client{})
 	res, err := client.Do(req)
 	if err != nil {
 		c.log.WithField("error", err.Error()).Error("Image Builder ComposeStatus Request Error")
@@ -559,7 +559,7 @@ func (c *Client) SearchPackage(packageName string, arch string, dist string) (*m
 	for key, value := range clients.GetOutgoingHeaders(c.ctx) {
 		req.Header.Add(key, value)
 	}
-	client := clients.ConfigureHttpClient(&http.Client{})
+	client := clients.ConfigureClientWithTlsPath(&http.Client{})
 	res, err := client.Do(req)
 	if err != nil {
 		c.log.WithField("error", err.Error()).Error(new(PackageRequestError))

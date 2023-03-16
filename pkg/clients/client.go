@@ -34,7 +34,9 @@ func GetOutgoingHeaders(ctx context.Context) map[string]string {
 	return headers
 }
 
-func ConfigureHttpClient(client *http.Client) *http.Client {
+// ConfigureClientWithTlsPath return https client in case there is TLS CA path,
+// otherwise return the original unmodified client and logs an error
+func ConfigureClientWithTlsPath(client *http.Client) *http.Client {
 	cfg := config.Get()
 	timeout, err := time.ParseDuration(fmt.Sprintf("%ds", cfg.HTTPClientTimeout))
 	if err != nil {
@@ -56,7 +58,7 @@ func ConfigureHttpClient(client *http.Client) *http.Client {
 		return client
 	}
 	if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
-		log.WithFields(log.Fields{"certs": certs, "tlsCAPath": cfg.TlsCAPath}).Warn("adding certificate from PEM failed")
+		log.WithFields(log.Fields{"certs": certs, "tlsCAPath": cfg.TlsCAPath}).Error("failed to add certificate from PEM")
 	}
 	httpConfig := &tls.Config{
 		MinVersion:         tls.VersionTLS12,
