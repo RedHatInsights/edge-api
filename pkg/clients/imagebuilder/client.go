@@ -537,14 +537,15 @@ func (c *Client) GetImageThirdPartyRepos(image *models.Image) ([]Repository, err
 		// init variables for current repository
 		var gpgKey *string
 		var enforceCheckGpg bool
-		// we have no checkGpg field in custom repo or in remote content-sources repositories or in image model
-		// assume that if repo has gpgKey, we should enforce CheckGPG
+		// there is no CheckGpg field in:
+		//		models.ThirdPartyRepo, repositories.Repository, models.Image
+		// assume that if repo has a GpgKey, we should set enforceCheckGPG to true
 		if thirdpartyrepos[i].GpgKey != "" {
 			gpgKey = &thirdpartyrepos[i].GpgKey
 			enforceCheckGpg = true
 		}
 
-		// to preserve compatibility, we want to pass checkGpg only in case of enforce checkGpg is true
+		// to preserve compatibility, we want to pass CheckGpg only in case of enforceCheckGpg is true
 		var checkGpg *bool
 		if enforceCheckGpg {
 			checkGpg = &enforceCheckGpg

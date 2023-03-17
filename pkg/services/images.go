@@ -287,7 +287,6 @@ func (s *ImageService) CreateImage(image *models.Image) error {
 	}
 
 	if feature.ContentSources.IsEnabled() {
-		// need to save the repos to database
 		err := s.SetImageContentSourcesRepositories(image)
 		if err != nil {
 			return err
