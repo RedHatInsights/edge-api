@@ -1692,7 +1692,7 @@ func (th *MockTestExecHelper) MockExecCommand(command string, args ...string) *e
 }
 
 // TestProcessHelper this will be executed in its own process instead of the real command
-func TestProcessHelper(t *testing.T) {
+func TestProcessHelper(_ *testing.T) {
 	if os.Getenv("TEST_PROCESS_HELPER") != "1" {
 		return
 	}
