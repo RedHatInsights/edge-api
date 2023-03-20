@@ -74,7 +74,7 @@ func (c *Client) ExecuteDispatcher(payload DispatcherPayload) ([]Response, error
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("PSK %s", c.psk))
 
-	client := clients.ConfigureClientWithTlsPath(&http.Client{})
+	client := clients.ConfigureHttpClient(&http.Client{})
 	res, err := client.Do(req)
 	if err != nil {
 		c.log.WithFields(log.Fields{

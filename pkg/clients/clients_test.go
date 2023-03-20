@@ -106,12 +106,12 @@ var _ = Describe("Clients", func() {
 
 		It("should get client when TLS path is empty", func() {
 			config.Get().HTTPClientTimeout = 30
-			clientWithTLSPath := clients.ConfigureClientWithTlsPath(&client)
+			clientWithTLSPath := clients.ConfigureHttpClient(&client)
 			Expect(clientWithTLSPath.Timeout).To(Equal(30 * time.Second))
 		})
 		It("should get client when TLS path doesnt exist", func() {
 			config.Get().TlsCAPath = "/test_TLS"
-			clientWithTLSPath := clients.ConfigureClientWithTlsPath(&client)
+			clientWithTLSPath := clients.ConfigureHttpClient(&client)
 			Expect(clientWithTLSPath.Transport).To(BeNil())
 
 		})
@@ -119,7 +119,7 @@ var _ = Describe("Clients", func() {
 			file, err := os.CreateTemp("", "*-tls_file.txt")
 			Expect(err).To(BeNil())
 			config.Get().TlsCAPath = file.Name()
-			clientWithTLSPath := clients.ConfigureClientWithTlsPath(&client)
+			clientWithTLSPath := clients.ConfigureHttpClient(&client)
 			Expect(clientWithTLSPath.Transport).ToNot(BeNil())
 			Expect(clientWithTLSPath.Timeout, 30*time.Second)
 			transport, ok := client.Transport.(*http.Transport)
