@@ -172,8 +172,7 @@ func (c *Client) ListRepositories(requestParams ListRepositoriesParams, filters 
 	for key, value := range headers {
 		req.Header.Add(key, value)
 	}
-
-	client := &http.Client{}
+	client := clients.ConfigureHttpClient(&http.Client{})
 	res, err := client.Do(req)
 	if err != nil {
 		c.log.WithField("error", err.Error()).Error("content source repositories request error")
