@@ -1,5 +1,5 @@
-// Package services handles all service-related features
 // FIXME: golangci-lint
+// Package services handles all service-related features
 // nolint:errcheck,gocritic,govet,revive
 package services
 
@@ -125,6 +125,45 @@ func GetImageReposFromDB(orgID string, repos []models.ThirdPartyRepo) (*[]models
 	return &imagesRepos, nil
 }
 
+// getImageContentSourcesRepositories return a map of content-sources repositories with repository uuid as key and a slice of the repositories UUIDs
+func (s *ImageService) getImageContentSourcesRepositories(image *models.Image) (map[string]*repositories.Repository, []string, error) {
+	// Get the Content-Sources Repositories by name
+	// create a map of content-sources repositories with their uuid as key
+	csRepos := make(map[string]*repositories.Repository, len(image.ThirdPartyRepositories))
+	// create a slice of repos uuids
+	csReposUUID := make([]string, 0, len(image.ThirdPartyRepositories))
+	for _, repo := range image.ThirdPartyRepositories {
+		csRepo, err := s.Repositories.GetRepositoryByName(repo.Name)
+		if err != nil {
+			s.log.WithFields(log.Fields{"repository_name": repo.Name, "error": err.Error()}).Error("error occurred while retrieving content-sources repository")
+			return nil, nil, err
+		}
+		csRepos[csRepo.UUID.String()] = csRepo
+		csReposUUID = append(csReposUUID, csRepo.UUID.String())
+	}
+
+	return csRepos, csReposUUID, nil
+}
+
+// getExistingImageCustomRepositoriesByUUIDS return the local existing custom repositories that correspond to the given content-sources uuids,
+// as a map of repositories.Repository with uuid as key
+func (s *ImageService) getExistingImageCustomRepositoriesByUUIDS(orgID string, uuids []string) (map[string]*models.ThirdPartyRepo, error) {
+	// Get the local existing custom repos that correspond to content-sources uuids
+	var repos []models.ThirdPartyRepo
+	if err := db.Org(orgID, "").Where("uuid", uuids).Find(&repos).Error; err != nil {
+		s.log.WithFields(log.Fields{"repos_uuid": uuids, "error": err.Error()}).Error("error occurred while retrieving from local db")
+		return nil, err
+	}
+	// Create a map of existing custom repos with uuid as key
+	existingReposUUID := make(map[string]*models.ThirdPartyRepo, len(uuids))
+	for _, repo := range repos {
+		// create a local variable to prevent implicit memory aliasing in for loop
+		emRepo := repo
+		existingReposUUID[emRepo.UUID] = &emRepo
+	}
+	return existingReposUUID, nil
+}
+
 // SetImageContentSourcesRepositories rebuild the image.ThirdPartyRepositories from content-sources repositories,
 // we get each repository from content-sources and check if it exists locally by its uuid,
 // if exists locally update its fields, if not create a new record,
@@ -144,33 +183,18 @@ func (s *ImageService) SetImageContentSourcesRepositories(image *models.Image) e
 		return new(OrgIDNotSet)
 	}
 
-	// Get the Content-Sources Repositories by name
-	// create a map of content-sources repositories with their uuid as key
-	csRepos := make(map[string]*repositories.Repository, len(image.ThirdPartyRepositories))
-	// create a slice of repos uuids
-	csReposUUID := make([]string, 0, len(image.ThirdPartyRepositories))
-	for _, repo := range image.ThirdPartyRepositories {
-		csRepo, err := s.Repositories.GetRepositoryByName(repo.Name)
-		if err != nil {
-			s.log.WithFields(log.Fields{"repository_name": repo.Name, "error": err.Error()}).Error("error occurred while retrieving content-sources repository")
-			return err
-		}
-		csRepos[csRepo.UUID.String()] = csRepo
-		csReposUUID = append(csReposUUID, csRepo.UUID.String())
+	// get the Content-Sources Repositories in a map and a slice of the repos uuids
+	csRepos, csReposUUID, err := s.getImageContentSourcesRepositories(image)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("error occurred while retrieving content-sources repositories")
+		return err
 	}
 
 	// Get the local existing custom repos that correspond to content-sources uuids
-	var existingEMRepos []models.ThirdPartyRepo
-	if err := db.Org(image.OrgID, "").Where("uuid", csReposUUID).Find(&existingEMRepos).Error; err != nil {
-		s.log.WithFields(log.Fields{"repos_uuid": csReposUUID, "error": err.Error()}).Error("error occurred while retrieving from local db")
+	existingEMReposUUID, err := s.getExistingImageCustomRepositoriesByUUIDS(image.OrgID, csReposUUID)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("error occurred while getting existing custom repositories by uuids")
 		return err
-	}
-	// Create a map of existing custom repos with uuid as key
-	existingEMReposUUID := make(map[string]*models.ThirdPartyRepo, len(image.ThirdPartyRepositories))
-	for _, emRepo := range existingEMRepos {
-		// create a local variable to prevent implicit memory aliasing in for loop
-		emRepo := emRepo
-		existingEMReposUUID[emRepo.UUID] = &emRepo
 	}
 
 	// build image third-party repos
@@ -180,14 +204,14 @@ func (s *ImageService) SetImageContentSourcesRepositories(image *models.Image) e
 		csRepo := csRepos[UUID]
 		var emRepo models.ThirdPartyRepo
 		if existingEMRepo, ok := existingEMReposUUID[UUID]; ok {
-			// update local custom on any changes, to keep the used repos always updated
-			// make update only in case of changes
-			if existingEMRepo.Name != csRepo.Name ||
+			repositoryChanged := existingEMRepo.Name != csRepo.Name ||
 				existingEMRepo.URL != csRepo.URL ||
 				existingEMRepo.GpgKey != csRepo.GpgKey ||
 				existingEMRepo.DistributionArch != csRepo.DistributionArch ||
-				existingEMRepo.PackageCount != csRepo.PackageCount {
-
+				existingEMRepo.PackageCount != csRepo.PackageCount
+			// update local custom on any changes, to keep the used repos always updated
+			// make update only in case of changes
+			if repositoryChanged {
 				existingEMRepo.Name = csRepo.Name
 				existingEMRepo.URL = csRepo.URL
 				existingEMRepo.GpgKey = csRepo.GpgKey
