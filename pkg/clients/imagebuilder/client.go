@@ -534,8 +534,26 @@ func (c *Client) GetImageThirdPartyRepos(image *models.Image) ([]Repository, err
 		return nil, errors.New("enter valid third party repository id")
 	}
 	for i := 0; i < len(thirdpartyrepos); i++ {
+		// init variables for current repository
+		var gpgKey *string
+		var enforceCheckGpg bool
+		// there is no CheckGpg field in:
+		//		models.ThirdPartyRepo, repositories.Repository, models.Image
+		// assume that if repo has a GpgKey, we should set enforceCheckGPG to true
+		if thirdpartyrepos[i].GpgKey != "" {
+			gpgKey = &thirdpartyrepos[i].GpgKey
+			enforceCheckGpg = true
+		}
+
+		// to preserve compatibility, we want to pass CheckGpg only in case of enforceCheckGpg is true
+		var checkGpg *bool
+		if enforceCheckGpg {
+			checkGpg = &enforceCheckGpg
+		}
 		repos[i] = Repository{
-			BaseURL: thirdpartyrepos[i].URL,
+			BaseURL:  thirdpartyrepos[i].URL,
+			GPGKey:   gpgKey,
+			CheckGPG: checkGpg,
 		}
 	}
 

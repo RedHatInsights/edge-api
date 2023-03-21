@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/pkg/clients"
 	"github.com/redhatinsights/edge-api/pkg/clients/repositories"
 
 	"github.com/bxcodec/faker/v3"
@@ -69,11 +70,13 @@ func TestGetBaseURL(t *testing.T) {
 func TestListRepositories(t *testing.T) {
 	initialContentSourceURL := config.Get().ContentSourcesURL
 	initialAPIRepositoriesPath := repositories.APIRepositoriesPath
+	originalTLScaPATH := config.Get().TlsCAPath
 	// restore the initial content sources url and apiRepositoriesPath
-	defer func(contentSourcesURL, reposPath string) {
+	defer func(contentSourcesURL, reposPath string, tlsCAPath string) {
 		config.Get().ContentSourcesURL = contentSourcesURL
 		repositories.APIRepositoriesPath = reposPath
-	}(initialContentSourceURL, initialAPIRepositoriesPath)
+		config.Get().TlsCAPath = tlsCAPath
+	}(initialContentSourceURL, initialAPIRepositoriesPath, originalTLScaPATH)
 
 	repoName := faker.UUIDHyphenated()
 	defaultFilters := repositories.NewListRepositoryFilters()
@@ -91,9 +94,11 @@ func TestListRepositories(t *testing.T) {
 		Filters             repositories.ListRepositoriesFilters
 		ExpectedError       error
 		ExpectedURLParams   map[string]string
+		TLSCAPath           string
 	}{
 		{
 			Name:       "should return the expected repos",
+			TLSCAPath:  "/test_TLS",
 			HTTPStatus: http.StatusOK,
 			IOReadAll:  io.ReadAll,
 			Params:     repositories.ListRepositoriesParams{Limit: 40, Offset: 41, SortBy: "name", SortType: "asc"},
@@ -214,9 +219,14 @@ func TestListRepositories(t *testing.T) {
 			if testCase.APIRepositoriesPath != "" {
 				repositories.APIRepositoriesPath = testCase.APIRepositoriesPath
 			}
+			if testCase.TLSCAPath != "" {
+				config.Get().TlsCAPath = testCase.TLSCAPath
+			}
 
 			client := repositories.InitClient(context.Background(), log.NewEntry(log.StandardLogger()))
 			assert.NotNil(t, client)
+			clientWithTLSPath := clients.ConfigureHttpClient(&http.Client{})
+			assert.NotNil(t, clientWithTLSPath)
 
 			response, err := client.ListRepositories(testCase.Params, testCase.Filters)
 			if testCase.ExpectedError == nil {
