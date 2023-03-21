@@ -65,6 +65,36 @@ func (mr *MockClientInterfaceMockRecorder) GetRepositoryByName(name interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRepositoryByName", reflect.TypeOf((*MockClientInterface)(nil).GetRepositoryByName), name)
 }
 
+// GetRepositoryByURL mocks base method.
+func (m *MockClientInterface) GetRepositoryByURL(url string) (*repositories.Repository, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRepositoryByURL", url)
+	ret0, _ := ret[0].(*repositories.Repository)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRepositoryByURL indicates an expected call of GetRepositoryByURL.
+func (mr *MockClientInterfaceMockRecorder) GetRepositoryByURL(url interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRepositoryByURL", reflect.TypeOf((*MockClientInterface)(nil).GetRepositoryByURL), url)
+}
+
+// GetRepositoryByUUID mocks base method.
+func (m *MockClientInterface) GetRepositoryByUUID(uuid string) (*repositories.Repository, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRepositoryByUUID", uuid)
+	ret0, _ := ret[0].(*repositories.Repository)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRepositoryByUUID indicates an expected call of GetRepositoryByUUID.
+func (mr *MockClientInterfaceMockRecorder) GetRepositoryByUUID(uuid interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRepositoryByUUID", reflect.TypeOf((*MockClientInterface)(nil).GetRepositoryByUUID), uuid)
+}
+
 // ListRepositories mocks base method.
 func (m *MockClientInterface) ListRepositories(requestParams repositories.ListRepositoriesParams, filters repositories.ListRepositoriesFilters) (*repositories.ListRepositoriesResponse, error) {
 	m.ctrl.T.Helper()
