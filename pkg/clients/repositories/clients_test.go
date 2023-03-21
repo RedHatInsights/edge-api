@@ -225,7 +225,7 @@ func TestListRepositories(t *testing.T) {
 
 			client := repositories.InitClient(context.Background(), log.NewEntry(log.StandardLogger()))
 			assert.NotNil(t, client)
-			clientWithTLSPath := clients.ConfigureHttpClient(&http.Client{})
+			clientWithTLSPath := clients.ConfigureClientWithTLS(&http.Client{})
 			assert.NotNil(t, clientWithTLSPath)
 
 			response, err := client.ListRepositories(testCase.Params, testCase.Filters)
