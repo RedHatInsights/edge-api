@@ -399,6 +399,20 @@ func (mr *MockImageServiceInterfaceMockRecorder) SetFinalImageStatus(i interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetFinalImageStatus", reflect.TypeOf((*MockImageServiceInterface)(nil).SetFinalImageStatus), i)
 }
 
+// SetImageContentSourcesRepositories mocks base method.
+func (m *MockImageServiceInterface) SetImageContentSourcesRepositories(image *models.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetImageContentSourcesRepositories", image)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetImageContentSourcesRepositories indicates an expected call of SetImageContentSourcesRepositories.
+func (mr *MockImageServiceInterfaceMockRecorder) SetImageContentSourcesRepositories(image interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetImageContentSourcesRepositories", reflect.TypeOf((*MockImageServiceInterface)(nil).SetImageContentSourcesRepositories), image)
+}
+
 // SetLog mocks base method.
 func (m *MockImageServiceInterface) SetLog(arg0 *logrus.Entry) {
 	m.ctrl.T.Helper()
