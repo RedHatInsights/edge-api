@@ -34,9 +34,9 @@ func GetOutgoingHeaders(ctx context.Context) map[string]string {
 	return headers
 }
 
-// ConfigureHttpClient return https client in case there is TLS CA path,
+// ConfigureClientWithTLS return https client in case there is TLS CA path,
 // otherwise return the original unmodified client and logs an error
-func ConfigureHttpClient(client *http.Client) *http.Client {
+func ConfigureClientWithTLS(client *http.Client) *http.Client {
 	cfg := config.Get()
 	timeout, err := time.ParseDuration(fmt.Sprintf("%ds", cfg.HTTPClientTimeout))
 	if err != nil {
