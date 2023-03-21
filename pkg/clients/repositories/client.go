@@ -67,6 +67,8 @@ func (filters ListRepositoriesFilters) Add(name, value string) {
 type ClientInterface interface {
 	GetBaseURL() (*url2.URL, error)
 	GetRepositoryByName(name string) (*Repository, error)
+	GetRepositoryByURL(url string) (*Repository, error)
+	GetRepositoryByUUID(uuid string) (*Repository, error)
 	ListRepositories(requestParams ListRepositoriesParams, filters ListRepositoriesFilters) (*ListRepositoriesResponse, error)
 }
 
@@ -99,6 +101,8 @@ var IOReadAll = io.ReadAll
 var ErrRepositoryRequestResponse = errors.New("repository request error response")
 var ErrParsingRawURL = errors.New("error occurred while parsing raw url")
 var ErrRepositoryNameIsMandatory = errors.New("repository name is mandatory")
+var ErrRepositoryURLIsMandatory = errors.New("repository url is mandatory")
+var ErrRepositoryUUIDIsMandatory = errors.New("repository uuid is mandatory")
 var ErrRepositoryNoFound = errors.New("repository not found")
 
 // GetBaseURL return the base url of content sources service
@@ -128,6 +132,78 @@ func (c *Client) GetRepositoryByName(name string) (*Repository, error) {
 		return nil, ErrRepositoryNoFound
 	}
 	return &repos.Data[0], nil
+}
+
+// GetRepositoryByURL return the content-sources repository filtering by its URL
+func (c *Client) GetRepositoryByURL(url string) (*Repository, error) {
+	if url == "" {
+		c.log.Error("repository url is mandatory")
+		return nil, ErrRepositoryURLIsMandatory
+	}
+	repos, err := c.ListRepositories(ListRepositoriesParams{Limit: 1}, ListRepositoriesFilters{"url": url})
+	if err != nil {
+		c.log.WithFields(log.Fields{"repository-url": url, "error": err.Error()}).Error("failed when calling to ListRepositories")
+		return nil, err
+	}
+	if len(repos.Data) == 0 {
+		c.log.WithField("repository-url", url).Error("repository not found")
+		return nil, ErrRepositoryNoFound
+	}
+	return &repos.Data[0], nil
+}
+
+// GetRepositoryByUUID return the content-sources repository by its UUID
+func (c *Client) GetRepositoryByUUID(uuid string) (*Repository, error) {
+	if uuid == "" {
+		c.log.Error("repository uuid is mandatory")
+		return nil, ErrRepositoryUUIDIsMandatory
+	}
+	url, err := c.GetBaseURL()
+	if err != nil {
+		return nil, err
+	}
+
+	repositoryRawURL := url.String() + fmt.Sprintf("/%s/%s/%s", APIVersion, APIRepositoriesPath, uuid)
+	repositoryURL, err := url.Parse(repositoryRawURL)
+	if err != nil {
+		c.log.WithFields(log.Fields{"url": repositoryRawURL, "error": err.Error()}).Error("failed to parse repository url")
+		return nil, ErrParsingRawURL
+	}
+
+	requestURL := repositoryURL.String()
+	c.log.WithField("url", requestURL).Info("content source repository request started")
+	req, _ := http.NewRequest("GET", requestURL, nil)
+	req.Header.Add("Content-Type", "application/json")
+	headers := clients.GetOutgoingHeaders(c.ctx)
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
+
+	client := clients.ConfigureClientWithTLS(&http.Client{})
+	res, err := client.Do(req)
+	if err != nil {
+		c.log.WithField("error", err.Error()).Error("content source repository request error")
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	body, err := IOReadAll(res.Body)
+	if err != nil {
+		c.log.WithFields(log.Fields{"statusCode": res.StatusCode, "error": err.Error()}).Error("content source repository response error")
+		return nil, err
+	}
+	if res.StatusCode != http.StatusOK {
+		c.log.WithFields(log.Fields{"statusCode": res.StatusCode, "responseBody": string(body)}).Error("content source repository error response")
+		return nil, ErrRepositoryRequestResponse
+	}
+
+	var repository Repository
+	err = json.Unmarshal(body, &repository)
+	if err != nil {
+		c.log.WithField("error", err.Error()).Error("error occurred when unmarshalling response body")
+		return nil, err
+	}
+	return &repository, nil
 }
 
 // ListRepositories return the list of content source repositories
