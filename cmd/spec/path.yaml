@@ -359,11 +359,9 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                  - type: array
-                    items:
-                      $ref: "#/components/schemas/v1.UpdateTransaction"
-                  - $ref: "#/components/schemas/v1.APIResponse"
+                type: array
+                items:
+                  $ref: '#/components/schemas/v1.UpdateTransaction'
           description: OK
         "400":
           content:
