@@ -272,7 +272,7 @@ func TestGetRepositoryByName(t *testing.T) {
 			Repository:        nil,
 			HTTPStatus:        http.StatusOK,
 			ExpectedURLParams: map[string]string{"limit": strconv.Itoa(1), "offset": strconv.Itoa(0), "name": repoName},
-			ExpectedError:     repositories.ErrRepositoryNoFound,
+			ExpectedError:     repositories.ErrRepositoryNotFound,
 		},
 		{
 			Name:          "should return error when repo name is empty",
@@ -353,7 +353,7 @@ func TestGetRepositoryByURL(t *testing.T) {
 			Repository:        nil,
 			HTTPStatus:        http.StatusOK,
 			ExpectedURLParams: map[string]string{"limit": strconv.Itoa(1), "offset": strconv.Itoa(0), "url": repoURL},
-			ExpectedError:     repositories.ErrRepositoryNoFound,
+			ExpectedError:     repositories.ErrRepositoryNotFound,
 		},
 		{
 			Name:          "should return error when repo name is empty",
@@ -434,6 +434,13 @@ func TestGetRepositoryByUUID(t *testing.T) {
 			IOReadAll:     io.ReadAll,
 			Response:      &repo,
 			ExpectedError: nil,
+		},
+		{
+			Name:          "should return ErrRepositoryNotFound when http status is 404",
+			UUID:          repoUUID,
+			HTTPStatus:    http.StatusNotFound,
+			IOReadAll:     io.ReadAll,
+			ExpectedError: repositories.ErrRepositoryNotFound,
 		},
 		{
 			Name:          "should return error when http status is not 200",
