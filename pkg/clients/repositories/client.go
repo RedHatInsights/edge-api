@@ -103,7 +103,7 @@ var ErrParsingRawURL = errors.New("error occurred while parsing raw url")
 var ErrRepositoryNameIsMandatory = errors.New("repository name is mandatory")
 var ErrRepositoryURLIsMandatory = errors.New("repository url is mandatory")
 var ErrRepositoryUUIDIsMandatory = errors.New("repository uuid is mandatory")
-var ErrRepositoryNoFound = errors.New("repository not found")
+var ErrRepositoryNotFound = errors.New("repository not found")
 
 // GetBaseURL return the base url of content sources service
 func (c *Client) GetBaseURL() (*url2.URL, error) {
@@ -129,7 +129,7 @@ func (c *Client) GetRepositoryByName(name string) (*Repository, error) {
 	}
 	if len(repos.Data) == 0 {
 		c.log.WithField("repository-name", name).Error("repository not found")
-		return nil, ErrRepositoryNoFound
+		return nil, ErrRepositoryNotFound
 	}
 	return &repos.Data[0], nil
 }
@@ -147,7 +147,7 @@ func (c *Client) GetRepositoryByURL(url string) (*Repository, error) {
 	}
 	if len(repos.Data) == 0 {
 		c.log.WithField("repository-url", url).Error("repository not found")
-		return nil, ErrRepositoryNoFound
+		return nil, ErrRepositoryNotFound
 	}
 	return &repos.Data[0], nil
 }
@@ -193,7 +193,7 @@ func (c *Client) GetRepositoryByUUID(uuid string) (*Repository, error) {
 		return nil, err
 	}
 	if res.StatusCode == http.StatusNotFound {
-		return nil, ErrRepositoryNoFound
+		return nil, ErrRepositoryNotFound
 	}
 	if res.StatusCode != http.StatusOK {
 		c.log.WithFields(log.Fields{"statusCode": res.StatusCode, "responseBody": string(body)}).Error("content source repository error response")

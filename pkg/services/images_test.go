@@ -1370,11 +1370,11 @@ var _ = Describe("Image Service Test", func() {
 
 			It("should return error when repository.GetRepositoryByName fails", func() {
 				image := models.Image{OrgID: orgID, Name: faker.Name(), ThirdPartyRepositories: []models.ThirdPartyRepo{otherEMRepo}}
-				mockRepositories.EXPECT().GetRepositoryByName(image.ThirdPartyRepositories[0].Name).Return(nil, repositories.ErrRepositoryNoFound)
+				mockRepositories.EXPECT().GetRepositoryByName(image.ThirdPartyRepositories[0].Name).Return(nil, repositories.ErrRepositoryNotFound)
 
 				err := service.SetImageContentSourcesRepositories(&image)
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(repositories.ErrRepositoryNoFound))
+				Expect(err).To(MatchError(repositories.ErrRepositoryNotFound))
 			})
 		})
 
@@ -1403,7 +1403,7 @@ var _ = Describe("Image Service Test", func() {
 			})
 
 			It("CreateImage should return error when SetImageContentSourcesRepositories fails", func() {
-				expectedError := repositories.ErrRepositoryNoFound
+				expectedError := repositories.ErrRepositoryNotFound
 				mockRepositories.EXPECT().GetRepositoryByName(emRepos[0].Name).Return(nil, expectedError)
 
 				err := service.CreateImage(&image)
@@ -1457,7 +1457,7 @@ var _ = Describe("Image Service Test", func() {
 			})
 
 			It("should return error when SetImageContentSourcesRepositories fails", func() {
-				expectedError := repositories.ErrRepositoryNoFound
+				expectedError := repositories.ErrRepositoryNotFound
 				mockRepositories.EXPECT().GetRepositoryByName(emRepos[0].Name).Return(nil, expectedError)
 
 				err := service.UpdateImage(&image, &previousImage)
