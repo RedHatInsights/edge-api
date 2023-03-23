@@ -436,6 +436,13 @@ func TestGetRepositoryByUUID(t *testing.T) {
 			ExpectedError: nil,
 		},
 		{
+			Name:          "should return ErrRepositoryNoFound when http status is 404",
+			UUID:          repoUUID,
+			HTTPStatus:    http.StatusNotFound,
+			IOReadAll:     io.ReadAll,
+			ExpectedError: repositories.ErrRepositoryNoFound,
+		},
+		{
 			Name:          "should return error when http status is not 200",
 			UUID:          repoUUID,
 			HTTPStatus:    http.StatusBadRequest,

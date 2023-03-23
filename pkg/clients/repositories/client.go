@@ -192,6 +192,9 @@ func (c *Client) GetRepositoryByUUID(uuid string) (*Repository, error) {
 		c.log.WithFields(log.Fields{"statusCode": res.StatusCode, "error": err.Error()}).Error("content source repository response error")
 		return nil, err
 	}
+	if res.StatusCode == http.StatusNotFound {
+		return nil, ErrRepositoryNoFound
+	}
 	if res.StatusCode != http.StatusOK {
 		c.log.WithFields(log.Fields{"statusCode": res.StatusCode, "responseBody": string(body)}).Error("content source repository error response")
 		return nil, ErrRepositoryRequestResponse
