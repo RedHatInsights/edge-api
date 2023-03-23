@@ -1289,7 +1289,7 @@ var _ = Describe("Image Service Test", func() {
 			}
 			err = db.DB.Create(&existingEMRepo).Error
 			Expect(err).ToNot(HaveOccurred())
-			// other emRepo does not exist in db
+			// other emRepo does not exist in db, but may exist in content-sources repositories
 			otherEMRepo = models.ThirdPartyRepo{OrgID: orgID, Name: faker.UUIDHyphenated(), UUID: faker.UUIDHyphenated(), URL: faker.URL()}
 			emRepos = []models.ThirdPartyRepo{
 				existingEMRepo,
@@ -1303,7 +1303,7 @@ var _ = Describe("Image Service Test", func() {
 				},
 				// add the other that do not exist in db
 				{
-					UUID: uuid.New(), Name: otherEMRepo.Name, URL: faker.URL(), DistributionArch: faker.UUIDHyphenated(),
+					UUID: uuid.MustParse(otherEMRepo.UUID), Name: otherEMRepo.Name, URL: faker.URL(), DistributionArch: faker.UUIDHyphenated(),
 					GpgKey: faker.UUIDHyphenated(), PackageCount: 160,
 				},
 			}
@@ -1325,8 +1325,8 @@ var _ = Describe("Image Service Test", func() {
 
 		Context("#SetImageContentSourcesRepositories", func() {
 			It("should set the image third-party repos successfully", func() {
-				mockRepositories.EXPECT().GetRepositoryByName(emRepos[0].Name).Return(&csRepos[0], nil)
-				mockRepositories.EXPECT().GetRepositoryByName(emRepos[1].Name).Return(&csRepos[1], nil)
+				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[0].UUID).Return(&csRepos[0], nil)
+				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[1].UUID).Return(&csRepos[1], nil)
 
 				err := service.SetImageContentSourcesRepositories(&image)
 				Expect(err).ToNot(HaveOccurred())
@@ -1368,13 +1368,36 @@ var _ = Describe("Image Service Test", func() {
 				Expect(err.Error()).To(Equal(services.OrgIDNotSetMsg))
 			})
 
-			It("should return error when repository.GetRepositoryByName fails", func() {
+			It("should return error when repository.GetRepositoryByUUID fails with unknown error", func() {
 				image := models.Image{OrgID: orgID, Name: faker.Name(), ThirdPartyRepositories: []models.ThirdPartyRepo{otherEMRepo}}
-				mockRepositories.EXPECT().GetRepositoryByName(image.ThirdPartyRepositories[0].Name).Return(nil, repositories.ErrRepositoryNotFound)
+				expectedError := errors.New("expected unknown error returned when calling GetRepositoryByUUID")
+				mockRepositories.EXPECT().GetRepositoryByUUID(image.ThirdPartyRepositories[0].UUID).Return(nil, expectedError)
 
 				err := service.SetImageContentSourcesRepositories(&image)
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError(repositories.ErrRepositoryNotFound))
+				Expect(err).To(MatchError(expectedError))
+			})
+
+			It("should ignore repository if it does not exist in content-sources", func() {
+				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[0].UUID).Return(&csRepos[0], nil)
+				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[1].UUID).Return(&csRepos[1], repositories.ErrRepositoryNotFound)
+
+				err := service.SetImageContentSourcesRepositories(&image)
+				Expect(err).ToNot(HaveOccurred())
+				// the non-existent content-sources repository was ignored
+				Expect(len(image.ThirdPartyRepositories)).To(Equal(1))
+				imageRepo := image.ThirdPartyRepositories[0]
+				// The existing repo has not changed id and UUID
+				Expect(imageRepo.ID).To(Equal(existingEMRepo.ID))
+				Expect(imageRepo.UUID).To(Equal(existingEMRepo.UUID))
+
+				// check that the existing repo has been updated has the expected data
+				Expect(imageRepo.Name).To(Equal(csRepos[0].Name))
+				Expect(imageRepo.UUID).To(Equal(csRepos[0].UUID.String()))
+				Expect(imageRepo.URL).To(Equal(csRepos[0].URL))
+				Expect(imageRepo.DistributionArch).To(Equal(csRepos[0].DistributionArch))
+				Expect(imageRepo.GpgKey).To(Equal(csRepos[0].GpgKey))
+				Expect(imageRepo.PackageCount).To(Equal(csRepos[0].PackageCount))
 			})
 		})
 
@@ -1384,8 +1407,8 @@ var _ = Describe("Image Service Test", func() {
 				expectedError := errors.New("simulate compose commit error as the call should happen before calling ComposeCommit")
 				mockImageBuilderClient.EXPECT().ComposeCommit(&image).Return(&image, expectedError)
 
-				mockRepositories.EXPECT().GetRepositoryByName(emRepos[0].Name).Return(&csRepos[0], nil)
-				mockRepositories.EXPECT().GetRepositoryByName(emRepos[1].Name).Return(&csRepos[1], nil)
+				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[0].UUID).Return(&csRepos[0], nil)
+				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[1].UUID).Return(&csRepos[1], nil)
 
 				err := service.CreateImage(&image)
 				Expect(err).To(HaveOccurred())
@@ -1402,9 +1425,9 @@ var _ = Describe("Image Service Test", func() {
 				}
 			})
 
-			It("CreateImage should return error when SetImageContentSourcesRepositories fails", func() {
-				expectedError := repositories.ErrRepositoryNotFound
-				mockRepositories.EXPECT().GetRepositoryByName(emRepos[0].Name).Return(nil, expectedError)
+			It("CreateImage should return error when SetImageContentSourcesRepositories fails with unknown error", func() {
+				expectedError := errors.New("expected unknown GetRepositoryByUUID error")
+				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[0].UUID).Return(nil, expectedError)
 
 				err := service.CreateImage(&image)
 				Expect(err).To(HaveOccurred())
@@ -1438,8 +1461,8 @@ var _ = Describe("Image Service Test", func() {
 				expectedError := errors.New("simulate compose commit error as the call should happen before calling ComposeCommit")
 				mockImageBuilderClient.EXPECT().ComposeCommit(&image).Return(&image, expectedError)
 
-				mockRepositories.EXPECT().GetRepositoryByName(emRepos[0].Name).Return(&csRepos[0], nil)
-				mockRepositories.EXPECT().GetRepositoryByName(emRepos[1].Name).Return(&csRepos[1], nil)
+				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[0].UUID).Return(&csRepos[0], nil)
+				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[1].UUID).Return(&csRepos[1], nil)
 
 				err := service.UpdateImage(&image, &previousImage)
 				Expect(err).To(HaveOccurred())
@@ -1456,9 +1479,9 @@ var _ = Describe("Image Service Test", func() {
 				}
 			})
 
-			It("should return error when SetImageContentSourcesRepositories fails", func() {
-				expectedError := repositories.ErrRepositoryNotFound
-				mockRepositories.EXPECT().GetRepositoryByName(emRepos[0].Name).Return(nil, expectedError)
+			It("should return error when SetImageContentSourcesRepositories fails with unknown error", func() {
+				expectedError := errors.New("expected unknown GetRepositoryByUUID error")
+				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[0].UUID).Return(nil, expectedError)
 
 				err := service.UpdateImage(&image, &previousImage)
 				Expect(err).To(HaveOccurred())

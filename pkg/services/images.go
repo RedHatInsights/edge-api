@@ -133,8 +133,17 @@ func (s *ImageService) getImageContentSourcesRepositories(image *models.Image) (
 	// create a slice of repos uuids
 	csReposUUID := make([]string, 0, len(image.ThirdPartyRepositories))
 	for _, repo := range image.ThirdPartyRepositories {
-		csRepo, err := s.Repositories.GetRepositoryByName(repo.Name)
+		csRepo, err := s.Repositories.GetRepositoryByUUID(repo.UUID)
 		if err != nil {
+			if err == repositories.ErrRepositoryNotFound {
+				// only log the error and ignore any repository that does not exist
+				s.log.WithFields(log.Fields{
+					"repository_name": repo.Name,
+					"repository_uuid": repo.UUID,
+					"error":           err.Error(),
+				}).Error("repository was not found on content-sources")
+				continue
+			}
 			s.log.WithFields(log.Fields{"repository_name": repo.Name, "error": err.Error()}).Error("error occurred while retrieving content-sources repository")
 			return nil, nil, err
 		}
