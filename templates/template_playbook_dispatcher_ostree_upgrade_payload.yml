@@ -19,29 +19,35 @@
       contenturl={{ repo_content_url }}
       tls-client-key-path=/etc/pki/consumer/key.pem
       tls-client-cert-path=/etc/pki/consumer/cert.pem
+      {{ proxy_details.stdout }}
     insights_signature_exclude: "/vars/insights_signature,/vars/update_number,/vars/ostree_remote_name,/vars/ostree_changes_refs,/vars/os_tree_ref,/vars/repo_url,/vars/repo_content_url,/vars/ostree_gpg_verify"
     insights_signature: !!binary |
       TFMwdExTMUNSVWRKVGlCUVIxQWdVMGxIVGtGVVZWSkZMUzB0TFMwS1ZtVnljMmx2YmpvZ1IyNTFV
-      RWNnZGpFS0NtbFJTVlpCZDFWQldTOVZaSFJqZG5jMU9FUXJhalZ3VGtGUmFuUkdVUzhyUzJwMVVu
-      WXdaRVJuWmpBemFHVkVWUzg1ZGpsRmFtaGhTVWxJT0VwSU1rUUtRMXBMVTFsRldHeFVkRlpzVEdK
-      RFprOXlORFZqWWs1dU5tVmlaVVVyTUdSMllVbDJUelZIUjNCUGVtTndWak56UkM5MGJEaGxWVTQy
-      T0RsNVJHOUpjQXA0VW5ScFVtUlVZVlJqVDFFeE5XYzBTRGxxTkdvek5uTkhWbVpSUWxsdk9XSm1P
-      SEpwVmpkbVNEVnZSMWRMUVVGeFIyZEpOa2hQWnpGUGNtUlNlblEzQ2psd05XZEtkMlI0VW1ablNI
-      WlFTMWhtV2xwMk5reFNSV1pzWjAxblZuUnZVelZ6YmtVdlFqUkxkM0ZDZW1aNWVraGlWalZsV1N0
-      Q1UwZFBUbWwzVW1JS2IwWnBla1JPT1ZJMFpYVllkWFpyT1ZWa2QwZzRkR1pPZUZReGVreGpaWE5W
-      TWsxNkswTTRlRXRaTTB4Qk5rcFBaRGhtT1RRM1pFZ3hObmxOY20xVVVBcEdZVkkyTDJ0bFVWUm5S
-      VXh5TUdGcFZFczBiVFZZZURBMFQxUmhkVmg0Y213MlZUZEVPRXh0ZERWNGJIZGtWWHBoTWxNelpt
-      ZHRka3hLUkhCa1dqZERDa3hoVFZrck1FMVhMMk5uZEV0YVdrMXVNVUo2UkVGVEsyeFhWbHAyZW1s
-      R05sQk5SVTlwTVVSYVIzaG9Wa1U1YkVsM2RtaFNhVUp6ZVhWcVVGWTNRbXdLTW1OU2IxWjBTRTkx
-      TDI5cmRHa3dSVGc0VTBWdWNrdFVUSEp6YTJaaGFFOTVlRmhvUW1wallXNUhlbGRZWlZCMk5Vb3ZW
-      elJvWTFCNGFYSlROWE5UV1Fwc2JXUXJlWEF6YjFCb2RHdE5ibGxQTURsWGVVVlllRzFTUkcxRFZW
-      VnZSbkZVY0RKNGNHVnRjekpaZFhadVFqQlNOVUpFTkROQ2JqaG9OQ3RaTURGeUNuZzFSbTFJTTJW
-      V0t5dHNPVWxVT1ZRM2VYVjFRMU5vVkVSVE5HcGpiRXg1S3pWdksyOWlaSE4yWVZWWU9UbFJZbUpE
-      YVRoNVYxQXJlWEo1WnpWdU4wd0tSMmRzYTBkcVlXSTRMMHM1VVhwME0wVlRjbWh5TTJwYWMxZDJj
-      Vk15VGpsT1dtVkVMM3BZZHpSUldYbFVNVnB1VlhCM2EyaG1lV3BIVURCRk9WcEhVZ3B5TjJKVGVE
-      VXhTVUZsZHowS1BUazNXaThLTFMwdExTMUZUa1FnVUVkUUlGTkpSMDVCVkZWU1JTMHRMUzB0Q2c9
+      RWNnZGpFS0NtbFJTVlpCZDFWQldrTkhPR0k0ZG5jMU9FUXJhalZ3VGtGUmFGWklaeTgzUW1GM09U
+      RjJibmd6Y2tRM2VrOW5kemxPZWprM1lWSXZhSEJIY0U5U2N6QUtORk01ZVRGcFZqbEVTVk00VkVO
+      SWIxSnBhbkJXTVZWMmJqWlVaMkZhV21KeE0zQnlURzQ0TXpRNFUzVmlVekoyVERCRk9WVnBjWE5s
+      VDFrd2ExUkRPQXBOS3pKVUt5dFNPRlV3TTNOa1RrbFllWFpwV1ZVM01tczRlazFtU0hsMkszVnZX
+      bFZWWmxJMlVITjJNSEppUkRWdFFUY3JWM2RHYmpCaVpIaG1RbGxaQ2twR01USkVNM3BXWm1ORFdH
+      eFNjSE5yU0VWUWJXcG9RV041V0dKcWFrOVJZVXc0YlVjMWJsRnNUakJWZGxSUFVsTjBkVFYxUWxs
+      cWNGZGFhVUZsTTNVS2JEVkdNR2RrUVc1b1pqSkNaelZaVmtKM1ZrWnpSWFUwZUc5Q1VHdzRORWwy
+      YTFKU1lrMTVjRTR2YVVaa01rMURUMkpEU0ROU1ZraDRTR2RFTUhaYVlRcGlOR013Y0dsSlluRklO
+      V2xYVVVsWFYxcEJTV1p6UkVKWVZHaGxRbXN4YmxWVU1HaGhWbmhaYlhsWmJsWnRZbVpoY0VwTFYw
+      eFRPVmh2ZEc1Q2VYRTVDalUzUVhJMVkzVmxOMjVTWWxSa1ZYbFBTRFIyVjNoM1MxUTRZMk5ZUWxo
+      RFRWUnFNMk4wUkdaVFJHdElOMnRDVEZaUEwwRldjalpWV21wTVdpczJWVTBLZGtJd1Myb3hhR2Rv
+      VlRoTlN6Y3ZaVlJvVWpCWVpFcHZjemxuVDNkNFoySlBlV3BrTW1OSVYyeEZLeTlqTW5GUmIwWjFT
+      MVozUTJNclVISXdRVGh6VGdvcmNVbHJURFZuWjBreVpqUkJRV1psY2pBeVRtdHNkRTFaTm13NFVD
+      OVdaSE50VkRWSGJ6Tm1NVUU1WWs1c2JTOXZSVTh2ZVZWbUswcGlWa2hHWm1sR0NreHhVa1JaVVZS
+      dldVWmFVa2RsTURSek0zRkJUMnB0YzNWeldYWndTVWt4VHk5WGRXZFhkbVlyUldndlIxSTVjRkZv
+      VlhCTVdFNUhTVmRMWlVGamJEY0tZVXhOTTNneU1YTjNTWFpLYTFwcGNGTnlabFJaYUdkRVFVUTVW
+      MVV6ZEM5UVpFVTJOM0EyWTNnNVFrRnFUWEF4YUZsV1VETlNUMk5NUXpORUswdFlNd3B6WW14T05X
+      eGxXSEJQYXowS1BYRkJWVlVLTFMwdExTMUZUa1FnVUVkUUlGTkpSMDVCVkZWU1JTMHRMUzB0Q2c9
       PQ==
   tasks:
+    - name: get the proxy line content if exists
+      command: grep 'proxy' /etc/ostree/remotes.d/rhel-edge.conf
+      register: proxy_details
+      changed_when: false
+      failed_when: false
     - name: apply templated ostree remote config
       ansible.builtin.copy:
         content: "{{ ostree_remote_template }}"
