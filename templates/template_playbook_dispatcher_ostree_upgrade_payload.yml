@@ -19,7 +19,7 @@
       contenturl={{ repo_content_url }}
       tls-client-key-path=/etc/pki/consumer/key.pem
       tls-client-cert-path=/etc/pki/consumer/cert.pem
-      {{ proxy_details.stdout }}
+      {{ repo_details['content'] | b64decode | split('\n') | regex_search('proxy.*/') }}
     insights_signature_exclude: "/vars/insights_signature,/vars/update_number,/vars/ostree_remote_name,/vars/ostree_changes_refs,/vars/os_tree_ref,/vars/repo_url,/vars/repo_content_url,/vars/ostree_gpg_verify"
     insights_signature: !!binary |
       TFMwdExTMUNSVWRKVGlCUVIxQWdVMGxIVGtGVVZWSkZMUzB0TFMwS1ZtVnljMmx2YmpvZ1IyNTFV
@@ -44,9 +44,10 @@
       PQ==
   tasks:
     - name: get the proxy line content if exists
-      command: grep 'proxy' /etc/ostree/remotes.d/rhel-edge.conf
-      register: proxy_details
-      changed_when: false
+      ansible.builtin.slurp:
+        src: /etc/ostree/remotes.d/rhel-edge.conf
+      register: repo_details
+      check_mode: yes
       failed_when: false
     - name: apply templated ostree remote config
       ansible.builtin.copy:
