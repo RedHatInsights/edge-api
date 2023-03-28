@@ -66,7 +66,8 @@ useradd -m -G wheel $USER_NAME
 USER_HOME=$(getent passwd $USER_NAME | awk -F: '{print $6}')
 
 mkdir -p ${USER_HOME}/.ssh
-chmod 755 ${USER_HOME}/.ssh
+chown ${USER_NAME}:${USER_NAME} ${USER_HOME}/.ssh
+chmod 0700 ${USER_HOME}/.ssh
 cat <<'__AUTHKEYS__' >> ${USER_HOME}/.ssh/authorized_keys 
 {{.Sshkey}}
 __AUTHKEYS__
@@ -94,8 +95,8 @@ then
 
 		USER_HOME=$(getent passwd $ADMIN_USER | awk -F: '{print $6}')
 		mkdir -p ${USER_HOME}/.ssh
-		chmod 755 ${USER_HOME}/.ssh
 		chown ${ADMIN_USER}:${ADMIN_USER} ${USER_HOME}/.ssh
+		chmod 0700 ${USER_HOME}/.ssh
 
 		cat /root/fleet_authkeys.txt >> ${USER_HOME}/.ssh/authorized_keys
 		chmod 600 ${USER_HOME}/.ssh/authorized_keys
