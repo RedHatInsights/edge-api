@@ -36,9 +36,15 @@
       PQ==
   tasks:
     - name: verify that configuration file exist
-      file:
+      ansible.builtin.file:
         path: "{{ conf_file_path }}"
         state: touch
+    - name: verify that title of configuration file exist
+      ansible.builtin.lineinfile:
+          dest: "{{ conf_file_path }}"
+          regexp: ^\[.*\]
+          line: '[remote "{{ ostree_remote_name }}"]'
+          state: present
     - name: apply templated ostree remote config
       ansible.builtin.lineinfile:
         dest: "{{ conf_file_path }}"
