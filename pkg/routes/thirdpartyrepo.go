@@ -101,6 +101,10 @@ func getThirdPartyRepo(w http.ResponseWriter, r *http.Request) *models.ThirdPart
 // CreateThirdPartyRepo creates Third Party Repository
 func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
+	if feature.ContentSources.IsEnabled() {
+		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable(""))
+		return
+	}
 	thirdPartyRepo, err := createRequest(w, r)
 	if err != nil {
 		// error handled by createRequest already
@@ -388,12 +392,17 @@ func GetThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 
 // UpdateThirdPartyRepo updates the existing third party repository
 func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	if feature.ContentSources.IsEnabled() {
+		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable(""))
+		return
+	}
 	oldtprepo := getThirdPartyRepo(w, r)
 	if oldtprepo == nil {
 		// error is handled by getThirdPartyRepo
 		return
 	}
-	ctxServices := dependencies.ServicesFromContext(r.Context())
+
 	tprepo, err := createRequest(w, r)
 	if err != nil {
 		// error handled by createRequest already
@@ -427,12 +436,17 @@ func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 
 // DeleteThirdPartyRepoByID deletes the third party repository using ID
 func DeleteThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	if feature.ContentSources.IsEnabled() {
+		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable(""))
+		return
+	}
 	tprepo := getThirdPartyRepo(w, r)
 	if tprepo == nil {
 		// error response handled by getThirdPartyRepo
 		return
 	}
-	ctxServices := dependencies.ServicesFromContext(r.Context())
+
 	tprepo, err := ctxServices.ThirdPartyRepoService.DeleteThirdPartyRepoByID(fmt.Sprint(tprepo.ID))
 	if err != nil {
 		var responseErr errors.APIError

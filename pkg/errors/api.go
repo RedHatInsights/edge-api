@@ -72,8 +72,14 @@ type FeatureNotAvailable struct {
 	apiError
 }
 
+// FeatureNotAvailableDefaultMessage the message used by default for FeatureNotAvailable API error
+const FeatureNotAvailableDefaultMessage = "Feature not available"
+
 // NewFeatureNotAvailable creates a new NewFeatureNotAvailable
 func NewFeatureNotAvailable(message string) APIError {
+	if message == "" {
+		message = FeatureNotAvailableDefaultMessage
+	}
 	err := new(FeatureNotAvailable)
 	err.Code = "FEATURE_NOT_AVAILABLE"
 	err.Title = message
