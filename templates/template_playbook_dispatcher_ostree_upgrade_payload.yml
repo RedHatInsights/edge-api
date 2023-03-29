@@ -3,6 +3,7 @@
   become: true
   hosts: localhost
   vars:
+    conf_file_path: /etc/ostree/remotes.d/rhel-edge.conf
     update_number: "@@ .UpdateNumber @@"
     repo_url: "@@ .RepoURL @@"
     repo_content_url: "@@ .RepoContentURL @@"
@@ -11,15 +12,6 @@
     os_tree_ref: "@@ .OSTreeRef @@"
     ostree_gpg_verify: "@@ .GoTemplateGpgVerify @@"
     ostree_gpg_keypath: "/etc/pki/rpm-gpg/"
-    ostree_remote_template: |
-      [remote "{{ ostree_remote_name }}"]
-      url={{ repo_url }}
-      gpg-verify={{ ostree_gpg_verify }}
-      gpgkeypath={{ ostree_gpg_keypath }}
-      contenturl={{ repo_content_url }}
-      tls-client-key-path=/etc/pki/consumer/key.pem
-      tls-client-cert-path=/etc/pki/consumer/cert.pem
-      {{ repo_details['content'] | b64decode | split('\n') | regex_search('proxy.*/') }}
     insights_signature_exclude: "/vars/insights_signature,/vars/update_number,/vars/ostree_remote_name,/vars/ostree_changes_refs,/vars/os_tree_ref,/vars/repo_url,/vars/repo_content_url,/vars/ostree_gpg_verify"
     insights_signature: !!binary |
       TFMwdExTMUNSVWRKVGlCUVIxQWdVMGxIVGtGVVZWSkZMUzB0TFMwS1ZtVnljMmx2YmpvZ1IyNTFV
@@ -43,16 +35,23 @@
       eGxXSEJQYXowS1BYRkJWVlVLTFMwdExTMUZUa1FnVUVkUUlGTkpSMDVCVkZWU1JTMHRMUzB0Q2c9
       PQ==
   tasks:
-    - name: get the proxy line content if exists
-      ansible.builtin.slurp:
-        src: /etc/ostree/remotes.d/rhel-edge.conf
-      register: repo_details
-      check_mode: yes
-      failed_when: false
+    - name: verify that configuration file exist
+      file:
+        path: "{{ conf_file_path }}"
+        state: touch
     - name: apply templated ostree remote config
-      ansible.builtin.copy:
-        content: "{{ ostree_remote_template }}"
-        dest: /etc/ostree/remotes.d/rhel-edge.conf
+      ansible.builtin.lineinfile:
+        dest: "{{ conf_file_path }}"
+        regexp: "^{{ item.property }}"
+        line: "{{ item.property }}{{ item.value }}"
+        state: present
+        loop:
+          - { property: 'url=', value: '{{repo_url}}' }
+          - { property: 'gpg-verify=', value: '{{ ostree_gpg_verify }}' }
+          - { property: 'gpgkeypath=', value: '{{ ostree_gpg_keypath }}' }
+          - { property: 'contenturl=', value: '{{ repo_content_url }}' }
+          - { property: 'tls-client-key-path=', value: '/etc/pki/consumer/key.pem' }
+          - { property: 'tls-client-cert-path=', value: '/etc/pki/consumer/cert.pem' }
     - name: run rpmostree update
       when: not ostree_changes_refs|bool
       ansible.builtin.shell: rpm-ostree upgrade --allow-downgrade
