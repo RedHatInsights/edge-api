@@ -41,23 +41,23 @@
         state: touch
     - name: verify that title of configuration file exist
       ansible.builtin.lineinfile:
-          dest: "{{ conf_file_path }}"
-          regexp: ^\[.*\]
-          line: '[remote "{{ ostree_remote_name }}"]'
-          state: present
+        dest: "{{ conf_file_path }}"
+        regexp: ^\[.*\]
+        line: '[remote "{{ ostree_remote_name }}"]'
+        state: present
     - name: apply templated ostree remote config
       ansible.builtin.lineinfile:
         dest: "{{ conf_file_path }}"
         regexp: "^{{ item.property }}"
         line: "{{ item.property }}{{ item.value }}"
         state: present
-        loop:
-          - { property: 'url=', value: '{{repo_url}}' }
-          - { property: 'gpg-verify=', value: '{{ ostree_gpg_verify }}' }
-          - { property: 'gpgkeypath=', value: '{{ ostree_gpg_keypath }}' }
-          - { property: 'contenturl=', value: '{{ repo_content_url }}' }
-          - { property: 'tls-client-key-path=', value: '/etc/pki/consumer/key.pem' }
-          - { property: 'tls-client-cert-path=', value: '/etc/pki/consumer/cert.pem' }
+      loop:
+        - { property: 'url=', value: '{{ repo_url }}' }
+        - { property: 'gpg-verify=', value: '{{ ostree_gpg_verify }}' }
+        - { property: 'gpgkeypath=', value: '{{ ostree_gpg_keypath }}' }
+        - { property: 'contenturl=', value: '{{ repo_content_url }}' }
+        - { property: 'tls-client-key-path=', value: '/etc/pki/consumer/key.pem' }
+        - { property: 'tls-client-cert-path=', value: '/etc/pki/consumer/cert.pem' }
     - name: run rpmostree update
       when: not ostree_changes_refs|bool
       ansible.builtin.shell: rpm-ostree upgrade --allow-downgrade
