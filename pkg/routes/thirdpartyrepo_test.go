@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -19,6 +20,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients/repositories/mock_repositories"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
+	apiError "github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -433,6 +435,7 @@ var _ = Describe("ThirdPartyRepos basic routes", func() {
 			ctrl = gomock.NewController(GinkgoT())
 			mockRepositoriesService = mock_repositories.NewMockClientInterface(ctrl)
 			mockImageService = mock_services.NewMockImageServiceInterface(ctrl)
+			mockThirdPartyRepoService = mock_services.NewMockThirdPartyRepoServiceInterface(ctrl)
 
 			listRepositoryResponse = repositories.ListRepositoriesResponse{
 				Data: []repositories.Repository{
@@ -449,9 +452,10 @@ var _ = Describe("ThirdPartyRepos basic routes", func() {
 			router.Use(func(next http.Handler) http.Handler {
 				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					ctx := dependencies.ContextWithServices(r.Context(), &dependencies.EdgeAPIServices{
-						ImageService:        mockImageService,
-						RepositoriesService: mockRepositoriesService,
-						Log:                 log.NewEntry(log.StandardLogger()),
+						ImageService:          mockImageService,
+						RepositoriesService:   mockRepositoriesService,
+						ThirdPartyRepoService: mockThirdPartyRepoService,
+						Log:                   log.NewEntry(log.StandardLogger()),
 					})
 					next.ServeHTTP(w, r.WithContext(ctx))
 				})
@@ -671,6 +675,80 @@ var _ = Describe("ThirdPartyRepos basic routes", func() {
 				respBody, err := io.ReadAll(httpTestRecorder.Body)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(string(respBody)).To(ContainSubstring("cannot find org-id"))
+			})
+		})
+
+		Context("Modify ThirdParty repositories is not allowed", func() {
+			It("should return error when creating a new thirdParty repository", func() {
+				newRepo := models.ThirdPartyRepo{
+					OrgID:       orgID,
+					Name:        faker.UUIDHyphenated(),
+					Description: faker.UUIDHyphenated(),
+					URL:         faker.URL(),
+				}
+				repoJson, err := json.Marshal(&newRepo)
+				Expect(err).ToNot(HaveOccurred())
+				req, err := http.NewRequest("POST", "/thirdpartyrepo/", bytes.NewBuffer(repoJson))
+				Expect(err).ToNot(HaveOccurred())
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusNotImplemented))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring(apiError.FeatureNotAvailableDefaultMessage))
+			})
+
+			It("should return error when updating thirdParty repository", func() {
+				repo := models.ThirdPartyRepo{
+					OrgID:       orgID,
+					Name:        faker.UUIDHyphenated(),
+					Description: faker.UUIDHyphenated(),
+					URL:         faker.URL(),
+				}
+				err := db.DB.Create(&repo).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				repo.URL = faker.URL()
+				repoJson, err := json.Marshal(&repo)
+				Expect(err).ToNot(HaveOccurred())
+				req, err := http.NewRequest("PUT", fmt.Sprintf("/thirdpartyrepo/%d", repo.ID), bytes.NewBuffer(repoJson))
+				Expect(err).ToNot(HaveOccurred())
+
+				mockThirdPartyRepoService.EXPECT().GetThirdPartyRepoByID(strconv.FormatUint(uint64(repo.ID), 10)).Return(&repo, nil)
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusNotImplemented))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring(apiError.FeatureNotAvailableDefaultMessage))
+			})
+
+			It("should return error when deleting thirdParty repository", func() {
+				repo := models.ThirdPartyRepo{
+					OrgID:       orgID,
+					Name:        faker.UUIDHyphenated(),
+					Description: faker.UUIDHyphenated(),
+					URL:         faker.URL(),
+				}
+				err := db.DB.Create(&repo).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				req, err := http.NewRequest("DELETE", fmt.Sprintf("/thirdpartyrepo/%d", repo.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				mockThirdPartyRepoService.EXPECT().GetThirdPartyRepoByID(strconv.FormatUint(uint64(repo.ID), 10)).Return(&repo, nil)
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusNotImplemented))
+				respBody, err := io.ReadAll(httpTestRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).To(ContainSubstring(apiError.FeatureNotAvailableDefaultMessage))
 			})
 		})
 	})
