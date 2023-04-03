@@ -35,19 +35,18 @@
       eGxXSEJQYXowS1BYRkJWVlVLTFMwdExTMUZUa1FnVUVkUUlGTkpSMDVCVkZWU1JTMHRMUzB0Q2c9
       PQ==
   tasks:
-    - name: verify that configuration file exist
-      ansible.builtin.file:
-        path: "{{ conf_file_path }}"
-        state: touch
     - name: verify that title of configuration file exist
       ansible.builtin.lineinfile:
         dest: "{{ conf_file_path }}"
+        create: true
+        backup: true
         regexp: ^\[.*\]
         line: '[remote "{{ ostree_remote_name }}"]'
         state: present
     - name: apply templated ostree remote config
       ansible.builtin.lineinfile:
         dest: "{{ conf_file_path }}"
+        backup: true
         regexp: "^{{ item.property }}"
         line: "{{ item.property }}{{ item.value }}"
         state: present
