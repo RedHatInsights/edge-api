@@ -545,3 +545,96 @@ func TestGetRepositoryByUUID(t *testing.T) {
 		})
 	}
 }
+
+func TestSearchContentPackage(t *testing.T) {
+	initialContentSourceURL := config.Get().ContentSourcesURL
+	initialAPIRepositoriesPath := repositories.APIRepositoriesPath
+	defer func(contentSourcesURL, reposPath string) {
+		config.Get().ContentSourcesURL = contentSourcesURL
+		repositories.APIRepositoriesPath = reposPath
+	}(initialContentSourceURL, initialAPIRepositoriesPath)
+
+	testCases := []struct {
+		Name                string
+		ContentSourcesURL   string
+		PackageName         string
+		APIRepositoriesPath string
+		URLS                []string
+		IOReadAll           func(r io.Reader) ([]byte, error)
+		HTTPStatus          int
+		Response            *repositories.RepositoriesResponse
+		ResponseText        string
+		ExpectedError       error
+	}{
+		{
+			Name:        "should return the expected repos",
+			URLS:        []string{"https://dl.fedoraproject.org/pub/epel/7/x86_64/"},
+			PackageName: "catch",
+			HTTPStatus:  http.StatusOK,
+			IOReadAll:   io.ReadAll,
+			Response: &repositories.RepositoriesResponse{
+				Data: &[]repositories.SearchRepositoriesResponse{
+					{PackageName: "catch-devel",
+						Summary: "Development files for catch"},
+				},
+			},
+			ExpectedError: nil,
+		},
+		{
+			Name:          "should return error",
+			URLS:          []string{"https://google.com"},
+			PackageName:   "",
+			HTTPStatus:    http.StatusInternalServerError,
+			IOReadAll:     io.ReadAll,
+			Response:      &repositories.RepositoriesResponse{},
+			ExpectedError: &repositories.PackageRequestError{},
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			initialAPIRepositoriesPath := repositories.APIRepositoriesPath
+
+			defer func(reposPath string) {
+				repositories.APIRepositoriesPath = reposPath
+				repositories.IOReadAll = io.ReadAll
+			}(initialAPIRepositoriesPath)
+
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(testCase.HTTPStatus)
+				if testCase.ResponseText != "" {
+					_, err := fmt.Fprint(w, testCase.ResponseText)
+					assert.NoError(t, err)
+					return
+				}
+				if testCase.Response != nil {
+					err := json.NewEncoder(w).Encode(&testCase.Response)
+					assert.NoError(t, err)
+				}
+			}))
+			defer ts.Close()
+
+			repositories.IOReadAll = testCase.IOReadAll
+			if testCase.ContentSourcesURL == "" {
+				config.Get().ContentSourcesURL = ts.URL
+			} else {
+				config.Get().ContentSourcesURL = testCase.ContentSourcesURL
+			}
+			if testCase.APIRepositoriesPath != "" {
+				repositories.APIRepositoriesPath = testCase.APIRepositoriesPath
+			}
+
+			client := repositories.InitClient(context.Background(), log.NewEntry(log.StandardLogger()))
+			assert.NotNil(t, client)
+
+			response, err := client.SearchContentPackage(testCase.PackageName, testCase.URLS)
+			if testCase.ExpectedError == nil {
+				assert.NoError(t, err)
+				assert.Equal(t, response, testCase.Response)
+			} else {
+				assert.ErrorContains(t, err, testCase.ExpectedError.Error())
+			}
+		})
+	}
+}
