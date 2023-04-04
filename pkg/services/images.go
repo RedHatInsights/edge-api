@@ -321,7 +321,11 @@ func (s *ImageService) CreateImage(image *models.Image) error {
 
 	if feature.ContentSources.IsEnabled() {
 		//add validation s.ValidateImageCustomPackage(image)
-		err := s.SetImageContentSourcesRepositories(image)
+		err := s.ValidateImageCustomPackage(image)
+		if err != nil {
+			return err
+		}
+		err = s.SetImageContentSourcesRepositories(image)
 		if err != nil {
 			return err
 		}
@@ -392,22 +396,25 @@ func (s *ImageService) ProcessImage(ctx context.Context, img *models.Image) erro
 }
 
 // ValidateImageCustomPackage validate package name on Image Builder
-func (s *ImageService) ValidateImageCustomPackage(packageName string, image *models.Image) error {
+func (s *ImageService) ValidateImageCustomPackage(image *models.Image) error {
 	var urls []string
 	for i := range image.ThirdPartyRepositories {
 		urls = append(urls, image.ThirdPartyRepositories[i].URL)
 	}
-	res, err := s.Repositories.SearchContentPackage(packageName, urls)
-	if err != nil {
-		return err
-	}
-	if len(*res.Data) == 0 {
-		return new(PackageNameDoesNotExist)
-	}
-	for _, pkg := range *res.Data {
-		if pkg.PackageName == packageName {
-			return nil
+	for i := range image.CustomPackages {
+		res, err := s.Repositories.SearchContentPackage(image.CustomPackages[i].Name, urls)
+		if err != nil {
+			return err
 		}
+		if len(*res.Data) == 0 {
+			return new(PackageNameDoesNotExist)
+		}
+		for _, pkg := range *res.Data {
+			if pkg.PackageName == image.CustomPackages[i].Name {
+				return nil
+			}
+		}
+		return new(PackageNameDoesNotExist)
 	}
 	return new(PackageNameDoesNotExist)
 }
