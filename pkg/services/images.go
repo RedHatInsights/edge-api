@@ -390,6 +390,27 @@ func (s *ImageService) ProcessImage(ctx context.Context, img *models.Image) erro
 	return nil
 }
 
+// ValidateImageCustomPackage validate package name on Image Builder
+func (s *ImageService) ValidateImageCustomPackage(packageName string, image *models.Image) error {
+	var urls []string
+	for i := range image.ThirdPartyRepositories {
+		urls = append(urls, image.ThirdPartyRepositories[i].URL)
+	}
+	res, err := s.Repositories.SearchContentPackage(packageName, urls)
+	if err != nil {
+		return err
+	}
+	if len(*res.Data) == 0 {
+		return new(PackageNameDoesNotExist)
+	}
+	for _, pkg := range *res.Data {
+		if pkg.PackageName == packageName {
+			return nil
+		}
+	}
+	return new(PackageNameDoesNotExist)
+}
+
 // ValidateImagePackage validate package name on Image Builder
 func (s *ImageService) ValidateImagePackage(packageName string, image *models.Image) error {
 	arch := image.Commit.Arch
