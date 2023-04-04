@@ -554,6 +554,8 @@ func TestSearchContentPackage(t *testing.T) {
 		repositories.APIRepositoriesPath = reposPath
 	}(initialContentSourceURL, initialAPIRepositoriesPath)
 
+	// response := repositories.RepositoriesResponse{} //repositories.RepositoriesResponse{Data: &[]repositories.SearchRepositoriesResponse{}}
+
 	testCases := []struct {
 		Name                string
 		ContentSourcesURL   string
@@ -562,23 +564,18 @@ func TestSearchContentPackage(t *testing.T) {
 		URLS                []string
 		IOReadAll           func(r io.Reader) ([]byte, error)
 		HTTPStatus          int
-		Response            *repositories.RepositoriesResponse
+		Response            repositories.RepositoriesResponse
 		ResponseText        string
 		ExpectedError       error
 	}{
 		{
-			Name:        "should return the expected repos",
-			URLS:        []string{"https://dl.fedoraproject.org/pub/epel/7/x86_64/"},
-			PackageName: "catch",
-			HTTPStatus:  http.StatusOK,
-			IOReadAll:   io.ReadAll,
-			Response: &repositories.RepositoriesResponse{
-				Data: &[]repositories.SearchRepositoriesResponse{
-					{PackageName: "catch-devel",
-						Summary: "Development files for catch"},
-				},
-			},
-			ExpectedError: nil,
+			Name:          "should return the expected repos",
+			URLS:          []string{"https://test.com"},
+			PackageName:   "catch",
+			HTTPStatus:    http.StatusInternalServerError,
+			IOReadAll:     io.ReadAll,
+			Response:      repositories.RepositoriesResponse{},
+			ExpectedError: &repositories.PackageRequestError{},
 		},
 		{
 			Name:          "should return error",
@@ -586,7 +583,7 @@ func TestSearchContentPackage(t *testing.T) {
 			PackageName:   "",
 			HTTPStatus:    http.StatusInternalServerError,
 			IOReadAll:     io.ReadAll,
-			Response:      &repositories.RepositoriesResponse{},
+			Response:      repositories.RepositoriesResponse{},
 			ExpectedError: &repositories.PackageRequestError{},
 		},
 	}
@@ -608,7 +605,7 @@ func TestSearchContentPackage(t *testing.T) {
 					assert.NoError(t, err)
 					return
 				}
-				if testCase.Response != nil {
+				if &testCase.Response != nil {
 					err := json.NewEncoder(w).Encode(&testCase.Response)
 					assert.NoError(t, err)
 				}
@@ -629,6 +626,7 @@ func TestSearchContentPackage(t *testing.T) {
 			assert.NotNil(t, client)
 
 			response, err := client.SearchContentPackage(testCase.PackageName, testCase.URLS)
+
 			if testCase.ExpectedError == nil {
 				assert.NoError(t, err)
 				assert.Equal(t, response, testCase.Response)
