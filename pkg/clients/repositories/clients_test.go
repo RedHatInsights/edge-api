@@ -564,7 +564,7 @@ func TestSearchContentPackage(t *testing.T) {
 		URLS                []string
 		IOReadAll           func(r io.Reader) ([]byte, error)
 		HTTPStatus          int
-		Response            repositories.RepositoriesResponse
+		Response            *repositories.ContentRepositoriesResponse
 		ResponseText        string
 		ExpectedError       error
 	}{
@@ -574,7 +574,7 @@ func TestSearchContentPackage(t *testing.T) {
 			PackageName:   "catch",
 			HTTPStatus:    http.StatusInternalServerError,
 			IOReadAll:     io.ReadAll,
-			Response:      repositories.RepositoriesResponse{},
+			Response:      &repositories.ContentRepositoriesResponse{},
 			ExpectedError: &repositories.PackageRequestError{},
 		},
 		{
@@ -583,7 +583,7 @@ func TestSearchContentPackage(t *testing.T) {
 			PackageName:   "",
 			HTTPStatus:    http.StatusInternalServerError,
 			IOReadAll:     io.ReadAll,
-			Response:      repositories.RepositoriesResponse{},
+			Response:      &repositories.ContentRepositoriesResponse{},
 			ExpectedError: &repositories.PackageRequestError{},
 		},
 	}
@@ -605,7 +605,7 @@ func TestSearchContentPackage(t *testing.T) {
 					assert.NoError(t, err)
 					return
 				}
-				if &testCase.Response != nil {
+				if testCase.Response != nil {
 					err := json.NewEncoder(w).Encode(&testCase.Response)
 					assert.NoError(t, err)
 				}

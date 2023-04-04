@@ -414,7 +414,6 @@ func (s *ImageService) ValidateImageCustomPackage(image *models.Image) error {
 				return nil
 			}
 		}
-		return new(PackageNameDoesNotExist)
 	}
 	return new(PackageNameDoesNotExist)
 }

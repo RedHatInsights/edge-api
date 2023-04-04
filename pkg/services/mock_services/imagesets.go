@@ -10,8 +10,8 @@ import (
 	models "github.com/redhatinsights/edge-api/pkg/models"
 	services "github.com/redhatinsights/edge-api/pkg/services"
 
-	gorm "gorm.io/gorm"
 	gomock "github.com/golang/mock/gomock"
+	gorm "gorm.io/gorm"
 )
 
 // MockImageSetsServiceInterface is a mock of ImageSetsServiceInterface interface.

@@ -54,7 +54,7 @@ type ListRepositoriesResponse struct {
 	Meta ListRepositoriesMeta `json:"meta"`
 }
 
-type RepositoriesResponse struct {
+type ContentRepositoriesResponse struct {
 	Data *[]SearchRepositoriesResponse `json:"Data"`
 }
 type SearchRepositoriesResponse struct {
@@ -78,7 +78,7 @@ type ClientInterface interface {
 	GetRepositoryByURL(url string) (*Repository, error)
 	GetRepositoryByUUID(uuid string) (*Repository, error)
 	ListRepositories(requestParams ListRepositoriesParams, filters ListRepositoriesFilters) (*ListRepositoriesResponse, error)
-	SearchContentPackage(packageName string, URLS []string) (*RepositoriesResponse, error)
+	SearchContentPackage(packageName string, URLS []string) (*ContentRepositoriesResponse, error)
 }
 
 // Client is the implementation of an ClientInterface
@@ -302,7 +302,7 @@ func (e *PackageRequestError) Error() string {
 	return "image builder search packages request error"
 }
 
-func (c *Client) SearchContentPackage(packageName string, URLS []string) (*RepositoriesResponse, error) {
+func (c *Client) SearchContentPackage(packageName string, listUrls []string) (*ContentRepositoriesResponse, error) {
 	c.log.Infof("Searching content packages")
 
 	url, err := c.GetBaseURL()
@@ -311,7 +311,7 @@ func (c *Client) SearchContentPackage(packageName string, URLS []string) (*Repos
 	}
 
 	payload := ContentSearchPayload{
-		URLS:   URLS,
+		URLS:   listUrls,
 		Search: packageName,
 	}
 	payloadBuf := new(bytes.Buffer)
@@ -348,7 +348,7 @@ func (c *Client) SearchContentPackage(packageName string, URLS []string) (*Repos
 		}).Error(new(PackageRequestError))
 		return nil, new(PackageRequestError)
 	}
-	var searchResult RepositoriesResponse
+	var searchResult ContentRepositoriesResponse
 
 	err = json.Unmarshal(respBody, &searchResult.Data)
 	if err != nil {
