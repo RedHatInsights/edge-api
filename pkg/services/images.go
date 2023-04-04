@@ -320,6 +320,7 @@ func (s *ImageService) CreateImage(image *models.Image) error {
 	}
 
 	if feature.ContentSources.IsEnabled() {
+		//add validation s.ValidateImageCustomPackage(image)
 		err := s.SetImageContentSourcesRepositories(image)
 		if err != nil {
 			return err
