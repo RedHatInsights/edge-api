@@ -13,7 +13,6 @@ import (
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients"
-	"github.com/redhatinsights/edge-api/pkg/models"
 
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -56,10 +55,10 @@ type ListRepositoriesResponse struct {
 }
 
 type RepositoriesResponse struct {
-	Data *[]SearchRepositoriesResponse
+	Data *[]SearchRepositoriesResponse `json:"Data"`
 }
 type SearchRepositoriesResponse struct {
-	PackageName string `json:"name"`
+	PackageName string `json:"package_name"`
 	Summary     string `json:"summary"`
 }
 type ListRepositoriesFilters map[string]string
@@ -79,7 +78,7 @@ type ClientInterface interface {
 	GetRepositoryByURL(url string) (*Repository, error)
 	GetRepositoryByUUID(uuid string) (*Repository, error)
 	ListRepositories(requestParams ListRepositoriesParams, filters ListRepositoriesFilters) (*ListRepositoriesResponse, error)
-	SearchContentPackage(packageName string, urls []string) (*models.SearchPackageResult, error)
+	SearchContentPackage(packageName string, URLS []string) (*RepositoriesResponse, error)
 }
 
 // Client is the implementation of an ClientInterface
@@ -292,8 +291,8 @@ func (c *Client) ListRepositories(requestParams ListRepositoriesParams, filters 
 }
 
 type ContentSearchPayload struct {
-	URL  []string `json:"URL"`
-	Name string   `json:"Name"`
+	URLS   []string `json:"urls"`
+	Search string   `json:"search"`
 }
 
 // PackageRequestError indicates request search packages from Image Builder
@@ -312,28 +311,21 @@ func (c *Client) SearchContentPackage(packageName string, URLS []string) (*Repos
 	}
 
 	payload := ContentSearchPayload{
-		URL:  URLS,
-		Name: packageName,
+		URLS:   URLS,
+		Search: packageName,
 	}
-
 	payloadBuf := new(bytes.Buffer)
 	if err := json.NewEncoder(payloadBuf).Encode(payload); err != nil {
 		return nil, err
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
 	repositoryRawURL := url.String() + fmt.Sprintf("/%s/%s", APIVersion, APIPackagePath)
-
 	req, _ := http.NewRequest("POST", repositoryRawURL, payloadBuf)
-
-	req.Header.Add("Content-Type", "application/json")
 	headers := clients.GetOutgoingHeaders(c.ctx)
 	for key, value := range headers {
 		req.Header.Add(key, value)
 	}
+	req.Header.Add("Content-Type", "application/json")
 
 	client := clients.ConfigureClientWithTLS(&http.Client{})
 	res, err := client.Do(req)
@@ -356,14 +348,13 @@ func (c *Client) SearchContentPackage(packageName string, URLS []string) (*Repos
 		}).Error(new(PackageRequestError))
 		return nil, new(PackageRequestError)
 	}
-
+	fmt.Printf("\n res.StatusCode %v\n", res.StatusCode)
 	var searchResult RepositoriesResponse
-	err = json.Unmarshal(respBody, &searchResult)
 
+	err = json.Unmarshal(respBody, &searchResult.Data)
 	if err != nil {
 		c.log.WithField("error", err.Error()).Error(new(PackageRequestError))
 		return nil, err
 	}
-
 	return &searchResult, nil
 }
