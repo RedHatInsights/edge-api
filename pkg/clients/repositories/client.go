@@ -348,7 +348,6 @@ func (c *Client) SearchContentPackage(packageName string, URLS []string) (*Repos
 		}).Error(new(PackageRequestError))
 		return nil, new(PackageRequestError)
 	}
-	fmt.Printf("\n res.StatusCode %v\n", res.StatusCode)
 	var searchResult RepositoriesResponse
 
 	err = json.Unmarshal(respBody, &searchResult.Data)
