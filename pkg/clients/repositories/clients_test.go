@@ -586,8 +586,8 @@ func TestSearchContentPackage(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	var mockRepositoriesService *mock_repositories.MockClientInterface
-	mockRepositoriesService = mock_repositories.NewMockClientInterface(ctrl)
+
+	mockRepositoriesService := mock_repositories.NewMockClientInterface(ctrl)
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(t *testing.T) {
