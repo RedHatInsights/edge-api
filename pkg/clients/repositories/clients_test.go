@@ -11,9 +11,11 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients"
 	"github.com/redhatinsights/edge-api/pkg/clients/repositories"
+	"github.com/redhatinsights/edge-api/pkg/clients/repositories/mock_repositories"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/google/uuid"
@@ -545,16 +547,17 @@ func TestGetRepositoryByUUID(t *testing.T) {
 		})
 	}
 }
-
 func TestSearchContentPackage(t *testing.T) {
+
 	initialContentSourceURL := config.Get().ContentSourcesURL
 	initialAPIRepositoriesPath := repositories.APIRepositoriesPath
+
 	defer func(contentSourcesURL, reposPath string) {
 		config.Get().ContentSourcesURL = contentSourcesURL
 		repositories.APIRepositoriesPath = reposPath
 	}(initialContentSourceURL, initialAPIRepositoriesPath)
 
-	// response := repositories.RepositoriesResponse{} //repositories.RepositoriesResponse{Data: &[]repositories.SearchRepositoriesResponse{}}
+	rp := []repositories.SearchPackageResponse{{PackageName: "cat", Summary: "cat test"}}
 
 	testCases := []struct {
 		Name                string
@@ -564,18 +567,18 @@ func TestSearchContentPackage(t *testing.T) {
 		URLS                []string
 		IOReadAll           func(r io.Reader) ([]byte, error)
 		HTTPStatus          int
-		Response            *repositories.ContentRepositoriesResponse
+		Response            *[]repositories.SearchPackageResponse
 		ResponseText        string
 		ExpectedError       error
 	}{
 		{
 			Name:          "should return the expected repos",
 			URLS:          []string{"https://test.com"},
-			PackageName:   "catch",
+			PackageName:   "cat",
 			HTTPStatus:    http.StatusInternalServerError,
 			IOReadAll:     io.ReadAll,
-			Response:      &repositories.ContentRepositoriesResponse{},
-			ExpectedError: &repositories.PackageRequestError{},
+			Response:      &rp,
+			ExpectedError: nil,
 		},
 		{
 			Name:          "should return error",
@@ -583,10 +586,16 @@ func TestSearchContentPackage(t *testing.T) {
 			PackageName:   "",
 			HTTPStatus:    http.StatusInternalServerError,
 			IOReadAll:     io.ReadAll,
-			Response:      &repositories.ContentRepositoriesResponse{},
+			Response:      &[]repositories.SearchPackageResponse{},
 			ExpectedError: &repositories.PackageRequestError{},
 		},
 	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	var mockRepositoriesService *mock_repositories.MockClientInterface
+
+	mockRepositoriesService = mock_repositories.NewMockClientInterface(ctrl)
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(t *testing.T) {
@@ -621,11 +630,12 @@ func TestSearchContentPackage(t *testing.T) {
 			if testCase.APIRepositoriesPath != "" {
 				repositories.APIRepositoriesPath = testCase.APIRepositoriesPath
 			}
+			mockRepositoriesService.EXPECT().SearchContentPackage(gomock.Any(), gomock.Any()).Return(&rp, testCase.ExpectedError)
 
 			client := repositories.InitClient(context.Background(), log.NewEntry(log.StandardLogger()))
 			assert.NotNil(t, client)
 
-			response, err := client.SearchContentPackage(testCase.PackageName, testCase.URLS)
+			response, err := mockRepositoriesService.SearchContentPackage(testCase.PackageName, testCase.URLS)
 
 			if testCase.ExpectedError == nil {
 				assert.NoError(t, err)

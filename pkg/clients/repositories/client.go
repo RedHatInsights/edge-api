@@ -337,11 +337,12 @@ func (c *Client) SearchContentPackage(packageName string, listUrls []string) (*[
 	defer res.Body.Close()
 
 	respBody, err := io.ReadAll(res.Body)
+	fmt.Printf("\n test %v \n", respBody)
 	if err != nil {
 		return nil, err
 	}
 	defer res.Body.Close()
-
+	fmt.Printf("\n test %v \n", res.StatusCode)
 	if res.StatusCode != http.StatusOK {
 		c.log.WithFields(log.Fields{
 			"statusCode": res.StatusCode,
@@ -352,6 +353,7 @@ func (c *Client) SearchContentPackage(packageName string, listUrls []string) (*[
 
 	err = json.Unmarshal(respBody, &searchResult.Data)
 	if err != nil {
+		fmt.Printf("\n err %v \n", err.Error())
 		c.log.WithField("error", err.Error()).Error(new(PackageRequestError))
 		return nil, err
 	}
