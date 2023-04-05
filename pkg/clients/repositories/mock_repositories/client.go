@@ -110,10 +110,10 @@ func (mr *MockClientInterfaceMockRecorder) ListRepositories(requestParams, filte
 }
 
 // SearchContentPackage mocks base method
-func (m *MockClientInterface) SearchContentPackage(packageName string, URLS []string) (*repositories.ContentRepositoriesResponse, error) {
+func (m *MockClientInterface) SearchContentPackage(packageName string, URLS []string) (*[]repositories.SearchPackageResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SearchContentPackage", packageName, URLS)
-	ret0, _ := ret[0].(*repositories.ContentRepositoriesResponse)
+	ret0, _ := ret[0].(*[]repositories.SearchPackageResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

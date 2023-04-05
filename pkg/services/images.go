@@ -406,16 +406,16 @@ func (s *ImageService) ValidateImageCustomPackage(image *models.Image) error {
 		if err != nil {
 			return err
 		}
-		if len(*res.Data) == 0 {
+		if len(*res) == 0 {
 			return new(PackageNameDoesNotExist)
 		}
-		for _, pkg := range *res.Data {
+		for _, pkg := range *res {
 			if pkg.PackageName == image.CustomPackages[i].Name {
 				return nil
 			}
 		}
 	}
-	return new(PackageNameDoesNotExist)
+	return nil
 }
 
 // ValidateImagePackage validate package name on Image Builder

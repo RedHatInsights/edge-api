@@ -55,9 +55,9 @@ type ListRepositoriesResponse struct {
 }
 
 type ContentRepositoriesResponse struct {
-	Data *[]SearchRepositoriesResponse `json:"Data"`
+	Data *[]SearchPackageResponse `json:"Data"`
 }
-type SearchRepositoriesResponse struct {
+type SearchPackageResponse struct {
 	PackageName string `json:"package_name"`
 	Summary     string `json:"summary"`
 }
@@ -78,7 +78,7 @@ type ClientInterface interface {
 	GetRepositoryByURL(url string) (*Repository, error)
 	GetRepositoryByUUID(uuid string) (*Repository, error)
 	ListRepositories(requestParams ListRepositoriesParams, filters ListRepositoriesFilters) (*ListRepositoriesResponse, error)
-	SearchContentPackage(packageName string, URLS []string) (*ContentRepositoriesResponse, error)
+	SearchContentPackage(packageName string, URLS []string) (*[]SearchPackageResponse, error)
 }
 
 // Client is the implementation of an ClientInterface
@@ -302,7 +302,7 @@ func (e *PackageRequestError) Error() string {
 	return "image builder search packages request error"
 }
 
-func (c *Client) SearchContentPackage(packageName string, listUrls []string) (*ContentRepositoriesResponse, error) {
+func (c *Client) SearchContentPackage(packageName string, listUrls []string) (*[]SearchPackageResponse, error) {
 	c.log.Infof("Searching content packages")
 
 	url, err := c.GetBaseURL()
@@ -355,5 +355,5 @@ func (c *Client) SearchContentPackage(packageName string, listUrls []string) (*C
 		c.log.WithField("error", err.Error()).Error(new(PackageRequestError))
 		return nil, err
 	}
-	return &searchResult, nil
+	return searchResult.Data, nil
 }
