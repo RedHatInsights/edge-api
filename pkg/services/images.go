@@ -398,20 +398,22 @@ func (s *ImageService) ProcessImage(ctx context.Context, img *models.Image) erro
 // ValidateImageCustomPackage validate package name on Image Builder
 func (s *ImageService) ValidateImageCustomPackage(image *models.Image) error {
 	var urls []string
-	for i := range image.ThirdPartyRepositories {
-		urls = append(urls, image.ThirdPartyRepositories[i].URL)
-	}
-	for i := range image.CustomPackages {
-		res, err := s.Repositories.SearchContentPackage(image.CustomPackages[i].Name, urls)
-		if err != nil {
-			return err
+	if image.ThirdPartyRepositories != nil && image.CustomPackages != nil {
+		for i := range image.ThirdPartyRepositories {
+			urls = append(urls, image.ThirdPartyRepositories[i].URL)
 		}
-		if len(*res) == 0 {
-			return new(PackageNameDoesNotExist)
-		}
-		for _, pkg := range *res {
-			if pkg.PackageName == image.CustomPackages[i].Name {
-				return nil
+		for i := range image.CustomPackages {
+			res, err := s.Repositories.SearchContentPackage(image.CustomPackages[i].Name, urls)
+			if err != nil {
+				return err
+			}
+			if res == nil {
+				return new(PackageNameDoesNotExist)
+			}
+			for _, pkg := range *res {
+				if pkg.PackageName == image.CustomPackages[i].Name {
+					return nil
+				}
 			}
 		}
 	}

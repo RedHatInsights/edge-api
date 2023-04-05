@@ -1875,6 +1875,65 @@ var _ = Describe("Image Service Test", func() {
 		})
 
 	})
+	Describe("Test ValidateCustomImagePackage function", func() {
+		When("When there's no valid request", func() {
+			It("should raise NewBadRequest", func() {
+				image := models.Image{
+					ThirdPartyRepositories: []models.ThirdPartyRepo{},
+					CustomPackages:         []models.Package{{Name: ""}},
+				}
+				mockRepositories.EXPECT().SearchContentPackage(gomock.Any(), gomock.Any()).
+					Return(nil, new(apiErrors.BadRequest))
+				error := service.ValidateImageCustomPackage(&image)
+				Expect(error).To(HaveOccurred())
+				Expect(error).To(BeAssignableToTypeOf(new(apiErrors.BadRequest)))
+			})
+		})
+
+		When("When SearchPackage fails to find a package", func() {
+			It("should raise an error", func() {
+				// rp := []repositories.SearchPackageResponse{{PackageName: "cat", Summary: "cat test"}}
+				image := models.Image{
+					ThirdPartyRepositories: []models.ThirdPartyRepo{},
+					CustomPackages:         []models.Package{{Name: ""}},
+				}
+				mockRepositories.EXPECT().SearchContentPackage(gomock.Any(), gomock.Any()).
+					Return(nil, &repositories.PackageRequestError{})
+				error := service.ValidateImageCustomPackage(&image)
+				Expect(error).To(HaveOccurred())
+				Expect(error).To(MatchError(new(repositories.PackageRequestError)))
+			})
+		})
+
+		When("When package name is found", func() {
+			It("should return nil", func() {
+				image := models.Image{
+					ThirdPartyRepositories: []models.ThirdPartyRepo{},
+					CustomPackages:         []models.Package{{Name: "C"}},
+				}
+				mockRepositories.EXPECT().SearchContentPackage(gomock.Any(), gomock.Any()).
+					Return(nil, nil)
+				error := service.ValidateImageCustomPackage(&image)
+				Expect(error).To(HaveOccurred())
+				Expect(error).To(MatchError(new(services.PackageNameDoesNotExist)))
+			})
+		})
+		When("When package name is found", func() {
+			It("should return value", func() {
+				rp := []repositories.SearchPackageResponse{{PackageName: "cat", Summary: "cat test"}}
+				image := models.Image{
+					ThirdPartyRepositories: []models.ThirdPartyRepo{{URL: "http://testcom"}},
+					CustomPackages:         []models.Package{{Name: "cat"}},
+				}
+				mockRepositories.EXPECT().SearchContentPackage(gomock.Any(), gomock.Any()).
+					Return(&rp, nil)
+				error := service.ValidateImageCustomPackage(&image)
+				Expect(error).ToNot(HaveOccurred())
+				Expect(error).To(BeNil())
+			})
+		})
+
+	})
 	Describe("Create image when ValidateImagePackage", func() {
 		orgID := faker.UUIDHyphenated()
 		// requestID := faker.UUIDHyphenated()
