@@ -547,15 +547,8 @@ func TestGetRepositoryByUUID(t *testing.T) {
 		})
 	}
 }
+
 func TestSearchContentPackage(t *testing.T) {
-
-	initialContentSourceURL := config.Get().ContentSourcesURL
-	initialAPIRepositoriesPath := repositories.APIRepositoriesPath
-
-	defer func(contentSourcesURL, reposPath string) {
-		config.Get().ContentSourcesURL = contentSourcesURL
-		repositories.APIRepositoriesPath = reposPath
-	}(initialContentSourceURL, initialAPIRepositoriesPath)
 
 	rp := []repositories.SearchPackageResponse{{PackageName: "cat", Summary: "cat test"}}
 
@@ -594,18 +587,10 @@ func TestSearchContentPackage(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	var mockRepositoriesService *mock_repositories.MockClientInterface
-
 	mockRepositoriesService = mock_repositories.NewMockClientInterface(ctrl)
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(t *testing.T) {
-			initialAPIRepositoriesPath := repositories.APIRepositoriesPath
-
-			defer func(reposPath string) {
-				repositories.APIRepositoriesPath = reposPath
-				repositories.IOReadAll = io.ReadAll
-			}(initialAPIRepositoriesPath)
-
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(testCase.HTTPStatus)
@@ -630,10 +615,9 @@ func TestSearchContentPackage(t *testing.T) {
 			if testCase.APIRepositoriesPath != "" {
 				repositories.APIRepositoriesPath = testCase.APIRepositoriesPath
 			}
-			mockRepositoriesService.EXPECT().SearchContentPackage(gomock.Any(), gomock.Any()).Return(&rp, testCase.ExpectedError)
 
-			client := repositories.InitClient(context.Background(), log.NewEntry(log.StandardLogger()))
-			assert.NotNil(t, client)
+			mockRepositoriesService.EXPECT().SearchContentPackage(gomock.Any(), gomock.Any()).
+				Return(&rp, testCase.ExpectedError)
 
 			response, err := mockRepositoriesService.SearchContentPackage(testCase.PackageName, testCase.URLS)
 
