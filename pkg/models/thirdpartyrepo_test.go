@@ -135,3 +135,71 @@ func TestThirdPartyRepoBeforeCreate(t *testing.T) {
 	}
 
 }
+
+func TestAddSlashToURL(t *testing.T) {
+	testCases := []struct {
+		Name        string
+		URL         string
+		ExpectedURL string
+	}{
+		{
+			Name:        "should remove trailing white spaces and add slash",
+			URL:         " http://example.com.repo  ",
+			ExpectedURL: "http://example.com.repo/",
+		},
+		{
+			Name:        "should remove only trailing white spaces",
+			URL:         " http://example.com.repo/  ",
+			ExpectedURL: "http://example.com.repo/",
+		},
+		{
+			Name:        "should not change the URL",
+			URL:         "http://example.com.repo/",
+			ExpectedURL: "http://example.com.repo/",
+		},
+		{
+			Name:        "should not change the URL when empty",
+			URL:         "",
+			ExpectedURL: "",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			url := AddSlashToURL(testCase.URL)
+			assert.Equal(t, testCase.ExpectedURL, url)
+		})
+	}
+}
+
+func TestCreateThirdPartyRepoWithURL(t *testing.T) {
+	// should clean up url and add a slash "/" when creating repo
+	url := " http://example.com.repo  \t"
+	wantedURL := "http://example.com.repo/"
+	repo := ThirdPartyRepo{
+		Name:  faker.Name(),
+		OrgID: faker.UUIDHyphenated(),
+		URL:   url,
+	}
+	err := db.DB.Create(&repo).Error
+	assert.NoError(t, err)
+	assert.Equal(t, wantedURL, repo.URL)
+}
+
+func TestUpdateThirdPartyRepoWithURL(t *testing.T) {
+	// should clean up url and add a slash "/" when updating repo
+	repo := ThirdPartyRepo{
+		Name:  faker.Name(),
+		OrgID: faker.UUIDHyphenated(),
+		URL:   faker.URL(),
+	}
+	err := db.DB.Create(&repo).Error
+	assert.NoError(t, err)
+
+	url := " http://example.com.repo  \t"
+	wantedURL := "http://example.com.repo/"
+	repo.URL = url
+	err = db.DB.Save(&repo).Error
+	assert.NoError(t, err)
+	assert.Equal(t, wantedURL, repo.URL)
+}

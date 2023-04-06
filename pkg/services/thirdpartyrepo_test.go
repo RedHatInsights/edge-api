@@ -4,6 +4,7 @@ package services_test
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -55,7 +56,7 @@ var _ = Describe("ThirdPartyRepos basic functions", func() {
 
 		It("Custom repo should be created successfully", func() {
 			orgID := faker.UUIDHyphenated()
-			repo := models.ThirdPartyRepo{Name: faker.UUIDHyphenated(), URL: faker.URL()}
+			repo := models.ThirdPartyRepo{Name: faker.UUIDHyphenated(), URL: models.AddSlashToURL(faker.URL())}
 			newRepo, err := customReposService.CreateThirdPartyRepo(&repo, orgID)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(newRepo.Name).To(Equal(repo.Name))
@@ -207,6 +208,82 @@ var _ = Describe("ThirdPartyRepos basic functions", func() {
 			_, err := customReposService.DeleteThirdPartyRepoByID(strconv.FormatUint(uint64(repo.ID), 10))
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("custom repository is used by some images"))
+		})
+	})
+
+	Context("ThirdPartyRepoURLExists", func() {
+		var orgID string
+		var repo models.ThirdPartyRepo
+		var url string
+		var otherURL string
+		BeforeEach(func() {
+			orgID = common.DefaultOrgID
+			// important the urls are without trailing slash "/"
+			url = fmt.Sprintf("http://%s-example.com/repo", faker.UUIDHyphenated())
+			otherURL = fmt.Sprintf("http://%s-example.com/repo", faker.UUIDHyphenated())
+			repo = models.ThirdPartyRepo{Name: faker.UUIDHyphenated(), URL: url, OrgID: orgID}
+			err := db.DB.Create(&repo).Error
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should find that the repo exists with initial url", func() {
+			exists, err := customReposService.ThirdPartyRepoURLExists(orgID, url)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(exists).To(BeTrue())
+		})
+
+		It("should find that the repo exists with cleaned url", func() {
+			exists, err := customReposService.ThirdPartyRepoURLExists(orgID, models.AddSlashToURL(url))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(exists).To(BeTrue())
+		})
+
+		It("should not find that the repo exists with otherURL", func() {
+			exists, err := customReposService.ThirdPartyRepoURLExists(orgID, otherURL)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(exists).To(BeFalse())
+		})
+
+		It("should not find that the repo exists with cleaned otherURL", func() {
+			exists, err := customReposService.ThirdPartyRepoURLExists(orgID, models.AddSlashToURL(otherURL))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(exists).To(BeFalse())
+		})
+
+		It("should return error when org is undefined", func() {
+			_, err := customReposService.ThirdPartyRepoURLExists("", url)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal(services.OrgIDNotSetMsg))
+		})
+		It("should return error when url is undefined", func() {
+			_, err := customReposService.ThirdPartyRepoURLExists(orgID, "")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal(services.ThirdPartyRepositoryURLIsEmptyMsg))
+		})
+
+		It("should not create a repo with url when a repo with that url exists", func() {
+			repo := models.ThirdPartyRepo{Name: faker.UUIDHyphenated(), URL: url}
+			_, err := customReposService.CreateThirdPartyRepo(&repo, orgID)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal(services.ThirdPartyRepositoryWithURLAlreadyExistsMsg))
+		})
+
+		It("should not update a repo with url when a repo with that url exists", func() {
+			existingURL := fmt.Sprintf("http://%s-example.com/repo", faker.UUIDHyphenated())
+			existingRepo := models.ThirdPartyRepo{
+				Name:  faker.UUIDHyphenated(),
+				URL:   existingURL,
+				OrgID: orgID,
+			}
+			err := db.DB.Create(&existingRepo).Error
+			Expect(err).ToNot(HaveOccurred())
+			updateRepo := models.ThirdPartyRepo{
+				Name: faker.UUIDHyphenated(),
+				URL:  existingURL,
+			}
+			err = customReposService.UpdateThirdPartyRepo(&updateRepo, orgID, strconv.Itoa(int(repo.ID)))
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal(services.ThirdPartyRepositoryWithURLAlreadyExistsMsg))
 		})
 	})
 })

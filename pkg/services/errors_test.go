@@ -23,6 +23,7 @@ func TestDeviceNotFoundError(t *testing.T) {
 		{new(services.IDMustBeInteger), services.IDMustBeIntegerMsg},
 		{new(services.ThirdPartyRepositoryNotFound), services.ThirdPartyRepositoryNotFoundMsg},
 		{new(services.ThirdPartyRepositoryAlreadyExists), services.ThirdPartyRepositoryAlreadyExistsMsg},
+		{new(services.ThirdPartyRepositoryWithURLAlreadyExists), services.ThirdPartyRepositoryWithURLAlreadyExistsMsg},
 		{new(services.ThirdPartyRepositoryNameIsEmpty), services.ThirdPartyRepositoryNameIsEmptyMsg},
 		{new(services.ThirdPartyRepositoryURLIsEmpty), services.ThirdPartyRepositoryURLIsEmptyMsg},
 		{new(services.ThirdPartyRepositoryInfoIsInvalid), services.ThirdPartyRepositoryInfoIsInvalidMsg},

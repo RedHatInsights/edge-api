@@ -752,4 +752,86 @@ var _ = Describe("ThirdPartyRepos basic routes", func() {
 			})
 		})
 	})
+
+	Context("ThirdPartyRepositoryWithURLAlreadyExists", func() {
+		var orgID string
+		var ctrl *gomock.Controller
+		var router chi.Router
+		var mockThirdPartyRepoService *mock_services.MockThirdPartyRepoServiceInterface
+		var edgeAPIServices *dependencies.EdgeAPIServices
+
+		BeforeEach(func() {
+			orgID = common.DefaultOrgID
+			ctrl = gomock.NewController(GinkgoT())
+			mockThirdPartyRepoService = mock_services.NewMockThirdPartyRepoServiceInterface(ctrl)
+			edgeAPIServices = &dependencies.EdgeAPIServices{
+				ThirdPartyRepoService: mockThirdPartyRepoService,
+				Log:                   log.NewEntry(log.StandardLogger()),
+			}
+			router = chi.NewRouter()
+			router.Use(func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					ctx := dependencies.ContextWithServices(r.Context(), edgeAPIServices)
+					next.ServeHTTP(w, r.WithContext(ctx))
+				})
+			})
+			router.Route("/thirdpartyrepo", MakeThirdPartyRepoRouter)
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
+		})
+
+		It("should return error when creating a new repository with url that already exists", func() {
+			newRepo := models.ThirdPartyRepo{
+				OrgID:       orgID,
+				Name:        faker.UUIDHyphenated(),
+				Description: faker.UUIDHyphenated(),
+				URL:         faker.URL(),
+			}
+			repoJson, err := json.Marshal(&newRepo)
+			Expect(err).ToNot(HaveOccurred())
+			req, err := http.NewRequest("POST", "/thirdpartyrepo/", bytes.NewBuffer(repoJson))
+			Expect(err).ToNot(HaveOccurred())
+
+			expectedError := new(services.ThirdPartyRepositoryWithURLAlreadyExists)
+			mockThirdPartyRepoService.EXPECT().CreateThirdPartyRepo(gomock.Any(), orgID).Return(nil, expectedError)
+
+			httpTestRecorder := httptest.NewRecorder()
+			router.ServeHTTP(httpTestRecorder, req)
+
+			Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+			respBody, err := io.ReadAll(httpTestRecorder.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(respBody)).To(ContainSubstring(expectedError.Error()))
+		})
+
+		It("should return error when updating a repository with url that already exists", func() {
+			repo := models.ThirdPartyRepo{
+				OrgID:       orgID,
+				Name:        faker.UUIDHyphenated(),
+				Description: faker.UUIDHyphenated(),
+				URL:         faker.URL(),
+			}
+			err := db.DB.Create(&repo).Error
+			Expect(err).ToNot(HaveOccurred())
+
+			repoJson, err := json.Marshal(&repo)
+			Expect(err).ToNot(HaveOccurred())
+			req, err := http.NewRequest("PUT", fmt.Sprintf("/thirdpartyrepo/%d", repo.ID), bytes.NewBuffer(repoJson))
+			Expect(err).ToNot(HaveOccurred())
+
+			expectedError := new(services.ThirdPartyRepositoryWithURLAlreadyExists)
+			mockThirdPartyRepoService.EXPECT().GetThirdPartyRepoByID(fmt.Sprint(repo.ID)).Return(&repo, nil)
+			mockThirdPartyRepoService.EXPECT().UpdateThirdPartyRepo(gomock.Any(), orgID, fmt.Sprint(repo.ID)).Return(expectedError)
+
+			httpTestRecorder := httptest.NewRecorder()
+			router.ServeHTTP(httpTestRecorder, req)
+
+			Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
+			respBody, err := io.ReadAll(httpTestRecorder.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(respBody)).To(ContainSubstring(expectedError.Error()))
+		})
+	})
 })
