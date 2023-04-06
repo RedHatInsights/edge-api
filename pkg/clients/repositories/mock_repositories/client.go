@@ -123,3 +123,18 @@ func (mr *MockClientInterfaceMockRecorder) SearchContentPackage(packageName, URL
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchContentPackage", reflect.TypeOf((*MockClientInterface)(nil).SearchContentPackage), packageName, URLS)
 }
+
+// CreateRepository mocks base method
+func (m *MockClientInterface) CreateRepository(repository repositories.Repository) (*repositories.Repository, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateRepository", repository)
+	ret0, _ := ret[0].(*repositories.Repository)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateRepository indicates an expected call of CreateRepository
+func (mr *MockClientInterfaceMockRecorder) CreateRepository(repository interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRepository", reflect.TypeOf((*MockClientInterface)(nil).CreateRepository), repository)
+}

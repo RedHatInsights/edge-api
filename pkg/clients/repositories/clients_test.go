@@ -548,6 +548,169 @@ func TestGetRepositoryByUUID(t *testing.T) {
 	}
 }
 
+// ErrFaultyWriter the error returned by FaultWriter's Write function
+var ErrFaultyWriter = errors.New("faulty writer expected write error")
+
+// FaultyWriter a struct that implement a Writer that return always error when writing
+type FaultyWriter struct{}
+
+func (f *FaultyWriter) Write(_ []byte) (n int, err error) {
+	return 0, ErrFaultyWriter
+}
+
+func TestCreateRepository(t *testing.T) {
+	initialContentSourceURL := config.Get().ContentSourcesURL
+	initialAPIRepositoriesPath := repositories.APIRepositoriesPath
+	// restore the initial content sources url and apiRepositoriesPath
+	defer func(contentSourcesURL, reposPath string) {
+		config.Get().ContentSourcesURL = contentSourcesURL
+		repositories.APIRepositoriesPath = reposPath
+	}(initialContentSourceURL, initialAPIRepositoriesPath)
+
+	repoToCreate := repositories.Repository{Name: faker.UUIDHyphenated(), URL: faker.URL()}
+	responseRepo := repositories.Repository{UUID: uuid.New(), Name: repoToCreate.Name, URL: repoToCreate.URL}
+
+	testCases := []struct {
+		Name                string
+		ContentSourcesURL   string
+		APIRepositoriesPath string
+		RepoToCreate        repositories.Repository
+		IOReadAll           func(r io.Reader) ([]byte, error)
+		NewJSONEncoder      func(w io.Writer) *json.Encoder
+		HTTPStatus          int
+		Response            *repositories.Repository
+		ResponseText        string
+		ExpectedError       error
+	}{
+		{
+			Name:           "should create repository successfully",
+			RepoToCreate:   repoToCreate,
+			HTTPStatus:     http.StatusCreated,
+			IOReadAll:      io.ReadAll,
+			NewJSONEncoder: json.NewEncoder,
+			Response:       &responseRepo,
+			ExpectedError:  nil,
+		},
+		{
+			Name:           "should return error when http status is not 201",
+			RepoToCreate:   repoToCreate,
+			HTTPStatus:     http.StatusBadRequest,
+			IOReadAll:      io.ReadAll,
+			NewJSONEncoder: json.NewEncoder,
+			ExpectedError:  repositories.ErrRepositoryRequestResponse,
+		},
+		{
+			Name:              "should return error when parsing base url fails",
+			RepoToCreate:      repoToCreate,
+			ContentSourcesURL: "\t",
+			IOReadAll:         io.ReadAll,
+			NewJSONEncoder:    json.NewEncoder,
+			HTTPStatus:        http.StatusCreated,
+			ExpectedError:     repositories.ErrParsingRawURL,
+		},
+		{
+			Name:                "should return error when parsing apiRepositoriesPath fails",
+			RepoToCreate:        repoToCreate,
+			APIRepositoriesPath: "\t",
+			IOReadAll:           io.ReadAll,
+			NewJSONEncoder:      json.NewEncoder,
+			HTTPStatus:          http.StatusCreated,
+			ExpectedError:       repositories.ErrParsingRawURL,
+		},
+		{
+			Name:              "should return error when client Do fail",
+			RepoToCreate:      repoToCreate,
+			ContentSourcesURL: "host-without-schema",
+			IOReadAll:         io.ReadAll,
+			NewJSONEncoder:    json.NewEncoder,
+			HTTPStatus:        http.StatusCreated,
+			ExpectedError:     errors.New("unsupported protocol scheme"),
+		},
+		{
+			Name:           "should return error when malformed json is returned",
+			RepoToCreate:   repoToCreate,
+			HTTPStatus:     http.StatusCreated,
+			IOReadAll:      io.ReadAll,
+			NewJSONEncoder: json.NewEncoder,
+			ResponseText:   `{"data: {}}`,
+			ExpectedError:  errors.New("unexpected end of JSON input"),
+		},
+		{
+			Name:         "should return error when body readAll fails",
+			RepoToCreate: repoToCreate,
+			HTTPStatus:   http.StatusCreated,
+			IOReadAll: func(r io.Reader) ([]byte, error) {
+				return nil, errors.New("expected error for when reading response body fails")
+			},
+			NewJSONEncoder: json.NewEncoder,
+			Response:       nil,
+			ExpectedError:  errors.New("expected error for when reading response body fails"),
+		},
+		{
+			Name:         "should return error when repository json encode fails",
+			RepoToCreate: repoToCreate,
+			IOReadAll:    io.ReadAll,
+			NewJSONEncoder: func(_ io.Writer) *json.Encoder {
+				// ignore any argument a return the FaultyWriter, that returns error when calling its Write function
+				return json.NewEncoder(&FaultyWriter{})
+			},
+			ExpectedError: ErrFaultyWriter,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			initialAPIRepositoriesPath := repositories.APIRepositoriesPath
+			// restore the initial apiRepositoriesPath and IOReadAll
+			defer func(reposPath string) {
+				repositories.APIRepositoriesPath = reposPath
+				repositories.IOReadAll = io.ReadAll
+				repositories.NewJSONEncoder = json.NewEncoder
+			}(initialAPIRepositoriesPath)
+
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(testCase.HTTPStatus)
+				if testCase.ResponseText != "" {
+					_, err := fmt.Fprint(w, testCase.ResponseText)
+					assert.NoError(t, err)
+					return
+				}
+				if testCase.Response != nil {
+					err := json.NewEncoder(w).Encode(&testCase.Response)
+					assert.NoError(t, err)
+				}
+			}))
+			defer ts.Close()
+
+			repositories.IOReadAll = testCase.IOReadAll
+			repositories.NewJSONEncoder = testCase.NewJSONEncoder
+
+			if testCase.ContentSourcesURL == "" {
+				config.Get().ContentSourcesURL = ts.URL
+			} else {
+				config.Get().ContentSourcesURL = testCase.ContentSourcesURL
+			}
+			if testCase.APIRepositoriesPath != "" {
+				repositories.APIRepositoriesPath = testCase.APIRepositoriesPath
+			}
+
+			client := repositories.InitClient(context.Background(), log.NewEntry(log.StandardLogger()))
+			assert.NotNil(t, client)
+
+			response, err := client.CreateRepository(testCase.RepoToCreate)
+			if testCase.ExpectedError == nil {
+				assert.NoError(t, err)
+				assert.NotNil(t, response)
+				assert.NotNil(t, testCase.Response)
+				assert.Equal(t, *response, *testCase.Response)
+			} else {
+				assert.ErrorContains(t, err, testCase.ExpectedError.Error())
+			}
+		})
+	}
+}
+
 func TestSearchContentPackage(t *testing.T) {
 
 	rp := []repositories.SearchPackageResponse{{PackageName: "cat", Summary: "cat test"}}
