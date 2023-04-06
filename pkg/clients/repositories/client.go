@@ -295,11 +295,11 @@ type ContentSearchPayload struct {
 	Search string   `json:"search"`
 }
 
-// PackageRequestError indicates request search packages from Image Builder
+// PackageRequestError indicates request search packages from content-source
 type PackageRequestError struct{}
 
 func (e *PackageRequestError) Error() string {
-	return "image builder search packages request error"
+	return "content source search packages request error"
 }
 
 func (c *Client) SearchContentPackage(packageName string, listUrls []string) (*[]SearchPackageResponse, error) {

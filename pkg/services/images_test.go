@@ -1892,7 +1892,6 @@ var _ = Describe("Image Service Test", func() {
 
 		When("When SearchPackage fails to find a package", func() {
 			It("should raise an error", func() {
-				// rp := []repositories.SearchPackageResponse{{PackageName: "cat", Summary: "cat test"}}
 				image := models.Image{
 					ThirdPartyRepositories: []models.ThirdPartyRepo{},
 					CustomPackages:         []models.Package{{Name: ""}},
@@ -1905,7 +1904,7 @@ var _ = Describe("Image Service Test", func() {
 			})
 		})
 
-		When("When package name is found", func() {
+		When("When package name is not found", func() {
 			It("should return nil", func() {
 				image := models.Image{
 					ThirdPartyRepositories: []models.ThirdPartyRepo{},
