@@ -1882,11 +1882,11 @@ var _ = Describe("Image Service Test", func() {
 					ThirdPartyRepositories: []models.ThirdPartyRepo{},
 					CustomPackages:         []models.Package{{Name: ""}},
 				}
-				mockRepositories.EXPECT().SearchContentPackage(gomock.Any(), gomock.Any()).
-					Return(nil, new(apiErrors.BadRequest))
+				expectedError := errors.New("expected error returned by SearchContentPackage")
+				mockRepositories.EXPECT().SearchContentPackage(gomock.Any(), gomock.Any()).Return(nil, expectedError)
 				error := service.ValidateImageCustomPackage(&image)
 				Expect(error).To(HaveOccurred())
-				Expect(error).To(BeAssignableToTypeOf(new(apiErrors.BadRequest)))
+				Expect(error).To(MatchError(expectedError))
 			})
 		})
 
