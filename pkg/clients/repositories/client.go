@@ -54,6 +54,13 @@ type ListRepositoriesResponse struct {
 	Meta ListRepositoriesMeta `json:"meta"`
 }
 
+type ContentRepositoriesResponse struct {
+	Data *[]SearchPackageResponse `json:"Data"`
+}
+type SearchPackageResponse struct {
+	PackageName string `json:"package_name"`
+	Summary     string `json:"summary"`
+}
 type ListRepositoriesFilters map[string]string
 
 func NewListRepositoryFilters() ListRepositoriesFilters {
@@ -71,6 +78,7 @@ type ClientInterface interface {
 	GetRepositoryByURL(url string) (*Repository, error)
 	GetRepositoryByUUID(uuid string) (*Repository, error)
 	ListRepositories(requestParams ListRepositoriesParams, filters ListRepositoriesFilters) (*ListRepositoriesResponse, error)
+	SearchContentPackage(packageName string, URLS []string) (*[]SearchPackageResponse, error)
 	CreateRepository(repository Repository) (*Repository, error)
 }
 
@@ -96,6 +104,9 @@ const APIVersion = "v1"
 
 // APIRepositoriesPath The api repositories path
 var APIRepositoriesPath = "repositories"
+
+// APIPackagePath The api repositories path
+var APIPackagePath = "rpms/names"
 
 // IOReadAll The io body reader
 var IOReadAll = io.ReadAll
@@ -319,7 +330,6 @@ func (c *Client) CreateRepository(repository Repository) (*Repository, error) {
 		return nil, err
 	}
 	defer res.Body.Close()
-
 	body, err := IOReadAll(res.Body)
 	if err != nil {
 		c.log.WithFields(log.Fields{"statusCode": res.StatusCode, "error": err.Error()}).Error("content source create repository response error")
@@ -338,4 +348,74 @@ func (c *Client) CreateRepository(repository Repository) (*Repository, error) {
 		return nil, err
 	}
 	return &responseRepository, nil
+}
+
+// PackageRequestError indicates request search packages from content-source
+type PackageRequestError struct{}
+
+func (e *PackageRequestError) Error() string {
+	return "content source search packages request error"
+}
+
+type ContentSearchPayload struct {
+	URLS   []string `json:"urls"`
+	Search string   `json:"search"`
+}
+
+func (c *Client) SearchContentPackage(packageName string, listUrls []string) (*[]SearchPackageResponse, error) {
+	c.log.Infof("Searching content packages")
+
+	url, err := c.GetBaseURL()
+	if err != nil {
+		return nil, err
+	}
+
+	payload := ContentSearchPayload{
+		URLS:   listUrls,
+		Search: packageName,
+	}
+	payloadBuf := new(bytes.Buffer)
+	if err := json.NewEncoder(payloadBuf).Encode(payload); err != nil {
+		return nil, err
+	}
+
+	repositoryRawURL := url.String() + fmt.Sprintf("/%s/%s", APIVersion, APIPackagePath)
+	req, _ := http.NewRequest("POST", repositoryRawURL, payloadBuf)
+	headers := clients.GetOutgoingHeaders(c.ctx)
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	client := clients.ConfigureClientWithTLS(&http.Client{})
+	res, err := client.Do(req)
+
+	if err != nil {
+		c.log.WithField("error", err.Error()).Error("content source repository request error")
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	respBody, err := io.ReadAll(res.Body)
+
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		c.log.WithFields(log.Fields{
+			"statusCode": res.StatusCode,
+		}).Error(new(PackageRequestError))
+		return nil, new(PackageRequestError)
+	}
+	var searchResult ContentRepositoriesResponse
+
+	err = json.Unmarshal(respBody, &searchResult.Data)
+	if err != nil {
+		fmt.Printf("\n err %v \n", err.Error())
+		c.log.WithField("error", err.Error()).Error(new(PackageRequestError))
+		return nil, err
+	}
+	return searchResult.Data, nil
 }

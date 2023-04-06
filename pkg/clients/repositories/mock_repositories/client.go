@@ -5,52 +5,36 @@
 package mock_repositories
 
 import (
-	url "net/url"
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	repositories "github.com/redhatinsights/edge-api/pkg/clients/repositories"
+	url "net/url"
+	reflect "reflect"
 )
 
-// MockClientInterface is a mock of ClientInterface interface.
+// MockClientInterface is a mock of ClientInterface interface
 type MockClientInterface struct {
 	ctrl     *gomock.Controller
 	recorder *MockClientInterfaceMockRecorder
 }
 
-// MockClientInterfaceMockRecorder is the mock recorder for MockClientInterface.
+// MockClientInterfaceMockRecorder is the mock recorder for MockClientInterface
 type MockClientInterfaceMockRecorder struct {
 	mock *MockClientInterface
 }
 
-// NewMockClientInterface creates a new mock instance.
+// NewMockClientInterface creates a new mock instance
 func NewMockClientInterface(ctrl *gomock.Controller) *MockClientInterface {
 	mock := &MockClientInterface{ctrl: ctrl}
 	mock.recorder = &MockClientInterfaceMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use.
+// EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockClientInterface) EXPECT() *MockClientInterfaceMockRecorder {
 	return m.recorder
 }
 
-// CreateRepository mocks base method.
-func (m *MockClientInterface) CreateRepository(repository repositories.Repository) (*repositories.Repository, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateRepository", repository)
-	ret0, _ := ret[0].(*repositories.Repository)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CreateRepository indicates an expected call of CreateRepository.
-func (mr *MockClientInterfaceMockRecorder) CreateRepository(repository interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRepository", reflect.TypeOf((*MockClientInterface)(nil).CreateRepository), repository)
-}
-
-// GetBaseURL mocks base method.
+// GetBaseURL mocks base method
 func (m *MockClientInterface) GetBaseURL() (*url.URL, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBaseURL")
@@ -59,13 +43,13 @@ func (m *MockClientInterface) GetBaseURL() (*url.URL, error) {
 	return ret0, ret1
 }
 
-// GetBaseURL indicates an expected call of GetBaseURL.
+// GetBaseURL indicates an expected call of GetBaseURL
 func (mr *MockClientInterfaceMockRecorder) GetBaseURL() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBaseURL", reflect.TypeOf((*MockClientInterface)(nil).GetBaseURL))
 }
 
-// GetRepositoryByName mocks base method.
+// GetRepositoryByName mocks base method
 func (m *MockClientInterface) GetRepositoryByName(name string) (*repositories.Repository, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRepositoryByName", name)
@@ -74,13 +58,13 @@ func (m *MockClientInterface) GetRepositoryByName(name string) (*repositories.Re
 	return ret0, ret1
 }
 
-// GetRepositoryByName indicates an expected call of GetRepositoryByName.
+// GetRepositoryByName indicates an expected call of GetRepositoryByName
 func (mr *MockClientInterfaceMockRecorder) GetRepositoryByName(name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRepositoryByName", reflect.TypeOf((*MockClientInterface)(nil).GetRepositoryByName), name)
 }
 
-// GetRepositoryByURL mocks base method.
+// GetRepositoryByURL mocks base method
 func (m *MockClientInterface) GetRepositoryByURL(url string) (*repositories.Repository, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRepositoryByURL", url)
@@ -89,13 +73,13 @@ func (m *MockClientInterface) GetRepositoryByURL(url string) (*repositories.Repo
 	return ret0, ret1
 }
 
-// GetRepositoryByURL indicates an expected call of GetRepositoryByURL.
+// GetRepositoryByURL indicates an expected call of GetRepositoryByURL
 func (mr *MockClientInterfaceMockRecorder) GetRepositoryByURL(url interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRepositoryByURL", reflect.TypeOf((*MockClientInterface)(nil).GetRepositoryByURL), url)
 }
 
-// GetRepositoryByUUID mocks base method.
+// GetRepositoryByUUID mocks base method
 func (m *MockClientInterface) GetRepositoryByUUID(uuid string) (*repositories.Repository, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRepositoryByUUID", uuid)
@@ -104,13 +88,13 @@ func (m *MockClientInterface) GetRepositoryByUUID(uuid string) (*repositories.Re
 	return ret0, ret1
 }
 
-// GetRepositoryByUUID indicates an expected call of GetRepositoryByUUID.
+// GetRepositoryByUUID indicates an expected call of GetRepositoryByUUID
 func (mr *MockClientInterfaceMockRecorder) GetRepositoryByUUID(uuid interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRepositoryByUUID", reflect.TypeOf((*MockClientInterface)(nil).GetRepositoryByUUID), uuid)
 }
 
-// ListRepositories mocks base method.
+// ListRepositories mocks base method
 func (m *MockClientInterface) ListRepositories(requestParams repositories.ListRepositoriesParams, filters repositories.ListRepositoriesFilters) (*repositories.ListRepositoriesResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListRepositories", requestParams, filters)
@@ -119,8 +103,38 @@ func (m *MockClientInterface) ListRepositories(requestParams repositories.ListRe
 	return ret0, ret1
 }
 
-// ListRepositories indicates an expected call of ListRepositories.
+// ListRepositories indicates an expected call of ListRepositories
 func (mr *MockClientInterfaceMockRecorder) ListRepositories(requestParams, filters interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRepositories", reflect.TypeOf((*MockClientInterface)(nil).ListRepositories), requestParams, filters)
+}
+
+// SearchContentPackage mocks base method
+func (m *MockClientInterface) SearchContentPackage(packageName string, URLS []string) (*[]repositories.SearchPackageResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SearchContentPackage", packageName, URLS)
+	ret0, _ := ret[0].(*[]repositories.SearchPackageResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SearchContentPackage indicates an expected call of SearchContentPackage
+func (mr *MockClientInterfaceMockRecorder) SearchContentPackage(packageName, URLS interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchContentPackage", reflect.TypeOf((*MockClientInterface)(nil).SearchContentPackage), packageName, URLS)
+}
+
+// CreateRepository mocks base method
+func (m *MockClientInterface) CreateRepository(repository repositories.Repository) (*repositories.Repository, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateRepository", repository)
+	ret0, _ := ret[0].(*repositories.Repository)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateRepository indicates an expected call of CreateRepository
+func (mr *MockClientInterfaceMockRecorder) CreateRepository(repository interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateRepository", reflect.TypeOf((*MockClientInterface)(nil).CreateRepository), repository)
 }

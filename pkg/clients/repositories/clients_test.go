@@ -11,9 +11,11 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/golang/mock/gomock"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients"
 	"github.com/redhatinsights/edge-api/pkg/clients/repositories"
+	"github.com/redhatinsights/edge-api/pkg/clients/repositories/mock_repositories"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/google/uuid"
@@ -702,6 +704,89 @@ func TestCreateRepository(t *testing.T) {
 				assert.NotNil(t, response)
 				assert.NotNil(t, testCase.Response)
 				assert.Equal(t, *response, *testCase.Response)
+			} else {
+				assert.ErrorContains(t, err, testCase.ExpectedError.Error())
+			}
+		})
+	}
+}
+
+func TestSearchContentPackage(t *testing.T) {
+
+	rp := []repositories.SearchPackageResponse{{PackageName: "cat", Summary: "cat test"}}
+
+	testCases := []struct {
+		Name                string
+		ContentSourcesURL   string
+		PackageName         string
+		APIRepositoriesPath string
+		URLS                []string
+		IOReadAll           func(r io.Reader) ([]byte, error)
+		HTTPStatus          int
+		Response            *[]repositories.SearchPackageResponse
+		ResponseText        string
+		ExpectedError       error
+	}{
+		{
+			Name:          "should return the expected repos",
+			URLS:          []string{"https://test.com"},
+			PackageName:   "cat",
+			HTTPStatus:    http.StatusInternalServerError,
+			IOReadAll:     io.ReadAll,
+			Response:      &rp,
+			ExpectedError: nil,
+		},
+		{
+			Name:          "should return error",
+			URLS:          []string{"https://google.com"},
+			PackageName:   "",
+			HTTPStatus:    http.StatusInternalServerError,
+			IOReadAll:     io.ReadAll,
+			Response:      &[]repositories.SearchPackageResponse{},
+			ExpectedError: &repositories.PackageRequestError{},
+		},
+	}
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepositoriesService := mock_repositories.NewMockClientInterface(ctrl)
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(testCase.HTTPStatus)
+				if testCase.ResponseText != "" {
+					_, err := fmt.Fprint(w, testCase.ResponseText)
+					assert.NoError(t, err)
+					return
+				}
+				if testCase.Response != nil {
+					err := json.NewEncoder(w).Encode(&testCase.Response)
+					assert.NoError(t, err)
+				}
+			}))
+			defer ts.Close()
+
+			repositories.IOReadAll = testCase.IOReadAll
+			if testCase.ContentSourcesURL == "" {
+				config.Get().ContentSourcesURL = ts.URL
+			} else {
+				config.Get().ContentSourcesURL = testCase.ContentSourcesURL
+			}
+			if testCase.APIRepositoriesPath != "" {
+				repositories.APIRepositoriesPath = testCase.APIRepositoriesPath
+			}
+
+			mockRepositoriesService.EXPECT().SearchContentPackage(gomock.Any(), gomock.Any()).
+				Return(&rp, testCase.ExpectedError)
+
+			response, err := mockRepositoriesService.SearchContentPackage(testCase.PackageName, testCase.URLS)
+
+			if testCase.ExpectedError == nil {
+				assert.NoError(t, err)
+				assert.Equal(t, response, testCase.Response)
 			} else {
 				assert.ErrorContains(t, err, testCase.ExpectedError.Error())
 			}
