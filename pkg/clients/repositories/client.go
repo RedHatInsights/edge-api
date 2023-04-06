@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -70,6 +71,7 @@ type ClientInterface interface {
 	GetRepositoryByURL(url string) (*Repository, error)
 	GetRepositoryByUUID(uuid string) (*Repository, error)
 	ListRepositories(requestParams ListRepositoriesParams, filters ListRepositoriesFilters) (*ListRepositoriesResponse, error)
+	CreateRepository(repository Repository) (*Repository, error)
 }
 
 // Client is the implementation of an ClientInterface
@@ -97,6 +99,9 @@ var APIRepositoriesPath = "repositories"
 
 // IOReadAll The io body reader
 var IOReadAll = io.ReadAll
+
+// NewJSONEncoder  create a new json encoder
+var NewJSONEncoder = json.NewEncoder
 
 var ErrRepositoryRequestResponse = errors.New("repository request error response")
 var ErrParsingRawURL = errors.New("error occurred while parsing raw url")
@@ -276,4 +281,61 @@ func (c *Client) ListRepositories(requestParams ListRepositoriesParams, filters 
 		return nil, err
 	}
 	return &response, nil
+}
+
+func (c *Client) CreateRepository(repository Repository) (*Repository, error) {
+	baseURL, err := c.GetBaseURL()
+	if err != nil {
+		return nil, err
+	}
+
+	repositoriesRawURL := baseURL.String() + fmt.Sprintf("/%s/%s/", APIVersion, APIRepositoriesPath)
+	repositoriesURL, err := baseURL.Parse(repositoriesRawURL)
+	if err != nil {
+		c.log.WithFields(log.Fields{"url": repositoriesRawURL, "error": err.Error()}).Error("failed to parse repository url")
+		return nil, ErrParsingRawURL
+	}
+
+	payloadBuffer := new(bytes.Buffer)
+	if err := NewJSONEncoder(payloadBuffer).Encode(&repository); err != nil {
+		c.log.WithField("error", err.Error()).Error("content source error occurred while encoding repository")
+		return nil, err
+	}
+
+	requestURL := repositoriesURL.String()
+	c.log.WithField("url", requestURL).Info("content source create repository request started")
+
+	req, _ := http.NewRequest("POST", requestURL, payloadBuffer)
+	req.Header.Add("Content-Type", "application/json")
+	headers := clients.GetOutgoingHeaders(c.ctx)
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
+
+	client := clients.ConfigureClientWithTLS(&http.Client{})
+	res, err := client.Do(req)
+	if err != nil {
+		c.log.WithField("error", err.Error()).Error("content source create repository request error")
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	body, err := IOReadAll(res.Body)
+	if err != nil {
+		c.log.WithFields(log.Fields{"statusCode": res.StatusCode, "error": err.Error()}).Error("content source create repository response error")
+		return nil, err
+	}
+
+	if res.StatusCode != http.StatusCreated {
+		c.log.WithFields(log.Fields{"statusCode": res.StatusCode, "responseBody": string(body)}).Error("content source create repository response error")
+		return nil, ErrRepositoryRequestResponse
+	}
+
+	var responseRepository Repository
+	err = json.Unmarshal(body, &responseRepository)
+	if err != nil {
+		c.log.WithFields(log.Fields{"responseBody": string(body), "error": err.Error()}).Error("error occurred when unmarshalling response body to repository")
+		return nil, err
+	}
+	return &responseRepository, nil
 }
