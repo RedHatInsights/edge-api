@@ -13,7 +13,7 @@ type WebGetter interface {
 }
 
 // Add description
-type ConfigurableWebGetter struct {	// nolint:gofmt,goimports,govet
+type ConfigurableWebGetter struct { // nolint:gofmt,goimports,govet
 	URL    string
 	GetURL func(string) (resp *http.Response, err error)
 }
