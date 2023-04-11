@@ -14,6 +14,7 @@ const OrgIDNotSetMsg = "Org ID is not set"
 const IDMustBeIntegerMsg = "ID needs to be an integer"
 const ThirdPartyRepositoryNotFoundMsg = "third party repository was not found"
 const ThirdPartyRepositoryAlreadyExistsMsg = "custom repository already exists"
+const ThirdPartyRepositoryWithURLAlreadyExistsMsg = "custom repository with url already exists"
 const ThirdPartyRepositoryNameIsEmptyMsg = "custom repository name cannot be empty"
 const ThirdPartyRepositoryURLIsEmptyMsg = "custom repository URL cannot be empty"
 const ThirdPartyRepositoryInfoIsInvalidMsg = "custom repository info is invalid"
@@ -128,6 +129,13 @@ type ThirdPartyRepositoryAlreadyExists struct{}
 
 func (e *ThirdPartyRepositoryAlreadyExists) Error() string {
 	return ThirdPartyRepositoryAlreadyExistsMsg
+}
+
+// ThirdPartyRepositoryWithURLAlreadyExists indicates the Third Party Repository already exists with the requested url
+type ThirdPartyRepositoryWithURLAlreadyExists struct{}
+
+func (e *ThirdPartyRepositoryWithURLAlreadyExists) Error() string {
+	return ThirdPartyRepositoryWithURLAlreadyExistsMsg
 }
 
 // ThirdPartyRepositoryNameIsEmpty indicates the Third Party Repository name is empty
