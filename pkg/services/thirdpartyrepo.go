@@ -5,6 +5,7 @@ package services
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	"gorm.io/gorm"
 
@@ -22,6 +23,7 @@ type ThirdPartyRepoServiceInterface interface {
 	UpdateThirdPartyRepo(tprepo *models.ThirdPartyRepo, orgID string, ID string) error
 	DeleteThirdPartyRepoByID(ID string) (*models.ThirdPartyRepo, error)
 	ThirdPartyRepoNameExists(orgID string, name string) (bool, error)
+	ThirdPartyRepoURLExists(orgID string, url string) (bool, error)
 }
 
 // NewThirdPartyRepoService gives a instance of the main implementation of a ThirdPartyRepoServiceInterface
@@ -34,6 +36,35 @@ func NewThirdPartyRepoService(ctx context.Context, log *log.Entry) ThirdPartyRep
 // ThirdPartyRepoService is the main implementation of a ThirdPartyRepoServiceInterface
 type ThirdPartyRepoService struct {
 	Service
+}
+
+// ThirdPartyRepoURLExists check if a repo with the requested url exist
+func (s *ThirdPartyRepoService) ThirdPartyRepoURLExists(orgID string, url string) (bool, error) {
+	if orgID == "" {
+		return false, new(OrgIDNotSet)
+	}
+	if url == "" {
+		return false, new(ThirdPartyRepositoryURLIsEmpty)
+	}
+
+	// consider that url with slash and without slash at the end to be equivalent
+	// e.g "http://example.com/repo" and "http://example.com/repo/" are equivalent
+	cleanedURL := models.AddSlashToURL(url)
+
+	if cleanedURL == url {
+		// remove the slash from url, e.g url will be without slash and cleanedURL will be with slash at the end
+		// as we need to check the both strings variants
+		url = strings.TrimRight(url, "/")
+	}
+
+	var reposCount int64
+	if err := db.Org(orgID, "").Debug().Model(&models.ThirdPartyRepo{}).
+		Where("(url = ? OR url = ?)", url, cleanedURL).
+		Count(&reposCount).Error; err != nil {
+		s.log.WithField("error", err.Error()).Error("Error checking custom repository existence")
+		return false, err
+	}
+	return reposCount > 0, nil
 }
 
 // ThirdPartyRepoNameExists check if a repo with the requested name exists
@@ -97,6 +128,12 @@ func (s *ThirdPartyRepoService) CreateThirdPartyRepo(thirdPartyRepo *models.Thir
 	if repoExists {
 		return nil, new(ThirdPartyRepositoryAlreadyExists)
 	}
+	if repoExists, err := s.ThirdPartyRepoURLExists(orgID, thirdPartyRepo.URL); err != nil {
+		return nil, err
+	} else if repoExists {
+		return nil, new(ThirdPartyRepositoryWithURLAlreadyExists)
+	}
+
 	createdThirdPartyRepo := &models.ThirdPartyRepo{
 		Name:        thirdPartyRepo.Name,
 		URL:         thirdPartyRepo.URL,
@@ -151,7 +188,14 @@ func (s *ThirdPartyRepoService) UpdateThirdPartyRepo(tprepo *models.ThirdPartyRe
 		repoDetails.Name = tprepo.Name
 	}
 	if tprepo.URL != "" {
-		if repoDetails.URL != tprepo.URL {
+		// consider that url with slash and without slash at the end to be equivalent
+		// e.g "http://example.com/repo" and "http://example.com/repo/" are equivalent
+		if repoDetails.URL != tprepo.URL && repoDetails.URL != models.AddSlashToURL(tprepo.URL) {
+			if repoExists, err := s.ThirdPartyRepoURLExists(orgID, tprepo.URL); err != nil {
+				return err
+			} else if repoExists {
+				return new(ThirdPartyRepositoryWithURLAlreadyExists)
+			}
 			// prohibit url change if images exists with successful status
 			imagesExists, err := s.thirdPartyRepoImagesExists(
 				strconv.FormatUint(uint64(repoDetails.ID), 10),

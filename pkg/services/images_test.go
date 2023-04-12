@@ -1298,12 +1298,12 @@ var _ = Describe("Image Service Test", func() {
 			csRepos = []repositories.Repository{
 				// add an existing one, but change some data
 				{
-					UUID: uuid.MustParse(existingEMRepo.UUID), Name: faker.UUIDHyphenated(), URL: faker.URL(),
+					UUID: uuid.MustParse(existingEMRepo.UUID), Name: faker.UUIDHyphenated(), URL: models.AddSlashToURL(faker.URL()),
 					DistributionArch: faker.UUIDHyphenated(), GpgKey: faker.UUIDHyphenated(), PackageCount: 200,
 				},
 				// add the other that do not exist in db
 				{
-					UUID: uuid.MustParse(otherEMRepo.UUID), Name: otherEMRepo.Name, URL: faker.URL(), DistributionArch: faker.UUIDHyphenated(),
+					UUID: uuid.MustParse(otherEMRepo.UUID), Name: otherEMRepo.Name, URL: models.AddSlashToURL(faker.URL()), DistributionArch: faker.UUIDHyphenated(),
 					GpgKey: faker.UUIDHyphenated(), PackageCount: 160,
 				},
 			}

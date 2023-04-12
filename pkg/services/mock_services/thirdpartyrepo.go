@@ -94,6 +94,21 @@ func (mr *MockThirdPartyRepoServiceInterfaceMockRecorder) ThirdPartyRepoNameExis
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ThirdPartyRepoNameExists", reflect.TypeOf((*MockThirdPartyRepoServiceInterface)(nil).ThirdPartyRepoNameExists), orgID, name)
 }
 
+// ThirdPartyRepoURLExists mocks base method.
+func (m *MockThirdPartyRepoServiceInterface) ThirdPartyRepoURLExists(orgID, url string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ThirdPartyRepoURLExists", orgID, url)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ThirdPartyRepoURLExists indicates an expected call of ThirdPartyRepoURLExists.
+func (mr *MockThirdPartyRepoServiceInterfaceMockRecorder) ThirdPartyRepoURLExists(orgID, url interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ThirdPartyRepoURLExists", reflect.TypeOf((*MockThirdPartyRepoServiceInterface)(nil).ThirdPartyRepoURLExists), orgID, url)
+}
+
 // UpdateThirdPartyRepo mocks base method.
 func (m *MockThirdPartyRepoServiceInterface) UpdateThirdPartyRepo(tprepo *models.ThirdPartyRepo, orgID, ID string) error {
 	m.ctrl.T.Helper()
