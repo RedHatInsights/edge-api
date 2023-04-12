@@ -78,8 +78,7 @@ func (c *Client) ExecuteDispatcher(payload DispatcherPayload) ([]Response, error
 	res, err := client.Do(req)
 	if err != nil {
 		c.log.WithFields(log.Fields{
-			"statusCode": res.StatusCode,
-			"error":      err,
+			"error": err,
 		}).Error("PlaybookDispatcher ExecuteDispatcher Request Error")
 		return nil, err
 	}
