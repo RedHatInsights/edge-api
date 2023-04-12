@@ -77,8 +77,13 @@ func (c *Client) ExecuteDispatcher(payload DispatcherPayload) ([]Response, error
 	client := clients.ConfigureClientWithTLS(&http.Client{})
 	res, err := client.Do(req)
 	if err != nil {
+		code := 500
+		if res != nil {
+			code = res.StatusCode
+		}
+
 		c.log.WithFields(log.Fields{
-			"statusCode": res.StatusCode,
+			"statusCode": code,
 			"error":      err,
 		}).Error("PlaybookDispatcher ExecuteDispatcher Request Error")
 		return nil, err
