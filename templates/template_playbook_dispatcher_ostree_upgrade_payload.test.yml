@@ -11,53 +11,99 @@
     os_tree_ref: "rhel/8/x86_64/edge"
     ostree_gpg_verify: "false"
     ostree_gpg_keypath: "/etc/pki/rpm-gpg/"
-    ostree_remote_template: |
-      [remote "{{ ostree_remote_name }}"]
-      url={{ repo_url }}
-      gpg-verify={{ ostree_gpg_verify }}
-      gpgkeypath={{ ostree_gpg_keypath }}
-      contenturl={{ repo_content_url }}
-      tls-client-key-path=/etc/pki/consumer/key.pem
-      tls-client-cert-path=/etc/pki/consumer/cert.pem
+    conf_file_path: "/etc/ostree/remotes.d/rhel-edge.conf"
     insights_signature_exclude: "/vars/insights_signature,/vars/update_number,/vars/ostree_remote_name,/vars/ostree_changes_refs,/vars/os_tree_ref,/vars/repo_url,/vars/repo_content_url,/vars/ostree_gpg_verify"
     insights_signature: !!binary |
       TFMwdExTMUNSVWRKVGlCUVIxQWdVMGxIVGtGVVZWSkZMUzB0TFMwS1ZtVnljMmx2YmpvZ1IyNTFV
-      RWNnZGpFS0NtbFJTVlpCZDFWQldTOVZaSFJqZG5jMU9FUXJhalZ3VGtGUmFuUkdVUzhyUzJwMVVu
-      WXdaRVJuWmpBemFHVkVWUzg1ZGpsRmFtaGhTVWxJT0VwSU1rUUtRMXBMVTFsRldHeFVkRlpzVEdK
-      RFprOXlORFZqWWs1dU5tVmlaVVVyTUdSMllVbDJUelZIUjNCUGVtTndWak56UkM5MGJEaGxWVTQy
-      T0RsNVJHOUpjQXA0VW5ScFVtUlVZVlJqVDFFeE5XYzBTRGxxTkdvek5uTkhWbVpSUWxsdk9XSm1P
-      SEpwVmpkbVNEVnZSMWRMUVVGeFIyZEpOa2hQWnpGUGNtUlNlblEzQ2psd05XZEtkMlI0VW1ablNI
-      WlFTMWhtV2xwMk5reFNSV1pzWjAxblZuUnZVelZ6YmtVdlFqUkxkM0ZDZW1aNWVraGlWalZsV1N0
-      Q1UwZFBUbWwzVW1JS2IwWnBla1JPT1ZJMFpYVllkWFpyT1ZWa2QwZzRkR1pPZUZReGVreGpaWE5W
-      TWsxNkswTTRlRXRaTTB4Qk5rcFBaRGhtT1RRM1pFZ3hObmxOY20xVVVBcEdZVkkyTDJ0bFVWUm5S
-      VXh5TUdGcFZFczBiVFZZZURBMFQxUmhkVmg0Y213MlZUZEVPRXh0ZERWNGJIZGtWWHBoTWxNelpt
-      ZHRka3hLUkhCa1dqZERDa3hoVFZrck1FMVhMMk5uZEV0YVdrMXVNVUo2UkVGVEsyeFhWbHAyZW1s
-      R05sQk5SVTlwTVVSYVIzaG9Wa1U1YkVsM2RtaFNhVUp6ZVhWcVVGWTNRbXdLTW1OU2IxWjBTRTkx
-      TDI5cmRHa3dSVGc0VTBWdWNrdFVUSEp6YTJaaGFFOTVlRmhvUW1wallXNUhlbGRZWlZCMk5Vb3ZW
-      elJvWTFCNGFYSlROWE5UV1Fwc2JXUXJlWEF6YjFCb2RHdE5ibGxQTURsWGVVVlllRzFTUkcxRFZW
-      VnZSbkZVY0RKNGNHVnRjekpaZFhadVFqQlNOVUpFTkROQ2JqaG9OQ3RaTURGeUNuZzFSbTFJTTJW
-      V0t5dHNPVWxVT1ZRM2VYVjFRMU5vVkVSVE5HcGpiRXg1S3pWdksyOWlaSE4yWVZWWU9UbFJZbUpE
-      YVRoNVYxQXJlWEo1WnpWdU4wd0tSMmRzYTBkcVlXSTRMMHM1VVhwME0wVlRjbWh5TTJwYWMxZDJj
-      Vk15VGpsT1dtVkVMM3BZZHpSUldYbFVNVnB1VlhCM2EyaG1lV3BIVURCRk9WcEhVZ3B5TjJKVGVE
-      VXhTVUZsZHowS1BUazNXaThLTFMwdExTMUZUa1FnVUVkUUlGTkpSMDVCVkZWU1JTMHRMUzB0Q2c9
+      RWNnZGpFS0NtbFJTVlpCZDFWQldrUmlVbWhOZG5jMU9FUXJhalZ3VGtGUmFYUndVa0ZCYjBOVWVF
+      SmliM1EwZEZocGNYbDBTbGRDTlZWeVdETTVUVk54VWtWUFZXa0tUV3hKVjFKclEyUTBWbEJpU2pa
+      MGNETjNXRXRaYTFWWmFVMVJOWGN4VDJwaFZWbzJaek5wT1dSWWNtbGFha2xFU3l0WGVrbHBPVmQx
+      YjJsRlExZHFTd3BsTTNZM1IyTkJNVXBWUW10S2VFNU5lbVpRTUVwTmNIZ3ljRkUwV1RocFFVTnJU
+      REJtTDNnMVZYaFBPRTg1TTBST2RrcHhRbUpMUkRsTGJVMUxlVVZrQ2xOSmNVdGxXa2xVWW1WWldr
+      SmtTMk5wVW1aWVRYUm9hMk0xTldWeGRHOXRWVUppZVRWSVdEQTNkVWt2U0ZwSFZuUTFlWGxQYTNR
+      MmIzbFlhM1JPVkVRS2FFdzJSREZrTDFsT1lTdHRWR2RsY1hvMVVVNXBWR0YxVFZnelMzQkZSM1JP
+      TlVGSU9Vc3lRMVJZV1dkRFdFUXlRbkIwT0V0MFltdzJkemxsUVVWcVF3b3pVV1pxZVRkMmFWSmta
+      a3RhZDNSWmNVRkVWMDg1YkZKaE5uRnFPVE0zWWxkVlZrNDRXaTl2V1U1MlEyeElRbGgwVkdVM1ps
+      WkZlR2RuTm10MGVtNUZDbFZwWVhaVVpteHphMjVFU0daaE1rZFVZVXRIYVZoMVUxUnNSVTVpU1hK
+      Wk9IQllUMkZvTDNvNGMzcHRSVkZpVFVjM2QydGlVMGxCWmpGVVVqWkVhWEVLV1hCbFpWTTFjVEZ6
+      YjBKNVJHeE5jWFZQWm1WT2FqUmFZalpMTjFoUk5tUXhjWFZ0YUdzMldqWk9WVkE1VUhoc0sxSlRU
+      a1JVWkZaMFFXOTZNbkJhZFFwdVdrRm5TbFZ4WkVKaU1GUlRSelZSUVZkUFlqRXJWbGN6V1hkUVIz
+      cEhhRE5EYTNjemJ6ZGlkV2hNVVVKWlJGQXpSRW9yTVc1UVNteFlURTQxWkRGUENtZEpiR1JMV0RF
+      MVFUUk5RMUpRVHpkNlYxVjFTR2R5YldkV1FsVkdOa0ZVVG5adlZ6RTRaalpaVjNWTlVuZzVWbXhD
+      TXpsbWQySkdWMFF6WjFWbFJWWUtiSGMwVDJ4all6VnpXR3N4WjBSV00zRkdhalZqZGtSUWMxWnlT
+      VE0yS3l0UGNVeFRXRXN4Ukhac1FXWnBhR1pSTUVSb1FXNVlka0pXZWxrM2JqVXJlUXBDVUhsVE1r
+      Sk5SMFZGU1QwS1BVeGtia2dLTFMwdExTMUZUa1FnVUVkUUlGTkpSMDVCVkZWU1JTMHRMUzB0Q2c9
       PQ==
   tasks:
-    - name: apply templated ostree remote config
-      ansible.builtin.copy:
-        content: "{{ ostree_remote_template }}"
-        dest: /etc/ostree/remotes.d/rhel-edge.conf
-    - name: run rpmostree update
-      when: not ostree_changes_refs|bool
-      ansible.builtin.shell: rpm-ostree upgrade --allow-downgrade
-      register: rpmostree_upgrade_out
-      changed_when: '"No upgrade available" not in rpmostree_upgrade_out.stdout'
-      failed_when: 'rpmostree_upgrade_out.rc != 0'
-    - name: run rpmostree rebase
-      when: ostree_changes_refs|bool
-      ansible.builtin.shell: rpm-ostree rebase "{{ os_tree_ref }}"
-      register: rpmostree_rebase_out
-      changed_when: '"No upgrade available" not in rpmostree_rebase_out.stdout'
-      failed_when: 'rpmostree_rebase_out.rc != 0'
-    - name: schedule reboot when rpmostree upgraded
-      ansible.builtin.shell: systemd-run --on-active=5 /usr/bin/systemctl reboot
-      when: ('rpmostree_rebase_out.changed | "Staging deployment...done" in rpmostree_rebase_out.out') or ('rpmostree_upgrade_out.changed | "Staging deployment...done" in rpmostree_upgrade_out.stdout')
+  - name: modify ostree rhel-edge remote file
+    ansible.builtin.shell: |
+      import configparser
+      import os
+      import shutil
+      import time
+
+      changed = False
+      ostree_conf_file = '{{ conf_file_path }}'
+      section = 'remote "{{ ostree_remote_name }}"'
+      elements = {"url": "{{ repo_url }}",
+                  "contenturl": "{{ repo_content_url }}",
+                  "gpg-verify": "{{ ostree_gpg_verify }}",
+                  "gpgkeypath": "{{ ostree_gpg_keypath }}",
+                  "tls-client-key-path": "/etc/pki/consumer/key.pem",
+                  "tls-client-cert-path": "/etc/pki/consumer/cert.pem",}
+
+      config = configparser.ConfigParser()
+
+      # read the ostree remote config file if it exists
+      if os.path.exists(ostree_conf_file):
+          config.read(ostree_conf_file)
+
+      # add the section if it does not exist
+      if not config.has_section(section):
+          config.add_section(section)
+
+      # create/update key/value elements in config section
+      for key, value in elements.items():
+          # check for element and set flag on change
+          if config.has_option(section, key):
+              element_value = config.get(section, key)
+              # if the values are the same, do not change
+              if value == element_value:
+                  continue
+          config.set(section, key, value)
+          changed = True
+
+          # this has to be here for Ansible changed_when to work
+          print("Option changed: ", key, value)
+
+      # backup the file only on change
+      if changed and os.path.exists(ostree_conf_file):
+          backupdest = ''
+          # backups named basename.PID.YYYY-MM-DD@HH:MM:SS~
+          ext = time.strftime("%Y-%m-%d@%H:%M:%S~", time.localtime(time.time()))
+          backupdest = '%s.%s.%s' % (ostree_conf_file, os.getpid(), ext)
+          shutil.copy2(ostree_conf_file, backupdest)
+
+      # write the file
+      with open(ostree_conf_file, 'w') as configfile:
+        config.write(configfile, space_around_delimiters=False)
+    args:
+      executable: /usr/bin/python3
+    register: ostree_remote_out
+    changed_when: '"Option changed:" in ostree_remote_out.stdout'
+    failed_when: 'ostree_remote_out.rc != 0'
+  - name: run rpmostree update
+    when: not ostree_changes_refs|bool
+    ansible.builtin.shell: rpm-ostree upgrade --allow-downgrade
+    register: rpmostree_upgrade_out
+    changed_when: '"No upgrade available" not in rpmostree_upgrade_out.stdout'
+    failed_when: 'rpmostree_upgrade_out.rc != 0'
+  - name: run rpmostree rebase
+    when: ostree_changes_refs|bool
+    ansible.builtin.shell: rpm-ostree rebase "{{ os_tree_ref }}"
+    register: rpmostree_rebase_out
+    changed_when: '"No upgrade available" not in rpmostree_rebase_out.stdout'
+    failed_when: 'rpmostree_rebase_out.rc != 0'
+  - name: schedule reboot when rpmostree upgraded
+    ansible.builtin.shell: systemd-run --on-active=5 /usr/bin/systemctl reboot
+    when: ('rpmostree_rebase_out.changed | "Staging deployment...done" in rpmostree_rebase_out.out') or ('rpmostree_upgrade_out.changed | "Staging deployment...done" in rpmostree_upgrade_out.stdout')
