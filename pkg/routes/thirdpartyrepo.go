@@ -122,7 +122,7 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var apiError errors.APIError
 		switch err.(type) {
-		case *services.ThirdPartyRepositoryNameIsEmpty, *services.ThirdPartyRepositoryURLIsEmpty, *services.ThirdPartyRepositoryAlreadyExists:
+		case *services.ThirdPartyRepositoryNameIsEmpty, *services.ThirdPartyRepositoryURLIsEmpty, *services.ThirdPartyRepositoryAlreadyExists, *services.ThirdPartyRepositoryWithURLAlreadyExists:
 			apiError = errors.NewBadRequest(err.Error())
 		default:
 			apiError = errors.NewInternalServerError()
@@ -412,7 +412,7 @@ func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		var apiError errors.APIError
 		switch err.(type) {
-		case *services.ThirdPartyRepositoryAlreadyExists, *services.ThirdPartyRepositoryImagesExists:
+		case *services.ThirdPartyRepositoryAlreadyExists, *services.ThirdPartyRepositoryImagesExists, *services.ThirdPartyRepositoryWithURLAlreadyExists:
 			apiError = errors.NewBadRequest(err.Error())
 		case *services.ThirdPartyRepositoryNotFound:
 			apiError = errors.NewNotFound(err.Error())

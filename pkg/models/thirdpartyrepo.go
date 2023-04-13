@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -70,12 +71,31 @@ func (t *ThirdPartyRepo) ValidateRequest() error {
 	return nil
 }
 
+// AddSlashToURL cleanup url from leading and trailing white spaces and add slash "/" at the end if missing
+// e.g. transform " http://repo.url.com/repo "  to "http://repo.url.com/repo/"
+func AddSlashToURL(url string) string {
+	url = strings.TrimSpace(url)
+	if len(url) > 0 && url[len(url)-1] != '/' {
+		url += "/"
+	}
+	return url
+}
+
 // BeforeCreate method is called before creating Third Party Repository, it make sure org_id is not empty
 func (t *ThirdPartyRepo) BeforeCreate(tx *gorm.DB) error {
 	if t.OrgID == "" {
 		log.Error("custom-repository do not have an org_id")
 		return ErrOrgIDIsMandatory
 	}
+	// clean up URL and add slash "/"
+	t.URL = AddSlashToURL(t.URL)
 
+	return nil
+}
+
+// BeforeUpdate is called before updating third party repository
+func (t *ThirdPartyRepo) BeforeUpdate(tx *gorm.DB) error {
+	// clean up URL and add slash "/"
+	t.URL = AddSlashToURL(t.URL)
 	return nil
 }
