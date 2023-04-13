@@ -1,0 +1,11 @@
+version: '2'
+services:
+    edge-api-dbmigrate:
+      image: registry.redhat.io/codeready-workspaces/stacks-golang-rhel8:latest
+      env_file:
+        - env/edge-api.env
+      volumes:
+        - ~/dev/git/RedHatInsights/edge-api:/opt/app-root/src:Z
+      working_dir: /opt/app-root/src
+      command:  go run cmd/migraterepos/main.go
+#      command: /usr/bin/edge-api-migrate-repositories

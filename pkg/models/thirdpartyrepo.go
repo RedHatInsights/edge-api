@@ -81,6 +81,10 @@ func AddSlashToURL(url string) string {
 	return url
 }
 
+// RepoURLCleanUp define the cleanup function, by default equal to AddSlashToURL, now it's used only to allow unit-testing
+// of the migration preparation scripts
+var RepoURLCleanUp = AddSlashToURL
+
 // BeforeCreate method is called before creating Third Party Repository, it make sure org_id is not empty
 func (t *ThirdPartyRepo) BeforeCreate(tx *gorm.DB) error {
 	if t.OrgID == "" {
@@ -88,7 +92,7 @@ func (t *ThirdPartyRepo) BeforeCreate(tx *gorm.DB) error {
 		return ErrOrgIDIsMandatory
 	}
 	// clean up URL and add slash "/"
-	t.URL = AddSlashToURL(t.URL)
+	t.URL = RepoURLCleanUp(t.URL)
 
 	return nil
 }
@@ -96,6 +100,6 @@ func (t *ThirdPartyRepo) BeforeCreate(tx *gorm.DB) error {
 // BeforeUpdate is called before updating third party repository
 func (t *ThirdPartyRepo) BeforeUpdate(tx *gorm.DB) error {
 	// clean up URL and add slash "/"
-	t.URL = AddSlashToURL(t.URL)
+	t.URL = RepoURLCleanUp(t.URL)
 	return nil
 }

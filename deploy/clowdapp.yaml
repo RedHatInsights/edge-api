@@ -46,6 +46,12 @@ objects:
           - -c
           - edge-api-migrate
           inheritEnv: true
+        - name: run-repositories-migration
+          command:
+          - bash
+          - -c
+          - edge-api-migrate-repositories
+          inheritEnv: true
         livenessProbe:
           failureThreshold: 3
           httpGet:
