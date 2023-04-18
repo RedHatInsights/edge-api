@@ -87,6 +87,9 @@ var UpdateRepoRequested = &Flag{Name: "edge-management.update_repo_requested", E
 // ContentSources is a feature flag to use for code related to Parity and custom repositories
 var ContentSources = &Flag{Name: "edge-management.content_sources", EnvVar: "FEATURE_CONTENT_SOURCES"}
 
+// MigrateCustomRepositories is a feature flag to use for code related to custom repositories migration to content-sources
+var MigrateCustomRepositories = &Flag{Name: "edge-management.migrate_custom_repositories", EnvVar: "FEATURE_MIGRATE_CUSTOM_REPOSITORIES"}
+
 // (ADD FEATURE FLAGS ABOVE)
 // FEATURE FLAG CHECK CODE
 
