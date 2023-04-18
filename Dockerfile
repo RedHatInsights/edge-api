@@ -24,6 +24,7 @@ RUN go build -tags=fdo -o /go/bin/edge-api
 RUN go build -o /go/bin/edge-api-migrate cmd/migrate/main.go
 RUN go build -o /go/bin/edge-api-wipe cmd/db/wipe.go
 RUN go build -o /go/bin/edge-api-migrate-device cmd/db/updDb/set_account_on_device.go
+RUN go build -o /go/bin/edge-api-migrate-repositories cmd/migraterepos/main.go
 
 # Run the doc binary
 RUN go run cmd/spec/main.go
@@ -75,6 +76,7 @@ COPY --from=edge-builder /go/bin/edge-api /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-migrate /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-wipe /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-migrate-device /usr/bin
+COPY --from=edge-builder /go/bin/edge-api-migrate-repositories /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-ibvents /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-images-build /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-isos-build /usr/bin
