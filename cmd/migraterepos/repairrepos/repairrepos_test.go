@@ -21,9 +21,12 @@ var _ = Describe("Repair custom repositories", func() {
 		var reposLen = 10
 		var badSuffix = "/without-slash  \t "
 		var cleanedSuffix = "/without-slash/"
+		var initialDefaultLimit int
 		BeforeEach(func() {
 			// disable the cleanup function to allow adding urls without slashes by returning the same initial url.
 			models.RepoURLCleanUp = func(url string) string { return url }
+			initialDefaultLimit = repairrepos.DefaultDataLimit
+			repairrepos.DefaultDataLimit = 1
 
 			for i := 0; i < reposLen; i++ {
 				initialRepos = append(initialRepos, models.ThirdPartyRepo{OrgID: faker.UUIDHyphenated(), Name: "test-repair-urls" + faker.UUIDHyphenated(), URL: faker.URL() + badSuffix})
@@ -40,6 +43,7 @@ var _ = Describe("Repair custom repositories", func() {
 			// disable migration feature
 			err := os.Unsetenv(feature.MigrateCustomRepositories.EnvVar)
 			Expect(err).ToNot(HaveOccurred())
+			repairrepos.DefaultDataLimit = initialDefaultLimit
 		})
 
 		It("all initialRepos url should have been cleaned a slash added", func() {
@@ -79,10 +83,13 @@ var _ = Describe("Repair custom repositories", func() {
 		var repos []models.ThirdPartyRepo
 		var image models.Image
 		var orgPrefix string
+		var initialDefaultLimit int
 
 		BeforeEach(func() {
 			// enable migration feature
 			err := os.Setenv(feature.MigrateCustomRepositories.EnvVar, "true")
+			initialDefaultLimit = repairrepos.DefaultDataLimit
+			repairrepos.DefaultDataLimit = 1
 			Expect(err).ToNot(HaveOccurred())
 			if repos == nil {
 				// initialize only once for all the tests
@@ -139,6 +146,7 @@ var _ = Describe("Repair custom repositories", func() {
 			// disable migration feature
 			err := os.Unsetenv(feature.MigrateCustomRepositories.EnvVar)
 			Expect(err).ToNot(HaveOccurred())
+			repairrepos.DefaultDataLimit = initialDefaultLimit
 		})
 
 		It("should remove all orgID1 repos with duplicate urls as expected", func() {
