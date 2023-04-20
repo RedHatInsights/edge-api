@@ -10,7 +10,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// ErrMigrationNotAvailable error returned when the migration feature flag is disabled
 var ErrMigrationNotAvailable = errors.New("migration is not available")
+
+// DefaultDataLimit the default data limit to use when collecting data
+var DefaultDataLimit = 100
+
+// DefaultMaxDataPageNumber the default data pages to handle as preventive way to enter an indefinite loop
+var DefaultMaxDataPageNumber = 100
 
 // RepairUrls add slash to urls to conform to content-sources urls
 // any url like "http://example.com" became "http://example.com/"
@@ -25,31 +32,40 @@ func RepairUrls() (int, error) {
 		Count int
 	}
 
-	var repoURLs []RepoURL
-	if err := db.DB.Debug().Model(&models.ThirdPartyRepo{}).
-		Select("url, count(url) as count").
-		Where("url NOT LIKE '%/' AND url IS NOT NULL AND url != ''").
-		Group("url").
-		Scan(&repoURLs).Error; err != nil {
+	affectedURLS := 0
+	page := 0
+	for page < DefaultMaxDataPageNumber {
+		var repoURLs []RepoURL
+		if err := db.DB.Debug().Model(&models.ThirdPartyRepo{}).
+			Select("url, count(url) as count").
+			Where("url NOT LIKE '%/' AND url IS NOT NULL AND url != ''").
+			Group("url").
+			Limit(DefaultDataLimit).
+			Scan(&repoURLs).Error; err != nil {
 
-		log.WithField("error", err.Error()).Error("error when retrieving urls without slashes")
-		return 0, err
-	}
-	for _, repoURL := range repoURLs {
-		newURL := models.AddSlashToURL(repoURL.URL)
-		log.WithFields(log.Fields{"URL": repoURL.URL, "Count": repoURL.Count, "newURL": newURL}).Info("updating url")
-		if err := db.DB.Debug().Model(&models.ThirdPartyRepo{}).Where("url = ?", repoURL.URL).Update("url", newURL).Error; err != nil {
-			log.WithField("error", err.Error()).Error("error while updating with newURL")
+			log.WithField("error", err.Error()).Error("error when retrieving urls without slashes")
 			return 0, err
 		}
-	}
+		if len(repoURLs) == 0 {
+			break
+		}
+		for _, repoURL := range repoURLs {
+			newURL := models.AddSlashToURL(repoURL.URL)
+			log.WithFields(log.Fields{"URL": repoURL.URL, "Count": repoURL.Count, "newURL": newURL}).Info("updating url")
+			if err := db.DB.Debug().Model(&models.ThirdPartyRepo{}).Where("url = ?", repoURL.URL).Update("url", newURL).Error; err != nil {
+				log.WithField("error", err.Error()).Error("error while updating with newURL")
+				return 0, err
+			}
+		}
 
-	affectedURLS := len(repoURLs)
+		affectedURLS += len(repoURLs)
+		page++
+	}
 	log.WithField("effected", affectedURLS).Info("... repair repositories urls finished")
 	return affectedURLS, nil
 }
 
-func repairOrgDuplicateRepoURLs(orgID string, url string) error {
+func repairOrgDuplicateRepoURL(orgID string, url string) error {
 	repairLogger := log.WithFields(log.Fields{"org_id": orgID, "url": url})
 	if orgID == "" || url == "" {
 		repairLogger.Info("no orgID or url supplied to repair repositories duplicate urls")
@@ -115,30 +131,40 @@ func RepairDuplicates() error {
 		Count int
 	}
 
-	var reposData []RepoData
-	if err := db.DB.Debug().Model(&models.ThirdPartyRepo{}).
-		Select("org_id, url, count(url) as count").
-		Where("url IS NOT NULL AND url != ''").
-		Group("org_id, url").
-		Having("count(url) > 1").
-		Scan(&reposData).Error; err != nil {
-		log.WithField("error", err.Error()).Error("error when collecting orgs duplicate urls")
-	}
-
-	if len(reposData) == 0 {
-		log.Info("... repair repositories duplicate urls finished with no organizations repository urls duplicates found")
-		return nil
-	}
-
-	for _, repoData := range reposData {
-		log.WithFields(log.Fields{"URL": repoData.URL, "Count": repoData.Count, "org": repoData.OrgID}).Info("repair duplicates")
-		if err := repairOrgDuplicateRepoURLs(repoData.OrgID, repoData.URL); err != nil {
-			log.WithField("error", err.Error()).Error("error when repairing org duplicate urls")
-			return err
+	orgUrls := 0
+	page := 0
+	for page < DefaultMaxDataPageNumber {
+		var reposData []RepoData
+		if err := db.DB.Debug().Model(&models.ThirdPartyRepo{}).
+			Select("org_id, url, count(url) as count").
+			Where("url IS NOT NULL AND url != ''").
+			Group("org_id, url").
+			Having("count(url) > 1").
+			Limit(DefaultDataLimit).
+			Scan(&reposData).Error; err != nil {
+			log.WithField("error", err.Error()).Error("error when collecting orgs duplicate urls")
 		}
+
+		if len(reposData) == 0 {
+			break
+		}
+
+		for _, repoData := range reposData {
+			log.WithFields(log.Fields{"URL": repoData.URL, "Count": repoData.Count, "org": repoData.OrgID}).Info("repair duplicates")
+			if err := repairOrgDuplicateRepoURL(repoData.OrgID, repoData.URL); err != nil {
+				log.WithField("error", err.Error()).Error("error when repairing org duplicate urls")
+				return err
+			}
+		}
+		orgUrls += len(reposData)
+		page++
 	}
 
-	log.Info("... repair repositories duplicate urls finished")
+	if orgUrls == 0 {
+		log.Info("... repair repositories duplicate urls finished with no organizations repository urls duplicates found")
+	} else {
+		log.WithField("orgUrls", orgUrls).Info("... repair repositories duplicate urls finished all organizations repository urls duplicates has been repaired")
+	}
 
 	return nil
 }
