@@ -59,6 +59,8 @@ func handleExist(err error) {
 func main() {
 
 	initConfiguration()
+	// wait for 5 seconds, for the unleash client to refresh
+	time.Sleep(5 * time.Second)
 
 	if feature.MigrateCustomRepositories.IsEnabled() {
 		log.Info("custom repositories migration started")
