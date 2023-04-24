@@ -25,6 +25,7 @@ RUN go build -tags=fdo -o /usr/bin/edge-api
 RUN go build -o /usr/bin/edge-api-migrate cmd/migrate/main.go
 RUN go build -o /usr/bin/edge-api-wipe cmd/db/wipe.go
 RUN go build -o /usr/bin/edge-api-migrate-device cmd/db/updDb/set_account_on_device.go
+RUN go build -o /usr/bin/edge-api-migrate-repositories cmd/migraterepos/main.go
 
 # Run the doc binary
 RUN go run cmd/spec/main.go
@@ -78,6 +79,7 @@ ENV MTOOLS_SKIP_CHECK=1
 #COPY  /usr/bin/edge-api-migrate /usr/bin
 #COPY  /usr/bin/edge-api-wipe /usr/bin
 #COPY /usr/bin/edge-api-migrate-device /usr/bin
+#COPY /usr/bin/edge-api-migrate-repositories /usr/bin
 #COPY  /usr/bin/edge-api-ibvents /usr/bin
 #COPY cmd/spec/openapi.json /var/tmp
 
