@@ -65,6 +65,91 @@ func RepairUrls() (int, error) {
 	return affectedURLS, nil
 }
 
+func repairDuplicateImagesReposURLS(imageID uint, url string) error {
+
+	log.WithFields(log.Fields{"URL": url, "image_id": imageID}).Info("repair images_repos url duplicates starting ...")
+
+	// collect all image url repos ids from images_repos
+	var reposIDS []uint
+	if err := db.DB.Debug().Table("images_repos").
+		Select("third_party_repo_id").
+		Joins("JOIN third_party_repos on third_party_repos.id = images_repos.third_party_repo_id").
+		Where("image_id = ? AND url = ? AND deleted_at IS NULL", imageID, url).
+		Order("third_party_repo_id DESC").
+		Pluck("third_party_repo_id", &reposIDS).Error; err != nil {
+		log.WithFields(log.Fields{"URL": url, "image_id": imageID, "error": err.Error()}).Info("error occurred  while collecting image urls for images_repos url duplicates repair")
+		return err
+	}
+
+	if len(reposIDS) <= 1 {
+		log.WithFields(log.Fields{"URL": url, "image_id": imageID}).Info("... repair images_repos url no duplicates found, finished")
+		return nil
+	}
+
+	// let only one to exists (the first one from the slice) and delete the others
+	otherReposIDS := reposIDS[1:]
+	if err := db.DB.Debug().Exec("DELETE FROM images_repos WHERE image_id = ? AND third_party_repo_id IN (?)", imageID, otherReposIDS).Error; err != nil {
+		log.WithFields(log.Fields{"URL": url, "image_id": imageID, "to-remove": len(otherReposIDS), "error": err.Error()}).Info("error occurred  while deleting image repos with duplicates urls in image_repos")
+		return err
+	}
+
+	log.WithFields(log.Fields{"URL": url, "image_id": imageID, "removed": len(otherReposIDS)}).Info("... repair images_repos url duplicates starting finished")
+
+	return nil
+}
+
+// RepairDuplicateImagesReposURLS repair images_repos table from images duplicates urls.
+// e.g. some images may have may repos with same urls, and this function remove that duplicates.
+func RepairDuplicateImagesReposURLS() error {
+	if !feature.MigrateCustomRepositories.IsEnabled() {
+		log.Info("custom repositories migration feature is disabled, repair images_repos urls duplicates is not available")
+		return ErrMigrationNotAvailable
+	}
+
+	log.Info("... repair images_repos urls duplicates repair started")
+
+	// collect all images repos with duplicate repos url
+	type ImagesReposData struct {
+		ImageID uint
+		URL     string
+		Count   int
+	}
+
+	imagesUrls := 0
+	page := 0
+	for page < DefaultMaxDataPageNumber {
+		var imagesReposData []ImagesReposData
+		if err := db.DB.Debug().Table("images_repos").
+			Select("image_id, url, count(url) as count").
+			Joins("JOIN third_party_repos on third_party_repos.id = images_repos.third_party_repo_id").
+			Where("deleted_at IS NULL").
+			Group("image_id, url, deleted_at").
+			Having("count(url) > 1").
+			Order("image_id").
+			Limit(DefaultDataLimit).
+			Scan(&imagesReposData).Error; err != nil {
+			log.WithField("error", err.Error()).Info("error occurred while collecting main data for images_repos urls duplicates")
+			return err
+		}
+		if len(imagesReposData) == 0 {
+			break
+		}
+		for _, imageRepoURL := range imagesReposData {
+			log.WithFields(log.Fields{"URL": imageRepoURL.URL, "Count": imageRepoURL.Count, "image_id": imageRepoURL.ImageID}).Info("repair images_repos url duplicates")
+			if err := repairDuplicateImagesReposURLS(imageRepoURL.ImageID, imageRepoURL.URL); err != nil {
+				return err
+			}
+		}
+
+		imagesUrls += len(imagesReposData)
+		page++
+	}
+
+	log.WithField("images_repos_urls", imagesUrls).Info("... repair images_repos urls duplicates repair finished")
+
+	return nil
+}
+
 func repairOrgDuplicateRepoURL(orgID string, url string) error {
 	repairLogger := log.WithFields(log.Fields{"org_id": orgID, "url": url})
 	if orgID == "" || url == "" {
@@ -117,6 +202,7 @@ func repairOrgDuplicateRepoURL(orgID string, url string) error {
 	return nil
 }
 
+// RepairDuplicates repair table third_party_repos from repos with duplicate urls
 func RepairDuplicates() error {
 	if !feature.MigrateCustomRepositories.IsEnabled() {
 		log.Info("custom repositories migration feature is disabled, repair duplicates is not available")
