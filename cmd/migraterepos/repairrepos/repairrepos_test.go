@@ -74,6 +74,240 @@ var _ = Describe("Repair custom repositories", func() {
 		})
 	})
 
+	Context("repairDuplicateImagesReposURLS", func() {
+		var repoURL1 string
+		var repoURL2 string
+		var repoURL3 string
+		var repoURL4 string
+		var orgID string
+		var image1 *models.Image
+		var image2 *models.Image
+		var initialDefaultLimit int
+		initialDefaultLimit = repairrepos.DefaultDataLimit
+		repairrepos.DefaultDataLimit = 1
+
+		BeforeEach(func() {
+			initialDefaultLimit = repairrepos.DefaultDataLimit
+			repairrepos.DefaultDataLimit = 1
+			// enable migration feature
+			err := os.Setenv(feature.MigrateCustomRepositories.EnvVar, "true")
+			Expect(err).ToNot(HaveOccurred())
+
+			// create two images with duplicates repos urls
+			// create image1 and image2 only once
+			if image1 == nil && image2 == nil {
+				orgID = faker.UUIDHyphenated()
+				repoURL1 = models.AddSlashToURL(faker.URL() + "/repo/")
+				repoURL2 = models.AddSlashToURL(faker.URL() + "/repo/")
+				repoURL3 = models.AddSlashToURL(faker.URL() + "/repo/")
+				repoURL4 = models.AddSlashToURL(faker.URL() + "/repo/")
+				image1 = &models.Image{
+					OrgID: orgID,
+					Name:  faker.UUIDHyphenated(),
+					ThirdPartyRepositories: []models.ThirdPartyRepo{
+						// repoURL1 is duplicated two times
+						{
+							OrgID: orgID,
+							Name:  faker.UUIDHyphenated(),
+							URL:   repoURL1,
+						},
+						{
+							OrgID: orgID,
+							Name:  faker.UUIDHyphenated(),
+							URL:   repoURL1,
+						},
+						// repoURL3 is duplicated two times
+						{
+							OrgID: orgID,
+							Name:  faker.UUIDHyphenated(),
+							URL:   repoURL3,
+						},
+						{
+							OrgID: orgID,
+							Name:  faker.UUIDHyphenated(),
+							URL:   repoURL3,
+						},
+						{
+							OrgID: orgID,
+							Name:  faker.UUIDHyphenated(),
+							URL:   repoURL4,
+						},
+					},
+				}
+				err = db.DB.Create(&image1).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				image2 = &models.Image{
+					OrgID: orgID,
+					Name:  faker.UUIDHyphenated(),
+					ThirdPartyRepositories: []models.ThirdPartyRepo{
+						// repoURL2 is duplicated 4 times
+						{
+							OrgID: orgID,
+							Name:  faker.UUIDHyphenated(),
+							URL:   repoURL2,
+						},
+						{
+							OrgID: orgID,
+							Name:  faker.UUIDHyphenated(),
+							URL:   repoURL2,
+						},
+						{
+							OrgID: orgID,
+							Name:  faker.UUIDHyphenated(),
+							URL:   repoURL2,
+						},
+						{
+							OrgID: orgID,
+							Name:  faker.UUIDHyphenated(),
+							URL:   repoURL2,
+						},
+						{
+							OrgID: orgID,
+							Name:  faker.UUIDHyphenated(),
+							URL:   repoURL3,
+						},
+					},
+				}
+				err = db.DB.Create(&image2).Error
+				Expect(err).ToNot(HaveOccurred())
+			}
+		})
+
+		AfterEach(func() {
+			err := os.Unsetenv(feature.MigrateCustomRepositories.EnvVar)
+			Expect(err).ToNot(HaveOccurred())
+			repairrepos.DefaultDataLimit = initialDefaultLimit
+		})
+
+		It("before repair image1 has duplicates", func() {
+			var dbImage1 models.Image
+			err := db.DB.Preload("ThirdPartyRepositories").First(&dbImage1, image1.ID).Error
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(dbImage1.ThirdPartyRepositories)).To(Equal(5))
+			var countOfRepoURL1 int
+			var countOfRepoURL2 int
+			var countOfRepoURL3 int
+			var countOfRepoURL4 int
+			for _, repo := range dbImage1.ThirdPartyRepositories {
+				if repo.URL == repoURL1 {
+					countOfRepoURL1++
+				}
+				if repo.URL == repoURL2 {
+					countOfRepoURL2++
+				}
+				if repo.URL == repoURL3 {
+					countOfRepoURL3++
+				}
+				if repo.URL == repoURL4 {
+					countOfRepoURL4++
+				}
+			}
+			Expect(countOfRepoURL1).To(Equal(2))
+			// image1 has no repoURL2 url
+			Expect(countOfRepoURL2).To(Equal(0))
+			Expect(countOfRepoURL3).To(Equal(2))
+			Expect(countOfRepoURL4).To(Equal(1))
+		})
+
+		It("before repair image2 has duplicates", func() {
+			var dbImage2 models.Image
+			err := db.DB.Preload("ThirdPartyRepositories").First(&dbImage2, image2.ID).Error
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(dbImage2.ThirdPartyRepositories)).To(Equal(5))
+			var countOfRepoURL1 int
+			var countOfRepoURL2 int
+			var countOfRepoURL3 int
+			var countOfRepoURL4 int
+			for _, repo := range dbImage2.ThirdPartyRepositories {
+				if repo.URL == repoURL1 {
+					countOfRepoURL1++
+				}
+				if repo.URL == repoURL2 {
+					countOfRepoURL2++
+				}
+				if repo.URL == repoURL3 {
+					countOfRepoURL3++
+				}
+				if repo.URL == repoURL4 {
+					countOfRepoURL4++
+				}
+			}
+			// image2 has no repoURL1 url
+			Expect(countOfRepoURL1).To(Equal(0))
+			Expect(countOfRepoURL2).To(Equal(4))
+			Expect(countOfRepoURL3).To(Equal(1))
+			// image2 has no repoURL4 url
+			Expect(countOfRepoURL4).To(Equal(0))
+		})
+
+		It("RepairDuplicateImagesReposURLS should run successfully ", func() {
+			err := repairrepos.RepairDuplicateImagesReposURLS()
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("after repair should remove duplicate repos urls from image1", func() {
+			var dbImage1 models.Image
+			err := db.DB.Preload("ThirdPartyRepositories").First(&dbImage1, image1.ID).Error
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(dbImage1.ThirdPartyRepositories)).To(Equal(3))
+			var countOfRepoURL1 int
+			var countOfRepoURL2 int
+			var countOfRepoURL3 int
+			var countOfRepoURL4 int
+			for _, repo := range dbImage1.ThirdPartyRepositories {
+				if repo.URL == repoURL1 {
+					countOfRepoURL1++
+				}
+				if repo.URL == repoURL2 {
+					countOfRepoURL2++
+				}
+				if repo.URL == repoURL3 {
+					countOfRepoURL3++
+				}
+				if repo.URL == repoURL4 {
+					countOfRepoURL4++
+				}
+			}
+			Expect(countOfRepoURL1).To(Equal(1))
+			// image1 has no repoURL2 url
+			Expect(countOfRepoURL2).To(Equal(0))
+			Expect(countOfRepoURL3).To(Equal(1))
+			Expect(countOfRepoURL4).To(Equal(1))
+		})
+
+		It("after repair should remove duplicate repos urls from image2", func() {
+			var dbImage2 models.Image
+			err := db.DB.Preload("ThirdPartyRepositories").First(&dbImage2, image2.ID).Error
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(dbImage2.ThirdPartyRepositories)).To(Equal(2))
+			var countOfRepoURL1 int
+			var countOfRepoURL2 int
+			var countOfRepoURL3 int
+			var countOfRepoURL4 int
+			for _, repo := range dbImage2.ThirdPartyRepositories {
+				if repo.URL == repoURL1 {
+					countOfRepoURL1++
+				}
+				if repo.URL == repoURL2 {
+					countOfRepoURL2++
+				}
+				if repo.URL == repoURL3 {
+					countOfRepoURL3++
+				}
+				if repo.URL == repoURL4 {
+					countOfRepoURL4++
+				}
+			}
+			// image2 has no repoURL1 url
+			Expect(countOfRepoURL1).To(Equal(0))
+			Expect(countOfRepoURL2).To(Equal(1))
+			Expect(countOfRepoURL3).To(Equal(1))
+			// image2 has no repoURL4 url
+			Expect(countOfRepoURL4).To(Equal(0))
+		})
+	})
+
 	Context("RepairDuplicates", func() {
 		var repoURL1 string
 		var repoURL2 string
@@ -208,6 +442,11 @@ var _ = Describe("Repair custom repositories", func() {
 
 		It("repair urls should not be available", func() {
 			_, err := repairrepos.RepairUrls()
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(repairrepos.ErrMigrationNotAvailable))
+		})
+		It("repair images repos urls should not be available", func() {
+			err := repairrepos.RepairDuplicateImagesReposURLS()
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(repairrepos.ErrMigrationNotAvailable))
 		})

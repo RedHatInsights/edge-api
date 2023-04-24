@@ -47,7 +47,7 @@ func initConfiguration() {
 	initializeUnleash()
 }
 
-func handleExist(err error) {
+func cleanupAndExit(err error) {
 	// flush logger before app exit
 	logger.FlushLogger()
 	if err != nil {
@@ -65,17 +65,22 @@ func main() {
 	if feature.MigrateCustomRepositories.IsEnabled() {
 		log.Info("custom repositories migration started")
 		if _, err := repairrepos.RepairUrls(); err != nil {
-			handleExist(err)
+			cleanupAndExit(err)
+			return
+		}
+
+		if err := repairrepos.RepairDuplicateImagesReposURLS(); err != nil {
+			cleanupAndExit(err)
 			return
 		}
 
 		if err := repairrepos.RepairDuplicates(); err != nil {
-			handleExist(err)
+			cleanupAndExit(err)
 			return
 		}
 	} else {
 		log.Info("custom repositories migration feature is disabled")
 	}
 
-	handleExist(nil)
+	cleanupAndExit(nil)
 }
