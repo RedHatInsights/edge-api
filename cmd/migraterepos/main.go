@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/redhatinsights/edge-api/cmd/migraterepos/migraterepos"
 	"github.com/redhatinsights/edge-api/cmd/migraterepos/repairrepos"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/logger"
@@ -75,6 +76,11 @@ func main() {
 		}
 
 		if err := repairrepos.RepairDuplicates(); err != nil {
+			cleanupAndExit(err)
+			return
+		}
+
+		if err := migraterepos.MigrateAllCustomRepositories(); err != nil {
 			cleanupAndExit(err)
 			return
 		}
