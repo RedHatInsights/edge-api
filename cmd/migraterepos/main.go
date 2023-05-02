@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/redhatinsights/edge-api/cmd/migraterepos/migraterepos"
+	"github.com/redhatinsights/edge-api/cmd/migraterepos/postmigraterepos"
 	"github.com/redhatinsights/edge-api/cmd/migraterepos/repairrepos"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/logger"
@@ -88,12 +89,13 @@ func main() {
 		log.Info("custom repositories migration feature is disabled")
 	}
 
-	//if feature.PostMigrateDeleteCustomRepositories.IsEnabled() {
-	///	log.Info("custom repositories migration started")
-	//	if _, err := repairrepos.RepairUrls(); err != nil {
-	//		cleanupAndExit(err)
-	//		return
-	//	}
+	if feature.PostMigrateDeleteCustomRepositories.IsEnabled() {
+		log.Info("post migrate delete custom repositories start")
+	}
+	if _, err := postmigraterepos.PostMigrateDeleteCustomRepo(); err != nil {
+		cleanupAndExit(err)
+		return
+	}
 
 	cleanupAndExit(nil)
 }
