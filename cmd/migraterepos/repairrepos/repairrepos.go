@@ -13,6 +13,9 @@ import (
 // ErrMigrationNotAvailable error returned when the migration feature flag is disabled
 var ErrMigrationNotAvailable = errors.New("migration is not available")
 
+// ErrPostMigrationNotAvailable error returned when the post delete migration feature flag is disabled
+var ErrPostMigrationNotAvailable = errors.New("post migration  delete repository is not available")
+
 // DefaultDataLimit the default data limit to use when collecting data
 var DefaultDataLimit = 100
 

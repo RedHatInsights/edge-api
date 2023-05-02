@@ -88,5 +88,12 @@ func main() {
 		log.Info("custom repositories migration feature is disabled")
 	}
 
+	//if feature.PostMigrateDeleteCustomRepositories.IsEnabled() {
+	///	log.Info("custom repositories migration started")
+	//	if _, err := repairrepos.RepairUrls(); err != nil {
+	//		cleanupAndExit(err)
+	//		return
+	//	}
+
 	cleanupAndExit(nil)
 }
