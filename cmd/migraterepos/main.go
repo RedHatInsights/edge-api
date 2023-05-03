@@ -91,10 +91,10 @@ func main() {
 
 	if feature.PostMigrateDeleteCustomRepositories.IsEnabled() {
 		log.Info("post migrate delete custom repositories start")
-	}
-	if _, err := postmigraterepos.PostMigrateDeleteCustomRepo(); err != nil {
-		cleanupAndExit(err)
-		return
+		if _, err := postmigraterepos.PostMigrateDeleteCustomRepo(); err != nil {
+			cleanupAndExit(err)
+			return
+		}
 	}
 
 	cleanupAndExit(nil)
