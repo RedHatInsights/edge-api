@@ -312,9 +312,10 @@ var _ = Describe("Migrate custom repositories", func() {
 					// expect that the repo name looks like repoName_uuid
 					Expect(reqRepository.Name).ToNot(BeEmpty())
 					repoNameSlice := strings.Split(reqRepository.Name, "_")
-					Expect(len(repoNameSlice)).To(Equal(2))
+					Expect(len(repoNameSlice)).To(Equal(3))
 					Expect(repoNameSlice[0]).To(Equal(repoName))
-					_, err = uuid.Parse(repoNameSlice[1])
+					Expect(repoNameSlice[1]).To(Equal("migrated"))
+					_, err = uuid.Parse(repoNameSlice[2])
 					Expect(err).ToNot(HaveOccurred())
 					// set a uuid
 					reqRepository.UUID = newUUID
