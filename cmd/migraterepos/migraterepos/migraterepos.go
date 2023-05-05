@@ -49,7 +49,7 @@ func createContentSourcesRepository(client repositories.ClientInterface, emRepo 
 		// content-sources repository with repoName does not exist, will keep using the repoName
 	} else {
 		// content-sources repository with repoName does exist, generate a new repoName using an uuid
-		repoName = fmt.Sprintf("%s_%s", repoName, uuid.NewString())
+		repoName = fmt.Sprintf("%s_migrated_%s", repoName, uuid.NewString())
 	}
 
 	logger.WithField("name", repoName).Info("creating content-source repository")
