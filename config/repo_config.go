@@ -33,7 +33,7 @@ var RHEL8 = []string{"ansible"}
 var RHEL8X = []string{"ansible-core"}
 
 // RHEL90 contains additional list of packages to build an image to = RHEL90
-var RHEL90 = []string{"ansible-core"}
+var RHEL9 = []string{"ansible-core"}
 
 // DistributionsPackages add packages by image
 var DistributionsPackages = map[string][]string{
@@ -42,9 +42,9 @@ var DistributionsPackages = map[string][]string{
 	distRHEL86: RHEL8X,
 	distRHEL87: RHEL8X,
 	distRHEL88: RHEL8X,
-	distRHEL90: RHEL90,
-	distRHEL91: RHEL90,
-	distRHEL92: RHEL90,
+	distRHEL90: RHEL9,
+	distRHEL91: RHEL9,
+	distRHEL92: RHEL9,
 }
 
 // DistributionsRefs set the ref to Images
