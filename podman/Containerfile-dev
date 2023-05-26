@@ -28,13 +28,17 @@ RUN go build -o /usr/bin/edge-api-migrate-device cmd/db/updDb/set_account_on_dev
 
 # Run the doc binary
 RUN go run cmd/spec/main.go
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+RUN mkdir -p api
+RUN ~/go/bin/swag init --generalInfo api.go --o ./api --dir pkg/models,pkg/routes --parseDependency
+RUN go run cmd/swagger2openapi/main.go  api/swagger.json api/openapi.json
 
 # Build the microservices
 #RUN go build -o /usr/local/bin/edge-api-ibvents cmd/kafka/main.go
-RUN go build -o /usr/local/bin/edge-api-utility pkg/services/utility/main.go
-RUN go build -o /usr/local/bin/edge-api-images-build pkg/services/images_build/main.go
-RUN go build -o /usr/local/bin/edge-api-images-iso pkg/services/images_iso/main.go
-RUN go build -o /usr/local/bin/edge-api-images-status pkg/services/images_status/main.go
+#RUN go build -o /usr/local/bin/edge-api-utility pkg/services/utility/main.go
+#RUN go build -o /usr/local/bin/edge-api-images-build pkg/services/images_build/main.go
+#RUN go build -o /usr/local/bin/edge-api-images-iso pkg/services/images_iso/main.go
+#RUN go build -o /usr/local/bin/edge-api-images-status pkg/services/images_status/main.go
 
 ######################################
 # STEP 2: build the dependencies image

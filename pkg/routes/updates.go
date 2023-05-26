@@ -80,6 +80,17 @@ func UpdateCtx(next http.Handler) http.Handler {
 }
 
 // GetUpdatePlaybook returns the playbook for a update transaction
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Updates (Systems)
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /updates/{updateID}/update-playbook.yml [get]
 func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 	update := getUpdate(w, r)
 	if update == nil {
@@ -103,6 +114,17 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetUpdates returns the updates for the device
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Updates (Systems)
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /updates [get]
 func GetUpdates(w http.ResponseWriter, r *http.Request) {
 	services := dependencies.ServicesFromContext(r.Context())
 	result := updateFilters(r, db.DB)
@@ -241,6 +263,16 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 }
 
 // AddUpdate updates a device
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Updates (Systems)
+// @Accept       json
+// @Produce      json
+// @Param        body	body	models.Image	true	"request body"
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /updates [post]
 func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	ctxServices.Log.Info("Starting update")
@@ -275,6 +307,17 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetUpdateByID obtains an update from the database for an orgID
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Updates (Systems)
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /updates/{updateID}/ [get]
 func GetUpdateByID(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	update := getUpdate(w, r)
@@ -297,6 +340,17 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction
 }
 
 // SendNotificationForDevice TMP route to validate
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Updates (Systems)
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /updates/{updateID}/notify [get]
 func SendNotificationForDevice(w http.ResponseWriter, r *http.Request) {
 	if update := getUpdate(w, r); update != nil {
 		ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -321,6 +375,16 @@ type ValidateUpdateResponse struct {
 }
 
 // PostValidateUpdate validate that images can be updated
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Updates (Systems)
+// @Accept       json
+// @Produce      json
+// @Param        body	body	models.Image	true	"request body"
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /updates/validate [post]
 func PostValidateUpdate(w http.ResponseWriter, r *http.Request) {
 	services := dependencies.ServicesFromContext(r.Context())
 	orgID := readOrgID(w, r, services.Log)

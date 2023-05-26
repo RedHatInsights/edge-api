@@ -147,6 +147,17 @@ func ValidateGetDevicesViewFilterParams(next http.Handler) http.Handler {
 }
 
 // GetUpdateAvailableForDevice returns if exists update for the current image at the device.
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Devices (Systems)
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /devices/{DeviceUUID}/updates [get]
 func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	contextServices := dependencies.ServicesFromContext(r.Context())
 	dc, ok := r.Context().Value(deviceContextKey).(DeviceContext)
@@ -177,6 +188,17 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetDeviceImageInfo returns the information of a running image for a device
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Devices (Systems)
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /devices/{DeviceUUID}/image [get]
 func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 	contextServices := dependencies.ServicesFromContext(r.Context())
 	dc, ok := r.Context().Value(deviceContextKey).(DeviceContext)
@@ -204,6 +226,17 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 // Returns the information of a running image and previous image in case of a rollback.
 // Returns updates available to a device.
 // Returns updates transactions for that device, if any.
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Devices (Systems)
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /devices/{DeviceUUID}/ [get]
 func GetDevice(w http.ResponseWriter, r *http.Request) {
 	contextServices := dependencies.ServicesFromContext(r.Context())
 	dc, ok := r.Context().Value(deviceContextKey).(DeviceContext)
@@ -258,6 +291,16 @@ func deviceListFilters(v url.Values) *inventory.Params {
 }
 
 // GetDevices return the device data both on Edge API and InventoryAPI
+// @Summary      Get system data
+// @Description  Get combined system data from Edge API and Inventory API
+// @Tags         Devices (Systems)
+// @Accept       json
+// @Produce      json
+// @Param		 order_by query string false "Order by display_name, updated or operating_system"
+// @Success      200  {object}  models.DeviceDetailsList
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /devices [get]
 func GetDevices(w http.ResponseWriter, r *http.Request) {
 	contextServices := dependencies.ServicesFromContext(r.Context())
 	params := deviceListFilters(r.URL.Query())
@@ -270,6 +313,17 @@ func GetDevices(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetDeviceDBInfo return the device data on EdgeAPI DB
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Devices (Systems)
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /devices/{DeviceUUID}/dbinfo [get]
 func GetDeviceDBInfo(w http.ResponseWriter, r *http.Request) {
 	contextServices := dependencies.ServicesFromContext(r.Context())
 	var devices []models.Device
@@ -291,6 +345,17 @@ func GetDeviceDBInfo(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetDevicesView returns all data needed to display customers devices
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Devices (Systems)
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /devices/devicesview [get]
 func GetDevicesView(w http.ResponseWriter, r *http.Request) {
 	contextServices := dependencies.ServicesFromContext(r.Context())
 	tx := devicesFilters(r, db.DB).Where("image_id > 0")

@@ -264,6 +264,17 @@ func ValidateGetAllDeviceGroupsFilterParams(next http.Handler) http.Handler {
 }
 
 // GetAllDeviceGroups return devices groups for an orgID
+// @Summary      GET Placeholder summary
+// @Description  This is a GET placeholder description
+// @Tags         Device Groups
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /device-groups [get]
 func GetAllDeviceGroups(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	deviceGroupService := ctxServices.DeviceGroupsService
@@ -293,6 +304,16 @@ func GetAllDeviceGroups(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateDeviceGroup is the route to create a new device group
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Device Groups
+// @Accept       json
+// @Produce      json
+// @Param        body	body	models.Image	true	"request body"
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /device-groups [post]
 func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	deviceGroup, err := createDeviceRequest(w, r)
@@ -321,6 +342,17 @@ func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetDeviceGroupDetailsByID return devices groups details for an Id
+// @Summary      GET Placeholder summary
+// @Description  This is a GET placeholder description
+// @Tags         Device Groups
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /device-groups/{ID}/details [get]
 func GetDeviceGroupDetailsByID(w http.ResponseWriter, r *http.Request) {
 	if deviceGroup := getContextDeviceGroupDetails(w, r); deviceGroup != nil {
 		ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -329,6 +361,17 @@ func GetDeviceGroupDetailsByID(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetDeviceGroupDetailsByIDView return devices groups details for an ID
+// @Summary      GET Placeholder summary
+// @Description  This is a GET placeholder description
+// @Tags         Device Groups
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /device-groups/{ID}/view [get]
 func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	deviceGroup := getContextDeviceGroup(w, r)
@@ -380,6 +423,17 @@ func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetDeviceGroupByID return devices groups for an ID
+// @Summary      GET Placeholder summary
+// @Description  This is a GET placeholder description
+// @Tags         Device Groups
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /device-groups/{ID} [get]
 func GetDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
 	if deviceGroup := getContextDeviceGroup(w, r); deviceGroup != nil {
 		ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -412,6 +466,18 @@ func getContextDeviceGroup(w http.ResponseWriter, r *http.Request) *models.Devic
 }
 
 // UpdateDeviceGroup updates the existing device group
+// @Summary      PUT Placeholder summary
+// @Description  This is a put placeholder description
+// @Tags         Device Groups
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm path string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm path int false "A placeholder for optional parameter" example(42)
+// @Param        body	body	models.Image	true	"request body"
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /device-groups/{ID} [put]
 func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	if oldDeviceGroup := getContextDeviceGroup(w, r); oldDeviceGroup != nil {
 		ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -453,6 +519,16 @@ func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteDeviceGroupByID deletes an existing device group
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Device Groups
+// @Accept       json
+// @Produce      json
+// @Param		 imageSetID		path    int  true  "Identifier of the ImageSet"
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /device-groups/{ID} [delete]
 func DeleteDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	deviceGroup := getContextDeviceGroup(w, r)
@@ -523,6 +599,16 @@ func getContextDeviceGroupDevice(w http.ResponseWriter, r *http.Request) *models
 }
 
 // AddDeviceGroupDevices add devices to device group
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Device Groups
+// @Accept       json
+// @Produce      json
+// @Param        body	body	models.Image	true	"request body"
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /device-groups/{ID}/devices [post]
 func AddDeviceGroupDevices(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	contextDeviceGroup := getContextDeviceGroup(w, r)
@@ -559,6 +645,16 @@ func AddDeviceGroupDevices(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteDeviceGroupManyDevices delete the requested devices from device-group
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Device Groups
+// @Accept       json
+// @Produce      json
+// @Param		 imageSetID		path    int  true  "Identifier of the ImageSet"
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /device-groups/{ID}/devices [delete]
 func DeleteDeviceGroupManyDevices(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	contextDeviceGroup := getContextDeviceGroup(w, r)
@@ -596,6 +692,16 @@ func DeleteDeviceGroupManyDevices(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteDeviceGroupOneDevice delete the requested device from device-group
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Device Groups
+// @Accept       json
+// @Produce      json
+// @Param		 imageSetID		path    int  true  "Identifier of the ImageSet"
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /device-groups/{ID}/devices/{deviceID} [delete]
 func DeleteDeviceGroupOneDevice(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	contextDeviceGroup := getContextDeviceGroup(w, r)
@@ -633,6 +739,17 @@ func DeleteDeviceGroupOneDevice(w http.ResponseWriter, r *http.Request) {
 }
 
 // CheckGroupName validates if a group name exists on an ID
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Device Groups
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /device-groups/checkName/{name} [get]
 func CheckGroupName(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	var name = chi.URLParam(r, "name")
@@ -653,6 +770,16 @@ func CheckGroupName(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateAllDevicesFromGroup will be responsible to update all devices that belong to a group
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Device Groups
+// @Accept       json
+// @Produce      json
+// @Param        body	body	models.Image	true	"request body"
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /device-groups/{ID}/updateDevices [post]
 func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	deviceGroup := getContextDeviceGroup(w, r)

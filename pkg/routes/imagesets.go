@@ -180,6 +180,17 @@ type ImageSetInstallerURL struct {
 }
 
 // ListAllImageSets return the list of image sets and images
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Image-sets
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /image-sets [get]
 func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	s := dependencies.ServicesFromContext(r.Context())
 
@@ -278,6 +289,17 @@ type ImageSetImagePackages struct {
 }
 
 // GetImageSetsByID returns the list of Image Sets by a given Image Set ID
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Image-sets
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /image-sets/{imageSetID}/ [get]
 func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	var images []models.Image
 	var details ImageSetImagePackages
@@ -476,6 +498,17 @@ func returnImageDetails(images []models.Image, s *dependencies.EdgeAPIServices) 
 }
 
 // GetImageSetsView return a list of image-sets view
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Image-sets
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /image-sets/view [get]
 func GetImageSetsView(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	orgID := readOrgID(w, r, ctxServices.Log)
@@ -550,6 +583,17 @@ func getContextImageSet(w http.ResponseWriter, r *http.Request) *models.ImageSet
 }
 
 // GetImageSetViewByID handle the image-set view
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Image-sets
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /image-sets/view/{imageSetID}/ [get]
 func GetImageSetViewByID(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	imageSet := getContextImageSet(w, r)
@@ -578,6 +622,17 @@ func GetImageSetViewByID(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetAllImageSetImagesView handle the image-set images view
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Image-sets
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /image-sets/view/{imageSetID}/versions [get]
 func GetAllImageSetImagesView(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	imageSet := getContextImageSet(w, r)
@@ -655,6 +710,17 @@ func getContextImageSetImage(w http.ResponseWriter, r *http.Request) *models.Ima
 }
 
 // GetImageSetImageView handle the image-set image view
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Image-sets
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /image-sets/view/{imageSetID}/versions/{imageID} [get]
 func GetImageSetImageView(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	imageSet := getContextImageSet(w, r)
@@ -686,6 +752,17 @@ func GetImageSetImageView(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, ctxServices.Log, imageSetImageView)
 }
 
+// DeleteImageSet deletes an imageset
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Image-sets
+// @Accept       json
+// @Produce      json
+// @Param		 imageSetID		path    int  true  "Identifier of the ImageSet"
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /image-sets/{imageSetID} [delete]
 func DeleteImageSet(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	imageSet := getContextImageSet(w, r)
@@ -700,11 +777,24 @@ func DeleteImageSet(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// ImageSetDevices contains the count and data for a list of Imagesets
 type ImageSetDevices struct {
 	Count int      `json:"Count"`
 	Data  []string `json:"Data"`
 }
 
+// GetImageSetsDevicesByID gets all devices related to an imageset
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Image-sets
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /image-sets/{imageSetID}/devices [get]
 func GetImageSetsDevicesByID(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	imageSet := getContextImageSet(w, r)
