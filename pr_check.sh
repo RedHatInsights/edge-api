@@ -16,7 +16,7 @@ export IQE_CJI_TIMEOUT="30m"  # This is the time to wait for smoke test to compl
 
 # Install bonfire repo/initialize
 WORKSPACE=${WORKSPACE:-$PWD}
-BONFIRE_REPO_BRANCH='bonfire-hotfix'
+BONFIRE_REPO_BRANCH='master'
 CICD_URL="https://raw.githubusercontent.com/RedHatInsights/bonfire/${BONFIRE_REPO_BRANCH}/cicd"
 curl -s $CICD_URL/bootstrap.sh > ${WORKSPACE}/cicd_bootstrap.sh && source ${WORKSPACE}/cicd_bootstrap.sh
 
