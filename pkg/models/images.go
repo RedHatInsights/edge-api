@@ -281,6 +281,8 @@ type ImageSetView struct {
 	Name             string      `json:"Name"`
 	Version          int         `json:"Version"`
 	UpdatedAt        EdgeAPITime `json:"UpdatedAt"`
+	Distribution     string      `json:"Distribution"`
+	OutputTypes      []string    `json:"OutputTypes"`
 	Status           string      `json:"Status"`
 	ImageBuildIsoURL string      `json:"ImageBuildIsoURL"`
 	ImageID          uint        `json:"ImageID"`

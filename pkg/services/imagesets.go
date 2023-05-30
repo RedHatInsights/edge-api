@@ -9,6 +9,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 
+	"github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -130,12 +131,14 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 
 	// ImageSetRow the structure for getting the main data table
 	type ImageSetRow struct {
-		ID        uint               `json:"ID"`
-		Name      string             `json:"Name"`
-		Version   int                `json:"Version"`
-		Status    string             `json:"Status"`
-		ImageID   uint               `json:"ImageID"`
-		UpdatedAt models.EdgeAPITime `json:"UpdatedAt"`
+		ID           uint               `json:"ID"`
+		Name         string             `json:"Name"`
+		Version      int                `json:"Version"`
+		Distribution string             `json:"Distribution"`
+		OutputTypes  pq.StringArray     `gorm:"type:text[]" json:"OutputTypes"`
+		Status       string             `json:"Status"`
+		ImageID      uint               `json:"ImageID"`
+		UpdatedAt    models.EdgeAPITime `json:"UpdatedAt"`
 	}
 
 	var imageSetsRows []ImageSetRow
@@ -145,7 +148,7 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 	if result := db.OrgDB(orgID, tx, "image_sets").Debug().Table("(?) as latest_images", latestImagesSubQuery).Limit(limit).Offset(offset).
 		Joins("JOIN images on images.id = latest_images.image_id").
 		Joins("JOIN image_sets on image_sets.id = latest_images.image_set_id").
-		Select("image_sets.id, image_sets.name, images.version, images.status, images.id as image_id, images.updated_at").
+		Select("image_sets.id, image_sets.name, images.version,images.distribution, images.output_types, images.status, images.id as image_id, images.updated_at").
 		Where("image_sets.deleted_at IS NULL").
 		Find(&imageSetsRows); result.Error != nil {
 		log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error(
@@ -175,12 +178,14 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 	imageSetsView := make([]models.ImageSetView, 0, len(imageSetsRows))
 	for _, imageSetRow := range imageSetsRows {
 		imageSetView := models.ImageSetView{
-			ID:        imageSetRow.ID,
-			Name:      imageSetRow.Name,
-			Version:   imageSetRow.Version,
-			UpdatedAt: imageSetRow.UpdatedAt,
-			Status:    imageSetRow.Status,
-			ImageID:   imageSetRow.ImageID,
+			ID:           imageSetRow.ID,
+			Name:         imageSetRow.Name,
+			Version:      imageSetRow.Version,
+			Distribution: imageSetRow.Distribution,
+			OutputTypes:  imageSetRow.OutputTypes,
+			UpdatedAt:    imageSetRow.UpdatedAt,
+			Status:       imageSetRow.Status,
+			ImageID:      imageSetRow.ImageID,
 		}
 		installerID, ok := imageSetsInstallersMap[imageSetRow.ID]
 		if ok {
