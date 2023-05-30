@@ -15,7 +15,9 @@ export IQE_FILTER_EXPRESSION=""  # This is the value passed to pytest -k
 export IQE_CJI_TIMEOUT="30m"  # This is the time to wait for smoke test to complete or fail
 
 # Install bonfire repo/initialize
-CICD_URL=https://raw.githubusercontent.com/RedHatInsights/bonfire/master/cicd
+WORKSPACE=${WORKSPACE:-$PWD}
+BONFIRE_REPO_BRANCH='bonfire-hotfix'
+CICD_URL="https://raw.githubusercontent.com/RedHatInsights/bonfire/${BONFIRE_REPO_BRANCH}/cicd"
 curl -s $CICD_URL/bootstrap.sh > ${WORKSPACE}/cicd_bootstrap.sh && source ${WORKSPACE}/cicd_bootstrap.sh
 
 # env vars for bonfire
