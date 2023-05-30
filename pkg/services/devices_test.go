@@ -1121,7 +1121,7 @@ var _ = Describe("DfseviceService", func() {
 				}
 
 				dbFilter := db.DB.Model(models.Device{}).Where("devices.image_id = ?", imageV1.ID).Order("devices.created_at ASC")
-				devices, err := deviceService.GetDevicesView(0, 0, dbFilter)
+				devices, err := deviceService.GetDevicesView(100, 0, dbFilter)
 				wg.Wait()
 				wg2.Wait()
 				Expect(err).To(BeNil())
@@ -1217,7 +1217,7 @@ var _ = Describe("DfseviceService", func() {
 				}
 
 				dbFilter := db.DB.Model(models.Device{}).Where("devices.image_id = ?", imageV1.ID).Order("devices.created_at ASC")
-				devices, err := deviceService.GetDevicesView(0, 0, dbFilter)
+				devices, err := deviceService.GetDevicesView(100, 0, dbFilter)
 				wg.Wait()
 				wg2.Wait()
 				Expect(err).To(BeNil())
@@ -1256,7 +1256,7 @@ var _ = Describe("DfseviceService", func() {
 					Inventory: mockInventoryClient,
 				}
 
-				devices, err := deviceService.GetDevicesView(0, 0, nil)
+				devices, err := deviceService.GetDevicesView(100, 0, nil)
 				wg.Wait()
 				wg2.Wait()
 				Expect(err).To(BeNil())
@@ -1302,7 +1302,7 @@ var _ = Describe("DfseviceService", func() {
 					Inventory: mockInventoryClient,
 				}
 
-				devices, err := deviceService.GetDevicesView(0, 0, nil)
+				devices, err := deviceService.GetDevicesView(100, 0, nil)
 				wg.Wait()
 				wg2.Wait()
 				Expect(err).To(BeNil())
