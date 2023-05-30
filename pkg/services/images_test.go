@@ -1278,6 +1278,7 @@ var _ = Describe("Image Service Test", func() {
 		var csRepos []repositories.Repository
 		var existingEMRepo models.ThirdPartyRepo
 		var otherEMRepo models.ThirdPartyRepo
+		var existingEMRepo2 models.ThirdPartyRepo
 
 		BeforeEach(func() {
 			orgID = faker.UUIDHyphenated()
@@ -1291,20 +1292,31 @@ var _ = Describe("Image Service Test", func() {
 			Expect(err).ToNot(HaveOccurred())
 			// other emRepo does not exist in db, but may exist in content-sources repositories
 			otherEMRepo = models.ThirdPartyRepo{OrgID: orgID, Name: faker.UUIDHyphenated(), UUID: faker.UUIDHyphenated(), URL: faker.URL()}
+			// other emRepo2 does exist in db, but exist in content-sources repositories with other uuid
+			existingEMRepo2 = models.ThirdPartyRepo{OrgID: orgID, Name: faker.UUIDHyphenated(), UUID: faker.UUIDHyphenated(), URL: faker.URL()}
+			err = db.DB.Create(&existingEMRepo2).Error
+			Expect(err).ToNot(HaveOccurred())
+
 			emRepos = []models.ThirdPartyRepo{
 				existingEMRepo,
 				otherEMRepo,
+				existingEMRepo2,
 			}
 			csRepos = []repositories.Repository{
 				// add an existing one, but change some data
 				{
-					UUID: uuid.MustParse(existingEMRepo.UUID), Name: faker.UUIDHyphenated(), URL: models.AddSlashToURL(faker.URL()),
+					UUID: uuid.MustParse(existingEMRepo.UUID), Name: faker.UUIDHyphenated(), URL: existingEMRepo.URL,
 					DistributionArch: faker.UUIDHyphenated(), GpgKey: faker.UUIDHyphenated(), PackageCount: 200,
 				},
 				// add the other that do not exist in db
 				{
 					UUID: uuid.MustParse(otherEMRepo.UUID), Name: otherEMRepo.Name, URL: models.AddSlashToURL(faker.URL()), DistributionArch: faker.UUIDHyphenated(),
 					GpgKey: faker.UUIDHyphenated(), PackageCount: 160,
+				},
+				// add the existing one that do exist in db with other uuid, this repos maybe deleted and created again with same url at content-sources
+				{
+					UUID: uuid.New(), Name: faker.Name(), URL: existingEMRepo2.URL, DistributionArch: faker.UUIDHyphenated(),
+					GpgKey: faker.UUIDHyphenated(), PackageCount: 180,
 				},
 			}
 
@@ -1325,26 +1337,34 @@ var _ = Describe("Image Service Test", func() {
 
 		Context("#SetImageContentSourcesRepositories", func() {
 			It("should set the image third-party repos successfully", func() {
-				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[0].UUID).Return(&csRepos[0], nil)
-				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[1].UUID).Return(&csRepos[1], nil)
+				mockRepositories.EXPECT().GetRepositoryByURL(emRepos[0].URL).Return(&csRepos[0], nil)
+				mockRepositories.EXPECT().GetRepositoryByURL(emRepos[1].URL).Return(&csRepos[1], nil)
+				mockRepositories.EXPECT().GetRepositoryByURL(emRepos[2].URL).Return(&csRepos[2], nil)
 
 				err := service.SetImageContentSourcesRepositories(&image)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(len(image.ThirdPartyRepositories)).To(Equal(2))
-				// The existing repo has not changed id and UUID
+				Expect(len(image.ThirdPartyRepositories)).To(Equal(3))
+				// The existing repo has not changed id, URL and UUID
 				Expect(image.ThirdPartyRepositories[0].ID).To(Equal(existingEMRepo.ID))
 				Expect(image.ThirdPartyRepositories[0].UUID).To(Equal(existingEMRepo.UUID))
+				Expect(image.ThirdPartyRepositories[0].URL).To(Equal(existingEMRepo.URL))
 				// the other repo has been saved
 				Expect(image.ThirdPartyRepositories[1].ID > 0).To(BeTrue())
 
-				// check that the existing repo has been updated and the newly created has the expected data
-				for ind := range []int{0, 1} {
+				// check that the existing repos has been updated and the newly created has the expected data
+				for ind := range []int{0, 1, 2} {
 					Expect(image.ThirdPartyRepositories[ind].Name).To(Equal(csRepos[ind].Name))
 					Expect(image.ThirdPartyRepositories[ind].UUID).To(Equal(csRepos[ind].UUID.String()))
 					Expect(image.ThirdPartyRepositories[ind].URL).To(Equal(csRepos[ind].URL))
 					Expect(image.ThirdPartyRepositories[ind].DistributionArch).To(Equal(csRepos[ind].DistributionArch))
 					Expect(image.ThirdPartyRepositories[ind].GpgKey).To(Equal(csRepos[ind].GpgKey))
 					Expect(image.ThirdPartyRepositories[ind].PackageCount).To(Equal(csRepos[ind].PackageCount))
+				}
+
+				// ensure that the initial existing records in images are the same as the resulting one.
+				existingRecords := []int{0, 2}
+				for ind, id := range []uint{existingEMRepo.ID, existingEMRepo2.ID} {
+					Expect(image.ThirdPartyRepositories[existingRecords[ind]].ID).To(Equal(id))
 				}
 			})
 
@@ -1371,7 +1391,7 @@ var _ = Describe("Image Service Test", func() {
 			It("should return error when repository.GetRepositoryByUUID fails with unknown error", func() {
 				image := models.Image{OrgID: orgID, Name: faker.Name(), ThirdPartyRepositories: []models.ThirdPartyRepo{otherEMRepo}}
 				expectedError := errors.New("expected unknown error returned when calling GetRepositoryByUUID")
-				mockRepositories.EXPECT().GetRepositoryByUUID(image.ThirdPartyRepositories[0].UUID).Return(nil, expectedError)
+				mockRepositories.EXPECT().GetRepositoryByURL(image.ThirdPartyRepositories[0].URL).Return(nil, expectedError)
 
 				err := service.SetImageContentSourcesRepositories(&image)
 				Expect(err).To(HaveOccurred())
@@ -1379,25 +1399,29 @@ var _ = Describe("Image Service Test", func() {
 			})
 
 			It("should ignore repository if it does not exist in content-sources", func() {
-				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[0].UUID).Return(&csRepos[0], nil)
-				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[1].UUID).Return(&csRepos[1], repositories.ErrRepositoryNotFound)
+				mockRepositories.EXPECT().GetRepositoryByURL(emRepos[0].URL).Return(&csRepos[0], nil)
+				mockRepositories.EXPECT().GetRepositoryByURL(emRepos[1].URL).Return(&csRepos[1], repositories.ErrRepositoryNotFound)
+				mockRepositories.EXPECT().GetRepositoryByURL(emRepos[2].URL).Return(&csRepos[2], nil)
 
 				err := service.SetImageContentSourcesRepositories(&image)
 				Expect(err).ToNot(HaveOccurred())
 				// the non-existent content-sources repository was ignored
-				Expect(len(image.ThirdPartyRepositories)).To(Equal(1))
+				Expect(len(image.ThirdPartyRepositories)).To(Equal(2))
 				imageRepo := image.ThirdPartyRepositories[0]
-				// The existing repo has not changed id and UUID
+				// The existing repo has not changed id , url  and UUID
 				Expect(imageRepo.ID).To(Equal(existingEMRepo.ID))
 				Expect(imageRepo.UUID).To(Equal(existingEMRepo.UUID))
+				Expect(imageRepo.URL).To(Equal(existingEMRepo.URL))
 
-				// check that the existing repo has been updated has the expected data
-				Expect(imageRepo.Name).To(Equal(csRepos[0].Name))
-				Expect(imageRepo.UUID).To(Equal(csRepos[0].UUID.String()))
-				Expect(imageRepo.URL).To(Equal(csRepos[0].URL))
-				Expect(imageRepo.DistributionArch).To(Equal(csRepos[0].DistributionArch))
-				Expect(imageRepo.GpgKey).To(Equal(csRepos[0].GpgKey))
-				Expect(imageRepo.PackageCount).To(Equal(csRepos[0].PackageCount))
+				// check that the existing repos has been updated has the expected data
+				for ind, csRepoInd := range []int{0, 2} {
+					Expect(image.ThirdPartyRepositories[ind].Name).To(Equal(csRepos[csRepoInd].Name))
+					Expect(image.ThirdPartyRepositories[ind].UUID).To(Equal(csRepos[csRepoInd].UUID.String()))
+					Expect(image.ThirdPartyRepositories[ind].URL).To(Equal(csRepos[csRepoInd].URL))
+					Expect(image.ThirdPartyRepositories[ind].DistributionArch).To(Equal(csRepos[csRepoInd].DistributionArch))
+					Expect(image.ThirdPartyRepositories[ind].GpgKey).To(Equal(csRepos[csRepoInd].GpgKey))
+					Expect(image.ThirdPartyRepositories[ind].PackageCount).To(Equal(csRepos[csRepoInd].PackageCount))
+				}
 			})
 		})
 
@@ -1407,15 +1431,16 @@ var _ = Describe("Image Service Test", func() {
 				expectedError := errors.New("simulate compose commit error as the call should happen before calling ComposeCommit")
 				mockImageBuilderClient.EXPECT().ComposeCommit(&image).Return(&image, expectedError)
 
-				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[0].UUID).Return(&csRepos[0], nil)
-				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[1].UUID).Return(&csRepos[1], nil)
+				mockRepositories.EXPECT().GetRepositoryByURL(emRepos[0].URL).Return(&csRepos[0], nil)
+				mockRepositories.EXPECT().GetRepositoryByURL(emRepos[1].URL).Return(&csRepos[1], nil)
+				mockRepositories.EXPECT().GetRepositoryByURL(emRepos[2].URL).Return(&csRepos[2], nil)
 
 				err := service.CreateImage(&image)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(expectedError))
-				Expect(len(image.ThirdPartyRepositories)).To(Equal(2))
+				Expect(len(image.ThirdPartyRepositories)).To(Equal(3))
 				// check that the existing repo has been updated and the newly created has the expected data
-				for ind := range []int{0, 1} {
+				for ind := range []int{0, 1, 2} {
 					Expect(image.ThirdPartyRepositories[ind].Name).To(Equal(csRepos[ind].Name))
 					Expect(image.ThirdPartyRepositories[ind].UUID).To(Equal(csRepos[ind].UUID.String()))
 					Expect(image.ThirdPartyRepositories[ind].URL).To(Equal(csRepos[ind].URL))
@@ -1427,7 +1452,7 @@ var _ = Describe("Image Service Test", func() {
 
 			It("CreateImage should return error when SetImageContentSourcesRepositories fails with unknown error", func() {
 				expectedError := errors.New("expected unknown GetRepositoryByUUID error")
-				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[0].UUID).Return(nil, expectedError)
+				mockRepositories.EXPECT().GetRepositoryByURL(emRepos[0].URL).Return(nil, expectedError)
 
 				err := service.CreateImage(&image)
 				Expect(err).To(HaveOccurred())
@@ -1461,15 +1486,16 @@ var _ = Describe("Image Service Test", func() {
 				expectedError := errors.New("simulate compose commit error as the call should happen before calling ComposeCommit")
 				mockImageBuilderClient.EXPECT().ComposeCommit(&image).Return(&image, expectedError)
 
-				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[0].UUID).Return(&csRepos[0], nil)
-				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[1].UUID).Return(&csRepos[1], nil)
+				mockRepositories.EXPECT().GetRepositoryByURL(emRepos[0].URL).Return(&csRepos[0], nil)
+				mockRepositories.EXPECT().GetRepositoryByURL(emRepos[1].URL).Return(&csRepos[1], nil)
+				mockRepositories.EXPECT().GetRepositoryByURL(emRepos[2].URL).Return(&csRepos[2], nil)
 
 				err := service.UpdateImage(&image, &previousImage)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(expectedError))
-				Expect(len(image.ThirdPartyRepositories)).To(Equal(2))
+				Expect(len(image.ThirdPartyRepositories)).To(Equal(3))
 				// check that the existing repo has been updated and the newly created has the expected data
-				for ind := range []int{0, 1} {
+				for ind := range []int{0, 1, 2} {
 					Expect(image.ThirdPartyRepositories[ind].Name).To(Equal(csRepos[ind].Name))
 					Expect(image.ThirdPartyRepositories[ind].UUID).To(Equal(csRepos[ind].UUID.String()))
 					Expect(image.ThirdPartyRepositories[ind].URL).To(Equal(csRepos[ind].URL))
@@ -1481,7 +1507,7 @@ var _ = Describe("Image Service Test", func() {
 
 			It("should return error when SetImageContentSourcesRepositories fails with unknown error", func() {
 				expectedError := errors.New("expected unknown GetRepositoryByUUID error")
-				mockRepositories.EXPECT().GetRepositoryByUUID(emRepos[0].UUID).Return(nil, expectedError)
+				mockRepositories.EXPECT().GetRepositoryByURL(emRepos[0].URL).Return(nil, expectedError)
 
 				err := service.UpdateImage(&image, &previousImage)
 				Expect(err).To(HaveOccurred())
