@@ -52,23 +52,23 @@ var _ = Describe("ImageSets Service Test", func() {
 
 		imageSet1 := models.ImageSet{OrgID: OrgID, Name: CommonName + "-" + faker.Name(), Version: 3}
 		db.DB.Create(&imageSet1)
-		image1 := models.Image{OrgID: OrgID, Name: imageSet1.Name, ImageSetID: &imageSet1.ID, Version: 1, Status: models.ImageStatusSuccess}
+		image1 := models.Image{OrgID: OrgID, Name: imageSet1.Name, ImageSetID: &imageSet1.ID, Version: 1, Distribution: "rhel-90", OutputTypes: []string{models.ImageTypeInstaller, models.ImageTypeCommit}, Status: models.ImageStatusSuccess}
 		image1.Installer = &models.Installer{OrgID: OrgID, ImageBuildISOURL: faker.URL(), Status: models.ImageStatusSuccess}
 		db.DB.Create(&image1)
-		image2 := models.Image{OrgID: OrgID, Name: imageSet1.Name, ImageSetID: &imageSet1.ID, Version: 2, Status: models.ImageStatusSuccess}
+		image2 := models.Image{OrgID: OrgID, Name: imageSet1.Name, ImageSetID: &imageSet1.ID, Version: 2, Distribution: "rhel-90", OutputTypes: []string{models.ImageTypeInstaller, models.ImageTypeCommit}, Status: models.ImageStatusSuccess}
 		image2.Installer = &models.Installer{OrgID: OrgID, ImageBuildISOURL: faker.URL(), Status: models.ImageStatusSuccess}
 		db.DB.Create(&image2)
 		// image 3 Is with empty url and error status
-		image3 := models.Image{OrgID: OrgID, Name: imageSet1.Name, ImageSetID: &imageSet1.ID, Version: 3, Status: models.ImageStatusError}
+		image3 := models.Image{OrgID: OrgID, Name: imageSet1.Name, ImageSetID: &imageSet1.ID, Version: 3, Distribution: "rhel-91", OutputTypes: []string{models.ImageTypeInstaller, models.ImageTypeCommit}, Status: models.ImageStatusError}
 		image3.Installer = &models.Installer{OrgID: OrgID, Status: models.ImageStatusError}
 		db.DB.Create(&image3)
 
 		// other image set
 		otherImageSet1 := models.ImageSet{OrgID: OrgID, Name: CommonName + "-" + faker.Name(), Version: 1}
 		db.DB.Create(&otherImageSet1)
-		otherImage0 := models.Image{OrgID: OrgID, Name: otherImageSet1.Name, ImageSetID: &otherImageSet1.ID, Version: 1, Status: models.ImageStatusBuilding}
+		otherImage0 := models.Image{OrgID: OrgID, Name: otherImageSet1.Name, ImageSetID: &otherImageSet1.ID, Version: 1, Distribution: "rhel-90", OutputTypes: []string{models.ImageTypeInstaller, models.ImageTypeCommit}, Status: models.ImageStatusBuilding}
 		db.DB.Create(&otherImage0)
-		otherImage1 := models.Image{OrgID: OrgID, Name: otherImageSet1.Name, ImageSetID: &otherImageSet1.ID, Version: 1, Status: models.ImageStatusSuccess}
+		otherImage1 := models.Image{OrgID: OrgID, Name: otherImageSet1.Name, ImageSetID: &otherImageSet1.ID, Version: 1, Distribution: "rhel-90", OutputTypes: []string{models.ImageTypeInstaller, models.ImageTypeCommit}, Status: models.ImageStatusSuccess}
 		otherImage1.Installer = &models.Installer{OrgID: OrgID, ImageBuildISOURL: faker.URL(), Status: models.ImageStatusSuccess}
 		db.DB.Create(&otherImage1)
 
@@ -130,6 +130,8 @@ var _ = Describe("ImageSets Service Test", func() {
 
 			Expect(imageSetRow.ID).To(Equal(imageSet1.ID))
 			Expect(imageSetRow.Version).To(Equal(image3.Version))
+			Expect(imageSetRow.Distribution).To(Equal(image3.Distribution))
+			Expect(imageSetRow.OutputTypes).To(Equal(append([]string{}, image3.OutputTypes...)))
 			Expect(imageSetRow.ImageID).To(Equal(image3.ID))
 			Expect(imageSetRow.ImageBuildIsoURL).To(Equal(fmt.Sprintf("/api/edge/v1/storage/isos/%d", image2.Installer.ID)))
 			Expect(imageSetRow.Status).To(Equal(image3.Status))
@@ -147,6 +149,8 @@ var _ = Describe("ImageSets Service Test", func() {
 
 			Expect(imageSetRow.ID).To(Equal(otherImageSet1.ID))
 			Expect(imageSetRow.Version).To(Equal(1))
+			Expect(imageSetRow.Distribution).To(Equal(otherImage1.Distribution))
+			Expect(imageSetRow.OutputTypes).To(Equal(append([]string{}, otherImage1.OutputTypes...)))
 			Expect(imageSetRow.ImageBuildIsoURL).To(Equal(fmt.Sprintf("/api/edge/v1/storage/isos/%d", otherImage1.Installer.ID)))
 			Expect(imageSetRow.Status).To(Equal(models.ImageStatusSuccess))
 		})
