@@ -216,6 +216,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		Preload("Images.Commit.Repo").
 		Joins("JOIN images on images.id = latest_images.image_id").
 		Joins("JOIN image_sets on image_sets.id = latest_images.image_set_id").
+		Where("image_sets.deleted_at IS NULL").
 		Find(&imageSet)
 
 	if result.Error != nil {
