@@ -451,7 +451,11 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
-	result = db.OrgDB(orgID, result, "images").Limit(pagination.Limit).Offset(pagination.Offset).Preload("Packages").Preload("Commit.Repo").Preload("CustomPackages").Preload("ThirdPartyRepositories").Joins("Commit").Joins("Installer").Find(&images)
+	result = db.OrgDB(orgID, result, "images").Limit(pagination.Limit).Offset(pagination.Offset).
+		Preload("Packages").
+		Preload("Commit.Repo").
+		Preload("CustomPackages").
+		Preload("ThirdPartyRepositories").Joins("Commit").Joins("Installer").Find(&images)
 	if result.Error != nil {
 		ctxServices.Log.WithField("error", result.Error.Error()).Error("Error retrieving images")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
