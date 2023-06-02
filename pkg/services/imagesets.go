@@ -450,22 +450,13 @@ func (s *ImageSetsService) DeleteImageSet(imageSetID uint) error {
 		s.log.WithField("error", result.Error.Error()).Error("Error getting image set by id")
 		return result.Error
 	}
-	result = db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
-	if result.Error != nil {
-		s.log.WithField("error", result.Error.Error()).Error("Error getting image set's images")
+
+	if err := db.DB.Where("image_set_id = ?", imageSetID).Delete(&models.Image{}).Error; err != nil {
+		s.log.WithFields(log.Fields{"ImageSet_id": imageSetID, "error": err.Error}).Error("an error occurred when deleting images")
 		return result.Error
 	}
 
-	if len(imageSet.Images) > 0 {
-		result = db.DB.Delete(&imageSet.Images)
-		if result.Error != nil {
-			s.log.WithFields(
-				log.Fields{"ImageSet_id": imageSetID, "error": result.Error},
-			).Error("Error when deleting image set images")
-			return result.Error
-		}
-	}
-	if result := db.DB.Delete(&models.ImageSet{}, imageSet); result.Error != nil {
+	if result := db.DB.Delete(&imageSet); result.Error != nil {
 		s.log.WithFields(
 			log.Fields{"ImageSet_id": imageSetID, "error": result.Error},
 		).Error("Error when deleting image set")
