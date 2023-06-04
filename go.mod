@@ -25,9 +25,9 @@ require (
 	github.com/sirupsen/logrus v1.9.2
 	github.com/spf13/viper v1.16.0
 	github.com/stretchr/testify v1.8.4
-	gorm.io/driver/postgres v1.5.0
-	gorm.io/driver/sqlite v1.5.0
-	gorm.io/gorm v1.24.7-0.20230306060331-85eaf9eeda11
+	gorm.io/driver/postgres v1.5.2
+	gorm.io/driver/sqlite v1.5.1
+	gorm.io/gorm v1.25.1
 )
 
 require (
@@ -58,7 +58,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mattn/go-sqlite3 v1.14.16 // indirect
+	github.com/mattn/go-sqlite3 v1.14.17 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
