@@ -22,7 +22,7 @@ require (
 	github.com/prometheus/client_golang v1.15.1
 	github.com/redhatinsights/app-common-go v1.6.6
 	github.com/redhatinsights/platform-go-middlewares v0.20.0
-	github.com/sirupsen/logrus v1.9.2
+	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.16.0
 	github.com/stretchr/testify v1.8.4
 	gorm.io/driver/postgres v1.5.2
