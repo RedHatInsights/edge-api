@@ -451,17 +451,18 @@ func (s *ImageSetsService) DeleteImageSet(imageSetID uint) error {
 		return result.Error
 	}
 
-	if err := db.DB.Where("image_set_id = ?", imageSetID).Delete(&models.Image{}).Error; err != nil {
-		s.log.WithFields(log.Fields{"ImageSet_id": imageSetID, "error": err.Error}).Error("an error occurred when deleting images")
-		return result.Error
-	}
+	err = db.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("image_set_id = ?", imageSetID).Delete(&models.Image{}).Error; err != nil {
+			s.log.WithFields(log.Fields{"ImageSet_id": imageSetID, "error": err.Error()}).Error("an error occurred when deleting images")
+			return err
+		}
 
-	if result := db.DB.Delete(&imageSet); result.Error != nil {
-		s.log.WithFields(
-			log.Fields{"ImageSet_id": imageSetID, "error": result.Error},
-		).Error("Error when deleting image set")
-		return result.Error
-	}
+		if err := tx.Delete(&imageSet).Error; err != nil {
+			s.log.WithFields(log.Fields{"ImageSet_id": imageSetID, "error": err.Error()}).Error("an error occurred when deleting image-set")
+			return err
+		}
+		return nil
+	})
 
-	return nil
+	return err
 }
