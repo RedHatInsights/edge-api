@@ -26,6 +26,9 @@ RUN go build -o /go/bin/edge-api-wipe cmd/db/wipe.go
 RUN go build -o /go/bin/edge-api-migrate-device cmd/db/updDb/set_account_on_device.go
 RUN go build -o /go/bin/edge-api-migrate-repositories cmd/migraterepos/main.go
 
+# Build the delete orphans binary
+RUN go build -o /go/bin/edge-api-delete-orphans cmd/deleteorphans/main.go
+
 # Run the doc binary
 RUN go run cmd/spec/main.go
 
@@ -80,6 +83,7 @@ COPY --from=edge-builder /go/bin/edge-api-migrate-repositories /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-ibvents /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-images-build /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-isos-build /usr/bin
+COPY --from=edge-builder /go/bin/edge-api-deleteorphans /usr/bin
 COPY --from=edge-builder ${EDGE_API_WORKSPACE}/cmd/spec/openapi.json /var/tmp
 
 # kickstart inject requirements
