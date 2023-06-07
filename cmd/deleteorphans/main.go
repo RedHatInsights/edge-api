@@ -6,7 +6,6 @@ import (
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/logger"
-	l "github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
@@ -16,7 +15,7 @@ import (
 
 func main() {
 	config.Init()
-	l.InitLogger(os.Stdout)
+	logger.InitLogger(os.Stdout)
 	log.Info("Starting deletion of orphaned images...")
 	db.InitDB()
 
@@ -49,6 +48,7 @@ func main() {
 						"name":    image.Name,
 						"account": image.Account,
 					}).Error("Attempted to delete image but failed")
+					cleanupAndExit(deleteErr)
 				}
 			}
 		}
