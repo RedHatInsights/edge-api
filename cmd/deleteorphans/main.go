@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"os"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -10,32 +11,46 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
-	log "github.com/sirupsen/logrus"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
+	if !feature.DeleteOrphanedImages.IsEnabled() {
+		message := "delete orphaned images feature is disabled"
+		logrus.Error(message)
+		cleanupAndExit(errors.New(message))
+	}
+
 	config.Init()
 	logger.InitLogger(os.Stdout)
-	log.Info("Starting deletion of orphaned images...")
+	logrus.Info("Starting deletion of orphaned images...")
 	db.InitDB()
 
 	imageService := services.NewImageService(
 		context.Background(),
-		log.WithField("service", "image"),
+		logrus.WithField("service", "image"),
 	)
 
-	// TODO: where to get a list of third party repos?
+	// TODO:
+	//  - where to get a list of third party repos?
+	//  - is this the right way to retrieve all images?
 	var repos []models.ThirdPartyRepo
-
 	imageRepos, imageRepoErr := services.GetImageReposFromDB(common.DefaultOrgID, repos)
 
 	if imageRepoErr != nil {
-		log.Error("Could not retrieve image repositories from database")
+		logrus.Error("Could not retrieve image repositories from database. Exiting...")
 		cleanupAndExit(imageRepoErr)
 	}
 
+	reposLen := len(*imageRepos)
+	if reposLen == 0 {
+		logrus.Info("No repositories found, no orphaned images to delete. Exiting...")
+		cleanupAndExit(nil)
+	}
+
 	// find orphaned images
-	for i := 0; i < len(*imageRepos); i++ {
+	for i := 0; i < reposLen; i++ {
 		repo := (*imageRepos)[i]
 
 		for j := 0; j < len(repo.Images); j++ {
@@ -44,7 +59,7 @@ func main() {
 			if image.ImageSetID == nil {
 				deleteErr := imageService.DeleteImage(&image)
 				if deleteErr != nil {
-					log.WithFields(log.Fields{
+					logrus.WithFields(logrus.Fields{
 						"name":    image.Name,
 						"account": image.Account,
 					}).Error("Attempted to delete image but failed")
@@ -59,7 +74,7 @@ func cleanupAndExit(err error) {
 	// flush logger before app exit
 	logger.FlushLogger()
 	if err != nil {
-		os.Exit(2)
+		logrus.Exit(2)
 	}
-	os.Exit(0)
+	logrus.Exit(0)
 }

@@ -93,6 +93,9 @@ var MigrateCustomRepositories = &Flag{Name: "edge-management.migrate_custom_repo
 // PostMigrateDeleteCustomRepositories is a feature flag to use for code related to custom repositories post migration to content-sources
 var PostMigrateDeleteCustomRepositories = &Flag{Name: "edge-management.post_migrate_delete_repos", EnvVar: "FEATURE_POST_MIGRATE_DELETE_REPOSITORIES"}
 
+// DeleteOrphanedImages is a feature flag to use for code related to deleting orphaned images, or images without a dataset
+var DeleteOrphanedImages = &Flag{Name: "edge-management.delete-orphaned-images", EnvVar: "FEATURE_DELETE_ORPHANED_IMAGES"}
+
 // (ADD FEATURE FLAGS ABOVE)
 // FEATURE FLAG CHECK CODE
 
