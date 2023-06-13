@@ -90,11 +90,14 @@ var ContentSources = &Flag{Name: "edge-management.content_sources", EnvVar: "FEA
 // MigrateCustomRepositories is a feature flag to use for code related to custom repositories migration to content-sources
 var MigrateCustomRepositories = &Flag{Name: "edge-management.migrate_custom_repositories", EnvVar: "FEATURE_MIGRATE_CUSTOM_REPOSITORIES"}
 
-// PostMigrateDeleteCustomRepositories is a feature flag to use for code related to custom repositories post migration to content-sources
+// PostMigrateDeleteCustomRepositories is a feature flag to use for deletion of repos after migration
 var PostMigrateDeleteCustomRepositories = &Flag{Name: "edge-management.post_migrate_delete_repos", EnvVar: "FEATURE_POST_MIGRATE_DELETE_REPOSITORIES"}
 
 // DeleteOrphanedImages is a feature flag to use for code related to deleting orphaned images, or images without a dataset
 var DeleteOrphanedImages = &Flag{Name: "edge-management.delete-orphaned-images", EnvVar: "FEATURE_DELETE_ORPHANED_IMAGES"}
+
+// SkipUpdateRepo is a feature flag to skip the process of download and re-upload of update repositories
+var SkipUpdateRepo = &Flag{Name: "edgemanagement.skip_update_repo", EnvVar: "FEATURE_SKIP_UPDATE_REPO"}
 
 // (ADD FEATURE FLAGS ABOVE)
 // FEATURE FLAG CHECK CODE
