@@ -138,6 +138,7 @@ var _ = Describe("Uploader Test", func() {
 			var initialRepoTempPath string
 
 			BeforeEach(func() {
+				config.Init()
 				logEntry = log.NewEntry(log.StandardLogger())
 				ctrl = gomock.NewController(GinkgoT())
 				s3Client = mock_files.NewMockS3ClientInterface(ctrl)
@@ -261,7 +262,45 @@ var _ = Describe("Uploader Test", func() {
 					)
 					Expect(targetURL).To(Equal(expectedTargetURL))
 				})
+				It("should upload repo on second attempt after failure ", func() {
+					fileName := fmt.Sprintf("uploader-%d.file", time.Now().UnixNano())
+					repoDirName := fmt.Sprintf("uploader-%d.repo", time.Now().UnixNano())
+					sourceRepoDirPath := filepath.Join(conf.RepoTempPath, repoDirName)
+					sourceFilePath := filepath.Join(sourceRepoDirPath, fileName)
 
+					// create repo dir
+					err := os.Mkdir(sourceRepoDirPath, os.ModePerm)
+					Expect(err).ToNot(HaveOccurred())
+					// create a repo file to upload
+					file, err := os.Create(sourceFilePath)
+					Expect(err).ToNot(HaveOccurred())
+					defer func(file *os.File, dirPath string) {
+						_ = file.Close()
+						_ = os.Remove(file.Name())
+						_ = os.Remove(dirPath)
+					}(file, sourceRepoDirPath)
+					wg := sync.WaitGroup{}
+					wg.Add(1)
+					expectedFilePath := fmt.Sprintf("%s/%s", orgID, strings.TrimPrefix(sourceFilePath, conf.RepoTempPath))
+					s3Client.EXPECT().PutObject(gomock.AssignableToTypeOf(&os.File{}), conf.BucketName, expectedFilePath, acl).
+						DoAndReturn(func(arg0, arg1, arg2, arg3 interface{}) (interface{}, error) {
+							return nil, errors.New("Error uploading file")
+						})
+					s3Client.EXPECT().PutObject(gomock.AssignableToTypeOf(&os.File{}), conf.BucketName, expectedFilePath, acl).
+						DoAndReturn(func(arg0, arg1, arg2, arg3 interface{}) (interface{}, error) {
+							defer wg.Done()
+							return nil, nil
+						})
+					// when acl is empty the default private acl will be used
+					targetURL, err := s3Uploader.UploadRepo(sourceRepoDirPath, orgID, "")
+					wg.Wait()
+					Expect(err).ToNot(HaveOccurred())
+					expectedTargetURL := fmt.Sprintf(
+						"https://%s.s3.%s.amazonaws.com/%s/%s",
+						conf.BucketName, conf.BucketRegion, orgID, strings.TrimPrefix(sourceRepoDirPath, conf.RepoTempPath),
+					)
+					Expect(targetURL).To(Equal(expectedTargetURL))
+				})
 			})
 		})
 	})
