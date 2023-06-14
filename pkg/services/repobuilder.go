@@ -173,11 +173,6 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		update.Repo.URL = repoURL
 	}
 
-	// just need to assign the existing commit repo URL to the update repo URL
-	if feature.SkipUpdateRepo.IsEnabled() {
-		update.Repo.URL = update.Commit.Repo.URL
-	}
-
 	rb.log.WithField("repo", update.Repo.URL).Info("Update repo URL")
 	update.Repo.Status = models.RepoStatusSuccess
 	if err := db.DB.Omit("Devices.*").Save(&update).Error; err != nil {
