@@ -291,17 +291,17 @@ func (mr *MockImageServiceInterfaceMockRecorder) GetUpdateInfo(image interface{}
 }
 
 // ProcessImage mocks base method.
-func (m *MockImageServiceInterface) ProcessImage(arg0 context.Context, arg1 *models.Image) error {
+func (m *MockImageServiceInterface) ProcessImage(ctx context.Context, img *models.Image, handleInterruptSignal bool) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ProcessImage", arg0, arg1)
+	ret := m.ctrl.Call(m, "ProcessImage", ctx, img, handleInterruptSignal)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ProcessImage indicates an expected call of ProcessImage.
-func (mr *MockImageServiceInterfaceMockRecorder) ProcessImage(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockImageServiceInterfaceMockRecorder) ProcessImage(ctx, img, handleInterruptSignal interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessImage", reflect.TypeOf((*MockImageServiceInterface)(nil).ProcessImage), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessImage", reflect.TypeOf((*MockImageServiceInterface)(nil).ProcessImage), ctx, img, handleInterruptSignal)
 }
 
 // ResumeCreateImage mocks base method.
