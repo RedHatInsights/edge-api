@@ -32,6 +32,7 @@ type EdgeConfig struct {
 	BucketRegion               string                    `json:"bucket_region,omitempty"`
 	AccessKey                  string                    `json:"-"`
 	SecretKey                  string                    `json:"-"`
+	AWSToken                   string                    `json:"-"`
 	RepoTempPath               string                    `json:"repo_temp_path,omitempty"`
 	OpenAPIFilePath            string                    `json:"openapi_file_path,omitempty"`
 	ImageBuilderConfig         *imageBuilderConfig       `json:"image_builder,omitempty"`
@@ -70,6 +71,8 @@ type EdgeConfig struct {
 	GlitchtipDsn               string                    `json:"glitchtip_dsn,omitempty"`
 	HTTPClientTimeout          int                       `json:"HTTP_client_timeout,omitempty"`
 	TlsCAPath                  string                    `json:"Tls_CA_path,omitempty"`
+	RepoFileUploadAttempts     uint                      `json:"repo_file_upload_attempts"`
+	RepoFileUploadDelay        uint                      `json:"repo_file_upload_delay"`
 }
 
 type dbConfig struct {
@@ -105,6 +108,7 @@ type playbookDispatcherConfig struct {
 type loggingConfig struct {
 	AccessKeyID     string `json:"-"`
 	SecretAccessKey string `json:"-"`
+	AWSToken        string `json:"-"`
 	LogGroup        string `json:"log_group,omitempty"`
 	Region          string `json:"region,omitempty"`
 }
@@ -154,6 +158,8 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("KafkaRetryBackoffMs", 100)
 	options.SetDefault("HTTPClientTimeout", 30)
 	options.SetDefault("TlsCAPath", "/tmp/tls_path.txt")
+	options.SetDefault("RepoFileUploadAttempts", 3)
+	options.SetDefault("RepoFileUploadDelay", 1)
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
@@ -255,6 +261,7 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		GpgVerify:                  options.GetString("GpgVerify"),
 		GlitchtipDsn:               options.GetString("GlitchtipDsn"),
 		TlsCAPath:                  options.GetString("/tmp/tls_path.txt"),
+		RepoFileUploadAttempts:     options.GetUint("RepoFileUploadAttempts"),
 	}
 	if edgeConfig.TenantTranslatorHost != "" && edgeConfig.TenantTranslatorPort != "" {
 		edgeConfig.TenantTranslatorURL = fmt.Sprintf("http://%s:%s", edgeConfig.TenantTranslatorHost, edgeConfig.TenantTranslatorPort)
@@ -416,6 +423,9 @@ func LogConfigAtStartup(cfg *EdgeConfig) {
 		"Debug":                    cfg.Debug,
 		"BucketName":               cfg.BucketName,
 		"BucketRegion":             cfg.BucketRegion,
+		"AWSAccessKey":             cfg.AccessKey,
+		"AWSSecretKey":             cfg.SecretKey,
+		"AWSToken":                 cfg.AWSToken,
 		"RepoTempPath ":            cfg.RepoTempPath,
 		"OpenAPIFilePath ":         cfg.OpenAPIFilePath,
 		"ImageBuilderURL":          cfg.ImageBuilderConfig.URL,
@@ -432,6 +442,9 @@ func LogConfigAtStartup(cfg *EdgeConfig) {
 		"GlitchtipDsn":             cfg.GlitchtipDsn,
 		"ContentSourcesURL":        cfg.ContentSourcesURL,
 		"TlsCAPath":                cfg.TlsCAPath,
+		"RepoFileUploadAttempts":   cfg.RepoFileUploadAttempts,
+		"RepoFileUploadDelay":      cfg.RepoFileUploadDelay,
+		"UploadWorkers":            cfg.UploadWorkers,
 	}
 
 	// loop through the key/value pairs
