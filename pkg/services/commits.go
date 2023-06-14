@@ -37,7 +37,7 @@ func (s *CommitService) GetCommitByID(commitID uint, orgID string) (*models.Comm
 	s.log = s.log.WithField("commitID", commitID)
 	s.log.Debug("Getting commit by id")
 	var commit models.Commit
-	result := db.Org(orgID, "").First(&commit, commitID)
+	result := db.Org(orgID, "").Joins("Repo").First(&commit, commitID)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error searching for commit by commitID")
 		return nil, result.Error
