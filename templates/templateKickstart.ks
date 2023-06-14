@@ -134,10 +134,9 @@ fi
 
 %end
 
+#FIX THE RHCD_T semanage
 %post --log=/var/log/anaconda/permissive-rhcd_t.log
-if [ -x /usr/sbin/selinuxenabled ] && /usr/sbin/selinuxenabled; then
-    /usr/sbin/semanage permissive --add rhcd_t || true
-fi
+/usr/sbin/semanage permissive --add rhcd_t
 %end
 
 #CUSTOM_POST_HERE
