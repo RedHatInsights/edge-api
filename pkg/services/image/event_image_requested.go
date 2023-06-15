@@ -17,7 +17,7 @@ import (
 
 // imageService is the interface representation of ImageService to facilitate testing
 type imageService interface {
-	ProcessImage(context.Context, *models.Image) error
+	ProcessImage(ctx context.Context, img *models.Image, handleInterruptSignal bool) error
 	SetLog(log *log.Entry)
 }
 
@@ -73,7 +73,7 @@ func (ev EventImageRequestedBuildHandler) Consume(ctx context.Context, imgServic
 	imgService.SetLog(log)
 
 	// process the image
-	err = imgService.ProcessImage(ctx, img)
+	err = imgService.ProcessImage(ctx, img, true)
 	if err != nil {
 		log.Error("Error processing the image")
 	}
