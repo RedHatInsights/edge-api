@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -92,13 +93,28 @@ type uploadDetails struct {
 	count      int
 }
 
-func (u *S3Uploader) worker(uploadQueue chan *uploadDetails, acl string) {
+func (u *S3Uploader) worker(uploadQueue chan *uploadDetails, acl string, cfg *config.EdgeConfig) {
+	retryDelay := time.Duration(cfg.RepoFileUploadDelay)
 	for p := range uploadQueue {
-		fname, err := p.uploader.UploadFileWithACL(p.fileName, p.uploadPath, acl)
-		if err != nil {
-			u.log.WithFields(log.Fields{"fname": fname, "count": p.count, "error": err.Error()}).Error("Error uploading file")
+		// attempt to upload a file multiple times before erroring
+		for attempt := 1; attempt <= int(cfg.RepoFileUploadAttempts); attempt++ {
+			fname, err := p.uploader.UploadFileWithACL(p.fileName, p.uploadPath, acl)
+			// log on file upload failure and retry
+			if err != nil {
+				u.log.WithFields(log.Fields{"fname": fname, "attempt": attempt, "count": p.count, "error": err.Error()}).Error("Error uploading file")
+				time.Sleep(retryDelay * time.Second)
+				continue
+			}
+			// if upload succeeds on retry, log Info to show error is resolved, else use Trace on first try
+			if attempt > 1 {
+				u.log.WithFields(log.Fields{"fname": fname, "attempt": attempt, "count": p.count}).Info("File was uploaded successfully")
+			} else {
+				u.log.WithFields(log.Fields{"fname": fname, "attempt": attempt, "count": p.count}).Trace("File was uploaded successfully")
+			}
+
+			break
 		}
-		u.log.WithFields(log.Fields{"fname": fname, "count": p.count}).Trace("File was uploaded successfully")
+
 		p.done <- true
 	}
 }
@@ -151,7 +167,7 @@ func (u *S3Uploader) UploadRepo(src string, account string, acl string) (string,
 
 	numberOfWorkers := cfg.UploadWorkers
 	for i := 0; i < numberOfWorkers; i++ {
-		go u.worker(uploadQueue, acl)
+		go u.worker(uploadQueue, acl, cfg)
 	}
 
 	for i, ud := range uploadDetailsList {
