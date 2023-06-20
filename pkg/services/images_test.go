@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -41,6 +42,7 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 
 	"github.com/redhatinsights/edge-api/config"
 )
@@ -2703,12 +2705,71 @@ var _ = Describe("Image Service Test", func() {
 
 	})
 
-	Context("CreateInstallerForImage", func() {
-		var image *models.Image
+	Context("ProcessImage", func() {
+		var image models.Image
 		var orgID string
+		var initialDefaultLoopDelay time.Duration
 
 		BeforeEach(func() {
 			orgID = faker.UUIDHyphenated()
+			initialDefaultLoopDelay = services.DefaultLoopDelay
+			services.DefaultLoopDelay = 1 * time.Second
+			image = models.Image{
+				OrgID:       orgID,
+				Name:        faker.UUIDHyphenated(),
+				OutputTypes: []string{models.ImageTypeCommit},
+				Status:      models.ImageStatusBuilding,
+				RequestID:   faker.UUIDHyphenated(),
+				Installer:   &models.Installer{OrgID: orgID},
+				Commit: &models.Commit{
+					OrgID:  orgID,
+					Status: models.ImageStatusBuilding,
+				},
+			}
+			err := db.DB.Create(&image).Error
+			Expect(err).ToNot(HaveOccurred())
+		})
+		AfterEach(func() {
+			// restore the default loop delay
+			services.DefaultLoopDelay = initialDefaultLoopDelay
+		})
+
+		It("should not restore a deleted image when building", func() {
+			wg := sync.WaitGroup{}
+			wg.Add(1)
+			mockImageBuilderClient.EXPECT().GetCommitStatus(gomock.AssignableToTypeOf(&models.Image{})).DoAndReturn(func(builderImage *models.Image) (*models.Image, error) {
+				defer wg.Done()
+				builderImage.Commit.Status = models.ImageStatusBuilding
+				builderImage.Status = models.ImageStatusBuilding
+				// delete the image while building the image
+				err := db.DB.Delete(&models.Image{}, builderImage.ID).Error
+				Expect(err).ToNot(HaveOccurred())
+				// return back with no error, to simulate building still going
+				return builderImage, nil
+			}).Times(1)
+
+			err := service.ProcessImage(context.Background(), &image, false)
+			Expect(err).ToNot(HaveOccurred())
+
+			wg.Wait()
+			// sleep a fraction of second to give a chance to the remaining code after GetCommitStatus to execute
+			time.Sleep(100 * time.Millisecond)
+			// reload the image from database and ensure it's still in deleted state
+			err = db.DB.First(&image, image.ID).Error
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(gorm.ErrRecordNotFound))
+		})
+	})
+
+	Context("CreateInstallerForImage", func() {
+		var image *models.Image
+		var orgID string
+		var initialDefaultLoopDelay time.Duration
+
+		BeforeEach(func() {
+			orgID = faker.UUIDHyphenated()
+			initialDefaultLoopDelay = services.DefaultLoopDelay
+			services.DefaultLoopDelay = 1 * time.Second
 			image = &models.Image{
 				OrgID:     orgID,
 				Name:      faker.UUIDHyphenated(),
@@ -2727,6 +2788,8 @@ var _ = Describe("Image Service Test", func() {
 
 		AfterEach(func() {
 			services.BuildCommand = exec.Command
+			// restore the default loop delay
+			services.DefaultLoopDelay = initialDefaultLoopDelay
 		})
 
 		// as ginkgo does not support mocking exec.Command
@@ -2767,6 +2830,40 @@ var _ = Describe("Image Service Test", func() {
 			_, _, err := service.CreateInstallerForImage(context.Background(), image)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(expectedError))
+		})
+
+		It("should not restore a deleted image when building", func() {
+			mockImageBuilderClient.EXPECT().ComposeInstaller(image).Return(image, nil)
+			mockImageBuilderClient.EXPECT().GetInstallerStatus(image).DoAndReturn(func(builderImage *models.Image) (*models.Image, error) {
+				builderImage.Installer.Status = models.ImageStatusBuilding
+				builderImage.Status = models.ImageStatusBuilding
+				// delete the image while building installer
+				err := db.DB.Debug().Delete(&models.Image{}, builderImage.ID).Error
+				Expect(err).ToNot(HaveOccurred())
+				// return back with no error, to simulate building still going
+				return builderImage, nil
+			}).Times(1)
+
+			installerImage, errorChan, err := service.CreateInstallerForImage(context.Background(), image)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(errorChan).ToNot(BeNil())
+			Expect(installerImage).To(Equal(image))
+
+			var installerStatusErr error
+			select {
+			case err := <-errorChan:
+				installerStatusErr = err
+			case <-time.After(30 * time.Second):
+				installerStatusErr = errors.New("installer channel reading timeout")
+			}
+
+			Expect(installerStatusErr).To(HaveOccurred())
+			Expect(installerStatusErr).To(MatchError(new(services.ImageNotFoundError)))
+
+			// reload the image from database and ensure it's still in deleted state
+			err = db.DB.First(&image, image.ID).Error
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(gorm.ErrRecordNotFound))
 		})
 
 		Context("feature.ImageCreateISOEDA.IsEnabled()", func() {

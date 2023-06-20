@@ -72,7 +72,7 @@ var _ = Describe("Event Image Update Requested Test", func() {
 					}
 					Expect(edgePayload).ToNot(BeNil())
 
-					mockImageService.EXPECT().ProcessImage(gomock.Any(), gomock.Any()).Return(nil)
+					mockImageService.EXPECT().ProcessImage(gomock.Any(), gomock.Any(), true).Return(nil)
 					event := &EventImageUpdateRequestedBuildHandler{}
 
 					event.Data = *edgePayload
@@ -104,7 +104,7 @@ var _ = Describe("Event Image Update Requested Test", func() {
 							NewImage: *image,
 						}
 
-						mockImageService.EXPECT().ProcessImage(gomock.Any(), gomock.Any()).Return(errors.New("error processing the image"))
+						mockImageService.EXPECT().ProcessImage(gomock.Any(), gomock.Any(), true).Return(errors.New("error processing the image"))
 						event := &EventImageUpdateRequestedBuildHandler{}
 						event.Data = *edgePayload
 						event.Consume(ctx)

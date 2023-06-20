@@ -130,7 +130,7 @@ func TestCreate(t *testing.T) {
 	defer ctrl.Finish()
 	mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
 	mockImageService.EXPECT().CreateImage(gomock.Any()).Return(nil)
-	mockImageService.EXPECT().ProcessImage(gomock.Any(), gomock.Any()).Return(nil)
+	mockImageService.EXPECT().ProcessImage(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 	ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 		ImageService: mockImageService,
 		Log:          log.NewEntry(log.StandardLogger()),
@@ -1325,7 +1325,7 @@ var _ = Describe("Images Route Tests", func() {
 				// but as it's un-marshaled it's using an other pointer, most important assertions are those at the end of the test
 				mockImagesService.EXPECT().UpdateImage(gomock.Any(), &image).Return(nil)
 				// same here for context and updateImage
-				mockImagesService.EXPECT().ProcessImage(gomock.Any(), gomock.Any())
+				mockImagesService.EXPECT().ProcessImage(gomock.Any(), gomock.Any(), gomock.Any())
 				httpTestRecorder := httptest.NewRecorder()
 				router.ServeHTTP(httpTestRecorder, req)
 
@@ -1411,7 +1411,7 @@ var _ = Describe("Images Route Tests", func() {
 				// but as it's un-marshaled it's using another pointer.
 				mockImagesService.EXPECT().UpdateImage(gomock.AssignableToTypeOf(&updateImage), &image).Return(nil)
 				// same here for context and updateImage
-				mockImagesService.EXPECT().ProcessImage(gomock.Any(), gomock.AssignableToTypeOf(&updateImage))
+				mockImagesService.EXPECT().ProcessImage(gomock.Any(), gomock.AssignableToTypeOf(&updateImage), gomock.Any())
 
 				httpTestRecorder := httptest.NewRecorder()
 				router.ServeHTTP(httpTestRecorder, req)
