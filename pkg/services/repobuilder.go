@@ -36,18 +36,20 @@ type RepoBuilderInterface interface {
 // RepoBuilder is the implementation of a RepoBuilderInterface
 type RepoBuilder struct {
 	Service
-	FilesService FilesService
-	repoService  RepoServiceInterface
-	Log          *log.Entry
+	FilesService  FilesService
+	repoService   RepoServiceInterface
+	commitService CommitServiceInterface
+	Log           *log.Entry
 }
 
 // NewRepoBuilder initializes the repository builder in this package
 func NewRepoBuilder(ctx context.Context, log *log.Entry) RepoBuilderInterface {
 	return &RepoBuilder{
-		Service:      Service{ctx: ctx, log: log.WithField("service", "repobuilder")},
-		FilesService: NewFilesService(log),
-		repoService:  NewRepoService(ctx, log),
-		Log:          log,
+		Service:       Service{ctx: ctx, log: log.WithField("service", "repobuilder")},
+		FilesService:  NewFilesService(log),
+		repoService:   NewRepoService(ctx, log),
+		commitService: NewCommitService(ctx, log),
+		Log:           log,
 	}
 }
 
@@ -173,9 +175,13 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		update.Repo.URL = repoURL
 	}
 
-	// just need to assign the existing commit repo URL to the update repo URL
 	if feature.SkipUpdateRepo.IsEnabled() {
-		update.Repo.URL = update.Commit.Repo.URL
+		// grab the original commit URL
+		updateCommit, err := rb.commitService.GetCommitByID(update.CommitID, update.OrgID)
+		if err != nil {
+			return nil, err
+		}
+		update.Repo.URL = updateCommit.Repo.URL
 	}
 
 	rb.log.WithField("repo", update.Repo.URL).Info("Update repo URL")
