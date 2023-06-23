@@ -781,13 +781,14 @@ func (s *UpdateService) ValidateUpdateDeviceGroup(orgID string, deviceGroupID ui
 	return count == 1, nil
 }
 
-// BuildUpdateTransactions build records
+// BuildUpdateTransactions creates the update transaction to be sent to Playbook Dispatcher
 func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpdate,
 	orgID string, commit *models.Commit) (*[]models.UpdateTransaction, error) {
 	var inv inventory.Response
 	var ii []inventory.Response
 	var err error
 
+	/// Confirm devices are in Hosted Inventory
 	if len(devicesUpdate.DevicesUUID) > 0 {
 		for _, UUID := range devicesUpdate.DevicesUUID {
 			inv, err = s.Inventory.ReturnDevicesByID(UUID)
@@ -802,20 +803,25 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 	}
 
 	s.log.WithField("inventoryDevice", inv).Debug("Device retrieved from inventoryResponse")
+
+	// Create the models.UpdateTransaction for each device
 	var updates []models.UpdateTransaction
 	for _, inventoryResponse := range ii {
-		// Create the models.UpdateTransaction
 		update := models.UpdateTransaction{
 			OrgID:    orgID,
 			CommitID: devicesUpdate.CommitID,
 			Status:   models.UpdateStatusCreated,
 		}
 
-		// Get the models.Commit from the Commit ID passed in via JSON
+		// Add the Commit ID passed in via JSON to the update
 		update.Commit = commit
+
+		// TODO: why is empty DispatchRecord defined here instead of when populated?
 		update.DispatchRecords = []models.DispatchRecord{}
 
 		devices := update.Devices
+
+		// TODO: do we have any OldCommits at this point?
 		oldCommits := update.OldCommits
 		toUpdate := true
 

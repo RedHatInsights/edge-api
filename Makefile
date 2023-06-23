@@ -123,6 +123,7 @@ help:
 	@echo "help                      Show this message"
 	@echo "lint                      Runs 'golint' on the project"
 	@echo "golangci-lint			 Runs 'golangci-lint' on the project"
+	@echo "openapi                   Generates an openapi.{json,yaml} file in /cmd/spec/"
 	@echo "pre-commit                Runs fmt, vet, lint, and clean on the project"
 	@echo "restart-app				 Scales the edge-api-service deployment down to 0 then up to 1 in the given namespace"
 	@echo "                            @param NAMESPACE - (optional) the namespace to use"
@@ -131,6 +132,8 @@ help:
 	@echo "scale-up					 Scales the edge-api-service deployment up to 1 in the given namespace"
 	@echo "                            @param NAMESPACE - (optional) the namespace to use"
 	@echo "scan_project              Run security scan"
+	@echo "swaggo                    Runs swaggo/swag and converts to openapi.json in /api"
+	@echo "swaggo_setup"             Installs necessary packages to use swaggo
 	@echo "test                      Runs 'go test' on the project"
 	@echo "test-clean-no-fdo         Runs 'go test' on the project without FDO"
 	@echo "test-no-fdo               Runs 'go test' on the project without FDO"
@@ -165,6 +168,9 @@ golangci-lint-no-fdo:
 lint:
 	golint $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
 
+openapi:
+	go run cmd/spec/main.go
+
 pre-commit:
 	$(MAKE) golangci-lint-no-fdo
 	$(MAKE) test-clean-no-fdo
@@ -182,6 +188,14 @@ scale-up:
 
 scan_project:
 	./sonarqube.sh
+
+swaggo_setup:
+	go install github.com/swaggo/swag/cmd/swag@latest
+	mkdir -p api
+
+swaggo:
+	swag init --generalInfo api.go --o ./api --dir pkg/models,pkg/routes --parseDependency
+	go run ./cmd/swagger2openapi/main.go  api/swagger.json api/openapi.json
 
 test:
 	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /test/) $(TEST_OPTIONS)
