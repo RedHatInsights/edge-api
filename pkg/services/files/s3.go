@@ -1,6 +1,7 @@
 package files
 
 import (
+	"context"
 	"io"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
@@ -19,6 +21,7 @@ import (
 type S3ClientAPI interface {
 	GetObject(input *s3.GetObjectInput) (*s3.GetObjectOutput, error)
 	PutObject(input *s3.PutObjectInput) (*s3.PutObjectOutput, error)
+	DeleteObject(input *s3.DeleteObjectInput) (*s3.DeleteObjectOutput, error)
 	GetObjectRequest(input *s3.GetObjectInput) (req *request.Request, output *s3.GetObjectOutput)
 }
 
@@ -46,6 +49,7 @@ type RequestPreSignerAPI interface {
 type S3ClientInterface interface {
 	GetObject(bucket string, key string) (output *s3.GetObjectOutput, err error)
 	PutObject(file io.ReadSeeker, bucket string, key string, acl string) (*s3.PutObjectOutput, error)
+	DeleteObject(bucket string, key string) (*s3.DeleteObjectOutput, error)
 	Download(file io.WriterAt, bucket string, key string) (n int64, err error)
 	Upload(file io.Reader, bucket string, key string, acl string) (*s3manager.UploadOutput, error)
 	GetSignedURL(bucket string, key string, expire time.Duration) (string, error)
@@ -57,6 +61,7 @@ type S3Client struct {
 	Downloader       S3DownloaderAPI
 	RequestPreSigner RequestPreSignerAPI
 	Uploader         S3UploaderAPI
+	FolderDeleter    BatchFolderDeleterAPI
 }
 
 // GetObject API operation on S3 bucket
@@ -74,6 +79,14 @@ func (s3Client *S3Client) PutObject(file io.ReadSeeker, bucket string, key strin
 		Key:    aws.String(key),
 		Body:   file,
 		ACL:    aws.String(acl),
+	})
+}
+
+// DeleteObject API operation on S3 bucket
+func (s3Client *S3Client) DeleteObject(bucket string, key string) (*s3.DeleteObjectOutput, error) {
+	return s3Client.Client.DeleteObject(&s3.DeleteObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
 	})
 }
 
@@ -130,6 +143,7 @@ func GetNewS3Client() *S3Client {
 			u.Concurrency = 1
 		}),
 		RequestPreSigner: &RequestPreSigner{},
+		FolderDeleter:    NewBachFolderDeleter(client),
 	}
 }
 
@@ -153,4 +167,23 @@ func GetNewS3Session() *session.Session {
 		}
 	}
 	return sess
+}
+
+type BatchFolderDeleterAPI interface {
+	Delete(bucket string, folderKey string) error
+}
+
+type BatchFolderDeleter struct {
+	client s3iface.S3API
+}
+
+func NewBachFolderDeleter(client s3iface.S3API) BatchFolderDeleterAPI {
+	return &BatchFolderDeleter{client: client}
+}
+
+func (batchFD *BatchFolderDeleter) Delete(bucket string, folderKey string) error {
+	// create a folder objects iterator
+	iter := s3manager.NewDeleteListIterator(batchFD.client, &s3.ListObjectsInput{Bucket: aws.String(bucket), Prefix: aws.String(folderKey)})
+	// use iterator to delete all objects
+	return s3manager.NewBatchDeleteWithClient(batchFD.client).Delete(context.Background(), iter)
 }

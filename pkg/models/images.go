@@ -104,6 +104,11 @@ const (
 	// ImageStatusPending is for when an image or installer is waiting to be built
 	ImageStatusPending = "PENDING"
 
+	// ImageStatusStorageCleaned is for when an image commit or image commit repo or image installer content has storage cleaned
+	// this status is set only for Commit, Repo and Installer models
+	// this happen when an image is going to be deleted forever or when image status is ERROR
+	ImageStatusStorageCleaned = "STORAGE_CLEANED"
+
 	// MissingInstaller is the error message for not passing an installer in the request
 	MissingInstaller = "installer info must be provided"
 	// MissingOrganizationId is the error message for not providing an org id in the request

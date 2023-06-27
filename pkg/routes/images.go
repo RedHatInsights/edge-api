@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	_ "database/sql" // nolint:blankimport
+	_ "database/sql"
 
 	"github.com/go-chi/chi"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"

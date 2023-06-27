@@ -40,6 +40,9 @@ RUN go run cmd/swagger2openapi/main.go  api/swagger.json api/openapi.json
 #RUN go build -o /usr/local/bin/edge-api-images-iso pkg/services/images_iso/main.go
 #RUN go build -o /usr/local/bin/edge-api-images-status pkg/services/images_status/main.go
 
+# Build utilities
+RUN go build -o /usr/local/bin/edge-api-cleanup cmd/cleanup/main.go
+
 ######################################
 # STEP 2: build the dependencies image
 ######################################

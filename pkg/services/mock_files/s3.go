@@ -39,6 +39,21 @@ func (m *MockS3ClientAPI) EXPECT() *MockS3ClientAPIMockRecorder {
 	return m.recorder
 }
 
+// DeleteObject mocks base method.
+func (m *MockS3ClientAPI) DeleteObject(input *s3.DeleteObjectInput) (*s3.DeleteObjectOutput, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteObject", input)
+	ret0, _ := ret[0].(*s3.DeleteObjectOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteObject indicates an expected call of DeleteObject.
+func (mr *MockS3ClientAPIMockRecorder) DeleteObject(input interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteObject", reflect.TypeOf((*MockS3ClientAPI)(nil).DeleteObject), input)
+}
+
 // GetObject mocks base method.
 func (m *MockS3ClientAPI) GetObject(input *s3.GetObjectInput) (*s3.GetObjectOutput, error) {
 	m.ctrl.T.Helper()
@@ -269,6 +284,21 @@ func (m *MockS3ClientInterface) EXPECT() *MockS3ClientInterfaceMockRecorder {
 	return m.recorder
 }
 
+// DeleteObject mocks base method.
+func (m *MockS3ClientInterface) DeleteObject(bucket, key string) (*s3.DeleteObjectOutput, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteObject", bucket, key)
+	ret0, _ := ret[0].(*s3.DeleteObjectOutput)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeleteObject indicates an expected call of DeleteObject.
+func (mr *MockS3ClientInterfaceMockRecorder) DeleteObject(bucket, key interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteObject", reflect.TypeOf((*MockS3ClientInterface)(nil).DeleteObject), bucket, key)
+}
+
 // Download mocks base method.
 func (m *MockS3ClientInterface) Download(file io.WriterAt, bucket, key string) (int64, error) {
 	m.ctrl.T.Helper()
@@ -342,4 +372,41 @@ func (m *MockS3ClientInterface) Upload(file io.Reader, bucket, key, acl string) 
 func (mr *MockS3ClientInterfaceMockRecorder) Upload(file, bucket, key, acl interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upload", reflect.TypeOf((*MockS3ClientInterface)(nil).Upload), file, bucket, key, acl)
+}
+
+// MockBatchFolderDeleterAPI is a mock of BatchFolderDeleterAPI interface.
+type MockBatchFolderDeleterAPI struct {
+	ctrl     *gomock.Controller
+	recorder *MockBatchFolderDeleterAPIMockRecorder
+}
+
+// MockBatchFolderDeleterAPIMockRecorder is the mock recorder for MockBatchFolderDeleterAPI.
+type MockBatchFolderDeleterAPIMockRecorder struct {
+	mock *MockBatchFolderDeleterAPI
+}
+
+// NewMockBatchFolderDeleterAPI creates a new mock instance.
+func NewMockBatchFolderDeleterAPI(ctrl *gomock.Controller) *MockBatchFolderDeleterAPI {
+	mock := &MockBatchFolderDeleterAPI{ctrl: ctrl}
+	mock.recorder = &MockBatchFolderDeleterAPIMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockBatchFolderDeleterAPI) EXPECT() *MockBatchFolderDeleterAPIMockRecorder {
+	return m.recorder
+}
+
+// Delete mocks base method.
+func (m *MockBatchFolderDeleterAPI) Delete(bucket, folderKey string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", bucket, folderKey)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockBatchFolderDeleterAPIMockRecorder) Delete(bucket, folderKey interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockBatchFolderDeleterAPI)(nil).Delete), bucket, folderKey)
 }
