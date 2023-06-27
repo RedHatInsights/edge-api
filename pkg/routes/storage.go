@@ -168,6 +168,17 @@ func getContextInstaller(w http.ResponseWriter, r *http.Request) *models.Install
 }
 
 // GetInstallerIsoStorageContent redirect to a signed installer iso url
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Storage
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /storage/isos/{installerID}/ [get]
 func GetInstallerIsoStorageContent(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	installer := getContextInstaller(w, r)
@@ -288,6 +299,17 @@ func ValidateStorageUpdateTransaction(w http.ResponseWriter, r *http.Request) st
 }
 
 // GetUpdateTransactionRepoFileContent redirect to a signed url of an update-transaction repository path content
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Storage
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /storage/update-repos/{updateTransactionID}/content/{repoFilePath} [get]
 func GetUpdateTransactionRepoFileContent(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	logContext := ctxServices.Log.WithField("service", "device-repository-storage")
@@ -312,6 +334,17 @@ func GetUpdateTransactionRepoFileContent(w http.ResponseWriter, r *http.Request)
 }
 
 // GetUpdateTransactionRepoFile return the content of an update-transaction repository path
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Storage
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /storage/update-repos/{updateTransactionID}/{repoFilePath} [get]
 func GetUpdateTransactionRepoFile(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	logContext := ctxServices.Log.WithField("service", "device-repository-storage")
@@ -433,6 +466,17 @@ func ValidateStorageImage(w http.ResponseWriter, r *http.Request) string {
 }
 
 // GetImageRepoFileContent redirect to a signed url of an image commit repository path content
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Storage
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /storage/images-repos/{imageID}/content/{repoFilePath} [get]
 func GetImageRepoFileContent(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	logContext := ctxServices.Log.WithField("service", "image-repository-storage")
@@ -457,6 +501,17 @@ func GetImageRepoFileContent(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetImageRepoFile return the content of an image commit repository path
+// @Summary      Placeholder summary
+// @Description  This is a placeholder description
+// @Tags         Storage
+// @Accept       json
+// @Produce      json
+// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
+// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Failure      400 {object} errors.BadRequest
+// @Failure      500 {object} errors.InternalServerError
+// @Router       /storage/images-repos/{imageID}/{repoFilePath} [get]
 func GetImageRepoFile(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	logContext := ctxServices.Log.WithField("service", "image-repository-storage")
