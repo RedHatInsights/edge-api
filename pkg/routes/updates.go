@@ -142,6 +142,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("DeviceUUID required."))
 		return nil
 	}
+
 	// remove any duplicates
 	devicesUUID := make([]string, 0, len(devicesUpdate.DevicesUUID))
 	devicesUUIDSMap := make(map[string]bool, len(devicesUpdate.DevicesUUID))
@@ -151,6 +152,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 			devicesUUIDSMap[deviceUUID] = true
 		}
 	}
+
 	// check that all submitted devices exists
 	var devicesCount int64
 	if result := db.Org(orgID, "").Model(&models.Device{}).Where("uuid IN (?)", devicesUUID).Count(&devicesCount); result.Error != nil {
@@ -166,6 +168,8 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 		respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("some devices where not found"))
 		return nil
 	}
+
+	// get the latest commit for devices
 	var commit *models.Commit
 	if devicesUpdate.CommitID == 0 {
 		commitID, err := ctxServices.DeviceService.GetLatestCommitFromDevices(orgID, devicesUUID)

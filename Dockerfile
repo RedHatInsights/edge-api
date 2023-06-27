@@ -28,6 +28,11 @@ RUN go build -o /go/bin/edge-api-migrate-repositories cmd/migraterepos/main.go
 
 # Run the doc binary
 RUN go run cmd/spec/main.go
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+RUN mkdir -p api
+RUN ~/go/bin/swag init --generalInfo api.go --o ./api --dir pkg/models,pkg/routes --parseDependency
+RUN go run cmd/swagger2openapi/main.go  api/swagger.json api/openapi.json
+RUN cat api/openapi.json
 
 # Build the microservice binaries
 RUN go build -o /go/bin/edge-api-ibvents cmd/kafka/main.go
