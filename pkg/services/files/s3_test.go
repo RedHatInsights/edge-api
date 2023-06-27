@@ -108,6 +108,7 @@ var _ = Describe("S3 Test", func() {
 		var requestPreSigner *mock_files.MockRequestPreSignerAPI
 		var client files.S3Client
 		var s3RequestPresignerAPI *mock_files.MockS3RequestAPI
+		var s3FolderDeleter *mock_files.MockBatchFolderDeleterAPI
 
 		bucket := faker.UUIDHyphenated()
 		key := faker.UUIDHyphenated()
@@ -120,11 +121,13 @@ var _ = Describe("S3 Test", func() {
 			s3DownloaderAPI = mock_files.NewMockS3DownloaderAPI(ctrl)
 			s3UploaderAPI = mock_files.NewMockS3UploaderAPI(ctrl)
 			requestPreSigner = mock_files.NewMockRequestPreSignerAPI(ctrl)
+			s3FolderDeleter = mock_files.NewMockBatchFolderDeleterAPI(ctrl)
 			client = files.S3Client{
 				Client:           s3ClientAPI,
 				Downloader:       s3DownloaderAPI,
 				Uploader:         s3UploaderAPI,
 				RequestPreSigner: requestPreSigner,
+				FolderDeleter:    s3FolderDeleter,
 			}
 			s3RequestPresignerAPI = mock_files.NewMockS3RequestAPI(ctrl)
 		})
@@ -194,6 +197,32 @@ var _ = Describe("S3 Test", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(Equal(expectedError))
 				Expect(output).To(BeNil())
+			})
+		})
+
+		Context("DeleteObject", func() {
+			It("should delete object successfully", func() {
+				expectedVersionID := faker.UUIDHyphenated()
+				s3ClientAPI.EXPECT().DeleteObject(
+					&s3.DeleteObjectInput{
+						Bucket: aws.String(bucket),
+						Key:    aws.String(key),
+					}).Return(&s3.DeleteObjectOutput{VersionId: aws.String(expectedVersionID)}, nil)
+				output, err := client.DeleteObject(bucket, key)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(aws.StringValue(output.VersionId)).To(Equal(expectedVersionID))
+			})
+
+			It("should return error when s3 API DeleteObject fails", func() {
+				expectedError := errors.New("expected error returned by aws s3 DeleteObject")
+				s3ClientAPI.EXPECT().DeleteObject(
+					&s3.DeleteObjectInput{
+						Bucket: aws.String(bucket),
+						Key:    aws.String(key),
+					}).Return(nil, expectedError)
+				_, err := client.DeleteObject(bucket, key)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(expectedError))
 			})
 		})
 

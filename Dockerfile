@@ -39,6 +39,9 @@ RUN go build -o /go/bin/edge-api-ibvents cmd/kafka/main.go
 RUN go build -o /go/bin/edge-api-images-build pkg/services/images_build/main.go
 RUN go build -o /go/bin/edge-api-isos-build pkg/services/images_iso/main.go
 
+# Build utilities binaries
+RUN go build -o /go/bin/edge-api-cleanup cmd/cleanup/main.go
+
 ######################################
 # STEP 2: build the dependencies image
 ######################################
