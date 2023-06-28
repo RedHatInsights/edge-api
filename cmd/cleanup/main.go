@@ -37,6 +37,7 @@ func initializeUnleash() {
 	} else {
 		log.WithField("FeatureFlagURL", cfg.UnleashURL).Warning("FeatureFlag service initialization was skipped.")
 	}
+	unleash.WaitForReady()
 }
 
 func initConfiguration() {
