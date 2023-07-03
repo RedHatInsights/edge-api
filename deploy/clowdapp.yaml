@@ -332,7 +332,7 @@ objects:
     jobs:
       - name: cleanup
         schedule: ${CLEANUP_SCHEDULE}
-        restartPolicy: OnFailure
+        restartPolicy: Never
         concurrencyPolicy: Forbid
         podSpec:
           image: ${IMAGE}:${IMAGE_TAG}
@@ -530,4 +530,4 @@ parameters:
 - name: LINT_ANNOTATION
   value: 'ignore-check.kube-linter.io/minimum-three-replicas'
 - name: CLEANUP_SCHEDULE
-  value: "0 0 1 * *"
+  value: "0 10 3 * *"
