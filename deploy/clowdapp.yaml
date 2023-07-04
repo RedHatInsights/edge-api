@@ -530,4 +530,4 @@ parameters:
 - name: LINT_ANNOTATION
   value: 'ignore-check.kube-linter.io/minimum-three-replicas'
 - name: CLEANUP_SCHEDULE
-  value: "0 10 3 * *"
+  value: "0 11 4 * *"
