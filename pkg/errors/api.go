@@ -34,7 +34,7 @@ type InternalServerError struct {
 func NewInternalServerError() APIError {
 	err := new(InternalServerError)
 	err.Code = "ERROR"
-	err.Title = "There was an internal server error."
+	err.Title = "Something went wrong."
 	err.Status = http.StatusInternalServerError
 	return err
 }

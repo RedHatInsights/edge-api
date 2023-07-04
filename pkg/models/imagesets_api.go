@@ -9,12 +9,6 @@ type ImageSetAPI struct {
 	Images  []Image `json:"Images"`
 }
 
-// ImageSetInstallerURLAPI returns ImagesetAPI structure with last installer available
-type ImageSetInstallerURLAPI struct {
-	ImageSetData     ImageSetAPI `json:"image_set"`
-	ImageBuildISOURL *string     `json:"image_build_iso_url" example:"https://buket.example.com"`
-}
-
 // ImageDetailAPI return the structure to inform package info to images
 type ImageDetailAPI struct {
 	Image              *Image `json:"image"`
@@ -50,7 +44,7 @@ type ImageSetIDViewAPI struct {
 
 // ImagesViewDataAPI is the images view data return for images view with filters , limit, offSet
 type ImagesViewDataAPI struct {
-	Count int64       `json:"count"`
+	Count int64       `json:"count" example:"100"`
 	Data  []ImageView `json:"data"`
 }
 
@@ -65,4 +59,15 @@ type ImageSetImageIDViewAPI struct {
 type ImageSetDevicesAPI struct {
 	Count int      `json:"Count"`
 	Data  []string `json:"Data"`
+}
+
+// ImageSetInstallerURLAPI returns ImagesetAPI structure with last installer available
+type ImageSetInstallerURLAPI struct {
+	ImageSetData     ImageSetAPI `json:"image_set"`
+	ImageBuildISOURL *string     `json:"image_build_iso_url" example:"https://buket.example.com"`
+}
+
+type ImageSetsResponseAPI struct {
+	Count int                       `json:"Count" example:"100"`
+	Data  []ImageSetInstallerURLAPI `json:"Data"`
 }

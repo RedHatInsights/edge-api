@@ -180,14 +180,17 @@ type ImageSetInstallerURL struct {
 }
 
 // ListAllImageSets return the list of image sets and images
-// @Summary      List all image sets.
-// @Description  Get list of all image sets.
+// @Summary      Return the list of image sets.
+// @Description  Return the list of image sets.
 // @Tags         Image-sets
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
-// @Success      200 {object} models.ImageSetInstallerURLAPI
+// @Param        sort_by    query     string     false  "Define sort fields: created_at, updated_at, name. To sort DESC use -"
+// @Param        name       query     string     false  "field: filter by name"
+// @Param        status     query     string     false  "field: filter by status"
+// @Param        limit      query     integer    false  "field: return number of image-set view until limit is reached. Default is 100."
+// @Param        offset     query     integer    false  "field: return number of image-set view beginning at the offset."
+// @Success      200 {object} models.ImageSetsResponseAPI
 // @Failure      400 {object} errors.BadRequest
 // @Failure      404 {object} errors.NotFound
 // @Failure      500 {object} errors.InternalServerError
