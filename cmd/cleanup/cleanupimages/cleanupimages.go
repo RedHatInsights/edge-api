@@ -23,10 +23,10 @@ var ErrImagesCleanUPNotAvailable = errors.New("images cleanup is not available")
 var ErrImageNotCleanUPCandidate = errors.New("image is not a cleanup candidate")
 
 // DefaultDataLimit the default data limit to use when collecting data
-var DefaultDataLimit = 10
+var DefaultDataLimit = 30
 
 // DefaultMaxDataPageNumber the default data pages to handle as preventive way to enter an indefinite loop
-var DefaultMaxDataPageNumber = 1
+var DefaultMaxDataPageNumber = 1000
 
 type CandidateImage struct {
 	ImageID         uint           `json:"image_id"`
