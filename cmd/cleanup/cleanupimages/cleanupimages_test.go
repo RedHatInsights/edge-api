@@ -3,6 +3,7 @@ package cleanupimages_test
 import (
 	"errors"
 	"os"
+	"strings"
 
 	"github.com/redhatinsights/edge-api/cmd/cleanup/cleanupimages"
 	"github.com/redhatinsights/edge-api/config"
@@ -163,15 +164,15 @@ var _ = Describe("Cleanup images", func() {
 
 			It("should delete aws s3 folder", func() {
 				folderPath := "/test/folder/to/delete"
-				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, folderPath).Return(nil)
-				err := cleanupimages.DeleteAWSFolder(s3Client, folderPath)
+				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, strings.TrimPrefix(folderPath, "/")).Return(nil)
+				err := cleanupimages.DeleteAWSFolder(s3Client, strings.TrimPrefix(folderPath, "/"))
 				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("should return error when aws folder deleter returns error", func() {
 				folderPath := "/test/folder/to/delete"
 				expectedError := errors.New("expected error returned by aws s3 folder deleter")
-				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, folderPath).Return(expectedError)
+				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, strings.TrimPrefix(folderPath, "/")).Return(expectedError)
 				err := cleanupimages.DeleteAWSFolder(s3Client, folderPath)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(expectedError))
@@ -232,6 +233,9 @@ var _ = Describe("Cleanup images", func() {
 			var existingImage models.Image
 			// image should be deleted, and it's content should be cleared
 			var image models.Image
+			// image should be deleted, and it's content should be cleared, but update transaction is not deleted
+			var image2 models.Image
+			var update models.UpdateTransaction
 			// image should not be deleted, and it's content should be cleared
 			var errImage models.Image
 			var imageSet models.ImageSet
@@ -239,6 +243,10 @@ var _ = Describe("Cleanup images", func() {
 			var imageTarPath string
 			var imageISOPath string
 			var imageRepoPath string
+
+			var image2TarPath string
+			var image2ISOPath string
+			var image2RepoPath string
 
 			var errImageTarPath string
 			var errImageRepoPath string
@@ -266,6 +274,10 @@ var _ = Describe("Cleanup images", func() {
 				imageISOPath = "/image/iso/file/path/" + faker.UUIDHyphenated()
 				imageRepoPath = "/image/repo/path/" + faker.UUIDHyphenated()
 
+				image2TarPath = "/image2/tar/file/path/" + faker.UUIDHyphenated()
+				image2ISOPath = "/image2/iso/file/path/" + faker.UUIDHyphenated()
+				image2RepoPath = "/image2/repo/path/" + faker.UUIDHyphenated()
+
 				image = models.Image{
 					Name:       imageSet.Name,
 					OrgID:      orgID,
@@ -292,6 +304,39 @@ var _ = Describe("Cleanup images", func() {
 
 				// soft delete image
 				err = db.DB.Delete(&image).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				image2 = models.Image{
+					Name:       imageSet.Name,
+					OrgID:      orgID,
+					Status:     models.ImageStatusSuccess,
+					ImageSetID: &imageSet.ID,
+
+					Commit: &models.Commit{
+						OrgID:  orgID,
+						Status: models.ImageStatusSuccess,
+						Repo: &models.Repo{
+							Status: models.ImageStatusSuccess,
+							URL:    "https://buket.example.com" + image2RepoPath,
+						},
+						ImageBuildTarURL: "https://buket.example.com" + image2TarPath,
+					},
+					Installer: &models.Installer{
+						OrgID:            orgID,
+						Status:           models.ImageStatusSuccess,
+						ImageBuildISOURL: "https://buket.example.com" + image2ISOPath,
+					},
+				}
+				err = db.DB.Create(&image2).Error
+				Expect(err).ToNot(HaveOccurred())
+				update = models.UpdateTransaction{OrgID: orgID, CommitID: image2.Commit.ID}
+				err = db.DB.Create(&update).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				// soft delete images
+				err = db.DB.Delete(&image).Error
+				Expect(err).ToNot(HaveOccurred())
+				err = db.DB.Delete(&image2).Error
 				Expect(err).ToNot(HaveOccurred())
 
 				errImageTarPath = "/errImage/tar/file/path/" + faker.UUIDHyphenated()
@@ -334,16 +379,25 @@ var _ = Describe("Cleanup images", func() {
 				}).Return(nil, nil)
 				s3ClientAPI.EXPECT().DeleteObject(&s3.DeleteObjectInput{
 					Bucket: aws.String(config.Get().BucketName),
+					Key:    aws.String(image2TarPath),
+				}).Return(nil, nil)
+				s3ClientAPI.EXPECT().DeleteObject(&s3.DeleteObjectInput{
+					Bucket: aws.String(config.Get().BucketName),
 					Key:    aws.String(imageISOPath),
 				}).Return(nil, nil)
-				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, imageRepoPath).Return(nil)
+				s3ClientAPI.EXPECT().DeleteObject(&s3.DeleteObjectInput{
+					Bucket: aws.String(config.Get().BucketName),
+					Key:    aws.String(image2ISOPath),
+				}).Return(nil, nil)
+				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, strings.TrimPrefix(imageRepoPath, "/")).Return(nil)
+				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, strings.TrimPrefix(image2RepoPath, "/")).Return(nil)
 
 				// expect all errImage success content to be deleted
 				s3ClientAPI.EXPECT().DeleteObject(&s3.DeleteObjectInput{
 					Bucket: aws.String(config.Get().BucketName),
 					Key:    aws.String(errImageTarPath),
 				}).Return(nil, nil)
-				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, errImageRepoPath).Return(nil)
+				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, strings.TrimPrefix(errImageRepoPath, "/")).Return(nil)
 
 				err := cleanupimages.CleanUpAllImages(s3Client)
 				Expect(err).ToNot(HaveOccurred())
@@ -360,6 +414,22 @@ var _ = Describe("Cleanup images", func() {
 				err = db.DB.Unscoped().First(&models.Image{}, image.ID).Error
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(gorm.ErrRecordNotFound))
+				// expect image commit does not exist
+				err = db.DB.Unscoped().First(&models.Commit{}, image.Commit.ID).Error
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(gorm.ErrRecordNotFound))
+
+				// expect image2 do not exist anymore
+				err = db.DB.Unscoped().First(&models.Image{}, image2.ID).Error
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(gorm.ErrRecordNotFound))
+				// expect image2 commit to still exist
+				err = db.DB.Unscoped().First(&models.Commit{}, image2.Commit.ID).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				// expect update transaction not deleted
+				err = db.DB.Unscoped().First(&models.UpdateTransaction{}, update.ID).Error
+				Expect(err).ToNot(HaveOccurred())
 
 				// expect the image with error status to still exist
 				err = db.DB.Joins("Commit").Preload("Commit.Repo").First(&errImage, errImage.ID).Error
