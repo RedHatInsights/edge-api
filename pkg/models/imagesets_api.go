@@ -35,17 +35,10 @@ type ImageSetImagePackagesAPI struct {
 // EdgeAPITimeAPI is a time.Time with a valid flag.
 type EdgeAPITimeAPI sql.NullTime
 
-// ImageSetViewAPI is the image-set row returned for ui image-sets display
-type ImageSetViewAPI struct {
-	ID               uint           `json:"ID"`
-	Name             string         `json:"Name"`
-	Version          int            `json:"Version"`
-	UpdatedAt        EdgeAPITimeAPI `json:"UpdatedAt"`
-	Distribution     string         `json:"Distribution"`
-	OutputTypes      []string       `json:"OutputTypes"`
-	Status           string         `json:"Status"`
-	ImageBuildIsoURL string         `json:"ImageBuildIsoURL"`
-	ImageID          uint           `json:"ImageID"`
+// ImageSetsViewResponseAPI is the image-set row returned for ui image-sets display
+type ImageSetsViewResponseAPI struct {
+	Count int            `json:"count" example:"100"`
+	Data  []ImageSetView `json:"data"`
 }
 
 // ImageSetIDViewAPI is the image set details view returned for ui image-set display

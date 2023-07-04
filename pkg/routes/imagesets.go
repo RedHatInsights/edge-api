@@ -501,14 +501,18 @@ func returnImageDetails(images []models.Image, s *dependencies.EdgeAPIServices) 
 }
 
 // GetImageSetsView return a list of image-sets view
-// @Summary      List image sets view.
-// @Description  Get list of all image sets view.
+// @Summary      Return the list of image set view.
+// @Description  Return the list of image set view.
 // @Tags         image-sets
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
-// @Success      200 {object} models.ImageSetViewAPI
+// @Param        sort_by    query     string     false  "Define sort fields: created_at, updated_at, name. To sort DESC use -"
+// @Param        name       query     string     false  "field: filter by name"
+// @Param        status     query     string     false  "field: filter by status"
+// @Param        id         query     integer    false  "field: filter by id"
+// @Param        limit      query     integer    false  "field: return number of image-set view until limit is reached. Default is 30."
+// @Param        offset     query     integer    false  "field: return number of image-set view beginning at the offset."
+// @Success      200 {object} models.ImageSetsViewResponseAPI
 // @Failure      500 {object} errors.InternalServerError
 // @Router       /image-sets/view [get]
 func GetImageSetsView(w http.ResponseWriter, r *http.Request) {
@@ -719,7 +723,7 @@ func getContextImageSetImage(w http.ResponseWriter, r *http.Request) *models.Ima
 // @Tags         image-sets
 // @Accept       json
 // @Produce      json
-// @Param		 imageSetID query int true "image set id"
+// @Param		 imageSetID path int true "image set id"
 // @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
 // @Success      200 {object} models.ImageSetImageIDViewAPI
 // @Failure      400 {object} errors.BadRequest
