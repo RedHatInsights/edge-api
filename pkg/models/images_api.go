@@ -55,16 +55,3 @@ type ImageResponseAPI struct {
 // SuccessPlaceholderResponse is a placeholder
 type SuccessPlaceholderResponse struct {
 }
-
-// ImageViewAPI is the image row returned for ui images-set display
-type ImageViewAPI struct {
-	ID               uint           `json:"ID"`
-	Name             string         `json:"Name"`
-	Version          int            `json:"Version"`
-	ImageType        string         `json:"ImageType"`
-	CommitCheckSum   string         `json:"CommitCheckSum"`
-	OutputTypes      []string       `json:"OutputTypes"`
-	CreatedAt        EdgeAPITimeAPI `json:"CreatedAt"`
-	Status           string         `json:"Status"`
-	ImageBuildIsoURL string         `json:"ImageBuildIsoURL"`
-}

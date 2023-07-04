@@ -67,7 +67,14 @@ type ImageSetInstallerURLAPI struct {
 	ImageBuildISOURL *string     `json:"image_build_iso_url" example:"https://buket.example.com"`
 }
 
+// ImageSetsResponseAPI is a struct for auto-generation of openapi.json
 type ImageSetsResponseAPI struct {
 	Count int                       `json:"Count" example:"100"`
 	Data  []ImageSetInstallerURLAPI `json:"Data"`
+}
+
+// ImageSetDetailsResponseAPI is a struct for auto-generation of openapi.json
+type ImageSetDetailsResponseAPI struct {
+	Count int                      `json:"Count" example:"100"`
+	Data  ImageSetImagePackagesAPI `json:"Data"`
 }

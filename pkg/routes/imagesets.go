@@ -180,6 +180,7 @@ type ImageSetInstallerURL struct {
 }
 
 // ListAllImageSets return the list of image sets and images
+// @ID           ListAllImageSets
 // @Summary      Return the list of image sets.
 // @Description  Return the list of image sets.
 // @Tags         Image-sets
@@ -294,17 +295,23 @@ type ImageSetImagePackages struct {
 }
 
 // GetImageSetsByID returns the list of Image Sets by a given Image Set ID
-// @Summary      List all image sets By ID.
+// @ID           GetImageSetsByID
+// @Summary      Get an image-set
 // @Description  Get all image sets By ID.
 // @Tags         Image-sets
 // @Accept       json
 // @Produce      json
-// @Param		 imageSetID path int true "Image Set ID"
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
-// @Success      200 {object} models.ImageSetImagePackagesAPI
+// @Param        imageSetID  path      integer    true    "Image Set ID"
+// @Param        sort_by     query     string     false  "Define sort fields: created_at, updated_at, name. To sort DESC use -"
+// @Param        name        query     string     false  "field: filter by name"
+// @Param        status      query     string     false  "field: filter by status"
+// @Param        version     query     string     false  "field: filter by version"
+// @Param        limit       query     integer    false  "field: return number of image-set view until limit is reached. Default is 100."
+// @Param        offset      query     integer    false  "field: return number of image-set view beginning at the offset."
+// @Success      200 {object} models.ImageSetDetailsResponseAPI
 // @Failure      400 {object} errors.BadRequest
 // @Failure      404 {object} errors.NotFound
-// @Failure      500 {object} errors.InternalServerError
+// @Failure      500 {object} errors.InternalServerError "int"
 // @Router       /image-sets/{imageSetID}/ [get]
 func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	var images []models.Image
@@ -592,6 +599,7 @@ func getContextImageSet(w http.ResponseWriter, r *http.Request) *models.ImageSet
 }
 
 // GetImageSetViewByID handle the image-set view
+// @ID           GetImageSetViewByID
 // @Summary      List image set view by id.
 // @Description  Get image set view by id.
 // @Tags         image-sets
@@ -632,6 +640,7 @@ func GetImageSetViewByID(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetAllImageSetImagesView handle the image-set images view
+// @ID           GetAllImageSetImagesView
 // @Summary      List all images in an image set.
 // @Description  Get all images in an image set view.
 // @Tags         image-sets
@@ -797,6 +806,7 @@ type ImageSetDevices struct {
 }
 
 // GetImageSetsDevicesByID gets all devices related to an imageset
+// @ID           GetImageSetsDevicesByID
 // @Summary      Placeholder summary
 // @Description  This is a placeholder description
 // @Tags         Image-sets
