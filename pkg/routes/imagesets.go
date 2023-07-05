@@ -183,7 +183,7 @@ type ImageSetInstallerURL struct {
 // @ID           ListAllImageSets
 // @Summary      Return the list of image sets.
 // @Description  Return the list of image sets.
-// @Tags         Image-sets
+// @Tags         Image-Sets
 // @Accept       json
 // @Produce      json
 // @Param        sort_by    query     string     false  "Define sort fields: created_at, updated_at, name. To sort DESC use -"
@@ -192,9 +192,9 @@ type ImageSetInstallerURL struct {
 // @Param        limit      query     integer    false  "field: return number of image-set view until limit is reached. Default is 100."
 // @Param        offset     query     integer    false  "field: return number of image-set view beginning at the offset."
 // @Success      200 {object} models.ImageSetsResponseAPI
-// @Failure      400 {object} errors.BadRequest
-// @Failure      404 {object} errors.NotFound
-// @Failure      500 {object} errors.InternalServerError
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      404 {object} errors.NotFound "The Image Set was not found."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /image-sets [get]
 func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	s := dependencies.ServicesFromContext(r.Context())
@@ -297,8 +297,8 @@ type ImageSetImagePackages struct {
 // GetImageSetsByID returns the list of Image Sets by a given Image Set ID
 // @ID           GetImageSetsByID
 // @Summary      Get an image-set
-// @Description  Get all image sets By ID.
-// @Tags         Image-sets
+// @Description  Get image set by ID
+// @Tags         Image-Sets
 // @Accept       json
 // @Produce      json
 // @Param        imageSetID  path      integer    true    "Image Set ID"
@@ -309,9 +309,9 @@ type ImageSetImagePackages struct {
 // @Param        limit       query     integer    false  "field: return number of image-set view until limit is reached. Default is 100."
 // @Param        offset      query     integer    false  "field: return number of image-set view beginning at the offset."
 // @Success      200 {object} models.ImageSetDetailsResponseAPI
-// @Failure      400 {object} errors.BadRequest
-// @Failure      404 {object} errors.NotFound
-// @Failure      500 {object} errors.InternalServerError "int"
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      404 {object} errors.NotFound "image-set was not found."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /image-sets/{imageSetID}/ [get]
 func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 	var images []models.Image
@@ -513,7 +513,7 @@ func returnImageDetails(images []models.Image, s *dependencies.EdgeAPIServices) 
 // GetImageSetsView return a list of image-sets view
 // @Summary      Return the list of image set view.
 // @Description  Return the list of image set view.
-// @Tags         image-sets
+// @Tags         Image-Sets
 // @Accept       json
 // @Produce      json
 // @Param        sort_by    query     string     false  "Define sort fields: created_at, updated_at, name. To sort DESC use -"
@@ -523,7 +523,7 @@ func returnImageDetails(images []models.Image, s *dependencies.EdgeAPIServices) 
 // @Param        limit      query     integer    false  "field: return number of image-set view until limit is reached. Default is 30."
 // @Param        offset     query     integer    false  "field: return number of image-set view beginning at the offset."
 // @Success      200 {object} models.ImageSetsViewResponseAPI
-// @Failure      500 {object} errors.InternalServerError
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /image-sets/view [get]
 func GetImageSetsView(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -600,18 +600,17 @@ func getContextImageSet(w http.ResponseWriter, r *http.Request) *models.ImageSet
 
 // GetImageSetViewByID handle the image-set view
 // @ID           GetImageSetViewByID
-// @Summary      List image set view by id.
-// @Description  Get image set view by id.
-// @Tags         image-sets
+// @Summary      Return the image-set description view.
+// @Description  Return the image-set description view.
+// @Tags         Image-Sets
 // @Accept       json
 // @Produce      json
-// @Param		 imageSetID path int true "Image Set ID"
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Param        image_set_id path integer true "the image-set id"
 // @Success      200 {object} models.ImageSetIDViewAPI
-// @Failure      400 {object} errors.BadRequest
-// @Failure      404 {object} errors.NotFound
-// @Failure      500 {object} errors.InternalServerError
-// @Router       /image-sets/view/{imageSetID}/ [get]
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      404 {object} errors.NotFound "The Image-Set was not found."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
+// @Router       /image-sets/view/{image_set_id} [get]
 func GetImageSetViewByID(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	imageSet := getContextImageSet(w, r)
@@ -641,18 +640,22 @@ func GetImageSetViewByID(w http.ResponseWriter, r *http.Request) {
 
 // GetAllImageSetImagesView handle the image-set images view
 // @ID           GetAllImageSetImagesView
-// @Summary      List all images in an image set.
-// @Description  Get all images in an image set view.
-// @Tags         image-sets
+// @Summary      Return the image-set images view list.
+// @Description  Return the image-set images view list.
+// @Tags         Image-Sets
 // @Accept       json
 // @Produce      json
-// @Param		 imageSetID path int true "Image Set ID"
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Param	 image_set_id   path      int       true   "the image-set id"
+// @Param        sort_by        query     string    false  "Define sort fields: created_at, version, To sort DESC use -"
+// @Param        status         query     string    false  "field: filter by status"
+// @Param        version        query     string    false  "field: filter by version"
+// @Param        limit          query     integer   false  "field: return number of images until limit is reached. Default is 100."
+// @Param        offset         query     integer   false  "field: return number of images beginning at the offset."
 // @Success      200 {object} models.ImagesViewDataAPI
-// @Failure      400 {object} errors.BadRequest
-// @Failure      404 {object} errors.NotFound
-// @Failure      500 {object} errors.InternalServerError
-// @Router       /image-sets/view/{imageSetID}/versions [get]
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      404 {object} errors.NotFound "The Image-Set was not found."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
+// @Router       /image-sets/view/{image_set_id}/versions [get]
 func GetAllImageSetImagesView(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	imageSet := getContextImageSet(w, r)
@@ -730,17 +733,18 @@ func getContextImageSetImage(w http.ResponseWriter, r *http.Request) *models.Ima
 }
 
 // GetImageSetImageView handle the image-set image view
-// @Summary      Get image view of image set.
-// @Description  This is a placeholder description
-// @Tags         image-sets
+// @ID           GetImageSetImageView
+// @Summary      Return the image-set images view list.
+// @Description  Return the image-set images view list.
+// @Tags         Image-Sets
 // @Accept       json
 // @Produce      json
-// @Param		 imageSetID path int true "image set id"
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Param 	 image_set_id path int true "the image set id"
+// @Param	 image_id     path int true "the image id"
 // @Success      200 {object} models.ImageSetImageIDViewAPI
-// @Failure      400 {object} errors.BadRequest
-// @Failure      404 {object} errors.NotFound
-// @Failure      500 {object} errors.InternalServerError
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      404 {object} errors.NotFound "The Image-Set or Image was not found."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /image-sets/view/{imageSetID}/versions/{imageID} [get]
 func GetImageSetImageView(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -774,16 +778,17 @@ func GetImageSetImageView(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteImageSet deletes an imageset
+// @ID           DeleteImageSet
 // @Summary      Delete Image Set
 // @Description  Delete Image Set
-// @Tags         image-sets
+// @Tags         Image-Sets
 // @Accept       json
 // @Produce      json
-// @Param		 imageSetID		path    int  true  "Identifier of the ImageSet"
+// @Param 	 ImageSetId	path	int	true  "Identifier of the ImageSet"
 // @Success      200 {object} models.ImageSetAPI
-// @Failure      400 {object} errors.BadRequest
-// @Failure      404 {object} errors.NotFound
-// @Failure      500 {object} errors.InternalServerError
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      404 {object} errors.NotFound "image-set was not found."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /image-sets/{imageSetID} [delete]
 func DeleteImageSet(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -807,15 +812,16 @@ type ImageSetDevices struct {
 
 // GetImageSetsDevicesByID gets all devices related to an imageset
 // @ID           GetImageSetsDevicesByID
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
-// @Tags         Image-sets
+// @Summary      Return device ids for an image set.
+// @Description  Return device ids for an image set.
+// @Tags         Image-Sets
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Param        ImageSetId	path	int	true	"Identifier of the ImageSet"
 // @Success      200 {object} models.ImageSetDevicesAPI
-// @Failure      500 {object} errors.InternalServerError
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      404 {object} errors.NotFound "The Image Set ID was not found."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /image-sets/{imageSetID}/devices [get]
 func GetImageSetsDevicesByID(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())

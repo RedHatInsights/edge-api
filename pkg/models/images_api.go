@@ -55,3 +55,19 @@ type ImageResponseAPI struct {
 // SuccessPlaceholderResponse is a placeholder
 type SuccessPlaceholderResponse struct {
 }
+
+// ImageDetailAPI return the structure to inform package info to images
+type ImageDetailAPI struct {
+	Image              *Image `json:"image"`
+	AdditionalPackages int    `json:"additional_packages" example:"3"`
+	Packages           int    `json:"packages" example:"3"`
+	UpdateAdded        int    `json:"update_added" example:"3"`
+	UpdateRemoved      int    `json:"update_removed" example:"2"`
+	UpdateUpdated      int    `json:"update_updated" example:"3"`
+}
+
+// ImagesViewDataAPI is the images view data return for images view with filters , limit, offSet
+type ImagesViewDataAPI struct {
+	Count int64       `json:"count" example:"100"`
+	Data  []ImageView `json:"data"`
+}
