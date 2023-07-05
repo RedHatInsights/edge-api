@@ -137,6 +137,7 @@ fi
 #FIX THE RHCD_T semanage
 %post --log=/var/log/anaconda/permissive-rhcd_t.log
 /usr/sbin/semanage permissive --add rhcd_t
+/usr/sbin/semanage permissive --add insights_client_t
 %end
 
 #CUSTOM_POST_HERE
