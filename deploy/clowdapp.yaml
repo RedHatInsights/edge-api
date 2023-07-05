@@ -329,6 +329,74 @@ objects:
           requests:
             cpu: 125m
             memory: 128Mi
+    jobs:
+      - name: cleanup
+        schedule: ${CLEANUP_SCHEDULE}
+        restartPolicy: Never
+        concurrencyPolicy: Forbid
+        podSpec:
+          image: ${IMAGE}:${IMAGE_TAG}
+          args:
+            - /usr/bin/edge-api-cleanup
+          env:
+            - name: CLOWDER_ENABLED
+              value: ${CLOWDER_ENABLED}
+            - name: ENABLE_CLOUDWATCH_LOGGING
+              value: ${ENABLE_CLOUDWATCH_LOGGING}
+            - name: AUTH
+              value: ${ENABLE_RH_IDENTITY_PROCESSING}
+            - name: EDGETARBALLSBUCKET
+              value: ${EDGE_TARBALLS_BUCKET}
+            - name: OPENAPIFILEPATH
+              value: ${OPEN_API_FILEPATH}
+            - name: IMAGEBUILDERURL
+              value: ${IMAGEBUILDER_URL}
+            - name: INVENTORYURL
+              value: ${INVENTORYURL}
+            - name: PLAYBOOKDISPATCHERURL
+              value: ${PLAYBOOKDISPATCHERURL}
+            - name: CONTENT_SOURCES_URL
+              value: ${CONTENT_SOURCES_URL}
+            - name: FDO_HOST_URL
+              value: ${FDO_HOST_URL}
+            - name: FDO_API_VERSION
+              value: ${FDO_API_VERSION}
+            - name: PLAYBOOKDISPATCHERPSK
+              valueFrom:
+                secretKeyRef:
+                  key: key
+                  name: psk-playbook-dispatcher
+            - name: IMAGEBUILDERORGID
+              valueFrom:
+                secretKeyRef:
+                  key: key
+                  name: image-builder-org-id
+            - name: EDGEAPIBASEURL
+              value: ${EDGEAPIBASEURL}
+            - name: EDGECERTAPIBASEURL
+              value: ${EDGECERTAPIBASEURL}
+            - name: UPLOADWORKERS
+              value: ${UPLOADWORKERS}
+            - name: LOG_LEVEL
+              value: ${LOG_LEVEL}
+            - name: UNLEASH_URL
+              value: ${UNLEASH_URL}
+            - name: UNLEASH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ${UNLEASH_SECRET_NAME}
+                  key: CLIENT_ACCESS_TOKEN
+            - name: TENANT_TRANSLATOR_HOST
+              value: ${TENANT_TRANSLATOR_HOST}
+            - name: TENANT_TRANSLATOR_PORT
+              value: ${TENANT_TRANSLATOR_PORT}
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 250m
+              memory: 256Mi
     objectStore:
     - ${EDGE_TARBALLS_BUCKET}
     database:
@@ -461,3 +529,5 @@ parameters:
   value: '8892'
 - name: LINT_ANNOTATION
   value: 'ignore-check.kube-linter.io/minimum-three-replicas'
+- name: CLEANUP_SCHEDULE
+  value: "0 0 6 * *"

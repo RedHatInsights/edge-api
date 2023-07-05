@@ -2,7 +2,7 @@ module github.com/redhatinsights/edge-api
 
 require (
 	github.com/Unleash/unleash-client-go/v3 v3.7.4
-	github.com/aws/aws-sdk-go v1.44.290
+	github.com/aws/aws-sdk-go v1.44.295
 	github.com/bxcodec/faker/v3 v3.8.1
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/confluentinc/confluent-kafka-go v1.9.2
@@ -27,7 +27,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	gorm.io/driver/postgres v1.5.2
 	gorm.io/driver/sqlite v1.5.2
-	gorm.io/gorm v1.25.2-0.20230530020048-26663ab9bf55
+	gorm.io/gorm v1.25.2
 )
 
 require (

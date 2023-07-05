@@ -3,6 +3,8 @@ package cleanupimages
 import (
 	"errors"
 	url2 "net/url"
+	"strings"
+	"time"
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -22,10 +24,16 @@ var ErrImagesCleanUPNotAvailable = errors.New("images cleanup is not available")
 var ErrImageNotCleanUPCandidate = errors.New("image is not a cleanup candidate")
 
 // DefaultDataLimit the default data limit to use when collecting data
-var DefaultDataLimit = 10
+var DefaultDataLimit = 30
 
 // DefaultMaxDataPageNumber the default data pages to handle as preventive way to enter an indefinite loop
 var DefaultMaxDataPageNumber = 1000
+
+// DefaultDeleteFoldersAttempts the default delete folder attempts
+var DefaultDeleteFoldersAttempts = 10
+
+// DefaultDeleteFoldersRetryDelay the default delete folder delay before a retry
+var DefaultDeleteFoldersRetryDelay = 5 * time.Second
 
 type CandidateImage struct {
 	ImageID         uint           `json:"image_id"`
@@ -52,14 +60,22 @@ func GetPathFromURL(url string) (string, error) {
 }
 
 func DeleteAWSFolder(s3Client *files.S3Client, folder string) error {
+	// remove the prefixed url separator if exists
+	folder = strings.TrimPrefix(folder, "/")
 	logger := log.WithField("folder-key", folder)
-	if err := s3Client.FolderDeleter.Delete(config.Get().BucketName, folder); err != nil {
-		logger.WithField("error", err.Error()).Error("error deleting folder")
-		return err
+	var err error
+	for attempt := 1; attempt <= DefaultDeleteFoldersAttempts; attempt++ {
+		err = s3Client.FolderDeleter.Delete(config.Get().BucketName, folder)
+		if err != nil {
+			logger.WithFields(log.Fields{"attempt": attempt, "error": err.Error()}).Error("error deleting folder")
+			time.Sleep(DefaultDeleteFoldersRetryDelay)
+			continue
+		}
+		logger.WithField("attempt", attempt).Info("folder deleted successfully")
+		break
 	}
-	logger.Info("folder deleted successfully")
-	return nil
-
+	// return the latest error
+	return err
 }
 
 func DeleteAWSFile(client *files.S3Client, fileKey string) error {
@@ -230,29 +246,27 @@ func DeleteImage(candidateImage *CandidateImage) error {
 			return err
 		}
 
-		// delete updatetransaction_commits with commit_id
-		if err := tx.Exec("DELETE FROM updatetransaction_commits WHERE commit_id=?", candidateImage.CommitID).Error; err != nil {
-			return err
-		}
-
-		// delete update_transactions with commit_id
-		if err := tx.Unscoped().Where("commit_id", candidateImage.CommitID).Delete(&models.UpdateTransaction{}).Error; err != nil {
-			return err
-		}
-
 		// delete image
 		if err := tx.Unscoped().Where("id", candidateImage.ImageID).Delete(&models.Image{}).Error; err != nil {
 			return err
 		}
 
-		// delete commit
-		if err := tx.Unscoped().Where("id", candidateImage.CommitID).Delete(&models.Commit{}).Error; err != nil {
+		// get the updates count with commit_id
+		var updatesCount int64
+		if err := tx.Unscoped().Debug().Model(&models.UpdateTransaction{}).Where("commit_id", candidateImage.CommitID).Count(&updatesCount).Error; err != nil {
 			return err
 		}
 
-		// delete repos with commit repo_id
-		if err := tx.Unscoped().Where("id", candidateImage.RepoID).Delete(&models.Repo{}).Error; err != nil {
-			return err
+		// delete commit only if it has no update transactions
+		if updatesCount == 0 {
+			if err := tx.Unscoped().Where("id", candidateImage.CommitID).Delete(&models.Commit{}).Error; err != nil {
+				return err
+			}
+
+			// delete repos with commit repo_id
+			if err := tx.Unscoped().Where("id", candidateImage.RepoID).Delete(&models.Repo{}).Error; err != nil {
+				return err
+			}
 		}
 
 		// delete installer
