@@ -168,15 +168,15 @@ func getContextInstaller(w http.ResponseWriter, r *http.Request) *models.Install
 }
 
 // GetInstallerIsoStorageContent redirect to a signed installer iso url
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// @Summary      Redirect to a signed installer
+// @Description  This method will redirect request to a signed installer iso url
 // @Tags         Storage
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
-// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Param		 installerID path string true "Id for the installer required"
+// @Success      303 {string} URL to redirect
 // @Failure      400 {object} errors.BadRequest
+// @Failure      404 {object} errors.NotFound	"the device update was not found"
 // @Failure      500 {object} errors.InternalServerError
 // @Router       /storage/isos/{installerID}/ [get]
 func GetInstallerIsoStorageContent(w http.ResponseWriter, r *http.Request) {
@@ -300,14 +300,13 @@ func ValidateStorageUpdateTransaction(w http.ResponseWriter, r *http.Request) st
 
 // GetUpdateTransactionRepoFileContent redirect to a signed url of an update-transaction repository path content
 // @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// @Description  Method will redirect to asigned url of an update-transaction based on repository content
 // @Tags         Storage
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
-// @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
+// @Param		 updateTransactionID path integer true "id for update transaction id"
+// @Param		 repoFilePath path string true "path to repository to be checked"
+// @Success      303 {string} URL signed to be redirect
 // @Failure      500 {object} errors.InternalServerError
 // @Router       /storage/update-repos/{updateTransactionID}/content/{repoFilePath} [get]
 func GetUpdateTransactionRepoFileContent(w http.ResponseWriter, r *http.Request) {
@@ -334,14 +333,14 @@ func GetUpdateTransactionRepoFileContent(w http.ResponseWriter, r *http.Request)
 }
 
 // GetUpdateTransactionRepoFile return the content of an update-transaction repository path
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// @Summary      Return the content od an update-transaction repository path
+// @Description  Request will get access to content of an update-transaction file based on the path
 // @Tags         Storage
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
-// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Param		 updateTransactionID path integer true "Update Transaction Id"
+// @Param		 repoFilePath path integer true "path for repository file"
+// @Success      200 {stream} file stream
 // @Failure      400 {object} errors.BadRequest
 // @Failure      500 {object} errors.InternalServerError
 // @Router       /storage/update-repos/{updateTransactionID}/{repoFilePath} [get]
@@ -465,15 +464,14 @@ func ValidateStorageImage(w http.ResponseWriter, r *http.Request) string {
 	return requestPath
 }
 
-// GetImageRepoFileContent redirect to a signed url of an image commit repository path content
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// @Summary      redirect to a signed url of an image commit repository path content
+// @Description  Redirect request to a signed and valid url for an image commit repository from the path content
 // @Tags         Storage
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
-// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Param		 imageID path string true "Id to identify Image"
+// @Param		 repoFilePath path string true "path to file repository"
+// @Success      303 {string} url response
 // @Failure      400 {object} errors.BadRequest
 // @Failure      500 {object} errors.InternalServerError
 // @Router       /storage/images-repos/{imageID}/content/{repoFilePath} [get]
@@ -500,15 +498,14 @@ func GetImageRepoFileContent(w http.ResponseWriter, r *http.Request) {
 	redirectToStorageSignedURL(w, r, requestPath)
 }
 
-// GetImageRepoFile return the content of an image commit repository path
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// @Summary      return the content of an image commit repository path
+// @Description  Bring the content for a image commit in a repository path
 // @Tags         Storage
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
-// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Param		 imageID path string true "Id to identify Image"
+// @Param		 repoFilePath path string true "path to file repository"
+// @Success      200 {string} stream content
 // @Failure      400 {object} errors.BadRequest
 // @Failure      500 {object} errors.InternalServerError
 // @Router       /storage/images-repos/{imageID}/{repoFilePath} [get]
