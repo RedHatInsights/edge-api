@@ -340,7 +340,7 @@ func GetUpdateTransactionRepoFileContent(w http.ResponseWriter, r *http.Request)
 // @Produce      json
 // @Param		 updateTransactionID path integer true "Update Transaction Id"
 // @Param		 repoFilePath path integer true "path for repository file"
-// @Success      200 {stream} file stream
+// @Success      200 {string}		"Stream object from file content"
 // @Failure      400 {object} errors.BadRequest
 // @Failure      500 {object} errors.InternalServerError
 // @Router       /storage/update-repos/{updateTransactionID}/{repoFilePath} [get]
@@ -505,7 +505,7 @@ func GetImageRepoFileContent(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param		 imageID path string true "Id to identify Image"
 // @Param		 repoFilePath path string true "path to file repository"
-// @Success      200 {string} stream content
+// @Success      200 {string}		"Stream object from file content"
 // @Failure      400 {object} errors.BadRequest
 // @Failure      500 {object} errors.InternalServerError
 // @Router       /storage/images-repos/{imageID}/{repoFilePath} [get]
