@@ -88,6 +88,7 @@ COPY --from=edge-builder /go/bin/edge-api-migrate-repositories /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-ibvents /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-images-build /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-isos-build /usr/bin
+COPY --from=edge-builder /go/bin/edge-api-cleanup /usr/bin
 COPY --from=edge-builder ${EDGE_API_WORKSPACE}/cmd/spec/openapi.json /var/tmp
 
 # kickstart inject requirements

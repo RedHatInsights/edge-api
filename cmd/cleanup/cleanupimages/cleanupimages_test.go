@@ -3,6 +3,8 @@ package cleanupimages_test
 import (
 	"errors"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/redhatinsights/edge-api/cmd/cleanup/cleanupimages"
 	"github.com/redhatinsights/edge-api/config"
@@ -146,11 +148,16 @@ var _ = Describe("Cleanup images", func() {
 			var s3Client *files.S3Client
 			var s3ClientAPI *mock_files.MockS3ClientAPI
 			var s3FolderDeleter *mock_files.MockBatchFolderDeleterAPI
+			var initialTimeDuration time.Duration
+			var configDeleteAttempts int
 
 			BeforeEach(func() {
 				ctrl = gomock.NewController(GinkgoT())
 				s3ClientAPI = mock_files.NewMockS3ClientAPI(ctrl)
 				s3FolderDeleter = mock_files.NewMockBatchFolderDeleterAPI(ctrl)
+				initialTimeDuration = cleanupimages.DefaultTimeDuration
+				cleanupimages.DefaultTimeDuration = 1 * time.Millisecond
+				configDeleteAttempts = int(config.Get().DeleteFilesAttempts)
 				s3Client = &files.S3Client{
 					Client:        s3ClientAPI,
 					FolderDeleter: s3FolderDeleter,
@@ -159,27 +166,46 @@ var _ = Describe("Cleanup images", func() {
 
 			AfterEach(func() {
 				ctrl.Finish()
+				cleanupimages.DefaultTimeDuration = initialTimeDuration
 			})
 
 			It("should delete aws s3 folder", func() {
 				folderPath := "/test/folder/to/delete"
-				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, folderPath).Return(nil)
-				err := cleanupimages.DeleteAWSFolder(s3Client, folderPath)
+				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, strings.TrimPrefix(folderPath, "/")).Return(nil)
+				err := cleanupimages.DeleteAWSFolder(s3Client, strings.TrimPrefix(folderPath, "/"))
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			It("should return error when aws folder deleter returns error", func() {
+			It("should return error when aws folder deleter returns error with all the attempts ", func() {
 				folderPath := "/test/folder/to/delete"
 				expectedError := errors.New("expected error returned by aws s3 folder deleter")
-				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, folderPath).Return(expectedError)
+				// important to expect that this should be called cleanupimages.DefaultDeleteAttempts times
+				s3FolderDeleter.EXPECT().Delete(
+					config.Get().BucketName, strings.TrimPrefix(folderPath, "/"),
+				).Return(expectedError).Times(int(configDeleteAttempts))
 				err := cleanupimages.DeleteAWSFolder(s3Client, folderPath)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(expectedError))
 			})
 
+			It("should not return error after a successful delete folder retry", func() {
+				folderPath := "/test/folder/to/delete"
+				expectedError := errors.New("expected error returned by aws s3 folder deleter")
+				// expect that error was returned (cleanupimages.DefaultDeleteAttempts -1) times
+				s3FolderDeleter.EXPECT().Delete(
+					config.Get().BucketName, strings.TrimPrefix(folderPath, "/"),
+				).Return(expectedError).Times(configDeleteAttempts - 1)
+				// expect that the latest allowed time was a successful delete
+				s3FolderDeleter.EXPECT().Delete(
+					config.Get().BucketName, strings.TrimPrefix(folderPath, "/"),
+				).Return(nil).Times(1)
+
+				err := cleanupimages.DeleteAWSFolder(s3Client, folderPath)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
 			It("should delete aws s3 file", func() {
 				filePath := "/test/file/to/delete"
-				// s3ClientAPI.EXPECT().DeleteObject(config.Get().BucketName, filePath).Return(nil)
 				s3ClientAPI.EXPECT().DeleteObject(&s3.DeleteObjectInput{
 					Bucket: aws.String(config.Get().BucketName),
 					Key:    aws.String(filePath),
@@ -188,17 +214,37 @@ var _ = Describe("Cleanup images", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			It("should return error when aws delete object returns error", func() {
+			It("should return error when aws delete object returns error with all attempts", func() {
 				filePath := "/test/file/to/delete"
 				expectedError := errors.New("expected error returned by aws s3 file deleter")
+				// important to expect that this should be called cleanupimages.DefaultDeleteAttempts times
 				s3ClientAPI.EXPECT().DeleteObject(
 					&s3.DeleteObjectInput{
 						Bucket: aws.String(config.Get().BucketName),
 						Key:    aws.String(filePath),
-					}).Return(nil, expectedError)
+					}).Return(nil, expectedError).Times(configDeleteAttempts)
 				err := cleanupimages.DeleteAWSFile(s3Client, filePath)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(expectedError))
+			})
+
+			It("should not return error after a successful delete object retry", func() {
+				filePath := "/test/file/to/delete"
+				expectedError := errors.New("expected error returned by aws s3 file deleter")
+				// expect that error was returned (cleanupimages.DefaultDeleteAttempts -1) times
+				s3ClientAPI.EXPECT().DeleteObject(
+					&s3.DeleteObjectInput{
+						Bucket: aws.String(config.Get().BucketName),
+						Key:    aws.String(filePath),
+					}).Return(nil, expectedError).Times(configDeleteAttempts - 1)
+				// expect that the latest allowed time was a successful delete
+				s3ClientAPI.EXPECT().DeleteObject(
+					&s3.DeleteObjectInput{
+						Bucket: aws.String(config.Get().BucketName),
+						Key:    aws.String(filePath),
+					}).Return(nil, nil).Times(1)
+				err := cleanupimages.DeleteAWSFile(s3Client, filePath)
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 
@@ -232,6 +278,9 @@ var _ = Describe("Cleanup images", func() {
 			var existingImage models.Image
 			// image should be deleted, and it's content should be cleared
 			var image models.Image
+			// image should be deleted, and it's content should be cleared, but update transaction is not deleted
+			var image2 models.Image
+			var update models.UpdateTransaction
 			// image should not be deleted, and it's content should be cleared
 			var errImage models.Image
 			var imageSet models.ImageSet
@@ -240,8 +289,15 @@ var _ = Describe("Cleanup images", func() {
 			var imageISOPath string
 			var imageRepoPath string
 
+			var image2TarPath string
+			var image2ISOPath string
+			var image2RepoPath string
+
 			var errImageTarPath string
 			var errImageRepoPath string
+
+			var initialTimeDuration time.Duration
+			var confiDeleteAttempts int
 
 			BeforeEach(func() {
 				ctrl = gomock.NewController(GinkgoT())
@@ -251,6 +307,10 @@ var _ = Describe("Cleanup images", func() {
 					Client:        s3ClientAPI,
 					FolderDeleter: s3FolderDeleter,
 				}
+
+				initialTimeDuration = cleanupimages.DefaultTimeDuration
+				cleanupimages.DefaultTimeDuration = 1 * time.Millisecond
+				confiDeleteAttempts = int(config.Get().DeleteFilesAttempts)
 
 				orgID = faker.UUIDHyphenated()
 
@@ -265,6 +325,10 @@ var _ = Describe("Cleanup images", func() {
 				imageTarPath = "/image/tar/file/path/" + faker.UUIDHyphenated()
 				imageISOPath = "/image/iso/file/path/" + faker.UUIDHyphenated()
 				imageRepoPath = "/image/repo/path/" + faker.UUIDHyphenated()
+
+				image2TarPath = "/image2/tar/file/path/" + faker.UUIDHyphenated()
+				image2ISOPath = "/image2/iso/file/path/" + faker.UUIDHyphenated()
+				image2RepoPath = "/image2/repo/path/" + faker.UUIDHyphenated()
 
 				image = models.Image{
 					Name:       imageSet.Name,
@@ -292,6 +356,39 @@ var _ = Describe("Cleanup images", func() {
 
 				// soft delete image
 				err = db.DB.Delete(&image).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				image2 = models.Image{
+					Name:       imageSet.Name,
+					OrgID:      orgID,
+					Status:     models.ImageStatusSuccess,
+					ImageSetID: &imageSet.ID,
+
+					Commit: &models.Commit{
+						OrgID:  orgID,
+						Status: models.ImageStatusSuccess,
+						Repo: &models.Repo{
+							Status: models.ImageStatusSuccess,
+							URL:    "https://buket.example.com" + image2RepoPath,
+						},
+						ImageBuildTarURL: "https://buket.example.com" + image2TarPath,
+					},
+					Installer: &models.Installer{
+						OrgID:            orgID,
+						Status:           models.ImageStatusSuccess,
+						ImageBuildISOURL: "https://buket.example.com" + image2ISOPath,
+					},
+				}
+				err = db.DB.Create(&image2).Error
+				Expect(err).ToNot(HaveOccurred())
+				update = models.UpdateTransaction{OrgID: orgID, CommitID: image2.Commit.ID}
+				err = db.DB.Create(&update).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				// soft delete images
+				err = db.DB.Delete(&image).Error
+				Expect(err).ToNot(HaveOccurred())
+				err = db.DB.Delete(&image2).Error
 				Expect(err).ToNot(HaveOccurred())
 
 				errImageTarPath = "/errImage/tar/file/path/" + faker.UUIDHyphenated()
@@ -324,6 +421,7 @@ var _ = Describe("Cleanup images", func() {
 
 			AfterEach(func() {
 				ctrl.Finish()
+				cleanupimages.DefaultTimeDuration = initialTimeDuration
 			})
 
 			It("should delete images and clear s3 content as expected", func() {
@@ -334,16 +432,25 @@ var _ = Describe("Cleanup images", func() {
 				}).Return(nil, nil)
 				s3ClientAPI.EXPECT().DeleteObject(&s3.DeleteObjectInput{
 					Bucket: aws.String(config.Get().BucketName),
+					Key:    aws.String(image2TarPath),
+				}).Return(nil, nil)
+				s3ClientAPI.EXPECT().DeleteObject(&s3.DeleteObjectInput{
+					Bucket: aws.String(config.Get().BucketName),
 					Key:    aws.String(imageISOPath),
 				}).Return(nil, nil)
-				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, imageRepoPath).Return(nil)
+				s3ClientAPI.EXPECT().DeleteObject(&s3.DeleteObjectInput{
+					Bucket: aws.String(config.Get().BucketName),
+					Key:    aws.String(image2ISOPath),
+				}).Return(nil, nil)
+				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, strings.TrimPrefix(imageRepoPath, "/")).Return(nil)
+				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, strings.TrimPrefix(image2RepoPath, "/")).Return(nil)
 
 				// expect all errImage success content to be deleted
 				s3ClientAPI.EXPECT().DeleteObject(&s3.DeleteObjectInput{
 					Bucket: aws.String(config.Get().BucketName),
 					Key:    aws.String(errImageTarPath),
 				}).Return(nil, nil)
-				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, errImageRepoPath).Return(nil)
+				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, strings.TrimPrefix(errImageRepoPath, "/")).Return(nil)
 
 				err := cleanupimages.CleanUpAllImages(s3Client)
 				Expect(err).ToNot(HaveOccurred())
@@ -360,6 +467,22 @@ var _ = Describe("Cleanup images", func() {
 				err = db.DB.Unscoped().First(&models.Image{}, image.ID).Error
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(MatchError(gorm.ErrRecordNotFound))
+				// expect image commit does not exist
+				err = db.DB.Unscoped().First(&models.Commit{}, image.Commit.ID).Error
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(gorm.ErrRecordNotFound))
+
+				// expect image2 do not exist anymore
+				err = db.DB.Unscoped().First(&models.Image{}, image2.ID).Error
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(gorm.ErrRecordNotFound))
+				// expect image2 commit to still exist
+				err = db.DB.Unscoped().First(&models.Commit{}, image2.Commit.ID).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				// expect update transaction not deleted
+				err = db.DB.Unscoped().First(&models.UpdateTransaction{}, update.ID).Error
+				Expect(err).ToNot(HaveOccurred())
 
 				// expect the image with error status to still exist
 				err = db.DB.Joins("Commit").Preload("Commit.Repo").First(&errImage, errImage.ID).Error
@@ -367,6 +490,83 @@ var _ = Describe("Cleanup images", func() {
 				// The commit and Repo status is set to cleared
 				Expect(errImage.Commit.Status).To(Equal(models.ImageStatusStorageCleaned))
 				Expect(errImage.Commit.Repo.Status).To(Equal(models.ImageStatusStorageCleaned))
+			})
+
+			It("should interrupt when any folder delete error persists", func() {
+				expectedError := errors.New("expected folder delete error")
+				defer func() {
+					// teardown: remove image to not conflict with other tests
+					candidateImage := cleanupimages.CandidateImage{ImageID: image.ID, ImageDeletedAt: image.DeletedAt}
+					_ = cleanupimages.DeleteImage(&candidateImage)
+				}()
+
+				s3ClientAPI.EXPECT().DeleteObject(&s3.DeleteObjectInput{
+					Bucket: aws.String(config.Get().BucketName),
+					Key:    aws.String(imageTarPath),
+				}).Return(nil, nil)
+				s3ClientAPI.EXPECT().DeleteObject(&s3.DeleteObjectInput{
+					Bucket: aws.String(config.Get().BucketName),
+					Key:    aws.String(image2TarPath),
+				}).Return(nil, nil)
+				s3ClientAPI.EXPECT().DeleteObject(&s3.DeleteObjectInput{
+					Bucket: aws.String(config.Get().BucketName),
+					Key:    aws.String(imageISOPath),
+				}).Return(nil, nil).Times(0)
+				s3ClientAPI.EXPECT().DeleteObject(&s3.DeleteObjectInput{
+					Bucket: aws.String(config.Get().BucketName),
+					Key:    aws.String(image2ISOPath),
+				}).Return(nil, nil)
+				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, strings.TrimPrefix(imageRepoPath, "/")).Return(expectedError).Times(confiDeleteAttempts)
+				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, strings.TrimPrefix(image2RepoPath, "/")).Return(nil)
+
+				// expect all errImage success content to be deleted
+				s3ClientAPI.EXPECT().DeleteObject(&s3.DeleteObjectInput{
+					Bucket: aws.String(config.Get().BucketName),
+					Key:    aws.String(errImageTarPath),
+				}).Return(nil, nil)
+				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, strings.TrimPrefix(errImageRepoPath, "/")).Return(nil)
+
+				err := cleanupimages.CleanUpAllImages(s3Client)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(cleanupimages.ErrCleanUpAllImagesInterrupted))
+			})
+
+			It("should interrupt when any file delete error persists", func() {
+				expectedError := errors.New("expected file delete error")
+				defer func() {
+					// teardown: remove image to not conflict with other tests
+					candidateImage := cleanupimages.CandidateImage{ImageID: image.ID, ImageDeletedAt: image.DeletedAt}
+					_ = cleanupimages.DeleteImage(&candidateImage)
+				}()
+				s3ClientAPI.EXPECT().DeleteObject(&s3.DeleteObjectInput{
+					Bucket: aws.String(config.Get().BucketName),
+					Key:    aws.String(imageTarPath),
+				}).Return(nil, expectedError).Times(confiDeleteAttempts)
+				s3ClientAPI.EXPECT().DeleteObject(&s3.DeleteObjectInput{
+					Bucket: aws.String(config.Get().BucketName),
+					Key:    aws.String(image2TarPath),
+				}).Return(nil, nil)
+				s3ClientAPI.EXPECT().DeleteObject(&s3.DeleteObjectInput{
+					Bucket: aws.String(config.Get().BucketName),
+					Key:    aws.String(imageISOPath),
+				}).Return(nil, nil).Times(0)
+				s3ClientAPI.EXPECT().DeleteObject(&s3.DeleteObjectInput{
+					Bucket: aws.String(config.Get().BucketName),
+					Key:    aws.String(image2ISOPath),
+				}).Return(nil, nil)
+				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, strings.TrimPrefix(imageRepoPath, "/")).Return(nil).Times(0)
+				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, strings.TrimPrefix(image2RepoPath, "/")).Return(nil)
+
+				// expect all errImage success content to be deleted
+				s3ClientAPI.EXPECT().DeleteObject(&s3.DeleteObjectInput{
+					Bucket: aws.String(config.Get().BucketName),
+					Key:    aws.String(errImageTarPath),
+				}).Return(nil, nil)
+				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, strings.TrimPrefix(errImageRepoPath, "/")).Return(nil)
+
+				err := cleanupimages.CleanUpAllImages(s3Client)
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(cleanupimages.ErrCleanUpAllImagesInterrupted))
 			})
 		})
 	})

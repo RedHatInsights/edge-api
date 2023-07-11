@@ -79,17 +79,18 @@ func UpdateCtx(next http.Handler) http.Handler {
 	})
 }
 
-// GetUpdatePlaybook returns the playbook for a update transaction
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// GetUpdatePlaybook returns the playbook for an update transaction
+// @Summary      returns the playbook yaml file for a system update
+// @ID           GetUpdatePlaybook
+// @Description  returns the update transaction playbook used for system update
 // @Tags         Updates (Systems)
 // @Accept       json
-// @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
-// @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Produce      plain
+// @Param        updateID  path  integer    true  "a unique ID to identify the update the playbook belongs to" example(1042)
+// @Success      200 {string}		"the playbook file content for an update"
+// @Failure      400 {object} errors.BadRequest	"The request sent couldn't be processed."
+// @Failure      404 {object} errors.NotFound	"the device update was not found"
+// @Failure      500 {object} errors.InternalServerError	"There was an internal server error."
 // @Router       /updates/{updateID}/update-playbook.yml [get]
 func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 	update := getUpdate(w, r)
@@ -114,16 +115,21 @@ func GetUpdatePlaybook(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetUpdates returns the updates for the device
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// @Summary      Gets all device updates
+// @ID           ListUpdates
+// @Description  Gets all device updates
 // @Tags         Updates (Systems)
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
-// @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Param        limit query int false "field: return number of updates until limit is reached. Default is 30." example(20)
+// @Param        offset query int false "field: return updates beginning at the given offset." example(30)
+// @Param        sort_by query string false "fields: created_at, updated_at. To sort DESC use - before the fields." example(-created_at)
+// @Param        status query string false "field: filter by status" example(BUILDING)
+// @Param        created_at query string false "field: filter by creation date" example(2023-05-03)
+// @Param        updated_at query string false "field: filter by update date" example(2023-05-04)
+// @Success      200 {object} []models.UpdateAPI	"List of devices updates"
+// @Failure      400 {object} errors.BadRequest	"The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError	"There was an internal server error."
 // @Router       /updates [get]
 func GetUpdates(w http.ResponseWriter, r *http.Request) {
 	services := dependencies.ServicesFromContext(r.Context())
@@ -267,15 +273,16 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 }
 
 // AddUpdate updates a device
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// @Summary      Executes a device update
+// @ID           UpdateDevice
+// @Description  Executes a device update
 // @Tags         Updates (Systems)
 // @Accept       json
 // @Produce      json
-// @Param        body	body	models.Image	true	"request body"
-// @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Param        body	body	models.DevicesUpdateAPI	true	"devices uuids to update and optional target commit id"
+// @Success      200 {object} models.UpdateAPI	"The created device update"
+// @Failure      400 {object} errors.BadRequest	"The request sent couldn't be processed"
+// @Failure      500 {object} errors.InternalServerError	"There was an internal server error"
 // @Router       /updates [post]
 func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -311,17 +318,18 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetUpdateByID obtains an update from the database for an orgID
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// @Summary      Gets a single requested update
+// @ID           GetUpdate
+// @Description  Gets a single requested update.
 // @Tags         Updates (Systems)
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
-// @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
-// @Router       /updates/{updateID}/ [get]
+// @Param        updateID  path  integer    true  "a unique ID to identify the update" example(1042)
+// @Success      200 {object} models.UpdateAPI	"The requested update"
+// @Failure      400 {object} errors.BadRequest	"The request sent couldn't be processed"
+// @Failure      404 {object} errors.NotFound	"The requested update was not found"
+// @Failure      500 {object} errors.InternalServerError	"There was an internal server error"
+// @Router       /updates/{updateID} [get]
 func GetUpdateByID(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	update := getUpdate(w, r)
@@ -344,16 +352,17 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction
 }
 
 // SendNotificationForDevice TMP route to validate
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// @Summary      Send a notification for a device update
+// @ID           SendNotificationForDevice
+// @Description  Send a notification for a device update
 // @Tags         Updates (Systems)
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
-// @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Param        updateID  path  integer    true  "a unique ID to identify the update" example(1042)
+// @Success      200 {object} models.DeviceNotificationAPI "The notification payload"
+// @Failure      400 {object} errors.BadRequest	"The request sent couldn't be processed"
+// @Failure      404 {object} errors.NotFound	"The requested update was not found"
+// @Failure      500 {object} errors.InternalServerError	"There was an internal server error"
 // @Router       /updates/{updateID}/notify [get]
 func SendNotificationForDevice(w http.ResponseWriter, r *http.Request) {
 	if update := getUpdate(w, r); update != nil {
@@ -379,15 +388,16 @@ type ValidateUpdateResponse struct {
 }
 
 // PostValidateUpdate validate that images can be updated
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// @Summary      Validate if the images selection could be updated
+// @ID           PostValidateUpdate
+// @Description  Validate if the images selection could be updated
 // @Tags         Updates (Systems)
 // @Accept       json
 // @Produce      json
-// @Param        body	body	models.Image	true	"request body"
-// @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Param        body	body	[]models.ImageValidationRequestAPI	true	"request body"
+// @Success      200 {object} models.ImageValidationResponseAPI	"the validation result"
+// @Failure      400 {object} errors.BadRequest	"The request sent couldn't be processed"
+// @Failure      500 {object} errors.InternalServerError	"There was an internal server error"
 // @Router       /updates/validate [post]
 func PostValidateUpdate(w http.ResponseWriter, r *http.Request) {
 	services := dependencies.ServicesFromContext(r.Context())

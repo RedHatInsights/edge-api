@@ -3,6 +3,8 @@ package cleanupimages
 import (
 	"errors"
 	url2 "net/url"
+	"strings"
+	"time"
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -21,11 +23,16 @@ var ErrImagesCleanUPNotAvailable = errors.New("images cleanup is not available")
 // ErrImageNotCleanUPCandidate error returned when the image is not a cleanup candidate
 var ErrImageNotCleanUPCandidate = errors.New("image is not a cleanup candidate")
 
+var ErrCleanUpAllImagesInterrupted = errors.New("cleanup all images is interrupted")
+
 // DefaultDataLimit the default data limit to use when collecting data
-var DefaultDataLimit = 10
+var DefaultDataLimit = 30
 
 // DefaultMaxDataPageNumber the default data pages to handle as preventive way to enter an indefinite loop
 var DefaultMaxDataPageNumber = 1000
+
+// DefaultTimeDuration the default time duration to use, this will allow to speedup testing
+var DefaultTimeDuration = 1 * time.Second
 
 type CandidateImage struct {
 	ImageID         uint           `json:"image_id"`
@@ -52,34 +59,51 @@ func GetPathFromURL(url string) (string, error) {
 }
 
 func DeleteAWSFolder(s3Client *files.S3Client, folder string) error {
+	// remove the prefixed url separator if exists
+	folder = strings.TrimPrefix(folder, "/")
 	logger := log.WithField("folder-key", folder)
-	if err := s3Client.FolderDeleter.Delete(config.Get().BucketName, folder); err != nil {
-		logger.WithField("error", err.Error()).Error("error deleting folder")
-		return err
+	configAttempts := config.Get().DeleteFilesAttempts
+	configDelay := time.Duration(config.Get().DeleteFilesRetryDelay) * DefaultTimeDuration
+	var err error
+	for attempt := uint(1); attempt <= configAttempts; attempt++ {
+		err = s3Client.FolderDeleter.Delete(config.Get().BucketName, folder)
+		if err != nil {
+			logger.WithFields(log.Fields{"attempt": attempt, "error": err.Error()}).Error("error deleting folder")
+			time.Sleep(configDelay)
+			continue
+		}
+		logger.WithField("attempt", attempt).Info("folder deleted successfully")
+		break
 	}
-	logger.Info("folder deleted successfully")
-	return nil
-
+	// return the latest error
+	return err
 }
 
 func DeleteAWSFile(client *files.S3Client, fileKey string) error {
 	logger := log.WithField("file-key", fileKey)
-	_, err := client.DeleteObject(config.Get().BucketName, fileKey)
-	if err != nil {
-		var contextErr error
-		var errCode string
-		if awsErr, ok := err.(awserr.Error); ok {
-			errCode = awsErr.Code()
-			contextErr = awsErr
-		} else {
-			contextErr = err
+	var err error
+	configAttempts := config.Get().DeleteFilesAttempts
+	configDelay := time.Duration(config.Get().DeleteFilesRetryDelay) * DefaultTimeDuration
+	for attempt := uint(1); attempt <= configAttempts; attempt++ {
+		_, err = client.DeleteObject(config.Get().BucketName, fileKey)
+		if err != nil {
+			var contextErr error
+			var errCode string
+			if awsErr, ok := err.(awserr.Error); ok {
+				errCode = awsErr.Code()
+				contextErr = awsErr
+			} else {
+				contextErr = err
+			}
+			logger.WithFields(log.Fields{"attempt": attempt, "error": contextErr.Error(), "error-code": errCode}).Error("error deleting file")
+			time.Sleep(configDelay)
+			continue
 		}
-
-		logger.WithFields(log.Fields{"error": contextErr.Error(), "error-code": errCode}).Error("error when deleting aws s3 file-key")
-		return contextErr
+		logger.WithField("attempt", attempt).Info("file deleted successfully")
+		break
 	}
-	logger.Info("file deleted successfully")
-	return nil
+	// return the latest error
+	return err
 }
 func cleanUpImageTarFile(s3Client *files.S3Client, candidateImage *CandidateImage) error {
 	logger := log.WithFields(log.Fields{
@@ -230,29 +254,27 @@ func DeleteImage(candidateImage *CandidateImage) error {
 			return err
 		}
 
-		// delete updatetransaction_commits with commit_id
-		if err := tx.Exec("DELETE FROM updatetransaction_commits WHERE commit_id=?", candidateImage.CommitID).Error; err != nil {
-			return err
-		}
-
-		// delete update_transactions with commit_id
-		if err := tx.Unscoped().Where("commit_id", candidateImage.CommitID).Delete(&models.UpdateTransaction{}).Error; err != nil {
-			return err
-		}
-
 		// delete image
 		if err := tx.Unscoped().Where("id", candidateImage.ImageID).Delete(&models.Image{}).Error; err != nil {
 			return err
 		}
 
-		// delete commit
-		if err := tx.Unscoped().Where("id", candidateImage.CommitID).Delete(&models.Commit{}).Error; err != nil {
+		// get the updates count with commit_id
+		var updatesCount int64
+		if err := tx.Unscoped().Debug().Model(&models.UpdateTransaction{}).Where("commit_id", candidateImage.CommitID).Count(&updatesCount).Error; err != nil {
 			return err
 		}
 
-		// delete repos with commit repo_id
-		if err := tx.Unscoped().Where("id", candidateImage.RepoID).Delete(&models.Repo{}).Error; err != nil {
-			return err
+		// delete commit only if it has no update transactions
+		if updatesCount == 0 {
+			if err := tx.Unscoped().Where("id", candidateImage.CommitID).Delete(&models.Commit{}).Error; err != nil {
+				return err
+			}
+
+			// delete repos with commit repo_id
+			if err := tx.Unscoped().Where("id", candidateImage.RepoID).Delete(&models.Repo{}).Error; err != nil {
+				return err
+			}
 		}
 
 		// delete installer
@@ -337,7 +359,7 @@ func CleanUpAllImages(s3Client *files.S3Client) error {
 
 	imagesCount := 0
 	page := 0
-	for page < DefaultMaxDataPageNumber {
+	for page < DefaultMaxDataPageNumber && feature.CleanUPImages.IsEnabled() {
 		candidateImages, err := GetCandidateImages(db.DB)
 		if err != nil {
 			return err
@@ -347,14 +369,36 @@ func CleanUpAllImages(s3Client *files.S3Client) error {
 			break
 		}
 
+		// create a new channel for each iteration
+		errChan := make(chan error)
+
 		for _, image := range candidateImages {
 			image := image
-			if err := CleanUpImage(s3Client, &image); err != nil {
-				return err
+			// handle all the page images candidates at once, by default 30
+			go func(resChan chan error) {
+				resChan <- CleanUpImage(s3Client, &image)
+			}(errChan)
+		}
+
+		// wait for all results to be returned
+		errCount := 0
+		for range candidateImages {
+			resError := <-errChan
+			if resError != nil {
+				// errors are logged in the related functions, at this stage need to know if there is an error, to break the loop
+				errCount++
 			}
 		}
 
+		close(errChan)
+
 		imagesCount += len(candidateImages)
+
+		// break on any error
+		if errCount > 0 {
+			log.WithFields(log.Fields{"images_count": imagesCount, "errors_count": errCount}).Info("cleanup images was interrupted because of cleanup errors")
+			return ErrCleanUpAllImagesInterrupted
+		}
 		page++
 	}
 

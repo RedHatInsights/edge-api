@@ -73,6 +73,8 @@ type EdgeConfig struct {
 	TlsCAPath                  string                    `json:"Tls_CA_path,omitempty"`
 	RepoFileUploadAttempts     uint                      `json:"repo_file_upload_attempts"`
 	RepoFileUploadDelay        uint                      `json:"repo_file_upload_delay"`
+	DeleteFilesAttempts        uint                      `json:"delete_files_attempts"`
+	DeleteFilesRetryDelay      uint                      `json:"delete_files_retry_delay"`
 }
 
 type dbConfig struct {
@@ -160,6 +162,8 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("TlsCAPath", "/tmp/tls_path.txt")
 	options.SetDefault("RepoFileUploadAttempts", 3)
 	options.SetDefault("RepoFileUploadDelay", 1)
+	options.SetDefault("DeleteFilesAttempts", 10)
+	options.SetDefault("DeleteFilesRetryDelay", 5)
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
@@ -262,6 +266,8 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		GlitchtipDsn:               options.GetString("GlitchtipDsn"),
 		TlsCAPath:                  options.GetString("/tmp/tls_path.txt"),
 		RepoFileUploadAttempts:     options.GetUint("RepoFileUploadAttempts"),
+		DeleteFilesAttempts:        options.GetUint("DeleteFilesAttempts"),
+		DeleteFilesRetryDelay:      options.GetUint("DeleteFilesRetryDelay"),
 	}
 	if edgeConfig.TenantTranslatorHost != "" && edgeConfig.TenantTranslatorPort != "" {
 		edgeConfig.TenantTranslatorURL = fmt.Sprintf("http://%s:%s", edgeConfig.TenantTranslatorHost, edgeConfig.TenantTranslatorPort)
