@@ -469,7 +469,7 @@ func ValidateGetAllImagesSearchParams(next http.Handler) http.Handler {
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest
 // @Failure      500 {object} errors.InternalServerError
-// @Router       /images/getAllImages [get]
+// @Router       /images [get]
 func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	ctxServices.Log.Debug("Getting all images")
