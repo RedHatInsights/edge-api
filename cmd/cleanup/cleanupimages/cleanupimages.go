@@ -26,7 +26,7 @@ var ErrImageNotCleanUPCandidate = errors.New("image is not a cleanup candidate")
 var ErrCleanUpAllImagesInterrupted = errors.New("cleanup all images is interrupted")
 
 // DefaultDataLimit the default data limit to use when collecting data
-var DefaultDataLimit = 30
+var DefaultDataLimit = 45
 
 // DefaultMaxDataPageNumber the default data pages to handle as preventive way to enter an indefinite loop
 var DefaultMaxDataPageNumber = 1000
