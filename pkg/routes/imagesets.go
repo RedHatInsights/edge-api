@@ -189,8 +189,8 @@ type ImageSetInstallerURL struct {
 // @Param        sort_by    query     string     false  "Define sort fields: created_at, updated_at, name. To sort DESC use -"
 // @Param        name       query     string     false  "field: filter by name"
 // @Param        status     query     string     false  "field: filter by status"
-// @Param        limit      query     integer    false  "field: return number of image-set view until limit is reached. Default is 100."
-// @Param        offset     query     integer    false  "field: return number of image-set view beginning at the offset."
+// @Param        limit      query     int        false  "field: return number of image-set view until limit is reached. Default is 100."
+// @Param        offset     query     int        false  "field: return number of image-set view beginning at the offset."
 // @Success      200 {object} models.ImageSetsResponseAPI
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
 // @Failure      404 {object} errors.NotFound "The Image Set was not found."
@@ -301,13 +301,13 @@ type ImageSetImagePackages struct {
 // @Tags         Image-Sets
 // @Accept       json
 // @Produce      json
-// @Param        imageSetID  path      integer    true    "Image Set ID"
+// @Param        imageSetID  path      int        true    "Image Set ID"
 // @Param        sort_by     query     string     false  "Define sort fields: created_at, updated_at, name. To sort DESC use -"
 // @Param        name        query     string     false  "field: filter by name"
 // @Param        status      query     string     false  "field: filter by status"
 // @Param        version     query     string     false  "field: filter by version"
-// @Param        limit       query     integer    false  "field: return number of image-set view until limit is reached. Default is 100."
-// @Param        offset      query     integer    false  "field: return number of image-set view beginning at the offset."
+// @Param        limit       query     int        false  "field: return number of image-set view until limit is reached. Default is 100."
+// @Param        offset      query     int        false  "field: return number of image-set view beginning at the offset."
 // @Success      200 {object} models.ImageSetDetailsResponseAPI
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
 // @Failure      404 {object} errors.NotFound "image-set was not found."
@@ -519,9 +519,9 @@ func returnImageDetails(images []models.Image, s *dependencies.EdgeAPIServices) 
 // @Param        sort_by    query     string     false  "Define sort fields: created_at, updated_at, name. To sort DESC use -"
 // @Param        name       query     string     false  "field: filter by name"
 // @Param        status     query     string     false  "field: filter by status"
-// @Param        id         query     integer    false  "field: filter by id"
-// @Param        limit      query     integer    false  "field: return number of image-set view until limit is reached. Default is 30."
-// @Param        offset     query     integer    false  "field: return number of image-set view beginning at the offset."
+// @Param        id         query     int        false  "field: filter by id"
+// @Param        limit      query     int        false  "field: return number of image-set view until limit is reached. Default is 30."
+// @Param        offset     query     int        false  "field: return number of image-set view beginning at the offset."
 // @Success      200 {object} models.ImageSetsViewResponseAPI
 // @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /image-sets/view [get]
@@ -605,7 +605,7 @@ func getContextImageSet(w http.ResponseWriter, r *http.Request) *models.ImageSet
 // @Tags         Image-Sets
 // @Accept       json
 // @Produce      json
-// @Param        image_set_id path integer true "the image-set id"
+// @Param        image_set_id path int   true "the image-set id"
 // @Success      200 {object} models.ImageSetIDViewAPI
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
 // @Failure      404 {object} errors.NotFound "The Image-Set was not found."
@@ -649,8 +649,8 @@ func GetImageSetViewByID(w http.ResponseWriter, r *http.Request) {
 // @Param        sort_by        query     string    false  "Define sort fields: created_at, version, To sort DESC use -"
 // @Param        status         query     string    false  "field: filter by status"
 // @Param        version        query     string    false  "field: filter by version"
-// @Param        limit          query     integer   false  "field: return number of images until limit is reached. Default is 100."
-// @Param        offset         query     integer   false  "field: return number of images beginning at the offset."
+// @Param        limit          query     int       false  "field: return number of images until limit is reached. Default is 100."
+// @Param        offset         query     int       false  "field: return number of images beginning at the offset."
 // @Success      200 {object} models.ImagesViewDataAPI
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
 // @Failure      404 {object} errors.NotFound "The Image-Set was not found."
