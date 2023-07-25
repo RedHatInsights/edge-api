@@ -59,16 +59,16 @@ var thirdPartyRepoFilters = common.ComposeFilters(
 )
 
 // CheckThirdPartyRepoName validates a repo name
-// @Summary      GET Placeholder summary
-// @Description  This is a GET placeholder description
+// @Summary      Checks to see if a ThirdParty repo Name exists.
+// @ID           CheckThirdPartyRepoName
+// @Description  Checks to see if a ThirdParty repo Name exists.
 // @Tags         Third Party Repo
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
-// @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Param		 name	path	string	true	"ThirdParty repo Name" example(my_custom_repo)
+// @Success      200 {object} models.CheckThirdPartyRepoNameAPI "The third party repository name check result"
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /thirdpartyrepo/{name} [get]
 func CheckThirdPartyRepoName(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -111,15 +111,16 @@ func getThirdPartyRepo(w http.ResponseWriter, r *http.Request) *models.ThirdPart
 }
 
 // CreateThirdPartyRepo creates Third Party Repository
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// @Summary      Create Third Party Repository for an account.
+// @ID           CreateThirdPartyRepo
+// @Description  Create Third Party Repository for an account.
 // @Tags         Third Party Repo
 // @Accept       json
 // @Produce      json
-// @Param        body	body	models.Image	true	"request body"
-// @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Param        body	body	models.ThirdPartyRepoAPI	true	"the third party repository to create"
+// @Success      200 {object} models.ThirdPartyRepoAPI "The created third party repository"
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /thirdpartyrepo [post]
 func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -311,16 +312,21 @@ func GetAllContentSourcesRepositories(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetAllThirdPartyRepo return all the ThirdPartyRepo
-// @Summary      GET Placeholder summary
-// @Description  This is a GET placeholder description
+// @Summary      Lists all Third Party Repository for an account.
+// @ID           GetAllThirdPartyRepo
+// @Description  Lists all Third Party Repository for an account.
 // @Tags         Third Party Repo
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
-// @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Param		 sort_by query string false "fields: created_at, name, updated_at. To sort DESC use - before the fields." example(-name)
+// @Param		 name query string false "field: filter by name" example(my_repo)
+// @Param		 created_at query string false "field: filter by creation date" example(2003-10-01)
+// @Param		 updated_at query string false "field: filter by update date" example(2003-10-01)
+// @Param		 limit query int false "field: return number of repositories until limit is reached." example(50)
+// @Param		 offset query int false "field: return number of repositories beginning at the offset." example(0)
+// @Success      200 {object} models.ThirdPartyRepoListAPI "The list of third party repositories response"
+// @Failure      400 {object} errors.BadRequest	"The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /thirdpartyrepo [get]
 func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	if feature.ContentSources.IsEnabled() {
@@ -416,16 +422,17 @@ func ThirdPartyRepoCtx(next http.Handler) http.Handler {
 }
 
 // GetThirdPartyRepoByID gets the Third Party repository by ID from the database
-// @Summary      GET Placeholder summary
-// @Description  This is a GET placeholder description
+// @Summary      Get third party repository by id.
+// @ID           GetThirdPartyRepoByID
+// @Description  Get third party repository by id.
 // @Tags         Third Party Repo
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
-// @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Param		 ID query int true "An unique existing third party repository id." example(1080)
+// @Success      200 {object} models.ThirdPartyRepoAPI  "The requested third party repository."
+// @Failure      404 {object} errors.NotFound "The third party repository was not found."
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /thirdpartyrepo/{ID} [get]
 func GetThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 	if tprepo := getThirdPartyRepo(w, r); tprepo != nil {
@@ -435,17 +442,18 @@ func GetThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateThirdPartyRepo updates the existing third party repository
-// @Summary      PUT Placeholder summary
-// @Description  This is a put placeholder description
+// @Summary      Creates an Update for third party repository
+// @ID           CreateThirdPartyRepoUpdate
+// @Description  Creates an Update for third party repository
 // @Tags         Third Party Repo
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm path string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm path int false "A placeholder for optional parameter" example(42)
-// @Param        body	body	models.Image	true	"request body"
-// @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Param		 ID query int true "An unique existing third party repository id." example(1080)
+// @Param        body	body	models.ThirdPartyRepoAPI	true	"The third party repository update data"
+// @Success      200 {object} models.ThirdPartyRepoAPI  "The updated third party repository."
+// @Failure      404 {object} errors.NotFound "The third party repository was not found."
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /thirdpartyrepo/{ID} [put]
 func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -491,15 +499,17 @@ func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteThirdPartyRepoByID deletes the third party repository using ID
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// @Summary      Delete third party repository using id.
+// @ID           DeleteThirdPartyRepoByID
+// @Description  Delete third party repository using id.
 // @Tags         Third Party Repo
 // @Accept       json
 // @Produce      json
-// @Param		 imageSetID		path    int  true  "Identifier of the ImageSet"
-// @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Param		 ID query int true "An unique existing third party repository id." example(1080)
+// @Success      200 {object} models.ThirdPartyRepoAPI  "The deleted third party repository."
+// @Failure      404 {object} errors.NotFound "The third party repository was not found."
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /thirdpartyrepo/{ID} [delete]
 func DeleteThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
