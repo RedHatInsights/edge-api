@@ -164,6 +164,11 @@ func main() {
 
 	modelsInterfaces = append(modelsInterfaces,
 		ModelInterface{
+			label:             "StaticDeltaState",
+			interfaceInstance: &models.StaticDeltaState{}})
+
+	modelsInterfaces = append(modelsInterfaces,
+		ModelInterface{
 			label:             "ThirdPartyRepo",
 			interfaceInstance: &models.ThirdPartyRepo{}})
 
