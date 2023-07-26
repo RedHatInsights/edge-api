@@ -304,15 +304,16 @@ func GetAllDeviceGroups(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateDeviceGroup is the route to create a new device group
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// @Summary      Create Device Group for an account.
+// @ID 			 CreateDeviceGroup
+// @Description  Create Device Group for an account.
 // @Tags         Device Groups
 // @Accept       json
 // @Produce      json
-// @Param        body	body	models.Image	true	"request body"
-// @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Param        body	body models.CreateDeviceGroupAPI	true	"request body"
+// @Success      200 {object} models.DeviceGroupAPI "The created device groups"
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /device-groups [post]
 func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
