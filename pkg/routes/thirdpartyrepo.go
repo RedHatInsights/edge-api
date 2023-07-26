@@ -65,11 +65,11 @@ var thirdPartyRepoFilters = common.ComposeFilters(
 // @Tags         Third Party Repo
 // @Accept       json
 // @Produce      json
-// @Param		 name	path	string	true	"ThirdParty repo Name" example(my_custom_repo)
+// @Param        name	path	string	true	"ThirdParty repo Name" example(my_custom_repo)
 // @Success      200 {object} models.CheckThirdPartyRepoNameAPI "The third party repository name check result"
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
 // @Failure      500 {object} errors.InternalServerError "There was an internal server error."
-// @Router       /thirdpartyrepo/{name} [get]
+// @Router       /thirdpartyrepo/checkName/{name} [get]
 func CheckThirdPartyRepoName(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	name := chi.URLParam(r, "name")
@@ -318,12 +318,12 @@ func GetAllContentSourcesRepositories(w http.ResponseWriter, r *http.Request) {
 // @Tags         Third Party Repo
 // @Accept       json
 // @Produce      json
-// @Param		 sort_by query string false "fields: created_at, name, updated_at. To sort DESC use - before the fields." example(-name)
-// @Param		 name query string false "field: filter by name" example(my_repo)
-// @Param		 created_at query string false "field: filter by creation date" example(2003-10-01)
-// @Param		 updated_at query string false "field: filter by update date" example(2003-10-01)
-// @Param		 limit query int false "field: return number of repositories until limit is reached." example(50)
-// @Param		 offset query int false "field: return number of repositories beginning at the offset." example(0)
+// @Param        sort_by query string false "fields: created_at, name, updated_at. To sort DESC use - before the fields." example(-name)
+// @Param        name query string false "field: filter by name" example(my_repo)
+// @Param        created_at query string false "field: filter by creation date" example(2003-10-01)
+// @Param        updated_at query string false "field: filter by update date" example(2003-10-01)
+// @Param        limit query int false "field: return number of repositories until limit is reached." example(50)
+// @Param        offset query int false "field: return number of repositories beginning at the offset." example(0)
 // @Success      200 {object} models.ThirdPartyRepoListAPI "The list of third party repositories response"
 // @Failure      400 {object} errors.BadRequest	"The request sent couldn't be processed."
 // @Failure      500 {object} errors.InternalServerError "There was an internal server error."
@@ -448,7 +448,7 @@ func GetThirdPartyRepoByID(w http.ResponseWriter, r *http.Request) {
 // @Tags         Third Party Repo
 // @Accept       json
 // @Produce      json
-// @Param		 ID query int true "An unique existing third party repository id." example(1080)
+// @Param        ID query int true "An unique existing third party repository id." example(1080)
 // @Param        body	body	models.ThirdPartyRepoAPI	true	"The third party repository update data"
 // @Success      200 {object} models.ThirdPartyRepoAPI  "The updated third party repository."
 // @Failure      404 {object} errors.NotFound "The third party repository was not found."
@@ -505,7 +505,7 @@ func UpdateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 // @Tags         Third Party Repo
 // @Accept       json
 // @Produce      json
-// @Param		 ID query int true "An unique existing third party repository id." example(1080)
+// @Param        ID query int true "An unique existing third party repository id." example(1080)
 // @Success      200 {object} models.ThirdPartyRepoAPI  "The deleted third party repository."
 // @Failure      404 {object} errors.NotFound "The third party repository was not found."
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
