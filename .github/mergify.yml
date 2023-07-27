@@ -96,7 +96,7 @@ pull_request_rules:
           - invalid
       queue:
         name: edge-api
-        method: merge
+        method: squash
   #
   # Detect when PR conflicts and add label
   - name: warn on conflicts
