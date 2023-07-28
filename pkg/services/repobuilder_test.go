@@ -774,6 +774,13 @@ func TestBuildUpdateRepoWithOldCommits(t *testing.T) {
 			ExpectedExistStatus: 0,
 			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree static-delta generate --repo %s --from %s --to %s", updateRepoPath, oldCommitRevision, updateCommitRevision),
 		},
+		{
+			name:                "run ostree command summary successfully",
+			TestHelper:          NewMockTestExecHelper(t, "summary", 0),
+			ExpectedOutput:      "summary",
+			ExpectedExistStatus: 0,
+			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree summary --repo %s -u", updateRepoPath),
+		},
 	}
 	// chain TestExecHelper, so that each mock can initiate the next exec command helper
 	for ind := range expectedExecCalls {
@@ -1312,6 +1319,13 @@ func TestRepoPullLocalStaticDeltas(t *testing.T) {
 			ExpectedExistStatus: 0,
 			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree static-delta generate --repo %s --from %s --to %s", updateRepoPath, oldCommitRevision, updateCommitRevision),
 		},
+		{
+			name:                "run ostree command summary successfully",
+			TestHelper:          NewMockTestExecHelper(t, "summary", 0),
+			ExpectedOutput:      "summary",
+			ExpectedExistStatus: 0,
+			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree summary --repo %s -u", updateRepoPath),
+		},
 	}
 	// chain TestHelper, so that each mock can initiate the next exec command helper
 	for ind := range expectedCallsCases {
@@ -1632,6 +1646,106 @@ func TestRepoPullLocalStaticDeltasFailsWhenStaticDeltaFails(t *testing.T) {
 	// set the first exec command helper mock
 	services.BuildCommand = expectedCallsCases[0].TestHelper.MockExecCommand
 	expectedErrorMessage := fmt.Sprintf("exit status %d", expectedCallsCases[3].TestHelper.ExistStatus)
+
+	err = RepoBuilder.RepoPullLocalStaticDeltas(&updateCommit, &oldCommit, updateRepoPath, oldRepoPath)
+	g.Expect(err).To(HaveOccurred())
+	g.Expect(err.Error()).To(Equal(expectedErrorMessage))
+
+	for _, testCase := range expectedCallsCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			g.Expect(testCase.TestHelper.Executed).To(BeTrue())
+			g.Expect(testCase.TestHelper.ExistStatus).To(Equal(testCase.ExpectedExistStatus))
+			g.Expect(testCase.TestHelper.Output).To(Equal(testCase.ExpectedOutput))
+			if testCase.ExpectedCommand != "" {
+				g.Expect(testCase.TestHelper.Command).To(Equal(testCase.ExpectedCommand))
+			}
+		})
+	}
+}
+
+func TestRepoPullLocalStaticDeltasFailsWhenSummaryFails(t *testing.T) {
+	g := NewGomegaWithT(t)
+	currentDir, err := os.Getwd()
+	currentCommandBuilder := services.BuildCommand
+	g.Expect(err).ToNot(HaveOccurred())
+
+	defer func(dirPath string, commandBuilder func(name string, arg ...string) *exec.Cmd) {
+		// restore the initial command builder
+		services.BuildCommand = commandBuilder
+		// restore the initial directory
+		_ = os.Chdir(dirPath)
+	}(currentDir, currentCommandBuilder)
+
+	ctx := context.Background()
+	RepoBuilder := services.NewRepoBuilder(ctx, log.NewEntry(log.StandardLogger()))
+	updateCommit := models.Commit{OSTreeRef: faker.UUIDHyphenated()}
+	oldCommit := models.Commit{OSTreeRef: faker.UUIDHyphenated()}
+
+	updateRepoPath := filepath.Join(os.TempDir(), fmt.Sprintf("repo_update_test_%d", time.Now().Unix()))
+	err = os.Mkdir(updateRepoPath, 0755)
+	g.Expect(err).ToNot(HaveOccurred())
+	defer func(dirPath string) {
+		_ = os.RemoveAll(dirPath)
+	}(updateRepoPath)
+
+	oldRepoPath := filepath.Join(os.TempDir(), fmt.Sprintf("repo_old_test_%d", time.Now().Unix()))
+
+	updateCommitRevision := faker.UUIDHyphenated()
+	oldCommitRevision := faker.UUIDHyphenated()
+
+	expectedCallsCases := []struct {
+		name                string
+		TestHelper          MockTestExecHelper
+		ExpectedOutput      string
+		ExpectedExistStatus int
+		ExpectedCommand     string
+		ExpectExecuted      bool
+	}{
+		{
+			name:                "should run ostree command rev-parse for update commit successfully",
+			TestHelper:          NewMockTestExecHelper(t, updateCommitRevision, 0),
+			ExpectedOutput:      updateCommitRevision,
+			ExpectedExistStatus: 0,
+			ExpectedCommand:     fmt.Sprintf("ostree rev-parse --repo %s %s", updateRepoPath, updateCommit.OSTreeRef),
+		},
+		{
+			name:                "should run ostree command rev-parse for old commit successfully",
+			TestHelper:          NewMockTestExecHelper(t, oldCommitRevision, 0),
+			ExpectedOutput:      oldCommitRevision,
+			ExpectedExistStatus: 0,
+			ExpectedCommand:     fmt.Sprintf("ostree rev-parse --repo %s %s", oldRepoPath, oldCommit.OSTreeRef),
+		},
+		{
+			name:                "should run ostree command pull-local successfully",
+			TestHelper:          NewMockTestExecHelper(t, "pull-local", 0),
+			ExpectedOutput:      "pull-local",
+			ExpectedExistStatus: 0,
+			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree pull-local --repo %s %s %s", updateRepoPath, oldRepoPath, oldCommitRevision),
+		},
+		{
+			name:                "should run ostree command static-delta successfully",
+			TestHelper:          NewMockTestExecHelper(t, "static-delta", 0),
+			ExpectedOutput:      "static-delta",
+			ExpectedExistStatus: 0,
+			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree static-delta generate --repo %s --from %s --to %s", updateRepoPath, oldCommitRevision, updateCommitRevision),
+		},
+		{
+			name:                "run ostree command summary with fail",
+			TestHelper:          NewMockTestExecHelper(t, "summary", 4),
+			ExpectedOutput:      "summary",
+			ExpectedExistStatus: 4,
+			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree summary --repo %s -u", updateRepoPath),
+		},
+	}
+	// chain TestHelper, so that each mock can initiate the next exec command helper
+	for ind := range expectedCallsCases {
+		if ind < (len(expectedCallsCases) - 1) {
+			expectedCallsCases[ind].TestHelper.Next = &expectedCallsCases[ind+1].TestHelper
+		}
+	}
+	// set the first exec command helper mock
+	services.BuildCommand = expectedCallsCases[0].TestHelper.MockExecCommand
+	expectedErrorMessage := fmt.Sprintf("exit status %d", expectedCallsCases[4].TestHelper.ExistStatus)
 
 	err = RepoBuilder.RepoPullLocalStaticDeltas(&updateCommit, &oldCommit, updateRepoPath, oldRepoPath)
 	g.Expect(err).To(HaveOccurred())
