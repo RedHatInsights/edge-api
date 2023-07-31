@@ -20,6 +20,6 @@ type ThirdPartyRepoAPI struct {
 
 // ThirdPartyRepoListAPI is the third party repositories list result data
 type ThirdPartyRepoListAPI struct {
-	Count int                 `json:"count" example:"23"` // The overall count of the stored third party repositories
+	Count int                 `json:"count" example:"25"` // The overall count of the stored third party repositories
 	Data  []ThirdPartyRepoAPI `json:"data"`               // The data list of the third party repositories
 } // @name ThirdPartyRepoList
