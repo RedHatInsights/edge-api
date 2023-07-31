@@ -2,17 +2,13 @@ package cleanupimages
 
 import (
 	"errors"
-	url2 "net/url"
-	"strings"
-	"time"
 
-	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/cmd/cleanup/storage"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services/files"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -31,9 +27,6 @@ var DefaultDataLimit = 45
 // DefaultMaxDataPageNumber the default data pages to handle as preventive way to enter an indefinite loop
 var DefaultMaxDataPageNumber = 1000
 
-// DefaultTimeDuration the default time duration to use, this will allow to speedup testing
-var DefaultTimeDuration = 1 * time.Second
-
 type CandidateImage struct {
 	ImageID         uint           `json:"image_id"`
 	ImageStatus     string         `json:"image_status"`
@@ -50,61 +43,6 @@ type CandidateImage struct {
 	InstallerISOURL string         `json:"installer_iso_url"`
 }
 
-func GetPathFromURL(url string) (string, error) {
-	RepoURL, err := url2.Parse(url)
-	if err != nil {
-		return "", err
-	}
-	return RepoURL.Path, nil
-}
-
-func DeleteAWSFolder(s3Client *files.S3Client, folder string) error {
-	// remove the prefixed url separator if exists
-	folder = strings.TrimPrefix(folder, "/")
-	logger := log.WithField("folder-key", folder)
-	configAttempts := config.Get().DeleteFilesAttempts
-	configDelay := time.Duration(config.Get().DeleteFilesRetryDelay) * DefaultTimeDuration
-	var err error
-	for attempt := uint(1); attempt <= configAttempts; attempt++ {
-		err = s3Client.FolderDeleter.Delete(config.Get().BucketName, folder)
-		if err != nil {
-			logger.WithFields(log.Fields{"attempt": attempt, "error": err.Error()}).Error("error deleting folder")
-			time.Sleep(configDelay)
-			continue
-		}
-		logger.WithField("attempt", attempt).Info("folder deleted successfully")
-		break
-	}
-	// return the latest error
-	return err
-}
-
-func DeleteAWSFile(client *files.S3Client, fileKey string) error {
-	logger := log.WithField("file-key", fileKey)
-	var err error
-	configAttempts := config.Get().DeleteFilesAttempts
-	configDelay := time.Duration(config.Get().DeleteFilesRetryDelay) * DefaultTimeDuration
-	for attempt := uint(1); attempt <= configAttempts; attempt++ {
-		_, err = client.DeleteObject(config.Get().BucketName, fileKey)
-		if err != nil {
-			var contextErr error
-			var errCode string
-			if awsErr, ok := err.(awserr.Error); ok {
-				errCode = awsErr.Code()
-				contextErr = awsErr
-			} else {
-				contextErr = err
-			}
-			logger.WithFields(log.Fields{"attempt": attempt, "error": contextErr.Error(), "error-code": errCode}).Error("error deleting file")
-			time.Sleep(configDelay)
-			continue
-		}
-		logger.WithField("attempt", attempt).Info("file deleted successfully")
-		break
-	}
-	// return the latest error
-	return err
-}
 func cleanUpImageTarFile(s3Client *files.S3Client, candidateImage *CandidateImage) error {
 	logger := log.WithFields(log.Fields{
 		"image_id":      candidateImage.ImageID,
@@ -114,14 +52,14 @@ func cleanUpImageTarFile(s3Client *files.S3Client, candidateImage *CandidateImag
 	})
 	if candidateImage.CommitStatus == models.ImageStatusSuccess {
 		if candidateImage.CommitTarURL != "" {
-			urlPath, err := GetPathFromURL(candidateImage.CommitTarURL)
+			urlPath, err := storage.GetPathFromURL(candidateImage.CommitTarURL)
 			if err != nil {
 				logger.WithField("error", err.Error()).Error("error occurred while getting resource path url")
 				return err
 			}
 			logger = logger.WithField("tar-file-path", urlPath)
 			logger.Debug("deleting tar file")
-			err = DeleteAWSFile(s3Client, urlPath)
+			err = storage.DeleteAWSFile(s3Client, urlPath)
 			if err != nil {
 				logger.WithField("error", err.Error()).Error("error occurred while deleting tar file")
 				return err
@@ -148,14 +86,14 @@ func cleanUpImageRepo(s3Client *files.S3Client, candidateImage *CandidateImage) 
 
 	if candidateImage.RepoStatus == models.ImageStatusSuccess {
 		if candidateImage.RepoURL != "" {
-			urlPath, err := GetPathFromURL(candidateImage.RepoURL)
+			urlPath, err := storage.GetPathFromURL(candidateImage.RepoURL)
 			if err != nil {
 				logger.WithField("error", err.Error()).Error("error occurred while getting resource path url")
 				return err
 			}
 			logger = logger.WithField("repo-url-path", urlPath)
 			logger.Debug("deleting repo directory")
-			err = DeleteAWSFolder(s3Client, urlPath)
+			err = storage.DeleteAWSFolder(s3Client, urlPath)
 			if err != nil {
 				logger.WithField("error", err.Error()).Error("error occurred while deleting repo directory")
 				return err
@@ -181,14 +119,14 @@ func cleanUpImageISOFile(s3Client *files.S3Client, candidateImage *CandidateImag
 	})
 	if candidateImage.InstallerStatus == models.ImageStatusSuccess {
 		if candidateImage.InstallerISOURL != "" {
-			urlPath, err := GetPathFromURL(candidateImage.InstallerISOURL)
+			urlPath, err := storage.GetPathFromURL(candidateImage.InstallerISOURL)
 			if err != nil {
 				logger.WithField("error", err.Error()).Error("error occurred while getting resource path url")
 				return err
 			}
 			logger = logger.WithField("iso-file-path", urlPath)
 			logger.Debug("deleting iso file")
-			err = DeleteAWSFile(s3Client, urlPath)
+			err = storage.DeleteAWSFile(s3Client, urlPath)
 			if err != nil {
 				logger.WithField("error", err.Error()).Error("error occurred while deleting iso file")
 				return err
