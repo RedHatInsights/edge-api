@@ -4,32 +4,32 @@ package models
 // It is a combination of the data of a Device owned by Inventory API
 // and the Device data saved on Edge API
 type EdgeDeviceAPI struct {
-	UUID              string               `json:"UUID"`                            // UUID of edge device
-	AvailableHash     string               `json:"AvailableHash,omitempty"`         // Hash that available
-	RHCClientID       string               `json:"RHCClientID"`                     // RHC Client ID
-	Connected         bool                 `json:"Connected"        example:"true"` // If Device connect of not
-	Name              string               `json:"Name"`                            // Name of Edge Device
-	LastSeen          EdgeAPITime          `json:"LastSeen"`                        // Last datetime that device updated
+	UUID              string               `json:"UUID"                     example:"ba-93ba-49a3-b4ae-a6c8acdc4736"` // UUID of edge device
+	AvailableHash     string               `json:"AvailableHash,omitempty"  example:"true"`                           // Hash that available
+	RHCClientID       string               `json:"RHCClientID"`                                                       // RHC Client ID
+	Connected         bool                 `json:"Connected"                example:"true"`                           // If Device connect of not
+	Name              string               `json:"Name"`                                                              // Name of Edge Device
+	LastSeen          EdgeAPITime          `json:"LastSeen"`                                                          // Last datetime that device updated
 	CurrentHash       string               `json:"CurrentHash,omitempty"`
-	ImageID           uint                 `json:"ImageID"          example:"12834"` // image id of device
-	UpdateAvailable   bool                 `json:"UpdateAvailable"  example:"true"`  // If there is update available
-	DevicesGroups     []DeviceGroupAPI     `json:"DevicesGroups"`                    // device groups
+	ImageID           uint                 `json:"ImageID"                  example:"12834"` // image id of device
+	UpdateAvailable   bool                 `json:"UpdateAvailable"          example:"true"`  // If there is update available
+	DevicesGroups     []DeviceGroupAPI     `json:"DevicesGroups"`                            // device groups
 	UpdateTransaction *[]UpdateTransaction `json:"UpdateTransaction"`
-	DeviceName        string               `example:"device_name"` // The device name
-	Booted            bool                 `example:"true"`        // Booted status is referring to the LastDeployment of this device
+	DeviceName        string               `example:"test_device_api_static"` // The device name
+	Booted            bool                 `example:"true"`                   // Booted status is referring to the LastDeployment of this device
 }
 
 // DeviceAPI is entity for device
 type DeviceAPI struct {
-	UUID              string               `json:"UUID"`                                  // UUID of edge device
-	AvailableHash     string               `json:"AvailableHash,omitempty"`               // Hash that available
-	RHCClientID       string               `json:"RHCClientID"`                           // RHC Client ID
-	Connected         bool                 `json:"Connected"       example:"true"`        // If Device connect of not
-	Name              string               `json:"Name"            example:"device_name"` // Name of device
+	UUID              string               `json:"UUID"                     example:"ba-93ba-49a3-b4ae-a6c8acdc4736"` // UUID of edge device
+	AvailableHash     string               `json:"AvailableHash,omitempty"  example:"true"`                           // Hash that available
+	RHCClientID       string               `json:"RHCClientID"`                                                       // RHC Client ID
+	Connected         bool                 `json:"Connected"                example:"true"`                           // If Device connect of not
+	Name              string               `json:"Name"                     example:"device_name"`                    // Name of device
 	LastSeen          string               // Last datetime that device updated
 	CurrentHash       string               `json:"CurrentHash,omitempty"`
-	ImageID           uint                 `json:"ImageID"         example:"12834"` // image id of device`
-	UpdateAvailable   bool                 `json:"UpdateAvailable" example:"true"`  // If there is Update available
+	ImageID           uint                 `json:"ImageID"                  example:"12834"` // image id of device`
+	UpdateAvailable   bool                 `json:"UpdateAvailable"          example:"true"`  // If there is Update available
 	DevicesGroups     []DeviceGroupAPI     // device groups
 	UpdateTransaction *[]UpdateTransaction `json:"UpdateTransaction"`
 	DeviceName        string
@@ -40,10 +40,10 @@ type DeviceAPI struct {
 // Account is the account associated with the device group
 // Type is the device group type and must be "static" or "dynamic"
 type DeviceGroupAPI struct {
-	Name        string      `json:"Name" example:"device_group name"` // The device group name`
-	Type        string      `json:"Type" example:"static"`            // The device group type``
-	Devices     []DeviceAPI `json:"Devices"`                          // Devices that belong to the group
-	ValidUpdate bool        `json:"ValidUpdate" example:"true"`       // indicate if the update is valid
+	Name        string      `json:"Name"        example:"device_group name"` // The device group name`
+	Type        string      `json:"Type"        example:"static"`            // The device group type``
+	Devices     []DeviceAPI `json:"Devices"`                                 // Devices that belong to the group
+	ValidUpdate bool        `json:"ValidUpdate" example:"true"`              // indicate if the update is valid
 }
 
 // DispatchRecordAPI represents the combination of a Playbook Dispatcher (https://github.com/RedHatInsights/playbook-dispatcher),
@@ -107,6 +107,6 @@ type DeviceViewAPI struct {
 
 // DeviceViewListAPI is the list of devices for a given account, formatted for the UI
 type DeviceViewListAPI struct {
-	Total   int64           `json:"total" example:"40"` // total number of device`
+	Total   int64           `json:"total" example:"40"` // Total number of device
 	Devices []DeviceViewAPI `json:"devices"`            // List of Devices
 }
