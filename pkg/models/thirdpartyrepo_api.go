@@ -2,7 +2,7 @@ package models
 
 // CheckThirdPartyRepoNameDataAPI is the third party repository check name data
 type CheckThirdPartyRepoNameDataAPI struct {
-	IsValid bool `json:"isValid" example:"true"` // The indicator of third party repository name validity
+	IsValid bool `json:"isValid" example:"false"` // The indicator of third party repository name validity
 } // @name CheckThirdPartyRepoNameData
 
 // CheckThirdPartyRepoNameAPI is the third party repository check name result data
