@@ -12,7 +12,7 @@ type CheckThirdPartyRepoNameAPI struct {
 
 // ThirdPartyRepoAPI is the third party repository entity main data
 type ThirdPartyRepoAPI struct {
-	ID          uint   `json:"ID,omitempty" example:"1080"`                               // The unique ID of the third party repository
+	ID          uint   `json:"ID,omitempty" example:"1028"`                               // The unique ID of the third party repository
 	Name        string `json:"Name" example:"my_custom_repo"`                             // The name of the third party repository
 	URL         string `json:"URL" example:"https://public.example.com/my_custom_repo"`   // The URL of the third party repository
 	Description string `json:"Description,omitempty" example:"a repo for some utilities"` // The description of the third party repository
