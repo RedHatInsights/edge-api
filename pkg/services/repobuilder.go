@@ -452,6 +452,16 @@ func (rb *RepoBuilder) RepoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 		).Error("error occurred while running static-delta command")
 		return err
 	}
+
+	// update ostree summary
+	cmd = BuildCommand("/usr/bin/ostree", "summary", "--repo", uprepo, "-u")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		rb.log.WithFields(
+			log.Fields{"error": err.Error(), "OSTreeSummary": uprepo, "output": output},
+		).Error("error occurred while running summary update command")
+		return err
+	}
+
 	return nil
 }
 
