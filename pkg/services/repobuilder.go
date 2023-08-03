@@ -21,6 +21,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// BuildCommand references the exec.Command for calls to the system
 var BuildCommand = exec.Command
 
 // RepoBuilderInterface defines the interface of a repository builder
