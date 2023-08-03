@@ -167,18 +167,19 @@ func getContextInstaller(w http.ResponseWriter, r *http.Request) *models.Install
 	return installer
 }
 
-// @Summary      Redirect to a signed installer
-// @ID 			 RedirectSignedInstaller
-// @Description  This method will redirect request to a signed installer iso url
-// @Tags         Storage
-// @Accept       json
-// @Produce      octet-stream
-// @Param		 installerID path string true "Installer ID"
-// @Success      303 {string} string "URL to redirect"
-// @Failure      400 {object} errors.BadRequest "The request send couln't be processed."
-// @Failure      404 {object} errors.NotFound "installer not found."
-// @Failure      500 {object} errors.InternalServerError
-// @Router       /storage/isos/{installerID}/ [get]
+// GetInstallerIsoStorageContent redirect to a signed installer iso url
+// @Summary			Redirect to a signed installer
+// @ID				RedirectSignedInstaller
+// @Description		This method will redirect request to a signed installer iso url
+// @Tags			Storage
+// @Accept			json
+// @Produce			octet-stream
+// @Param			installerID path string true "Installer ID"
+// @Success			303 {string} string "URL to redirect"
+// @Failure			400 {object} errors.BadRequest "The request send couln't be processed."
+// @Failure			404 {object} errors.NotFound "installer not found."
+// @Failure			500 {object} errors.InternalServerError
+// @Router			/storage/isos/{installerID}/ [get]
 func GetInstallerIsoStorageContent(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	installer := getContextInstaller(w, r)
@@ -467,18 +468,20 @@ func ValidateStorageImage(w http.ResponseWriter, r *http.Request) string {
 	return requestPath
 }
 
-// @Summary      redirect to a signed url of an image commit repository path content
-// @Description  Redirect request to a signed and valid url for an image commit repository from the path content
-// @ID 			 RedirectSignedImageCommitRepository
-// @Tags         Storage
-// @Accept       json
-// @Produce      json
-// @Param		 imageID path string true "Id to identify Image"
-// @Param		 repoFilePath path string true "path to file repository"
-// @Success      303 {string} url response
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
-// @Router       /storage/images-repos/{imageID}/content/{repoFilePath} [get]
+// GetImageRepoFileContent redirect to a signed url of an image commit repository path content
+// @Summary			redirect to a signed url of an image commit repository path content
+// @Description		Redirect request to a signed and valid url for an image commit repository from the path content
+// @ID				RedirectSignedImageCommitRepository
+// @Tags			Storage
+// @Accept			json
+// @Produce			json
+// @Param			imageID path string true "Id to identify Image"
+// @Param			repoFilePath path string true "path to file repository"
+// @Success			303 {string} url response
+// @Failure			400 {object} errors.BadRequest
+// @Failure			404 {object} errors.NotFound
+// @Failure			500 {object} errors.InternalServerError
+// @Router			/storage/images-repos/{imageID}/content/{repoFilePath} [get]
 func GetImageRepoFileContent(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	logContext := ctxServices.Log.WithField("service", "image-repository-storage")
@@ -502,6 +505,7 @@ func GetImageRepoFileContent(w http.ResponseWriter, r *http.Request) {
 	redirectToStorageSignedURL(w, r, requestPath)
 }
 
+// GetImageRepoFile return the content of an image commit repository path
 // @Summary		return the content of an image commit repository path
 // @ID			ContentImageCommitRepositoryPath
 // @Description	Bring the content for a image commit in a repository path
