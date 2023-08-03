@@ -86,8 +86,8 @@ func UpdateCtx(next http.Handler) http.Handler {
 // @Tags         Updates (Systems)
 // @Accept       json
 // @Produce      plain
-// @Param        updateID  path  integer    true  "a unique ID to identify the update the playbook belongs to" example(1042)
-// @Success      200 {string}		"the playbook file content for an update"
+// @Param        updateID  path  int    true  "a unique ID to identify the update the playbook belongs to" example(1042)
+// @Success      200 {string} string "the playbook file content for an update"
 // @Failure      400 {object} errors.BadRequest	"The request sent couldn't be processed."
 // @Failure      404 {object} errors.NotFound	"the device update was not found"
 // @Failure      500 {object} errors.InternalServerError	"There was an internal server error."
@@ -324,7 +324,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 // @Tags         Updates (Systems)
 // @Accept       json
 // @Produce      json
-// @Param        updateID  path  integer    true  "a unique ID to identify the update" example(1042)
+// @Param        updateID  path  int    true  "a unique ID to identify the update" example(1042)
 // @Success      200 {object} models.UpdateAPI	"The requested update"
 // @Failure      400 {object} errors.BadRequest	"The request sent couldn't be processed"
 // @Failure      404 {object} errors.NotFound	"The requested update was not found"
@@ -358,7 +358,7 @@ func getUpdate(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction
 // @Tags         Updates (Systems)
 // @Accept       json
 // @Produce      json
-// @Param        updateID  path  integer    true  "a unique ID to identify the update" example(1042)
+// @Param        updateID  path  int    true  "a unique ID to identify the update" example(1042)
 // @Success      200 {object} models.DeviceNotificationAPI "The notification payload"
 // @Failure      400 {object} errors.BadRequest	"The request sent couldn't be processed"
 // @Failure      404 {object} errors.NotFound	"The requested update was not found"

@@ -334,6 +334,7 @@ objects:
         schedule: ${CLEANUP_SCHEDULE}
         restartPolicy: Never
         concurrencyPolicy: Forbid
+        suspend: ${{CLEANUP_SUSPEND}}
         podSpec:
           image: ${IMAGE}:${IMAGE_TAG}
           args:
@@ -530,4 +531,8 @@ parameters:
 - name: LINT_ANNOTATION
   value: 'ignore-check.kube-linter.io/minimum-three-replicas'
 - name: CLEANUP_SCHEDULE
-  value: "0 0 6 * *"
+  value: "0 0 * * 1"
+- description: Whether to suspend the cleanup scheduled job.
+  name: CLEANUP_SUSPEND
+  required: false
+  value: "false"

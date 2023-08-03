@@ -96,7 +96,8 @@ pull_request_rules:
           - invalid
       queue:
         name: edge-api
-        method: merge
+        method: squash
+        commit_message_template: "{{ commits[0] }}"
   #
   # Detect when PR conflicts and add label
   - name: warn on conflicts

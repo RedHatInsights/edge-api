@@ -58,3 +58,6 @@ go/pkg/mod/*
 /build/
 /coverage.json
 /coverage.html
+
+#docfiles
+api/

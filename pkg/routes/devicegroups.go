@@ -263,15 +263,17 @@ func ValidateGetAllDeviceGroupsFilterParams(next http.Handler) http.Handler {
 	})
 }
 
-// GetAllDeviceGroups return devices groups for an orgID
-// @Summary      GET Placeholder summary
-// @Description  This is a GET placeholder description
+// GetAllDeviceGroups Returns device groups for an orgID
+// @Summary      Returns device groups for an orgID
+// @Description  Returns device groups for an orgID
 // @Tags         Device Groups
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
-// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Param        sort_by    query     string     false  "Define sort fields: created_at, updated_at, name. To sort DESC use -"
+// @Param        name       query     string     false  "field: filter by name"
+// @Param        limit      query     int        false  "field: return number of image-set view until limit is reached. Default is 100."
+// @Param        offset     query     int        false  "field: return number of image-set view beginning at the offset."
+// @Success      200 {object} models.DeviceGroup
 // @Failure      400 {object} errors.BadRequest
 // @Failure      500 {object} errors.InternalServerError
 // @Router       /device-groups [get]
@@ -304,15 +306,16 @@ func GetAllDeviceGroups(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateDeviceGroup is the route to create a new device group
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// @Summary      Creates a Device Group for an account.
+// @ID 			 CreateDeviceGroup
+// @Description  Creates a Device Group for an account.
 // @Tags         Device Groups
 // @Accept       json
 // @Produce      json
-// @Param        body	body	models.Image	true	"request body"
-// @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Param        body	body models.CreateDeviceGroupAPI	true	"request body"
+// @Success      200 {object} models.DeviceGroupAPI "The created device groups"
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /device-groups [post]
 func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -341,15 +344,14 @@ func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, ctxServices.Log, &deviceGroup)
 }
 
-// GetDeviceGroupDetailsByID return devices groups details for an Id
-// @Summary      GET Placeholder summary
-// @Description  This is a GET placeholder description
+// GetDeviceGroupDetailsByID Returns details for group identified by ID
+// @Summary      Returns details for group identified by ID
+// @Description  Returns details for group identified by ID
 // @Tags         Device Groups
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
-// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Param		 required_param query int true "device group ID" example(123)
+// @Success      200 {object} models.DeviceGroup
 // @Failure      400 {object} errors.BadRequest
 // @Failure      500 {object} errors.InternalServerError
 // @Router       /device-groups/{ID}/details [get]
@@ -360,15 +362,14 @@ func GetDeviceGroupDetailsByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetDeviceGroupDetailsByIDView return devices groups details for an ID
-// @Summary      GET Placeholder summary
-// @Description  This is a GET placeholder description
+// GetDeviceGroupDetailsByIDView Returns devices groups view for group identified by ID
+// @Summary      Returns device groups view for group identified by ID
+// @Description  Returns device groups view for group identified by ID
 // @Tags         Device Groups
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
-// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Param		 required_param query int false "device group ID"
+// @Success      200 {object} models.DeviceGroupViewAPI
 // @Failure      400 {object} errors.BadRequest
 // @Failure      500 {object} errors.InternalServerError
 // @Router       /device-groups/{ID}/view [get]
@@ -422,15 +423,14 @@ func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, ctxServices.Log, &deviceGroupDetails)
 }
 
-// GetDeviceGroupByID return devices groups for an ID
-// @Summary      GET Placeholder summary
-// @Description  This is a GET placeholder description
+// GetDeviceGroupByID Returns device groups for group identified by ID
+// @Summary      Returns devices groups for group identified by ID
+// @Description  Returns devices groups for group identified by ID
 // @Tags         Device Groups
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
-// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Param		 required_param query int false "device group ID"
+// @Success      200 {object} models.DeviceGroup
 // @Failure      400 {object} errors.BadRequest
 // @Failure      500 {object} errors.InternalServerError
 // @Router       /device-groups/{ID} [get]
@@ -465,16 +465,15 @@ func getContextDeviceGroup(w http.ResponseWriter, r *http.Request) *models.Devic
 	return deviceGroup
 }
 
-// UpdateDeviceGroup updates the existing device group
-// @Summary      PUT Placeholder summary
-// @Description  This is a put placeholder description
+// UpdateDeviceGroup Updates the existing device group
+// @Summary      Updates the existing device group
+// @Description  Updates the existing device group
 // @Tags         Device Groups
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm path string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm path int false "A placeholder for optional parameter" example(42)
-// @Param        body	body	models.Image	true	"request body"
-// @Success      200 {object} models.SuccessPlaceholderResponse
+// @Param        required_param query int true "An unique existing Device Group" example(1080)
+// @Param        body	body	models.PutGroupNameParamAPI	true	"request body"
+// @Success      200 {object} models.DeviceGroup
 // @Failure      400 {object} errors.BadRequest
 // @Failure      500 {object} errors.InternalServerError
 // @Router       /device-groups/{ID} [put]
@@ -518,13 +517,13 @@ func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// DeleteDeviceGroupByID deletes an existing device group
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// DeleteDeviceGroupByID Deletes an existing device group
+// @Summary      Deletes an existing device group
+// @Description  Deletes an existing device group
 // @Tags         Device Groups
 // @Accept       json
 // @Produce      json
-// @Param		 imageSetID		path    int  true  "Identifier of the ImageSet"
+// @Param		 required_param query int true "A unique existing Device Group" example(1080)
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest
 // @Failure      500 {object} errors.InternalServerError
@@ -598,13 +597,14 @@ func getContextDeviceGroupDevice(w http.ResponseWriter, r *http.Request) *models
 	return deviceGroupDevice
 }
 
-// AddDeviceGroupDevices add devices to device group
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// AddDeviceGroupDevices Adds devices to device group
+// @Summary      Adds devices to device group
+// @Description  Adds devices to device group
 // @Tags         Device Groups
 // @Accept       json
 // @Produce      json
-// @Param        body	body	models.Image	true	"request body"
+// @Param        required_param query int true "An unique existing Device Group" example(1080)
+// @Param        required_param body	body	models.PostDeviceForDeviceGroupAPI	true	"request body"
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest
 // @Failure      500 {object} errors.InternalServerError
@@ -644,13 +644,13 @@ func AddDeviceGroupDevices(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, ctxServices.Log, devicesAdded)
 }
 
-// DeleteDeviceGroupManyDevices delete the requested devices from device-group
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// DeleteDeviceGroupManyDevices Deletes the requested devices from device-group
+// @Summary      Deletes the requested devices from device-group
+// @Description  Deletes the requested devices from device-group
 // @Tags         Device Groups
 // @Accept       json
 // @Produce      json
-// @Param		 imageSetID		path    int  true  "Identifier of the ImageSet"
+// @Param		 DeviceGroupID		path    int  true  "Identifier of the DeviceGroup"
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest
 // @Failure      500 {object} errors.InternalServerError
@@ -691,13 +691,14 @@ func DeleteDeviceGroupManyDevices(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, ctxServices.Log, deletedDevices)
 }
 
-// DeleteDeviceGroupOneDevice delete the requested device from device-group
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// DeleteDeviceGroupOneDevice Deletes the requested device from the device-group
+// @Summary      Deletes the requested device from the device-group
+// @Description  Deletes the requested device from the device-group
 // @Tags         Device Groups
 // @Accept       json
 // @Produce      json
-// @Param		 imageSetID		path    int  true  "Identifier of the ImageSet"
+// @Param		 DeviceGroupId		path    int  true  "Identifier of the Device Group"
+// @Param		 DeviceId		path    int  true  "Identifier of the Device in a Device Group"
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest
 // @Failure      500 {object} errors.InternalServerError
@@ -738,14 +739,13 @@ func DeleteDeviceGroupOneDevice(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, ctxServices.Log, contextDeviceGroupDevice)
 }
 
-// CheckGroupName validates if a group name exists on an ID
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// CheckGroupName Validates if a group name already exists
+// @Summary      Validates if a group name already exists
+// @Description  Validates if a group name already exists
 // @Tags         Device Groups
 // @Accept       json
 // @Produce      json
-// @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
-// @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
+// @Param		 body	body models.CheckGroupNameParamAPI true	"request body"
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest
 // @Failure      500 {object} errors.InternalServerError
@@ -769,13 +769,13 @@ func CheckGroupName(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, ctxServices.Log, map[string]interface{}{"data": map[string]interface{}{"isValid": value}})
 }
 
-// UpdateAllDevicesFromGroup will be responsible to update all devices that belong to a group
-// @Summary      Placeholder summary
-// @Description  This is a placeholder description
+// UpdateAllDevicesFromGroup Updates all devices that belong to a group
+// @Summary      Updates all devices that belong to a group
+// @Description  Updates all devices that belong to a group
 // @Tags         Device Groups
 // @Accept       json
 // @Produce      json
-// @Param        body	body	models.Image	true	"request body"
+// @Param		 required_param query int  true  "Identifier of the DeviceGroup"
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest
 // @Failure      500 {object} errors.InternalServerError
