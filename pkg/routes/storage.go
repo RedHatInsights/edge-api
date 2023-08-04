@@ -309,6 +309,8 @@ func ValidateStorageUpdateTransaction(w http.ResponseWriter, r *http.Request) st
 // @Param		updateTransactionID path int true "id for update transaction id"
 // @Param		repoFilePath path string true "path to repository to be checked"
 // @Success		303 {string} string "URL signed to be redirect"
+// @Failure		400 {object} errors.BadRequest
+// @Failure		404 {object} errors.NotFound
 // @Failure		500 {object} errors.InternalServerError
 // @Router		/storage/update-repos/{updateTransactionID}/content/{repoFilePath} [get]
 func GetUpdateTransactionRepoFileContent(w http.ResponseWriter, r *http.Request) {
