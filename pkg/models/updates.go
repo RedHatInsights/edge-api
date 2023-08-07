@@ -68,6 +68,9 @@ const (
 	UpdateStatusDeviceDisconnected = "DISCONNECTED"
 	// UpdateStatusDeviceUnresponsive is for when an update is UpdateStatusDeviceUnresponsive
 	UpdateStatusDeviceUnresponsive = "UNRESPONSIVE"
+	// UpdateStatusStorageCleaned is for when an update-transaction repo content has storage cleaned
+	// this happen when an update-transaction is going to be deleted forever
+	UpdateStatusStorageCleaned = "STORAGE_CLEANED"
 )
 
 const (

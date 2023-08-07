@@ -96,6 +96,9 @@ var PostMigrateDeleteCustomRepositories = &Flag{Name: "edge-management.post_migr
 // CleanUPImages is a feature flag to use for cleanup images
 var CleanUPImages = &Flag{Name: "edge-management.cleanup_images", EnvVar: "FEATURE_CLEANUP_IMAGES"}
 
+// CleanUPDevices is a feature flag to use for cleanup devices
+var CleanUPDevices = &Flag{Name: "edge-management.cleanup_devices", EnvVar: "FEATURE_CLEANUP_DEVICES"}
+
 // SkipUpdateRepo is a feature flag to skip the process of download and re-upload of update repositories
 var SkipUpdateRepo = &Flag{Name: "edgemanagement.skip_update_repo", EnvVar: "FEATURE_SKIP_UPDATE_REPO"}
 
