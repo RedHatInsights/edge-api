@@ -44,6 +44,7 @@ func setUp() {
 		FDOUser{},
 		SSHKey{},
 		DeviceGroup{},
+		StaticDeltaState{},
 	)
 
 	if err != nil {
