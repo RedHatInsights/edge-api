@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/redhatinsights/edge-api/cmd/cleanup/cleanupdevices"
 	"github.com/redhatinsights/edge-api/cmd/cleanup/cleanupimages"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/logger"
@@ -63,7 +64,15 @@ func main() {
 
 	client := files.GetNewS3Client()
 
+	var mainErr error
+
 	if err := cleanupimages.CleanUpAllImages(client); err != nil {
-		flushLogAndExit(err)
+		mainErr = err
 	}
+
+	if err := cleanupdevices.CleanupAllDevices(client, db.DB); err != nil {
+		mainErr = err
+	}
+
+	flushLogAndExit(mainErr)
 }
