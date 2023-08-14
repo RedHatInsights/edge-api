@@ -96,6 +96,9 @@ var PostMigrateDeleteCustomRepositories = &Flag{Name: "edge-management.post_migr
 // CleanUPImages is a feature flag to use for cleanup images
 var CleanUPImages = &Flag{Name: "edge-management.cleanup_images", EnvVar: "FEATURE_CLEANUP_IMAGES"}
 
+// CleanUPDeleteImages is a feature flag to use for cleanup delete images
+var CleanUPDeleteImages = &Flag{Name: "edge-management.cleanup_delete_images", EnvVar: "FEATURE_CLEANUP_DELETE_IMAGES"}
+
 // CleanUPDevices is a feature flag to use for cleanup devices
 var CleanUPDevices = &Flag{Name: "edge-management.cleanup_devices", EnvVar: "FEATURE_CLEANUP_DEVICES"}
 
