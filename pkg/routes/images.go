@@ -193,14 +193,15 @@ func GetImageWithIdentity(w http.ResponseWriter, r *http.Request) (*models.Image
 // It always creates a commit on Image Builder.
 // Then we create our repo with the ostree commit and if needed, create the installer.
 // @Summary      Create an image
+// @ID           createImage
 // @Description  Create an ostree commit and/or installer ISO
 // @Tags         Images
 // @Accept       json
 // @Produce      json
 // @Param        body	body	models.CreateImageAPI	true	"request body"
 // @Success      200 {object}  models.ImageResponseAPI
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /images [post]
 func CreateImage(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -279,14 +280,15 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 // Then we create our repo with the ostree commit and if needed, create the installer.
 // CreateImageUpdate godocs
 // @Summary      Update an image
+// @ID           CreateImageUpdate
 // @Description  Create an updated ostree commit
 // @Tags         Images
 // @Accept       json
 // @Produce      json
 // @Param        body	body	models.Image	true	"request body"
 // @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /images/{imageId}/update [post]
 func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -460,6 +462,7 @@ func ValidateGetAllImagesSearchParams(next http.Handler) http.Handler {
 
 // GetAllImages image objects from the database for an orgID
 // @Summary      Placeholder summary
+// @ID           GetAllImages
 // @Description  This is a placeholder description
 // @Tags         Images
 // @Accept       json
@@ -467,8 +470,8 @@ func ValidateGetAllImagesSearchParams(next http.Handler) http.Handler {
 // @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
 // @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
 // @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Failure      400 {object} errors.BadRequest " The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /images [get]
 func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -514,6 +517,7 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 
 // GetImageStatusByID returns the image status.
 // @Summary      Placeholder summary
+// @ID           GetImageStatusByID
 // @Description  This is a placeholder description
 // @Tags         Images
 // @Accept       json
@@ -521,8 +525,8 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 // @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
 // @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
 // @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /images/{imageId}/status [get]
 func GetImageStatusByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
@@ -554,6 +558,7 @@ type ImageDetail struct {
 
 // GetImageByID obtains an image from the database for an orgID
 // @Summary      Placeholder summary
+// @ID           GetImageByID
 // @Description  This is a placeholder description
 // @Tags         Images
 // @Accept       json
@@ -561,8 +566,8 @@ type ImageDetail struct {
 // @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
 // @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
 // @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /images/{imageId} [get]
 func GetImageByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
@@ -573,6 +578,7 @@ func GetImageByID(w http.ResponseWriter, r *http.Request) {
 
 // GetImageDetailsByID obtains an image from the database for an orgID
 // @Summary      Placeholder summary
+// @ID           GetImageDetailsByID
 // @Description  This is a placeholder description
 // @Tags         Images
 // @Accept       json
@@ -580,8 +586,8 @@ func GetImageByID(w http.ResponseWriter, r *http.Request) {
 // @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
 // @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
 // @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /images/{imageId}/details [get]
 func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
@@ -614,6 +620,7 @@ func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 
 // GetImageByOstree obtains an image from the database for an orgID based on Commit Ostree
 // @Summary      Placeholder summary
+// @ID           GetImageByOstree
 // @Description  This is a placeholder description
 // @Tags         Images
 // @Accept       json
@@ -621,8 +628,8 @@ func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 // @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
 // @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
 // @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /images/{ostreeCommitHash}/info [get]
 func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
@@ -634,14 +641,15 @@ func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 // CreateInstallerForImage creates an installer for an Image
 // It requires a created image and a repo with a successful status
 // @Summary      Placeholder summary
+// @ID           CreateInstallerForImage
 // @Description  This is a placeholder description
 // @Tags         Images
 // @Accept       json
 // @Produce      json
 // @Param        body	body	models.Image	true	"request body"
 // @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /images/{imageId}/installer [post]
 func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -691,6 +699,7 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 
 // GetRepoForImage gets the repository for an Image
 // @Summary      Placeholder summary
+// @ID           GetRepoForImage
 // @Description  This is a placeholder description
 // @Tags         Images
 // @Accept       json
@@ -698,8 +707,8 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 // @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
 // @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
 // @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /images/{imageId}/repo [get]
 func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
@@ -717,6 +726,7 @@ func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 
 // GetMetadataForImage gets the metadata from image-builder on /metadata endpoint
 // @Summary      Placeholder summary
+// @ID           GetMetadataForImage
 // @Description  This is a placeholder description
 // @Tags         Images
 // @Accept       json
@@ -724,8 +734,8 @@ func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 // @Param		 required_parm query string true "A placeholder for required parameter" example(cat)
 // @Param		 optional_parm query int false "A placeholder for optional parameter" example(42)
 // @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /images/{imageId}/metadata [get]
 func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
@@ -741,14 +751,15 @@ func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 
 // CreateKickStartForImage creates a kickstart file for an existent image
 // @Summary      Placeholder summary
+// @ID           CreateKickStartForImage
 // @Description  This is a placeholder description
 // @Tags         Images
 // @Accept       json
 // @Produce      json
 // @Param        body	body	models.Image	true	"request body"
 // @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /images/{imageId}/kickstart [post]
 func CreateKickStartForImage(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -772,14 +783,15 @@ type CheckImageNameResponse struct {
 
 // CheckImageName verifies that ImageName exists
 // @Summary      Update an image
+// @ID           CheckImageName
 // @Description  Create an updated ostree commit
 // @Tags         Images
 // @Accept       json
 // @Produce      json
 // @Param        body	body	models.Image	true	"request body"
 // @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /images/checkImageName [post]
 func CheckImageName(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -807,15 +819,15 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 }
 
 // RetryCreateImage retries the image creation
-// @Summary      Update an image
+// @Summary      Retries building an image from scratch
+// @ID           RetryCreateImage
 // @Description  Create an updated ostree commit
 // @Tags         Images
 // @Accept       json
 // @Produce      json
 // @Param        body	body	models.Image	true	"request body"
-// @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Success      201 {object} models.SuccessPlaceholderResponse "Retry is being processed"
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /images/{imageId}/retry [post]
 func RetryCreateImage(w http.ResponseWriter, r *http.Request) {
 	if image := getImage(w, r); image != nil {
@@ -903,14 +915,15 @@ func SendNotificationForImage(w http.ResponseWriter, r *http.Request) {
 
 // DeleteImage soft deletes an image
 // @Summary      Placeholder summary
+// @ID           DeleteImage
 // @Description  This is a placeholder description
 // @Tags         Images
 // @Accept       json
 // @Produce      json
 // @Param		 imageSetID		path    int  true  "Identifier of the ImageSet"
 // @Success      200 {object} models.SuccessPlaceholderResponse
-// @Failure      400 {object} errors.BadRequest
-// @Failure      500 {object} errors.InternalServerError
+// @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /images/{imageId} [delete]
 func DeleteImage(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
