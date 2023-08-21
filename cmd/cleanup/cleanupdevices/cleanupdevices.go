@@ -2,6 +2,7 @@ package cleanupdevices
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/redhatinsights/edge-api/cmd/cleanup/storage"
@@ -148,9 +149,9 @@ func DeleteUpdateTransaction(candidateDevice *CandidateDevice) error {
 			}
 		}
 
-		err := DeleteCommit(tx, candidateDevice)
+		// NOTE: COMMIT WILL BE DELETED IN IT'S OWN FUNCTION
 
-		return err
+		return nil
 	})
 
 	if err != nil {
@@ -213,8 +214,10 @@ func CleanUpUpdateTransaction(s3Client *files.S3Client, candidateDevice *Candida
 	})
 
 	if candidateDevice.RepoID != nil && candidateDevice.RepoURL != nil &&
-		*candidateDevice.RepoURL != "" && strings.Contains(*candidateDevice.RepoURL, "/upd/") {
+		*candidateDevice.RepoURL != "" &&
+		(strings.Contains(*candidateDevice.RepoURL, "/upd/") || strings.Contains(*candidateDevice.RepoURL, fmt.Sprintf("/%d/", *candidateDevice.RepoID))) {
 		// this is an update repo and was build when updating a device
+		// note update repo has //upd/ or update-transaction id as part of the repo path
 		logger = logger.WithFields(log.Fields{
 			"repo_url": *candidateDevice.RepoURL,
 		})
@@ -259,11 +262,97 @@ func CleanUpDevice(s3Client *files.S3Client, candidateDevice *CandidateDevice) e
 	return err
 }
 
+// GetOrphanDevicesUpdatesCandidates returns the data set of orphan devices cleanup candidates
+// orphan devices updates are devices that are linked to dispatcher-records, the dispatcher record is linked to update-transaction
+// but the device is not linked to the update-transaction
+func GetOrphanDevicesUpdatesCandidates(gormDB *gorm.DB) ([]CandidateDevice, error) {
+
+	var candidateDevices []CandidateDevice
+	err := gormDB.Debug().Table("devices").
+		Select(`devices.id AS device_id, devices.deleted_at AS device_deleted_at, update_transactions.id AS update_id, repos.id AS repo_id, 
+repos.status AS repo_status, repos.URL AS repo_url, update_transactions.commit_id AS commit_id, images.id AS image_id, commits.repo_id as commit_repo_id`).
+		Joins("JOIN dispatch_records ON dispatch_records.device_id = devices.id").
+		Joins("JOIN updatetransaction_dispatchrecords ON updatetransaction_dispatchrecords.dispatch_record_id = dispatch_records.id").
+		Joins("JOIN update_transactions ON update_transactions.id = updatetransaction_dispatchrecords.update_transaction_id").
+		Joins("LEFT JOIN updatetransaction_devices ON updatetransaction_devices.update_transaction_id = updatetransaction_dispatchrecords.update_transaction_id").
+		Joins("LEFT JOIN repos ON repos.id = update_transactions.repo_id").
+		Joins("LEFT JOIN images ON images.commit_id = update_transactions.commit_id").
+		Joins("LEFT JOIN commits ON commits.id = update_transactions.commit_id").
+		Where("devices.deleted_at IS NOT NULL AND updatetransaction_devices.device_id IS NULL").
+		Order("devices.id ASC").
+		Order("update_transactions.id ASC").
+		Limit(DefaultDataLimit).
+		Scan(&candidateDevices).Error
+
+	if err != nil {
+		log.WithFields(log.Fields{"error": err.Error()}).Error("error occurred when collecting orphan devices updates candidates")
+	}
+
+	return candidateDevices, err
+}
+
+// CleanupOrphanDevicesUpdates cleanup all orphan devices updates candidates
+// orphan devices updates are devices that are linked to dispatcher-records, the dispatcher record is linked to update-transaction
+// but the device is not linked to the update-transaction
+func CleanupOrphanDevicesUpdates(s3Client *files.S3Client, gormDB *gorm.DB) error {
+
+	devicesUpdatesCount := 0
+	page := 0
+	for page < DefaultMaxDataPageNumber && feature.CleanUPDevices.IsEnabled() {
+		candidateDevices, err := GetOrphanDevicesUpdatesCandidates(gormDB)
+		if err != nil {
+			return err
+		}
+
+		if len(candidateDevices) == 0 {
+			break
+		}
+
+		// create a new channel for each iteration
+		errChan := make(chan error)
+
+		for _, deviceCandidate := range candidateDevices {
+			deviceCandidate := deviceCandidate
+			// handle all the page devices candidates at once, by default 100
+			go func(resChan chan error) {
+				// for orphan device update candidate need to clean up the update-transaction only.
+				// the device will be deleted by main function CleanupAllDevices
+				resChan <- CleanUpUpdateTransaction(s3Client, &deviceCandidate)
+			}(errChan)
+		}
+
+		// wait for all results to be returned
+		errCount := 0
+		for range candidateDevices {
+			resError := <-errChan
+			if resError != nil {
+				// errors are logged in the related functions, at this stage need to know if there is an error, to break the loop
+				errCount++
+			}
+		}
+
+		close(errChan)
+
+		devicesUpdatesCount += len(candidateDevices)
+
+		// break on any error
+		if errCount > 0 {
+			log.WithFields(log.Fields{"devices_updates_count": devicesUpdatesCount, "errors_count": errCount}).Info("cleanup devices was interrupted because of cleanup errors")
+			return ErrCleanUpAllDevicesInterrupted
+		}
+		page++
+	}
+
+	log.WithField("devices_updates_count", devicesUpdatesCount).Info("cleanup devices finished")
+
+	return nil
+}
+
 // GetCandidateDevices returns the data set of devices cleanup candidates
 func GetCandidateDevices(gormDB *gorm.DB) ([]CandidateDevice, error) {
 	var candidateDevices []CandidateDevice
 
-	if err := gormDB.Debug().Table("devices").
+	err := gormDB.Debug().Table("devices").
 		Select(`devices.id AS device_id, devices.deleted_at AS device_deleted_at, update_transactions.id AS update_id, repos.id AS	repo_id,
 repos.status AS repo_status, repos.URL AS repo_url,	update_transactions.commit_id AS commit_id,	images.id AS image_id, commits.repo_id as commit_repo_id`).
 		Joins("LEFT JOIN updatetransaction_devices ON updatetransaction_devices.device_id = devices.id").
@@ -271,15 +360,18 @@ repos.status AS repo_status, repos.URL AS repo_url,	update_transactions.commit_i
 		Joins("LEFT JOIN repos ON repos.id = update_transactions.repo_id").
 		Joins("LEFT JOIN images ON images.commit_id = update_transactions.commit_id").
 		Joins("LEFT JOIN commits ON commits.id = update_transactions.commit_id").
+		Joins("LEFT JOIN repos as commit_repos ON commit_repos.id = commits.repo_id").
 		Where("devices.deleted_at IS NOT NULL").
 		Order("devices.id ASC").
 		Order("update_transactions.id ASC").
 		Limit(DefaultDataLimit).
-		Scan(&candidateDevices).Error; err != nil {
+		Scan(&candidateDevices).Error
+
+	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Error("error occurred when collecting devices candidate")
 	}
 
-	return candidateDevices, nil
+	return candidateDevices, err
 }
 
 func CleanupAllDevices(s3Client *files.S3Client, gormDB *gorm.DB) error {
@@ -289,6 +381,11 @@ func CleanupAllDevices(s3Client *files.S3Client, gormDB *gorm.DB) error {
 	}
 	if gormDB == nil {
 		gormDB = db.DB
+	}
+
+	// clean up orphan devices updates first
+	if err := CleanupOrphanDevicesUpdates(s3Client, gormDB); err != nil {
+		return err
 	}
 
 	devicesUpdatesCount := 0
@@ -308,7 +405,7 @@ func CleanupAllDevices(s3Client *files.S3Client, gormDB *gorm.DB) error {
 
 		for _, deviceCandidate := range candidateDevices {
 			deviceCandidate := deviceCandidate
-			// handle all the page images candidates at once, by default 30
+			// handle all the page devices candidates at once, by default 30
 			go func(resChan chan error) {
 				resChan <- CleanUpDevice(s3Client, &deviceCandidate)
 			}(errChan)
