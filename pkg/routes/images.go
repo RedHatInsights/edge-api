@@ -286,7 +286,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Param        body	body	models.Image	true	"request body"
-// @Param		 imageId	path	int	true	"Image ID"	example(1234)
+// @Param        imageId	path	int	true	"Image ID"	example(1234)
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
 // @Failure      500 {object} errors.InternalServerError "There was an internal server error."
@@ -468,13 +468,13 @@ func ValidateGetAllImagesSearchParams(next http.Handler) http.Handler {
 // @Tags         Images
 // @Accept       json
 // @Produce      json
-// @Param		 limit	query	int	false	"Return number of images until limit is reached." example(1200)
-// @Param		 offset	query	int	false	"Return number of images beginning at the offset" example(42)
-// @Param		 sort_by	query	string	false	"created_at, distribution, name,status. To sort DESC use -before the fields" example(-created_at)
-// @Param		 name query string false "Filter by name." example(cat)
-// @Param		 status	query	string	false	"Filter by status."	example(BUILDING)
-// @Param		 distribution	query	string	false	"Filter by distribution."	example(xrhel-92)
-// @Param		 created_at		query	string	false	"Filter by creation date."	example(2023-05-03)
+// @Param        limit	query	int	false	"Return number of images until limit is reached." example(1200)
+// @Param        offset	query	int	false	"Return number of images beginning at the offset" example(42)
+// @Param        sort_by	query	string	false	"created_at, distribution, name,status. To sort DESC use -before the fields" example(-created_at)
+// @Param        name query string false "Filter by name." example(cat)
+// @Param        status	query	string	false	"Filter by status."	example(BUILDING)
+// @Param        distribution	query	string	false	"Filter by distribution."	example(xrhel-92)
+// @Param        created_at		query	string	false	"Filter by creation date."	example(2023-05-03)
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest " The request sent couldn't be processed."
 // @Failure      500 {object} errors.InternalServerError "There was an internal server error."
@@ -528,7 +528,7 @@ func getImage(w http.ResponseWriter, r *http.Request) *models.Image {
 // @Tags         Images
 // @Accept       json
 // @Produce      json
-// @Param		 imageId	path	int	true	"Image Identifier"	example(1234)
+// @Param        imageId	path	int	true	"Image Identifier"	example(1234)
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
 // @Failure      500 {object} errors.InternalServerError "There was an internal server error."
@@ -568,7 +568,7 @@ type ImageDetail struct {
 // @Tags         Images
 // @Accept       json
 // @Produce      json
-// @Param		 imageId	path	int	true	"Image ID"	example(1234)
+// @Param        imageId	path	int	true	"Image ID"	example(1234)
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
 // @Failure      500 {object} errors.InternalServerError "There was an internal server error."
@@ -587,7 +587,7 @@ func GetImageByID(w http.ResponseWriter, r *http.Request) {
 // @Tags         Images
 // @Accept       json
 // @Produce      json
-// @Param		 imageId	path	int	true	"Image ID"	example(1234)
+// @Param        imageId	path	int	true	"Image ID"	example(1234)
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
 // @Failure      500 {object} errors.InternalServerError "There was an internal server error."
@@ -628,7 +628,7 @@ func GetImageDetailsByID(w http.ResponseWriter, r *http.Request) {
 // @Tags         Images
 // @Accept       json
 // @Produce      json
-// @Param		 ostreeCommitHash	path	string	true	"Ostree Commit Hash"	example(9bd8dfe9856aa5bb1683e85f123bfe7785d45fbdb6f10372ff2c80e703400999)
+// @Param        ostreeCommitHash	path	string	true	"Ostree Commit Hash"	example(9bd8dfe9856aa5bb1683e85f123bfe7785d45fbdb6f10372ff2c80e703400999)
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
 // @Failure      500 {object} errors.InternalServerError "There was an internal server error."
@@ -648,8 +648,8 @@ func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 // @Tags         Images
 // @Accept       json
 // @Produce      json
-// @Param		 body	body	models.Image	true	"request body"
-// @Param		 imageId	path	int	true	"Image ID"	example(1234)
+// @Param        body	body	models.Image	true	"request body"
+// @Param        imageId	path	int	true	"Image ID"	example(1234)
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
 // @Failure      500 {object} errors.InternalServerError "There was an internal server error."
@@ -707,7 +707,7 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 // @Tags         Images
 // @Accept       json
 // @Produce      json
-// @Param		 imageId	path	int	true	"Image ID"	example(1234)
+// @Param        imageId	path	int	true	"Image ID"	example(1234)
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
 // @Failure      500 {object} errors.InternalServerError "There was an internal server error."
@@ -733,7 +733,7 @@ func GetRepoForImage(w http.ResponseWriter, r *http.Request) {
 // @Tags         Images
 // @Accept       json
 // @Produce      json
-// @Param		 imageId	path	int	true	"Image ID"	example(1234)
+// @Param        imageId	path	int	true	"Image ID"	example(1234)
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
 // @Failure      500 {object} errors.InternalServerError "There was an internal server error."
@@ -758,7 +758,7 @@ func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Param        body	body	models.Image	true	"request body"
-// @Param		 imageId	path	int	true	"Image ID"	example(1234)
+// @Param        imageId	path	int	true	"Image ID"	example(1234)
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
 // @Failure      500 {object} errors.InternalServerError "There was an internal server error."
@@ -828,7 +828,7 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Param        body	body	models.Image	true	"request body"
-// @Param		 imageId	path	int	true	"Image ID"	example(1234)
+// @Param        imageId	path	int	true	"Image ID"	example(1234)
 // @Success      201 {object} models.SuccessPlaceholderResponse "Retry is being processed"
 // @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /images/{imageId}/retry [post]
@@ -923,7 +923,7 @@ func SendNotificationForImage(w http.ResponseWriter, r *http.Request) {
 // @Tags         Images
 // @Accept       json
 // @Produce      json
-// @Param		 imageSetID	path	int		true 	"Identifier of the ImageSet"
+// @Param        imageSetID	path	int	true	"Identifier of the ImageSet"
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
 // @Failure      500 {object} errors.InternalServerError "There was an internal server error."
