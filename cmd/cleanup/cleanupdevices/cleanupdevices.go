@@ -235,17 +235,14 @@ func CleanUpUpdateTransaction(s3Client *files.S3Client, candidateDevice *Candida
 			return err
 		}
 		// clean url and update cleaned status
-		if err := db.DB.Model(&models.Repo{}).Where("id", candidateDevice.RepoID).
+		if err := db.DB.Model(&models.Repo{}).Where("id", *candidateDevice.RepoID).
 			Updates(map[string]interface{}{"status": models.UpdateStatusStorageCleaned, "url": ""}).Error; err != nil {
 			logger.WithField("error", err.Error()).Error("error occurred while updating repo status to cleaned")
 			return err
 		}
 	}
 
-	if err := DeleteUpdateTransaction(candidateDevice); err != nil {
-		return nil
-	}
-	return nil
+	return DeleteUpdateTransaction(candidateDevice)
 }
 
 func CleanUpDevice(s3Client *files.S3Client, candidateDevice *CandidateDevice) error {
