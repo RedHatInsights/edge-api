@@ -2,6 +2,7 @@ package cleanupdevices_test
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -287,11 +288,6 @@ var _ = Describe("Cleanup devices", func() {
 
 			// ensure update-transaction repo does not exist
 			err = db.DB.First(&updateRepo, updateRepo.ID).Error
-			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(gorm.ErrRecordNotFound))
-
-			// ensure commit record does not exist
-			err = db.DB.First(&commit, commit.ID).Error
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(gorm.ErrRecordNotFound))
 
@@ -675,6 +671,139 @@ var _ = Describe("Cleanup devices", func() {
 		})
 	})
 
+	Context("CleanupOrphanDevicesUpdates", func() {
+		var orgID string
+		var image models.Image
+		var device models.Device
+		var updateTransaction models.UpdateTransaction
+		var updateTransaction2 models.UpdateTransaction
+		var updateTransaction3 models.UpdateTransaction
+		var updateRepoPath string
+		var updateRepoPath2 string
+
+		BeforeEach(func() {
+			err := os.Setenv(feature.CleanUPDevices.EnvVar, "true")
+			Expect(err).NotTo(HaveOccurred())
+
+			// setup only once
+			if orgID == "" {
+				orgID = faker.UUIDHyphenated()
+				image = models.Image{OrgID: orgID, Commit: &models.Commit{OrgID: orgID, Repo: &models.Repo{URL: faker.URL()}}}
+				err := db.DB.Create(&image).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				device = models.Device{OrgID: orgID, UUID: faker.UUIDHyphenated()}
+				err = db.DB.Create(&device).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				updateRepoPath = "repo/path/upd/" + faker.UUIDHyphenated()
+
+				updateTransaction = models.UpdateTransaction{
+					OrgID:    orgID,
+					CommitID: image.Commit.ID,
+					Commit:   image.Commit,
+					// update transaction without device, but with DispatchRecords
+					DispatchRecords: []models.DispatchRecord{
+						{DeviceID: device.ID},
+					},
+					Repo: &models.Repo{URL: "https://bucket.example.com/" + updateRepoPath, Status: models.ImageStatusPending},
+				}
+				err = db.DB.Create(&updateTransaction).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				updateTransaction2 = models.UpdateTransaction{
+					OrgID:    orgID,
+					CommitID: image.Commit.ID,
+					Commit:   image.Commit,
+					// update transaction without device, but with DispatchRecords
+					DispatchRecords: []models.DispatchRecord{
+						{DeviceID: device.ID},
+					},
+					Repo: &models.Repo{Status: models.ImageStatusBuilding},
+				}
+				err = db.DB.Create(&updateTransaction2).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				updateRepoPath2 = fmt.Sprintf("repo/path/%d/", updateTransaction2.Repo.ID) + faker.UUIDHyphenated()
+				updateTransaction2.Repo.URL = "https://bucket.example.com/" + updateRepoPath2
+				err = db.DB.Save(&updateTransaction2.Repo).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				updateTransaction3 = models.UpdateTransaction{
+					OrgID:    orgID,
+					CommitID: image.Commit.ID,
+					Commit:   image.Commit,
+					// update transaction with device and with DispatchRecords
+					Devices: []models.Device{device},
+					DispatchRecords: []models.DispatchRecord{
+						{DeviceID: device.ID},
+					},
+					Repo: &models.Repo{Status: models.ImageStatusBuilding},
+				}
+				err = db.DB.Omit("Devices.*").Create(&updateTransaction3).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				// delete device to allow it to be a candidate
+				err = db.DB.Delete(&device).Error
+				Expect(err).ToNot(HaveOccurred())
+			}
+		})
+
+		AfterEach(func() {
+			err := os.Unsetenv(feature.CleanUPDevices.EnvVar)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should cleanup updatetransaction repo successfully and delete update-transactions", func() {
+			type UpdateTransactionDispatcherRecord struct {
+				UpdateTransactionID uint `json:"update_transaction_id"`
+				DispatchRecordID    uint `json:"dispatch_record_id"`
+			}
+			var updateTransactionDispatcherRecord UpdateTransactionDispatcherRecord
+
+			s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, updateRepoPath).Return(nil).Times(1)
+			s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, updateRepoPath2).Return(nil).Times(1)
+			err := cleanupdevices.CleanupOrphanDevicesUpdates(s3Client, db.DB.Where("devices.org_id = ?", orgID))
+			Expect(err).ToNot(HaveOccurred())
+
+			// updateTransaction does not exist
+			err = db.DB.Unscoped().First(&updateTransaction, updateTransaction.ID).Error
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(gorm.ErrRecordNotFound))
+
+			// updateTransaction dispatcher record does not exist
+			err = db.DB.Table("updatetransaction_dispatchrecords").
+				Where("update_transaction_id=?", updateTransaction.ID).
+				First(&updateTransactionDispatcherRecord).Error
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(gorm.ErrRecordNotFound))
+
+			// updateTransaction2 does not exist
+			err = db.DB.Unscoped().First(&updateTransaction2, updateTransaction2.ID).Error
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(gorm.ErrRecordNotFound))
+			// updateTransaction2 dispatcher record does not exist
+			err = db.DB.Table("updatetransaction_dispatchrecords").
+				Where("update_transaction_id=?", updateTransaction2.ID).
+				First(&updateTransactionDispatcherRecord).Error
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(gorm.ErrRecordNotFound))
+
+			// updateTransaction3 still exist
+			err = db.DB.Preload("DispatchRecords").First(&updateTransaction3, updateTransaction3.ID).Error
+			Expect(err).ToNot(HaveOccurred())
+			Expect(len(updateTransaction3.DispatchRecords)).To(Equal(1))
+
+			// updateTransaction3 dispatcher record still exist
+			err = db.DB.Table("updatetransaction_dispatchrecords").
+				Where("update_transaction_id=?", updateTransaction3.ID).
+				First(&updateTransactionDispatcherRecord).Error
+			Expect(err).ToNot(HaveOccurred())
+			Expect(updateTransactionDispatcherRecord.UpdateTransactionID).To(Equal(updateTransaction3.ID))
+			Expect(updateTransactionDispatcherRecord.DispatchRecordID).To(Equal(updateTransaction3.DispatchRecords[0].ID))
+		})
+	})
+
 	When("feature flag is disabled", func() {
 
 		BeforeEach(func() {
@@ -696,6 +825,7 @@ var _ = Describe("Cleanup devices", func() {
 
 		var updateTransaction models.UpdateTransaction
 		var updateTransaction2 models.UpdateTransaction
+		var orphanUpdateTransaction models.UpdateTransaction
 		var device models.Device
 		var device2 models.Device
 		var device3 models.Device
@@ -703,6 +833,7 @@ var _ = Describe("Cleanup devices", func() {
 		// var updateRepo models.Repo
 		var updateRepoPath string
 		var updateRepoPath2 string
+		var orphanUpdateRepoPath string
 
 		BeforeEach(func() {
 			err := os.Setenv(feature.CleanUPDevices.EnvVar, "true")
@@ -755,6 +886,23 @@ var _ = Describe("Cleanup devices", func() {
 					Repo:    &models.Repo{URL: "https://bucket.example.com/" + updateRepoPath2, Status: models.ImageStatusPending},
 				}
 				err = db.DB.Omit("Devices.*").Create(&updateTransaction2).Error
+				Expect(err).ToNot(HaveOccurred())
+
+				orphanUpdateTransaction = models.UpdateTransaction{
+					OrgID:  orgID,
+					Commit: &models.Commit{OrgID: orgID, Repo: &models.Repo{URL: faker.URL()}},
+					// update transaction without device, but with DispatchRecords
+					DispatchRecords: []models.DispatchRecord{
+						{DeviceID: device.ID},
+					},
+					Repo: &models.Repo{Status: models.ImageStatusBuilding},
+				}
+				err = db.DB.Create(&orphanUpdateTransaction).Error
+				Expect(err).ToNot(HaveOccurred())
+				// update repo url
+				orphanUpdateRepoPath = fmt.Sprintf("repo/path/%d/", orphanUpdateTransaction.Repo.ID) + faker.UUIDHyphenated()
+				orphanUpdateTransaction.Repo.URL = "https://bucket.example.com/" + orphanUpdateRepoPath
+				err = db.DB.Save(&orphanUpdateTransaction.Repo).Error
 				Expect(err).ToNot(HaveOccurred())
 
 				// soft delete the devices to make them candidates
@@ -819,8 +967,19 @@ var _ = Describe("Cleanup devices", func() {
 				cleanupdevices.DefaultDataLimit = initialDefaultDataLimit
 			})
 
+			It("should return error when orphan updateTransaction repo folder delete failed", func() {
+				expectedError := errors.New("an expected folder delete error")
+				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, orphanUpdateRepoPath).Return(expectedError).Times(configDeleteAttempts)
+				err := cleanupdevices.CleanupAllDevices(s3Client, db.DB.Where("devices.org_id = ?", orgID))
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(cleanupdevices.ErrCleanUpAllDevicesInterrupted))
+			})
+
 			It("should return error when folder delete failed", func() {
 				expectedError := errors.New("an expected folder delete error")
+				// make the orphan device update repo to pass
+				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, orphanUpdateRepoPath).Return(nil).Times(1)
+				// mnke the other update repos folders to fail
 				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, updateRepoPath).Return(expectedError).Times(configDeleteAttempts)
 				err := cleanupdevices.CleanupAllDevices(s3Client, db.DB.Where("devices.org_id = ?", orgID))
 				Expect(err).To(HaveOccurred())
@@ -828,7 +987,8 @@ var _ = Describe("Cleanup devices", func() {
 			})
 
 			It("cleanup devices successfully", func() {
-
+				// the orphan update repo was deleted in the previous test and should not be called
+				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, orphanUpdateRepoPath).Return(nil).Times(0)
 				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, updateRepoPath).Return(nil).Times(1)
 				s3FolderDeleter.EXPECT().Delete(config.Get().BucketName, updateRepoPath2).Return(nil).Times(1)
 
@@ -854,13 +1014,15 @@ var _ = Describe("Cleanup devices", func() {
 				// updateTransaction2 does not exist
 				err = db.DB.First(&updateTransaction2, updateTransaction2.ID).Error
 				Expect(err).To(HaveOccurred())
-				// updateTransaction2 commit does not exist (because has no image)
-				err = db.DB.First(&updateTransaction2.Commit, updateTransaction2.Commit.ID).Error
-				Expect(err).To(HaveOccurred())
 
 				// undeletedDevice still exist (because not a candidate)
 				err = db.DB.First(&undeletedDevice, undeletedDevice.ID).Error
 				Expect(err).ToNot(HaveOccurred())
+
+				// orphanUpdateTransaction does not exists
+				err = db.DB.First(&orphanUpdateTransaction, orphanUpdateTransaction.ID).Error
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(gorm.ErrRecordNotFound))
 			})
 		})
 	})
