@@ -260,6 +260,8 @@ func TestGetKafkaProducerConfigMapSecurityProtocol(t *testing.T) {
 
 	service = kafkacommon.NewKafkaConfigMapService()
 	for _, testCase := range testCases {
+		// avoid Implicit memory aliasing
+		testCase := testCase
 		t.Run(testCase.Name, func(t *testing.T) {
 			config.Get().KafkaBroker = &testCase.BrokerConfig
 
@@ -315,6 +317,8 @@ func TestGetKafkaProducerConfigMapCaCert(t *testing.T) {
 
 	service = kafkacommon.NewKafkaConfigMapService()
 	for _, testCase := range testCases {
+		// avoid Implicit memory aliasing
+		testCase := testCase
 		t.Run(testCase.Name, func(t *testing.T) {
 			config.Get().KafkaBroker = &testCase.BrokerConfig
 			config.Get().KafkaBrokerCaCertPath = testCase.BrokerConfigCaCertPath

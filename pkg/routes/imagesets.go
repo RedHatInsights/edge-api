@@ -250,6 +250,8 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		imgSet.ImageSetData.Version = img.Images[0].Version
 		imageSetIsoURLSetten := false
 		for _, i := range img.Images {
+			// avoid Implicit memory aliasing
+			i := i
 			if i.InstallerID != nil {
 				if i.Installer == nil {
 					result = db.DB.First(&i.Installer, &i.InstallerID)
