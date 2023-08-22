@@ -285,7 +285,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 // @Tags         Images
 // @Accept       json
 // @Produce      json
-// @Param        body	body	models.Image	true	"request body"
+// @Param        body	body	models.CreateImageAPI	true	"request body"
 // @Param        imageId	path	int	true	"Image ID"	example(1234)
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
@@ -648,7 +648,7 @@ func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 // @Tags         Images
 // @Accept       json
 // @Produce      json
-// @Param        body	body	models.Image	true	"request body"
+// @Param        body	body	models.CreateImageAPI	true	"request body"
 // @Param        imageId	path	int	true	"Image ID"	example(1234)
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
@@ -757,7 +757,7 @@ func GetMetadataForImage(w http.ResponseWriter, r *http.Request) {
 // @Tags         Images
 // @Accept       json
 // @Produce      json
-// @Param        body	body	models.Image	true	"request body"
+// @Param        body	body	models.CreateImageAPI	true	"request body"
 // @Param        imageId	path	int	true	"Image ID"	example(1234)
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
@@ -790,7 +790,7 @@ type CheckImageNameResponse struct {
 // @Tags         Images
 // @Accept       json
 // @Produce      json
-// @Param        body	body	models.Image	true	"request body"
+// @Param        body	body	models.CreateImageAPI	true	"request body"
 // @Success      200 {object} models.SuccessPlaceholderResponse
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
 // @Failure      500 {object} errors.InternalServerError "There was an internal server error."
@@ -827,7 +827,7 @@ func CheckImageName(w http.ResponseWriter, r *http.Request) {
 // @Tags         Images
 // @Accept       json
 // @Produce      json
-// @Param        body	body	models.Image	true	"request body"
+// @Param        body	body	models.CreateImageAPI	true	"request body"
 // @Param        imageId	path	int	true	"Image ID"	example(1234)
 // @Success      201 {object} models.SuccessPlaceholderResponse "Retry is being processed"
 // @Failure      500 {object} errors.InternalServerError "There was an internal server error."
