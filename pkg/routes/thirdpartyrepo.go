@@ -283,6 +283,8 @@ func GetAllContentSourcesRepositories(w http.ResponseWriter, r *http.Request) {
 
 	repos := make([]models.ThirdPartyRepo, 0, len(response.Data))
 	for ind, ContentSourcesRepo := range response.Data {
+		// avoid Implicit memory aliasing
+		ContentSourcesRepo := ContentSourcesRepo
 		// calculate the id to set , that will not have a conflict with the saved one on db,
 		// use an ID superior of any known one in the current context, add overall repos count so that we will not conflict with
 		// ids used on different pages even if we change pagination.Limit when changing pages

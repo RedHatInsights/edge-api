@@ -188,6 +188,8 @@ func TestListRepositories(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		// avoid Implicit memory aliasing
+		testCase := testCase
 		t.Run(testCase.Name, func(t *testing.T) {
 			initialAPIRepositoriesPath := repositories.APIRepositoriesPath
 			// restore the initial apiRepositoriesPath and IOReadAll
@@ -501,6 +503,8 @@ func TestGetRepositoryByUUID(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		// avoid Implicit memory aliasing
+		testCase := testCase
 		t.Run(testCase.Name, func(t *testing.T) {
 			initialAPIRepositoriesPath := repositories.APIRepositoriesPath
 			// restore the initial apiRepositoriesPath and IOReadAll
@@ -659,6 +663,8 @@ func TestCreateRepository(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		// avoid Implicit memory aliasing
+		testCase := testCase
 		t.Run(testCase.Name, func(t *testing.T) {
 			initialAPIRepositoriesPath := repositories.APIRepositoriesPath
 			// restore the initial apiRepositoriesPath and IOReadAll
@@ -753,6 +759,8 @@ func TestSearchContentPackage(t *testing.T) {
 	mockRepositoriesService := mock_repositories.NewMockClientInterface(ctrl)
 
 	for _, testCase := range testCases {
+		// avoid Implicit memory aliasing
+		testCase := testCase
 		t.Run(testCase.Name, func(t *testing.T) {
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
