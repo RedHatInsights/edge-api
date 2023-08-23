@@ -8,6 +8,7 @@ import (
 
 	"github.com/redhatinsights/edge-api/cmd/cleanup/cleanupdevices"
 	"github.com/redhatinsights/edge-api/cmd/cleanup/cleanupimages"
+	"github.com/redhatinsights/edge-api/cmd/cleanup/cleanuporphancommits"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/logger"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -71,6 +72,11 @@ func main() {
 	}
 
 	if err := cleanupdevices.CleanupAllDevices(client, db.DB); err != nil {
+		mainErr = err
+	}
+
+	if err := cleanuporphancommits.CleanupAllOrphanCommits(client, db.DB); err != nil &&
+		err != cleanuporphancommits.ErrCleanupOrphanCommitsNotAvailable {
 		mainErr = err
 	}
 

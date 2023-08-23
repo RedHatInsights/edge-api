@@ -99,6 +99,9 @@ var CleanUPImages = &Flag{Name: "edge-management.cleanup_images", EnvVar: "FEATU
 // CleanUPDevices is a feature flag to use for cleanup devices
 var CleanUPDevices = &Flag{Name: "edge-management.cleanup_devices", EnvVar: "FEATURE_CLEANUP_DEVICES"}
 
+// CleanUPOrphanCommits is a feature flag to use for cleanup orphan commits
+var CleanUPOrphanCommits = &Flag{Name: "edge-management.cleanup_orphan_commits", EnvVar: "FEATURE_CLEANUP_ORPHAN_COMMITS"}
+
 // SkipUpdateRepo is a feature flag to skip the process of download and re-upload of update repositories
 var SkipUpdateRepo = &Flag{Name: "edgemanagement.skip_update_repo", EnvVar: "FEATURE_SKIP_UPDATE_REPO"}
 
