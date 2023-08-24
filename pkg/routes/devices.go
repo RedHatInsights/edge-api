@@ -19,6 +19,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	"gorm.io/gorm"
 )
 
 // MakeDevicesRouter adds support for operations on update
@@ -348,7 +349,7 @@ func GetDeviceDBInfo(w http.ResponseWriter, r *http.Request) {
 // @Router       /devices/devicesview [get]
 func GetDevicesView(w http.ResponseWriter, r *http.Request) {
 	contextServices := dependencies.ServicesFromContext(r.Context())
-	tx := devicesFilters(r, db.DB).Where("image_id > 0")
+	tx := devicesFilters(r, db.DB).Where("image_id > 0").Session(&gorm.Session{})
 	pagination := common.GetPagination(r)
 
 	devicesCount, err := contextServices.DeviceService.GetDevicesCount(tx)
