@@ -394,10 +394,10 @@ objects:
           resources:
             limits:
               cpu: 900m
-              memory: 1Gi
+              memory: 2Gi
             requests:
               cpu: 500m
-              memory: 512Mi
+              memory: 1Gi
     objectStore:
     - ${EDGE_TARBALLS_BUCKET}
     database:
@@ -531,7 +531,7 @@ parameters:
 - name: LINT_ANNOTATION
   value: 'ignore-check.kube-linter.io/minimum-three-replicas'
 - name: CLEANUP_SCHEDULE
-  value: "0 0 * * 1"
+  value: "0 0 * * 5"
 - description: Whether to suspend the cleanup scheduled job.
   name: CLEANUP_SUSPEND
   required: false
