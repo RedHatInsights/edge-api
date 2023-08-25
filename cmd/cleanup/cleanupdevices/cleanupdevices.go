@@ -144,8 +144,17 @@ func DeleteUpdateTransaction(candidateDevice *CandidateDevice) error {
 
 		// delete update-transaction repo
 		if candidateDevice.RepoID != nil {
-			if err := tx.Unscoped().Where("id", *candidateDevice.RepoID).Delete(&models.Repo{}).Error; err != nil {
+			var repoOtherUpdatesCount int64
+			if err := tx.Unscoped().Debug().Model(&models.UpdateTransaction{}).Where("repo_id = ?", *candidateDevice.RepoID).
+				Count(&repoOtherUpdatesCount).Error; err != nil {
 				return err
+			}
+			if repoOtherUpdatesCount == 0 {
+				// delete only in case no update-transaction is using the repo
+				// in some old versions some updates was sharing the same repo
+				if err := tx.Unscoped().Where("id", *candidateDevice.RepoID).Delete(&models.Repo{}).Error; err != nil {
+					return err
+				}
 			}
 		}
 
