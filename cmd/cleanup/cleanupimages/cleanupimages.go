@@ -192,6 +192,11 @@ func DeleteImage(candidateImage *CandidateImage) error {
 			return err
 		}
 
+		// delete commit from updatetransaction_commits with commit_id
+		if err := tx.Exec("DELETE FROM updatetransaction_commits WHERE commit_id=?", candidateImage.CommitID).Error; err != nil {
+			return err
+		}
+
 		// delete image
 		if err := tx.Unscoped().Where("id", candidateImage.ImageID).Delete(&models.Image{}).Error; err != nil {
 			return err

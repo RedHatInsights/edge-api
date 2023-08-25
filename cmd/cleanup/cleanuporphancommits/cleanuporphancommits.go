@@ -2,8 +2,10 @@ package cleanuporphancommits
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/redhatinsights/edge-api/cmd/cleanup/storage"
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services/files"
@@ -111,15 +113,25 @@ func cleanupOrphanCommit(s3Client *files.S3Client, commitCandidate *OrphanCommit
 
 func getOrphanCommitsCandidates(gormDB *gorm.DB) ([]OrphanCommitCandidate, error) {
 	var orphanCommitsCandidates []OrphanCommitCandidate
-	err := gormDB.Debug().Table("commits").
+	mainQuery := gormDB.Debug().Table("commits").
 		Select("commits.id as commit_id, commits.repo_id as repo_id, repos.url as repo_url, repos.status as repo_status").
 		Joins("LEFT JOIN images ON images.commit_id = commits.id").
 		Joins("LEFT JOIN update_transactions ON update_transactions.commit_id = commits.id").
 		Joins("LEFT JOIN repos ON repos.id = commits.repo_id").
-		Where("images.id IS NULL AND update_transactions.id IS NULL").
-		Order("commits.id ASC").
-		Limit(DefaultDataLimit).
-		Scan(&orphanCommitsCandidates).Error
+		Where("images.id IS NULL AND update_transactions.id IS NULL")
+
+	if strings.Contains(config.Get().EdgeAPIBaseURL, "stage") {
+		// in old versions repos had commit_id
+		// this impossible to test locally as that column has been deleted from repos models
+		// this case needs to be handled separately
+		// this is only valid for stage env,
+		// on prod the column commit_id in repos table does not exit
+		log.Info("stage environment detected, add sub-query to ignore commits linked to repos table by repos.commit_id")
+		subQuery := db.DB.Table("repos").Select("commit_id").Where("commit_id IS NOT NULL")
+		mainQuery = mainQuery.Where("commits.id NOT IN (?)", subQuery)
+	}
+
+	err := mainQuery.Order("commits.id ASC").Limit(DefaultDataLimit).Scan(&orphanCommitsCandidates).Error
 
 	if err != nil {
 		log.WithFields(log.Fields{"error": err.Error()}).Error("error occurred when collecting orphan commits candidates")
