@@ -89,6 +89,11 @@ type DeviceDetailsListAPI struct {
 	Devices []DeviceDetailsAPI `json:"data"`                // List of Devices
 }
 
+// FilterByDevicesAPI is the deviceUUID list
+type FilterByDevicesAPI struct {
+	DevicesUUID []string `json:"devices_uuid"` // Devices UUID
+}
+
 // DeviceViewAPI is the device information needed for the UI
 type DeviceViewAPI struct {
 	DeviceID         uint             `json:"DeviceID"        example:"1913277"`             // ID of device

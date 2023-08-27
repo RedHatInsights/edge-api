@@ -3,6 +3,7 @@
 package routes
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -634,4 +635,438 @@ func TestValidateGetDevicesViewFilterParams(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestGetDevicesViewWithinDevices(t *testing.T) {
+	RegisterTestingT(t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	orgID := faker.UUIDHyphenated()
+	account := faker.UUIDHyphenated()
+	imageSet := &models.ImageSet{
+		Name:    "test",
+		Version: 1,
+		OrgID:   orgID,
+	}
+
+	result := db.DB.Create(imageSet)
+	Expect(result.Error).ToNot(HaveOccurred())
+	imageV1 := &models.Image{
+		Commit: &models.Commit{
+			OSTreeCommit: faker.UUIDHyphenated(),
+			OrgID:        orgID,
+		},
+		Status:     models.ImageStatusSuccess,
+		ImageSetID: &imageSet.ID,
+		Version:    1,
+		OrgID:      orgID,
+	}
+	result = db.DB.Create(imageV1)
+	Expect(result.Error).ToNot(HaveOccurred())
+
+	devices := []models.Device{
+		{
+			Name:    faker.Name(),
+			UUID:    faker.UUIDHyphenated(),
+			Account: account,
+			OrgID:   orgID,
+			ImageID: imageV1.ID,
+		},
+		{
+			Name:    faker.Name(),
+			UUID:    faker.UUIDHyphenated(),
+			Account: account,
+			OrgID:   orgID,
+			ImageID: imageV1.ID,
+		},
+		{
+			Name:    faker.Name(),
+			UUID:    faker.UUIDHyphenated(),
+			Account: account,
+			OrgID:   orgID,
+			ImageID: imageV1.ID,
+		},
+	}
+	result = db.DB.Create(devices)
+	Expect(result.Error).ToNot(HaveOccurred())
+
+	deviceView := []models.DeviceView{
+		{
+			DeviceID:   devices[0].ID,
+			DeviceUUID: devices[0].UUID,
+		},
+		{
+			DeviceID:   devices[1].ID,
+			DeviceUUID: devices[1].UUID,
+		},
+		{
+			DeviceID:   devices[2].ID,
+			DeviceUUID: devices[2].UUID,
+		},
+	}
+	var mockDeviceService *mock_services.MockDeviceServiceInterface
+	var router chi.Router
+	var mockServices *dependencies.EdgeAPIServices
+	ctrl = gomock.NewController(GinkgoT())
+
+	mockDeviceService = mock_services.NewMockDeviceServiceInterface(ctrl)
+	mockServices = &dependencies.EdgeAPIServices{
+		DeviceService: mockDeviceService,
+		Log:           log.NewEntry(log.StandardLogger()),
+	}
+	router = chi.NewRouter()
+	router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := dependencies.ContextWithServices(r.Context(), mockServices)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	})
+	router.Route("/", MakeDevicesRouter)
+	mockDeviceService.EXPECT().GetDevicesCount(gomock.Any()).Return(int64(3), nil)
+	mockDeviceService.EXPECT().GetDevicesView(30, 0, gomock.Any()).Return(&models.DeviceViewList{Total: 3, Devices: deviceView}, nil)
+
+	jsonDeviceViewListBytes, err := json.Marshal(models.FilterByDevicesAPI{DevicesUUID: []string{devices[0].UUID, devices[1].UUID, devices[2].UUID}})
+	Expect(err).To(BeNil())
+
+	req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(jsonDeviceViewListBytes))
+	Expect(err).To(BeNil())
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(GetDevicesViewWithinDevices)
+
+	ctx := dependencies.ContextWithServices(req.Context(), mockServices)
+	req = req.WithContext(ctx)
+	handler.ServeHTTP(rr, req)
+	Expect(rr.Code).To(Equal(http.StatusOK))
+
+}
+
+func TestGetDevicesViewWithoutDevices(t *testing.T) {
+	RegisterTestingT(t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	var mockDeviceService *mock_services.MockDeviceServiceInterface
+	var router chi.Router
+	var mockServices *dependencies.EdgeAPIServices
+	ctrl = gomock.NewController(GinkgoT())
+
+	mockDeviceService = mock_services.NewMockDeviceServiceInterface(ctrl)
+	mockServices = &dependencies.EdgeAPIServices{
+		DeviceService: mockDeviceService,
+		Log:           log.NewEntry(log.StandardLogger()),
+	}
+	router = chi.NewRouter()
+	router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := dependencies.ContextWithServices(r.Context(), mockServices)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	})
+	router.Route("/", MakeDevicesRouter)
+	mockDeviceService.EXPECT().GetDevicesCount(gomock.Any()).Return(int64(0), nil)
+	mockDeviceService.EXPECT().GetDevicesView(30, 0, gomock.Any()).Return(&models.DeviceViewList{Total: 0}, nil)
+
+	jsonDeviceViewListBytes, err := json.Marshal(models.FilterByDevicesAPI{DevicesUUID: []string{}})
+	Expect(err).To(BeNil())
+
+	req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(jsonDeviceViewListBytes))
+	Expect(err).To(BeNil())
+
+	rr := httptest.NewRecorder()
+	handler := http.HandlerFunc(GetDevicesViewWithinDevices)
+
+	ctx := dependencies.ContextWithServices(req.Context(), mockServices)
+	req = req.WithContext(ctx)
+	handler.ServeHTTP(rr, req)
+	Expect(rr.Code).To(Equal(http.StatusBadRequest))
+
+}
+
+func TestValidateGetDevicesViewWithDevicesFilterParams(t *testing.T) {
+	tt := []struct {
+		name          string
+		params        string
+		expectedError []validationError
+	}{
+		{
+			name:   "invalid update_available",
+			params: "update_available=abc",
+			expectedError: []validationError{
+				{Key: "update_available", Reason: "abc is not a valid value for update_available. update_available must be boolean"},
+			},
+		},
+		{
+			name:   "invalid update_available",
+			params: "update_available=123",
+			expectedError: []validationError{
+				{Key: "update_available", Reason: "123 is not a valid value for update_available. update_available must be boolean"},
+			},
+		},
+		{
+			name:   "invalid image_id",
+			params: "image_id=abc",
+			expectedError: []validationError{
+				{Key: "image_id", Reason: "abc is not a valid value for image_id. image_id must be integer"},
+			},
+		},
+	}
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+	for _, te := range tt {
+		req, err := http.NewRequest("POST", fmt.Sprintf("/devices/devicesview?%s", te.params), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		w := httptest.NewRecorder()
+		ctrl := gomock.NewController(t)
+		defer ctrl.Finish()
+		mockImageService := mock_services.NewMockImageServiceInterface(ctrl)
+		ctx := dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{
+			ImageService: mockImageService,
+			Log:          log.NewEntry(log.StandardLogger()),
+		})
+		req = req.WithContext(ctx)
+
+		ValidateGetDevicesViewFilterParams(next).ServeHTTP(w, req)
+
+		resp := w.Result()
+		defer resp.Body.Close()
+		jsonBody := []validationError{}
+		err = json.NewDecoder(resp.Body).Decode(&jsonBody)
+		if err != nil {
+			t.Errorf("failed decoding response body: %s", err.Error())
+		}
+		for _, exErr := range te.expectedError {
+			found := false
+			for _, jsErr := range jsonBody {
+				if jsErr.Key == exErr.Key && jsErr.Reason == exErr.Reason {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("in %q: was expected to have %v but not found in %v", te.name, exErr, jsonBody)
+			}
+		}
+	}
+}
+
+func TestGetDevicesViewWithinDevicesAndGetInternalErrorInCountDevice(t *testing.T) {
+	RegisterTestingT(t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	orgID := faker.UUIDHyphenated()
+	account := faker.UUIDHyphenated()
+	imageSet := &models.ImageSet{
+		Name:    "test",
+		Version: 1,
+		OrgID:   orgID,
+	}
+
+	result := db.DB.Create(imageSet)
+	Expect(result.Error).ToNot(HaveOccurred())
+	imageV1 := &models.Image{
+		Commit: &models.Commit{
+			OSTreeCommit: faker.UUIDHyphenated(),
+			OrgID:        orgID,
+		},
+		Status:     models.ImageStatusSuccess,
+		ImageSetID: &imageSet.ID,
+		Version:    1,
+		OrgID:      orgID,
+	}
+	result = db.DB.Create(imageV1)
+	Expect(result.Error).ToNot(HaveOccurred())
+
+	devices := []models.Device{
+		{
+			Name:    faker.Name(),
+			UUID:    faker.UUIDHyphenated(),
+			Account: account,
+			OrgID:   orgID,
+			ImageID: imageV1.ID,
+		},
+	}
+	result = db.DB.Create(devices)
+	Expect(result.Error).ToNot(HaveOccurred())
+
+	var mockDeviceService *mock_services.MockDeviceServiceInterface
+	var router chi.Router
+	var mockServices *dependencies.EdgeAPIServices
+	ctrl = gomock.NewController(GinkgoT())
+
+	mockDeviceService = mock_services.NewMockDeviceServiceInterface(ctrl)
+	mockServices = &dependencies.EdgeAPIServices{
+		DeviceService: mockDeviceService,
+		Log:           log.NewEntry(log.StandardLogger()),
+	}
+	router = chi.NewRouter()
+	router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := dependencies.ContextWithServices(r.Context(), mockServices)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	})
+	router.Route("/", MakeDevicesRouter)
+	mockDeviceService.EXPECT().GetDevicesCount(gomock.Any()).Return(int64(1), errors.New("random error"))
+	jsonDeviceViewListBytes, err := json.Marshal(models.FilterByDevicesAPI{DevicesUUID: []string{devices[0].UUID}})
+	Expect(err).To(BeNil())
+
+	req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(jsonDeviceViewListBytes))
+	Expect(err).To(BeNil())
+
+	recorder := httptest.NewRecorder()
+	handler := http.HandlerFunc(GetDevicesViewWithinDevices)
+	ctx := dependencies.ContextWithServices(req.Context(), mockServices)
+	req = req.WithContext(ctx)
+	handler.ServeHTTP(recorder, req)
+	Expect(recorder.Code).To(Equal(http.StatusInternalServerError))
+
+}
+
+func TestGetDevicesViewWithinDevicesAndGetInternalErrorInGetDevicesView(t *testing.T) {
+	RegisterTestingT(t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	orgID := faker.UUIDHyphenated()
+	account := faker.UUIDHyphenated()
+	imageSet := &models.ImageSet{
+		Name:    "test",
+		Version: 1,
+		OrgID:   orgID,
+	}
+
+	result := db.DB.Create(imageSet)
+	Expect(result.Error).ToNot(HaveOccurred())
+	imageV1 := &models.Image{
+		Commit: &models.Commit{
+			OSTreeCommit: faker.UUIDHyphenated(),
+			OrgID:        orgID,
+		},
+		Status:     models.ImageStatusSuccess,
+		ImageSetID: &imageSet.ID,
+		Version:    1,
+		OrgID:      orgID,
+	}
+	result = db.DB.Create(imageV1)
+	Expect(result.Error).ToNot(HaveOccurred())
+
+	devices := []models.Device{
+		{
+			Name:    faker.Name(),
+			UUID:    faker.UUIDHyphenated(),
+			Account: account,
+			OrgID:   orgID,
+			ImageID: imageV1.ID,
+		},
+	}
+	result = db.DB.Create(devices)
+	Expect(result.Error).ToNot(HaveOccurred())
+
+	var mockDeviceService *mock_services.MockDeviceServiceInterface
+	var router chi.Router
+	var mockServices *dependencies.EdgeAPIServices
+	ctrl = gomock.NewController(GinkgoT())
+
+	mockDeviceService = mock_services.NewMockDeviceServiceInterface(ctrl)
+	mockServices = &dependencies.EdgeAPIServices{
+		DeviceService: mockDeviceService,
+		Log:           log.NewEntry(log.StandardLogger()),
+	}
+	router = chi.NewRouter()
+	router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := dependencies.ContextWithServices(r.Context(), mockServices)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	})
+	router.Route("/", MakeDevicesRouter)
+	mockDeviceService.EXPECT().GetDevicesCount(gomock.Any()).Return(int64(1), nil)
+	mockDeviceService.EXPECT().GetDevicesView(30, 0, gomock.Any()).Return(&models.DeviceViewList{Total: 1}, errors.New("random error"))
+	jsonDeviceViewListBytes, err := json.Marshal(models.FilterByDevicesAPI{DevicesUUID: []string{devices[0].UUID}})
+	Expect(err).To(BeNil())
+
+	req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(jsonDeviceViewListBytes))
+	Expect(err).To(BeNil())
+
+	recorder := httptest.NewRecorder()
+	handler := http.HandlerFunc(GetDevicesViewWithinDevices)
+	ctx := dependencies.ContextWithServices(req.Context(), mockServices)
+	req = req.WithContext(ctx)
+	handler.ServeHTTP(recorder, req)
+	Expect(recorder.Code).To(Equal(http.StatusInternalServerError))
+
+}
+
+func TestGetDevicesViewWithinDevicesWitUUIDNotExist(t *testing.T) {
+	RegisterTestingT(t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	orgID := faker.UUIDHyphenated()
+	account := faker.UUIDHyphenated()
+	imageSet := &models.ImageSet{
+		Name:    "test",
+		Version: 1,
+		OrgID:   orgID,
+	}
+
+	result := db.DB.Create(imageSet)
+	Expect(result.Error).ToNot(HaveOccurred())
+	imageV1 := &models.Image{
+		Commit: &models.Commit{
+			OSTreeCommit: faker.UUIDHyphenated(),
+			OrgID:        orgID,
+		},
+		Status:     models.ImageStatusSuccess,
+		ImageSetID: &imageSet.ID,
+		Version:    1,
+		OrgID:      orgID,
+	}
+	result = db.DB.Create(imageV1)
+	Expect(result.Error).ToNot(HaveOccurred())
+
+	devices := []models.Device{
+		{
+			Name:    faker.Name(),
+			UUID:    faker.UUIDHyphenated(),
+			Account: account,
+			OrgID:   orgID,
+			ImageID: imageV1.ID,
+		},
+	}
+	result = db.DB.Create(devices)
+	Expect(result.Error).ToNot(HaveOccurred())
+
+	var mockDeviceService *mock_services.MockDeviceServiceInterface
+	var router chi.Router
+	var mockServices *dependencies.EdgeAPIServices
+	ctrl = gomock.NewController(GinkgoT())
+
+	mockDeviceService = mock_services.NewMockDeviceServiceInterface(ctrl)
+	mockServices = &dependencies.EdgeAPIServices{
+		DeviceService: mockDeviceService,
+		Log:           log.NewEntry(log.StandardLogger()),
+	}
+	router = chi.NewRouter()
+	router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := dependencies.ContextWithServices(r.Context(), mockServices)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	})
+	router.Route("/", MakeDevicesRouter)
+	jsonDeviceViewListBytes, err := json.Marshal([]string{"uuid-1", "uuid-2"})
+	Expect(err).To(BeNil())
+
+	req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(jsonDeviceViewListBytes))
+	Expect(err).To(BeNil())
+
+	recorder := httptest.NewRecorder()
+	handler := http.HandlerFunc(GetDevicesViewWithinDevices)
+	ctx := dependencies.ContextWithServices(req.Context(), mockServices)
+	req = req.WithContext(ctx)
+	handler.ServeHTTP(recorder, req)
+	Expect(recorder.Code).To(Equal(http.StatusBadRequest))
+
 }
