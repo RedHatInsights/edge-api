@@ -50,6 +50,9 @@ sonarqube/
 
 openapi.json
 openapi.yaml
+swagger.json
+swagger.yaml
+docs.go
 
 go/pkg/mod/*
 .cache
