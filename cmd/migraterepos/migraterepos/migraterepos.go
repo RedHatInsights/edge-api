@@ -22,7 +22,12 @@ import (
 
 func newOrgContentSourcesClient(orgID string) (repositories.ClientInterface, error) {
 	// create a new content-sources client and set organization identity in the initialization context
-	ident := identity.XRHID{Identity: identity.Identity{OrgID: orgID, Type: "User", Internal: identity.Internal{OrgID: orgID}}}
+	ident := identity.XRHID{Identity: identity.Identity{
+		OrgID:    orgID,
+		Type:     "User",
+		Internal: identity.Internal{OrgID: orgID},
+		User:     identity.User{OrgAdmin: true, Username: "edge-repo-migrator"},
+	}}
 	jsonIdent, err := json.Marshal(&ident)
 	if err != nil {
 		return nil, err
