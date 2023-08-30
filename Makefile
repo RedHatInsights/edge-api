@@ -98,7 +98,8 @@ fmt:
 	go fmt $$(go list ./... | grep -v /vendor/)
 
 generate-docs:
-	go run cmd/spec/main.go
+	~/go/bin/swag init --generalInfo api.go --o ./cmd/spec/ --dir pkg/models,pkg/routes --parseDependency
+	go run ./cmd/swagger2openapi/main.go  cmd/spec/swagger.json cmd/spec/openapi.json
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of:"
@@ -192,11 +193,6 @@ scan_project:
 
 swaggo_setup:
 	go install github.com/swaggo/swag/cmd/swag@latest
-	mkdir -p api
-
-swaggo:
-	swag init --generalInfo api.go --o ./api --dir pkg/models,pkg/routes --parseDependency
-	go run ./cmd/swagger2openapi/main.go  api/swagger.json api/openapi.json
 
 test:
 	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /test/) $(TEST_OPTIONS)
