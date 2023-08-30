@@ -72,6 +72,8 @@ var _ = Describe("Migrate custom repositories", func() {
 			ts := httptest.NewServer(dependencies.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				rhIndent, err := common.GetIdentityInstanceFromContext(r.Context())
 				Expect(err).ToNot(HaveOccurred())
+				// ensure identity user OrgAdmin is true
+				Expect(rhIndent.Identity.User.OrgAdmin).To(BeTrue())
 				w.Header().Set("Content-Type", "application/json")
 				var repo models.ThirdPartyRepo
 				switch r.Method {
