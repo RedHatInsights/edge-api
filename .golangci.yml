@@ -1,0 +1,19 @@
+linters:
+  enable:
+  - errcheck
+  - ginkgolinter
+  - gocritic
+  - gofmt
+  - goimports
+  - gosec
+  - gosimple
+  - govet
+  - ineffassign
+  - revive
+  - staticcheck
+  - typecheck
+  - unused
+  - bodyclose
+linters-settings:
+  ginkgolinter:
+    forbid-focus-container: true

@@ -24,7 +24,7 @@ jobs:
       - uses: actions/setup-go@v4
         name: Set up Go 1.x
         with:
-          go-version: 1.18
+          go-version-file: go.mod
 
       - uses: actions/checkout@v3
         name: Checkout edge-api
@@ -38,7 +38,6 @@ jobs:
           # Args should be the same as Makefile
           # Workaround from https://github.com/golangci/golangci-lint-action/issues/119
           args: >
-            --enable=errcheck,gocritic,gofmt,goimports,gosec,gosimple,govet,ineffassign,revive,staticcheck,typecheck,unused,bodyclose
             --fix=false
             --max-same-issues=20
             --out-${NO_FUTURE}format=colored-line-number
@@ -74,7 +73,7 @@ jobs:
       - uses: actions/setup-go@v4
         name: Set up Go 1.x
         with:
-          go-version: 1.18
+          go-version-file: go.mod
 
       - uses: actions/checkout@v3
         name: Checkout edge-api
