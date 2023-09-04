@@ -75,7 +75,7 @@ type Customizations struct {
 type Repository struct {
 	BaseURL    string  `json:"baseurl"`
 	CheckGPG   *bool   `json:"check_gpg,omitempty"`
-	GPGKey     *string `json:"gpg_key,omitempty"`
+	GPGKey     *string `json:"gpgkey,omitempty"`
 	IgnoreSSL  *bool   `json:"ignore_ssl,omitempty"`
 	MetaLink   *string `json:"metalink,omitempty"`
 	MirrorList *string `json:"mirrorlist,omitempty"`

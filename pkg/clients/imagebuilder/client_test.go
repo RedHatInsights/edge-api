@@ -381,6 +381,7 @@ var _ = Describe("Image Builder Client Test", func() {
 			body, err := io.ReadAll(r.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).ToNot(BeNil())
+			Expect(string(body)).To(ContainSubstring(`"gpgkey":"some dummy data"`))
 			err = json.Unmarshal(body, &composeRequest)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(composeRequest.Customizations).ToNot(BeNil())
