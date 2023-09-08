@@ -26,7 +26,7 @@ jobs:
         with:
           go-version: 1.18
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         name: Checkout edge-api
 
       - name: golangci-lint
@@ -76,7 +76,7 @@ jobs:
         with:
           go-version: 1.18
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         name: Checkout edge-api
 
       - name: Generate API docs spec file
@@ -97,7 +97,7 @@ jobs:
     name: Codecov
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         name: Checkout edge-api
 
       - name: Run Go Test Coverage output without fdo
