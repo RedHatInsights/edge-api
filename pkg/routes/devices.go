@@ -26,6 +26,7 @@ import (
 func MakeDevicesRouter(sub chi.Router) {
 	sub.With(ValidateQueryParams("devices")).With(ValidateGetAllDevicesFilterParams).Get("/", GetDevices)
 	sub.With(ValidateQueryParams("devicesview")).With(common.Paginate).With(ValidateGetDevicesViewFilterParams).Get("/devicesview", GetDevicesView)
+	sub.With(ValidateQueryParams("devicesview")).With(common.Paginate).With(ValidateGetDevicesViewFilterParams).Post("/", GetDevicesViewWithinDevices)
 	sub.Route("/{DeviceUUID}", func(r chi.Router) {
 		r.Use(DeviceCtx)
 		r.Get("/dbinfo", GetDeviceDBInfo)
@@ -361,6 +362,58 @@ func GetDevicesView(w http.ResponseWriter, r *http.Request) {
 	devicesViewList, err := contextServices.DeviceService.GetDevicesView(pagination.Limit, pagination.Offset, tx)
 	if err != nil {
 		respondWithAPIError(w, contextServices.Log, errors.NewNotFound("No devices found"))
+		return
+	}
+	respondWithJSONBody(w, contextServices.Log, map[string]interface{}{"data": devicesViewList, "count": devicesCount})
+}
+
+// GetDevicesViewWithinDevices returns all data needed to display customers devices
+// @ID           GetDevicesViewWithinDevices
+// @Summary      Return all data of Devices.
+// @Description  Return all data of Devices.
+// @Tags         Devices (Systems)
+// @Accept       json
+// @Produce      json
+// @Param    body	body	models.FilterByDevicesAPI true	"request body"
+// @Param	 sort_by            query string	false "fields: name, uuid, update_available, image_id. To sort DESC use - before the fields."
+// @Param	 name               query string 	false "field: filter by name"
+// @Param	 update_available   query boolean	false "field: filter by update_available"
+// @Param	 uuid               query string	false "field: filter by uuid"
+// @Param	 created_at         query string	false "field: filter by creation date"
+// @Param	 image_id           query int   	false "field: filter by image id"
+// @Param	 limit              query int    	false "field: return number of devices until limit is reached. Default is 100."
+// @Param	 offset             query int    	false "field: return number of devices beginning at the offset."
+// @Success      200  {object}  models.DeviceViewListAPI
+// @Failure      500 {object} errors.InternalServerError "There was an internal server error."
+// @Router       /devices/devicesview [post]
+func GetDevicesViewWithinDevices(w http.ResponseWriter, r *http.Request) {
+	contextServices := dependencies.ServicesFromContext(r.Context())
+	orgID := readOrgID(w, r, contextServices.Log)
+	if orgID == "" {
+		return
+	}
+
+	var devicesUUID models.FilterByDevicesAPI
+	if err := readRequestJSONBody(w, r, contextServices.Log, &devicesUUID); err != nil {
+		return
+	}
+	if len(devicesUUID.DevicesUUID) == 0 {
+		respondWithAPIError(w, contextServices.Log, errors.NewBadRequest("Missing devicesUUID "))
+		return
+	}
+
+	tx := devicesFilters(r, db.DB).Where("image_id > 0").Where("devices.uuid IN (?)", devicesUUID.DevicesUUID).Session(&gorm.Session{})
+	pagination := common.GetPagination(r)
+
+	devicesCount, err := contextServices.DeviceService.GetDevicesCount(tx)
+	if err != nil {
+		respondWithAPIError(w, contextServices.Log, errors.NewInternalServerError())
+		return
+	}
+
+	devicesViewList, err := contextServices.DeviceService.GetDevicesView(pagination.Limit, pagination.Offset, tx)
+	if err != nil {
+		respondWithAPIError(w, contextServices.Log, errors.NewInternalServerError())
 		return
 	}
 	respondWithJSONBody(w, contextServices.Log, map[string]interface{}{"data": devicesViewList, "count": devicesCount})
