@@ -43,6 +43,9 @@ const (
 	// StaticDeltaStatusNotFound represents when a static delta is not found (not an error)
 	StaticDeltaStatusNotFound = "NOTFOUND"
 
+	// StaticDeltaStatusNotFound represents static delta under development (not an error)
+	StaticDeltaStatusNotImplemented = "NOTIMPLEMENTED"
+
 	// StaticDeltaStatusReady represents the static delta is ready to be used for an update
 	StaticDeltaStatusReady = "READY"
 
