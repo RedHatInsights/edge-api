@@ -58,7 +58,13 @@ func NewRepoBuilder(ctx context.Context, log *log.Entry) RepoBuilderInterface {
 // with static deltas generated between them all
 func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, error) {
 	var update *models.UpdateTransaction
-	if err := db.DB.Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").Preload("OldCommits").First(&update, id).Error; err != nil {
+	if err := db.DB.Preload("DispatchRecords").
+		Preload("Devices").
+		Joins("Commit").
+		Joins("Repo").
+		Preload("OldCommits").
+		First(&update, id).Error; err != nil {
+
 		if err == gorm.ErrRecordNotFound {
 			rb.log.WithField("updateID", id).Error("update transaction does not exist")
 			return nil, new(UpdateNotFoundError)
@@ -74,9 +80,48 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	rb.log = rb.log.WithFields(log.Fields{
 		"commitID": update.Commit.ID,
 		"updateID": update.ID})
+
 	if update.Repo == nil {
 		rb.log.Error("Repo is unavailable")
 		return nil, errors.New("repo unavailable")
+	}
+
+	// temporary to see actual values in various scenarios
+	// 1. single system update
+	// 2. multiple system update
+	// 3. update of system after rollback (current logic assumes updating from booted commit)
+	if feature.StaticDeltaDev.IsEnabled() {
+		rb.log.WithField("updateTransaction", update).Info("Update transaction dev info")
+
+		// FIXME: break out to getFromCommit() and getToCommit()
+		fromCommitHash := "undefined"
+		fromCommit := &models.StaticDeltaCommit{
+			Rev: fromCommitHash,
+		}
+
+		oldCommitCount := len(update.OldCommits)
+		if oldCommitCount > 0 {
+			fromCommit.Rev = update.OldCommits[0].OSTreeCommit
+		}
+
+		toCommit := &models.StaticDeltaCommit{
+			Rev: update.Commit.OSTreeCommit,
+		}
+
+		rb.log.WithFields(log.Fields{
+			"old_commit_count": oldCommitCount,
+			"from_commit_hash": fromCommit.Rev,
+			"to_commit_hash":   toCommit.Rev,
+		}).Info("Static delta commit dev info")
+
+		// FIXME: StaticDeltaStatusNotImplemented is for dev only. Replace with actual status when done.
+		staticDeltaState := &models.StaticDeltaState{
+			Status: models.StaticDeltaStatusNotImplemented,
+		}
+
+		if staticDeltaState.Status != models.StaticDeltaStatusReady {
+			rb.log.WithField("status", staticDeltaState.Status).Debug("Static Delta is not ready")
+		}
 	}
 
 	// Skipping this process if the feature flag is enabled.
@@ -440,7 +485,7 @@ func (rb *RepoBuilder) RepoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 	cmd := BuildCommand("/usr/bin/ostree", "pull-local", "--repo", uprepo, oldrepo, oldRevParse)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		rb.log.WithFields(
-			log.Fields{"error": err.Error(), "OSTreeCommit": oldRevParse, "output": output},
+			log.Fields{"error": err.Error(), "OSTreeCommit": oldRevParse, "output": string(output)},
 		).Error("error occurred while running pull-local command")
 		return err
 	}
@@ -449,7 +494,7 @@ func (rb *RepoBuilder) RepoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 	cmd = BuildCommand("/usr/bin/ostree", "static-delta", "generate", "--repo", uprepo, "--from", oldRevParse, "--to", updateRevParse)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		rb.log.WithFields(
-			log.Fields{"error": err.Error(), "OSTreeCommit": oldRevParse, "output": output},
+			log.Fields{"error": err.Error(), "OSTreeCommit": oldRevParse, "output": string(output)},
 		).Error("error occurred while running static-delta command")
 		return err
 	}
@@ -458,7 +503,7 @@ func (rb *RepoBuilder) RepoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 	cmd = BuildCommand("/usr/bin/ostree", "summary", "--repo", uprepo, "-u")
 	if output, err := cmd.CombinedOutput(); err != nil {
 		rb.log.WithFields(
-			log.Fields{"error": err.Error(), "OSTreeSummary": uprepo, "output": output},
+			log.Fields{"error": err.Error(), "OSTreeSummary": uprepo, "output": string(output)},
 		).Error("error occurred while running summary update command")
 		return err
 	}
