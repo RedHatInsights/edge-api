@@ -96,6 +96,12 @@ func InitClient(ctx context.Context, log *log.Entry) *Client {
 // DefaultLimit The default data list Limit to be returned
 const DefaultLimit = 20
 
+// DefaultOrigin The default repositories origin
+const DefaultOrigin = "external"
+
+// DefaultContentType The default repositories content-type
+const DefaultContentType = "rpm"
+
 // APIPath The content-sources base api path
 const APIPath = "/api/content-sources"
 
@@ -256,6 +262,10 @@ func (c *Client) ListRepositories(requestParams ListRepositoriesParams, filters 
 	for fieldName, fieldValue := range filters {
 		queryValues.Add(fieldName, fieldValue)
 	}
+	// set origin as DefaultOrigin eg: "external"
+	queryValues.Add("origin", DefaultOrigin)
+	// set content_type as DefaultContentType eg: "rpm"
+	queryValues.Add("content_type", DefaultContentType)
 	// set queryValues to repository url
 	repositoriesURL.RawQuery = queryValues.Encode()
 	requestURL := repositoriesURL.String()
