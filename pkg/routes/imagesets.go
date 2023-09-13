@@ -741,8 +741,8 @@ func getContextImageSetImage(w http.ResponseWriter, r *http.Request) *models.Ima
 // @Tags         Image-Sets
 // @Accept       json
 // @Produce      json
-// @Param 	 image_set_id path int true "the image set id"
-// @Param	 image_id     path int true "the image id"
+// @Param 	 imageSetID path int true "the image set id"
+// @Param	 imageID     path int true "the image id"
 // @Success      200 {object} models.ImageSetImageIDViewAPI
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
 // @Failure      404 {object} errors.NotFound "The Image-Set or Image was not found."
@@ -786,7 +786,7 @@ func GetImageSetImageView(w http.ResponseWriter, r *http.Request) {
 // @Tags         Image-Sets
 // @Accept       json
 // @Produce      json
-// @Param 	 ImageSetId	path	int	true  "Identifier of the ImageSet"
+// @Param 	 imageSetID	path	int	true  "Identifier of the ImageSet"
 // @Success      200 {object} models.ImageSetAPI
 // @Failure      400 {object} errors.BadRequest "The request sent couldn't be processed."
 // @Failure      404 {object} errors.NotFound "image-set was not found."
