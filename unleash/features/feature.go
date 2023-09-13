@@ -116,6 +116,11 @@ var StaticDeltaDev = &Flag{Name: "edge-management.static_delta_dev", EnvVar: "FE
 // StaticDeltaGenerate toggles creation of static deltas
 var StaticDeltaGenerate = &Flag{Name: "edge-management.static_delta_generate", EnvVar: "FEATURE_STATIC_DELTA_GENERATE"}
 
+// DB LOGGING FLAGS
+
+// SilentGormLogging toggles noisy logging from Gorm (using for tests during development on slow machines/connections
+var SilentGormLogging = &Flag{Name: "edge-management.silent_gorm_logging", EnvVar: "FEATURE_SILENT_GORM_LOGGING"}
+
 // (ADD FEATURE FLAGS ABOVE)
 // FEATURE FLAG CHECK CODE
 
