@@ -5,11 +5,13 @@ package db
 import (
 	"fmt"
 
-	"github.com/redhatinsights/edge-api/logger"
+	edgelogger "github.com/redhatinsights/edge-api/logger"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 
 	"github.com/redhatinsights/edge-api/config"
 )
@@ -35,9 +37,18 @@ func CreateDB() (*gorm.DB, error) {
 		dia = sqlite.Open(cfg.Database.Name)
 	}
 
-	newDB, err := gorm.Open(dia, &gorm.Config{})
+	var newDB *gorm.DB
+	var err error
+	if feature.SilentGormLogging.IsEnabled() {
+		newDB, err = gorm.Open(dia, &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Silent),
+		})
+	} else {
+		newDB, err = gorm.Open(dia, &gorm.Config{})
+	}
+
 	if err != nil {
-		logger.LogErrorAndPanic("failed to connect database", err)
+		edgelogger.LogErrorAndPanic("failed to connect database", err)
 		return nil, err
 	}
 
