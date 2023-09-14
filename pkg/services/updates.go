@@ -64,6 +64,7 @@ func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterfac
 		ProducerService: kafkacommon.NewProducerService(),
 		TopicService:    kafkacommon.NewTopicService(),
 		WaitForReboot:   time.Minute * 5,
+		commitService:   NewCommitService(ctx, log),
 	}
 }
 
