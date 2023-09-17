@@ -1,6 +1,8 @@
 package models
 
 import (
+	"fmt"
+
 	"github.com/redhatinsights/edge-api/pkg/db"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -9,8 +11,9 @@ import (
 // StaticDelta models the basic data needed to generate a static delta
 type StaticDelta struct {
 	FromCommit StaticDeltaCommit
-	ImagesetID uint64 `json:"imageset_id"` // the ID of the imageset with commits (versions)
-	Name       string `json:"name"`        // the combined commitfrom-committo static delta name
+	ImagesetID uint64           `json:"imageset_id"` // the ID of the imageset with commits (versions)
+	Name       string           `json:"name"`        // the combined commitfrom-committo static delta name
+	State      StaticDeltaState `json:"state"`
 	ToCommit   StaticDeltaCommit
 	Type       string `json:"type"` // delta is stored with "repo" (default) or in external "file"
 }
@@ -52,6 +55,10 @@ const (
 	// StaticDeltaStatusUploading represents the delta is being uploaded to repo storage
 	StaticDeltaStatusUploading = "UPLOADING"
 )
+
+func GetStaticDeltaName(fromCommitHash string, toCommitHash string) string {
+	return fmt.Sprintf("%s-%s", fromCommitHash, toCommitHash)
+}
 
 // Delete removes the static delta state record from the database
 func (sds *StaticDeltaState) Delete(edgelog *log.Entry) error {
@@ -125,11 +132,15 @@ func (sds *StaticDeltaState) Query(edgelog *log.Entry) (*StaticDeltaState, error
 
 // Save writes a static delta state to the database
 func (sds *StaticDeltaState) Save(edgelog *log.Entry) error {
-	edgelog.Info("Saving static delta state record")
+	edgelog.WithFields(log.Fields{
+		"org_id": sds.OrgID,
+		"name":   sds.Name,
+		"url":    sds.URL,
+		"status": sds.Status}).Debug("Saving static delta state")
 	result := db.DB.Save(&sds)
 	if result.Error != nil {
 		edgelog.Error(result.Error)
-		edgelog.WithFields(log.Fields{"error": result.Error}).Error("Error while saving static delta state record")
+		edgelog.WithFields(log.Fields{"error": result.Error}).Error("Error while saving static delta state")
 
 		return result.Error
 	}

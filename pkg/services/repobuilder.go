@@ -86,14 +86,15 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		return nil, errors.New("repo unavailable")
 	}
 
-	// temporary to see actual values in various scenarios
-	// 1. single system update
-	// 2. multiple system update
-	// 3. update of system after rollback (current logic assumes updating from booted commit)
-	if feature.StaticDeltaDev.IsEnabled() {
+	// Skipping this process if the feature flag is enabled.
+	// Without static-deltas, this just downloads a commit repo and re-uploads as an update repo.
+	// This will retain the original commit repo URL as the update URL.
+	// (e.g., for a 2GB commit, this saves 4GB+ in traffic and local disk space on the pod)
+	if !feature.SkipUpdateRepo.IsEnabled() {
+		rb.log.Info("Starts building update repo...")
+
 		rb.log.WithField("updateTransaction", update).Info("Update transaction dev info")
 
-		// FIXME: break out to getFromCommit() and getToCommit()
 		fromCommitHash := "undefined"
 		fromCommit := &models.StaticDeltaCommit{
 			Rev: fromCommitHash,
@@ -108,119 +109,188 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 			Rev: update.Commit.OSTreeCommit,
 		}
 
+		// FIXME: replace with new struct
 		rb.log.WithFields(log.Fields{
 			"old_commit_count": oldCommitCount,
 			"from_commit_hash": fromCommit.Rev,
 			"to_commit_hash":   toCommit.Rev,
 		}).Info("Static delta commit dev info")
 
-		// FIXME: StaticDeltaStatusNotImplemented is for dev only. Replace with actual status when done.
 		staticDeltaState := &models.StaticDeltaState{
-			Status: models.StaticDeltaStatusNotImplemented,
+			Name:   models.GetStaticDeltaName(fromCommit.Rev, toCommit.Rev),
+			OrgID:  update.OrgID,
+			Status: models.StaticDeltaStatusGenerating,
 		}
 
-		if staticDeltaState.Status != models.StaticDeltaStatusReady {
-			rb.log.WithField("status", staticDeltaState.Status).Debug("Static Delta is not ready")
+		if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
+			rb.log.Error("error saving static delta state")
+			return nil, errors.New("error saving static delta state")
 		}
-	}
-
-	// Skipping this process if the feature flag is enabled.
-	// Without static-deltas, this just downloads a commit repo and re-uploads as an update repo.
-	// This will retain the original commit repo URL as the update URL.
-	// (e.g., for a 2GB commit, this saves 4GB+ in traffic and local disk space on the pod)
-	if !feature.SkipUpdateRepo.IsEnabled() {
-		rb.log.Info("Starts building update repo...")
 
 		cfg := config.Get()
 		path := filepath.Clean(filepath.Join(cfg.RepoTempPath, "upd/", strconv.FormatUint(uint64(update.ID), 10)))
 		rb.log.WithField("path", path).Debug("Update path will be created")
 		err := os.MkdirAll(path, os.FileMode(0755))
 		if err != nil {
+			rb.log.Error("Error creating update path")
+			staticDeltaState.Status = models.StaticDeltaStatusError
+			if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
+				rb.log.Error("error saving static delta state")
+			}
 			return nil, err
 		}
 		err = os.Chdir(path)
 		if err != nil {
+			rb.log.Error("Error changing directory to update path")
+			staticDeltaState.Status = models.StaticDeltaStatusError
+			if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
+				rb.log.Error("error saving static delta state")
+			}
+
 			return nil, err
 		}
 
 		tarFileName, err := rb.DownloadVersionRepo(update.Commit, path)
 		if err != nil {
 			rb.log.WithField("error", err.Error()).Error("Error downloading tar")
+			staticDeltaState.Status = models.StaticDeltaStatusError
+			if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
+				rb.log.Error("error saving static delta state")
+			}
+
 			return nil, fmt.Errorf("error download repo repo :: %s", err.Error())
 		}
 		err = rb.ExtractVersionRepo(update.Commit, tarFileName, path)
 		if err != nil {
 			rb.log.WithField("error", err.Error()).Error("Error extracting tar")
+			staticDeltaState.Status = models.StaticDeltaStatusError
+			if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
+				rb.log.Error("error saving static delta state")
+			}
+
 			return nil, fmt.Errorf("error extracting repo :: %s", err.Error())
 		}
 
-		if feature.BuildUpdateRepoWithOldCommits.IsEnabled() && len(update.OldCommits) > 0 {
+		rb.log.WithFields(log.Fields{
+			"updateID":   update.ID,
+			"OldCommits": len(update.OldCommits)}).
+			Info("Old commits found to this commit")
+		stagePath := filepath.Clean(filepath.Join(path, "staging"))
+		err = os.MkdirAll(stagePath, os.FileMode(0755))
+		if err != nil {
+			rb.log.WithField("error", err.Error()).Error("Error making dir")
+			staticDeltaState.Status = models.StaticDeltaStatusError
+			if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
+				rb.log.Error("error saving static delta state")
+			}
+
+			return nil, fmt.Errorf("error mkdir :: %s", err.Error())
+		}
+		err = os.Chdir(stagePath)
+		if err != nil {
+			rb.log.WithField("error", err.Error()).Error("Error changing dir")
+			staticDeltaState.Status = models.StaticDeltaStatusError
+			if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
+				rb.log.Error("error saving static delta state")
+			}
+
+			return nil, fmt.Errorf("error chdir :: %s", err.Error())
+		}
+
+		// If there are any old commits, we need to download them all to be merged
+		// into the update commit repo
+		for _, commit := range update.OldCommits {
 			rb.log.WithFields(log.Fields{
-				"updateID":   update.ID,
-				"OldCommits": len(update.OldCommits)}).
-				Info("Old commits found to this commit")
-			stagePath := filepath.Clean(filepath.Join(path, "staging"))
-			err = os.MkdirAll(stagePath, os.FileMode(0755))
+				"updateID":            update.ID,
+				"commit.OSTreeCommit": commit.OSTreeCommit,
+				"OldCommits":          commit.ID}).
+				Info("Calculate diff from previous commit")
+			commit := commit // this will prevent implicit memory aliasing in the loop
+			stageCommitPath := filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit))
+			tarFileName, err := rb.DownloadVersionRepo(&commit, stageCommitPath)
 			if err != nil {
-				rb.log.WithField("error", err.Error()).Error("Error making dir")
-				return nil, fmt.Errorf("error mkdir :: %s", err.Error())
-			}
-			err = os.Chdir(stagePath)
-			if err != nil {
-				rb.log.WithField("error", err.Error()).Error("Error changing dir")
-				return nil, fmt.Errorf("error chdir :: %s", err.Error())
-			}
+				rb.log.WithField("error", err.Error()).Error("Error downloading tar")
+				staticDeltaState.Status = models.StaticDeltaStatusError
+				if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
+					rb.log.Error("error saving static delta state")
+				}
 
-			// If there are any old commits, we need to download them all to be merged
-			// into the update commit repo
-			for _, commit := range update.OldCommits {
-				rb.log.WithFields(log.Fields{
-					"updateID":            update.ID,
-					"commit.OSTreeCommit": commit.OSTreeCommit,
-					"OldCommits":          commit.ID}).
-					Info("Calculate diff from previous commit")
-				commit := commit // this will prevent implicit memory aliasing in the loop
-				stageCommitPath := filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit))
-				tarFileName, err := rb.DownloadVersionRepo(&commit, stageCommitPath)
-				if err != nil {
-					rb.log.WithField("error", err.Error()).Error("Error downloading tar")
-					return nil, fmt.Errorf("error Upload repo repo :: %s", err.Error())
-				}
-				err = rb.ExtractVersionRepo(update.Commit, tarFileName, stageCommitPath)
-				if err != nil {
-					rb.log.WithField("error", err.Error()).Error("Error extracting repo")
-					return nil, err
-				}
-				// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
-				err = rb.RepoPullLocalStaticDeltas(update.Commit, &commit, filepath.Clean(filepath.Join(path, "repo")),
-					filepath.Clean(filepath.Join(stageCommitPath, "repo")))
-				if err != nil {
-					rb.log.WithField("error", err.Error()).Error("Error pulling static deltas")
-					return nil, err
-				}
+				return nil, fmt.Errorf("error Upload repo repo :: %s", err.Error())
 			}
-
-			// Once all the old commits have been pulled into the update commit's repo
-			// and has static deltas generated, then we don't need the old commits
-			// anymore.
-			err = os.RemoveAll(stagePath)
+			err = rb.ExtractVersionRepo(update.Commit, tarFileName, stageCommitPath)
 			if err != nil {
+				rb.log.WithField("error", err.Error()).Error("Error extracting repo")
+				staticDeltaState.Status = models.StaticDeltaStatusError
+				if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
+					rb.log.Error("error saving static delta state")
+				}
+
 				return nil, err
 			}
+			// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
+			err = rb.RepoPullLocalStaticDeltas(update.Commit, &commit, filepath.Clean(filepath.Join(path, "repo")),
+				filepath.Clean(filepath.Join(stageCommitPath, "repo")))
+			if err != nil {
+				rb.log.WithField("error", err.Error()).Error("Error pulling static deltas")
+				staticDeltaState.Status = models.StaticDeltaStatusError
+				if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
+					rb.log.Error("error saving static delta state")
+				}
 
+				return nil, err
+			}
 		}
-		// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
 
-		rb.log.Info("Upload repo")
-		repoURL, err := rb.FilesService.GetUploader().UploadRepo(filepath.Clean(filepath.Join(path, "repo")), strconv.FormatUint(uint64(update.ID), 10), "private")
-		rb.log.Info("Finished uploading repo")
+		// Once all the old commits have been pulled into the update commit's repo
+		// and has static deltas generated, then we don't need the old commits
+		// anymore.
+		err = os.RemoveAll(stagePath)
 		if err != nil {
+			staticDeltaState.Status = models.StaticDeltaStatusError
+			if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
+				rb.log.Error("error saving static delta state")
+			}
+
 			return nil, err
 		}
 
+		// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
+
+		rb.log.Info("Upload repo")
+
+		staticDeltaState.Status = models.StaticDeltaStatusUploading
+		if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
+			rb.log.Error("error saving static delta state")
+
+			return nil, errors.New("Error saving static delta state")
+		}
+
+		repoURL, err := rb.FilesService.GetUploader().UploadRepo(filepath.Clean(filepath.Join(path, "repo")), strconv.FormatUint(uint64(update.ID), 10), "private")
+		rb.log.Info("Finished uploading repo")
+		if err != nil {
+			staticDeltaState.Status = models.StaticDeltaStatusError
+			if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
+				rb.log.Error("error saving static delta state")
+			}
+
+			return nil, err
+		}
+
+		staticDeltaState.Status = models.StaticDeltaStatusReady
+		staticDeltaState.URL = repoURL
+		if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
+			rb.log.Error("error saving static delta state")
+
+			return nil, errors.New("Error saving static delta state")
+		}
+
 		update.Repo.URL = repoURL
+
+		rb.log.WithField("static_delta_state", staticDeltaState).Debug("Static Delta State")
 	}
 
+	// FIXME: (remove) moved this logic to the calling function to avoid extra DB lookups when static delta is not generated
+	// 			remove when tested successfully
 	if feature.SkipUpdateRepo.IsEnabled() {
 		// grab the original commit URL
 		updateCommit, err := rb.commitService.GetCommitByID(update.CommitID, update.OrgID)

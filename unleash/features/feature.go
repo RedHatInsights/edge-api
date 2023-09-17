@@ -113,6 +113,10 @@ var SkipUpdateRepo = &Flag{Name: "edge-management.skip_update_repo", EnvVar: "FE
 // StaticDeltaDev toggles creation of static deltas
 var StaticDeltaDev = &Flag{Name: "edge-management.static_delta_dev", EnvVar: "FEATURE_STATIC_DELTA_DEV"}
 
+// StaticDeltaShortCircuit toggles creation of static deltas
+var StaticDeltaShortCircuit = &Flag{Name: "edge-management.static_delta_shortcircuit",
+	EnvVar: "FEATURE_STATIC_DELTA_SHORTCIRCUIT"}
+
 // StaticDeltaGenerate toggles creation of static deltas
 var StaticDeltaGenerate = &Flag{Name: "edge-management.static_delta_generate", EnvVar: "FEATURE_STATIC_DELTA_GENERATE"}
 

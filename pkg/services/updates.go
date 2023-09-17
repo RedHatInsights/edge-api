@@ -4,6 +4,7 @@ package services
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -21,7 +22,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/edge-api/pkg/errors"
+	edgeerrors "github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
@@ -64,7 +65,6 @@ func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterfac
 		ProducerService: kafkacommon.NewProducerService(),
 		TopicService:    kafkacommon.NewTopicService(),
 		WaitForReboot:   time.Minute * 5,
-		commitService:   NewCommitService(ctx, log),
 	}
 }
 
@@ -80,7 +80,6 @@ type UpdateService struct {
 	ProducerService kafkacommon.ProducerServiceInterface
 	TopicService    kafkacommon.TopicServiceInterface
 	WaitForReboot   time.Duration
-	commitService   CommitServiceInterface
 }
 
 type playbooks struct {
@@ -367,21 +366,85 @@ func NewTemplateRemoteInfo(update *models.UpdateTransaction) TemplateRemoteInfo 
 	}
 }
 
+func checkStaticDeltaPreReqs(edgelog *log.Entry, orgID string, update models.UpdateTransaction) (*models.StaticDelta, error) {
+	var systemCommit *models.Commit
+
+	if update.ChangesRefs {
+		return &models.StaticDelta{}, errors.New("update changes refs")
+	}
+
+	if update.Commit.OSTreeCommit == "" {
+		return &models.StaticDelta{}, errors.New("to_commit rev is empty")
+	}
+
+	toCommit := &models.StaticDeltaCommit{
+		Rev: update.Commit.OSTreeCommit,
+		Ref: update.Commit.OSTreeRef,
+		URL: update.Commit.Repo.URL,
+	}
+
+	// read to_commit from database without the full service
+	edgelog = edgelog.WithField("commitID", update.CommitID)
+	edgelog.WithField("commit_id", update.CommitID).Debug("Getting commit by id")
+	result := db.Org(orgID, "").Joins("Repo").First(&systemCommit, update.CommitID)
+	if result.Error != nil {
+		edgelog.WithField("error", result.Error.Error()).Error("Error searching for commit by commitID")
+		return &models.StaticDelta{}, result.Error
+	}
+	edgelog.WithField("commit", systemCommit).Debug("Commit retrieved")
+
+	if systemCommit.OSTreeCommit == "" {
+		return &models.StaticDelta{}, errors.New("from_commit rev is empty")
+	}
+
+	fromCommit := &models.StaticDeltaCommit{
+		Rev: systemCommit.OSTreeCommit,
+		Ref: systemCommit.OSTreeRef,
+		URL: systemCommit.Repo.URL,
+	}
+
+	deltaName := models.GetStaticDeltaName(fromCommit.Rev, toCommit.Rev)
+
+	// if static delta does not exist and refs do not change
+	staticDeltaState := &models.StaticDeltaState{
+		Name:  deltaName,
+		OrgID: update.OrgID,
+	}
+	staticDeltaState, err := staticDeltaState.Query(edgelog)
+	if err != nil {
+		return &models.StaticDelta{}, errors.New("cannot determine state of static delta")
+	}
+
+	switch staticDeltaState.Status {
+	case models.StaticDeltaStatusReady:
+		return &models.StaticDelta{}, errors.New("static delta exists")
+	case models.StaticDeltaStatusGenerating:
+		return &models.StaticDelta{}, errors.New("static delta is generating")
+	case models.StaticDeltaStatusUploading:
+		return &models.StaticDelta{}, errors.New("static delta is uploading")
+	}
+
+	staticDelta := &models.StaticDelta{
+		FromCommit: *fromCommit,
+		Name:       deltaName,
+		State:      *staticDeltaState,
+		ToCommit:   *toCommit,
+	}
+
+	edgelog.WithField("static_delta", staticDelta).Debug("check prereqs for creating a static delta")
+
+	return staticDelta, nil
+}
+
 // BuildUpdateRepo determines if a static delta is necessary and calls the repo builder
 func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.UpdateTransaction, error) {
-	/* FIXME: (remove this description when deltas are running)
-	In a nutshell,
-	1. set the repo to the original image repo
-	if generating deltas is flagged on,
-	2. check for existing delta
-	3. if exists, override with the URL from the delta state record
-	4. if not exists, pause the update and gen the delta
-	5. resume update with new delta repo URL
-	*/
 	var update *models.UpdateTransaction
 	var err error
+	var sderr error
+	var staticDelta *models.StaticDelta
 
 	// grab the update transaction from db based on the updateID
+	// NOTE: already contains the to_commit
 	if result := db.Org(orgID, "update_transactions").
 		Preload("DispatchRecords").
 		Preload("Devices").
@@ -396,25 +459,28 @@ func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.Up
 		return nil, result.Error
 	}
 
-	// FIXME: this temp short circuit will set the update repo to the original image repo
-	// 			make permanent with the static delta logic
-	if feature.StaticDeltaDev.IsEnabled() {
-		// grab the original commit URL
-		updateCommit, err := s.commitService.GetCommitByID(update.CommitID, update.OrgID)
-		if err != nil {
-			return nil, err
-		}
-		update.Repo.URL = updateCommit.Repo.URL
-
-		s.log.WithField("updateTransaction", update).Info("services.BuildUpdateRepo StaticDeltaDev setup info")
-	}
-
 	genStaticDelta := false
 
-	if feature.StaticDeltaGenerate.IsEnabled() {
-		// FIXME: once we see this work with the flag, replace with the static delta exists check :-)
-		genStaticDelta = true
+	s.log.WithField("genStaticDelta", genStaticDelta).Debug("initial state of genStaticDelta")
+
+	if feature.StaticDeltaShortCircuit.IsEnabled() {
+		staticDelta, sderr = checkStaticDeltaPreReqs(s.log, orgID, *update)
+		if sderr != nil {
+			s.log.WithField("error", sderr.Error()).Error("error in static delta prereq check")
+		} else {
+			genStaticDelta = true
+		}
+		s.log.WithField("genStaticDelta", genStaticDelta).Debug("checked state of genStaticDelta")
 	}
+
+	if feature.StaticDeltaGenerate.IsEnabled() {
+		// FIXME: remove this when no longer need a forced override for dev purposes
+		genStaticDelta = true
+
+		s.log.WithField("genStaticDelta", genStaticDelta).Debug("feature flag override state of genStaticDelta")
+	}
+
+	s.log.WithField("genStaticDelta", genStaticDelta).Debug("final state of genStaticDelta")
 
 	if genStaticDelta {
 		// setup a context and signal for SIGTERM
@@ -434,7 +500,7 @@ func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.Up
 
 		updateRepoID := update.RepoID
 
-		// create a static delta if necessary
+		// use repobuilder to build the static delta
 		update, err = s.RepoBuilder.BuildUpdateRepo(updateID)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error building update repo")
@@ -455,12 +521,16 @@ func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.Up
 
 		s.log.WithField("updateTransaction", update).Info("services.BuildUpdateRepo StaticDeltaGenerate return dev info")
 
+		// the call to repobuilder saves the update state before returning, so skipping the save here
+
 		return update, nil
 	}
 
-	// FIXME: this temp short circuit will skip the call to the repobuilder service
-	//				and just save and return the update with original repo
-	if feature.StaticDeltaDev.IsEnabled() {
+	// FIXME: remove feature flag when both scenerios work in stage
+	// if static delta generation is skipped, we fall through and use the update image repo
+	if feature.StaticDeltaShortCircuit.IsEnabled() {
+		update.Repo.URL = staticDelta.FromCommit.URL
+
 		s.log.WithField("repo", update.Repo.URL).Info("Update repo URL")
 		update.Repo.Status = models.RepoStatusSuccess
 		if err := db.DB.Omit("Devices.*").Save(&update).Error; err != nil {
@@ -469,8 +539,6 @@ func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.Up
 		if err := db.DB.Omit("Devices.*").Save(&update.Repo).Error; err != nil {
 			return nil, err
 		}
-
-		s.log.WithField("updateTransaction", update).Info("services.BuildUpdateRepo StaticDeltaDev return info")
 
 		return update, nil
 	}
@@ -897,7 +965,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 		for _, UUID := range devicesUpdate.DevicesUUID {
 			inv, err = s.Inventory.ReturnDevicesByID(UUID)
 			if err != nil {
-				err := errors.NewNotFound(fmt.Sprintf("No devices found for UUID %s", UUID))
+				err := edgeerrors.NewNotFound(fmt.Sprintf("No devices found for UUID %s", UUID))
 				return nil, err
 			}
 			if inv.Count > 0 {
@@ -941,7 +1009,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 						"error":      dbDevice.Error.Error(),
 						"deviceUUID": device.ID,
 					}).Error("Error retrieving device record from database")
-					err = errors.NewBadRequest(dbDevice.Error.Error())
+					err = edgeerrors.NewBadRequest(dbDevice.Error.Error())
 					return nil, err
 				}
 				s.log.WithFields(log.Fields{
@@ -1006,7 +1074,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					if result.Error != nil {
 						if result.Error.Error() != "record not found" {
 							s.log.WithField("error", result.Error.Error()).Error("Error returning old commit for this ostree checksum")
-							err := errors.NewBadRequest(result.Error.Error())
+							err := edgeerrors.NewBadRequest(result.Error.Error())
 							return nil, err
 						}
 					}
@@ -1055,7 +1123,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 				update.OldCommits = oldCommits
 				update.RepoID = &repo.ID
 				if err := db.DB.Omit("Devices.*").Save(&update).Error; err != nil {
-					err = errors.NewBadRequest(err.Error())
+					err = edgeerrors.NewBadRequest(err.Error())
 					s.log.WithField("error", err.Error()).Error("Error encoding error")
 					return nil, err
 				}
