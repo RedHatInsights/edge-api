@@ -64,6 +64,7 @@ func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterfac
 		ProducerService: kafkacommon.NewProducerService(),
 		TopicService:    kafkacommon.NewTopicService(),
 		WaitForReboot:   time.Minute * 5,
+		commitService:   NewCommitService(ctx, log),
 	}
 }
 
@@ -79,6 +80,7 @@ type UpdateService struct {
 	ProducerService kafkacommon.ProducerServiceInterface
 	TopicService    kafkacommon.TopicServiceInterface
 	WaitForReboot   time.Duration
+	commitService   CommitServiceInterface
 }
 
 type playbooks struct {
@@ -351,6 +353,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	return update, nil
 }
 
+// NewTemplateRemoteInfo contains the info for the ostree remote file to be written to the system
 func NewTemplateRemoteInfo(update *models.UpdateTransaction) TemplateRemoteInfo {
 
 	return TemplateRemoteInfo{
@@ -363,15 +366,116 @@ func NewTemplateRemoteInfo(update *models.UpdateTransaction) TemplateRemoteInfo 
 		RemoteOstreeUpdate:  fmt.Sprint(update.ChangesRefs),
 	}
 }
+
+// BuildUpdateRepo determines if a static delta is necessary and calls the repo builder
 func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.UpdateTransaction, error) {
+	/* FIXME: (remove this description when deltas are running)
+	In a nutshell,
+	1. set the repo to the original image repo
+	if generating deltas is flagged on,
+	2. check for existing delta
+	3. if exists, override with the URL from the delta state record
+	4. if not exists, pause the update and gen the delta
+	5. resume update with new delta repo URL
+	*/
 	var update *models.UpdateTransaction
-	if result := db.Org(orgID, "update_transactions").Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").First(&update, updateID); result.Error != nil {
+	var err error
+
+	// grab the update transaction from db based on the updateID
+	if result := db.Org(orgID, "update_transactions").
+		Preload("DispatchRecords").
+		Preload("Devices").
+		Joins("Commit").
+		Joins("Repo").
+		First(&update, updateID); result.Error != nil {
+
 		s.log.WithField("error", result.Error.Error()).Error("error retrieving update-transaction")
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, new(UpdateNotFoundError)
 		}
 		return nil, result.Error
 	}
+
+	// FIXME: this temp short circuit will set the update repo to the original image repo
+	// 			make permanent with the static delta logic
+	if feature.StaticDeltaDev.IsEnabled() {
+		// grab the original commit URL
+		updateCommit, err := s.commitService.GetCommitByID(update.CommitID, update.OrgID)
+		if err != nil {
+			return nil, err
+		}
+		update.Repo.URL = updateCommit.Repo.URL
+
+		s.log.WithField("updateTransaction", update).Info("services.BuildUpdateRepo StaticDeltaDev setup info")
+	}
+
+	genStaticDelta := false
+
+	if feature.StaticDeltaGenerate.IsEnabled() {
+		// FIXME: once we see this work with the flag, replace with the static delta exists check :-)
+		genStaticDelta = true
+	}
+
+	if genStaticDelta {
+		// setup a context and signal for SIGTERM
+		intctx, intcancel := context.WithCancel(context.Background())
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
+
+		// this will run at the end of BuildUpdateRepo to tidy up signal and context
+		defer func() {
+			s.log.WithField("updateUDID", updateID).Debug("Stopping the interrupt context and sigint signal")
+			signal.Stop(sigint)
+			intcancel()
+		}()
+		// This runs alongside and blocks on either a signal or normal completion from defer above
+		// 	if an interrupt, set update status to error
+		go s.SetUpdateErrorStatusWhenInterrupted(intctx, *update, sigint, intcancel)
+
+		updateRepoID := update.RepoID
+
+		// create a static delta if necessary
+		update, err = s.RepoBuilder.BuildUpdateRepo(updateID)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Error building update repo")
+			// set status to error
+			if result := db.DB.Model(&models.UpdateTransaction{}).Where("id=?", updateID).Update("Status", models.UpdateStatusError); result.Error != nil {
+				s.log.WithField("error", err.Error()).Error("failed to save building error status")
+				return nil, result.Error
+			}
+			// set repo status to error
+			if updateRepoID != nil {
+				if err := db.DB.Model(&models.Repo{}).Where("id=?", updateRepoID).Update("Status", models.RepoStatusError).Error; err != nil {
+					s.log.WithField("error", err.Error()).Error("failed to save update repository error status")
+					return nil, err
+				}
+			}
+			return nil, err
+		}
+
+		s.log.WithField("updateTransaction", update).Info("services.BuildUpdateRepo StaticDeltaGenerate return dev info")
+
+		return update, nil
+	}
+
+	// FIXME: this temp short circuit will skip the call to the repobuilder service
+	//				and just save and return the update with original repo
+	if feature.StaticDeltaDev.IsEnabled() {
+		s.log.WithField("repo", update.Repo.URL).Info("Update repo URL")
+		update.Repo.Status = models.RepoStatusSuccess
+		if err := db.DB.Omit("Devices.*").Save(&update).Error; err != nil {
+			return nil, err
+		}
+		if err := db.DB.Omit("Devices.*").Save(&update.Repo).Error; err != nil {
+			return nil, err
+		}
+
+		s.log.WithField("updateTransaction", update).Info("services.BuildUpdateRepo StaticDeltaDev return info")
+
+		return update, nil
+	}
+
+	/* everything below goes away if the above works with flags enabled */
 
 	// setup a context and signal for SIGTERM
 	intctx, intcancel := context.WithCancel(context.Background())
@@ -389,7 +493,7 @@ func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.Up
 	go s.SetUpdateErrorStatusWhenInterrupted(intctx, *update, sigint, intcancel)
 
 	updateRepoID := update.RepoID
-	update, err := s.RepoBuilder.BuildUpdateRepo(updateID)
+	update, err = s.RepoBuilder.BuildUpdateRepo(updateID)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error building update repo")
 		// set status to error
