@@ -45,6 +45,7 @@ func setupTestDB() {
 		&models.FDOUser{},
 		&models.SSHKey{},
 		&models.DeviceGroup{},
+		&models.StaticDeltaState{},
 	)
 	if err != nil {
 		panic(err)
