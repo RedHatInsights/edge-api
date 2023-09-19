@@ -13,6 +13,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 
 	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
@@ -319,29 +320,35 @@ func GetAllDeviceGroups(w http.ResponseWriter, r *http.Request) {
 // @Router       /device-groups [post]
 func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
-	deviceGroup, err := createDeviceRequest(w, r)
-	if err != nil {
-		return
-	}
-	ctxServices.Log.Info("Creating a device group")
 
-	deviceGroup, err = ctxServices.DeviceGroupsService.CreateDeviceGroup(deviceGroup)
-	if err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Error creating a device group")
-		var apiError errors.APIError
-		switch err.(type) {
-		case *services.DeviceGroupAlreadyExists:
-			apiError = errors.NewBadRequest(err.Error())
-		default:
-			apiError := errors.NewInternalServerError()
-			apiError.SetTitle("failed updating device group")
+	if feature.CreateGroup.IsEnabled() {
+		deviceGroup, err := createDeviceRequest(w, r)
+		if err != nil {
+			return
 		}
-		respondWithAPIError(w, ctxServices.Log, apiError)
-		return
-	}
+		ctxServices.Log.Info("Creating a device group")
 
-	w.WriteHeader(http.StatusOK)
-	respondWithJSONBody(w, ctxServices.Log, &deviceGroup)
+		deviceGroup, err = ctxServices.DeviceGroupsService.CreateDeviceGroup(deviceGroup)
+		if err != nil {
+			ctxServices.Log.WithField("error", err.Error()).Error("Error creating a device group")
+			var apiError errors.APIError
+			switch err.(type) {
+			case *services.DeviceGroupAlreadyExists:
+				apiError = errors.NewBadRequest(err.Error())
+			default:
+				apiError := errors.NewInternalServerError()
+				apiError.SetTitle("failed updating device group")
+			}
+			respondWithAPIError(w, ctxServices.Log, apiError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		respondWithJSONBody(w, ctxServices.Log, &deviceGroup)
+	} else {
+		w.WriteHeader(http.StatusUnauthorized)
+		respondWithJSONBody(w, ctxServices.Log, feature.CreateGroup.IsEnabled())
+	}
 }
 
 // GetDeviceGroupDetailsByID Returns details for group identified by ID
