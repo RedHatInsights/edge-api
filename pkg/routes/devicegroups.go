@@ -321,7 +321,11 @@ func GetAllDeviceGroups(w http.ResponseWriter, r *http.Request) {
 func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 
-	if feature.CreateGroup.IsEnabled() {
+	if feature.HideCreateGroup.IsEnabled() {
+		w.WriteHeader(http.StatusUnauthorized)
+		respondWithJSONBody(w, ctxServices.Log, nil)
+		return
+	} else {
 		deviceGroup, err := createDeviceRequest(w, r)
 		if err != nil {
 			return
@@ -345,9 +349,6 @@ func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 
 		w.WriteHeader(http.StatusOK)
 		respondWithJSONBody(w, ctxServices.Log, &deviceGroup)
-	} else {
-		w.WriteHeader(http.StatusUnauthorized)
-		respondWithJSONBody(w, ctxServices.Log, feature.CreateGroup.IsEnabled())
 	}
 }
 

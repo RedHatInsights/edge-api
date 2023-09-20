@@ -121,7 +121,7 @@ var StaticDeltaShortCircuit = &Flag{Name: "edge-management.static_delta_shortcir
 var StaticDeltaGenerate = &Flag{Name: "edge-management.static_delta_generate", EnvVar: "FEATURE_STATIC_DELTA_GENERATE"}
 
 // CreateGroup toggles creation of static deltas
-var CreateGroup = &Flag{Name: "edgeParity.create-group", EnvVar: "FEATURE_EDGE_PARITY_CREATE_GROUP"}
+var HideCreateGroup = &Flag{Name: "edge-management.hide-create-group", EnvVar: "FEATURE_HIDE_CREATE_GROUP"}
 
 // DB LOGGING FLAGS
 
