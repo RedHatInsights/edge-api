@@ -452,6 +452,7 @@ func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.Up
 		Preload("Devices").
 		Joins("Commit").
 		Joins("Repo").
+		Preload("OldCommits").
 		First(&update, updateID); result.Error != nil {
 
 		s.log.WithField("error", result.Error.Error()).Error("error retrieving update-transaction")
