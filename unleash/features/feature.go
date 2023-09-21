@@ -120,6 +120,9 @@ var StaticDeltaShortCircuit = &Flag{Name: "edge-management.static_delta_shortcir
 // StaticDeltaGenerate toggles creation of static deltas
 var StaticDeltaGenerate = &Flag{Name: "edge-management.static_delta_generate", EnvVar: "FEATURE_STATIC_DELTA_GENERATE"}
 
+// CreateGroup toggles creation of static deltas
+var HideCreateGroup = &Flag{Name: "edge-management.hide-create-group", EnvVar: "FEATURE_HIDE_CREATE_GROUP"}
+
 // DB LOGGING FLAGS
 
 // SilentGormLogging toggles noisy logging from Gorm (using for tests during development on slow machines/connections
