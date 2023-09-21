@@ -20,10 +20,11 @@ type StaticDelta struct {
 
 // StaticDeltaCommit models a commit specific to generation of static deltas
 type StaticDeltaCommit struct {
-	Path string `json:"path"` // the local path for the from commit repo
-	Ref  string `json:"ref"`  // the ref for from commit (e.g., x86_64/edge)
-	Rev  string `json:"rev"`  // the commit Rev
-	URL  string `json:"url"`
+	Path   string `json:"path"` // the local path for the from commit repo
+	Ref    string `json:"ref"`  // the ref for from commit (e.g., x86_64/edge)
+	Rev    string `json:"rev"`  // the commit Rev
+	TarURL string `json:"tar_url"`
+	URL    string `json:"url"`
 }
 
 // StaticDeltaState models the state of a static delta database record
