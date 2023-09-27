@@ -77,9 +77,9 @@ type ClientInterface interface {
 	GetBaseURL() (*url2.URL, error)
 	GetGroupByName(name string) (*Group, error)
 	GetGroupByUUID(groupUUID string) (*Group, error)
-	CreateGroup(groupName string) (*Group, error)
+	CreateGroup(groupName string, hostIDS []string) (*Group, error)
 	AddHostsToGroup(groupUUID string, hosts []string) (*Group, error)
-	ListGroups(requestParams ListGroupsParams) ([]Group, error)
+	ListGroups(requestParams ListGroupsParams) (*Response, error)
 }
 
 // Client is the implementation of an ClientInterface
@@ -89,7 +89,7 @@ type Client struct {
 }
 
 // InitClient initializes the client for Image Builder
-func InitClient(ctx context.Context, log *log.Entry) *Client {
+func InitClient(ctx context.Context, log *log.Entry) ClientInterface {
 	return &Client{ctx: ctx, log: log}
 }
 
