@@ -590,6 +590,7 @@ var _ = Describe("DfseviceService", func() {
 			event.Host.Updated = models.EdgeAPITime(sql.NullTime{Time: time.Now().UTC(), Valid: true})
 			event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
 			event.Host.SystemProfile.RHCClientID = faker.UUIDHyphenated()
+			event.Host.Groups = []services.PlatformInsightsGroup{{ID: faker.UUIDHyphenated(), Name: faker.Name()}}
 			message, err = json.Marshal(event)
 			Expect(err).To(BeNil())
 		})
@@ -605,6 +606,8 @@ var _ = Describe("DfseviceService", func() {
 			Expect(savedDevice.LastSeen.Time).To(Equal(event.Host.Updated.Time))
 			Expect(savedDevice.Name).To(Equal(event.Host.Name))
 			Expect(savedDevice.RHCClientID).To(Equal(event.Host.SystemProfile.RHCClientID))
+			Expect(savedDevice.GroupUUID).To(Equal(event.Host.Groups[0].ID))
+			Expect(savedDevice.GroupName).To(Equal(event.Host.Groups[0].Name))
 		})
 
 		It("should NOT create devices when record is found", func() {
@@ -651,6 +654,7 @@ var _ = Describe("DfseviceService", func() {
 			event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
 			event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
 			event.Host.SystemProfile.RHCClientID = faker.UUIDHyphenated()
+			event.Host.Groups = []services.PlatformInsightsGroup{{ID: faker.UUIDHyphenated(), Name: faker.Name()}}
 			message, err := json.Marshal(event)
 			Expect(err).To(BeNil())
 
@@ -666,9 +670,11 @@ var _ = Describe("DfseviceService", func() {
 			Expect(device.UpdateAvailable).To(Equal(false))
 			Expect(device.LastSeen.Time).To(Equal(event.Host.Updated.Time))
 			Expect(device.Name).To(Equal(event.Host.Name))
+			Expect(device.GroupUUID).To(Equal(event.Host.Groups[0].ID))
+			Expect(device.GroupName).To(Equal(event.Host.Groups[0].Name))
 		})
 
-		It("should update device OrgID, name, lastSeen, image_id and update availability when device already exists", func() {
+		It("should update device OrgID, name, lastSeen, image_id, group_name, group_uuid and update availability when device already exists", func() {
 			// Creating a devices needs to have org_id because of BeforeCreate method applied to Devices model
 			device := models.Device{
 				UUID:            faker.UUIDHyphenated(),
@@ -688,6 +694,7 @@ var _ = Describe("DfseviceService", func() {
 			event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
 			event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
 			event.Host.SystemProfile.RHCClientID = faker.UUIDHyphenated()
+			event.Host.Groups = []services.PlatformInsightsGroup{{ID: faker.UUIDHyphenated(), Name: faker.Name()}}
 			message, err := json.Marshal(event)
 			Expect(err).To(BeNil())
 
@@ -703,6 +710,8 @@ var _ = Describe("DfseviceService", func() {
 			Expect(savedDevice.RHCClientID).To(Equal(event.Host.SystemProfile.RHCClientID))
 			Expect(savedDevice.LastSeen.Time).To(Equal(event.Host.Updated.Time))
 			Expect(savedDevice.Name).To(Equal(event.Host.Name))
+			Expect(savedDevice.GroupUUID).To(Equal(event.Host.Groups[0].ID))
+			Expect(savedDevice.GroupName).To(Equal(event.Host.Groups[0].Name))
 		})
 
 		Context("device update availability", func() {
@@ -942,12 +951,14 @@ var _ = Describe("DfseviceService", func() {
 				orgID := common.DefaultOrgID
 
 				imageV1, _ := seeder.Images().Create()
+				groupName := faker.Name()
+				groupUUID := faker.UUIDHyphenated()
 
 				deviceUnresponsive := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
 				result := db.DB.Create(&deviceUnresponsive)
 				Expect(result.Error).To(BeNil())
 
-				deviceSuccess := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated()}
+				deviceSuccess := models.Device{OrgID: orgID, ImageID: imageV1.ID, UUID: faker.UUIDHyphenated(), GroupName: groupName, GroupUUID: groupUUID}
 				result = db.DB.Create(&deviceSuccess)
 				Expect(result.Error).To(BeNil())
 
@@ -1135,6 +1146,8 @@ var _ = Describe("DfseviceService", func() {
 				Expect(devices.Devices[1].DispatcherStatus).To(Equal(models.UpdateStatusSuccess))
 				Expect(devices.Devices[1].Status).To(Equal(models.DeviceViewStatusRunning))
 				Expect(devices.Devices[1].DispatcherReason).To(BeEmpty())
+				Expect(devices.Devices[1].GroupName).To(Equal(groupName))
+				Expect(devices.Devices[1].GroupUUID).To(Equal(groupUUID))
 
 				Expect(devices.Devices[2].DispatcherStatus).To(Equal(models.DispatchRecordStatusError))
 				Expect(devices.Devices[2].Status).To(Equal(models.DeviceViewStatusRunning))

@@ -58,6 +58,8 @@ type DeviceView struct {
 	DeviceGroups     []DeviceDeviceGroup `json:"DeviceGroups"`
 	DispatcherStatus string              `json:"DispatcherStatus"`
 	DispatcherReason string              `json:"DispatcherReason"`
+	GroupName        string              `json:"GroupName"` // the inventory group name
+	GroupUUID        string              `json:"GroupUUID"` // the inventory group id
 }
 
 // DeviceDeviceGroup is a struct of device group name and id needed for DeviceView
@@ -97,6 +99,8 @@ type Device struct {
 	UpdateAvailable   bool                 `json:"UpdateAvailable"`
 	DevicesGroups     []DeviceGroup        `faker:"-" gorm:"many2many:device_groups_devices;save_association:false" json:"DevicesGroups"`
 	UpdateTransaction *[]UpdateTransaction `faker:"-" gorm:"many2many:updatetransaction_devices;" json:"UpdateTransaction"`
+	GroupName         string               `json:"group_name"` // the inventory group name
+	GroupUUID         string               `json:"group_uuid"` // the inventory group id
 }
 
 // BeforeCreate method is called before creating devices, it make sure org_id is not empty
