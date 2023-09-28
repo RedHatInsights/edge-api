@@ -76,12 +76,18 @@ type systemProfile struct {
 }
 
 type host struct {
-	ID            string             `json:"id"`
-	Name          string             `json:"display_name"`
-	OrgID         string             `json:"org_id"`
-	InsightsID    string             `json:"insights_id"`
-	Updated       models.EdgeAPITime `json:"updated"`
-	SystemProfile systemProfile      `json:"system_profile"`
+	ID            string                  `json:"id"`
+	Name          string                  `json:"display_name"`
+	OrgID         string                  `json:"org_id"`
+	InsightsID    string                  `json:"insights_id"`
+	Updated       models.EdgeAPITime      `json:"updated"`
+	SystemProfile systemProfile           `json:"system_profile"`
+	Groups        []PlatformInsightsGroup `json:"groups"`
+}
+
+type PlatformInsightsGroup struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 // PlatformInsightsDeleteEventPayload is the body of the delete event found on the platform.inventory.events kafka topic.
@@ -632,6 +638,12 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 	deviceUUID := eventData.Host.ID
 	deviceOrgID := eventData.Host.OrgID
 	deviceName := eventData.Host.Name
+	var deviceGroupName string
+	var deviceGroupUUID string
+	if len(eventData.Host.Groups) > 0 {
+		deviceGroupName = eventData.Host.Groups[0].Name
+		deviceGroupUUID = eventData.Host.Groups[0].ID
+	}
 	device, err := s.GetDeviceByUUID(deviceUUID)
 	if err != nil {
 		if _, ok := err.(*DeviceNotFoundError); ok {
@@ -642,6 +654,8 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 				OrgID:       deviceOrgID,
 				Name:        deviceName,
 				LastSeen:    eventData.Host.Updated,
+				GroupName:   deviceGroupName,
+				GroupUUID:   deviceGroupUUID,
 			}
 			if result := db.DB.Create(&newDevice); result.Error != nil {
 				s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error.Error()}).Error("Error creating device")
@@ -664,6 +678,8 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 	// always update device name and last seen datetime
 	device.LastSeen = eventData.Host.Updated
 	device.Name = deviceName
+	device.GroupName = deviceGroupName
+	device.GroupUUID = deviceGroupUUID
 
 	if result := db.DB.Save(device); result.Error != nil {
 		s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error}).Error("Error updating device")
@@ -884,6 +900,8 @@ func ReturnDevicesView(storedDevices []models.Device, orgID string) ([]models.De
 			DeviceGroups:     deviceGroups,
 			DispatcherStatus: deviceInfo.DispatcherStatus,
 			DispatcherReason: deviceInfo.DispatcherReason,
+			GroupName:        device.GroupName,
+			GroupUUID:        device.GroupUUID,
 		}
 		returnDevices = append(returnDevices, currentDeviceView)
 	}
@@ -964,12 +982,20 @@ func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCre
 		"host_id": string(e.Host.ID),
 		"name":    string(e.Host.Name),
 	}).Debug("Saving newly created edge device")
+	var deviceGroupName string
+	var deviceGroupUUID string
+	if len(e.Host.Groups) > 0 {
+		deviceGroupName = e.Host.Groups[0].Name
+		deviceGroupUUID = e.Host.Groups[0].ID
+	}
 	var newDevice = models.Device{
 		UUID:        e.Host.ID,
 		RHCClientID: e.Host.SystemProfile.RHCClientID,
 		OrgID:       e.Host.OrgID,
 		Name:        e.Host.Name,
 		LastSeen:    e.Host.Updated,
+		GroupName:   deviceGroupName,
+		GroupUUID:   deviceGroupUUID,
 	}
 
 	// We should not create a new device if UUID already exists
