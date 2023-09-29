@@ -26,7 +26,7 @@ import (
 func MakeDevicesRouter(sub chi.Router) {
 	sub.With(ValidateQueryParams("devices")).With(ValidateGetAllDevicesFilterParams).Get("/", GetDevices)
 	sub.With(ValidateQueryParams("devicesview")).With(common.Paginate).With(ValidateGetDevicesViewFilterParams).Get("/devicesview", GetDevicesView)
-	sub.With(ValidateQueryParams("devicesview")).With(common.Paginate).With(ValidateGetDevicesViewFilterParams).Post("/", GetDevicesViewWithinDevices)
+	sub.With(ValidateQueryParams("devicesview")).With(common.Paginate).With(ValidateGetDevicesViewFilterParams).Post("/devicesview", GetDevicesViewWithinDevices)
 	sub.Route("/{DeviceUUID}", func(r chi.Router) {
 		r.Use(DeviceCtx)
 		r.Get("/dbinfo", GetDeviceDBInfo)
