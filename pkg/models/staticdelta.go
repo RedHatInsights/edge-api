@@ -38,8 +38,17 @@ type StaticDeltaState struct {
 
 // values for the StaticDeltaState Status field
 const (
+	// StaticDeltaStatusDownloading represents the to and from commits are being downloaded
+	StaticDeltaStatusDownloading = "DOWNLOADING"
+
 	// StaticDeltaStatusError represents there has been an error in the process
 	StaticDeltaStatusError = "ERROR"
+
+	// StaticDeltaStatusFailedPrereq skips the static delta and uses existing to_commit URL
+	StaticDeltaStatusFailedPrereq = "FAILEDPREREQ"
+
+	// StaticDeltaStatusForceGenerate is a feature flag override to force static delta generation
+	StaticDeltaStatusForceGenerate = "FORCE"
 
 	// StaticDeltaStatusGenerating represents static delta generation is in process
 	StaticDeltaStatusGenerating = "GENERATING"
