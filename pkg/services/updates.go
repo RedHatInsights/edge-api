@@ -438,10 +438,20 @@ func checkStaticDeltaPreReqs(edgelog *log.Entry, orgID string, update models.Upd
 	return staticDelta, nil
 }
 
+func saveUpdateTransaction(edgelog *log.Entry, updateTransaction *models.UpdateTransaction) error {
+	edgelog.WithField("repo", updateTransaction.Repo.URL).Info("Update repo URL")
+	updateTransaction.Repo.Status = models.RepoStatusSuccess
+	if err := db.DB.Omit("Devices.*").Save(&updateTransaction).Error; err != nil {
+		return err
+	}
+	err := db.DB.Omit("Devices.*").Save(&updateTransaction.Repo).Error
+
+	return err
+}
+
 // BuildUpdateRepo determines if a static delta is necessary and calls the repo builder
 func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.UpdateTransaction, error) {
 	var update *models.UpdateTransaction
-	var err error
 	var sderr error
 	var staticDelta *models.StaticDelta
 
@@ -462,105 +472,128 @@ func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.Up
 		return nil, result.Error
 	}
 
-	genStaticDelta := false
+	// FIXME: remove this when no longer need a forced override for dev purposes
+	if feature.StaticDeltaGenerate.IsEnabled() {
+		staticDelta.State.Status = models.StaticDeltaStatusForceGenerate
+	}
 
-	s.log.WithField("genStaticDelta", genStaticDelta).Debug("initial state of genStaticDelta")
-
-	if feature.StaticDeltaShortCircuit.IsEnabled() {
+	if feature.StaticDeltaDev.IsEnabled() {
 		staticDelta, sderr = checkStaticDeltaPreReqs(s.log, orgID, *update)
 		if sderr != nil {
 			s.log.WithField("error", sderr.Error()).Error("error in static delta prereq check")
-		} else {
-			genStaticDelta = true
+			staticDelta.State.Status = models.StaticDeltaStatusFailedPrereq
 		}
 
-		if staticDelta.State.Status == models.StaticDeltaStatusReady ||
-			staticDelta.State.Status == models.StaticDeltaStatusGenerating ||
-			staticDelta.State.Status == models.StaticDeltaStatusUploading {
-			genStaticDelta = false
-		}
+		s.log.WithField("static_delta_state_status", staticDelta.State.Status).
+			Debug("static delta state status")
 
-		s.log.WithField("genStaticDelta", genStaticDelta).Debug("checked state of genStaticDelta")
-	}
+		switch staticDelta.State.Status {
+		// if FAILEDPREREQ, just return the URL from the to_commit
+		case models.StaticDeltaStatusFailedPrereq:
+			update.Repo.URL = staticDelta.ToCommit.URL
 
-	if feature.StaticDeltaGenerate.IsEnabled() {
-		// FIXME: remove this when no longer need a forced override for dev purposes
-		genStaticDelta = true
-
-		s.log.WithField("genStaticDelta", genStaticDelta).Debug("feature flag override state of genStaticDelta")
-	}
-
-	s.log.WithField("genStaticDelta", genStaticDelta).Debug("final state of genStaticDelta")
-
-	if genStaticDelta {
-		// setup a context and signal for SIGTERM
-		intctx, intcancel := context.WithCancel(context.Background())
-		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
-
-		// this will run at the end of BuildUpdateRepo to tidy up signal and context
-		defer func() {
-			s.log.WithField("updateUDID", updateID).Debug("Stopping the interrupt context and sigint signal")
-			signal.Stop(sigint)
-			intcancel()
-		}()
-		// This runs alongside and blocks on either a signal or normal completion from defer above
-		// 	if an interrupt, set update status to error
-		go s.SetUpdateErrorStatusWhenInterrupted(intctx, *update, sigint, intcancel)
-
-		updateRepoID := update.RepoID
-
-		// use repobuilder to build the static delta
-		update, err = s.RepoBuilder.BuildUpdateRepo(updateID)
-		if err != nil {
-			s.log.WithField("error", err.Error()).Error("Error building update repo")
-			// set status to error
-			if result := db.DB.Model(&models.UpdateTransaction{}).Where("id=?", updateID).Update("Status", models.UpdateStatusError); result.Error != nil {
-				s.log.WithField("error", err.Error()).Error("failed to save building error status")
-				return nil, result.Error
+			s.log.WithField("repo", update.Repo.URL).Info("Update repo URL")
+			update.Repo.Status = models.RepoStatusSuccess
+			if saveErr := saveUpdateTransaction(s.log, update); saveErr != nil {
+				return nil, saveErr
 			}
-			// set repo status to error
-			if updateRepoID != nil {
-				if err := db.DB.Model(&models.Repo{}).Where("id=?", updateRepoID).Update("Status", models.RepoStatusError).Error; err != nil {
-					s.log.WithField("error", err.Error()).Error("failed to save update repository error status")
-					return nil, err
-				}
-			}
-			return nil, err
-		}
 
-		s.log.WithField("updateTransaction", update).Info("services.BuildUpdateRepo StaticDeltaGenerate return dev info")
-
-		// the call to repobuilder saves the update state before returning, so skipping the save here
-
-		return update, nil
-	}
-
-	// FIXME: remove feature flag when both scenerios work in stage
-	// if static delta generation is skipped, we fall through and use the update image repo
-	if feature.StaticDeltaShortCircuit.IsEnabled() {
-		// FIXME: this is where the queue to wait for a generating static delta goes
-		//		NEXT PR :-)
-		update.Repo.URL = staticDelta.ToCommit.URL
-
-		/// override URL if a static delta exists in the ready state
-		if staticDelta.State.Status == models.StaticDeltaStatusReady {
+			return update, nil
+		// if READY, just return the URL from static delta state
+		case models.StaticDeltaStatusReady:
 			update.Repo.URL = staticDelta.State.URL
+
+			s.log.WithField("repo", update.Repo.URL).Info("Update repo URL")
+			update.Repo.Status = models.RepoStatusSuccess
+			if saveErr := saveUpdateTransaction(s.log, update); saveErr != nil {
+				return nil, saveErr
+			}
+
+			return update, nil
+		// if NOTFOUND, we need to generate a static delta and wait
+		case models.StaticDeltaStatusNotFound, models.StaticDeltaStatusForceGenerate:
+			// FIXME: possible dupes if multiple async updates hit this at the same time
+			deltaUpdate, deltaErr := s.generateStaticDelta(updateID, update)
+
+			s.log.WithField("updateTransaction", deltaUpdate).
+				Info("generateStaticDelta return dev info")
+
+			return deltaUpdate, deltaErr
+		// if GENERATING/UPLOADING, just need to wait
+		case models.StaticDeltaStatusGenerating, models.StaticDeltaStatusUploading, models.StaticDeltaStatusDownloading:
+			sdUpdate, sdErr := s.waitForStaticDeltaReady(update, staticDelta)
+			if sdErr != nil {
+				return nil, sdErr
+			}
+			return sdUpdate, nil
 		}
+	}
+
+	// FIXME: this is the current code falling through if feature flags aren't enabled
+	//		if flagged above, we should not get here. Remove when all tests ok.
+	update, err := s.generateStaticDelta(updateID, update)
+
+	s.log.WithField("updateTransaction", update).
+		Info("original return dev info")
+
+	return update, err
+}
+
+func (s *UpdateService) waitForStaticDeltaReady(update *models.UpdateTransaction, staticDelta *models.StaticDelta) (*models.UpdateTransaction, error) {
+	sleepTime := time.Duration(60 * time.Second)
+	sdTimeout := time.Duration(20 * time.Minute)
+	deltaChan := make(chan models.StaticDeltaState)
+	errChan := make(chan error)
+
+	go func(edgelog *log.Entry, staticDeltaState models.StaticDeltaState) {
+		for {
+			sdReady, err := staticDeltaState.IsReady(edgelog)
+			if err != nil {
+				errChan <- err
+				break
+			}
+
+			if sdReady {
+				deltaChan <- staticDeltaState
+				break
+			}
+
+			time.Sleep(sleepTime)
+		}
+	}(s.log, staticDelta.State)
+
+	select {
+	case sdState := <-deltaChan:
+		update.Repo.URL = sdState.URL
+
 		s.log.WithField("repo", update.Repo.URL).Info("Update repo URL")
 		update.Repo.Status = models.RepoStatusSuccess
-		if err := db.DB.Omit("Devices.*").Save(&update).Error; err != nil {
-			return nil, err
+		if saveErr := saveUpdateTransaction(s.log, update); saveErr != nil {
+			return nil, saveErr
 		}
-		if err := db.DB.Omit("Devices.*").Save(&update.Repo).Error; err != nil {
-			return nil, err
-		}
+	case <-time.After(time.Minute * sdTimeout):
+		update.Repo.URL = staticDelta.ToCommit.URL
 
-		return update, nil
+		s.log.WithField("repo", update.Repo.URL).Info("Update repo URL")
+		update.Repo.Status = models.RepoStatusSuccess
+		if saveErr := saveUpdateTransaction(s.log, update); saveErr != nil {
+			return nil, saveErr
+		}
+	case <-errChan:
+		update.Repo.URL = staticDelta.ToCommit.URL
+
+		s.log.WithField("repo", update.Repo.URL).Info("Update repo URL")
+		update.Repo.Status = models.RepoStatusSuccess
+		if saveErr := saveUpdateTransaction(s.log, update); saveErr != nil {
+			return nil, saveErr
+		}
 	}
 
-	/* everything below goes away if the above works with flags enabled */
+	return update, nil
+}
 
+func (s *UpdateService) generateStaticDelta(updateID uint, update *models.UpdateTransaction) (*models.UpdateTransaction, error) {
+	var err error
 	// setup a context and signal for SIGTERM
 	intctx, intcancel := context.WithCancel(context.Background())
 	sigint := make(chan os.Signal, 1)

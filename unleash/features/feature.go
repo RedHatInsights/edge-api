@@ -105,17 +105,13 @@ var CleanUPDevices = &Flag{Name: "edge-management.cleanup_devices", EnvVar: "FEA
 // CleanUPOrphanCommits is a feature flag to use for cleanup orphan commits
 var CleanUPOrphanCommits = &Flag{Name: "edge-management.cleanup_orphan_commits", EnvVar: "FEATURE_CLEANUP_ORPHAN_COMMITS"}
 
+// STATIC DELTA FLAGS
+
 // SkipUpdateRepo is a feature flag to skip the process of download and re-upload of update repositories
 var SkipUpdateRepo = &Flag{Name: "edge-management.skip_update_repo", EnvVar: "FEATURE_SKIP_UPDATE_REPO"}
 
-// STATIC DELTA FLAGS
-
 // StaticDeltaDev toggles creation of static deltas
 var StaticDeltaDev = &Flag{Name: "edge-management.static_delta_dev", EnvVar: "FEATURE_STATIC_DELTA_DEV"}
-
-// StaticDeltaShortCircuit toggles creation of static deltas
-var StaticDeltaShortCircuit = &Flag{Name: "edge-management.static_delta_shortcircuit",
-	EnvVar: "FEATURE_STATIC_DELTA_SHORTCIRCUIT"}
 
 // StaticDeltaGenerate toggles creation of static deltas
 var StaticDeltaGenerate = &Flag{Name: "edge-management.static_delta_generate", EnvVar: "FEATURE_STATIC_DELTA_GENERATE"}

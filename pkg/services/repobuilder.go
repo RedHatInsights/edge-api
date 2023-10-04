@@ -119,7 +119,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		staticDeltaState := &models.StaticDeltaState{
 			Name:   models.GetStaticDeltaName(fromCommit.Rev, toCommit.Rev),
 			OrgID:  update.OrgID,
-			Status: models.StaticDeltaStatusGenerating,
+			Status: models.StaticDeltaStatusDownloading,
 		}
 
 		if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
@@ -227,7 +227,14 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 
 				return nil, err
 			}
-			// FIXME: hardcoding "repo" in here because that's how it comes from osbuild
+
+			staticDeltaState.Status = models.StaticDeltaStatusGenerating
+			if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
+				rb.log.Error("error saving static delta state")
+
+				return nil, errors.New("Error saving static delta state")
+			}
+
 			err = rb.RepoPullLocalStaticDeltas(update.Commit, &commit, filepath.Clean(filepath.Join(path, "repo")),
 				filepath.Clean(filepath.Join(stageCommitPath, "repo")))
 			if err != nil {
