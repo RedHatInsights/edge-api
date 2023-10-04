@@ -52,6 +52,12 @@ objects:
           - -c
           - edge-api-migrate-repositories
           inheritEnv: true
+        - name: run-groups-migration
+          command:
+            - bash
+            - -c
+            - edge-api-migrate-groups
+          inheritEnv: true
         livenessProbe:
           failureThreshold: 3
           httpGet:
