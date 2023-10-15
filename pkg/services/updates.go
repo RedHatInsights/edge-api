@@ -440,7 +440,6 @@ func checkStaticDeltaPreReqs(edgelog *log.Entry, orgID string, update models.Upd
 
 func saveUpdateTransaction(edgelog *log.Entry, updateTransaction *models.UpdateTransaction) error {
 	edgelog.WithField("repo", updateTransaction.Repo.URL).Info("Update repo URL")
-	updateTransaction.Repo.Status = models.RepoStatusSuccess
 	if err := db.DB.Omit("Devices.*").Save(&updateTransaction).Error; err != nil {
 		return err
 	}
@@ -489,7 +488,9 @@ func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.Up
 
 		switch staticDelta.State.Status {
 		// if FAILEDPREREQ, just return the URL from the to_commit
-		case models.StaticDeltaStatusFailedPrereq:
+		// TODO: no current logic to correct an err'd static delta gen
+		//			currently using temporary endpoints in dev
+		case models.StaticDeltaStatusFailedPrereq, models.StaticDeltaStatusError:
 			update.Repo.URL = staticDelta.ToCommit.URL
 
 			s.log.WithField("repo", update.Repo.URL).Info("Update repo URL")
@@ -546,16 +547,21 @@ func (s *UpdateService) waitForStaticDeltaReady(update *models.UpdateTransaction
 	errChan := make(chan error)
 
 	go func(edgelog *log.Entry, staticDeltaState models.StaticDeltaState) {
+	DeltaLoop:
 		for {
-			sdReady, err := staticDeltaState.IsReady(edgelog)
+			staticDeltaStateCheck, err := staticDeltaState.Query(edgelog)
 			if err != nil {
-				errChan <- err
-				break
+				errChan <- errors.New("cannot determine state of static delta")
+				break DeltaLoop
 			}
 
-			if sdReady {
+			switch staticDeltaStateCheck.Status {
+			case models.StaticDeltaStatusError:
+				errChan <- errors.New("error in static delta generation")
+				break DeltaLoop
+			case models.StaticDeltaStatusReady:
 				deltaChan <- staticDeltaState
-				break
+				break DeltaLoop
 			}
 
 			time.Sleep(sleepTime)
@@ -566,7 +572,8 @@ func (s *UpdateService) waitForStaticDeltaReady(update *models.UpdateTransaction
 	case sdState := <-deltaChan:
 		update.Repo.URL = sdState.URL
 
-		s.log.WithField("repo", update.Repo.URL).Info("Update repo URL")
+		s.log.WithFields(log.Fields{"static_delta_state": sdState,
+			"repo": update.Repo.URL}).Info("static delta status wait returned")
 		update.Repo.Status = models.RepoStatusSuccess
 		if saveErr := saveUpdateTransaction(s.log, update); saveErr != nil {
 			return nil, saveErr
@@ -574,15 +581,17 @@ func (s *UpdateService) waitForStaticDeltaReady(update *models.UpdateTransaction
 	case <-time.After(time.Minute * sdTimeout):
 		update.Repo.URL = staticDelta.ToCommit.URL
 
-		s.log.WithField("repo", update.Repo.URL).Info("Update repo URL")
+		s.log.WithFields(log.Fields{"timeout": sdTimeout,
+			"repo": update.Repo.URL}).Info("static delta status wait returned")
 		update.Repo.Status = models.RepoStatusSuccess
 		if saveErr := saveUpdateTransaction(s.log, update); saveErr != nil {
 			return nil, saveErr
 		}
-	case <-errChan:
+	case err := <-errChan:
 		update.Repo.URL = staticDelta.ToCommit.URL
 
-		s.log.WithField("repo", update.Repo.URL).Info("Update repo URL")
+		s.log.WithFields(log.Fields{"err": err.Error(),
+			"repo": update.Repo.URL}).Error("static delta status wait returned")
 		update.Repo.Status = models.RepoStatusSuccess
 		if saveErr := saveUpdateTransaction(s.log, update); saveErr != nil {
 			return nil, saveErr
