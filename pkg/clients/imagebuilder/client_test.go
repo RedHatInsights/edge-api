@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -850,7 +849,7 @@ var _ = Describe("Image Builder Client Test", func() {
 				}`
 
 				// create a new reader with that JSON
-				r := ioutil.NopCloser(bytes.NewReader([]byte(jsonResponse)))
+				r := io.NopCloser(bytes.NewReader([]byte(jsonResponse)))
 
 				ImageBuilderHTTPClient = &MockClient{
 					MockDo: func(*http.Request) (*http.Response, error) {
@@ -889,7 +888,7 @@ var _ = Describe("Image Builder Client Test", func() {
 				}`
 
 				// create a new reader with that JSON
-				r := ioutil.NopCloser(bytes.NewReader([]byte(jsonResponse)))
+				r := io.NopCloser(bytes.NewReader([]byte(jsonResponse)))
 
 				ImageBuilderHTTPClient = &MockClient{
 					MockDo: func(*http.Request) (*http.Response, error) {
@@ -923,7 +922,7 @@ var _ = Describe("Image Builder Client Test", func() {
 				jsonResponse := `{}`
 
 				// create a new reader with that JSON
-				r := ioutil.NopCloser(bytes.NewReader([]byte(jsonResponse)))
+				r := io.NopCloser(bytes.NewReader([]byte(jsonResponse)))
 
 				ImageBuilderHTTPClient = &MockClient{
 					MockDo: func(*http.Request) (*http.Response, error) {
@@ -1060,7 +1059,7 @@ var _ = Describe("Image Builder Client Test", func() {
 				}`
 
 				// create a new reader with that JSON
-				r := ioutil.NopCloser(bytes.NewReader([]byte(jsonResponse)))
+				r := io.NopCloser(bytes.NewReader([]byte(jsonResponse)))
 
 				ImageBuilderHTTPClient = &MockClient{
 					MockDo: func(*http.Request) (*http.Response, error) {
