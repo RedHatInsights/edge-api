@@ -1,7 +1,7 @@
 ############################################
 # STEP 1: build executable edge-api binaries
 ############################################
-FROM registry.access.redhat.com/ubi8/go-toolset:1.18.4-8
+FROM registry.access.redhat.com/ubi8/go-toolset:1.19.10-16
 #WORKDIR $GOPATH/src/github.com/RedHatInsights/edge-api/
 COPY . .
 # Use go mod
