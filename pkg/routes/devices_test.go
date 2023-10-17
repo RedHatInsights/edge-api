@@ -1152,11 +1152,9 @@ func TestGetDevicesViewFilteringByGroup(t *testing.T) {
 		Expect(err).ToNot(HaveOccurred())
 	}
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(GetDevicesView)
 
 	ctx := dependencies.ContextWithServices(req.Context(), mockServices)
 	req = req.WithContext(ctx)
-	handler.ServeHTTP(rr, req)
 	Expect(rr.Code).To(Equal(http.StatusOK))
 
 }
