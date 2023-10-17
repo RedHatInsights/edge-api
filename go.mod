@@ -19,7 +19,7 @@ require (
 	github.com/magiconair/properties v1.8.7
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.27.10
-	github.com/prometheus/client_golang v1.16.0
+	github.com/prometheus/client_golang v1.17.0
 	github.com/redhatinsights/app-common-go v1.6.7
 	github.com/redhatinsights/platform-go-middlewares v0.20.0
 	github.com/sirupsen/logrus v1.9.3
@@ -67,9 +67,9 @@ require (
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/perimeterx/marshmallow v1.1.4 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/prometheus/client_model v0.3.0 // indirect
-	github.com/prometheus/common v0.42.0 // indirect
-	github.com/prometheus/procfs v0.10.1 // indirect
+	github.com/prometheus/client_model v0.4.1-0.20230718164431-9a2bf3000d16 // indirect
+	github.com/prometheus/common v0.44.0 // indirect
+	github.com/prometheus/procfs v0.11.1 // indirect
 	github.com/sagikazarmark/locafero v0.3.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
