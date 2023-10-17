@@ -1142,19 +1142,19 @@ func TestGetDevicesViewFilteringByGroup(t *testing.T) {
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	})
-	router.Route("/", MakeDevicesRouter)
-	mockDeviceService.EXPECT().GetDevicesCount(gomock.Any()).Return(int64(1), nil)
-	mockDeviceService.EXPECT().GetDevicesView(10, 0, gomock.Any()).Return(&models.DeviceViewList{Total: 1, Devices: deviceView}, nil)
+	router.Route("/devices", MakeDevicesRouter)
 
-	url := fmt.Sprintf("/deviceview?groupUUID=%v", groupUUID)
+	mockDeviceService.EXPECT().GetDevicesCount(gomock.Any()).Return(int64(1), nil)
+	mockDeviceService.EXPECT().GetDevicesView(30, 0, gomock.Any()).Return(&models.DeviceViewList{Total: 1, Devices: deviceView}, nil)
+
+	url := fmt.Sprintf("/devices/devicesview?groupUUID=%v", groupUUID)
 	req, err := http.NewRequest("GET", url, nil)
+	fmt.Printf(req.URL.Host)
 	if err != nil {
 		Expect(err).ToNot(HaveOccurred())
 	}
 	rr := httptest.NewRecorder()
-
-	ctx := dependencies.ContextWithServices(req.Context(), mockServices)
-	req = req.WithContext(ctx)
+	router.ServeHTTP(rr, req)
 	Expect(rr.Code).To(Equal(http.StatusOK))
 
 }
