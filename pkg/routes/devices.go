@@ -91,6 +91,11 @@ var devicesFilters = common.ComposeFilters(
 		QueryParam: "image_id",
 		DBField:    "devices.image_id",
 	}),
+	// Filter handler for "groupUUID"
+	common.ContainFilterHandler(&common.Filter{
+		QueryParam: "groupUUID",
+		DBField:    "devices.group_uuid",
+	}),
 	common.SortFilterHandler("devices", "name", "ASC"),
 )
 
