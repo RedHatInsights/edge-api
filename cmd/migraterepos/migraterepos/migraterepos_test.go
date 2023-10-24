@@ -20,8 +20,8 @@ import (
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/google/uuid"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo" // nolint: revive
+	. "github.com/onsi/gomega" // nolint: revive
 )
 
 var _ = Describe("Migrate custom repositories", func() {

@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi"
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega" // nolint: revive
 )
 
 func TestGetPagination(t *testing.T) {

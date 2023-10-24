@@ -15,8 +15,8 @@ import (
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 
 	"github.com/bxcodec/faker/v3"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo" // nolint: revive
+	. "github.com/onsi/gomega" // nolint: revive
 )
 
 var _ = Describe("Clients", func() {
