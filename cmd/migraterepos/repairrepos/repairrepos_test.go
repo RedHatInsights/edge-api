@@ -10,8 +10,8 @@ import (
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 
 	"github.com/bxcodec/faker/v3"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo" // nolint: revive
+	. "github.com/onsi/gomega" // nolint: revive
 )
 
 var _ = Describe("Repair custom repositories", func() {

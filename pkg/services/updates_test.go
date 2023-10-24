@@ -12,8 +12,8 @@ import (
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo" // nolint: revive
+	. "github.com/onsi/gomega" // nolint: revive
 	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"

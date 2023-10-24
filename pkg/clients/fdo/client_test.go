@@ -11,8 +11,8 @@ import (
 	"net/http/httptest"
 	"strconv"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo" // nolint: revive
+	. "github.com/onsi/gomega" // nolint: revive
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 

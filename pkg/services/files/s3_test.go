@@ -16,8 +16,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo" // nolint: revive
+	. "github.com/onsi/gomega" // nolint: revive
 )
 
 var _ = Describe("S3 Test", func() {
