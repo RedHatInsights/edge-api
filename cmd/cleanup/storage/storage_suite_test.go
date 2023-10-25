@@ -3,8 +3,8 @@ package storage_test
 import (
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo" // nolint: revive
+	. "github.com/onsi/gomega" // nolint: revive
 )
 
 func TestMigrate(t *testing.T) {

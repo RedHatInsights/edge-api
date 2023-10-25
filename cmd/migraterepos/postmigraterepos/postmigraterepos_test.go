@@ -11,8 +11,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo" // nolint: revive
+	. "github.com/onsi/gomega" // nolint: revive
 	"gorm.io/gorm"
 )
 
