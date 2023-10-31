@@ -19,6 +19,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	"github.com/redhatinsights/edge-api/pkg/services/utility"
 	"gorm.io/gorm"
 )
 
@@ -350,11 +351,15 @@ func GetDeviceDBInfo(w http.ResponseWriter, r *http.Request) {
 // @Param	 image_id           query int   	false "field: filter by image id"
 // @Param	 limit              query int    	false "field: return number of devices until limit is reached. Default is 100."
 // @Param	 offset             query int    	false "field: return number of devices begining at the offset."
-// @Success      200  {object}  models.DeviceViewListAPI
+// @Success      200  {object}  models.DeviceViewListResponseAPI
 // @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /devices/devicesview [get]
 func GetDevicesView(w http.ResponseWriter, r *http.Request) {
 	contextServices := dependencies.ServicesFromContext(r.Context())
+	orgID := readOrgID(w, r, contextServices.Log)
+	if orgID == "" {
+		return
+	}
 	tx := devicesFilters(r, db.DB).Where("image_id > 0").Session(&gorm.Session{})
 	pagination := common.GetPagination(r)
 
@@ -369,6 +374,8 @@ func GetDevicesView(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, contextServices.Log, errors.NewNotFound("No devices found"))
 		return
 	}
+	// set whether to enforce edge groups
+	devicesViewList.EnforceEdgeGroups = utility.EnforceEdgeGroups(orgID)
 	respondWithJSONBody(w, contextServices.Log, map[string]interface{}{"data": devicesViewList, "count": devicesCount})
 }
 
@@ -388,7 +395,7 @@ func GetDevicesView(w http.ResponseWriter, r *http.Request) {
 // @Param	 image_id           query int   	false "field: filter by image id"
 // @Param	 limit              query int    	false "field: return number of devices until limit is reached. Default is 100."
 // @Param	 offset             query int    	false "field: return number of devices beginning at the offset."
-// @Success      200  {object}  models.DeviceViewListAPI
+// @Success      200  {object}  models.DeviceViewListResponseAPI
 // @Failure      500 {object} errors.InternalServerError "There was an internal server error."
 // @Router       /devices/devicesview [post]
 func GetDevicesViewWithinDevices(w http.ResponseWriter, r *http.Request) {
@@ -421,5 +428,7 @@ func GetDevicesViewWithinDevices(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, contextServices.Log, errors.NewInternalServerError())
 		return
 	}
+	// set whether to enforce edge groups
+	devicesViewList.EnforceEdgeGroups = utility.EnforceEdgeGroups(orgID)
 	respondWithJSONBody(w, contextServices.Log, map[string]interface{}{"data": devicesViewList, "count": devicesCount})
 }

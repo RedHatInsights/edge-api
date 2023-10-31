@@ -59,3 +59,8 @@ type PostDeviceForDeviceGroupAPI struct {
 	Name string `json:"Name" example:"localhost"`                            // device name
 	UUID string `json:"UUID" example:"68485bb8-6427-40ad-8711-93b6a5b4deac"` // device uuid
 }
+
+// EnforceEdgeGroupsAPI is the result of /device-groups/enforce-edge-groups end point
+type EnforceEdgeGroupsAPI struct {
+	EnforceEdgeGroups bool `json:"enforce_edge_groups" example:"false"` // whether to enforce edge groups usage
+}

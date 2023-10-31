@@ -40,8 +40,9 @@ type DeviceDetailsList struct {
 
 // DeviceViewList is the list of devices for a given account, formatted for the UI
 type DeviceViewList struct {
-	Total   int64        `json:"total"`
-	Devices []DeviceView `json:"devices"`
+	Total             int64        `json:"total"`
+	Devices           []DeviceView `json:"devices"`
+	EnforceEdgeGroups bool         `json:"enforce_edge_groups"` // Whether to enforce the edge groups usage
 }
 
 // DeviceView is the device information needed for the UI

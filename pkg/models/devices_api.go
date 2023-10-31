@@ -112,6 +112,13 @@ type DeviceViewAPI struct {
 
 // DeviceViewListAPI is the list of devices for a given account, formatted for the UI
 type DeviceViewListAPI struct {
-	Total   int64           `json:"total" example:"40"` // Total number of device
-	Devices []DeviceViewAPI `json:"devices"`            // List of Devices
+	Total             int64           `json:"total" example:"40"`  // Total number of device
+	Devices           []DeviceViewAPI `json:"devices"`             // List of Devices
+	EnforceEdgeGroups bool            `json:"enforce_edge_groups"` // Whether to enforce the edge groups usage
+}
+
+// DeviceViewListResponseAPI is the struct returned by the devices view endpoint
+type DeviceViewListResponseAPI struct {
+	Data  DeviceViewListAPI `json:"data"`               // The devices view data
+	Count int64             `json:"count" example:"40"` // The overall number of devices
 }
