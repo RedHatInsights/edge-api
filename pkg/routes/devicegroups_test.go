@@ -7,8 +7,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo"
@@ -16,8 +18,10 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 
 	"github.com/redhatinsights/edge-api/config"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 
 	"github.com/redhatinsights/edge-api/pkg/services"
 
@@ -25,6 +29,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 
+	"github.com/go-chi/chi"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	log "github.com/sirupsen/logrus"
 )
@@ -888,6 +893,86 @@ var _ = Describe("DeviceGroup routes", func() {
 				// Check the status code is what we expect.
 				Expect(rr.Code).To(Equal(http.StatusBadRequest))
 			})
+		})
+	})
+
+	Context("EnforceEdgeGroups", func() {
+		var conf *config.EdgeConfig
+		var OrgID string
+		// var initialConfigEnforceEdgeGroupsOrgs []string
+		var initialAuth bool
+		var router *chi.Mux
+
+		BeforeEach(func() {
+			conf = config.Get()
+			OrgID = faker.UUIDHyphenated()
+			// save initial conf values
+			initialAuth = conf.Auth
+
+			// initialConfigEnforceEdgeGroupsOrgs = conf.EnforceEdgeGroupsOrgs
+
+			// set config auth to true to force use identity org
+			conf.Auth = true
+			router = chi.NewRouter()
+			router.Use(func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					ctx := dependencies.ContextWithServices(r.Context(), edgeAPIServices)
+					// set identity orgID
+					ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
+					next.ServeHTTP(w, r.WithContext(ctx))
+				})
+			})
+			router.Route("/device-groups", MakeDeviceGroupsRouter)
+
+		})
+
+		AfterEach(func() {
+			// restore initial conf values
+			conf.Auth = initialAuth
+			err := os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should return enforce edge groups value true", func() {
+			err := os.Setenv(feature.EnforceEdgeGroups.EnvVar, "true")
+			Expect(err).ToNot(HaveOccurred())
+
+			req, err := http.NewRequest("GET", "/device-groups/enforce-edge-groups", nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			responseRecorder := httptest.NewRecorder()
+			router.ServeHTTP(responseRecorder, req)
+
+			Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+			respBody, err := io.ReadAll(responseRecorder.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(respBody)).ToNot(BeEmpty())
+
+			var responseDevicesView models.EnforceEdgeGroupsAPI
+			err = json.Unmarshal(respBody, &responseDevicesView)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(responseDevicesView.EnforceEdgeGroups).To(BeTrue())
+		})
+
+		It("should return enforce edge groups value false", func() {
+			err := os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
+			Expect(err).ToNot(HaveOccurred())
+
+			req, err := http.NewRequest("GET", "/device-groups/enforce-edge-groups", nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			responseRecorder := httptest.NewRecorder()
+			router.ServeHTTP(responseRecorder, req)
+
+			Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+			respBody, err := io.ReadAll(responseRecorder.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(respBody)).ToNot(BeEmpty())
+
+			var responseDevicesView models.EnforceEdgeGroupsAPI
+			err = json.Unmarshal(respBody, &responseDevicesView)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(responseDevicesView.EnforceEdgeGroups).To(BeFalse())
 		})
 	})
 })

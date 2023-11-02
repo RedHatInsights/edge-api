@@ -11,15 +11,18 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/go-chi/chi"
 	"github.com/golang/mock/gomock"
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory/mock_inventory"
 	"github.com/redhatinsights/edge-api/pkg/common/seeder"
+	"github.com/redhatinsights/platform-go-middlewares/identity"
 	log "github.com/sirupsen/logrus"
 
 	. "github.com/onsi/ginkgo"
@@ -31,6 +34,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 )
 
 var _ = Describe("Devices Router", func() {
@@ -1157,4 +1161,123 @@ func TestGetDevicesViewFilteringByGroup(t *testing.T) {
 	router.ServeHTTP(rr, req)
 	Expect(rr.Code).To(Equal(http.StatusOK))
 
+}
+
+func TestEnforceEdgeGroups(t *testing.T) {
+	RegisterTestingT(t)
+	conf := config.Get()
+	initialAuth := conf.Auth
+	// restore initial conf properties and env variables
+	defer func(auth bool) {
+		conf := config.Get()
+		conf.Auth = auth
+		err := os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
+		Expect(err).ToNot(HaveOccurred())
+	}(initialAuth)
+
+	orgID := faker.UUIDHyphenated()
+
+	testCases := []struct {
+		Name          string
+		EnvVar        string
+		HTTPMethod    string
+		BodyData      *models.FilterByDevicesAPI
+		OrgID         string
+		ExpectedValue bool
+	}{
+		{
+			Name:          "should return enforce edge groups value true for http GET method",
+			EnvVar:        "true",
+			HTTPMethod:    "GET",
+			OrgID:         orgID,
+			ExpectedValue: true,
+		},
+		{
+			Name:          "should return enforce edge groups value false for http GET method",
+			EnvVar:        "",
+			HTTPMethod:    "GET",
+			OrgID:         faker.UUIDHyphenated(),
+			ExpectedValue: false,
+		},
+		{
+			Name:          "should return enforce edge groups value true for http POST method",
+			EnvVar:        "true",
+			HTTPMethod:    "POST",
+			BodyData:      &models.FilterByDevicesAPI{DevicesUUID: []string{faker.UUIDHyphenated()}},
+			OrgID:         orgID,
+			ExpectedValue: true,
+		},
+		{
+			Name:          "should return enforce edge groups value false for http POST method",
+			EnvVar:        "",
+			HTTPMethod:    "POST",
+			BodyData:      &models.FilterByDevicesAPI{DevicesUUID: []string{faker.UUIDHyphenated()}},
+			OrgID:         faker.UUIDHyphenated(),
+			ExpectedValue: false,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			if testCase.EnvVar == "" {
+				err := os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
+				Expect(err).ToNot(HaveOccurred())
+			} else {
+				err := os.Setenv(feature.EnforceEdgeGroups.EnvVar, testCase.EnvVar)
+				Expect(err).ToNot(HaveOccurred())
+			}
+
+			// set conf  auth to true to force use the supplied identity
+			conf.Auth = true
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			var mockDeviceService *mock_services.MockDeviceServiceInterface
+			var router chi.Router
+			var edgeAPIServices *dependencies.EdgeAPIServices
+			ctrl = gomock.NewController(GinkgoT())
+
+			mockDeviceService = mock_services.NewMockDeviceServiceInterface(ctrl)
+			edgeAPIServices = &dependencies.EdgeAPIServices{
+				DeviceService: mockDeviceService,
+				Log:           log.NewEntry(log.StandardLogger()),
+			}
+			router = chi.NewRouter()
+			router.Use(func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					ctx := dependencies.ContextWithServices(r.Context(), edgeAPIServices)
+					// set identity orgID
+					ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: testCase.OrgID}})
+					next.ServeHTTP(w, r.WithContext(ctx))
+				})
+			})
+			router.Route("/devices", MakeDevicesRouter)
+
+			mockDeviceService.EXPECT().GetDevicesCount(gomock.Any()).Return(int64(0), nil)
+			mockDeviceService.EXPECT().GetDevicesView(30, 0, gomock.Any()).Return(&models.DeviceViewList{}, nil)
+
+			var body io.Reader
+			if testCase.BodyData != nil {
+				jsonBodyData, err := json.Marshal(*testCase.BodyData)
+				Expect(err).To(BeNil())
+				body = bytes.NewBuffer(jsonBodyData)
+			}
+			req, err := http.NewRequest(testCase.HTTPMethod, "/devices/devicesview", body)
+			Expect(err).ToNot(HaveOccurred())
+
+			responseRecorder := httptest.NewRecorder()
+			router.ServeHTTP(responseRecorder, req)
+
+			Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+			respBody, err := io.ReadAll(responseRecorder.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(respBody)).ToNot(BeEmpty())
+
+			var responseDevicesView models.DeviceViewListResponseAPI
+			err = json.Unmarshal(respBody, &responseDevicesView)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(responseDevicesView.Data.EnforceEdgeGroups).To(Equal(testCase.ExpectedValue))
+		})
+	}
 }

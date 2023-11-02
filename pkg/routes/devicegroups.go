@@ -13,6 +13,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	"github.com/redhatinsights/edge-api/pkg/services/utility"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 
 	"github.com/go-chi/chi"
@@ -47,6 +48,7 @@ func MakeDeviceGroupsRouter(sub chi.Router) {
 	sub.With(ValidateQueryParams("device-groups")).With(ValidateGetAllDeviceGroupsFilterParams).With(common.Paginate).Get("/", GetAllDeviceGroups)
 	sub.Post("/", CreateDeviceGroup)
 	sub.Get("/checkName/{name}", CheckGroupName)
+	sub.Get("/enforce-edge-groups", GetEnforceEdgeGroups)
 	sub.Route("/{ID}", func(r chi.Router) {
 		r.Use(DeviceGroupCtx)
 		r.Get("/", GetDeviceGroupByID)
@@ -889,4 +891,25 @@ func containsInt(s []uint, searchterm uint) bool {
 		}
 	}
 	return false
+}
+
+// GetEnforceEdgeGroups Returns whether the edge groups is enforced for the current organization
+// @Summary      Returns whether the edge groups is enforced for the current organization
+// @Description  Returns whether the edge groups is enforced for the current organization
+// @Tags         Device Groups
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} models.EnforceEdgeGroupsAPI
+// @Failure      400 {object} errors.BadRequest
+// @Router       /device-groups/enforce-edge-groups [get]
+func GetEnforceEdgeGroups(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		// logs and response handled by readOrgID
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	respondWithJSONBody(w, ctxServices.Log, &models.EnforceEdgeGroupsAPI{EnforceEdgeGroups: utility.EnforceEdgeGroups(orgID)})
 }

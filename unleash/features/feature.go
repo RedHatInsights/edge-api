@@ -116,11 +116,14 @@ var StaticDeltaDev = &Flag{Name: "edge-management.static_delta_dev", EnvVar: "FE
 // StaticDeltaGenerate toggles creation of static deltas
 var StaticDeltaGenerate = &Flag{Name: "edge-management.static_delta_generate", EnvVar: "FEATURE_STATIC_DELTA_GENERATE"}
 
-// CreateGroup toggles creation of static deltas
+// HideCreateGroup toggles creation of static deltas
 var HideCreateGroup = &Flag{Name: "edge-management.hide-create-group", EnvVar: "FEATURE_HIDE_CREATE_GROUP"}
 
 // EdgeParityGroupsMigration toggles edge parity groups migration
 var EdgeParityGroupsMigration = &Flag{Name: "edgeParity.groups-migration", EnvVar: "FEATURE_EDGE-PARITY-GROUPS-MIGRATION"}
+
+// EnforceEdgeGroups is a feature flag to query to query unleash whether the org is enforced to use edge groups
+var EnforceEdgeGroups = &Flag{Name: "edge-management.enforce_edge_groups", EnvVar: "FEATURE_ENFORCE_EDGE_GROUPS"}
 
 // DB LOGGING FLAGS
 
@@ -131,23 +134,25 @@ var SilentGormLogging = &Flag{Name: "edge-management.silent_gorm_logging", EnvVa
 // FEATURE FLAG CHECK CODE
 
 // CheckFeature checks to see if a given feature is available
-func CheckFeature(feature string) bool {
+func CheckFeature(feature string, options ...unleash.FeatureOption) bool {
 	cfg := config.Get()
 
 	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
-		unleashCtx := unleashCTX.Context{}
-		return unleash.IsEnabled(feature, unleash.WithContext(unleashCtx))
+		if len(options) == 0 {
+			options = append(options, unleash.WithContext(unleashCTX.Context{}))
+		}
+		return unleash.IsEnabled(feature, options...)
 	}
 
 	return false
 }
 
 // IsEnabled checks both the feature flag service and env vars on demand
-func (ff *Flag) IsEnabled() bool {
+func (ff *Flag) IsEnabled(options ...unleash.FeatureOption) bool {
 	ffServiceEnabled := false
 	ffEnvEnabled := false
 	if ff.Name != "" {
-		ffServiceEnabled = CheckFeature(ff.Name)
+		ffServiceEnabled = CheckFeature(ff.Name, options...)
 	}
 
 	// just check if the env variable exists. it can be set to any value.
