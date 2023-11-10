@@ -108,6 +108,8 @@ type DeviceViewAPI struct {
 	DeviceGroups     []DeviceGroupAPI `json:"DeviceGroups"`                                  // Device's groups
 	DispatcherStatus string           `json:"DispatcherStatus"`                              // Status of Dispatch
 	DispatcherReason string           `json:"DispatcherReason"`                              // Reason of Dispatch
+	GroupName        string           `json:"GroupName"`                                     // the inventory group name
+	GroupUUID        string           `json:"GroupUUID"`                                     // the inventory group id
 }
 
 // DeviceViewListAPI is the list of devices for a given account, formatted for the UI

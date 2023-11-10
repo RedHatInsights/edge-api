@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/redhatinsights/edge-api/logger"
+	"github.com/redhatinsights/edge-api/pkg/clients/rbac"
 	"github.com/redhatinsights/edge-api/pkg/clients/repositories"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
@@ -31,6 +32,7 @@ type EdgeAPIServices struct {
 	ProducerService         kafkacommon.ProducerServiceInterface
 	ConsumerService         kafkacommon.ConsumerServiceInterface
 	RepositoriesService     repositories.ClientInterface
+	RbacService             rbac.ClientInterface
 	Log                     *log.Entry
 }
 
@@ -58,6 +60,7 @@ func Init(ctx context.Context) *EdgeAPIServices {
 		ProducerService:         kafkacommon.NewProducerService(),
 		ConsumerService:         kafkacommon.NewConsumerService(ctx, log),
 		RepositoriesService:     repositories.InitClient(ctx, log),
+		RbacService:             rbac.InitClient(ctx, log),
 		Log:                     log,
 	}
 }

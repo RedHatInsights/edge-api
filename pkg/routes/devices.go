@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
+	"github.com/redhatinsights/edge-api/pkg/clients/rbac"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
@@ -20,6 +21,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/utility"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 	"gorm.io/gorm"
 )
 
@@ -336,6 +338,50 @@ func GetDeviceDBInfo(w http.ResponseWriter, r *http.Request) {
 	respondWithJSONBody(w, contextServices.Log, &devices)
 }
 
+func handleInventoryHostsRbac(w http.ResponseWriter, r *http.Request) (*gorm.DB, error) {
+	contextServices := dependencies.ServicesFromContext(r.Context())
+	if identity, err := common.GetIdentityFromContext(r.Context()); err != nil {
+		contextServices.Log.WithField("error", err.Error()).Error("error occurred when retrieving identity from context")
+		respondWithAPIError(w, contextServices.Log, errors.NewBadRequest("error retrieving identity"))
+		return nil, err
+	} else if identity.Identity.Type != common.IdentityTypeUser {
+		return nil, nil
+	}
+	acl, err := contextServices.RbacService.GetAccessList(rbac.ApplicationInventory)
+	if err != nil {
+		contextServices.Log.WithField("error", err.Error()).Error("error occurred when getting rbac access list")
+		respondWithAPIError(w, contextServices.Log, errors.NewInternalServerError())
+		return nil, err
+	}
+
+	allowedAccess, groupIDS, hostsWithNoGroupsAssigned, err := contextServices.RbacService.GetInventoryGroupsAccess(
+		acl, rbac.ResourceTypeHOSTS, rbac.AccessTypeRead,
+	)
+	if err != nil {
+		apiError := errors.NewServiceUnavailable(err.Error())
+		respondWithAPIError(w, contextServices.Log, apiError)
+		return nil, err
+	}
+	if !allowedAccess {
+		apiError := errors.NewForbidden("access to hosts is forbidden")
+		respondWithAPIError(w, contextServices.Log, apiError)
+		return nil, apiError
+	}
+	var filter *gorm.DB
+	if len(groupIDS) > 0 {
+		filter = db.DB.Where("devices.group_uuid IN (?)", groupIDS)
+	}
+	if hostsWithNoGroupsAssigned {
+		noGroupsFilters := db.DB.Where("devices.group_uuid = '' OR devices.group_uuid IS NULL")
+		if filter == nil {
+			filter = noGroupsFilters
+		} else {
+			filter = filter.Or(noGroupsFilters)
+		}
+	}
+	return filter, nil
+}
+
 // GetDevicesView returns all data needed to display customers devices
 // @ID           GetDevicesView
 // @Summary      Return all data of Devices.
@@ -360,7 +406,19 @@ func GetDevicesView(w http.ResponseWriter, r *http.Request) {
 	if orgID == "" {
 		return
 	}
-	tx := devicesFilters(r, db.DB).Where("image_id > 0").Session(&gorm.Session{})
+	tx := devicesFilters(r, db.DB).Where("image_id > 0")
+	enforceEdgeGroups := utility.EnforceEdgeGroups(orgID)
+	if feature.EdgeParityInventoryRbac.IsEnabled() && feature.EdgeParityInventoryGroupsEnabled.IsEnabled() && !enforceEdgeGroups {
+		inventoryRbacFilter, err := handleInventoryHostsRbac(w, r)
+		if err != nil {
+			// logs and response handled by handleInventoryHostsRbac
+			return
+		}
+		if inventoryRbacFilter != nil {
+			tx = tx.Where(inventoryRbacFilter)
+		}
+	}
+	tx = tx.Session(&gorm.Session{})
 	pagination := common.GetPagination(r)
 
 	devicesCount, err := contextServices.DeviceService.GetDevicesCount(tx)
@@ -375,7 +433,7 @@ func GetDevicesView(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// set whether to enforce edge groups
-	devicesViewList.EnforceEdgeGroups = utility.EnforceEdgeGroups(orgID)
+	devicesViewList.EnforceEdgeGroups = enforceEdgeGroups
 	respondWithJSONBody(w, contextServices.Log, map[string]interface{}{"data": devicesViewList, "count": devicesCount})
 }
 
@@ -414,7 +472,19 @@ func GetDevicesViewWithinDevices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tx := devicesFilters(r, db.DB).Where("image_id > 0").Where("devices.uuid IN (?)", devicesUUID.DevicesUUID).Session(&gorm.Session{})
+	tx := devicesFilters(r, db.DB).Where("image_id > 0").Where("devices.uuid IN (?)", devicesUUID.DevicesUUID)
+	enforceEdgeGroups := utility.EnforceEdgeGroups(orgID)
+	if feature.EdgeParityInventoryRbac.IsEnabled() && feature.EdgeParityInventoryGroupsEnabled.IsEnabled() && !enforceEdgeGroups {
+		inventoryRbacFilter, err := handleInventoryHostsRbac(w, r)
+		if err != nil {
+			// logs and response handled by handleInventoryHostsRbac
+			return
+		}
+		if inventoryRbacFilter != nil {
+			tx = tx.Where(inventoryRbacFilter)
+		}
+	}
+	tx = tx.Session(&gorm.Session{})
 	pagination := common.GetPagination(r)
 
 	devicesCount, err := contextServices.DeviceService.GetDevicesCount(tx)
@@ -429,6 +499,6 @@ func GetDevicesViewWithinDevices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// set whether to enforce edge groups
-	devicesViewList.EnforceEdgeGroups = utility.EnforceEdgeGroups(orgID)
+	devicesViewList.EnforceEdgeGroups = enforceEdgeGroups
 	respondWithJSONBody(w, contextServices.Log, map[string]interface{}{"data": devicesViewList, "count": devicesCount})
 }

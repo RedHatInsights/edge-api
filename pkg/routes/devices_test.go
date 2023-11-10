@@ -15,12 +15,15 @@ import (
 	"testing"
 	"time"
 
+	rbacClient "github.com/RedHatInsights/rbac-client-go"
 	"github.com/bxcodec/faker/v3"
 	"github.com/go-chi/chi"
 	"github.com/golang/mock/gomock"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory/mock_inventory"
+	"github.com/redhatinsights/edge-api/pkg/clients/rbac"
+	"github.com/redhatinsights/edge-api/pkg/clients/rbac/mock_rbac"
 	"github.com/redhatinsights/edge-api/pkg/common/seeder"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	log "github.com/sirupsen/logrus"
@@ -1278,6 +1281,430 @@ func TestEnforceEdgeGroups(t *testing.T) {
 			err = json.Unmarshal(respBody, &responseDevicesView)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(responseDevicesView.Data.EnforceEdgeGroups).To(Equal(testCase.ExpectedValue))
+		})
+	}
+}
+
+func TestDevicesViewInventoryHostsRbac(t *testing.T) {
+	RegisterTestingT(t)
+	conf := config.Get()
+	orgID := faker.UUIDHyphenated()
+
+	defer func() {
+		_ = os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
+		_ = os.Unsetenv(feature.EdgeParityInventoryRbac.EnvVar)
+		_ = os.Unsetenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar)
+		config.Get().Auth = false
+	}()
+
+	// enable authentication in config
+	conf.Auth = true
+
+	// ensure enforce edge groups is disabled
+	err := os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
+	Expect(err).ToNot(HaveOccurred())
+	// ensure edgeParty inventory rbac feature is enabled
+	err = os.Setenv(feature.EdgeParityInventoryRbac.EnvVar, "true")
+	Expect(err).ToNot(HaveOccurred())
+	// ensure edgeParty inventory groups feature is enabled
+	err = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
+	Expect(err).ToNot(HaveOccurred())
+
+	inventoryGroups := []struct {
+		ID   string
+		Name string
+	}{
+		{ID: faker.UUIDHyphenated(), Name: faker.Name()},
+		{ID: faker.UUIDHyphenated(), Name: faker.Name()},
+	}
+
+	image := models.Image{Name: faker.Name(), OrgID: orgID}
+	err = db.DB.Create(&image).Error
+	Expect(err).ToNot(HaveOccurred())
+
+	// create 3 devices two with different inventory groups and one without inventory group
+	devices := []models.Device{
+		{OrgID: orgID, UUID: faker.UUIDHyphenated(), GroupUUID: inventoryGroups[0].ID, GroupName: inventoryGroups[0].Name, ImageID: image.ID},
+		{OrgID: orgID, UUID: faker.UUIDHyphenated(), GroupUUID: inventoryGroups[1].ID, GroupName: inventoryGroups[1].Name, ImageID: image.ID},
+		{OrgID: orgID, UUID: faker.UUIDHyphenated(), ImageID: image.ID},
+	}
+	err = db.DB.Create(&devices).Error
+	Expect(err).ToNot(HaveOccurred())
+
+	// for http post method will include all devices uuids
+	PostDefaultData := &models.FilterByDevicesAPI{DevicesUUID: []string{devices[0].UUID, devices[1].UUID, devices[2].UUID}}
+
+	errClientExpectedError := errors.New("expected client error")
+
+	testCases := []struct {
+		Name                            string
+		HTTPMethod                      string
+		BodyData                        *models.FilterByDevicesAPI
+		RbacACL                         rbacClient.AccessList
+		UseIdentity                     bool
+		UseIdentityType                 string
+		ClientCallExpected              bool
+		ClientError                     error
+		ClientAccessCallExpected        bool
+		ClientAccessError               error
+		ResultAllowedAccess             bool
+		ResultGroupsID                  []string
+		ResultHostsWithNoGroupsAssigned bool
+		ExpectedDevices                 []models.Device
+		ExpectedHTTPStatus              int
+		ExpectedErrorMessage            string
+	}{
+		// GET http method
+		{
+			Name:       "should return the devices device from groups in ACL",
+			HTTPMethod: "GET",
+			RbacACL: rbacClient.AccessList{
+				rbacClient.Access{
+					ResourceDefinitions: []rbacClient.ResourceDefinition{
+						{
+							Filter: rbacClient.ResourceDefinitionFilter{
+								Key:       "group.id",
+								Operation: "in",
+								Value:     fmt.Sprintf(`["%s"]`, inventoryGroups[0].ID),
+							},
+						},
+					},
+					Permission: "inventory:hosts:read",
+				},
+			},
+			UseIdentity:                     true,
+			UseIdentityType:                 common.IdentityTypeUser,
+			ClientCallExpected:              true,
+			ClientAccessCallExpected:        true,
+			ResultAllowedAccess:             true,
+			ResultGroupsID:                  []string{inventoryGroups[0].ID},
+			ResultHostsWithNoGroupsAssigned: false,
+			ExpectedHTTPStatus:              http.StatusOK,
+			ExpectedDevices:                 []models.Device{devices[0]},
+		},
+		{
+			Name:       "should return the devices with no groups",
+			HTTPMethod: "GET",
+			RbacACL: rbacClient.AccessList{
+				rbacClient.Access{
+					ResourceDefinitions: []rbacClient.ResourceDefinition{
+						{
+							Filter: rbacClient.ResourceDefinitionFilter{
+								Key:       "group.id",
+								Operation: "in",
+								Value:     `[null]`,
+							},
+						},
+					},
+					Permission: "inventory:hosts:read",
+				},
+			},
+			UseIdentity:                     true,
+			UseIdentityType:                 common.IdentityTypeUser,
+			ClientCallExpected:              true,
+			ClientAccessCallExpected:        true,
+			ResultAllowedAccess:             true,
+			ResultGroupsID:                  []string{},
+			ResultHostsWithNoGroupsAssigned: true,
+			ExpectedHTTPStatus:              http.StatusOK,
+			ExpectedDevices:                 []models.Device{devices[2]},
+		},
+		{
+			Name:       "should return the devices with group and with no groups",
+			HTTPMethod: "GET",
+			RbacACL: rbacClient.AccessList{
+				rbacClient.Access{
+					ResourceDefinitions: []rbacClient.ResourceDefinition{
+						{
+							Filter: rbacClient.ResourceDefinitionFilter{
+								Key:       "group.id",
+								Operation: "in",
+								Value:     fmt.Sprintf(`["%s", null]`, inventoryGroups[0].ID),
+							},
+						},
+					},
+					Permission: "inventory:hosts:read",
+				},
+			},
+			UseIdentity:                     true,
+			UseIdentityType:                 common.IdentityTypeUser,
+			ClientCallExpected:              true,
+			ClientAccessCallExpected:        true,
+			ClientError:                     nil,
+			ResultAllowedAccess:             true,
+			ResultGroupsID:                  []string{inventoryGroups[0].ID},
+			ResultHostsWithNoGroupsAssigned: true,
+			ExpectedHTTPStatus:              http.StatusOK,
+			ExpectedDevices:                 []models.Device{devices[0], devices[2]},
+		},
+		{
+			Name:               `should not filter by inventory rbac groups when identity type is not "User"`,
+			HTTPMethod:         "GET",
+			RbacACL:            rbacClient.AccessList{},
+			UseIdentity:        true,
+			UseIdentityType:    "System",
+			ClientCallExpected: false,
+			ExpectedHTTPStatus: http.StatusOK,
+			ExpectedDevices:    devices,
+		},
+		{
+			Name:               "should return error when identity not found",
+			HTTPMethod:         "GET",
+			RbacACL:            rbacClient.AccessList{},
+			UseIdentity:        false,
+			ClientCallExpected: false,
+			ExpectedHTTPStatus: http.StatusBadRequest,
+		},
+		{
+			Name:                     "should return error when rbac GetAccessList fails",
+			HTTPMethod:               "GET",
+			RbacACL:                  rbacClient.AccessList{},
+			UseIdentity:              true,
+			UseIdentityType:          common.IdentityTypeUser,
+			ClientCallExpected:       true,
+			ClientError:              errClientExpectedError,
+			ClientAccessCallExpected: false,
+			ExpectedHTTPStatus:       http.StatusInternalServerError,
+		},
+		{
+			Name:                     "should return error when rbac GetInventoryGroupsAccess fails",
+			HTTPMethod:               "GET",
+			RbacACL:                  rbacClient.AccessList{},
+			UseIdentity:              true,
+			UseIdentityType:          common.IdentityTypeUser,
+			ClientCallExpected:       true,
+			ClientAccessCallExpected: true,
+			ClientAccessError:        errClientExpectedError,
+			ExpectedHTTPStatus:       http.StatusServiceUnavailable,
+			ExpectedErrorMessage:     errClientExpectedError.Error(),
+		},
+		{
+			Name:                     "should return error when not allowed access",
+			HTTPMethod:               "GET",
+			RbacACL:                  rbacClient.AccessList{},
+			UseIdentity:              true,
+			UseIdentityType:          common.IdentityTypeUser,
+			ClientCallExpected:       true,
+			ClientAccessCallExpected: true,
+			ResultAllowedAccess:      false,
+			ExpectedHTTPStatus:       http.StatusForbidden,
+			ExpectedErrorMessage:     "access to hosts is forbidden",
+		},
+		// POST http method
+		{
+			Name:       "should return the devices device from groups in ACL",
+			HTTPMethod: "POST",
+			BodyData:   PostDefaultData,
+			RbacACL: rbacClient.AccessList{
+				rbacClient.Access{
+					ResourceDefinitions: []rbacClient.ResourceDefinition{
+						{
+							Filter: rbacClient.ResourceDefinitionFilter{
+								Key:       "group.id",
+								Operation: "in",
+								Value:     fmt.Sprintf(`["%s"]`, inventoryGroups[0].ID),
+							},
+						},
+					},
+					Permission: "inventory:hosts:read",
+				},
+			},
+			UseIdentity:                     true,
+			UseIdentityType:                 common.IdentityTypeUser,
+			ClientCallExpected:              true,
+			ClientAccessCallExpected:        true,
+			ResultAllowedAccess:             true,
+			ResultGroupsID:                  []string{inventoryGroups[0].ID},
+			ResultHostsWithNoGroupsAssigned: false,
+			ExpectedHTTPStatus:              http.StatusOK,
+			ExpectedDevices:                 []models.Device{devices[0]},
+		},
+		{
+			Name:       "should return the devices with no groups",
+			HTTPMethod: "POST",
+			BodyData:   PostDefaultData,
+			RbacACL: rbacClient.AccessList{
+				rbacClient.Access{
+					ResourceDefinitions: []rbacClient.ResourceDefinition{
+						{
+							Filter: rbacClient.ResourceDefinitionFilter{
+								Key:       "group.id",
+								Operation: "in",
+								Value:     `[null]`,
+							},
+						},
+					},
+					Permission: "inventory:hosts:read",
+				},
+			},
+			UseIdentity:                     true,
+			UseIdentityType:                 common.IdentityTypeUser,
+			ClientCallExpected:              true,
+			ClientAccessCallExpected:        true,
+			ResultAllowedAccess:             true,
+			ResultGroupsID:                  []string{},
+			ResultHostsWithNoGroupsAssigned: true,
+			ExpectedHTTPStatus:              http.StatusOK,
+			ExpectedDevices:                 []models.Device{devices[2]},
+		},
+		{
+			Name:       "should return the devices with group and with no groups",
+			HTTPMethod: "POST",
+			BodyData:   PostDefaultData,
+			RbacACL: rbacClient.AccessList{
+				rbacClient.Access{
+					ResourceDefinitions: []rbacClient.ResourceDefinition{
+						{
+							Filter: rbacClient.ResourceDefinitionFilter{
+								Key:       "group.id",
+								Operation: "in",
+								Value:     fmt.Sprintf(`["%s", null]`, inventoryGroups[0].ID),
+							},
+						},
+					},
+					Permission: "inventory:hosts:read",
+				},
+			},
+			UseIdentity:                     true,
+			UseIdentityType:                 common.IdentityTypeUser,
+			ClientCallExpected:              true,
+			ClientAccessCallExpected:        true,
+			ClientError:                     nil,
+			ResultAllowedAccess:             true,
+			ResultGroupsID:                  []string{inventoryGroups[0].ID},
+			ResultHostsWithNoGroupsAssigned: true,
+			ExpectedHTTPStatus:              http.StatusOK,
+			ExpectedDevices:                 []models.Device{devices[0], devices[2]},
+		},
+		{
+			Name:               `should not filter by inventory rbac groups when identity type is not "User"`,
+			HTTPMethod:         "POST",
+			BodyData:           PostDefaultData,
+			RbacACL:            rbacClient.AccessList{},
+			UseIdentity:        true,
+			UseIdentityType:    "System",
+			ClientCallExpected: false,
+			ExpectedHTTPStatus: http.StatusOK,
+			ExpectedDevices:    devices,
+		},
+		{
+			Name:               "should return error when identity not found",
+			HTTPMethod:         "POST",
+			BodyData:           PostDefaultData,
+			RbacACL:            rbacClient.AccessList{},
+			UseIdentity:        false,
+			ClientCallExpected: false,
+			ExpectedHTTPStatus: http.StatusBadRequest,
+		},
+		{
+			Name:                     "should return error when rbac GetAccessList fails",
+			HTTPMethod:               "POST",
+			BodyData:                 PostDefaultData,
+			RbacACL:                  rbacClient.AccessList{},
+			UseIdentity:              true,
+			UseIdentityType:          common.IdentityTypeUser,
+			ClientCallExpected:       true,
+			ClientError:              errClientExpectedError,
+			ClientAccessCallExpected: false,
+			ExpectedHTTPStatus:       http.StatusInternalServerError,
+		},
+		{
+			Name:                     "should return error when rbac GetInventoryGroupsAccess fails",
+			HTTPMethod:               "POST",
+			BodyData:                 PostDefaultData,
+			RbacACL:                  rbacClient.AccessList{},
+			UseIdentity:              true,
+			UseIdentityType:          common.IdentityTypeUser,
+			ClientCallExpected:       true,
+			ClientAccessCallExpected: true,
+			ClientAccessError:        errClientExpectedError,
+			ExpectedHTTPStatus:       http.StatusServiceUnavailable,
+			ExpectedErrorMessage:     errClientExpectedError.Error(),
+		},
+		{
+			Name:                     "should return error when not allowed access",
+			HTTPMethod:               "POST",
+			BodyData:                 PostDefaultData,
+			RbacACL:                  rbacClient.AccessList{},
+			UseIdentity:              true,
+			UseIdentityType:          common.IdentityTypeUser,
+			ClientCallExpected:       true,
+			ClientAccessCallExpected: true,
+			ResultAllowedAccess:      false,
+			ExpectedHTTPStatus:       http.StatusForbidden,
+			ExpectedErrorMessage:     "access to hosts is forbidden",
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			RegisterTestingT(t)
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			var router chi.Router
+			var edgeAPIServices *dependencies.EdgeAPIServices
+
+			mockRbacClient := mock_rbac.NewMockClientInterface(ctrl)
+
+			router = chi.NewRouter()
+			router.Use(func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					rLog := log.NewEntry(log.StandardLogger())
+					ctx := r.Context()
+					if testCase.UseIdentity {
+						ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: orgID, Type: testCase.UseIdentityType}})
+					}
+					edgeAPIServices = &dependencies.EdgeAPIServices{
+						DeviceService: services.NewDeviceService(ctx, rLog),
+						RbacService:   mockRbacClient,
+						Log:           rLog,
+					}
+					ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+
+					next.ServeHTTP(w, r.WithContext(ctx))
+				})
+			})
+			router.Route("/devices", MakeDevicesRouter)
+
+			if testCase.ClientCallExpected {
+				mockRbacClient.EXPECT().GetAccessList(rbac.ApplicationInventory).Return(testCase.RbacACL, testCase.ClientError)
+			}
+			if testCase.ClientAccessCallExpected {
+				mockRbacClient.EXPECT().GetInventoryGroupsAccess(testCase.RbacACL, rbac.ResourceTypeHOSTS, rbac.AccessTypeRead).Return(
+					testCase.ResultAllowedAccess, testCase.ResultGroupsID, testCase.ResultHostsWithNoGroupsAssigned, testCase.ClientAccessError,
+				)
+			}
+
+			var body io.Reader
+			if testCase.BodyData != nil {
+				jsonBodyData, err := json.Marshal(*testCase.BodyData)
+				Expect(err).To(BeNil())
+				body = bytes.NewBuffer(jsonBodyData)
+			}
+			req, err := http.NewRequest(testCase.HTTPMethod, "/devices/devicesview?sort_by=created_at", body)
+			Expect(err).ToNot(HaveOccurred())
+
+			responseRecorder := httptest.NewRecorder()
+			router.ServeHTTP(responseRecorder, req)
+
+			Expect(responseRecorder.Code).To(Equal(testCase.ExpectedHTTPStatus))
+			respBody, err := io.ReadAll(responseRecorder.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(respBody)).ToNot(BeEmpty())
+			if testCase.ExpectedHTTPStatus == http.StatusOK {
+				var responseDevicesView models.DeviceViewListResponseAPI
+				err = json.Unmarshal(respBody, &responseDevicesView)
+				Expect(err).ToNot(HaveOccurred())
+				if len(testCase.ExpectedDevices) > 0 {
+					Expect(len(responseDevicesView.Data.Devices)).To(Equal(len(testCase.ExpectedDevices)))
+					for ind, device := range responseDevicesView.Data.Devices {
+						Expect(device.DeviceUUID).To(Equal(testCase.ExpectedDevices[ind].UUID))
+					}
+				}
+			} else if testCase.ExpectedErrorMessage != "" {
+				Expect(string(respBody)).To(ContainSubstring(testCase.ExpectedErrorMessage))
+			}
 		})
 	}
 }

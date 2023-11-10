@@ -125,6 +125,12 @@ var EdgeParityGroupsMigration = &Flag{Name: "edgeParity.groups-migration", EnvVa
 // EnforceEdgeGroups is a feature flag to query to query unleash whether the org is enforced to use edge groups
 var EnforceEdgeGroups = &Flag{Name: "edge-management.enforce_edge_groups", EnvVar: "FEATURE_ENFORCE_EDGE_GROUPS"}
 
+// EdgeParityInventoryGroupsEnabled is a feature flag for inventory groups usage
+var EdgeParityInventoryGroupsEnabled = &Flag{Name: "edgeParity.inventory-groups-enabled", EnvVar: "FEATURE_INVENTORY_GROUPS_ENABLED"}
+
+// EdgeParityInventoryRbac is a feature flag for inventory rbac usage
+var EdgeParityInventoryRbac = &Flag{Name: "edgeParity.inventory-rbac", EnvVar: "FEATURE_INVENTORY_RBAC"}
+
 // DB LOGGING FLAGS
 
 // SilentGormLogging toggles noisy logging from Gorm (using for tests during development on slow machines/connections

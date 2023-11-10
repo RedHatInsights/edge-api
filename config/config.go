@@ -75,6 +75,8 @@ type EdgeConfig struct {
 	RepoFileUploadDelay        uint                      `json:"repo_file_upload_delay"`
 	DeleteFilesAttempts        uint                      `json:"delete_files_attempts"`
 	DeleteFilesRetryDelay      uint                      `json:"delete_files_retry_delay"`
+	RbacBaseURL                string                    `json:"rbac_base_url"`
+	RbacTimeout                uint                      `mapstructure:"rbac_timeout,omitempty"`
 }
 
 type dbConfig struct {
@@ -164,6 +166,8 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("RepoFileUploadDelay", 1)
 	options.SetDefault("DeleteFilesAttempts", 10)
 	options.SetDefault("DeleteFilesRetryDelay", 5)
+	options.SetDefault("RBAC_BASE_URL", "http://rbac-service:8080")
+	options.SetDefault("RbacTimeout", 30)
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
@@ -268,6 +272,8 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		RepoFileUploadAttempts:     options.GetUint("RepoFileUploadAttempts"),
 		DeleteFilesAttempts:        options.GetUint("DeleteFilesAttempts"),
 		DeleteFilesRetryDelay:      options.GetUint("DeleteFilesRetryDelay"),
+		RbacBaseURL:                options.GetString("RBAC_BASE_URL"),
+		RbacTimeout:                options.GetUint("RbacTimeout"),
 	}
 	if edgeConfig.TenantTranslatorHost != "" && edgeConfig.TenantTranslatorPort != "" {
 		edgeConfig.TenantTranslatorURL = fmt.Sprintf("http://%s:%s", edgeConfig.TenantTranslatorHost, edgeConfig.TenantTranslatorPort)

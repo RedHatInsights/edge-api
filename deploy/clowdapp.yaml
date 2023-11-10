@@ -133,6 +133,8 @@ objects:
           value: ${TENANT_TRANSLATOR_HOST}
         - name: TENANT_TRANSLATOR_PORT
           value: ${TENANT_TRANSLATOR_PORT}
+        - name : RBAC_BASE_URL
+          value: ${RBAC_BASE_URL}
         resources:
           limits:
             cpu: ${{CPU_LIMIT}}
@@ -198,6 +200,8 @@ objects:
           value: ${TENANT_TRANSLATOR_HOST}
         - name: TENANT_TRANSLATOR_PORT
           value: ${TENANT_TRANSLATOR_PORT}
+        - name : RBAC_BASE_URL
+          value: ${RBAC_BASE_URL}
         resources:
           limits:
             cpu: 250m
@@ -263,6 +267,8 @@ objects:
           value: ${TENANT_TRANSLATOR_HOST}
         - name: TENANT_TRANSLATOR_PORT
           value: ${TENANT_TRANSLATOR_PORT}
+        - name : RBAC_BASE_URL
+          value: ${RBAC_BASE_URL}
         resources:
           limits:
             cpu: 250m
@@ -328,6 +334,8 @@ objects:
           value: ${TENANT_TRANSLATOR_HOST}
         - name: TENANT_TRANSLATOR_PORT
           value: ${TENANT_TRANSLATOR_PORT}
+        - name : RBAC_BASE_URL
+          value: ${RBAC_BASE_URL}
         resources:
           limits:
             cpu: 250m
@@ -397,6 +405,8 @@ objects:
               value: ${TENANT_TRANSLATOR_HOST}
             - name: TENANT_TRANSLATOR_PORT
               value: ${TENANT_TRANSLATOR_PORT}
+            - name : RBAC_BASE_URL
+              value: ${RBAC_BASE_URL}
           resources:
             limits:
               cpu: 900m
@@ -542,3 +552,7 @@ parameters:
   name: CLEANUP_SUSPEND
   required: false
   value: "false"
+- description: RBAC service base URL
+  name: RBAC_BASE_URL
+  required: false
+  value: "http://rbac-service:8080"
