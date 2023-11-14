@@ -111,3 +111,13 @@ func (ur *UpdateTransaction) BeforeCreate(tx *gorm.DB) error {
 
 	return nil
 }
+
+// InventoryGroupDevicesUpdateInfo is the inventory group update info
+type InventoryGroupDevicesUpdateInfo struct {
+	GroupUUID      string   `json:"group_uuid"`
+	UpdateValid    bool     `json:"update_valid"`
+	ImageSetID     uint     `json:"image_set_id"`
+	ImageSetsCount int      `json:"image_sets_count"`
+	DevicesCount   int      `json:"devices_count"`
+	DevicesUUIDS   []string `json:"update_devices_uuids"`
+}
