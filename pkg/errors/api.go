@@ -86,3 +86,43 @@ func NewFeatureNotAvailable(message string) APIError {
 	err.Status = http.StatusNotImplemented
 	return err
 }
+
+// Forbidden defines an error for whenever access is forbidden
+type Forbidden struct {
+	apiError
+}
+
+// ForbiddenDefaultMessage the message used by default for Forbidden API error
+const ForbiddenDefaultMessage = "access is forbidden"
+
+// NewForbidden creates a new Forbidden API error
+func NewForbidden(message string) APIError {
+	if message == "" {
+		message = ForbiddenDefaultMessage
+	}
+	err := new(FeatureNotAvailable)
+	err.Code = "FORBIDDEN"
+	err.Title = message
+	err.Status = http.StatusForbidden
+	return err
+}
+
+// ServiceUnavailable defines an error for whenever service is unavailable
+type ServiceUnavailable struct {
+	apiError
+}
+
+// ServiceUnavailableDefaultMessage the message used by default for Service Unavailable API error
+const ServiceUnavailableDefaultMessage = "service is unavailable"
+
+// NewServiceUnavailable creates a new ServiceUnavailable API error
+func NewServiceUnavailable(message string) APIError {
+	if message == "" {
+		message = ServiceUnavailableDefaultMessage
+	}
+	err := new(FeatureNotAvailable)
+	err.Code = "SERVICE_UNAVAILABLE"
+	err.Title = message
+	err.Status = http.StatusServiceUnavailable
+	return err
+}

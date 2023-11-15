@@ -16,6 +16,9 @@ type rhIdentityKeyType string
 // rhIdentityKey is the context key for x-rh-identity
 const rhIdentityKey = rhIdentityKeyType("xRhIdentity")
 
+// IdentityTypeUser represent the user identity type
+const IdentityTypeUser = "User"
+
 // GetOriginalIdentity get the original identity data from context
 func GetOriginalIdentity(ctx context.Context) (string, error) {
 	ident, ok := ctx.Value(rhIdentityKey).(string)
