@@ -153,13 +153,18 @@ func (c *Client) GetInventoryGroupsAccess(acl rbacClient.AccessList, resource Re
 	var allowedAccess bool
 	var globalUnGroupedHosts bool
 	for _, ac := range acl {
+		// check if the resource with accessType has access to the current access item
 		if ac.Application() == string(ApplicationInventory) && ResourceMatch(ResourceType(ac.Resource()), resource) && AccessMatch(AccessType(ac.Verb()), accessType) {
 			allowedAccess = true
 			for _, resourceDef := range ac.ResourceDefinitions {
+				// validate if the resource definition is correct and get all access groups from the resource definition value
 				accessGroups, err := c.getAssessGroupsFromResourceDefinition(resourceDef)
 				if err != nil {
 					return false, nil, false, err
 				}
+				// validate if all access groups are valid, as access groups is a list of groups uuids with pointers to string []*string
+				// this function call will return static groups list []string and if any null value is in the list, this means that ungrouped Hosts
+				// are needed and unGroupedHosts will be set to true
 				groups, unGroupedHosts, err := c.getGroupsFromAccessGroups(accessGroups)
 				if err != nil {
 					return false, nil, false, err
@@ -168,7 +173,9 @@ func (c *Client) GetInventoryGroupsAccess(acl rbacClient.AccessList, resource Re
 					globalUnGroupedHosts = true
 				}
 				for _, groupUUID := range groups {
+					// add the group to global groups list when it's not in the global map, to make sure there is no duplicates
 					if _, ok := overallGroupIDSMap[groupUUID]; !ok {
+						// put it in the map for later duplicate check
 						overallGroupIDSMap[groupUUID] = true
 						overallGroupIDS = append(overallGroupIDS, groupUUID)
 					}
