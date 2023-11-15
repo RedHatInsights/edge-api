@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -19,9 +20,12 @@ import (
 	apiError "github.com/redhatinsights/edge-api/pkg/errors"
 
 	"github.com/bxcodec/faker/v3"
+	"github.com/redhatinsights/edge-api/pkg/clients/inventorygroups"
+	"github.com/redhatinsights/edge-api/pkg/clients/inventorygroups/mock_inventorygroups"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -1153,5 +1157,170 @@ func TestValidateGetAllUpdatesQueryParameters(t *testing.T) {
 				t.Errorf("in %q: was expected to have %v but not found in %v", te.name, exErr, jsonBody)
 			}
 		}
+	}
+}
+
+func TestInventoryGroupDevicesUpdateInfo(t *testing.T) {
+
+	defer func() {
+		config.Get().Auth = false
+	}()
+
+	// enable auth
+	config.Get().Auth = true
+
+	orgID := faker.UUIDHyphenated()
+	groupUUID := faker.UUIDHyphenated()
+	inventoryGroup := inventorygroups.Group{Name: faker.Name(), ID: groupUUID, OrgID: orgID}
+	expectedError := errors.New("some expected error")
+	testCases := []struct {
+		Name                             string
+		EnforceEdgeGroups                bool
+		EdgeParityInventoryGroupsEnabled bool
+		GroupUUID                        string
+		ReturnInventoryGroup             *inventorygroups.Group
+		ReturnInventoryGroupError        error
+		ReturnServiceError               error
+		ReturnServiceData                *models.InventoryGroupDevicesUpdateInfo
+		ExpectedHTTPStatus               int
+		ExpectedHTTPErrorMessage         string
+	}{
+		{
+			Name:                             "should return InventoryGroupDevicesUpdateInfo successfully",
+			EdgeParityInventoryGroupsEnabled: true,
+			GroupUUID:                        groupUUID,
+			ReturnInventoryGroup:             &inventoryGroup,
+			ReturnServiceData:                &models.InventoryGroupDevicesUpdateInfo{UpdateValid: true, DevicesUUIDS: []string{faker.UUIDHyphenated()}},
+			ExpectedHTTPStatus:               http.StatusOK,
+		},
+		{
+			Name:                     "should return bad request error when inventory group not supplied",
+			GroupUUID:                "",
+			ExpectedHTTPStatus:       http.StatusBadRequest,
+			ExpectedHTTPErrorMessage: "missing inventory group uuid",
+		},
+		{
+			Name:                      "should return not found error when inventory group not found",
+			GroupUUID:                 groupUUID,
+			ReturnInventoryGroup:      nil,
+			ReturnInventoryGroupError: inventorygroups.ErrGroupNotFound,
+			ExpectedHTTPStatus:        http.StatusNotFound,
+			ExpectedHTTPErrorMessage:  "inventory group not found",
+		},
+		{
+			Name:                      "should return internal server error when inventory group return unknown error",
+			GroupUUID:                 groupUUID,
+			ReturnInventoryGroup:      nil,
+			ReturnInventoryGroupError: expectedError,
+			ExpectedHTTPStatus:        http.StatusInternalServerError,
+		},
+		{
+			Name:                             "should return error when inventory groups feature is not in use",
+			EdgeParityInventoryGroupsEnabled: false,
+			GroupUUID:                        groupUUID,
+			ReturnInventoryGroup:             &inventoryGroup,
+			ReturnInventoryGroupError:        nil,
+			ExpectedHTTPStatus:               http.StatusNotImplemented,
+			ExpectedHTTPErrorMessage:         "inventory groups feature is not available",
+		},
+		{
+			Name:                             "should return error when EdgeGroups is enforced",
+			EdgeParityInventoryGroupsEnabled: true,
+			EnforceEdgeGroups:                true,
+			GroupUUID:                        groupUUID,
+			ReturnInventoryGroup:             &inventoryGroup,
+			ReturnInventoryGroupError:        nil,
+			ExpectedHTTPStatus:               http.StatusNotImplemented,
+			ExpectedHTTPErrorMessage:         "inventory groups feature is not available",
+		},
+		{
+			Name:                             "should return error when InventoryGroupDevicesUpdateInfo fails",
+			EdgeParityInventoryGroupsEnabled: true,
+			GroupUUID:                        groupUUID,
+			ReturnInventoryGroup:             &inventoryGroup,
+			ReturnInventoryGroupError:        nil,
+			ReturnServiceError:               expectedError,
+			ExpectedHTTPStatus:               http.StatusInternalServerError,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			RegisterTestingT(t)
+
+			defer func() {
+				_ = os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
+				_ = os.Unsetenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar)
+			}()
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			if testCase.EnforceEdgeGroups {
+				err := os.Setenv(feature.EnforceEdgeGroups.EnvVar, "true")
+				Expect(err).ToNot(HaveOccurred())
+			}
+			if testCase.EdgeParityInventoryGroupsEnabled {
+				err := os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
+				Expect(err).ToNot(HaveOccurred())
+			}
+
+			var router chi.Router
+			var edgeAPIServices *dependencies.EdgeAPIServices
+
+			mockUpdateService := mock_services.NewMockUpdateServiceInterface(ctrl)
+			mockInventoryGroupsClient := mock_inventorygroups.NewMockClientInterface(ctrl)
+
+			router = chi.NewRouter()
+			router.Use(func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					rLog := log.NewEntry(log.StandardLogger())
+					ctx := r.Context()
+					ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: orgID}})
+					edgeAPIServices = &dependencies.EdgeAPIServices{
+						UpdateService:          mockUpdateService,
+						InventoryGroupsService: mockInventoryGroupsClient,
+						Log:                    rLog,
+					}
+					ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+
+					next.ServeHTTP(w, r.WithContext(ctx))
+				})
+			})
+			router.Route("/updates", MakeUpdatesRouter)
+
+			req, err := http.NewRequest(
+				http.MethodGet, fmt.Sprintf("/updates/inventory-groups/%s/update-info", testCase.GroupUUID), nil,
+			)
+			Expect(err).ToNot(HaveOccurred())
+
+			if testCase.ReturnInventoryGroup != nil || testCase.ReturnInventoryGroupError != nil {
+				mockInventoryGroupsClient.EXPECT().GetGroupByUUID(testCase.GroupUUID).Return(
+					testCase.ReturnInventoryGroup, testCase.ReturnInventoryGroupError,
+				)
+			}
+
+			if testCase.ReturnServiceData != nil || testCase.ReturnServiceError != nil {
+				mockUpdateService.EXPECT().InventoryGroupDevicesUpdateInfo(orgID, testCase.GroupUUID).Return(
+					testCase.ReturnServiceData, testCase.ReturnServiceError,
+				)
+			}
+			responseRecorder := httptest.NewRecorder()
+			router.ServeHTTP(responseRecorder, req)
+			respBody, err := io.ReadAll(responseRecorder.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(string(respBody)).ToNot(BeEmpty())
+
+			Expect(responseRecorder.Code).To(Equal(testCase.ExpectedHTTPStatus))
+			if testCase.ExpectedHTTPStatus == http.StatusOK && testCase.ReturnServiceData != nil {
+				var responseUpdateInfo models.InventoryGroupDevicesUpdateInfo
+				err = json.Unmarshal(respBody, &responseUpdateInfo)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(responseUpdateInfo.UpdateValid).To(Equal(testCase.ReturnServiceData.UpdateValid))
+				Expect(responseUpdateInfo.DevicesUUIDS).To(Equal(testCase.ReturnServiceData.DevicesUUIDS))
+			} else if testCase.ExpectedHTTPErrorMessage != "" {
+				Expect(string(respBody)).To(ContainSubstring(testCase.ExpectedHTTPErrorMessage))
+			}
+		})
 	}
 }

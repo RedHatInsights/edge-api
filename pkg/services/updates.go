@@ -51,6 +51,7 @@ type UpdateServiceInterface interface {
 	UpdateDevicesFromUpdateTransaction(update models.UpdateTransaction) error
 	ValidateUpdateSelection(orgID string, imageIds []uint) (bool, error)
 	ValidateUpdateDeviceGroup(orgID string, deviceGroupID uint) (bool, error)
+	InventoryGroupDevicesUpdateInfo(orgID string, inventoryGroupUUID string) (*models.InventoryGroupDevicesUpdateInfo, error)
 }
 
 // NewUpdateService gives an instance of the main implementation of a UpdateServiceInterface
@@ -1009,6 +1010,49 @@ func (s *UpdateService) ValidateUpdateDeviceGroup(orgID string, deviceGroupID ui
 	}
 
 	return count == 1, nil
+}
+
+// InventoryGroupDevicesUpdateInfo return the inventory group update info
+func (s *UpdateService) InventoryGroupDevicesUpdateInfo(orgID string, inventoryGroupUUID string) (*models.InventoryGroupDevicesUpdateInfo, error) {
+
+	type DeviceData struct {
+		DeviceUUID      string `json:"device_uuid"`
+		UpdateAvailable bool   `json:"update_available"`
+		ImageSetID      uint   `json:"image_set_id"`
+	}
+
+	var inventoryGroupDevicesData []DeviceData
+	if err := db.Org(orgID, "devices").Model(&models.Device{}).
+		Select("devices.uuid as device_uuid, devices.update_available as update_available, images.image_set_id as image_set_id").
+		Joins(`JOIN images ON images.id = devices.image_id`).
+		Where(`devices.group_uuid = ?`, inventoryGroupUUID).
+		Where("devices.image_id > 0").
+		Where("images.deleted_at IS NULL").
+		Order("devices.id ASC").
+		Scan(&inventoryGroupDevicesData).Error; err != nil {
+		return nil, err
+	}
+
+	var inventoryGroupDevicesInfo models.InventoryGroupDevicesUpdateInfo
+	var imageSetIDSMap = make(map[uint]bool)
+	for _, deviceData := range inventoryGroupDevicesData {
+		imageSetIDSMap[deviceData.ImageSetID] = true
+		inventoryGroupDevicesInfo.ImageSetID = deviceData.ImageSetID
+		if deviceData.UpdateAvailable && deviceData.DeviceUUID != "" {
+			inventoryGroupDevicesInfo.DevicesUUIDS = append(inventoryGroupDevicesInfo.DevicesUUIDS, deviceData.DeviceUUID)
+		}
+	}
+	inventoryGroupDevicesInfo.DevicesCount = len(inventoryGroupDevicesData)
+	inventoryGroupDevicesInfo.ImageSetsCount = len(imageSetIDSMap)
+	inventoryGroupDevicesInfo.GroupUUID = inventoryGroupUUID
+	if inventoryGroupDevicesInfo.ImageSetsCount == 1 && len(inventoryGroupDevicesInfo.DevicesUUIDS) > 0 {
+		inventoryGroupDevicesInfo.UpdateValid = true
+	} else {
+		inventoryGroupDevicesInfo.ImageSetID = 0
+		inventoryGroupDevicesInfo.UpdateValid = false
+	}
+
+	return &inventoryGroupDevicesInfo, nil
 }
 
 // BuildUpdateTransactions creates the update transaction to be sent to Playbook Dispatcher

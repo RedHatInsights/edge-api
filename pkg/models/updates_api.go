@@ -85,3 +85,13 @@ type RecipientNotificationAPI struct {
 	IgnoreUserPreferences bool     `json:"ignore_user_preferences" example:"false"` // notification recipient to ignore user preferences
 	Users                 []string `json:"users" example:"user-id"`                 // notification recipient users
 } // @name RecipientNotification
+
+// InventoryGroupDevicesUpdateInfoResponseAPI is the inventory group update info
+type InventoryGroupDevicesUpdateInfoResponseAPI struct {
+	GroupUUID      string   `json:"group_uuid" example:"b579a578-1a6f-48d5-8a45-21f2a656a5d4"`                                                // the inventory group id
+	UpdateValid    bool     `json:"update_valid" example:"true"`                                                                              // whether the inventory group devices update is valid
+	ImageSetID     uint     `json:"image_set_id" example:"1024" `                                                                             // the image set id common to all inventory group devices
+	ImageSetsCount int      `json:"image_sets_count" example:"1"`                                                                             // how much image set ids the inventory group devices belongs to
+	DevicesCount   int      `json:"devices_count" example:"25"`                                                                               // the overall count of all devices that belongs to inventory group
+	DevicesUUID    []string `json:"update_devices_uuids" example:"b579a578-1a6f-48d5-8a45-21f2a656a5d4,1abb288d-6d88-4e2d-bdeb-fcc536be58ec"` // the list of devices uuids that belongs to inventory group that are available to update
+}

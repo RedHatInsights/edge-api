@@ -123,6 +123,21 @@ func (mr *MockUpdateServiceInterfaceMockRecorder) GetUpdateTransactionsForDevice
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUpdateTransactionsForDevice", reflect.TypeOf((*MockUpdateServiceInterface)(nil).GetUpdateTransactionsForDevice), device)
 }
 
+// InventoryGroupDevicesUpdateInfo mocks base method.
+func (m *MockUpdateServiceInterface) InventoryGroupDevicesUpdateInfo(orgID, inventoryGroupUUID string) (*models.InventoryGroupDevicesUpdateInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InventoryGroupDevicesUpdateInfo", orgID, inventoryGroupUUID)
+	ret0, _ := ret[0].(*models.InventoryGroupDevicesUpdateInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// InventoryGroupDevicesUpdateInfo indicates an expected call of InventoryGroupDevicesUpdateInfo.
+func (mr *MockUpdateServiceInterfaceMockRecorder) InventoryGroupDevicesUpdateInfo(orgID, inventoryGroupUUID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InventoryGroupDevicesUpdateInfo", reflect.TypeOf((*MockUpdateServiceInterface)(nil).InventoryGroupDevicesUpdateInfo), orgID, inventoryGroupUUID)
+}
+
 // ProcessPlaybookDispatcherRunEvent mocks base method.
 func (m *MockUpdateServiceInterface) ProcessPlaybookDispatcherRunEvent(message []byte) error {
 	m.ctrl.T.Helper()

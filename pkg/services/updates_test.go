@@ -1685,4 +1685,104 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 		})
 	})
+
+	Describe("inventory group", func() {
+
+		Context("InventoryGroupDevicesUpdateInfo", func() {
+			var orgID string
+			var imageName string
+			var groupUUID string
+			var groupUUID2 string
+			var groupUUID3 string
+			var imageSet models.ImageSet
+			var innerImageSet models.ImageSet
+			var innerImages []models.Image
+			var images []models.Image
+			var devices []models.Device
+
+			var updateService services.UpdateServiceInterface
+
+			BeforeEach(func() {
+				var err error
+				if orgID == "" {
+					// setup only once
+					updateService = services.NewUpdateService(context.Background(), log.WithField("service", "update"))
+
+					orgID = faker.UUIDHyphenated()
+					imageName = faker.Name()
+					groupUUID = faker.UUIDHyphenated()
+					groupUUID2 = faker.UUIDHyphenated()
+					groupUUID3 = faker.UUIDHyphenated()
+
+					imageSet = models.ImageSet{Name: imageName, OrgID: orgID}
+					err = db.DB.Create(&imageSet).Error
+					Expect(err).ToNot(HaveOccurred())
+					images = []models.Image{
+						{Name: imageName, OrgID: orgID, ImageSetID: &imageSet.ID, Version: 1},
+						{Name: imageName, OrgID: orgID, ImageSetID: &imageSet.ID, Version: 2},
+						{Name: imageName, OrgID: orgID, ImageSetID: &imageSet.ID, Version: 3},
+						{Name: imageName, OrgID: orgID, ImageSetID: &imageSet.ID, Version: 4},
+					}
+					err = db.DB.Create(&images).Error
+					Expect(err).ToNot(HaveOccurred())
+
+					innerImageSet = models.ImageSet{Name: faker.Name(), OrgID: orgID}
+					err = db.DB.Create(&innerImageSet).Error
+					Expect(err).ToNot(HaveOccurred())
+					innerImages = []models.Image{
+						{Name: innerImageSet.Name, OrgID: orgID, ImageSetID: &innerImageSet.ID, Version: 1},
+						{Name: innerImageSet.Name, OrgID: orgID, ImageSetID: &innerImageSet.ID, Version: 2},
+					}
+					err = db.DB.Create(&innerImages).Error
+					Expect(err).ToNot(HaveOccurred())
+
+					devices = []models.Device{
+						{OrgID: orgID, Name: faker.Name(), UUID: faker.UUIDHyphenated(), GroupUUID: groupUUID, ImageID: images[0].ID, UpdateAvailable: true},
+						{OrgID: orgID, Name: faker.Name(), UUID: faker.UUIDHyphenated(), GroupUUID: groupUUID, ImageID: images[1].ID, UpdateAvailable: true},
+						{OrgID: orgID, Name: faker.Name(), UUID: faker.UUIDHyphenated(), GroupUUID: groupUUID, ImageID: images[2].ID, UpdateAvailable: true},
+						{OrgID: orgID, Name: faker.Name(), UUID: faker.UUIDHyphenated(), GroupUUID: groupUUID, ImageID: images[3].ID, UpdateAvailable: false},
+						{OrgID: orgID, Name: faker.Name(), UUID: faker.UUIDHyphenated(), GroupUUID: groupUUID2, ImageID: images[3].ID, UpdateAvailable: false},
+						{OrgID: orgID, Name: faker.Name(), UUID: faker.UUIDHyphenated(), GroupUUID: groupUUID3, ImageID: images[0].ID, UpdateAvailable: true},
+						{OrgID: orgID, Name: faker.Name(), UUID: faker.UUIDHyphenated(), GroupUUID: groupUUID3, ImageID: innerImages[0].ID, UpdateAvailable: true},
+					}
+					err = db.DB.Create(&devices).Error
+					Expect(err).ToNot(HaveOccurred())
+				}
+			})
+
+			It("inventory group devices update should be valid", func() {
+				expectedDevicesUUID := []string{devices[0].UUID, devices[1].UUID, devices[2].UUID}
+				inventoryGroupDevicesUpdateInfo, err := updateService.InventoryGroupDevicesUpdateInfo(orgID, groupUUID)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(inventoryGroupDevicesUpdateInfo.UpdateValid).To(BeTrue())
+				Expect(inventoryGroupDevicesUpdateInfo.GroupUUID).To(Equal(groupUUID))
+				Expect(inventoryGroupDevicesUpdateInfo.ImageSetID).To(Equal(imageSet.ID))
+				Expect(inventoryGroupDevicesUpdateInfo.ImageSetsCount).To(Equal(1))
+				Expect(inventoryGroupDevicesUpdateInfo.DevicesCount).To(Equal(4))
+				Expect(len(inventoryGroupDevicesUpdateInfo.DevicesUUIDS)).To(Equal(3))
+				Expect(inventoryGroupDevicesUpdateInfo.DevicesUUIDS).To(Equal(expectedDevicesUUID))
+			})
+
+			It("inventory group devices update should be invalid when no device update available", func() {
+				inventoryGroupDevicesUpdateInfo, err := updateService.InventoryGroupDevicesUpdateInfo(orgID, groupUUID2)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(inventoryGroupDevicesUpdateInfo.UpdateValid).To(BeFalse())
+				Expect(inventoryGroupDevicesUpdateInfo.GroupUUID).To(Equal(groupUUID2))
+				Expect(inventoryGroupDevicesUpdateInfo.ImageSetID).To(Equal(uint(0)))
+				Expect(inventoryGroupDevicesUpdateInfo.ImageSetsCount).To(Equal(1))
+				Expect(inventoryGroupDevicesUpdateInfo.DevicesCount).To(Equal(1))
+				Expect(len(inventoryGroupDevicesUpdateInfo.DevicesUUIDS)).To(Equal(0))
+			})
+			It("inventory group devices update should be invalid when devices are from different images sets", func() {
+				inventoryGroupDevicesUpdateInfo, err := updateService.InventoryGroupDevicesUpdateInfo(orgID, groupUUID3)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(inventoryGroupDevicesUpdateInfo.UpdateValid).To(BeFalse())
+				Expect(inventoryGroupDevicesUpdateInfo.GroupUUID).To(Equal(groupUUID3))
+				Expect(inventoryGroupDevicesUpdateInfo.ImageSetID).To(Equal(uint(0)))
+				Expect(inventoryGroupDevicesUpdateInfo.ImageSetsCount).To(Equal(2))
+				Expect(inventoryGroupDevicesUpdateInfo.DevicesCount).To(Equal(2))
+				Expect(len(inventoryGroupDevicesUpdateInfo.DevicesUUIDS)).To(Equal(2))
+			})
+		})
+	})
 })

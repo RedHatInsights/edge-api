@@ -11,13 +11,15 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/redhatinsights/edge-api/pkg/clients/inventorygroups"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
-
+	"github.com/redhatinsights/edge-api/pkg/services/utility"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -31,6 +33,10 @@ func MakeUpdatesRouter(sub chi.Router) {
 		r.Get("/", GetUpdateByID)
 		r.Get("/update-playbook.yml", GetUpdatePlaybook)
 		r.Get("/notify", SendNotificationForDevice) // TMP ROUTE TO SEND THE NOTIFICATION
+	})
+	sub.Route("/inventory-groups/{GroupUUID}", func(r chi.Router) {
+		r.Use(InventoryGroupsCtx)
+		r.Get("/update-info", GetInventoryGroupDevicesUpdateInfo)
 	})
 	// TODO: This is for backwards compatibility with the previous route
 	// Once the frontend starts querying the device
@@ -77,6 +83,52 @@ func UpdateCtx(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), UpdateContextKey, &updates[0])
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+type inventoryGroupContextKeyType string
+
+const inventoryGroupContextKey = inventoryGroupContextKeyType("inventory_group_key")
+
+// InventoryGroupsCtx a handler for updates inventory groups requests
+func InventoryGroupsCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		contextServices := dependencies.ServicesFromContext(r.Context())
+		orgID := readOrgID(w, r, contextServices.Log)
+		if orgID == "" {
+			return
+		}
+
+		groupUUID := chi.URLParam(r, "GroupUUID")
+		if groupUUID == "" {
+			respondWithAPIError(w, contextServices.Log, errors.NewBadRequest("missing inventory group uuid"))
+			return
+		}
+		inventoryGroup, err := contextServices.InventoryGroupsService.GetGroupByUUID(groupUUID)
+		if err != nil {
+			var apiError errors.APIError
+			switch err {
+			case inventorygroups.ErrGroupNotFound:
+				apiError = errors.NewNotFound("inventory group not found")
+			default:
+				apiError = errors.NewInternalServerError()
+			}
+			respondWithAPIError(w, contextServices.Log, apiError)
+			return
+		}
+		ctx := context.WithValue(r.Context(), inventoryGroupContextKey, inventoryGroup)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func getInventoryGroup(w http.ResponseWriter, r *http.Request) *inventorygroups.Group {
+	ctx := r.Context()
+	ctxServices := dependencies.ServicesFromContext(ctx)
+	inventoryGroup, ok := ctx.Value(inventoryGroupContextKey).(*inventorygroups.Group)
+	if !ok {
+		respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("inventory group not found in context"))
+		return nil
+	}
+	return inventoryGroup
 }
 
 // GetUpdatePlaybook returns the playbook for an update transaction
@@ -485,4 +537,47 @@ func ValidateGetUpdatesFilterParams(next http.Handler) http.Handler {
 		w.WriteHeader(http.StatusBadRequest)
 		respondWithJSONBody(w, ctxServices.Log, &errs)
 	})
+}
+
+// GetInventoryGroupDevicesUpdateInfo returns inventory group update info
+// @Summary      Gets the inventory group update info
+// @ID           GetInventoryGroupDevicesUpdateInfo
+// @Description  Gets the inventory group update info
+// @Tags         Updates (Systems)
+// @Accept       json
+// @Produce      json
+// @Param        GroupUUID  path  string    true  "a unique uuid to identify the inventory group"
+// @Success      200 {object} models.InventoryGroupDevicesUpdateInfoResponseAPI	"The requested inventory group update info"
+// @Failure      400 {object} errors.BadRequest	"The request sent couldn't be processed"
+// @Failure      404 {object} errors.NotFound	"The requested inventory group was not found"
+// @Failure      500 {object} errors.InternalServerError	"There was an internal server error"
+// @Router       /inventory-groups/{GroupUUID}/update-info [get]
+func GetInventoryGroupDevicesUpdateInfo(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		return
+	}
+	inventoryGroup := getInventoryGroup(w, r)
+	if inventoryGroup == nil {
+		return
+	}
+
+	enforceEdgeGroups := utility.EnforceEdgeGroups(orgID)
+	if !feature.EdgeParityInventoryGroupsEnabled.IsEnabled() ||
+		(feature.EdgeParityInventoryGroupsEnabled.IsEnabled() && enforceEdgeGroups) {
+		// return feature not available when inventory groups feature is not enabled
+		// or when the inventory groups feature is enabled but the org is enforced to use edge groups
+		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable("inventory groups feature is not available"))
+		return
+	}
+
+	inventoryGroupUpdateDevicesInfo, err := ctxServices.UpdateService.InventoryGroupDevicesUpdateInfo(orgID, inventoryGroup.ID)
+	if err != nil {
+		ctxServices.Log.WithFields(log.Fields{"error": err.Error(), "group-uuid": inventoryGroup.ID}).Error("error occurred while getting inventory group update validation")
+		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
+	}
+
+	w.WriteHeader(http.StatusOK)
+	respondWithJSONBody(w, ctxServices.Log, inventoryGroupUpdateDevicesInfo)
 }
