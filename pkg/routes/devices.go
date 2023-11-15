@@ -369,13 +369,17 @@ func handleInventoryHostsRbac(w http.ResponseWriter, r *http.Request) (*gorm.DB,
 	}
 	var filter *gorm.DB
 	if len(groupIDS) > 0 {
+		// include only systems with inventory groups that are in the allowed list
 		filter = db.DB.Where("devices.group_uuid IN (?)", groupIDS)
 	}
 	if hostsWithNoGroupsAssigned {
+		// include systems without inventory groups
+		// systems without inventory groups are systems with unassigned group_uuid
 		noGroupsFilters := db.DB.Where("devices.group_uuid = '' OR devices.group_uuid IS NULL")
 		if filter == nil {
 			filter = noGroupsFilters
 		} else {
+			// in this we will include all systems with inventory groups in groupIDS and systems with no inventory groups assigned
 			filter = filter.Or(noGroupsFilters)
 		}
 	}

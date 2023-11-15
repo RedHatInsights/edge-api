@@ -50,6 +50,7 @@ type ClientInterface interface {
 	GetInventoryGroupsAccess(acl rbacClient.AccessList, resource ResourceType, accessType AccessType) (bool, []string, bool, error)
 }
 
+// WrappedClientInterface is an interface of the original rbac client
 type WrappedClientInterface interface {
 	GetAccess(ctx context.Context, identity string, username string) (rbacClient.AccessList, error)
 }
@@ -65,10 +66,11 @@ func InitClient(ctx context.Context, log *log.Entry) ClientInterface {
 	return &Client{ctx: ctx, log: log.WithField("client-context", "rbac-client")}
 }
 
+// NewRbacClient create a new rbac client
 func (c *Client) NewRbacClient(application Application) (WrappedClientInterface, error) {
 	url, err := url2.JoinPath(config.Get().RbacBaseURL, APIPath)
 	if err != nil {
-		c.log.WithField("error", err.Error()).Error("error occurred while creating rbac url")
+		c.log.WithField("error", err.Error()).Error(ErrCreatingRbacURL.Error())
 		return nil, ErrCreatingRbacURL
 	}
 
@@ -77,6 +79,7 @@ func (c *Client) NewRbacClient(application Application) (WrappedClientInterface,
 	return &wrappedClient, nil
 }
 
+// GetAccessList return the application rbac access list
 func (c *Client) GetAccessList(application Application) (rbacClient.AccessList, error) {
 	conf := config.Get()
 	rbacTimeout := time.Duration(conf.RbacTimeout) * DefaultTimeDuration
@@ -107,52 +110,81 @@ func (c *Client) GetAccessList(application Application) (rbacClient.AccessList, 
 	return acl, nil
 }
 
+// getAssessGroupsFromResourceDefinition validate and return the access groups
+func (c *Client) getAssessGroupsFromResourceDefinition(resourceDefinition rbacClient.ResourceDefinition) ([]*string, error) {
+	if resourceDefinition.Filter.Key != "group.id" {
+		c.log.WithField("filter-key", resourceDefinition.Filter.Key).Error("received an unexpected resource filter key value")
+		return nil, ErrInvalidAttributeFilterKey
+	}
+	if resourceDefinition.Filter.Operation != "in" {
+		c.log.WithField("filter-operation", resourceDefinition.Filter.Key).Error("received an unexpected resource filter operation value")
+		return nil, ErrInvalidAttributeFilterOperation
+	}
+	var accessGroups []*string
+	if err := json.Unmarshal([]byte(resourceDefinition.Filter.Value), &accessGroups); err != nil {
+		c.log.WithField("filter-value", resourceDefinition.Filter.Value).Error("received an unexpected resource filter value type")
+		return nil, ErrInvalidAttributeFilterValueType
+	}
+	return accessGroups, nil
+}
+
+// getGroupsFromAccessGroups validate access groups and return groups and whether to ungrouped hosts should be included
+func (c *Client) getGroupsFromAccessGroups(accessGroups []*string) ([]string, bool, error) {
+	var unGroupedHosts bool
+	var groups []string
+	for _, groupUUID := range accessGroups {
+		if groupUUID == nil {
+			unGroupedHosts = true
+		} else {
+			if _, err := uuid.Parse(*groupUUID); err != nil {
+				c.log.WithField("filter-uuid", *groupUUID).Error("error occurred while parsing uuid value")
+				return nil, false, ErrInvalidAttributeFilterValue
+			}
+			groups = append(groups, *groupUUID)
+		}
+	}
+	return groups, unGroupedHosts, nil
+}
+
+// GetInventoryGroupsAccess return whether access is allowed and the groups configurations
 func (c *Client) GetInventoryGroupsAccess(acl rbacClient.AccessList, resource ResourceType, accessType AccessType) (bool, []string, bool, error) {
 	var overallGroupIDS []string
 	var overallGroupIDSMap = make(map[string]bool)
 	var allowedAccess bool
-	var hostsWithNoGroupsAssigned bool
+	var globalUnGroupedHosts bool
 	for _, ac := range acl {
 		if ac.Application() == string(ApplicationInventory) && ResourceMatch(ResourceType(ac.Resource()), resource) && AccessMatch(AccessType(ac.Verb()), accessType) {
 			allowedAccess = true
 			for _, resourceDef := range ac.ResourceDefinitions {
-				if resourceDef.Filter.Key != "group.id" {
-					c.log.WithField("filter-key", resourceDef.Filter.Key).Error("received an unexpected resource filter key value")
-					return false, nil, false, ErrInvalidAttributeFilterKey
+				accessGroups, err := c.getAssessGroupsFromResourceDefinition(resourceDef)
+				if err != nil {
+					return false, nil, false, err
 				}
-				if resourceDef.Filter.Operation != "in" {
-					c.log.WithField("filter-operation", resourceDef.Filter.Key).Error("received an unexpected resource filter operation value")
-					return false, nil, false, ErrInvalidAttributeFilterOperation
+				groups, unGroupedHosts, err := c.getGroupsFromAccessGroups(accessGroups)
+				if err != nil {
+					return false, nil, false, err
 				}
-				var accessGroupIDS []*string
-				if err := json.Unmarshal([]byte(resourceDef.Filter.Value), &accessGroupIDS); err != nil {
-					c.log.WithField("filter-value", resourceDef.Filter.Value).Error("received an unexpected resource filter value type")
-					return false, nil, false, ErrInvalidAttributeFilterValueType
+				if unGroupedHosts {
+					globalUnGroupedHosts = true
 				}
-				for _, groupUUID := range accessGroupIDS {
-					if groupUUID == nil {
-						hostsWithNoGroupsAssigned = true
-					} else {
-						if _, err := uuid.Parse(*groupUUID); err != nil {
-							c.log.WithField("filter-uuid", *groupUUID).Error("error occurred while parsing uuid value")
-							return false, nil, false, ErrInvalidAttributeFilterValue
-						}
-						if _, ok := overallGroupIDSMap[*groupUUID]; !ok {
-							overallGroupIDSMap[*groupUUID] = true
-							overallGroupIDS = append(overallGroupIDS, *groupUUID)
-						}
+				for _, groupUUID := range groups {
+					if _, ok := overallGroupIDSMap[groupUUID]; !ok {
+						overallGroupIDSMap[groupUUID] = true
+						overallGroupIDS = append(overallGroupIDS, groupUUID)
 					}
 				}
 			}
 		}
 	}
-	return allowedAccess, overallGroupIDS, hostsWithNoGroupsAssigned, nil
+	return allowedAccess, overallGroupIDS, globalUnGroupedHosts, nil
 }
 
+// AccessMatch return whether the access type matches the required resource type
 func AccessMatch(access1, access2 AccessType) bool {
 	return access1 == access2 || access1 == AccessTypeAny
 }
 
+// ResourceMatch return whether the resource type matches the required resource type
 func ResourceMatch(resource1, resource2 ResourceType) bool {
 	return resource1 == resource2 || resource1 == ResourceTypeAny
 }

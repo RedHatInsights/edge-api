@@ -121,7 +121,7 @@ func NewServiceUnavailable(message string) APIError {
 		message = ServiceUnavailableDefaultMessage
 	}
 	err := new(FeatureNotAvailable)
-	err.Code = "FORBIDDEN"
+	err.Code = "SERVICE_UNAVAILABLE"
 	err.Title = message
 	err.Status = http.StatusServiceUnavailable
 	return err
