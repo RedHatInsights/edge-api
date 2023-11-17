@@ -1752,13 +1752,13 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 			It("inventory group devices update should be valid", func() {
 				expectedDevicesUUID := []string{devices[0].UUID, devices[1].UUID, devices[2].UUID}
-				expectedDevicesImageSets := map[string]int{}
+				expectedDevicesImageSets := map[string]uint{}
 
-				for _, d := range devices {
-					for _, i := range images {
-						if i.ID == d.ImageID {
-							expectedDevicesImageSets = map[string]int{d.UUID: int(*i.ImageSetID)}
-							return
+				for _, device := range devices[:4] {
+					for _, image := range images {
+						if image.ID == device.ImageID {
+							expectedDevicesImageSets[device.UUID] = *image.ImageSetID
+							break
 						}
 					}
 				}
@@ -1771,7 +1771,11 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Expect(inventoryGroupDevicesUpdateInfo.DevicesCount).To(Equal(4))
 				Expect(len(inventoryGroupDevicesUpdateInfo.DevicesUUIDS)).To(Equal(3))
 				Expect(inventoryGroupDevicesUpdateInfo.DevicesUUIDS).To(Equal(expectedDevicesUUID))
-				Expect(inventoryGroupDevicesUpdateInfo.DevicesImageSets).To(Equal(expectedDevicesImageSets))
+				Expect(len(inventoryGroupDevicesUpdateInfo.DevicesImageSets)).To(Equal(len(expectedDevicesImageSets)))
+				for device := range expectedDevicesImageSets {
+					Expect(inventoryGroupDevicesUpdateInfo.DevicesImageSets[device]).To(Equal(expectedDevicesImageSets[device]))
+				}
+
 			})
 
 			It("inventory group devices update should be invalid when no device update available", func() {
