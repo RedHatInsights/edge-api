@@ -1042,7 +1042,6 @@ func (s *UpdateService) InventoryGroupDevicesUpdateInfo(orgID string, inventoryG
 		inventoryGroupDevicesInfo.ImageSetID = deviceData.ImageSetID
 		if deviceData.DeviceUUID != "" {
 			devicesImageMap[deviceData.DeviceUUID] = deviceData.ImageSetID
-			inventoryGroupDevicesInfo.DevicesImageSets = devicesImageMap
 		}
 		if deviceData.UpdateAvailable && deviceData.DeviceUUID != "" {
 			inventoryGroupDevicesInfo.DevicesUUIDS = append(inventoryGroupDevicesInfo.DevicesUUIDS, deviceData.DeviceUUID)
@@ -1050,6 +1049,7 @@ func (s *UpdateService) InventoryGroupDevicesUpdateInfo(orgID string, inventoryG
 		}
 
 	}
+	inventoryGroupDevicesInfo.DevicesImageSets = devicesImageMap
 	inventoryGroupDevicesInfo.DevicesCount = len(inventoryGroupDevicesData)
 	inventoryGroupDevicesInfo.ImageSetsCount = len(imageSetIDSMap)
 	inventoryGroupDevicesInfo.GroupUUID = inventoryGroupUUID
