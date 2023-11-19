@@ -1035,13 +1035,21 @@ func (s *UpdateService) InventoryGroupDevicesUpdateInfo(orgID string, inventoryG
 
 	var inventoryGroupDevicesInfo models.InventoryGroupDevicesUpdateInfo
 	var imageSetIDSMap = make(map[uint]bool)
+	var devicesImageMap = make(map[string]uint)
+
 	for _, deviceData := range inventoryGroupDevicesData {
 		imageSetIDSMap[deviceData.ImageSetID] = true
 		inventoryGroupDevicesInfo.ImageSetID = deviceData.ImageSetID
+		if deviceData.DeviceUUID != "" {
+			devicesImageMap[deviceData.DeviceUUID] = deviceData.ImageSetID
+		}
 		if deviceData.UpdateAvailable && deviceData.DeviceUUID != "" {
 			inventoryGroupDevicesInfo.DevicesUUIDS = append(inventoryGroupDevicesInfo.DevicesUUIDS, deviceData.DeviceUUID)
+
 		}
+
 	}
+	inventoryGroupDevicesInfo.DevicesImageSets = devicesImageMap
 	inventoryGroupDevicesInfo.DevicesCount = len(inventoryGroupDevicesData)
 	inventoryGroupDevicesInfo.ImageSetsCount = len(imageSetIDSMap)
 	inventoryGroupDevicesInfo.GroupUUID = inventoryGroupUUID
