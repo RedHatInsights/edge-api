@@ -4,26 +4,32 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
 	url2 "net/url"
 	"time"
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients"
-	"github.com/redhatinsights/edge-api/pkg/routes/common"
-
-	rbacClient "github.com/RedHatInsights/rbac-client-go"
 
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 )
 
 var ErrCreatingRbacURL = errors.New("error occurred when creating rbac url")
-var ErrGettingIdentityFromContext = errors.New("error getting x-rh-identity from context")
 var ErrInvalidAttributeFilterKey = errors.New("invalid value for attributeFilter.key in RBAC response")
 var ErrInvalidAttributeFilterOperation = errors.New("invalid value for attributeFilter.operation in RBAC response")
-var ErrInvalidAttributeFilterValueType = errors.New("did not receive a list for attributeFilter.value in RBAC response")
 var ErrInvalidAttributeFilterValue = errors.New("received invalid UUIDs for attributeFilter.value in RBAC response")
+var ErrFailedToBuildAccessRequest = errors.New("failed to build access request")
+var ErrRbacRequestResponse = errors.New("rbac response error")
 
+// IOReadAll The io body reader
+var IOReadAll = io.ReadAll
+
+// HTTPGetCommand the http get command
+var HTTPGetCommand = http.MethodGet
+
+// APIPath the rbac base path
 const APIPath = "/api/rbac/v1"
 
 type ResourceType string
@@ -44,15 +50,35 @@ const (
 
 const DefaultTimeDuration = 1 * time.Second
 
-// ClientInterface is an Interface to make request to insights rbac
-type ClientInterface interface {
-	GetAccessList(application Application) (rbacClient.AccessList, error)
-	GetInventoryGroupsAccess(acl rbacClient.AccessList, resource ResourceType, accessType AccessType) (bool, []string, bool, error)
+// PaginationLimit to get a maximum of 1000 records
+const PaginationLimit = "1000"
+
+// ResponseBody represents the response body format from the RBAC service
+type ResponseBody struct {
+	Meta  PaginationMeta  `json:"meta"`
+	Links PaginationLinks `json:"links"`
+	Data  AccessList      `json:"data"`
 }
 
-// WrappedClientInterface is an interface of the original rbac client
-type WrappedClientInterface interface {
-	GetAccess(ctx context.Context, identity string, username string) (rbacClient.AccessList, error)
+// PaginationMeta contains metadata for pagination
+type PaginationMeta struct {
+	Count  int `json:"count"`
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
+}
+
+// PaginationLinks provides links to additional pages of response data
+type PaginationLinks struct {
+	First    string `json:"first"`
+	Next     string `json:"next"`
+	Previous string `json:"previous"`
+	Last     string `json:"last"`
+}
+
+// ClientInterface is an Interface to make request to insights rbac
+type ClientInterface interface {
+	GetAccessList(application Application) (AccessList, error)
+	GetInventoryGroupsAccess(acl AccessList, resource ResourceType, accessType AccessType) (bool, []string, bool, error)
 }
 
 // Client is the implementation of an ClientInterface
@@ -66,52 +92,73 @@ func InitClient(ctx context.Context, log *log.Entry) ClientInterface {
 	return &Client{ctx: ctx, log: log.WithField("client-context", "rbac-client")}
 }
 
-// NewRbacClient create a new rbac client
-func (c *Client) NewRbacClient(application Application) (WrappedClientInterface, error) {
-	url, err := url2.JoinPath(config.Get().RbacBaseURL, APIPath)
+func (c *Client) GetRBacAccessHTTPRequest(ctx context.Context, application Application) (*http.Request, error) {
+	url, err := url2.JoinPath(config.Get().RbacBaseURL, APIPath, "access/")
 	if err != nil {
 		c.log.WithField("error", err.Error()).Error(ErrCreatingRbacURL.Error())
 		return nil, ErrCreatingRbacURL
 	}
 
-	wrappedClient := rbacClient.NewClient(url, string(application))
-	wrappedClient.HTTPClient = clients.ConfigureClientWithTLS(wrappedClient.HTTPClient)
-	return &wrappedClient, nil
+	req, err := http.NewRequestWithContext(ctx, HTTPGetCommand, url, nil)
+	if err != nil {
+		return nil, ErrFailedToBuildAccessRequest
+	}
+	q := req.URL.Query()
+	q.Add("application", string(application))
+	q.Add("limit", PaginationLimit)
+	req.URL.RawQuery = q.Encode()
+	req.Header.Add("Content-Type", "application/json")
+	headers := clients.GetOutgoingHeaders(c.ctx)
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
+	return req, nil
 }
 
 // GetAccessList return the application rbac access list
-func (c *Client) GetAccessList(application Application) (rbacClient.AccessList, error) {
-	conf := config.Get()
-	rbacTimeout := time.Duration(conf.RbacTimeout) * DefaultTimeDuration
-
+func (c *Client) GetAccessList(application Application) (AccessList, error) {
+	rbacTimeout := time.Duration(config.Get().RbacTimeout) * DefaultTimeDuration
 	ctx, cancel := context.WithTimeout(c.ctx, rbacTimeout)
 	defer cancel()
 
-	wrappedClient, err := c.NewRbacClient(application)
+	req, err := c.GetRBacAccessHTTPRequest(ctx, application)
 	if err != nil {
-		c.log.WithField("error", err.Error()).Error("error occurred when creating rbac client")
+		c.log.WithField("error", err.Error()).Error("error occurred while creating rbac access request")
 		return nil, err
 	}
 
-	var identity string
-	if config.Get().Auth {
-		identity, err = common.GetOriginalIdentity(ctx)
-		if err != nil {
-			c.log.WithField("error", err.Error()).Error("error getting identity from context")
-			return nil, ErrGettingIdentityFromContext
-		}
-	}
-
-	acl, err := wrappedClient.GetAccess(ctx, identity, "")
+	client := clients.ConfigureClientWithTLS(&http.Client{})
+	res, err := client.Do(req)
 	if err != nil {
-		c.log.WithField("error", err.Error()).Error("error occurred getting rbac AccessList")
+		c.log.WithField("error", err.Error()).Error("rbac request failed")
 		return nil, err
 	}
-	return acl, nil
+	defer res.Body.Close()
+
+	body, err := IOReadAll(res.Body)
+	if err != nil {
+		c.log.WithFields(log.Fields{"statusCode": res.StatusCode, "error": err.Error()}).Error("rbac read response body error")
+		return nil, err
+	}
+	if res.StatusCode != http.StatusOK {
+		c.log.WithFields(
+			log.Fields{"statusCode": res.StatusCode, "responseBody": string(body)},
+		).Error("rbac request error response")
+		return nil, ErrRbacRequestResponse
+	}
+
+	var responseAccess ResponseBody
+	err = json.Unmarshal(body, &responseAccess)
+	if err != nil {
+		c.log.WithFields(log.Fields{"responseBody": string(body), "error": err.Error()}).Error("error occurred when unmarshalling response body to repository")
+		return nil, err
+	}
+
+	return responseAccess.Data, nil
 }
 
 // getAssessGroupsFromResourceDefinition validate and return the access groups
-func (c *Client) getAssessGroupsFromResourceDefinition(resourceDefinition rbacClient.ResourceDefinition) ([]*string, error) {
+func (c *Client) getAssessGroupsFromResourceDefinition(resourceDefinition ResourceDefinition) ([]*string, error) {
 	if resourceDefinition.Filter.Key != "group.id" {
 		c.log.WithField("filter-key", resourceDefinition.Filter.Key).Error("received an unexpected resource filter key value")
 		return nil, ErrInvalidAttributeFilterKey
@@ -120,12 +167,8 @@ func (c *Client) getAssessGroupsFromResourceDefinition(resourceDefinition rbacCl
 		c.log.WithField("filter-operation", resourceDefinition.Filter.Key).Error("received an unexpected resource filter operation value")
 		return nil, ErrInvalidAttributeFilterOperation
 	}
-	var accessGroups []*string
-	if err := json.Unmarshal([]byte(resourceDefinition.Filter.Value), &accessGroups); err != nil {
-		c.log.WithField("filter-value", resourceDefinition.Filter.Value).Error("received an unexpected resource filter value type")
-		return nil, ErrInvalidAttributeFilterValueType
-	}
-	return accessGroups, nil
+
+	return resourceDefinition.Filter.Value, nil
 }
 
 // getGroupsFromAccessGroups validate access groups and return groups and whether to ungrouped hosts should be included
@@ -147,14 +190,14 @@ func (c *Client) getGroupsFromAccessGroups(accessGroups []*string) ([]string, bo
 }
 
 // GetInventoryGroupsAccess return whether access is allowed and the groups configurations
-func (c *Client) GetInventoryGroupsAccess(acl rbacClient.AccessList, resource ResourceType, accessType AccessType) (bool, []string, bool, error) {
+func (c *Client) GetInventoryGroupsAccess(acl AccessList, resource ResourceType, accessType AccessType) (bool, []string, bool, error) {
 	var overallGroupIDS []string
 	var overallGroupIDSMap = make(map[string]bool)
 	var allowedAccess bool
 	var globalUnGroupedHosts bool
 	for _, ac := range acl {
 		// check if the resource with accessType has access to the current access item
-		if ac.Application() == string(ApplicationInventory) && ResourceMatch(ResourceType(ac.Resource()), resource) && AccessMatch(AccessType(ac.Verb()), accessType) {
+		if ac.Application() == string(ApplicationInventory) && ResourceMatch(ResourceType(ac.Resource()), resource) && AccessMatch(AccessType(ac.AccessType()), accessType) {
 			allowedAccess = true
 			for _, resourceDef := range ac.ResourceDefinitions {
 				// validate if the resource definition is correct and get all access groups from the resource definition value

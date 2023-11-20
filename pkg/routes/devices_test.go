@@ -15,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	rbacClient "github.com/RedHatInsights/rbac-client-go"
 	"github.com/bxcodec/faker/v3"
 	"github.com/go-chi/chi"
 	"github.com/golang/mock/gomock"
@@ -1340,7 +1339,7 @@ func TestDevicesViewInventoryHostsRbac(t *testing.T) {
 		Name                            string
 		HTTPMethod                      string
 		BodyData                        *models.FilterByDevicesAPI
-		RbacACL                         rbacClient.AccessList
+		RbacACL                         rbac.AccessList
 		UseIdentity                     bool
 		UseIdentityType                 string
 		ClientCallExpected              bool
@@ -1358,14 +1357,14 @@ func TestDevicesViewInventoryHostsRbac(t *testing.T) {
 		{
 			Name:       "should return the devices device from groups in ACL",
 			HTTPMethod: "GET",
-			RbacACL: rbacClient.AccessList{
-				rbacClient.Access{
-					ResourceDefinitions: []rbacClient.ResourceDefinition{
+			RbacACL: rbac.AccessList{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
 						{
-							Filter: rbacClient.ResourceDefinitionFilter{
+							Filter: rbac.ResourceDefinitionFilter{
 								Key:       "group.id",
 								Operation: "in",
-								Value:     fmt.Sprintf(`["%s"]`, inventoryGroups[0].ID),
+								Value:     []*string{&inventoryGroups[0].ID},
 							},
 						},
 					},
@@ -1385,14 +1384,14 @@ func TestDevicesViewInventoryHostsRbac(t *testing.T) {
 		{
 			Name:       "should return the devices with no groups",
 			HTTPMethod: "GET",
-			RbacACL: rbacClient.AccessList{
-				rbacClient.Access{
-					ResourceDefinitions: []rbacClient.ResourceDefinition{
+			RbacACL: rbac.AccessList{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
 						{
-							Filter: rbacClient.ResourceDefinitionFilter{
+							Filter: rbac.ResourceDefinitionFilter{
 								Key:       "group.id",
 								Operation: "in",
-								Value:     `[null]`,
+								Value:     []*string{nil},
 							},
 						},
 					},
@@ -1412,14 +1411,14 @@ func TestDevicesViewInventoryHostsRbac(t *testing.T) {
 		{
 			Name:       "should return the devices with group and with no groups",
 			HTTPMethod: "GET",
-			RbacACL: rbacClient.AccessList{
-				rbacClient.Access{
-					ResourceDefinitions: []rbacClient.ResourceDefinition{
+			RbacACL: rbac.AccessList{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
 						{
-							Filter: rbacClient.ResourceDefinitionFilter{
+							Filter: rbac.ResourceDefinitionFilter{
 								Key:       "group.id",
 								Operation: "in",
-								Value:     fmt.Sprintf(`["%s", null]`, inventoryGroups[0].ID),
+								Value:     []*string{&inventoryGroups[0].ID, nil},
 							},
 						},
 					},
@@ -1440,7 +1439,7 @@ func TestDevicesViewInventoryHostsRbac(t *testing.T) {
 		{
 			Name:               `should not filter by inventory rbac groups when identity type is not "User"`,
 			HTTPMethod:         "GET",
-			RbacACL:            rbacClient.AccessList{},
+			RbacACL:            rbac.AccessList{},
 			UseIdentity:        true,
 			UseIdentityType:    "System",
 			ClientCallExpected: false,
@@ -1450,7 +1449,7 @@ func TestDevicesViewInventoryHostsRbac(t *testing.T) {
 		{
 			Name:               "should return error when identity not found",
 			HTTPMethod:         "GET",
-			RbacACL:            rbacClient.AccessList{},
+			RbacACL:            rbac.AccessList{},
 			UseIdentity:        false,
 			ClientCallExpected: false,
 			ExpectedHTTPStatus: http.StatusBadRequest,
@@ -1458,7 +1457,7 @@ func TestDevicesViewInventoryHostsRbac(t *testing.T) {
 		{
 			Name:                     "should return error when rbac GetAccessList fails",
 			HTTPMethod:               "GET",
-			RbacACL:                  rbacClient.AccessList{},
+			RbacACL:                  rbac.AccessList{},
 			UseIdentity:              true,
 			UseIdentityType:          common.IdentityTypeUser,
 			ClientCallExpected:       true,
@@ -1469,7 +1468,7 @@ func TestDevicesViewInventoryHostsRbac(t *testing.T) {
 		{
 			Name:                     "should return error when rbac GetInventoryGroupsAccess fails",
 			HTTPMethod:               "GET",
-			RbacACL:                  rbacClient.AccessList{},
+			RbacACL:                  rbac.AccessList{},
 			UseIdentity:              true,
 			UseIdentityType:          common.IdentityTypeUser,
 			ClientCallExpected:       true,
@@ -1481,7 +1480,7 @@ func TestDevicesViewInventoryHostsRbac(t *testing.T) {
 		{
 			Name:                     "should return error when not allowed access",
 			HTTPMethod:               "GET",
-			RbacACL:                  rbacClient.AccessList{},
+			RbacACL:                  rbac.AccessList{},
 			UseIdentity:              true,
 			UseIdentityType:          common.IdentityTypeUser,
 			ClientCallExpected:       true,
@@ -1495,14 +1494,14 @@ func TestDevicesViewInventoryHostsRbac(t *testing.T) {
 			Name:       "should return the devices device from groups in ACL",
 			HTTPMethod: "POST",
 			BodyData:   PostDefaultData,
-			RbacACL: rbacClient.AccessList{
-				rbacClient.Access{
-					ResourceDefinitions: []rbacClient.ResourceDefinition{
+			RbacACL: rbac.AccessList{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
 						{
-							Filter: rbacClient.ResourceDefinitionFilter{
+							Filter: rbac.ResourceDefinitionFilter{
 								Key:       "group.id",
 								Operation: "in",
-								Value:     fmt.Sprintf(`["%s"]`, inventoryGroups[0].ID),
+								Value:     []*string{&inventoryGroups[0].ID},
 							},
 						},
 					},
@@ -1523,14 +1522,14 @@ func TestDevicesViewInventoryHostsRbac(t *testing.T) {
 			Name:       "should return the devices with no groups",
 			HTTPMethod: "POST",
 			BodyData:   PostDefaultData,
-			RbacACL: rbacClient.AccessList{
-				rbacClient.Access{
-					ResourceDefinitions: []rbacClient.ResourceDefinition{
+			RbacACL: rbac.AccessList{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
 						{
-							Filter: rbacClient.ResourceDefinitionFilter{
+							Filter: rbac.ResourceDefinitionFilter{
 								Key:       "group.id",
 								Operation: "in",
-								Value:     `[null]`,
+								Value:     []*string{nil},
 							},
 						},
 					},
@@ -1551,14 +1550,14 @@ func TestDevicesViewInventoryHostsRbac(t *testing.T) {
 			Name:       "should return the devices with group and with no groups",
 			HTTPMethod: "POST",
 			BodyData:   PostDefaultData,
-			RbacACL: rbacClient.AccessList{
-				rbacClient.Access{
-					ResourceDefinitions: []rbacClient.ResourceDefinition{
+			RbacACL: rbac.AccessList{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
 						{
-							Filter: rbacClient.ResourceDefinitionFilter{
+							Filter: rbac.ResourceDefinitionFilter{
 								Key:       "group.id",
 								Operation: "in",
-								Value:     fmt.Sprintf(`["%s", null]`, inventoryGroups[0].ID),
+								Value:     []*string{&inventoryGroups[0].ID, nil},
 							},
 						},
 					},
@@ -1580,7 +1579,7 @@ func TestDevicesViewInventoryHostsRbac(t *testing.T) {
 			Name:               `should not filter by inventory rbac groups when identity type is not "User"`,
 			HTTPMethod:         "POST",
 			BodyData:           PostDefaultData,
-			RbacACL:            rbacClient.AccessList{},
+			RbacACL:            rbac.AccessList{},
 			UseIdentity:        true,
 			UseIdentityType:    "System",
 			ClientCallExpected: false,
@@ -1591,7 +1590,7 @@ func TestDevicesViewInventoryHostsRbac(t *testing.T) {
 			Name:               "should return error when identity not found",
 			HTTPMethod:         "POST",
 			BodyData:           PostDefaultData,
-			RbacACL:            rbacClient.AccessList{},
+			RbacACL:            rbac.AccessList{},
 			UseIdentity:        false,
 			ClientCallExpected: false,
 			ExpectedHTTPStatus: http.StatusBadRequest,
@@ -1600,7 +1599,7 @@ func TestDevicesViewInventoryHostsRbac(t *testing.T) {
 			Name:                     "should return error when rbac GetAccessList fails",
 			HTTPMethod:               "POST",
 			BodyData:                 PostDefaultData,
-			RbacACL:                  rbacClient.AccessList{},
+			RbacACL:                  rbac.AccessList{},
 			UseIdentity:              true,
 			UseIdentityType:          common.IdentityTypeUser,
 			ClientCallExpected:       true,
@@ -1612,7 +1611,7 @@ func TestDevicesViewInventoryHostsRbac(t *testing.T) {
 			Name:                     "should return error when rbac GetInventoryGroupsAccess fails",
 			HTTPMethod:               "POST",
 			BodyData:                 PostDefaultData,
-			RbacACL:                  rbacClient.AccessList{},
+			RbacACL:                  rbac.AccessList{},
 			UseIdentity:              true,
 			UseIdentityType:          common.IdentityTypeUser,
 			ClientCallExpected:       true,
@@ -1625,7 +1624,7 @@ func TestDevicesViewInventoryHostsRbac(t *testing.T) {
 			Name:                     "should return error when not allowed access",
 			HTTPMethod:               "POST",
 			BodyData:                 PostDefaultData,
-			RbacACL:                  rbacClient.AccessList{},
+			RbacACL:                  rbac.AccessList{},
 			UseIdentity:              true,
 			UseIdentityType:          common.IdentityTypeUser,
 			ClientCallExpected:       true,
