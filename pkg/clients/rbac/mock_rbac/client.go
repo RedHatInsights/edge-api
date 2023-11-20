@@ -5,12 +5,10 @@
 package mock_rbac
 
 import (
-	context "context"
 	reflect "reflect"
 
-	rbac "github.com/RedHatInsights/rbac-client-go"
 	gomock "github.com/golang/mock/gomock"
-	rbac0 "github.com/redhatinsights/edge-api/pkg/clients/rbac"
+	rbac "github.com/redhatinsights/edge-api/pkg/clients/rbac"
 )
 
 // MockClientInterface is a mock of ClientInterface interface.
@@ -37,7 +35,7 @@ func (m *MockClientInterface) EXPECT() *MockClientInterfaceMockRecorder {
 }
 
 // GetAccessList mocks base method.
-func (m *MockClientInterface) GetAccessList(application rbac0.Application) (rbac.AccessList, error) {
+func (m *MockClientInterface) GetAccessList(application rbac.Application) (rbac.AccessList, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAccessList", application)
 	ret0, _ := ret[0].(rbac.AccessList)
@@ -52,7 +50,7 @@ func (mr *MockClientInterfaceMockRecorder) GetAccessList(application interface{}
 }
 
 // GetInventoryGroupsAccess mocks base method.
-func (m *MockClientInterface) GetInventoryGroupsAccess(acl rbac.AccessList, resource rbac0.ResourceType, accessType rbac0.AccessType) (bool, []string, bool, error) {
+func (m *MockClientInterface) GetInventoryGroupsAccess(acl rbac.AccessList, resource rbac.ResourceType, accessType rbac.AccessType) (bool, []string, bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetInventoryGroupsAccess", acl, resource, accessType)
 	ret0, _ := ret[0].(bool)
@@ -66,42 +64,4 @@ func (m *MockClientInterface) GetInventoryGroupsAccess(acl rbac.AccessList, reso
 func (mr *MockClientInterfaceMockRecorder) GetInventoryGroupsAccess(acl, resource, accessType interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInventoryGroupsAccess", reflect.TypeOf((*MockClientInterface)(nil).GetInventoryGroupsAccess), acl, resource, accessType)
-}
-
-// MockWrappedClientInterface is a mock of WrappedClientInterface interface.
-type MockWrappedClientInterface struct {
-	ctrl     *gomock.Controller
-	recorder *MockWrappedClientInterfaceMockRecorder
-}
-
-// MockWrappedClientInterfaceMockRecorder is the mock recorder for MockWrappedClientInterface.
-type MockWrappedClientInterfaceMockRecorder struct {
-	mock *MockWrappedClientInterface
-}
-
-// NewMockWrappedClientInterface creates a new mock instance.
-func NewMockWrappedClientInterface(ctrl *gomock.Controller) *MockWrappedClientInterface {
-	mock := &MockWrappedClientInterface{ctrl: ctrl}
-	mock.recorder = &MockWrappedClientInterfaceMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockWrappedClientInterface) EXPECT() *MockWrappedClientInterfaceMockRecorder {
-	return m.recorder
-}
-
-// GetAccess mocks base method.
-func (m *MockWrappedClientInterface) GetAccess(ctx context.Context, identity, username string) (rbac.AccessList, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAccess", ctx, identity, username)
-	ret0, _ := ret[0].(rbac.AccessList)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAccess indicates an expected call of GetAccess.
-func (mr *MockWrappedClientInterfaceMockRecorder) GetAccess(ctx, identity, username interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccess", reflect.TypeOf((*MockWrappedClientInterface)(nil).GetAccess), ctx, identity, username)
 }

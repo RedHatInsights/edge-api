@@ -3,7 +3,8 @@ package rbac_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 
@@ -12,13 +13,15 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 
-	rbacClient "github.com/RedHatInsights/rbac-client-go"
-
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo" // nolint: revive
 	. "github.com/onsi/gomega" // nolint: revive
 	log "github.com/sirupsen/logrus"
 )
+
+func StringPointer(str string) *string {
+	return &str
+}
 
 var _ = Describe("Rbac Client", func() {
 	var orgID string
@@ -47,16 +50,33 @@ var _ = Describe("Rbac Client", func() {
 	AfterEach(func() {
 		config.Get().Auth = initialAuth
 		config.Get().RbacBaseURL = initialRbacBaseURL
+		rbac.HTTPGetCommand = http.MethodGet
+		rbac.IOReadAll = io.ReadAll
 	})
 
 	Context("GetAccessList", func() {
 
 		It("should return rbac access list successfully", func() {
-			expectedACL := rbacClient.AccessList{rbacClient.Access{}}
+			groupUUID1 := faker.UUIDHyphenated()
+			groupUUID2 := faker.UUIDHyphenated()
+			expectedACL := rbac.AccessList{rbac.Access{
+				ResourceDefinitions: []rbac.ResourceDefinition{
+					{
+						Filter: rbac.ResourceDefinitionFilter{
+							Key:       "group.id",
+							Operation: "in",
+							Value:     []*string{&groupUUID1, &groupUUID2, nil},
+						},
+					},
+				},
+				Permission: "inventory:hosts:read",
+			}}
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				Expect(r.URL.Path).To(Equal(rbac.APIPath + "/access/"))
+				Expect(r.URL.Query().Get("application")).To(Equal(string(rbac.ApplicationInventory)))
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusOK)
-				response := rbacClient.PaginatedBody{Data: expectedACL}
+				response := rbac.ResponseBody{Data: expectedACL}
 				err := json.NewEncoder(w).Encode(&response)
 				Expect(err).ToNot(HaveOccurred())
 			}))
@@ -64,20 +84,28 @@ var _ = Describe("Rbac Client", func() {
 
 			config.Get().RbacBaseURL = ts.URL
 
-			_, err := client.GetAccessList(rbac.ApplicationInventory)
+			acl, err := client.GetAccessList(rbac.ApplicationInventory)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(len(acl) > 0).To(BeTrue())
+			Expect(len(acl)).To(Equal(len(expectedACL)))
+			Expect(acl[0].Permission).To(Equal(expectedACL[0].Permission))
+			Expect(len(acl[0].ResourceDefinitions)).To(Equal(len(expectedACL[0].ResourceDefinitions)))
+			Expect(acl[0].ResourceDefinitions[0].Filter.Key).To(Equal(expectedACL[0].ResourceDefinitions[0].Filter.Key))
+			Expect(acl[0].ResourceDefinitions[0].Filter.Operation).To(Equal(expectedACL[0].ResourceDefinitions[0].Filter.Operation))
+			Expect(len(acl[0].ResourceDefinitions[0].Filter.Value)).To(Equal(len(expectedACL[0].ResourceDefinitions[0].Filter.Value)))
+			for ind := range acl[0].ResourceDefinitions[0].Filter.Value {
+				if acl[0].ResourceDefinitions[0].Filter.Value[ind] == nil {
+					Expect(acl[0].ResourceDefinitions[0].Filter.Value[ind]).To(Equal(expectedACL[0].ResourceDefinitions[0].Filter.Value[ind]))
+				} else {
+					Expect(*acl[0].ResourceDefinitions[0].Filter.Value[ind]).To(Equal(*expectedACL[0].ResourceDefinitions[0].Filter.Value[ind]))
+				}
+			}
 		})
 
 		It("should return error when rbac url is not valid", func() {
 			config.Get().RbacBaseURL = "\t"
 			_, err := client.GetAccessList(rbac.ApplicationInventory)
 			Expect(err).To(MatchError(rbac.ErrCreatingRbacURL))
-		})
-
-		It("should return error when unble to get identity from context", func() {
-			client = rbac.InitClient(context.Background(), log.NewEntry(log.StandardLogger()))
-			_, err := client.GetAccessList(rbac.ApplicationInventory)
-			Expect(err).To(MatchError(rbac.ErrGettingIdentityFromContext))
 		})
 
 		It("should return error when GetAccess fail", func() {
@@ -89,7 +117,61 @@ var _ = Describe("Rbac Client", func() {
 
 			_, err := client.GetAccessList(rbac.ApplicationInventory)
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring(" received non-OK status code: 500"))
+			Expect(err.Error()).To(ContainSubstring(rbac.ErrRbacRequestResponse.Error()))
+		})
+
+		It("should return error when NewRequestWithContext fails", func() {
+			rbac.HTTPGetCommand = "\tBAD-HTTP-METHOD"
+			_, err := client.GetAccessList(rbac.ApplicationInventory)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(rbac.ErrFailedToBuildAccessRequest))
+		})
+
+		It("should return error when client.Do fails", func() {
+			config.Get().RbacBaseURL = "url-without-schema"
+			_, err := client.GetAccessList(rbac.ApplicationInventory)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("unsupported protocol scheme"))
+		})
+
+		It("should return error when body read all fails", func() {
+			expectedACL := rbac.AccessList{rbac.Access{}}
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				response := rbac.ResponseBody{Data: expectedACL}
+				err := json.NewEncoder(w).Encode(&response)
+				Expect(err).ToNot(HaveOccurred())
+			}))
+			defer ts.Close()
+
+			config.Get().RbacBaseURL = ts.URL
+
+			expectedError := errors.New("expected error for when reading response body fails")
+			rbac.IOReadAll = func(r io.Reader) ([]byte, error) {
+				return nil, expectedError
+			}
+			_, err := client.GetAccessList(rbac.ApplicationInventory)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(expectedError))
+		})
+
+		It("should return error when unmarshal fails", func() {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				response := `{"data: {}}`
+				err := json.NewEncoder(w).Encode(&response)
+				Expect(err).ToNot(HaveOccurred())
+			}))
+			defer ts.Close()
+
+			config.Get().RbacBaseURL = ts.URL
+
+			_, err := client.GetAccessList(rbac.ApplicationInventory)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("cannot unmarshal string into Go value of type rbac.ResponseBody"))
+
 		})
 	})
 
@@ -103,61 +185,64 @@ var _ = Describe("Rbac Client", func() {
 			expectedGroups := []string{groupUUID1, groupUUID2, groupUUID3, groupUUID4}
 			// not in access list
 			groupUUID5 := faker.UUIDHyphenated()
-			acl := rbacClient.AccessList{
-				rbacClient.Access{
-					ResourceDefinitions: []rbacClient.ResourceDefinition{
+			acl := rbac.AccessList{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
 						{
-							Filter: rbacClient.ResourceDefinitionFilter{
+							Filter: rbac.ResourceDefinitionFilter{
 								Key:       "group.id",
 								Operation: "in",
-								Value:     fmt.Sprintf(`["%s","%s"]`, groupUUID1, groupUUID2)},
+								Value:     []*string{&groupUUID1, &groupUUID2},
+							},
 						},
 					},
 					Permission: "inventory:hosts:read",
 				},
-				rbacClient.Access{
-					ResourceDefinitions: []rbacClient.ResourceDefinition{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
 						{
-							Filter: rbacClient.ResourceDefinitionFilter{
+							Filter: rbac.ResourceDefinitionFilter{
 								Key:       "group.id",
 								Operation: "in",
-								Value:     fmt.Sprintf(`["%s"]`, groupUUID3),
+								Value:     []*string{&groupUUID3},
 							},
 						},
 					},
 					Permission: "inventory:hosts:*",
 				},
-				rbacClient.Access{
-					ResourceDefinitions: []rbacClient.ResourceDefinition{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
 						{
-							Filter: rbacClient.ResourceDefinitionFilter{
+							Filter: rbac.ResourceDefinitionFilter{
 								Key:       "group.id",
 								Operation: "in",
-								Value:     fmt.Sprintf(`["%s"]`, groupUUID4)},
+								Value:     []*string{&groupUUID4},
+							},
 						},
 					},
 					Permission: "inventory:*:read",
 				},
-				rbacClient.Access{
-					ResourceDefinitions: []rbacClient.ResourceDefinition{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
 						{
-							Filter: rbacClient.ResourceDefinitionFilter{
+							Filter: rbac.ResourceDefinitionFilter{
 								Key:       "group.id",
 								Operation: "in",
-								Value:     `[null]`,
+								Value:     []*string{nil},
 							},
 						},
 					},
 					Permission: "inventory:*:*",
 				},
 				// should not be taken into account
-				rbacClient.Access{
-					ResourceDefinitions: []rbacClient.ResourceDefinition{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
 						{
-							Filter: rbacClient.ResourceDefinitionFilter{
+							Filter: rbac.ResourceDefinitionFilter{
 								Key:       "group.id",
 								Operation: "in",
-								Value:     fmt.Sprintf(`["%s"]`, groupUUID5)},
+								Value:     []*string{&groupUUID5},
+							},
 						},
 					},
 					Permission: "inventory:groups:read",
@@ -171,14 +256,14 @@ var _ = Describe("Rbac Client", func() {
 		})
 
 		It("it should not be allowed access when no resources matches", func() {
-			acl := rbacClient.AccessList{
-				rbacClient.Access{
-					ResourceDefinitions: []rbacClient.ResourceDefinition{
+			acl := rbac.AccessList{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
 						{
-							Filter: rbacClient.ResourceDefinitionFilter{
+							Filter: rbac.ResourceDefinitionFilter{
 								Key:       "group.id",
 								Operation: "in",
-								Value:     `[null]`,
+								Value:     []*string{nil},
 							},
 						},
 					},
@@ -191,14 +276,14 @@ var _ = Describe("Rbac Client", func() {
 		})
 
 		It("it should not be allowed access when no access type matches", func() {
-			acl := rbacClient.AccessList{
-				rbacClient.Access{
-					ResourceDefinitions: []rbacClient.ResourceDefinition{
+			acl := rbac.AccessList{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
 						{
-							Filter: rbacClient.ResourceDefinitionFilter{
+							Filter: rbac.ResourceDefinitionFilter{
 								Key:       "group.id",
 								Operation: "in",
-								Value:     `[null]`,
+								Value:     []*string{nil},
 							},
 						},
 					},
@@ -211,14 +296,14 @@ var _ = Describe("Rbac Client", func() {
 		})
 
 		It("hostsWithNoGroupsAssigned should be false when no null value found", func() {
-			acl := rbacClient.AccessList{
-				rbacClient.Access{
-					ResourceDefinitions: []rbacClient.ResourceDefinition{
+			acl := rbac.AccessList{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
 						{
-							Filter: rbacClient.ResourceDefinitionFilter{
+							Filter: rbac.ResourceDefinitionFilter{
 								Key:       "group.id",
 								Operation: "in",
-								Value:     `[]`,
+								Value:     []*string{},
 							},
 						},
 					},
@@ -232,14 +317,14 @@ var _ = Describe("Rbac Client", func() {
 		})
 
 		It("should return error when filter key is not valid", func() {
-			acl := rbacClient.AccessList{
-				rbacClient.Access{
-					ResourceDefinitions: []rbacClient.ResourceDefinition{
+			acl := rbac.AccessList{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
 						{
-							Filter: rbacClient.ResourceDefinitionFilter{
+							Filter: rbac.ResourceDefinitionFilter{
 								Key:       "invalid.key",
 								Operation: "in",
-								Value:     `[]`,
+								Value:     []*string{},
 							},
 						},
 					},
@@ -252,14 +337,14 @@ var _ = Describe("Rbac Client", func() {
 		})
 
 		It("should return error when filter operation is not valid", func() {
-			acl := rbacClient.AccessList{
-				rbacClient.Access{
-					ResourceDefinitions: []rbacClient.ResourceDefinition{
+			acl := rbac.AccessList{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
 						{
-							Filter: rbacClient.ResourceDefinitionFilter{
+							Filter: rbac.ResourceDefinitionFilter{
 								Key:       "group.id",
 								Operation: "invalid-operation",
-								Value:     `[]`,
+								Value:     []*string{},
 							},
 						},
 					},
@@ -271,36 +356,15 @@ var _ = Describe("Rbac Client", func() {
 			Expect(err).To(MatchError(rbac.ErrInvalidAttributeFilterOperation))
 		})
 
-		It("should return error when filter value has invalid type", func() {
-			acl := rbacClient.AccessList{
-				rbacClient.Access{
-					ResourceDefinitions: []rbacClient.ResourceDefinition{
-						{
-							Filter: rbacClient.ResourceDefinitionFilter{
-								Key:       "group.id",
-								Operation: "in",
-								// set a dict instead of list
-								Value: `{"id": "some-value"}`,
-							},
-						},
-					},
-					Permission: "inventory:hosts:read",
-				},
-			}
-			_, _, _, err := client.GetInventoryGroupsAccess(acl, rbac.ResourceTypeHOSTS, rbac.AccessTypeRead)
-			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(rbac.ErrInvalidAttributeFilterValueType))
-		})
-
 		It("should return error when filter value item is not a valid uuid", func() {
-			acl := rbacClient.AccessList{
-				rbacClient.Access{
-					ResourceDefinitions: []rbacClient.ResourceDefinition{
+			acl := rbac.AccessList{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
 						{
-							Filter: rbacClient.ResourceDefinitionFilter{
+							Filter: rbac.ResourceDefinitionFilter{
 								Key:       "group.id",
 								Operation: "in",
-								Value:     `["invalid-uuid-value"]`,
+								Value:     []*string{StringPointer("invalid-uuid-value")},
 							},
 						},
 					},
@@ -310,6 +374,26 @@ var _ = Describe("Rbac Client", func() {
 			_, _, _, err := client.GetInventoryGroupsAccess(acl, rbac.ResourceTypeHOSTS, rbac.AccessTypeRead)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(rbac.ErrInvalidAttributeFilterValue))
+		})
+
+		It("should not allow access when permission is mal formed", func() {
+			acl := rbac.AccessList{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
+						{
+							Filter: rbac.ResourceDefinitionFilter{
+								Key:       "group.id",
+								Operation: "in",
+								Value:     []*string{},
+							},
+						},
+					},
+					Permission: "inventory-hosts-read",
+				},
+			}
+			allowedAccess, _, _, err := client.GetInventoryGroupsAccess(acl, rbac.ResourceTypeHOSTS, rbac.AccessTypeRead)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(allowedAccess).To(BeFalse())
 		})
 	})
 })
