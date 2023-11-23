@@ -119,6 +119,7 @@ var _ = Describe("Migrate device groups", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(rhIndent.Identity.OrgID).To(Equal(orgID))
 					Expect(rhIndent.Identity.Type).To(Equal(migrategroups.DefaultIdentityType))
+					Expect(rhIndent.Identity.AuthType).To(Equal(migrategroups.AuthTypeBASIC))
 					return mockInventoryGroupClient
 				}
 
