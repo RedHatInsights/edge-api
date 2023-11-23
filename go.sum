@@ -723,8 +723,8 @@ github.com/Masterminds/semver/v3 v3.1.1 h1:hLg3sBzpNErnxhQtUy/mmLR2I9foDujNK030I
 github.com/Masterminds/semver/v3 v3.1.1/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
 github.com/PuerkitoBio/purell v1.1.1/go.mod h1:c11w/QuzBsJSee3cPx9rAFu61PvFxuPbtSwDGJws/X0=
 github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdkoq3SwY9Y+13GIhn11/XLaGBb4BfwItxLd5jeuXE=
-github.com/Unleash/unleash-client-go/v3 v3.9.1 h1:QIu15sBa9Jc90qCT496hI4PbAmr84BEDSbjM0pd7HTY=
-github.com/Unleash/unleash-client-go/v3 v3.9.1/go.mod h1:jAf7F2WWpfJbfn1n8bZ74p7hkAhijrqH4TpWoT7kWLc=
+github.com/Unleash/unleash-client-go/v3 v3.9.2 h1:/Jl61G/kOx+1+MqPuMnC/JvJxdsf52ZDdJvCmXoA2ck=
+github.com/Unleash/unleash-client-go/v3 v3.9.2/go.mod h1:jAf7F2WWpfJbfn1n8bZ74p7hkAhijrqH4TpWoT7kWLc=
 github.com/actgardner/gogen-avro/v10 v10.1.0/go.mod h1:o+ybmVjEa27AAr35FRqU98DJu1fXES56uXniYFv4yDA=
 github.com/actgardner/gogen-avro/v10 v10.2.1/go.mod h1:QUhjeHPchheYmMDni/Nx7VB0RsT/ee8YIgGY/xpEQgQ=
 github.com/actgardner/gogen-avro/v9 v9.1.0/go.mod h1:nyTj6wPqDJoxM3qdnjcLv+EnMDSDFqE0qDpva2QRmKc=
