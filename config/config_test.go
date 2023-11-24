@@ -117,8 +117,10 @@ func TestKafkaBroker(t *testing.T) {
 	testCases := []struct {
 		Name                      string
 		clowderConfig             *clowder.AppConfig
+		KafkaServers              []string
 		ExpectedKafkaBroker       *clowder.BrokerConfig
 		ExpectedKafkaBrokerCaCert string
+		ExpectedKafkaServers      string
 	}{
 		{
 
@@ -132,7 +134,9 @@ func TestKafkaBroker(t *testing.T) {
 				},
 			},
 
-			ExpectedKafkaBroker: &kafkaBroker,
+			ExpectedKafkaBroker:  &kafkaBroker,
+			KafkaServers:         []string{"kafka-1.example.com:9099", "kafka-2.example.com:9099"},
+			ExpectedKafkaServers: "kafka-1.example.com:9099,kafka-2.example.com:9099",
 		},
 
 		{
@@ -162,9 +166,11 @@ func TestKafkaBroker(t *testing.T) {
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(t *testing.T) {
 			clowder.LoadedConfig = testCase.clowderConfig
+			clowder.KafkaServers = testCase.KafkaServers
 			// init the configuration
 			Init()
 			assert.Equal(t, Config.KafkaBroker, testCase.ExpectedKafkaBroker)
+			assert.Equal(t, Config.KafkaServers, testCase.ExpectedKafkaServers)
 			if testCase.ExpectedKafkaBroker != nil {
 				if testCase.ExpectedKafkaBroker.Cacert != nil && *testCase.ExpectedKafkaBroker.Cacert != "" {
 					assert.NotEmpty(t, Config.KafkaBrokerCaCertPath)
