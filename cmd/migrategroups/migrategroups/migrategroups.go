@@ -38,6 +38,9 @@ var DefaultMaxDataPageNumber = 100
 // DefaultIdentityType the default identity type used in header when requesting inventory groups end-point
 var DefaultIdentityType = "System"
 
+// AuthTypeBASIC the BASIC identity type used in header when requesting inventory groups end-point
+var AuthTypeBASIC = "basic-auth"
+
 // OrgsGroupsFilter the filter added to filter an organization groups (if the org_id is defined in the map as a key)
 var OrgsGroupsFilter = map[string][]interface{}{
 	"11789772": {"device_groups.name LIKE ?", "%-Store-%"},
@@ -63,6 +66,7 @@ func newInventoryGroupsOrgClient(orgID string) (inventorygroups.ClientInterface,
 	ident := identity.XRHID{Identity: identity.Identity{
 		OrgID:    orgID,
 		Type:     DefaultIdentityType,
+		AuthType: AuthTypeBASIC,
 		Internal: identity.Internal{OrgID: orgID},
 	}}
 	jsonIdent, err := json.Marshal(&ident)

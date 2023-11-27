@@ -974,5 +974,64 @@ var _ = Describe("DeviceGroup routes", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(responseDevicesView.EnforceEdgeGroups).To(BeFalse())
 		})
+
+		Context("GetDeviceGroupDetailsByIDView", func() {
+
+			It("should return EnforceEdgeGroups value: true", func() {
+				err := os.Setenv(feature.EnforceEdgeGroups.EnvVar, "true")
+				Expect(err).ToNot(HaveOccurred())
+				deviceGroup := models.DeviceGroup{
+					OrgID: OrgID, Name: faker.Name(),
+					Devices: []models.Device{
+						{UUID: faker.UUIDHyphenated(), OrgID: OrgID},
+						{UUID: faker.UUIDHyphenated(), OrgID: OrgID},
+					},
+				}
+
+				mockDeviceGroupsService.EXPECT().GetDeviceGroupByID(fmt.Sprintf("%d", deviceGroup.ID)).Return(&deviceGroup, nil)
+				mockDeviceService.EXPECT().GetDevicesCount(gomock.Any()).Return(int64(len(deviceGroup.Devices)), nil)
+				mockDeviceService.EXPECT().GetDevicesView(gomock.Any(), gomock.Any(), gomock.Any()).Return(&models.DeviceViewList{}, nil)
+
+				req, err := http.NewRequest("GET", fmt.Sprintf("/device-groups/%d/view", deviceGroup.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				responseRecorder := httptest.NewRecorder()
+				router.ServeHTTP(responseRecorder, req)
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+				respBody, err := io.ReadAll(responseRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).ToNot(BeEmpty())
+
+				var deviceGroupDetails models.DeviceGroupDetailsView
+				err = json.Unmarshal(respBody, &deviceGroupDetails)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(deviceGroupDetails.DeviceDetails.EnforceEdgeGroups).To(BeTrue())
+			})
+
+			It("should return EnforceEdgeGroups value: false", func() {
+				err := os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
+				Expect(err).ToNot(HaveOccurred())
+				deviceGroup := models.DeviceGroup{Model: models.Model{ID: 10}, OrgID: OrgID, Name: faker.Name()}
+
+				mockDeviceGroupsService.EXPECT().GetDeviceGroupByID(fmt.Sprintf("%d", deviceGroup.ID)).Return(&deviceGroup, nil)
+
+				req, err := http.NewRequest("GET", fmt.Sprintf("/device-groups/%d/view", deviceGroup.ID), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				responseRecorder := httptest.NewRecorder()
+				router.ServeHTTP(responseRecorder, req)
+
+				Expect(responseRecorder.Code).To(Equal(http.StatusOK))
+				respBody, err := io.ReadAll(responseRecorder.Body)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(respBody)).ToNot(BeEmpty())
+
+				var deviceGroupDetails models.DeviceGroupDetailsView
+				err = json.Unmarshal(respBody, &deviceGroupDetails)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(deviceGroupDetails.DeviceDetails.EnforceEdgeGroups).To(BeFalse())
+			})
+		})
 	})
 })

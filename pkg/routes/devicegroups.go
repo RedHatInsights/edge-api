@@ -385,6 +385,11 @@ func GetDeviceGroupDetailsByID(w http.ResponseWriter, r *http.Request) {
 // @Router       /device-groups/{ID}/view [get]
 func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		return
+	}
+
 	deviceGroup := getContextDeviceGroup(w, r)
 	if deviceGroup == nil {
 		return
@@ -392,6 +397,7 @@ func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 
 	var deviceGroupDetails models.DeviceGroupDetailsView
 	deviceGroupDetails.DeviceGroup = deviceGroup
+	deviceGroupDetails.DeviceDetails.EnforceEdgeGroups = utility.EnforceEdgeGroups(orgID)
 	if int(len(deviceGroup.Devices)) == 0 {
 		respondWithJSONBody(w, ctxServices.Log, &deviceGroupDetails)
 		return
