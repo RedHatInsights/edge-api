@@ -4,8 +4,6 @@
 package kafkacommon
 
 import (
-	"fmt"
-
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -33,7 +31,7 @@ func (k *KafkaConfigMapService) getKafkaCommonConfigMap() kafka.ConfigMap {
 
 	// use the first kafka broker from config
 	if cfg.KafkaBroker != nil {
-		kafkaConfigMap.SetKey("bootstrap.servers", fmt.Sprintf("%s:%d", cfg.KafkaBroker.Hostname, *cfg.KafkaBroker.Port))
+		kafkaConfigMap.SetKey("bootstrap.servers", cfg.KafkaServers)
 		var securityProtocol string
 		if cfg.KafkaBroker.SecurityProtocol != nil {
 			securityProtocol = *cfg.KafkaBroker.SecurityProtocol

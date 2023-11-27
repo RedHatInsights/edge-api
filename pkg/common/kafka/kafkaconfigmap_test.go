@@ -20,12 +20,14 @@ func TestGetKafkaProducerConfigMap(t *testing.T) {
 
 	conf := cfg.KafkaConfig
 	originalKafkaBroker := cfg.KafkaBroker
+	originalKafkaServers := cfg.KafkaServers
 
 	authType := clowder.BrokerConfigAuthtype("sasl")
 	dummyString := "something"
 	mech := "PLAIN"
 	proto := "SASL_SSL"
 	port := 80
+	kafkaServers := "192.168.1.7:80,192.168.1.8:90"
 	brokerConfig := clowder.BrokerConfig{
 		Authtype:         &authType,
 		Cacert:           &dummyString,
@@ -39,7 +41,7 @@ func TestGetKafkaProducerConfigMap(t *testing.T) {
 		},
 	}
 	kafkaConfigMap := kafka.ConfigMap{
-		"bootstrap.servers":        "192.168.1.7:80",
+		"bootstrap.servers":        kafkaServers,
 		"sasl.mechanisms":          "PLAIN",
 		"security.protocol":        "SASL_SSL",
 		"sasl.username":            "something",
@@ -51,14 +53,16 @@ func TestGetKafkaProducerConfigMap(t *testing.T) {
 	cfg.KafkaBroker = &brokerConfig
 
 	// Reset config.kafkaconfig back to its original value
-	defer func(conf *v1.KafkaConfig, kafkaBroker *clowder.BrokerConfig) {
+	defer func(conf *v1.KafkaConfig, kafkaBroker *clowder.BrokerConfig, kafkaServers string) {
 		config.Get().KafkaConfig = conf
 		config.Get().KafkaBroker = kafkaBroker
-	}(conf, originalKafkaBroker)
+		config.Get().KafkaServers = kafkaServers
+	}(conf, originalKafkaBroker, originalKafkaServers)
 
 	ctx := context.Background()
 	cfg.KafkaConfig = &v1.KafkaConfig{}
 	cfg.KafkaConfig.Brokers = []clowder.BrokerConfig{brokerConfig}
+	cfg.KafkaServers = kafkaServers
 
 	cases := []struct {
 		Name            string
@@ -89,6 +93,7 @@ func TestGetKafkaConsumerConfigMap(t *testing.T) {
 
 	conf := cfg.KafkaConfig
 	originalKafkaBroker := cfg.KafkaBroker
+	originalKafkaServers := cfg.KafkaServers
 
 	authType := clowder.BrokerConfigAuthtype("sasl")
 	dummyString := "something"
@@ -107,8 +112,9 @@ func TestGetKafkaConsumerConfigMap(t *testing.T) {
 			Password:      &dummyString,
 		},
 	}
+	kafkaServers := "192.168.1.7:80,192.168.1.8:90"
 	kafkaConfigMap := kafka.ConfigMap{
-		"bootstrap.servers":     "192.168.1.7:80",
+		"bootstrap.servers":     kafkaServers,
 		"sasl.mechanisms":       "PLAIN",
 		"security.protocol":     "SASL_SSL",
 		"sasl.username":         "something",
@@ -121,12 +127,14 @@ func TestGetKafkaConsumerConfigMap(t *testing.T) {
 	brokerSlice := []clowder.BrokerConfig{brokerConfig}
 	cfg.KafkaBrokers = brokerSlice
 	cfg.KafkaBroker = &brokerConfig
+	cfg.KafkaServers = kafkaServers
 
 	// Reset config.kafkaconfig back to its original value
-	defer func(conf *v1.KafkaConfig, kafkaBroker *clowder.BrokerConfig) {
+	defer func(conf *v1.KafkaConfig, kafkaBroker *clowder.BrokerConfig, kafkaServers string) {
 		config.Get().KafkaConfig = conf
 		config.Get().KafkaBroker = kafkaBroker
-	}(conf, originalKafkaBroker)
+		config.Get().KafkaServers = kafkaServers
+	}(conf, originalKafkaBroker, originalKafkaServers)
 
 	ctx := context.Background()
 	cfg.KafkaConfig = &v1.KafkaConfig{}

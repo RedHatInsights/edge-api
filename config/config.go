@@ -46,6 +46,7 @@ type EdgeConfig struct {
 	UploadWorkers              int                       `json:"upload_workers,omitempty"`
 	KafkaConfig                *clowder.KafkaConfig      `json:"kafka,omitempty"`
 	KafkaBrokers               []clowder.BrokerConfig    `json:"kafka_brokers,omitempty"`
+	KafkaServers               string                    `json:"kafka_servers,omitempty"`
 	KafkaBroker                *clowder.BrokerConfig     `json:"kafka_broker,omitempty"`
 	KafkaBrokerCaCertPath      string                    `json:"kafka_broker_ca_cert_path,omitempty"`
 	KafkaRequestRequiredAcks   int                       `json:"kafka_request_required_acks,omitempty"`
@@ -331,6 +332,7 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		}
 
 		edgeConfig.KafkaConfig = cfg.Kafka
+		edgeConfig.KafkaServers = strings.Join(clowder.KafkaServers, ",")
 	}
 
 	// get edgeConfig from file if running in developer mode
