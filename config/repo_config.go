@@ -8,9 +8,11 @@ const distRHEL85 = "rhel-85"
 const distRHEL86 = "rhel-86"
 const distRHEL87 = "rhel-87"
 const distRHEL88 = "rhel-88"
+const distRHEL89 = "rhel-89"
 const distRHEL90 = "rhel-90"
 const distRHEL91 = "rhel-91"
 const distRHEL92 = "rhel-92"
+const distRHEL93 = "rhel-93"
 
 // DefaultDistribution set the default image distribution in case miss it
 const DefaultDistribution = distRHEL90
@@ -42,9 +44,11 @@ var DistributionsPackages = map[string][]string{
 	distRHEL86: RHEL8X,
 	distRHEL87: RHEL8X,
 	distRHEL88: RHEL8X,
+	distRHEL89: RHEL8X,
 	distRHEL90: RHEL9,
 	distRHEL91: RHEL9,
 	distRHEL92: RHEL9,
+	distRHEL93: RHEL9,
 }
 
 // DistributionsRefs set the ref to Images
@@ -54,7 +58,9 @@ var DistributionsRefs = map[string]string{
 	distRHEL86: OstreeRefRHEL8,
 	distRHEL87: OstreeRefRHEL8,
 	distRHEL88: OstreeRefRHEL8,
+	distRHEL89: OstreeRefRHEL8,
 	distRHEL90: OstreeRefRHEL9,
 	distRHEL91: OstreeRefRHEL9,
 	distRHEL92: OstreeRefRHEL9,
+	distRHEL93: OstreeRefRHEL9,
 }
