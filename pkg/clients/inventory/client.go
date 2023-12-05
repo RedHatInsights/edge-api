@@ -35,7 +35,7 @@ type Client struct {
 }
 
 // InitClient initializes the client for Image Builder
-func InitClient(ctx context.Context, log *log.Entry) *Client {
+func InitClient(ctx context.Context, log *log.Entry) ClientInterface {
 	return &Client{ctx: ctx, log: log}
 }
 
@@ -55,6 +55,12 @@ type Device struct {
 	Ostree          SystemProfile `json:"system_profile"`
 	Account         string        `json:"account"`
 	OrgID           string        `json:"org_id"`
+	Groups          []Group       `json:"groups"`
+}
+
+type Group struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 // SystemProfile represents the struct of a SystemProfile on Inventory API
