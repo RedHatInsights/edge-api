@@ -36,7 +36,7 @@ func (ev EventImageUpdateRequestedBuildHandler) Consume(ctx context.Context) {
 	identity := payload.GetIdentity()
 	identityBytes, err := json.Marshal(identity)
 	if err != nil {
-		eventlog.Error("Error Marshaling the identity into a string")
+		eventlog.WithField("error", err.Error()).Error("Error Marshaling the identity into a string")
 		return
 	}
 
@@ -49,12 +49,12 @@ func (ev EventImageUpdateRequestedBuildHandler) Consume(ctx context.Context) {
 	var image *models.Image
 	imageString, err := json.Marshal(payload.NewImage)
 	if err != nil {
-		eventlog.Error("Error marshaling the image")
+		eventlog.WithField("error", err.Error()).Error("Error marshaling the image")
 		return
 	}
 	err = json.Unmarshal(imageString, &image)
 	if err != nil {
-		eventlog.Error("Error unmarshaling the image")
+		eventlog.WithField("error", err.Error()).Error("Error unmarshaling the image")
 		return
 	}
 	log := eventlog.WithFields(log.Fields{
@@ -68,6 +68,6 @@ func (ev EventImageUpdateRequestedBuildHandler) Consume(ctx context.Context) {
 	imageService := edgeAPIServices.ImageService
 	err = imageService.ProcessImage(ctx, image, true)
 	if err != nil {
-		log.Error("Error processing the image")
+		log.WithField("error", err.Error()).Error("Error processing the image")
 	}
 }

@@ -102,7 +102,7 @@ func (ev EventUpdateRepoRequestedHandler) Consume(ctx context.Context) {
 	if err = edgeAPIServices.ProducerService.ProduceEvent(
 		kafkacommon.TopicFleetmgmtUpdateWriteTemplateRequested, models.EventTypeEdgeWriteTemplateRequested, edgeEvent,
 	); err != nil {
-		log.WithField("request_id", ev.Data.RequestID).Error("producing the WriteTemplate event failed")
+		log.WithFields(log.Fields{"request_id": ev.Data.RequestID, "error": err.Error()}).Error("producing the WriteTemplate event failed")
 		// set update status to error
 		updateTransaction.Status = models.UpdateStatusError
 		if result := db.DB.Save(&updateTransaction); result.Error != nil {
@@ -110,7 +110,7 @@ func (ev EventUpdateRepoRequestedHandler) Consume(ctx context.Context) {
 				"requestID": ev.Data.RequestID,
 				"orgID":     updateTransaction.OrgID,
 				"updateID":  updateTransaction.ID,
-				"error":     err.Error(),
+				"error":     result.Error.Error(),
 			}).Error("failed to save update error status when WriteTemplate event failed")
 		}
 		return

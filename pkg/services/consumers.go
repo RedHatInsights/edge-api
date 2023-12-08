@@ -82,7 +82,7 @@ func (s *KafkaConsumerService) initReader() *kafka.Consumer {
 
 	err = c.SubscribeTopics([]string{s.topic}, nil)
 	if err != nil {
-		log.Error("Subscribing to topics failed")
+		log.WithField("error", err.Error()).Error("Subscribing to topics failed")
 
 	}
 	return c
