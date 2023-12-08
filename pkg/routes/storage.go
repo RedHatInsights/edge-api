@@ -99,7 +99,7 @@ func serveStorageContent(w http.ResponseWriter, r *http.Request, path string) {
 	defer func(requestFile io.ReadCloser) {
 		err := requestFile.Close()
 		if err != nil {
-			logContext.WithField("path", path).Error("error closing request file")
+			logContext.WithFields(log.Fields{"path": path, "error": err.Error()}).Error("error closing request file")
 		}
 	}(requestFile)
 
@@ -331,7 +331,7 @@ func GetUpdateTransactionRepoFileContent(w http.ResponseWriter, r *http.Request)
 		"orgID":               updateTransaction.OrgID,
 		"updateTransactionID": updateTransaction.ID,
 		"path":                requestPath,
-	}).Info("redirect storage update transaction repo resource")
+	}).Debug("redirect storage update transaction repo resource")
 
 	redirectToStorageSignedURL(w, r, requestPath)
 }
@@ -369,7 +369,7 @@ func GetUpdateTransactionRepoFile(w http.ResponseWriter, r *http.Request) {
 		"updateTransactionID": updateTransaction.ID,
 		"path":                requestPath,
 	})
-	logContext.Info("return storage update transaction repo resource content")
+	logContext.Debug("return storage update transaction repo resource content")
 	serveStorageContent(w, r, requestPath)
 }
 
@@ -503,7 +503,7 @@ func GetImageRepoFileContent(w http.ResponseWriter, r *http.Request) {
 		"orgID":   image.OrgID,
 		"imageID": image.ID,
 		"path":    requestPath,
-	}).Info("redirect storage image repo resource")
+	}).Debug("redirect storage image repo resource")
 	redirectToStorageSignedURL(w, r, requestPath)
 }
 
@@ -539,6 +539,6 @@ func GetImageRepoFile(w http.ResponseWriter, r *http.Request) {
 		"orgID":   image.OrgID,
 		"imageID": image.ID,
 		"path":    requestPath,
-	}).Info("return storage image repo resource content")
+	}).Debug("return storage image repo resource content")
 	serveStorageContent(w, r, requestPath)
 }

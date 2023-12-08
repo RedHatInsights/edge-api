@@ -203,18 +203,18 @@ func (s *DeviceGroupsService) GetDeviceImageInfo(images map[int]models.DeviceIma
 				CommitID = deviceImageSet.Images[len(deviceImageSet.Images)-1].CommitID
 
 				// loading commit and packages to calculate diff
-				if currentCommit := db.DB.First(&deviceImage.Commit, deviceImage.CommitID); currentCommit.Error != nil {
-					s.log.WithField("error", currentCommit).Error("Error when getting Commit for CurrentImage")
-					return currentCommit.Error
+				if err := db.DB.First(&deviceImage.Commit, deviceImage.CommitID).Error; err != nil {
+					s.log.WithField("error", err.Error()).Error("Error when getting Commit for CurrentImage")
+					return err
 				}
 				if err := db.DB.Model(&deviceImage.Commit).Association("InstalledPackages").Find(&deviceImage.Commit.InstalledPackages); err != nil {
 					s.log.WithField("error", err.Error()).Error("Error when getting InstalledPackages for CurrentImage")
 					return err
 				}
 
-				if latestCommit := db.DB.First(&latestImage.Commit, latestImage.CommitID); latestCommit.Error != nil {
-					s.log.WithField("error", latestCommit).Error("Error when getting Commit for LatestImage")
-					return latestCommit.Error
+				if err := db.DB.First(&latestImage.Commit, latestImage.CommitID).Error; err != nil {
+					s.log.WithField("error", err.Error()).Error("Error when getting Commit for LatestImage")
+					return err
 				}
 				if err := db.DB.Model(&latestImage.Commit).Association("InstalledPackages").Find(&latestImage.Commit.InstalledPackages); err != nil {
 					s.log.WithField("error", err.Error()).Error("Error when getting InstalledPackages for LatestImage")
@@ -295,7 +295,7 @@ func (s *DeviceGroupsService) GetDeviceGroupDetailsByID(ID string) (*models.Devi
 
 	result := db.Org(orgID, "").Where("id = ?", ID).Preload("Devices").First(&deviceGroupDetails.DeviceGroup)
 	if result.Error != nil {
-		s.log.WithField("error", err.Error()).Error("Device details query error")
+		s.log.WithField("error", result.Error.Error()).Error("Device details query error")
 		return nil, new(DeviceGroupNotFound)
 	}
 

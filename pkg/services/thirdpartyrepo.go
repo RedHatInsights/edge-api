@@ -58,7 +58,7 @@ func (s *ThirdPartyRepoService) ThirdPartyRepoURLExists(orgID string, url string
 	}
 
 	var reposCount int64
-	if err := db.Org(orgID, "").Debug().Model(&models.ThirdPartyRepo{}).
+	if err := db.Org(orgID, "").Model(&models.ThirdPartyRepo{}).
 		Where("(url = ? OR url = ?)", url, cleanedURL).
 		Count(&reposCount).Error; err != nil {
 		s.log.WithField("error", err.Error()).Error("Error checking custom repository existence")
@@ -77,7 +77,7 @@ func (s *ThirdPartyRepoService) ThirdPartyRepoNameExists(orgID string, name stri
 	}
 
 	var reposCount int64
-	if result := db.Org(orgID, "").Debug().Model(&models.ThirdPartyRepo{}).Where("name = ?", name).Count(&reposCount); result.Error != nil {
+	if result := db.Org(orgID, "").Model(&models.ThirdPartyRepo{}).Where("name = ?", name).Count(&reposCount); result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error checking custom repository existence")
 		return false, result.Error
 	}
@@ -98,7 +98,7 @@ func (s *ThirdPartyRepoService) thirdPartyRepoImagesExists(id string, imageStatu
 	if len(imageStatuses) > 0 {
 		tx = tx.Where("images.status IN (?)", imageStatuses)
 	}
-	if result := tx.Debug().Count(&imagesCount); result.Error != nil {
+	if result := tx.Count(&imagesCount); result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error checking custom repository existence")
 		return false, result.Error
 	}

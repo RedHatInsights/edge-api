@@ -91,9 +91,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	// This will retain the original commit repo URL as the update URL.
 	// (e.g., for a 2GB commit, this saves 4GB+ in traffic and local disk space on the pod)
 	if !feature.SkipUpdateRepo.IsEnabled() {
-		rb.log.Info("Starts building update repo...")
-
-		rb.log.WithField("updateTransaction", update).Info("Update transaction dev info")
+		rb.log.WithField("updateTransaction", update).Info("Starts building update repo...")
 
 		fromCommitHash := "undefined"
 		fromCommit := &models.StaticDeltaCommit{
@@ -123,7 +121,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		}
 
 		if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
-			rb.log.Error("error saving static delta state")
+			rb.log.WithField("error", saveErr.Error()).Error("error saving static delta state")
 			return nil, errors.New("error saving static delta state")
 		}
 
@@ -132,19 +130,19 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		rb.log.WithField("path", path).Debug("Update path will be created")
 		err := os.MkdirAll(path, os.FileMode(0755))
 		if err != nil {
-			rb.log.Error("Error creating update path")
+			rb.log.WithField("error", err.Error()).Error("Error creating update path")
 			staticDeltaState.Status = models.StaticDeltaStatusError
 			if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
-				rb.log.Error("error saving static delta state")
+				rb.log.WithField("error", saveErr.Error()).Error("error saving static delta state")
 			}
 			return nil, err
 		}
 		err = os.Chdir(path)
 		if err != nil {
-			rb.log.Error("Error changing directory to update path")
+			rb.log.WithField("error", err.Error()).Error("Error changing directory to update path")
 			staticDeltaState.Status = models.StaticDeltaStatusError
 			if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
-				rb.log.Error("error saving static delta state")
+				rb.log.WithField("error", saveErr.Error()).Error("error saving static delta state")
 			}
 
 			return nil, err
@@ -155,7 +153,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 			rb.log.WithField("error", err.Error()).Error("Error downloading tar")
 			staticDeltaState.Status = models.StaticDeltaStatusError
 			if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
-				rb.log.Error("error saving static delta state")
+				rb.log.WithField("error", saveErr.Error()).Error("error saving static delta state")
 			}
 
 			return nil, fmt.Errorf("error download repo repo :: %s", err.Error())
@@ -165,7 +163,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 			rb.log.WithField("error", err.Error()).Error("Error extracting tar")
 			staticDeltaState.Status = models.StaticDeltaStatusError
 			if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
-				rb.log.Error("error saving static delta state")
+				rb.log.WithField("error", saveErr.Error()).Error("error saving static delta state")
 			}
 
 			return nil, fmt.Errorf("error extracting repo :: %s", err.Error())
@@ -181,7 +179,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 			rb.log.WithField("error", err.Error()).Error("Error making dir")
 			staticDeltaState.Status = models.StaticDeltaStatusError
 			if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
-				rb.log.Error("error saving static delta state")
+				rb.log.WithField("error", saveErr.Error()).Error("error saving static delta state")
 			}
 
 			return nil, fmt.Errorf("error mkdir :: %s", err.Error())
@@ -191,7 +189,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 			rb.log.WithField("error", err.Error()).Error("Error changing dir")
 			staticDeltaState.Status = models.StaticDeltaStatusError
 			if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
-				rb.log.Error("error saving static delta state")
+				rb.log.WithField("error", saveErr.Error()).Error("error saving static delta state")
 			}
 
 			return nil, fmt.Errorf("error chdir :: %s", err.Error())
@@ -212,7 +210,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 				rb.log.WithField("error", err.Error()).Error("Error downloading tar")
 				staticDeltaState.Status = models.StaticDeltaStatusError
 				if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
-					rb.log.Error("error saving static delta state")
+					rb.log.WithField("error", saveErr.Error()).Error("error saving static delta state")
 				}
 
 				return nil, fmt.Errorf("error Upload repo repo :: %s", err.Error())
@@ -222,7 +220,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 				rb.log.WithField("error", err.Error()).Error("Error extracting repo")
 				staticDeltaState.Status = models.StaticDeltaStatusError
 				if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
-					rb.log.Error("error saving static delta state")
+					rb.log.WithField("error", saveErr.Error()).Error("error saving static delta state")
 				}
 
 				return nil, err
@@ -230,7 +228,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 
 			staticDeltaState.Status = models.StaticDeltaStatusGenerating
 			if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
-				rb.log.Error("error saving static delta state")
+				rb.log.WithField("error", saveErr.Error()).Error("error saving static delta state")
 
 				return nil, errors.New("Error saving static delta state")
 			}
@@ -241,7 +239,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 				rb.log.WithField("error", err.Error()).Error("Error pulling static deltas")
 				staticDeltaState.Status = models.StaticDeltaStatusError
 				if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
-					rb.log.Error("error saving static delta state")
+					rb.log.WithField("error", saveErr.Error()).Error("error saving static delta state")
 				}
 
 				return nil, err
@@ -255,7 +253,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		if err != nil {
 			staticDeltaState.Status = models.StaticDeltaStatusError
 			if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
-				rb.log.Error("error saving static delta state")
+				rb.log.WithField("error", saveErr.Error()).Error("error saving static delta state")
 			}
 
 			return nil, err
@@ -267,26 +265,27 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 
 		staticDeltaState.Status = models.StaticDeltaStatusUploading
 		if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
-			rb.log.Error("error saving static delta state")
+			rb.log.WithField("error", saveErr.Error()).Error("error saving static delta state")
 
 			return nil, errors.New("Error saving static delta state")
 		}
 
 		repoURL, err := rb.FilesService.GetUploader().UploadRepo(filepath.Clean(filepath.Join(path, "repo")), strconv.FormatUint(uint64(update.ID), 10), "private")
-		rb.log.Info("Finished uploading repo")
 		if err != nil {
+			rb.log.WithField("error", err.Error()).Error("error occurred while uploading repo")
 			staticDeltaState.Status = models.StaticDeltaStatusError
 			if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
-				rb.log.Error("error saving static delta state")
+				rb.log.WithField("error", saveErr.Error()).Error("error saving static delta state")
 			}
 
 			return nil, err
 		}
+		rb.log.Info("Finished uploading repo")
 
 		staticDeltaState.Status = models.StaticDeltaStatusReady
 		staticDeltaState.URL = repoURL
 		if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
-			rb.log.Error("error saving static delta state")
+			rb.log.WithField("error", saveErr.Error()).Error("error saving static delta state")
 
 			return nil, errors.New("Error saving static delta state")
 		}
@@ -342,32 +341,32 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 
 	tarFileName, err := rb.DownloadVersionRepo(&cmt, path)
 	if err != nil {
+		rb.log.WithField("error", err.Error()).Error("Error downloading repo...")
 		r.Status = models.RepoStatusError
 		result := db.DB.Save(&r)
 		if result.Error != nil {
 			rb.log.WithField("error", result.Error.Error()).Error("Error saving repo...")
 		}
-		rb.log.WithField("error", err.Error()).Error("Error downloading repo...")
 		return nil, fmt.Errorf("error downloading repo")
 	}
 	errUpload := rb.UploadVersionRepo(&cmt, tarFileName)
 	if errUpload != nil {
+		rb.log.WithField("error", errUpload.Error()).Error("Error uploading repo...")
 		r.Status = models.RepoStatusError
 		result := db.DB.Save(&r)
 		if result.Error != nil {
 			rb.log.WithField("error", result.Error.Error()).Error("Error saving repo...")
 		}
-		rb.log.WithField("error", errUpload.Error()).Error("Error uploading repo...")
 		return nil, fmt.Errorf("error Upload repo repo :: %s", errUpload.Error())
 	}
 	err = rb.ExtractVersionRepo(&cmt, tarFileName, path)
 	if err != nil {
+		rb.log.WithField("error", err.Error()).Error("Error extracting repo")
 		r.Status = models.RepoStatusError
 		result := db.DB.Save(&r)
 		if result.Error != nil {
 			rb.log.WithField("error", result.Error.Error()).Error("Error saving repo")
 		}
-		rb.log.WithField("error", err.Error()).Error("Error extracting repo")
 		return nil, fmt.Errorf("error extracting repo :: %s", err.Error())
 	}
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
