@@ -332,7 +332,7 @@ func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			return
 		}
-		ctxServices.Log.Info("Creating a device group")
+		ctxServices.Log.Debug("Creating a device group")
 
 		deviceGroup, err = ctxServices.DeviceGroupsService.CreateDeviceGroup(deviceGroup)
 		if err != nil {
@@ -551,7 +551,7 @@ func DeleteDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
 		return // error handled by getContextDeviceGroup already
 	}
 	ctxLog := ctxServices.Log.WithField("device_group_id", deviceGroup.ID)
-	ctxLog.Info("Deleting a device group")
+	ctxLog.Debug("Deleting a device group")
 	err := ctxServices.DeviceGroupsService.DeleteDeviceGroupByID(fmt.Sprint(deviceGroup.ID))
 	if err != nil {
 		ctxLog.WithField("error", err.Error()).Error("Error deleting device group")
@@ -595,7 +595,7 @@ func createDeviceRequest(w http.ResponseWriter, r *http.Request) (*models.Device
 	deviceGroup.OrgID = orgID
 
 	if err := deviceGroup.ValidateRequest(); err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Info("Error validation request from device group")
+		ctxServices.Log.WithField("error", err.Error()).Error("Error validation request from device group")
 		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 		return nil, err
 	}
@@ -815,7 +815,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 
 	for _, d := range deviceGroup.Devices {
 		var img models.Image
-		err := db.DB.Joins("Images").Debug().Find(&img,
+		err := db.DB.Joins("Images").Find(&img,
 			"id = ?", d.ImageID)
 		if err.Error != nil {
 			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(fmt.Sprintf(err.Error.Error())))
@@ -870,7 +870,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	for _, update := range *updates {
 		update.OrgID = orgID
 		upd = append(upd, update)
-		ctxServices.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
+		ctxServices.Log.WithField("updateID", update.ID).Debug("Starting asynchronous update process")
 		ctxServices.UpdateService.CreateUpdateAsync(update.ID)
 	}
 	if len(upd) == 0 {

@@ -427,7 +427,6 @@ func SendNotificationForDevice(w http.ResponseWriter, r *http.Request) {
 			respondWithAPIError(w, ctxServices.Log, err)
 			return
 		}
-		ctxServices.Log.WithField("StatusOK", http.StatusOK).Info("Writing Header")
 
 		w.WriteHeader(http.StatusOK)
 		respondWithJSONBody(w, ctxServices.Log, &notify)

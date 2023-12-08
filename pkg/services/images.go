@@ -610,7 +610,7 @@ func (s *ImageService) processInstaller(ctx context.Context, image *models.Image
 	imageID := image.ID
 	for {
 		// reload the image from database, for a long-running process
-		if err := db.DB.Debug().Joins("Commit").Joins("Installer").First(&image, imageID).Error; err != nil {
+		if err := db.DB.Joins("Commit").Joins("Installer").First(&image, imageID).Error; err != nil {
 			s.log.WithField("error", err.Error()).Error("error occurred when reloading image from database")
 			if goErrors.Is(err, gorm.ErrRecordNotFound) {
 				return new(ImageNotFoundError)
@@ -700,7 +700,7 @@ func (s *ImageService) processInstaller(ctx context.Context, image *models.Image
 
 		// put the event on the bus
 		if err := s.ProducerService.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeInstallerCompleted, edgeEvent); err != nil {
-			log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
+			log.WithFields(log.Fields{"request_id": edgeEvent.ID, "error": err.Error()}).Error("Producing the event failed")
 
 			return err
 		}
@@ -769,7 +769,7 @@ func (s *ImageService) processCommit(ctx context.Context, image *models.Image, l
 
 			// put the event on the bus
 			if err := kafkacommon.NewProducerService().ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeCommitCompleted, edgeEvent); err != nil {
-				s.log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
+				s.log.WithFields(log.Fields{"request_id": edgeEvent.ID, "error": err.Error()}).Error("Producing the event failed")
 
 				return image, err
 			}
@@ -987,7 +987,7 @@ func (s *ImageService) CreateRepoForImage(ctx context.Context, img *models.Image
 
 		// put the event on the bus
 		if err := s.ProducerService.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeOstreeRepoCompleted, edgeEvent); err != nil {
-			log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
+			log.WithFields(log.Fields{"request_id": edgeEvent.ID, "error": err.Error()}).Error("Producing the event failed")
 
 			return nil, err
 		}
@@ -1374,7 +1374,7 @@ func (s *ImageService) GetImageByIDExtended(imageID uint, gormDB *gorm.DB) (*mod
 	}
 	dbQuery := db.OrgDB(orgID, gormDB, "images")
 
-	if err := dbQuery.Debug().First(&image, imageID).Error; err != nil {
+	if err := dbQuery.First(&image, imageID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, new(ImageNotFoundError)
 		}
@@ -1411,7 +1411,7 @@ func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Im
 	var image models.Image
 	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {
-		s.log.Error("Error retrieving org_id")
+		s.log.WithField("error", err.Error()).Error("Error retrieving org_id")
 		return nil, new(OrgIDNotSet)
 	}
 	result := db.Org(orgID, "images").Joins("JOIN commits ON commits.id = images.commit_id AND commits.os_tree_commit = ?", commitHash).Joins("Installer").Preload("Packages").Preload("Commit.InstalledPackages").Preload("Commit.Repo").First(&image)
@@ -1783,10 +1783,10 @@ func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, err
 	var rollback models.Image
 	orgID, err := common.GetOrgIDFromContext(s.ctx)
 	if err != nil {
-		s.log.Error("Error retrieving org_id")
+		s.log.WithField("error", err.Error()).Error("Error retrieving org_id")
 		return nil, new(OrgIDNotSet)
 	}
-	result := db.Org(orgID, "images").Debug().Joins("Commit").Joins("Installer").Preload("Packages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where(&models.Image{ImageSetID: image.ImageSetID, Status: models.ImageStatusSuccess}).Last(&rollback, "images.id < ?", image.ID)
+	result := db.Org(orgID, "images").Joins("Commit").Joins("Installer").Preload("Packages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where(&models.Image{ImageSetID: image.ImageSetID, Status: models.ImageStatusSuccess}).Last(&rollback, "images.id < ?", image.ID)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error).Error("Error retrieving rollback image")
 		return nil, new(ImageNotFoundError)
@@ -1962,7 +1962,7 @@ func (s *ImageService) GetImagesView(limit int, offset int, tx *gorm.DB) (*[]mod
 
 	var images []models.Image
 
-	if result := db.OrgDB(orgID, tx, "").Debug().Limit(limit).Offset(offset).
+	if result := db.OrgDB(orgID, tx, "").Limit(limit).Offset(offset).
 		Preload("Installer").
 		Preload("Commit").
 		Find(&images); result.Error != nil {
@@ -2000,7 +2000,7 @@ func (s *ImageService) GetImagesView(limit int, offset int, tx *gorm.DB) (*[]mod
 func (s *ImageService) DeleteImage(i *models.Image) error {
 	if i.Status != models.ImageStatusError {
 		s.log.WithFields(
-			log.Fields{"Image_id": i.ID},
+			log.Fields{"Image_id": i.ID, "image_status": i.Status},
 		).Error("Error when deleting image, only errored images can be deleted")
 		return new(ImageNotInErrorState)
 	}
