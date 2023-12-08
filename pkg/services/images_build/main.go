@@ -53,7 +53,7 @@ func initConsumerImageBuild(ctx context.Context) {
 		topics := []string{kafkacommon.TopicFleetmgmtImageBuild}
 		err = c.SubscribeTopics(topics, nil)
 		if err != nil {
-			mslog.Error("Subscribing to topics failed")
+			mslog.WithField("error", err.Error()).Error("Subscribing to topics failed")
 			// TODO: handle retries
 			// TODO: handle notifications
 		}
@@ -100,7 +100,7 @@ func initConsumerImageBuild(ctx context.Context) {
 
 						err = json.Unmarshal(e.Value, crcEvent)
 						if err != nil {
-							mslog.Error("Failed to unmarshal CRC event")
+							mslog.WithField("error", err.Error()).Error("Failed to unmarshal CRC event")
 							break
 						}
 
@@ -117,7 +117,7 @@ func initConsumerImageBuild(ctx context.Context) {
 						crcEvent := &image.EventImageUpdateRequestedBuildHandler{}
 						err = json.Unmarshal(e.Value, crcEvent)
 						if err != nil {
-							mslog.Error("Failed to unmarshal CRC event")
+							mslog.WithField("error", err.Error()).Error("Failed to unmarshal CRC event")
 						}
 
 						// add event UUID to logger

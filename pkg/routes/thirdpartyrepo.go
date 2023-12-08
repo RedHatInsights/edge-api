@@ -133,7 +133,7 @@ func CreateThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 		// error handled by createRequest already
 		return
 	}
-	ctxServices.Log.Info("Creating custom repository")
+	ctxServices.Log.Debug("Creating custom repository")
 
 	orgID := readOrgID(w, r, ctxServices.Log)
 	if orgID == "" {
@@ -168,7 +168,7 @@ func createRequest(w http.ResponseWriter, r *http.Request) (*models.ThirdPartyRe
 	}
 
 	if err := tprepo.ValidateRequest(); err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Info("custom repository validation error")
+		ctxServices.Log.WithField("error", err.Error()).Error("custom repository validation error")
 		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 		return nil, err
 	}
@@ -347,13 +347,13 @@ func GetAllThirdPartyRepo(w http.ResponseWriter, r *http.Request) {
 	var ctx *gorm.DB
 	imageID := r.URL.Query().Get("imageID")
 	if imageID != "" {
-		ctx = db.Org(orgID, "").Debug().
+		ctx = db.Org(orgID, "").
 			Joins("left join images_repos on third_party_repo_id = id and image_id = ?", imageID).
 			Order("images_repos.third_party_repo_id DESC NULLS LAST").
 			Model(&models.ThirdPartyRepo{})
 		ctx = thirdPartyRepoFilters(r, ctx)
 	} else {
-		ctx = db.OrgDB(orgID, thirdPartyRepoFilters(r, db.DB), "").Debug().Model(&models.ThirdPartyRepo{})
+		ctx = db.OrgDB(orgID, thirdPartyRepoFilters(r, db.DB), "").Model(&models.ThirdPartyRepo{})
 	}
 
 	pagination := common.GetPagination(r)

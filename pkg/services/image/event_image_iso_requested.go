@@ -33,12 +33,12 @@ func (ev EventImageISORequestedBuildHandler) Consume(ctx context.Context) {
 	var image *models.Image
 	imageString, err := json.Marshal(payload.NewImage)
 	if err != nil {
-		eventlog.Error("Error marshaling the image")
+		eventlog.WithField("error", err.Error()).Error("Error marshaling the image")
 		return
 	}
 	err = json.Unmarshal(imageString, &image)
 	if err != nil {
-		eventlog.Error("Error unmarshaling the image")
+		eventlog.WithField("error", err.Error()).Error("Error unmarshaling the image")
 		return
 	}
 	if image.OrgID == "" || image.RequestID == "" {
