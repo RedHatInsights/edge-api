@@ -145,7 +145,7 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 
 	// create a sub query of the latest images and their corresponding image sets
 	latestImagesSubQuery := db.Org(orgID, "").Model(&models.Image{}).Select("image_set_id", "max(id) as image_id").Group("image_set_id")
-	if result := db.OrgDB(orgID, tx, "image_sets").Debug().Table("(?) as latest_images", latestImagesSubQuery).Limit(limit).Offset(offset).
+	if result := db.OrgDB(orgID, tx, "image_sets").Table("(?) as latest_images", latestImagesSubQuery).Limit(limit).Offset(offset).
 		Joins("JOIN images on images.id = latest_images.image_id").
 		Joins("JOIN image_sets on image_sets.id = latest_images.image_set_id").
 		Select("image_sets.id, image_sets.name, images.version,images.distribution, images.output_types, images.status, images.id as image_id, images.updated_at").

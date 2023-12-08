@@ -197,7 +197,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	}
 
 	if feature.UpdateRepoRequested.IsEnabled() {
-		s.log.Debug("Creating Update Repo with EDA")
+		s.log.WithField("updateID", id).Debug("Creating Update Repo with EDA")
 
 		identity, err := common.GetIdentityFromContext(s.ctx)
 		if err != nil {
@@ -252,7 +252,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 
 	// this will run at the end of BuildUpdateRepo to tidy up signal and context
 	defer func() {
-		s.log.WithField("updateUDID", update.ID).Debug("Stopping the interrupt context and sigint signal")
+		s.log.WithField("updateID", update.ID).Debug("Stopping the interrupt context and sigint signal")
 		signal.Stop(sigint)
 		intcancel()
 	}()
@@ -294,7 +294,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			PlaybookName: "Edge-management",
 			Principal:    identity.User.Username,
 		}
-		s.log.Debug("Calling playbook dispatcher")
+		s.log.WithField("playbook_dispatcher", payloadDispatcher).Debug("Calling playbook dispatcher")
 		exc, err := s.PlaybookClient.ExecuteDispatcher(payloadDispatcher)
 
 		if err != nil {
@@ -307,7 +307,9 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 				Status:      models.DispatchRecordStatusError,
 				Reason:      models.UpdateReasonFailure,
 			})
-			db.DB.Omit("Devices.*").Debug().Save(update)
+			if err := db.DB.Omit("Devices.*").Save(update).Error; err != nil {
+				s.log.WithField("error", err.Error()).Error("error on saving device update-transaction")
+			}
 			return nil, err
 		}
 
@@ -611,7 +613,7 @@ func (s *UpdateService) generateStaticDelta(updateID uint, update *models.Update
 
 	// this will run at the end of BuildUpdateRepo to tidy up signal and context
 	defer func() {
-		s.log.WithField("updateUDID", updateID).Debug("Stopping the interrupt context and sigint signal")
+		s.log.WithField("updateID", updateID).Debug("Stopping the interrupt context and sigint signal")
 		signal.Stop(sigint)
 		intcancel()
 	}()
@@ -771,16 +773,17 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 		"Status":               e.Payload.Status,
 	})
 	if e.Payload.Status == PlaybookStatusRunning {
-		s.log.Debug("Playbook is running - waiting for next messages")
+		s.log.WithField("playbook_dispatcher_id", e.Payload.ID).Debug("Playbook is running - waiting for next messages")
 		return nil
 	} else if e.Payload.Status == PlaybookStatusSuccess {
-		s.log.Debug("The playbook was applied successfully. Waiting two minutes for reboot before setting status to success.")
+		s.log.WithField("playbook_dispatcher_id", e.Payload.ID).Debug("The playbook was applied successfully. Waiting two minutes for reboot before setting status to success.")
 		time.Sleep(s.WaitForReboot)
 	}
 
 	var dispatchRecord models.DispatchRecord
 	result := db.DB.Where(&models.DispatchRecord{PlaybookDispatcherID: e.Payload.ID}).Preload("Device").First(&dispatchRecord)
 	if result.Error != nil {
+		s.log.WithFields(log.Fields{"playbook_dispatcher_id": e.Payload.ID, "error": result.Error.Error()}).Error("error occurred while getting dispatcher record from db")
 		return result.Error
 	}
 
@@ -935,7 +938,7 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 	if update.Status != models.UpdateStatusSuccess {
 		// update only when update is successful
 		// do nothing
-		logger.Debug("ignore device update when update is not successful")
+		logger.WithField("update_status", update.Status).Debug("ignore device update when update is not successful")
 		return nil
 	}
 
@@ -1000,7 +1003,7 @@ func (s *UpdateService) ValidateUpdateSelection(orgID string, imageIds []uint) (
 func (s *UpdateService) ValidateUpdateDeviceGroup(orgID string, deviceGroupID uint) (bool, error) {
 	var count int64
 
-	if result := db.Org(orgID, "Device_Groups").Debug().Model(&models.DeviceGroup{}).Where(`Device_Groups.id = ?`, deviceGroupID).
+	if result := db.Org(orgID, "Device_Groups").Model(&models.DeviceGroup{}).Where(`Device_Groups.id = ?`, deviceGroupID).
 		Joins(`JOIN Device_Groups_Devices  ON Device_Groups.id = Device_Groups_Devices.device_group_id`).
 		Joins(`JOIN Devices  ON Device_Groups_Devices.device_id = Devices.id`).
 		Where("Devices.image_id IS NOT NULL AND Devices.image_id != 0").

@@ -464,7 +464,7 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		var storeDevice models.Device
 		// Don't throw error if device not found
 		db.DB.Where("id=?", dbDeviceID).First(&storeDevice)
-		err := db.DB.Model(&storeDevice).Debug().Association("UpdateTransaction").Find(&storeDevice.UpdateTransaction)
+		err := db.DB.Model(&storeDevice).Association("UpdateTransaction").Find(&storeDevice.UpdateTransaction)
 
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error finding associated updates for device")
@@ -721,7 +721,7 @@ func (s *DeviceService) GetDevicesCountByImage(imageId uint) (int64, error) {
 	}
 
 	var count int64
-	res := db.OrgDB(orgID, db.DB.Model(&models.Device{}), "devices").Debug().Find(&models.Device{}, "image_id =? ", imageId).Count(&count)
+	res := db.OrgDB(orgID, db.DB.Model(&models.Device{}), "devices").Find(&models.Device{}, "image_id =? ", imageId).Count(&count)
 	if res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device groups count")
 		return 0, res.Error
@@ -1033,8 +1033,8 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 	var devices []models.Device
 	if result := db.Org(deviceOrgID, "").Where("uuid = ?", deviceUUID).Find(&devices); result.Error != nil {
 		s.log.WithFields(
-			log.Fields{"host_id": deviceUUID, "OrgID": deviceOrgID, "error": result.Error},
-		).Debug("Error retrieving the devices")
+			log.Fields{"host_id": deviceUUID, "OrgID": deviceOrgID, "error": result.Error.Error()},
+		).Error("Error retrieving the devices")
 		return result.Error
 	}
 	if len(devices) == 0 {
@@ -1072,7 +1072,7 @@ func (s *DeviceService) SyncDevicesWithInventory(orgID string) {
 	var edgeCount int64
 	for int64(offset) <= total {
 		s.log.WithFields(log.Fields{"offset": int64(offset), "total": total}).Debug("Comparing offset to total")
-		if res := db.Org(orgID, "").Debug().Limit(limit).Offset(offset).Find(&edgeDevices); res.Error != nil {
+		if res := db.Org(orgID, "").Limit(limit).Offset(offset).Find(&edgeDevices); res.Error != nil {
 			s.log.WithField("error", res.Error.Error()).Error("Error getting devices in device sync")
 			return
 		}
@@ -1133,7 +1133,7 @@ func (s *DeviceService) SyncDevicesWithInventory(orgID string) {
 	// Get the count of our db and from inventory and compare them
 	// If they are the same, sync is done
 	// If not, we have missed some "create" events from inventory, we need to discover and add these devices to our DB
-	if res := db.Org(orgID, "").Debug().Model(&models.Device{}).Count(&total); res.Error != nil {
+	if res := db.Org(orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
 		return
 	}
@@ -1179,7 +1179,7 @@ func (s *DeviceService) SyncInventoryWithDevices(orgID string) {
 		}
 
 		var dbDevices []models.Device
-		if res := db.Org(orgID, "").Debug().Where("UUID IN ?", inveDeviceIds).Find(&dbDevices); res.Error != nil {
+		if res := db.Org(orgID, "").Where("UUID IN ?", inveDeviceIds).Find(&dbDevices); res.Error != nil {
 			s.log.WithField("error", res.Error.Error()).Error("Error getting devices in device sync")
 			return
 		}
@@ -1250,7 +1250,7 @@ func (s *DeviceService) SyncInventoryWithDevices(orgID string) {
 	// If they are the same, sync is done
 	// If not, sync failed
 	var total int64
-	if res := db.Org(orgID, "").Debug().Model(&models.Device{}).Count(&total); res.Error != nil {
+	if res := db.Org(orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
 		return
 	}
