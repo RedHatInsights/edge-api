@@ -36,13 +36,13 @@ func (s *RepoService) GetRepoByID(repoID *uint) (*models.Repo, error) {
 		s.log.Error("Image Repository is undefined")
 		return nil, errors.New("image repository is undefined")
 	}
-	s.log.Debug("Retrieving repo by ID")
+	s.log.WithField("repo_id", repoID).Debug("Retrieving repo by ID")
 	var repo models.Repo
 	result := db.DB.First(&repo, repoID)
 	if result.Error != nil {
-		s.log.Error("Error retrieving image repository")
+		s.log.WithField("error", result.Error.Error()).Error("Error retrieving image repository")
 		return nil, result.Error
 	}
-	s.log.Debug("Repo by ID retrieved successfully")
+	s.log.WithField("repo_id", repoID).Debug("Repo by ID retrieved successfully")
 	return &repo, nil
 }

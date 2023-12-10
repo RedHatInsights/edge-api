@@ -331,7 +331,7 @@ func GetDeviceDBInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if result := db.Org(orgID, "").Where("UUID = ?", dc.DeviceUUID).Find(&devices); result.Error != nil {
-		contextServices.Log.WithField("error", result.Error).Debug("Result error")
+		contextServices.Log.WithField("error", result.Error).Error("Result error")
 		respondWithAPIError(w, contextServices.Log, errors.NewBadRequest(result.Error.Error()))
 		return
 	}

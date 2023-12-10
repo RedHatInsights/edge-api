@@ -157,12 +157,12 @@ func ImageSetCtx(next http.Handler) http.Handler {
 			if imageSet.Images != nil {
 				result := db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
 				if result.Error != nil {
-					s.Log.WithField("error", result.Error.Error()).Debug("error when getting image-set images")
+					s.Log.WithField("error", result.Error.Error()).Error("error when getting image-set images")
 					respondWithAPIError(w, s.Log, errors.NewInternalServerError())
 					return
 				}
 				if result := db.DB.Where("id = ?", &imageSet.Images[len(imageSet.Images)-1].InstallerID).Find(&imageSet.Images[len(imageSet.Images)-1].Installer); result.Error != nil {
-					s.Log.WithField("error", result.Error.Error()).Debug("error when getting image installer")
+					s.Log.WithField("error", result.Error.Error()).Error("error when getting image installer")
 					respondWithAPIError(w, s.Log, errors.NewInternalServerError())
 					return
 				}
@@ -223,7 +223,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result = imageSetFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Debug().Model(&models.ImageSet{})).Table("(?) as latest_images", latestImagesSubQuery).
+	result = imageSetFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Model(&models.ImageSet{})).Table("(?) as latest_images", latestImagesSubQuery).
 		Distinct("image_sets.*").
 		Limit(pagination.Limit).Offset(pagination.Offset).
 		Preload("Images").
@@ -333,7 +333,7 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, s.Log, errors.NewBadRequest("image-set not found in the context"))
 		return
 	}
-	result := imageDetailFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Debug().Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
+	result := imageDetailFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
 		Preload("Commit.Repo").Preload("Commit.InstalledPackages").Preload("Installer").
 		Joins(`JOIN Image_Sets ON Image_Sets.id = Images.image_set_id`).
 		Where(`Image_sets.id = ?`, &imageSet.ID).

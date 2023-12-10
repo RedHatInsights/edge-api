@@ -34,20 +34,20 @@ func GetReadinessStatus(g WebGetter) http.HandlerFunc {
 		resp, err := g.Get()
 		if err != nil {
 			w.WriteHeader(http.StatusServiceUnavailable)
-			log.Info("Readiness probe failed.", err)
+			log.WithField("error", err.Error()).Error("Readiness probe failed.")
 			respondWithJSONBody(w, nil, ReadinessStatus{
 				Readiness: "not ready",
 			})
 		} else {
 			if resp.StatusCode != http.StatusOK {
 				w.WriteHeader(http.StatusServiceUnavailable)
-				log.Info("Readiness probe failed with code.", resp.StatusCode)
+				log.WithField("http_status_code", resp.StatusCode).Info("Readiness probe failed with code.")
 				respondWithJSONBody(w, nil, ReadinessStatus{
 					Readiness: "not ready",
 				})
 			} else {
 				w.WriteHeader(http.StatusOK)
-				log.Info("Readiness probe succeeded.")
+				log.Debug("Readiness probe succeeded.")
 				respondWithJSONBody(w, nil, ReadinessStatus{
 					Readiness: "ready",
 				})

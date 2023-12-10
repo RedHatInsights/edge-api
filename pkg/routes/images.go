@@ -385,7 +385,7 @@ func initImageCreateRequest(w http.ResponseWriter, r *http.Request) (*models.Ima
 	}
 
 	if err := image.ValidateRequest(); err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Info("Error validating image")
+		ctxServices.Log.WithField("error", err.Error()).Error("Error validating image")
 		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
 		return nil, err
 	}
@@ -910,7 +910,6 @@ func SendNotificationForImage(w http.ResponseWriter, r *http.Request) {
 			respondWithAPIError(w, ctxServices.Log, err)
 			return
 		}
-		ctxServices.Log.WithField("StatusOK", http.StatusOK).Info("Writing Header")
 		w.WriteHeader(http.StatusOK)
 		respondWithJSONBody(w, ctxServices.Log, &notify)
 	}

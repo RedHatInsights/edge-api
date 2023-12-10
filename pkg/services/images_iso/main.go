@@ -53,7 +53,7 @@ func initConsumer(ctx context.Context) error {
 	topics := []string{kafkacommon.TopicFleetmgmtImageISOBuild}
 	err = c.SubscribeTopics(topics, nil)
 	if err != nil {
-		mslog.Error("Subscribing to topics failed")
+		mslog.WithField("error", err.Error()).Error("Subscribing to topics failed")
 		return errors.New("subscribing to topics failed")
 	}
 
@@ -96,7 +96,7 @@ func initConsumer(ctx context.Context) error {
 
 					err = json.Unmarshal(e.Value, crcEvent)
 					if err != nil {
-						mslog.Error("Failed to unmarshal CRC ISO event")
+						mslog.WithField("error", err.Error()).Error("Failed to unmarshal CRC ISO event")
 						break
 					}
 
