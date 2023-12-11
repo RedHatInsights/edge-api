@@ -1322,6 +1322,18 @@ var _ = Describe("DfseviceService", func() {
 				Expect(devices).ToNot(BeNil())
 			})
 		})
+
+		When("devices are not returned from db", func() {
+			It("should return an empty list and not a nil value", func() {
+				unExistDeviceFilter := db.DB.Where("devices.uuid", faker.UUIDHyphenated())
+				devices, err := deviceService.GetDevicesView(100, 0, unExistDeviceFilter)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(devices).ToNot(BeNil())
+				Expect(devices.Total).To(Equal(int64(0)))
+				Expect(devices.Devices).ToNot(BeNil())
+				Expect(devices.Devices).To(BeEmpty())
+			})
+		})
 	})
 	Context("Get CommitID from Device Image", func() {
 		It("should return zero images", func() {
