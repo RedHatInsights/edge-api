@@ -871,7 +871,7 @@ func ReturnDevicesView(storedDevices []models.Device, orgID string) ([]models.De
 	}
 
 	// build the return object
-	var returnDevices []models.DeviceView
+	returnDevices := make([]models.DeviceView, 0, len(storedDevices))
 	for _, device := range storedDevices {
 		var imageName string
 		deviceInfo := &neededDeviceInfo{}
