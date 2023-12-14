@@ -120,7 +120,7 @@ var StaticDeltaGenerate = &Flag{Name: "edge-management.static_delta_generate", E
 var HideCreateGroup = &Flag{Name: "edge-management.hide-create-group", EnvVar: "FEATURE_HIDE_CREATE_GROUP"}
 
 // EdgeParityGroupsMigration toggles edge parity groups migration
-var EdgeParityGroupsMigration = &Flag{Name: "edgeParity.groups-migration", EnvVar: "FEATURE_EDGE-PARITY-GROUPS-MIGRATION"}
+var EdgeParityGroupsMigration = &Flag{Name: "edgeParity.groups-migration", EnvVar: "FEATURE_EDGE_PARITY_GROUPS_MIGRATION"}
 
 // EnforceEdgeGroups is a feature flag to query to query unleash whether the org is enforced to use edge groups
 var EnforceEdgeGroups = &Flag{Name: "edge-management.enforce_edge_groups", EnvVar: "FEATURE_ENFORCE_EDGE_GROUPS"}
