@@ -64,7 +64,7 @@ echo POST-USER
 USER_NAME={{.Username}}
 useradd -m -G wheel $USER_NAME
 USER_HOME=$(getent passwd $USER_NAME | awk -F: '{print $6}')
-
+RHC_ACTIVATION_KEY = {{.activationKey}}
 mkdir -p ${USER_HOME}/.ssh
 chown ${USER_NAME}:${USER_NAME} ${USER_HOME}/.ssh
 chmod 0700 ${USER_HOME}/.ssh
