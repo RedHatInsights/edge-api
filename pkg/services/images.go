@@ -1046,6 +1046,13 @@ func (s *ImageService) AddUserInfo(image *models.Image) error {
 		return fmt.Errorf("error adding ssh key to kickstart file :: %s", err.Error())
 	}
 
+	activationKey := image.subscription.activation_key
+	s.log.Debug("Adding Activation Key to kickstart file...")
+	err = s.addActivationKeyToKickstart(activationKey, kickstart)
+	if err != nil {
+		return fmt.Errorf("error adding Activation Key to kickstart file :: %s", err.Error())
+	}
+
 	s.log.Debug("Injecting the kickstart into image...")
 	err = s.exeInjectionScript(kickstart, imageName, image.ID)
 	if err != nil {
@@ -1079,6 +1086,10 @@ type UnameSSH struct {
 	Username string
 }
 
+type UnameActivationKey struct {
+	activationKey string
+}
+
 // Adds user provided ssh key to the kickstart file.
 func (s *ImageService) addSSHKeyToKickstart(sshKey string, username string, kickstart string) error {
 	cfg := config.Get()
@@ -1100,6 +1111,39 @@ func (s *ImageService) addSSHKeyToKickstart(sshKey string, username string, kick
 	s.log.WithFields(log.Fields{
 		"username": username,
 		"sshKey":   sshKey,
+	}).Debug("Injecting username and key into template")
+	err = t.Execute(file, td)
+	if err != nil {
+		s.log.WithField("error", err.Error()).Error("Failed adding username and sshkey on image")
+		return err
+	}
+	if err := file.Close(); err != nil {
+		s.log.WithField("error", err.Error()).Error("Failed closing file")
+		return err
+	}
+
+	return nil
+}
+
+func (s *ImageService) addActivationKeyToKickstart(activationKey string, kickstart string) error {
+	cfg := config.Get()
+
+	td := UnameActivationKey{activationKey}
+
+	s.log.WithField("templatesPath", cfg.TemplatesPath).Debug("Opening file")
+	t, err := template.ParseFiles(path.Join(cfg.TemplatesPath, "templateKickstart.ks"))
+	if err != nil {
+		return err
+	}
+
+	s.log.WithField("kickstart", kickstart).Debug("Creating file")
+	file, err := os.Create(kickstart)
+	if err != nil {
+		return err
+	}
+
+	s.log.WithFields(log.Fields{
+		"activationKey": activationKey,
 	}).Debug("Injecting username and key into template")
 	err = t.Execute(file, td)
 	if err != nil {
