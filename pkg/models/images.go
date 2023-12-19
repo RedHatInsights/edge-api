@@ -24,27 +24,38 @@ type ImageSet struct {
 	Images  []Image `json:"Images"`
 }
 
+type ImageSubscription struct {
+	Model
+	Organization  string `json:"organization"`
+	ActivationKey string `json:"activation-key"`
+	BaseUrl       string `json:"base-url"`
+	ServerUrl     string `json:"server-url"`
+	Insights      bool   `json:"insights"`
+	RHC           bool   `json:"rhc"`
+}
+
 // Image is what generates a OSTree Commit.
 type Image struct {
 	Model
-	Name                   string           `json:"Name"`
-	Account                string           `json:"Account"`
-	OrgID                  string           `json:"org_id" gorm:"index;<-:create"`
-	Distribution           string           `json:"Distribution"`
-	Description            string           `json:"Description"`
-	Status                 string           `json:"Status"`
-	Version                int              `json:"Version" gorm:"default:1"`
-	ImageType              string           `json:"ImageType"` // TODO: Remove as soon as the frontend stops using
-	OutputTypes            pq.StringArray   `gorm:"type:text[]" json:"OutputTypes"`
-	CommitID               uint             `json:"CommitID"`
-	Commit                 *Commit          `json:"Commit"`
-	InstallerID            *uint            `json:"InstallerID"`
-	Installer              *Installer       `json:"Installer"`
-	ImageSetID             *uint            `json:"ImageSetID" gorm:"index"` // TODO: Wipe staging database and set to not nullable
-	Packages               []Package        `json:"Packages,omitempty" gorm:"many2many:images_packages;"`
-	ThirdPartyRepositories []ThirdPartyRepo `json:"ThirdPartyRepositories,omitempty" gorm:"many2many:images_repos;"`
-	CustomPackages         []Package        `json:"CustomPackages,omitempty" gorm:"many2many:images_custom_packages"`
-	RequestID              string           `json:"request_id"` // storing for logging reference on resume
+	Name                   string            `json:"Name"`
+	Account                string            `json:"Account"`
+	OrgID                  string            `json:"org_id" gorm:"index;<-:create"`
+	Distribution           string            `json:"Distribution"`
+	Description            string            `json:"Description"`
+	Status                 string            `json:"Status"`
+	Version                int               `json:"Version" gorm:"default:1"`
+	ImageType              string            `json:"ImageType"` // TODO: Remove as soon as the frontend stops using
+	OutputTypes            pq.StringArray    `gorm:"type:text[]" json:"OutputTypes"`
+	CommitID               uint              `json:"CommitID"`
+	Commit                 *Commit           `json:"Commit"`
+	InstallerID            *uint             `json:"InstallerID"`
+	Installer              *Installer        `json:"Installer"`
+	ImageSetID             *uint             `json:"ImageSetID" gorm:"index"` // TODO: Wipe staging database and set to not nullable
+	Packages               []Package         `json:"Packages,omitempty" gorm:"many2many:images_packages;"`
+	ThirdPartyRepositories []ThirdPartyRepo  `json:"ThirdPartyRepositories,omitempty" gorm:"many2many:images_repos;"`
+	CustomPackages         []Package         `json:"CustomPackages,omitempty" gorm:"many2many:images_custom_packages"`
+	RequestID              string            `json:"request_id"` // storing for logging reference on resume
+	Subscription           ImageSubscription `json:"subscription"`
 
 	TotalDevicesWithImage int64 `json:"SystemsRunning" gorm:"-"` // only for forms
 	TotalPackages         int   `json:"TotalPackages" gorm:"-"`  // only for forms
