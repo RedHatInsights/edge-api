@@ -67,9 +67,10 @@ type OSTree struct {
 
 // Customizations is made of the packages that are baked into an image
 type Customizations struct {
-	Packages            *[]string     `json:"packages"`
-	PayloadRepositories *[]Repository `json:"payload_repositories,omitempty"`
-	Users               *[]User       `json:"users,omitempty"`
+	Packages            *[]string                 `json:"packages"`
+	PayloadRepositories *[]Repository             `json:"payload_repositories,omitempty"`
+	Users               *[]User                   `json:"users,omitempty"`
+	Subscription        *models.ImageSubscription `json:"subscription"`
 }
 
 // Repository is the record of Third Party Repository
@@ -236,6 +237,7 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 		Customizations: &Customizations{
 			Packages:            image.GetALLPackagesList(),
 			PayloadRepositories: &payloadRepos,
+			Subscription:        &image.Subscription,
 		},
 		Distribution: image.Distribution,
 		ImageRequests: []ImageRequest{
