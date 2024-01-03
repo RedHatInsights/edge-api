@@ -237,7 +237,7 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 		Customizations: &Customizations{
 			Packages:            image.GetALLPackagesList(),
 			PayloadRepositories: &payloadRepos,
-			Subscription:        &image.Subscription,
+			Subscription:        image.Subscription,
 		},
 		Distribution: image.Distribution,
 		ImageRequests: []ImageRequest{

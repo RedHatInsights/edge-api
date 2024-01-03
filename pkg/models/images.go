@@ -55,7 +55,7 @@ type Image struct {
 	ThirdPartyRepositories []ThirdPartyRepo  `json:"ThirdPartyRepositories,omitempty" gorm:"many2many:images_repos;"`
 	CustomPackages         []Package         `json:"CustomPackages,omitempty" gorm:"many2many:images_custom_packages"`
 	RequestID              string            `json:"request_id"` // storing for logging reference on resume
-	Subscription           ImageSubscription `json:"subscription"`
+	Subscription           ImageSubscription `json:"subscription,omitempty" gorm:"foreignKey:ActivationKey"`
 
 	TotalDevicesWithImage int64 `json:"SystemsRunning" gorm:"-"` // only for forms
 	TotalPackages         int   `json:"TotalPackages" gorm:"-"`  // only for forms
