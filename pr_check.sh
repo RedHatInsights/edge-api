@@ -19,9 +19,6 @@ WORKSPACE=${WORKSPACE:-$PWD}
 CICD_URL="https://raw.githubusercontent.com/RedHatInsights/cicd-tools/main"
 curl -s $CICD_URL/bootstrap.sh > ${WORKSPACE}/cicd_bootstrap.sh && source ${WORKSPACE}/cicd_bootstrap.sh
 
-# env vars for bonfire
-export EXTRA_DEPLOY_ARGS="rhsm-api-proxy --set-template-ref rhsm-api-proxy=master"
-
 # Build the image and push to quay
 source $CICD_ROOT/build.sh
 
