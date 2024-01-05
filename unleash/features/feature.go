@@ -119,6 +119,9 @@ var StaticDeltaGenerate = &Flag{Name: "edge-management.static_delta_generate", E
 // HideCreateGroup toggles creation of static deltas
 var HideCreateGroup = &Flag{Name: "edge-management.hide-create-group", EnvVar: "FEATURE_HIDE_CREATE_GROUP"}
 
+// SkipInjectKickstartToISO toggles INJECTING kickstart to iso file
+var SkipInjectKickstartToISO = &Flag{Name: "edge-management.skip-inject-kickstart-to-iso", EnvVar: "FEATURE_SKIP_INJECT_KICKSTART_TO_ISO"}
+
 // EdgeParityGroupsMigration toggles edge parity groups migration
 var EdgeParityGroupsMigration = &Flag{Name: "edgeParity.groups-migration", EnvVar: "FEATURE_EDGE_PARITY_GROUPS_MIGRATION"}
 

@@ -1040,16 +1040,20 @@ func (s *ImageService) AddUserInfo(image *models.Image) error {
 		return fmt.Errorf("error downloading ISO file :: %s", err.Error())
 	}
 
-	s.log.Debug("Adding SSH Key to kickstart file...")
-	err = s.addSSHKeyToKickstart(sshKey, username, kickstart)
-	if err != nil {
-		return fmt.Errorf("error adding ssh key to kickstart file :: %s", err.Error())
-	}
+	if !feature.SkipInjectKickstartToISO.IsEnabled() {
+		s.log.Debug("Adding SSH Key to kickstart file...")
+		err = s.addSSHKeyToKickstart(sshKey, username, kickstart)
+		if err != nil {
+			return fmt.Errorf("error adding ssh key to kickstart file :: %s", err.Error())
+		}
 
-	s.log.Debug("Injecting the kickstart into image...")
-	err = s.exeInjectionScript(kickstart, imageName, image.ID)
-	if err != nil {
-		return fmt.Errorf("error executing fleetkick script :: %s", err.Error())
+		s.log.Debug("Injecting the kickstart into image...")
+		err = s.exeInjectionScript(kickstart, imageName, image.ID)
+		if err != nil {
+			return fmt.Errorf("error executing fleetkick script :: %s", err.Error())
+		}
+	} else {
+		s.log.WithField("image_id", image.ID).Debug("kickstart injection into ISO was skipped")
 	}
 
 	s.log.Debug("Calculating the checksum for the ISO image...")
@@ -1166,14 +1170,16 @@ func (s *ImageService) uploadISO(image *models.Image, imageName string) error {
 
 // Remove edited kickstart after use.
 func (s *ImageService) cleanFiles(kickstart string, isoName string, imageID uint) error {
-	err := os.Remove(kickstart)
-	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Error removing kickstart file")
-		return err
+	if !feature.SkipInjectKickstartToISO.IsEnabled() {
+		err := os.Remove(kickstart)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Error removing kickstart file")
+			return err
+		}
+		s.log.WithField("kickstart", kickstart).Debug("Kickstart file removed")
 	}
-	s.log.WithField("kickstart", kickstart).Debug("Kickstart file removed")
 
-	err = os.Remove(isoName)
+	err := os.Remove(isoName)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error removing tmp iso")
 		return err

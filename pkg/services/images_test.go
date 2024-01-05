@@ -39,6 +39,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_files"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
+	"github.com/redhatinsights/edge-api/pkg/services/utility"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	log "github.com/sirupsen/logrus"
@@ -3062,8 +3064,14 @@ var _ = Describe("Image Service Test", func() {
 })
 
 func TestCreateInstallerForImageSuccessfully(t *testing.T) {
-	// feature.ImageCreateISOEDA is disabled
 	g := NewGomegaWithT(t)
+	// ensure feature.SkipInjectKickstartToISO feature flag is disabled
+	err := os.Unsetenv(feature.SkipInjectKickstartToISO.EnvVar)
+	g.Expect(err).ToNot(HaveOccurred())
+	// ensure feature.ImageCreateISOEDA is disabled
+	err = os.Unsetenv(feature.ImageCreateEDA.EnvVar)
+	g.Expect(err).ToNot(HaveOccurred())
+
 	currentDir, err := os.Getwd()
 	g.Expect(err).ToNot(HaveOccurred())
 	// set the templates path
@@ -3148,6 +3156,107 @@ func TestCreateInstallerForImageSuccessfully(t *testing.T) {
 	g.Expect(testMockExecHelper.Executed).To(BeTrue())
 	g.Expect(testMockExecHelper.ExistStatus).To(Equal(0))
 	g.Expect(testMockExecHelper.Command).To(Equal(expectedCommand))
+
+	g.Expect(installerStatusErr).ToNot(HaveOccurred())
+	g.Expect(image.Status).To(Equal(models.ImageStatusSuccess))
+	g.Expect(image.Installer.Status).To(Equal(models.ImageStatusSuccess))
+	g.Expect(image.Installer.ImageBuildISOURL).To(Equal(expectedUploadUrl))
+}
+
+func TestCreateInstallerForImageSuccessfullyWithSkipInjectKickstart(t *testing.T) {
+	g := NewGomegaWithT(t)
+	// set feature flag feature.SkipInjectKickstartToISO to skip injecting kickstart to ISO file
+	err := os.Setenv(feature.SkipInjectKickstartToISO.EnvVar, "true")
+	g.Expect(err).ToNot(HaveOccurred())
+	// ensure feature.ImageCreateISOEDA is disabled
+	err = os.Unsetenv(feature.ImageCreateEDA.EnvVar)
+	g.Expect(err).ToNot(HaveOccurred())
+
+	defer func() {
+		// unset feature flags
+		err := os.Unsetenv(feature.SkipInjectKickstartToISO.EnvVar)
+		g.Expect(err).ToNot(HaveOccurred())
+	}()
+
+	orgID := faker.UUIDHyphenated()
+	image := &models.Image{
+		OrgID:     orgID,
+		Name:      faker.UUIDHyphenated(),
+		Installer: &models.Installer{OrgID: orgID, Username: faker.UUIDHyphenated(), SSHKey: "ssh-rsa dd:00:eeff:10"},
+		Commit: &models.Commit{
+			OrgID:            orgID,
+			OSTreeCommit:     faker.UUIDHyphenated(),
+			ImageBuildTarURL: faker.URL(),
+			Status:           models.ImageStatusSuccess,
+		},
+	}
+	err = db.DB.Create(image).Error
+	g.Expect(err).ToNot(HaveOccurred())
+
+	ctrl := gomock.NewController(GinkgoT())
+	mockImageBuilderClient := mock_imagebuilder.NewMockClientInterface(ctrl)
+	mockFilesService := mock_services.NewMockFilesService(ctrl)
+	mockUploader := mock_files.NewMockUploader(ctrl)
+
+	// create a new logger and set the output to use a local logBuffer
+	logBuffer := bytes.Buffer{}
+	testLogger := log.NewEntry(log.StandardLogger())
+	testLogger.Logger.SetOutput(&logBuffer)
+	testLogger.Logger.SetLevel(log.DebugLevel)
+
+	ctx := context.Background()
+	ctx = utility.ContextWithLogger(ctx, testLogger)
+	service := services.ImageService{
+		Service:      services.NewService(ctx, testLogger),
+		ImageBuilder: mockImageBuilderClient,
+		FilesService: mockFilesService,
+	}
+
+	defer func() {
+		// restore the original exec command builder
+		services.BuildCommand = exec.Command
+		ctrl.Finish()
+	}()
+
+	// create a server to serve the iso, for testing we return an empty file.
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		emptyFileReader := bytes.NewReader([]byte{})
+		_, _ = io.Copy(w, emptyFileReader)
+	}))
+	defer ts.Close()
+
+	mockImageBuilderClient.EXPECT().ComposeInstaller(image).Return(image, nil)
+	mockImageBuilderClient.EXPECT().GetInstallerStatus(image).DoAndReturn(func(builderImage *models.Image) (*models.Image, error) {
+		// simulate that Installer status was successful and set the appropriate statuses and data
+		builderImage.Status = models.ImageStatusSuccess
+		builderImage.Installer.Status = models.ImageStatusSuccess
+		builderImage.Installer.ImageBuildISOURL = ts.URL
+		return builderImage, nil
+	})
+
+	expectedUploadUrl := faker.URL()
+	mockFilesService.EXPECT().GetUploader().Return(mockUploader)
+
+	testMockExecHelper := NewMockTestExecHelper(t, "", 0)
+	services.BuildCommand = testMockExecHelper.MockExecCommand
+
+	mockUploader.EXPECT().UploadFile(gomock.Any(), gomock.Any()).Return(expectedUploadUrl, nil)
+
+	installerImage, errorChan, err := service.CreateInstallerForImage(context.Background(), image)
+	g.Expect(err).ToNot(HaveOccurred())
+	g.Expect(errorChan).ToNot(BeNil())
+	g.Expect(installerImage).To(Equal(image))
+
+	var installerStatusErr error
+	select {
+	case err := <-errorChan:
+		installerStatusErr = err
+	case <-time.After(30 * time.Second):
+		installerStatusErr = errors.New("installer channel reading timeout")
+	}
+
+	g.Expect(testMockExecHelper.Executed).To(BeFalse())
+	g.Expect(logBuffer.String()).To(ContainSubstring("kickstart injection into ISO was skipped"))
 
 	g.Expect(installerStatusErr).ToNot(HaveOccurred())
 	g.Expect(image.Status).To(Equal(models.ImageStatusSuccess))
