@@ -625,6 +625,82 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(img.Installer.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
 		Expect(img.Commit.ExternalURL).To(BeFalse())
 	})
+
+	It("test compose installer with username and ssh-key", func() {
+		installer := models.Installer{Username: faker.Username(), SSHKey: faker.UUIDHyphenated()}
+		composeJobID := "compose-job-id-returned-from-image-builder"
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			b, err := io.ReadAll(r.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(b).ToNot(BeNil())
+			var req ComposeRequest
+			err = json.Unmarshal(b, &req)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(req.Customizations.Users).ToNot(BeNil())
+			Expect(len(*req.Customizations.Users)).To(Equal(1))
+			Expect((*req.Customizations.Users)[0].Name).To(Equal(installer.Username))
+			Expect((*req.Customizations.Users)[0].SSHKey).To(Equal(installer.SSHKey))
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			payload := fmt.Sprintf(`{"id": "%s"}`, composeJobID)
+			_, err = fmt.Fprintln(w, payload)
+			Expect(err).ToNot(HaveOccurred())
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+
+		pkgs := []models.Package{{Name: "vim"}, {Name: "ansible"}}
+		img := &models.Image{
+			Distribution: "rhel-8",
+			Packages:     pkgs,
+			Commit:       &models.Commit{Arch: "x86_64", Repo: &models.Repo{}},
+			Installer:    &installer,
+		}
+		img, err := client.ComposeInstaller(img)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(img).ToNot(BeNil())
+		Expect(img.Installer.ComposeJobID).To(Equal(composeJobID))
+		Expect(img.Commit.ExternalURL).To(BeFalse())
+	})
+
+	It("test compose installer without username and ssh-key", func() {
+		// install has no username and ssh-key
+		installer := models.Installer{}
+		composeJobID := "compose-job-id-returned-from-image-builder"
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			b, err := io.ReadAll(r.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(b).ToNot(BeNil())
+			var req ComposeRequest
+			err = json.Unmarshal(b, &req)
+			Expect(err).ToNot(HaveOccurred())
+			// when installer username or ssh-key are empty no user is passed to image-builder
+			Expect(req.Customizations.Users).To(BeNil())
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			payload := fmt.Sprintf(`{"id": "%s"}`, composeJobID)
+			_, err = fmt.Fprintln(w, payload)
+			Expect(err).ToNot(HaveOccurred())
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+
+		pkgs := []models.Package{{Name: "vim"}, {Name: "ansible"}}
+		img := &models.Image{
+			Distribution: "rhel-8",
+			Packages:     pkgs,
+			Commit:       &models.Commit{Arch: "x86_64", Repo: &models.Repo{}},
+			Installer:    &installer,
+		}
+		img, err := client.ComposeInstaller(img)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(img).ToNot(BeNil())
+		Expect(img.Installer.ComposeJobID).To(Equal(composeJobID))
+		Expect(img.Commit.ExternalURL).To(BeFalse())
+	})
+
 	It("test compose image when ostree parent commit is empty", func() {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer GinkgoRecover()
