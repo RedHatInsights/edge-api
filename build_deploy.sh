@@ -2,7 +2,7 @@
 
 set -exv
 
-export GOROOT="/opt/go/1.19.11"
+export GOROOT="/opt/go/1.20.10"
 export PATH="${GOROOT}/bin:${PATH}"
 
 export PR_CHECK="false" # Only used when doing a PR check from Github.
@@ -53,7 +53,7 @@ done
 # Run coverage using same version of Go as the App
 podman run --user root --rm -i \
     -v $PWD:/usr/src:z \
-    registry.access.redhat.com/ubi8/go-toolset:1.19.13-2.1698062273 \
+    registry.access.redhat.com/ubi8/go-toolset:1.20.10-3 \
     bash -c 'cd /usr/src && make coverage-no-fdo'
 
 # Generate sonarqube reports
