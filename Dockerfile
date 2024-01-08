@@ -1,7 +1,7 @@
 ############################################
 # STEP 1: build executable edge-api binaries
 ############################################
-FROM registry.access.redhat.com/ubi8/go-toolset:1.20.10-3 AS edge-builder
+FROM registry.access.redhat.com/ubi9/go-toolset:1.20 AS edge-builder
 WORKDIR $GOPATH/src/github.com/RedHatInsights/edge-api/
 COPY . .
 # Use go mod
@@ -10,6 +10,9 @@ ENV GO111MODULE=on
 # Using go get requires root.
 USER root
 RUN go get -d -v
+
+# for compatibility install compat-openssl11 for fdo compilation
+RUN yum install compat-openssl11 -y
 
 # interim FDO requirements
 ENV LD_LIBRARY_PATH /usr/local/lib
@@ -43,15 +46,15 @@ RUN go build -o /go/bin/edge-api-cleanup cmd/cleanup/main.go
 ######################################
 # STEP 2: build the dependencies image
 ######################################
-FROM registry.access.redhat.com/ubi8/ubi AS ubi-micro-build
+FROM registry.access.redhat.com/ubi9/ubi AS ubi-micro-build
 RUN mkdir -p /mnt/rootfs
 # This step is needed for subscription-manager refresh.
 RUN yum install coreutils-single -y
 RUN yum install --installroot /mnt/rootfs \
     coreutils-single glibc-minimal-langpack \
     pykickstart mtools xorriso genisoimage \
-    syslinux isomd5sum file ostree \
-    --releasever 8 --setopt \
+    syslinux isomd5sum file ostree compat-openssl11 \
+    --releasever 9 --setopt \
     install_weak_deps=false --nodocs -y; \
     yum --installroot /mnt/rootfs clean all
 RUN rm -rf /mnt/rootfs/var/cache/* /mnt/rootfs/var/log/dnf* /mnt/rootfs/var/log/yum.*
@@ -61,7 +64,7 @@ RUN rm -rf /mnt/rootfs/var/cache/* /mnt/rootfs/var/log/dnf* /mnt/rootfs/var/log/
 ####################################
 FROM scratch
 LABEL maintainer="Red Hat, Inc."
-LABEL com.redhat.component="ubi8-micro-container"
+LABEL com.redhat.component="ubi9-micro-container"
 
 # label for EULA
 LABEL com.redhat.license_terms="https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI"

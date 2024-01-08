@@ -1,7 +1,7 @@
 ############################################
 # STEP 1: build executable edge-api binaries
 ############################################
-FROM registry.access.redhat.com/ubi8/go-toolset:1.20.10-3
+FROM registry.access.redhat.com/ubi9/go-toolset:1.20
 #WORKDIR $GOPATH/src/github.com/RedHatInsights/edge-api/
 COPY . .
 # Use go mod
@@ -54,7 +54,7 @@ RUN go build -o /usr/local/bin/edge-api-cleanup cmd/cleanup/main.go
 #    coreutils-single glibc-minimal-langpack \
 #    pykickstart mtools xorriso genisoimage \
 #    syslinux isomd5sum file ostree \
-#    --releasever 8 --setopt \
+#    --releasever 9 --setopt \
 #    install_weak_deps=false --nodocs -y; \
 #    yum --installroot /mnt/rootfs clean all
 #RUN rm -rf /var/cache/* /var/log/dnf* /var/log/yum.*
@@ -64,7 +64,7 @@ RUN go build -o /usr/local/bin/edge-api-cleanup cmd/cleanup/main.go
 ####################################
 #FROM scratch
 #LABEL maintainer="Red Hat, Inc."
-#LABEL com.redhat.component="ubi8-micro-container"
+#LABEL com.redhat.component="ubi9-micro-container"
 
 # label for EULA
 #LABEL com.redhat.license_terms="https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI"

@@ -53,7 +53,7 @@ done
 # Run coverage using same version of Go as the App
 podman run --user root --rm -i \
     -v $PWD:/usr/src:z \
-    registry.access.redhat.com/ubi8/go-toolset:1.20.10-3 \
+    registry.access.redhat.com/ubi9/go-toolset:1.20 \
     bash -c 'cd /usr/src && make coverage-no-fdo'
 
 # Generate sonarqube reports
