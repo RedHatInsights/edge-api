@@ -3,7 +3,7 @@ arch: amd64   # Full VM on AWS or GCE
 dist: focal  # Ubuntu Focal 20.04
 services: docker
 language: go
-go: 1.19
+go: "1.20"
 os: linux     # Linux OS
 env:
   global:
