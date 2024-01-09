@@ -67,10 +67,10 @@ type OSTree struct {
 
 // Customizations is made of the packages that are baked into an image
 type Customizations struct {
-	Packages            *[]string                 `json:"packages"`
-	PayloadRepositories *[]Repository             `json:"payload_repositories,omitempty"`
-	Users               *[]User                   `json:"users,omitempty"`
-	Subscription        *models.ImageSubscription `json:"subscription"`
+	Packages            *[]string     `json:"packages"`
+	PayloadRepositories *[]Repository `json:"payload_repositories,omitempty"`
+	Users               *[]User       `json:"users,omitempty"`
+	Subscription        *Subscription `json:"subscription,omitempty"`
 }
 
 // Repository is the record of Third Party Repository
@@ -88,6 +88,14 @@ type Repository struct {
 type User struct {
 	Name   string `json:"name"`
 	SSHKey string `json:"ssh_key"`
+}
+type Subscription struct {
+	Organization  string `json:"organization"`
+	ActivationKey string `json:"activation-key"`
+	BaseUrl       string `json:"base-url"`
+	ServerUrl     string `json:"server-url"`
+	Insights      bool   `json:"insights"`
+	RHC           bool   `json:"rhc"`
 }
 
 // UploadRequest is the upload options accepted by Image Builder API
@@ -237,7 +245,6 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 		Customizations: &Customizations{
 			Packages:            image.GetALLPackagesList(),
 			PayloadRepositories: &payloadRepos,
-			Subscription:        image.Subscription,
 		},
 		Distribution: image.Distribution,
 		ImageRequests: []ImageRequest{
@@ -249,6 +256,16 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 					Type:    "aws.s3",
 				},
 			}},
+	}
+	if image.ActivationKey != "" {
+		req.Customizations.Subscription = &Subscription{
+			ActivationKey: image.ActivationKey,
+			Organization:  image.OrgID,
+			BaseUrl:       config.Get().ActivationKeyBaseUrl,
+			ServerUrl:     config.Get().ActivationKeyServerURL,
+			Insights:      true,
+			RHC:           true,
+		}
 	}
 	if image.Commit.OSTreeRef != "" {
 		if req.ImageRequests[0].Ostree == nil {
