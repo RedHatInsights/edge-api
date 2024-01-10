@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export GOROOT="/opt/go//1.19.11"
+export GOROOT="/opt/go/1.20.10"
 export PATH="${GOROOT}/bin:${PATH}"
 
 export PR_CHECK="true" # Only used when doing a PR check from Github.
@@ -16,12 +16,8 @@ export IQE_CJI_TIMEOUT="30m"  # This is the time to wait for smoke test to compl
 
 # Install bonfire repo/initialize
 WORKSPACE=${WORKSPACE:-$PWD}
-BONFIRE_REPO_BRANCH='bonfire-hotfix'
-CICD_URL="https://raw.githubusercontent.com/RedHatInsights/bonfire/${BONFIRE_REPO_BRANCH}/cicd"
+CICD_URL="https://raw.githubusercontent.com/RedHatInsights/cicd-tools/main"
 curl -s $CICD_URL/bootstrap.sh > ${WORKSPACE}/cicd_bootstrap.sh && source ${WORKSPACE}/cicd_bootstrap.sh
-
-# env vars for bonfire
-export EXTRA_DEPLOY_ARGS="rhsm-api-proxy --set-template-ref rhsm-api-proxy=master"
 
 # Build the image and push to quay
 source $CICD_ROOT/build.sh
@@ -52,7 +48,7 @@ CONTAINER_NAME="edge-pr-check-$ghprbPullId"
 podman run --user root --rm --replace -i \
     --name $CONTAINER_NAME \
     -v $PWD:/usr/src:z \
-    registry.access.redhat.com/ubi8/go-toolset:1.19.13-2.1698062273 \
+    registry.access.redhat.com/ubi8/go-toolset:1.20.10-3 \
     bash -c 'cd /usr/src && make coverage-no-fdo'
 
 # Generate sonarqube reports

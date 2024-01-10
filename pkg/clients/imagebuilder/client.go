@@ -69,6 +69,7 @@ type OSTree struct {
 type Customizations struct {
 	Packages            *[]string     `json:"packages"`
 	PayloadRepositories *[]Repository `json:"payload_repositories,omitempty"`
+	Users               *[]User       `json:"users,omitempty"`
 }
 
 // Repository is the record of Third Party Repository
@@ -80,6 +81,12 @@ type Repository struct {
 	MetaLink   *string `json:"metalink,omitempty"`
 	MirrorList *string `json:"mirrorlist,omitempty"`
 	RHSM       bool    `json:"rhsm"`
+}
+
+// User is the username ad ssh key to inject in ISO kickstart for device login by default.
+type User struct {
+	Name   string `json:"name"`
+	SSHKey string `json:"ssh_key"`
 }
 
 // UploadRequest is the upload options accepted by Image Builder API
@@ -286,10 +293,14 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 		repoURL = image.Commit.Repo.URL
 		rhsm = false
 	}
-
+	var users []User
+	if image.Installer != nil && image.Installer.Username != "" && image.Installer.SSHKey != "" {
+		users = []User{{Name: image.Installer.Username, SSHKey: image.Installer.SSHKey}}
+	}
 	req := &ComposeRequest{
 		Customizations: &Customizations{
 			Packages: &pkgs,
+			Users:    &users,
 		},
 
 		Distribution: image.Distribution,

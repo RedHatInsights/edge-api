@@ -2,7 +2,7 @@ module github.com/redhatinsights/edge-api
 
 require (
 	github.com/Unleash/unleash-client-go/v3 v3.9.2
-	github.com/aws/aws-sdk-go v1.48.15
+	github.com/aws/aws-sdk-go v1.49.6
 	github.com/bxcodec/faker/v3 v3.8.1
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/confluentinc/confluent-kafka-go v1.9.2
@@ -97,4 +97,4 @@ require (
 // fixes CVE-2023-44487
 replace google.golang.org/grpc => google.golang.org/grpc v1.58.3
 
-go 1.19
+go 1.20
