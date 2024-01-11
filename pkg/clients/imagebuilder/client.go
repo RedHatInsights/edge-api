@@ -261,8 +261,8 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 		req.Customizations.Subscription = &Subscription{
 			ActivationKey: image.ActivationKey,
 			Organization:  image.OrgID,
-			BaseUrl:       config.Get().ActivationKeyBaseUrl,
-			ServerUrl:     config.Get().ActivationKeyServerURL,
+			BaseUrl:       config.Get().SubscriptionBaseUrl,
+			ServerUrl:     config.Get().SubscriptionServerURL,
 			Insights:      true,
 			RHC:           true,
 		}
