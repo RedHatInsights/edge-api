@@ -455,4 +455,81 @@ var _ = Describe("DeviceGroupsService basic functions", func() {
 			})
 		})
 	})
+
+	Context("rename device group", func() {
+		var orgID string
+		var deviceGroup models.DeviceGroup
+		BeforeEach(func() {
+			var err error
+			orgID, err = common.GetOrgIDFromContext(ctx)
+			Expect(err).ToNot(HaveOccurred())
+		})
+		When("group has no devices", func() {
+			BeforeEach(func() {
+				deviceGroup = models.DeviceGroup{
+					OrgID: orgID,
+					Name:  faker.Name(),
+				}
+				err := db.DB.Create(&deviceGroup).Error
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should rename group", func() {
+				updateGroup := models.DeviceGroup{Name: faker.Name()}
+				err := deviceGroupsService.UpdateDeviceGroup(&updateGroup, orgID, fmt.Sprintf("%d", deviceGroup.ID))
+				Expect(err).ToNot(HaveOccurred())
+
+				var group models.DeviceGroup
+				err = db.DB.First(&group, deviceGroup.ID).Error
+				Expect(err).ToNot(HaveOccurred())
+				Expect(group.Name).To(Equal(updateGroup.Name))
+			})
+		})
+
+		When("group has devices", func() {
+			BeforeEach(func() {
+				deviceGroup = models.DeviceGroup{
+					OrgID: orgID,
+					Name:  faker.Name(),
+					Devices: []models.Device{
+						{OrgID: orgID, UUID: faker.UUIDHyphenated()},
+						{OrgID: orgID, UUID: faker.UUIDHyphenated()},
+					},
+				}
+				err := db.DB.Create(&deviceGroup).Error
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should rename group", func() {
+				updateGroup := models.DeviceGroup{Name: faker.Name()}
+				err := deviceGroupsService.UpdateDeviceGroup(&updateGroup, orgID, fmt.Sprintf("%d", deviceGroup.ID))
+				Expect(err).ToNot(HaveOccurred())
+
+				var group models.DeviceGroup
+				err = db.DB.First(&group, deviceGroup.ID).Error
+				Expect(err).ToNot(HaveOccurred())
+				Expect(group.Name).To(Equal(updateGroup.Name))
+			})
+		})
+
+		When("group with same name exists", func() {
+			var existingGroupName string
+			BeforeEach(func() {
+				existingGroupName = faker.Name()
+				deviceGroup = models.DeviceGroup{OrgID: orgID, Name: faker.Name()}
+				err := db.DB.Create(&deviceGroup).Error
+				Expect(err).ToNot(HaveOccurred())
+				otherDeviceGroup := models.DeviceGroup{OrgID: orgID, Name: existingGroupName}
+				err = db.DB.Create(&otherDeviceGroup).Error
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should return error", func() {
+				updateGroup := models.DeviceGroup{Name: existingGroupName}
+				err := deviceGroupsService.UpdateDeviceGroup(&updateGroup, orgID, fmt.Sprintf("%d", deviceGroup.ID))
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(MatchError(new(services.DeviceGroupAlreadyExists)))
+			})
+		})
+	})
 })

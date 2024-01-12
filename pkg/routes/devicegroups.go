@@ -514,7 +514,7 @@ func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 			case *services.DeviceGroupAlreadyExists:
 				apiError = errors.NewBadRequest(err.Error())
 			default:
-				apiError := errors.NewInternalServerError()
+				apiError = errors.NewInternalServerError()
 				apiError.SetTitle("failed updating device group")
 			}
 			respondWithAPIError(w, ctxServices.Log, apiError)

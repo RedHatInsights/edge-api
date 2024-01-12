@@ -341,7 +341,7 @@ func (s *DeviceGroupsService) UpdateDeviceGroup(deviceGroup *models.DeviceGroup,
 		}
 	}
 
-	result := db.DB.Save(&groupDetails)
+	result := db.DB.Omit("Devices").Save(&groupDetails)
 	if result.Error != nil {
 		return result.Error
 	}
