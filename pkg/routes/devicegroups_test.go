@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,7 +17,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/edge-api/pkg/errors"
+	apiErrors "github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 
@@ -378,6 +379,53 @@ var _ = Describe("DeviceGroup routes", func() {
 				Expect(rr.Code).To(Equal(http.StatusOK))
 			})
 		})
+
+		When("UpdateDeviceGroup return error", func() {
+			It("should return internal server error when unknown error occur", func() {
+				deviceGroupUpdated := &models.DeviceGroup{Name: deviceGroupName, Type: models.DeviceGroupTypeDefault, OrgID: common.DefaultOrgID}
+				jsonDeviceBytes, err := json.Marshal(deviceGroupUpdated)
+				Expect(err).To(BeNil())
+
+				url := fmt.Sprintf("/%d", deviceGroupUpdated.ID)
+				req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(jsonDeviceBytes))
+				Expect(err).To(BeNil())
+
+				ctx := setContextDeviceGroup(req.Context(), deviceGroupUpdated)
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+				rr := httptest.NewRecorder()
+
+				expectedError := errors.New("expected unknown error returned by UpdateDeviceGroup")
+				mockDeviceGroupsService.EXPECT().UpdateDeviceGroup(deviceGroupUpdated, common.DefaultOrgID, fmt.Sprintf("%d", deviceGroupUpdated.ID)).Return(expectedError)
+
+				handler := http.HandlerFunc(UpdateDeviceGroup)
+				handler.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusInternalServerError))
+				Expect(rr.Body.String()).To(ContainSubstring("failed updating device group"))
+			})
+
+			It("should return bad request when group with same name already exists", func() {
+				deviceGroupUpdated := &models.DeviceGroup{Name: deviceGroupName, Type: models.DeviceGroupTypeDefault, OrgID: common.DefaultOrgID}
+				jsonDeviceBytes, err := json.Marshal(deviceGroupUpdated)
+				Expect(err).To(BeNil())
+
+				url := fmt.Sprintf("/%d", deviceGroupUpdated.ID)
+				req, err := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(jsonDeviceBytes))
+				Expect(err).To(BeNil())
+
+				ctx := setContextDeviceGroup(req.Context(), deviceGroupUpdated)
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+				req = req.WithContext(ctx)
+				rr := httptest.NewRecorder()
+
+				mockDeviceGroupsService.EXPECT().UpdateDeviceGroup(deviceGroupUpdated, common.DefaultOrgID, fmt.Sprintf("%d", deviceGroupUpdated.ID)).Return(new(services.DeviceGroupAlreadyExists))
+
+				handler := http.HandlerFunc(UpdateDeviceGroup)
+				handler.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusBadRequest))
+				Expect(rr.Body.String()).To(ContainSubstring(services.DeviceGroupAlreadyExistsMsg))
+			})
+		})
 	})
 	Context("delete DeviceGroup", func() {
 		account := common.DefaultAccount
@@ -554,7 +602,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				rr := httptest.NewRecorder()
 
 				// setup mock for DeviceGroupsService
-				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupByID(fmt.Sprint(fakeIDUint)).Return(errors.NewInternalServerError())
+				mockDeviceGroupsService.EXPECT().DeleteDeviceGroupByID(fmt.Sprint(fakeIDUint)).Return(apiErrors.NewInternalServerError())
 
 				handler := http.HandlerFunc(DeleteDeviceGroupByID)
 				handler.ServeHTTP(rr, req)
