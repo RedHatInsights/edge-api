@@ -217,13 +217,13 @@ func TestSubscriptionBaseURL(t *testing.T) {
 		assert.NoError(t, err)
 	}(subscriptionBaseURLEnvName, initialSubscriptionBaseURLEnv)
 
-	expectedContentSourcesURl := faker.URL()
-	err := os.Setenv(subscriptionBaseURLEnvName, expectedContentSourcesURl)
+	expectedSubscriptionBaseURL := faker.URL()
+	err := os.Setenv(subscriptionBaseURLEnvName, expectedSubscriptionBaseURL)
 	assert.NoError(t, err)
 
 	conf, err := CreateEdgeAPIConfig()
 	assert.NoError(t, err)
-	assert.Equal(t, expectedContentSourcesURl, conf.SubscriptionBaseUrl)
+	assert.Equal(t, expectedSubscriptionBaseURL, conf.SubscriptionBaseUrl)
 }
 
 func TestSubscriptionServerURL(t *testing.T) {
@@ -236,13 +236,13 @@ func TestSubscriptionServerURL(t *testing.T) {
 		assert.NoError(t, err)
 	}(subscriptionServerURLEnvName, initialSubscriptionServerURLEnv)
 
-	expectedContentSourcesURl := faker.URL()
-	err := os.Setenv(subscriptionServerURLEnvName, expectedContentSourcesURl)
+	expectedSubscriptionServerURL := faker.URL()
+	err := os.Setenv(subscriptionServerURLEnvName, expectedSubscriptionServerURL)
 	assert.NoError(t, err)
 
 	conf, err := CreateEdgeAPIConfig()
 	assert.NoError(t, err)
-	assert.Equal(t, expectedContentSourcesURl, conf.SubscriptionServerURL)
+	assert.Equal(t, expectedSubscriptionServerURL, conf.SubscriptionServerURL)
 }
 
 func TestTLSCAPath(t *testing.T) {
