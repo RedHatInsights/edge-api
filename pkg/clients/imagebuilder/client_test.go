@@ -244,6 +244,87 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(img.Commit.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
 		Expect(img.Commit.ExternalURL).To(BeFalse())
 	})
+	It("image actication key is filled", func() {
+		composeJobID := faker.UUIDHyphenated()
+		orgID := faker.UUIDHyphenated()
+		repoURL := fmt.Sprintf("%s/api/edge/v1/storage/images-repos/12345", config.Get().EdgeCertAPIBaseURL)
+		dist := "rhel-84"
+		newDist := "rhel-85"
+
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var req ComposeRequest
+			body, err := io.ReadAll(r.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(body).ToNot(BeNil())
+			err = json.Unmarshal(body, &req)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(req.Customizations.Subscription.ActivationKey).To(Equal("test-key"))
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			_, err = fmt.Fprintf(w, `{"id": "%s"}`, composeJobID)
+			Expect(err).ToNot(HaveOccurred())
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+
+		img := &models.Image{Distribution: dist,
+			Name:  faker.Name(),
+			OrgID: orgID,
+			Commit: &models.Commit{
+				OrgID:              orgID,
+				Arch:               "x86_64",
+				Repo:               &models.Repo{},
+				OSTreeRef:          config.DistributionsRefs[newDist],
+				OSTreeParentRef:    config.DistributionsRefs[dist],
+				OSTreeParentCommit: repoURL,
+			},
+			ActivationKey: "test-key",
+		}
+
+		img, err := client.ComposeCommit(img)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(img).ToNot(BeNil())
+		Expect(img.Commit.ComposeJobID).To(Equal(composeJobID))
+		Expect(img.Commit.ExternalURL).To(BeFalse())
+	})
+
+	It("image actication key is not filled", func() {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var req ComposeRequest
+			body, err := io.ReadAll(r.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(body).ToNot(BeNil())
+			err = json.Unmarshal(body, &req)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(req.Customizations.Subscription).To(BeNil())
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprintln(w, `{"id": "compose-job-id-returned-from-image-builder"}`)
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+
+		pkgs := []models.Package{
+			{
+				Name: "vim",
+			},
+			{
+				Name: "ansible",
+			},
+		}
+		img := &models.Image{Distribution: "rhel-8",
+			Packages: pkgs,
+			Commit: &models.Commit{
+				Arch: "x86_64",
+				Repo: &models.Repo{},
+			}}
+		img, err := client.ComposeCommit(img)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(img).ToNot(BeNil())
+		Expect(img.Commit.ComposeJobID).To(Equal("compose-job-id-returned-from-image-builder"))
+		Expect(img.Commit.ExternalURL).To(BeFalse())
+	})
+
 	It("should return error when image has org_id undefined", func() {
 		pkgs := []models.Package{
 			{
