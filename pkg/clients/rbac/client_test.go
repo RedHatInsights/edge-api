@@ -255,6 +255,72 @@ var _ = Describe("Rbac Client", func() {
 			Expect(overallGroupIDS).To(Equal(expectedGroups))
 		})
 
+		It("it should allowed access when resources is empty", func() {
+			acl := rbac.AccessList{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{},
+					Permission:          "inventory:hosts:read",
+				},
+			}
+			allowedAccess, overallGroupIDS, hostsWithNoGroupsAssigned, err := client.GetInventoryGroupsAccess(acl, rbac.ResourceTypeHOSTS, rbac.AccessTypeRead)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(allowedAccess).To(BeTrue())
+			Expect(hostsWithNoGroupsAssigned).To(BeFalse())
+			Expect(len(overallGroupIDS)).To(Equal(0))
+		})
+
+		It("it should allowed access when resources is empty any where in the list 1", func() {
+			acl := rbac.AccessList{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
+						{
+							Filter: rbac.ResourceDefinitionFilter{
+								Key:       "group.id",
+								Operation: "in",
+								Value:     []*string{nil},
+							},
+						},
+					},
+					Permission: "inventory:hosts:read",
+				},
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{},
+					Permission:          "inventory:hosts:read",
+				},
+			}
+			allowedAccess, overallGroupIDS, hostsWithNoGroupsAssigned, err := client.GetInventoryGroupsAccess(acl, rbac.ResourceTypeHOSTS, rbac.AccessTypeRead)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(allowedAccess).To(BeTrue())
+			Expect(hostsWithNoGroupsAssigned).To(BeFalse())
+			Expect(len(overallGroupIDS)).To(Equal(0))
+		})
+
+		It("it should allowed access when resources is empty any where in the list 2", func() {
+			acl := rbac.AccessList{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{},
+					Permission:          "inventory:hosts:read",
+				},
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{
+						{
+							Filter: rbac.ResourceDefinitionFilter{
+								Key:       "group.id",
+								Operation: "in",
+								Value:     []*string{nil},
+							},
+						},
+					},
+					Permission: "inventory:hosts:read",
+				},
+			}
+			allowedAccess, overallGroupIDS, hostsWithNoGroupsAssigned, err := client.GetInventoryGroupsAccess(acl, rbac.ResourceTypeHOSTS, rbac.AccessTypeRead)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(allowedAccess).To(BeTrue())
+			Expect(hostsWithNoGroupsAssigned).To(BeFalse())
+			Expect(len(overallGroupIDS)).To(Equal(0))
+		})
+
 		It("it should not be allowed access when no resources matches", func() {
 			acl := rbac.AccessList{
 				rbac.Access{

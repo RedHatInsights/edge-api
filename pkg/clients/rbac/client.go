@@ -199,6 +199,13 @@ func (c *Client) GetInventoryGroupsAccess(acl AccessList, resource ResourceType,
 		// check if the resource with accessType has access to the current access item
 		if ac.Application() == string(ApplicationInventory) && ResourceMatch(ResourceType(ac.Resource()), resource) && AccessMatch(AccessType(ac.AccessType()), accessType) {
 			allowedAccess = true
+			if len(ac.ResourceDefinitions) == 0 {
+				// we should have global access to the resource in the context of this access type
+				// reset the values
+				globalUnGroupedHosts = false
+				overallGroupIDS = nil
+				break
+			}
 			for _, resourceDef := range ac.ResourceDefinitions {
 				// validate if the resource definition is correct and get all access groups from the resource definition value
 				accessGroups, err := c.getAssessGroupsFromResourceDefinition(resourceDef)
