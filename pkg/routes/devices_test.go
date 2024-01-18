@@ -1355,6 +1355,25 @@ func TestDevicesViewInventoryHostsRbac(t *testing.T) {
 	}{
 		// GET http method
 		{
+			Name:       "should return all the devices",
+			HTTPMethod: "GET",
+			RbacACL: rbac.AccessList{
+				rbac.Access{
+					ResourceDefinitions: []rbac.ResourceDefinition{},
+					Permission:          "inventory:hosts:read",
+				},
+			},
+			UseIdentity:                     true,
+			UseIdentityType:                 common.IdentityTypeUser,
+			ClientCallExpected:              true,
+			ClientAccessCallExpected:        true,
+			ResultAllowedAccess:             true,
+			ResultGroupsID:                  []string{},
+			ResultHostsWithNoGroupsAssigned: false,
+			ExpectedHTTPStatus:              http.StatusOK,
+			ExpectedDevices:                 devices,
+		},
+		{
 			Name:       "should return the devices device from groups in ACL",
 			HTTPMethod: "GET",
 			RbacACL: rbac.AccessList{
