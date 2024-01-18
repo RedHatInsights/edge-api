@@ -135,6 +135,10 @@ objects:
           value: ${TENANT_TRANSLATOR_PORT}
         - name : RBAC_BASE_URL
           value: ${RBAC_BASE_URL}
+        - name : SUBSCRIPTION_BASE_URL
+          value: ${SUBSCRIPTION_BASE_URL}
+        - name : SUBSCRIPTION_SERVER_URL
+          value: ${SUBSCRIPTION_SERVER_URL}
         resources:
           limits:
             cpu: ${{CPU_LIMIT}}
@@ -202,6 +206,10 @@ objects:
           value: ${TENANT_TRANSLATOR_PORT}
         - name : RBAC_BASE_URL
           value: ${RBAC_BASE_URL}
+        - name : SUBSCRIPTION_BASE_URL
+          value: ${SUBSCRIPTION_BASE_URL}
+        - name : SUBSCRIPTION_SERVER_URL
+          value: ${SUBSCRIPTION_SERVER_URL}
         resources:
           limits:
             cpu: 250m
@@ -269,6 +277,10 @@ objects:
           value: ${TENANT_TRANSLATOR_PORT}
         - name : RBAC_BASE_URL
           value: ${RBAC_BASE_URL}
+        - name : SUBSCRIPTION_BASE_URL
+          value: ${SUBSCRIPTION_BASE_URL}
+        - name : SUBSCRIPTION_SERVER_URL
+          value: ${SUBSCRIPTION_SERVER_URL}
         resources:
           limits:
             cpu: 250m
@@ -336,6 +348,10 @@ objects:
           value: ${TENANT_TRANSLATOR_PORT}
         - name : RBAC_BASE_URL
           value: ${RBAC_BASE_URL}
+        - name : SUBSCRIPTION_BASE_URL
+          value: ${SUBSCRIPTION_BASE_URL}
+        - name : SUBSCRIPTION_SERVER_URL
+          value: ${SUBSCRIPTION_SERVER_URL}
         resources:
           limits:
             cpu: 250m
@@ -407,6 +423,10 @@ objects:
               value: ${TENANT_TRANSLATOR_PORT}
             - name : RBAC_BASE_URL
               value: ${RBAC_BASE_URL}
+            - name : SUBSCRIPTION_BASE_URL
+              value: ${SUBSCRIPTION_BASE_URL}
+            - name : SUBSCRIPTION_SERVER_URL
+              value: ${SUBSCRIPTION_SERVER_URL}
           resources:
             limits:
               cpu: 900m
@@ -556,3 +576,11 @@ parameters:
   name: RBAC_BASE_URL
   required: false
   value: "http://rbac-service:8080"
+- description: SUBSCRIPTION service base URL
+  name: SUBSCRIPTION_BASE_URL
+  required: false
+  value: "http://subscription-service:8080"
+- description: SUBSCRIPTION server URL
+  name: SUBSCRIPTION_SERVER_URL
+  required: false
+  value: "http://subscription-servers:8080"

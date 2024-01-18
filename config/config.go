@@ -78,6 +78,8 @@ type EdgeConfig struct {
 	DeleteFilesRetryDelay      uint                      `json:"delete_files_retry_delay"`
 	RbacBaseURL                string                    `json:"rbac_base_url"`
 	RbacTimeout                uint                      `mapstructure:"rbac_timeout,omitempty"`
+	SubscriptionServerURL      string                    `json:"subscription_server_url"`
+	SubscriptionBaseUrl        string                    `json:"subscription_base_url"`
 }
 
 type dbConfig struct {
@@ -275,6 +277,8 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		DeleteFilesRetryDelay:      options.GetUint("DeleteFilesRetryDelay"),
 		RbacBaseURL:                options.GetString("RBAC_BASE_URL"),
 		RbacTimeout:                options.GetUint("RbacTimeout"),
+		SubscriptionServerURL:      options.GetString("SUBSCRIPTION_SERVER_URL"),
+		SubscriptionBaseUrl:        options.GetString("SUBSCRIPTION_BASE_URL"),
 	}
 	if edgeConfig.TenantTranslatorHost != "" && edgeConfig.TenantTranslatorPort != "" {
 		edgeConfig.TenantTranslatorURL = fmt.Sprintf("http://%s:%s", edgeConfig.TenantTranslatorHost, edgeConfig.TenantTranslatorPort)

@@ -207,6 +207,44 @@ func TestContentSourcesURL(t *testing.T) {
 	assert.Equal(t, expectedContentSourcesURl, conf.ContentSourcesURL)
 }
 
+func TestSubscriptionBaseURL(t *testing.T) {
+	subscriptionBaseURLEnvName := "SUBSCRIPTION_BASE_URL"
+	initialSubscriptionBaseURLEnv := os.Getenv(subscriptionBaseURLEnvName)
+
+	// restore initial content source env value
+	defer func(envName, envValue string) {
+		err := os.Setenv(envName, envValue)
+		assert.NoError(t, err)
+	}(subscriptionBaseURLEnvName, initialSubscriptionBaseURLEnv)
+
+	expectedSubscriptionBaseURL := faker.URL()
+	err := os.Setenv(subscriptionBaseURLEnvName, expectedSubscriptionBaseURL)
+	assert.NoError(t, err)
+
+	conf, err := CreateEdgeAPIConfig()
+	assert.NoError(t, err)
+	assert.Equal(t, expectedSubscriptionBaseURL, conf.SubscriptionBaseUrl)
+}
+
+func TestSubscriptionServerURL(t *testing.T) {
+	subscriptionServerURLEnvName := "SUBSCRIPTION_SERVER_URL"
+	initialSubscriptionServerURLEnv := os.Getenv(subscriptionServerURLEnvName)
+
+	// restore initial content source env value
+	defer func(envName, envValue string) {
+		err := os.Setenv(envName, envValue)
+		assert.NoError(t, err)
+	}(subscriptionServerURLEnvName, initialSubscriptionServerURLEnv)
+
+	expectedSubscriptionServerURL := faker.URL()
+	err := os.Setenv(subscriptionServerURLEnvName, expectedSubscriptionServerURL)
+	assert.NoError(t, err)
+
+	conf, err := CreateEdgeAPIConfig()
+	assert.NoError(t, err)
+	assert.Equal(t, expectedSubscriptionServerURL, conf.SubscriptionServerURL)
+}
+
 func TestTLSCAPath(t *testing.T) {
 	// restore initial clowder config
 	defer func(clowderLoadedConfig *clowder.AppConfig) {
