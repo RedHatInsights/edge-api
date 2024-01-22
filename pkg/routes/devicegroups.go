@@ -322,8 +322,11 @@ func GetAllDeviceGroups(w http.ResponseWriter, r *http.Request) {
 // @Router       /device-groups [post]
 func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
-
-	if feature.HideCreateGroup.IsEnabled() || !(feature.EnforceEdgeGroups.IsEnabled()) {
+	if feature.EdgeParityInventoryGroupsEnabled.IsEnabled() && !feature.EnforceEdgeGroups.IsEnabled() {
+		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable(""))
+		return
+	}
+	if feature.HideCreateGroup.IsEnabled() {
 		w.WriteHeader(http.StatusUnauthorized)
 		respondWithJSONBody(w, ctxServices.Log, nil)
 		return

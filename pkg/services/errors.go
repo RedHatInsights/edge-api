@@ -53,6 +53,7 @@ const SomeDevicesDoesNotExistsMsg = "image-set not found for all devices"
 const KafkaAllBrokersDownMsg = "Cannot connect to any Kafka brokers"
 const DBCommitErrorMsg = "Error searching for ImageSet of Device Images"
 const KafkaProducerInstanceUndefinedMsg = "kafka producer instance is undefined"
+const ParsingISODateErrorMsg = "error occurred while parsing string for ISO date"
 
 // DeviceNotFoundError indicates the device was not found
 type DeviceNotFoundError struct{}
@@ -410,4 +411,11 @@ type ImageCommitNotFound struct{}
 
 func (e *ImageCommitNotFound) Error() string {
 	return ImageCommitNotFoundMsg
+}
+
+// ParsingISODateError occurs when parsing a string for iso date fails
+type ParsingISODateError struct{}
+
+func (e *ParsingISODateError) Error() string {
+	return ParsingISODateErrorMsg
 }
