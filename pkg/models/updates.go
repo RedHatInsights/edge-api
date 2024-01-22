@@ -122,3 +122,15 @@ type InventoryGroupDevicesUpdateInfo struct {
 	DevicesUUIDS     []string        `json:"update_devices_uuids"`
 	DevicesImageSets map[string]uint `json:"device_image_set_info"`
 }
+
+// DeviceUpdateImagesFilters is the device image
+type DeviceUpdateImagesFilters struct {
+	Limit              int
+	Offset             int
+	Version            int
+	Release            string
+	Created            string
+	AdditionalPackages *int
+	AllPackages        *int
+	SystemsRunning     *int
+}

@@ -33,7 +33,7 @@ func MakeDevicesRouter(sub chi.Router) {
 	sub.Route("/{DeviceUUID}", func(r chi.Router) {
 		r.Use(DeviceCtx)
 		r.Get("/dbinfo", GetDeviceDBInfo)
-		r.With(common.Paginate).Get("/", GetDevice)
+		r.With(common.Paginate).With(ValidateDeviceUpdateImagesFilterParams).Get("/", GetDevice)
 		r.With(common.Paginate).Get("/updates", GetUpdateAvailableForDevice)
 		r.With(common.Paginate).Get("/image", GetDeviceImageInfo)
 	})
@@ -101,6 +101,83 @@ var devicesFilters = common.ComposeFilters(
 	}),
 	common.SortFilterHandler("devices", "name", "ASC"),
 )
+
+func ValidateDeviceUpdateImagesFilterParams(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		var errs []validationError
+		for _, key := range []string{"version", "additional packages", "all packages", "systems running"} {
+			if paramValue := r.URL.Query().Get(key); paramValue != "" {
+				_, err := strconv.Atoi(paramValue)
+				if err != nil {
+					errs = append(errs, validationError{Key: key, Reason: fmt.Sprintf(`"%s" is not a valid "%s" type, "%s" must be number`, key, key, key)})
+				}
+			}
+		}
+		if paramValue := r.URL.Query().Get("created"); paramValue != "" {
+			if _, err := time.Parse(common.LayoutISO, paramValue); err != nil {
+				errs = append(errs, validationError{Key: "created", Reason: err.Error()})
+			}
+		}
+
+		if len(errs) == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		respondWithJSONBody(w, ctxServices.Log, &errs)
+	})
+}
+
+func GetDeviceUpdateImagesFilters(r *http.Request) models.DeviceUpdateImagesFilters {
+	deviceUpdateImagesFilters := models.DeviceUpdateImagesFilters{}
+
+	query := r.URL.Query()
+
+	// define string filter
+	paramValue := query.Get("release")
+	if paramValue != "" {
+		deviceUpdateImagesFilters.Release = paramValue
+	}
+
+	// define date filter
+	paramValue = query.Get("created")
+	if paramValue != "" {
+		createdDated, err := time.Parse(common.LayoutISO, paramValue)
+		if err == nil {
+			deviceUpdateImagesFilters.Created = createdDated.Format(common.LayoutISO)
+		}
+		// any date parse error should have been caught in validation step
+	}
+
+	// define int filters
+	for _, key := range []string{"version", "additional packages", "all packages", "systems running"} {
+		paramValue := query.Get(key)
+		if paramValue != "" {
+			value, err := strconv.Atoi(paramValue)
+			if err != nil {
+				// any int parse error should have been caught by the params validation early
+				// this block is here only for natural code followup
+				continue
+			}
+			switch key {
+			case "version":
+				deviceUpdateImagesFilters.Version = value
+			case "additional packages":
+				deviceUpdateImagesFilters.AdditionalPackages = &value
+			case "all packages":
+				deviceUpdateImagesFilters.AllPackages = &value
+			case "systems running":
+				deviceUpdateImagesFilters.SystemsRunning = &value
+			}
+		}
+	}
+	// add pagination
+	pagination := common.GetPagination(r)
+	deviceUpdateImagesFilters.Limit = pagination.Limit
+	deviceUpdateImagesFilters.Offset = pagination.Offset
+	return deviceUpdateImagesFilters
+}
 
 // ValidateGetAllDevicesFilterParams validate the query params that sent to /devices endpoint
 func ValidateGetAllDevicesFilterParams(next http.Handler) http.Handler {
@@ -180,8 +257,8 @@ func GetUpdateAvailableForDevice(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Query().Get("latest") == "true" {
 		latest = true
 	}
-	pagination := common.GetPagination(r)
-	result, _, err := contextServices.DeviceService.GetUpdateAvailableForDeviceByUUID(dc.DeviceUUID, latest, pagination.Limit, pagination.Offset)
+	deviceUpdateImagesFilters := GetDeviceUpdateImagesFilters(r)
+	result, _, err := contextServices.DeviceService.GetUpdateAvailableForDeviceByUUID(dc.DeviceUUID, latest, deviceUpdateImagesFilters)
 	if err != nil {
 		var apiError errors.APIError
 		switch err.(type) {
@@ -205,8 +282,8 @@ func GetDeviceImageInfo(w http.ResponseWriter, r *http.Request) {
 	if dc.DeviceUUID == "" || !ok {
 		return // Error set by DeviceCtx method
 	}
-	pagination := common.GetPagination(r)
-	result, err := contextServices.DeviceService.GetDeviceImageInfoByUUID(dc.DeviceUUID, pagination.Limit, pagination.Offset)
+	deviceUpdateImagesFilters := GetDeviceUpdateImagesFilters(r)
+	result, err := contextServices.DeviceService.GetDeviceImageInfoByUUID(dc.DeviceUUID, deviceUpdateImagesFilters)
 	if err != nil {
 		var apiError errors.APIError
 		switch err.(type) {
@@ -244,8 +321,8 @@ func GetDevice(w http.ResponseWriter, r *http.Request) {
 	if dc.DeviceUUID == "" || !ok {
 		return // Error set by DeviceCtx method
 	}
-	pagination := common.GetPagination(r)
-	result, err := contextServices.DeviceService.GetDeviceDetailsByUUID(dc.DeviceUUID, pagination.Limit, pagination.Offset)
+	deviceUpdateImagesFilters := GetDeviceUpdateImagesFilters(r)
+	result, err := contextServices.DeviceService.GetDeviceDetailsByUUID(dc.DeviceUUID, deviceUpdateImagesFilters)
 	if err != nil {
 		var apiError errors.APIError
 		switch err.(type) {
