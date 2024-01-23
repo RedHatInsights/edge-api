@@ -1268,11 +1268,10 @@ var _ = Describe("DeviceGroup routes", func() {
 						OrgID:   faker.UUIDHyphenated(),
 					},
 				}
-				url := fmt.Sprintf("/1/devices")
 
 				jsonDeviceBytes, err := json.Marshal(models.DeviceGroup{Devices: devices})
 				Expect(err).To(BeNil())
-				req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonDeviceBytes))
+				req, err := http.NewRequest(http.MethodPost, "/1/devices", bytes.NewBuffer(jsonDeviceBytes))
 				Expect(err).To(BeNil())
 
 				ctx := req.Context()
