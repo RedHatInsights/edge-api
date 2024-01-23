@@ -370,8 +370,12 @@ func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 // @Failure      500 {object} errors.InternalServerError
 // @Router       /device-groups/{ID}/details [get]
 func GetDeviceGroupDetailsByID(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	if feature.EdgeParityInventoryGroupsEnabled.IsEnabled() && !feature.EnforceEdgeGroups.IsEnabled() {
+		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable(""))
+		return
+	}
 	if deviceGroup := getContextDeviceGroupDetails(w, r); deviceGroup != nil {
-		ctxServices := dependencies.ServicesFromContext(r.Context())
 		respondWithJSONBody(w, ctxServices.Log, deviceGroup)
 	}
 }
@@ -389,6 +393,10 @@ func GetDeviceGroupDetailsByID(w http.ResponseWriter, r *http.Request) {
 // @Router       /device-groups/{ID}/view [get]
 func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
+	if feature.EdgeParityInventoryGroupsEnabled.IsEnabled() && !feature.EnforceEdgeGroups.IsEnabled() {
+		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable(""))
+		return
+	}
 	orgID := readOrgID(w, r, ctxServices.Log)
 	if orgID == "" {
 		return
@@ -455,8 +463,13 @@ func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 // @Failure      500 {object} errors.InternalServerError
 // @Router       /device-groups/{ID} [get]
 func GetDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+
+	if feature.EdgeParityInventoryGroupsEnabled.IsEnabled() && !feature.EnforceEdgeGroups.IsEnabled() {
+		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable(""))
+		return
+	}
 	if deviceGroup := getContextDeviceGroup(w, r); deviceGroup != nil {
-		ctxServices := dependencies.ServicesFromContext(r.Context())
 		respondWithJSONBody(w, ctxServices.Log, deviceGroup)
 	}
 }
@@ -498,8 +511,12 @@ func getContextDeviceGroup(w http.ResponseWriter, r *http.Request) *models.Devic
 // @Failure      500 {object} errors.InternalServerError
 // @Router       /device-groups/{ID} [put]
 func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
+	ctxServices := dependencies.ServicesFromContext(r.Context())
+	if feature.EdgeParityInventoryGroupsEnabled.IsEnabled() && !feature.EnforceEdgeGroups.IsEnabled() {
+		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable(""))
+		return
+	}
 	if oldDeviceGroup := getContextDeviceGroup(w, r); oldDeviceGroup != nil {
-		ctxServices := dependencies.ServicesFromContext(r.Context())
 		deviceGroup, err := createDeviceRequest(w, r)
 		if err != nil {
 			// error handled by createRequest already
@@ -550,6 +567,11 @@ func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 // @Router       /device-groups/{ID} [delete]
 func DeleteDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
+
+	if feature.EdgeParityInventoryGroupsEnabled.IsEnabled() && !feature.EnforceEdgeGroups.IsEnabled() {
+		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable(""))
+		return
+	}
 	deviceGroup := getContextDeviceGroup(w, r)
 	if deviceGroup == nil {
 		return // error handled by getContextDeviceGroup already
@@ -631,6 +653,12 @@ func getContextDeviceGroupDevice(w http.ResponseWriter, r *http.Request) *models
 // @Router       /device-groups/{ID}/devices [post]
 func AddDeviceGroupDevices(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
+
+	if feature.EdgeParityInventoryGroupsEnabled.IsEnabled() && !feature.EnforceEdgeGroups.IsEnabled() {
+		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable(""))
+		return
+	}
+
 	contextDeviceGroup := getContextDeviceGroup(w, r)
 	if contextDeviceGroup == nil {
 		return
@@ -677,6 +705,10 @@ func AddDeviceGroupDevices(w http.ResponseWriter, r *http.Request) {
 // @Router       /device-groups/{ID}/devices [delete]
 func DeleteDeviceGroupManyDevices(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
+	if feature.EdgeParityInventoryGroupsEnabled.IsEnabled() && !feature.EnforceEdgeGroups.IsEnabled() {
+		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable(""))
+		return
+	}
 	contextDeviceGroup := getContextDeviceGroup(w, r)
 	if contextDeviceGroup == nil {
 		return
@@ -725,6 +757,10 @@ func DeleteDeviceGroupManyDevices(w http.ResponseWriter, r *http.Request) {
 // @Router       /device-groups/{ID}/devices/{deviceID} [delete]
 func DeleteDeviceGroupOneDevice(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
+	if feature.EdgeParityInventoryGroupsEnabled.IsEnabled() && !feature.EnforceEdgeGroups.IsEnabled() {
+		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable(""))
+		return
+	}
 	contextDeviceGroup := getContextDeviceGroup(w, r)
 	contextDeviceGroupDevice := getContextDeviceGroupDevice(w, r)
 	if contextDeviceGroupDevice == nil {
@@ -802,6 +838,11 @@ func CheckGroupName(w http.ResponseWriter, r *http.Request) {
 // @Router       /device-groups/{ID}/updateDevices [post]
 func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
+
+	if feature.EdgeParityInventoryGroupsEnabled.IsEnabled() && !feature.EnforceEdgeGroups.IsEnabled() {
+		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable(""))
+		return
+	}
 	deviceGroup := getContextDeviceGroup(w, r)
 	if deviceGroup == nil {
 		return
