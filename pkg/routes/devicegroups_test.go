@@ -1080,6 +1080,44 @@ var _ = Describe("DeviceGroup routes", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(deviceGroupDetails.DeviceDetails.EnforceEdgeGroups).To(BeFalse())
 			})
+
+			It("should return EnforceEdgeGroups value: false: NewFeatureNotAvailable", func() {
+				_ = os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
+				_ = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
+				req, err := http.NewRequest("POST", "/", nil)
+				Expect(err).To(BeNil())
+
+				ctx := req.Context()
+				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+					Log: log.NewEntry(log.StandardLogger()),
+				})
+				req = req.WithContext(ctx)
+				rr := httptest.NewRecorder()
+				handler := http.HandlerFunc(CreateDeviceGroup)
+
+				handler.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusNotImplemented))
+
+			})
+			It("should return hide group:true NotAuthorized", func() {
+				_ = os.Setenv(feature.EnforceEdgeGroups.EnvVar, "true")
+				_ = os.Setenv(feature.HideCreateGroup.EnvVar, "true")
+
+				req, err := http.NewRequest("POST", "/", nil)
+				Expect(err).To(BeNil())
+
+				ctx := req.Context()
+				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+					Log: log.NewEntry(log.StandardLogger()),
+				})
+				req = req.WithContext(ctx)
+				rr := httptest.NewRecorder()
+				handler := http.HandlerFunc(CreateDeviceGroup)
+
+				handler.ServeHTTP(rr, req)
+				Expect(rr.Code).To(Equal(http.StatusUnauthorized))
+
+			})
 		})
 	})
 })
