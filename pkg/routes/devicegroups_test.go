@@ -1086,13 +1086,17 @@ var _ = Describe("DeviceGroup routes", func() {
 			It("should return NewFeatureNotAvailable on create device Groups", func() {
 				_ = os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
 				_ = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
+
 				req, err := http.NewRequest("POST", "/", nil)
 				Expect(err).To(BeNil())
 
 				ctx := req.Context()
+				// set identity orgID
+				ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
 				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 					Log: log.NewEntry(log.StandardLogger()),
 				})
+
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
 				handler := http.HandlerFunc(CreateDeviceGroup)
@@ -1116,7 +1120,12 @@ var _ = Describe("DeviceGroup routes", func() {
 
 				req, err := http.NewRequest("GET", fmt.Sprintf("/device-groups/%d/view", deviceGroup.ID), nil)
 				Expect(err).ToNot(HaveOccurred())
-
+				ctx := req.Context()
+				// set identity orgID
+				ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
+				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+					Log: log.NewEntry(log.StandardLogger()),
+				})
 				responseRecorder := httptest.NewRecorder()
 				router.ServeHTTP(responseRecorder, req)
 
@@ -1138,7 +1147,12 @@ var _ = Describe("DeviceGroup routes", func() {
 
 				req, err := http.NewRequest("GET", fmt.Sprintf("/device-groups/%d/view", deviceGroup.ID), nil)
 				Expect(err).ToNot(HaveOccurred())
-
+				ctx := req.Context()
+				// set identity orgID
+				ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
+				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+					Log: log.NewEntry(log.StandardLogger()),
+				})
 				responseRecorder := httptest.NewRecorder()
 				router.ServeHTTP(responseRecorder, req)
 
@@ -1158,6 +1172,11 @@ var _ = Describe("DeviceGroup routes", func() {
 					Model: models.Model{
 						ID: fakeIDUint,
 					},
+				})
+				// set identity orgID
+				ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
+				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+					Log: log.NewEntry(log.StandardLogger()),
 				})
 				req = req.WithContext(ctx)
 				ctx = dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
@@ -1191,6 +1210,11 @@ var _ = Describe("DeviceGroup routes", func() {
 						ID: uint(1),
 					},
 				})
+				// set identity orgID
+				ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
+				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+					Log: log.NewEntry(log.StandardLogger()),
+				})
 				req = req.WithContext(ctx)
 				ctx = dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
 				req = req.WithContext(ctx)
@@ -1211,6 +1235,11 @@ var _ = Describe("DeviceGroup routes", func() {
 				req, err := http.NewRequest(http.MethodDelete, url, nil)
 				Expect(err).To(BeNil())
 				ctx := req.Context()
+				// set identity orgID
+				ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
+				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+					Log: log.NewEntry(log.StandardLogger()),
+				})
 				ctx = setContextDeviceGroup(ctx, &models.DeviceGroup{
 					Model: models.Model{
 						ID: fakeIDUint,
@@ -1247,6 +1276,11 @@ var _ = Describe("DeviceGroup routes", func() {
 				Expect(err).To(BeNil())
 
 				ctx := req.Context()
+				// set identity orgID
+				ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
+				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+					Log: log.NewEntry(log.StandardLogger()),
+				})
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
@@ -1265,6 +1299,12 @@ var _ = Describe("DeviceGroup routes", func() {
 				Expect(err).To(BeNil())
 
 				ctx := req.Context()
+				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
+					Log: log.NewEntry(log.StandardLogger()),
+				})
+
+				// set identity orgID
+				ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
 				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 					Log: log.NewEntry(log.StandardLogger()),
 				})
