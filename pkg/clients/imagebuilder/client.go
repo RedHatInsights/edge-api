@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 
@@ -90,7 +91,7 @@ type User struct {
 	SSHKey string `json:"ssh_key"`
 }
 type Subscription struct {
-	Organization  string `json:"organization"`
+	Organization  int    `json:"organization"`
 	ActivationKey string `json:"activation-key"`
 	BaseUrl       string `json:"base-url"`
 	ServerUrl     string `json:"server-url"`
@@ -258,14 +259,20 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 			}},
 	}
 	if image.ActivationKey != "" {
+		orgID, err := strconv.Atoi(image.OrgID)
+		if err != nil {
+			c.log.WithField("error", err.Error()).Error("Error can not convert org Id to integer")
+			return nil, err
+		}
 		req.Customizations.Subscription = &Subscription{
 			ActivationKey: image.ActivationKey,
-			Organization:  image.OrgID,
+			Organization:  orgID,
 			BaseUrl:       config.Get().SubscriptionBaseUrl,
 			ServerUrl:     config.Get().SubscriptionServerURL,
 			Insights:      true,
 			RHC:           true,
 		}
+
 	}
 	if image.Commit.OSTreeRef != "" {
 		if req.ImageRequests[0].Ostree == nil {
@@ -316,6 +323,7 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 	if image.Installer != nil && image.Installer.Username != "" && image.Installer.SSHKey != "" {
 		users = []User{{Name: image.Installer.Username, SSHKey: image.Installer.SSHKey}}
 	}
+
 	req := &ComposeRequest{
 		Customizations: &Customizations{
 			Packages: &pkgs,
@@ -338,6 +346,22 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 					Type:    "aws.s3",
 				},
 			}},
+	}
+	if image.ActivationKey != "" {
+		orgID, err := strconv.Atoi(image.OrgID)
+		if err != nil {
+			c.log.WithField("error", err.Error()).Error("Error can not convert org Id to integer")
+			return nil, err
+		}
+		req.Customizations.Subscription = &Subscription{
+			ActivationKey: image.ActivationKey,
+			Organization:  orgID,
+			BaseUrl:       config.Get().SubscriptionBaseUrl,
+			ServerUrl:     config.Get().SubscriptionServerURL,
+			Insights:      true,
+			RHC:           true,
+		}
+
 	}
 	cr, err := c.compose(req)
 	if err != nil {
