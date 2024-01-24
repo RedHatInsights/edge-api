@@ -246,7 +246,7 @@ var _ = Describe("Image Builder Client Test", func() {
 	})
 	It("image actication key is filled", func() {
 		composeJobID := faker.UUIDHyphenated()
-		orgID := faker.UUIDHyphenated()
+		orgID := "123"
 		repoURL := fmt.Sprintf("%s/api/edge/v1/storage/images-repos/12345", config.Get().EdgeCertAPIBaseURL)
 		dist := "rhel-84"
 		newDist := "rhel-85"
