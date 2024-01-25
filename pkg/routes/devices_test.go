@@ -95,20 +95,20 @@ var _ = Describe("Devices Router", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("should fail when device is not found", func() {
-				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), false, 30, 0).Return(nil, int64(0), new(services.DeviceNotFoundError))
+				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), false, models.DeviceUpdateImagesFilters{Limit: 30, Offset: 0}).Return(nil, int64(0), new(services.DeviceNotFoundError))
 				recorder := httptest.NewRecorder()
 				router.ServeHTTP(recorder, req)
 				Expect(recorder.Code).To(Equal(http.StatusNotFound))
 			})
 			It("should fail when unexpected error happens", func() {
-				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), false, 30, 0).Return(nil, int64(0), errors.New("random error"))
+				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), false, models.DeviceUpdateImagesFilters{Limit: 30, Offset: 0}).Return(nil, int64(0), errors.New("random error"))
 				recorder := httptest.NewRecorder()
 				router.ServeHTTP(recorder, req)
 				Expect(recorder.Code).To(Equal(http.StatusInternalServerError))
 			})
 			It("should return when everything is okay", func() {
 				updates := make([]models.ImageUpdateAvailable, 0)
-				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), false, 30, 0).Return(updates, int64(0), nil)
+				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), false, models.DeviceUpdateImagesFilters{Limit: 30, Offset: 0}).Return(updates, int64(0), nil)
 				recorder := httptest.NewRecorder()
 				router.ServeHTTP(recorder, req)
 				Expect(recorder.Code).To(Equal(http.StatusOK))
@@ -140,20 +140,20 @@ var _ = Describe("Devices Router", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 			It("should fail when device is not found", func() {
-				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), true, 30, 0).Return(nil, int64(0), new(services.DeviceNotFoundError))
+				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), true, models.DeviceUpdateImagesFilters{Limit: 30, Offset: 0}).Return(nil, int64(0), new(services.DeviceNotFoundError))
 				recorder := httptest.NewRecorder()
 				router.ServeHTTP(recorder, req)
 				Expect(recorder.Code).To(Equal(http.StatusNotFound))
 			})
 			It("should fail when unexpected error happens", func() {
-				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), true, 30, 0).Return(nil, int64(0), errors.New("random error"))
+				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), true, models.DeviceUpdateImagesFilters{Limit: 30, Offset: 0}).Return(nil, int64(0), errors.New("random error"))
 				recorder := httptest.NewRecorder()
 				router.ServeHTTP(recorder, req)
 				Expect(recorder.Code).To(Equal(http.StatusInternalServerError))
 			})
 			It("should return when everything is okay", func() {
 				updates := make([]models.ImageUpdateAvailable, 0)
-				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), true, 30, 0).Return(updates, int64(0), nil)
+				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(gomock.Eq(deviceUUID), true, models.DeviceUpdateImagesFilters{Limit: 30, Offset: 0}).Return(updates, int64(0), nil)
 				recorder := httptest.NewRecorder()
 				router.ServeHTTP(recorder, req)
 				Expect(recorder.Code).To(Equal(http.StatusOK))
@@ -230,6 +230,220 @@ var _ = Describe("Devices View Router", func() {
 				handler.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(http.StatusOK))
 
+			})
+		})
+	})
+})
+
+var _ = Describe("Device Router", func() {
+	var mockDeviceService *mock_services.MockDeviceServiceInterface
+	// var router chi.Router
+	var mockServices *dependencies.EdgeAPIServices
+	var ctrl *gomock.Controller
+
+	BeforeEach(func() {
+		ctrl = gomock.NewController(GinkgoT())
+		mockDeviceService = mock_services.NewMockDeviceServiceInterface(ctrl)
+		mockServices = &dependencies.EdgeAPIServices{
+			DeviceService: mockDeviceService,
+			Log:           log.NewEntry(log.StandardLogger()),
+		}
+	})
+
+	AfterEach(func() {
+		ctrl.Finish()
+	})
+
+	Context("device update images filter params", func() {
+		var IntPointer = func(value int) *int { return &value }
+
+		When("GetDevice", func() {
+			It("filter params should be created as expected", func() {
+				deviceUUID := faker.UUIDHyphenated()
+				expectedDeviceUpdateImagesFilters := models.DeviceUpdateImagesFilters{
+					Limit:              10,
+					Offset:             1,
+					Version:            4,
+					Release:            "rhel-8.8",
+					Created:            "2024-01-16",
+					AdditionalPackages: IntPointer(10),
+					AllPackages:        IntPointer(200),
+					SystemsRunning:     IntPointer(15),
+				}
+
+				mockDeviceService.EXPECT().GetDeviceDetailsByUUID(deviceUUID, gomock.Any()).DoAndReturn(
+					func(deviceID string, deviceUpdateImagesFilters models.DeviceUpdateImagesFilters) (*models.DeviceDetails, error) {
+						Expect(deviceID).To(Equal(deviceUUID))
+						Expect(deviceUpdateImagesFilters.Limit).To(Equal(expectedDeviceUpdateImagesFilters.Limit))
+						Expect(deviceUpdateImagesFilters.Offset).To(Equal(expectedDeviceUpdateImagesFilters.Offset))
+						Expect(deviceUpdateImagesFilters.Version).To(Equal(expectedDeviceUpdateImagesFilters.Version))
+						Expect(deviceUpdateImagesFilters.Release).To(Equal(expectedDeviceUpdateImagesFilters.Release))
+						Expect(deviceUpdateImagesFilters.Created).To(Equal(expectedDeviceUpdateImagesFilters.Created))
+						Expect(deviceUpdateImagesFilters.AdditionalPackages).ToNot(BeNil())
+						Expect(*deviceUpdateImagesFilters.AdditionalPackages).To(Equal(*expectedDeviceUpdateImagesFilters.AdditionalPackages))
+						Expect(deviceUpdateImagesFilters.AllPackages).ToNot(BeNil())
+						Expect(*deviceUpdateImagesFilters.AllPackages).To(Equal(*expectedDeviceUpdateImagesFilters.AllPackages))
+						Expect(deviceUpdateImagesFilters.SystemsRunning).ToNot(BeNil())
+						Expect(*deviceUpdateImagesFilters.SystemsRunning).To(Equal(*expectedDeviceUpdateImagesFilters.SystemsRunning))
+						return &models.DeviceDetails{}, nil
+					},
+				)
+
+				params := fmt.Sprintf(
+					"limit=%d&offset=%d&version=%d&release=%s&created=%s&additional%%20packages=%d&all%%20packages=%d&systems%%20running=%d",
+					expectedDeviceUpdateImagesFilters.Limit,
+					expectedDeviceUpdateImagesFilters.Offset,
+					expectedDeviceUpdateImagesFilters.Version,
+					expectedDeviceUpdateImagesFilters.Release,
+					expectedDeviceUpdateImagesFilters.Created,
+					*expectedDeviceUpdateImagesFilters.AdditionalPackages,
+					*expectedDeviceUpdateImagesFilters.AllPackages,
+					*expectedDeviceUpdateImagesFilters.SystemsRunning,
+				)
+				path := fmt.Sprintf("/devices/%s/?%s", deviceUUID, params)
+				req, err := http.NewRequest("GET", path, nil)
+				if err != nil {
+					Expect(err).ToNot(HaveOccurred())
+				}
+
+				ctx := dependencies.ContextWithServices(req.Context(), mockServices)
+				ctx = context.WithValue(ctx, deviceContextKey, DeviceContext{DeviceUUID: deviceUUID})
+				ctx = context.WithValue(ctx, common.PaginationKey, common.Pagination{
+					Limit: expectedDeviceUpdateImagesFilters.Limit, Offset: expectedDeviceUpdateImagesFilters.Offset,
+				})
+				req = req.WithContext(ctx)
+
+				recorder := httptest.NewRecorder()
+				handler := http.HandlerFunc(GetDevice)
+				handler.ServeHTTP(recorder, req)
+				Expect(recorder.Code).To(Equal(http.StatusOK))
+			})
+		})
+
+		When("GetUpdateAvailableForDevice", func() {
+			It("filter params should be created as expected", func() {
+				deviceUUID := faker.UUIDHyphenated()
+				expectedDeviceUpdateImagesFilters := models.DeviceUpdateImagesFilters{
+					Limit:              10,
+					Offset:             1,
+					Version:            4,
+					Release:            "rhel-8.8",
+					Created:            "2024-01-16",
+					AdditionalPackages: IntPointer(10),
+					AllPackages:        IntPointer(200),
+					SystemsRunning:     IntPointer(15),
+				}
+
+				mockDeviceService.EXPECT().GetUpdateAvailableForDeviceByUUID(deviceUUID, false, gomock.Any()).DoAndReturn(
+					func(deviceID string, latestUpdate bool, deviceUpdateImagesFilters models.DeviceUpdateImagesFilters) (*models.DeviceDetails, int64, error) {
+						Expect(deviceID).To(Equal(deviceUUID))
+						Expect(latestUpdate).To(BeFalse())
+						Expect(deviceUpdateImagesFilters.Limit).To(Equal(expectedDeviceUpdateImagesFilters.Limit))
+						Expect(deviceUpdateImagesFilters.Offset).To(Equal(expectedDeviceUpdateImagesFilters.Offset))
+						Expect(deviceUpdateImagesFilters.Version).To(Equal(expectedDeviceUpdateImagesFilters.Version))
+						Expect(deviceUpdateImagesFilters.Release).To(Equal(expectedDeviceUpdateImagesFilters.Release))
+						Expect(deviceUpdateImagesFilters.Created).To(Equal(expectedDeviceUpdateImagesFilters.Created))
+						Expect(deviceUpdateImagesFilters.AdditionalPackages).ToNot(BeNil())
+						Expect(*deviceUpdateImagesFilters.AdditionalPackages).To(Equal(*expectedDeviceUpdateImagesFilters.AdditionalPackages))
+						Expect(deviceUpdateImagesFilters.AllPackages).ToNot(BeNil())
+						Expect(*deviceUpdateImagesFilters.AllPackages).To(Equal(*expectedDeviceUpdateImagesFilters.AllPackages))
+						Expect(deviceUpdateImagesFilters.SystemsRunning).ToNot(BeNil())
+						Expect(*deviceUpdateImagesFilters.SystemsRunning).To(Equal(*expectedDeviceUpdateImagesFilters.SystemsRunning))
+						return &models.DeviceDetails{}, 0, nil
+					},
+				)
+
+				params := fmt.Sprintf(
+					"limit=%d&offset=%d&version=%d&release=%s&created=%s&additional%%20packages=%d&all%%20packages=%d&systems%%20running=%d",
+					expectedDeviceUpdateImagesFilters.Limit,
+					expectedDeviceUpdateImagesFilters.Offset,
+					expectedDeviceUpdateImagesFilters.Version,
+					expectedDeviceUpdateImagesFilters.Release,
+					expectedDeviceUpdateImagesFilters.Created,
+					*expectedDeviceUpdateImagesFilters.AdditionalPackages,
+					*expectedDeviceUpdateImagesFilters.AllPackages,
+					*expectedDeviceUpdateImagesFilters.SystemsRunning,
+				)
+				path := fmt.Sprintf("/devices/%s/updates?%s", deviceUUID, params)
+				req, err := http.NewRequest("GET", path, nil)
+				if err != nil {
+					Expect(err).ToNot(HaveOccurred())
+				}
+
+				ctx := dependencies.ContextWithServices(req.Context(), mockServices)
+				ctx = context.WithValue(ctx, deviceContextKey, DeviceContext{DeviceUUID: deviceUUID})
+				ctx = context.WithValue(ctx, common.PaginationKey, common.Pagination{
+					Limit: expectedDeviceUpdateImagesFilters.Limit, Offset: expectedDeviceUpdateImagesFilters.Offset,
+				})
+				req = req.WithContext(ctx)
+
+				recorder := httptest.NewRecorder()
+				handler := http.HandlerFunc(GetUpdateAvailableForDevice)
+				handler.ServeHTTP(recorder, req)
+				Expect(recorder.Code).To(Equal(http.StatusOK))
+			})
+		})
+
+		When("GetDeviceImageInfo", func() {
+			It("filter params should be created as expected", func() {
+				deviceUUID := faker.UUIDHyphenated()
+				expectedDeviceUpdateImagesFilters := models.DeviceUpdateImagesFilters{
+					Limit:              10,
+					Offset:             1,
+					Version:            4,
+					Release:            "rhel-8.8",
+					Created:            "2024-01-16",
+					AdditionalPackages: IntPointer(10),
+					AllPackages:        IntPointer(200),
+					SystemsRunning:     IntPointer(15),
+				}
+
+				mockDeviceService.EXPECT().GetDeviceImageInfoByUUID(deviceUUID, gomock.Any()).DoAndReturn(
+					func(deviceID string, deviceUpdateImagesFilters models.DeviceUpdateImagesFilters) (*models.ImageInfo, error) {
+						Expect(deviceID).To(Equal(deviceUUID))
+						Expect(deviceUpdateImagesFilters.Limit).To(Equal(expectedDeviceUpdateImagesFilters.Limit))
+						Expect(deviceUpdateImagesFilters.Offset).To(Equal(expectedDeviceUpdateImagesFilters.Offset))
+						Expect(deviceUpdateImagesFilters.Version).To(Equal(expectedDeviceUpdateImagesFilters.Version))
+						Expect(deviceUpdateImagesFilters.Release).To(Equal(expectedDeviceUpdateImagesFilters.Release))
+						Expect(deviceUpdateImagesFilters.Created).To(Equal(expectedDeviceUpdateImagesFilters.Created))
+						Expect(deviceUpdateImagesFilters.AdditionalPackages).ToNot(BeNil())
+						Expect(*deviceUpdateImagesFilters.AdditionalPackages).To(Equal(*expectedDeviceUpdateImagesFilters.AdditionalPackages))
+						Expect(deviceUpdateImagesFilters.AllPackages).ToNot(BeNil())
+						Expect(*deviceUpdateImagesFilters.AllPackages).To(Equal(*expectedDeviceUpdateImagesFilters.AllPackages))
+						Expect(deviceUpdateImagesFilters.SystemsRunning).ToNot(BeNil())
+						Expect(*deviceUpdateImagesFilters.SystemsRunning).To(Equal(*expectedDeviceUpdateImagesFilters.SystemsRunning))
+						return &models.ImageInfo{}, nil
+					},
+				)
+
+				params := fmt.Sprintf(
+					"limit=%d&offset=%d&version=%d&release=%s&created=%s&additional%%20packages=%d&all%%20packages=%d&systems%%20running=%d",
+					expectedDeviceUpdateImagesFilters.Limit,
+					expectedDeviceUpdateImagesFilters.Offset,
+					expectedDeviceUpdateImagesFilters.Version,
+					expectedDeviceUpdateImagesFilters.Release,
+					expectedDeviceUpdateImagesFilters.Created,
+					*expectedDeviceUpdateImagesFilters.AdditionalPackages,
+					*expectedDeviceUpdateImagesFilters.AllPackages,
+					*expectedDeviceUpdateImagesFilters.SystemsRunning,
+				)
+				path := fmt.Sprintf("/devices/%s/image?%s", deviceUUID, params)
+				req, err := http.NewRequest("GET", path, nil)
+				if err != nil {
+					Expect(err).ToNot(HaveOccurred())
+				}
+
+				ctx := dependencies.ContextWithServices(req.Context(), mockServices)
+				ctx = context.WithValue(ctx, deviceContextKey, DeviceContext{DeviceUUID: deviceUUID})
+				ctx = context.WithValue(ctx, common.PaginationKey, common.Pagination{
+					Limit: expectedDeviceUpdateImagesFilters.Limit, Offset: expectedDeviceUpdateImagesFilters.Offset,
+				})
+				req = req.WithContext(ctx)
+
+				recorder := httptest.NewRecorder()
+				handler := http.HandlerFunc(GetDeviceImageInfo)
+				handler.ServeHTTP(recorder, req)
+				Expect(recorder.Code).To(Equal(http.StatusOK))
 			})
 		})
 	})
@@ -640,6 +854,124 @@ func TestValidateGetDevicesViewFilterParams(t *testing.T) {
 				t.Errorf("in %q: was expected to have %v but not found in %v", te.name, exErr, jsonBody)
 			}
 		}
+	}
+}
+
+func TestValidateDeviceUpdateImagesFilterParams(t *testing.T) {
+	testCases := []struct {
+		name          string
+		params        string
+		expectedError []validationError
+	}{
+		{
+			name:   "invalid version",
+			params: "version=not_a_number",
+			expectedError: []validationError{
+				{Key: "version", Reason: `"version" is not a valid "version" type, "version" must be number`},
+			},
+		},
+		{
+			name:          "valid version",
+			params:        "version=2",
+			expectedError: nil,
+		},
+		{
+			name:   "invalid additional packages",
+			params: "additional%20packages=not_a_number",
+			expectedError: []validationError{
+				{Key: "additional packages", Reason: `"additional packages" is not a valid "additional packages" type, "additional packages" must be number`},
+			},
+		},
+		{
+			name:          "valid additional packages",
+			params:        "additional%20packages=10",
+			expectedError: nil,
+		},
+		{
+			name:   "invalid all packages",
+			params: "all%20packages=not_a_number",
+			expectedError: []validationError{
+				{Key: "all packages", Reason: `"all packages" is not a valid "all packages" type, "all packages" must be number`},
+			},
+		},
+		{
+			name:          "valid all packages",
+			params:        "all%20packages=220",
+			expectedError: nil,
+		},
+		{
+			name:   "invalid systems running",
+			params: "systems%20running=not_a_number",
+			expectedError: []validationError{
+				{Key: "systems running", Reason: `"systems running" is not a valid "systems running" type, "systems running" must be number`},
+			},
+		},
+		{
+			name:          "valid systems running",
+			params:        "systems%20running=10",
+			expectedError: nil,
+		},
+		{
+			name:   "invalid created",
+			params: "created=AAAA",
+			expectedError: []validationError{
+				{Key: "created", Reason: `parsing time "AAAA" as "2006-01-02": cannot parse "AAAA" as "2006"`},
+			},
+		},
+		{
+			name:          "valid created",
+			params:        "created=2006-01-02",
+			expectedError: nil,
+		},
+	}
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			RegisterTestingT(t)
+
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockDeviceService := mock_services.NewMockDeviceServiceInterface(ctrl)
+			mockServices := &dependencies.EdgeAPIServices{
+				DeviceService: mockDeviceService,
+				Log:           log.NewEntry(log.StandardLogger()),
+			}
+
+			req, err := http.NewRequest("GET", fmt.Sprintf("/devices/9e7a7e3c-daa8-41cf-82d0-13e3a0224cf7?%s", testCase.params), nil)
+			Expect(err).ToNot(HaveOccurred())
+
+			ctx := dependencies.ContextWithServices(req.Context(), mockServices)
+			req = req.WithContext(ctx)
+
+			recorder := httptest.NewRecorder()
+			ValidateDeviceUpdateImagesFilterParams(next).ServeHTTP(recorder, req)
+
+			if testCase.expectedError == nil {
+				Expect(recorder.Code).To(Equal(http.StatusOK))
+			} else {
+				Expect(recorder.Code).To(Equal(http.StatusBadRequest))
+				resp := recorder.Result()
+				defer resp.Body.Close()
+				validationsErrors := []validationError{}
+				err = json.NewDecoder(resp.Body).Decode(&validationsErrors)
+				if err != nil {
+					Expect(err).ToNot(HaveOccurred())
+				}
+				for _, exErr := range testCase.expectedError {
+					found := false
+					for _, jsErr := range validationsErrors {
+						if jsErr.Key == exErr.Key && jsErr.Reason == exErr.Reason {
+							found = true
+							break
+						}
+					}
+					Expect(found).To(BeTrue(), fmt.Sprintf("in %q: was expected to have %v but not found in %v", testCase.name, exErr, validationsErrors))
+				}
+			}
+		})
 	}
 }
 
