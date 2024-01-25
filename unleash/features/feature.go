@@ -122,6 +122,9 @@ var HideCreateGroup = &Flag{Name: "edge-management.hide-create-group", EnvVar: "
 // SkipInjectKickstartToISO toggles INJECTING kickstart to iso file
 var SkipInjectKickstartToISO = &Flag{Name: "edge-management.skip-inject-kickstart-to-iso", EnvVar: "FEATURE_SKIP_INJECT_KICKSTART_TO_ISO"}
 
+// PassUserToImageBuilder toggles passing user to image builder
+var PassUserToImageBuilder = &Flag{Name: "edge-management.pass-user-to-image-builder", EnvVar: "FEATURE_PASS_USER_TO_IMAGE_BUILDER"}
+
 // EdgeParityGroupsMigration toggles edge parity groups migration
 var EdgeParityGroupsMigration = &Flag{Name: "edgeParity.groups-migration", EnvVar: "FEATURE_EDGE_PARITY_GROUPS_MIGRATION"}
 

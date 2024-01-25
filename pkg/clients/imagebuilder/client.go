@@ -320,7 +320,7 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 		rhsm = false
 	}
 	var users []User
-	if image.Installer != nil && image.Installer.Username != "" && image.Installer.SSHKey != "" {
+	if feature.PassUserToImageBuilder.IsEnabled() && image.Installer != nil && image.Installer.Username != "" && image.Installer.SSHKey != "" {
 		users = []User{{Name: image.Installer.Username, SSHKey: image.Installer.SSHKey}}
 	}
 
