@@ -261,34 +261,43 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 		query = query.Where("images.version = ?", deviceUpdateImagesFilters.Version)
 	}
 	if deviceUpdateImagesFilters.Release != "" {
-		query = query.Where("upper(images.distribution) LIKE ?", "%"+strings.ToUpper(deviceUpdateImagesFilters.Release)+"%")
+		release := strings.ToUpper(deviceUpdateImagesFilters.Release)
+		// in UI we are showing RHEL 8.9 in db we are saving rhel-89
+		// replace " " by "-"
+		release = strings.ReplaceAll(release, " ", "-")
+		// replace "." by empty string
+		release = strings.ReplaceAll(release, ".", "")
+		query = query.Where("upper(images.distribution) LIKE ?", "%"+release+"%")
 	}
 	if deviceUpdateImagesFilters.AdditionalPackages != nil {
-		subQuery := db.DB.Table("images_custom_packages").Select("image_id").
-			Joins("JOIN images on images.id = images_custom_packages.image_id").
+		subQuery := db.DB.Table("images").Select("images.id").
+			Joins("LEFT JOIN images_packages on images_packages.image_id = images.id").
 			Where("images.image_set_id = ?", *currentImage.ImageSetID).
 			Where("images.deleted_at IS NULL").
-			Having("count(package_id) = ?", *deviceUpdateImagesFilters.AdditionalPackages).
-			Group("image_id")
+			Where("images.status = ? ", models.ImageStatusSuccess).
+			Group("images.id").
+			Having("count(images_packages.package_id) = ?", *deviceUpdateImagesFilters.AdditionalPackages)
 		query = query.Where("images.id IN (?)", subQuery)
 	}
 	if deviceUpdateImagesFilters.AllPackages != nil {
-		subQuery := db.DB.Table("commit_installed_packages").Select("images.id").
-			Joins("JOIN images on images.commit_id = commit_installed_packages.commit_id").
+		subQuery := db.DB.Table("images").Select("images.id").
+			Joins("LEFT JOIN commit_installed_packages on commit_installed_packages.commit_id = images.commit_id").
 			Where("images.image_set_id = ?", *currentImage.ImageSetID).
 			Where("images.deleted_at IS NULL").
-			Having("count(installed_package_id) = ?", *deviceUpdateImagesFilters.AllPackages).
-			Group("images.id")
+			Where("images.status = ? ", models.ImageStatusSuccess).
+			Group("images.id").
+			Having("count(commit_installed_packages.installed_package_id) = ?", *deviceUpdateImagesFilters.AllPackages)
 		query = query.Where("images.id IN (?)", subQuery)
 	}
 	if deviceUpdateImagesFilters.SystemsRunning != nil {
-		subQuery := db.DB.Table("devices").Select("image_id").
-			Joins("JOIN images on images.id = devices.image_id").
+		subQuery := db.DB.Table("images").Select("images.id").
+			Joins("LEFT JOIN devices on devices.image_id = images.id").
 			Where("images.image_set_id = ?", *currentImage.ImageSetID).
 			Where("images.deleted_at IS NULL").
+			Where("images.status = ? ", models.ImageStatusSuccess).
 			Where("devices.deleted_at IS NULL").
-			Having("count(devices.id) = ?", *deviceUpdateImagesFilters.SystemsRunning).
-			Group("images.id")
+			Group("images.id").
+			Having("count(devices.id) = ?", *deviceUpdateImagesFilters.SystemsRunning)
 		query = query.Where("images.id IN (?)", subQuery)
 	}
 
