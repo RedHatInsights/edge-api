@@ -724,10 +724,9 @@ var _ = Describe("Image Builder Client Test", func() {
 			var req ComposeRequest
 			err = json.Unmarshal(b, &req)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(req.Customizations.Users).ToNot(BeNil())
-			Expect(len(*req.Customizations.Users)).To(Equal(1))
-			Expect((*req.Customizations.Users)[0].Name).To(Equal(installer.Username))
-			Expect((*req.Customizations.Users)[0].SSHKey).To(Equal(installer.SSHKey))
+			Expect(len(req.Customizations.Users)).To(Equal(1))
+			Expect((req.Customizations.Users)[0].Name).To(Equal(installer.Username))
+			Expect((req.Customizations.Users)[0].SSHKey).To(Equal(installer.SSHKey))
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
@@ -767,7 +766,7 @@ var _ = Describe("Image Builder Client Test", func() {
 			err = json.Unmarshal(b, &req)
 			Expect(err).ToNot(HaveOccurred())
 			// when installer username or ssh-key are empty no user is passed to image-builder
-			Expect(req.Customizations.Users).To(BeNil())
+			Expect(len(req.Customizations.Users)).To(Equal(0))
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
@@ -806,7 +805,7 @@ var _ = Describe("Image Builder Client Test", func() {
 			err = json.Unmarshal(b, &req)
 			Expect(err).ToNot(HaveOccurred())
 			// when feature flag is disabled the user and ssh key should not not be passed to image builder
-			Expect(req.Customizations.Users).To(BeNil())
+			Expect(len(req.Customizations.Users)).To(Equal(0))
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
