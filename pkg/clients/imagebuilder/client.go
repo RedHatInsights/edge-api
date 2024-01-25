@@ -70,7 +70,7 @@ type OSTree struct {
 type Customizations struct {
 	Packages            *[]string     `json:"packages"`
 	PayloadRepositories *[]Repository `json:"payload_repositories,omitempty"`
-	Users               *[]User       `json:"users,omitempty"`
+	Users               []User        `json:"users,omitempty"`
 	Subscription        *Subscription `json:"subscription,omitempty"`
 }
 
@@ -319,15 +319,15 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 		repoURL = image.Commit.Repo.URL
 		rhsm = false
 	}
-	var users []User
+	users := make([]User, 0)
 	if feature.PassUserToImageBuilder.IsEnabled() && image.Installer != nil && image.Installer.Username != "" && image.Installer.SSHKey != "" {
-		users = []User{{Name: image.Installer.Username, SSHKey: image.Installer.SSHKey}}
+		users = append(users, User{Name: image.Installer.Username, SSHKey: image.Installer.SSHKey})
 	}
 
 	req := &ComposeRequest{
 		Customizations: &Customizations{
 			Packages: &pkgs,
-			Users:    &users,
+			Users:    users,
 		},
 
 		Distribution: image.Distribution,
