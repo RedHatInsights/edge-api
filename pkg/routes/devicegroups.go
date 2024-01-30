@@ -51,9 +51,7 @@ func MakeDeviceGroupsRouter(sub chi.Router) {
 	sub.Get("/enforce-edge-groups", GetEnforceEdgeGroups)
 	sub.Route("/{ID}", func(r chi.Router) {
 		r.Use(DeviceGroupCtx)
-		// r.With(ValidateAccessPermission).Get("/", GetDeviceGroupByID)
 		r.Get("/", GetDeviceGroupByID)
-
 		r.Put("/", UpdateDeviceGroup)
 		r.Delete("/", DeleteDeviceGroupByID)
 		r.Post("/devices", AddDeviceGroupDevices)
@@ -76,8 +74,6 @@ func MakeDeviceGroupsRouter(sub chi.Router) {
 }
 
 func ValidateAccessPermission(w http.ResponseWriter, r *http.Request) error {
-
-	// func ValidateAccessPermission(next http.Handler) http.Handler {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	orgID := readOrgID(w, r, ctxServices.Log)
 	if orgID == "" {
@@ -91,8 +87,6 @@ func ValidateAccessPermission(w http.ResponseWriter, r *http.Request) error {
 		return errors.NewFeatureNotAvailable("")
 	}
 	return nil
-	// next.ServeHTTP(w, r)
-	// })
 }
 
 // DeviceGroupDetailsCtx is a handler to Device Group Details requests
@@ -348,15 +342,7 @@ func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		return
 	}
-	// orgID := readOrgID(w, r, ctxServices.Log)
-	// if orgID == "" {
-	// 	return
-	// }
 
-	// if feature.EdgeParityInventoryGroupsEnabled.IsEnabled() && !utility.EnforceEdgeGroups(orgID) {
-	// 	respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable(""))
-	// 	return
-	// }
 	if feature.HideCreateGroup.IsEnabled() {
 		w.WriteHeader(http.StatusUnauthorized)
 		respondWithJSONBody(w, ctxServices.Log, nil)
@@ -405,8 +391,8 @@ func GetDeviceGroupDetailsByID(w http.ResponseWriter, r *http.Request) {
 	if orgID == "" {
 		return
 	}
-	if feature.EdgeParityInventoryGroupsEnabled.IsEnabled() && !utility.EnforceEdgeGroups(orgID) {
-		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable(""))
+	err := ValidateAccessPermission(w, r)
+	if err != nil {
 		return
 	}
 	if deviceGroup := getContextDeviceGroupDetails(w, r); deviceGroup != nil {
@@ -427,12 +413,9 @@ func GetDeviceGroupDetailsByID(w http.ResponseWriter, r *http.Request) {
 // @Router       /device-groups/{ID}/view [get]
 func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
-	orgID := readOrgID(w, r, ctxServices.Log)
-	if orgID == "" {
-		return
-	}
-	if feature.EdgeParityInventoryGroupsEnabled.IsEnabled() && !utility.EnforceEdgeGroups(orgID) {
-		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable(""))
+
+	err := ValidateAccessPermission(w, r)
+	if err != nil {
 		return
 	}
 
@@ -440,7 +423,10 @@ func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 	if deviceGroup == nil {
 		return
 	}
-
+	orgID := readOrgID(w, r, ctxServices.Log)
+	if orgID == "" {
+		return
+	}
 	var deviceGroupDetails models.DeviceGroupDetailsView
 	deviceGroupDetails.DeviceGroup = deviceGroup
 	deviceGroupDetails.DeviceDetails.EnforceEdgeGroups = utility.EnforceEdgeGroups(orgID)
