@@ -388,8 +388,8 @@ func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 // @Failure      500 {object} errors.InternalServerError
 // @Router       /device-groups/{ID}/details [get]
 func GetDeviceGroupDetailsByID(w http.ResponseWriter, r *http.Request) {
-	ctxServices := dependencies.ServicesFromContext(r.Context())
 	if deviceGroup := getContextDeviceGroupDetails(w, r); deviceGroup != nil {
+		ctxServices := dependencies.ServicesFromContext(r.Context())
 		respondWithJSONBody(w, ctxServices.Log, deviceGroup)
 	}
 }
@@ -472,8 +472,8 @@ func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 // @Failure      500 {object} errors.InternalServerError
 // @Router       /device-groups/{ID} [get]
 func GetDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
-	ctxServices := dependencies.ServicesFromContext(r.Context())
 	if deviceGroup := getContextDeviceGroup(w, r); deviceGroup != nil {
+		ctxServices := dependencies.ServicesFromContext(r.Context())
 		respondWithJSONBody(w, ctxServices.Log, deviceGroup)
 	}
 }
@@ -515,9 +515,9 @@ func getContextDeviceGroup(w http.ResponseWriter, r *http.Request) *models.Devic
 // @Failure      500 {object} errors.InternalServerError
 // @Router       /device-groups/{ID} [put]
 func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
-	ctxServices := dependencies.ServicesFromContext(r.Context())
-
 	if oldDeviceGroup := getContextDeviceGroup(w, r); oldDeviceGroup != nil {
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+
 		deviceGroup, err := createDeviceRequest(w, r)
 		if err != nil {
 			// error handled by createRequest already
@@ -660,6 +660,7 @@ func AddDeviceGroupDevices(w http.ResponseWriter, r *http.Request) {
 	}
 	orgID := readOrgID(w, r, ctxServices.Log)
 	if orgID == "" {
+		// logs and response handled by readOrgID
 		return
 	}
 	devicesAdded, err := ctxServices.DeviceGroupsService.AddDeviceGroupDevices(orgID, contextDeviceGroup.ID, requestDeviceGroup.Devices)
@@ -706,6 +707,7 @@ func DeleteDeviceGroupManyDevices(w http.ResponseWriter, r *http.Request) {
 	}
 	orgID := readOrgID(w, r, ctxServices.Log)
 	if orgID == "" {
+		// logs and response handled by readOrgID
 		return
 	}
 	deletedDevices, err := ctxServices.DeviceGroupsService.DeleteDeviceGroupDevices(orgID, contextDeviceGroup.ID, requestDeviceGroup.Devices)
@@ -748,6 +750,7 @@ func DeleteDeviceGroupOneDevice(w http.ResponseWriter, r *http.Request) {
 	}
 	orgID := readOrgID(w, r, ctxServices.Log)
 	if orgID == "" {
+		// logs and response handled by readOrgID
 		return
 	}
 	_, err := ctxServices.DeviceGroupsService.DeleteDeviceGroupDevices(
