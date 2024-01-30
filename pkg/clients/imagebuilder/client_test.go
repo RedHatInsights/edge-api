@@ -830,6 +830,83 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(img.Commit.ExternalURL).To(BeFalse())
 	})
 
+	It("test compose installer with activation key", func() {
+		// enable feature flag
+		err := os.Setenv(feature.PassUserToImageBuilder.EnvVar, "true")
+		orgID := "234"
+		Expect(err).ToNot(HaveOccurred())
+		installer := models.Installer{Username: faker.Username(), SSHKey: faker.UUIDHyphenated()}
+		composeJobID := "compose-job-id-returned-from-image-builder"
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			b, err := io.ReadAll(r.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(b).ToNot(BeNil())
+			var req ComposeRequest
+			err = json.Unmarshal(b, &req)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(req.Customizations.Subscription.ActivationKey).To(Equal("test-key"))
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			payload := fmt.Sprintf(`{"id": "%s"}`, composeJobID)
+			_, err = fmt.Fprintln(w, payload)
+			Expect(err).ToNot(HaveOccurred())
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+
+		img := &models.Image{
+			OrgID:         orgID,
+			Distribution:  "rhel-8",
+			Commit:        &models.Commit{Arch: "x86_64", Repo: &models.Repo{}},
+			Installer:     &installer,
+			ActivationKey: "test-key",
+		}
+		img, err = client.ComposeInstaller(img)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(img).ToNot(BeNil())
+		Expect(img.Installer.ComposeJobID).To(Equal(composeJobID))
+		Expect(img.Commit.ExternalURL).To(BeFalse())
+	})
+
+	It("test compose installer with no activation key", func() {
+		// enable feature flag
+		err := os.Setenv(feature.PassUserToImageBuilder.EnvVar, "true")
+		orgID := "234"
+		Expect(err).ToNot(HaveOccurred())
+		installer := models.Installer{Username: faker.Username(), SSHKey: faker.UUIDHyphenated()}
+		composeJobID := "compose-job-id-returned-from-image-builder"
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			b, err := io.ReadAll(r.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(b).ToNot(BeNil())
+			var req ComposeRequest
+			err = json.Unmarshal(b, &req)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(req.Customizations.Subscription).To(BeNil())
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			payload := fmt.Sprintf(`{"id": "%s"}`, composeJobID)
+			_, err = fmt.Fprintln(w, payload)
+			Expect(err).ToNot(HaveOccurred())
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+
+		img := &models.Image{
+			OrgID:        orgID,
+			Distribution: "rhel-8",
+			Commit:       &models.Commit{Arch: "x86_64", Repo: &models.Repo{}},
+			Installer:    &installer,
+		}
+		img, err = client.ComposeInstaller(img)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(img).ToNot(BeNil())
+		Expect(img.Installer.ComposeJobID).To(Equal(composeJobID))
+		Expect(img.Commit.ExternalURL).To(BeFalse())
+	})
+
 	It("test compose image when ostree parent commit is empty", func() {
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer GinkgoRecover()
