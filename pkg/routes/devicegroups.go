@@ -74,7 +74,7 @@ func MakeDeviceGroupsRouter(sub chi.Router) {
 	})
 }
 
-// func ValidateAccessPermission(w http.ResponseWriter, r *http.Request) error {
+// ValidateAccessPermission is a permission validator to routes requests
 func ValidateAccessPermission(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctxServices := dependencies.ServicesFromContext(r.Context())
