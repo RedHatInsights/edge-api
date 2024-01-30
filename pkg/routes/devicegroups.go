@@ -45,11 +45,12 @@ func setContextDeviceGroupDevice(ctx context.Context, deviceGroupDevice *models.
 
 // MakeDeviceGroupsRouter adds support for device groups operations
 func MakeDeviceGroupsRouter(sub chi.Router) {
-	sub.With(ValidateQueryParams("device-groups")).With(ValidateGetAllDeviceGroupsFilterParams).With(common.Paginate).Get("/", GetAllDeviceGroups)
-	sub.Post("/", CreateDeviceGroup)
+	sub.With(ValidateAccessPermission).With(ValidateQueryParams("device-groups")).With(ValidateGetAllDeviceGroupsFilterParams).With(common.Paginate).Get("/", GetAllDeviceGroups)
+	sub.With(ValidateAccessPermission).Post("/", CreateDeviceGroup)
 	sub.Get("/checkName/{name}", CheckGroupName)
 	sub.Get("/enforce-edge-groups", GetEnforceEdgeGroups)
 	sub.Route("/{ID}", func(r chi.Router) {
+		r.Use(ValidateAccessPermission)
 		r.Use(DeviceGroupCtx)
 		r.Get("/", GetDeviceGroupByID)
 		r.Put("/", UpdateDeviceGroup)
@@ -73,20 +74,26 @@ func MakeDeviceGroupsRouter(sub chi.Router) {
 	})
 }
 
-func ValidateAccessPermission(w http.ResponseWriter, r *http.Request) error {
-	ctxServices := dependencies.ServicesFromContext(r.Context())
-	orgID := readOrgID(w, r, ctxServices.Log)
-	if orgID == "" {
+// func ValidateAccessPermission(w http.ResponseWriter, r *http.Request) error {
+func ValidateAccessPermission(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctxServices := dependencies.ServicesFromContext(r.Context())
+		orgID := readOrgID(w, r, ctxServices.Log)
+		if orgID == "" {
+			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("could not read org id"))
+			return
+		}
 
-		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("could not read org id"))
-		return errors.NewBadRequest("could not read org id")
-	}
+		if feature.EdgeParityInventoryGroupsEnabled.IsEnabled() && !utility.EnforceEdgeGroups(orgID) {
+			respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable(""))
+			return
+		}
 
-	if feature.EdgeParityInventoryGroupsEnabled.IsEnabled() && !utility.EnforceEdgeGroups(orgID) {
-		respondWithAPIError(w, ctxServices.Log, errors.NewFeatureNotAvailable(""))
-		return errors.NewFeatureNotAvailable("")
-	}
-	return nil
+		ctx := setContextDeviceGroupDetails(r.Context(), nil)
+		next.ServeHTTP(w, r.WithContext(ctx))
+
+	})
+
 }
 
 // DeviceGroupDetailsCtx is a handler to Device Group Details requests
@@ -338,11 +345,6 @@ func GetAllDeviceGroups(w http.ResponseWriter, r *http.Request) {
 // @Router       /device-groups [post]
 func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
-	err := ValidateAccessPermission(w, r)
-	if err != nil {
-		return
-	}
-
 	if feature.HideCreateGroup.IsEnabled() {
 		w.WriteHeader(http.StatusUnauthorized)
 		respondWithJSONBody(w, ctxServices.Log, nil)
@@ -391,10 +393,6 @@ func GetDeviceGroupDetailsByID(w http.ResponseWriter, r *http.Request) {
 	if orgID == "" {
 		return
 	}
-	err := ValidateAccessPermission(w, r)
-	if err != nil {
-		return
-	}
 	if deviceGroup := getContextDeviceGroupDetails(w, r); deviceGroup != nil {
 		respondWithJSONBody(w, ctxServices.Log, deviceGroup)
 	}
@@ -413,11 +411,6 @@ func GetDeviceGroupDetailsByID(w http.ResponseWriter, r *http.Request) {
 // @Router       /device-groups/{ID}/view [get]
 func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
-
-	err := ValidateAccessPermission(w, r)
-	if err != nil {
-		return
-	}
 
 	deviceGroup := getContextDeviceGroup(w, r)
 	if deviceGroup == nil {
@@ -484,10 +477,6 @@ func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 // @Router       /device-groups/{ID} [get]
 func GetDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
-	err := ValidateAccessPermission(w, r)
-	if err != nil {
-		return
-	}
 	if deviceGroup := getContextDeviceGroup(w, r); deviceGroup != nil {
 		respondWithJSONBody(w, ctxServices.Log, deviceGroup)
 	}
@@ -531,10 +520,7 @@ func getContextDeviceGroup(w http.ResponseWriter, r *http.Request) *models.Devic
 // @Router       /device-groups/{ID} [put]
 func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
-	err := ValidateAccessPermission(w, r)
-	if err != nil {
-		return
-	}
+
 	if oldDeviceGroup := getContextDeviceGroup(w, r); oldDeviceGroup != nil {
 		deviceGroup, err := createDeviceRequest(w, r)
 		if err != nil {
@@ -586,10 +572,6 @@ func UpdateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 // @Router       /device-groups/{ID} [delete]
 func DeleteDeviceGroupByID(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
-	errAccess := ValidateAccessPermission(w, r)
-	if errAccess != nil {
-		return
-	}
 	deviceGroup := getContextDeviceGroup(w, r)
 	if deviceGroup == nil {
 		return // error handled by getContextDeviceGroup already
@@ -671,12 +653,6 @@ func getContextDeviceGroupDevice(w http.ResponseWriter, r *http.Request) *models
 // @Router       /device-groups/{ID}/devices [post]
 func AddDeviceGroupDevices(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
-
-	errAccess := ValidateAccessPermission(w, r)
-	if errAccess != nil {
-		return
-	}
-
 	contextDeviceGroup := getContextDeviceGroup(w, r)
 	if contextDeviceGroup == nil {
 		return
@@ -722,11 +698,6 @@ func AddDeviceGroupDevices(w http.ResponseWriter, r *http.Request) {
 // @Router       /device-groups/{ID}/devices [delete]
 func DeleteDeviceGroupManyDevices(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
-
-	errAccess := ValidateAccessPermission(w, r)
-	if errAccess != nil {
-		return
-	}
 
 	contextDeviceGroup := getContextDeviceGroup(w, r)
 	if contextDeviceGroup == nil {
@@ -774,10 +745,6 @@ func DeleteDeviceGroupManyDevices(w http.ResponseWriter, r *http.Request) {
 // @Router       /device-groups/{ID}/devices/{deviceID} [delete]
 func DeleteDeviceGroupOneDevice(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
-	errAccess := ValidateAccessPermission(w, r)
-	if errAccess != nil {
-		return
-	}
 	contextDeviceGroup := getContextDeviceGroup(w, r)
 	contextDeviceGroupDevice := getContextDeviceGroupDevice(w, r)
 	if contextDeviceGroupDevice == nil {
@@ -852,10 +819,6 @@ func CheckGroupName(w http.ResponseWriter, r *http.Request) {
 // @Router       /device-groups/{ID}/updateDevices [post]
 func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
-	errAccess := ValidateAccessPermission(w, r)
-	if errAccess != nil {
-		return
-	}
 	deviceGroup := getContextDeviceGroup(w, r)
 	if deviceGroup == nil {
 		return

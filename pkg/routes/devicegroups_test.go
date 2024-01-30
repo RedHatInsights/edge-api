@@ -1083,6 +1083,35 @@ var _ = Describe("DeviceGroup routes", func() {
 		})
 
 		Context("NewFeatureNotAvailable", func() {
+
+			var mockDeviceService *mock_services.MockDeviceGroupsServiceInterface
+			var router chi.Router
+			var ctrl *gomock.Controller
+			var OrgID string
+			BeforeEach(func() {
+				OrgID = "00000"
+				ctrl = gomock.NewController(GinkgoT())
+
+				mockDeviceService = mock_services.NewMockDeviceGroupsServiceInterface(ctrl)
+				mockServices := &dependencies.EdgeAPIServices{
+					DeviceGroupsService: mockDeviceService,
+					Log:                 log.NewEntry(log.StandardLogger()),
+				}
+				router = chi.NewRouter()
+				router.Use(func(next http.Handler) http.Handler {
+					return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						fmt.Println(mockServices)
+						ctx := dependencies.ContextWithServices(r.Context(), mockServices)
+						next.ServeHTTP(w, r.WithContext(ctx))
+					})
+				})
+				router.Route("/", MakeDeviceGroupsRouter)
+			})
+
+			AfterEach(func() {
+				ctrl.Finish()
+			})
+
 			It("should return NewFeatureNotAvailable on create device Groups", func() {
 				_ = os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
 				_ = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
@@ -1099,9 +1128,8 @@ var _ = Describe("DeviceGroup routes", func() {
 
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
-				handler := http.HandlerFunc(CreateDeviceGroup)
+				router.ServeHTTP(rr, req)
 
-				handler.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(http.StatusNotImplemented))
 
 			})
@@ -1116,49 +1144,29 @@ var _ = Describe("DeviceGroup routes", func() {
 					},
 				}
 
-				mockDeviceGroupsService.EXPECT().GetDeviceGroupByID(fmt.Sprintf("%d", deviceGroup.ID)).Return(&deviceGroup, nil)
+				// mockDeviceGroupsService.EXPECT().GetDeviceGroupByID(fmt.Sprintf("%d", deviceGroup.ID)).Return(&deviceGroup, nil)
 
 				req, err := http.NewRequest("GET", fmt.Sprintf("/device-groups/%d/view", deviceGroup.ID), nil)
 				Expect(err).ToNot(HaveOccurred())
+
 				ctx := req.Context()
 				// set identity orgID
 				ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
 				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 					Log: log.NewEntry(log.StandardLogger()),
 				})
-				responseRecorder := httptest.NewRecorder()
-				router.ServeHTTP(responseRecorder, req)
+				req = req.WithContext(ctx)
 
-				Expect(responseRecorder.Code).To(Equal(http.StatusNotImplemented))
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
 
-			})
-			It("should return NewFeatureNotAvailable on device-groups view ", func() {
-				_ = os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
-				_ = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
-				deviceGroup := models.DeviceGroup{
-					OrgID: OrgID, Name: faker.Name(),
-					Devices: []models.Device{
-						{UUID: faker.UUIDHyphenated(), OrgID: OrgID},
-						{UUID: faker.UUIDHyphenated(), OrgID: OrgID},
-					},
-				}
+				// responseRecorder := httptest.NewRecorder()
+				// router.ServeHTTP(responseRecorder, req)
 
-				mockDeviceGroupsService.EXPECT().GetDeviceGroupByID(fmt.Sprintf("%d", deviceGroup.ID)).Return(&deviceGroup, nil)
-
-				req, err := http.NewRequest("GET", fmt.Sprintf("/device-groups/%d/view", deviceGroup.ID), nil)
-				Expect(err).ToNot(HaveOccurred())
-				ctx := req.Context()
-				// set identity orgID
-				ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
-				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
-					Log: log.NewEntry(log.StandardLogger()),
-				})
-				responseRecorder := httptest.NewRecorder()
-				router.ServeHTTP(responseRecorder, req)
-
-				Expect(responseRecorder.Code).To(Equal(http.StatusNotImplemented))
+				Expect(rr.Code).To(Equal(http.StatusNotImplemented))
 
 			})
+
 			It("should return NewFeatureNotAvailable on GetDeviceGroupByID ", func() {
 				_ = os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
 				_ = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
@@ -1168,7 +1176,8 @@ var _ = Describe("DeviceGroup routes", func() {
 				req, err := http.NewRequest("GET", "/", nil)
 				Expect(err).To(BeNil())
 
-				ctx := context.WithValue(req.Context(), deviceGroupKey, &models.DeviceGroup{
+				ctx := req.Context()
+				ctx = context.WithValue(req.Context(), deviceGroupKey, &models.DeviceGroup{
 					Model: models.Model{
 						ID: fakeIDUint,
 					},
@@ -1179,12 +1188,9 @@ var _ = Describe("DeviceGroup routes", func() {
 					Log: log.NewEntry(log.StandardLogger()),
 				})
 				req = req.WithContext(ctx)
-				ctx = dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
-				req = req.WithContext(ctx)
-				rr := httptest.NewRecorder()
 
-				handler := http.HandlerFunc(GetDeviceGroupByID)
-				handler.ServeHTTP(rr, req)
+				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
 				// Check the status code is what we expect.
 				Expect(rr.Code).To(Equal(http.StatusNotImplemented))
 			})
@@ -1219,9 +1225,12 @@ var _ = Describe("DeviceGroup routes", func() {
 				ctx = dependencies.ContextWithServices(req.Context(), &dependencies.EdgeAPIServices{})
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
 
-				handler := http.HandlerFunc(UpdateDeviceGroup)
-				handler.ServeHTTP(rr, req)
+				// rr := httptest.NewRecorder()
+
+				// handler := http.HandlerFunc(UpdateDeviceGroup)
+				// handler.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(http.StatusNotImplemented))
 			})
 
@@ -1248,9 +1257,12 @@ var _ = Describe("DeviceGroup routes", func() {
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
 
-				handler := http.HandlerFunc(DeleteDeviceGroupByID)
-				handler.ServeHTTP(rr, req)
+				// rr := httptest.NewRecorder()
+
+				// handler := http.HandlerFunc(DeleteDeviceGroupByID)
+				// handler.ServeHTTP(rr, req)
 				// Check the status code is what we expect.
 
 				Expect(rr.Code).To(Equal(http.StatusNotImplemented))
@@ -1283,9 +1295,12 @@ var _ = Describe("DeviceGroup routes", func() {
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
+				router.ServeHTTP(rr, req)
 
-				handler := http.HandlerFunc(AddDeviceGroupDevices)
-				handler.ServeHTTP(rr, req)
+				// rr := httptest.NewRecorder()
+
+				// handler := http.HandlerFunc(AddDeviceGroupDevices)
+				// handler.ServeHTTP(rr, req)
 				// Check the status code is what we expect.
 				Expect(rr.Code).To(Equal(http.StatusNotImplemented))
 			})
@@ -1309,9 +1324,12 @@ var _ = Describe("DeviceGroup routes", func() {
 				})
 				req = req.WithContext(ctx)
 				rr := httptest.NewRecorder()
-				handler := http.HandlerFunc(CreateDeviceGroup)
+				router.ServeHTTP(rr, req)
 
-				handler.ServeHTTP(rr, req)
+				// rr := httptest.NewRecorder()
+				// handler := http.HandlerFunc(CreateDeviceGroup)
+
+				// handler.ServeHTTP(rr, req)
 				Expect(rr.Code).To(Equal(http.StatusUnauthorized))
 
 			})
