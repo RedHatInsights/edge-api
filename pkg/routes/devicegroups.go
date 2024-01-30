@@ -389,10 +389,6 @@ func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 // @Router       /device-groups/{ID}/details [get]
 func GetDeviceGroupDetailsByID(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
-	orgID := readOrgID(w, r, ctxServices.Log)
-	if orgID == "" {
-		return
-	}
 	if deviceGroup := getContextDeviceGroupDetails(w, r); deviceGroup != nil {
 		respondWithJSONBody(w, ctxServices.Log, deviceGroup)
 	}
