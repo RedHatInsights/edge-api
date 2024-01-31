@@ -345,17 +345,13 @@ func GetAllDeviceGroups(w http.ResponseWriter, r *http.Request) {
 // @Router       /device-groups [post]
 func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
-	fmt.Print("&&&&&&&&&&&&&&&&&")
 	if feature.HideCreateGroup.IsEnabled() {
-		fmt.Print("\n if \n")
 		w.WriteHeader(http.StatusUnauthorized)
 		respondWithJSONBody(w, ctxServices.Log, nil)
 		return
 	} else {
-		fmt.Print("\n else \n")
 		deviceGroup, err := createDeviceRequest(w, r)
 		if err != nil {
-			fmt.Printf("\n err: %v \n", err)
 			return
 		}
 		ctxServices.Log.Debug("Creating a device group")
@@ -667,6 +663,7 @@ func AddDeviceGroupDevices(w http.ResponseWriter, r *http.Request) {
 		// logs and response handled by readOrgID
 		return
 	}
+
 	devicesAdded, err := ctxServices.DeviceGroupsService.AddDeviceGroupDevices(orgID, contextDeviceGroup.ID, requestDeviceGroup.Devices)
 	if err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Error when adding deviceGroup devices")
@@ -749,14 +746,17 @@ func DeleteDeviceGroupOneDevice(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	contextDeviceGroup := getContextDeviceGroup(w, r)
 	contextDeviceGroupDevice := getContextDeviceGroupDevice(w, r)
+
 	if contextDeviceGroupDevice == nil {
 		return
 	}
+
 	orgID := readOrgID(w, r, ctxServices.Log)
 	if orgID == "" {
 		// logs and response handled by readOrgID
 		return
 	}
+
 	_, err := ctxServices.DeviceGroupsService.DeleteDeviceGroupDevices(
 		orgID, contextDeviceGroup.ID, []models.Device{*contextDeviceGroupDevice},
 	)
