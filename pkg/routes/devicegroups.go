@@ -345,13 +345,17 @@ func GetAllDeviceGroups(w http.ResponseWriter, r *http.Request) {
 // @Router       /device-groups [post]
 func CreateDeviceGroup(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
+	fmt.Print("&&&&&&&&&&&&&&&&&")
 	if feature.HideCreateGroup.IsEnabled() {
+		fmt.Print("\n if \n")
 		w.WriteHeader(http.StatusUnauthorized)
 		respondWithJSONBody(w, ctxServices.Log, nil)
 		return
 	} else {
+		fmt.Print("\n else \n")
 		deviceGroup, err := createDeviceRequest(w, r)
 		if err != nil {
+			fmt.Printf("\n err: %v \n", err)
 			return
 		}
 		ctxServices.Log.Debug("Creating a device group")
