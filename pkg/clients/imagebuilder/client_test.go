@@ -831,10 +831,7 @@ var _ = Describe("Image Builder Client Test", func() {
 	})
 
 	It("test compose installer with activation key", func() {
-		// enable feature flag
-		err := os.Setenv(feature.PassUserToImageBuilder.EnvVar, "true")
 		orgID := "234"
-		Expect(err).ToNot(HaveOccurred())
 		installer := models.Installer{Username: faker.Username(), SSHKey: faker.UUIDHyphenated()}
 		composeJobID := "compose-job-id-returned-from-image-builder"
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -845,6 +842,11 @@ var _ = Describe("Image Builder Client Test", func() {
 			err = json.Unmarshal(b, &req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(req.Customizations.Subscription.ActivationKey).To(Equal("test-key"))
+			Expect(req.Customizations.Subscription.Organization).To(Equal(234))
+			Expect(req.Customizations.Subscription.RHC).To(Equal(true))
+			Expect(req.Customizations.Subscription.Insights).To(Equal(true))
+			Expect(req.Customizations.Subscription.BaseUrl).To(Equal(config.Get().SubscriptionBaseUrl))
+			Expect(req.Customizations.Subscription.ServerUrl).To(Equal(config.Get().SubscriptionBaseUrl))
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
@@ -862,7 +864,7 @@ var _ = Describe("Image Builder Client Test", func() {
 			Installer:     &installer,
 			ActivationKey: "test-key",
 		}
-		img, err = client.ComposeInstaller(img)
+		img, err := client.ComposeInstaller(img)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(img).ToNot(BeNil())
 		Expect(img.Installer.ComposeJobID).To(Equal(composeJobID))
@@ -870,10 +872,7 @@ var _ = Describe("Image Builder Client Test", func() {
 	})
 
 	It("test compose installer with no activation key", func() {
-		// enable feature flag
-		err := os.Setenv(feature.PassUserToImageBuilder.EnvVar, "true")
 		orgID := "234"
-		Expect(err).ToNot(HaveOccurred())
 		installer := models.Installer{Username: faker.Username(), SSHKey: faker.UUIDHyphenated()}
 		composeJobID := "compose-job-id-returned-from-image-builder"
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -900,7 +899,7 @@ var _ = Describe("Image Builder Client Test", func() {
 			Commit:       &models.Commit{Arch: "x86_64", Repo: &models.Repo{}},
 			Installer:    &installer,
 		}
-		img, err = client.ComposeInstaller(img)
+		img, err := client.ComposeInstaller(img)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(img).ToNot(BeNil())
 		Expect(img.Installer.ComposeJobID).To(Equal(composeJobID))
