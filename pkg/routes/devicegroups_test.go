@@ -1109,13 +1109,20 @@ var _ = Describe("DeviceGroup routes", func() {
 			})
 
 			AfterEach(func() {
+				err := os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
+				Expect(err).ToNot(HaveOccurred())
+				err = os.Unsetenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar)
+				Expect(err).ToNot(HaveOccurred())
+				err = os.Unsetenv(feature.HideCreateGroup.EnvVar)
+				Expect(err).ToNot(HaveOccurred())
 				ctrl.Finish()
 			})
 
 			It("should return NewFeatureNotAvailable on create device Groups", func() {
-				_ = os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
-				_ = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
-
+				err := os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
+				Expect(err).ToNot(HaveOccurred())
+				err = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
+				Expect(err).To(BeNil())
 				req, err := http.NewRequest("POST", "/", nil)
 				Expect(err).To(BeNil())
 
@@ -1134,8 +1141,10 @@ var _ = Describe("DeviceGroup routes", func() {
 
 			})
 			It("should return NewFeatureNotAvailable on device-groups view ", func() {
-				_ = os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
-				_ = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
+				err := os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
+				Expect(err).ToNot(HaveOccurred())
+				err = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
+				Expect(err).ToNot(HaveOccurred())
 				deviceGroup := models.DeviceGroup{
 					OrgID: OrgID, Name: faker.Name(),
 					Devices: []models.Device{
@@ -1163,8 +1172,10 @@ var _ = Describe("DeviceGroup routes", func() {
 			})
 
 			It("should return NewFeatureNotAvailable on GetDeviceGroupByID ", func() {
-				_ = os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
-				_ = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
+				err := os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
+				Expect(err).ToNot(HaveOccurred())
+				err = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
+				Expect(err).ToNot(HaveOccurred())
 
 				fakeID, _ := faker.RandomInt(1000, 2000, 1)
 				fakeIDUint := uint(fakeID[0])
@@ -1191,8 +1202,10 @@ var _ = Describe("DeviceGroup routes", func() {
 			})
 
 			It("should return NewFeatureNotAvailable on UpdateDeviceGroup ", func() {
-				_ = os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
-				_ = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
+				err := os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
+				Expect(err).ToNot(HaveOccurred())
+				err = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
+				Expect(err).ToNot(HaveOccurred())
 
 				deviceGroupUpdated := &models.DeviceGroup{
 					Name:    deviceGroupName,
@@ -1225,8 +1238,10 @@ var _ = Describe("DeviceGroup routes", func() {
 			})
 
 			It("should return NewFeatureNotAvailable on DeleteDeviceGroupByID ", func() {
-				_ = os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
-				_ = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
+				err := os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
+				Expect(err).ToNot(HaveOccurred())
+				err = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
+				Expect(err).ToNot(HaveOccurred())
 
 				fakeID, _ := faker.RandomInt(1000, 2000, 1)
 				fakeIDUint := uint(fakeID[0])
@@ -1253,8 +1268,10 @@ var _ = Describe("DeviceGroup routes", func() {
 			})
 
 			It("should return NewFeatureNotAvailable on AddDeviceGroupDevices ", func() {
-				_ = os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
-				_ = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
+				err := os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
+				Expect(err).ToNot(HaveOccurred())
+				err = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
+				Expect(err).ToNot(HaveOccurred())
 
 				devices := []models.Device{
 					{
@@ -1284,9 +1301,11 @@ var _ = Describe("DeviceGroup routes", func() {
 				Expect(rr.Code).To(Equal(http.StatusNotImplemented))
 			})
 
-			It("should return hide group:true NotAuthorized", func() {
-				_ = os.Setenv(feature.EnforceEdgeGroups.EnvVar, "true")
-				_ = os.Setenv(feature.HideCreateGroup.EnvVar, "true")
+			It("should return NotAuthorized HideCreategroup:true ", func() {
+				err := os.Setenv(feature.EnforceEdgeGroups.EnvVar, "true")
+				Expect(err).ToNot(HaveOccurred())
+				err = os.Setenv(feature.HideCreateGroup.EnvVar, "true")
+				Expect(err).ToNot(HaveOccurred())
 
 				req, err := http.NewRequest("POST", "/", nil)
 				Expect(err).To(BeNil())
@@ -1308,10 +1327,14 @@ var _ = Describe("DeviceGroup routes", func() {
 
 			})
 
-			It("should return Success on create Device", func() {
-				_ = os.Setenv(feature.EnforceEdgeGroups.EnvVar, "true")
-				_ = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
-				_ = os.Unsetenv(feature.HideCreateGroup.EnvVar)
+			It("should return Success on create DeviceGroup when EdgeEnforce:True", func() {
+				err := os.Setenv(feature.EnforceEdgeGroups.EnvVar, "true")
+				Expect(err).ToNot(HaveOccurred())
+				err = os.Setenv(feature.EdgeParityInventoryGroupsEnabled.EnvVar, "true")
+				Expect(err).ToNot(HaveOccurred())
+				err = os.Unsetenv(feature.HideCreateGroup.EnvVar)
+				Expect(err).ToNot(HaveOccurred())
+
 				deviceGroup := &models.DeviceGroup{
 					Name:    "test",
 					Type:    models.DeviceGroupTypeDefault,
