@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -50,6 +51,8 @@ var _ = Describe("Image Builder Client Test", func() {
 	var dbName string
 	var originalImageBuilderURL string
 	conf := config.Get()
+	SUBSCRIPTION_BASE_URL := "SUBSCRIPTION_BASE_URL"
+	SUBSCRIPTION_SERVER_URL := "SUBSCRIPTION_SERVER_URL"
 	BeforeEach(func() {
 		config.Init()
 		config.Get().Debug = true
@@ -73,6 +76,10 @@ var _ = Describe("Image Builder Client Test", func() {
 		client = InitClient(context.Background(), log.NewEntry(log.StandardLogger()))
 		// save the original image builder url
 		originalImageBuilderURL = conf.ImageBuilderConfig.URL
+		err = os.Setenv(SUBSCRIPTION_BASE_URL, "http://base.url")
+		Expect(err).ToNot(HaveOccurred())
+		err = os.Setenv(SUBSCRIPTION_SERVER_URL, "http://server.url")
+		Expect(err).ToNot(HaveOccurred())
 	})
 	AfterEach(func() {
 		os.Remove(dbName)
@@ -80,6 +87,10 @@ var _ = Describe("Image Builder Client Test", func() {
 		conf.ImageBuilderConfig.URL = originalImageBuilderURL
 		// disable passing user to image builder feature flag
 		err := os.Unsetenv(feature.PassUserToImageBuilder.EnvVar)
+		Expect(err).ToNot(HaveOccurred())
+		err = os.Unsetenv(SUBSCRIPTION_BASE_URL)
+		Expect(err).ToNot(HaveOccurred())
+		err = os.Unsetenv(SUBSCRIPTION_SERVER_URL)
 		Expect(err).ToNot(HaveOccurred())
 	})
 	It("should init client", func() {
@@ -832,6 +843,8 @@ var _ = Describe("Image Builder Client Test", func() {
 
 	It("test compose installer with activation key", func() {
 		orgID := "234"
+		parsedOrgId, error := strconv.Atoi(orgID)
+		Expect(error).ToNot(HaveOccurred())
 		installer := models.Installer{Username: faker.Username(), SSHKey: faker.UUIDHyphenated()}
 		composeJobID := "compose-job-id-returned-from-image-builder"
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -841,9 +854,9 @@ var _ = Describe("Image Builder Client Test", func() {
 			var req ComposeRequest
 			err = json.Unmarshal(b, &req)
 			Expect(err).ToNot(HaveOccurred())
-Expect(req.Customizations.Subscription).ToNot(BeNil())                
-Expect(req.Customizations.Subscription.ActivationKey).To(Equal("test-key"))
-			Expect(req.Customizations.Subscription.Organization).To(Equal(orgID))
+			Expect(req.Customizations.Subscription).ToNot(BeNil())
+			Expect(req.Customizations.Subscription.ActivationKey).To(Equal("test-key"))
+			Expect(req.Customizations.Subscription.Organization).To(Equal(parsedOrgId))
 			Expect(req.Customizations.Subscription.RHC).To(Equal(true))
 			Expect(req.Customizations.Subscription.Insights).To(Equal(true))
 			Expect(req.Customizations.Subscription.BaseUrl).To(Equal(config.Get().SubscriptionBaseUrl))
