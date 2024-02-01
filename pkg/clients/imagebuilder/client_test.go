@@ -842,7 +842,7 @@ var _ = Describe("Image Builder Client Test", func() {
 			err = json.Unmarshal(b, &req)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(req.Customizations.Subscription.ActivationKey).To(Equal("test-key"))
-			Expect(req.Customizations.Subscription.Organization).To(Equal(234))
+			Expect(req.Customizations.Subscription.Organization).To(Equal(orgID))
 			Expect(req.Customizations.Subscription.RHC).To(Equal(true))
 			Expect(req.Customizations.Subscription.Insights).To(Equal(true))
 			Expect(req.Customizations.Subscription.BaseUrl).To(Equal(config.Get().SubscriptionBaseUrl))
