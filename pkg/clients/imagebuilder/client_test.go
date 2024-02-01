@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -50,14 +51,21 @@ var _ = Describe("Image Builder Client Test", func() {
 	var dbName string
 	var originalImageBuilderURL string
 	conf := config.Get()
+	SUBSCRIPTION_BASE_URL := "SUBSCRIPTION_BASE_URL"
+	SUBSCRIPTION_SERVER_URL := "SUBSCRIPTION_SERVER_URL"
+
 	BeforeEach(func() {
+		err := os.Setenv(SUBSCRIPTION_BASE_URL, "http://base.url")
+		Expect(err).ToNot(HaveOccurred())
+		err = os.Setenv(SUBSCRIPTION_SERVER_URL, "http://server.url")
+		Expect(err).ToNot(HaveOccurred())
 		config.Init()
 		config.Get().Debug = true
 		dbName = fmt.Sprintf("%d-client.db", time.Now().UnixNano())
 		config.Get().Database.Name = dbName
 		db.InitDB()
 
-		err := db.DB.AutoMigrate(
+		err = db.DB.AutoMigrate(
 			&models.ImageSet{},
 			&models.Commit{},
 			&models.UpdateTransaction{},
@@ -73,6 +81,7 @@ var _ = Describe("Image Builder Client Test", func() {
 		client = InitClient(context.Background(), log.NewEntry(log.StandardLogger()))
 		// save the original image builder url
 		originalImageBuilderURL = conf.ImageBuilderConfig.URL
+
 	})
 	AfterEach(func() {
 		os.Remove(dbName)
@@ -80,6 +89,10 @@ var _ = Describe("Image Builder Client Test", func() {
 		conf.ImageBuilderConfig.URL = originalImageBuilderURL
 		// disable passing user to image builder feature flag
 		err := os.Unsetenv(feature.PassUserToImageBuilder.EnvVar)
+		Expect(err).ToNot(HaveOccurred())
+		err = os.Unsetenv(SUBSCRIPTION_BASE_URL)
+		Expect(err).ToNot(HaveOccurred())
+		err = os.Unsetenv(SUBSCRIPTION_SERVER_URL)
 		Expect(err).ToNot(HaveOccurred())
 	})
 	It("should init client", func() {
@@ -824,6 +837,85 @@ var _ = Describe("Image Builder Client Test", func() {
 			Installer:    &installer,
 		}
 		img, err = client.ComposeInstaller(img)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(img).ToNot(BeNil())
+		Expect(img.Installer.ComposeJobID).To(Equal(composeJobID))
+		Expect(img.Commit.ExternalURL).To(BeFalse())
+	})
+
+	It("test compose installer with activation key", func() {
+		orgID := "234"
+		parsedOrgId, error := strconv.Atoi(orgID)
+		Expect(error).ToNot(HaveOccurred())
+		installer := models.Installer{Username: faker.Username(), SSHKey: faker.UUIDHyphenated()}
+		composeJobID := "compose-job-id-returned-from-image-builder"
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			b, err := io.ReadAll(r.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(b).ToNot(BeNil())
+			var req ComposeRequest
+			err = json.Unmarshal(b, &req)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(req.Customizations.Subscription).ToNot(BeNil())
+			Expect(req.Customizations.Subscription.ActivationKey).To(Equal("test-key"))
+			Expect(req.Customizations.Subscription.Organization).To(Equal(parsedOrgId))
+			Expect(req.Customizations.Subscription.RHC).To(Equal(true))
+			Expect(req.Customizations.Subscription.Insights).To(Equal(true))
+			Expect(req.Customizations.Subscription.BaseUrl).To(Equal(config.Get().SubscriptionBaseUrl))
+			Expect(req.Customizations.Subscription.ServerUrl).To(Equal(config.Get().SubscriptionServerURL))
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			payload := fmt.Sprintf(`{"id": "%s"}`, composeJobID)
+			_, err = fmt.Fprintln(w, payload)
+			Expect(err).ToNot(HaveOccurred())
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+
+		img := &models.Image{
+			OrgID:         orgID,
+			Distribution:  "rhel-8",
+			Commit:        &models.Commit{Arch: "x86_64", Repo: &models.Repo{}},
+			Installer:     &installer,
+			ActivationKey: "test-key",
+		}
+		img, err := client.ComposeInstaller(img)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(img).ToNot(BeNil())
+		Expect(img.Installer.ComposeJobID).To(Equal(composeJobID))
+		Expect(img.Commit.ExternalURL).To(BeFalse())
+	})
+
+	It("test compose installer with no activation key", func() {
+		orgID := "234"
+		installer := models.Installer{Username: faker.Username(), SSHKey: faker.UUIDHyphenated()}
+		composeJobID := "compose-job-id-returned-from-image-builder"
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			b, err := io.ReadAll(r.Body)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(b).ToNot(BeNil())
+			var req ComposeRequest
+			err = json.Unmarshal(b, &req)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(req.Customizations.Subscription).To(BeNil())
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			payload := fmt.Sprintf(`{"id": "%s"}`, composeJobID)
+			_, err = fmt.Fprintln(w, payload)
+			Expect(err).ToNot(HaveOccurred())
+		}))
+		defer ts.Close()
+		config.Get().ImageBuilderConfig.URL = ts.URL
+
+		img := &models.Image{
+			OrgID:        orgID,
+			Distribution: "rhel-8",
+			Commit:       &models.Commit{Arch: "x86_64", Repo: &models.Repo{}},
+			Installer:    &installer,
+		}
+		img, err := client.ComposeInstaller(img)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(img).ToNot(BeNil())
 		Expect(img.Installer.ComposeJobID).To(Equal(composeJobID))

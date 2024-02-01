@@ -189,6 +189,26 @@ type InstalledPackage struct {
 	Epoch     string `json:"epoch,omitempty"`
 }
 
+func createSubscriptionToImage(image *models.Image) (*Subscription, error) {
+	if image.ActivationKey != "" {
+		orgID, err := strconv.Atoi(image.OrgID)
+		if err != nil {
+			return nil, err
+		}
+		subscription := &Subscription{
+			ActivationKey: image.ActivationKey,
+			Organization:  orgID,
+			BaseUrl:       config.Get().SubscriptionBaseUrl,
+			ServerUrl:     config.Get().SubscriptionServerURL,
+			Insights:      true,
+			RHC:           true,
+		}
+
+		return subscription, nil
+	}
+	return nil, nil
+}
+
 func (c *Client) compose(composeReq *ComposeRequest) (*ComposeResult, error) {
 	payloadBuf := new(bytes.Buffer)
 	if err := json.NewEncoder(payloadBuf).Encode(composeReq); err != nil {
@@ -347,22 +367,13 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 				},
 			}},
 	}
-	if image.ActivationKey != "" {
-		orgID, err := strconv.Atoi(image.OrgID)
-		if err != nil {
-			c.log.WithField("error", err.Error()).Error("Error can not convert org Id to integer")
-			return nil, err
-		}
-		req.Customizations.Subscription = &Subscription{
-			ActivationKey: image.ActivationKey,
-			Organization:  orgID,
-			BaseUrl:       config.Get().SubscriptionBaseUrl,
-			ServerUrl:     config.Get().SubscriptionServerURL,
-			Insights:      true,
-			RHC:           true,
-		}
-
+	subscription, error := createSubscriptionToImage(image)
+	if error != nil {
+		c.log.WithField("error", error.Error()).Error("Error can not convert org Id to integer")
+		return nil, error
 	}
+	req.Customizations.Subscription = subscription
+
 	cr, err := c.compose(req)
 	if err != nil {
 		image.Installer.Status = models.ImageStatusError
