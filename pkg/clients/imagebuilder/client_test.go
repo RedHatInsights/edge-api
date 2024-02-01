@@ -846,7 +846,7 @@ var _ = Describe("Image Builder Client Test", func() {
 			Expect(req.Customizations.Subscription.RHC).To(Equal(true))
 			Expect(req.Customizations.Subscription.Insights).To(Equal(true))
 			Expect(req.Customizations.Subscription.BaseUrl).To(Equal(config.Get().SubscriptionBaseUrl))
-			Expect(req.Customizations.Subscription.ServerUrl).To(Equal(config.Get().SubscriptionBaseUrl))
+			Expect(req.Customizations.Subscription.ServerUrl).To(Equal(config.Get().SubscriptionServerURL))
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
