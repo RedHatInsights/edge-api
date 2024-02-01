@@ -53,14 +53,19 @@ var _ = Describe("Image Builder Client Test", func() {
 	conf := config.Get()
 	SUBSCRIPTION_BASE_URL := "SUBSCRIPTION_BASE_URL"
 	SUBSCRIPTION_SERVER_URL := "SUBSCRIPTION_SERVER_URL"
+
 	BeforeEach(func() {
+		err := os.Setenv(SUBSCRIPTION_BASE_URL, "http://base.url")
+		Expect(err).ToNot(HaveOccurred())
+		err = os.Setenv(SUBSCRIPTION_SERVER_URL, "http://server.url")
+		Expect(err).ToNot(HaveOccurred())
 		config.Init()
 		config.Get().Debug = true
 		dbName = fmt.Sprintf("%d-client.db", time.Now().UnixNano())
 		config.Get().Database.Name = dbName
 		db.InitDB()
 
-		err := db.DB.AutoMigrate(
+		err = db.DB.AutoMigrate(
 			&models.ImageSet{},
 			&models.Commit{},
 			&models.UpdateTransaction{},
@@ -76,10 +81,7 @@ var _ = Describe("Image Builder Client Test", func() {
 		client = InitClient(context.Background(), log.NewEntry(log.StandardLogger()))
 		// save the original image builder url
 		originalImageBuilderURL = conf.ImageBuilderConfig.URL
-		err = os.Setenv(SUBSCRIPTION_BASE_URL, "http://base.url")
-		Expect(err).ToNot(HaveOccurred())
-		err = os.Setenv(SUBSCRIPTION_SERVER_URL, "http://server.url")
-		Expect(err).ToNot(HaveOccurred())
+
 	})
 	AfterEach(func() {
 		os.Remove(dbName)
