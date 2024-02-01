@@ -841,7 +841,8 @@ var _ = Describe("Image Builder Client Test", func() {
 			var req ComposeRequest
 			err = json.Unmarshal(b, &req)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(req.Customizations.Subscription.ActivationKey).To(Equal("test-key"))
+Expect(req.Customizations.Subscription).ToNot(BeNil())                
+Expect(req.Customizations.Subscription.ActivationKey).To(Equal("test-key"))
 			Expect(req.Customizations.Subscription.Organization).To(Equal(orgID))
 			Expect(req.Customizations.Subscription.RHC).To(Equal(true))
 			Expect(req.Customizations.Subscription.Insights).To(Equal(true))
