@@ -69,7 +69,7 @@ type ListGroupsParams struct {
 
 type CreateGroup struct {
 	Name    string   `json:"name"`
-	HostIDS []string `json:"host_ids,omitempty"`
+	HostIDS []string `json:"host_ids,omitempty"` // nolint:revive
 }
 
 // ClientInterface is an Interface to make request to inventory Groups
@@ -77,7 +77,7 @@ type ClientInterface interface {
 	GetBaseURL() (*url2.URL, error)
 	GetGroupByName(name string) (*Group, error)
 	GetGroupByUUID(groupUUID string) (*Group, error)
-	CreateGroup(groupName string, hostIDS []string) (*Group, error)
+	CreateGroup(groupName string, hostIDS []string) (*Group, error) // nolint:revive
 	AddHostsToGroup(groupUUID string, hosts []string) (*Group, error)
 	ListGroups(requestParams ListGroupsParams) (*Response, error)
 }
@@ -241,7 +241,7 @@ func (c *Client) GetGroupByUUID(groupUUID string) (*Group, error) {
 	return &response.Results[0], nil
 }
 
-func (c *Client) CreateGroup(groupName string, hostIDS []string) (*Group, error) {
+func (c *Client) CreateGroup(groupName string, hostIDS []string) (*Group, error) { // nolint:revive
 	if groupName == "" {
 		c.log.Error("inventory group name is mandatory")
 		return nil, ErrGroupNameIsMandatory

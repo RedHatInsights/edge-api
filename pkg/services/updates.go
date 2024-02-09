@@ -49,7 +49,7 @@ type UpdateServiceInterface interface {
 	SetUpdateStatus(update *models.UpdateTransaction) error
 	SendDeviceNotification(update *models.UpdateTransaction) (ImageNotification, error)
 	UpdateDevicesFromUpdateTransaction(update models.UpdateTransaction) error
-	ValidateUpdateSelection(orgID string, imageIds []uint) (bool, error)
+	ValidateUpdateSelection(orgID string, imageIds []uint) (bool, error) // nolint:revive
 	ValidateUpdateDeviceGroup(orgID string, deviceGroupID uint) (bool, error)
 	InventoryGroupDevicesUpdateInfo(orgID string, inventoryGroupUUID string) (*models.InventoryGroupDevicesUpdateInfo, error)
 }
@@ -974,7 +974,7 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 	updateAvailable := len(updateImages) > 0
 
 	// create a slice of devices ids
-	devicesIDS := make([]uint, 0, len(currentUpdate.Devices))
+	devicesIDS := make([]uint, 0, len(currentUpdate.Devices)) // nolint:revive
 	for _, device := range currentUpdate.Devices {
 		devicesIDS = append(devicesIDS, device.ID)
 	}
@@ -990,7 +990,7 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 }
 
 // ValidateUpdateSelection validate the images for update
-func (s *UpdateService) ValidateUpdateSelection(orgID string, imageIds []uint) (bool, error) {
+func (s *UpdateService) ValidateUpdateSelection(orgID string, imageIds []uint) (bool, error) { // nolint:revive
 	var count int64
 	if result := db.Org(orgID, "").Table("images").Distinct("image_set_id").Where(`id IN ?`, imageIds).Count(&count); result.Error != nil {
 		return false, result.Error
