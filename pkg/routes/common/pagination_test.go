@@ -83,7 +83,7 @@ func TestPaginate(t *testing.T) {
 	}
 
 	for _, te := range tt {
-		t.Run(te.name, func(t *testing.T) {
+		t.Run(te.name, func(_ *testing.T) {
 			router := chi.NewRouter()
 			router.Use(Paginate)
 			router.Get("/", func(w http.ResponseWriter, r *http.Request) {

@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:revive
 package rbac_test
 
 import (
