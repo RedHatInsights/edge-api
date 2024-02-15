@@ -548,13 +548,19 @@ func GetDevicesViewWithinDevices(w http.ResponseWriter, r *http.Request) {
 	if err := readRequestJSONBody(w, r, contextServices.Log, &devicesUUID); err != nil {
 		return
 	}
+	enforceEdgeGroups := utility.EnforceEdgeGroups(orgID)
+
 	if len(devicesUUID.DevicesUUID) == 0 {
-		respondWithAPIError(w, contextServices.Log, errors.NewBadRequest("Missing devicesUUID "))
+		respondWithJSONBody(
+			w,
+			contextServices.Log,
+			map[string]interface{}{"data": models.DeviceViewList{EnforceEdgeGroups: enforceEdgeGroups}, "count": 0},
+		)
 		return
 	}
 
 	tx := devicesFilters(r, db.DB).Where("image_id > 0").Where("devices.uuid IN (?)", devicesUUID.DevicesUUID)
-	enforceEdgeGroups := utility.EnforceEdgeGroups(orgID)
+
 	if feature.EdgeParityInventoryRbac.IsEnabled() && feature.EdgeParityInventoryGroupsEnabled.IsEnabled() && !enforceEdgeGroups {
 		inventoryRbacFilter, err := handleInventoryHostsRbac(w, r)
 		if err != nil {
