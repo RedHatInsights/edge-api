@@ -77,13 +77,14 @@ type systemProfile struct {
 }
 
 type host struct {
-	ID            string                  `json:"id"`
-	Name          string                  `json:"display_name"`
-	OrgID         string                  `json:"org_id"`
-	InsightsID    string                  `json:"insights_id"`
-	Updated       models.EdgeAPITime      `json:"updated"`
-	SystemProfile systemProfile           `json:"system_profile"`
-	Groups        []PlatformInsightsGroup `json:"groups"`
+	ID                    string                  `json:"id"`
+	Name                  string                  `json:"display_name"`
+	OrgID                 string                  `json:"org_id"`
+	InsightsID            string                  `json:"insights_id"`
+	Updated               models.EdgeAPITime      `json:"updated"`
+	SystemProfile         systemProfile           `json:"system_profile"`
+	Groups                []PlatformInsightsGroup `json:"groups"`
+	SubscriptionManagerId string                  `json:subscription_manager_id,omitempty`
 }
 
 type PlatformInsightsGroup struct {
@@ -181,8 +182,9 @@ func (s *DeviceService) GetDeviceDetails(device inventory.Device, deviceUpdateIm
 		ulog.Info("Could not find device on the devices table yet - returning just the data from inventory")
 		// if err != nil then databaseDevice is nil pointer
 		databaseDevice = &models.Device{
-			UUID:        device.ID,
-			RHCClientID: device.Ostree.RHCClientID,
+			UUID:                  device.ID,
+			RHCClientID:           device.Ostree.RHCClientID,
+			SubscriptionManagerId: device.SubscriptionManagerId,
 		}
 	}
 	details := &models.DeviceDetails{
@@ -545,13 +547,14 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 
 		dd.Device = models.EdgeDevice{
 			Device: &models.Device{
-				Model:             models.Model{ID: dbDeviceID},
-				UUID:              device.ID,
-				RHCClientID:       device.Ostree.RHCClientID,
-				Name:              device.DisplayName,
-				OrgID:             device.OrgID,
-				DevicesGroups:     storeDevice.DevicesGroups,
-				UpdateTransaction: storeDevice.UpdateTransaction,
+				Model:                 models.Model{ID: dbDeviceID},
+				UUID:                  device.ID,
+				RHCClientID:           device.Ostree.RHCClientID,
+				Name:                  device.DisplayName,
+				OrgID:                 device.OrgID,
+				DevicesGroups:         storeDevice.DevicesGroups,
+				UpdateTransaction:     storeDevice.UpdateTransaction,
+				SubscriptionManagerId: device.SubscriptionManagerId,
 			},
 			OrgID:      device.OrgID,
 			DeviceName: device.DisplayName,
@@ -705,13 +708,14 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 		if _, ok := err.(*DeviceNotFoundError); ok {
 			// create a new device if it does not exist.
 			var newDevice = models.Device{
-				UUID:        deviceUUID,
-				RHCClientID: eventData.Host.SystemProfile.RHCClientID,
-				OrgID:       deviceOrgID,
-				Name:        deviceName,
-				LastSeen:    eventData.Host.Updated,
-				GroupName:   deviceGroupName,
-				GroupUUID:   deviceGroupUUID,
+				UUID:                  deviceUUID,
+				RHCClientID:           eventData.Host.SystemProfile.RHCClientID,
+				OrgID:                 deviceOrgID,
+				Name:                  deviceName,
+				LastSeen:              eventData.Host.Updated,
+				GroupName:             deviceGroupName,
+				GroupUUID:             deviceGroupUUID,
+				SubscriptionManagerId: eventData.Host.SubscriptionManagerId,
 			}
 			if result := db.DB.Create(&newDevice); result.Error != nil {
 				s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error.Error()}).Error("Error creating device")
@@ -730,6 +734,9 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 	// update rhc client id if undefined
 	if eventData.Host.SystemProfile.RHCClientID != "" && device.RHCClientID != eventData.Host.SystemProfile.RHCClientID {
 		device.RHCClientID = eventData.Host.SystemProfile.RHCClientID
+	}
+	if eventData.Host.SubscriptionManagerId != "" && device.SubscriptionManagerId != eventData.Host.SubscriptionManagerId {
+		device.SubscriptionManagerId = eventData.Host.SubscriptionManagerId
 	}
 	// always update device name and last seen datetime
 	device.LastSeen = eventData.Host.Updated
@@ -1044,14 +1051,16 @@ func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCre
 		deviceGroupName = e.Host.Groups[0].Name
 		deviceGroupUUID = e.Host.Groups[0].ID
 	}
+
 	var newDevice = models.Device{
-		UUID:        e.Host.ID,
-		RHCClientID: e.Host.SystemProfile.RHCClientID,
-		OrgID:       e.Host.OrgID,
-		Name:        e.Host.Name,
-		LastSeen:    e.Host.Updated,
-		GroupName:   deviceGroupName,
-		GroupUUID:   deviceGroupUUID,
+		UUID:                  e.Host.ID,
+		RHCClientID:           e.Host.SystemProfile.RHCClientID,
+		OrgID:                 e.Host.OrgID,
+		Name:                  e.Host.Name,
+		LastSeen:              e.Host.Updated,
+		GroupName:             deviceGroupName,
+		GroupUUID:             deviceGroupUUID,
+		SubscriptionManagerId: e.Host.SubscriptionManagerId,
 	}
 
 	// We should not create a new device if UUID already exists
@@ -1274,11 +1283,12 @@ func (s *DeviceService) SyncInventoryWithDevices(orgID string) {
 						RHCClientID:          inDevice.Ostree.RHCClientID,
 					}
 					iHost := host{
-						ID:            inDevice.ID,
-						Name:          inDevice.DisplayName,
-						OrgID:         inDevice.OrgID,
-						Updated:       models.EdgeAPITime{Time: time.Now(), Valid: true},
-						SystemProfile: profile,
+						ID:                    inDevice.ID,
+						Name:                  inDevice.DisplayName,
+						OrgID:                 inDevice.OrgID,
+						Updated:               models.EdgeAPITime{Time: time.Now(), Valid: true},
+						SystemProfile:         profile,
+						SubscriptionManagerId: inDevice.SubscriptionManagerId,
 					}
 					createEvent := PlatformInsightsCreateUpdateEventPayload{
 						Type: InventoryEventTypeCreated,

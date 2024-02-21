@@ -87,21 +87,22 @@ const (
 // THEEDGE-1921 created 2 temporary indexes to address production issue
 type Device struct {
 	Model
-	UUID              string               `gorm:"index" json:"UUID"`
-	AvailableHash     string               `json:"AvailableHash,omitempty"`
-	RHCClientID       string               `json:"RHCClientID"`
-	Connected         bool                 `gorm:"default:true" json:"Connected"`
-	Name              string               `json:"Name"`
-	LastSeen          EdgeAPITime          `json:"LastSeen"`
-	CurrentHash       string               `json:"CurrentHash,omitempty"`
-	Account           string               `gorm:"index" json:"Account"`
-	OrgID             string               `json:"org_id" gorm:"index;<-:create"`
-	ImageID           uint                 `json:"ImageID" gorm:"index"`
-	UpdateAvailable   bool                 `json:"UpdateAvailable"`
-	DevicesGroups     []DeviceGroup        `faker:"-" gorm:"many2many:device_groups_devices;save_association:false" json:"DevicesGroups"`
-	UpdateTransaction *[]UpdateTransaction `faker:"-" gorm:"many2many:updatetransaction_devices;" json:"UpdateTransaction"`
-	GroupName         string               `json:"group_name"` // the inventory group name
-	GroupUUID         string               `json:"group_uuid"` // the inventory group id
+	UUID                  string               `gorm:"index" json:"UUID"`
+	AvailableHash         string               `json:"AvailableHash,omitempty"`
+	RHCClientID           string               `json:"RHCClientID"`
+	Connected             bool                 `gorm:"default:true" json:"Connected"`
+	Name                  string               `json:"Name"`
+	LastSeen              EdgeAPITime          `json:"LastSeen"`
+	CurrentHash           string               `json:"CurrentHash,omitempty"`
+	Account               string               `gorm:"index" json:"Account"`
+	OrgID                 string               `json:"org_id" gorm:"index;<-:create"`
+	ImageID               uint                 `json:"ImageID" gorm:"index"`
+	UpdateAvailable       bool                 `json:"UpdateAvailable"`
+	DevicesGroups         []DeviceGroup        `faker:"-" gorm:"many2many:device_groups_devices;save_association:false" json:"DevicesGroups"`
+	UpdateTransaction     *[]UpdateTransaction `faker:"-" gorm:"many2many:updatetransaction_devices;" json:"UpdateTransaction"`
+	GroupName             string               `json:"group_name"` // the inventory group name
+	GroupUUID             string               `json:"group_uuid"` // the inventory group id
+	SubscriptionManagerId string               `json:"SubscriptionManagerId"`
 }
 
 // BeforeCreate method is called before creating devices, it make sure org_id is not empty
