@@ -1418,7 +1418,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 		var newImage models.Image
 		var device models.Device
 		var device2 models.Device
-
+		var device3 models.Device
 		var updateService services.UpdateServiceInterface
 		var mockRepoBuilder *mock_services.MockRepoBuilderInterface
 		var mockInventory *mock_inventory.MockClientInterface
@@ -1459,6 +1459,8 @@ var _ = Describe("UpdateService Basic functions", func() {
 			db.DB.Create(&device)
 			device2 = models.Device{OrgID: orgID, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated()}
 			db.DB.Create(&device2)
+			device3 = models.Device{OrgID: orgID, ImageID: currentImage.ID, UpdateAvailable: true, UUID: faker.UUIDHyphenated()}
+			db.DB.Create(&device3)
 		})
 
 		AfterEach(func() {
@@ -1577,7 +1579,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 			})
 		})
 
-		Context("when has two devices, one with rhc_client_id and another without", func() {
+		Context("when has three devices, one with rhc_client_id, one with subscription and another without", func() {
 			It("should create two update transactions, one with a repo and another without", func() {
 				var devicesUpdate models.DevicesUpdate
 				devicesUpdate.DevicesUUID = []string{device.UUID, device2.UUID}
@@ -1622,6 +1624,37 @@ var _ = Describe("UpdateService Basic functions", func() {
 				Expect((*updates)[1].OrgID).Should(Equal(common.DefaultOrgID))
 				Expect((*updates)[1].Status).Should(Equal(models.UpdateStatusDeviceDisconnected))
 				Expect((*updates)[1].Repo).Should(BeNil())
+
+			})
+
+			It("should create one update transactions with a repo using subscription", func() {
+				SubscriptionManagerId := faker.UUIDHyphenated()
+				var devicesUpdate models.DevicesUpdate
+				devicesUpdate.DevicesUUID = []string{device3.UUID}
+
+				responseInventory3 := inventory.Response{Total: 1, Count: 1, Result: []inventory.Device{
+					{ID: device3.UUID, SubscriptionManagerId: SubscriptionManagerId, Ostree: inventory.SystemProfile{}},
+				}}
+				mockInventory.EXPECT().ReturnDevicesByID(device3.UUID).
+					Return(responseInventory3, nil)
+
+				mockProducer.EXPECT().Produce(gomock.Any(), gomock.Any()).Return(nil)
+				mockProducerService.EXPECT().GetProducerInstance().Return(mockProducer)
+				mockTopicService.EXPECT().GetTopic(services.NotificationTopic).Return(services.NotificationTopic, nil).Times(1)
+
+				updates, err := updateService.BuildUpdateTransactions(&devicesUpdate, common.DefaultOrgID, &newCommit)
+
+				Expect(err).To(BeNil())
+				Expect(len(*updates)).Should(Equal(1))
+				Expect((*updates)[0].ID).Should(BeNumerically(">", 0))
+				Expect((*updates)[0].RepoID).ToNot(BeNil())
+				Expect((*updates)[0].OrgID).Should(Equal(common.DefaultOrgID))
+				Expect((*updates)[0].Status).Should(Equal(models.UpdateStatusCreated))
+				Expect((*updates)[0].Repo.ID).Should(BeNumerically(">", 0))
+				Expect((*updates)[0].Repo.URL).Should(BeEmpty())
+				Expect((*updates)[0].Repo.Status).Should(Equal(models.RepoStatusBuilding))
+				Expect((*updates)[0].Devices[0].SubscriptionManagerId).Should(Equal(device3.SubscriptionManagerId))
+
 			})
 		})
 
