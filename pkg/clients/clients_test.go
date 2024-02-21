@@ -1,3 +1,5 @@
+// FIXME: golangci-lint
+// nolint:revive
 package clients_test
 
 import (

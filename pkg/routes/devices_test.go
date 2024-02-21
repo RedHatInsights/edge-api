@@ -977,7 +977,7 @@ func TestValidateDeviceUpdateImagesFilterParams(t *testing.T) {
 
 func TestGetDevicesViewWithinDevices(t *testing.T) {
 	RegisterTestingT(t)
-	ctrl := gomock.NewController(t)
+	ctrl := gomock.NewController(GinkgoT())
 	defer ctrl.Finish()
 	orgID := faker.UUIDHyphenated()
 	account := faker.UUIDHyphenated()
@@ -1045,7 +1045,6 @@ func TestGetDevicesViewWithinDevices(t *testing.T) {
 	var mockDeviceService *mock_services.MockDeviceServiceInterface
 	var router chi.Router
 	var mockServices *dependencies.EdgeAPIServices
-	ctrl = gomock.NewController(GinkgoT())
 
 	mockDeviceService = mock_services.NewMockDeviceServiceInterface(ctrl)
 	mockServices = &dependencies.EdgeAPIServices{
@@ -1081,13 +1080,22 @@ func TestGetDevicesViewWithinDevices(t *testing.T) {
 
 func TestGetDevicesViewWithoutDevices(t *testing.T) {
 	RegisterTestingT(t)
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+
+	// set enforce edge groups to be sure it's returned as expected
+	err := os.Setenv(feature.EnforceEdgeGroups.EnvVar, "true")
+	Expect(err).ToNot(HaveOccurred())
+
+	ctrl := gomock.NewController(GinkgoT())
+	// teardown
+	defer func() {
+		ctrl.Finish()
+		err := os.Unsetenv(feature.EnforceEdgeGroups.EnvVar)
+		Expect(err).ToNot(HaveOccurred())
+	}()
 
 	var mockDeviceService *mock_services.MockDeviceServiceInterface
 	var router chi.Router
 	var mockServices *dependencies.EdgeAPIServices
-	ctrl = gomock.NewController(GinkgoT())
 
 	mockDeviceService = mock_services.NewMockDeviceServiceInterface(ctrl)
 	mockServices = &dependencies.EdgeAPIServices{
@@ -1102,8 +1110,10 @@ func TestGetDevicesViewWithoutDevices(t *testing.T) {
 		})
 	})
 	router.Route("/", MakeDevicesRouter)
-	mockDeviceService.EXPECT().GetDevicesCount(gomock.Any()).Return(int64(0), nil)
-	mockDeviceService.EXPECT().GetDevicesView(30, 0, gomock.Any()).Return(&models.DeviceViewList{Total: 0}, nil)
+
+	// GetDevicesCount and GetDevicesView should not be called
+	mockDeviceService.EXPECT().GetDevicesCount(gomock.Any()).Times(0)
+	mockDeviceService.EXPECT().GetDevicesView(30, 0, gomock.Any()).Times(0)
 
 	jsonDeviceViewListBytes, err := json.Marshal(models.FilterByDevicesAPI{DevicesUUID: []string{}})
 	Expect(err).To(BeNil())
@@ -1117,8 +1127,18 @@ func TestGetDevicesViewWithoutDevices(t *testing.T) {
 	ctx := dependencies.ContextWithServices(req.Context(), mockServices)
 	req = req.WithContext(ctx)
 	handler.ServeHTTP(rr, req)
-	Expect(rr.Code).To(Equal(http.StatusBadRequest))
+	Expect(rr.Code).To(Equal(http.StatusOK))
 
+	respBody, err := io.ReadAll(rr.Body)
+	Expect(err).ToNot(HaveOccurred())
+
+	var response models.DeviceViewListResponseAPI
+	err = json.Unmarshal(respBody, &response)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(response.Count).To(Equal(int64(0)))
+	Expect(response.Data.Total).To(Equal(int64(0)))
+	Expect(response.Data.EnforceEdgeGroups).To(BeTrue())
+	Expect(len(response.Data.Devices)).To(Equal(0))
 }
 
 func TestValidateGetDevicesViewWithDevicesFilterParams(t *testing.T) {

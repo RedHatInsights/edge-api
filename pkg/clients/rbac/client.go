@@ -191,7 +191,7 @@ func (c *Client) getGroupsFromAccessGroups(accessGroups []*string) ([]string, bo
 
 // GetInventoryGroupsAccess return whether access is allowed and the groups configurations
 func (c *Client) GetInventoryGroupsAccess(acl AccessList, resource ResourceType, accessType AccessType) (bool, []string, bool, error) {
-	var overallGroupIDS []string
+	var overallGroupIDs []string
 	var overallGroupIDSMap = make(map[string]bool)
 	var allowedAccess bool
 	var globalUnGroupedHosts bool
@@ -203,7 +203,7 @@ func (c *Client) GetInventoryGroupsAccess(acl AccessList, resource ResourceType,
 				// we should have global access to the resource in the context of this access type
 				// reset the values
 				globalUnGroupedHosts = false
-				overallGroupIDS = nil
+				overallGroupIDs = nil
 				break
 			}
 			for _, resourceDef := range ac.ResourceDefinitions {
@@ -227,13 +227,13 @@ func (c *Client) GetInventoryGroupsAccess(acl AccessList, resource ResourceType,
 					if _, ok := overallGroupIDSMap[groupUUID]; !ok {
 						// put it in the map for later duplicate check
 						overallGroupIDSMap[groupUUID] = true
-						overallGroupIDS = append(overallGroupIDS, groupUUID)
+						overallGroupIDs = append(overallGroupIDs, groupUUID)
 					}
 				}
 			}
 		}
 	}
-	return allowedAccess, overallGroupIDS, globalUnGroupedHosts, nil
+	return allowedAccess, overallGroupIDs, globalUnGroupedHosts, nil
 }
 
 // AccessMatch return whether the access type matches the required resource type

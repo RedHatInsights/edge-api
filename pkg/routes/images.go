@@ -151,7 +151,7 @@ type CreateImageRequest struct {
 	Image *models.Image
 }
 
-// GetImageWithIdentity pre-populates the image with Account, OrgID, requestID and also returns an identity header
+// GetImageWithIdentity pre-populates the image with OrgID, requestID and also returns an identity header
 // This is used by every image endpoint, so it reduces copy/paste risk
 func GetImageWithIdentity(w http.ResponseWriter, r *http.Request) (*models.Image, identity.XRHID, error) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
@@ -170,13 +170,6 @@ func GetImageWithIdentity(w http.ResponseWriter, r *http.Request) (*models.Image
 		return image, ident, err
 	}
 
-	image.Account, err = common.GetAccount(r)
-	if err != nil {
-		ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving account from request")
-		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-
-		return image, ident, err
-	}
 	image.OrgID, err = common.GetOrgID(r)
 	if err != nil {
 		ctxServices.Log.WithField("error", err.Error()).Error("Failed retrieving org_id from request")
@@ -872,7 +865,7 @@ func ResumeCreateImage(w http.ResponseWriter, r *http.Request) {
 		resumeLog.Info("Resuming image build")
 
 		// recreate a stripped down identity header
-		strippedIdentity := `{ "identity": {"account_number": ` + image.Account + `, "type": "User", "internal": {"org_id": ` + image.OrgID + `, }, }, }`
+		strippedIdentity := `{ "identity": {"org_id": ` + image.OrgID + `, "type": "User", "internal": {"org_id": ` + image.OrgID + `, }, }, }`
 		resumeLog.WithField("identity_text", strippedIdentity).Debug("Creating a new stripped identity")
 		base64Identity := base64.StdEncoding.EncodeToString([]byte(strippedIdentity))
 		resumeLog.WithField("identity_base64", base64Identity).Debug("Using a base64encoded stripped identity")

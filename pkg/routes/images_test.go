@@ -1802,7 +1802,6 @@ var _ = Describe("Images Route Integration Tests", func() {
 				composeImage.Commit.OSTreeRef = "rhel/9/x86_64/edge"
 				composeImage.Commit.OSTreeParentRef = "rhel/9/x86_64/edge"
 				composeImage.OrgID = common.DefaultOrgID
-				composeImage.Account = common.DefaultAccount
 				composeImage.ImageSetID = &imageSet.ID
 
 				var body bytes.Buffer
