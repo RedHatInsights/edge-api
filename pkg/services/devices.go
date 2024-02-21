@@ -84,7 +84,7 @@ type host struct {
 	Updated               models.EdgeAPITime      `json:"updated"`
 	SystemProfile         systemProfile           `json:"system_profile"`
 	Groups                []PlatformInsightsGroup `json:"groups"`
-	SubscriptionManagerId string                  `json:subscription_manager_id,omitempty`
+	SubscriptionManagerId string                  `json:"subscription_manager_id,omitempty"`
 }
 
 type PlatformInsightsGroup struct {
