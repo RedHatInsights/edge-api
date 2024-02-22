@@ -48,15 +48,14 @@ type Response struct {
 
 // Device represents the struct of a Device on Inventory API
 type Device struct {
-	ID                    string        `json:"id"`
-	DisplayName           string        `json:"display_name"`
-	LastSeen              string        `json:"updated"`
-	UpdateAvailable       bool          `json:"update_available"`
-	Ostree                SystemProfile `json:"system_profile"`
-	Account               string        `json:"account"`
-	OrgID                 string        `json:"org_id"`
-	Groups                []Group       `json:"groups"`
-	SubscriptionManagerId string        `json:"subscription_manager_id"`
+	ID              string        `json:"id"`
+	DisplayName     string        `json:"display_name"`
+	LastSeen        string        `json:"updated"`
+	UpdateAvailable bool          `json:"update_available"`
+	Ostree          SystemProfile `json:"system_profile"`
+	Account         string        `json:"account"`
+	OrgID           string        `json:"org_id"`
+	Groups          []Group       `json:"groups"`
 }
 
 type Group struct {
