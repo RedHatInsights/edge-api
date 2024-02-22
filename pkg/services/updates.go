@@ -1137,11 +1137,8 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					return nil, result.Error
 				}
 			}
-			connectorID := device.Ostree.RHCClientID
-			if connectorID == "" {
-				connectorID = device.SubscriptionManagerId
-			}
-			if connectorID == "" {
+
+			if device.Ostree.RHCClientID == "" {
 				s.log.WithFields(log.Fields{
 					"deviceUUID": device.ID,
 				}).Info("Device is disconnected")
@@ -1152,8 +1149,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 				}
 				continue
 			}
-
-			updateDevice.RHCClientID = connectorID
+			updateDevice.RHCClientID = device.Ostree.RHCClientID
 			updateDevice.AvailableHash = update.Commit.OSTreeCommit
 
 			// update the device orgID if undefined

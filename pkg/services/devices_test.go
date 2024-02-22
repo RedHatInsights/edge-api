@@ -632,52 +632,6 @@ var _ = Describe("DfseviceService", func() {
 			Expect(len(total)).To(Equal(1))
 		})
 	})
-
-	Context("ProcessPlatformInventoryCreateEvent with Subscription Manager ID", func() {
-
-		commit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}
-		result := db.DB.Create(&commit)
-		Expect(result.Error).To(BeNil())
-		image := models.Image{OrgID: orgID, CommitID: commit.ID, Status: models.ImageStatusSuccess}
-		result = db.DB.Create(&image)
-		Expect(result.Error).To(BeNil())
-		var message []byte
-		var err error
-		var event services.PlatformInsightsCreateUpdateEventPayload
-		BeforeEach(func() {
-
-			event.Type = services.InventoryEventTypeCreated
-			event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
-			event.Host.ID = faker.UUIDHyphenated()
-			event.Host.OrgID = orgID
-			event.Host.Name = faker.UUIDHyphenated()
-			event.Host.Updated = models.EdgeAPITime(sql.NullTime{Time: time.Now().UTC(), Valid: true})
-			event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
-			event.Host.SubscriptionManagerId = faker.UUIDHyphenated()
-			event.Host.SystemProfile.RHCClientID = faker.UUIDHyphenated()
-
-			event.Host.Groups = []services.PlatformInsightsGroup{{ID: faker.UUIDHyphenated(), Name: faker.Name()}}
-			message, err = json.Marshal(event)
-			Expect(err).To(BeNil())
-		})
-		It("should create devices when no record is found", func() {
-			err = deviceService.ProcessPlatformInventoryCreateEvent(message)
-			Expect(err).To(BeNil())
-			var savedDevice models.Device
-			result := db.DB.Where(models.Device{UUID: event.Host.ID, OrgID: event.Host.OrgID}).First(&savedDevice).Unscoped()
-			Expect(result.Error).To(BeNil())
-			Expect(savedDevice.UUID).To(Equal(event.Host.ID))
-			Expect(savedDevice.OrgID).To(Equal(orgID))
-			Expect(savedDevice.ImageID).To(Equal(image.ID))
-			Expect(savedDevice.LastSeen.Time).To(Equal(event.Host.Updated.Time))
-			Expect(savedDevice.Name).To(Equal(event.Host.Name))
-			Expect(savedDevice.RHCClientID).To(Equal(event.Host.SystemProfile.RHCClientID))
-			Expect(savedDevice.SubscriptionManagerId).To(Equal(event.Host.SubscriptionManagerId))
-			Expect(savedDevice.GroupUUID).To(Equal(event.Host.Groups[0].ID))
-			Expect(savedDevice.GroupName).To(Equal(event.Host.Groups[0].Name))
-		})
-	})
-
 	Context("ProcessPlatformInventoryUpdatedEvent", func() {
 		commit := models.Commit{OrgID: orgID, OSTreeCommit: faker.UUIDHyphenated()}
 		result := db.DB.Create(&commit)
@@ -754,48 +708,6 @@ var _ = Describe("DfseviceService", func() {
 			Expect(savedDevice.ImageID).To(Equal(image.ID))
 			Expect(savedDevice.UpdateAvailable).To(Equal(false))
 			Expect(savedDevice.RHCClientID).To(Equal(event.Host.SystemProfile.RHCClientID))
-			Expect(savedDevice.LastSeen.Time).To(Equal(event.Host.Updated.Time))
-			Expect(savedDevice.Name).To(Equal(event.Host.Name))
-			Expect(savedDevice.GroupUUID).To(Equal(event.Host.Groups[0].ID))
-			Expect(savedDevice.GroupName).To(Equal(event.Host.Groups[0].Name))
-		})
-
-		It("should update device subscription manager id when device already exists", func() {
-			// Creating a devices needs to have org_id because of BeforeCreate method applied to Devices model
-			device := models.Device{
-				UUID:            faker.UUIDHyphenated(),
-				UpdateAvailable: true,
-				OrgID:           orgID,
-			}
-			res := db.DB.Create(&device)
-			Expect(res.Error).To(BeNil())
-
-			event := new(services.PlatformInsightsCreateUpdateEventPayload)
-			event.Type = services.InventoryEventTypeUpdated
-			event.Host.ID = device.UUID
-			event.Host.InsightsID = faker.UUIDHyphenated()
-			event.Host.OrgID = orgID
-			event.Host.Name = faker.UUIDHyphenated()
-			event.Host.Updated = models.EdgeAPITime(sql.NullTime{Time: time.Now().UTC(), Valid: true})
-			event.Host.SystemProfile.HostType = services.InventoryHostTypeEdge
-			event.Host.SystemProfile.RpmOSTreeDeployments = []services.RpmOSTreeDeployment{{Booted: true, Checksum: commit.OSTreeCommit}}
-			event.Host.SystemProfile.RHCClientID = faker.UUIDHyphenated()
-			event.Host.SubscriptionManagerId = faker.UUIDHyphenated()
-			event.Host.Groups = []services.PlatformInsightsGroup{{ID: faker.UUIDHyphenated(), Name: faker.Name()}}
-			message, err := json.Marshal(event)
-			Expect(err).To(BeNil())
-
-			err = deviceService.ProcessPlatformInventoryUpdatedEvent(message)
-			Expect(err).To(BeNil())
-
-			var savedDevice models.Device
-			res = db.DB.Where("uuid = ?", device.UUID).First(&savedDevice)
-			Expect(res.Error).To(BeNil())
-			Expect(savedDevice.OrgID).To(Equal(orgID))
-			Expect(savedDevice.ImageID).To(Equal(image.ID))
-			Expect(savedDevice.UpdateAvailable).To(Equal(false))
-			Expect(savedDevice.RHCClientID).To(Equal(event.Host.SystemProfile.RHCClientID))
-			Expect(savedDevice.SubscriptionManagerId).To(Equal(event.Host.SubscriptionManagerId))
 			Expect(savedDevice.LastSeen.Time).To(Equal(event.Host.Updated.Time))
 			Expect(savedDevice.Name).To(Equal(event.Host.Name))
 			Expect(savedDevice.GroupUUID).To(Equal(event.Host.Groups[0].ID))
