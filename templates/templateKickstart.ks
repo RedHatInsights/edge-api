@@ -112,28 +112,6 @@ fi
 %end
 
 
-%post --log=/var/log/anaconda/insights-on-reboot-unit-install.log --interpreter=/usr/bin/bash --erroronfail
-echo POST-INSIGHTS-CLIENT-OVERRIDE
-
-INSIGHTS_CLIENT_OVERRIDE_DIR=/etc/systemd/system/insights-client.service.d
-INSIGHTS_CLIENT_OVERRIDE_FILE=$INSIGHTS_CLIENT_OVERRIDE_DIR/override.conf
-
-if [ ! -f $INSIGHTS_CLIENT_OVERRIDE_FILE ]; then
-    mkdir -p $INSIGHTS_CLIENT_OVERRIDE_DIR
-    cat > $INSIGHTS_CLIENT_OVERRIDE_FILE << EOF 
-[Unit]
-Requisite=greenboot-healthcheck.service
-After=network-online.target greenboot-healthcheck.service
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-    systemctl enable insights-client.service
-fi
-
-%end
-
 #FIX THE RHCD_T semanage
 %post --log=/var/log/anaconda/permissive-rhcd_t.log
 /usr/sbin/semanage permissive --add rhcd_t
