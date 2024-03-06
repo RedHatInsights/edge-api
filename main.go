@@ -35,8 +35,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services"
 	edgeunleash "github.com/redhatinsights/edge-api/unleash"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
-	"github.com/redhatinsights/platform-go-middlewares/request_id"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
 	log "github.com/sirupsen/logrus"
 )
 

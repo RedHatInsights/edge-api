@@ -5,7 +5,7 @@
 package models
 
 import (
-	identity "github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 )
 
 // Error An error reported by an application.

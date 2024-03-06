@@ -24,12 +24,12 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients/rbac"
 	"github.com/redhatinsights/edge-api/pkg/clients/rbac/mock_rbac"
 	"github.com/redhatinsights/edge-api/pkg/common/seeder"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
 	log "github.com/sirupsen/logrus"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	testHelpers "github.com/redhatinsights/edge-api/internal/testing"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -1602,7 +1602,7 @@ func TestEnforceEdgeGroups(t *testing.T) {
 				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					ctx := dependencies.ContextWithServices(r.Context(), edgeAPIServices)
 					// set identity orgID
-					ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: testCase.OrgID}})
+					ctx = testHelpers.WithCustomIdentity(ctx, testCase.OrgID)
 					next.ServeHTTP(w, r.WithContext(ctx))
 				})
 			})
@@ -2023,7 +2023,7 @@ func TestDevicesViewInventoryHostsRbac(t *testing.T) {
 					rLog := log.NewEntry(log.StandardLogger())
 					ctx := r.Context()
 					if testCase.UseIdentity {
-						ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: orgID, Type: testCase.UseIdentityType}})
+						ctx = testHelpers.WithCustomIdentityType(ctx, orgID, testCase.UseIdentityType)
 					}
 					edgeAPIServices = &dependencies.EdgeAPIServices{
 						DeviceService: services.NewDeviceService(ctx, rLog),

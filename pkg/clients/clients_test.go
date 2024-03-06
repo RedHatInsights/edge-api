@@ -10,11 +10,10 @@ import (
 	"time"
 
 	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/internal/testing"
 	"github.com/redhatinsights/edge-api/pkg/clients"
-	"github.com/redhatinsights/edge-api/pkg/routes/common"
-
-	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo" // nolint: revive
@@ -24,20 +23,18 @@ import (
 var _ = Describe("Clients", func() {
 
 	Context("GetOutgoingHeaders", func() {
-		var orgID string
 		var requestID string
+		var orgID string
 		var ctx context.Context
 		var originalAuth bool
 
 		BeforeEach(func() {
 			originalAuth = config.Get().Auth
-			orgID = faker.UUIDHyphenated()
 			requestID = faker.UUIDHyphenated()
+			orgID = faker.UUIDHyphenated()
 			ctx = context.Background()
 			ctx = context.WithValue(ctx, request_id.RequestIDKey, requestID)
-			content, err := json.Marshal(&identity.XRHID{Identity: identity.Identity{OrgID: orgID}})
-			Expect(err).ToNot(HaveOccurred())
-			ctx = common.SetOriginalIdentity(ctx, string(content))
+			ctx = testing.WithRawIdentity(ctx, orgID)
 		})
 
 		AfterEach(func() {
@@ -81,7 +78,6 @@ var _ = Describe("Clients", func() {
 		})
 	})
 	Context("ConfigureHttpClient", func() {
-		var orgID string
 		var requestID string
 		var ctx context.Context
 		var originalAuth bool
@@ -90,15 +86,11 @@ var _ = Describe("Clients", func() {
 
 		BeforeEach(func() {
 			originalAuth = config.Get().Auth
-			orgID = faker.UUIDHyphenated()
 			originalTLScaPATH = config.Get().TlsCAPath
 			requestID = faker.UUIDHyphenated()
 			ctx = context.Background()
 			ctx = context.WithValue(ctx, request_id.RequestIDKey, requestID)
-			content, err := json.Marshal(&identity.XRHID{Identity: identity.Identity{OrgID: orgID}})
-			Expect(err).ToNot(HaveOccurred())
-			ctx = common.SetOriginalIdentity(ctx, string(content))
-
+			ctx = testing.WithRawIdentity(ctx, faker.UUIDHyphenated())
 		})
 
 		AfterEach(func() {
