@@ -41,8 +41,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 	"github.com/redhatinsights/edge-api/pkg/services/utility"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
@@ -144,7 +144,7 @@ var _ = Describe("Image Service Test", func() {
 				}(originalAuth)
 				config.Get().Auth = true
 				// create a service with identity with empty orgID
-				ctx := context.WithValue(context.Background(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: ""}})
+				ctx := identity.WithIdentity(context.Background(), identity.XRHID{Identity: identity.Identity{OrgID: ""}})
 
 				service = services.ImageService{
 					Service: services.NewService(ctx, log.NewEntry(log.StandardLogger())),
@@ -2359,7 +2359,7 @@ var _ = Describe("Image Service Test", func() {
 				})
 				It("GetImageDevicesCount should return error in case that OrgID not found", func() {
 					ctx := context.Background()
-					ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{
+					ctx = identity.WithIdentity(ctx, identity.XRHID{Identity: identity.Identity{
 						OrgID: ""}})
 					imageService := services.NewImageService(ctx, log.NewEntry(log.StandardLogger()))
 
@@ -2368,7 +2368,7 @@ var _ = Describe("Image Service Test", func() {
 				})
 				It("GetUpdateInfo should return error when GetImageDevicesCount return error", func() {
 					ctx := context.Background()
-					ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{
+					ctx = identity.WithIdentity(ctx, identity.XRHID{Identity: identity.Identity{
 						OrgID: ""}})
 					imageService := services.NewImageService(ctx, log.NewEntry(log.StandardLogger()))
 					_, err1 := imageService.GetUpdateInfo(*image2)

@@ -16,7 +16,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 	eventReq "github.com/redhatinsights/edge-api/pkg/services/update"
 	"github.com/redhatinsights/edge-api/pkg/services/utility"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
