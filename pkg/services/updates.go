@@ -287,12 +287,18 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	for _, device := range update.Devices {
 		device := device // this will prevent implicit memory aliasing in the loop
 		// Create new &DispatcherPayload{}
+		principal := identity.User.Username
+		if len(identity.User.Username) == 0 {
+			// FIXME: identity.ServiceAccount.Username when middleware identity v2.0 is prod, until then use update.OrgId
+			principal = update.OrgID
+		}
+
 		payloadDispatcher := playbookdispatcher.DispatcherPayload{
 			Recipient:    device.RHCClientID,
 			PlaybookURL:  playbookURL,
 			OrgID:        update.OrgID,
 			PlaybookName: "Edge-management",
-			Principal:    identity.User.Username,
+			Principal:    principal,
 		}
 		s.log.WithField("playbook_dispatcher", payloadDispatcher).Debug("Calling playbook dispatcher")
 		exc, err := s.PlaybookClient.ExecuteDispatcher(payloadDispatcher)
