@@ -16,12 +16,11 @@ import (
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/internal/testing"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	apiErrors "github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
-
-	"github.com/redhatinsights/edge-api/config"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -966,7 +965,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					ctx := dependencies.ContextWithServices(r.Context(), edgeAPIServices)
 					// set identity orgID
-					ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
+					ctx = testing.WithCustomIdentity(ctx, OrgID)
 					next.ServeHTTP(w, r.WithContext(ctx))
 				})
 			})
@@ -1128,7 +1127,7 @@ var _ = Describe("DeviceGroup routes", func() {
 
 				ctx := req.Context()
 				// set identity orgID
-				ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
+				ctx = testing.WithCustomIdentity(ctx, OrgID)
 				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 					Log: log.NewEntry(log.StandardLogger()),
 				})
@@ -1158,7 +1157,7 @@ var _ = Describe("DeviceGroup routes", func() {
 
 				ctx := req.Context()
 				// set identity orgID
-				ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
+				ctx = testing.WithCustomIdentity(ctx, OrgID)
 				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 					Log: log.NewEntry(log.StandardLogger()),
 				})
@@ -1189,7 +1188,7 @@ var _ = Describe("DeviceGroup routes", func() {
 					},
 				})
 				// set identity orgID
-				ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
+				ctx = testing.WithCustomIdentity(ctx, OrgID)
 				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 					Log: log.NewEntry(log.StandardLogger()),
 				})
@@ -1225,7 +1224,7 @@ var _ = Describe("DeviceGroup routes", func() {
 					},
 				})
 				// set identity orgID
-				ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
+				ctx = testing.WithCustomIdentity(ctx, OrgID)
 				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 					Log: log.NewEntry(log.StandardLogger()),
 				})
@@ -1250,7 +1249,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				Expect(err).To(BeNil())
 				ctx := req.Context()
 				// set identity orgID
-				ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
+				ctx = testing.WithCustomIdentity(ctx, OrgID)
 				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 					Log: log.NewEntry(log.StandardLogger()),
 				})
@@ -1289,7 +1288,7 @@ var _ = Describe("DeviceGroup routes", func() {
 
 				ctx := req.Context()
 				// set identity orgID
-				ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
+				ctx = testing.WithCustomIdentity(ctx, OrgID)
 				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 					Log: log.NewEntry(log.StandardLogger()),
 				})
@@ -1316,7 +1315,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				})
 
 				// set identity orgID
-				ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
+				ctx = testing.WithCustomIdentity(ctx, OrgID)
 				ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 					Log: log.NewEntry(log.StandardLogger()),
 				})
@@ -1348,7 +1347,7 @@ var _ = Describe("DeviceGroup routes", func() {
 				Expect(err).To(BeNil())
 
 				ctx := req.Context()
-				ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: OrgID}})
+				ctx = testing.WithCustomIdentity(ctx, OrgID)
 				ctx = setContextDeviceGroup(ctx, deviceGroup)
 				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				req = req.WithContext(ctx)

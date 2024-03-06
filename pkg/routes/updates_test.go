@@ -17,18 +17,17 @@ import (
 	"testing"
 	"time"
 
+	testHelpers "github.com/redhatinsights/edge-api/internal/testing"
 	apiError "github.com/redhatinsights/edge-api/pkg/errors"
 
 	"github.com/bxcodec/faker/v3"
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventorygroups"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventorygroups/mock_inventorygroups"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
-
-	"github.com/redhatinsights/edge-api/config"
 
 	"github.com/go-chi/chi"
 	"github.com/golang/mock/gomock"
@@ -232,12 +231,8 @@ var _ = Describe("Update routes", func() {
 				Expect(err).To(BeNil())
 
 				rr := httptest.NewRecorder()
-				ctx := context.WithValue(req.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{
-					OrgID: "111111",
-				}})
-				req = req.WithContext(ctx)
-				ctx = dependencies.ContextWithServices(req.Context(), edgeAPIServices)
-				req = req.WithContext(ctx)
+				ctx := testHelpers.WithCustomIdentity(req.Context(), "111111")
+				ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 				handler := http.HandlerFunc(PostValidateUpdate)
 
 				handler.ServeHTTP(rr, req.WithContext(ctx))
@@ -960,11 +955,10 @@ var _ = Describe("Update routes", func() {
 					httpTestRecorder := httptest.NewRecorder()
 
 					ctx := dependencies.ContextWithServices(context.Background(), edgeAPIServices)
-					ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: ""}})
-					req = req.WithContext(ctx)
+					ctx = testHelpers.WithCustomIdentity(ctx, "")
 					handler := http.HandlerFunc(GetUpdates)
 
-					handler.ServeHTTP(httpTestRecorder, req)
+					handler.ServeHTTP(httpTestRecorder, req.WithContext(ctx))
 
 					Expect(httpTestRecorder.Code).To(Equal(http.StatusBadRequest))
 					respBody, err := io.ReadAll(httpTestRecorder.Body)
@@ -1275,8 +1269,7 @@ func TestInventoryGroupDevicesUpdateInfo(t *testing.T) {
 			router.Use(func(next http.Handler) http.Handler {
 				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					rLog := log.NewEntry(log.StandardLogger())
-					ctx := r.Context()
-					ctx = context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: orgID}})
+					ctx := testHelpers.WithCustomIdentity(r.Context(), orgID)
 					edgeAPIServices = &dependencies.EdgeAPIServices{
 						UpdateService:          mockUpdateService,
 						InventoryGroupsService: mockInventoryGroupsClient,

@@ -3,7 +3,6 @@
 package routes
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	url2 "net/url"
 	"strings"
 
+	testHelpers "github.com/redhatinsights/edge-api/internal/testing"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
@@ -24,7 +24,6 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -642,7 +641,7 @@ var _ = Describe("Storage Router", func() {
 					router.Use(func(next http.Handler) http.Handler {
 						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 							// set identity orgID to orgID the creator/owner of the image
-							ctx := context.WithValue(r.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: orgID}})
+							ctx := testHelpers.WithCustomIdentity(r.Context(), orgID)
 							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 							next.ServeHTTP(w, r.WithContext(ctx))
 						})
@@ -700,7 +699,7 @@ var _ = Describe("Storage Router", func() {
 					router.Use(func(next http.Handler) http.Handler {
 						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 							// set identity orgID to imageBuilderOrgID
-							ctx := context.WithValue(r.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: imageBuilderOrgID}})
+							ctx := testHelpers.WithCustomIdentity(r.Context(), imageBuilderOrgID)
 							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 							next.ServeHTTP(w, r.WithContext(ctx))
 						})
@@ -762,7 +761,7 @@ var _ = Describe("Storage Router", func() {
 					router.Use(func(next http.Handler) http.Handler {
 						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 							// set identity orgID to otherOrgID
-							ctx := context.WithValue(r.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: otherOrgID}})
+							ctx := testHelpers.WithCustomIdentity(r.Context(), otherOrgID)
 							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 							next.ServeHTTP(w, r.WithContext(ctx))
 						})
@@ -964,7 +963,7 @@ var _ = Describe("Storage Router", func() {
 					router.Use(func(next http.Handler) http.Handler {
 						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 							// set identity orgID to orgID the creator/owner of the image
-							ctx := context.WithValue(r.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: orgID}})
+							ctx := testHelpers.WithCustomIdentity(r.Context(), orgID)
 							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 							next.ServeHTTP(w, r.WithContext(ctx))
 						})
@@ -1016,7 +1015,7 @@ var _ = Describe("Storage Router", func() {
 					router.Use(func(next http.Handler) http.Handler {
 						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 							// set identity orgID to imageBuilderOrgID
-							ctx := context.WithValue(r.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: imageBuilderOrgID}})
+							ctx := testHelpers.WithCustomIdentity(r.Context(), imageBuilderOrgID)
 							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 							next.ServeHTTP(w, r.WithContext(ctx))
 						})
@@ -1072,7 +1071,7 @@ var _ = Describe("Storage Router", func() {
 					router.Use(func(next http.Handler) http.Handler {
 						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 							// set identity orgID to otherOrgID
-							ctx := context.WithValue(r.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: otherOrgID}})
+							ctx := testHelpers.WithCustomIdentity(r.Context(), otherOrgID)
 							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 							next.ServeHTTP(w, r.WithContext(ctx))
 						})

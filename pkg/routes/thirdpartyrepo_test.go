@@ -4,7 +4,6 @@ package routes
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,7 +14,14 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/bxcodec/faker/v3"
+	"github.com/go-chi/chi"
+	"github.com/golang/mock/gomock"
+	"github.com/google/uuid"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/redhatinsights/edge-api/config"
+	testHelpers "github.com/redhatinsights/edge-api/internal/testing"
 	"github.com/redhatinsights/edge-api/pkg/clients/repositories"
 	"github.com/redhatinsights/edge-api/pkg/clients/repositories/mock_repositories"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -25,14 +31,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
-
-	"github.com/bxcodec/faker/v3"
-	"github.com/go-chi/chi"
-	"github.com/golang/mock/gomock"
-	"github.com/google/uuid"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -371,7 +369,7 @@ var _ = Describe("ThirdPartyRepos basic routes", func() {
 			router.Use(func(next http.Handler) http.Handler {
 				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					// set identity with empty orgID, this should provoke to return an error from GetOrgIDFromContext
-					ctx := context.WithValue(r.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: ""}})
+					ctx := testHelpers.WithCustomIdentity(r.Context(), "")
 					ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 					next.ServeHTTP(w, r.WithContext(ctx))
 				})
@@ -647,7 +645,7 @@ var _ = Describe("ThirdPartyRepos basic routes", func() {
 				router.Use(func(next http.Handler) http.Handler {
 					return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						// set identity with empty orgID, this should provoke to return an error from GetOrgIDFromContext
-						ctx := context.WithValue(r.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: ""}})
+						ctx := testHelpers.WithCustomIdentity(r.Context(), "")
 						ctx = dependencies.ContextWithServices(ctx, &dependencies.EdgeAPIServices{
 							ImageService:        mockImageService,
 							RepositoriesService: mockRepositoriesService,

@@ -9,7 +9,7 @@ import (
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/magiconair/properties/assert"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 
 	"github.com/redhatinsights/edge-api/config"
 )
@@ -52,14 +52,14 @@ func TestGetDefaultOrgID(t *testing.T) {
 		},
 		{
 			Name:          "Cannot get orgID from Context",
-			Context:       context.WithValue(ctx, identity.Key, nil),
+			Context:       ctx, // don't add identity
 			Auth:          true,
 			ExpectedOrgID: "",
 			ExpectedError: errors.New("cannot find org-id"),
 		},
 		{
 			Name: "Get orgID from Context",
-			Context: context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{
+			Context: identity.WithIdentity(ctx, identity.XRHID{Identity: identity.Identity{
 				AccountNumber: faker.UUIDHyphenated(),
 				OrgID:         orgID,
 			}}),
@@ -69,7 +69,7 @@ func TestGetDefaultOrgID(t *testing.T) {
 		},
 		{
 			Name: "Blank orgID from Context",
-			Context: context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{
+			Context: identity.WithIdentity(ctx, identity.XRHID{Identity: identity.Identity{
 				AccountNumber: faker.UUIDHyphenated(),
 				OrgID:         "",
 			}}),

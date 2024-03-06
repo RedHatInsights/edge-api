@@ -9,7 +9,7 @@ import (
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/magiconair/properties/assert"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 
 	"github.com/redhatinsights/edge-api/config"
 )
@@ -52,14 +52,14 @@ func TestGetDefaultIdentity(t *testing.T) {
 		},
 		{
 			Name:             "Cannot get Identity from Context",
-			Context:          context.WithValue(ctx, identity.Key, nil),
+			Context:          ctx, // don't add identity
 			Auth:             true,
 			ExpectedIdentity: "",
 			ExpectedError:    errors.New("cannot find identity"),
 		},
 		{
 			Name: "Get Identity from Context",
-			Context: context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{
+			Context: identity.WithIdentity(ctx, identity.XRHID{Identity: identity.Identity{
 				AccountNumber: faker.UUIDHyphenated(),
 				OrgID:         orgID,
 			}}),
@@ -74,7 +74,11 @@ func TestGetDefaultIdentity(t *testing.T) {
 			// Save current config.Auth
 			cfg.Auth = test.Auth
 			getIdentity, error := GetIdentityFromContext(test.Context)
-			assert.Equal(t, getIdentity.Identity.User.Username, test.ExpectedIdentity)
+			username := ""
+			if getIdentity.Identity.User != nil {
+				username = getIdentity.Identity.User.Username
+			}
+			assert.Equal(t, username, test.ExpectedIdentity)
 			assert.Equal(t, error, test.ExpectedError)
 		})
 	}

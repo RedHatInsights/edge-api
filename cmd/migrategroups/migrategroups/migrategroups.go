@@ -16,8 +16,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services/utility"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 
-	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -77,7 +77,7 @@ func newInventoryOrgClients(orgID string) (*InventoryOrgClients, error) {
 		Type:     DefaultIdentityType,
 		AuthType: AuthTypeBASIC,
 		Internal: identity.Internal{OrgID: orgID},
-		User:     identity.User{OrgAdmin: true, Email: "edge-groups-migrator@example.com", FirstName: "edge-groups-migrator"},
+		User:     &identity.User{OrgAdmin: true, Email: "edge-groups-migrator@example.com", FirstName: "edge-groups-migrator"},
 	}}
 	jsonIdent, err := json.Marshal(&ident)
 	if err != nil {

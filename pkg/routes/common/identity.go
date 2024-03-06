@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 )
 
 type rhIdentityKeyType string
@@ -21,8 +21,8 @@ const IdentityTypeUser = "User"
 
 // GetOriginalIdentity get the original identity data from context
 func GetOriginalIdentity(ctx context.Context) (string, error) {
-	ident, ok := ctx.Value(rhIdentityKey).(string)
-	if !ok {
+	ident := identity.GetRawIdentity(ctx)
+	if ident == "" {
 		return "", errors.New("no identity found")
 	}
 	return ident, nil
@@ -30,7 +30,7 @@ func GetOriginalIdentity(ctx context.Context) (string, error) {
 
 // SetOriginalIdentity set the original identity data to the context
 func SetOriginalIdentity(ctx context.Context, value string) context.Context {
-	return context.WithValue(ctx, rhIdentityKey, value)
+	return identity.WithRawIdentity(ctx, value)
 }
 
 // GetIdentityInstanceFromContext returns an instances of identity.XRHID from Base64 encoded ident in context

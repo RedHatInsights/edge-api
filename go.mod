@@ -22,9 +22,11 @@ require (
 	github.com/prometheus/client_golang v1.18.0
 	github.com/redhatinsights/app-common-go v1.6.7
 	github.com/redhatinsights/platform-go-middlewares v1.0.0
+	github.com/redhatinsights/platform-go-middlewares/v2 v2.0.0-beta.2
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.18.1
 	github.com/stretchr/testify v1.8.4
+	go.openly.dev/pointy v1.3.0
 	gorm.io/driver/postgres v1.5.4
 	gorm.io/driver/sqlite v1.5.4
 	gorm.io/gorm v1.25.6
@@ -61,7 +63,7 @@ require (
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
-	github.com/nxadm/tail v1.4.8 // indirect
+	github.com/nxadm/tail v1.4.11 // indirect
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
@@ -79,8 +81,7 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/twmb/murmur3 v1.1.5 // indirect
 	go.mongodb.org/mongo-driver v1.13.1 // indirect
-	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/multierr v1.9.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.16.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/net v0.19.0 // indirect

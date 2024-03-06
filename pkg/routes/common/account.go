@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 
 	"github.com/redhatinsights/edge-api/config"
 )
@@ -28,11 +28,9 @@ func GetAccountFromContext(ctx context.Context) (string, error) {
 		if !config.Get().Auth {
 			return DefaultAccount, nil
 		}
-		if ctx.Value(identity.Key) != nil {
-			ident := identity.Get(ctx)
-			if ident.Identity.AccountNumber != "" {
-				return ident.Identity.AccountNumber, nil
-			}
+		rhId := identity.GetIdentity(ctx)
+		if rhId.Identity.AccountNumber != "" {
+			return rhId.Identity.AccountNumber, nil
 		}
 	}
 	return "", fmt.Errorf("cannot find account number")
