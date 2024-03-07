@@ -352,7 +352,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 						PlaybookURL:  playbookURL,
 						OrgID:        update.OrgID,
 						PlaybookName: "Edge-management",
-						Principal:    common.DefaultUserName,
+						Principal:    common.DefaultPrincipal,
 					}).Return([]playbookdispatcher.Response{
 						{
 							StatusCode:           http.StatusCreated,
@@ -398,7 +398,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 						PlaybookURL:  playbookURL,
 						OrgID:        update.OrgID,
 						PlaybookName: "Edge-management",
-						Principal:    common.DefaultUserName,
+						Principal:    common.DefaultPrincipal,
 					}).Return([]playbookdispatcher.Response{
 						{
 							StatusCode:           http.StatusBadRequest,
@@ -442,7 +442,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 						PlaybookURL:  playbookURL,
 						OrgID:        update.OrgID,
 						PlaybookName: "Edge-management",
-						Principal:    common.DefaultUserName,
+						Principal:    common.DefaultPrincipal,
 					}).Return(nil, errors.New("error on playbook dispatcher client"))
 
 					_, err := updateService.CreateUpdate(update.ID)

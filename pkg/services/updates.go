@@ -282,17 +282,12 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		s.log.Error("context identity org_id and update transaction org_id mismatch")
 		return nil, ErrOrgIDMismatch
 	}
+	principal := common.GetParsedIdentityPrincipal(s.ctx)
 	// 3. Loop through all devices in UpdateTransaction
 	dispatchRecords := update.DispatchRecords
 	for _, device := range update.Devices {
 		device := device // this will prevent implicit memory aliasing in the loop
 		// Create new &DispatcherPayload{}
-		principal := identity.User.Username
-		if len(identity.User.Username) == 0 {
-			// FIXME: identity.ServiceAccount.Username when middleware identity v2.0 is prod, until then use update.OrgId
-			principal = update.OrgID
-		}
-
 		payloadDispatcher := playbookdispatcher.DispatcherPayload{
 			Recipient:    device.RHCClientID,
 			PlaybookURL:  playbookURL,
