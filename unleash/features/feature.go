@@ -7,8 +7,8 @@ package feature
 import (
 	"os"
 
-	"github.com/Unleash/unleash-client-go/v3"
-	unleashCTX "github.com/Unleash/unleash-client-go/v3/context"
+	"github.com/Unleash/unleash-client-go/v4"
+	unleashCTX "github.com/Unleash/unleash-client-go/v4/context"
 
 	"github.com/redhatinsights/edge-api/config"
 )

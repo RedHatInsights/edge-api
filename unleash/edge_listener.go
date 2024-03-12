@@ -1,7 +1,7 @@
 package unleash // nolint:gofmt,goimports,revive
 
 import (
-	unleashclient "github.com/Unleash/unleash-client-go/v3"
+	unleashclient "github.com/Unleash/unleash-client-go/v4"
 	log "github.com/sirupsen/logrus"
 )
 
