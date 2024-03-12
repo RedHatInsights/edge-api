@@ -29,7 +29,7 @@ import (
 
 	"github.com/redhatinsights/edge-api/config"
 
-	"github.com/Unleash/unleash-client-go/v3"
+	"github.com/Unleash/unleash-client-go/v4"
 	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"

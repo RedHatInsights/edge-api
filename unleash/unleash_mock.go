@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Unleash/unleash-client-go/v3/api"
+	"github.com/Unleash/unleash-client-go/v4/api"
 )
 
 // FakeUnleashServer is the server object

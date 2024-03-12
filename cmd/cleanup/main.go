@@ -16,7 +16,7 @@ import (
 
 	edgeunleash "github.com/redhatinsights/edge-api/unleash"
 
-	"github.com/Unleash/unleash-client-go/v3"
+	"github.com/Unleash/unleash-client-go/v4"
 	log "github.com/sirupsen/logrus"
 )
 

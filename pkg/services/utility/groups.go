@@ -1,8 +1,8 @@
 package utility
 
 import (
-	"github.com/Unleash/unleash-client-go/v3"
-	unleashContext "github.com/Unleash/unleash-client-go/v3/context"
+	"github.com/Unleash/unleash-client-go/v4"
+	unleashContext "github.com/Unleash/unleash-client-go/v4/context"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 )
 
