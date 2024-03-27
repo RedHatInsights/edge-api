@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 
 	"github.com/redhatinsights/edge-api/config"
 )
@@ -21,7 +21,7 @@ const (
 func GetDefaultIdentity() identity.XRHID {
 	DefaultIdentity := identity.XRHID{}
 	DefaultIdentity.Identity.OrgID = DefaultOrgID
-	DefaultIdentity.Identity.User.Username = DefaultUserName
+	DefaultIdentity.Identity.User = &identity.User{Username: DefaultUserName}
 	return DefaultIdentity
 }
 
@@ -36,8 +36,8 @@ func GetIdentityFromContext(ctx context.Context) (identity.XRHID, error) {
 		if !config.Get().Auth {
 			return GetDefaultIdentity(), nil
 		}
-		if ctx.Value(identity.Key) != nil {
-			ident := identity.Get(ctx)
+		ident := identity.GetIdentity(ctx)
+		if ident.Identity.OrgID != "" {
 			return ident, nil
 		}
 	}

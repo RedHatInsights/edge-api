@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	testHelpers "github.com/redhatinsights/edge-api/internal/testing"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -31,7 +32,6 @@ import (
 	EdgeErrors "github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -1104,7 +1104,7 @@ var _ = Describe("Images Route Tests", func() {
 					router.Use(func(next http.Handler) http.Handler {
 						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 							// set identity orgID as empty
-							ctx := context.WithValue(r.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: ""}})
+							ctx := testHelpers.WithCustomIdentity(r.Context(), "")
 							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 							next.ServeHTTP(w, r.WithContext(ctx))
 						})
@@ -1262,7 +1262,7 @@ var _ = Describe("Images Route Tests", func() {
 					router.Use(func(next http.Handler) http.Handler {
 						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 							// set identity orgID as empty
-							ctx := context.WithValue(r.Context(), identity.Key, identity.XRHID{Identity: identity.Identity{OrgID: ""}})
+							ctx := testHelpers.WithCustomIdentity(r.Context(), "")
 							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 							next.ServeHTTP(w, r.WithContext(ctx))
 						})

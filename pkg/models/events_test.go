@@ -7,7 +7,7 @@ import (
 	"github.com/bxcodec/faker/v3"
 	"github.com/magiconair/properties/assert"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
-	identity "github.com/redhatinsights/platform-go-middlewares/identity"
+	identity "github.com/redhatinsights/platform-go-middlewares/v2/identity"
 )
 
 // Setup the test payload

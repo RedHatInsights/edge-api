@@ -7,7 +7,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 
 	"github.com/redhatinsights/edge-api/config"
 )
@@ -31,11 +31,9 @@ func GetOrgIDFromContext(ctx context.Context) (string, error) {
 	if !conf.Auth {
 		return DefaultOrgID, nil
 	}
-	if ctx.Value(identity.Key) != nil {
-		ident := identity.Get(ctx)
-		if ident.Identity.OrgID != "" {
-			return ident.Identity.OrgID, nil
-		}
+	rhId := identity.GetIdentity(ctx)
+	if rhId.Identity.OrgID != "" {
+		return rhId.Identity.OrgID, nil
 	}
 
 	return "", errors.New("cannot find org-id")

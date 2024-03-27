@@ -9,7 +9,7 @@ import (
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/magiconair/properties/assert"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 
 	"github.com/redhatinsights/edge-api/config"
 )
@@ -50,14 +50,14 @@ func TestGetDefaultAccount(t *testing.T) {
 		},
 		{
 			Name:            "Cannot get account from Context",
-			Context:         context.WithValue(ctx, identity.Key, nil),
+			Context:         ctx, // don't add any identity
 			Auth:            true,
 			ExpectedAccount: "",
 			ExpectedError:   errors.New("cannot find account number"),
 		},
 		{
 			Name: "Get account from Context",
-			Context: context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{
+			Context: identity.WithIdentity(ctx, identity.XRHID{Identity: identity.Identity{
 				OrgID:         faker.UUIDHyphenated(),
 				AccountNumber: account,
 			}}),
@@ -67,7 +67,7 @@ func TestGetDefaultAccount(t *testing.T) {
 		},
 		{
 			Name: "Blank account from Context",
-			Context: context.WithValue(ctx, identity.Key, identity.XRHID{Identity: identity.Identity{
+			Context: identity.WithIdentity(ctx, identity.XRHID{Identity: identity.Identity{
 				OrgID:         faker.UUIDHyphenated(),
 				AccountNumber: "",
 			}}),

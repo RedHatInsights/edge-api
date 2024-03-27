@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/magiconair/properties/assert"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 )
 
 func TestGetIdentityInstanceFromContext(t *testing.T) {
@@ -39,7 +39,7 @@ func TestGetIdentityInstanceFromContext(t *testing.T) {
 		},
 		{
 			Name:          "Cannot unmarshal identity from context",
-			Context:       SetOriginalIdentity(context.Background(), ""),
+			Context:       SetOriginalIdentity(context.Background(), base64.StdEncoding.EncodeToString([]byte("{\"bb\""))),
 			ExpectedOrgID: "",
 			ExpectedError: &json.SyntaxError{},
 		},
@@ -57,6 +57,9 @@ func TestGetIdentityInstanceFromContext(t *testing.T) {
 		t.Run(test.Name, func(t *testing.T) {
 			ident, err := GetIdentityInstanceFromContext(test.Context)
 			assert.Equal(t, ident.Identity.OrgID, test.ExpectedOrgID)
+			if err != nil {
+				t.Log(err.Error())
+			}
 			if errors.As(err, &tt) {
 				// It's not possible to create json.SyntaxError directly
 				// https://stackoverflow.com/questions/71768824/how-to-handle-json-syntax-error-in-a-go-test-case

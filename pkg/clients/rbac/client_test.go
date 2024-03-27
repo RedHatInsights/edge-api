@@ -10,14 +10,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/redhatinsights/edge-api/config"
-	"github.com/redhatinsights/edge-api/pkg/clients/rbac"
-	"github.com/redhatinsights/edge-api/pkg/routes/common"
-	"github.com/redhatinsights/platform-go-middlewares/identity"
-
 	"github.com/bxcodec/faker/v3"
 	. "github.com/onsi/ginkgo" // nolint: revive
 	. "github.com/onsi/gomega" // nolint: revive
+	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/edge-api/internal/testing"
+	"github.com/redhatinsights/edge-api/pkg/clients/rbac"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -26,8 +24,6 @@ func StringPointer(str string) *string {
 }
 
 var _ = Describe("Rbac Client", func() {
-	var orgID string
-	var rhID identity.XRHID
 	var ctx context.Context
 	var client rbac.ClientInterface
 
@@ -35,17 +31,13 @@ var _ = Describe("Rbac Client", func() {
 	var initialRbacBaseURL string
 
 	BeforeEach(func() {
-		orgID = faker.UUIDHyphenated()
 		initialAuth = config.Get().Auth
 		initialRbacBaseURL = config.Get().RbacBaseURL
 
 		config.Get().Auth = true
 
-		rhID = identity.XRHID{Identity: identity.Identity{OrgID: orgID, Type: "User"}}
-		content, err := json.Marshal(&rhID)
-		Expect(err).ToNot(HaveOccurred())
 		ctx = context.Background()
-		ctx = common.SetOriginalIdentity(ctx, string(content))
+		ctx = testing.WithRawIdentity(ctx, faker.UUIDHyphenated())
 		client = rbac.InitClient(ctx, log.NewEntry(log.StandardLogger()))
 	})
 
