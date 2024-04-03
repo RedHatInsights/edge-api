@@ -134,6 +134,7 @@ func initConsumer(ctx context.Context) error {
 func main() {
 	ctx := context.Background()
 	logger.InitLogger(os.Stdout)
+	defer logger.FlushLogger()
 	edgeAPIServices := dependencies.Init(ctx)
 	ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
 	mslog := log.WithFields(log.Fields{"app": "edge", "service": "images"})
@@ -144,6 +145,5 @@ func main() {
 		mslog.WithField("error", err.Error()).Error("Error when initializing consumer")
 		exitCode = 1
 	}
-	logger.FlushLogger()
 	os.Exit(exitCode)
 }

@@ -51,41 +51,31 @@ func initConfiguration() {
 	initializeUnleash()
 }
 
-func flushLogAndExit(err error) {
-	// flush logger before app exit
-	logger.FlushLogger()
-	if err != nil {
-		os.Exit(2)
-	}
-	os.Exit(0)
-}
-
 func main() {
 	initConfiguration()
+	defer logger.FlushLogger()
 
 	client := files.GetNewS3Client()
 
-	var mainErr error
-
 	if err := deleteimages.DeleteAllImages(db.DB); err != nil &&
 		err != deleteimages.ErrDeleteImagesCleanUpNotAvailable {
-		mainErr = err
+		os.Exit(2)
 	}
 
 	if err := cleanupimages.CleanUpAllImages(client); err != nil &&
 		err != cleanupimages.ErrImagesCleanUPNotAvailable {
-		mainErr = err
+		os.Exit(2)
 	}
 
 	if err := cleanupdevices.CleanupAllDevices(client, db.DB); err != nil &&
 		err != cleanupdevices.ErrCleanupDevicesNotAvailable {
-		mainErr = err
+		os.Exit(2)
 	}
 
 	if err := cleanuporphancommits.CleanupAllOrphanCommits(client, db.DB); err != nil &&
 		err != cleanuporphancommits.ErrCleanupOrphanCommitsNotAvailable {
-		mainErr = err
+		os.Exit(2)
 	}
 
-	flushLogAndExit(mainErr)
+	os.Exit(0)
 }

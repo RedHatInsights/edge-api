@@ -48,41 +48,30 @@ func initConfiguration() {
 	initializeUnleash()
 }
 
-func cleanupAndExit(err error) {
-	// flush logger before app exit
-	logger.FlushLogger()
-	if err != nil {
-		os.Exit(2)
-	}
-	os.Exit(0)
-}
-
 func main() {
 
 	initConfiguration()
+	defer logger.FlushLogger()
+
 	// wait for 5 seconds, for the unleash client to refresh
 	time.Sleep(5 * time.Second)
 
 	if feature.MigrateCustomRepositories.IsEnabled() {
 		log.Info("custom repositories migration started")
 		if _, err := repairrepos.RepairUrls(); err != nil {
-			cleanupAndExit(err)
-			return
+			os.Exit(2)
 		}
 
 		if err := repairrepos.RepairDuplicateImagesReposURLS(); err != nil {
-			cleanupAndExit(err)
-			return
+			os.Exit(2)
 		}
 
 		if err := repairrepos.RepairDuplicates(); err != nil {
-			cleanupAndExit(err)
-			return
+			os.Exit(2)
 		}
 
 		if err := migraterepos.MigrateAllCustomRepositories(); err != nil {
-			cleanupAndExit(err)
-			return
+			os.Exit(2)
 		}
 	} else {
 		log.Info("custom repositories migration feature is disabled")
@@ -91,10 +80,9 @@ func main() {
 	if feature.PostMigrateDeleteCustomRepositories.IsEnabled() {
 		log.Info("post migrate delete custom repositories start")
 		if _, err := postmigraterepos.PostMigrateDeleteCustomRepo(); err != nil {
-			cleanupAndExit(err)
-			return
+			os.Exit(2)
 		}
 	}
 
-	cleanupAndExit(nil)
+	os.Exit(0)
 }
