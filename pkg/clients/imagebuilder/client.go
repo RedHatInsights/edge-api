@@ -68,10 +68,16 @@ type OSTree struct {
 
 // Customizations is made of the packages that are baked into an image
 type Customizations struct {
-	Packages            *[]string     `json:"packages"`
-	PayloadRepositories *[]Repository `json:"payload_repositories,omitempty"`
-	Users               []User        `json:"users,omitempty"`
-	Subscription        *Subscription `json:"subscription,omitempty"`
+	Installer           *CustomInstaller `json:"installer,omitempty"`
+	Packages            *[]string        `json:"packages"`
+	PayloadRepositories *[]Repository    `json:"payload_repositories,omitempty"`
+	Users               []User           `json:"users,omitempty"`
+	Subscription        *Subscription    `json:"subscription,omitempty"`
+}
+
+type CustomInstaller struct {
+	SudoNoPasswd []string `json:"sudo-nopasswd"`
+	Unattended   bool     `json:"unattended"`
 }
 
 // Repository is the record of Third Party Repository
@@ -85,11 +91,13 @@ type Repository struct {
 	RHSM       bool    `json:"rhsm"`
 }
 
-// User is the username ad ssh key to inject in ISO kickstart for device login by default.
+// User is the username and ssh key to inject in ISO kickstart for device login by default.
 type User struct {
-	Name   string `json:"name"`
-	SSHKey string `json:"ssh_key"`
+	Groups []string `json:"groups"`
+	Name   string   `json:"name"`
+	SSHKey string   `json:"ssh_key"`
 }
+
 type Subscription struct {
 	Organization  int    `json:"organization"`
 	ActivationKey string `json:"activation-key"`
@@ -327,7 +335,7 @@ func (c *Client) ComposeCommit(image *models.Image) (*models.Image, error) {
 	return image, nil
 }
 
-// ComposeInstaller composes a Installer on ImageBuilder
+// ComposeInstaller composes an Installer on ImageBuilder
 func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 	pkgs := make([]string, 0)
 	var repoURL string
@@ -339,9 +347,12 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 		repoURL = image.Commit.Repo.URL
 		rhsm = false
 	}
+
 	users := make([]User, 0)
 	if feature.PassUserToImageBuilder.IsEnabled() && image.Installer != nil && image.Installer.Username != "" && image.Installer.SSHKey != "" {
-		users = append(users, User{Name: image.Installer.Username, SSHKey: image.Installer.SSHKey})
+		users = append(users, User{Name: image.Installer.Username,
+			SSHKey: image.Installer.SSHKey,
+			Groups: []string{image.Installer.Username, "wheel"}})
 	}
 
 	req := &ComposeRequest{
@@ -367,6 +378,14 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 				},
 			}},
 	}
+
+	if feature.BlueprintCustomInstaller.IsEnabled() {
+		req.Customizations.Installer = &CustomInstaller{
+			Unattended:   true,
+			SudoNoPasswd: []string{"@wheel"},
+		}
+	}
+
 	subscription, error := createSubscriptionToImage(image)
 	if error != nil {
 		c.log.WithField("error", error.Error()).Error("Error can not convert org Id to integer")
