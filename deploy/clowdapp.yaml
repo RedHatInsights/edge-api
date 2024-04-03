@@ -432,7 +432,7 @@ objects:
               cpu: 900m
               memory: 2Gi
             requests:
-              cpu: 500m
+              cpu: 400m
               memory: 1Gi
     objectStore:
     - ${EDGE_TARBALLS_BUCKET}
