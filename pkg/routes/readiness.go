@@ -47,7 +47,6 @@ func GetReadinessStatus(g WebGetter) http.HandlerFunc {
 				})
 			} else {
 				w.WriteHeader(http.StatusOK)
-				log.Debug("Readiness probe succeeded.")
 				respondWithJSONBody(w, nil, ReadinessStatus{
 					Readiness: "ready",
 				})
