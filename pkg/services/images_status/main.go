@@ -16,7 +16,6 @@ func main() {
 	log.Info("Images-Status microservice started")
 
 	for {
-		log.Info("Sleeping...")
 		time.Sleep(InfiniteLoopWait * time.Minute)
 	}
 }

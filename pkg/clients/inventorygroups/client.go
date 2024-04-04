@@ -201,7 +201,7 @@ func (c *Client) GetGroupByUUID(groupUUID string) (*Group, error) {
 
 	requestURL := groupsURL.String() + "/" + groupUUID
 
-	c.log.WithField("url", requestURL).Info("inventory group request started")
+	c.log.WithField("url", requestURL).Debug("inventory group request started")
 	req, _ := http.NewRequest(http.MethodGet, requestURL, nil)
 	req.Header.Add("Content-Type", "application/json")
 	headers := clients.GetOutgoingHeaders(c.ctx)

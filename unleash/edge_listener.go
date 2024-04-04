@@ -11,17 +11,17 @@ type EdgeListener struct{}
 
 // OnError prints out errors.
 func (l EdgeListener) OnError(err error) { // nolint:gofmt,goimports,revive
-	log.Infof("ERROR: %+v\n", err.Error())
+	log.Warnf("Unleash: %+v\n", err.Error())
 }
 
 // OnWarning prints out warning.
 func (l EdgeListener) OnWarning(warning error) { // nolint:gofmt,goimports,revive
-	log.Debugf("WARNING: %+v\n", warning.Error())
+	log.Warnf("Unleash: %+v\n", warning.Error())
 }
 
 // OnReady prints to the console when the repository is ready.
 func (l EdgeListener) OnReady() { // nolint:gofmt,goimports,revive
-	log.Infof("READY\n")
+	log.Infof("Unleash: READY\n")
 }
 
 // OnCount prints to the console when the feature is queried.
