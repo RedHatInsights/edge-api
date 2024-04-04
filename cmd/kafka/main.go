@@ -79,7 +79,6 @@ func main() {
 
 	log.Info("Entering the infinite loop...")
 	for {
-		log.Debug("Sleeping...")
 		// TODO: make this configurable
 		time.Sleep(LoopTime * time.Minute)
 		// TODO: programatic method to avoid resuming a build until app is up or on way up???
