@@ -382,7 +382,7 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 	if feature.BlueprintCustomInstaller.IsEnabled() {
 		req.Customizations.Installer = &CustomInstaller{
 			Unattended:   true,
-			SudoNoPasswd: []string{"@wheel"},
+			SudoNoPasswd: []string{"%wheel"},
 		}
 	}
 
