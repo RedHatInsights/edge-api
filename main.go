@@ -23,6 +23,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/routes"
+	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 	edgeunleash "github.com/redhatinsights/edge-api/unleash"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
@@ -78,15 +79,37 @@ func serveMetrics(port int) *http.Server {
 	return &server
 }
 
+func logMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t1 := time.Now()
+		s := dependencies.ServicesFromContext(r.Context())
+
+		org_id, _ := common.GetOrgID(r)
+		fields := log.Fields{
+			"request_id": request_id.GetReqID(r.Context()),
+			"org_id":     org_id,
+		}
+
+		s.Log.WithFields(fields).Debugf("Started %s request %s", r.Method, r.URL.Path)
+
+		defer func() {
+			s.Log.WithFields(fields).
+				WithField("duration_ms", time.Since(t1).Milliseconds()).Infof("Finished %s request %s", r.Method, r.URL.Path)
+		}()
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 	route := chi.NewRouter()
 	route.Use(
 		request_id.ConfiguredRequestID("x-rh-insights-request-id"),
 		middleware.RealIP,
 		middleware.Recoverer,
-		middleware.Logger,
 		setupDocsMiddleware,
 		dependencies.Middleware,
+		logMiddleware,
 	)
 
 	// Unauthenticated routes
