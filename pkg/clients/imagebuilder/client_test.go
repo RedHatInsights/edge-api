@@ -88,7 +88,7 @@ var _ = Describe("Image Builder Client Test", func() {
 		// restore the original image builder url
 		conf.ImageBuilderConfig.URL = originalImageBuilderURL
 		// disable passing user to image builder feature flag
-		err := os.Unsetenv(feature.PassUserToImageBuilder.EnvVar)
+		err := os.Unsetenv(feature.DeprecateKickstartInjection.EnvVar)
 		Expect(err).ToNot(HaveOccurred())
 		err = os.Unsetenv(SUBSCRIPTION_BASE_URL)
 		Expect(err).ToNot(HaveOccurred())
@@ -726,7 +726,7 @@ var _ = Describe("Image Builder Client Test", func() {
 
 	It("test compose installer with username and ssh-key", func() {
 		// enable feature flag
-		err := os.Setenv(feature.PassUserToImageBuilder.EnvVar, "true")
+		err := os.Setenv(feature.DeprecateKickstartInjection.EnvVar, "true")
 		Expect(err).ToNot(HaveOccurred())
 		installer := models.Installer{Username: faker.Username(), SSHKey: faker.UUIDHyphenated()}
 		composeJobID := "compose-job-id-returned-from-image-builder"
@@ -766,7 +766,7 @@ var _ = Describe("Image Builder Client Test", func() {
 
 	It("test compose installer without username and ssh-key", func() {
 		// enable feature flag
-		err := os.Setenv(feature.PassUserToImageBuilder.EnvVar, "true")
+		err := os.Setenv(feature.DeprecateKickstartInjection.EnvVar, "true")
 		Expect(err).ToNot(HaveOccurred())
 		// install has no username and ssh-key
 		installer := models.Installer{}
@@ -806,7 +806,7 @@ var _ = Describe("Image Builder Client Test", func() {
 
 	It("test compose installer should not pass username and ssh-key when feature flag is disabled", func() {
 		// ensure feature flag disabled
-		err := os.Unsetenv(feature.PassUserToImageBuilder.EnvVar)
+		err := os.Unsetenv(feature.DeprecateKickstartInjection.EnvVar)
 		Expect(err).ToNot(HaveOccurred())
 		installer := models.Installer{Username: faker.Username(), SSHKey: faker.UUIDHyphenated()}
 		composeJobID := "compose-job-id-returned-from-image-builder"

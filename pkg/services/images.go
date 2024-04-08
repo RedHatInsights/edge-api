@@ -1040,7 +1040,7 @@ func (s *ImageService) AddUserInfo(image *models.Image) error {
 		return fmt.Errorf("error downloading ISO file :: %s", err.Error())
 	}
 
-	if !feature.SkipInjectKickstartToISO.IsEnabled() {
+	if !feature.DeprecateKickstartInjection.IsEnabled() {
 		s.log.Debug("Adding SSH Key to kickstart file...")
 		err = s.addSSHKeyToKickstart(sshKey, username, kickstart)
 		if err != nil {
@@ -1170,7 +1170,7 @@ func (s *ImageService) uploadISO(image *models.Image, imageName string) error {
 
 // Remove edited kickstart after use.
 func (s *ImageService) cleanFiles(kickstart string, isoName string, imageID uint) error {
-	if !feature.SkipInjectKickstartToISO.IsEnabled() {
+	if !feature.DeprecateKickstartInjection.IsEnabled() {
 		err := os.Remove(kickstart)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error removing kickstart file")

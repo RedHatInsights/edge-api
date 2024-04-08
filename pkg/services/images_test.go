@@ -3066,7 +3066,7 @@ var _ = Describe("Image Service Test", func() {
 func TestCreateInstallerForImageSuccessfully(t *testing.T) {
 	g := NewGomegaWithT(t)
 	// ensure feature.SkipInjectKickstartToISO feature flag is disabled
-	err := os.Unsetenv(feature.SkipInjectKickstartToISO.EnvVar)
+	err := os.Unsetenv(feature.DeprecateKickstartInjection.EnvVar)
 	g.Expect(err).ToNot(HaveOccurred())
 	// ensure feature.ImageCreateISOEDA is disabled
 	err = os.Unsetenv(feature.ImageCreateEDA.EnvVar)
@@ -3166,7 +3166,7 @@ func TestCreateInstallerForImageSuccessfully(t *testing.T) {
 func TestCreateInstallerForImageSuccessfullyWithSkipInjectKickstart(t *testing.T) {
 	g := NewGomegaWithT(t)
 	// set feature flag feature.SkipInjectKickstartToISO to skip injecting kickstart to ISO file
-	err := os.Setenv(feature.SkipInjectKickstartToISO.EnvVar, "true")
+	err := os.Setenv(feature.DeprecateKickstartInjection.EnvVar, "true")
 	g.Expect(err).ToNot(HaveOccurred())
 	// ensure feature.ImageCreateISOEDA is disabled
 	err = os.Unsetenv(feature.ImageCreateEDA.EnvVar)
@@ -3174,7 +3174,7 @@ func TestCreateInstallerForImageSuccessfullyWithSkipInjectKickstart(t *testing.T
 
 	defer func() {
 		// unset feature flags
-		err := os.Unsetenv(feature.SkipInjectKickstartToISO.EnvVar)
+		err := os.Unsetenv(feature.DeprecateKickstartInjection.EnvVar)
 		g.Expect(err).ToNot(HaveOccurred())
 	}()
 
