@@ -349,7 +349,7 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 	}
 
 	users := make([]User, 0)
-	if feature.PassUserToImageBuilder.IsEnabled() && image.Installer != nil && image.Installer.Username != "" && image.Installer.SSHKey != "" {
+	if feature.DeprecateKickstartInjection.IsEnabled() && image.Installer != nil && image.Installer.Username != "" && image.Installer.SSHKey != "" {
 		users = append(users, User{Name: image.Installer.Username,
 			SSHKey: image.Installer.SSHKey,
 			Groups: []string{image.Installer.Username, "wheel"}})
@@ -379,7 +379,7 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 			}},
 	}
 
-	if feature.BlueprintCustomInstaller.IsEnabled() {
+	if feature.DeprecateKickstartInjection.IsEnabled() {
 		req.Customizations.Installer = &CustomInstaller{
 			Unattended:   true,
 			SudoNoPasswd: []string{"%wheel"},

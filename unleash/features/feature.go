@@ -119,12 +119,6 @@ var StaticDeltaGenerate = &Flag{Name: "edge-management.static_delta_generate", E
 // HideCreateGroup toggles creation of static deltas
 var HideCreateGroup = &Flag{Name: "edge-management.hide-create-group", EnvVar: "FEATURE_HIDE_CREATE_GROUP"}
 
-// SkipInjectKickstartToISO toggles INJECTING kickstart to iso file
-var SkipInjectKickstartToISO = &Flag{Name: "edge-management.skip-inject-kickstart-to-iso", EnvVar: "FEATURE_SKIP_INJECT_KICKSTART_TO_ISO"}
-
-// PassUserToImageBuilder toggles passing user to image builder
-var PassUserToImageBuilder = &Flag{Name: "edge-management.pass-user-to-image-builder", EnvVar: "FEATURE_PASS_USER_TO_IMAGE_BUILDER"}
-
 // EdgeParityGroupsMigration toggles edge parity groups migration
 var EdgeParityGroupsMigration = &Flag{Name: "edgeParity.groups-migration", EnvVar: "FEATURE_EDGE_PARITY_GROUPS_MIGRATION"}
 
@@ -137,9 +131,10 @@ var EdgeParityInventoryGroupsEnabled = &Flag{Name: "edgeParity.inventory-groups-
 // EdgeParityInventoryRbac is a feature flag for inventory rbac usage
 var EdgeParityInventoryRbac = &Flag{Name: "edgeParity.inventory-rbac", EnvVar: "FEATURE_INVENTORY_RBAC"}
 
-// KICKSTART CUSTOMIZE KICKSTART FLAGS
+// USER, RHC, CUSTOMIZE KICKSTART FLAGS
 
-var BlueprintCustomInstaller = &Flag{Name: "edge-management.blueprint_custominstaller", EnvVar: "FEATURE_BLUEPRINT_CUSTOMINSTALLER"}
+// DeprecateKickstartInjection replaces the user, custom installer, and ks injection feature flags
+var DeprecateKickstartInjection = &Flag{Name: "edge-management.deprecate_ks_injection", EnvVar: "FEATURE_DEPRECATE_KS_INJECTION"}
 
 // DB LOGGING FLAGS
 
