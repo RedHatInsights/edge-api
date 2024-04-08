@@ -13,11 +13,19 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime/debug"
 	"syscall"
 	"time"
 
+	"github.com/Unleash/unleash-client-go/v4"
+	"github.com/getsentry/sentry-go"
+	slg "github.com/getsentry/sentry-go/logrus"
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	redoc "github.com/go-openapi/runtime/middleware"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/redhatinsights/edge-api/config"
 	l "github.com/redhatinsights/edge-api/logger"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
@@ -27,14 +35,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services"
 	edgeunleash "github.com/redhatinsights/edge-api/unleash"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
-
-	"github.com/redhatinsights/edge-api/config"
-
-	"github.com/Unleash/unleash-client-go/v4"
-	"github.com/getsentry/sentry-go"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redhatinsights/platform-go-middlewares/identity"
 	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	log "github.com/sirupsen/logrus"
@@ -197,7 +197,20 @@ func main() {
 		// Set up Sentry client for GlitchTip error tracking
 		sentry.Init(sentry.ClientOptions{
 			Dsn: cfg.GlitchtipDsn,
+			Tags: map[string]string{
+				"service": "edge-api",
+				"binary":  filepath.Base(os.Args[0]),
+			},
 		})
+
+		// Initialize logrus hook for Sentry
+		sh := slg.NewFromClient([]log.Level{
+			log.PanicLevel,
+			log.FatalLevel,
+			log.ErrorLevel,
+		}, sentry.CurrentHub().Client())
+		log.AddHook(sh)
+
 		// Flush client after main exits
 		defer sentry.Flush(2 * time.Second)
 		// Report captured errors to GlitchTip
