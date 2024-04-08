@@ -16,10 +16,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services/utility"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 
-	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 
-	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -85,7 +83,6 @@ func newInventoryOrgClients(orgID string) (*InventoryOrgClients, error) {
 	}
 	base64Identity := base64.StdEncoding.EncodeToString(jsonIdent)
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, request_id.RequestIDKey, uuid.NewString())
 	ctx = common.SetOriginalIdentity(ctx, base64Identity)
 	clientLog := log.WithFields(log.Fields{
 		"org_id":  orgID,

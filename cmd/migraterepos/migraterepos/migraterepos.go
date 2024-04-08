@@ -13,7 +13,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 
-	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 
 	"github.com/google/uuid"
@@ -34,7 +33,6 @@ func newOrgContentSourcesClient(orgID string) (repositories.ClientInterface, err
 	}
 	base64Identity := base64.StdEncoding.EncodeToString(jsonIdent)
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, request_id.RequestIDKey, uuid.NewString())
 	ctx = common.SetOriginalIdentity(ctx, base64Identity)
 
 	client := repositories.InitClient(ctx, log.NewEntry(log.StandardLogger()))

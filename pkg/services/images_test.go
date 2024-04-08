@@ -41,7 +41,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 	"github.com/redhatinsights/edge-api/pkg/services/utility"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
-	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -2610,11 +2609,8 @@ var _ = Describe("Image Service Test", func() {
 
 		Context("feature.ImageCompletionEventsEDA.IsEnabled()", func() {
 			var ctx context.Context
-			var requestID string
 			BeforeEach(func() {
-				requestID = faker.UUIDHyphenated()
 				ctx = context.Background()
-				ctx = context.WithValue(ctx, request_id.RequestIDKey, requestID)
 				identityBytes, err := json.Marshal(&identity.XRHID{Identity: identity.Identity{OrgID: orgID}})
 				base64Identity := base64.StdEncoding.EncodeToString(identityBytes)
 				Expect(err).ToNot(HaveOccurred())
@@ -2870,11 +2866,8 @@ var _ = Describe("Image Service Test", func() {
 
 		Context("feature.ImageCreateISOEDA.IsEnabled()", func() {
 			var ctx context.Context
-			var requestID string
 			BeforeEach(func() {
-				requestID = faker.UUIDHyphenated()
 				ctx = context.Background()
-				ctx = context.WithValue(ctx, request_id.RequestIDKey, requestID)
 				identityBytes, err := json.Marshal(&identity.XRHID{Identity: identity.Identity{OrgID: orgID}})
 				base64Identity := base64.StdEncoding.EncodeToString(identityBytes)
 				Expect(err).ToNot(HaveOccurred())
