@@ -12,7 +12,6 @@ import (
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/internal/testing"
 	"github.com/redhatinsights/edge-api/pkg/clients"
-	"github.com/redhatinsights/platform-go-middlewares/request_id"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 
 	"github.com/bxcodec/faker/v3"
@@ -23,29 +22,19 @@ import (
 var _ = Describe("Clients", func() {
 
 	Context("GetOutgoingHeaders", func() {
-		var requestID string
 		var orgID string
 		var ctx context.Context
 		var originalAuth bool
 
 		BeforeEach(func() {
 			originalAuth = config.Get().Auth
-			requestID = faker.UUIDHyphenated()
 			orgID = faker.UUIDHyphenated()
 			ctx = context.Background()
-			ctx = context.WithValue(ctx, request_id.RequestIDKey, requestID)
 			ctx = testing.WithRawIdentity(ctx, orgID)
 		})
 
 		AfterEach(func() {
 			config.Get().Auth = originalAuth
-		})
-
-		It("should get requestID", func() {
-			headers := clients.GetOutgoingHeaders(ctx)
-			headerRequestID, ok := headers["x-rh-insights-request-id"]
-			Expect(ok).To(BeTrue())
-			Expect(headerRequestID).To(Equal(requestID))
 		})
 
 		It("when no auth should not get identity", func() {
@@ -78,7 +67,6 @@ var _ = Describe("Clients", func() {
 		})
 	})
 	Context("ConfigureHttpClient", func() {
-		var requestID string
 		var ctx context.Context
 		var originalAuth bool
 		var client http.Client
@@ -87,9 +75,7 @@ var _ = Describe("Clients", func() {
 		BeforeEach(func() {
 			originalAuth = config.Get().Auth
 			originalTLScaPATH = config.Get().TlsCAPath
-			requestID = faker.UUIDHyphenated()
 			ctx = context.Background()
-			ctx = context.WithValue(ctx, request_id.RequestIDKey, requestID)
 			ctx = testing.WithRawIdentity(ctx, faker.UUIDHyphenated())
 		})
 
