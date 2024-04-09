@@ -477,20 +477,20 @@ func GetAllImages(w http.ResponseWriter, r *http.Request) {
 	ctxServices.Log.Debug("Getting all images")
 	var count int64
 	var images []models.Image
-	result := imageFilters(r, db.DB)
+	result := imageFilters(r, db.DBx(r.Context()))
 	pagination := common.GetPagination(r)
 	orgID := readOrgID(w, r, ctxServices.Log)
 	if orgID == "" {
 		// logs and response handled by readOrgID
 		return
 	}
-	countResult := db.OrgDB(orgID, imageFilters(r, db.DB.Model(&models.Image{})), "images").Count(&count)
+	countResult := db.OrgDB(orgID, imageFilters(r, db.DBx(r.Context()).Model(&models.Image{})), "images").Count(&count)
 	if countResult.Error != nil {
 		ctxServices.Log.WithField("error", countResult.Error.Error()).Error("Error retrieving images")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
-	result = db.OrgDB(orgID, result, "images").Limit(pagination.Limit).Offset(pagination.Offset).
+	result = db.OrgDB(orgID, result, "images").WithContext(r.Context()).Limit(pagination.Limit).Offset(pagination.Offset).
 		Preload("Packages").
 		Preload("Commit.Repo").
 		Preload("CustomPackages").
@@ -677,11 +677,11 @@ func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
 	go func(id uint, ctx context.Context) {
 		ctxServices := dependencies.ServicesFromContext(ctx)
 		var img *models.Image
-		if result := db.DB.Joins("Commit").Joins("Installer").First(&img, id); result.Error != nil {
+		if result := db.DBx(r.Context()).Joins("Commit").Joins("Installer").First(&img, id); result.Error != nil {
 			ctxServices.Log.WithField("error", result.Error.Error()).Debug("error while trying to get image")
 			return
 		}
-		if result := db.DB.First(&img.Commit, img.CommitID); result.Error != nil {
+		if result := db.DBx(r.Context()).First(&img.Commit, img.CommitID); result.Error != nil {
 			ctxServices.Log.WithField("error", result.Error.Error()).Debug("error while trying to get image commit")
 			return
 		}
@@ -859,7 +859,7 @@ func ResumeCreateImage(w http.ResponseWriter, r *http.Request) {
 
 		// re-grab the image from the database
 		var image *models.Image
-		db.DB.Preload("Commit.Repo").Joins("Commit").Joins("Installer").First(&image, tempImage.ID)
+		db.DBx(r.Context()).Preload("Commit.Repo").Joins("Commit").Joins("Installer").First(&image, tempImage.ID)
 
 		resumeLog := edgeAPIServices.Log.WithField("originalRequestId", image.RequestID)
 		resumeLog.Info("Resuming image build")

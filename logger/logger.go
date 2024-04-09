@@ -24,6 +24,12 @@ var logLevel log.Level
 // hook is an instance of cloudwatch.hook
 var hook *lc.Hook
 
+func prettyfier(f *runtime.Frame) (string, string) {
+	s := strings.Split(f.Function, ".")
+	funcName := s[len(s)-1]
+	return funcName, fmt.Sprintf("%s:%d", path.Base(f.File), f.Line)
+}
+
 // InitLogger initializes the API logger
 func InitLogger(writer io.Writer) {
 
@@ -52,11 +58,7 @@ func InitLogger(writer io.Writer) {
 			FieldMap: log.FieldMap{
 				log.FieldKeyTime: "@timestamp",
 			},
-			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-				s := strings.Split(f.Function, ".")
-				funcName := s[len(s)-1]
-				return funcName, fmt.Sprintf("%s:%d", path.Base(f.File), f.Line)
-			},
+			CallerPrettyfier: prettyfier,
 		})
 	}
 

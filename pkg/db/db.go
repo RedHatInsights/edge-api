@@ -3,6 +3,7 @@
 package db
 
 import (
+	"context"
 	"fmt"
 
 	edgelogger "github.com/redhatinsights/edge-api/logger"
@@ -44,7 +45,9 @@ func CreateDB() (*gorm.DB, error) {
 			Logger: logger.Default.LogMode(logger.Silent),
 		})
 	} else {
-		newDB, err = gorm.Open(dia, &gorm.Config{})
+		newDB, err = gorm.Open(dia, &gorm.Config{
+			Logger: edgelogger.NewGormLogger(log.StandardLogger()),
+		})
 	}
 
 	if err != nil {
@@ -98,9 +101,19 @@ func AccountOrOrgTx(account string, orgID string, tx *gorm.DB, table string) *go
 	return tx.Where(sqlText, account, orgID)
 }
 
+// DBX returns a gorm db query with context
+func DBx(ctx context.Context) *gorm.DB {
+	return DB.WithContext(ctx)
+}
+
 // Org returns a gorm db query with orgID filter
 func Org(orgID string, table string) *gorm.DB {
 	return OrgDB(orgID, DB, table)
+}
+
+// Orgx returns a gorm db query with orgID filter with context
+func Orgx(ctx context.Context, orgID string, table string) *gorm.DB {
+	return Org(orgID, table).WithContext(ctx)
 }
 
 // OrgDB returns a gorm db with orgID filter from a known gorm db query
@@ -123,4 +136,9 @@ func OrgDB(orgID string, gormDB *gorm.DB, table string) *gorm.DB {
 	)
 
 	return gormDB.Where(sqlText, orgID)
+}
+
+// OrgDBx returns a gorm db with orgID filter from a known gorm db query with context
+func OrgDBx(ctx context.Context, orgID string, gormDB *gorm.DB, table string) *gorm.DB {
+	return OrgDB(orgID, gormDB, table).WithContext(ctx)
 }

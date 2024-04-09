@@ -155,13 +155,13 @@ func ImageSetCtx(next http.Handler) http.Handler {
 				return
 			}
 			if imageSet.Images != nil {
-				result := db.DB.Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
+				result := db.DBx(r.Context()).Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
 				if result.Error != nil {
 					s.Log.WithField("error", result.Error.Error()).Error("error when getting image-set images")
 					respondWithAPIError(w, s.Log, errors.NewInternalServerError())
 					return
 				}
-				if result := db.DB.Where("id = ?", &imageSet.Images[len(imageSet.Images)-1].InstallerID).Find(&imageSet.Images[len(imageSet.Images)-1].Installer); result.Error != nil {
+				if result := db.DBx(r.Context()).Where("id = ?", &imageSet.Images[len(imageSet.Images)-1].InstallerID).Find(&imageSet.Images[len(imageSet.Images)-1].Installer); result.Error != nil {
 					s.Log.WithField("error", result.Error.Error()).Error("error when getting image installer")
 					respondWithAPIError(w, s.Log, errors.NewInternalServerError())
 					return
@@ -211,7 +211,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 	}
 
 	latestImagesSubQuery := db.Org(orgID, "").Model(&models.Image{}).Select("image_set_id", "deleted_at", "max(id) as image_id").Group("image_set_id, deleted_at")
-	countResult := imageSetFilters(r, db.OrgDB(orgID, db.DB, "image_sets")).Table("(?) as latest_images", latestImagesSubQuery).
+	countResult := imageSetFilters(r, db.OrgDB(orgID, db.DBx(r.Context()), "image_sets")).Table("(?) as latest_images", latestImagesSubQuery).
 		Joins("JOIN images on images.id = latest_images.image_id").
 		Joins("JOIN image_sets on image_sets.id = latest_images.image_set_id").
 		Where("image_sets.deleted_at IS NULL").
@@ -223,7 +223,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result = imageSetFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Model(&models.ImageSet{})).Table("(?) as latest_images", latestImagesSubQuery).
+	result = imageSetFilters(r, db.OrgDB(orgID, db.DBx(r.Context()), "Image_Sets").Model(&models.ImageSet{})).Table("(?) as latest_images", latestImagesSubQuery).
 		Distinct("image_sets.*").
 		Limit(pagination.Limit).Offset(pagination.Offset).
 		Preload("Images").
@@ -254,7 +254,7 @@ func ListAllImageSets(w http.ResponseWriter, r *http.Request) {
 			i := i
 			if i.InstallerID != nil {
 				if i.Installer == nil {
-					result = db.DB.First(&i.Installer, &i.InstallerID)
+					result = db.DBx(r.Context()).First(&i.Installer, &i.InstallerID)
 				}
 				if i.Installer.ImageBuildISOURL != "" {
 					installerIsoURL := getStorageInstallerIsoURL(i.Installer.ID)
@@ -333,7 +333,7 @@ func GetImageSetsByID(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, s.Log, errors.NewBadRequest("image-set not found in the context"))
 		return
 	}
-	result := imageDetailFilters(r, db.OrgDB(orgID, db.DB, "Image_Sets").Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
+	result := imageDetailFilters(r, db.OrgDB(orgID, db.DBx(r.Context()), "Image_Sets").Model(&models.Image{})).Limit(pagination.Limit).Offset(pagination.Offset).
 		Preload("Commit.Repo").Preload("Commit.InstalledPackages").Preload("Installer").
 		Joins(`JOIN Image_Sets ON Image_Sets.id = Images.image_set_id`).
 		Where(`Image_sets.id = ?`, &imageSet.ID).
@@ -537,14 +537,14 @@ func GetImageSetsView(w http.ResponseWriter, r *http.Request) {
 
 	pagination := common.GetPagination(r)
 
-	imageSetsCount, err := ctxServices.ImageSetService.GetImageSetsViewCount(imageSetsViewFilters(r, db.DB))
+	imageSetsCount, err := ctxServices.ImageSetService.GetImageSetsViewCount(imageSetsViewFilters(r, db.DBx(r.Context())))
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{"error": err.Error(), "orgID": orgID}).Error("error getting image-sets view count")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
 		return
 	}
 
-	imageSetsViewList, err := ctxServices.ImageSetService.GetImageSetsView(pagination.Limit, pagination.Offset, imageSetsViewFilters(r, db.DB))
+	imageSetsViewList, err := ctxServices.ImageSetService.GetImageSetsView(pagination.Limit, pagination.Offset, imageSetsViewFilters(r, db.DBx(r.Context())))
 	if err != nil {
 		ctxServices.Log.WithFields(log.Fields{"error": err.Error(), "orgID": orgID}).Error("error getting image-sets view")
 		respondWithAPIError(w, ctxServices.Log, errors.NewInternalServerError())
@@ -665,7 +665,7 @@ func GetAllImageSetImagesView(w http.ResponseWriter, r *http.Request) {
 		// log and response handled by getContextImageSet
 		return
 	}
-	imagesDBFilters := imageDetailFilters(r, db.DB)
+	imagesDBFilters := imageDetailFilters(r, db.DBx(r.Context()))
 	pagination := common.GetPagination(r)
 
 	imageSetImagesView, err := ctxServices.ImageSetService.GetImagesViewData(imageSet.ID, pagination.Limit, pagination.Offset, imagesDBFilters)
