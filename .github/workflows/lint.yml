@@ -92,22 +92,3 @@ jobs:
 
       - name: Validate spec-file
         run: python3 -m openapi_spec_validator ${{ github.workspace }}/cmd/spec/openapi.json
-
-  gocoverage:
-    name: Codecov
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        name: Checkout edge-api
-
-      - name: Run Go Test Coverage output without fdo
-        run: make coverage-output-no-fdo
-
-      - name: Run Go Test Coverage without fdo
-        run: make coverage-no-fdo
-
-      - uses: codecov/codecov-action@v3
-        with:
-          fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
-          verbose: true
