@@ -306,7 +306,7 @@ func ValidateGetAllDeviceGroupsFilterParams(next http.Handler) http.Handler {
 func GetAllDeviceGroups(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	deviceGroupService := ctxServices.DeviceGroupsService
-	tx := deviceGroupsFilters(r, db.DB)
+	tx := deviceGroupsFilters(r, db.DBx(r.Context()))
 
 	orgID := readOrgID(w, r, ctxServices.Log)
 	if orgID == "" {
@@ -429,7 +429,7 @@ func GetDeviceGroupDetailsByIDView(w http.ResponseWriter, r *http.Request) {
 		devicesIDS = append(devicesIDS, device.ID)
 	}
 
-	tx := devicesFilters(r, db.DB).
+	tx := devicesFilters(r, db.DBx(r.Context())).
 		Where("image_id IS NOT NULL AND image_id != 0 AND ID IN (?)", devicesIDS)
 
 	devicesCount, err := ctxServices.DeviceService.GetDevicesCount(tx)
@@ -834,7 +834,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 
 	for _, d := range deviceGroup.Devices {
 		var img models.Image
-		err := db.DB.Joins("Images").Find(&img,
+		err := db.DBx(r.Context()).Joins("Images").Find(&img,
 			"id = ?", d.ImageID)
 		if err.Error != nil {
 			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(fmt.Sprintf(err.Error.Error())))
@@ -901,7 +901,7 @@ func UpdateAllDevicesFromGroup(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("devices not found"))
 		return
 	}
-	result := db.DB.Omit("Devices").Save(upd)
+	result := db.DBx(r.Context()).Omit("Devices").Save(upd)
 	if result.Error != nil {
 		ctxServices.Log.WithFields(log.Fields{
 			"error": err.Error(),
