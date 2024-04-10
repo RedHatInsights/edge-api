@@ -16,7 +16,7 @@ import (
 
 func handlePanic(errorOccurred *bool) {
 	if err := recover(); err != nil {
-		log.Error("Database automigrate failure")
+		log.Errorf("Database automigrate failure: %s", err)
 		l.FlushLogger()
 		os.Exit(1)
 	}
@@ -73,6 +73,11 @@ func main() {
 	// Automigration
 	errorOccurred := false
 	defer handlePanic(&errorOccurred)
+
+	var realDbName string
+	if result := db.DB.Raw("SELECT current_database()").Scan(&realDbName); result.Error == nil && realDbName == "postgres" {
+		log.Warning("Migration attempted on 'postgres' database")
+	}
 
 	// Delete indexes first, before models AutoMigrate
 	indexesToDelete := []struct {
