@@ -25,6 +25,13 @@ func CreateDB() (*gorm.DB, error) {
 	var dia gorm.Dialector
 	cfg := config.Get()
 
+	log.Debugf("Opening database host=%s user=%s dbname=%s port=%d",
+		cfg.Database.Hostname,
+		cfg.Database.User,
+		cfg.Database.Name,
+		cfg.Database.Port,
+	)
+
 	if cfg.Database.Type == "pgsql" {
 		dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d",
 			cfg.Database.Hostname,
@@ -58,11 +65,16 @@ func CreateDB() (*gorm.DB, error) {
 	if cfg.Database.Type == "pgsql" {
 		var minorVersion string
 		if result := newDB.Raw("SELECT version()").Scan(&minorVersion); result.Error != nil {
-			log.WithFields(log.Fields{"error": result.Error.Error()}).Error("error selecting version")
+			log.Errorf("error selecting version: %s", result.Error.Error())
+			return nil, result.Error
+		}
+		var realDbName string
+		if result := newDB.Raw("SELECT current_database()").Scan(&realDbName); result.Error != nil {
+			log.Errorf("error selecting version: %s", result.Error.Error())
 			return nil, result.Error
 		}
 
-		log.Infof("Postgres information: '%s'", minorVersion)
+		log.Infof("Postgres db '%s' information: '%s'", realDbName, minorVersion)
 	}
 
 	return newDB, nil

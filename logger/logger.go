@@ -3,6 +3,7 @@
 package logger
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"path"
@@ -28,6 +29,27 @@ func prettyfier(f *runtime.Frame) (string, string) {
 	s := strings.Split(f.Function, ".")
 	funcName := s[len(s)-1]
 	return funcName, fmt.Sprintf("%s:%d", path.Base(f.File), f.Line)
+}
+
+type plainFormatter struct{}
+
+// Format formats the log entry for humans (just the message or SQL if present)
+func (f *plainFormatter) Format(e *log.Entry) ([]byte, error) {
+	var b bytes.Buffer
+	if f, ok := e.Data["sql"]; ok {
+		b.WriteString(f.(string))
+	} else {
+		b.WriteString(e.Message)
+	}
+	b.WriteRune('\n')
+
+	if f, ok := e.Data["error"]; ok {
+		b.WriteString("ERROR: ")
+		b.WriteString(fmt.Sprintf("%v", f))
+		b.WriteRune('\n')
+	}
+
+	return b.Bytes(), nil
 }
 
 // InitLogger initializes the API logger
@@ -60,6 +82,8 @@ func InitLogger(writer io.Writer) {
 			},
 			CallerPrettyfier: prettyfier,
 		})
+	} else {
+		log.SetFormatter(&plainFormatter{})
 	}
 
 	log.SetOutput(writer)
