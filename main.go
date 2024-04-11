@@ -55,14 +55,7 @@ func initDependencies() {
 
 func serveMetrics(port int) *http.Server {
 	metricsRoute := chi.NewRouter()
-	SpecURL := "api/edge/v1/openapi.json" // nolint:gocritic,gofmt,goimports
-
-	readinessHandlerFunc := &routes.ConfigurableWebGetter{
-		URL:    fmt.Sprintf("%s:%d/%s", config.Get().MetricsBaseURL, config.Get().WebPort, SpecURL),
-		GetURL: http.Get,
-	}
-
-	metricsRoute.Get("/", routes.GetReadinessStatus(readinessHandlerFunc))
+	metricsRoute.Get("/", routes.StatusOK)
 	metricsRoute.Handle("/metrics", promhttp.Handler())
 	server := http.Server{
 		Addr:         fmt.Sprintf(":%d", port),
@@ -75,12 +68,17 @@ func serveMetrics(port int) *http.Server {
 			l.LogErrorAndPanic("metrics service stopped unexpectedly", err)
 		}
 	}()
-	log.Info("metrics service started")
+	log.Infof("metrics service started at port %d", port)
 	return &server
 }
 
 func logMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		t1 := time.Now()
 		s := dependencies.ServicesFromContext(r.Context())
 
@@ -159,7 +157,7 @@ func serveWeb(cfg *config.EdgeConfig, consumers []services.ConsumerService) *htt
 			l.LogErrorAndPanic("web service stopped unexpectedly", err)
 		}
 	}()
-	log.Info("web service started")
+	log.Infof("web service started at port %d", cfg.WebPort)
 	return &server
 }
 
