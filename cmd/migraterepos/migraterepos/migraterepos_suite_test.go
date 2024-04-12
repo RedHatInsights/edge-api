@@ -23,7 +23,7 @@ func TestMigrate(t *testing.T) {
 
 func setupTestDB() string {
 	config.Init()
-	dbName := fmt.Sprintf("%d-migraterepos.db", time.Now().UnixNano())
+	dbName := fmt.Sprintf("/tmp/%d-migraterepos.db", time.Now().UnixNano())
 	config.Get().Database.Name = dbName
 	db.InitDB()
 	if err := db.DB.AutoMigrate(

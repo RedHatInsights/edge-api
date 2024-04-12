@@ -24,7 +24,7 @@ func TestCleanupOrphanCommits(t *testing.T) {
 func setupTestDB() string {
 	config.Init()
 	config.Get().Debug = true
-	dbName := fmt.Sprintf("%d-cleanuporphancommits.db", time.Now().UnixNano())
+	dbName := fmt.Sprintf("/tmp/%d-cleanuporphancommits.db", time.Now().UnixNano())
 	config.Get().Database.Name = dbName
 	db.InitDB()
 	err := db.DB.AutoMigrate(

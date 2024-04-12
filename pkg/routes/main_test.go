@@ -57,7 +57,7 @@ var dbName string
 func setUp() {
 	config.Init()
 	config.Get().Debug = true
-	dbName = fmt.Sprintf("%d-routes.db", time.Now().UnixNano())
+	dbName = fmt.Sprintf("/tmp/%d-routes.db", time.Now().UnixNano())
 	config.Get().Database.Name = dbName
 	db.InitDB()
 	err := db.DB.AutoMigrate(

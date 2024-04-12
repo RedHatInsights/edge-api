@@ -29,7 +29,7 @@ var dbName string
 func setUp() {
 	config.Init()
 	time := time.Now().UnixNano()
-	dbName = fmt.Sprintf("%d-models.db", time)
+	dbName = fmt.Sprintf("/tmp/%d-models.db", time)
 	config.Get().Database.Name = dbName
 	db.InitDB()
 	err := db.DB.AutoMigrate(

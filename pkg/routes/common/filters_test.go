@@ -26,7 +26,7 @@ func setUp() {
 	config.Init()
 	config.Get().Debug = true
 	time := time.Now().UnixNano()
-	dbName = fmt.Sprintf("%d-routes-common.db", time)
+	dbName = fmt.Sprintf("/tmp/%d-routes-common.db", time)
 	config.Get().Database.Name = dbName
 	db.InitDB()
 	db.DB.AutoMigrate(&models.Image{})
