@@ -461,7 +461,10 @@ We are using [gomock](https://github.com/golang/mock) to generate mocks for our 
 
 In order to genenerate a mock for a particular file, you can run:
 
-`mockgen -source=pkg/filename.go -destination=pkg/mock_pkg/mock_filename.go`
+```
+go install github.com/golang/mock/mockgen@latest
+mockgen -source=pkg/filename.go -destination=pkg/mock_pkg/mock_filename.go
+```
 
 For example, to create/update mocks for ImageService, we can run:
 
