@@ -106,7 +106,7 @@ var _ = Describe("UpdateService Basic functions", func() {
 	Context("SetUpdateErrorStatusWhenInterrupted", func() {
 		var updateService *services.UpdateService
 		var ctrl *gomock.Controller
-		var testLog log.FieldLogger
+		var testLog *log.Entry
 		var logBuffer bytes.Buffer
 		var updateTransaction models.UpdateTransaction
 		var originalLogLevel log.Level
