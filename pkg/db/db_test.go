@@ -52,7 +52,7 @@ var _ = Describe("Db", func() {
 
 		BeforeEach(func() {
 			dbTimeCreation := time.Now().UnixNano()
-			dbName = fmt.Sprintf("%d-dbtest.db", dbTimeCreation)
+			dbName = fmt.Sprintf("/tmp/%d-dbtest.db", dbTimeCreation)
 			originalDBName = config.Get().Database.Name
 			config.Get().Database.Name = dbName
 		})

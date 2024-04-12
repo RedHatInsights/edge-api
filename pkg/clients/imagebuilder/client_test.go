@@ -61,7 +61,7 @@ var _ = Describe("Image Builder Client Test", func() {
 		Expect(err).ToNot(HaveOccurred())
 		config.Init()
 		config.Get().Debug = true
-		dbName = fmt.Sprintf("%d-client.db", time.Now().UnixNano())
+		dbName = fmt.Sprintf("/tmp/%d-client.db", time.Now().UnixNano())
 		config.Get().Database.Name = dbName
 		db.InitDB()
 

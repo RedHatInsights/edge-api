@@ -25,7 +25,7 @@ var dbName string
 
 func setupTestDB() {
 	dbTimeCreation := time.Now().UnixNano()
-	dbName = fmt.Sprintf("%d-services.db", dbTimeCreation)
+	dbName = fmt.Sprintf("/tmp/%d-services.db", dbTimeCreation)
 	config.Get().Database.Name = dbName
 	InitDB()
 }

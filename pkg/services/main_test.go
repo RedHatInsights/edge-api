@@ -28,7 +28,7 @@ func setupTestDB() {
 	config.Init()
 	config.Get().Debug = true
 	time := time.Now().UnixNano()
-	dbName = fmt.Sprintf("%d-services.db", time)
+	dbName = fmt.Sprintf("/tmp/%d-services.db", time)
 	config.Get().Database.Name = dbName
 	db.InitDB()
 	err := db.DB.AutoMigrate(
