@@ -41,7 +41,7 @@ EXCLUDE_DIRS=-e /test/ -e /cmd/db -e /cmd/kafka \
 CONTAINERFILE_NAME=Dockerfile
 
 .PHONY:	all bonfire-config-local bonfire-config-github build-containers \
-               build-edge-api-container clean coverage coverage-html coverage-no-fdo \
+               build build-edge-api-container clean coverage coverage-html coverage-no-fdo \
                create-ns deploy-app deploy-env fmt generate-docs help lint pre-commit \
                restart-app scale-down scale-up scan_project test test-clean-no-fdo \
                test-no-fdo vet vet-no-fdo
@@ -69,6 +69,9 @@ build-test-container:
 		--no-cache \
 		--tag "$(TEST_CONTAINER_TAG)" \
 		.
+
+build:
+	go build -o edge-api .
 
 clean:
 	golangci-lint cache clean
@@ -202,6 +205,9 @@ test-clean-no-fdo:
 
 test-no-fdo:
 	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS)
+
+test_gha:
+	go test ./...
 
 vet:
 	go mod tidy
