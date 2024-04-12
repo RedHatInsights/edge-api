@@ -210,3 +210,105 @@ vet:
 
 vet-no-fdo:
 	go vet $$(go list ./... | grep -v /vendor/)
+
+pkg/services/mock_services/downloader.go: pkg/services/files/downloader.go
+	mockgen -source=$< -destination=$@
+
+pkg/services/mock_services/updates.go: pkg/services/updates.go
+	mockgen -source=$< -destination=$@
+
+pkg/services/mock_services/thirdpartyrepo.go: pkg/services/thirdpartyrepo.go
+	mockgen -source=$< -destination=$@
+
+pkg/services/mock_services/repobuilder.go: pkg/services/repobuilder.go
+	mockgen -source=$< -destination=$@
+
+pkg/services/mock_services/imagesets.go: pkg/services/imagesets.go
+	mockgen -source=$< -destination=$@
+
+pkg/services/mock_services/images.go: pkg/services/images.go
+	mockgen -source=$< -destination=$@
+
+pkg/services/mock_services/devices.go: pkg/services/devices.go
+	mockgen -source=$< -destination=$@
+
+pkg/services/mock_services/commits.go: pkg/services/commits.go
+	mockgen -source=$< -destination=$@
+
+pkg/services/mock_services/uploader.go: pkg/services/files/uploader.go
+	mockgen -source=$< -destination=$@
+
+pkg/services/mock_services/repo.go: pkg/services/repo.go
+	mockgen -source=$< -destination=$@
+
+pkg/services/mock_files/uploader.go: pkg/services/files/uploader.go
+	mockgen -source=$< -destination=$@
+
+pkg/services/mock_services/files.go: pkg/services/files.go
+	mockgen -source=$< -destination=$@
+
+pkg/services/mock_files/s3.go: pkg/services/files/s3.go
+	mockgen -source=$< -destination=$@
+
+pkg/services/mock_services/devicegroups.go: pkg/services/devicegroups.go
+	mockgen -source=$< -destination=$@
+
+pkg/services/mock_files/extrator.go: pkg/services/files/extractor.go
+	mockgen -source=$< -destination=$@
+
+pkg/common/kafka/mock_kafka/mock_topics.go: pkg/common/kafka/topics.go
+	mockgen -source=$< -destination=$@
+
+pkg/common/kafka/mock_kafka/mock_producer.go: pkg/common/kafka/producer.go
+	mockgen -source=$< -destination=$@
+
+pkg/common/kafka/mock_kafka/mock_kafkaconfigmap.go: pkg/common/kafka/kafkaconfigmap.go
+	mockgen -source=$< -destination=$@
+
+pkg/common/kafka/mock_kafka/mock_consumer.go: pkg/common/kafka/consumer.go
+	mockgen -source=$< -destination=$@
+
+pkg/clients/repositories/mock_repositories/client.go: pkg/clients/repositories/client.go
+	mockgen -source=$< -destination=$@
+
+pkg/clients/playbookdispatcher/mock_playbookdispatcher/playbookdispatcher.go: pkg/clients/playbookdispatcher/client.go
+	mockgen -source=$< -destination=$@
+
+pkg/clients/rbac/mock_rbac/client.go: pkg/clients/rbac/client.go
+	mockgen -source=$< -destination=$@
+
+pkg/clients/inventory/mock_inventory/inventory.go: pkg/clients/inventory/client.go
+	mockgen -source=$< -destination=$@
+
+pkg/clients/inventorygroups/mock_inventorygroups/client.go: pkg/clients/inventorygroups/client.go
+	mockgen -source=$< -destination=$@
+
+pkg/clients/imagebuilder/mock_imagebuilder/client.go: pkg/clients/imagebuilder/client.go
+	mockgen -source=$< -destination=$@
+
+mockgen: \
+	pkg/services/mock_services/downloader.go \
+	pkg/services/mock_services/updates.go \
+	pkg/services/mock_services/thirdpartyrepo.go \
+	pkg/services/mock_services/repobuilder.go \
+	pkg/services/mock_services/imagesets.go \
+	pkg/services/mock_services/images.go \
+	pkg/services/mock_services/devices.go \
+	pkg/services/mock_services/commits.go \
+	pkg/services/mock_services/uploader.go \
+	pkg/services/mock_services/repo.go \
+	pkg/services/mock_files/uploader.go \
+	pkg/services/mock_services/files.go \
+	pkg/services/mock_files/s3.go \
+	pkg/services/mock_services/devicegroups.go \
+	pkg/services/mock_files/extrator.go \
+	pkg/common/kafka/mock_kafka/mock_topics.go \
+	pkg/common/kafka/mock_kafka/mock_producer.go \
+	pkg/common/kafka/mock_kafka/mock_kafkaconfigmap.go \
+	pkg/common/kafka/mock_kafka/mock_consumer.go \
+	pkg/clients/repositories/mock_repositories/client.go \
+	pkg/clients/playbookdispatcher/mock_playbookdispatcher/playbookdispatcher.go \
+	pkg/clients/rbac/mock_rbac/client.go \
+	pkg/clients/inventory/mock_inventory/inventory.go \
+	pkg/clients/inventorygroups/mock_inventorygroups/client.go \
+	pkg/clients/imagebuilder/mock_imagebuilder/client.go \
