@@ -19,7 +19,7 @@ type Downloader interface {
 }
 
 // NewDownloader returns the main downloader used by Edge API
-func NewDownloader(log *log.Entry) Downloader {
+func NewDownloader(log log.FieldLogger) Downloader {
 	cfg := config.Get()
 	if cfg.Local {
 		return &HTTPDownloader{log: log}
@@ -29,7 +29,7 @@ func NewDownloader(log *log.Entry) Downloader {
 
 // HTTPDownloader implements Downloader and downloads from a URL through HTTP
 type HTTPDownloader struct {
-	log *log.Entry
+	log log.FieldLogger
 }
 
 // DownloadToPath download function that puts the source_url into the destination_path on the local filesystem
@@ -58,13 +58,13 @@ func (d *HTTPDownloader) DownloadToPath(sourceURL string, destinationPath string
 }
 
 // NewS3Downloader return a new S3Downloader
-func NewS3Downloader(logger *log.Entry, client S3ClientInterface) *S3Downloader {
+func NewS3Downloader(logger log.FieldLogger, client S3ClientInterface) *S3Downloader {
 	return &S3Downloader{log: logger, Client: client}
 }
 
 // S3Downloader aws s3 files Downloader, download resources at aws s3 bucket via sdk
 type S3Downloader struct {
-	log    *log.Entry
+	log    log.FieldLogger
 	Client S3ClientInterface
 }
 

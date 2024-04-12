@@ -25,7 +25,7 @@ import (
 )
 
 var _ = Describe("File Service Test", func() {
-	var logEntry *log.Entry
+	var logEntry log.FieldLogger
 	Describe("local file service", func() {
 		var service services.FilesService
 

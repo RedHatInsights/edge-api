@@ -38,7 +38,7 @@ type ClientInterface interface {
 // Client is the implementation of an ClientInterface
 type Client struct {
 	ctx context.Context
-	log *log.Entry
+	log log.FieldLogger
 }
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
@@ -51,7 +51,7 @@ func init() {
 }
 
 // InitClient initializes the client for Image Builder
-func InitClient(ctx context.Context, log *log.Entry) *Client {
+func InitClient(ctx context.Context, log log.FieldLogger) *Client {
 	return &Client{ctx: ctx, log: log}
 }
 

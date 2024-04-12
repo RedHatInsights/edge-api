@@ -18,7 +18,7 @@ import (
 // imageService is the interface representation of ImageService to facilitate testing
 type imageService interface {
 	ProcessImage(ctx context.Context, img *models.Image, handleInterruptSignal bool) error
-	SetLog(log *log.Entry)
+	SetLog(log log.FieldLogger)
 }
 
 // EventImageRequestedBuildHandlerDummy is a dummy placeholder to workaround the Golang struct vs json fun

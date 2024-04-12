@@ -24,13 +24,13 @@ type ClientInterface interface {
 // Client is the implementation of an ClientInterface
 type Client struct {
 	ctx context.Context
-	log *log.Entry
+	log log.FieldLogger
 	url string
 	psk string
 }
 
 // InitClient initializes the client for Image Builder
-func InitClient(ctx context.Context, log *log.Entry) *Client {
+func InitClient(ctx context.Context, log log.FieldLogger) *Client {
 	cfg := config.Get()
 	return &Client{ctx: ctx, log: log, url: cfg.PlaybookDispatcherConfig.URL, psk: cfg.PlaybookDispatcherConfig.PSK}
 }

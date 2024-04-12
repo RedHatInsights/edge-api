@@ -166,7 +166,7 @@ var _ = Describe("Migrate device groups", func() {
 			})
 
 			It("should migrate group successfully", func() {
-				migrategroups.GetNewInventoryGroupClient = func(ctx context.Context, log *log.Entry) inventorygroups.ClientInterface {
+				migrategroups.GetNewInventoryGroupClient = func(ctx context.Context, log log.FieldLogger) inventorygroups.ClientInterface {
 					rhIndent, err := common.GetIdentityInstanceFromContext(ctx)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(rhIndent.Identity.OrgID).To(Equal(orgID))
@@ -175,7 +175,7 @@ var _ = Describe("Migrate device groups", func() {
 					Expect(rhIndent.Identity.User.OrgAdmin).To(BeTrue())
 					return mockInventoryGroupClient
 				}
-				migrategroups.GetNewInventoryClient = func(ctx context.Context, log *log.Entry) inventory.ClientInterface {
+				migrategroups.GetNewInventoryClient = func(ctx context.Context, log log.FieldLogger) inventory.ClientInterface {
 					rhIndent, err := common.GetIdentityInstanceFromContext(ctx)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(rhIndent.Identity.OrgID).To(Equal(orgID))
@@ -213,10 +213,10 @@ var _ = Describe("Migrate device groups", func() {
 					migrategroups.OrgsGroupsFilter = map[string][]any{
 						orgID: {"device_groups.name = ?", otherGroup.Name},
 					}
-					migrategroups.GetNewInventoryGroupClient = func(ctx context.Context, log *log.Entry) inventorygroups.ClientInterface {
+					migrategroups.GetNewInventoryGroupClient = func(ctx context.Context, log log.FieldLogger) inventorygroups.ClientInterface {
 						return mockInventoryGroupClient
 					}
-					migrategroups.GetNewInventoryClient = func(ctx context.Context, log *log.Entry) inventory.ClientInterface {
+					migrategroups.GetNewInventoryClient = func(ctx context.Context, log log.FieldLogger) inventory.ClientInterface {
 						return mockInventoryClient
 					}
 				})
@@ -292,10 +292,10 @@ var _ = Describe("Migrate device groups", func() {
 					migrategroups.OrgsGroupsFilter = map[string][]any{
 						faker.UUIDHyphenated(): {"device_groups.name = ?", group.Name},
 					}
-					migrategroups.GetNewInventoryGroupClient = func(ctx context.Context, log *log.Entry) inventorygroups.ClientInterface {
+					migrategroups.GetNewInventoryGroupClient = func(ctx context.Context, log log.FieldLogger) inventorygroups.ClientInterface {
 						return mockInventoryGroupClient
 					}
-					migrategroups.GetNewInventoryClient = func(ctx context.Context, log *log.Entry) inventory.ClientInterface {
+					migrategroups.GetNewInventoryClient = func(ctx context.Context, log log.FieldLogger) inventory.ClientInterface {
 						return mockInventoryClient
 					}
 				})

@@ -17,7 +17,7 @@ type RepoServiceInterface interface {
 }
 
 // NewRepoService gives a instance of the main implementation of RepoServiceInterface
-func NewRepoService(ctx context.Context, log *log.Entry) RepoServiceInterface {
+func NewRepoService(ctx context.Context, log log.FieldLogger) RepoServiceInterface {
 	return &RepoService{
 		ctx: ctx,
 		log: log,
@@ -27,7 +27,7 @@ func NewRepoService(ctx context.Context, log *log.Entry) RepoServiceInterface {
 // RepoService is the main implementation of a RepoServiceInterface
 type RepoService struct {
 	ctx context.Context
-	log *log.Entry
+	log log.FieldLogger
 }
 
 // GetRepoByID receives RepoID uint and get a *models.Repo back

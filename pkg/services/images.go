@@ -72,12 +72,12 @@ type ImageServiceInterface interface {
 	ValidateImagePackage(pack string, image *models.Image) error
 	GetImagesViewCount(tx *gorm.DB) (int64, error)
 	GetImagesView(limit int, offset int, tx *gorm.DB) (*[]models.ImageView, error)
-	SetLog(*log.Entry)
+	SetLog(log.FieldLogger)
 	DeleteImage(image *models.Image) error
 }
 
 // NewImageService gives a instance of the main implementation of a ImageServiceInterface
-func NewImageService(ctx context.Context, log *log.Entry) ImageServiceInterface {
+func NewImageService(ctx context.Context, log log.FieldLogger) ImageServiceInterface {
 	return &ImageService{
 		Service:         Service{ctx: ctx, log: log.WithField("service", "image")},
 		ImageBuilder:    imagebuilder.InitClient(ctx, log),

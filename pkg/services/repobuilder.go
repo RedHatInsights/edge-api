@@ -40,11 +40,11 @@ type RepoBuilder struct {
 	FilesService  FilesService
 	repoService   RepoServiceInterface
 	commitService CommitServiceInterface
-	Log           *log.Entry
+	Log           log.FieldLogger
 }
 
 // NewRepoBuilder initializes the repository builder in this package
-func NewRepoBuilder(ctx context.Context, log *log.Entry) RepoBuilderInterface {
+func NewRepoBuilder(ctx context.Context, log log.FieldLogger) RepoBuilderInterface {
 	return &RepoBuilder{
 		Service:       Service{ctx: ctx, log: log.WithField("service", "repobuilder")},
 		FilesService:  NewFilesService(log),

@@ -24,7 +24,7 @@ import (
 )
 
 var _ = Describe("Uploader Test", func() {
-	var logEntry *log.Entry
+	var logEntry log.FieldLogger
 	var account string
 	var acl = "private"
 	Describe("local uploader", func() {

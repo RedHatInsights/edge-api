@@ -35,7 +35,7 @@ type EdgeAPIServices struct {
 	InventoryGroupsService  inventorygroups.ClientInterface
 	RepositoriesService     repositories.ClientInterface
 	RbacService             rbac.ClientInterface
-	Log                     *log.Entry
+	Log                     log.FieldLogger
 }
 
 // Init creates all services that Edge API depends on in order to have dependency injection on context

@@ -27,7 +27,7 @@ type ThirdPartyRepoServiceInterface interface {
 }
 
 // NewThirdPartyRepoService gives a instance of the main implementation of a ThirdPartyRepoServiceInterface
-func NewThirdPartyRepoService(ctx context.Context, log *log.Entry) ThirdPartyRepoServiceInterface {
+func NewThirdPartyRepoService(ctx context.Context, log log.FieldLogger) ThirdPartyRepoServiceInterface {
 	return &ThirdPartyRepoService{
 		Service: Service{ctx: ctx, log: log.WithField("service", "image")},
 	}

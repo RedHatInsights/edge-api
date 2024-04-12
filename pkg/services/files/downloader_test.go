@@ -21,7 +21,7 @@ import (
 )
 
 var _ = Describe("Downloader Test", func() {
-	var logEntry *log.Entry
+	var logEntry log.FieldLogger
 
 	Describe("local downloader", func() {
 		var downloader files.Downloader

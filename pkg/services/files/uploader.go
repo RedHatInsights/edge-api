@@ -22,7 +22,7 @@ type Uploader interface {
 }
 
 // NewUploader returns the uploader used by EdgeAPI based on configurations
-func NewUploader(log *log.Entry) Uploader {
+func NewUploader(log log.FieldLogger) Uploader {
 	cfg := config.Get()
 	var uploader Uploader
 	uploader = &LocalUploader{
@@ -39,7 +39,7 @@ func NewUploader(log *log.Entry) Uploader {
 type S3Uploader struct {
 	Client S3ClientInterface
 	Bucket string
-	log    *log.Entry
+	log    log.FieldLogger
 }
 
 // LocalUploader isn't actually an uploader but implements the interface in
@@ -47,7 +47,7 @@ type S3Uploader struct {
 // without S3
 type LocalUploader struct {
 	BaseDir string
-	log     *log.Entry
+	log     log.FieldLogger
 }
 
 // UploadRepo just returns the src repo folder
@@ -75,7 +75,7 @@ func (u *LocalUploader) UploadFile(fname string, uploadPath string) (string, err
 }
 
 // NewS3Uploader return a new S3Uploader
-func NewS3Uploader(log *log.Entry, client S3ClientInterface) *S3Uploader {
+func NewS3Uploader(log log.FieldLogger, client S3ClientInterface) *S3Uploader {
 	cfg := config.Get()
 	return &S3Uploader{
 		Client: client,

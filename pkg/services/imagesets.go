@@ -49,7 +49,7 @@ type ImageSetImageIDView struct {
 }
 
 // NewImageSetsService gives an instance of the main implementation of a ImageSetsServiceInterface
-func NewImageSetsService(ctx context.Context, log *log.Entry) ImageSetsServiceInterface {
+func NewImageSetsService(ctx context.Context, log log.FieldLogger) ImageSetsServiceInterface {
 	return &ImageSetsService{
 		Service: Service{ctx: ctx, log: log.WithField("service", "image-sets")},
 	}

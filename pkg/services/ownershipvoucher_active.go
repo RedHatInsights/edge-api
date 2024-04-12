@@ -34,7 +34,7 @@ type OwnershipVoucherServiceInterface interface {
 }
 
 // NewOwnershipVoucherService creates a new ownership voucher service
-func NewOwnershipVoucherService(ctx context.Context, log *log.Entry) OwnershipVoucherServiceInterface {
+func NewOwnershipVoucherService(ctx context.Context, log log.FieldLogger) OwnershipVoucherServiceInterface {
 	return &OwnershipVoucherService{
 		Service: Service{ctx: ctx, log: log.WithField("service", "ownershipvoucher")},
 	}
