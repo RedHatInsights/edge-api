@@ -25,7 +25,7 @@ var _ = Describe("Event Image ISO Event Test", func() {
 	var ctrl *gomock.Controller
 	var ctx context.Context
 	var logBuffer bytes.Buffer
-	var testLog log.FieldLogger
+	var testLog *log.Entry
 
 	var mockImageService *mock_services.MockImageServiceInterface
 	BeforeEach(func() {

@@ -24,7 +24,7 @@ var _ = Describe("Event Inventory sync Event Test", func() {
 	var mockDeviceService *mock_services.MockDeviceServiceInterface
 	var ctrl *gomock.Controller
 	var logBuffer bytes.Buffer
-	var testLog log.FieldLogger
+	var testLog *log.Entry
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 		testLog = log.NewEntry(log.StandardLogger())
