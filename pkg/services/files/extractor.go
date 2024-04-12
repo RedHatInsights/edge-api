@@ -17,13 +17,13 @@ type Extractor interface {
 }
 
 // NewExtractor returns the main extractor used by EdgeAPI
-func NewExtractor(log *log.Entry) Extractor {
+func NewExtractor(log log.FieldLogger) Extractor {
 	return &TARFileExtractor{log: log}
 }
 
 // TARFileExtractor implements a method to extract TAR files into a path
 type TARFileExtractor struct {
-	log *log.Entry
+	log log.FieldLogger
 }
 
 // Extract extracts file to destination path

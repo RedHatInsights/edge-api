@@ -99,7 +99,7 @@ type PlatformInsightsDeleteEventPayload struct {
 }
 
 // NewDeviceService gives a instance of the main implementation of DeviceServiceInterface
-func NewDeviceService(ctx context.Context, log *log.Entry) DeviceServiceInterface {
+func NewDeviceService(ctx context.Context, log log.FieldLogger) DeviceServiceInterface {
 	return &DeviceService{
 		UpdateService: NewUpdateService(ctx, log),
 		ImageService:  NewImageService(ctx, log),

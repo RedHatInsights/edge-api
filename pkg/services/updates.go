@@ -55,7 +55,7 @@ type UpdateServiceInterface interface {
 }
 
 // NewUpdateService gives an instance of the main implementation of a UpdateServiceInterface
-func NewUpdateService(ctx context.Context, log *log.Entry) UpdateServiceInterface {
+func NewUpdateService(ctx context.Context, log log.FieldLogger) UpdateServiceInterface {
 	return &UpdateService{
 		Service:         Service{ctx: ctx, log: log.WithField("service", "update")},
 		FilesService:    NewFilesService(log),
@@ -375,7 +375,7 @@ func NewTemplateRemoteInfo(update *models.UpdateTransaction) TemplateRemoteInfo 
 	}
 }
 
-func checkStaticDeltaPreReqs(edgelog *log.Entry, orgID string, update models.UpdateTransaction) (*models.StaticDelta, error) {
+func checkStaticDeltaPreReqs(edgelog log.FieldLogger, orgID string, update models.UpdateTransaction) (*models.StaticDelta, error) {
 	var systemCommit *models.Commit
 	var updateCommit *models.Commit
 
@@ -447,7 +447,7 @@ func checkStaticDeltaPreReqs(edgelog *log.Entry, orgID string, update models.Upd
 	return staticDelta, nil
 }
 
-func saveUpdateTransaction(edgelog *log.Entry, updateTransaction *models.UpdateTransaction) error {
+func saveUpdateTransaction(edgelog log.FieldLogger, updateTransaction *models.UpdateTransaction) error {
 	edgelog.WithField("repo", updateTransaction.Repo.URL).Info("Update repo URL")
 	if err := db.DB.Omit("Devices.*").Save(&updateTransaction).Error; err != nil {
 		return err
@@ -555,7 +555,7 @@ func (s *UpdateService) waitForStaticDeltaReady(update *models.UpdateTransaction
 	deltaChan := make(chan models.StaticDeltaState)
 	errChan := make(chan error)
 
-	go func(edgelog *log.Entry, staticDeltaState models.StaticDeltaState) {
+	go func(edgelog log.FieldLogger, staticDeltaState models.StaticDeltaState) {
 	DeltaLoop:
 		for {
 			staticDeltaStateCheck, err := staticDeltaState.Query(edgelog)

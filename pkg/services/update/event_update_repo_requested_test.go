@@ -31,7 +31,7 @@ var _ = Describe("UpdateRepoRequested Event Consumer Test", func() {
 	var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
 	var ctrl *gomock.Controller
 	var logBuffer bytes.Buffer
-	var testLog *log.Entry
+	var testLog log.FieldLogger
 	var updateTransaction models.UpdateTransaction
 	var ident identity.XRHID
 	orgID := common.DefaultOrgID

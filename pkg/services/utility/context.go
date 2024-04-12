@@ -14,8 +14,8 @@ type loggerKeyType string
 const loggerKey = loggerKeyType("logger")
 
 // GetLoggerFromContext grabs the cumulative logger from the context
-func GetLoggerFromContext(ctx context.Context) *log.Entry {
-	loggerVal, ok := ctx.Value(loggerKey).(*log.Entry)
+func GetLoggerFromContext(ctx context.Context) log.FieldLogger {
+	loggerVal, ok := ctx.Value(loggerKey).(log.FieldLogger)
 	if !ok {
 		return nil
 	}
@@ -24,6 +24,6 @@ func GetLoggerFromContext(ctx context.Context) *log.Entry {
 }
 
 // ContextWithLogger adds a logger to the context
-func ContextWithLogger(ctx context.Context, logger *log.Entry) context.Context {
+func ContextWithLogger(ctx context.Context, logger log.FieldLogger) context.Context {
 	return context.WithValue(ctx, loggerKey, logger)
 }

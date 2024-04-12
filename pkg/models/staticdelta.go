@@ -71,7 +71,7 @@ func GetStaticDeltaName(fromCommitHash string, toCommitHash string) string {
 }
 
 // Delete removes the static delta state record from the database
-func (sds *StaticDeltaState) Delete(edgelog *log.Entry) error {
+func (sds *StaticDeltaState) Delete(edgelog log.FieldLogger) error {
 	edgelog.Info("Deleting static delta state record")
 	result := db.DB.Where("org_id = ? AND name = ?", sds.OrgID, sds.Name).Delete(&sds)
 	if result.Error != nil {
@@ -84,7 +84,7 @@ func (sds *StaticDeltaState) Delete(edgelog *log.Entry) error {
 }
 
 // Exists returns a comma ok true if the static delta state record exists in the database
-func (sds *StaticDeltaState) Exists(edgelog *log.Entry) (bool, error) {
+func (sds *StaticDeltaState) Exists(edgelog log.FieldLogger) (bool, error) {
 	dbState, err := sds.Query(edgelog)
 	if err != nil {
 		return false, err
@@ -98,7 +98,7 @@ func (sds *StaticDeltaState) Exists(edgelog *log.Entry) (bool, error) {
 }
 
 // IsReady returns a comma ok true if the static delta state is set to ready in the database
-func (sds *StaticDeltaState) IsReady(edgelog *log.Entry) (bool, error) {
+func (sds *StaticDeltaState) IsReady(edgelog log.FieldLogger) (bool, error) {
 	dbState, err := sds.Query(edgelog)
 	if err != nil {
 		return false, err
@@ -112,7 +112,7 @@ func (sds *StaticDeltaState) IsReady(edgelog *log.Entry) (bool, error) {
 }
 
 // Query retrieves the state of a static delta commit pair from the database
-func (sds *StaticDeltaState) Query(edgelog *log.Entry) (*StaticDeltaState, error) {
+func (sds *StaticDeltaState) Query(edgelog log.FieldLogger) (*StaticDeltaState, error) {
 	if result := db.DB.Where("org_id = ? AND name = ?", sds.OrgID, sds.Name).First(&sds); result.Error != nil {
 		switch result.Error {
 		case gorm.ErrRecordNotFound:
@@ -141,7 +141,7 @@ func (sds *StaticDeltaState) Query(edgelog *log.Entry) (*StaticDeltaState, error
 }
 
 // Save writes a static delta state to the database
-func (sds *StaticDeltaState) Save(edgelog *log.Entry) error {
+func (sds *StaticDeltaState) Save(edgelog log.FieldLogger) error {
 	edgelog.WithFields(log.Fields{
 		"org_id": sds.OrgID,
 		"name":   sds.Name,

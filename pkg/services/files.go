@@ -62,7 +62,7 @@ type LocalFilesService struct {
 }
 
 // NewFilesService creates a new service to handle files
-func NewFilesService(log *log.Entry) FilesService {
+func NewFilesService(log log.FieldLogger) FilesService {
 	cfg := config.Get()
 	basicFileService := BasicFileService{
 		extractor:  files.NewExtractor(log),

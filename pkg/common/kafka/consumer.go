@@ -54,13 +54,13 @@ type ConsumerServiceInterface interface {
 // ConsumerService is the consumer service for edge
 type ConsumerService struct {
 	ctx            context.Context
-	log            *log.Entry
+	log            log.FieldLogger
 	Topic          TopicServiceInterface
 	KafkaConfigMap KafkaConfigMapServiceInterface
 }
 
 // NewConsumerService returns a new service
-func NewConsumerService(ctx context.Context, log *log.Entry) ConsumerServiceInterface {
+func NewConsumerService(ctx context.Context, log log.FieldLogger) ConsumerServiceInterface {
 	return &ConsumerService{
 		ctx:            ctx,
 		log:            log,

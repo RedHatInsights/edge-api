@@ -85,11 +85,11 @@ type ClientInterface interface {
 // Client is the implementation of an ClientInterface
 type Client struct {
 	ctx context.Context
-	log *log.Entry
+	log log.FieldLogger
 }
 
 // InitClient initializes the client for Image Builder
-func InitClient(ctx context.Context, log *log.Entry) ClientInterface {
+func InitClient(ctx context.Context, log log.FieldLogger) ClientInterface {
 	return &Client{ctx: ctx, log: log}
 }
 

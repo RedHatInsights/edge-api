@@ -28,12 +28,12 @@ type ClientInterface interface {
 // Client is the implementation of an ClientInterface
 type Client struct {
 	ctx        context.Context
-	log        *log.Entry
+	log        log.FieldLogger
 	httpClient *http.Client
 }
 
 // InitClient initializes the client for FDO
-func InitClient(ctx context.Context, log *log.Entry) *Client {
+func InitClient(ctx context.Context, log log.FieldLogger) *Client {
 	return &Client{ctx: ctx, log: log, httpClient: &http.Client{}}
 }
 

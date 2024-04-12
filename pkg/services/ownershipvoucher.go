@@ -15,6 +15,6 @@ import (
 type OwnershipVoucherServiceInterface interface{}
 
 // NewOwnershipVoucherService returns nil for non-fdo builds
-func NewOwnershipVoucherService(ctx context.Context, log *log.Entry) OwnershipVoucherServiceInterface {
+func NewOwnershipVoucherService(ctx context.Context, log log.FieldLogger) OwnershipVoucherServiceInterface {
 	return nil
 }

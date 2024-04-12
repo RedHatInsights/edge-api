@@ -24,7 +24,7 @@ var _ = Describe("Event Image Update Requested Test", func() {
 	var ctrl *gomock.Controller
 	var ctx context.Context
 	var logBuffer bytes.Buffer
-	var testLog *log.Entry
+	var testLog log.FieldLogger
 	var mockImageService *mock_services.MockImageServiceInterface
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())

@@ -48,7 +48,7 @@ type DeviceGroupsService struct {
 }
 
 // NewDeviceGroupsService return an instance of the main implementation of a DeviceGroupsServiceInterface
-func NewDeviceGroupsService(ctx context.Context, log *log.Entry) DeviceGroupsServiceInterface {
+func NewDeviceGroupsService(ctx context.Context, log log.FieldLogger) DeviceGroupsServiceInterface {
 	return &DeviceGroupsService{
 		Service:       Service{ctx: ctx, log: log.WithField("service", "device-groups")},
 		DeviceService: NewDeviceService(ctx, log),

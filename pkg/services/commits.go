@@ -20,7 +20,7 @@ type CommitServiceInterface interface {
 }
 
 // NewCommitService gives a instance of the main implementation of CommitServiceInterface
-func NewCommitService(ctx context.Context, log *log.Entry) CommitServiceInterface {
+func NewCommitService(ctx context.Context, log log.FieldLogger) CommitServiceInterface {
 	return &CommitService{
 		Service: Service{ctx: ctx, log: log.WithField("service", "commit")},
 	}

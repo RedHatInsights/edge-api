@@ -12,7 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func readAccount(w http.ResponseWriter, r *http.Request, logEntry *log.Entry) string {
+func readAccount(w http.ResponseWriter, r *http.Request, logEntry log.FieldLogger) string {
 	account, err := common.GetAccount(r)
 	if err != nil {
 		logEntry.WithField("error", err.Error()).Error("Error retrieving account")
@@ -22,7 +22,7 @@ func readAccount(w http.ResponseWriter, r *http.Request, logEntry *log.Entry) st
 	return account
 }
 
-func readOrgID(w http.ResponseWriter, r *http.Request, logEntry *log.Entry) string {
+func readOrgID(w http.ResponseWriter, r *http.Request, logEntry log.FieldLogger) string {
 	orgID, err := common.GetOrgID(r)
 	if err != nil {
 		logEntry.WithField("error", err.Error()).Error("Error retrieving org_id")
@@ -32,7 +32,7 @@ func readOrgID(w http.ResponseWriter, r *http.Request, logEntry *log.Entry) stri
 	return orgID
 }
 
-func readAccountOrOrgID(w http.ResponseWriter, r *http.Request, logEntry *log.Entry) (string, string) {
+func readAccountOrOrgID(w http.ResponseWriter, r *http.Request, logEntry log.FieldLogger) (string, string) {
 	account, accountErr := common.GetAccount(r)
 	orgID, orgIDError := common.GetOrgID(r)
 	if accountErr != nil && orgIDError != nil {
@@ -44,7 +44,7 @@ func readAccountOrOrgID(w http.ResponseWriter, r *http.Request, logEntry *log.En
 	return account, orgID
 }
 
-func respondWithAPIError(w http.ResponseWriter, logEntry *log.Entry, apiError errors.APIError) {
+func respondWithAPIError(w http.ResponseWriter, logEntry log.FieldLogger, apiError errors.APIError) {
 	w.WriteHeader(apiError.GetStatus())
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	if err := json.NewEncoder(w).Encode(&apiError); err != nil {
@@ -52,7 +52,7 @@ func respondWithAPIError(w http.ResponseWriter, logEntry *log.Entry, apiError er
 	}
 }
 
-func respondWithJSONBody(w http.ResponseWriter, logEntry *log.Entry, data interface{}) {
+func respondWithJSONBody(w http.ResponseWriter, logEntry log.FieldLogger, data interface{}) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		logEntry.WithField("error", data).Error("Error while trying to encode data")
@@ -60,7 +60,7 @@ func respondWithJSONBody(w http.ResponseWriter, logEntry *log.Entry, data interf
 	}
 }
 
-func readRequestJSONBody(w http.ResponseWriter, r *http.Request, logEntry *log.Entry, dataReceiver interface{}) error {
+func readRequestJSONBody(w http.ResponseWriter, r *http.Request, logEntry log.FieldLogger, dataReceiver interface{}) error {
 	defer r.Body.Close()
 	if err := json.NewDecoder(r.Body).Decode(dataReceiver); err != nil {
 		logEntry.WithField("error", err.Error()).Error("Error parsing json from request body")
