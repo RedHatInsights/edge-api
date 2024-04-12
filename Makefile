@@ -212,7 +212,7 @@ vet-no-fdo:
 	go vet $$(go list ./... | grep -v /vendor/)
 
 pkg/services/mock_services/downloader.go: pkg/services/files/downloader.go
-	mockgen -source=$< -destination=$@
+	mockgen -source=$< -destination=$@ -package=mock_services
 
 pkg/services/mock_services/updates.go: pkg/services/updates.go
 	mockgen -source=$< -destination=$@
@@ -235,14 +235,15 @@ pkg/services/mock_services/devices.go: pkg/services/devices.go
 pkg/services/mock_services/commits.go: pkg/services/commits.go
 	mockgen -source=$< -destination=$@
 
-pkg/services/mock_services/uploader.go: pkg/services/files/uploader.go
-	mockgen -source=$< -destination=$@
-
 pkg/services/mock_services/repo.go: pkg/services/repo.go
 	mockgen -source=$< -destination=$@
 
 pkg/services/mock_files/uploader.go: pkg/services/files/uploader.go
 	mockgen -source=$< -destination=$@
+
+# is a copy of the above, before this make target it was a manually created mess
+pkg/services/mock_services/uploader.go: pkg/services/files/uploader.go
+	mockgen -source=$< -destination=$@ -package=mock_services
 
 pkg/services/mock_services/files.go: pkg/services/files.go
 	mockgen -source=$< -destination=$@
