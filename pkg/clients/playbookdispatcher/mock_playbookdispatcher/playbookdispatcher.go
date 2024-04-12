@@ -11,30 +11,30 @@ import (
 	playbookdispatcher "github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
 )
 
-// MockClientInterface is a mock of ClientInterface interface
+// MockClientInterface is a mock of ClientInterface interface.
 type MockClientInterface struct {
 	ctrl     *gomock.Controller
 	recorder *MockClientInterfaceMockRecorder
 }
 
-// MockClientInterfaceMockRecorder is the mock recorder for MockClientInterface
+// MockClientInterfaceMockRecorder is the mock recorder for MockClientInterface.
 type MockClientInterfaceMockRecorder struct {
 	mock *MockClientInterface
 }
 
-// NewMockClientInterface creates a new mock instance
+// NewMockClientInterface creates a new mock instance.
 func NewMockClientInterface(ctrl *gomock.Controller) *MockClientInterface {
 	mock := &MockClientInterface{ctrl: ctrl}
 	mock.recorder = &MockClientInterfaceMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockClientInterface) EXPECT() *MockClientInterfaceMockRecorder {
 	return m.recorder
 }
 
-// ExecuteDispatcher mocks base method
+// ExecuteDispatcher mocks base method.
 func (m *MockClientInterface) ExecuteDispatcher(payload playbookdispatcher.DispatcherPayload) ([]playbookdispatcher.Response, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExecuteDispatcher", payload)
@@ -43,7 +43,7 @@ func (m *MockClientInterface) ExecuteDispatcher(payload playbookdispatcher.Dispa
 	return ret0, ret1
 }
 
-// ExecuteDispatcher indicates an expected call of ExecuteDispatcher
+// ExecuteDispatcher indicates an expected call of ExecuteDispatcher.
 func (mr *MockClientInterfaceMockRecorder) ExecuteDispatcher(payload interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteDispatcher", reflect.TypeOf((*MockClientInterface)(nil).ExecuteDispatcher), payload)

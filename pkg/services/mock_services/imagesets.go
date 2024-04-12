@@ -7,10 +7,9 @@ package mock_services
 import (
 	reflect "reflect"
 
+	gomock "github.com/golang/mock/gomock"
 	models "github.com/redhatinsights/edge-api/pkg/models"
 	services "github.com/redhatinsights/edge-api/pkg/services"
-
-	gomock "github.com/golang/mock/gomock"
 	gorm "gorm.io/gorm"
 )
 
