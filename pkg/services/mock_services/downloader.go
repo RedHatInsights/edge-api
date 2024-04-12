@@ -2,37 +2,38 @@
 // Source: pkg/services/files/downloader.go
 
 // Package mock_files is a generated GoMock package.
-package mock_services
+package mock_files
 
 import (
-	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
 )
 
-// MockDownloader is a mock of Downloader interface
+// MockDownloader is a mock of Downloader interface.
 type MockDownloader struct {
 	ctrl     *gomock.Controller
 	recorder *MockDownloaderMockRecorder
 }
 
-// MockDownloaderMockRecorder is the mock recorder for MockDownloader
+// MockDownloaderMockRecorder is the mock recorder for MockDownloader.
 type MockDownloaderMockRecorder struct {
 	mock *MockDownloader
 }
 
-// NewMockDownloader creates a new mock instance
+// NewMockDownloader creates a new mock instance.
 func NewMockDownloader(ctrl *gomock.Controller) *MockDownloader {
 	mock := &MockDownloader{ctrl: ctrl}
 	mock.recorder = &MockDownloaderMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockDownloader) EXPECT() *MockDownloaderMockRecorder {
 	return m.recorder
 }
 
-// DownloadToPath mocks base method
+// DownloadToPath mocks base method.
 func (m *MockDownloader) DownloadToPath(source, destinationPath string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DownloadToPath", source, destinationPath)
@@ -40,7 +41,7 @@ func (m *MockDownloader) DownloadToPath(source, destinationPath string) error {
 	return ret0
 }
 
-// DownloadToPath indicates an expected call of DownloadToPath
+// DownloadToPath indicates an expected call of DownloadToPath.
 func (mr *MockDownloaderMockRecorder) DownloadToPath(source, destinationPath interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadToPath", reflect.TypeOf((*MockDownloader)(nil).DownloadToPath), source, destinationPath)

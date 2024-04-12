@@ -414,7 +414,7 @@ func (mr *MockImageServiceInterfaceMockRecorder) SetImageContentSourcesRepositor
 }
 
 // SetLog mocks base method.
-func (m *MockImageServiceInterface) SetLog(arg0 *logrus.Entry) {
+func (m *MockImageServiceInterface) SetLog(arg0 logrus.FieldLogger) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetLog", arg0)
 }
