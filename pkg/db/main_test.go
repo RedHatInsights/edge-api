@@ -15,10 +15,13 @@ import (
 
 // This will set up the test database and run the tests for whole package
 func TestMain(m *testing.M) {
+	rc := 0
+	defer func() { os.Exit(rc) }()
+
 	setupTestDB()
-	retCode := m.Run()
-	tearDownTestDB()
-	os.Exit(retCode)
+	defer tearDownTestDB()
+
+	rc = m.Run()
 }
 
 var dbName string

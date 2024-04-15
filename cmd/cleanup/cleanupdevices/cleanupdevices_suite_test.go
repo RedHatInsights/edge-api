@@ -17,8 +17,9 @@ import (
 func TestMigrate(t *testing.T) {
 	RegisterFailHandler(Fail)
 	dbName := setupTestDB()
+	defer tearDownTestDB(dbName)
+
 	RunSpecs(t, "Cleanup devices storage Suite")
-	tearDownTestDB(dbName)
 }
 
 func setupTestDB() string {

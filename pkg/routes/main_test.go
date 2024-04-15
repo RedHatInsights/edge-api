@@ -44,12 +44,13 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	rc := 0
+	defer func() { os.Exit(rc) }()
+
 	setUp()
-	retCode := m.Run()
-	defer func(exitCode int) {
-		tearDown()
-		os.Exit(exitCode)
-	}(retCode)
+	defer tearDown()
+
+	rc = m.Run()
 }
 
 var dbName string

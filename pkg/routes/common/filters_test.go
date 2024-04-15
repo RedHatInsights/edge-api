@@ -64,11 +64,18 @@ func setUp() {
 }
 
 func TestMain(m *testing.M) {
+	rc := 0
+	defer func() { os.Exit(rc) }()
+
 	setUp()
-	retCode := m.Run()
+	defer tearDown()
+
+	rc = m.Run()
 	db.DB.Exec("DELETE FROM images")
+}
+
+func tearDown() {
 	os.Remove(dbName)
-	os.Exit(retCode)
 }
 
 func TestContainFilterHandler(t *testing.T) {

@@ -17,8 +17,9 @@ import (
 func TestMigrate(t *testing.T) {
 	RegisterFailHandler(Fail)
 	dbName := setupTestDB()
+	defer tearDownTestDB(dbName)
+
 	RunSpecs(t, "Repair custom repositories Suite")
-	tearDownTestDB(dbName)
 }
 
 func setupTestDB() string {
