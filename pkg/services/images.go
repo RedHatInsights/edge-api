@@ -27,6 +27,7 @@ import (
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/errors"
+	"github.com/redhatinsights/edge-api/pkg/jobs"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
@@ -1430,6 +1431,32 @@ func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Im
 	return &image, nil
 }
 
+type RetryCreateImageJob struct {
+	ImageID uint
+}
+
+func RetryCreateImageJobHandler(ctx context.Context, job *jobs.Job) {
+	s := NewImageService(ctx, log.StandardLogger()).(*ImageService)
+	args := job.Args.(*RetryCreateImageJob)
+
+	s.processImage(ctx, args.ImageID, DefaultLoopDelay, false)
+}
+
+func RetryCreateImageFailHandler(ctx context.Context, job *jobs.Job) {
+	s := NewImageService(ctx, log.StandardLogger()).(*ImageService)
+	args := job.Args.(*RetryCreateImageJob)
+
+	tx := db.DB.Model(&models.Image{}).Where("ID = ?", args.ImageID).Update("Status", models.ImageStatusInterrupted)
+	s.log.WithField("imageID", args.ImageID).Debug("Image updated with interrupted status")
+	if tx.Error != nil {
+		s.log.WithField("error", tx.Error.Error()).Error("Error updating image")
+	}
+}
+
+func init() {
+	jobs.RegisterHandlers("RetryCreateImageJob", RetryCreateImageJobHandler, RetryCreateImageFailHandler)
+}
+
 // RetryCreateImage retries the whole post process of the image creation
 func (s *ImageService) RetryCreateImage(ctx context.Context, image *models.Image) error {
 	s.log = s.log.WithFields(log.Fields{"imageID": image.ID, "commitID": image.Commit.ID})
@@ -1444,7 +1471,15 @@ func (s *ImageService) RetryCreateImage(ctx context.Context, image *models.Image
 		s.log.WithField("error", err.Error()).Error("Failed setting image status")
 		return nil
 	}
-	go s.processImage(ctx, image.ID, DefaultLoopDelay, true)
+	if feature.JobQueue.IsEnabled() {
+		job := jobs.Job{
+			Type: "RetryCreateImageJob",
+			Args: &RetryCreateImageJob{ImageID: image.ID},
+		}
+		jobs.Enqueue(ctx, &job)
+	} else {
+		go s.processImage(ctx, image.ID, DefaultLoopDelay, true)
+	}
 	return nil
 }
 

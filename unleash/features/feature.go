@@ -35,6 +35,9 @@ var GlitchtipLogging = &Flag{Name: "edge-management.glitchtip_logging", EnvVar: 
 // KafkaLogging is the feature flag for logging kafka messages
 var KafkaLogging = &Flag{Name: "edge-management.kafka_logging", EnvVar: "KAFKA_LOGGING"}
 
+// JOB QUEUE FLAGS
+var JobQueue = &Flag{Name: "edge-management.job_queue", EnvVar: "FEATURE_JOBQUEUE"}
+
 // IMAGE FEATURE FLAGS
 
 // ImageCreateEDA is the feature flag for routes.CreateImage() EDA code
