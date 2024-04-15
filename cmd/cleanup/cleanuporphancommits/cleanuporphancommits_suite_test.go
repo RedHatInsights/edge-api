@@ -17,8 +17,9 @@ import (
 func TestCleanupOrphanCommits(t *testing.T) {
 	RegisterFailHandler(Fail)
 	dbName := setupTestDB()
+	defer tearDownTestDB(dbName)
+
 	RunSpecs(t, "Cleanup orphan commits Suite")
-	tearDownTestDB(dbName)
 }
 
 func setupTestDB() string {

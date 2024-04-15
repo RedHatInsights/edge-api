@@ -20,8 +20,9 @@ import (
 func TestDevices(t *testing.T) {
 	RegisterFailHandler(Fail)
 	setUp()
+	defer tearDown()
+
 	RunSpecs(t, "Update Suite")
-	tearDown()
 }
 
 var dbName string

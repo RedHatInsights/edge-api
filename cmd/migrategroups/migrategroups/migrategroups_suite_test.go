@@ -18,6 +18,7 @@ func TestMigrate(t *testing.T) {
 	RegisterFailHandler(Fail)
 	dbName := setupTestDB()
 	defer tearDownTestDB(dbName)
+
 	RunSpecs(t, "Migrate device groups Suite")
 }
 

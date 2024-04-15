@@ -16,10 +16,13 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	rc := 0
+	defer func() { os.Exit(rc) }()
+
 	setUp()
-	retCode := m.Run()
-	tearDown()
-	os.Exit(retCode)
+	defer tearDown()
+
+	rc = m.Run()
 }
 
 var dbName string
