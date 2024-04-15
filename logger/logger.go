@@ -13,7 +13,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	lc "github.com/redhatinsights/platform-go-middlewares/logging/cloudwatch"
+	lc "github.com/redhatinsights/platform-go-middlewares/v2/logging/cloudwatch"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -23,7 +23,7 @@ import (
 var logLevel log.Level
 
 // hook is an instance of cloudwatch.hook
-var hook *lc.Hook
+var hook *lc.LogrusHook
 
 func prettyfier(f *runtime.Frame) (string, string) {
 	s := strings.Split(f.Function, ".")
@@ -70,10 +70,11 @@ func InitLogger(writer io.Writer) {
 	if cfg.Logging != nil && cfg.Logging.Region != "" {
 		cred := credentials.NewStaticCredentials(cfg.Logging.AccessKeyID, cfg.Logging.SecretAccessKey, "")
 		awsconf := aws.NewConfig().WithRegion(cfg.Logging.Region).WithCredentials(cred)
-		hook, err := lc.NewBatchingHook(cfg.Logging.LogGroup, cfg.Hostname, awsconf, 10*time.Second)
+		w, err := lc.NewBatchWriterWithDuration(cfg.Logging.LogGroup, cfg.Hostname, awsconf, 10*time.Second)
 		if err != nil {
 			log.WithFields(log.Fields{"error": err.Error()}).Error("Error creating AWS hook")
 		}
+		hook = lc.NewLogrusHook(w)
 		log.AddHook(hook)
 		log.SetFormatter(&log.JSONFormatter{
 			TimestampFormat: time.RFC3339Nano,
