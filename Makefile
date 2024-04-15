@@ -71,9 +71,20 @@ build-test-container:
 		.
 
 build:
-	go build -o edge-api .
+	mkdir -p build 2>/dev/null
+	go build -o build/edge-api .
+	go build -o build/edge-api-migrate cmd/migrate/main.go
+	go build -o build/edge-api-wipe cmd/db/wipe.go
+	go build -o build/edge-api-migrate-device cmd/db/updDb/set_account_on_device.go
+	go build -o build/edge-api-migrate-repositories cmd/migraterepos/main.go
+	go build -o build/edge-api-migrate-groups cmd/migrategroups/main.go
+	go build -o build/edge-api-ibvents cmd/kafka/main.go
+	go build -o build/edge-api-images-build pkg/services/images_build/main.go
+	go build -o build/edge-api-isos-build pkg/services/images_iso/main.go
+	go build -o build/edge-api-cleanup cmd/cleanup/main.go
 
 clean:
+	rm -rf build
 	golangci-lint cache clean
 
 coverage:
@@ -113,7 +124,8 @@ help:
 	@echo "build-containers          Builds all the container images"
 	@echo "build-edge-api-container  Builds the edge-api container"
 	@echo "build-test-container      Builds the test container"
-	@echo "clean                     Removes cached golangci files"
+	@echo "build                     Build all binaries into ./build"
+	@echo "clean                     Removes binaries and cached golangci files"
 	@echo "coverage                  Runs 'go test' coverage on the project"
 	@echo "coverage-html             Create HTML version of coverage report"
 	@echo "coverage-no-fdo           Runs 'go test' coverage on the project without FDO"
@@ -318,4 +330,4 @@ mockgen: \
 	pkg/clients/rbac/mock_rbac/client.go \
 	pkg/clients/inventory/mock_inventory/inventory.go \
 	pkg/clients/inventorygroups/mock_inventorygroups/client.go \
-	pkg/clients/imagebuilder/mock_imagebuilder/client.go \
+	pkg/clients/imagebuilder/mock_imagebuilder/client.go
