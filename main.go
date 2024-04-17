@@ -26,10 +26,13 @@ import (
 	redoc "github.com/go-openapi/runtime/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/redhatinsights/edge-api/config"
+	em "github.com/redhatinsights/edge-api/internal/middleware"
 	l "github.com/redhatinsights/edge-api/logger"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
+	"github.com/redhatinsights/edge-api/pkg/jobs"
+	"github.com/redhatinsights/edge-api/pkg/metrics"
 	"github.com/redhatinsights/edge-api/pkg/routes"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -102,6 +105,7 @@ func logMiddleware(next http.Handler) http.Handler {
 func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 	route := chi.NewRouter()
 	route.Use(
+		em.NewPatternMiddleware(),
 		request_id.ConfiguredRequestID("x-rh-insights-request-id"),
 		middleware.RealIP,
 		middleware.Recoverer,
@@ -182,6 +186,7 @@ func featureFlagsServiceUnleash() bool {
 }
 
 func main() {
+	ctx := context.Background()
 	// this only catches interrupts for main
 	// see images for image build interrupt
 	interruptSignal := make(chan os.Signal, 1)
@@ -256,12 +261,22 @@ func main() {
 		log.WithField("FeatureFlagURL", cfg.UnleashURL).Warning("FeatureFlag service initialization was skipped.")
 	}
 
+	metrics.RegisterAPIMetrics()
+
+	jobs.InitMemoryWorker()
+	jobs.Worker().Start(ctx)
+	defer jobs.Worker().Stop(ctx)
+
 	consumers := []services.ConsumerService{
 		services.NewKafkaConsumerService(cfg.KafkaConfig, kafkacommon.TopicPlaybookDispatcherRuns),
 		services.NewKafkaConsumerService(cfg.KafkaConfig, kafkacommon.TopicInventoryEvents),
 	}
+
 	webServer := serveWeb(cfg, consumers)
+	defer gracefulTermination(webServer, "web")
+
 	metricsServer := serveMetrics(cfg.MetricsPort)
+	defer gracefulTermination(metricsServer, "metrics")
 
 	if cfg.KafkaConfig != nil {
 		log.Info("Starting Kafka Consumers")
@@ -276,8 +291,5 @@ func main() {
 	<-interruptSignal
 	log.Info("Shutting down gracefully...")
 	// temporarily adding a sleep to help troubleshoot interrupts
-	time.Sleep(20 * time.Second)
-	gracefulTermination(webServer, "web")
-	gracefulTermination(metricsServer, "metrics")
-	log.Info("Everything has shut down, goodbye")
+	time.Sleep(10 * time.Second)
 }
