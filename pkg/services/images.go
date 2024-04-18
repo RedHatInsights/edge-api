@@ -1471,7 +1471,7 @@ func (s *ImageService) RetryCreateImage(ctx context.Context, image *models.Image
 		s.log.WithField("error", err.Error()).Error("Failed setting image status")
 		return nil
 	}
-	if feature.JobQueue.IsEnabled() {
+	if feature.JobQueue.IsEnabledCtx(ctx) {
 		job := jobs.Job{
 			Type: "RetryCreateImageJob",
 			Args: &RetryCreateImageJob{ImageID: image.ID},

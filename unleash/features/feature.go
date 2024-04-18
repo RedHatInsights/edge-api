@@ -5,12 +5,13 @@
 package feature
 
 import (
+	"context"
 	"os"
 
 	"github.com/Unleash/unleash-client-go/v4"
 	unleashCTX "github.com/Unleash/unleash-client-go/v4/context"
-
 	"github.com/redhatinsights/edge-api/config"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 )
 
 // FeatureCustomRepos is the const of the custom repo feature flag
@@ -155,20 +156,51 @@ func CheckFeature(feature string, options ...unleash.FeatureOption) bool {
 	return false
 }
 
+// CheckFeature checks to see if a given feature is available with context
+func CheckFeatureCtx(ctx context.Context, feature string, options ...unleash.FeatureOption) bool {
+	cfg := config.Get()
+	uctx := unleashCTX.Context{}
+	orgID := identity.GetIdentity(ctx).Identity.OrgID
+	if orgID != "" {
+		uctx = unleashCTX.Context{
+			UserId: orgID,
+			Properties: map[string]string{
+				"org_id": orgID,
+			},
+		}
+	}
+
+	if cfg.FeatureFlagsEnvironment != "ephemeral" && cfg.FeatureFlagsURL != "" {
+		options = append(options, unleash.WithContext(uctx))
+		return unleash.IsEnabled(feature, options...)
+	}
+
+	return false
+}
+
 // IsEnabled checks both the feature flag service and env vars on demand
 func (ff *Flag) IsEnabled(options ...unleash.FeatureOption) bool {
-	ffServiceEnabled := false
-	ffEnvEnabled := false
-	if ff.Name != "" {
-		ffServiceEnabled = CheckFeature(ff.Name, options...)
-	}
-
-	// just check if the env variable exists. it can be set to any value.
-	_, ffEnvEnabled = os.LookupEnv(ff.EnvVar)
-
-	// if either is enabled, make it so
-	if ffServiceEnabled || ffEnvEnabled {
+	if ff.Name != "" && CheckFeature(ff.Name, options...) {
 		return true
 	}
+
+	if _, e := os.LookupEnv(ff.EnvVar); e {
+		return true
+	}
+
+	return false
+}
+
+// IsEnabled checks both the feature flag service and env vars on demand.
+// Organization ID is passed from the context if present.
+func (ff *Flag) IsEnabledCtx(ctx context.Context, options ...unleash.FeatureOption) bool {
+	if ff.Name != "" && CheckFeatureCtx(ctx, ff.Name, options...) {
+		return true
+	}
+
+	if _, e := os.LookupEnv(ff.EnvVar); e {
+		return true
+	}
+
 	return false
 }
