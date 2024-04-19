@@ -365,6 +365,7 @@ objects:
         restartPolicy: Never
         concurrencyPolicy: Forbid
         suspend: ${{CLEANUP_SUSPEND}}
+        activeDeadlineSeconds: 259200
         podSpec:
           image: ${IMAGE}:${IMAGE_TAG}
           args:
