@@ -13,14 +13,12 @@ import (
 	_ "database/sql"
 
 	"github.com/go-chi/chi"
-	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
-	feature "github.com/redhatinsights/edge-api/unleash/features"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
 	log "github.com/sirupsen/logrus"
@@ -200,7 +198,7 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 
 	// get the initial image with identity fields set
-	image, ident, err := GetImageWithIdentity(w, r)
+	image, _, err := GetImageWithIdentity(w, r)
 	if err != nil {
 		log.WithField("error", err).Error("Failed to get an image with identity added")
 		return
@@ -223,41 +221,6 @@ func CreateImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if feature.ImageCreateEDA.IsEnabled() {
-		ctxServices.Log.Debug("Creating image from API request with EDA")
-
-		// create payload for ImageRequested event
-		edgePayload := &models.EdgeImageRequestedEventPayload{
-			EdgeBasePayload: models.EdgeBasePayload{
-				Identity:       ident,
-				LastHandleTime: time.Now().Format(time.RFC3339),
-				RequestID:      image.RequestID,
-			},
-			NewImage: *image,
-		}
-
-		// create the edge event
-		edgeEvent := kafkacommon.CreateEdgeEvent(ident.Identity.OrgID, models.SourceEdgeEventAPI, image.RequestID,
-			models.EventTypeEdgeImageRequested, image.Name, edgePayload)
-
-		// put the event on the bus
-		if err = kafkacommon.NewProducerService().ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageRequested, edgeEvent); err != nil {
-			log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
-			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-
-			return
-		}
-
-		// return to Edge UI
-		w.WriteHeader(http.StatusOK)
-		respondWithJSONBody(w, ctxServices.Log, image)
-
-		return
-	}
-
-	// FALL THROUGH IF NOT EDA
-
-	// TODO: this is going to go away with EDA
 	ctxServices.ImageService.ProcessImage(r.Context(), image, true)
 
 	ctxServices.Log.WithFields(log.Fields{
@@ -288,7 +251,7 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 
 	// get the initial image with identity fields set
-	image, ident, err := GetImageWithIdentity(w, r)
+	image, _, err := GetImageWithIdentity(w, r)
 	if err != nil {
 		log.WithField("error", err).Error("Failed to get an image with identity added")
 		return
@@ -318,41 +281,6 @@ func CreateImageUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if feature.ImageUpdateEDA.IsEnabled() {
-		ctxServices.Log.Debug("Creating image from API request with EDA")
-
-		// create payload for ImageRequested event
-		edgePayload := &models.EdgeImageUpdateRequestedEventPayload{
-			EdgeBasePayload: models.EdgeBasePayload{
-				Identity:       ident,
-				LastHandleTime: time.Now().Format(time.RFC3339),
-				RequestID:      image.RequestID,
-			},
-			NewImage: *image,
-		}
-
-		// create the edge event
-		edgeEvent := kafkacommon.CreateEdgeEvent(ident.Identity.OrgID, models.SourceEdgeEventAPI, image.RequestID,
-			models.EventTypeEdgeImageUpdateRequested, image.Name, edgePayload)
-
-		// put the event on the bus
-		if err = kafkacommon.NewProducerService().ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageUpdateRequested, edgeEvent); err != nil {
-			log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
-			respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest(err.Error()))
-
-			return
-		}
-
-		// return to Edge UI
-		w.WriteHeader(http.StatusOK)
-		respondWithJSONBody(w, ctxServices.Log, image)
-
-		return
-	}
-
-	// FALL THROUGH IF NOT EDA
-
-	// TODO: this is going to go away with EDA
 	ctxServices.ImageService.ProcessImage(r.Context(), image, true)
 
 	w.WriteHeader(http.StatusOK)

@@ -40,12 +40,6 @@ var JobQueue = &Flag{Name: "edge-management.job_queue", EnvVar: "FEATURE_JOBQUEU
 
 // IMAGE FEATURE FLAGS
 
-// ImageCreateEDA is the feature flag for routes.CreateImage() EDA code
-var ImageCreateEDA = &Flag{Name: "edge-management.image_create", EnvVar: "FEATURE_IMAGECREATE"}
-
-// ImageUpdateEDA is the feature flag for routes.CreateImageUpdate() EDA code
-var ImageUpdateEDA = &Flag{Name: "edge-management.image_update", EnvVar: "FEATURE_IMAGEUPDATE"}
-
 // ImageCreateCommitEDA is the feature flag for routes.CreateCommit() EDA code
 var ImageCreateCommitEDA = &Flag{Name: "", EnvVar: "FEATURE_IMAGECREATE_COMMIT"}
 

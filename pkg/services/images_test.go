@@ -3062,8 +3062,6 @@ func TestCreateInstallerForImageSuccessfully(t *testing.T) {
 	err := os.Unsetenv(feature.DeprecateKickstartInjection.EnvVar)
 	g.Expect(err).ToNot(HaveOccurred())
 	// ensure feature.ImageCreateISOEDA is disabled
-	err = os.Unsetenv(feature.ImageCreateEDA.EnvVar)
-	g.Expect(err).ToNot(HaveOccurred())
 
 	currentDir, err := os.Getwd()
 	g.Expect(err).ToNot(HaveOccurred())
@@ -3160,9 +3158,6 @@ func TestCreateInstallerForImageSuccessfullyWithSkipInjectKickstart(t *testing.T
 	g := NewGomegaWithT(t)
 	// set feature flag feature.SkipInjectKickstartToISO to skip injecting kickstart to ISO file
 	err := os.Setenv(feature.DeprecateKickstartInjection.EnvVar, "true")
-	g.Expect(err).ToNot(HaveOccurred())
-	// ensure feature.ImageCreateISOEDA is disabled
-	err = os.Unsetenv(feature.ImageCreateEDA.EnvVar)
 	g.Expect(err).ToNot(HaveOccurred())
 
 	defer func() {
