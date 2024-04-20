@@ -34,8 +34,6 @@ RUN go run cmd/swagger2openapi/main.go  cmd/spec/swagger.json cmd/spec/openapi.j
 
 # Build the microservice binaries
 RUN go build -o /go/bin/edge-api-ibvents cmd/kafka/main.go
-RUN go build -o /go/bin/edge-api-images-build pkg/services/images_build/main.go
-RUN go build -o /go/bin/edge-api-isos-build pkg/services/images_iso/main.go
 
 # Build utilities binaries
 RUN go build -o /go/bin/edge-api-cleanup cmd/cleanup/main.go
@@ -85,8 +83,6 @@ COPY --from=edge-builder /go/bin/edge-api-migrate-device /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-migrate-repositories /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-migrate-groups /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-ibvents /usr/bin
-COPY --from=edge-builder /go/bin/edge-api-images-build /usr/bin
-COPY --from=edge-builder /go/bin/edge-api-isos-build /usr/bin
 COPY --from=edge-builder /go/bin/edge-api-cleanup /usr/bin
 COPY --from=edge-builder ${EDGE_API_WORKSPACE}/cmd/spec/openapi.json /var/tmp
 
