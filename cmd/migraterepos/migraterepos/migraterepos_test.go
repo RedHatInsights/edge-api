@@ -19,6 +19,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 
 	"github.com/bxcodec/faker/v3"
 	"github.com/google/uuid"
@@ -71,7 +72,7 @@ var _ = Describe("Migrate custom repositories", func() {
 		It("migrate all repos successfully", func() {
 			contentSourcesGetCallIndex := 0
 			contentSourcesPostCallIndex := 0
-			ts := httptest.NewServer(dependencies.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ts := httptest.NewServer(identity.EnforceIdentity(dependencies.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				rhIndent, err := common.GetIdentityInstanceFromContext(r.Context())
 				Expect(err).ToNot(HaveOccurred())
 				// ensure identity user OrgAdmin is true
@@ -131,7 +132,7 @@ var _ = Describe("Migrate custom repositories", func() {
 				default:
 					w.WriteHeader(http.StatusBadRequest)
 				}
-			})))
+			}))))
 			defer ts.Close()
 			config.Get().ContentSourcesURL = ts.URL
 
