@@ -24,11 +24,6 @@ func GetOriginalIdentity(ctx context.Context) (string, error) {
 	return ident, nil
 }
 
-// SetOriginalIdentity set the original identity data to the context
-func SetOriginalIdentity(ctx context.Context, value string) context.Context {
-	return identity.WithRawIdentity(ctx, value)
-}
-
 // GetIdentityInstanceFromContext returns an instances of identity.XRHID from Base64 encoded ident in context
 func GetIdentityInstanceFromContext(ctx context.Context) (identity.XRHID, error) {
 	ident64, err := GetOriginalIdentity(ctx)

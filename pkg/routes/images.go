@@ -799,7 +799,7 @@ func ResumeCreateImage(w http.ResponseWriter, r *http.Request) {
 		resumeLog.WithField("identity_base64", base64Identity).Debug("Using a base64encoded stripped identity")
 
 		// add the new identity to the context and create ctxServices with that context
-		ctx = common.SetOriginalIdentity(ctx, base64Identity)
+		ctx = identity.WithRawIdentity(ctx, base64Identity)
 		ctxServices := dependencies.ServicesFromContext(ctx)
 		// TODO: consider a bitwise& param to only add needed ctxServices
 

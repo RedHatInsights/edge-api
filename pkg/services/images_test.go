@@ -2614,7 +2614,7 @@ var _ = Describe("Image Service Test", func() {
 				identityBytes, err := json.Marshal(&identity.XRHID{Identity: identity.Identity{OrgID: orgID}})
 				base64Identity := base64.StdEncoding.EncodeToString(identityBytes)
 				Expect(err).ToNot(HaveOccurred())
-				ctx = common.SetOriginalIdentity(ctx, base64Identity)
+				ctx = identity.WithRawIdentity(ctx, base64Identity)
 
 				service = services.ImageService{
 					Service:         services.NewService(ctx, log.NewEntry(log.StandardLogger())),
@@ -2868,10 +2868,12 @@ var _ = Describe("Image Service Test", func() {
 			var ctx context.Context
 			BeforeEach(func() {
 				ctx = context.Background()
-				identityBytes, err := json.Marshal(&identity.XRHID{Identity: identity.Identity{OrgID: orgID}})
+				id := identity.XRHID{Identity: identity.Identity{OrgID: orgID}}
+				identityBytes, err := json.Marshal(&id)
 				base64Identity := base64.StdEncoding.EncodeToString(identityBytes)
 				Expect(err).ToNot(HaveOccurred())
-				ctx = common.SetOriginalIdentity(ctx, base64Identity)
+				ctx = identity.WithIdentity(ctx, id)
+				ctx = identity.WithRawIdentity(ctx, base64Identity)
 
 				service = services.ImageService{
 					Service:         services.NewService(ctx, log.NewEntry(log.StandardLogger())),
