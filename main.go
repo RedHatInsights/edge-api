@@ -94,8 +94,19 @@ func logMiddleware(next http.Handler) http.Handler {
 		s.Log.WithFields(fields).Debugf("Started %s request %s", r.Method, r.URL.Path)
 
 		defer func() {
-			s.Log.WithFields(fields).
-				WithField("duration_ms", time.Since(t1).Milliseconds()).Infof("Finished %s request %s", r.Method, r.URL.Path)
+			latency := time.Since(t1).Milliseconds()
+			var code int
+			if r.Response != nil {
+				code = r.Response.StatusCode
+			}
+			fields := log.Fields{
+				"request_id":  request_id.GetReqID(r.Context()),
+				"org_id":      org_id,
+				"latency_ms":  latency,
+				"status_code": code,
+				"method":      r.Method,
+			}
+			s.Log.WithFields(fields).Infof("Finished %s request %s with %d", r.Method, r.URL.Path, code)
 		}()
 
 		next.ServeHTTP(w, r)
