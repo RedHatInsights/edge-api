@@ -31,6 +31,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -1472,12 +1473,15 @@ func (s *ImageService) RetryCreateImage(ctx context.Context, image *models.Image
 		return nil
 	}
 	if feature.JobQueue.IsEnabledCtx(ctx) {
+		orgID := identity.GetIdentity(ctx).Identity.OrgID
+		s.log.Infof("Enqueuing RetryCreateImageJob for org %s", orgID)
 		job := jobs.Job{
 			Type: "RetryCreateImageJob",
 			Args: &RetryCreateImageJob{ImageID: image.ID},
 		}
 		jobs.Enqueue(ctx, &job)
 	} else {
+		s.log.Info("Calling RetryCreateImageJob")
 		go s.processImage(ctx, image.ID, DefaultLoopDelay, true)
 	}
 	return nil
