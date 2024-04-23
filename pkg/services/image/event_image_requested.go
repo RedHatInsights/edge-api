@@ -8,10 +8,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
-	"github.com/redhatinsights/edge-api/pkg/routes/common"
-
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services/utility"
+	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -40,8 +39,8 @@ func (ev EventImageRequestedBuildHandler) Consume(ctx context.Context, imgServic
 	eventlog.Info("Starting image build")
 
 	payload := ev.Data
-	identity := payload.GetIdentity()
-	identityBytes, err := json.Marshal(identity)
+	id := payload.GetIdentity()
+	identityBytes, err := json.Marshal(id)
 	if err != nil {
 		eventlog.WithField("error", err.Error()).Error("Error Marshaling the identity into a string")
 		return
@@ -50,7 +49,8 @@ func (ev EventImageRequestedBuildHandler) Consume(ctx context.Context, imgServic
 	base64Identity := base64.StdEncoding.EncodeToString(identityBytes)
 
 	// add the new identity to the context and create ctxServices with that context
-	ctx = common.SetOriginalIdentity(ctx, base64Identity)
+	ctx = identity.WithIdentity(ctx, id)
+	ctx = identity.WithRawIdentity(ctx, base64Identity)
 
 	// temporarily using some Marshal/Unmarshal conjuring to move our future EDA image back to models.Image world
 	var img *models.Image

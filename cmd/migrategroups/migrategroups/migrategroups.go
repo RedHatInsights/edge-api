@@ -12,7 +12,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients/inventorygroups"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
-	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services/utility"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 
@@ -83,7 +82,8 @@ func newInventoryOrgClients(orgID string) (*InventoryOrgClients, error) {
 	}
 	base64Identity := base64.StdEncoding.EncodeToString(jsonIdent)
 	ctx := context.Background()
-	ctx = common.SetOriginalIdentity(ctx, base64Identity)
+	ctx = identity.WithIdentity(ctx, ident)
+	ctx = identity.WithRawIdentity(ctx, base64Identity)
 	clientLog := log.WithFields(log.Fields{
 		"org_id":  orgID,
 		"context": "org-groups-migration",

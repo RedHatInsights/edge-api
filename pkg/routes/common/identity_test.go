@@ -14,8 +14,8 @@ import (
 )
 
 func TestGetIdentityInstanceFromContext(t *testing.T) {
-	identity := identity.XRHID{Identity: identity.Identity{OrgID: DefaultOrgID}}
-	identityBytes, _ := json.Marshal(identity) // nolint:errcheck,gofmt,goimports
+	id := identity.XRHID{Identity: identity.Identity{OrgID: DefaultOrgID}}
+	identityBytes, _ := json.Marshal(id) // nolint:errcheck,gofmt,goimports
 	base64Identity := base64.StdEncoding.EncodeToString(identityBytes)
 	illegalFirstByte := "X="
 
@@ -33,20 +33,20 @@ func TestGetIdentityInstanceFromContext(t *testing.T) {
 		},
 		{
 			Name:          "Cannot decode identity from context",
-			Context:       SetOriginalIdentity(context.Background(), illegalFirstByte),
+			Context:       identity.WithRawIdentity(context.Background(), illegalFirstByte),
 			ExpectedOrgID: "",
 			ExpectedError: base64.CorruptInputError(1),
 		},
 		{
 			Name:          "Cannot unmarshal identity from context",
-			Context:       SetOriginalIdentity(context.Background(), base64.StdEncoding.EncodeToString([]byte("{\"bb\""))),
+			Context:       identity.WithRawIdentity(context.Background(), base64.StdEncoding.EncodeToString([]byte("{\"bb\""))),
 			ExpectedOrgID: "",
 			ExpectedError: &json.SyntaxError{},
 		},
 
 		{
 			Name:          "Find identity instance from context",
-			Context:       SetOriginalIdentity(context.Background(), base64Identity),
+			Context:       identity.WithRawIdentity(context.Background(), base64Identity),
 			ExpectedOrgID: DefaultOrgID,
 			ExpectedError: nil,
 		},
