@@ -79,8 +79,6 @@ build:
 	go build -o build/edge-api-migrate-repositories cmd/migraterepos/main.go
 	go build -o build/edge-api-migrate-groups cmd/migrategroups/main.go
 	go build -o build/edge-api-ibvents cmd/kafka/main.go
-	go build -o build/edge-api-images-build pkg/services/images_build/main.go
-	go build -o build/edge-api-isos-build pkg/services/images_iso/main.go
 	go build -o build/edge-api-cleanup cmd/cleanup/main.go
 
 clean:
