@@ -79,9 +79,6 @@ var StorageImagesRepos = &Flag{Name: "edge-management.storage_images_repos", Env
 // DedupPackage is the feature flag to use edge-management.dedup_installed_packages when creating images
 var DedupPackage = &Flag{Name: "edge-management.dedup_installed_packages", EnvVar: "DEDUP_INSTALLED_PACKAGES"}
 
-// UpdateRepoRequested is the feature flag to use for services.UpdateService.CreateUpdate(id) EDA Code
-var UpdateRepoRequested = &Flag{Name: "edge-management.update_repo_requested", EnvVar: "FEATURE_UPDATE_REPO_REQUESTED"}
-
 // ContentSources is a feature flag to use for code related to Parity and custom repositories
 var ContentSources = &Flag{Name: "edge-management.content_sources", EnvVar: "FEATURE_CONTENT_SOURCES"}
 
