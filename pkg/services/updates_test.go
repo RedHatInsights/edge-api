@@ -22,7 +22,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory/mock_inventory"
 	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher"
 	"github.com/redhatinsights/edge-api/pkg/clients/playbookdispatcher/mock_playbookdispatcher"
-	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	mock_kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka/mock_kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	apiError "github.com/redhatinsights/edge-api/pkg/errors"
@@ -466,71 +465,6 @@ var _ = Describe("UpdateService Basic functions", func() {
 
 					Expect(len(updateTransaction.Devices)).Should(Equal(1))
 					Expect(updateTransaction.Devices[0].ID).Should(Equal(device.ID))
-				})
-			})
-			When("EDA feature UpdateRepoRequested is Enabled", func() {
-				var updateService services.UpdateServiceInterface
-				var mockProducerService *mock_kafkacommon.MockProducerServiceInterface
-				var ctrl *gomock.Controller
-				conf := config.Get()
-
-				BeforeEach(func() {
-					ctrl = gomock.NewController(GinkgoT())
-					mockProducerService = mock_kafkacommon.NewMockProducerServiceInterface(ctrl)
-					updateService = &services.UpdateService{
-						Service:         services.NewService(context.Background(), log.WithField("service", "update")),
-						ProducerService: mockProducerService,
-					}
-					// enable feature by environment
-					err := os.Setenv("FEATURE_UPDATE_REPO_REQUESTED", "True")
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				AfterEach(func() {
-					ctrl.Finish()
-					// disable feature by clearing the environment
-					err := os.Unsetenv("FEATURE_UPDATE_REPO_REQUESTED")
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				It("should create kafka event", func() {
-					mockProducerService.EXPECT().ProduceEvent(
-						kafkacommon.TopicFleetmgmtUpdateRepoRequested, models.EventTypeEdgeUpdateRepoRequested, gomock.Any(),
-					).Return(nil)
-					_, err := updateService.CreateUpdate(update.ID)
-					Expect(err).ToNot(HaveOccurred())
-				})
-
-				It("should return error create kafka event failed", func() {
-					expectedErr := errors.New("producer event error")
-					mockProducerService.EXPECT().ProduceEvent(
-						kafkacommon.TopicFleetmgmtUpdateRepoRequested, models.EventTypeEdgeUpdateRepoRequested, gomock.Any(),
-					).Return(expectedErr)
-					_, err := updateService.CreateUpdate(update.ID)
-					Expect(err).To(HaveOccurred())
-					Expect(err.Error()).To(Equal(expectedErr.Error()))
-				})
-
-				When("missing identity in context", func() {
-					var originalAuth bool
-					BeforeEach(func() {
-						originalAuth = conf.Auth
-						conf.Auth = true
-					})
-
-					AfterEach(func() {
-						conf.Auth = originalAuth
-					})
-
-					It("should not ProduceEvent", func() {
-						// Produce event should not be called
-						mockProducerService.EXPECT().ProduceEvent(
-							kafkacommon.TopicFleetmgmtUpdateRepoRequested, models.EventTypeEdgeUpdateRepoRequested, gomock.Any(),
-						).Times(0)
-						_, err := updateService.CreateUpdate(update.ID)
-						Expect(err).To(HaveOccurred())
-						Expect(err.Error()).To(Equal("cannot find org-id"))
-					})
 				})
 			})
 		})

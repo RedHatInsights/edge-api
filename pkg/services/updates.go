@@ -26,7 +26,6 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
-	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
 
 	"github.com/redhatinsights/edge-api/config"
 
@@ -196,47 +195,6 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		return nil, result.Error
 	}
 
-	if feature.UpdateRepoRequested.IsEnabled() {
-		s.log.WithField("updateID", id).Debug("Creating Update Repo with EDA")
-
-		identity, err := common.GetIdentityFromContext(s.ctx)
-		if err != nil {
-			s.log.WithField("error", err.Error()).Error("error getting identity from context")
-			return nil, err
-		}
-
-		requestID := request_id.GetReqID(s.ctx)
-		// create payload for UpdateRepoRequested event
-		edgePayload := &models.EdgeUpdateRepoRequestedEventPayload{
-			EdgeBasePayload: models.EdgeBasePayload{
-				Identity:       identity,
-				LastHandleTime: time.Now().Format(time.RFC3339),
-				RequestID:      requestID,
-			},
-			Update: *update,
-		}
-		// create the edge event
-		edgeEvent := kafkacommon.CreateEdgeEvent(
-			identity.Identity.OrgID,
-			models.SourceEdgeEventAPI,
-			requestID,
-			models.EventTypeEdgeUpdateRepoRequested,
-			fmt.Sprintf("update: %d, commit: %s", update.ID, update.Commit.OSTreeCommit),
-			edgePayload,
-		)
-
-		// put the event on the bus
-		if err = s.ProducerService.ProduceEvent(
-			kafkacommon.TopicFleetmgmtUpdateRepoRequested, models.EventTypeEdgeUpdateRepoRequested, edgeEvent,
-		); err != nil {
-			log.WithField("request_id", edgeEvent.ID).Error("producing the UpdateRepoRequested event failed")
-			return nil, err
-		}
-
-		return update, nil
-	}
-
-	// EDA disabled continue here
 	update, err = s.BuildUpdateRepo(orgID, id)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("error when building update repo")
