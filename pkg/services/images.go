@@ -636,77 +636,16 @@ func (s *ImageService) processInstaller(ctx context.Context, image *models.Image
 	if image.Installer.Status == models.ImageStatusSuccess {
 		// Post process the installer ISO
 		//	User, kickstart, checksum, etc.
-		if feature.ImageCreateISOEDA.IsEnabled() {
-			s.log.Debug("Creating image iso with EDA")
-
-			ident, errident := common.GetIdentityInstanceFromContext(ctx)
-			if errident != nil {
-				s.log.WithField("error", errident.Error()).Error("Failed retrieving identity from context")
-				return errident
-			}
-			// create payload for ImageISORequested event
-			edgePayload := &models.EdgeImageISORequestedEventPayload{
-				EdgeBasePayload: models.EdgeBasePayload{
-					Identity:       ident,
-					LastHandleTime: time.Now().Format(time.RFC3339),
-					RequestID:      image.RequestID,
-				},
-				NewImage: *image,
-			}
-
-			// create the edge event
-			edgeEvent := kafkacommon.CreateEdgeEvent(ident.Identity.OrgID, models.SourceEdgeEventAPI, image.RequestID,
-				models.EventTypeEdgeImageISORequested, image.Name, edgePayload)
-
-			// put the event on the bus
-			if err := s.ProducerService.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeImageISORequested, edgeEvent); err != nil {
-				log.WithField("request_id", edgeEvent.ID).Error("Producing the event failed")
-				return err
-			}
-		} else {
-			err := s.AddUserInfo(image)
-			if err != nil {
-				s.log.WithField("error", err.Error()).Error("Kickstart file injection failed")
-				return err
-			}
+		err := s.AddUserInfo(image)
+		if err != nil {
+			s.log.WithField("error", err.Error()).Error("Kickstart file injection failed")
+			return err
 		}
 	}
 	// Regardless of the status, call this method to make sure the status will be updated
 	// It updates the status across the image and not just the installer
 	s.log.Debug("Setting final image status")
 	s.SetFinalImageStatus(image)
-
-	// send an installer completed event
-	if feature.ImageCompletionEventsEDA.IsEnabled() {
-		s.log.Debug("Installer completed (EDA)")
-
-		// get the identity from the context
-		ident, err := common.GetIdentityInstanceFromContext(ctx)
-		if err != nil {
-			s.log.WithField("error", err.Error()).Error("Error getting identity from context")
-		}
-
-		// create payload for event
-		edgePayload := &models.EdgeInstallerCompletedEventPayload{
-			EdgeBasePayload: models.EdgeBasePayload{
-				Identity:       ident,
-				LastHandleTime: time.Now().Format(time.RFC3339),
-				RequestID:      image.RequestID,
-			},
-			NewImage: *image,
-		}
-
-		// create the edge event
-		edgeEvent := kafkacommon.CreateEdgeEvent(ident.Identity.OrgID, models.SourceEdgeEventAPI, image.RequestID,
-			models.EventTypeEdgeInstallerCompleted, image.Name, edgePayload)
-
-		// put the event on the bus
-		if err := s.ProducerService.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeInstallerCompleted, edgeEvent); err != nil {
-			log.WithFields(log.Fields{"request_id": edgeEvent.ID, "error": err.Error()}).Error("Producing the event failed")
-
-			return err
-		}
-	}
 
 	s.log.WithField("status", image.Status).Debug("Processing image installer is done")
 	return nil
@@ -742,39 +681,6 @@ func (s *ImageService) processCommit(ctx context.Context, image *models.Image, l
 			s.log.WithField("error", err.Error()).Error("Failed getting metadata from image builder")
 			s.SetErrorStatusOnImage(err, imageWithMetaData)
 			return image, err
-		}
-
-		// send a commit completed event
-		if feature.ImageCompletionEventsEDA.IsEnabled() {
-
-			// get the identity from the context
-			ident, err := common.GetIdentityInstanceFromContext(ctx)
-			if err != nil {
-				s.log.WithField("error", err.Error()).Error("Error getting identity from context")
-
-				return image, err
-			}
-
-			// create payload for event
-			edgePayload := &models.EdgeCommitCompletedEventPayload{
-				EdgeBasePayload: models.EdgeBasePayload{
-					Identity:       ident,
-					LastHandleTime: time.Now().Format(time.RFC3339),
-					RequestID:      image.RequestID,
-				},
-				NewImage: *image,
-			}
-
-			// create the edge event
-			edgeEvent := kafkacommon.CreateEdgeEvent(ident.Identity.OrgID, models.SourceEdgeEventAPI, image.RequestID,
-				models.EventTypeEdgeCommitCompleted, image.Name, edgePayload)
-
-			// put the event on the bus
-			if err := kafkacommon.NewProducerService().ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeCommitCompleted, edgeEvent); err != nil {
-				s.log.WithFields(log.Fields{"request_id": edgeEvent.ID, "error": err.Error()}).Error("Producing the event failed")
-
-				return image, err
-			}
 		}
 
 		// Create the repo for the image
@@ -959,40 +865,6 @@ func (s *ImageService) CreateRepoForImage(ctx context.Context, img *models.Image
 	repo, err := s.RepoBuilder.ImportRepo(repo)
 	if err != nil {
 		return nil, err
-	}
-
-	// send a commit completed event
-	if feature.ImageCompletionEventsEDA.IsEnabled() {
-		s.log.Debug("Repo completed (EDA)")
-
-		// get the identity from the context
-		ident, err := common.GetIdentityInstanceFromContext(ctx)
-		if err != nil {
-			s.log.WithField("error", err.Error()).Error("Error getting identity from context")
-
-			return nil, err
-		}
-
-		// create payload for event
-		edgePayload := &models.EdgeOstreeRepoCompletedEventPayload{
-			EdgeBasePayload: models.EdgeBasePayload{
-				Identity:       ident,
-				LastHandleTime: time.Now().Format(time.RFC3339),
-				RequestID:      img.RequestID,
-			},
-			NewImage: *img,
-		}
-
-		// create the edge event
-		edgeEvent := kafkacommon.CreateEdgeEvent(ident.Identity.OrgID, models.SourceEdgeEventAPI,
-			img.RequestID, models.EventTypeEdgeOstreeRepoCompleted, img.Name, edgePayload)
-
-		// put the event on the bus
-		if err := s.ProducerService.ProduceEvent(kafkacommon.TopicFleetmgmtImageBuild, models.EventTypeEdgeOstreeRepoCompleted, edgeEvent); err != nil {
-			log.WithFields(log.Fields{"request_id": edgeEvent.ID, "error": err.Error()}).Error("Producing the event failed")
-
-			return nil, err
-		}
 	}
 
 	s.log.Info("OSTree repo is ready")

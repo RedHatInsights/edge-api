@@ -41,24 +41,6 @@ var JobQueue = &Flag{Name: "edge-management.job_queue", EnvVar: "FEATURE_JOBQUEU
 
 // IMAGE FEATURE FLAGS
 
-// ImageCreateCommitEDA is the feature flag for routes.CreateCommit() EDA code
-var ImageCreateCommitEDA = &Flag{Name: "", EnvVar: "FEATURE_IMAGECREATE_COMMIT"}
-
-// ImageCreateInstallerEDA is the feature flag for routes.CreateInstaller() EDA code
-var ImageCreateInstallerEDA = &Flag{Name: "", EnvVar: "FEATURE_IMAGECREATE_INSTALLER"}
-
-// ImageCreateKickstartEDA is the feature flag for routes.CreateKickstart() EDA code
-var ImageCreateKickstartEDA = &Flag{Name: "", EnvVar: "FEATURE_IMAGECREATE_KICKSTART"}
-
-// ImageCreateRepoEDA is the feature flag for routes.CreateRepo() EDA code
-var ImageCreateRepoEDA = &Flag{Name: "", EnvVar: "FEATURE_IMAGECREATE_REPO"}
-
-// ImageCompletionEventsEDA is the feature flag for routes.CreateRepo() EDA code
-var ImageCompletionEventsEDA = &Flag{Name: "edge-management.completion_events", EnvVar: "FEATURE_COMPLETION_EVENTS"}
-
-// ImageCreateISOEDA is the feature flag for routes.CreateCommit() EDA code
-var ImageCreateISOEDA = &Flag{Name: "edge-management.image_create_iso", EnvVar: "FEATURE_IMAGECREATE_ISO"}
-
 // BuildUpdateRepoWithOldCommits is the feature flag for services.BuildUpdateRepo() to enable oldCommits feature
 var BuildUpdateRepoWithOldCommits = &Flag{Name: "edge-management.build_update_repo_with_old_commits", EnvVar: "FEATURE_BUILD_UPDATE_REPO_WITH_OLD_COMMITS"}
 
