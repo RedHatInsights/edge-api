@@ -80,24 +80,7 @@ pull_request_rules:
       label:
         add:
           - invalid
-  #
-  # Non-dependabot Merge PR rule
-  - name: Automatic merge on approval
-    conditions:
-      - base=main
-      - and: *common-merge-criteria
-      - check-success=Lint
-      - check-success=ci.int.devshift.net PR build
-      - label!=work in progress
-      - label!=do not merge
-    actions:
-      label:
-        remove:
-          - invalid
-      queue:
-        name: edge-api
-        method: squash
-        commit_message_template: "{{ commits[0] }}"
+
   #
   # Detect when PR conflicts and add label
   - name: warn on conflicts
