@@ -17,6 +17,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 )
 
 // Log is an instance of the global logrus.Logger
@@ -83,7 +84,7 @@ func InitLogger(writer io.Writer) {
 			},
 			CallerPrettyfier: prettyfier,
 		})
-	} else {
+	} else if !feature.LogVerboseFields.IsEnabledLocal() {
 		log.SetFormatter(&plainFormatter{})
 	}
 

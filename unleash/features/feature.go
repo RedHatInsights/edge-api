@@ -6,7 +6,9 @@ package feature
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/Unleash/unleash-client-go/v4"
 	unleashCTX "github.com/Unleash/unleash-client-go/v4/context"
@@ -25,6 +27,11 @@ type Flag struct {
 	Name   string
 	EnvVar string
 }
+
+// LONG_TERM OPERATIONAL AND DEV FLAGS
+
+// LogVerboseFields adds fields to the log output. Primarily for local dev and not an Unleash flag.
+var LogVerboseFields = &Flag{Name: "edge-management.log_verbose_fields", EnvVar: "FEATURE_LOG_VERBOSE_FIELDS"}
 
 // GLITCHTIP LOGGING FLAGS
 
@@ -155,6 +162,18 @@ func CheckFeatureCtx(ctx context.Context, feature string, options ...unleash.Fea
 	}
 
 	return false
+}
+
+// IsEnabledLocal returns a bool directly from the environment. Use before Unleash is init'd
+func (ff *Flag) IsEnabledLocal() bool {
+	envBool, err := strconv.ParseBool(os.Getenv(ff.EnvVar))
+	if err != nil {
+		fmt.Println("ERROR: ", err.Error())
+
+		return false
+	}
+
+	return envBool
 }
 
 // IsEnabled checks both the feature flag service and env vars on demand
