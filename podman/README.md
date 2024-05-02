@@ -8,7 +8,6 @@ The files in the podman directory are meant to help with local development and a
 
     sudo dnf install -y podman podman-compose
 
-
 ## **Dependencies**
 
 ## Environment File
@@ -17,7 +16,126 @@ The containers described below share a common environment file for setting appli
 
 A template is provided in the GitHub repo at *podman/env/edge-api_template.env*.
 
+[FILL IN DETAILS HERE]
+
+
+## PostgreSQL
+
+### Registries
+
+The default postgres used in the compose files is available from registry.redhat.io. You might need to authenticate to be able to pull the image.
+
+    podman login registry.redhat.io
+
+### Setup Data Directories
+
+    mkdir -p ~/devdata/postgresql
+    chmod 775 ~/devdata/postgresql
+
+### Start and Stop the Postgres Container
+
+To start and stop only the Edge API container, use the following commands:
+
+    podman-compose -f podman/container-compose-db.yml up -d
+    podman-compose -f podman/container-compose-db.yml down
+
+> **HELPFUL HINT**: To start a container in non-daemon mode and see the log output directly, run the up command without the -d. Otherwise, you can always use the log command to see the output when running the container in daemon mode.
+
+
+### Setup DB with DB Migration
+
+To setup the tables for Edge API before starting the application, run the DB migration:
+
+### Start and Stop the DB Migration Container
+
+To start and stop only the Edge API container, use the following commands:
+
+    podman-compose -f podman/container-compose-dbmigrate.yml up -d
+    podman-compose -f podman/container-compose-dbmigrate.yml down
+
+> **HELPFUL HINT**: To start a container in non-daemon mode and see the log output directly, run the up command without the -d. Otherwise, you can always use the log command to see the output when running the container in daemon mode.
+
+
+## **Optional for API Development**
+
+## Unleash
+
+It is not necessary to run a local Unleash server. Edge API is setup to use environment variables for feature flags.
+
+[FILL IN DETAILS HERE]
+
+
+## Frontend
+
+Although Edge API can be queried from curl or an application such as Postman, it is possible to run the Edge Frontend locally.
+
+[FILL IN DETAILS HERE]
+
+
+## **Edge Management Applications**
+
+
+## API
+
+Edge API can be run without Podman Compose, but using the compose file sets the API container up on the same podman default network as its depenedencies above.
+
+The Edge API container uses a micro image to reduce its size. It simplifies the dev process to use a container with additional tools (bash, wget, etc.) for development purposes. A dev container file, podman/Containerfile-dev, can be used in place of the primary containers stored in Quay.
+
+### Building the Edge API Dev Container
+
+To generate a local dev container, *cd* into the root of the Edge API git repo and run:
+
+    podman build -t localhost/edge-api:fedora -f podman/Containerfile-fedora .
+
+The dev container is now available for the Edge API compose file.
+
+### Setup Data Directories
+
+Set up the data directories that will be mounted as volumes with the following commands:
+
+    mkdir -p ~/devgo
+    chmod 775 ~/devgo
+    mkdir -p ~/devdata/repos
+    mkdir ~/devdata/vartmp
+    mkdir ~/devdata/gocache
+    chmod -R 775 ~/devdata/
+
+> **NOTE** To place the devdata directories in a different location, edit the compose files to match.
+
+### Start and Stop the Edge API Dev Container
+
+To start and stop only the Edge API container, use the following commands:
+
+    podman-compose -f podman/container-compose-api.yml up -d
+    podman-compose -f podman/container-compose-api.yml down
+
+> **HELPFUL HINT**: To start a container in non-daemon mode and see the log output directly, run the up command without the -d. Otherwise, you can always use the log command to see the output when running the container in daemon mode.
+
+### Execute Commands on the Kafka Container
+
+This is helpful for troubleshooting problems: e.g., to run /bin/bash to access the container and run commands directly.
+
+    podman-compose -f podman/container-compose-api.yml exec edge-api-service /bin/bash
+
+
+## Helpful Tools
+
+### API Calls with Postman
+
+[FILL IN DETAILS HERE]
+
+### API Calls with Curl
+
+[FILL IN DETAILS HERE]
+
+### Database Queries with pgAdmin4
+
+[FILL IN DETAILS HERE]
+
+
 ## Kafka
+
+> **NOTE**: This Kafka section was used for the Event-Driven Architecture dev work. It's only current use would be to fake Inventory create/update/delete events.
 
 ### Recommended Reading Before You Start
 
@@ -78,7 +196,7 @@ Topics can be created with the *kafka-topics.sh* script provided in the bin dire
 
 ### Environment File
 
-To make the config file descibed in the next section available to Edge API for configuration of Kafka, add the following to the *edge-api.env* file.
+To make the config file described in the next section available to Edge API for configuration of Kafka, add the following to the *edge-api.env* file.
 
 If using a local Kafka without authentication:
 
@@ -86,7 +204,7 @@ If using a local Kafka without authentication:
 
 If using a RHOSAK Kafka instance:
 
-    EDGEMGMT_CONFIG=/tmp/edgemgmt_config_sal.json
+    EDGEMGMT_CONFIG=/tmp/edgemgmt_config_sasl.json
 
 > **NOTE**: See the sections below for more information on local and RHOSAK Kafka instances.
 
@@ -205,40 +323,9 @@ Once the KafkaUI container is running, you can navigate to the Web UI via the UR
 
 For more information on KafkaUI, see https://github.com/provectus/kafka-ui
 
-## PostgreSQL
-
 
 ## **Edge Management Applications**
 
 ## Utility -- *aka (and soon to be formerly) IBvents*
 
 ## Microservices
-
-## API
-
-Edge API can be run without Podman Compose, but using the compose file sets the API container up on the same podman default network as its depenedencies above.
-
-The Edge API container uses a micro image to reduce its size. It simplifies the dev process to use a container with additional tools (bash, wget, etc.) for development purposes. A dev container file, podman/Containerfile-dev, can be used in place of the primary containers stored in Quay.
-
-### Building the Edge API Dev Container
-
-To generate a local dev container, *cd* into the root of the Edge API git repo and run:
-
-    podman build -t localhost/edge-api:localdev -f podman/Containerfile-dev .
-
-The dev container is now available for the Edge API compose file.
-
-### Start and Stop the Edge API Dev Container
-
-To start and stop only the Edge API container, use the following commands:
-
-    podman-compose -f podman/container-compose-api.yml up -d
-    podman-compose -f podman/container-compose-api.yml down
-
-> **HELPFUL HINT**: To start a container in non-daemon mode and see the log output directly, run the up command without the -d. Otherwise, you can always use the log command to see the output when running the container in daemon mode.
-
-## Frontend
-
-## **Optional for Development**
-
-## Unleash

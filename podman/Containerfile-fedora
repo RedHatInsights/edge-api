@@ -1,0 +1,78 @@
+############################################
+# STEP 1: build executable edge-api binaries
+############################################
+#FROM registry.access.redhat.com/ubi8/go-toolset:1.20 AS edge-builder
+FROM quay.io/fedora/fedora:39 AS edge-builder
+
+RUN dnf install -y go
+
+#WORKDIR $GOPATH/src/github.com/RedHatInsights/edge-api/
+
+COPY . .
+# Use go mod
+ENV GO111MODULE=on
+# Fetch dependencies.
+# Using go get requires root.
+USER root
+RUN go get -d -v
+
+# Build the binary.
+#RUN go build -tags=fdo -o /usr/bin/edge-api
+RUN go build -o /usr/bin/edge-api
+
+
+# Build the migration binary.
+RUN go build -o /usr/bin/edge-api-migrate cmd/migrate/main.go
+RUN go build -o /usr/bin/edge-api-wipe cmd/db/wipe.go
+RUN go build -o /usr/bin/edge-api-migrate-device cmd/db/updDb/set_account_on_device.go
+
+# Run the doc binary
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+RUN ~/go/bin/swag init --generalInfo api.go --o ./api --dir pkg/models,pkg/routes --parseDependency
+RUN go run cmd/swagger2openapi/main.go  api/swagger.json api/openapi.json
+
+# Build the microservices
+RUN go build -o /usr/local/bin/edge-api-ibvents cmd/kafka/main.go
+
+# Build utilities
+#RUN go build -o /usr/local/bin/edge-api-cleanup cmd/cleanup/main.go
+
+######################################
+# STEP 2: build the dependencies image
+######################################
+# for local dev on Fedora
+# (holloway 5/1/2024) ks injection is going away by end of week :-)
+RUN dnf install -y pykickstart mtools xorriso genisoimage syslinux isomd5sum file ostree
+ENV MTOOLS_SKIP_CHECK=1
+
+####################################
+# STEP 3: build edge-api micro image
+####################################
+#FROM scratch
+#LABEL maintainer="Red Hat, Inc."
+#LABEL com.redhat.component="ubi8-micro-container"
+
+# label for EULA
+#LABEL com.redhat.license_terms="https://www.redhat.com/en/about/red-hat-end-user-license-agreements#UBI"
+
+# labels for container catalog
+#LABEL summary="edge-api micro image"
+#LABEL description="The edge-api project is an API server for fleet edge management capabilities."
+#LABEL io.k8s.display-name="edge-api-micro"
+
+#COPY --from=ubi-micro-build /mnt/rootfs/ /
+#COPY --from=ubi-micro-build /etc/yum.repos.d/ubi.repo /etc/yum.repos.d/ubi.repo
+
+#ENV MTOOLS_SKIP_CHECK=1
+#ENV EDGE_API_WORKSPACE /src/github.com/RedHatInsights/edge-api
+
+# kickstart inject requirements
+COPY scripts/fleetkick.sh /usr/local/bin
+RUN chmod +x /usr/local/bin/fleetkick.sh
+COPY templates/templateKickstart.ks /usr/local/etc
+
+# template to playbook dispatcher
+#COPY templates/template_playbook_dispatcher_ostree_upgrade_payload.yml /usr/local/etc
+
+USER 1001
+CMD ["edge-api"]

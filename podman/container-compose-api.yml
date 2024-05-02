@@ -5,7 +5,10 @@ secrets:
 services:
   edge-api-service:
     container_name: edge-api-service
-    image: localhost/edge-api:localdev
+    image: localhost/edge-api:fedora
+#    image: localhost/edge-api:localdev
+#    image: quay.io/cloudservices/edge-api:latest
+
     restart: unless-stopped
     privileged: true
     ports:
@@ -13,10 +16,14 @@ services:
     env_file:
       - env/edge-api.env
     volumes:
-      - $PWD:/opt/app-root/src:z
-      - $HOME/go:/go
-      - $HOME/repos/:/tmp/repos:z
-    command: ["go", "run", "main.go"]
+      - ${PWD}:/opt/app-root/src:Z
+      - ${HOME}/devgo:/go:Z
+      - ${HOME}/devdata/:/.cache:Z
+      - ${HOME}/devdata/repos/:/tmp/repos:Z
+      - ${HOME}/devdata/vartmp:/var/tmp:Z
+    command: ["/opt/app-root/src/devrun.sh"]
+#    command: ["go", "run", "/opt/app-root/src/main.go"]
+
     secrets:
       - source: edgemgmt_config
         target: /tmp/edgemgmt_config.json
