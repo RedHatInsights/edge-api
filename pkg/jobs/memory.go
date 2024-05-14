@@ -2,6 +2,7 @@ package jobs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -71,19 +72,18 @@ func (w *MemoryWorker) Enqueue(ctx context.Context, job *Job) error {
 
 	_, logger := initJobContext(ctx, job)
 
-	logger.WithField("job_args", job.Args).Infof("Enqueuing job %s of type %s", job.ID, job.Type)
-
 	if job.ID == uuid.Nil {
 		job.ID = uuid.New()
 	}
 
+	logger.WithField("job_args", job.Args).Infof("Enqueuing job %s of type %s", job.ID, job.Type)
 	w.q <- job
 	w.sen.Add(1)
 	metrics.JobEnqueuedCount.WithLabelValues(string(job.Type)).Inc()
 	return nil
 }
 
-// Starts managed goroutines to process jobs from the queue. Additionally, start
+// Start managed goroutines to process jobs from the queue. Additionally, start
 // goroutine to handle interrupt signal if provided. This method does not block.
 // Worker must be gracefully stopped via Stop().
 func (w *MemoryWorker) Start(ctx context.Context) {
@@ -120,7 +120,7 @@ func (w *MemoryWorker) Start(ctx context.Context) {
 	}
 }
 
-// Stops processing of all free goroutines, queue is discarded but all active jobs are left
+// Stop processing of all free goroutines, queue is discarded but all active jobs are left
 // to finish. It blocks until all workers are done which may be terminated by kubernetes.
 func (w *MemoryWorker) Stop(ctx context.Context) {
 	w.oc.Do(func() {
@@ -210,7 +210,7 @@ func (w *MemoryWorker) processJob(ctx context.Context, job *Job, wid uuid.UUID) 
 				} else if ctx.Err() != nil {
 					logger.Warningf("Job %s of type %s was cancelled: %s, calling interrupt handler", job.ID, job.Type, ctx.Err().Error())
 					call = true
-					if ctx.Err() == context.DeadlineExceeded {
+					if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 						metrics.JobProcessedCount.WithLabelValues(string(job.Type), "timeouted").Inc()
 					} else {
 						metrics.JobProcessedCount.WithLabelValues(string(job.Type), "cancelled").Inc()
@@ -230,7 +230,7 @@ func (w *MemoryWorker) processJob(ctx context.Context, job *Job, wid uuid.UUID) 
 		start := time.Now()
 		h(ctx, job)
 		elapsed := time.Since(start)
-		logger.Infof("Job %s of type %s completed in %s seconds", job.ID, job.Type, elapsed.Seconds())
+		logger.Infof("Job %s of type %s completed in %.02f seconds", job.ID, job.Type, elapsed.Seconds())
 		metrics.JobProcessedCount.WithLabelValues(string(job.Type), "finished").Inc()
 		metrics.BackgroundJobDuration.WithLabelValues(string(job.Type)).Observe(elapsed.Seconds())
 	} else {

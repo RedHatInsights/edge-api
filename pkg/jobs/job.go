@@ -55,7 +55,7 @@ type JobEnqueuer interface {
 type JobWorker interface {
 	JobEnqueuer
 
-	// RegisterHandler registers an event listener for a particular type with an associated handler. The first handler
+	// RegisterHandlers registers an event listener for a particular type with an associated handler. The first handler
 	// is for business logic, the second handler is for error handling. The second handler is called when job is processing
 	// for too long, on graceful shutdown, panic or SIGINT.
 	RegisterHandlers(JobType, JobHandler, JobHandler)
@@ -108,7 +108,7 @@ func initJobContext(origCtx context.Context, job *Job) (context.Context, logrus.
 
 	id, err := identity.DecodeIdentity(job.Identity)
 	if err != nil {
-		logrus.WithContext(ctx).WithError(err).Warn("Error decoding identity")
+		logrus.WithContext(ctx).WithError(err).Warnf("Error decoding identity: %s", err)
 		id = identity.XRHID{}
 	}
 
