@@ -143,6 +143,10 @@ func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 		s.Route("/fdo", routes.MakeFDORouter)
 		s.Route("/device-groups", routes.MakeDeviceGroupsRouter)
 		s.Route("/storage", routes.MakeStorageRouter)
+
+		// this is meant for testing the job queue
+		s.Post("/ops/jobs/noop", services.CreateNoopJob)
+		s.Post("/ops/jobs/fallback", services.CreateFallbackJob)
 	})
 	return route
 }

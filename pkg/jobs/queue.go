@@ -22,7 +22,7 @@ func InitMemoryWorker() {
 	registerHandlers()
 }
 
-// InitMemoryWorker initializes the dummy (testing) worker queue with an in-memory worker. Call
+// InitDummyWorker initializes the dummy (testing) worker queue with an in-memory worker. Call
 // RegisterHandlers() before calling this function to register job handlers.
 func InitDummyWorker() {
 	Queue = NewDummyWorker()
@@ -36,7 +36,7 @@ func registerHandlers() {
 	}
 }
 
-// Returns the default worker queue.
+// Worker returns the default worker queue.
 func Worker() JobWorker {
 	return Queue
 }

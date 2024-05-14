@@ -189,7 +189,7 @@ func (ff *Flag) IsEnabled(options ...unleash.FeatureOption) bool {
 	return false
 }
 
-// IsEnabled checks both the feature flag service and env vars on demand.
+// IsEnabledCtx checks both the feature flag service and env vars on demand.
 // Organization ID is passed from the context if present.
 func (ff *Flag) IsEnabledCtx(ctx context.Context, options ...unleash.FeatureOption) bool {
 	if ff.Name != "" && CheckFeatureCtx(ctx, ff.Name, options...) {
