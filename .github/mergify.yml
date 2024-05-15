@@ -5,7 +5,6 @@ shared:
   my_ci: &common-merge-criteria
     - "#approved-reviews-by>=2"
     - "#changes-requested-reviews-by=0"
-    - "#review-threads-unresolved=0"
 #
 # Merge queue rules https://docs.mergify.com/actions/queue/#queue-rules
 queue_rules:
@@ -30,26 +29,6 @@ pull_request_rules:
         changes_requested: false
         message: New commit(s) added, removing existing approval(s)
         when: synchronize
-  #
-  # Require all conversations to be resolved
-  - name: Check for unresolved conversations before merging
-    conditions:
-      - "#review-threads-unresolved>0"
-    actions:
-      comment:
-        message: "This pull request needs all conversation threads to be resolved. Could you fix it @{{author}}? 🙏"
-      label:
-        add:
-          - question
-  #
-  # If all conversations to be resolved, remove question label
-  - name: Remove question label from resolved conversations
-    conditions:
-      - "#review-threads-unresolved=0"
-    actions:
-      label:
-        remove:
-          - question
   #
   # Dependabot PR merge rule
   - name: Automatic merge for Dependabot pull requests
