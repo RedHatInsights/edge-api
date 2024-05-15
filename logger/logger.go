@@ -22,6 +22,8 @@ var hook *lc.LogrusHook
 
 // InitLogger initializes the API logger
 func InitLogger(writer io.Writer) {
+	// add context hook before other hooks
+	log.AddHook(&ctxHook{})
 
 	cfg := config.Get()
 
@@ -52,7 +54,6 @@ func InitLogger(writer io.Writer) {
 		})
 	}
 
-	log.AddHook(&ctxHook{})
 	log.SetOutput(writer)
 	log.SetLevel(logLevel)
 }
