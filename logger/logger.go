@@ -3,12 +3,7 @@
 package logger
 
 import (
-	"bytes"
-	"fmt"
 	"io"
-	"path"
-	"runtime"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -17,7 +12,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
-	feature "github.com/redhatinsights/edge-api/unleash/features"
 )
 
 // Log is an instance of the global logrus.Logger
@@ -25,33 +19,6 @@ var logLevel log.Level
 
 // hook is an instance of cloudwatch.hook
 var hook *lc.LogrusHook
-
-func prettyfier(f *runtime.Frame) (string, string) {
-	s := strings.Split(f.Function, ".")
-	funcName := s[len(s)-1]
-	return funcName, fmt.Sprintf("%s:%d", path.Base(f.File), f.Line)
-}
-
-type plainFormatter struct{}
-
-// Format formats the log entry for humans (just the message or SQL if present)
-func (f *plainFormatter) Format(e *log.Entry) ([]byte, error) {
-	var b bytes.Buffer
-	if f, ok := e.Data["sql"]; ok {
-		b.WriteString(f.(string))
-	} else {
-		b.WriteString(e.Message)
-	}
-	b.WriteRune('\n')
-
-	if f, ok := e.Data["error"]; ok {
-		b.WriteString("ERROR: ")
-		b.WriteString(fmt.Sprintf("%v", f))
-		b.WriteRune('\n')
-	}
-
-	return b.Bytes(), nil
-}
 
 // InitLogger initializes the API logger
 func InitLogger(writer io.Writer) {
@@ -82,12 +49,10 @@ func InitLogger(writer io.Writer) {
 			FieldMap: log.FieldMap{
 				log.FieldKeyTime: "@timestamp",
 			},
-			CallerPrettyfier: prettyfier,
 		})
-	} else if !feature.LogVerboseFields.IsEnabledLocal() {
-		log.SetFormatter(&plainFormatter{})
 	}
 
+	log.AddHook(&ctxHook{})
 	log.SetOutput(writer)
 	log.SetLevel(logLevel)
 }
