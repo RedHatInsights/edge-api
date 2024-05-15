@@ -652,12 +652,12 @@ func (s *ImageService) processInstaller(ctx context.Context, image *models.Image
 }
 
 func (s *ImageService) processCommit(ctx context.Context, image *models.Image, loopDelay time.Duration) (*models.Image, error) {
-	s.log.Debug("Processing image build commit")
+	log.WithContext(ctx).Debug("Processing image build commit")
 	imageID := image.ID
 	for {
 		// reload the image from database, for a long-running process
 		if err := db.DB.Joins("Commit").Joins("Installer").First(&image, imageID).Error; err != nil {
-			s.log.WithField("error", err.Error()).Error("error occurred when reloading image from database")
+			log.WithContext(ctx).WithField("error", err.Error()).Error("error occurred when reloading image from database")
 			if goErrors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, new(ImageNotFoundError)
 			}
@@ -665,7 +665,7 @@ func (s *ImageService) processCommit(ctx context.Context, image *models.Image, l
 		}
 		i, err := s.UpdateImageStatus(image)
 		if err != nil {
-			s.log.WithField("error", err.Error()).Error("Update image status error")
+			log.WithContext(ctx).WithField("error", err.Error()).Error("Update image status error")
 			return image, err
 		}
 		if i.Commit.Status != models.ImageStatusBuilding {
@@ -678,7 +678,7 @@ func (s *ImageService) processCommit(ctx context.Context, image *models.Image, l
 	if image.Commit.Status == models.ImageStatusSuccess {
 		imageWithMetaData, err := s.ImageBuilder.GetMetadata(image)
 		if err != nil {
-			s.log.WithField("error", err.Error()).Error("Failed getting metadata from image builder")
+			log.WithContext(ctx).WithField("error", err.Error()).Error("Failed getting metadata from image builder")
 			s.SetErrorStatusOnImage(err, imageWithMetaData)
 			return image, err
 		}
@@ -686,18 +686,18 @@ func (s *ImageService) processCommit(ctx context.Context, image *models.Image, l
 		// Create the repo for the image
 		_, err = s.CreateRepoForImage(ctx, image)
 		if err != nil {
-			s.log.WithField("error", err.Error()).Error("Failed creating repo for image")
+			log.WithContext(ctx).WithField("error", err.Error()).Error("Failed creating repo for image")
 			return image, err
 		}
 	}
 	if !image.HasOutputType(models.ImageTypeInstaller) {
 		image.Installer = nil
-		s.log.Debug("Setting final image status - no installer to create")
+		log.WithContext(ctx).Debug("Setting final image status - no installer to create")
 		s.SetFinalImageStatus(image)
-		s.log.Debug("Processing image is done - no installer to create")
+		log.WithContext(ctx).Debug("Processing image is done - no installer to create")
 	}
 
-	s.log.Debug("Processing commit is done")
+	log.WithContext(ctx).Debug("Processing commit is done")
 	return image, nil
 }
 
@@ -750,7 +750,7 @@ func (s *ImageService) SetFinalImageStatus(i *models.Image) {
 }
 
 func (s *ImageService) processImage(ctx context.Context, id uint, loopDelay time.Duration, handleInterruptSignal bool) error {
-	s.log.Debug("Processing image build")
+	log.WithContext(ctx).Debug("Processing image build")
 	var image *models.Image
 
 	if handleInterruptSignal {
@@ -761,24 +761,24 @@ func (s *ImageService) processImage(ctx context.Context, id uint, loopDelay time
 
 		// this will run at the end of postProcessImage to tidy up signal and context
 		defer func() {
-			s.log.WithField("imageID", id).Debug("Stopping the interrupt context and sigint signal")
+			log.WithContext(ctx).WithField("imageID", id).Debug("Stopping the interrupt context and sigint signal")
 			signal.Stop(sigint)
 			intcancel()
 		}()
 		// This runs alongside and blocks on either a signal or normal completion from defer above
 		// 	if an interrupt, set image to INTERRUPTED in database
 		go func() {
-			s.log.WithField("imageID", id).Debug("Running the select go routine to handle completion and interrupts")
+			log.WithContext(ctx).WithField("imageID", id).Debug("Running the select go routine to handle completion and interrupts")
 
 			select {
 			case <-sigint:
 				// we caught an interrupt. Mark the image as interrupted.
-				s.log.WithField("imageID", id).Debug("Select case SIGINT interrupt has been triggered")
+				log.WithContext(ctx).WithField("imageID", id).Debug("Select case SIGINT interrupt has been triggered")
 
 				tx := db.DB.Model(&models.Image{}).Where("ID = ?", id).Update("Status", models.ImageStatusInterrupted)
-				s.log.WithField("imageID", id).Debug("Image updated with interrupted status")
+				log.WithContext(ctx).WithField("imageID", id).Debug("Image updated with interrupted status")
 				if tx.Error != nil {
-					s.log.WithField("error", tx.Error.Error()).Error("Error updating image")
+					log.WithContext(ctx).WithField("error", tx.Error.Error()).Error("Error updating image")
 				}
 
 				// cancel the context
@@ -786,38 +786,38 @@ func (s *ImageService) processImage(ctx context.Context, id uint, loopDelay time
 				return
 			case <-intctx.Done():
 				// Things finished normally and reached the defer defined above.
-				s.log.WithField("imageID", id).Info("Select case context intctx done has been triggered")
+				log.WithContext(ctx).WithField("imageID", id).Info("Select case context intctx done has been triggered")
 			}
 		}()
 	}
 	// business as usual from here to end of block
 	if err := db.DB.Joins("Commit").Joins("Installer").First(&image, id).Error; err != nil {
-		s.log.WithFields(log.Fields{"error": err.Error(), "ImageID": id}).Error("error occurred loading the image from database")
+		log.WithContext(ctx).WithFields(log.Fields{"error": err.Error(), "ImageID": id}).Error("error occurred loading the image from database")
 		return err
 	}
 
 	// Monitor the commit for completion
-	s.log.WithField("imageID", image.ID).Debug("Monitoring commit status for this image")
+	log.WithContext(ctx).WithField("imageID", image.ID).Debug("Monitoring commit status for this image")
 	var err error
 	image, err = s.processCommit(ctx, image, loopDelay)
 	if err != nil {
 		if image == nil {
-			s.log.WithField("error", err.Error()).Error("error occurred while processing commit, the image is undefined")
+			log.WithContext(ctx).WithField("error", err.Error()).Error("error occurred while processing commit, the image is undefined")
 			return err
 		}
 		if image.Status == models.ImageStatusInterrupted {
 			return err
 		}
 		s.SetErrorStatusOnImage(err, image)
-		s.log.WithField("error", err.Error()).Error("Failed creating commit for image")
+		log.WithContext(ctx).WithField("error", err.Error()).Error("Failed creating commit for image")
 	}
 
 	if image.Commit.Status == models.ImageStatusSuccess {
-		s.log.Debug("Commit is successful")
+		log.WithContext(ctx).Debug("Commit is successful")
 
 		// Request an installer ISO from Image Builder for the image
 		if image.HasOutputType(models.ImageTypeInstaller) {
-			s.log.WithField("imageID", image.ID).Debug("Creating an installer for this image")
+			log.WithContext(ctx).WithField("imageID", image.ID).Debug("Creating an installer for this image")
 			image, c, err := s.CreateInstallerForImage(ctx, image)
 			/* CreateInstallerForImage is also called directly from an endpoint.
 			If called from the endpoint it will not block
@@ -832,11 +832,11 @@ func (s *ImageService) processImage(ctx context.Context, id uint, loopDelay time
 			}
 			if err != nil {
 				s.SetErrorStatusOnImage(err, image)
-				s.log.WithField("error", err.Error()).Error("Failed creating installer for image")
+				log.WithContext(ctx).WithField("error", err.Error()).Error("Failed creating installer for image")
 			}
 		}
 	}
-	s.log.WithField("status", image.Status).Debug("Processing image build is done")
+	log.WithContext(ctx).WithField("status", image.Status).Debug("Processing image build is done")
 	return nil
 }
 
@@ -1673,19 +1673,19 @@ func (s *ImageService) GetMetadata(image *models.Image) (*models.Image, error) {
 
 // CreateInstallerForImage creates a installer given an existing image
 func (s *ImageService) CreateInstallerForImage(ctx context.Context, image *models.Image) (*models.Image, chan error, error) {
-	s.log.Debug("Creating installer for image")
+	log.WithContext(ctx).Debug("Creating installer for image")
 	c := make(chan error)
 
 	image.ImageType = models.ImageTypeInstaller
 	image.Installer.Status = models.ImageStatusBuilding
 	tx := db.DB.Save(&image)
 	if tx.Error != nil {
-		s.log.WithField("error", tx.Error.Error()).Error("Error saving image")
+		log.WithContext(ctx).WithField("error", tx.Error.Error()).Error("Error saving image")
 		return nil, c, tx.Error
 	}
 	tx = db.DB.Save(&image.Installer)
 	if tx.Error != nil {
-		s.log.WithField("error", tx.Error.Error()).Error("Error saving installer")
+		log.WithContext(ctx).WithField("error", tx.Error.Error()).Error("Error saving installer")
 		return nil, c, tx.Error
 	}
 	image, err := s.ImageBuilder.ComposeInstaller(image)
