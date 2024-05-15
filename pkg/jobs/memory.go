@@ -70,12 +70,11 @@ func (w *MemoryWorker) Enqueue(ctx context.Context, job *Job) error {
 		return fmt.Errorf("unable to enqueue job: %w", ErrJobNotFound)
 	}
 
-	_, logger := initJobContext(ctx, job)
-
 	if job.ID == uuid.Nil {
 		job.ID = uuid.New()
 	}
 
+	_, logger := initJobContext(ctx, job)
 	logger.WithField("job_args", job.Args).Infof("Enqueuing job %s of type %s", job.ID, job.Type)
 	w.q <- job
 	w.sen.Add(1)

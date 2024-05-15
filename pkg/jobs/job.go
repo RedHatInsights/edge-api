@@ -86,7 +86,8 @@ type Stats struct {
 type jobKeyID int
 
 const (
-	jobIDCtxKey jobKeyID = iota
+	jobIDCtxKey  jobKeyID = iota
+	corrIDCtxKey jobKeyID = iota
 )
 
 // JobID returns job id or an empty string when not set.
@@ -103,14 +104,30 @@ func WithJobID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, jobIDCtxKey, id)
 }
 
+// CorrID returns job id or an empty string when not set.
+func CorrID(ctx context.Context) string {
+	value := ctx.Value(corrIDCtxKey)
+	if value == nil {
+		return ""
+	}
+	return value.(string)
+}
+
+// WithCorrID returns context copy with trace id value.
+func WithCorrID(ctx context.Context, id string) context.Context {
+	return context.WithValue(ctx, corrIDCtxKey, id)
+}
+
 func initJobContext(origCtx context.Context, job *Job) (context.Context, logrus.FieldLogger) {
 	ctx := WithJobID(origCtx, job.ID.String())
+	ctx = WithCorrID(ctx, job.CorrelationID)
 
 	id, err := identity.DecodeIdentity(job.Identity)
 	if err != nil {
 		logrus.WithContext(ctx).WithError(err).Warnf("Error decoding identity: %s", err)
 		id = identity.XRHID{}
 	}
+	ctx = identity.WithIdentity(ctx, id)
 
 	return ctx, logrus.WithContext(ctx).WithFields(
 		logrus.Fields{

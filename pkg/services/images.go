@@ -1332,28 +1332,33 @@ func init() {
 
 // RetryCreateImage retries the whole post process of the image creation
 func (s *ImageService) RetryCreateImage(ctx context.Context, image *models.Image) error {
-	s.log = s.log.WithFields(log.Fields{"imageID": image.ID, "commitID": image.Commit.ID})
+	logger := log.WithContext(ctx).WithFields(log.Fields{"imageID": image.ID, "commitID": image.Commit.ID})
+
 	// recompose commit
 	image, err := s.ImageBuilder.ComposeCommit(image)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Failed recomposing commit")
+		logger.WithField("error", err.Error()).Error("Failed recomposing commit")
 		return err
 	}
 	err = s.SetBuildingStatusOnImageToRetryBuild(image)
 	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Failed setting image status")
+		logger.WithField("error", err.Error()).Error("Failed setting image status")
 		return nil
 	}
 	if feature.JobQueue.IsEnabledCtx(ctx) {
 		orgID := identity.GetIdentity(ctx).Identity.OrgID
-		s.log.Infof("Enqueuing RetryCreateImageJob for org %s", orgID)
+		logger.Infof("Enqueuing RetryCreateImageJob for org %s", orgID)
 		job := jobs.Job{
-			Type: "RetryCreateImageJob",
-			Args: &RetryCreateImageJob{ImageID: image.ID},
+			Type:     "RetryCreateImageJob",
+			Args:     &RetryCreateImageJob{ImageID: image.ID},
+			Identity: identity.GetRawIdentity(ctx),
 		}
-		jobs.Enqueue(ctx, &job)
+		err := jobs.Enqueue(ctx, &job)
+		if err != nil {
+			logger.WithField("error", err.Error()).Error("Failed enqueueing job")
+		}
 	} else {
-		s.log.Info("Calling RetryCreateImageJob")
+		logger.Info("Calling RetryCreateImageJob")
 		go s.processImage(ctx, image.ID, DefaultLoopDelay, true)
 	}
 	return nil

@@ -30,9 +30,6 @@ type Flag struct {
 
 // LONG_TERM OPERATIONAL AND DEV FLAGS
 
-// LogVerboseFields adds fields to the log output. Primarily for local dev and not an Unleash flag.
-var LogVerboseFields = &Flag{Name: "edge-management.log_verbose_fields", EnvVar: "FEATURE_LOG_VERBOSE_FIELDS"}
-
 // GLITCHTIP LOGGING FLAGS
 
 // GlitchtipLogging is the feature flag for reporting errors to GlitchTip
