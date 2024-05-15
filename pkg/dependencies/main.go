@@ -43,7 +43,7 @@ type EdgeAPIServices struct {
 func Init(ctx context.Context) *EdgeAPIServices {
 	account, _ := common.GetAccountFromContext(ctx)
 	orgID, _ := common.GetOrgIDFromContext(ctx)
-	log := log.WithFields(log.Fields{
+	log := log.WithContext(ctx).WithFields(log.Fields{
 		"requestId": request_id.GetReqID(ctx),
 		"accountId": account,
 		"orgID":     orgID,
