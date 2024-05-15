@@ -1309,20 +1309,21 @@ type RetryCreateImageJob struct {
 }
 
 func RetryCreateImageJobHandler(ctx context.Context, job *jobs.Job) {
-	s := NewImageService(ctx, log.StandardLogger()).(*ImageService)
+	s := NewImageService(ctx, log.StandardLogger().WithContext(ctx)).(*ImageService)
 	args := job.Args.(*RetryCreateImageJob)
 
-	s.processImage(ctx, args.ImageID, DefaultLoopDelay, false)
+	err := s.processImage(ctx, args.ImageID, DefaultLoopDelay, false)
+	if err != nil {
+		log.WithContext(ctx).Errorf("Process image returned error: %s", err)
+	}
 }
 
 func RetryCreateImageFailHandler(ctx context.Context, job *jobs.Job) {
-	s := NewImageService(ctx, log.StandardLogger()).(*ImageService)
 	args := job.Args.(*RetryCreateImageJob)
-
-	tx := db.DB.Model(&models.Image{}).Where("ID = ?", args.ImageID).Update("Status", models.ImageStatusInterrupted)
-	s.log.WithField("imageID", args.ImageID).Debug("Image updated with interrupted status")
+	tx := db.DBx(ctx).Model(&models.Image{}).Where("ID = ?", args.ImageID).Update("Status", models.ImageStatusInterrupted)
+	log.WithContext(ctx).WithField("imageID", args.ImageID).Debug("Image updated with interrupted status")
 	if tx.Error != nil {
-		s.log.WithField("error", tx.Error.Error()).Error("Error updating image")
+		log.WithContext(ctx).WithField("error", tx.Error.Error()).Error("Error updating image")
 	}
 }
 
