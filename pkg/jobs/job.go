@@ -128,6 +128,7 @@ func initJobContext(origCtx context.Context, job *Job) (context.Context, logrus.
 		id = identity.XRHID{}
 	}
 	ctx = identity.WithIdentity(ctx, id)
+	ctx = identity.WithRawIdentity(ctx, job.Identity)
 
 	return ctx, logrus.WithContext(ctx).WithFields(
 		logrus.Fields{
