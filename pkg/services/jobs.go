@@ -6,7 +6,6 @@ import (
 
 	"github.com/redhatinsights/edge-api/pkg/jobs"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
-	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -39,16 +38,7 @@ func CreateNoopJob(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	if feature.JobQueue.IsEnabledCtx(ctx) {
-		orgID := identity.GetIdentity(ctx).Identity.OrgID
-		log.WithContext(ctx).Infof("Enqueuing NoopJob for org %s", orgID)
-
-		job := jobs.Job{
-			Type:     "NoopJob",
-			Args:     &NoopJob{},
-			Identity: identity.GetRawIdentity(ctx),
-		}
-
-		err := jobs.Enqueue(ctx, &job)
+		err := jobs.NewAndEnqueue(ctx, "NoopJob", &NoopJob{})
 		if err != nil {
 			log.WithContext(ctx).Errorf("Cannot enqueue job: %s", err)
 		}
@@ -63,16 +53,7 @@ func CreateFallbackJob(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	if feature.JobQueue.IsEnabledCtx(ctx) {
-		orgID := identity.GetIdentity(ctx).Identity.OrgID
-		log.WithContext(ctx).Infof("Enqueuing NoopJob for org %s", orgID)
-
-		job := jobs.Job{
-			Type:     "FallbackJob",
-			Args:     &NoopJob{},
-			Identity: identity.GetRawIdentity(ctx),
-		}
-
-		err := jobs.Enqueue(ctx, &job)
+		err := jobs.NewAndEnqueue(ctx, "FallbackJob", &NoopJob{})
 		if err != nil {
 			log.WithContext(ctx).Errorf("Cannot enqueue job: %s", err)
 		}

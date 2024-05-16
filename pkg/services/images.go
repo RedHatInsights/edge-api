@@ -22,6 +22,9 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
+	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/imagebuilder"
 	"github.com/redhatinsights/edge-api/pkg/clients/repositories"
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
@@ -31,15 +34,8 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
-	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	log "github.com/sirupsen/logrus"
-
-	"github.com/redhatinsights/edge-api/config"
-
 	"gorm.io/gorm"
-
-	"github.com/confluentinc/confluent-kafka-go/kafka"
-	clowder "github.com/redhatinsights/app-common-go/pkg/api/v1"
 )
 
 // ImageServiceInterface defines the interface that helps handle
@@ -1347,14 +1343,7 @@ func (s *ImageService) RetryCreateImage(ctx context.Context, image *models.Image
 		return nil
 	}
 	if feature.JobQueue.IsEnabledCtx(ctx) {
-		orgID := identity.GetIdentity(ctx).Identity.OrgID
-		logger.Infof("Enqueuing RetryCreateImageJob for org %s", orgID)
-		job := jobs.Job{
-			Type:     "RetryCreateImageJob",
-			Args:     &RetryCreateImageJob{ImageID: image.ID},
-			Identity: identity.GetRawIdentity(ctx),
-		}
-		err := jobs.Enqueue(ctx, &job)
+		err := jobs.NewAndEnqueue(ctx, "RetryCreateImageJob", &RetryCreateImageJob{ImageID: image.ID})
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("Failed enqueueing job")
 		}

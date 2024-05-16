@@ -41,8 +41,14 @@ func Worker() JobWorker {
 	return Queue
 }
 
-// Enqueue sends a job to the worker queue.
+// Enqueue sends an existing job to the worker queue.
 func Enqueue(ctx context.Context, job *Job) error {
+	return Queue.Enqueue(ctx, job)
+}
+
+// NewAndEnqueue sends an existing job to the worker queue.
+func NewAndEnqueue(ctx context.Context, jobType JobType, args any) error {
+	job := New(ctx, jobType, args)
 	return Queue.Enqueue(ctx, job)
 }
 
