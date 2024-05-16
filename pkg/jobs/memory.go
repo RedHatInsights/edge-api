@@ -51,8 +51,8 @@ func NewMemoryClientWithConfig(config Config) *MemoryWorker {
 
 func NewMemoryClient() *MemoryWorker {
 	return NewMemoryClientWithConfig(Config{
-		QueueSize: 10,
-		Workers:   10,
+		QueueSize: 5,
+		Workers:   2,
 		Timeout:   4 * time.Hour,
 		IntSignal: os.Interrupt,
 	})
@@ -182,7 +182,7 @@ func (w *MemoryWorker) dequeueLoop(ctx context.Context, wid uuid.UUID) {
 
 func (w *MemoryWorker) processJob(ctx context.Context, job *Job, wid uuid.UUID) {
 	if job == nil {
-		logrus.WithContext(ctx).Error(ErrJobNotFound)
+		logrus.WithContext(ctx).WithField("err", ErrJobNotFound).Error("Job not found")
 		return
 	}
 	w.sac.Add(1)
@@ -233,7 +233,7 @@ func (w *MemoryWorker) processJob(ctx context.Context, job *Job, wid uuid.UUID) 
 		metrics.JobProcessedCount.WithLabelValues(string(job.Type), "finished").Inc()
 		metrics.BackgroundJobDuration.WithLabelValues(string(job.Type)).Observe(elapsed.Seconds())
 	} else {
-		logger.Errorf("Memory worker handler not found for job type: %s", job.Type)
+		logrus.WithContext(ctx).WithField("err", ErrHandlerNotFound).Errorf("Memory worker handler not found for job type: %s", job.Type)
 	}
 }
 

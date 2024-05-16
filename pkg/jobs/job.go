@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
+	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
 	"github.com/sirupsen/logrus"
 )
 
@@ -40,6 +41,17 @@ type Job struct {
 
 	// Job arguments
 	Args any
+}
+
+// New creates new job and sets identity and correlation id from passed context.
+func New(ctx context.Context, jobType JobType, args any) *Job {
+	return &Job{
+		ID:            uuid.New(),
+		Type:          jobType,
+		Identity:      identity.GetRawIdentity(ctx),
+		CorrelationID: request_id.GetReqID(ctx),
+		Args:          args,
+	}
 }
 
 var ErrJobNotFound = errors.New("job not found")
