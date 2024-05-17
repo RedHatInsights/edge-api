@@ -40,16 +40,3 @@ source $CICD_ROOT/deploy_ephemeral_env.sh
 source $CICD_ROOT/cji_smoke_test.sh
 # Upload test results to ibutusu
 source $CICD_ROOT/post_test_results.sh
-
-# Generate coverate report for sonarqube
-CONTAINER_NAME="edge-pr-check-$ghprbPullId"
-
-# Run coverage using same version of Go as the App
-podman run --user root --rm --replace -i \
-    --name $CONTAINER_NAME \
-    -v $PWD:/usr/src:z \
-    registry.access.redhat.com/ubi8/go-toolset:1.20 \
-    bash -c 'cd /usr/src && make coverage-no-fdo'
-
-# Generate sonarqube reports
-make scan_project
