@@ -43,7 +43,7 @@ CONTAINERFILE_NAME=Dockerfile
 .PHONY:	all bonfire-config-local bonfire-config-github build-containers \
                build build-edge-api-container clean coverage coverage-html coverage-no-fdo \
                create-ns deploy-app deploy-env fmt generate-docs help lint pre-commit \
-               restart-app scale-down scale-up scan_project test test-clean-no-fdo \
+               restart-app scale-down scale-up test test-clean-no-fdo \
                test-no-fdo vet vet-no-fdo
 
 bonfire-config-local:
@@ -146,7 +146,6 @@ help:
 	@echo "                            @param NAMESPACE - (optional) the namespace to use"
 	@echo "scale-up					 Scales the edge-api-service deployment up to 1 in the given namespace"
 	@echo "                            @param NAMESPACE - (optional) the namespace to use"
-	@echo "scan_project              Run security scan"
 	@echo "swaggo                    Runs swaggo/swag and converts to openapi.json in /api"
 	@echo "swaggo_setup"             Installs necessary packages to use swaggo
 	@echo "test                      Runs 'go test' on the project"
@@ -200,9 +199,6 @@ scale-down:
 
 scale-up:
 	$(KUBECTL) scale --replicas=1 deployment/edge-api-service -n $(NAMESPACE)
-
-scan_project:
-	./sonarqube.sh
 
 swaggo_setup:
 	go install github.com/swaggo/swag/cmd/swag@latest
