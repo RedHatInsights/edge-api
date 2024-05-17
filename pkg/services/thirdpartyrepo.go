@@ -58,7 +58,7 @@ func (s *ThirdPartyRepoService) ThirdPartyRepoURLExists(orgID string, url string
 	}
 
 	var reposCount int64
-	if err := db.Org(orgID, "").Model(&models.ThirdPartyRepo{}).
+	if err := db.Orgx(s.ctx, orgID, "").Model(&models.ThirdPartyRepo{}).
 		Where("(url = ? OR url = ?)", url, cleanedURL).
 		Count(&reposCount).Error; err != nil {
 		s.log.WithField("error", err.Error()).Error("Error checking custom repository existence")
@@ -77,7 +77,7 @@ func (s *ThirdPartyRepoService) ThirdPartyRepoNameExists(orgID string, name stri
 	}
 
 	var reposCount int64
-	if result := db.Org(orgID, "").Model(&models.ThirdPartyRepo{}).Where("name = ?", name).Count(&reposCount); result.Error != nil {
+	if result := db.Orgx(s.ctx, orgID, "").Model(&models.ThirdPartyRepo{}).Where("name = ?", name).Count(&reposCount); result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error checking custom repository existence")
 		return false, result.Error
 	}
@@ -92,7 +92,7 @@ func (s *ThirdPartyRepoService) thirdPartyRepoImagesExists(id string, imageStatu
 		return false, err
 	}
 	var imagesCount int64
-	tx := db.DB.Model(&models.Image{}).
+	tx := db.DBx(s.ctx).Model(&models.Image{}).
 		Joins("JOIN images_repos ON images_repos.image_id = images.id").
 		Where("images_repos.third_party_repo_id = ?", repo.ID)
 	if len(imageStatuses) > 0 {
@@ -140,7 +140,7 @@ func (s *ThirdPartyRepoService) CreateThirdPartyRepo(thirdPartyRepo *models.Thir
 		Description: thirdPartyRepo.Description,
 		OrgID:       orgID,
 	}
-	if result := db.DB.Create(&createdThirdPartyRepo); result.Error != nil {
+	if result := db.DBx(s.ctx).Create(&createdThirdPartyRepo); result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error creating custom repository")
 		return nil, result.Error
 	}
@@ -156,7 +156,7 @@ func (s *ThirdPartyRepoService) GetThirdPartyRepoByID(ID string) (*models.ThirdP
 		s.log.WithField("error", err.Error()).Error("Error getting orgID from context")
 		return nil, err
 	}
-	if result := db.Org(orgID, "").Where("id = ?", ID).First(&tprepo); result.Error != nil {
+	if result := db.Orgx(s.ctx, orgID, "").Where("id = ?", ID).First(&tprepo); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, new(ThirdPartyRepositoryNotFound)
 		}
@@ -214,7 +214,7 @@ func (s *ThirdPartyRepoService) UpdateThirdPartyRepo(tprepo *models.ThirdPartyRe
 	if tprepo.Description != "" {
 		repoDetails.Description = tprepo.Description
 	}
-	result := db.DB.Save(repoDetails)
+	result := db.DBx(s.ctx).Save(repoDetails)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -242,7 +242,7 @@ func (s *ThirdPartyRepoService) DeleteThirdPartyRepoByID(ID string) (*models.Thi
 	if imagesExists {
 		return nil, new(ThirdPartyRepositoryImagesExists)
 	}
-	if result := db.Org(orgID, "").Delete(&repoDetails); result.Error != nil {
+	if result := db.Orgx(s.ctx, orgID, "").Delete(&repoDetails); result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error deleting custom repository")
 		return nil, result.Error
 	}

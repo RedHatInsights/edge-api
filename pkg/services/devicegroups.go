@@ -62,7 +62,7 @@ func (s *DeviceGroupsService) DeviceGroupNameExists(orgID string, name string) (
 		return false, new(DeviceGroupMandatoryFieldsUndefined)
 	}
 	var deviceGroupsCount int64
-	result := db.Org(orgID, "").Model(&models.DeviceGroup{}).Where("name = ?", name).Count(&deviceGroupsCount)
+	result := db.Orgx(s.ctx, orgID, "").Model(&models.DeviceGroup{}).Where("name = ?", name).Count(&deviceGroupsCount)
 	if result.Error != nil {
 		return false, result.Error
 	}
@@ -73,7 +73,7 @@ func (s *DeviceGroupsService) DeviceGroupNameExists(orgID string, name string) (
 func (s *DeviceGroupsService) GetDeviceGroupsCount(orgID string, tx *gorm.DB) (int64, error) {
 
 	if tx == nil {
-		tx = db.DB
+		tx = db.DBx(s.ctx)
 	}
 
 	var count int64
@@ -97,7 +97,7 @@ func (s *DeviceGroupsService) DeleteDeviceGroupByID(ID string) error {
 		return err
 	}
 	// delete the device group
-	result := db.DB.Delete(&deviceGroup)
+	result := db.DBx(s.ctx).Delete(&deviceGroup)
 	if result.Error != nil {
 		sLog.WithField("error", result.Error.Error()).Error("Error deleting device group")
 		return result.Error
@@ -109,7 +109,7 @@ func (s *DeviceGroupsService) DeleteDeviceGroupByID(ID string) error {
 func (s *DeviceGroupsService) GetDeviceGroups(orgID string, limit int, offset int, tx *gorm.DB) (*[]models.DeviceGroupListDetail, error) {
 
 	if tx == nil {
-		tx = db.DB
+		tx = db.DBx(s.ctx)
 	}
 
 	var deviceGroups []models.DeviceGroup
@@ -184,12 +184,12 @@ func (s *DeviceGroupsService) GetDeviceImageInfo(images map[int]models.DeviceIma
 			var deviceImage models.Image
 			var deviceImageSet models.ImageSet
 			var CommitID uint
-			if result := db.Org(orgID, "").First(&deviceImage, imageID); result.Error != nil {
+			if result := db.Orgx(s.ctx, orgID, "").First(&deviceImage, imageID); result.Error != nil {
 				return result.Error
 			}
 
 			// should be changed to get the deviceInfo once we have the data correctly on DB
-			if result := db.Org(orgID, "").Preload("Images").
+			if result := db.Orgx(s.ctx, orgID, "").Preload("Images").
 				First(&deviceImageSet, deviceImage.ImageSetID).Order("ID desc"); result.Error != nil {
 				return result.Error
 			}
@@ -203,20 +203,20 @@ func (s *DeviceGroupsService) GetDeviceImageInfo(images map[int]models.DeviceIma
 				CommitID = deviceImageSet.Images[len(deviceImageSet.Images)-1].CommitID
 
 				// loading commit and packages to calculate diff
-				if err := db.DB.First(&deviceImage.Commit, deviceImage.CommitID).Error; err != nil {
+				if err := db.DBx(s.ctx).First(&deviceImage.Commit, deviceImage.CommitID).Error; err != nil {
 					s.log.WithField("error", err.Error()).Error("Error when getting Commit for CurrentImage")
 					return err
 				}
-				if err := db.DB.Model(&deviceImage.Commit).Association("InstalledPackages").Find(&deviceImage.Commit.InstalledPackages); err != nil {
+				if err := db.DBx(s.ctx).Model(&deviceImage.Commit).Association("InstalledPackages").Find(&deviceImage.Commit.InstalledPackages); err != nil {
 					s.log.WithField("error", err.Error()).Error("Error when getting InstalledPackages for CurrentImage")
 					return err
 				}
 
-				if err := db.DB.First(&latestImage.Commit, latestImage.CommitID).Error; err != nil {
+				if err := db.DBx(s.ctx).First(&latestImage.Commit, latestImage.CommitID).Error; err != nil {
 					s.log.WithField("error", err.Error()).Error("Error when getting Commit for LatestImage")
 					return err
 				}
-				if err := db.DB.Model(&latestImage.Commit).Association("InstalledPackages").Find(&latestImage.Commit.InstalledPackages); err != nil {
+				if err := db.DBx(s.ctx).Model(&latestImage.Commit).Association("InstalledPackages").Find(&latestImage.Commit.InstalledPackages); err != nil {
 					s.log.WithField("error", err.Error()).Error("Error when getting InstalledPackages for LatestImage")
 					return err
 				}
@@ -251,7 +251,7 @@ func (s *DeviceGroupsService) CreateDeviceGroup(deviceGroup *models.DeviceGroup)
 		Type:  string(static),
 		OrgID: deviceGroup.OrgID,
 	}
-	result := db.DB.Create(&group)
+	result := db.DBx(s.ctx).Create(&group)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error creating device group")
 		return nil, result.Error
@@ -270,7 +270,7 @@ func (s *DeviceGroupsService) GetDeviceGroupByID(ID string) (*models.DeviceGroup
 		return nil, err
 	}
 
-	result := db.Org(orgID, "").Where("id = ?", ID).Preload("Devices").First(&deviceGroup)
+	result := db.Orgx(s.ctx, orgID, "").Where("id = ?", ID).Preload("Devices").First(&deviceGroup)
 	if result.Error != nil {
 		return nil, new(DeviceGroupNotFound)
 	}
@@ -293,7 +293,7 @@ func (s *DeviceGroupsService) GetDeviceGroupDetailsByID(ID string) (*models.Devi
 		return nil, err
 	}
 
-	result := db.Org(orgID, "").Where("id = ?", ID).Preload("Devices").First(&deviceGroupDetails.DeviceGroup)
+	result := db.Orgx(s.ctx, orgID, "").Where("id = ?", ID).Preload("Devices").First(&deviceGroupDetails.DeviceGroup)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Device details query error")
 		return nil, new(DeviceGroupNotFound)
@@ -341,7 +341,7 @@ func (s *DeviceGroupsService) UpdateDeviceGroup(deviceGroup *models.DeviceGroup,
 		}
 	}
 
-	result := db.DB.Omit("Devices").Save(&groupDetails)
+	result := db.DBx(s.ctx).Omit("Devices").Save(&groupDetails)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -362,13 +362,13 @@ func (s *DeviceGroupsService) GetDeviceGroupDeviceByID(orgID string, deviceGroup
 
 	// get the device group
 	var deviceGroup models.DeviceGroup
-	if res := db.Org(orgID, "").First(&deviceGroup, deviceGroupID); res.Error != nil {
+	if res := db.Orgx(s.ctx, orgID, "").First(&deviceGroup, deviceGroupID); res.Error != nil {
 		return nil, res.Error
 	}
 
 	// we need to be sure that all the devices we want to remove already exists and belong to device group
 	var device models.Device
-	if err := db.DB.Model(&deviceGroup).Association("Devices").Find(&device, deviceID); err != nil {
+	if err := db.DBx(s.ctx).Model(&deviceGroup).Association("Devices").Find(&device, deviceID); err != nil {
 		return nil, err
 	}
 
@@ -388,7 +388,7 @@ func (s *DeviceGroupsService) AddDeviceGroupDevices(orgID string, deviceGroupID 
 
 	// get the device group
 	var deviceGroup models.DeviceGroup
-	if res := db.Org(orgID, "").First(&deviceGroup, deviceGroupID); res.Error != nil {
+	if res := db.Orgx(s.ctx, orgID, "").First(&deviceGroup, deviceGroupID); res.Error != nil {
 		return nil, res.Error
 	}
 
@@ -404,7 +404,7 @@ func (s *DeviceGroupsService) AddDeviceGroupDevices(orgID string, deviceGroupID 
 
 	// we need to be sure that all the devices we want to add already exists and have the same ID as the current device group ID
 	var devicesToAdd []models.Device
-	if res := db.Org(orgID, "").Find(&devicesToAdd, devicesIDsToAdd); res.Error != nil {
+	if res := db.Orgx(s.ctx, orgID, "").Find(&devicesToAdd, devicesIDsToAdd); res.Error != nil {
 		return nil, res.Error
 	}
 
@@ -415,7 +415,7 @@ func (s *DeviceGroupsService) AddDeviceGroupDevices(orgID string, deviceGroupID 
 	}
 
 	s.log.WithFields(log.Fields{"deviceCount": len(devicesToAdd), "deviceGroupID": deviceGroup.ID}).Debug("Adding devices to device group")
-	if err := db.DB.Model(&deviceGroup).Omit("Devices.*").Association("Devices").Append(devicesToAdd); err != nil {
+	if err := db.DBx(s.ctx).Model(&deviceGroup).Omit("Devices.*").Association("Devices").Append(devicesToAdd); err != nil {
 		return nil, err
 	}
 
@@ -435,7 +435,7 @@ func (s *DeviceGroupsService) DeleteDeviceGroupDevices(orgID string, deviceGroup
 
 	// get the device group
 	var deviceGroup models.DeviceGroup
-	if res := db.Org(orgID, "").First(&deviceGroup, deviceGroupID); res.Error != nil {
+	if res := db.Orgx(s.ctx, orgID, "").First(&deviceGroup, deviceGroupID); res.Error != nil {
 		return nil, res.Error
 	}
 
@@ -451,7 +451,7 @@ func (s *DeviceGroupsService) DeleteDeviceGroupDevices(orgID string, deviceGroup
 
 	// we need to be sure that all the devices we want to remove already exists and belong to device group
 	var devicesToRemove []models.Device
-	if err := db.DB.Model(&deviceGroup).Association("Devices").Find(&devicesToRemove, devicesIDsToRemove); err != nil {
+	if err := db.DBx(s.ctx).Model(&deviceGroup).Association("Devices").Find(&devicesToRemove, devicesIDsToRemove); err != nil {
 		return nil, err
 	}
 
@@ -462,7 +462,7 @@ func (s *DeviceGroupsService) DeleteDeviceGroupDevices(orgID string, deviceGroup
 	}
 
 	s.log.WithFields(log.Fields{"deviceCount": len(devicesToRemove), "deviceGroupID": deviceGroup.ID}).Debug("Removing devices from device group")
-	if err := db.DB.Model(&deviceGroup).Association("Devices").Delete(devicesToRemove); err != nil {
+	if err := db.DBx(s.ctx).Model(&deviceGroup).Association("Devices").Delete(devicesToRemove); err != nil {
 		return nil, err
 	}
 
