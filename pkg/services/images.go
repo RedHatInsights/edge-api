@@ -159,7 +159,7 @@ func (s *ImageService) getExistingImageCustomRepositoriesByURLS(orgID string, ur
 	// Get the local existing custom repos that correspond to content-sources urls
 	var repos []models.ThirdPartyRepo
 
-	if err := db.Org(orgID, "").Where("url", urls).Order("id asc").Find(&repos).Error; err != nil {
+	if err := db.Orgx(s.ctx, orgID, "").Where("url", urls).Order("id asc").Find(&repos).Error; err != nil {
 		s.log.WithFields(log.Fields{"repos_urls": urls, "error": err.Error()}).Error("error occurred while retrieving from local db")
 		return nil, err
 	}
@@ -227,7 +227,7 @@ func (s *ImageService) SetImageContentSourcesRepositories(image *models.Image) e
 				existingEMRepo.DistributionArch = csRepo.DistributionArch
 				existingEMRepo.PackageCount = csRepo.PackageCount
 
-				if err := db.DB.Save(existingEMRepo).Error; err != nil {
+				if err := db.DBx(s.ctx).Save(existingEMRepo).Error; err != nil {
 					s.log.WithFields(log.Fields{"repo_url": url, "repo_id": existingEMRepo.ID, "error": err.Error()}).Error("error occurred while updating custom repository")
 					return err
 				}
@@ -245,7 +245,7 @@ func (s *ImageService) SetImageContentSourcesRepositories(image *models.Image) e
 				GpgKey:              csRepo.GpgKey,
 				PackageCount:        csRepo.PackageCount,
 			}
-			if err := db.DB.Create(&emRepo).Error; err != nil {
+			if err := db.DBx(s.ctx).Create(&emRepo).Error; err != nil {
 				s.log.WithFields(log.Fields{"repository_url": csRepo.URL, "error": err.Error()}).Error("error occurred while creating custom repository")
 				return err
 			}
@@ -262,11 +262,11 @@ func (s *ImageService) getImageSetForNewImage(orgID string, image *models.Image)
 	// if it exists and is not linked to any images reuse it,
 	// if it exists and linked to any images return error
 	var imageSet models.ImageSet
-	if result := db.Org(orgID, "").Preload("Images").Where("(name = ?)", image.Name).First(&imageSet); result.Error != nil {
+	if result := db.Orgx(s.ctx, orgID, "").Preload("Images").Where("(name = ?)", image.Name).First(&imageSet); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			// Create a new imageSet
 			imageSet = models.ImageSet{OrgID: orgID, Name: image.Name, Version: image.Version}
-			if result := db.DB.Create(&imageSet); result.Error != nil {
+			if result := db.DBx(s.ctx).Create(&imageSet); result.Error != nil {
 				s.log.WithFields(log.Fields{
 					"imageSetName": image.Name,
 					"error":        result.Error.Error(),
@@ -372,7 +372,7 @@ func (s *ImageService) CreateImage(image *models.Image) error {
 		image.Installer.OrgID = image.OrgID
 	}
 
-	if result := db.DB.Create(&image); result.Error != nil {
+	if result := db.DBx(s.ctx).Create(&image); result.Error != nil {
 		return result.Error
 	}
 
@@ -445,7 +445,7 @@ func (s *ImageService) ValidateImagePackage(packageName string, image *models.Im
 // if no image found return nil
 func (s *ImageService) getLatestPreviousSuccessfulImage(image *models.Image) (*models.Image, error) {
 	var previousSuccessfulImage models.Image
-	if result := db.Org(image.OrgID, "images").
+	if result := db.Orgx(s.ctx, image.OrgID, "images").
 		Where(models.Image{ImageSetID: image.ImageSetID, Status: models.ImageStatusSuccess}).
 		Preload("Commit.Repo").Joins("Commit").
 		Where("images.created_at < ?", image.CreatedAt).
@@ -507,13 +507,13 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 	}
 
 	var currentImageSet models.ImageSet
-	result := db.DB.Where("Id = ?", previousImage.ImageSetID).First(&currentImageSet)
+	result := db.DBx(s.ctx).Where("Id = ?", previousImage.ImageSetID).First(&currentImageSet)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error retrieving the image set from parent image")
 		return result.Error
 	}
 	currentImageSet.Version = previousImage.Version + 1
-	if err := db.DB.Save(currentImageSet).Error; err != nil {
+	if err := db.DBx(s.ctx).Save(currentImageSet).Error; err != nil {
 		return err
 	}
 
@@ -589,7 +589,7 @@ func (s *ImageService) UpdateImage(image *models.Image, previousImage *models.Im
 		image.Installer.OrgID = image.OrgID
 	}
 
-	if result := db.DB.Create(&image); result.Error != nil {
+	if result := db.DBx(s.ctx).Create(&image); result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error creating image")
 		return result.Error
 	}
@@ -608,7 +608,7 @@ func (s *ImageService) processInstaller(ctx context.Context, image *models.Image
 	imageID := image.ID
 	for {
 		// reload the image from database, for a long-running process
-		if err := db.DB.Joins("Commit").Joins("Installer").First(&image, imageID).Error; err != nil {
+		if err := db.DBx(s.ctx).Joins("Commit").Joins("Installer").First(&image, imageID).Error; err != nil {
 			s.log.WithField("error", err.Error()).Error("error occurred when reloading image from database")
 			if goErrors.Is(err, gorm.ErrRecordNotFound) {
 				return new(ImageNotFoundError)
@@ -652,7 +652,7 @@ func (s *ImageService) processCommit(ctx context.Context, image *models.Image, l
 	imageID := image.ID
 	for {
 		// reload the image from database, for a long-running process
-		if err := db.DB.Joins("Commit").Joins("Installer").First(&image, imageID).Error; err != nil {
+		if err := db.DBx(s.ctx).Joins("Commit").Joins("Installer").First(&image, imageID).Error; err != nil {
 			log.WithContext(ctx).WithField("error", err.Error()).Error("error occurred when reloading image from database")
 			if goErrors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, new(ImageNotFoundError)
@@ -711,7 +711,7 @@ func (s *ImageService) SetFinalImageStatus(i *models.Image) {
 			if i.Commit.Status == models.ImageStatusBuilding {
 				success = false
 				i.Commit.Status = models.ImageStatusError
-				db.DB.Save(i.Commit)
+				db.DBx(s.ctx).Save(i.Commit)
 			}
 		}
 		if out == models.ImageTypeInstaller {
@@ -721,7 +721,7 @@ func (s *ImageService) SetFinalImageStatus(i *models.Image) {
 			if i.Installer.Status == models.ImageStatusBuilding {
 				success = false
 				i.Installer.Status = models.ImageStatusError
-				db.DB.Save(i.Installer)
+				db.DBx(s.ctx).Save(i.Installer)
 			}
 		}
 	}
@@ -732,7 +732,7 @@ func (s *ImageService) SetFinalImageStatus(i *models.Image) {
 		i.Status = models.ImageStatusError
 	}
 
-	tx := db.DB.Save(i)
+	tx := db.DBx(s.ctx).Save(i)
 	if tx.Error != nil {
 		s.log.WithField("error", tx.Error.Error()).Error("Couldn't set final image status")
 	}
@@ -771,7 +771,7 @@ func (s *ImageService) processImage(ctx context.Context, id uint, loopDelay time
 				// we caught an interrupt. Mark the image as interrupted.
 				log.WithContext(ctx).WithField("imageID", id).Debug("Select case SIGINT interrupt has been triggered")
 
-				tx := db.DB.Model(&models.Image{}).Where("ID = ?", id).Update("Status", models.ImageStatusInterrupted)
+				tx := db.DBx(s.ctx).Model(&models.Image{}).Where("ID = ?", id).Update("Status", models.ImageStatusInterrupted)
 				log.WithContext(ctx).WithField("imageID", id).Debug("Image updated with interrupted status")
 				if tx.Error != nil {
 					log.WithContext(ctx).WithField("error", tx.Error.Error()).Error("Error updating image")
@@ -787,7 +787,7 @@ func (s *ImageService) processImage(ctx context.Context, id uint, loopDelay time
 		}()
 	}
 	// business as usual from here to end of block
-	if err := db.DB.Joins("Commit").Joins("Installer").First(&image, id).Error; err != nil {
+	if err := db.DBx(s.ctx).Joins("Commit").Joins("Installer").First(&image, id).Error; err != nil {
 		log.WithContext(ctx).WithFields(log.Fields{"error": err.Error(), "ImageID": id}).Error("error occurred loading the image from database")
 		return err
 	}
@@ -842,7 +842,7 @@ func (s *ImageService) CreateRepoForImage(ctx context.Context, img *models.Image
 	repo := &models.Repo{
 		Status: models.RepoStatusBuilding,
 	}
-	tx := db.DB.Create(repo)
+	tx := db.DBx(s.ctx).Create(repo)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -852,7 +852,7 @@ func (s *ImageService) CreateRepoForImage(ctx context.Context, img *models.Image
 	img.Commit.Repo = repo
 	img.Commit.RepoID = &repo.ID
 
-	tx = db.DB.Save(img.Commit)
+	tx = db.DBx(s.ctx).Save(img.Commit)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
@@ -1031,7 +1031,7 @@ func (s *ImageService) uploadISO(image *models.Image, imageName string) error {
 	}
 
 	image.Installer.ImageBuildISOURL = url
-	tx := db.DB.Save(&image.Installer)
+	tx := db.DBx(s.ctx).Save(&image.Installer)
 	if tx.Error != nil {
 		return tx.Error
 	}
@@ -1075,7 +1075,7 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 			// check that if error contain timeout and job stop responding and image's time creation is less than 3 hours
 			if strings.Contains(err.Error(), "running this job stopped responding") {
 				image.Status = models.ImageStatusInterrupted
-				tx := db.DB.Model(&models.Image{}).Where("ID = ?", image.ID).Update("Status", models.ImageStatusInterrupted)
+				tx := db.DBx(s.ctx).Model(&models.Image{}).Where("ID = ?", image.ID).Update("Status", models.ImageStatusInterrupted)
 				if tx.Error != nil {
 					return image, err
 				}
@@ -1084,7 +1084,7 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 			return image, err
 		}
 		if image.Commit.Status != models.ImageStatusBuilding {
-			tx := db.DB.Save(&image.Commit)
+			tx := db.DBx(s.ctx).Save(&image.Commit)
 			if tx.Error != nil {
 				return image, tx.Error
 			}
@@ -1096,14 +1096,14 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 			return image, err
 		}
 		if image.Installer.Status != models.ImageStatusBuilding {
-			tx := db.DB.Save(&image.Installer)
+			tx := db.DBx(s.ctx).Save(&image.Installer)
 			if tx.Error != nil {
 				return image, tx.Error
 			}
 		}
 	}
 	if image.Status != models.ImageStatusBuilding {
-		tx := db.DB.Save(&image)
+		tx := db.DBx(s.ctx).Save(&image)
 		if tx.Error != nil {
 			return image, tx.Error
 		}
@@ -1115,7 +1115,7 @@ func (s *ImageService) UpdateImageStatus(image *models.Image) (*models.Image, er
 func (s *ImageService) CheckImageName(name, orgID string) (bool, error) {
 	var imageFindByName *models.Image
 	// Search for an organization with an image with specific name
-	result := db.Org(orgID, "").Where("(name = ?)", name).First(&imageFindByName)
+	result := db.Orgx(s.ctx, orgID, "").Where("(name = ?)", name).First(&imageFindByName)
 	// If we get an error from the query
 	if result.Error != nil {
 		// If no records were found
@@ -1174,7 +1174,7 @@ func (s *ImageService) calculateChecksum(isoPath string, image *models.Image) er
 
 	image.Installer.Checksum = hex.EncodeToString(sumCalculator.Sum(nil))
 	s.log.WithField("checksum", image.Installer.Checksum).Info("Checksum calculated")
-	tx := db.DB.Save(&image.Installer)
+	tx := db.DBx(s.ctx).Save(&image.Installer)
 	if tx.Error != nil {
 		s.log.WithField("error", tx.Error.Error()).Error("Error saving installer")
 		return tx.Error
@@ -1220,13 +1220,13 @@ func (s *ImageService) AddPackageInfo(image *models.Image) (ImageDetail, error) 
 
 func (s *ImageService) addImageExtraData(image *models.Image) (*models.Image, error) {
 	if image.InstallerID != nil {
-		result := db.DB.First(&image.Installer, image.InstallerID)
+		result := db.DBx(s.ctx).First(&image.Installer, image.InstallerID)
 		if result.Error != nil {
 			s.log.WithField("error", result.Error).Error("Error retrieving installer for image")
 			return nil, result.Error
 		}
 	}
-	err := db.DB.Model(image).Association("Packages").Find(&image.Packages)
+	err := db.DBx(s.ctx).Model(image).Association("Packages").Find(&image.Packages)
 	if err != nil {
 		s.log.WithField("error", err).Error("Error packages from image")
 		return nil, err
@@ -1248,7 +1248,7 @@ func (s *ImageService) GetImageByIDExtended(imageID uint, gormDB *gorm.DB) (*mod
 	if gormDB == nil {
 		gormDB = db.DB
 	}
-	dbQuery := db.OrgDB(orgID, gormDB, "images")
+	dbQuery := db.OrgDBx(s.ctx, orgID, gormDB, "images")
 
 	if err := dbQuery.First(&image, imageID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -1273,7 +1273,7 @@ func (s *ImageService) GetImageByID(imageID string) (*models.Image, error) {
 		s.log.WithField("error", err).Debug("Request related error - ID is not integer")
 		return nil, new(IDMustBeInteger)
 	}
-	result := db.Org(orgID, "images").Preload("Commit.Repo").Preload("Commit.InstalledPackages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Joins("Commit").First(&image, id)
+	result := db.Orgx(s.ctx, orgID, "images").Preload("Commit.Repo").Preload("Commit.InstalledPackages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Joins("Commit").First(&image, id)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Debug("Request related error - image is not found")
 		return nil, new(ImageNotFoundError)
@@ -1290,7 +1290,7 @@ func (s *ImageService) GetImageByOSTreeCommitHash(commitHash string) (*models.Im
 		s.log.WithField("error", err.Error()).Error("Error retrieving org_id")
 		return nil, new(OrgIDNotSet)
 	}
-	result := db.Org(orgID, "images").Joins("JOIN commits ON commits.id = images.commit_id AND commits.os_tree_commit = ?", commitHash).Joins("Installer").Preload("Packages").Preload("Commit.InstalledPackages").Preload("Commit.Repo").First(&image)
+	result := db.Orgx(s.ctx, orgID, "images").Joins("JOIN commits ON commits.id = images.commit_id AND commits.os_tree_commit = ?", commitHash).Joins("Installer").Preload("Packages").Preload("Commit.InstalledPackages").Preload("Commit.Repo").First(&image)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error).Error("Error retrieving image by OSTreeHash")
 		return nil, new(ImageNotFoundError)
@@ -1356,7 +1356,7 @@ func (s *ImageService) RetryCreateImage(ctx context.Context, image *models.Image
 
 func (s *ImageService) setImageStatus(image *models.Image, status string) error {
 	image.Status = status
-	tx := db.DB.Save(image)
+	tx := db.DBx(s.ctx).Save(image)
 	if tx.Error != nil {
 		s.log.WithFields(log.Fields{"imageID": image.ID, "status": status, "error": tx.Error.Error()}).Error("Failed to update image status")
 		return tx.Error
@@ -1368,7 +1368,7 @@ func (s *ImageService) setImageStatus(image *models.Image, status string) error 
 
 func (s *ImageService) setCommitStatus(image *models.Image, status string) error {
 	image.Commit.Status = status
-	tx := db.DB.Save(image.Commit)
+	tx := db.DBx(s.ctx).Save(image.Commit)
 	if tx.Error != nil {
 		s.log.WithFields(log.Fields{"imageID": image.ID, "commitID": image.Commit.ID, "status": status, "error": tx.Error.Error()}).Error("Failed to update commit status")
 		return tx.Error
@@ -1380,7 +1380,7 @@ func (s *ImageService) setCommitStatus(image *models.Image, status string) error
 
 func (s *ImageService) setInstallerStatus(image *models.Image, status string) error {
 	image.Installer.Status = status
-	tx := db.DB.Save(image.Installer)
+	tx := db.DBx(s.ctx).Save(image.Installer)
 	if tx.Error != nil {
 		s.log.WithFields(log.Fields{"imageID": image.ID, "installerID": image.Installer.ID, "status": status, "error": tx.Error.Error()}).Error("Failed to update installer status")
 		return tx.Error
@@ -1435,7 +1435,7 @@ func (s *ImageService) resumeProcessImage(ctx context.Context, image *models.Ima
 			// we caught an interrupt. Mark the image as interrupted.
 			s.log.WithField("imageID", id).Debug("Select case SIGINT interrupt has been triggered")
 
-			tx := db.DB.Model(&models.Image{}).Where("ID = ?", id).Update("Status", models.ImageStatusInterrupted)
+			tx := db.DBx(s.ctx).Model(&models.Image{}).Where("ID = ?", id).Update("Status", models.ImageStatusInterrupted)
 			s.log.WithField("imageID", id).Debug("Image updated with interrupted status")
 			if tx.Error != nil {
 				s.log.WithField("error", tx.Error.Error()).Error("Error updating image")
@@ -1583,7 +1583,7 @@ func (s *ImageService) CheckIfIsLatestVersion(previousImage *models.Image) error
 	}
 
 	var latestImageVersion models.Image
-	if result := db.Org(previousImage.OrgID, "").Where(models.Image{ImageSetID: previousImage.ImageSetID}).Order("version DESC").First(&latestImageVersion); result.Error != nil {
+	if result := db.Orgx(s.ctx, previousImage.OrgID, "").Where(models.Image{ImageSetID: previousImage.ImageSetID}).Order("version DESC").First(&latestImageVersion); result.Error != nil {
 		return result.Error
 	}
 
@@ -1601,7 +1601,7 @@ func (s *ImageService) GetUpdateInfo(image models.Image) (*models.ImageUpdateAva
 		return nil, nil
 	}
 	var updateFromImage models.Image
-	if result := db.DB.Where("Image_set_id = ? and Images.Status = ? and Images.Id < ?",
+	if result := db.DBx(s.ctx).Where("Image_set_id = ? and Images.Status = ? and Images.Id < ?",
 		image.ImageSetID, models.ImageStatusSuccess, image.ID).Joins("Commit").
 		Order("Images.created_at DESC").First(&updateFromImage); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
@@ -1612,23 +1612,23 @@ func (s *ImageService) GetUpdateInfo(image models.Image) (*models.ImageUpdateAva
 		return nil, result.Error
 	}
 
-	if result := db.DB.First(&updateFromImage.Commit, updateFromImage.CommitID); result.Error != nil {
+	if result := db.DBx(s.ctx).First(&updateFromImage.Commit, updateFromImage.CommitID); result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error when retrieving updateFromImage commit")
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, new(ImageCommitNotFound)
 		}
 		return nil, result.Error
 	}
-	if err := db.DB.Model(&updateFromImage.Commit).Association("InstalledPackages").Find(&updateFromImage.Commit.InstalledPackages); err != nil {
+	if err := db.DBx(s.ctx).Model(&updateFromImage.Commit).Association("InstalledPackages").Find(&updateFromImage.Commit.InstalledPackages); err != nil {
 		s.log.WithField("error", err.Error()).Error("Error retrieving installed packages")
 		return nil, err
 	}
-	if err := db.DB.Model(&updateFromImage).Association("Packages").Find(&updateFromImage.Packages); err != nil {
+	if err := db.DBx(s.ctx).Model(&updateFromImage).Association("Packages").Find(&updateFromImage.Packages); err != nil {
 		s.log.WithField("error", err.Error()).Error("Error retrieving updated packages")
 		return nil, err
 	}
 
-	if err := db.DB.Model(&updateFromImage).Association("CustomPackages").Find(&updateFromImage.CustomPackages); err != nil {
+	if err := db.DBx(s.ctx).Model(&updateFromImage).Association("CustomPackages").Find(&updateFromImage.CustomPackages); err != nil {
 		s.log.WithField("error", err.Error()).Error("Error retrieving updated CustomPackages")
 		return nil, err
 	}
@@ -1668,12 +1668,12 @@ func (s *ImageService) CreateInstallerForImage(ctx context.Context, image *model
 
 	image.ImageType = models.ImageTypeInstaller
 	image.Installer.Status = models.ImageStatusBuilding
-	tx := db.DB.Save(&image)
+	tx := db.DBx(s.ctx).Save(&image)
 	if tx.Error != nil {
 		log.WithContext(ctx).WithField("error", tx.Error.Error()).Error("Error saving image")
 		return nil, c, tx.Error
 	}
-	tx = db.DB.Save(&image.Installer)
+	tx = db.DBx(s.ctx).Save(&image.Installer)
 	if tx.Error != nil {
 		log.WithContext(ctx).WithField("error", tx.Error.Error()).Error("Error saving installer")
 		return nil, c, tx.Error
@@ -1698,7 +1698,7 @@ func (s *ImageService) GetRollbackImage(image *models.Image) (*models.Image, err
 		s.log.WithField("error", err.Error()).Error("Error retrieving org_id")
 		return nil, new(OrgIDNotSet)
 	}
-	result := db.Org(orgID, "images").Joins("Commit").Joins("Installer").Preload("Packages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where(&models.Image{ImageSetID: image.ImageSetID, Status: models.ImageStatusSuccess}).Last(&rollback, "images.id < ?", image.ID)
+	result := db.Orgx(s.ctx, orgID, "images").Joins("Commit").Joins("Installer").Preload("Packages").Preload("CustomPackages").Preload("ThirdPartyRepositories").Preload("Commit.InstalledPackages").Preload("Commit.Repo").Where(&models.Image{ImageSetID: image.ImageSetID, Status: models.ImageStatusSuccess}).Last(&rollback, "images.id < ?", image.ID)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error).Error("Error retrieving rollback image")
 		return nil, new(ImageNotFoundError)
@@ -1795,12 +1795,12 @@ func (s *ImageService) SetDevicesUpdateAvailabilityFromImageSet(orgID string, Im
 
 	// get the last image with success status
 	var lastImage models.Image
-	if result := db.Org(orgID, "").Where("(image_set_id = ? AND status = ?)", ImageSetID, models.ImageStatusSuccess).Order("created_at DESC").First(&lastImage); result.Error != nil {
+	if result := db.Orgx(s.ctx, orgID, "").Where("(image_set_id = ? AND status = ?)", ImageSetID, models.ImageStatusSuccess).Order("created_at DESC").First(&lastImage); result.Error != nil {
 		return result.Error
 	}
 
 	// update all devices with last image that has update_available=true to update_available=false
-	if result := db.Org(orgID, "").Model(&models.Device{}).
+	if result := db.Orgx(s.ctx, orgID, "").Model(&models.Device{}).
 		Where("(update_available = ? AND image_id = ?)", true, lastImage.ID).
 		UpdateColumn("update_available", false); result.Error != nil {
 		logger.WithField("error", result.Error).Error("Error occurred while updating device update_available")
@@ -1808,11 +1808,11 @@ func (s *ImageService) SetDevicesUpdateAvailabilityFromImageSet(orgID string, Im
 	}
 
 	// Create priorImagesSubQuery query for all successfully created images prior to lastImage
-	priorImagesSubQuery := db.Org(orgID, "").Model(&models.Image{}).Select("id").Where("image_set_id = ? AND status = ? AND created_at < ?",
+	priorImagesSubQuery := db.Orgx(s.ctx, orgID, "").Model(&models.Image{}).Select("id").Where("image_set_id = ? AND status = ? AND created_at < ?",
 		ImageSetID, models.ImageStatusSuccess, lastImage.CreatedAt)
 
 	// Update all devices with prior images that has update_available=false to update_available=true
-	if result := db.Org(orgID, "").Model(&models.Device{}).
+	if result := db.Orgx(s.ctx, orgID, "").Model(&models.Device{}).
 		Where("(update_available = ? AND image_id IN (?))", false, priorImagesSubQuery).
 		UpdateColumn("update_available", true); result.Error != nil {
 		logger.WithField("error", result.Error).Error("Error occurred when updating org_id devices update_available")
@@ -1830,11 +1830,11 @@ func (s *ImageService) GetImagesViewCount(tx *gorm.DB) (int64, error) {
 	}
 
 	if tx == nil {
-		tx = db.DB
+		tx = db.DBx(s.ctx)
 	}
 
 	var count int64
-	result := db.OrgDB(orgID, tx, "").Model(&models.Image{}).Count(&count)
+	result := db.OrgDBx(s.ctx, orgID, tx, "").Model(&models.Image{}).Count(&count)
 
 	if result.Error != nil {
 		s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("Error getting images count")
@@ -1853,7 +1853,7 @@ func (s *ImageService) GetImageDevicesCount(imageId uint) (int64, error) {
 	}
 
 	var count int64
-	res := db.Org(orgID, "").Model(&models.Device{}).Where("image_id =? ", imageId).Count(&count)
+	res := db.Orgx(s.ctx, orgID, "").Model(&models.Device{}).Where("image_id =? ", imageId).Count(&count)
 	if res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
 		return 0, res.Error
@@ -1869,12 +1869,12 @@ func (s *ImageService) GetImagesView(limit int, offset int, tx *gorm.DB) (*[]mod
 	}
 
 	if tx == nil {
-		tx = db.DB
+		tx = db.DBx(s.ctx)
 	}
 
 	var images []models.Image
 
-	if result := db.OrgDB(orgID, tx, "").Limit(limit).Offset(offset).
+	if result := db.OrgDBx(s.ctx, orgID, tx, "").Limit(limit).Offset(offset).
 		Preload("Installer").
 		Preload("Commit").
 		Find(&images); result.Error != nil {
@@ -1919,7 +1919,7 @@ func (s *ImageService) DeleteImage(i *models.Image) error {
 
 	// if this is the only image in an image set, delete the set also
 	var imageSet models.ImageSet
-	result := db.Org(i.OrgID, "").Preload("Images").Where("(name = ?)", i.Name).First(&imageSet)
+	result := db.Orgx(s.ctx, i.OrgID, "").Preload("Images").Where("(name = ?)", i.Name).First(&imageSet)
 	if result.Error != nil {
 		s.log.WithFields(
 			log.Fields{"Image_id": i.ID, "error": result.Error},
@@ -1927,7 +1927,7 @@ func (s *ImageService) DeleteImage(i *models.Image) error {
 		return result.Error
 	}
 
-	if result := db.DB.Delete(&i); result.Error != nil {
+	if result := db.DBx(s.ctx).Delete(&i); result.Error != nil {
 		s.log.WithFields(
 			log.Fields{"Image_id": i.ID, "error": result.Error},
 		).Error("Error when deleting image")
@@ -1935,7 +1935,7 @@ func (s *ImageService) DeleteImage(i *models.Image) error {
 	}
 
 	if len(imageSet.Images) <= 1 {
-		if result := db.DB.Delete(&imageSet); result.Error != nil {
+		if result := db.DBx(s.ctx).Delete(&imageSet); result.Error != nil {
 			s.log.WithFields(
 				log.Fields{"Image_id": i.ID, "error": result.Error},
 			).Error("Error when deleting image set")
