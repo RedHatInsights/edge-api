@@ -19,6 +19,7 @@ KUBECTL=kubectl
 NAMESPACE=default
 TEST_OPTIONS=-race
 BUILD_TAGS=-tags=fdo
+BUILD_FLAGS=-trimpath
 
 GOLANGCI_LINT_COMMON_OPTIONS=\
 			--enable=errcheck,gocritic,gofmt,goimports,gosec,gosimple,govet,ineffassign,revive,staticcheck,typecheck,unused,bodyclose \
@@ -72,14 +73,14 @@ build-test-container:
 
 build:
 	mkdir -p build 2>/dev/null
-	go build -o build/edge-api .
-	go build -o build/edge-api-migrate cmd/migrate/main.go
-	go build -o build/edge-api-wipe cmd/db/wipe.go
-	go build -o build/edge-api-migrate-device cmd/db/updDb/set_account_on_device.go
-	go build -o build/edge-api-migrate-repositories cmd/migraterepos/main.go
-	go build -o build/edge-api-migrate-groups cmd/migrategroups/main.go
-	go build -o build/edge-api-ibvents cmd/kafka/main.go
-	go build -o build/edge-api-cleanup cmd/cleanup/main.go
+	go build $(BUILD_FLAGS) -o build/edge-api .
+	go build $(BUILD_FLAGS) -o build/edge-api-migrate cmd/migrate/main.go
+	go build $(BUILD_FLAGS) -o build/edge-api-wipe cmd/db/wipe.go
+	go build $(BUILD_FLAGS) -o build/edge-api-migrate-device cmd/db/updDb/set_account_on_device.go
+	go build $(BUILD_FLAGS) -o build/edge-api-migrate-repositories cmd/migraterepos/main.go
+	go build $(BUILD_FLAGS) -o build/edge-api-migrate-groups cmd/migrategroups/main.go
+	go build $(BUILD_FLAGS) -o build/edge-api-ibvents cmd/kafka/main.go
+	go build $(BUILD_FLAGS) -o build/edge-api-cleanup cmd/cleanup/main.go
 
 clean:
 	rm -rf build
