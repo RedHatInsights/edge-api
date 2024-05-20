@@ -29,7 +29,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

@@ -15,7 +15,7 @@ import (
 	"testing"
 
 	"github.com/bxcodec/faker/v3"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo"

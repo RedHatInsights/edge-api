@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/bxcodec/faker/v3"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"

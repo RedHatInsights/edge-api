@@ -16,7 +16,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
