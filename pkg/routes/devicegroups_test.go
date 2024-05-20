@@ -29,7 +29,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	log "github.com/sirupsen/logrus"
 )

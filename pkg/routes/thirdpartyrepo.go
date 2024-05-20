@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/redhatinsights/edge-api/pkg/clients/repositories"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"

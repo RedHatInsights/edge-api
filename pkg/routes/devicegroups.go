@@ -16,7 +16,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/services/utility"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"

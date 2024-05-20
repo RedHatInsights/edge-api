@@ -12,7 +12,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 )
 
 // MakeFDORouter creates a router for the FDO API

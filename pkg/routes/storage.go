@@ -16,7 +16,7 @@ import (
 
 	"github.com/redhatinsights/edge-api/config"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
 	log "github.com/sirupsen/logrus"
