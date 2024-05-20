@@ -58,9 +58,10 @@ func NewProducerService() ProducerServiceInterface {
 // GetProducerInstance returns a kafka producer instance
 func (p *ProducerService) GetProducerInstance() Producer {
 	log.Debug("Getting the producer instance")
+	lock.Lock()
+	defer lock.Unlock()
+
 	if singleInstance == nil {
-		lock.Lock()
-		defer lock.Unlock()
 		cfg := config.Get()
 		if cfg.KafkaBrokers != nil {
 			log.WithFields(log.Fields{"broker": cfg.KafkaBrokers[0].Hostname,
