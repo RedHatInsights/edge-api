@@ -128,7 +128,7 @@ func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 
 	// Non-production routes
 	if strings.Contains(config.Get().EdgeAPIBaseURL, "stage") {
-		route.Mount("/debug", middleware.Profiler())
+		route.Mount("/api/edge/debug", middleware.Profiler())
 	}
 
 	// Authenticated routes
