@@ -52,7 +52,7 @@ func NewMemoryClientWithConfig(config Config) *MemoryWorker {
 func NewMemoryClient() *MemoryWorker {
 	return NewMemoryClientWithConfig(Config{
 		QueueSize: 5,
-		Workers:   2,
+		Workers:   1,
 		Timeout:   4 * time.Hour,
 		IntSignal: os.Interrupt,
 	})
