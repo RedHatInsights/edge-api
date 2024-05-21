@@ -46,9 +46,15 @@ func Enqueue(ctx context.Context, job *Job) error {
 	return Queue.Enqueue(ctx, job)
 }
 
-// NewAndEnqueue sends an existing job to the worker queue.
+// NewAndEnqueue sends an existing job to the fast worker queue.
 func NewAndEnqueue(ctx context.Context, jobType JobType, args any) error {
-	job := New(ctx, jobType, args)
+	job := New(ctx, jobType, FastQueue, args)
+	return Queue.Enqueue(ctx, job)
+}
+
+// NewAndEnqueueSlow sends an existing job to the slow worker queue.
+func NewAndEnqueueSlow(ctx context.Context, jobType JobType, args any) error {
+	job := New(ctx, jobType, SlowQueue, args)
 	return Queue.Enqueue(ctx, job)
 }
 

@@ -13,42 +13,42 @@ import (
 	models "github.com/redhatinsights/edge-api/pkg/models"
 )
 
-// MockProducer is a mock of Producer interface
+// MockProducer is a mock of Producer interface.
 type MockProducer struct {
 	ctrl     *gomock.Controller
 	recorder *MockProducerMockRecorder
 }
 
-// MockProducerMockRecorder is the mock recorder for MockProducer
+// MockProducerMockRecorder is the mock recorder for MockProducer.
 type MockProducerMockRecorder struct {
 	mock *MockProducer
 }
 
-// NewMockProducer creates a new mock instance
+// NewMockProducer creates a new mock instance.
 func NewMockProducer(ctrl *gomock.Controller) *MockProducer {
 	mock := &MockProducer{ctrl: ctrl}
 	mock.recorder = &MockProducerMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockProducer) EXPECT() *MockProducerMockRecorder {
 	return m.recorder
 }
 
-// Close mocks base method
+// Close mocks base method.
 func (m *MockProducer) Close() {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Close")
 }
 
-// Close indicates an expected call of Close
+// Close indicates an expected call of Close.
 func (mr *MockProducerMockRecorder) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockProducer)(nil).Close))
 }
 
-// Events mocks base method
+// Events mocks base method.
 func (m *MockProducer) Events() chan kafka.Event {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Events")
@@ -56,13 +56,13 @@ func (m *MockProducer) Events() chan kafka.Event {
 	return ret0
 }
 
-// Events indicates an expected call of Events
+// Events indicates an expected call of Events.
 func (mr *MockProducerMockRecorder) Events() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Events", reflect.TypeOf((*MockProducer)(nil).Events))
 }
 
-// Flush mocks base method
+// Flush mocks base method.
 func (m *MockProducer) Flush(timeoutMs int) int {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Flush", timeoutMs)
@@ -70,13 +70,13 @@ func (m *MockProducer) Flush(timeoutMs int) int {
 	return ret0
 }
 
-// Flush indicates an expected call of Flush
+// Flush indicates an expected call of Flush.
 func (mr *MockProducerMockRecorder) Flush(timeoutMs interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Flush", reflect.TypeOf((*MockProducer)(nil).Flush), timeoutMs)
 }
 
-// GetFatalError mocks base method
+// GetFatalError mocks base method.
 func (m *MockProducer) GetFatalError() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetFatalError")
@@ -84,13 +84,13 @@ func (m *MockProducer) GetFatalError() error {
 	return ret0
 }
 
-// GetFatalError indicates an expected call of GetFatalError
+// GetFatalError indicates an expected call of GetFatalError.
 func (mr *MockProducerMockRecorder) GetFatalError() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFatalError", reflect.TypeOf((*MockProducer)(nil).GetFatalError))
 }
 
-// GetMetadata mocks base method
+// GetMetadata mocks base method.
 func (m *MockProducer) GetMetadata(topic *string, allTopics bool, timeoutMs int) (*kafka.Metadata, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetMetadata", topic, allTopics, timeoutMs)
@@ -99,13 +99,13 @@ func (m *MockProducer) GetMetadata(topic *string, allTopics bool, timeoutMs int)
 	return ret0, ret1
 }
 
-// GetMetadata indicates an expected call of GetMetadata
+// GetMetadata indicates an expected call of GetMetadata.
 func (mr *MockProducerMockRecorder) GetMetadata(topic, allTopics, timeoutMs interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetadata", reflect.TypeOf((*MockProducer)(nil).GetMetadata), topic, allTopics, timeoutMs)
 }
 
-// Len mocks base method
+// Len mocks base method.
 func (m *MockProducer) Len() int {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Len")
@@ -113,13 +113,13 @@ func (m *MockProducer) Len() int {
 	return ret0
 }
 
-// Len indicates an expected call of Len
+// Len indicates an expected call of Len.
 func (mr *MockProducerMockRecorder) Len() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Len", reflect.TypeOf((*MockProducer)(nil).Len))
 }
 
-// OffsetsForTimes mocks base method
+// OffsetsForTimes mocks base method.
 func (m *MockProducer) OffsetsForTimes(times []kafka.TopicPartition, timeoutMs int) ([]kafka.TopicPartition, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "OffsetsForTimes", times, timeoutMs)
@@ -128,13 +128,13 @@ func (m *MockProducer) OffsetsForTimes(times []kafka.TopicPartition, timeoutMs i
 	return ret0, ret1
 }
 
-// OffsetsForTimes indicates an expected call of OffsetsForTimes
+// OffsetsForTimes indicates an expected call of OffsetsForTimes.
 func (mr *MockProducerMockRecorder) OffsetsForTimes(times, timeoutMs interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OffsetsForTimes", reflect.TypeOf((*MockProducer)(nil).OffsetsForTimes), times, timeoutMs)
 }
 
-// Produce mocks base method
+// Produce mocks base method.
 func (m *MockProducer) Produce(msg *kafka.Message, deliveryChan chan kafka.Event) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Produce", msg, deliveryChan)
@@ -142,13 +142,13 @@ func (m *MockProducer) Produce(msg *kafka.Message, deliveryChan chan kafka.Event
 	return ret0
 }
 
-// Produce indicates an expected call of Produce
+// Produce indicates an expected call of Produce.
 func (mr *MockProducerMockRecorder) Produce(msg, deliveryChan interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Produce", reflect.TypeOf((*MockProducer)(nil).Produce), msg, deliveryChan)
 }
 
-// ProduceChannel mocks base method
+// ProduceChannel mocks base method.
 func (m *MockProducer) ProduceChannel() chan *kafka.Message {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ProduceChannel")
@@ -156,13 +156,13 @@ func (m *MockProducer) ProduceChannel() chan *kafka.Message {
 	return ret0
 }
 
-// ProduceChannel indicates an expected call of ProduceChannel
+// ProduceChannel indicates an expected call of ProduceChannel.
 func (mr *MockProducerMockRecorder) ProduceChannel() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProduceChannel", reflect.TypeOf((*MockProducer)(nil).ProduceChannel))
 }
 
-// QueryWatermarkOffsets mocks base method
+// QueryWatermarkOffsets mocks base method.
 func (m *MockProducer) QueryWatermarkOffsets(topic string, partition int32, timeoutMs int) (int64, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "QueryWatermarkOffsets", topic, partition, timeoutMs)
@@ -172,13 +172,13 @@ func (m *MockProducer) QueryWatermarkOffsets(topic string, partition int32, time
 	return ret0, ret1, ret2
 }
 
-// QueryWatermarkOffsets indicates an expected call of QueryWatermarkOffsets
+// QueryWatermarkOffsets indicates an expected call of QueryWatermarkOffsets.
 func (mr *MockProducerMockRecorder) QueryWatermarkOffsets(topic, partition, timeoutMs interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryWatermarkOffsets", reflect.TypeOf((*MockProducer)(nil).QueryWatermarkOffsets), topic, partition, timeoutMs)
 }
 
-// SetOAuthBearerToken mocks base method
+// SetOAuthBearerToken mocks base method.
 func (m *MockProducer) SetOAuthBearerToken(oauthBearerToken kafka.OAuthBearerToken) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetOAuthBearerToken", oauthBearerToken)
@@ -186,13 +186,13 @@ func (m *MockProducer) SetOAuthBearerToken(oauthBearerToken kafka.OAuthBearerTok
 	return ret0
 }
 
-// SetOAuthBearerToken indicates an expected call of SetOAuthBearerToken
+// SetOAuthBearerToken indicates an expected call of SetOAuthBearerToken.
 func (mr *MockProducerMockRecorder) SetOAuthBearerToken(oauthBearerToken interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOAuthBearerToken", reflect.TypeOf((*MockProducer)(nil).SetOAuthBearerToken), oauthBearerToken)
 }
 
-// SetOAuthBearerTokenFailure mocks base method
+// SetOAuthBearerTokenFailure mocks base method.
 func (m *MockProducer) SetOAuthBearerTokenFailure(errstr string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetOAuthBearerTokenFailure", errstr)
@@ -200,13 +200,13 @@ func (m *MockProducer) SetOAuthBearerTokenFailure(errstr string) error {
 	return ret0
 }
 
-// SetOAuthBearerTokenFailure indicates an expected call of SetOAuthBearerTokenFailure
+// SetOAuthBearerTokenFailure indicates an expected call of SetOAuthBearerTokenFailure.
 func (mr *MockProducerMockRecorder) SetOAuthBearerTokenFailure(errstr interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOAuthBearerTokenFailure", reflect.TypeOf((*MockProducer)(nil).SetOAuthBearerTokenFailure), errstr)
 }
 
-// String mocks base method
+// String mocks base method.
 func (m *MockProducer) String() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "String")
@@ -214,13 +214,13 @@ func (m *MockProducer) String() string {
 	return ret0
 }
 
-// String indicates an expected call of String
+// String indicates an expected call of String.
 func (mr *MockProducerMockRecorder) String() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "String", reflect.TypeOf((*MockProducer)(nil).String))
 }
 
-// TestFatalError mocks base method
+// TestFatalError mocks base method.
 func (m *MockProducer) TestFatalError(code kafka.ErrorCode, str string) kafka.ErrorCode {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "TestFatalError", code, str)
@@ -228,36 +228,36 @@ func (m *MockProducer) TestFatalError(code kafka.ErrorCode, str string) kafka.Er
 	return ret0
 }
 
-// TestFatalError indicates an expected call of TestFatalError
+// TestFatalError indicates an expected call of TestFatalError.
 func (mr *MockProducerMockRecorder) TestFatalError(code, str interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TestFatalError", reflect.TypeOf((*MockProducer)(nil).TestFatalError), code, str)
 }
 
-// MockProducerServiceInterface is a mock of ProducerServiceInterface interface
+// MockProducerServiceInterface is a mock of ProducerServiceInterface interface.
 type MockProducerServiceInterface struct {
 	ctrl     *gomock.Controller
 	recorder *MockProducerServiceInterfaceMockRecorder
 }
 
-// MockProducerServiceInterfaceMockRecorder is the mock recorder for MockProducerServiceInterface
+// MockProducerServiceInterfaceMockRecorder is the mock recorder for MockProducerServiceInterface.
 type MockProducerServiceInterfaceMockRecorder struct {
 	mock *MockProducerServiceInterface
 }
 
-// NewMockProducerServiceInterface creates a new mock instance
+// NewMockProducerServiceInterface creates a new mock instance.
 func NewMockProducerServiceInterface(ctrl *gomock.Controller) *MockProducerServiceInterface {
 	mock := &MockProducerServiceInterface{ctrl: ctrl}
 	mock.recorder = &MockProducerServiceInterfaceMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockProducerServiceInterface) EXPECT() *MockProducerServiceInterfaceMockRecorder {
 	return m.recorder
 }
 
-// GetProducerInstance mocks base method
+// GetProducerInstance mocks base method.
 func (m *MockProducerServiceInterface) GetProducerInstance() kafkacommon.Producer {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetProducerInstance")
@@ -265,13 +265,13 @@ func (m *MockProducerServiceInterface) GetProducerInstance() kafkacommon.Produce
 	return ret0
 }
 
-// GetProducerInstance indicates an expected call of GetProducerInstance
+// GetProducerInstance indicates an expected call of GetProducerInstance.
 func (mr *MockProducerServiceInterfaceMockRecorder) GetProducerInstance() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProducerInstance", reflect.TypeOf((*MockProducerServiceInterface)(nil).GetProducerInstance))
 }
 
-// ProduceEvent mocks base method
+// ProduceEvent mocks base method.
 func (m *MockProducerServiceInterface) ProduceEvent(requestedTopic, recordKey string, event models.CRCCloudEvent) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ProduceEvent", requestedTopic, recordKey, event)
@@ -279,7 +279,7 @@ func (m *MockProducerServiceInterface) ProduceEvent(requestedTopic, recordKey st
 	return ret0
 }
 
-// ProduceEvent indicates an expected call of ProduceEvent
+// ProduceEvent indicates an expected call of ProduceEvent.
 func (mr *MockProducerServiceInterfaceMockRecorder) ProduceEvent(requestedTopic, recordKey, event interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProduceEvent", reflect.TypeOf((*MockProducerServiceInterface)(nil).ProduceEvent), requestedTopic, recordKey, event)

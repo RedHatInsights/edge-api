@@ -16,9 +16,11 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/errors"
+	"github.com/redhatinsights/edge-api/pkg/jobs"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 	"github.com/redhatinsights/platform-go-middlewares/v2/identity"
 	"github.com/redhatinsights/platform-go-middlewares/v2/request_id"
 	log "github.com/sirupsen/logrus"
@@ -561,6 +563,23 @@ func GetImageByOstree(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type ProcessInstallerJob struct {
+	Image models.Image
+}
+
+func ProcessInstallerJobHandler(ctx context.Context, job *jobs.Job) {
+	s := services.NewImageService(ctx, log.StandardLogger().WithContext(ctx)).(*services.ImageService)
+	args := job.Args.(*ProcessInstallerJob)
+	err := s.ProcessInstaller(ctx, &args.Image)
+	if err != nil {
+		log.WithContext(ctx).Errorf("Process installer returned error: %s", err)
+	}
+}
+
+func init() {
+	jobs.RegisterHandlers("ProcessInstallerJob", ProcessInstallerJobHandler, jobs.IgnoredJobHandler)
+}
+
 // CreateInstallerForImage creates an installer for an Image
 // It requires a created image and a repo with a successful status
 // @Summary      Placeholder summary
@@ -586,7 +605,7 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	image, _, err := ctxServices.ImageService.CreateInstallerForImage(r.Context(), image)
+	image, err := ctxServices.ImageService.CreateInstallerForImage(r.Context(), image)
 	if err != nil {
 		ctxServices.Log.WithField("error", err).Error("Failed to create installer")
 		err := errors.NewInternalServerError()
@@ -594,31 +613,66 @@ func CreateInstallerForImage(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, ctxServices.Log, err)
 		return
 	}
+
+	if feature.JobQueue.IsEnabledCtx(r.Context()) {
+		err := jobs.NewAndEnqueueSlow(r.Context(), "ProcessInstallerJob", &ProcessInstallerJob{Image: *image})
+		if err != nil {
+			log.WithContext(r.Context()).WithField("error", err.Error()).Error("Failed enqueueing job")
+		}
+	} else {
+		go ctxServices.ImageService.ProcessInstaller(r.Context(), image)
+	}
+
 	w.WriteHeader(http.StatusOK)
 	respondWithJSONBody(w, ctxServices.Log, image)
 }
 
+type CreateRepoForImageJob struct {
+	ImageID uint
+}
+
+func CreateRepoForImageJobHandler(ctx context.Context, job *jobs.Job) {
+	createRepoForImage(ctx, job.Args.(*CreateRepoForImageJob).ImageID)
+}
+
+func init() {
+	jobs.RegisterHandlers("CreateRepoForImageJob", CreateRepoForImageJobHandler, jobs.IgnoredJobHandler)
+}
+
+func createRepoForImage(ctx context.Context, id uint) {
+	ctxServices := dependencies.ServicesFromContext(ctx)
+	var img *models.Image
+	if result := db.DBx(ctx).Joins("Commit").Joins("Installer").First(&img, id); result.Error != nil {
+		ctxServices.Log.WithField("error", result.Error.Error()).Debug("error while trying to get image")
+		return
+	}
+	if result := db.DBx(ctx).First(&img.Commit, img.CommitID); result.Error != nil {
+		ctxServices.Log.WithField("error", result.Error.Error()).Debug("error while trying to get image commit")
+		return
+	}
+	if _, err := ctxServices.ImageService.CreateRepoForImage(ctx, img); err != nil {
+		ctxServices.Log.WithField("error", err).Error("Failed to create repo")
+	}
+}
+
 // CreateRepoForImage creates a repo for an Image
 func CreateRepoForImage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := log.WithContext(ctx)
 	image := getImage(w, r)
 
-	go func(id uint, ctx context.Context) {
-		ctxServices := dependencies.ServicesFromContext(ctx)
-		var img *models.Image
-		if result := db.DBx(r.Context()).Joins("Commit").Joins("Installer").First(&img, id); result.Error != nil {
-			ctxServices.Log.WithField("error", result.Error.Error()).Debug("error while trying to get image")
-			return
+	if feature.JobQueue.IsEnabledCtx(ctx) {
+		err := jobs.NewAndEnqueueSlow(ctx, "CreateRepoForImageJob", &CreateRepoForImageJob{ImageID: image.ID})
+		if err != nil {
+			logger.WithField("error", err.Error()).Error("Failed enqueueing job")
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			w.WriteHeader(http.StatusOK)
 		}
-		if result := db.DBx(r.Context()).First(&img.Commit, img.CommitID); result.Error != nil {
-			ctxServices.Log.WithField("error", result.Error.Error()).Debug("error while trying to get image commit")
-			return
-		}
-		if _, err := ctxServices.ImageService.CreateRepoForImage(ctx, img); err != nil {
-			ctxServices.Log.WithField("error", err).Error("Failed to create repo")
-		}
-	}(image.ID, r.Context())
-
-	w.WriteHeader(http.StatusOK)
+	} else {
+		go createRepoForImage(ctx, image.ID)
+		w.WriteHeader(http.StatusOK)
+	}
 }
 
 // GetRepoForImage gets the repository for an Image

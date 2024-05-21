@@ -111,13 +111,12 @@ func (mr *MockImageServiceInterfaceMockRecorder) CreateImage(image interface{}) 
 }
 
 // CreateInstallerForImage mocks base method.
-func (m *MockImageServiceInterface) CreateInstallerForImage(arg0 context.Context, arg1 *models.Image) (*models.Image, chan error, error) {
+func (m *MockImageServiceInterface) CreateInstallerForImage(arg0 context.Context, arg1 *models.Image) (*models.Image, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateInstallerForImage", arg0, arg1)
 	ret0, _ := ret[0].(*models.Image)
-	ret1, _ := ret[1].(chan error)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // CreateInstallerForImage indicates an expected call of CreateInstallerForImage.
@@ -302,6 +301,20 @@ func (m *MockImageServiceInterface) ProcessImage(ctx context.Context, img *model
 func (mr *MockImageServiceInterfaceMockRecorder) ProcessImage(ctx, img, handleInterruptSignal interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessImage", reflect.TypeOf((*MockImageServiceInterface)(nil).ProcessImage), ctx, img, handleInterruptSignal)
+}
+
+// ProcessInstaller mocks base method.
+func (m *MockImageServiceInterface) ProcessInstaller(ctx context.Context, image *models.Image) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ProcessInstaller", ctx, image)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ProcessInstaller indicates an expected call of ProcessInstaller.
+func (mr *MockImageServiceInterfaceMockRecorder) ProcessInstaller(ctx, image interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProcessInstaller", reflect.TypeOf((*MockImageServiceInterface)(nil).ProcessInstaller), ctx, image)
 }
 
 // ResumeCreateImage mocks base method.

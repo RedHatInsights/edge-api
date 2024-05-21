@@ -11,15 +11,15 @@ import (
 	"time"
 
 	version "github.com/knqyf263/go-rpm-version"
+	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/clients/inventory"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/jobs"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	feature "github.com/redhatinsights/edge-api/unleash/features"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-
-	"github.com/redhatinsights/edge-api/config"
 )
 
 const (
@@ -824,7 +824,14 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 		s.log.WithFields(log.Fields{"edge_count": total, "insights_count": inventoryDevices.Total}).Debug("Comparing edge and insights inventory counts")
 		if int64(inventoryDevices.Total) != total {
 			s.log.WithFields(log.Fields{"edge_count": total, "insights_count": inventoryDevices.Total}).Debug("Inventory counts do not match. Calling syncDevicesWithInventory")
-			go s.SyncDevicesWithInventory(orgID)
+			if feature.JobQueue.IsEnabledCtx(s.ctx) {
+				err := jobs.NewAndEnqueue(s.ctx, "SyncDevicesWithInventoryJob", &SyncDevicesWithInventoryJob{OrgID: orgID})
+				if err != nil {
+					log.WithContext(s.ctx).WithField("error", err.Error()).Error("Failed enqueueing job")
+				}
+			} else {
+				go s.SyncDevicesWithInventory(orgID)
+			}
 		}
 	}
 
@@ -1106,6 +1113,20 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 		"host_id": string(eventData.ID),
 	}).Debug("Deleting edge device")
 	return nil
+}
+
+type SyncDevicesWithInventoryJob struct {
+	OrgID string
+}
+
+func SyncDevicesWithInventoryJobHandler(ctx context.Context, job *jobs.Job) {
+	s := NewDeviceService(ctx, log.StandardLogger().WithContext(ctx)).(*DeviceService)
+	args := job.Args.(*SyncDevicesWithInventoryJob)
+	s.SyncDevicesWithInventory(args.OrgID)
+}
+
+func init() {
+	jobs.RegisterHandlers("SyncDevicesWithInventoryJob", SyncDevicesWithInventoryJobHandler, jobs.IgnoredJobHandler)
 }
 
 func (s *DeviceService) SyncDevicesWithInventory(orgID string) {

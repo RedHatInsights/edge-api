@@ -49,7 +49,8 @@ type ImageServiceInterface interface {
 	UpdateImageStatus(image *models.Image) (*models.Image, error)
 	SetErrorStatusOnImage(err error, i *models.Image)
 	CreateRepoForImage(context.Context, *models.Image) (*models.Repo, error)
-	CreateInstallerForImage(context.Context, *models.Image) (*models.Image, chan error, error)
+	CreateInstallerForImage(context.Context, *models.Image) (*models.Image, error)
+	ProcessInstaller(ctx context.Context, image *models.Image) error
 	SetImageContentSourcesRepositories(image *models.Image) error
 	GetImageByID(id string) (*models.Image, error)
 	GetImageByIDExtended(imageID uint, gormDB *gorm.DB) (*models.Image, error)
@@ -386,10 +387,35 @@ func (s *ImageService) CreateImage(image *models.Image) error {
 	return nil
 }
 
+type ProcessImageJob struct {
+	ImageID uint
+}
+
+func ProcessImageJobHandler(ctx context.Context, job *jobs.Job) {
+	s := NewImageService(ctx, log.StandardLogger().WithContext(ctx)).(*ImageService)
+	args := job.Args.(*ProcessImageJob)
+	s.processImage(ctx, args.ImageID, DefaultLoopDelay, false)
+}
+
+func ProcessImageFailHandler(ctx context.Context, job *jobs.Job) {
+	args := job.Args.(*ProcessImageJob)
+	db.DBx(ctx).Model(&models.Image{}).Where("ID = ?", args.ImageID).Update("Status", models.ImageStatusInterrupted)
+}
+
+func init() {
+	jobs.RegisterHandlers("ProcessImageJob", ProcessImageJobHandler, ProcessImageFailHandler)
+}
+
 // ProcessImage creates an Image for an OrgID on Image Builder and on our database
 func (s *ImageService) ProcessImage(ctx context.Context, img *models.Image, handleInterruptSignal bool) error {
-
-	go s.processImage(ctx, img.ID, DefaultLoopDelay, handleInterruptSignal)
+	if feature.JobQueue.IsEnabledCtx(s.ctx) {
+		err := jobs.NewAndEnqueueSlow(s.ctx, "ProcessImageJob", &ProcessImageJob{ImageID: img.ID})
+		if err != nil {
+			log.WithContext(s.ctx).WithField("error", err.Error()).Error("Failed enqueueing job")
+		}
+	} else {
+		go s.processImage(ctx, img.ID, DefaultLoopDelay, handleInterruptSignal)
+	}
 
 	return nil
 }
@@ -814,21 +840,18 @@ func (s *ImageService) processImage(ctx context.Context, id uint, loopDelay time
 		// Request an installer ISO from Image Builder for the image
 		if image.HasOutputType(models.ImageTypeInstaller) {
 			log.WithContext(ctx).WithField("imageID", image.ID).Debug("Creating an installer for this image")
-			image, c, err := s.CreateInstallerForImage(ctx, image)
-			/* CreateInstallerForImage is also called directly from an endpoint.
-			If called from the endpoint it will not block
-				the caller returns the channel output to _
-			Here, we catch the channel with c and use it in the next if--so it blocks.
-			*/
-			if c != nil {
-				err = <-c
-			}
-			if image.Status == models.ImageStatusInterrupted {
-				return err
-			}
+			image, err := s.CreateInstallerForImage(ctx, image)
 			if err != nil {
 				s.SetErrorStatusOnImage(err, image)
 				log.WithContext(ctx).WithField("error", err.Error()).Error("Failed creating installer for image")
+			}
+			err = s.ProcessInstaller(ctx, image)
+			if err != nil {
+				s.SetErrorStatusOnImage(err, image)
+				log.WithContext(ctx).WithField("error", err.Error()).Error("Failed creating installer for image")
+			}
+			if image.Status == models.ImageStatusInterrupted {
+				return err
 			}
 		}
 	}
@@ -1343,7 +1366,7 @@ func (s *ImageService) RetryCreateImage(ctx context.Context, image *models.Image
 		return nil
 	}
 	if feature.JobQueue.IsEnabledCtx(ctx) {
-		err := jobs.NewAndEnqueue(ctx, "RetryCreateImageJob", &RetryCreateImageJob{ImageID: image.ID})
+		err := jobs.NewAndEnqueueSlow(ctx, "RetryCreateImageJob", &RetryCreateImageJob{ImageID: image.ID})
 		if err != nil {
 			logger.WithField("error", err.Error()).Error("Failed enqueueing job")
 		}
@@ -1390,6 +1413,25 @@ func (s *ImageService) setInstallerStatus(image *models.Image, status string) er
 	return nil
 }
 
+type ResumeCreateImageJob struct {
+	Image models.Image
+}
+
+func ResumeCreateImageJobHandler(ctx context.Context, job *jobs.Job) {
+	s := NewImageService(ctx, log.StandardLogger().WithContext(ctx)).(*ImageService)
+	args := job.Args.(*ResumeCreateImageJob)
+	s.resumeProcessImage(ctx, &args.Image, false)
+}
+
+func ResumeCreateImageFailHandler(ctx context.Context, job *jobs.Job) {
+	args := job.Args.(*ProcessImageJob)
+	db.DBx(ctx).Model(&models.Image{}).Where("ID = ?", args.ImageID).Update("Status", models.ImageStatusInterrupted)
+}
+
+func init() {
+	jobs.RegisterHandlers("ResumeCreateImageJob", ResumeCreateImageJobHandler, ResumeCreateImageFailHandler)
+}
+
 // ResumeCreateImage retries the whole post process of the image creation
 func (s *ImageService) ResumeCreateImage(ctx context.Context, image *models.Image) error {
 	// add additional information to all log entries in this pipeline
@@ -1402,13 +1444,19 @@ func (s *ImageService) ResumeCreateImage(ctx context.Context, image *models.Imag
 		return err
 	}
 
-	// go routine so we can return to the API caller ASAP
-	go s.resumeProcessImage(ctx, image)
+	if feature.JobQueue.IsEnabledCtx(s.ctx) {
+		err := jobs.NewAndEnqueue(s.ctx, "ResumeCreateImageJob", &ResumeCreateImageJob{Image: *image})
+		if err != nil {
+			log.WithContext(s.ctx).WithField("error", err.Error()).Error("Failed enqueueing job")
+		}
+	} else {
+		go s.resumeProcessImage(ctx, image, true)
+	}
 
 	return nil
 }
 
-func (s *ImageService) resumeProcessImage(ctx context.Context, image *models.Image) {
+func (s *ImageService) resumeProcessImage(ctx context.Context, image *models.Image, handleInterrupt bool) {
 	// NOTE: Every log message in this method already has commit id and image id injected
 	s.log.Debug("Processing image build from where it was interrupted")
 
@@ -1425,30 +1473,33 @@ func (s *ImageService) resumeProcessImage(ctx context.Context, image *models.Ima
 		signal.Stop(sigint)
 		intcancel()
 	}()
+
 	// This runs alongside and blocks on either a signal or normal completion from defer above
 	// 	if an interrupt, set image to INTERRUPTED in database
-	go func() {
-		s.log.WithField("imageID", id).Debug("Running the select go routine to handle completion and interrupts")
+	if handleInterrupt {
+		go func() {
+			s.log.WithField("imageID", id).Debug("Running the select go routine to handle completion and interrupts")
 
-		select {
-		case <-sigint:
-			// we caught an interrupt. Mark the image as interrupted.
-			s.log.WithField("imageID", id).Debug("Select case SIGINT interrupt has been triggered")
+			select {
+			case <-sigint:
+				// we caught an interrupt. Mark the image as interrupted.
+				s.log.WithField("imageID", id).Debug("Select case SIGINT interrupt has been triggered")
 
-			tx := db.DB.Model(&models.Image{}).Where("ID = ?", id).Update("Status", models.ImageStatusInterrupted)
-			s.log.WithField("imageID", id).Debug("Image updated with interrupted status")
-			if tx.Error != nil {
-				s.log.WithField("error", tx.Error.Error()).Error("Error updating image")
+				tx := db.DB.Model(&models.Image{}).Where("ID = ?", id).Update("Status", models.ImageStatusInterrupted)
+				s.log.WithField("imageID", id).Debug("Image updated with interrupted status")
+				if tx.Error != nil {
+					s.log.WithField("error", tx.Error.Error()).Error("Error updating image")
+				}
+
+				// cancel the context
+				intcancel()
+				return
+			case <-intctx.Done():
+				// Things finished normally and reached the defer defined above.
+				s.log.WithField("imageID", id).Info("Select case context intctx done has been triggered")
 			}
-
-			// cancel the context
-			intcancel()
-			return
-		case <-intctx.Done():
-			// Things finished normally and reached the defer defined above.
-			s.log.WithField("imageID", id).Info("Select case context intctx done has been triggered")
-		}
-	}()
+		}()
+	}
 
 	/* business as usual from here to end of block */
 
@@ -1507,15 +1558,15 @@ func (s *ImageService) resumeProcessImage(ctx context.Context, image *models.Ima
 		// skip if already set to success
 		if image.HasOutputType(models.ImageTypeInstaller) && image.Installer.Status != models.ImageStatusSuccess {
 			s.log.WithField("imageID", image.ID).Debug("Creating an installer for this image")
-			image2, c, err := s.CreateInstallerForImage(ctx, image)
-			/* CreateInstallerForImage is also called directly from an endpoint.
-			If called from the endpoint it will not block
-				the caller returns the channel output to _
-			Here, we catch the channel with c and use it in the next if--so it blocks.
-			*/
-			if c != nil {
-				err = <-c
+			image2, err := s.CreateInstallerForImage(ctx, image)
+			if err != nil {
+				if image.Status == models.ImageStatusInterrupted {
+					return
+				}
+				s.SetErrorStatusOnImage(err, image2)
+				s.log.WithField("error", err.Error()).Error("Failed creating installer for image")
 			}
+			err = s.ProcessInstaller(ctx, image2)
 			if err != nil {
 				if image.Status == models.ImageStatusInterrupted {
 					return
@@ -1662,31 +1713,31 @@ func (s *ImageService) GetMetadata(image *models.Image) (*models.Image, error) {
 }
 
 // CreateInstallerForImage creates a installer given an existing image
-func (s *ImageService) CreateInstallerForImage(ctx context.Context, image *models.Image) (*models.Image, chan error, error) {
+func (s *ImageService) CreateInstallerForImage(ctx context.Context, image *models.Image) (*models.Image, error) {
 	log.WithContext(ctx).Debug("Creating installer for image")
-	c := make(chan error)
 
 	image.ImageType = models.ImageTypeInstaller
 	image.Installer.Status = models.ImageStatusBuilding
 	tx := db.DB.Save(&image)
 	if tx.Error != nil {
 		log.WithContext(ctx).WithField("error", tx.Error.Error()).Error("Error saving image")
-		return nil, c, tx.Error
+		return nil, tx.Error
 	}
 	tx = db.DB.Save(&image.Installer)
 	if tx.Error != nil {
 		log.WithContext(ctx).WithField("error", tx.Error.Error()).Error("Error saving installer")
-		return nil, c, tx.Error
+		return nil, tx.Error
 	}
 	image, err := s.ImageBuilder.ComposeInstaller(image)
 	if err != nil {
-		return nil, c, err
+		return nil, err
 	}
-	go func(c chan error, loopDelay time.Duration) {
-		err := s.processInstaller(ctx, image, loopDelay)
-		c <- err
-	}(c, DefaultLoopDelay)
-	return image, c, nil
+
+	return image, nil
+}
+
+func (s *ImageService) ProcessInstaller(ctx context.Context, image *models.Image) error {
+	return s.processInstaller(ctx, image, DefaultLoopDelay)
 }
 
 // GetRollbackImage returns the previous image from the image set in case of a rollback

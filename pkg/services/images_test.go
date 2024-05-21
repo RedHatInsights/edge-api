@@ -2735,18 +2735,11 @@ var _ = Describe("Image Service Test", func() {
 					return builderImage, expectedError
 				})
 
-			installerImage, errorChan, err := service.CreateInstallerForImage(context.Background(), image)
+			installerImage, err := service.CreateInstallerForImage(context.Background(), image)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(errorChan).ToNot(BeNil())
 			Expect(installerImage).To(Equal(image))
 
-			var installerStatusErr error
-			select {
-			case err := <-errorChan:
-				installerStatusErr = err
-			case <-time.After(30 * time.Second):
-				installerStatusErr = errors.New("installer channel reading timeout")
-			}
+			installerStatusErr := service.ProcessInstaller(context.Background(), image)
 			Expect(installerStatusErr).To(HaveOccurred())
 			Expect(installerStatusErr).To(Equal(expectedError))
 			Expect(image.Status).To(Equal(models.ImageStatusError))
@@ -2757,7 +2750,7 @@ var _ = Describe("Image Service Test", func() {
 			expectedError := errors.New("expected ComposeInstaller error")
 			mockImageBuilderClient.EXPECT().ComposeInstaller(image).Return(nil, expectedError)
 
-			_, _, err := service.CreateInstallerForImage(context.Background(), image)
+			_, err := service.CreateInstallerForImage(context.Background(), image)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(expectedError))
 		})
@@ -2774,19 +2767,11 @@ var _ = Describe("Image Service Test", func() {
 				return builderImage, nil
 			}).Times(1)
 
-			installerImage, errorChan, err := service.CreateInstallerForImage(context.Background(), image)
+			installerImage, err := service.CreateInstallerForImage(context.Background(), image)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(errorChan).ToNot(BeNil())
 			Expect(installerImage).To(Equal(image))
 
-			var installerStatusErr error
-			select {
-			case err := <-errorChan:
-				installerStatusErr = err
-			case <-time.After(30 * time.Second):
-				installerStatusErr = errors.New("installer channel reading timeout")
-			}
-
+			installerStatusErr := service.ProcessInstaller(context.Background(), image)
 			Expect(installerStatusErr).To(HaveOccurred())
 			Expect(installerStatusErr).To(MatchError(new(services.ImageNotFoundError)))
 
@@ -2872,19 +2857,11 @@ func TestCreateInstallerForImageSuccessfully(t *testing.T) {
 
 	mockUploader.EXPECT().UploadFile(gomock.Any(), gomock.Any()).Return(expectedUploadUrl, nil)
 
-	installerImage, errorChan, err := service.CreateInstallerForImage(context.Background(), image)
+	installerImage, err := service.CreateInstallerForImage(context.Background(), image)
 	g.Expect(err).ToNot(HaveOccurred())
-	g.Expect(errorChan).ToNot(BeNil())
 	g.Expect(installerImage).To(Equal(image))
 
-	var installerStatusErr error
-	select {
-	case err := <-errorChan:
-		installerStatusErr = err
-	case <-time.After(30 * time.Second):
-		installerStatusErr = errors.New("installer channel reading timeout")
-	}
-
+	installerStatusErr := service.ProcessInstaller(context.Background(), image)
 	g.Expect(testMockExecHelper.Executed).To(BeTrue())
 	g.Expect(testMockExecHelper.ExistStatus).To(Equal(0))
 	g.Expect(testMockExecHelper.Command).To(Equal(expectedCommand))
@@ -2971,19 +2948,11 @@ func TestCreateInstallerForImageSuccessfullyWithSkipInjectKickstart(t *testing.T
 
 	mockUploader.EXPECT().UploadFile(gomock.Any(), gomock.Any()).Return(expectedUploadUrl, nil)
 
-	installerImage, errorChan, err := service.CreateInstallerForImage(context.Background(), image)
+	installerImage, err := service.CreateInstallerForImage(context.Background(), image)
 	g.Expect(err).ToNot(HaveOccurred())
-	g.Expect(errorChan).ToNot(BeNil())
 	g.Expect(installerImage).To(Equal(image))
 
-	var installerStatusErr error
-	select {
-	case err := <-errorChan:
-		installerStatusErr = err
-	case <-time.After(30 * time.Second):
-		installerStatusErr = errors.New("installer channel reading timeout")
-	}
-
+	installerStatusErr := service.ProcessInstaller(context.Background(), image)
 	g.Expect(testMockExecHelper.Executed).To(BeFalse())
 	g.Expect(logBuffer.String()).To(ContainSubstring("kickstart injection into ISO was skipped"))
 
