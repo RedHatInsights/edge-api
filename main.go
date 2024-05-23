@@ -15,7 +15,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime/debug"
-	"strings"
 	"syscall"
 	"time"
 
@@ -126,10 +125,10 @@ func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 		http.ServeFile(w, r, cfg.OpenAPIFilePath)
 	})
 
-	// Non-production routes
-	if strings.Contains(config.Get().EdgeAPIBaseURL, "stage") {
-		route.Mount("/api/edge/debug", middleware.Profiler())
-	}
+	// Uncomment to enable profiling
+	//if strings.Contains(config.Get().EdgeAPIBaseURL, "stage") {
+	//route.Mount("/api/edge/debug", middleware.Profiler())
+	//}
 
 	// Authenticated routes
 	authRoute := route.Group(nil)
