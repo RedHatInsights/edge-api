@@ -190,6 +190,8 @@ func (u *S3Uploader) UploadFileWithACL(fname string, uploadPath string, acl stri
 	if err != nil {
 		return "", fmt.Errorf("failed to open file %q, %v", fname, err)
 	}
+	defer f.Close()
+
 	if acl == "" {
 		acl = "private"
 	}
@@ -201,10 +203,7 @@ func (u *S3Uploader) UploadFileWithACL(fname string, uploadPath string, acl stri
 		u.log.WithField("error", err.Error()).Error("Error uploading to AWS S3")
 		return "", err
 	}
-	if err := f.Close(); err != nil {
-		u.log.WithField("error", err.Error()).Error("Error closing file")
-		return "", err
-	}
+
 	region := config.Get().BucketRegion
 	s3URL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", u.Bucket, region, uploadPath)
 	return s3URL, nil

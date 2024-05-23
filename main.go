@@ -125,11 +125,6 @@ func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 		http.ServeFile(w, r, cfg.OpenAPIFilePath)
 	})
 
-	// Uncomment to enable profiling
-	//if strings.Contains(config.Get().EdgeAPIBaseURL, "stage") {
-	//route.Mount("/api/edge/debug", middleware.Profiler())
-	//}
-
 	// Authenticated routes
 	authRoute := route.Group(nil)
 	if cfg.Auth {
