@@ -363,8 +363,8 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 }
 
 func getPackageDiff(a, b []models.InstalledPackage) []models.InstalledPackage {
-	diff := make([]models.InstalledPackage, 0)
-	pkgs := make(map[string]models.InstalledPackage)
+	var diff []models.InstalledPackage
+	pkgs := make(map[string]models.InstalledPackage, len(b))
 	for _, pkg := range b {
 		pkgs[pkg.Name] = pkg
 	}
@@ -378,7 +378,7 @@ func getPackageDiff(a, b []models.InstalledPackage) []models.InstalledPackage {
 
 func getVersionDiff(new, old []models.InstalledPackage) []models.InstalledPackage {
 	var diff []models.InstalledPackage
-	oldPkgs := make(map[string]models.InstalledPackage)
+	oldPkgs := make(map[string]models.InstalledPackage, len(old))
 	for _, pkg := range old {
 		oldPkgs[pkg.Name] = pkg
 	}
