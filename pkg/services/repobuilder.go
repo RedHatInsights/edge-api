@@ -58,7 +58,7 @@ func NewRepoBuilder(ctx context.Context, log log.FieldLogger) RepoBuilderInterfa
 // with static deltas generated between them all
 func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, error) {
 	var update *models.UpdateTransaction
-	if err := db.DBx(rb.ctx).Preload("DispatchRecords").
+	if err := db.DB.Preload("DispatchRecords").
 		Preload("Devices").
 		Joins("Commit").
 		Joins("Repo").
@@ -308,10 +308,10 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 
 	rb.log.WithField("repo", update.Repo.URL).Info("Update repo URL")
 	update.Repo.Status = models.RepoStatusSuccess
-	if err := db.DBx(rb.ctx).Omit("Devices.*").Save(&update).Error; err != nil {
+	if err := db.DB.Omit("Devices.*").Save(&update).Error; err != nil {
 		return nil, err
 	}
-	if err := db.DBx(rb.ctx).Omit("Devices.*").Save(&update.Repo).Error; err != nil {
+	if err := db.DB.Omit("Devices.*").Save(&update.Repo).Error; err != nil {
 		return nil, err
 	}
 
@@ -322,7 +322,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 
 	var cmt models.Commit
-	cmtDB := db.DBx(rb.ctx).Where("repo_id = ?", r.ID).First(&cmt)
+	cmtDB := db.DB.Where("repo_id = ?", r.ID).First(&cmt)
 	if cmtDB.Error != nil {
 		return nil, cmtDB.Error
 	}
@@ -343,7 +343,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error downloading repo...")
 		r.Status = models.RepoStatusError
-		result := db.DBx(rb.ctx).Save(&r)
+		result := db.DB.Save(&r)
 		if result.Error != nil {
 			rb.log.WithField("error", result.Error.Error()).Error("Error saving repo...")
 		}
@@ -353,7 +353,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 	if errUpload != nil {
 		rb.log.WithField("error", errUpload.Error()).Error("Error uploading repo...")
 		r.Status = models.RepoStatusError
-		result := db.DBx(rb.ctx).Save(&r)
+		result := db.DB.Save(&r)
 		if result.Error != nil {
 			rb.log.WithField("error", result.Error.Error()).Error("Error saving repo...")
 		}
@@ -363,7 +363,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error extracting repo")
 		r.Status = models.RepoStatusError
-		result := db.DBx(rb.ctx).Save(&r)
+		result := db.DB.Save(&r)
 		if result.Error != nil {
 			rb.log.WithField("error", result.Error.Error()).Error("Error saving repo")
 		}
@@ -378,7 +378,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 
 	r.URL = repoURL
 	r.Status = models.RepoStatusSuccess
-	result := db.DBx(rb.ctx).Save(&r)
+	result := db.DB.Save(&r)
 	if result.Error != nil {
 		rb.log.WithField("error", result.Error.Error()).Error("Error saving repo")
 		return nil, fmt.Errorf("error saving status :: %s", result.Error.Error())
@@ -468,7 +468,7 @@ func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string) e
 	}
 	c.ImageBuildTarURL = repoTarURL
 	c.ExternalURL = false
-	result := db.DBx(rb.ctx).Save(c)
+	result := db.DB.Save(c)
 	if result.Error != nil {
 		rb.log.WithField("error", result.Error.Error()).Error("Error saving tar file")
 		return result.Error
