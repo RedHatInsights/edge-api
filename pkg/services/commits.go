@@ -37,7 +37,7 @@ func (s *CommitService) GetCommitByID(commitID uint, orgID string) (*models.Comm
 	s.log = s.log.WithField("commitID", commitID)
 	s.log.Debug("Getting commit by id")
 	var commit models.Commit
-	result := db.Orgx(s.ctx, orgID, "").Joins("Repo").First(&commit, commitID)
+	result := db.Org(orgID, "").Joins("Repo").First(&commit, commitID)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error searching for commit by commitID")
 		return nil, result.Error
@@ -50,7 +50,7 @@ func (s *CommitService) GetCommitByID(commitID uint, orgID string) (*models.Comm
 func (s *CommitService) GetCommitByOSTreeCommit(ost string) (*models.Commit, error) {
 	s.log = s.log.WithField("ostreeCommitHash", ost)
 	var commit models.Commit
-	result := db.DBx(s.ctx).Where("os_tree_commit = ?", ost).First(&commit)
+	result := db.DB.Where("os_tree_commit = ?", ost).First(&commit)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error searching for commit by ostreeCommitHash")
 		return nil, result.Error
@@ -73,7 +73,7 @@ func (s *CommitService) ValidateDevicesImageSetWithCommit(devicesUUID []string, 
 		return err
 	}
 
-	if result := db.Orgx(s.ctx, orgID, "devices").Table("devices").
+	if result := db.Org(orgID, "devices").Table("devices").
 		Select(`images.image_set_id as "image_set_id", images.commit_Id , count(devices.uuid) as devices_count`).
 		Joins("JOIN images ON devices.image_id = images.id").
 		Joins("Join commits on commits.ID = images.commit_id").
@@ -98,7 +98,7 @@ func (s *CommitService) ValidateDevicesImageSetWithCommit(devicesUUID []string, 
 		}).Error()
 		return new(SomeDevicesDoesNotExists)
 	}
-	if result := db.Orgx(s.ctx, orgID, "").Where("commit_id = ?", commitID).First(&commitImage); result.Error != nil {
+	if result := db.Org(orgID, "").Where("commit_id = ?", commitID).First(&commitImage); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return new(CommitImageNotFound)
 		}

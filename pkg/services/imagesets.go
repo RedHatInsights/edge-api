@@ -76,12 +76,12 @@ func (s *ImageSetsService) GetImageSetsByID(imageSetID int) (*models.ImageSet, e
 		s.log.WithField("error", err).Error("Error retrieving org_id")
 		return nil, new(OrgIDNotSet)
 	}
-	result := db.Orgx(s.ctx, orgID, "image_sets").First(&imageSet, imageSetID)
+	result := db.Org(orgID, "image_sets").First(&imageSet, imageSetID)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error getting image set by id")
 		return nil, new(ImageSetNotFoundError)
 	}
-	result = db.Orgx(s.ctx, orgID, "").Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
+	result = db.Org(orgID, "").Where("image_set_id = ?", imageSetID).Find(&imageSet.Images)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error getting image set's images")
 		return nil, new(ImageNotFoundError)
@@ -97,14 +97,14 @@ func (s *ImageSetsService) GetImageSetsViewCount(tx *gorm.DB) (int64, error) {
 	}
 
 	if tx == nil {
-		tx = db.DBx(s.ctx)
+		tx = db.DB
 	}
 
 	var count int64
 
 	// create a sub query of the latest images and their corresponding image sets
-	latestImagesSubQuery := db.Orgx(s.ctx, orgID, "").Model(&models.Image{}).Select("image_set_id", "max(id) as image_id").Group("image_set_id")
-	if result := db.OrgDBx(s.ctx, orgID, tx, "image_sets").Table("(?) as latest_images", latestImagesSubQuery).
+	latestImagesSubQuery := db.Org(orgID, "").Model(&models.Image{}).Select("image_set_id", "max(id) as image_id").Group("image_set_id")
+	if result := db.OrgDB(orgID, tx, "image_sets").Table("(?) as latest_images", latestImagesSubQuery).
 		Joins("JOIN images on images.id = latest_images.image_id").
 		Joins("JOIN image_sets on image_sets.id = latest_images.image_set_id").
 		Where("image_sets.deleted_at IS NULL").
@@ -126,7 +126,7 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 	}
 
 	if tx == nil {
-		tx = db.DBx(s.ctx)
+		tx = db.DB
 	}
 
 	// ImageSetRow the structure for getting the main data table
@@ -144,8 +144,8 @@ func (s *ImageSetsService) GetImageSetsView(limit int, offset int, tx *gorm.DB) 
 	var imageSetsRows []ImageSetRow
 
 	// create a sub query of the latest images and their corresponding image sets
-	latestImagesSubQuery := db.Orgx(s.ctx, orgID, "").Model(&models.Image{}).Select("image_set_id", "max(id) as image_id").Group("image_set_id")
-	if result := db.OrgDBx(s.ctx, orgID, tx, "image_sets").Table("(?) as latest_images", latestImagesSubQuery).Limit(limit).Offset(offset).
+	latestImagesSubQuery := db.Org(orgID, "").Model(&models.Image{}).Select("image_set_id", "max(id) as image_id").Group("image_set_id")
+	if result := db.OrgDB(orgID, tx, "image_sets").Table("(?) as latest_images", latestImagesSubQuery).Limit(limit).Offset(offset).
 		Joins("JOIN images on images.id = latest_images.image_id").
 		Joins("JOIN image_sets on image_sets.id = latest_images.image_set_id").
 		Select("image_sets.id, image_sets.name, images.version,images.distribution, images.output_types, images.status, images.id as image_id, images.updated_at").
@@ -214,7 +214,7 @@ func (s *ImageSetsService) GetImageSetsBuildIsoURL(orgID string, imageSetIDS []u
 	}
 	var imageSetsInstallers []ImageSetInstaller
 
-	if result := db.Orgx(s.ctx, orgID, "images").Table("images").
+	if result := db.Org(orgID, "images").Table("images").
 		Select(`images.image_set_id, Max(installers.id) as "installer_id"`).
 		Joins("JOIN installers ON images.installer_id = installers.id").
 		Where("images.status = ? AND images.image_set_id in (?)", models.ImageStatusSuccess, imageSetIDS).
@@ -298,7 +298,7 @@ func (s *ImageSetsService) GetImageSetViewByID(imageSetID uint) (*ImageSetIDView
 	var imageSetIDView ImageSetIDView
 
 	// get the image-set
-	if result := db.Orgx(s.ctx, orgID, "").First(&imageSetIDView.ImageSet, imageSetID); result.Error != nil {
+	if result := db.Org(orgID, "").First(&imageSetIDView.ImageSet, imageSetID); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("image-set not found")
 			return nil, new(ImageSetNotFoundError)
@@ -309,7 +309,7 @@ func (s *ImageSetsService) GetImageSetViewByID(imageSetID uint) (*ImageSetIDView
 
 	var lastImage models.Image
 	// get the last image-set image
-	if result := db.Orgx(s.ctx, orgID, "").Order("created_at DESC").
+	if result := db.Org(orgID, "").Order("created_at DESC").
 		Where("image_set_id = ?", imageSetID).First(&lastImage); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("image-set last image not found")
@@ -359,7 +359,7 @@ func (s *ImageSetsService) GetImageSetImageViewByID(imageSetID uint, imageID uin
 	var imageSetImageIDView ImageSetImageIDView
 
 	// get the image-set
-	if result := db.Orgx(s.ctx, orgID, "").First(&imageSetImageIDView.ImageSet, imageSetID); result.Error != nil {
+	if result := db.Org(orgID, "").First(&imageSetImageIDView.ImageSet, imageSetID); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("image-set not found")
 			return nil, new(ImageSetNotFoundError)
@@ -369,7 +369,7 @@ func (s *ImageSetsService) GetImageSetImageViewByID(imageSetID uint, imageID uin
 
 	var image models.Image
 	// get the image-set image
-	if result := db.Orgx(s.ctx, orgID, "").Order("created_at DESC").
+	if result := db.Org(orgID, "").Order("created_at DESC").
 		Where("image_set_id = ?", imageSetID).First(&image, imageID); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			s.log.WithFields(log.Fields{"error": result.Error.Error(), "OrgID": orgID}).Error("image-set image not found")

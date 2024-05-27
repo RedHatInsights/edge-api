@@ -121,14 +121,14 @@ func (s *DeviceService) GetDeviceByID(deviceID uint) (*models.Device, error) {
 	s.log = s.log.WithField("deviceID", deviceID)
 	s.log.Info("Get device by id")
 	var device models.Device
-	result := db.DBx(s.ctx).First(&device, deviceID)
+	result := db.DB.First(&device, deviceID)
 	if result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error finding device")
 		return nil, new(DeviceNotFoundError)
 	}
 
 	// Load from device DB the groups info and add to the new struct
-	err := db.DBx(s.ctx).Model(&device).Association("DevicesGroups").Find(&device.DevicesGroups)
+	err := db.DB.Model(&device).Association("DevicesGroups").Find(&device.DevicesGroups)
 	if err != nil {
 		s.log.WithField("error", result.Error.Error()).Error("Error finding associated devicegroups for device")
 		return nil, new(DeviceGroupNotFound)
@@ -142,7 +142,7 @@ func (s *DeviceService) GetDeviceByUUID(deviceUUID string) (*models.Device, erro
 	ulog := s.log.WithField("deviceUUID", deviceUUID)
 	ulog.Info("Get device by uuid")
 	var device models.Device
-	if result := db.DBx(s.ctx).Where("uuid = ?", deviceUUID).Preload("DevicesGroups").First(&device); result.Error != nil {
+	if result := db.DB.Where("uuid = ?", deviceUUID).Preload("DevicesGroups").First(&device); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			ulog.WithField("error", result.Error.Error()).Error("device not found by UUID")
 			return nil, new(DeviceNotFoundError)
@@ -229,20 +229,20 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 	}
 
 	var currentImage models.Image
-	result := db.DBx(s.ctx).Model(&models.Image{}).Joins("Commit").Where("OS_Tree_Commit = ?", lastDeployment.Checksum).First(&currentImage)
+	result := db.DB.Model(&models.Image{}).Joins("Commit").Where("OS_Tree_Commit = ?", lastDeployment.Checksum).First(&currentImage)
 	if result.Error != nil || result.RowsAffected == 0 {
 		s.log.WithField("error", result.Error.Error()).Error("Could not find device")
 		return nil, 0, new(DeviceNotFoundError)
 	}
 
-	err := db.DBx(s.ctx).Model(&currentImage.Commit).Association("InstalledPackages").Find(&currentImage.Commit.InstalledPackages)
+	err := db.DB.Model(&currentImage.Commit).Association("InstalledPackages").Find(&currentImage.Commit.InstalledPackages)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Could not find device")
 		return nil, 0, new(DeviceNotFoundError)
 	}
 
 	var images []models.Image
-	query := db.DBx(s.ctx).Limit(deviceUpdateImagesFilters.Limit).Offset(deviceUpdateImagesFilters.Offset).Where("Image_set_id = ? and Images.Status = ? and Images.Id > ?",
+	query := db.DB.Limit(deviceUpdateImagesFilters.Limit).Offset(deviceUpdateImagesFilters.Offset).Where("Image_set_id = ? and Images.Status = ? and Images.Id > ?",
 		currentImage.ImageSetID, models.ImageStatusSuccess, currentImage.ID,
 	).Joins("Commit").Order("Images.version desc")
 	if deviceUpdateImagesFilters.Created != "" {
@@ -270,7 +270,7 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 		query = query.Where("upper(images.distribution) LIKE ?", "%"+release+"%")
 	}
 	if deviceUpdateImagesFilters.AdditionalPackages != nil {
-		subQuery := db.DBx(s.ctx).Table("images").Select("images.id").
+		subQuery := db.DB.Table("images").Select("images.id").
 			Joins("LEFT JOIN images_packages on images_packages.image_id = images.id").
 			Where("images.image_set_id = ?", *currentImage.ImageSetID).
 			Where("images.deleted_at IS NULL").
@@ -280,7 +280,7 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 		query = query.Where("images.id IN (?)", subQuery)
 	}
 	if deviceUpdateImagesFilters.AllPackages != nil {
-		subQuery := db.DBx(s.ctx).Table("images").Select("images.id").
+		subQuery := db.DB.Table("images").Select("images.id").
 			Joins("LEFT JOIN commit_installed_packages on commit_installed_packages.commit_id = images.commit_id").
 			Where("images.image_set_id = ?", *currentImage.ImageSetID).
 			Where("images.deleted_at IS NULL").
@@ -290,7 +290,7 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 		query = query.Where("images.id IN (?)", subQuery)
 	}
 	if deviceUpdateImagesFilters.SystemsRunning != nil {
-		subQuery := db.DBx(s.ctx).Table("images").Select("images.id").
+		subQuery := db.DB.Table("images").Select("images.id").
 			Joins("LEFT JOIN devices on devices.image_id = images.id").
 			Where("images.image_set_id = ?", *currentImage.ImageSetID).
 			Where("images.deleted_at IS NULL").
@@ -315,7 +315,7 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 		return imageDiff, 0, nil
 	}
 
-	resultCount := db.DBx(s.ctx).Model(&models.Image{}).Where("Image_set_id = ? and Images.Status = ? and Images.Id > ?",
+	resultCount := db.DB.Model(&models.Image{}).Where("Image_set_id = ? and Images.Status = ? and Images.Id > ?",
 		currentImage.ImageSetID, models.ImageStatusSuccess, currentImage.ID,
 	).Joins("Commit").Count(&count)
 
@@ -326,18 +326,18 @@ func (s *DeviceService) GetUpdateAvailableForDevice(device inventory.Device, lat
 
 	for _, upd := range images {
 		upd := upd // this will prevent implicit memory aliasing in the loop
-		db.DBx(s.ctx).First(&upd.Commit, upd.CommitID)
+		db.DB.First(&upd.Commit, upd.CommitID)
 
-		if err := db.DBx(s.ctx).Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages); err != nil {
+		if err := db.DB.Model(&upd.Commit).Association("InstalledPackages").Find(&upd.Commit.InstalledPackages); err != nil {
 			s.log.WithField("error", err.Error()).Error("Could not find installed packages")
 			return nil, 0, err
 		}
 
-		if err := db.DBx(s.ctx).Model(&upd).Association("Packages").Find(&upd.Packages); err != nil {
+		if err := db.DB.Model(&upd).Association("Packages").Find(&upd.Packages); err != nil {
 			s.log.WithField("error", err.Error()).Error("Could not find packages")
 			return nil, 0, err
 		}
-		if err := db.DBx(s.ctx).Model(&upd).Association("CustomPackages").Find(&upd.CustomPackages); err != nil {
+		if err := db.DB.Model(&upd).Association("CustomPackages").Find(&upd.CustomPackages); err != nil {
 			s.log.WithField("error", err.Error()).Error("Could not find custom packages")
 			return nil, 0, err
 		}
@@ -500,7 +500,7 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		devicesUUIDs = append(devicesUUIDs, device.ID)
 	}
 	var storedDevices []models.Device
-	if res := db.Orgx(s.ctx, orgID, "").Where("uuid IN ?", devicesUUIDs).Find(&storedDevices); res.Error != nil {
+	if res := db.Org(orgID, "").Where("uuid IN ?", devicesUUIDs).Find(&storedDevices); res.Error != nil {
 		return nil, res.Error
 	}
 
@@ -519,15 +519,15 @@ func (s *DeviceService) GetDevices(params *inventory.Params) (*models.DeviceDeta
 		// Load from device DB the groups info and add to the new struct
 		var storeDevice models.Device
 		// Don't throw error if device not found
-		db.DBx(s.ctx).Where("id=?", dbDeviceID).First(&storeDevice)
-		err := db.DBx(s.ctx).Model(&storeDevice).Association("UpdateTransaction").Find(&storeDevice.UpdateTransaction)
+		db.DB.Where("id=?", dbDeviceID).First(&storeDevice)
+		err := db.DB.Model(&storeDevice).Association("UpdateTransaction").Find(&storeDevice.UpdateTransaction)
 
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error finding associated updates for device")
 			return nil, new(DeviceGroupNotFound)
 		}
 
-		err = db.DBx(s.ctx).Model(&storeDevice).Association("DevicesGroups").Find(&storeDevice.DevicesGroups)
+		err = db.DB.Model(&storeDevice).Association("DevicesGroups").Find(&storeDevice.DevicesGroups)
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error finding associated devicegroups for device")
 			return nil, new(DeviceGroupNotFound)
@@ -608,7 +608,7 @@ func (s *DeviceService) GetDeviceLastDeployment(device inventory.Device) *invent
 func (s *DeviceService) SetDeviceUpdateAvailability(orgID string, deviceID uint) error {
 
 	var device models.Device
-	if result := db.Orgx(s.ctx, orgID, "").First(&device, deviceID); result.Error != nil {
+	if result := db.Org(orgID, "").First(&device, deviceID); result.Error != nil {
 		return result.Error
 	}
 	if device.ImageID == 0 {
@@ -617,20 +617,20 @@ func (s *DeviceService) SetDeviceUpdateAvailability(orgID string, deviceID uint)
 
 	// get the device image
 	var deviceImage models.Image
-	if result := db.Orgx(s.ctx, orgID, "").First(&deviceImage, device.ImageID); result.Error != nil {
+	if result := db.Org(orgID, "").First(&deviceImage, device.ImageID); result.Error != nil {
 		return result.Error
 	}
 
 	// check for updates , find if any later images exists
 	var updateImages []models.Image
-	if result := db.Orgx(s.ctx, orgID, "").Select("id").Where("image_set_id = ? AND status = ? AND created_at > ?",
+	if result := db.Org(orgID, "").Select("id").Where("image_set_id = ? AND status = ? AND created_at > ?",
 		deviceImage.ImageSetID, models.ImageStatusSuccess, deviceImage.CreatedAt).Find(&updateImages); result.Error != nil {
 		return result.Error
 	}
 
 	device.UpdateAvailable = len(updateImages) > 0
 
-	if result := db.DBx(s.ctx).Save(device); result.Error != nil {
+	if result := db.DB.Save(device); result.Error != nil {
 		return result.Error
 	}
 
@@ -658,7 +658,7 @@ func (s *DeviceService) processPlatformInventoryEventUpdateDevice(eventData Plat
 	CommitCheck := deployments[0].Checksum
 	// Get the related commit image
 	var deviceImage models.Image
-	if result := db.Orgx(s.ctx, device.OrgID, "images").Select("images.id").
+	if result := db.Org(device.OrgID, "images").Select("images.id").
 		Joins("JOIN commits ON commits.id = images.commit_id").Where("commits.os_tree_commit = ? ", CommitCheck).
 		First(&deviceImage); result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
@@ -671,7 +671,7 @@ func (s *DeviceService) processPlatformInventoryEventUpdateDevice(eventData Plat
 
 	device.ImageID = deviceImage.ID
 
-	if result := db.DBx(s.ctx).Save(device); result.Error != nil {
+	if result := db.DB.Save(device); result.Error != nil {
 		logger.WithField("error", result.Error.Error()).Error("error occurred saving device image")
 		return result.Error
 	}
@@ -713,7 +713,7 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 				GroupName:   deviceGroupName,
 				GroupUUID:   deviceGroupUUID,
 			}
-			if result := db.DBx(s.ctx).Create(&newDevice); result.Error != nil {
+			if result := db.DB.Create(&newDevice); result.Error != nil {
 				s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error.Error()}).Error("Error creating device")
 				return result.Error
 			}
@@ -737,7 +737,7 @@ func (s *DeviceService) ProcessPlatformInventoryUpdatedEvent(message []byte) err
 	device.GroupName = deviceGroupName
 	device.GroupUUID = deviceGroupUUID
 
-	if result := db.DBx(s.ctx).Save(device); result.Error != nil {
+	if result := db.DB.Save(device); result.Error != nil {
 		s.log.WithFields(log.Fields{"host_id": deviceUUID, "error": result.Error}).Error("Error updating device")
 		return result.Error
 	}
@@ -759,7 +759,7 @@ func (s *DeviceService) GetDevicesCount(tx *gorm.DB) (int64, error) {
 
 	var count int64
 
-	res := db.OrgDBx(s.ctx, orgID, tx, "").Model(&models.Device{}).Count(&count)
+	res := db.OrgDB(orgID, tx, "").Model(&models.Device{}).Count(&count)
 
 	if res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device groups count")
@@ -777,7 +777,7 @@ func (s *DeviceService) GetDevicesCountByImage(imageId uint) (int64, error) {
 	}
 
 	var count int64
-	res := db.OrgDBx(s.ctx, orgID, db.DBx(s.ctx).Model(&models.Device{}), "devices").Find(&models.Device{}, "image_id =? ", imageId).Count(&count)
+	res := db.OrgDB(orgID, db.DB.Model(&models.Device{}), "devices").Find(&models.Device{}, "image_id =? ", imageId).Count(&count)
 	if res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device groups count")
 		return 0, res.Error
@@ -798,7 +798,7 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 
 	var storedDevices []models.Device
 	// search for all stored devices that are also in inventory
-	if res := db.OrgDBx(s.ctx, orgID, tx, "").Limit(limit).Offset(offset).
+	if res := db.OrgDB(orgID, tx, "").Limit(limit).Offset(offset).
 		Preload("UpdateTransaction", func(db *gorm.DB) *gorm.DB {
 			return db.Order("update_transactions.created_at DESC")
 		}).
@@ -817,7 +817,7 @@ func (s *DeviceService) GetDevicesView(limit int, offset int, tx *gorm.DB) (*mod
 		}
 
 		var total int64
-		if res := db.Orgx(s.ctx, orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
+		if res := db.Org(orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
 			s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
 			return nil, res.Error
 		}
@@ -968,7 +968,7 @@ func ReturnDevicesView(storedDevices []models.Device, orgID string) ([]models.De
 func (s *DeviceService) GetLatestCommitFromDevices(orgID string, devicesUUID []string) (uint, error) {
 	var devices []models.Device
 
-	if result := db.Orgx(s.ctx, orgID, "").Where("uuid IN ?", devicesUUID).Find(&devices); result.Error != nil {
+	if result := db.Org(orgID, "").Where("uuid IN ?", devicesUUID).Find(&devices); result.Error != nil {
 		return 0, result.Error
 	}
 
@@ -981,7 +981,7 @@ func (s *DeviceService) GetLatestCommitFromDevices(orgID string, devicesUUID []s
 		devicesImageID = append(devicesImageID, device.ImageID)
 	}
 	var devicesImage []models.Image
-	if result := db.Orgx(s.ctx, orgID, "").Find(&devicesImage, devicesImageID); result.Error != nil {
+	if result := db.Org(orgID, "").Find(&devicesImage, devicesImageID); result.Error != nil {
 		return 0, result.Error
 	}
 	// finding unique ImageSetID for device Image
@@ -1001,7 +1001,7 @@ func (s *DeviceService) GetLatestCommitFromDevices(orgID string, devicesUUID []s
 
 	// check for updates , find if any later images exists to get the commitID
 	var updateImages []models.Image
-	if result := db.Orgx(s.ctx, orgID, "").Model(&models.Image{}).Where("image_set_id = ? AND status = ?", imageSetID, models.ImageStatusSuccess).Order("version desc").Find(&updateImages); result.Error != nil {
+	if result := db.Org(orgID, "").Model(&models.Image{}).Where("image_set_id = ? AND status = ?", imageSetID, models.ImageStatusSuccess).Order("version desc").Find(&updateImages); result.Error != nil {
 		return 0, result.Error
 	}
 
@@ -1055,7 +1055,7 @@ func (s *DeviceService) platformInventoryCreateEventHelper(e PlatformInsightsCre
 	}
 
 	// We should not create a new device if UUID already exists
-	result := db.DBx(s.ctx).Where(&models.Device{UUID: newDevice.UUID}).FirstOrCreate(&newDevice)
+	result := db.DB.Where(&models.Device{UUID: newDevice.UUID}).FirstOrCreate(&newDevice)
 
 	if result.Error != nil {
 		s.log.WithFields(log.Fields{
@@ -1087,7 +1087,7 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 	deviceUUID := eventData.ID
 	deviceOrgID := eventData.OrgID
 	var devices []models.Device
-	if result := db.Orgx(s.ctx, deviceOrgID, "").Where("uuid = ?", deviceUUID).Find(&devices); result.Error != nil {
+	if result := db.Org(deviceOrgID, "").Where("uuid = ?", deviceUUID).Find(&devices); result.Error != nil {
 		s.log.WithFields(
 			log.Fields{"host_id": deviceUUID, "OrgID": deviceOrgID, "error": result.Error.Error()},
 		).Error("Error retrieving the devices")
@@ -1096,7 +1096,7 @@ func (s *DeviceService) ProcessPlatformInventoryDeleteEvent(message []byte) erro
 	if len(devices) == 0 {
 		return nil
 	}
-	if result := db.DBx(s.ctx).Delete(&devices[0]); result.Error != nil {
+	if result := db.DB.Delete(&devices[0]); result.Error != nil {
 		s.log.WithFields(
 			log.Fields{"host_id": deviceUUID, "OrgID": deviceOrgID, "error": result.Error},
 		).Error("Error when deleting devices")
@@ -1119,7 +1119,7 @@ func (s *DeviceService) SyncDevicesWithInventory(orgID string) {
 	offset := 0
 	var edgeDevices, devicesToBeDeleted []models.Device
 
-	if res := db.Orgx(s.ctx, orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
+	if res := db.Org(orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
 		return
 	}
@@ -1128,7 +1128,7 @@ func (s *DeviceService) SyncDevicesWithInventory(orgID string) {
 	var edgeCount int64
 	for int64(offset) <= total {
 		s.log.WithFields(log.Fields{"offset": int64(offset), "total": total}).Debug("Comparing offset to total")
-		if res := db.Orgx(s.ctx, orgID, "").Limit(limit).Offset(offset).Find(&edgeDevices); res.Error != nil {
+		if res := db.Org(orgID, "").Limit(limit).Offset(offset).Find(&edgeDevices); res.Error != nil {
 			s.log.WithField("error", res.Error.Error()).Error("Error getting devices in device sync")
 			return
 		}
@@ -1177,7 +1177,7 @@ func (s *DeviceService) SyncDevicesWithInventory(orgID string) {
 					log.Fields{"host_id": device.UUID, "OrgID": device.OrgID},
 				).Debug("Deleting device")
 
-				if result := db.DBx(s.ctx).Delete(&device); result.Error != nil {
+				if result := db.DB.Delete(&device); result.Error != nil {
 					s.log.WithFields(
 						log.Fields{"host_id": device.UUID, "OrgID": device.OrgID, "error": result.Error},
 					).Error("Error when deleting device in device sync")
@@ -1189,7 +1189,7 @@ func (s *DeviceService) SyncDevicesWithInventory(orgID string) {
 	// Get the count of our db and from inventory and compare them
 	// If they are the same, sync is done
 	// If not, we have missed some "create" events from inventory, we need to discover and add these devices to our DB
-	if res := db.Orgx(s.ctx, orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
+	if res := db.Org(orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
 		return
 	}
@@ -1235,7 +1235,7 @@ func (s *DeviceService) SyncInventoryWithDevices(orgID string) {
 		}
 
 		var dbDevices []models.Device
-		if res := db.Orgx(s.ctx, orgID, "").Where("UUID IN ?", inveDeviceIds).Find(&dbDevices); res.Error != nil {
+		if res := db.Org(orgID, "").Where("UUID IN ?", inveDeviceIds).Find(&dbDevices); res.Error != nil {
 			s.log.WithField("error", res.Error.Error()).Error("Error getting devices in device sync")
 			return
 		}
@@ -1306,7 +1306,7 @@ func (s *DeviceService) SyncInventoryWithDevices(orgID string) {
 	// If they are the same, sync is done
 	// If not, sync failed
 	var total int64
-	if res := db.Orgx(s.ctx, orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
+	if res := db.Org(orgID, "").Model(&models.Device{}).Count(&total); res.Error != nil {
 		s.log.WithField("error", res.Error.Error()).Error("Error getting device count")
 		return
 	}

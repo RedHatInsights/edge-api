@@ -150,13 +150,13 @@ func (s *UpdateService) SetUpdateErrorStatusWhenInterrupted(intCtx context.Conte
 		s.log.WithField("updateID", update.ID).Debug("Select case SIGINT interrupt has been triggered")
 
 		// Reload update to get updated status
-		if result := db.DBx(s.ctx).First(&update, update.ID); result.Error != nil {
+		if result := db.DB.First(&update, update.ID); result.Error != nil {
 			s.log.WithField("error", result.Error.Error()).Error("Error retrieving update")
 			// anyway continue and set the status error
 		}
 		if update.Status == models.UpdateStatusBuilding {
 			update.Status = models.UpdateStatusError
-			if tx := db.DBx(s.ctx).Omit("DispatchRecords", "Devices", "Commit", "Repo").Save(&update); tx.Error != nil {
+			if tx := db.DB.Omit("DispatchRecords", "Devices", "Commit", "Repo").Save(&update); tx.Error != nil {
 				s.log.WithField("error", tx.Error.Error()).Error("Update failed to save update Error status")
 			} else {
 				s.log.WithField("updateID", update.ID).Debug("Update updated with Error status")
@@ -181,7 +181,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		return nil, err
 	}
 	var update *models.UpdateTransaction
-	if result := db.Orgx(s.ctx, orgID, "update_transactions").Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").First(&update, id); result.Error != nil {
+	if result := db.Org(orgID, "update_transactions").Preload("DispatchRecords").Preload("Devices").Joins("Commit").Joins("Repo").First(&update, id); result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("error retrieving update-transaction")
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, new(UpdateNotFoundError)
@@ -190,7 +190,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 	}
 
 	update.Status = models.UpdateStatusBuilding
-	if result := db.DBx(s.ctx).Model(&models.UpdateTransaction{}).Where("ID=?", id).Update("Status", update.Status); result.Error != nil {
+	if result := db.DB.Model(&models.UpdateTransaction{}).Where("ID=?", id).Update("Status", update.Status); result.Error != nil {
 		s.log.WithField("error", result.Error.Error()).Error("failed to save building status")
 		return nil, result.Error
 	}
@@ -224,7 +224,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 
 	if err != nil {
 		update.Status = models.UpdateStatusError
-		db.DBx(s.ctx).Save(update)
+		db.DB.Save(update)
 		s.log.WithField("error", err.Error()).Error("Error writing playbook template")
 		return nil, err
 	}
@@ -266,7 +266,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 				Status:      models.DispatchRecordStatusError,
 				Reason:      models.UpdateReasonFailure,
 			})
-			if err := db.DBx(s.ctx).Omit("Devices.*").Save(update).Error; err != nil {
+			if err := db.DB.Omit("Devices.*").Save(update).Error; err != nil {
 				s.log.WithField("error", err.Error()).Error("error on saving device update-transaction")
 			}
 			return nil, err
@@ -294,7 +294,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 				}
 				dispatchRecords = append(dispatchRecords, *dispatchRecord)
 			}
-			db.DBx(s.ctx).Save(&device)
+			db.DB.Save(&device)
 		}
 		update.DispatchRecords = dispatchRecords
 		err = s.SetUpdateStatus(update)
@@ -302,7 +302,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			s.log.WithField("error", err.Error()).Error("Error saving update")
 			return nil, err
 		}
-		dRecord := db.DBx(s.ctx).Omit("Devices, DispatchRecords.Device").Save(update)
+		dRecord := db.DB.Omit("Devices, DispatchRecords.Device").Save(update)
 		if dRecord.Error != nil {
 			s.log.WithField("error", dRecord.Error).Error("Error saving Dispach Record")
 			return nil, dRecord.Error
@@ -418,7 +418,7 @@ func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.Up
 
 	// grab the update transaction from db based on the updateID
 	// NOTE: already contains the to_commit
-	if result := db.Orgx(s.ctx, orgID, "update_transactions").
+	if result := db.Org(orgID, "update_transactions").
 		Preload("DispatchRecords").
 		Preload("Devices").
 		Joins("Commit").
@@ -585,13 +585,13 @@ func (s *UpdateService) generateStaticDelta(updateID uint, update *models.Update
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error building update repo")
 		// set status to error
-		if result := db.DBx(s.ctx).Model(&models.UpdateTransaction{}).Where("id=?", updateID).Update("Status", models.UpdateStatusError); result.Error != nil {
+		if result := db.DB.Model(&models.UpdateTransaction{}).Where("id=?", updateID).Update("Status", models.UpdateStatusError); result.Error != nil {
 			s.log.WithField("error", err.Error()).Error("failed to save building error status")
 			return nil, result.Error
 		}
 		// set repo status to error
 		if updateRepoID != nil {
-			if err := db.DBx(s.ctx).Model(&models.Repo{}).Where("id=?", updateRepoID).Update("Status", models.RepoStatusError).Error; err != nil {
+			if err := db.DB.Model(&models.Repo{}).Where("id=?", updateRepoID).Update("Status", models.RepoStatusError).Error; err != nil {
 				s.log.WithField("error", err.Error()).Error("failed to save update repository error status")
 				return nil, err
 			}
@@ -691,7 +691,7 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, orgID str
 // GetUpdateTransactionsForDevice returns all update transactions for a given device
 func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*[]models.UpdateTransaction, error) {
 	var updates []models.UpdateTransaction
-	result := db.DBx(s.ctx).
+	result := db.DB.
 		Table("update_transactions").
 		Preload("DispatchRecords", func(db *gorm.DB) *gorm.DB {
 			return db.Where("dispatch_records.device_id = ?", device.ID)
@@ -740,7 +740,7 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 	}
 
 	var dispatchRecord models.DispatchRecord
-	result := db.DBx(s.ctx).Where(&models.DispatchRecord{PlaybookDispatcherID: e.Payload.ID}).Preload("Device").First(&dispatchRecord)
+	result := db.DB.Where(&models.DispatchRecord{PlaybookDispatcherID: e.Payload.ID}).Preload("Device").First(&dispatchRecord)
 	if result.Error != nil {
 		s.log.WithFields(log.Fields{"playbook_dispatcher_id": e.Payload.ID, "error": result.Error.Error()}).Error("error occurred while getting dispatcher record from db")
 		return result.Error
@@ -766,13 +766,13 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 		s.log.Error("Playbook status is not on the json schema for this event")
 	}
 
-	result = db.DBx(s.ctx).Omit("Device").Save(&dispatchRecord)
+	result = db.DB.Omit("Device").Save(&dispatchRecord)
 	if result.Error != nil {
 		return result.Error
 	}
 
 	// since it's using Omit, the device is not being saved, then it's required to explicit save the device
-	result = db.DBx(s.ctx).Save(&dispatchRecord.Device)
+	result = db.DB.Save(&dispatchRecord.Device)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -783,7 +783,7 @@ func (s *UpdateService) ProcessPlaybookDispatcherRunEvent(message []byte) error 
 // SetUpdateStatusBasedOnDispatchRecord is the function that, given a dispatch record, finds the update transaction related to and update its status if necessary
 func (s *UpdateService) SetUpdateStatusBasedOnDispatchRecord(dispatchRecord models.DispatchRecord) error {
 	var update models.UpdateTransaction
-	result := db.DBx(s.ctx).Table("update_transactions").Preload("DispatchRecords").
+	result := db.DB.Table("update_transactions").Preload("DispatchRecords").
 		Joins(`JOIN updatetransaction_dispatchrecords ON update_transactions.id = updatetransaction_dispatchrecords.update_transaction_id`).
 		Where(`updatetransaction_dispatchrecords.dispatch_record_id = ?`, dispatchRecord.ID).First(&update)
 	if result.Error != nil {
@@ -815,7 +815,7 @@ func (s *UpdateService) SetUpdateStatus(update *models.UpdateTransaction) error 
 		update.Status = models.UpdateStatusSuccess
 	}
 	// If there isn't an error, and it's not all success, some updates are still happening
-	result := db.DBx(s.ctx).Model(&models.UpdateTransaction{}).Where("ID=?", update.ID).Update("Status", update.Status)
+	result := db.DB.Model(&models.UpdateTransaction{}).Where("ID=?", update.ID).Update("Status", update.Status)
 
 	return result.Error
 }
@@ -903,7 +903,7 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 
 	// reload update transaction from db
 	var currentUpdate models.UpdateTransaction
-	if result := db.Orgx(s.ctx, update.OrgID, "").Preload("Devices").Preload("Commit").First(&currentUpdate, update.ID); result.Error != nil {
+	if result := db.Org(update.OrgID, "").Preload("Devices").Preload("Commit").First(&currentUpdate, update.ID); result.Error != nil {
 		return result.Error
 	}
 
@@ -914,7 +914,7 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 
 	// get the update commit image
 	var deviceImage models.Image
-	if result := db.Orgx(s.ctx, currentUpdate.OrgID, "images").
+	if result := db.Org(currentUpdate.OrgID, "images").
 		Joins("JOIN commits ON commits.id = images.commit_id").
 		Where("commits.os_tree_commit = ? ", currentUpdate.Commit.OSTreeCommit).
 		First(&deviceImage); result.Error != nil {
@@ -925,7 +925,7 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 	// get image update availability, by finding if there is later images updates
 	// consider only those with ImageStatusSuccess
 	var updateImages []models.Image
-	if result := db.Orgx(s.ctx, deviceImage.OrgID, "").Select("id").Where("image_set_id = ? AND status = ? AND created_at > ?",
+	if result := db.Org(deviceImage.OrgID, "").Select("id").Where("image_set_id = ? AND status = ? AND created_at > ?",
 		deviceImage.ImageSetID, models.ImageStatusSuccess, deviceImage.CreatedAt).Find(&updateImages); result.Error != nil {
 		logger.WithField("error", result.Error).Error("Error while getting update images")
 		return result.Error
@@ -939,7 +939,7 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 	}
 
 	// update devices with image and update availability
-	if result := db.Orgx(s.ctx, deviceImage.OrgID, "").Model(&models.Device{}).Where("id IN (?) ", devicesIDS).
+	if result := db.Org(deviceImage.OrgID, "").Model(&models.Device{}).Where("id IN (?) ", devicesIDS).
 		Updates(map[string]interface{}{"image_id": deviceImage.ID, "update_available": updateAvailable}); result.Error != nil {
 		logger.WithField("error", result.Error).Error("Error occurred while updating device image and update_available")
 		return result.Error
@@ -951,7 +951,7 @@ func (s *UpdateService) UpdateDevicesFromUpdateTransaction(update models.UpdateT
 // ValidateUpdateSelection validate the images for update
 func (s *UpdateService) ValidateUpdateSelection(orgID string, imageIds []uint) (bool, error) { // nolint:revive
 	var count int64
-	if result := db.Orgx(s.ctx, orgID, "").Table("images").Distinct("image_set_id").Where(`id IN ?`, imageIds).Count(&count); result.Error != nil {
+	if result := db.Org(orgID, "").Table("images").Distinct("image_set_id").Where(`id IN ?`, imageIds).Count(&count); result.Error != nil {
 		return false, result.Error
 	}
 
@@ -962,7 +962,7 @@ func (s *UpdateService) ValidateUpdateSelection(orgID string, imageIds []uint) (
 func (s *UpdateService) ValidateUpdateDeviceGroup(orgID string, deviceGroupID uint) (bool, error) {
 	var count int64
 
-	if result := db.Orgx(s.ctx, orgID, "Device_Groups").Model(&models.DeviceGroup{}).Where(`Device_Groups.id = ?`, deviceGroupID).
+	if result := db.Org(orgID, "Device_Groups").Model(&models.DeviceGroup{}).Where(`Device_Groups.id = ?`, deviceGroupID).
 		Joins(`JOIN Device_Groups_Devices  ON Device_Groups.id = Device_Groups_Devices.device_group_id`).
 		Joins(`JOIN Devices  ON Device_Groups_Devices.device_id = Devices.id`).
 		Where("Devices.image_id IS NOT NULL AND Devices.image_id != 0").
@@ -984,7 +984,7 @@ func (s *UpdateService) InventoryGroupDevicesUpdateInfo(orgID string, inventoryG
 	}
 
 	var inventoryGroupDevicesData []DeviceData
-	if err := db.Orgx(s.ctx, orgID, "devices").Model(&models.Device{}).
+	if err := db.Org(orgID, "devices").Model(&models.Device{}).
 		Select("devices.uuid as device_uuid, devices.update_available as update_available, images.image_set_id as image_set_id").
 		Joins(`JOIN images ON images.id = devices.image_id`).
 		Where(`devices.group_uuid = ?`, inventoryGroupUUID).
@@ -1074,7 +1074,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 		for _, device := range inventoryResponse.Result {
 			//  Check for the existence of a Repo that already has this commit and don't duplicate
 			var updateDevice *models.Device
-			dbDevice := db.DBx(s.ctx).Where("uuid = ?", device.ID).First(&updateDevice)
+			dbDevice := db.DB.Where("uuid = ?", device.ID).First(&updateDevice)
 			if dbDevice.Error != nil {
 				if dbDevice.Error.Error() != "Device was not found" {
 					s.log.WithFields(log.Fields{
@@ -1092,7 +1092,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					UUID:  device.ID,
 					OrgID: orgID,
 				}
-				if result := db.DBx(s.ctx).Omit("Devices.*").Create(&updateDevice); result.Error != nil {
+				if result := db.DB.Omit("Devices.*").Create(&updateDevice); result.Error != nil {
 					return nil, result.Error
 				}
 			}
@@ -1103,7 +1103,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 				}).Info("Device is disconnected")
 				update.Status = models.UpdateStatusDeviceDisconnected
 				update.Devices = append(update.Devices, *updateDevice)
-				if result := db.DBx(s.ctx).Omit("Devices.*").Create(&update); result.Error != nil {
+				if result := db.DB.Omit("Devices.*").Create(&update); result.Error != nil {
 					return nil, result.Error
 				}
 				continue
@@ -1115,7 +1115,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 			if updateDevice.OrgID == "" {
 				updateDevice.OrgID = orgID
 			}
-			result := db.DBx(s.ctx).Omit("Devices.*").Save(&updateDevice)
+			result := db.DB.Omit("Devices.*").Save(&updateDevice)
 			if result.Error != nil {
 				return nil, result.Error
 			}
@@ -1142,7 +1142,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 						break
 					}
 					var oldCommit models.Commit
-					result := db.DBx(s.ctx).Where("os_tree_commit = ?", deployment.Checksum).First(&oldCommit)
+					result := db.DB.Where("os_tree_commit = ?", deployment.Checksum).First(&oldCommit)
 					if result.Error != nil {
 						if result.Error.Error() != "record not found" {
 							s.log.WithField("error", result.Error.Error()).Error("Error returning old commit for this ostree checksum")
@@ -1178,7 +1178,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 					repo = &models.Repo{
 						Status: models.RepoStatusBuilding,
 					}
-					result := db.DBx(s.ctx).Create(&repo)
+					result := db.DB.Create(&repo)
 					if result.Error != nil {
 						s.log.WithField("error", result.Error.Error()).Debug("Result error")
 						return nil, result.Error
@@ -1194,7 +1194,7 @@ func (s *UpdateService) BuildUpdateTransactions(devicesUpdate *models.DevicesUpd
 				// Should not create a transaction to device already updated
 				update.OldCommits = oldCommits
 				update.RepoID = &repo.ID
-				if err := db.DBx(s.ctx).Omit("Devices.*").Save(&update).Error; err != nil {
+				if err := db.DB.Omit("Devices.*").Save(&update).Error; err != nil {
 					err = edgeerrors.NewBadRequest(err.Error())
 					s.log.WithField("error", err.Error()).Error("Error encoding error")
 					return nil, err
