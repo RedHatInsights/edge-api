@@ -53,3 +53,13 @@ var BackgroundJobDuration = prometheus.NewHistogramVec(
 	},
 	[]string{"type"},
 )
+
+var PlatformClientDuration = prometheus.NewHistogramVec(
+	prometheus.HistogramOpts{
+		Name:        "edge_platform_client_duration",
+		Help:        "platform HTTP client duration (in ms) by method and status",
+		ConstLabels: prometheus.Labels{"service": ApplicationName, "component": BinaryName},
+		Buckets:     []float64{20, 50, 100, 200, 500, 1000, 2000, 5000},
+	},
+	[]string{"method", "status"},
+)

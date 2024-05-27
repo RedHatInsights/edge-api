@@ -28,6 +28,8 @@ func InitLogger(writer io.Writer) {
 	cfg := config.Get()
 
 	switch cfg.LogLevel {
+	case "TRACE":
+		logLevel = log.TraceLevel
 	case "DEBUG":
 		logLevel = log.DebugLevel
 	case "ERROR":

@@ -17,6 +17,7 @@ require (
 	github.com/knqyf263/go-rpm-version v0.0.0-20170716094938-74609b86c936
 	github.com/lib/pq v1.10.9
 	github.com/magiconair/properties v1.8.7
+	github.com/oapi-codegen/runtime v1.1.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.33.1
 	github.com/prometheus/client_golang v1.19.1
@@ -26,6 +27,7 @@ require (
 	github.com/spf13/viper v1.18.1
 	github.com/stretchr/testify v1.8.4
 	go.openly.dev/pointy v1.3.0
+	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 	gorm.io/driver/postgres v1.5.4
 	gorm.io/driver/sqlite v1.5.4
 	gorm.io/gorm v1.25.6
@@ -33,6 +35,7 @@ require (
 
 require (
 	github.com/Masterminds/semver/v3 v3.1.1 // indirect
+	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -81,7 +84,6 @@ require (
 	go.mongodb.org/mongo-driver v1.13.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.22.0 // indirect
-	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect

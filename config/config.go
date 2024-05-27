@@ -78,6 +78,18 @@ type EdgeConfig struct {
 	RbacTimeout                uint                      `mapstructure:"rbac_timeout,omitempty"`
 	SubscriptionServerURL      string                    `json:"subscription_server_url"`
 	SubscriptionBaseUrl        string                    `json:"subscription_base_url"`
+	PulpURL                    string                    `json:"pulp_url,omitempty"`
+	PulpUsername               string                    `json:"pulp_username,omitempty"`
+	PulpPassword               string                    `json:"pulp_password,omitempty"`
+	PulpIdentityName           string                    `json:"pulp_identity_name,omitempty"`
+	PulpProxyURL               string                    `json:"pulp_proxy_url,omitempty"`
+	PulpOauth2URL              string                    `json:"pulp_oauth2_url,omitempty"`
+	PulpOauth2ClientID         string                    `json:"pulp_oauth2_client_id,omitempty"`
+	PulpOauth2ClientSecret     string                    `json:"pulp_oauth2_client_secret,omitempty"`
+	PulpS3BucketName           string                    `json:"pulp_s3_bucket_name,omitempty"`
+	PulpS3Region               string                    `json:"pulp_s3_region,omitempty"`
+	PulpS3SecretKey            string                    `json:"pulp_s3_secret_key,omitempty"`
+	PulpS3AccessKey            string                    `json:"pulp_s3_access_key,omitempty"`
 }
 
 type dbConfig struct {
@@ -170,6 +182,18 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("DeleteFilesRetryDelay", 5)
 	options.SetDefault("RBAC_BASE_URL", "http://rbac-service:8080")
 	options.SetDefault("RbacTimeout", 30)
+	options.SetDefault("PulpURL", "http://pulp-service:8080")
+	options.SetDefault("PulpUsername", "edge-api-dev")
+	options.SetDefault("PulpPassword", "")
+	options.SetDefault("PulpIdentityName", "edge-api-dev")
+	options.SetDefault("PulpProxyURL", "")
+	options.SetDefault("PulpOauth2URL", "https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token")
+	options.SetDefault("PulpOauth2ClientID", "")
+	options.SetDefault("PulpOauth2ClientSecret", "")
+	options.SetDefault("PulpS3BucketName", "")
+	options.SetDefault("PulpS3Region", "DummyRegion")
+	options.SetDefault("PulpS3SecretKey", "")
+	options.SetDefault("PulpS3AccessKey", "")
 	options.AutomaticEnv()
 
 	if options.GetBool("Debug") {
@@ -270,6 +294,18 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		RbacTimeout:                options.GetUint("RbacTimeout"),
 		SubscriptionServerURL:      options.GetString("SUBSCRIPTION_SERVER_URL"),
 		SubscriptionBaseUrl:        options.GetString("SUBSCRIPTION_BASE_URL"),
+		PulpURL:                    options.GetString("PulpURL"),
+		PulpUsername:               options.GetString("PulpUsername"),
+		PulpPassword:               options.GetString("PulpPassword"),
+		PulpIdentityName:           options.GetString("PulpIdentityName"),
+		PulpProxyURL:               options.GetString("PulpProxyURL"),
+		PulpOauth2URL:              options.GetString("PulpOauth2URL"),
+		PulpOauth2ClientID:         options.GetString("PulpOauth2ClientID"),
+		PulpOauth2ClientSecret:     options.GetString("PulpOauth2ClientSecret"),
+		PulpS3BucketName:           options.GetString("PulpS3BucketName"),
+		PulpS3Region:               options.GetString("PulpS3Region"),
+		PulpS3SecretKey:            options.GetString("PulpS3SecretKey"),
+		PulpS3AccessKey:            options.GetString("PulpS3AccessKey"),
 	}
 	if edgeConfig.TenantTranslatorHost != "" && edgeConfig.TenantTranslatorPort != "" {
 		edgeConfig.TenantTranslatorURL = fmt.Sprintf("http://%s:%s", edgeConfig.TenantTranslatorHost, edgeConfig.TenantTranslatorPort)
@@ -311,14 +347,36 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 			Type:     "pgsql",
 		}
 
-		bucket := clowder.ObjectBuckets[edgeConfig.BucketName]
-
-		edgeConfig.BucketName = bucket.RequestedName
-		if bucket.Region != nil {
-			edgeConfig.BucketRegion = *bucket.Region
+		// S3: Tarball bucket
+		bucket, ok := clowder.ObjectBuckets[edgeConfig.BucketName]
+		if ok {
+			edgeConfig.BucketName = bucket.RequestedName
+			if bucket.Region != nil {
+				edgeConfig.BucketRegion = *bucket.Region
+			}
+			if bucket.AccessKey != nil {
+				edgeConfig.AccessKey = *bucket.AccessKey
+			}
+			if bucket.SecretKey != nil {
+				edgeConfig.SecretKey = *bucket.SecretKey
+			}
 		}
-		edgeConfig.AccessKey = *bucket.AccessKey
-		edgeConfig.SecretKey = *bucket.SecretKey
+
+		// S3: Pulp bucket
+		bucket, ok = clowder.ObjectBuckets["edge-central-pulp-s3"]
+		if ok {
+			edgeConfig.PulpS3BucketName = bucket.Name
+			if bucket.Region != nil {
+				edgeConfig.PulpS3Region = *bucket.Region
+			}
+			if bucket.SecretKey != nil {
+				edgeConfig.PulpS3SecretKey = *bucket.SecretKey
+			}
+			if bucket.AccessKey != nil {
+				edgeConfig.PulpS3AccessKey = *bucket.AccessKey
+			}
+		}
+
 		edgeConfig.Logging = &loggingConfig{
 			AccessKeyID:     cfg.Logging.Cloudwatch.AccessKeyId,
 			SecretAccessKey: cfg.Logging.Cloudwatch.SecretAccessKey,
