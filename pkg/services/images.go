@@ -787,7 +787,7 @@ func (s *ImageService) processImage(ctx context.Context, id uint, loopDelay time
 		}()
 	}
 	// business as usual from here to end of block
-	if err := db.DBx(s.ctx).Joins("Commit").Joins("Installer").First(&image, id).Error; err != nil {
+	if err := db.DBx(ctx).Joins("Commit").Joins("Installer").First(&image, id).Error; err != nil {
 		log.WithContext(ctx).WithFields(log.Fields{"error": err.Error(), "ImageID": id}).Error("error occurred loading the image from database")
 		return err
 	}
