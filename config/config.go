@@ -118,7 +118,8 @@ type loggingConfig struct {
 	Region          string `json:"region,omitempty"`
 }
 
-var Config *EdgeConfig
+var config *EdgeConfig
+var configMu = sync.Mutex{}
 
 // DevConfigFile is a wrapper for local dev kafka edgeConfig
 type DevConfigFile struct {
@@ -378,22 +379,30 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 
 // Init configuration for service
 func Init() {
-	newConfig, err := CreateEdgeAPIConfig()
-	if err != nil {
-		return
-	}
-	Config = newConfig
+	_ = Get()
 }
 
 // Get returns an initialized EdgeConfig
 func Get() *EdgeConfig {
-	if Config == nil {
-		var lock = &sync.Mutex{}
-		lock.Lock()
-		defer lock.Unlock()
-		Init()
+	configMu.Lock()
+	defer configMu.Unlock()
+
+	if config == nil {
+		var err error
+		config, err = CreateEdgeAPIConfig()
+		if err != nil {
+			panic(err)
+		}
 	}
-	return Config
+
+	return config
+}
+
+func cleanup() {
+	configMu.Lock()
+	defer configMu.Unlock()
+
+	config = nil
 }
 
 // GetConfigValues return all configuration values that may be used for logging
