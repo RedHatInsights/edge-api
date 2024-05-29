@@ -12,11 +12,11 @@ import (
 )
 
 func TestInitializeApplicationConfig(t *testing.T) {
-	currentConfig := Config
+	currentConfig := config
 
 	Init()
-	assert.NotNil(t, Config)
-	assert.NotEqual(t, Config, currentConfig)
+	assert.NotNil(t, config)
+	assert.NotEqual(t, config, currentConfig)
 }
 
 func TestCreateNewConfig(t *testing.T) {
@@ -67,7 +67,7 @@ func TestRedactPasswordFromURL(t *testing.T) {
 }
 
 func TestKafkaBroker(t *testing.T) {
-	originalConfig := Config
+	originalConfig := config
 	originalClowderEnvConfig := os.Getenv("ACG_CONFIG")
 	originalClowderLoadedConfig := clowder.LoadedConfig
 	originalClowderObjectBuckets := clowder.ObjectBuckets
@@ -76,7 +76,7 @@ func TestKafkaBroker(t *testing.T) {
 	// restore configs
 	defer func(conf *EdgeConfig, clowderEnvConfig string, clowderLoadedConfig *clowder.AppConfig,
 		clowderObjectBuckets map[string]clowder.ObjectStoreBucket, originalBucketName string) {
-		Config = conf
+		config = conf
 		clowder.LoadedConfig = clowderLoadedConfig
 		clowder.ObjectBuckets = clowderObjectBuckets
 		if clowderEnvConfig == "" {
@@ -89,6 +89,8 @@ func TestKafkaBroker(t *testing.T) {
 		}
 
 	}(originalConfig, originalClowderEnvConfig, originalClowderLoadedConfig, originalClowderObjectBuckets, originalEDGETarBallsBucket)
+
+	defer cleanup()
 
 	err := os.Setenv("ACG_CONFIG", "need some value only, as the config path is not needed here")
 	assert.NoError(t, err)
@@ -168,21 +170,23 @@ func TestKafkaBroker(t *testing.T) {
 			clowder.LoadedConfig = testCase.clowderConfig
 			clowder.KafkaServers = testCase.KafkaServers
 			// init the configuration
+			cleanup()
 			Init()
-			assert.Equal(t, Config.KafkaBroker, testCase.ExpectedKafkaBroker)
-			assert.Equal(t, Config.KafkaServers, testCase.ExpectedKafkaServers)
+			defer cleanup()
+			assert.Equal(t, config.KafkaBroker, testCase.ExpectedKafkaBroker)
+			assert.Equal(t, config.KafkaServers, testCase.ExpectedKafkaServers)
 			if testCase.ExpectedKafkaBroker != nil {
 				if testCase.ExpectedKafkaBroker.Cacert != nil && *testCase.ExpectedKafkaBroker.Cacert != "" {
-					assert.NotEmpty(t, Config.KafkaBrokerCaCertPath)
-					caCertByteContent, err := os.ReadFile(Config.KafkaBrokerCaCertPath)
+					assert.NotEmpty(t, config.KafkaBrokerCaCertPath)
+					caCertByteContent, err := os.ReadFile(config.KafkaBrokerCaCertPath)
 					assert.NoError(t, err)
 					assert.Equal(t, string(caCertByteContent), *kafkaBroker.Cacert)
 				} else {
-					assert.Empty(t, Config.KafkaBrokerCaCertPath)
+					assert.Empty(t, config.KafkaBrokerCaCertPath)
 				}
 			} else {
-				assert.Nil(t, Config.KafkaBroker)
-				assert.Empty(t, Config.KafkaBrokerCaCertPath)
+				assert.Nil(t, config.KafkaBroker)
+				assert.Empty(t, config.KafkaBrokerCaCertPath)
 			}
 		})
 	}
