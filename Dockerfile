@@ -11,14 +11,8 @@ ENV GO111MODULE=on
 USER root
 RUN go get -d -v
 
-# interim FDO requirements
-ENV LD_LIBRARY_PATH /usr/local/lib
-RUN mkdir -p /usr/local/include/libfdo-data
-COPY --from=quay.io/fleet-management/libfdo-data ${LD_LIBRARY_PATH}/ ${LD_LIBRARY_PATH}/
-COPY --from=quay.io/fleet-management/libfdo-data /usr/local/include/libfdo-data/fdo_data.h /usr/local/include/libfdo-data/fdo_data.h
-
 # Build the binary.
-RUN go build -tags=fdo -o /go/bin/edge-api
+RUN go build -o /go/bin/edge-api
 
 # Build the migration binary.
 RUN go build -o /go/bin/edge-api-migrate cmd/migrate/main.go
@@ -93,12 +87,6 @@ COPY --from=edge-builder ${EDGE_API_WORKSPACE}/templates/templateKickstart.ks /u
 
 # template to playbook dispatcher
 COPY --from=edge-builder ${EDGE_API_WORKSPACE}/templates/template_playbook_dispatcher_ostree_upgrade_payload.yml /usr/local/etc
-
-# interim FDO requirements
-ENV LD_LIBRARY_PATH /usr/local/lib
-RUN mkdir -p /usr/local/include/libfdo-data
-COPY --from=edge-builder ${LD_LIBRARY_PATH}/ ${LD_LIBRARY_PATH}/
-COPY --from=edge-builder /usr/local/include/libfdo-data/fdo_data.h /usr/local/include/libfdo-data/fdo_data.h
 
 USER 1001
 CMD ["edge-api"]
