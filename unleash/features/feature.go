@@ -91,12 +91,6 @@ var CleanUPOrphanCommits = &Flag{Name: "edge-management.cleanup_orphan_commits",
 // SkipUpdateRepo is a feature flag to skip the process of download and re-upload of update repositories
 var SkipUpdateRepo = &Flag{Name: "edge-management.skip_update_repo", EnvVar: "FEATURE_SKIP_UPDATE_REPO"}
 
-// StaticDeltaDev toggles creation of static deltas
-var StaticDeltaDev = &Flag{Name: "edge-management.static_delta_dev", EnvVar: "FEATURE_STATIC_DELTA_DEV"}
-
-// StaticDeltaGenerate toggles creation of static deltas
-var StaticDeltaGenerate = &Flag{Name: "edge-management.static_delta_generate", EnvVar: "FEATURE_STATIC_DELTA_GENERATE"}
-
 // HideCreateGroup toggles creation of static deltas
 var HideCreateGroup = &Flag{Name: "edge-management.hide-create-group", EnvVar: "FEATURE_HIDE_CREATE_GROUP"}
 

@@ -4,7 +4,6 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -25,7 +24,6 @@ import (
 	edgeerrors "github.com/redhatinsights/edge-api/pkg/errors"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
-	feature "github.com/redhatinsights/edge-api/unleash/features"
 
 	"github.com/redhatinsights/edge-api/config"
 
@@ -328,93 +326,9 @@ func NewTemplateRemoteInfo(update *models.UpdateTransaction) TemplateRemoteInfo 
 	}
 }
 
-func checkStaticDeltaPreReqs(edgelog log.FieldLogger, orgID string, update models.UpdateTransaction) (*models.StaticDelta, error) {
-	var systemCommit *models.Commit
-	var updateCommit *models.Commit
-
-	if update.ChangesRefs {
-		return &models.StaticDelta{}, errors.New("update changes refs")
-	}
-
-	if update.Commit.OSTreeCommit == "" {
-		return &models.StaticDelta{}, errors.New("to_commit rev is empty")
-	}
-
-	// read to_commit from database without the full service
-	edgelog.WithField("commit_id", update.OldCommits[0].ID).Debug("Getting to_commit by id")
-	toResult := db.Org(orgID, "").Joins("Repo").First(&updateCommit, update.CommitID)
-	if toResult.Error != nil {
-		edgelog.WithField("error", toResult.Error.Error()).Error("Error searching for commit by commitID")
-		return &models.StaticDelta{}, toResult.Error
-	}
-	edgelog.WithField("to_commit", updateCommit).Debug("Update commit retrieved")
-
-	toCommit := &models.StaticDeltaCommit{
-		Rev:    update.Commit.OSTreeCommit,
-		Ref:    update.Commit.OSTreeRef,
-		TarURL: update.Commit.ImageBuildTarURL,
-		URL:    updateCommit.Repo.URL,
-	}
-
-	// read from_commit from database without the full service
-	edgelog.WithField("commit_id", update.OldCommits[0].ID).Debug("Getting from_commit by id")
-	result := db.Org(orgID, "").Joins("Repo").First(&systemCommit, update.OldCommits[0].ID)
-	if result.Error != nil {
-		edgelog.WithField("error", result.Error.Error()).Error("Error searching for commit by commitID")
-		return &models.StaticDelta{}, result.Error
-	}
-	edgelog.WithField("from_commit", systemCommit).Debug("System commit retrieved")
-
-	if systemCommit.OSTreeCommit == "" {
-		return &models.StaticDelta{}, errors.New("from_commit rev is empty")
-	}
-
-	fromCommit := &models.StaticDeltaCommit{
-		Rev:    systemCommit.OSTreeCommit,
-		Ref:    systemCommit.OSTreeRef,
-		TarURL: systemCommit.ImageBuildTarURL,
-		URL:    systemCommit.Repo.URL,
-	}
-
-	deltaName := models.GetStaticDeltaName(fromCommit.Rev, toCommit.Rev)
-
-	// if static delta does not exist and refs do not change
-	staticDeltaState := &models.StaticDeltaState{
-		Name:  deltaName,
-		OrgID: update.OrgID,
-	}
-	staticDeltaState, err := staticDeltaState.Query(edgelog)
-	if err != nil {
-		return &models.StaticDelta{}, errors.New("cannot determine state of static delta")
-	}
-
-	staticDelta := &models.StaticDelta{
-		FromCommit: *fromCommit,
-		Name:       deltaName,
-		State:      *staticDeltaState,
-		ToCommit:   *toCommit,
-	}
-
-	edgelog.WithField("static_delta", staticDelta).Debug("check prereqs for creating a static delta")
-
-	return staticDelta, nil
-}
-
-func saveUpdateTransaction(edgelog log.FieldLogger, updateTransaction *models.UpdateTransaction) error {
-	edgelog.WithField("repo", updateTransaction.Repo.URL).Info("Update repo URL")
-	if err := db.DB.Omit("Devices.*").Save(&updateTransaction).Error; err != nil {
-		return err
-	}
-	err := db.DB.Omit("Devices.*").Save(&updateTransaction.Repo).Error
-
-	return err
-}
-
 // BuildUpdateRepo determines if a static delta is necessary and calls the repo builder
 func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.UpdateTransaction, error) {
 	var update *models.UpdateTransaction
-	var sderr error
-	var staticDelta *models.StaticDelta
 
 	// grab the update transaction from db based on the updateID
 	// NOTE: already contains the to_commit
@@ -433,134 +347,12 @@ func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.Up
 		return nil, result.Error
 	}
 
-	// FIXME: remove this when no longer need a forced override for dev purposes
-	if feature.StaticDeltaGenerate.IsEnabled() {
-		staticDelta.State.Status = models.StaticDeltaStatusForceGenerate
-	}
-
-	if feature.StaticDeltaDev.IsEnabled() {
-		staticDelta, sderr = checkStaticDeltaPreReqs(s.log, orgID, *update)
-		if sderr != nil {
-			s.log.WithField("error", sderr.Error()).Error("error in static delta prereq check")
-			staticDelta.State.Status = models.StaticDeltaStatusFailedPrereq
-		}
-
-		s.log.WithField("static_delta_state_status", staticDelta.State.Status).
-			Debug("static delta state status")
-
-		switch staticDelta.State.Status {
-		// if FAILEDPREREQ, just return the URL from the to_commit
-		// TODO: no current logic to correct an err'd static delta gen
-		//			currently using temporary endpoints in dev
-		case models.StaticDeltaStatusFailedPrereq, models.StaticDeltaStatusError:
-			update.Repo.URL = staticDelta.ToCommit.URL
-
-			s.log.WithField("repo", update.Repo.URL).Info("Update repo URL")
-			update.Repo.Status = models.RepoStatusSuccess
-			if saveErr := saveUpdateTransaction(s.log, update); saveErr != nil {
-				return nil, saveErr
-			}
-
-			return update, nil
-		// if READY, just return the URL from static delta state
-		case models.StaticDeltaStatusReady:
-			update.Repo.URL = staticDelta.State.URL
-
-			s.log.WithField("repo", update.Repo.URL).Info("Update repo URL")
-			update.Repo.Status = models.RepoStatusSuccess
-			if saveErr := saveUpdateTransaction(s.log, update); saveErr != nil {
-				return nil, saveErr
-			}
-
-			return update, nil
-		// if NOTFOUND, we need to generate a static delta and wait
-		case models.StaticDeltaStatusNotFound, models.StaticDeltaStatusForceGenerate:
-			// FIXME: possible dupes if multiple async updates hit this at the same time
-			deltaUpdate, deltaErr := s.generateStaticDelta(updateID, update)
-
-			s.log.WithField("updateTransaction", deltaUpdate).
-				Info("generateStaticDelta return dev info")
-
-			return deltaUpdate, deltaErr
-		// if GENERATING/UPLOADING, just need to wait
-		case models.StaticDeltaStatusGenerating, models.StaticDeltaStatusUploading, models.StaticDeltaStatusDownloading:
-			sdUpdate, sdErr := s.waitForStaticDeltaReady(update, staticDelta)
-			if sdErr != nil {
-				return nil, sdErr
-			}
-			return sdUpdate, nil
-		}
-	}
-
-	// FIXME: this is the current code falling through if feature flags aren't enabled
-	//		if flagged above, we should not get here. Remove when all tests ok.
 	update, err := s.generateStaticDelta(updateID, update)
 
 	s.log.WithField("updateTransaction", update).
 		Info("original return dev info")
 
 	return update, err
-}
-
-func (s *UpdateService) waitForStaticDeltaReady(update *models.UpdateTransaction, staticDelta *models.StaticDelta) (*models.UpdateTransaction, error) {
-	sleepTime := time.Duration(60 * time.Second)
-	sdTimeout := time.Duration(20 * time.Minute)
-	deltaChan := make(chan models.StaticDeltaState)
-	errChan := make(chan error)
-
-	go func(edgelog log.FieldLogger, staticDeltaState models.StaticDeltaState) {
-	DeltaLoop:
-		for {
-			staticDeltaStateCheck, err := staticDeltaState.Query(edgelog)
-			if err != nil {
-				errChan <- errors.New("cannot determine state of static delta")
-				break DeltaLoop
-			}
-
-			switch staticDeltaStateCheck.Status {
-			case models.StaticDeltaStatusError:
-				errChan <- errors.New("error in static delta generation")
-				break DeltaLoop
-			case models.StaticDeltaStatusReady:
-				deltaChan <- staticDeltaState
-				break DeltaLoop
-			}
-
-			time.Sleep(sleepTime)
-		}
-	}(s.log, staticDelta.State)
-
-	select {
-	case sdState := <-deltaChan:
-		update.Repo.URL = sdState.URL
-
-		s.log.WithFields(log.Fields{"static_delta_state": sdState,
-			"repo": update.Repo.URL}).Info("static delta status wait returned")
-		update.Repo.Status = models.RepoStatusSuccess
-		if saveErr := saveUpdateTransaction(s.log, update); saveErr != nil {
-			return nil, saveErr
-		}
-	case <-time.After(time.Minute * sdTimeout):
-		update.Repo.URL = staticDelta.ToCommit.URL
-
-		s.log.WithFields(log.Fields{"timeout": sdTimeout,
-			"repo": update.Repo.URL}).Info("static delta status wait returned")
-		update.Repo.Status = models.RepoStatusSuccess
-		if saveErr := saveUpdateTransaction(s.log, update); saveErr != nil {
-			return nil, saveErr
-		}
-	case err := <-errChan:
-		update.Repo.URL = staticDelta.ToCommit.URL
-
-		s.log.WithFields(log.Fields{"err": err.Error(),
-			"repo": update.Repo.URL}).Error("static delta status wait returned")
-		update.Repo.Status = models.RepoStatusSuccess
-		if saveErr := saveUpdateTransaction(s.log, update); saveErr != nil {
-			return nil, saveErr
-		}
-	}
-
-	return update, nil
 }
 
 func (s *UpdateService) generateStaticDelta(updateID uint, update *models.UpdateTransaction) (*models.UpdateTransaction, error) {
@@ -648,6 +440,7 @@ func (s *UpdateService) WriteTemplate(templateInfo TemplateRemoteInfo, orgID str
 	}
 
 	// TODO change the same time as line 231
+	// TODO: (holloway) what is line 231 at the time the above TODO was added?
 	fname := fmt.Sprintf("playbook_dispatcher_update_%s_%d.yml", orgID, templateInfo.UpdateTransactionID)
 	tmpfilepath := fmt.Sprintf("/tmp/v2/%s/%s", orgID, fname)
 	dirpath := fmt.Sprintf("/tmp/v2/%s", orgID)
@@ -706,6 +499,8 @@ func (s *UpdateService) GetUpdateTransactionsForDevice(device *models.Device) (*
 	}
 	return &updates, nil
 }
+
+// TODO: 1000 lines of code. consider moving all of the playbook dispatcher (PBD) specific code to a PBD package
 
 // Status defined by https://github.com/RedHatInsights/playbook-dispatcher/blob/master/schema/run.event.yaml
 const (
