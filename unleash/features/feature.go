@@ -122,6 +122,11 @@ var DeprecateKickstartInjection = &Flag{Name: "edge-management.deprecate_ks_inje
 // SilentGormLogging toggles noisy logging from Gorm (using for tests during development on slow machines/connections
 var SilentGormLogging = &Flag{Name: "edge-management.silent_gorm_logging", EnvVar: "FEATURE_SILENT_GORM_LOGGING"}
 
+// PULP INTEGRATION FLAGS
+
+// PulpIntegration covers the overall integration of pulp and deprecation of AWS storage
+var PulpIntegration = &Flag{Name: "edge-management.pulp_integration", EnvVar: "FEATURE_PULP_INTEGRATION"}
+
 // (ADD FEATURE FLAGS ABOVE)
 // FEATURE FLAG CHECK CODE
 
