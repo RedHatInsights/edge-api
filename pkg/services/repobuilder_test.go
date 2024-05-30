@@ -630,14 +630,6 @@ var _ = Describe("RepoBuilder Service Test", func() {
 	})
 })
 
-func setupSuite(_ testing.TB) func(_ testing.TB) {
-	os.Setenv(feature.StaticDeltaDev.EnvVar, "True")
-
-	return func(_ testing.TB) {
-		os.Unsetenv(feature.StaticDeltaDev.EnvVar)
-	}
-}
-
 func TestBuildUpdateRepoWithOldCommits(t *testing.T) {
 	g := NewGomegaWithT(t)
 	currentDir, err := os.Getwd()
@@ -645,8 +637,6 @@ func TestBuildUpdateRepoWithOldCommits(t *testing.T) {
 	// enable oldCommits feature flag by setting the corresponding env variable
 	err = os.Setenv(feature.BuildUpdateRepoWithOldCommits.EnvVar, "True")
 	g.Expect(err).ToNot(HaveOccurred())
-	teardownSuite := setupSuite(t)
-	defer teardownSuite(t)
 
 	defer func(dirPath string) {
 		// restore the standard command builder
