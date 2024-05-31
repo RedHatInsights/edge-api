@@ -1329,7 +1329,11 @@ func (s *DeviceService) CanUpdate(currentDistribution string, updDistribution st
 	if config.DistributionsRefs[currentDistribution] == config.DistributionsRefs[updDistribution] {
 		return true
 	}
-	updPkgs := config.DistributionsPackages[updDistribution]
+	updPkgs, ok := config.DistributionsPackages[updDistribution]
+	if !ok {
+		panic("Distribution not found in config")
+	}
+
 	for i, pkg := range config.DistributionsPackages[currentDistribution] {
 		if updPkgs[i] == pkg {
 			return true
