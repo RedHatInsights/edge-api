@@ -323,6 +323,29 @@ objects:
     - ingress
     - image-builder
     featureFlags: true
+- apiVersion: metrics.console.redhat.com/v1alpha1
+  kind: FloorPlan
+  metadata:
+    name: edge-api
+    labels:
+      app: edge-api
+      service: edge
+  spec:
+    database:
+      secretName: ${FLOORIST_DB_SECRET_NAME}
+    objectStore:
+      secretName: ${FLOORIST_BUCKET_SECRET_NAME}
+    logLevel: ${FLOORIST_LOGLEVEL}
+    suspend: ${{FLOORIST_SUSPEND}}
+    queries:
+    - prefix: ${FLOORIST_QUERY_PREFIX}/commits
+      query: >-
+        SELECT org_id, compose_job_id, arch, status, os_tree_commit, os_tree_parent_commit, os_tree_ref
+        FROM commits;
+    - prefix: ${FLOORIST_QUERY_PREFIX}/devices
+      query: >-
+        SELECT uuid, org_id, deleted_at, current_hash, available_hash, last_seen
+        FROM devices;
 parameters:
 - description: Cpu limit of service
   name: CPU_LIMIT
@@ -443,3 +466,18 @@ parameters:
   name: SUBSCRIPTION_SERVER_URL
   required: false
   value: "http://subscription-servers:8080"
+- name: FLOORIST_LOGLEVEL
+  description: Floorist loglevel config
+  value: 'INFO'
+- name: FLOORIST_SUSPEND
+  description: Disable Floorist cronjob execution
+  value: 'false'
+- name: FLOORIST_DB_SECRET_NAME
+  description: Name of the secret for accessing the database for floorist
+  value: "edge-db"
+- name: FLOORIST_BUCKET_SECRET_NAME
+  description: Name of the secret for accessing the bucket for the floorist data dump
+  value: "floorist-bucket"
+- name: FLOORIST_QUERY_PREFIX
+  description: Prefix for separating query data between prod and stage in the bucket
+  value: "hms_analytics/edge/unknown"
