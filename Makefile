@@ -18,7 +18,7 @@ TEST_CONTAINER_TAG="quay.io/fleet-management/libfdo-data:$(IMAGE_TAG)"
 KUBECTL=kubectl
 NAMESPACE=default
 TEST_OPTIONS=-race
-BUILD_TAGS=-tags=fdo
+BUILD_TAGS=''
 BUILD_FLAGS=-trimpath
 
 GOLANGCI_LINT_COMMON_OPTIONS=\
@@ -42,10 +42,9 @@ EXCLUDE_DIRS=-e /test/ -e /cmd/db -e /cmd/kafka \
 CONTAINERFILE_NAME=Dockerfile
 
 .PHONY:	all bonfire-config-local bonfire-config-github build-containers \
-               build build-edge-api-container clean coverage coverage-html coverage-no-fdo \
+               build build-edge-api-container clean coverage coverage-html  \
                create-ns deploy-app deploy-env fmt generate-docs help lint pre-commit \
-               restart-app scale-down scale-up test test-clean-no-fdo \
-               test-no-fdo vet vet-no-fdo
+               restart-app scale-down scale-up test test-clean vet
 
 bonfire-config-local:
 	@cp default_config.yaml.local.example config.yaml
@@ -89,14 +88,9 @@ clean:
 coverage:
 	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v $(EXCLUDE_DIRS)) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
 
-coverage-output-no-fdo:
-	go test $$(go list ./... | grep -v $(EXCLUDE_DIRS)) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic
 
 coverage-html:
 	go tool cover -html=coverage.txt -o coverage.html
-
-coverage-no-fdo:
-	go test $$(go list ./... | grep -v $(EXCLUDE_DIRS)) $(TEST_OPTIONS) -coverprofile=coverage.txt -covermode=atomic -json > coverage.json
 
 create-ns:
 	$(KUBECTL) create ns $(NAMESPACE)
@@ -127,7 +121,6 @@ help:
 	@echo "clean                     Removes binaries and cached golangci files"
 	@echo "coverage                  Runs 'go test' coverage on the project"
 	@echo "coverage-html             Create HTML version of coverage report"
-	@echo "coverage-no-fdo           Runs 'go test' coverage on the project without FDO"
 	@echo "create-ns                 Creates a namespace in kubernetes"
 	@echo "                             @param NAMESPACE - (optional) the namespace to use"
 	@echo "deploy-app				 Deploys the edge app in the given namespace"
@@ -150,10 +143,7 @@ help:
 	@echo "swaggo                    Runs swaggo/swag and converts to openapi.json in /api"
 	@echo "swaggo_setup"             Installs necessary packages to use swaggo
 	@echo "test                      Runs 'go test' on the project"
-	@echo "test-clean-no-fdo         Runs 'go test' on the project without FDO"
-	@echo "test-no-fdo               Runs 'go test' on the project without FDO"
 	@echo "vet                       Runs 'go vet' on the project"
-	@echo "vet-no-fdo                Runs 'go vet' on the project without FDO"
 	@echo ""
 
 golangci-lint:
@@ -168,18 +158,6 @@ golangci-lint:
     golangci-lint run $(GOLANGCI_LINT_COMMON_OPTIONS) $(OUT_FORMAT) \
 			$(TARGET_FILES)
 
-golangci-lint-no-fdo:
-	if [ "$(GITHUB_ACTION)" != '' ]; \
-    then \
-		OUT_FORMAT="--out-format=line-number"; \
-		TARGET_FILES=$$(go list ./... | grep -v /vendor/);\
-    else \
-		OUT_FORMAT="--out-format=colored-line-number"; \
-		TARGET_FILES=$$(go list -f '{{.Dir}}' ./... | grep -v '/vendor/');\
-	fi;\
-    golangci-lint run $(GOLANGCI_LINT_COMMON_OPTIONS) $(OUT_FORMAT) \
-			$(TARGET_FILES)
-
 lint:
 	golint $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
 
@@ -187,8 +165,8 @@ openapi:
 	go run cmd/spec/main.go
 
 pre-commit:
-	$(MAKE) golangci-lint-no-fdo
-	$(MAKE) test-clean-no-fdo
+	$(MAKE) golangci-lint
+	$(MAKE) test-clean
 
 restart-app:
 	$(MAKE) scale-down NAMESPACE=$(NAMESPACE)
@@ -207,11 +185,9 @@ swaggo_setup:
 test:
 	go test $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /test/) $(TEST_OPTIONS)
 
-test-clean-no-fdo:
+test-clean:
 	go test -count=1 $$(go list ./... | grep -v /test/) $(TEST_OPTIONS)
 
-test-no-fdo:
-	go test $$(go list ./... | grep -v /test/) $(TEST_OPTIONS)
 
 test_gha:
 	go test ./...
@@ -220,9 +196,6 @@ vet:
 	go mod tidy
 	go install -a
 	go vet $(BUILD_TAGS) $$(go list $(BUILD_TAGS) ./... | grep -v /vendor/)
-
-vet-no-fdo:
-	go vet $$(go list ./... | grep -v /vendor/)
 
 pkg/services/mock_services/downloader.go: pkg/services/files/downloader.go
 	mockgen -source=$< -destination=$@ -package=mock_services
