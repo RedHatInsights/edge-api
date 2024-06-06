@@ -295,6 +295,7 @@ objects:
               memory: 1Gi
     objectStore:
     - ${EDGE_TARBALLS_BUCKET}
+    - edge-central-pulp-s3
     database:
       name: edge
     testing:
