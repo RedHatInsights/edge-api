@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -351,7 +352,7 @@ func (c *Client) ComposeInstaller(image *models.Image) (*models.Image, error) {
 	users := make([]User, 0)
 	if feature.DeprecateKickstartInjection.IsEnabled() && image.Installer != nil && image.Installer.Username != "" && image.Installer.SSHKey != "" {
 		users = append(users, User{Name: image.Installer.Username,
-			SSHKey: image.Installer.SSHKey,
+			SSHKey: strings.TrimSpace(image.Installer.SSHKey),
 			Groups: []string{image.Installer.Username, "wheel"}})
 	}
 
