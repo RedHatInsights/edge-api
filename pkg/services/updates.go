@@ -22,8 +22,10 @@ import (
 	kafkacommon "github.com/redhatinsights/edge-api/pkg/common/kafka"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	edgeerrors "github.com/redhatinsights/edge-api/pkg/errors"
+	"github.com/redhatinsights/edge-api/pkg/jobs"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 
 	"github.com/redhatinsights/edge-api/config"
 
@@ -128,14 +130,37 @@ type PlaybookDispatcherEvent struct {
 	Payload   PlaybookDispatcherEventPayload `json:"payload"`
 }
 
+type CreateUpdateAsyncJob struct {
+	UpdateID uint
+}
+
+func CreateUpdateAsyncJobHandler(ctx context.Context, job *jobs.Job) {
+	s := NewUpdateService(ctx, log.StandardLogger().WithContext(ctx)).(*UpdateService)
+	args := job.Args.(*CreateUpdateAsyncJob)
+	s.createUpdate(ctx, args.UpdateID)
+}
+
+func init() {
+	jobs.RegisterHandlers("CreateUpdateAsyncJob", CreateUpdateAsyncJobHandler, jobs.IgnoredJobHandler)
+}
+
 // CreateUpdateAsync is the function that creates an update transaction asynchronously
 func (s *UpdateService) CreateUpdateAsync(id uint) {
-	go func(updateID uint) {
-		_, err := s.CreateUpdate(updateID)
+	if feature.JobQueue.IsEnabledCtx(s.ctx) {
+		err := jobs.NewAndEnqueue(s.ctx, "CreateUpdateAsyncJob", &CreateUpdateAsyncJob{UpdateID: id})
 		if err != nil {
-			s.log.WithFields(log.Fields{"updateID": updateID, "error": err.Error()}).Error("error occurred when creating update")
+			log.WithContext(s.ctx).WithField("error", err.Error()).Error("Failed enqueueing job")
 		}
-	}(id)
+	} else {
+		go s.createUpdate(s.ctx, id)
+	}
+}
+
+func (s *UpdateService) createUpdate(ctx context.Context, updateID uint) {
+	_, err := s.CreateUpdate(updateID)
+	if err != nil {
+		log.WithContext(ctx).WithFields(log.Fields{"updateID": updateID, "error": err.Error()}).Error("error occurred when creating update")
+	}
 }
 
 // SetUpdateErrorStatusWhenInterrupted set the update to error status when instance is interrupted

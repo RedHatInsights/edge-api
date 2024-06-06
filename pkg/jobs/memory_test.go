@@ -10,12 +10,14 @@ import (
 )
 
 var defaultConfig = Config{
-	QueueSize: 1,
-	Workers:   2,
-	Timeout:   30 * time.Second,
+	FastQueueSize: 1,
+	SlowQueueSize: 1,
+	FastWorkers:   2,
+	SlowWorkers:   2,
+	Timeout:       30 * time.Second,
 }
 
-func TestMemoryWorker_Enqueue(t *testing.T) {
+func TestMemoryWorker_EnqueueFast(t *testing.T) {
 	ctx := context.Background()
 	worker := NewMemoryClientWithConfig(defaultConfig)
 	defer worker.Stop(ctx)
@@ -32,6 +34,34 @@ func TestMemoryWorker_Enqueue(t *testing.T) {
 
 	job := &Job{
 		Type: "test",
+	}
+
+	err := worker.Enqueue(ctx, job)
+	if err != nil {
+		t.Errorf("Enqueue call failed: %v", err)
+	}
+
+	waitUntilTrue(t, success.Load, "Timeout: job was not processed successfully")
+}
+
+func TestMemoryWorker_EnqueueSlow(t *testing.T) {
+	ctx := context.Background()
+	worker := NewMemoryClientWithConfig(defaultConfig)
+	defer worker.Stop(ctx)
+	var success atomic.Bool
+
+	worker.RegisterHandlers("test", func(context.Context, *Job) {
+		// called to process job
+		success.Store(true)
+	}, func(context.Context, *Job) {
+		// called when context is cancelled, expires or after unhandled panic
+		t.Error("Failure handler should not be called")
+	})
+	worker.Start(ctx)
+
+	job := &Job{
+		Type:  "test",
+		Queue: SlowQueue,
 	}
 
 	err := worker.Enqueue(ctx, job)

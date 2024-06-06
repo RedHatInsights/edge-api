@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -1569,8 +1570,15 @@ var _ = Describe("Images Route Tests", func() {
 				req, err := http.NewRequest("POST", fmt.Sprintf("/images/%d/installer", image.ID), &buf)
 				Expect(err).ToNot(HaveOccurred())
 
+				var wg sync.WaitGroup
+				wg.Add(1)
+				defer wg.Wait()
+
 				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
-				mockImagesService.EXPECT().CreateInstallerForImage(gomock.Any(), &image).Return(&image, nil, nil)
+				mockImagesService.EXPECT().CreateInstallerForImage(gomock.Any(), &image).Return(&image, nil)
+				mockImagesService.EXPECT().ProcessInstaller(gomock.Any(), &image).Return(nil).AnyTimes().Do(func(_ any, _ any) {
+					wg.Done()
+				})
 
 				httpTestRecorder := httptest.NewRecorder()
 				router.ServeHTTP(httpTestRecorder, req)
@@ -1597,7 +1605,7 @@ var _ = Describe("Images Route Tests", func() {
 
 				mockImagesService.EXPECT().GetImageByID(strconv.Itoa(int(image.ID))).Return(&image, nil)
 				expectedError := errors.New("unknown error")
-				mockImagesService.EXPECT().CreateInstallerForImage(gomock.Any(), &image).Return(nil, nil, expectedError)
+				mockImagesService.EXPECT().CreateInstallerForImage(gomock.Any(), &image).Return(nil, expectedError)
 
 				httpTestRecorder := httptest.NewRecorder()
 				router.ServeHTTP(httpTestRecorder, req)

@@ -10,30 +10,30 @@ import (
 	gomock "github.com/golang/mock/gomock"
 )
 
-// MockTopicServiceInterface is a mock of TopicServiceInterface interface
+// MockTopicServiceInterface is a mock of TopicServiceInterface interface.
 type MockTopicServiceInterface struct {
 	ctrl     *gomock.Controller
 	recorder *MockTopicServiceInterfaceMockRecorder
 }
 
-// MockTopicServiceInterfaceMockRecorder is the mock recorder for MockTopicServiceInterface
+// MockTopicServiceInterfaceMockRecorder is the mock recorder for MockTopicServiceInterface.
 type MockTopicServiceInterfaceMockRecorder struct {
 	mock *MockTopicServiceInterface
 }
 
-// NewMockTopicServiceInterface creates a new mock instance
+// NewMockTopicServiceInterface creates a new mock instance.
 func NewMockTopicServiceInterface(ctrl *gomock.Controller) *MockTopicServiceInterface {
 	mock := &MockTopicServiceInterface{ctrl: ctrl}
 	mock.recorder = &MockTopicServiceInterfaceMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockTopicServiceInterface) EXPECT() *MockTopicServiceInterfaceMockRecorder {
 	return m.recorder
 }
 
-// GetTopic mocks base method
+// GetTopic mocks base method.
 func (m *MockTopicServiceInterface) GetTopic(requested string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTopic", requested)
@@ -42,7 +42,7 @@ func (m *MockTopicServiceInterface) GetTopic(requested string) (string, error) {
 	return ret0, ret1
 }
 
-// GetTopic indicates an expected call of GetTopic
+// GetTopic indicates an expected call of GetTopic.
 func (mr *MockTopicServiceInterfaceMockRecorder) GetTopic(requested interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTopic", reflect.TypeOf((*MockTopicServiceInterface)(nil).GetTopic), requested)

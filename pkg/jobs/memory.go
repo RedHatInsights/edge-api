@@ -16,17 +16,20 @@ import (
 )
 
 type Config struct {
-	QueueSize int
-	Workers   int
-	Timeout   time.Duration
-	IntSignal os.Signal
+	FastQueueSize int
+	SlowQueueSize int
+	FastWorkers   int
+	SlowWorkers   int
+	Timeout       time.Duration
+	IntSignal     os.Signal
 }
 
 type MemoryWorker struct {
 	cfg Config
 	hs  map[JobType]JobHandler
 	fhs map[JobType]JobHandler
-	q   chan *Job
+	qF  chan *Job // fast
+	qS  chan *Job // slow
 	oc  *sync.Once
 	wg  sync.WaitGroup
 	cf  []context.CancelFunc
@@ -41,20 +44,23 @@ func NewMemoryClientWithConfig(config Config) *MemoryWorker {
 		cfg: config,
 		hs:  make(map[JobType]JobHandler),
 		fhs: make(map[JobType]JobHandler),
-		q:   make(chan *Job, config.QueueSize),
+		qF:  make(chan *Job, config.FastQueueSize),
+		qS:  make(chan *Job, config.SlowQueueSize),
 		oc:  &sync.Once{},
 		wg:  sync.WaitGroup{},
-		cf:  make([]context.CancelFunc, 0, config.Workers+1),
+		cf:  make([]context.CancelFunc, 0, config.FastWorkers+config.SlowWorkers+1),
 		sig: config.IntSignal,
 	}
 }
 
 func NewMemoryClient() *MemoryWorker {
 	return NewMemoryClientWithConfig(Config{
-		QueueSize: 5,
-		Workers:   1,
-		Timeout:   4 * time.Hour,
-		IntSignal: os.Interrupt,
+		FastQueueSize: 1000,
+		SlowQueueSize: 50,
+		FastWorkers:   100,
+		SlowWorkers:   10,
+		Timeout:       2 * time.Hour,
+		IntSignal:     os.Interrupt,
 	})
 }
 
@@ -76,7 +82,12 @@ func (w *MemoryWorker) Enqueue(ctx context.Context, job *Job) error {
 
 	_, logger := initJobContext(ctx, job)
 	logger.WithField("job_args", job.Args).Infof("Enqueuing job %s of type %s", job.ID, job.Type)
-	w.q <- job
+
+	if job.Queue == FastQueue {
+		w.qF <- job
+	} else {
+		w.qS <- job
+	}
 	w.sen.Add(1)
 	metrics.JobEnqueuedCount.WithLabelValues(string(job.Type)).Inc()
 	return nil
@@ -89,15 +100,31 @@ func (w *MemoryWorker) Start(ctx context.Context) {
 	w.cfm.Lock()
 	defer w.cfm.Unlock()
 
-	logrus.WithContext(ctx).Infof("Starting %d job workers", w.cfg.Workers)
-	for i := 0; i < w.cfg.Workers; i++ {
+	logrus.WithContext(ctx).Infof("Starting %d fast job workers", w.cfg.FastWorkers)
+	for i := 0; i < w.cfg.FastWorkers; i++ {
 		uid := uuid.New()
 		w.wg.Add(1)
-		logrus.WithContext(ctx).Infof("Started worker with uuid %s", uid)
+		logrus.WithContext(ctx).Infof("Started fast worker with uuid %s", uid)
 		gctx, cf := context.WithCancel(ctx)
 		w.cf = append(w.cf, cf)
-		go w.dequeueLoop(gctx, uid)
+		go w.dequeueLoop(gctx, uid, w.qF)
 	}
+
+	logrus.WithContext(ctx).Infof("Starting %d slow job workers", w.cfg.SlowWorkers)
+	for i := 0; i < w.cfg.SlowWorkers; i++ {
+		uid := uuid.New()
+		w.wg.Add(1)
+		logrus.WithContext(ctx).Infof("Started slow worker with uuid %s", uid)
+		gctx, cf := context.WithCancel(ctx)
+		w.cf = append(w.cf, cf)
+		go w.dequeueLoop(gctx, uid, w.qS)
+	}
+
+	// Start stats loop
+	w.wg.Add(1)
+	gctx, cf := context.WithCancel(ctx)
+	w.cf = append(w.cf, cf)
+	go w.statsLoop(gctx)
 
 	// Handle interrupt signal
 	if w.sig != nil {
@@ -134,7 +161,8 @@ func (w *MemoryWorker) Stop(ctx context.Context) {
 		logrus.WithContext(ctx).Infof("Stopping jobs, %d active jobs, %d queued jobs (waiting started)", s.Active, s.Enqueued)
 
 		// Stop all idle workers by closing the queue
-		close(w.q)
+		close(w.qF)
+		close(w.qS)
 
 		w.cancelAll()
 
@@ -151,17 +179,31 @@ func (w *MemoryWorker) cancelAll() {
 	}
 }
 
-func (w *MemoryWorker) dequeueLoop(ctx context.Context, wid uuid.UUID) {
+func (w *MemoryWorker) statsLoop(ctx context.Context) {
 	defer w.wg.Done()
 
-	// Handle also stats updates, in extreme case when all workers are busy, stats
-	// will not be updated for a while. Not
 	statsTick := time.NewTicker(1 * time.Second)
 	defer statsTick.Stop()
 
 	for {
 		select {
-		case job := <-w.q:
+		case <-statsTick.C:
+			s, _ := w.Stats(ctx)
+			metrics.JobActiveSize.Set(float64(s.Active))
+			metrics.JobQueueSize.Set(float64(s.Enqueued))
+		case <-ctx.Done():
+			logrus.WithContext(ctx).Debug("Stopping stats goroutine (context done)")
+			return
+		}
+	}
+}
+
+func (w *MemoryWorker) dequeueLoop(ctx context.Context, wid uuid.UUID, ch chan *Job) {
+	defer w.wg.Done()
+
+	for {
+		select {
+		case job := <-ch:
 			if job == nil {
 				logrus.WithContext(ctx).Debug("Stopping worker goroutine (closed channel)")
 				return
@@ -169,10 +211,6 @@ func (w *MemoryWorker) dequeueLoop(ctx context.Context, wid uuid.UUID) {
 
 			w.sen.Add(-1)
 			w.processJob(ctx, job, wid)
-		case <-statsTick.C:
-			s, _ := w.Stats(ctx)
-			metrics.JobActiveSize.Set(float64(s.Active))
-			metrics.JobQueueSize.Set(float64(s.Enqueued))
 		case <-ctx.Done():
 			logrus.WithContext(ctx).Debug("Stopping worker goroutine (context done)")
 			return
