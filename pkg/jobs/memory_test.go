@@ -194,7 +194,7 @@ func TestMemoryWorker_Panic(t *testing.T) {
 func TestMemoryWorker_Interrupt(t *testing.T) {
 	ctx := context.Background()
 	config := defaultConfig
-	config.IntSignal = os.Signal(syscall.SIGUSR1)
+	config.IntSignal = []os.Signal{os.Signal(syscall.SIGUSR1)}
 	worker := NewMemoryClientWithConfig(config)
 	var success atomic.Bool
 

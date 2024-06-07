@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/google/uuid"
@@ -21,7 +22,7 @@ type Config struct {
 	FastWorkers   int
 	SlowWorkers   int
 	Timeout       time.Duration
-	IntSignal     os.Signal
+	IntSignal     []os.Signal
 }
 
 type MemoryWorker struct {
@@ -36,7 +37,7 @@ type MemoryWorker struct {
 	cfm sync.Mutex
 	sen atomic.Int64
 	sac atomic.Int64
-	sig os.Signal
+	sig []os.Signal
 }
 
 func NewMemoryClientWithConfig(config Config) *MemoryWorker {
@@ -60,7 +61,7 @@ func NewMemoryClient() *MemoryWorker {
 		FastWorkers:   100,
 		SlowWorkers:   10,
 		Timeout:       2 * time.Hour,
-		IntSignal:     os.Interrupt,
+		IntSignal:     []os.Signal{os.Interrupt, syscall.SIGTERM, syscall.SIGSTOP},
 	})
 }
 
@@ -129,7 +130,7 @@ func (w *MemoryWorker) Start(ctx context.Context) {
 	// Handle interrupt signal
 	if w.sig != nil {
 		intC := make(chan os.Signal, 1)
-		signal.Notify(intC, w.sig)
+		signal.Notify(intC, w.sig...)
 
 		ctxInt, cfInt := context.WithCancel(ctx)
 		w.cf = append(w.cf, cfInt)
