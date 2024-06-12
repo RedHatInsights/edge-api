@@ -27,8 +27,8 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.openly.dev/pointy v1.3.0
 	gorm.io/driver/postgres v1.5.4
-	gorm.io/driver/sqlite v1.5.4
-	gorm.io/gorm v1.25.6
+	gorm.io/driver/sqlite v1.5.6
+	gorm.io/gorm v1.25.7-0.20240204074919-46816ad31dde
 )
 
 require (
@@ -58,7 +58,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mattn/go-sqlite3 v1.14.17 // indirect
+	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/nxadm/tail v1.4.11 // indirect
