@@ -1,0 +1,16 @@
+---
+package: pulp
+generate:
+  models: true
+  client: true
+output: pkg/clients/pulp/pulp_client.gen.go
+output-options:
+  include-tags:
+    - "Domains"
+    - "Tasks"
+    - "Artifacts"
+    - "Repositories: Ostree"
+    - "Distributions: Ostree"
+    - "Content: Content"
+    - "Contentguards: Header"
+    - "Contentguards: Composite"

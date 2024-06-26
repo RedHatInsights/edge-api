@@ -9,5 +9,6 @@ func RegisterAPIMetrics() {
 		JobQueueSize,
 		JobActiveSize,
 		BackgroundJobDuration,
+		PlatformClientDuration,
 	)
 }

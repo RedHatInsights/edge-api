@@ -1,0 +1,7 @@
+ostree --repo=repo init --mode archive
+mkdir tree
+echo "Hello world!" > tree/hello.txt
+ostree --repo=repo commit --branch=foo tree/
+tar cvf small_commit1.tar repo/
+echo "Hello again!" > tree/hello2.txt
+ostree --repo=repo commit --branch=foo tree/

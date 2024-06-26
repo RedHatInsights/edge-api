@@ -133,6 +133,7 @@ help:
 	@echo "lint                      Runs 'golint' on the project"
 	@echo "golangci-lint			 Runs 'golangci-lint' on the project"
 	@echo "openapi                   Generates an openapi.{json,yaml} file in /cmd/spec/"
+	@echo "update-clients            Updates sources for OpenAPI clients"
 	@echo "pre-commit                Runs fmt, vet, lint, and clean on the project"
 	@echo "restart-app				 Scales the edge-api-service deployment down to 0 then up to 1 in the given namespace"
 	@echo "                            @param NAMESPACE - (optional) the namespace to use"
@@ -163,6 +164,14 @@ lint:
 
 openapi:
 	go run cmd/spec/main.go
+
+# This needs github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
+# Also workarounds a bug: https://github.com/oapi-codegen/oapi-codegen/issues/243
+.PHONY: update-clients
+update-clients:
+	curl -s "https://pulp.stage.devshift.net/api/pulp/api/v3/docs/api.json?pk_path=1" > pkg/clients/pulp/pulp_openapi.json
+	perl -i -pe 'BEGIN{undef $$/;} s/"additionalProperties": {\s*"type": "object"\s*}/"additionalProperties": true/g' pkg/clients/pulp/pulp_openapi.json
+	oapi-codegen -config pkg/clients/pulp/pulp_config.yaml pkg/clients/pulp/pulp_openapi.json
 
 pre-commit:
 	$(MAKE) golangci-lint
