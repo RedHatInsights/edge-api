@@ -345,7 +345,7 @@ objects:
         FROM commits;
     - prefix: ${FLOORIST_QUERY_PREFIX}/devices
       query: >-
-        SELECT uuid, org_id, deleted_at, current_hash, available_hash, last_seen
+        SELECT uuid, org_id, deleted_at, current_hash, available_hash, last_seen, created_at
         FROM devices;
 parameters:
 - description: Cpu limit of service
