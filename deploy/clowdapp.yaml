@@ -351,7 +351,7 @@ parameters:
 - description: Cpu limit of service
   name: CPU_LIMIT
   required: false
-  value: "1"
+  value: "2"
 - description: Location of readiness probe
   name: READINESS_URI
   value: "/"
