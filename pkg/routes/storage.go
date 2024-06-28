@@ -31,12 +31,18 @@ const installerKey installerTypeKey = "installer_key"
 const updateTransactionKey updateTransactionTypeKey = "update_transaction_key"
 const storageImageKey storageImageTypeKey = "storage_image_key"
 
+type UpdateRepo struct {
+	ID      uint
+	OrgID   string
+	RepoURL string
+}
+
 func setContextInstaller(ctx context.Context, installer *models.Installer) context.Context {
 	return context.WithValue(ctx, installerKey, installer)
 }
 
-func setContextUpdateTransaction(ctx context.Context, installer *models.UpdateTransaction) context.Context {
-	return context.WithValue(ctx, updateTransactionKey, installer)
+func setContextUpdateTransaction(ctx context.Context, updateRepo *UpdateRepo) context.Context {
+	return context.WithValue(ctx, updateTransactionKey, updateRepo)
 }
 
 func setContextStorageImage(ctx context.Context, image *models.Image) context.Context {
@@ -230,8 +236,12 @@ func UpdateTransactionCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		var updateTransaction models.UpdateTransaction
-		if result := db.Org(orgID, "").Preload("Repo").First(&updateTransaction, updateTransactionID); result.Error != nil {
+		var updateRepo UpdateRepo
+		dbQuery := db.Org(orgID, "").
+			Model(models.UpdateTransaction{}).
+			Joins("Repo").
+			Select("update_transactions.id as id, update_transactions.org_id as org_id, Repo.url as repo_url")
+		if result := dbQuery.First(&updateRepo, updateTransactionID); result.Error != nil {
 			if result.Error == gorm.ErrRecordNotFound {
 				ctxServices.Log.WithField("error", result.Error.Error()).Error("device update transaction not found")
 				respondWithAPIError(w, ctxServices.Log, errors.NewNotFound("device update transaction not found"))
@@ -242,14 +252,14 @@ func UpdateTransactionCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := setContextUpdateTransaction(r.Context(), &updateTransaction)
+		ctx := setContextUpdateTransaction(r.Context(), &updateRepo)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func getContextStorageUpdateTransaction(w http.ResponseWriter, r *http.Request) *models.UpdateTransaction {
+func getContextStorageUpdateTransaction(w http.ResponseWriter, r *http.Request) *UpdateRepo {
 	ctx := r.Context()
-	updateTransaction, ok := ctx.Value(updateTransactionKey).(*models.UpdateTransaction)
+	updateTransaction, ok := ctx.Value(updateTransactionKey).(*UpdateRepo)
 
 	if !ok {
 		ctxServices := dependencies.ServicesFromContext(ctx)
@@ -262,14 +272,14 @@ func getContextStorageUpdateTransaction(w http.ResponseWriter, r *http.Request) 
 // ValidateStorageUpdateTransaction validate storage update transaction and return the request path
 func ValidateStorageUpdateTransaction(w http.ResponseWriter, r *http.Request) string {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
-	updateTransaction := getContextStorageUpdateTransaction(w, r)
-	if updateTransaction == nil {
+	updateRepo := getContextStorageUpdateTransaction(w, r)
+	if updateRepo == nil {
 		return ""
 	}
 	logContext := ctxServices.Log.WithFields(log.Fields{
 		"service":             "device-repository-storage",
-		"orgID":               updateTransaction.OrgID,
-		"updateTransactionID": updateTransaction.ID,
+		"orgID":               updateRepo.OrgID,
+		"updateTransactionID": updateRepo.ID,
 	})
 
 	filePath := chi.URLParam(r, "*")
@@ -279,17 +289,17 @@ func ValidateStorageUpdateTransaction(w http.ResponseWriter, r *http.Request) st
 		return ""
 	}
 
-	if updateTransaction.Repo == nil || updateTransaction.Repo.URL == "" {
+	if updateRepo.RepoURL == "" {
 		logContext.Error("update transaction repository does not exist")
 		respondWithAPIError(w, logContext, errors.NewNotFound("update transaction repository does not exist"))
 		return ""
 	}
 
-	RepoURL, err := url2.Parse(updateTransaction.Repo.URL)
+	RepoURL, err := url2.Parse(updateRepo.RepoURL)
 	if err != nil {
 		logContext.WithFields(log.Fields{
 			"error": err.Error(),
-			"URL":   updateTransaction.Repo.URL,
+			"URL":   updateRepo.RepoURL,
 		}).Error("error occurred when parsing repository url")
 		respondWithAPIError(w, ctxServices.Log, errors.NewBadRequest("bad update transaction repository url"))
 		return ""
@@ -316,8 +326,8 @@ func ValidateStorageUpdateTransaction(w http.ResponseWriter, r *http.Request) st
 func GetUpdateTransactionRepoFileContent(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	logContext := ctxServices.Log.WithField("service", "device-repository-storage")
-	updateTransaction := getContextStorageUpdateTransaction(w, r)
-	if updateTransaction == nil {
+	updateRepo := getContextStorageUpdateTransaction(w, r)
+	if updateRepo == nil {
 		return
 	}
 
@@ -328,8 +338,8 @@ func GetUpdateTransactionRepoFileContent(w http.ResponseWriter, r *http.Request)
 	}
 
 	logContext.WithFields(log.Fields{
-		"orgID":               updateTransaction.OrgID,
-		"updateTransactionID": updateTransaction.ID,
+		"orgID":               updateRepo.OrgID,
+		"updateTransactionID": updateRepo.ID,
 		"path":                requestPath,
 	}).Debug("redirect storage update transaction repo resource")
 
@@ -353,8 +363,8 @@ func GetUpdateTransactionRepoFileContent(w http.ResponseWriter, r *http.Request)
 func GetUpdateTransactionRepoFile(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
 	logContext := ctxServices.Log.WithField("service", "device-repository-storage")
-	updateTransaction := getContextStorageUpdateTransaction(w, r)
-	if updateTransaction == nil {
+	updateRepo := getContextStorageUpdateTransaction(w, r)
+	if updateRepo == nil {
 		return
 	}
 
@@ -365,8 +375,8 @@ func GetUpdateTransactionRepoFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logContext = logContext.WithFields(log.Fields{
-		"orgID":               updateTransaction.OrgID,
-		"updateTransactionID": updateTransaction.ID,
+		"orgID":               updateRepo.OrgID,
+		"updateTransactionID": updateRepo.ID,
 		"path":                requestPath,
 	})
 	logContext.Debug("return storage update transaction repo resource content")
