@@ -84,7 +84,6 @@ func logMiddleware(next http.Handler) http.Handler {
 
 		t1 := time.Now()
 		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
-		s := dependencies.ServicesFromContext(r.Context())
 
 		org_id, _ := common.GetOrgID(r)
 		fields := log.Fields{
@@ -93,14 +92,14 @@ func logMiddleware(next http.Handler) http.Handler {
 			"method":     r.Method,
 		}
 
-		s.Log.WithFields(fields).Debugf("Started %s request %s", r.Method, r.URL.Path)
+		log.WithContext(r.Context()).WithFields(fields).Debugf("Started %s request %s", r.Method, r.URL.Path)
 
 		defer func() {
 			latency := time.Since(t1).Milliseconds()
 			fields["latency_ms"] = latency
 			fields["status_code"] = ww.Status()
 			fields["bytes"] = ww.BytesWritten()
-			s.Log.WithFields(fields).Infof("Finished %s request %s with %d", r.Method, r.URL.Path, ww.Status())
+			log.WithContext(r.Context()).WithFields(fields).Infof("Finished %s request %s with %d", r.Method, r.URL.Path, ww.Status())
 		}()
 
 		next.ServeHTTP(ww, r)
