@@ -129,20 +129,24 @@ func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 		authRoute.Use(identity.EnforceIdentity)
 	}
 
-	authRoute.Route("/api/edge/v1", func(s chi.Router) {
-		s.Use(dependencies.Middleware)
-		s.Route("/images", routes.MakeImagesRouter)
-		s.Route("/updates", routes.MakeUpdatesRouter)
-		s.Route("/image-sets", routes.MakeImageSetsRouter)
-		s.Route("/devices", routes.MakeDevicesRouter)
-		s.Route("/thirdpartyrepo", routes.MakeThirdPartyRepoRouter)
-		s.Route("/fdo", routes.MakeFDORouter)
-		s.Route("/device-groups", routes.MakeDeviceGroupsRouter)
-		s.Route("/storage", routes.MakeStorageRouter)
+	authRoute.Route("/api/edge/v1", func(edgerRouter chi.Router) {
+		// Untangling the dependencies, these routes do not use the dependencies context
+		edgerRouter.Route("/storage", routes.MakeStorageRouter)
+		// The group below is still not sanitized
+		edgerRouter.Group(func(s chi.Router) {
+			s.Use(dependencies.Middleware)
+			s.Route("/images", routes.MakeImagesRouter)
+			s.Route("/updates", routes.MakeUpdatesRouter)
+			s.Route("/image-sets", routes.MakeImageSetsRouter)
+			s.Route("/devices", routes.MakeDevicesRouter)
+			s.Route("/thirdpartyrepo", routes.MakeThirdPartyRepoRouter)
+			s.Route("/fdo", routes.MakeFDORouter)
+			s.Route("/device-groups", routes.MakeDeviceGroupsRouter)
 
-		// this is meant for testing the job queue
-		s.Post("/ops/jobs/noop", services.CreateNoopJob)
-		s.Post("/ops/jobs/fallback", services.CreateFallbackJob)
+			// this is meant for testing the job queue
+			s.Post("/ops/jobs/noop", services.CreateNoopJob)
+			s.Post("/ops/jobs/fallback", services.CreateFallbackJob)
+		})
 	})
 	return route
 }
