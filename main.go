@@ -114,7 +114,6 @@ func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 		middleware.RealIP,
 		middleware.Recoverer,
 		setupDocsMiddleware,
-		dependencies.Middleware,
 		logMiddleware,
 	)
 
@@ -127,13 +126,11 @@ func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 	// Authenticated routes
 	authRoute := route.Group(nil)
 	if cfg.Auth {
-		authRoute.Use(
-			identity.EnforceIdentity,
-			dependencies.Middleware,
-		)
+		authRoute.Use(identity.EnforceIdentity)
 	}
 
 	authRoute.Route("/api/edge/v1", func(s chi.Router) {
+		s.Use(dependencies.Middleware)
 		s.Route("/images", routes.MakeImagesRouter)
 		s.Route("/updates", routes.MakeUpdatesRouter)
 		s.Route("/image-sets", routes.MakeImageSetsRouter)
