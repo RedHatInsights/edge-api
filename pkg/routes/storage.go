@@ -26,7 +26,9 @@ import (
 type installerTypeKey string
 type updateTransactionTypeKey string
 type storageImageTypeKey string
+type keyType int
 
+const fileServiceKey keyType = iota
 const installerKey installerTypeKey = "installer_key"
 const updateTransactionKey updateTransactionTypeKey = "update_transaction_key"
 const storageImageKey storageImageTypeKey = "storage_image_key"
@@ -49,30 +51,59 @@ func setContextStorageImage(ctx context.Context, image *models.Image) context.Co
 	return context.WithValue(ctx, storageImageKey, image)
 }
 
+func WithFileService(ctx context.Context, fileService services.FilesService) context.Context {
+	return context.WithValue(ctx, fileServiceKey, &fileService)
+}
+
+func getFileService(ctx context.Context) (services.FilesService, bool) {
+	fileService, ok := ctx.Value(fileServiceKey).(*services.FilesService)
+	if !ok || fileService == nil {
+		return nil, false
+	}
+	return *fileService, ok
+}
+
 // MakeStorageRouter adds support for external storage
 func MakeStorageRouter(sub chi.Router) {
+	sub.Use(fileServiceCtx)
+	MakeStorageRouterWithoutFilesService(sub)
+}
+
+func MakeStorageRouterWithoutFilesService(sub chi.Router) {
 	sub.Route("/update-repos/{updateID}", func(r chi.Router) {
 		r.Use(UpdateTransactionCtx)
 		r.Get("/content/*", GetUpdateTransactionRepoFileContent)
 		r.Get("/*", GetUpdateTransactionRepoFile)
 	})
-	sub.Group(func(s chi.Router) {
-		s.Route("/isos/{installerID}", func(r chi.Router) {
-			r.Use(InstallerByIDCtx)
-			r.Get("/", GetInstallerIsoStorageContent)
-		})
-		s.Route("/images-repos/{imageID}", func(r chi.Router) {
-			r.Use(storageImageCtx)
-			r.Get("/content/*", GetImageRepoFileContent)
-			r.Get("/*", GetImageRepoFile)
-		})
+	sub.Route("/isos/{installerID}", func(r chi.Router) {
+		r.Use(InstallerByIDCtx)
+		r.Get("/", GetInstallerIsoStorageContent)
+	})
+	sub.Route("/images-repos/{imageID}", func(r chi.Router) {
+		r.Use(storageImageCtx)
+		r.Get("/content/*", GetImageRepoFileContent)
+		r.Get("/*", GetImageRepoFile)
+	})
+}
+
+// fileServiceCtx is a handler to initiate fileService in context
+func fileServiceCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger := log.WithContext(r.Context())
+		fileService := services.NewFilesService(logger)
+		ctx := WithFileService(r.Context(), fileService)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 // redirectToStorageSignedURL redirect request to real content storage url using a signed url
 func redirectToStorageSignedURL(w http.ResponseWriter, r *http.Request, path string) {
 	logger := log.WithContext(r.Context()).WithField("service", "device-repository-storage")
-	fileService := services.NewFilesService(logger)
+	fileService, ok := getFileService(r.Context())
+	if !ok {
+		respondWithAPIError(w, logger, errors.NewBadRequest("Failed getting file service from context"))
+		return
+	}
 	signedURL, err := fileService.GetSignedURL(path)
 	if err != nil {
 		logger.WithFields(log.Fields{
@@ -89,7 +120,11 @@ func redirectToStorageSignedURL(w http.ResponseWriter, r *http.Request, path str
 // serveStorageContent return the real content from storage
 func serveStorageContent(w http.ResponseWriter, r *http.Request, path string) {
 	logger := log.WithContext(r.Context()).WithField("service", "device-repository-storage")
-	fileService := services.NewFilesService(logger)
+	fileService, ok := getFileService(r.Context())
+	if !ok {
+		respondWithAPIError(w, logger, errors.NewBadRequest("Failed getting file service from context"))
+		return
+	}
 	requestFile, err := fileService.GetFile(path)
 	if err != nil {
 		logger.WithFields(log.Fields{
@@ -201,7 +236,11 @@ func GetInstallerIsoStorageContent(w http.ResponseWriter, r *http.Request) {
 		respondWithAPIError(w, logger, errors.NewBadRequest("bad installer iso url"))
 		return
 	}
-	fileService := services.NewFilesService(logger)
+	fileService, ok := getFileService(r.Context())
+	if !ok {
+		respondWithAPIError(w, logger, errors.NewBadRequest("Failed getting file service from context"))
+		return
+	}
 	signedURL, err := fileService.GetSignedURL(url.Path)
 	if err != nil {
 		logger.WithField("error", err.Error()).Error("error occurred when signing url")
