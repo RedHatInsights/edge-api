@@ -12,7 +12,6 @@ import (
 
 	testHelpers "github.com/redhatinsights/edge-api/internal/testing"
 	"github.com/redhatinsights/edge-api/pkg/db"
-	"github.com/redhatinsights/edge-api/pkg/dependencies"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/routes/common"
 	"github.com/redhatinsights/edge-api/pkg/services/mock_services"
@@ -24,32 +23,25 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	log "github.com/sirupsen/logrus"
 )
 
 var _ = Describe("Storage Router", func() {
-	Skip("Skipping this whole suite, we don't use services in context - need test rewrite")
 
 	var ctrl *gomock.Controller
 	var router chi.Router
 	var mockFilesService *mock_services.MockFilesService
-	var edgeAPIServices *dependencies.EdgeAPIServices
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 		mockFilesService = mock_services.NewMockFilesService(ctrl)
-		edgeAPIServices = &dependencies.EdgeAPIServices{
-			FilesService: mockFilesService,
-			Log:          log.NewEntry(log.StandardLogger()),
-		}
 		router = chi.NewRouter()
 		router.Use(func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				ctx := dependencies.ContextWithServices(r.Context(), edgeAPIServices)
+				ctx := WithFileService(r.Context(), mockFilesService)
 				next.ServeHTTP(w, r.WithContext(ctx))
 			})
 		})
-		router.Route("/storage", MakeStorageRouter)
+		router.Route("/storage", MakeStorageRouterWithoutFilesService)
 	})
 	AfterEach(func() {
 		ctrl.Finish()
@@ -643,11 +635,11 @@ var _ = Describe("Storage Router", func() {
 						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 							// set identity orgID to orgID the creator/owner of the image
 							ctx := testHelpers.WithCustomIdentity(r.Context(), orgID)
-							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+							ctx = WithFileService(ctx, mockFilesService)
 							next.ServeHTTP(w, r.WithContext(ctx))
 						})
 					})
-					router.Route("/storage", MakeStorageRouter)
+					router.Route("/storage", MakeStorageRouterWithoutFilesService)
 				})
 
 				AfterEach(func() {
@@ -701,11 +693,11 @@ var _ = Describe("Storage Router", func() {
 						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 							// set identity orgID to imageBuilderOrgID
 							ctx := testHelpers.WithCustomIdentity(r.Context(), imageBuilderOrgID)
-							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+							ctx = WithFileService(ctx, mockFilesService)
 							next.ServeHTTP(w, r.WithContext(ctx))
 						})
 					})
-					router.Route("/storage", MakeStorageRouter)
+					router.Route("/storage", MakeStorageRouterWithoutFilesService)
 				})
 
 				AfterEach(func() {
@@ -763,11 +755,11 @@ var _ = Describe("Storage Router", func() {
 						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 							// set identity orgID to otherOrgID
 							ctx := testHelpers.WithCustomIdentity(r.Context(), otherOrgID)
-							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+							ctx = WithFileService(ctx, mockFilesService)
 							next.ServeHTTP(w, r.WithContext(ctx))
 						})
 					})
-					router.Route("/storage", MakeStorageRouter)
+					router.Route("/storage", MakeStorageRouterWithoutFilesService)
 				})
 
 				AfterEach(func() {
@@ -965,11 +957,11 @@ var _ = Describe("Storage Router", func() {
 						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 							// set identity orgID to orgID the creator/owner of the image
 							ctx := testHelpers.WithCustomIdentity(r.Context(), orgID)
-							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+							ctx = WithFileService(ctx, mockFilesService)
 							next.ServeHTTP(w, r.WithContext(ctx))
 						})
 					})
-					router.Route("/storage", MakeStorageRouter)
+					router.Route("/storage", MakeStorageRouterWithoutFilesService)
 				})
 
 				AfterEach(func() {
@@ -1017,11 +1009,11 @@ var _ = Describe("Storage Router", func() {
 						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 							// set identity orgID to imageBuilderOrgID
 							ctx := testHelpers.WithCustomIdentity(r.Context(), imageBuilderOrgID)
-							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+							ctx = WithFileService(ctx, mockFilesService)
 							next.ServeHTTP(w, r.WithContext(ctx))
 						})
 					})
-					router.Route("/storage", MakeStorageRouter)
+					router.Route("/storage", MakeStorageRouterWithoutFilesService)
 				})
 
 				AfterEach(func() {
@@ -1073,11 +1065,11 @@ var _ = Describe("Storage Router", func() {
 						return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 							// set identity orgID to otherOrgID
 							ctx := testHelpers.WithCustomIdentity(r.Context(), otherOrgID)
-							ctx = dependencies.ContextWithServices(ctx, edgeAPIServices)
+							ctx = WithFileService(ctx, mockFilesService)
 							next.ServeHTTP(w, r.WithContext(ctx))
 						})
 					})
-					router.Route("/storage", MakeStorageRouter)
+					router.Route("/storage", MakeStorageRouterWithoutFilesService)
 				})
 
 				AfterEach(func() {
