@@ -275,8 +275,8 @@ func UpdateTransactionCtx(next http.Handler) http.Handler {
 		var updateRepo UpdateRepo
 		dbQuery := db.Org(orgID, "").
 			Model(models.UpdateTransaction{}).
-			Joins("Repo").
-			Select("update_transactions.id as id, update_transactions.org_id as org_id, Repo.url as repo_url")
+			Joins("LEFT JOIN repos AS r ON r.id = update_transactions.repo_id").
+			Select("update_transactions.id as id, update_transactions.org_id as org_id, r.url as repo_url")
 		if result := dbQuery.First(&updateRepo, updateTransactionID); result.Error != nil {
 			if result.Error == gorm.ErrRecordNotFound {
 				logger.WithField("error", result.Error.Error()).Error("device update transaction not found")
