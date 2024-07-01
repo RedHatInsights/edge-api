@@ -10,7 +10,7 @@ require (
 	github.com/getkin/kin-openapi v0.125.0
 	github.com/getsentry/sentry-go v0.28.1
 	github.com/ghodss/yaml v1.0.0
-	github.com/go-chi/chi/v5 v5.0.14
+	github.com/go-chi/chi/v5 v5.1.0
 	github.com/go-openapi/runtime v0.27.1
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
@@ -27,7 +27,6 @@ require (
 	github.com/spf13/viper v1.18.1
 	github.com/stretchr/testify v1.8.4
 	go.openly.dev/pointy v1.3.0
-	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 	gorm.io/driver/postgres v1.5.4
 	gorm.io/driver/sqlite v1.5.4
 	gorm.io/gorm v1.25.6
@@ -84,6 +83,7 @@ require (
 	go.mongodb.org/mongo-driver v1.13.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.22.0 // indirect
+	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
