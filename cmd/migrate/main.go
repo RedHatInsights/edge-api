@@ -124,16 +124,6 @@ func main() {
 
 	modelsInterfaces = append(modelsInterfaces,
 		ModelInterface{
-			label:             "FDODevice",
-			interfaceInstance: &models.FDODevice{}})
-
-	modelsInterfaces = append(modelsInterfaces,
-		ModelInterface{
-			label:             "FDOUser",
-			interfaceInstance: &models.FDOUser{}})
-
-	modelsInterfaces = append(modelsInterfaces,
-		ModelInterface{
 			label:             "ImageSet",
 			interfaceInstance: &models.ImageSet{}})
 
@@ -149,11 +139,6 @@ func main() {
 
 	modelsInterfaces = append(modelsInterfaces,
 		ModelInterface{
-			label:             "OwnershipVoucherData",
-			interfaceInstance: &models.OwnershipVoucherData{}})
-
-	modelsInterfaces = append(modelsInterfaces,
-		ModelInterface{
 			label:             "Package",
 			interfaceInstance: &models.Package{}})
 
@@ -161,11 +146,6 @@ func main() {
 		ModelInterface{
 			label:             "Repo",
 			interfaceInstance: &models.Repo{}})
-
-	modelsInterfaces = append(modelsInterfaces,
-		ModelInterface{
-			label:             "SSHKey",
-			interfaceInstance: &models.SSHKey{}})
 
 	modelsInterfaces = append(modelsInterfaces,
 		ModelInterface{

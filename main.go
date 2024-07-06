@@ -140,7 +140,6 @@ func webRoutes(cfg *config.EdgeConfig) *chi.Mux {
 			s.Route("/image-sets", routes.MakeImageSetsRouter)
 			s.Route("/devices", routes.MakeDevicesRouter)
 			s.Route("/thirdpartyrepo", routes.MakeThirdPartyRepoRouter)
-			s.Route("/fdo", routes.MakeFDORouter)
 			s.Route("/device-groups", routes.MakeDeviceGroupsRouter)
 
 			// this is meant for testing the job queue

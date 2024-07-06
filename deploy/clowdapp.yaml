@@ -96,10 +96,6 @@ objects:
           value: ${PLAYBOOKDISPATCHERURL}
         - name: CONTENT_SOURCES_URL
           value: ${CONTENT_SOURCES_URL}
-        - name: FDO_HOST_URL
-          value: ${FDO_HOST_URL}
-        - name: FDO_API_VERSION
-          value: ${FDO_API_VERSION}
         - name: PLAYBOOKDISPATCHERPSK
           valueFrom:
             secretKeyRef:
@@ -173,10 +169,6 @@ objects:
           value: ${PLAYBOOKDISPATCHERURL}
         - name: CONTENT_SOURCES_URL
           value: ${CONTENT_SOURCES_URL}
-        - name: FDO_HOST_URL
-          value: ${FDO_HOST_URL}
-        - name: FDO_API_VERSION
-          value: ${FDO_API_VERSION}
         - name: PLAYBOOKDISPATCHERPSK
           valueFrom:
             secretKeyRef:
@@ -249,10 +241,6 @@ objects:
               value: ${PLAYBOOKDISPATCHERURL}
             - name: CONTENT_SOURCES_URL
               value: ${CONTENT_SOURCES_URL}
-            - name: FDO_HOST_URL
-              value: ${FDO_HOST_URL}
-            - name: FDO_API_VERSION
-              value: ${FDO_API_VERSION}
             - name: PLAYBOOKDISPATCHERPSK
               valueFrom:
                 secretKeyRef:
@@ -454,14 +442,6 @@ parameters:
   name: UPLOADWORKERS
   required: false
   value: "50"
-- description: FDO service URL
-  name: FDO_HOST_URL
-  required: false
-  value: "https://fdo.redhat.com"
-- description: FDO API version
-  name: FDO_API_VERSION
-  required: false
-  value: "v1"
 - description: Log level
   name: LOG_LEVEL
   required: false

@@ -343,60 +343,6 @@ curl -v http://localhost:8000/
 
 You should get a 200 response back.
 
-### Setup Podman to run FDO
-
-1. Install Podman
-2. Sign in on quay.io and create your secrect file
-
-     ```text
-     Upper right, click on username
-     Account Settings
-     Create Encrypted password
-     username
-     LHS Docker Configuration
-     copy contents into ~/.config/containers/auth.json
-     ```
-
-3. Execute Podman
-
-     ```bash
-     podman run --rm -ti -p 3000:3000 -v $(pwd):/edge-api:Z quay.io/fleet-management/edge-api:latest
-     ```
-
-Now the application should be running. You can test this running a curl command in another as follows:
-
-> Terminal 2
-
-```bash
-curl -v http://0.0.0.0:3000/docs
-```
-
-Using podman you might encounter `permission denied` error, well that error is because of podman rootless state.
-To solve it just change the volume you mount to `${pwd}:/edge-api:Z`.
-
-### Testing locally with libfdo-data
-
-The `quay.io/fleet-management/libfdo-data:latest` image is a special testing container, it contains a script that can help you run the tests from:
-
-1. edge-api upstream (clone on each run)
-
-     ```bash
-     podman run --rm -ti quay.io/fleet-management/libfdo-data:latest
-     ```
-
-2. your edge-api fork (clone on each run)
-
-     ```bash
-     podman build -f ./test-container --build-arg GIT_BRANCH=fdo --build-arg GIT_REMOTE=https://github.com/Avielyo10/edge-api.git -t quay.io/ayosef/libfdo-data:test
-     podman run --rm -ti quay.io/ayosef/libfdo-data:test
-     ```
-
-3. your localhost with volume
-
-     ```bash
-     podman run --rm -ti -v $(pwd):/edge-api:Z quay.io/fleet-management/libfdo-data:latest
-     ```
-
 ## Development
 
 Now you can build and deploy the application.
@@ -434,8 +380,6 @@ Golang also provides a unit test infrastructure `test`. Run unit tests with the 
 ```bash
 make test
 ```
-
-If you encounter issues, please follow steps under [Setup Podman to run FDO](https://github.com/RedHatInsights/edge-api#setup-podman-to-run-fdo) to setup your system, then [Testing locally with libfdo-data](https://github.com/RedHatInsights/edge-api#testing-locally-with-libfdo-data) to run tests within a speciialized container.
 
 ### API docs
 

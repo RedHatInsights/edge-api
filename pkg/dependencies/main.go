@@ -20,22 +20,21 @@ import (
 
 // EdgeAPIServices is the list of Edge API services
 type EdgeAPIServices struct {
-	CommitService           services.CommitServiceInterface
-	DeviceService           services.DeviceServiceInterface
-	ImageService            services.ImageServiceInterface
-	RepoService             services.RepoServiceInterface
-	ImageSetService         services.ImageSetsServiceInterface
-	UpdateService           services.UpdateServiceInterface
-	ThirdPartyRepoService   services.ThirdPartyRepoServiceInterface
-	OwnershipVoucherService services.OwnershipVoucherServiceInterface
-	DeviceGroupsService     services.DeviceGroupsServiceInterface
-	FilesService            services.FilesService
-	ProducerService         kafkacommon.ProducerServiceInterface
-	ConsumerService         kafkacommon.ConsumerServiceInterface
-	InventoryGroupsService  inventorygroups.ClientInterface
-	RepositoriesService     repositories.ClientInterface
-	RbacService             rbac.ClientInterface
-	Log                     log.FieldLogger
+	CommitService          services.CommitServiceInterface
+	DeviceService          services.DeviceServiceInterface
+	ImageService           services.ImageServiceInterface
+	RepoService            services.RepoServiceInterface
+	ImageSetService        services.ImageSetsServiceInterface
+	UpdateService          services.UpdateServiceInterface
+	ThirdPartyRepoService  services.ThirdPartyRepoServiceInterface
+	DeviceGroupsService    services.DeviceGroupsServiceInterface
+	FilesService           services.FilesService
+	ProducerService        kafkacommon.ProducerServiceInterface
+	ConsumerService        kafkacommon.ConsumerServiceInterface
+	InventoryGroupsService inventorygroups.ClientInterface
+	RepositoriesService    repositories.ClientInterface
+	RbacService            rbac.ClientInterface
+	Log                    log.FieldLogger
 }
 
 // Init creates all services that Edge API depends on in order to have dependency injection on context
@@ -49,22 +48,21 @@ func Init(ctx context.Context) *EdgeAPIServices {
 		"orgID":     orgID,
 	})
 	return &EdgeAPIServices{
-		CommitService:           services.NewCommitService(ctx, log),
-		ImageService:            services.NewImageService(ctx, log),
-		RepoService:             services.NewRepoService(ctx, log),
-		ImageSetService:         services.NewImageSetsService(ctx, log),
-		UpdateService:           services.NewUpdateService(ctx, log),
-		ThirdPartyRepoService:   services.NewThirdPartyRepoService(ctx, log),
-		DeviceService:           services.NewDeviceService(ctx, log),
-		OwnershipVoucherService: services.NewOwnershipVoucherService(ctx, log),
-		DeviceGroupsService:     services.NewDeviceGroupsService(ctx, log),
-		FilesService:            services.NewFilesService(log),
-		ProducerService:         kafkacommon.NewProducerService(),
-		ConsumerService:         kafkacommon.NewConsumerService(ctx, log),
-		InventoryGroupsService:  inventorygroups.InitClient(ctx, log),
-		RepositoriesService:     repositories.InitClient(ctx, log),
-		RbacService:             rbac.InitClient(ctx, log),
-		Log:                     log,
+		CommitService:          services.NewCommitService(ctx, log),
+		ImageService:           services.NewImageService(ctx, log),
+		RepoService:            services.NewRepoService(ctx, log),
+		ImageSetService:        services.NewImageSetsService(ctx, log),
+		UpdateService:          services.NewUpdateService(ctx, log),
+		ThirdPartyRepoService:  services.NewThirdPartyRepoService(ctx, log),
+		DeviceService:          services.NewDeviceService(ctx, log),
+		DeviceGroupsService:    services.NewDeviceGroupsService(ctx, log),
+		FilesService:           services.NewFilesService(log),
+		ProducerService:        kafkacommon.NewProducerService(),
+		ConsumerService:        kafkacommon.NewConsumerService(ctx, log),
+		InventoryGroupsService: inventorygroups.InitClient(ctx, log),
+		RepositoriesService:    repositories.InitClient(ctx, log),
+		RbacService:            rbac.InitClient(ctx, log),
+		Log:                    log,
 	}
 }
 

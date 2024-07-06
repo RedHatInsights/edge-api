@@ -42,10 +42,6 @@ func setUp() {
 		Repo{},
 		Device{},
 		DispatchRecord{},
-		FDODevice{},
-		OwnershipVoucherData{},
-		FDOUser{},
-		SSHKey{},
 		DeviceGroup{},
 		StaticDeltaState{},
 	)
