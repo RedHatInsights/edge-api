@@ -20,6 +20,7 @@ func handlePanic(errorOccurred *bool) {
 		os.Exit(1)
 	}
 }
+
 func main() {
 	config.Init()
 	l.InitLogger(os.Stdout)
@@ -101,16 +102,6 @@ func main() {
 
 	modelsInterfaces = append(modelsInterfaces,
 		ModelInterface{
-			label:             "FDODevice",
-			interfaceInstance: &models.FDODevice{}})
-
-	modelsInterfaces = append(modelsInterfaces,
-		ModelInterface{
-			label:             "FDOUser",
-			interfaceInstance: &models.FDOUser{}})
-
-	modelsInterfaces = append(modelsInterfaces,
-		ModelInterface{
 			label:             "ImageSet",
 			interfaceInstance: &models.ImageSet{}})
 
@@ -123,12 +114,6 @@ func main() {
 		ModelInterface{
 			label:             "Installer",
 			interfaceInstance: &models.Installer{}})
-
-	modelsInterfaces = append(modelsInterfaces,
-		ModelInterface{
-			label:             "OwnershipVoucherData",
-			interfaceInstance: &models.OwnershipVoucherData{}})
-
 	modelsInterfaces = append(modelsInterfaces,
 		ModelInterface{
 			label:             "Package",
@@ -138,11 +123,6 @@ func main() {
 		ModelInterface{
 			label:             "Repo",
 			interfaceInstance: &models.Repo{}})
-
-	modelsInterfaces = append(modelsInterfaces,
-		ModelInterface{
-			label:             "SSHKey",
-			interfaceInstance: &models.SSHKey{}})
 
 	modelsInterfaces = append(modelsInterfaces,
 		ModelInterface{

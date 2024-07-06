@@ -53,7 +53,6 @@ type EdgeConfig struct {
 	KafkaMessageSendMaxRetries int                       `json:"kafka_message_send_max_retries,omitempty"`
 	KafkaRetryBackoffMs        int                       `json:"kafka_retry_backoff_ms,omitempty"`
 	KafkaTopics                map[string]string         `json:"kafka_topics,omitempty"`
-	FDO                        *fdoConfig                `json:"fdo,omitempty"`
 	Local                      bool                      `json:"local,omitempty"`
 	Dev                        bool                      `json:"dev,omitempty"`
 	UnleashURL                 string                    `json:"unleash_url,omitempty"`
@@ -101,12 +100,6 @@ type dbConfig struct {
 	Hostname string `json:"hostname,omitempty"`
 	Port     uint   `json:"port,omitempty"`
 	Name     string `json:"name,omitempty"`
-}
-
-type fdoConfig struct {
-	URL                 string `json:"url,omitempty"`
-	APIVersion          string `json:"api_version,omitempty"`
-	AuthorizationBearer string `json:"-"`
 }
 
 type imageBuilderConfig struct {
@@ -167,9 +160,6 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("ContentSourcesURL", "http://content-sources:8000")
 	options.SetDefault("EdgeAPIServicePort", "3000")
 	options.SetDefault("UploadWorkers", 100)
-	options.SetDefault("FDOHostURL", "https://fdo.redhat.com")
-	options.SetDefault("FDOApiVersion", "v1")
-	options.SetDefault("FDOAuthorizationBearer", "lorum-ipsum")
 	options.SetDefault("Local", false)
 	options.SetDefault("Dev", false)
 	options.SetDefault("EDGEMGMT_CONFIGPATH", "/tmp/edgemgmt_config.json")
@@ -263,17 +253,12 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 			PSK:    options.GetString("PlaybookDispatcherPSK"),
 			Status: options.GetString("PlaybookDispatcherStatusURL"),
 		},
-		TemplatesPath:      options.GetString("TemplatesPath"),
-		EdgeAPIBaseURL:     options.GetString("EdgeAPIBaseURL"),
-		EdgeCertAPIBaseURL: options.GetString("EdgeCertAPIBaseURL"),
-		EdgeAPIServiceHost: options.GetString("EDGE_API_SERVICE_SERVICE_HOST"),
-		EdgeAPIServicePort: options.GetInt("EDGE_API_SERVICE_SERVICE_PORT"),
-		UploadWorkers:      options.GetInt("UploadWorkers"),
-		FDO: &fdoConfig{
-			URL:                 options.GetString("FDOHostURL"),
-			APIVersion:          options.GetString("FDOApiVersion"),
-			AuthorizationBearer: options.GetString("FDOAuthorizationBearer"),
-		},
+		TemplatesPath:              options.GetString("TemplatesPath"),
+		EdgeAPIBaseURL:             options.GetString("EdgeAPIBaseURL"),
+		EdgeCertAPIBaseURL:         options.GetString("EdgeCertAPIBaseURL"),
+		EdgeAPIServiceHost:         options.GetString("EDGE_API_SERVICE_SERVICE_HOST"),
+		EdgeAPIServicePort:         options.GetInt("EDGE_API_SERVICE_SERVICE_PORT"),
+		UploadWorkers:              options.GetInt("UploadWorkers"),
 		Local:                      options.GetBool("Local"),
 		Dev:                        options.GetBool("Dev"),
 		UnleashURL:                 options.GetString("FeatureFlagsUrl"),

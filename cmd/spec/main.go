@@ -39,7 +39,6 @@ func (s *edgeAPISchemaGen) addSchema(name string, model interface{}) {
 func main() {
 	gen := edgeAPISchemaGen{}
 	gen.init()
-	gen.addSchema("v1.OwnershipVoucherData", &[]models.OwnershipVoucherData{})
 	gen.addSchema("v1.Image", &models.Image{})
 	gen.addSchema("v1.PackageDiff", &models.PackageDiff{})
 	gen.addSchema("v1.ImageDetail", &routes.ImageDetail{})

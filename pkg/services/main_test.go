@@ -43,10 +43,6 @@ func setupTestDB() {
 		&models.Repo{},
 		&models.Device{},
 		&models.DispatchRecord{},
-		&models.FDODevice{},
-		&models.OwnershipVoucherData{},
-		&models.FDOUser{},
-		&models.SSHKey{},
 		&models.DeviceGroup{},
 		&models.StaticDeltaState{},
 	)
