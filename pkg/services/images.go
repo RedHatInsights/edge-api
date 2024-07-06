@@ -293,7 +293,7 @@ func (s *ImageService) getImageSetForNewImage(orgID string, image *models.Image)
 	return &imageSet, nil
 }
 
-// CreateImage sets up the image for the EDA-based CreateImage
+// CreateImage creates a new ostree image or image version
 func (s *ImageService) CreateImage(image *models.Image) error {
 	if image.OrgID == "" {
 		return new(OrgIDNotSet)
@@ -346,7 +346,6 @@ func (s *ImageService) CreateImage(image *models.Image) error {
 	// create an image under the new imageSet
 	image.ImageSetID = &imageSet.ID
 	// make the initial call to Image Builder
-	// FIXME: for EDA this should happen on the consumer side
 	image, err = s.ImageBuilder.ComposeCommit(image)
 	if err != nil {
 		return err

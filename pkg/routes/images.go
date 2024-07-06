@@ -55,7 +55,7 @@ func MakeImagesRouter(sub chi.Router) {
 		r.Post("/kickstart", CreateKickStartForImage)
 		r.Post("/update", CreateImageUpdate)
 		r.Post("/retry", RetryCreateImage)
-		r.Post("/resume", ResumeCreateImage)       // temporary to be replaced with EDA
+		r.Post("/resume", ResumeCreateImage)
 		r.Get("/notify", SendNotificationForImage) // TMP ROUTE TO SEND THE NOTIFICATION
 		r.Delete("/", DeleteImage)
 	})
