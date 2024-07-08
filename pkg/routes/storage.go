@@ -10,7 +10,9 @@ import (
 	url2 "net/url"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/redhatinsights/edge-api/pkg/cache"
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services"
@@ -250,6 +252,8 @@ func GetInstallerIsoStorageContent(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, signedURL, http.StatusSeeOther)
 }
 
+var UpdateTransCache = cache.NewMemoryCache[string, UpdateRepo](time.Duration(15 * time.Minute))
+
 // UpdateTransactionCtx is a handler for Update transaction requests
 func UpdateTransactionCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -259,33 +263,39 @@ func UpdateTransactionCtx(next http.Handler) http.Handler {
 			// readOrgID handle response and logging on failure
 			return
 		}
-
 		updateIDString := chi.URLParam(r, "updateID")
 		if updateIDString == "" {
 			logger.Debug("Update transaction ID was not passed to the request or it was empty")
 			respondWithAPIError(w, logger, errors.NewBadRequest("update transaction ID required"))
 			return
 		}
-		updateTransactionID, err := strconv.Atoi(updateIDString)
-		if err != nil {
-			respondWithAPIError(w, logger, errors.NewBadRequest("update transaction id must be an integer"))
-			return
-		}
+		cacheKey := orgID + "-" + updateIDString
 
 		var updateRepo UpdateRepo
-		dbQuery := db.Org(orgID, "").
-			Model(models.UpdateTransaction{}).
-			Joins("LEFT JOIN repos AS r ON r.id = update_transactions.repo_id").
-			Select("update_transactions.id as id, update_transactions.org_id as org_id, r.url as repo_url")
-		if result := dbQuery.First(&updateRepo, updateTransactionID); result.Error != nil {
-			if result.Error == gorm.ErrRecordNotFound {
-				logger.WithField("error", result.Error.Error()).Error("device update transaction not found")
-				respondWithAPIError(w, logger, errors.NewNotFound("device update transaction not found"))
+		var ok bool
+		if updateRepo, ok = UpdateTransCache.Get(cacheKey); !ok {
+			updateTransactionID, err := strconv.Atoi(updateIDString)
+			if err != nil {
+				respondWithAPIError(w, logger, errors.NewBadRequest("update transaction id must be an integer"))
 				return
 			}
-			logger.WithField("error", result.Error.Error()).Error("failed to retrieve update transaction")
-			respondWithAPIError(w, logger, errors.NewInternalServerError())
-			return
+
+			dbQuery := db.Org(orgID, "").
+				Model(models.UpdateTransaction{}).
+				Joins("LEFT JOIN repos AS r ON r.id = update_transactions.repo_id").
+				Select("update_transactions.id as id, update_transactions.org_id as org_id, r.url as repo_url")
+			if result := dbQuery.First(&updateRepo, updateTransactionID); result.Error != nil {
+				if result.Error == gorm.ErrRecordNotFound {
+					logger.WithField("error", result.Error.Error()).Error("device update transaction not found")
+					respondWithAPIError(w, logger, errors.NewNotFound("device update transaction not found"))
+					return
+				}
+				logger.WithField("error", result.Error.Error()).Error("failed to retrieve update transaction")
+				respondWithAPIError(w, logger, errors.NewInternalServerError())
+				return
+			}
+
+			UpdateTransCache.Set(cacheKey, updateRepo, time.Duration(2*time.Hour))
 		}
 
 		ctx := setContextUpdateTransaction(r.Context(), &updateRepo)
