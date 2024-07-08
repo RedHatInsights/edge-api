@@ -61,13 +61,20 @@ func (l *GormLogger) Trace(ctx context.Context, begin time.Time, fc func() (stri
 			"rows":       rows,
 			"sql":        sql,
 			"request_id": rid,
-		}).Error("SQL failed")
+		}).Warn("SQL failed")
 	} else {
-		l.logger.WithContext(ctx).WithFields(logrus.Fields{
-			"latency_ms": elapsed.Milliseconds(),
+		latency := elapsed.Milliseconds()
+		lg := l.logger.WithContext(ctx).WithFields(logrus.Fields{
+			"latency_ms": latency,
 			"rows":       rows,
 			"sql":        sql,
 			"request_id": rid,
-		}).Debug("SQL query")
+		})
+		if latency > 2000 {
+			lg.Warn("Slow SQL query")
+		} else {
+			lg.Trace("SQL query")
+		}
+
 	}
 }
