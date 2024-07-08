@@ -271,6 +271,8 @@ func main() {
 	jobs.Worker().Start(ctx)
 	defer jobs.Worker().Stop(ctx)
 
+	defer routes.UpdateTransCache.Stop()
+
 	consumers := []services.ConsumerService{
 		services.NewKafkaConsumerService(cfg.KafkaConfig, kafkacommon.TopicPlaybookDispatcherRuns),
 		services.NewKafkaConsumerService(cfg.KafkaConfig, kafkacommon.TopicInventoryEvents),
