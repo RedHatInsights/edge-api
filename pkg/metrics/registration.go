@@ -10,5 +10,9 @@ func RegisterAPIMetrics() {
 		JobActiveSize,
 		BackgroundJobDuration,
 		PlatformClientDuration,
+		StorageTransferBytes,
+		StorageTransferCount,
+		StorageTransferDuration,
+		MemoryCacheHitCount,
 	)
 }

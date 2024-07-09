@@ -14,6 +14,7 @@ import (
 
 	"github.com/redhatinsights/edge-api/pkg/cache"
 	"github.com/redhatinsights/edge-api/pkg/db"
+	"github.com/redhatinsights/edge-api/pkg/metrics"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services"
 
@@ -121,6 +122,7 @@ func redirectToStorageSignedURL(w http.ResponseWriter, r *http.Request, path str
 
 // serveStorageContent return the real content from storage
 func serveStorageContent(w http.ResponseWriter, r *http.Request, path string) {
+	startTime := time.Now()
 	logger := log.WithContext(r.Context()).WithField("service", "device-repository-storage")
 	fileService, ok := getFileService(r.Context())
 	if !ok {
@@ -154,6 +156,10 @@ func serveStorageContent(w http.ResponseWriter, r *http.Request, path string) {
 		logger.WithField("error", err.Error()).
 			WithField("Content-Type", w.Header().Values("Content-Type")).
 			WithField("len-content", ind).Error("error writing content")
+	} else {
+		metrics.StorageTransferBytes.Add(float64(ind))
+		metrics.StorageTransferCount.Inc()
+		metrics.StorageTransferDuration.Observe(float64(time.Since(startTime).Milliseconds()))
 	}
 }
 
