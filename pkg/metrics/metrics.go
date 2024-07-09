@@ -63,3 +63,37 @@ var PlatformClientDuration = prometheus.NewHistogramVec(
 	},
 	[]string{"method", "status"},
 )
+
+var StorageTransferCount = prometheus.NewCounter(
+	prometheus.CounterOpts{
+		Name:        "edge_storage_transfer_counts",
+		Help:        "number of download operations via S3 storage proxy",
+		ConstLabels: prometheus.Labels{"service": ApplicationName, "component": BinaryName},
+	},
+)
+
+var StorageTransferBytes = prometheus.NewCounter(
+	prometheus.CounterOpts{
+		Name:        "edge_storage_transfer_bytes",
+		Help:        "bytes transferred via S3 storage proxy",
+		ConstLabels: prometheus.Labels{"service": ApplicationName, "component": BinaryName},
+	},
+)
+
+var StorageTransferDuration = prometheus.NewHistogram(
+	prometheus.HistogramOpts{
+		Name:        "edge_storage_transfer_duration",
+		Help:        "duration of S3 storage proxy operations (in ms)",
+		ConstLabels: prometheus.Labels{"service": ApplicationName, "component": BinaryName},
+		Buckets:     []float64{5, 20, 50, 100, 200, 500, 1000, 5000, 10000},
+	},
+)
+
+var MemoryCacheHitCount = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name:        "edge_memory_cache_hit_count",
+		Help:        "memory cache hit count by operation",
+		ConstLabels: prometheus.Labels{"service": ApplicationName, "component": BinaryName},
+	},
+	[]string{"op"},
+)

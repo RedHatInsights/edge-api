@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"sync"
 	"time"
+
+	"github.com/redhatinsights/edge-api/pkg/metrics"
 )
 
 // Cache stores arbitrary data with expiration time.
@@ -80,6 +82,11 @@ func (cache *Cache[K, V]) Get(key K) (V, bool) {
 	defer cache.mu.Unlock()
 
 	item, exists := cache.items[key]
+	if exists {
+		metrics.MemoryCacheHitCount.WithLabelValues("hit").Inc()
+	} else {
+		metrics.MemoryCacheHitCount.WithLabelValues("miss").Inc()
+	}
 	if !exists || (item.expires > 0 && time.Now().UnixNano() > item.expires) {
 		var nothing V
 		return nothing, false
