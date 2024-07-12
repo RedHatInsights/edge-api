@@ -29,7 +29,7 @@ require (
 	go.openly.dev/pointy v1.3.0
 	gorm.io/driver/postgres v1.5.4
 	gorm.io/driver/sqlite v1.5.4
-	gorm.io/gorm v1.25.6
+	gorm.io/gorm v1.25.11
 )
 
 require (
