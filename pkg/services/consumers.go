@@ -137,7 +137,7 @@ func (s *KafkaConsumerService) ConsumePlaybookDispatcherRuns() error {
 					log.WithField("error", err.Error()).Error("Continuing without handling edge service event")
 				}
 			} else {
-				log.WithField("headers", fmt.Sprintf("%v", e.Headers)).Debug("Skipping message - it is not from edge service")
+				log.WithField("headers", fmt.Sprintf("%v", e.Headers)).Trace("Skipping message - it is not from edge service")
 			}
 
 			// commit the Kafka offset
