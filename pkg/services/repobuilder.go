@@ -77,9 +77,10 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		rb.log.Error("nil pointer to models.UpdateTransaction.Commit provided")
 		return nil, errors.New("invalid models.UpdateTransaction.Commit Provided: nil pointer")
 	}
+
 	rb.log = rb.log.WithFields(log.Fields{
-		"commitID": update.Commit.ID,
-		"updateID": update.ID})
+		"to_commit_id": update.Commit.ID,
+		"update_id":    update.ID})
 
 	if update.Repo == nil {
 		rb.log.Error("Repo is unavailable")
@@ -91,7 +92,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 	// This will retain the original commit repo URL as the update URL.
 	// (e.g., for a 2GB commit, this saves 4GB+ in traffic and local disk space on the pod)
 	if !feature.SkipUpdateRepo.IsEnabled() {
-		rb.log.WithField("updateTransaction", update).Info("Starts building update repo...")
+		rb.log.WithField("update_transaction", update).Info("UPGRADE: update repo build started")
 
 		fromCommitHash := "undefined"
 		fromCommit := &models.StaticDeltaCommit{
@@ -112,7 +113,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 			"old_commit_count": oldCommitCount,
 			"from_commit_hash": fromCommit.Rev,
 			"to_commit_hash":   toCommit.Rev,
-		}).Info("Static delta commit dev info")
+		}).Info("UPGRADE: static delta commit to and from is set")
 
 		staticDeltaState := &models.StaticDeltaState{
 			Name:   models.GetStaticDeltaName(fromCommit.Rev, toCommit.Rev),
@@ -125,9 +126,11 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 			return nil, errors.New("error saving static delta state")
 		}
 
+		rb.log.WithField("static_delta_state", staticDeltaState).Info("UPGRADE: static delta state")
+
+		// create the local FQ path
 		cfg := config.Get()
 		path := filepath.Clean(filepath.Join(cfg.RepoTempPath, "upd/", strconv.FormatUint(uint64(update.ID), 10)))
-		rb.log.WithField("path", path).Debug("Update path will be created")
 		err := os.MkdirAll(path, os.FileMode(0755))
 		if err != nil {
 			rb.log.WithField("error", err.Error()).Error("Error creating update path")
@@ -137,6 +140,9 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 			}
 			return nil, err
 		}
+		rb.log.WithField("path", path).Info("UPGRADE: local update path set")
+
+		// change to FQ path directory
 		err = os.Chdir(path)
 		if err != nil {
 			rb.log.WithField("error", err.Error()).Error("Error changing directory to update path")
@@ -148,6 +154,9 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 			return nil, err
 		}
 
+		rb.log.WithField("static_delta_state", staticDeltaState).Info("UPGRADE: static delta state")
+
+		// download the commit tarfile
 		tarFileName, err := rb.DownloadVersionRepo(update.Commit, path)
 		if err != nil {
 			rb.log.WithField("error", err.Error()).Error("Error downloading tar")
@@ -158,6 +167,10 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 
 			return nil, fmt.Errorf("error download repo repo :: %s", err.Error())
 		}
+
+		rb.log.WithField("static_delta_state", staticDeltaState).Info("UPGRADE: static delta state")
+
+		// extract the tarfile to local FQ path
 		err = rb.ExtractVersionRepo(update.Commit, tarFileName, path)
 		if err != nil {
 			rb.log.WithField("error", err.Error()).Error("Error extracting tar")
@@ -168,11 +181,14 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 
 			return nil, fmt.Errorf("error extracting repo :: %s", err.Error())
 		}
-
 		rb.log.WithFields(log.Fields{
 			"updateID":   update.ID,
 			"OldCommits": len(update.OldCommits)}).
 			Info("Old commits found to this commit")
+
+		rb.log.WithField("static_delta_state", staticDeltaState).Info("UPGRADE: static delta state")
+
+		// create local FQ path for static delta work
 		stagePath := filepath.Clean(filepath.Join(path, "staging"))
 		err = os.MkdirAll(stagePath, os.FileMode(0755))
 		if err != nil {
@@ -184,6 +200,8 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 
 			return nil, fmt.Errorf("error mkdir :: %s", err.Error())
 		}
+		rb.log.WithField("stage_path", stagePath).Info("UPGRADE: static delta stage path set")
+
 		err = os.Chdir(stagePath)
 		if err != nil {
 			rb.log.WithField("error", err.Error()).Error("Error changing dir")
@@ -194,6 +212,8 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 
 			return nil, fmt.Errorf("error chdir :: %s", err.Error())
 		}
+
+		rb.log.WithField("static_delta_state", staticDeltaState).Info("UPGRADE: static delta state")
 
 		// If there are any old commits, we need to download them all to be merged
 		// into the update commit repo
@@ -215,6 +235,9 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 
 				return nil, fmt.Errorf("error Upload repo repo :: %s", err.Error())
 			}
+
+			rb.log.WithField("update_transaction", update).Info("UPGRADE: to_commit repo tarfile downloaded")
+
 			err = rb.ExtractVersionRepo(update.Commit, tarFileName, stageCommitPath)
 			if err != nil {
 				rb.log.WithField("error", err.Error()).Error("Error extracting repo")
@@ -226,6 +249,8 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 				return nil, err
 			}
 
+			rb.log.WithField("update_transaction", update).Info("UPGRADE: to_commit repo tarfile extracted")
+
 			staticDeltaState.Status = models.StaticDeltaStatusGenerating
 			if saveErr := staticDeltaState.Save(rb.log); saveErr != nil {
 				rb.log.WithField("error", saveErr.Error()).Error("error saving static delta state")
@@ -233,6 +258,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 				return nil, errors.New("Error saving static delta state")
 			}
 
+			rb.log.WithField("update_transaction", update).Info("UPGRADE: updating repo with static delta and summary")
 			err = rb.RepoPullLocalStaticDeltas(update.Commit, &commit, filepath.Clean(filepath.Join(path, "repo")),
 				filepath.Clean(filepath.Join(stageCommitPath, "repo")))
 			if err != nil {
@@ -244,7 +270,10 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 
 				return nil, err
 			}
+			rb.log.WithField("update_transaction", update).Info("UPGRADE: updating repo complete")
 		}
+
+		rb.log.WithField("static_delta_state", staticDeltaState).Info("UPGRADE: static delta state")
 
 		// Once all the old commits have been pulled into the update commit's repo
 		// and has static deltas generated, then we don't need the old commits
@@ -270,6 +299,8 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 			return nil, errors.New("Error saving static delta state")
 		}
 
+		rb.log.WithField("static_delta_state", staticDeltaState).Info("UPGRADE: static delta state")
+
 		repoURL, err := rb.FilesService.GetUploader().UploadRepo(filepath.Clean(filepath.Join(path, "repo")), strconv.FormatUint(uint64(update.ID), 10), "private")
 		if err != nil {
 			rb.log.WithField("error", err.Error()).Error("error occurred while uploading repo")
@@ -291,8 +322,9 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		}
 
 		update.Repo.URL = repoURL
+		rb.log.WithField("update_transaction", update).Info("UPGRADE: point update to new update repo")
 
-		rb.log.WithField("static_delta_state", staticDeltaState).Debug("Static Delta State")
+		rb.log.WithField("static_delta_state", staticDeltaState).Info("UPGRADE: static delta state")
 	}
 
 	// FIXME: (remove) moved this logic to the calling function to avoid extra DB lookups when static delta is not generated
@@ -304,6 +336,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 			return nil, err
 		}
 		update.Repo.URL = updateCommit.Repo.URL
+		rb.log.WithField("update_transaction", update).Info("UPGRADE: point update to commit repo")
 	}
 
 	rb.log.WithField("repo", update.Repo.URL).Info("Update repo URL")
@@ -573,7 +606,7 @@ func (rb *RepoBuilder) RepoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 		"to_repo":       uprepo,
 		"from_repo":     oldrepo,
 		"from_revparse": oldRevParse,
-	}).Info("pull local from_commit into to_commit")
+	}).Info("UPGRADE: from_commit pulled into to_commit")
 
 	// generate static delta
 	cmd = BuildCommand("/usr/bin/ostree", "static-delta", "generate", "--repo", uprepo, "--from", oldRevParse, "--to", updateRevParse)
@@ -589,7 +622,7 @@ func (rb *RepoBuilder) RepoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 		"to_repo":       uprepo,
 		"from_revparse": oldRevParse,
 		"to_revparse":   updateRevParse,
-	}).Info("generate static delta")
+	}).Info("UPGRADE: static delta generated")
 
 	// confirm static delta
 	cmd = BuildCommand("/usr/bin/ostree", "static-delta", "list", "--repo", uprepo)
@@ -603,7 +636,7 @@ func (rb *RepoBuilder) RepoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 		"command": cmd,
 		"output":  string(output),
 		"to_repo": uprepo,
-	}).Info("confirm static delta")
+	}).Info("UPGRADE: static delta info")
 
 	// update ostree summary
 	cmd = BuildCommand("/usr/bin/ostree", "summary", "--repo", uprepo, "-u")
@@ -617,7 +650,7 @@ func (rb *RepoBuilder) RepoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 		"command": cmd,
 		"output":  string(output),
 		"to_repo": uprepo,
-	}).Info("update ostree summary")
+	}).Info("UPGRADE: ostree summary updated")
 
 	// confirm ostree summary
 	cmd = BuildCommand("/usr/bin/ostree", "summary", "--repo", uprepo, "-v")
@@ -631,7 +664,7 @@ func (rb *RepoBuilder) RepoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 		"command": cmd,
 		"output":  string(output),
 		"to_repo": uprepo,
-	}).Info("confirm ostree summary")
+	}).Info("UPGRADE: ostree summary info")
 
 	return nil
 }
