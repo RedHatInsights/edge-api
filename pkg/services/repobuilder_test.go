@@ -741,47 +741,61 @@ func TestBuildUpdateRepoWithOldCommits(t *testing.T) {
 	updateCommitRevision := update.Commit.OSTreeCommit
 
 	expectedExecCalls := []struct {
-		name                string
-		TestHelper          MockTestExecHelper
-		ExpectedOutput      string
-		ExpectedExistStatus int
-		ExpectedCommand     string
-		ExpectExecuted      bool
+		name               string
+		TestHelper         MockTestExecHelper
+		ExpectedOutput     string
+		ExpectedExitStatus int
+		ExpectedCommand    string
+		ExpectExecuted     bool
 	}{
 		{
-			name:                "run ostree command rev-parse for update commit successfully",
-			TestHelper:          NewMockTestExecHelper(t, updateCommitRevision, 0),
-			ExpectedOutput:      updateCommitRevision,
-			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("ostree rev-parse --repo %s %s", updateRepoPath, update.Commit.OSTreeRef),
+			name:               "run ostree command rev-parse for update commit successfully",
+			TestHelper:         NewMockTestExecHelper(t, updateCommitRevision, 0),
+			ExpectedOutput:     updateCommitRevision,
+			ExpectedExitStatus: 0,
+			ExpectedCommand:    fmt.Sprintf("ostree rev-parse --repo %s %s", updateRepoPath, update.Commit.OSTreeRef),
 		},
 		{
-			name:                "run ostree command rev-parse for old commit successfully",
-			TestHelper:          NewMockTestExecHelper(t, oldCommitRevision, 0),
-			ExpectedOutput:      oldCommitRevision,
-			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("ostree rev-parse --repo %s %s", updateOldCommitRepoPath, update.OldCommits[0].OSTreeRef),
+			name:               "run ostree command rev-parse for old commit successfully",
+			TestHelper:         NewMockTestExecHelper(t, oldCommitRevision, 0),
+			ExpectedOutput:     oldCommitRevision,
+			ExpectedExitStatus: 0,
+			ExpectedCommand:    fmt.Sprintf("ostree rev-parse --repo %s %s", updateOldCommitRepoPath, update.OldCommits[0].OSTreeRef),
 		},
 		{
-			name:                "run ostree command pull-local successfully",
-			TestHelper:          NewMockTestExecHelper(t, "pull-local", 0),
-			ExpectedOutput:      "pull-local",
-			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree pull-local --repo %s %s %s", updateRepoPath, updateOldCommitRepoPath, oldCommitRevision),
+			name:               "run ostree command pull-local successfully",
+			TestHelper:         NewMockTestExecHelper(t, "pull-local", 0),
+			ExpectedOutput:     "pull-local",
+			ExpectedExitStatus: 0,
+			ExpectedCommand:    fmt.Sprintf("/usr/bin/ostree pull-local --repo %s %s %s", updateRepoPath, updateOldCommitRepoPath, oldCommitRevision),
 		},
 		{
-			name:                "run ostree command static-delta successfully",
-			TestHelper:          NewMockTestExecHelper(t, "static-delta", 0),
-			ExpectedOutput:      "static-delta",
-			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree static-delta generate --repo %s --from %s --to %s", updateRepoPath, oldCommitRevision, updateCommitRevision),
+			name:               "run ostree command static-delta successfully",
+			TestHelper:         NewMockTestExecHelper(t, "static-delta", 0),
+			ExpectedOutput:     "static-delta",
+			ExpectedExitStatus: 0,
+			ExpectedCommand:    fmt.Sprintf("/usr/bin/ostree static-delta generate --repo %s --from %s --to %s", updateRepoPath, oldCommitRevision, updateCommitRevision),
 		},
 		{
-			name:                "run ostree command summary successfully",
-			TestHelper:          NewMockTestExecHelper(t, "summary", 0),
-			ExpectedOutput:      "summary",
-			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree summary --repo %s -u", updateRepoPath),
+			name:               "should run ostree command static-delta list successfully",
+			TestHelper:         NewMockTestExecHelper(t, "static-delta", 0),
+			ExpectedOutput:     "static-delta",
+			ExpectedExitStatus: 0,
+			ExpectedCommand:    fmt.Sprintf("/usr/bin/ostree static-delta list --repo %s", updateRepoPath),
+		},
+		{
+			name:               "run ostree command summary successfully",
+			TestHelper:         NewMockTestExecHelper(t, "summary", 0),
+			ExpectedOutput:     "summary",
+			ExpectedExitStatus: 0,
+			ExpectedCommand:    fmt.Sprintf("/usr/bin/ostree summary --repo %s -u", updateRepoPath),
+		},
+		{
+			name:               "run ostree command summary view successfully",
+			TestHelper:         NewMockTestExecHelper(t, "summary", 0),
+			ExpectedOutput:     "summary",
+			ExpectedExitStatus: 0,
+			ExpectedCommand:    fmt.Sprintf("/usr/bin/ostree summary --repo %s -v", updateRepoPath),
 		},
 	}
 	// chain TestExecHelper, so that each mock can initiate the next exec command helper
@@ -803,7 +817,7 @@ func TestBuildUpdateRepoWithOldCommits(t *testing.T) {
 	for _, testCase := range expectedExecCalls {
 		t.Run(testCase.name, func(t *testing.T) {
 			g.Expect(testCase.TestHelper.Executed).To(BeTrue())
-			g.Expect(testCase.TestHelper.ExistStatus).To(Equal(testCase.ExpectedExistStatus))
+			g.Expect(testCase.TestHelper.ExistStatus).To(Equal(testCase.ExpectedExitStatus))
 			g.Expect(testCase.TestHelper.Output).To(Equal(testCase.ExpectedOutput))
 			g.Expect(testCase.TestHelper.Command).To(Equal(testCase.ExpectedCommand))
 		})
@@ -1286,47 +1300,61 @@ func TestRepoPullLocalStaticDeltas(t *testing.T) {
 	oldCommitRevision := faker.UUIDHyphenated()
 
 	expectedCallsCases := []struct {
-		name                string
-		TestHelper          MockTestExecHelper
-		ExpectedOutput      string
-		ExpectedExistStatus int
-		ExpectedCommand     string
-		ExpectExecuted      bool
+		name               string
+		TestHelper         MockTestExecHelper
+		ExpectedOutput     string
+		ExpectedExitStatus int
+		ExpectedCommand    string
+		ExpectExecuted     bool
 	}{
 		{
-			name:                "should run ostree command rev-parse for update commit successfully",
-			TestHelper:          NewMockTestExecHelper(t, updateCommitRevision, 0),
-			ExpectedOutput:      updateCommitRevision,
-			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("ostree rev-parse --repo %s %s", updateRepoPath, updateCommit.OSTreeRef),
+			name:               "should run ostree command rev-parse for update commit successfully",
+			TestHelper:         NewMockTestExecHelper(t, updateCommitRevision, 0),
+			ExpectedOutput:     updateCommitRevision,
+			ExpectedExitStatus: 0,
+			ExpectedCommand:    fmt.Sprintf("ostree rev-parse --repo %s %s", updateRepoPath, updateCommit.OSTreeRef),
 		},
 		{
-			name:                "should run ostree command rev-parse for old commit successfully",
-			TestHelper:          NewMockTestExecHelper(t, oldCommitRevision, 0),
-			ExpectedOutput:      oldCommitRevision,
-			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("ostree rev-parse --repo %s %s", oldRepoPath, oldCommit.OSTreeRef),
+			name:               "should run ostree command rev-parse for old commit successfully",
+			TestHelper:         NewMockTestExecHelper(t, oldCommitRevision, 0),
+			ExpectedOutput:     oldCommitRevision,
+			ExpectedExitStatus: 0,
+			ExpectedCommand:    fmt.Sprintf("ostree rev-parse --repo %s %s", oldRepoPath, oldCommit.OSTreeRef),
 		},
 		{
-			name:                "should run ostree command pull-local successfully",
-			TestHelper:          NewMockTestExecHelper(t, "pull-local", 0),
-			ExpectedOutput:      "pull-local",
-			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree pull-local --repo %s %s %s", updateRepoPath, oldRepoPath, oldCommitRevision),
+			name:               "should run ostree command pull-local successfully",
+			TestHelper:         NewMockTestExecHelper(t, "pull-local", 0),
+			ExpectedOutput:     "pull-local",
+			ExpectedExitStatus: 0,
+			ExpectedCommand:    fmt.Sprintf("/usr/bin/ostree pull-local --repo %s %s %s", updateRepoPath, oldRepoPath, oldCommitRevision),
 		},
 		{
-			name:                "should run ostree command static-delta successfully",
-			TestHelper:          NewMockTestExecHelper(t, "static-delta", 0),
-			ExpectedOutput:      "static-delta",
-			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree static-delta generate --repo %s --from %s --to %s", updateRepoPath, oldCommitRevision, updateCommitRevision),
+			name:               "should run ostree command static-delta successfully",
+			TestHelper:         NewMockTestExecHelper(t, "static-delta", 0),
+			ExpectedOutput:     "static-delta",
+			ExpectedExitStatus: 0,
+			ExpectedCommand:    fmt.Sprintf("/usr/bin/ostree static-delta generate --repo %s --from %s --to %s", updateRepoPath, oldCommitRevision, updateCommitRevision),
 		},
 		{
-			name:                "run ostree command summary successfully",
-			TestHelper:          NewMockTestExecHelper(t, "summary", 0),
-			ExpectedOutput:      "summary",
-			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree summary --repo %s -u", updateRepoPath),
+			name:               "should run ostree command static-delta list successfully",
+			TestHelper:         NewMockTestExecHelper(t, "static-delta", 0),
+			ExpectedOutput:     "static-delta",
+			ExpectedExitStatus: 0,
+			ExpectedCommand:    fmt.Sprintf("/usr/bin/ostree static-delta list --repo %s", updateRepoPath),
+		},
+		{
+			name:               "run ostree command summary successfully",
+			TestHelper:         NewMockTestExecHelper(t, "summary", 0),
+			ExpectedOutput:     "summary",
+			ExpectedExitStatus: 0,
+			ExpectedCommand:    fmt.Sprintf("/usr/bin/ostree summary --repo %s -u", updateRepoPath),
+		},
+		{
+			name:               "run ostree command summary view successfully",
+			TestHelper:         NewMockTestExecHelper(t, "summary", 0),
+			ExpectedOutput:     "summary",
+			ExpectedExitStatus: 0,
+			ExpectedCommand:    fmt.Sprintf("/usr/bin/ostree summary --repo %s -v", updateRepoPath),
 		},
 	}
 	// chain TestHelper, so that each mock can initiate the next exec command helper
@@ -1344,7 +1372,7 @@ func TestRepoPullLocalStaticDeltas(t *testing.T) {
 	for _, testCase := range expectedCallsCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			g.Expect(testCase.TestHelper.Executed).To(BeTrue())
-			g.Expect(testCase.TestHelper.ExistStatus).To(Equal(testCase.ExpectedExistStatus))
+			g.Expect(testCase.TestHelper.ExistStatus).To(Equal(testCase.ExpectedExitStatus))
 			g.Expect(testCase.TestHelper.Output).To(Equal(testCase.ExpectedOutput))
 			if testCase.ExpectedCommand != "" {
 				g.Expect(testCase.TestHelper.Command).To(Equal(testCase.ExpectedCommand))
@@ -1696,47 +1724,54 @@ func TestRepoPullLocalStaticDeltasFailsWhenSummaryFails(t *testing.T) {
 	oldCommitRevision := faker.UUIDHyphenated()
 
 	expectedCallsCases := []struct {
-		name                string
-		TestHelper          MockTestExecHelper
-		ExpectedOutput      string
-		ExpectedExistStatus int
-		ExpectedCommand     string
-		ExpectExecuted      bool
+		name               string
+		TestHelper         MockTestExecHelper
+		ExpectedOutput     string
+		ExpectedExitStatus int
+		ExpectedCommand    string
+		ExpectExecuted     bool
 	}{
 		{
-			name:                "should run ostree command rev-parse for update commit successfully",
-			TestHelper:          NewMockTestExecHelper(t, updateCommitRevision, 0),
-			ExpectedOutput:      updateCommitRevision,
-			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("ostree rev-parse --repo %s %s", updateRepoPath, updateCommit.OSTreeRef),
+			name:               "should run ostree command rev-parse for update commit successfully",
+			TestHelper:         NewMockTestExecHelper(t, updateCommitRevision, 0),
+			ExpectedOutput:     updateCommitRevision,
+			ExpectedExitStatus: 0,
+			ExpectedCommand:    fmt.Sprintf("ostree rev-parse --repo %s %s", updateRepoPath, updateCommit.OSTreeRef),
 		},
 		{
-			name:                "should run ostree command rev-parse for old commit successfully",
-			TestHelper:          NewMockTestExecHelper(t, oldCommitRevision, 0),
-			ExpectedOutput:      oldCommitRevision,
-			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("ostree rev-parse --repo %s %s", oldRepoPath, oldCommit.OSTreeRef),
+			name:               "should run ostree command rev-parse for old commit successfully",
+			TestHelper:         NewMockTestExecHelper(t, oldCommitRevision, 0),
+			ExpectedOutput:     oldCommitRevision,
+			ExpectedExitStatus: 0,
+			ExpectedCommand:    fmt.Sprintf("ostree rev-parse --repo %s %s", oldRepoPath, oldCommit.OSTreeRef),
 		},
 		{
-			name:                "should run ostree command pull-local successfully",
-			TestHelper:          NewMockTestExecHelper(t, "pull-local", 0),
-			ExpectedOutput:      "pull-local",
-			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree pull-local --repo %s %s %s", updateRepoPath, oldRepoPath, oldCommitRevision),
+			name:               "should run ostree command pull-local successfully",
+			TestHelper:         NewMockTestExecHelper(t, "pull-local", 0),
+			ExpectedOutput:     "pull-local",
+			ExpectedExitStatus: 0,
+			ExpectedCommand:    fmt.Sprintf("/usr/bin/ostree pull-local --repo %s %s %s", updateRepoPath, oldRepoPath, oldCommitRevision),
 		},
 		{
-			name:                "should run ostree command static-delta successfully",
-			TestHelper:          NewMockTestExecHelper(t, "static-delta", 0),
-			ExpectedOutput:      "static-delta",
-			ExpectedExistStatus: 0,
-			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree static-delta generate --repo %s --from %s --to %s", updateRepoPath, oldCommitRevision, updateCommitRevision),
+			name:               "should run ostree command static-delta successfully",
+			TestHelper:         NewMockTestExecHelper(t, "static-delta", 0),
+			ExpectedOutput:     "static-delta",
+			ExpectedExitStatus: 0,
+			ExpectedCommand:    fmt.Sprintf("/usr/bin/ostree static-delta generate --repo %s --from %s --to %s", updateRepoPath, oldCommitRevision, updateCommitRevision),
 		},
 		{
-			name:                "run ostree command summary with fail",
-			TestHelper:          NewMockTestExecHelper(t, "summary", 4),
-			ExpectedOutput:      "summary",
-			ExpectedExistStatus: 4,
-			ExpectedCommand:     fmt.Sprintf("/usr/bin/ostree summary --repo %s -u", updateRepoPath),
+			name:               "should run ostree command static-delta list successfully",
+			TestHelper:         NewMockTestExecHelper(t, "static-delta", 0),
+			ExpectedOutput:     "static-delta",
+			ExpectedExitStatus: 0,
+			ExpectedCommand:    fmt.Sprintf("/usr/bin/ostree static-delta list --repo %s", updateRepoPath),
+		},
+		{
+			name:               "run ostree command summary with fail",
+			TestHelper:         NewMockTestExecHelper(t, "summary", 4),
+			ExpectedOutput:     "summary",
+			ExpectedExitStatus: 4,
+			ExpectedCommand:    fmt.Sprintf("/usr/bin/ostree summary --repo %s -u", updateRepoPath),
 		},
 	}
 	// chain TestHelper, so that each mock can initiate the next exec command helper
@@ -1747,7 +1782,7 @@ func TestRepoPullLocalStaticDeltasFailsWhenSummaryFails(t *testing.T) {
 	}
 	// set the first exec command helper mock
 	services.BuildCommand = expectedCallsCases[0].TestHelper.MockExecCommand
-	expectedErrorMessage := fmt.Sprintf("exit status %d", expectedCallsCases[4].TestHelper.ExistStatus)
+	expectedErrorMessage := fmt.Sprintf("exit status %d", expectedCallsCases[5].TestHelper.ExistStatus)
 
 	err = RepoBuilder.RepoPullLocalStaticDeltas(&updateCommit, &oldCommit, updateRepoPath, oldRepoPath)
 	g.Expect(err).To(HaveOccurred())
@@ -1756,7 +1791,7 @@ func TestRepoPullLocalStaticDeltasFailsWhenSummaryFails(t *testing.T) {
 	for _, testCase := range expectedCallsCases {
 		t.Run(testCase.name, func(t *testing.T) {
 			g.Expect(testCase.TestHelper.Executed).To(BeTrue())
-			g.Expect(testCase.TestHelper.ExistStatus).To(Equal(testCase.ExpectedExistStatus))
+			g.Expect(testCase.TestHelper.ExistStatus).To(Equal(testCase.ExpectedExitStatus))
 			g.Expect(testCase.TestHelper.Output).To(Equal(testCase.ExpectedOutput))
 			if testCase.ExpectedCommand != "" {
 				g.Expect(testCase.TestHelper.Command).To(Equal(testCase.ExpectedCommand))

@@ -557,6 +557,8 @@ func (rb *RepoBuilder) RepoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 		return err
 	}
 
+	var output []byte
+
 	// pull the local repo at the exact rev (which was HEAD of o.OSTreeRef)
 	cmd := BuildCommand("/usr/bin/ostree", "pull-local", "--repo", uprepo, oldrepo, oldRevParse)
 	if output, err := cmd.CombinedOutput(); err != nil {
@@ -565,6 +567,13 @@ func (rb *RepoBuilder) RepoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 		).Error("error occurred while running pull-local command")
 		return err
 	}
+	rb.log.WithFields(log.Fields{
+		"command":       cmd,
+		"output":        string(output),
+		"to_repo":       uprepo,
+		"from_repo":     oldrepo,
+		"from_revparse": oldRevParse,
+	}).Info("pull local from_commit into to_commit")
 
 	// generate static delta
 	cmd = BuildCommand("/usr/bin/ostree", "static-delta", "generate", "--repo", uprepo, "--from", oldRevParse, "--to", updateRevParse)
@@ -574,6 +583,27 @@ func (rb *RepoBuilder) RepoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 		).Error("error occurred while running static-delta command")
 		return err
 	}
+	rb.log.WithFields(log.Fields{
+		"command":       cmd,
+		"output":        string(output),
+		"to_repo":       uprepo,
+		"from_revparse": oldRevParse,
+		"to_revparse":   updateRevParse,
+	}).Info("generate static delta")
+
+	// confirm static delta
+	cmd = BuildCommand("/usr/bin/ostree", "static-delta", "list", "--repo", uprepo)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		rb.log.WithFields(
+			log.Fields{"error": err.Error(), "OSTreeCommit": oldRevParse, "output": string(output)},
+		).Error("error occurred while running static-delta command")
+		return err
+	}
+	rb.log.WithFields(log.Fields{
+		"command": cmd,
+		"output":  string(output),
+		"to_repo": uprepo,
+	}).Info("confirm static delta")
 
 	// update ostree summary
 	cmd = BuildCommand("/usr/bin/ostree", "summary", "--repo", uprepo, "-u")
@@ -583,6 +613,25 @@ func (rb *RepoBuilder) RepoPullLocalStaticDeltas(u *models.Commit, o *models.Com
 		).Error("error occurred while running summary update command")
 		return err
 	}
+	rb.log.WithFields(log.Fields{
+		"command": cmd,
+		"output":  string(output),
+		"to_repo": uprepo,
+	}).Info("update ostree summary")
+
+	// confirm ostree summary
+	cmd = BuildCommand("/usr/bin/ostree", "summary", "--repo", uprepo, "-v")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		rb.log.WithFields(
+			log.Fields{"error": err.Error(), "OSTreeSummary": uprepo, "output": string(output)},
+		).Error("error occurred while running summary view command")
+		return err
+	}
+	rb.log.WithFields(log.Fields{
+		"command": cmd,
+		"output":  string(output),
+		"to_repo": uprepo,
+	}).Info("confirm ostree summary")
 
 	return nil
 }
