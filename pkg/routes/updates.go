@@ -338,7 +338,7 @@ func updateFromHTTP(w http.ResponseWriter, r *http.Request) *[]models.UpdateTran
 // @Router       /updates [post]
 func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	ctxServices := dependencies.ServicesFromContext(r.Context())
-	ctxServices.Log.Info("Starting update")
+	ctxServices.Log.Info("UPGRADE: starting")
 	orgID := readOrgID(w, r, ctxServices.Log)
 	if orgID == "" {
 		return
@@ -353,7 +353,7 @@ func AddUpdate(w http.ResponseWriter, r *http.Request) {
 	for _, update := range *updates {
 		update.OrgID = orgID
 		upd = append(upd, update)
-		ctxServices.Log.WithField("updateID", update.ID).Info("Starting asynchronous update process")
+		ctxServices.Log.WithField("updateID", update.ID).Info("UPGRADE: Starting asynchronous update process")
 		if update.Status != models.UpdateStatusDeviceDisconnected {
 			ctxServices.UpdateService.CreateUpdateAsync(update.ID)
 		}

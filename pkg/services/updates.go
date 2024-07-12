@@ -153,6 +153,7 @@ func (s *UpdateService) CreateUpdateAsync(id uint) {
 		}
 	} else {
 		go s.createUpdate(s.ctx, id)
+		s.log.WithField("update_id", id).Info("UPGRADE: update create called async)")
 	}
 }
 
@@ -161,6 +162,8 @@ func (s *UpdateService) createUpdate(ctx context.Context, updateID uint) {
 	if err != nil {
 		log.WithContext(ctx).WithFields(log.Fields{"updateID": updateID, "error": err.Error()}).Error("error occurred when creating update")
 	}
+
+	s.log.WithField("update_id", updateID).Info("UPGRADE: update created")
 }
 
 // SetUpdateErrorStatusWhenInterrupted set the update to error status when instance is interrupted
@@ -224,6 +227,8 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		return nil, err
 	}
 
+	s.log.WithField("update_transaction", update).Info("UPGRADE: update repo built")
+
 	// below code wil be refactored in its own function when WriteTemplateRequested event will be implemented
 
 	// setup a context and signal for SIGTERM
@@ -278,7 +283,6 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 		}
 		s.log.WithField("playbook_dispatcher", payloadDispatcher).Debug("Calling playbook dispatcher")
 		exc, err := s.PlaybookClient.ExecuteDispatcher(payloadDispatcher)
-
 		if err != nil {
 			s.log.WithField("error", err.Error()).Error("Error on playbook-dispatcher execution")
 			update.Status = models.UpdateStatusError
@@ -294,6 +298,10 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 			}
 			return nil, err
 		}
+
+		s.log.WithFields(log.Fields{
+			"update_transaction": update,
+			"payload":            payloadDispatcher}).Debug("UPGRADE: playbook dispatched")
 
 		for _, excPlaybook := range exc {
 			if excPlaybook.StatusCode == http.StatusCreated {
@@ -333,7 +341,7 @@ func (s *UpdateService) CreateUpdate(id uint) (*models.UpdateTransaction, error)
 
 	}
 
-	s.log.WithField("updateID", update.ID).Info("Update was finished")
+	s.log.WithField("update_transaction", update).Info("UPGRADE: completed")
 	return update, nil
 }
 
@@ -374,8 +382,7 @@ func (s *UpdateService) BuildUpdateRepo(orgID string, updateID uint) (*models.Up
 
 	update, err := s.generateStaticDelta(updateID, update)
 
-	s.log.WithField("updateTransaction", update).
-		Info("original return dev info")
+	s.log.WithField("updateTransaction", update).Info("UPGRADE: static delta generated")
 
 	return update, err
 }
@@ -398,6 +405,7 @@ func (s *UpdateService) generateStaticDelta(updateID uint, update *models.Update
 	go s.SetUpdateErrorStatusWhenInterrupted(intctx, *update, sigint, intcancel)
 
 	updateRepoID := update.RepoID
+	s.log.WithField("update_id", updateID).Info("UPGRADE: repobuilder starting")
 	update, err = s.RepoBuilder.BuildUpdateRepo(updateID)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error building update repo")
@@ -415,6 +423,8 @@ func (s *UpdateService) generateStaticDelta(updateID uint, update *models.Update
 		}
 		return nil, err
 	}
+
+	s.log.WithField("update_transaction", update).Info("UPGRADE: repobuilder finished")
 
 	return update, nil
 }
