@@ -67,6 +67,21 @@ func NewNotFound(message string) APIError {
 	return err
 }
 
+// NoContent defines an error where the file was not found, but it's necessary to return a 204
+type NoContent struct {
+	apiError
+}
+
+// NewNoContent creat a new  NoContent error
+func NewNoContent(message string) APIError {
+	err := new(NoContent)
+	err.Code = "NO_CONTENT"
+	err.Title = message
+	err.Status = http.StatusNoContent
+
+	return err
+}
+
 // FeatureNotAvailable defines a error when the feature is toggled off via feature flags
 type FeatureNotAvailable struct {
 	apiError
