@@ -143,7 +143,7 @@ func serveStorageContent(w http.ResponseWriter, r *http.Request, path string) {
 				// handle optional ostree files when not found
 				filebase := filepath.Base(path)
 				switch filebase {
-				case ".commitmeta", "summary.sig":
+				case ".commitmeta", "summary", "summary.sig", "superblock":
 					apiError = errors.NewNoContent(fmt.Sprintf("file '%s' was not found", path))
 				default:
 					apiError = errors.NewNotFound(fmt.Sprintf("file '%s' was not found", path))
