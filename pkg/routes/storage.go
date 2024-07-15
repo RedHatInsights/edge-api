@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	url2 "net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/redhatinsights/edge-api/pkg/metrics"
 	"github.com/redhatinsights/edge-api/pkg/models"
 	"github.com/redhatinsights/edge-api/pkg/services"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 
 	"github.com/redhatinsights/edge-api/config"
 
@@ -134,13 +136,27 @@ func serveStorageContent(w http.ResponseWriter, r *http.Request, path string) {
 		logger.WithFields(log.Fields{
 			"error": err.Error(),
 		}).Error("error occurred when getting file from request path")
+
 		var apiError errors.APIError
 		if strings.Contains(err.Error(), "was not found on the S3 bucket") {
-			apiError = errors.NewNotFound(fmt.Sprintf("file '%s' was not found", path))
+			if feature.Return204for404.IsEnabled() {
+				// handle optional ostree files when not found
+				filebase := filepath.Base(path)
+				switch filebase {
+				case ".commitmeta", "summary", "summary.sig", "superblock":
+					apiError = errors.NewNoContent(fmt.Sprintf("file '%s' was not found", path))
+				default:
+					apiError = errors.NewNotFound(fmt.Sprintf("file '%s' was not found", path))
+				}
+			} else {
+				apiError = errors.NewNotFound(fmt.Sprintf("file '%s' was not found", path))
+			}
 		} else {
 			apiError = errors.NewInternalServerError()
 		}
+
 		respondWithAPIError(w, logger, apiError)
+
 		return
 	}
 	defer func(requestFile io.ReadCloser) {

@@ -121,6 +121,11 @@ var SilentGormLogging = &Flag{Name: "edge-management.silent_gorm_logging", EnvVa
 // PulpIntegration covers the overall integration of pulp and deprecation of AWS storage
 var PulpIntegration = &Flag{Name: "edge-management.pulp_integration", EnvVar: "FEATURE_PULP_INTEGRATION"}
 
+// OSTREE FLAGS
+
+// Return204for404 returns 204 No Content instead of 404 Not Found when not finding an optional ostree file
+var Return204for404 = &Flag{Name: "edge-management.return_204", EnvVar: "FEATURE_RETURN_204"}
+
 // (ADD FEATURE FLAGS ABOVE)
 // FEATURE FLAG CHECK CODE
 
