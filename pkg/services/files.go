@@ -3,6 +3,7 @@
 package services
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/redhatinsights/edge-api/config"
 	"github.com/redhatinsights/edge-api/pkg/services/files"
+	feature "github.com/redhatinsights/edge-api/unleash/features"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -109,6 +111,19 @@ func (s *S3FilesService) GetFile(path string) (io.ReadCloser, error) {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case s3.ErrCodeNoSuchKey:
+				// temporarily returning zero byte file for missing ostree optionals as 200
+				// FIXME: this is a workaround being tested. don't let it become forgotten technical debt!
+				if feature.Return200for404.IsEnabled() {
+					basepath := filepath.Base(path)
+					switch basepath {
+					case ".commitmeta", "summary", "summary.sig", "superblock":
+						o.Body.Close()
+						zeroByteCloser := io.NopCloser(bytes.NewBufferString(""))
+
+						return zeroByteCloser, nil
+					}
+				}
+
 				return nil, fmt.Errorf("the object %s was not found on the S3 bucket", path)
 			case s3.ErrCodeInvalidObjectState:
 				return nil, fmt.Errorf("the object %s was not found on the S3 bucket because of an invalid state", path)
