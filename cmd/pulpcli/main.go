@@ -45,21 +45,21 @@ func fixtureCreate(ctx context.Context, c *pulp.PulpService, orgID, tarFilename 
 	fmt.Println("Repository created", *repo.PulpHref)
 	fmt.Println("--------------------------------")
 
-	hcg, err := c.HeaderGuardReadOrCreate(ctx, pulp.JQOrgID, orgID)
+	cg, err := c.ContentGuardEnsure(ctx, orgID)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Header guard found or created", *hcg.PulpHref)
+	fmt.Println("Content guard found or created", *cg.PulpHref, (*cg.Guards)[0], (*cg.Guards)[1])
 	fmt.Println("--------------------------------")
 
-	dist, err := c.DistributionsCreate(ctx, resourceName, resourceName, *repo.PulpHref, *hcg.PulpHref)
+	dist, err := c.DistributionsCreate(ctx, resourceName, resourceName, *repo.PulpHref, *cg.PulpHref)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println("Distribution created", *dist.PulpHref)
 	fmt.Println("--------------------------------")
 
-	repoImported, err := c.RepositoriesImport(ctx, pulp.ScanUUID(*repo.PulpHref), "repo", *artifact.PulpHref)
+	repoImported, err := c.RepositoriesImport(ctx, pulp.ScanUUID(repo.PulpHref), "repo", *artifact.PulpHref)
 	if err != nil {
 		panic(err)
 	}
@@ -67,6 +67,7 @@ func fixtureCreate(ctx context.Context, c *pulp.PulpService, orgID, tarFilename 
 	fmt.Println("--------------------------------")
 
 	fmt.Printf("curl -L --proxy http://squid.xxxx.redhat.com:3128 --cert /etc/pki/consumer/cert.pem --key /etc/pki/consumer/key.pem https://cert.console.stage.redhat.com/api/pulp-content/%s/%s/\n", c.Domain(), resourceName)
+	fmt.Printf("curl -L --proxy http://squid.xxxx.redhat.com:3128 -u edge-content-dev:XXXX https://pulp.stage.xxxx.net/api/pulp-content/%s/%s/\n", c.Domain(), resourceName)
 	fmt.Println("--------------------------------")
 }
 
@@ -91,7 +92,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("Created domain:", pulp.ScanUUID(*createdDomain.PulpHref), ", please update the domainHref in the test source!")
+		fmt.Println("Created domain:", pulp.ScanUUID(createdDomain.PulpHref), ", please update the domainHref in the test source!")
 		return
 	}
 

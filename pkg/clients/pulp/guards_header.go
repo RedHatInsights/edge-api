@@ -6,20 +6,24 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/redhatinsights/edge-api/pkg/ptr"
+	"github.com/sirupsen/logrus"
 )
 
 const JQOrgID = ".identity.org_id"
 
-func formatName(name string) string {
-	return "ORGID=" + name
+func headerGuardName(orgID string) string {
+	return "EDGE_HEADER_ORGID=" + orgID
 }
 
-func (ps *PulpService) HeaderGuardCreate(ctx context.Context, jq, orgID string) (*HeaderContentGuardResponse, error) {
+// HeaderGuardCreate creates a new header guard for the given orgID.
+func (ps *PulpService) HeaderGuardCreate(ctx context.Context, orgID string) (*HeaderContentGuardResponse, error) {
 	req := ContentguardsCoreHeaderCreateJSONRequestBody{
-		Name:        formatName(orgID),
+		Name:        headerGuardName(orgID),
 		HeaderName:  "x-rh-identity",
 		HeaderValue: orgID,
-		JqFilter:    &jq,
+		JqFilter:    ptr.To(JQOrgID),
+		Description: ptr.To("EDGE"),
 	}
 	resp, err := ps.cwr.ContentguardsCoreHeaderCreateWithResponse(ctx, ps.dom, req, addAuthenticationHeader)
 
@@ -34,6 +38,7 @@ func (ps *PulpService) HeaderGuardCreate(ctx context.Context, jq, orgID string) 
 	return resp.JSON201, nil
 }
 
+// HeaderGuardRead returns the header guard with the given ID.
 func (ps *PulpService) HeaderGuardRead(ctx context.Context, id uuid.UUID) (*HeaderContentGuardResponse, error) {
 	req := ContentguardsCoreHeaderReadParams{}
 	resp, err := ps.cwr.ContentguardsCoreHeaderReadWithResponse(ctx, ps.dom, id, &req, addAuthenticationHeader)
@@ -49,6 +54,7 @@ func (ps *PulpService) HeaderGuardRead(ctx context.Context, id uuid.UUID) (*Head
 	return resp.JSON200, nil
 }
 
+// HeaderGuardReadByOrgID returns the header guard for the given orgID.
 func (ps *PulpService) HeaderGuardReadByOrgID(ctx context.Context, orgID string) (*HeaderContentGuardResponse, error) {
 	hgl, err := ps.HeaderGuardList(ctx, orgID)
 	if err != nil {
@@ -59,26 +65,43 @@ func (ps *PulpService) HeaderGuardReadByOrgID(ctx context.Context, orgID string)
 		return nil, fmt.Errorf("header guard not found for orgID %s: %w", orgID, ErrRecordNotFound)
 	}
 
-	id := ScanUUID(*hgl[0].PulpHref)
+	id := ScanUUID(hgl[0].PulpHref)
 	return ps.HeaderGuardRead(ctx, id)
 }
 
-func (ps *PulpService) HeaderGuardReadOrCreate(ctx context.Context, jq, orgID string) (*HeaderContentGuardResponse, error) {
-	hg, err := ps.HeaderGuardReadByOrgID(ctx, formatName(orgID))
+// HeaderGuardEnsure ensures that the header guard is created and returns it. The method is idempotent.
+func (ps *PulpService) HeaderGuardEnsure(ctx context.Context, orgID string) (*HeaderContentGuardResponse, error) {
+	cg, err := ps.HeaderGuardReadByOrgID(ctx, headerGuardName(orgID))
+	// nolint: gocritic
 	if errors.Is(err, ErrRecordNotFound) {
-		hg, err = ps.HeaderGuardCreate(ctx, jq, orgID)
+		cg, err = ps.HeaderGuardCreate(ctx, orgID)
 		if err != nil {
 			return nil, err
 		}
 
-		return hg, nil
+		return cg, nil
 	} else if err != nil {
 		return nil, err
+	} else if cg == nil {
+		return nil, fmt.Errorf("unexpected nil guard")
 	}
 
-	return hg, nil
+	if cg.JqFilter == nil || *cg.JqFilter != JQOrgID {
+		logrus.WithContext(ctx).Warnf("unexpected Header Content Guard: %s, expected: %s, deleting it", ptr.FromOrEmpty(cg.JqFilter), JQOrgID)
+		err = ps.HeaderGuardDelete(ctx, ScanUUID(cg.PulpHref))
+		if err != nil {
+			return nil, err
+		}
+
+		cg, err = ps.HeaderGuardCreate(ctx, orgID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return cg, nil
 }
 
+// HeaderGuardDelete deletes the header guard with the given ID.
 func (ps *PulpService) HeaderGuardDelete(ctx context.Context, id uuid.UUID) error {
 	resp, err := ps.cwr.ContentguardsCoreHeaderDelete(ctx, ps.dom, id, addAuthenticationHeader)
 
@@ -94,6 +117,7 @@ func (ps *PulpService) HeaderGuardDelete(ctx context.Context, id uuid.UUID) erro
 	return nil
 }
 
+// HeaderGuardList returns a list of header guards with the given name filter.
 func (ps *PulpService) HeaderGuardList(ctx context.Context, nameFilter string) ([]HeaderContentGuardResponse, error) {
 	req := ContentguardsCoreHeaderListParams{
 		Limit: &DefaultPageSize,
@@ -112,7 +136,7 @@ func (ps *PulpService) HeaderGuardList(ctx context.Context, nameFilter string) (
 		return nil, fmt.Errorf("unexpected response: %d, body: %s", resp.StatusCode(), string(resp.Body))
 	}
 
-	if resp.JSON200.Count >= DefaultPageSize {
+	if resp.JSON200.Count > DefaultPageSize {
 		return nil, fmt.Errorf("default page size too small: %d", resp.JSON200.Count)
 	}
 

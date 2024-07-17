@@ -12,5 +12,6 @@ output-options:
     - "Repositories: Ostree"
     - "Distributions: Ostree"
     - "Content: Content"
+    - "Contentguards: Rbac"
     - "Contentguards: Header"
     - "Contentguards: Composite"

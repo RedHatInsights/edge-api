@@ -111,6 +111,24 @@ const (
 	ContentguardsCoreHeaderListParamsOrderingPulpType             ContentguardsCoreHeaderListParamsOrdering = "pulp_type"
 )
 
+// Defines values for ContentguardsCoreRbacListParamsOrdering.
+const (
+	ContentguardsCoreRbacListParamsOrderingDescription          ContentguardsCoreRbacListParamsOrdering = "description"
+	ContentguardsCoreRbacListParamsOrderingMinusDescription     ContentguardsCoreRbacListParamsOrdering = "-description"
+	ContentguardsCoreRbacListParamsOrderingMinusName            ContentguardsCoreRbacListParamsOrdering = "-name"
+	ContentguardsCoreRbacListParamsOrderingMinusPk              ContentguardsCoreRbacListParamsOrdering = "-pk"
+	ContentguardsCoreRbacListParamsOrderingMinusPulpCreated     ContentguardsCoreRbacListParamsOrdering = "-pulp_created"
+	ContentguardsCoreRbacListParamsOrderingMinusPulpId          ContentguardsCoreRbacListParamsOrdering = "-pulp_id"
+	ContentguardsCoreRbacListParamsOrderingMinusPulpLastUpdated ContentguardsCoreRbacListParamsOrdering = "-pulp_last_updated"
+	ContentguardsCoreRbacListParamsOrderingMinusPulpType        ContentguardsCoreRbacListParamsOrdering = "-pulp_type"
+	ContentguardsCoreRbacListParamsOrderingName                 ContentguardsCoreRbacListParamsOrdering = "name"
+	ContentguardsCoreRbacListParamsOrderingPk                   ContentguardsCoreRbacListParamsOrdering = "pk"
+	ContentguardsCoreRbacListParamsOrderingPulpCreated          ContentguardsCoreRbacListParamsOrdering = "pulp_created"
+	ContentguardsCoreRbacListParamsOrderingPulpId               ContentguardsCoreRbacListParamsOrdering = "pulp_id"
+	ContentguardsCoreRbacListParamsOrderingPulpLastUpdated      ContentguardsCoreRbacListParamsOrdering = "pulp_last_updated"
+	ContentguardsCoreRbacListParamsOrderingPulpType             ContentguardsCoreRbacListParamsOrdering = "pulp_type"
+)
+
 // Defines values for DistributionsOstreeOstreeListParamsOrdering.
 const (
 	DistributionsOstreeOstreeListParamsOrderingBasePath             DistributionsOstreeOstreeListParamsOrdering = "base_path"
@@ -185,36 +203,36 @@ const (
 
 // Defines values for TasksListParamsOrdering.
 const (
-	TasksListParamsOrderingEncArgs                      TasksListParamsOrdering = "enc_args"
-	TasksListParamsOrderingEncKwargs                    TasksListParamsOrdering = "enc_kwargs"
-	TasksListParamsOrderingError                        TasksListParamsOrdering = "error"
-	TasksListParamsOrderingFinishedAt                   TasksListParamsOrdering = "finished_at"
-	TasksListParamsOrderingLoggingCid                   TasksListParamsOrdering = "logging_cid"
-	TasksListParamsOrderingMinusEncArgs                 TasksListParamsOrdering = "-enc_args"
-	TasksListParamsOrderingMinusEncKwargs               TasksListParamsOrdering = "-enc_kwargs"
-	TasksListParamsOrderingMinusError                   TasksListParamsOrdering = "-error"
-	TasksListParamsOrderingMinusFinishedAt              TasksListParamsOrdering = "-finished_at"
-	TasksListParamsOrderingMinusLoggingCid              TasksListParamsOrdering = "-logging_cid"
-	TasksListParamsOrderingMinusName                    TasksListParamsOrdering = "-name"
-	TasksListParamsOrderingMinusPk                      TasksListParamsOrdering = "-pk"
-	TasksListParamsOrderingMinusPulpCreated             TasksListParamsOrdering = "-pulp_created"
-	TasksListParamsOrderingMinusPulpId                  TasksListParamsOrdering = "-pulp_id"
-	TasksListParamsOrderingMinusPulpLastUpdated         TasksListParamsOrdering = "-pulp_last_updated"
-	TasksListParamsOrderingMinusReservedResourcesRecord TasksListParamsOrdering = "-reserved_resources_record"
-	TasksListParamsOrderingMinusStartedAt               TasksListParamsOrdering = "-started_at"
-	TasksListParamsOrderingMinusState                   TasksListParamsOrdering = "-state"
-	TasksListParamsOrderingMinusUnblockedAt             TasksListParamsOrdering = "-unblocked_at"
-	TasksListParamsOrderingMinusVersions                TasksListParamsOrdering = "-versions"
-	TasksListParamsOrderingName                         TasksListParamsOrdering = "name"
-	TasksListParamsOrderingPk                           TasksListParamsOrdering = "pk"
-	TasksListParamsOrderingPulpCreated                  TasksListParamsOrdering = "pulp_created"
-	TasksListParamsOrderingPulpId                       TasksListParamsOrdering = "pulp_id"
-	TasksListParamsOrderingPulpLastUpdated              TasksListParamsOrdering = "pulp_last_updated"
-	TasksListParamsOrderingReservedResourcesRecord      TasksListParamsOrdering = "reserved_resources_record"
-	TasksListParamsOrderingStartedAt                    TasksListParamsOrdering = "started_at"
-	TasksListParamsOrderingState                        TasksListParamsOrdering = "state"
-	TasksListParamsOrderingUnblockedAt                  TasksListParamsOrdering = "unblocked_at"
-	TasksListParamsOrderingVersions                     TasksListParamsOrdering = "versions"
+	EncArgs                      TasksListParamsOrdering = "enc_args"
+	EncKwargs                    TasksListParamsOrdering = "enc_kwargs"
+	Error                        TasksListParamsOrdering = "error"
+	FinishedAt                   TasksListParamsOrdering = "finished_at"
+	LoggingCid                   TasksListParamsOrdering = "logging_cid"
+	MinusEncArgs                 TasksListParamsOrdering = "-enc_args"
+	MinusEncKwargs               TasksListParamsOrdering = "-enc_kwargs"
+	MinusError                   TasksListParamsOrdering = "-error"
+	MinusFinishedAt              TasksListParamsOrdering = "-finished_at"
+	MinusLoggingCid              TasksListParamsOrdering = "-logging_cid"
+	MinusName                    TasksListParamsOrdering = "-name"
+	MinusPk                      TasksListParamsOrdering = "-pk"
+	MinusPulpCreated             TasksListParamsOrdering = "-pulp_created"
+	MinusPulpId                  TasksListParamsOrdering = "-pulp_id"
+	MinusPulpLastUpdated         TasksListParamsOrdering = "-pulp_last_updated"
+	MinusReservedResourcesRecord TasksListParamsOrdering = "-reserved_resources_record"
+	MinusStartedAt               TasksListParamsOrdering = "-started_at"
+	MinusState                   TasksListParamsOrdering = "-state"
+	MinusUnblockedAt             TasksListParamsOrdering = "-unblocked_at"
+	MinusVersions                TasksListParamsOrdering = "-versions"
+	Name                         TasksListParamsOrdering = "name"
+	Pk                           TasksListParamsOrdering = "pk"
+	PulpCreated                  TasksListParamsOrdering = "pulp_created"
+	PulpId                       TasksListParamsOrdering = "pulp_id"
+	PulpLastUpdated              TasksListParamsOrdering = "pulp_last_updated"
+	ReservedResourcesRecord      TasksListParamsOrdering = "reserved_resources_record"
+	StartedAt                    TasksListParamsOrdering = "started_at"
+	State                        TasksListParamsOrdering = "state"
+	UnblockedAt                  TasksListParamsOrdering = "unblocked_at"
+	Versions                     TasksListParamsOrdering = "versions"
 )
 
 // Defines values for TasksListParamsState.
@@ -407,6 +425,23 @@ type DomainResponse struct {
 	StorageSettings map[string]interface{} `json:"storage_settings"`
 }
 
+// GroupResponse Serializer for Group.
+type GroupResponse struct {
+	Id *int64 `json:"id,omitempty"`
+
+	// Name Name
+	Name     string  `json:"name"`
+	PulpHref *string `json:"pulp_href,omitempty"`
+}
+
+// GroupUserResponse Serializer for Users that belong to a Group.
+type GroupUserResponse struct {
+	PulpHref *string `json:"pulp_href,omitempty"`
+
+	// Username Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
+	Username string `json:"username"`
+}
+
 // HeaderContentGuard A serializer for HeaderContentGuard.
 type HeaderContentGuard struct {
 	// Description An optional description.
@@ -533,6 +568,14 @@ type PaginatedHeaderContentGuardResponseList struct {
 	Results  []HeaderContentGuardResponse `json:"results"`
 }
 
+// PaginatedRBACContentGuardResponseList defines model for PaginatedRBACContentGuardResponseList.
+type PaginatedRBACContentGuardResponseList struct {
+	Count    int                        `json:"count"`
+	Next     *string                    `json:"next"`
+	Previous *string                    `json:"previous"`
+	Results  []RBACContentGuardResponse `json:"results"`
+}
+
 // PaginatedTaskResponseList defines model for PaginatedTaskResponseList.
 type PaginatedTaskResponseList struct {
 	Count    int            `json:"count"`
@@ -626,6 +669,21 @@ type PatchedHeaderContentGuard struct {
 	Name *string `json:"name,omitempty"`
 }
 
+// PatchedRBACContentGuard Base serializer for use with :class:`pulpcore.app.models.Model`
+//
+// This ensures that all Serializers provide values for the 'pulp_href` field.
+//
+// The class provides a default for the “ref_name“ attribute in the
+// ModelSerializers's “Meta“ class. This ensures that the OpenAPI definitions
+// of plugins are namespaced properly.
+type PatchedRBACContentGuard struct {
+	// Description An optional description.
+	Description *string `json:"description"`
+
+	// Name The unique name.
+	Name *string `json:"name,omitempty"`
+}
+
 // PatchedTaskCancel Base serializer for use with :class:`pulpcore.app.models.Model`
 //
 // This ensures that all Serializers provide values for the 'pulp_href` field.
@@ -712,6 +770,45 @@ type Purge struct {
 
 	// States List of task-states to be purged. Only 'final' states are allowed.
 	States *[]StatesEnum `json:"states,omitempty"`
+}
+
+// RBACContentGuard Base serializer for use with :class:`pulpcore.app.models.Model`
+//
+// This ensures that all Serializers provide values for the 'pulp_href` field.
+//
+// The class provides a default for the “ref_name“ attribute in the
+// ModelSerializers's “Meta“ class. This ensures that the OpenAPI definitions
+// of plugins are namespaced properly.
+type RBACContentGuard struct {
+	// Description An optional description.
+	Description *string `json:"description"`
+
+	// Name The unique name.
+	Name string `json:"name"`
+}
+
+// RBACContentGuardResponse Base serializer for use with :class:`pulpcore.app.models.Model`
+//
+// This ensures that all Serializers provide values for the 'pulp_href` field.
+//
+// The class provides a default for the “ref_name“ attribute in the
+// ModelSerializers's “Meta“ class. This ensures that the OpenAPI definitions
+// of plugins are namespaced properly.
+type RBACContentGuardResponse struct {
+	// Description An optional description.
+	Description *string          `json:"description"`
+	Groups      *[]GroupResponse `json:"groups,omitempty"`
+
+	// Name The unique name.
+	Name string `json:"name"`
+
+	// PulpCreated Timestamp of creation.
+	PulpCreated *time.Time `json:"pulp_created,omitempty"`
+	PulpHref    *string    `json:"pulp_href,omitempty"`
+
+	// PulpLastUpdated Timestamp of the last time this resource was updated. Note: for immutable resources - like content, repository versions, and publication - pulp_created and pulp_last_updated dates will be the same.
+	PulpLastUpdated *time.Time           `json:"pulp_last_updated,omitempty"`
+	Users           *[]GroupUserResponse `json:"users,omitempty"`
 }
 
 // RepositoryAddRemoveContent Base serializer for use with :class:`pulpcore.app.models.Model`
@@ -1286,6 +1383,103 @@ type ContentguardsCoreHeaderListRolesParams struct {
 
 // ContentguardsCoreHeaderMyPermissionsParams defines parameters for ContentguardsCoreHeaderMyPermissions.
 type ContentguardsCoreHeaderMyPermissionsParams struct {
+	// Fields A list of fields to include in the response.
+	Fields *[]string `form:"fields,omitempty" json:"fields,omitempty"`
+
+	// ExcludeFields A list of fields to exclude from the response.
+	ExcludeFields *[]string `form:"exclude_fields,omitempty" json:"exclude_fields,omitempty"`
+}
+
+// ContentguardsCoreRbacListParams defines parameters for ContentguardsCoreRbacList.
+type ContentguardsCoreRbacListParams struct {
+	// Limit Number of results to return per page.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Name Filter results where name matches value
+	Name *string `form:"name,omitempty" json:"name,omitempty"`
+
+	// NameContains Filter results where name contains value
+	NameContains *string `form:"name__contains,omitempty" json:"name__contains,omitempty"`
+
+	// NameIcontains Filter results where name contains value
+	NameIcontains *string `form:"name__icontains,omitempty" json:"name__icontains,omitempty"`
+
+	// NameIexact Filter results where name matches value
+	NameIexact *string `form:"name__iexact,omitempty" json:"name__iexact,omitempty"`
+
+	// NameIn Filter results where name is in a comma-separated list of values
+	NameIn *[]string `form:"name__in,omitempty" json:"name__in,omitempty"`
+
+	// NameIregex Filter results where name matches regex value
+	NameIregex *string `form:"name__iregex,omitempty" json:"name__iregex,omitempty"`
+
+	// NameIstartswith Filter results where name starts with value
+	NameIstartswith *string `form:"name__istartswith,omitempty" json:"name__istartswith,omitempty"`
+
+	// NameRegex Filter results where name matches regex value
+	NameRegex *string `form:"name__regex,omitempty" json:"name__regex,omitempty"`
+
+	// NameStartswith Filter results where name starts with value
+	NameStartswith *string `form:"name__startswith,omitempty" json:"name__startswith,omitempty"`
+
+	// Offset The initial index from which to return the results.
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+
+	// Ordering Ordering
+	//
+	// * `pulp_id` - Pulp id
+	// * `-pulp_id` - Pulp id (descending)
+	// * `pulp_created` - Pulp created
+	// * `-pulp_created` - Pulp created (descending)
+	// * `pulp_last_updated` - Pulp last updated
+	// * `-pulp_last_updated` - Pulp last updated (descending)
+	// * `pulp_type` - Pulp type
+	// * `-pulp_type` - Pulp type (descending)
+	// * `name` - Name
+	// * `-name` - Name (descending)
+	// * `description` - Description
+	// * `-description` - Description (descending)
+	// * `pk` - Pk
+	// * `-pk` - Pk (descending)
+	Ordering *[]ContentguardsCoreRbacListParamsOrdering `form:"ordering,omitempty" json:"ordering,omitempty"`
+
+	// PulpHrefIn Multiple values may be separated by commas.
+	PulpHrefIn *[]string `form:"pulp_href__in,omitempty" json:"pulp_href__in,omitempty"`
+
+	// PulpIdIn Multiple values may be separated by commas.
+	PulpIdIn *[]openapi_types.UUID `form:"pulp_id__in,omitempty" json:"pulp_id__in,omitempty"`
+	Q        *string               `form:"q,omitempty" json:"q,omitempty"`
+
+	// Fields A list of fields to include in the response.
+	Fields *[]string `form:"fields,omitempty" json:"fields,omitempty"`
+
+	// ExcludeFields A list of fields to exclude from the response.
+	ExcludeFields *[]string `form:"exclude_fields,omitempty" json:"exclude_fields,omitempty"`
+}
+
+// ContentguardsCoreRbacListParamsOrdering defines parameters for ContentguardsCoreRbacList.
+type ContentguardsCoreRbacListParamsOrdering string
+
+// ContentguardsCoreRbacReadParams defines parameters for ContentguardsCoreRbacRead.
+type ContentguardsCoreRbacReadParams struct {
+	// Fields A list of fields to include in the response.
+	Fields *[]string `form:"fields,omitempty" json:"fields,omitempty"`
+
+	// ExcludeFields A list of fields to exclude from the response.
+	ExcludeFields *[]string `form:"exclude_fields,omitempty" json:"exclude_fields,omitempty"`
+}
+
+// ContentguardsCoreRbacListRolesParams defines parameters for ContentguardsCoreRbacListRoles.
+type ContentguardsCoreRbacListRolesParams struct {
+	// Fields A list of fields to include in the response.
+	Fields *[]string `form:"fields,omitempty" json:"fields,omitempty"`
+
+	// ExcludeFields A list of fields to exclude from the response.
+	ExcludeFields *[]string `form:"exclude_fields,omitempty" json:"exclude_fields,omitempty"`
+}
+
+// ContentguardsCoreRbacMyPermissionsParams defines parameters for ContentguardsCoreRbacMyPermissions.
+type ContentguardsCoreRbacMyPermissionsParams struct {
 	// Fields A list of fields to include in the response.
 	Fields *[]string `form:"fields,omitempty" json:"fields,omitempty"`
 
@@ -1943,6 +2137,51 @@ type ContentguardsCoreHeaderRemoveRoleFormdataRequestBody = NestedRole
 // ContentguardsCoreHeaderRemoveRoleMultipartRequestBody defines body for ContentguardsCoreHeaderRemoveRole for multipart/form-data ContentType.
 type ContentguardsCoreHeaderRemoveRoleMultipartRequestBody = NestedRole
 
+// ContentguardsCoreRbacCreateJSONRequestBody defines body for ContentguardsCoreRbacCreate for application/json ContentType.
+type ContentguardsCoreRbacCreateJSONRequestBody = RBACContentGuard
+
+// ContentguardsCoreRbacCreateFormdataRequestBody defines body for ContentguardsCoreRbacCreate for application/x-www-form-urlencoded ContentType.
+type ContentguardsCoreRbacCreateFormdataRequestBody = RBACContentGuard
+
+// ContentguardsCoreRbacCreateMultipartRequestBody defines body for ContentguardsCoreRbacCreate for multipart/form-data ContentType.
+type ContentguardsCoreRbacCreateMultipartRequestBody = RBACContentGuard
+
+// ContentguardsCoreRbacPartialUpdateJSONRequestBody defines body for ContentguardsCoreRbacPartialUpdate for application/json ContentType.
+type ContentguardsCoreRbacPartialUpdateJSONRequestBody = PatchedRBACContentGuard
+
+// ContentguardsCoreRbacPartialUpdateFormdataRequestBody defines body for ContentguardsCoreRbacPartialUpdate for application/x-www-form-urlencoded ContentType.
+type ContentguardsCoreRbacPartialUpdateFormdataRequestBody = PatchedRBACContentGuard
+
+// ContentguardsCoreRbacPartialUpdateMultipartRequestBody defines body for ContentguardsCoreRbacPartialUpdate for multipart/form-data ContentType.
+type ContentguardsCoreRbacPartialUpdateMultipartRequestBody = PatchedRBACContentGuard
+
+// ContentguardsCoreRbacUpdateJSONRequestBody defines body for ContentguardsCoreRbacUpdate for application/json ContentType.
+type ContentguardsCoreRbacUpdateJSONRequestBody = RBACContentGuard
+
+// ContentguardsCoreRbacUpdateFormdataRequestBody defines body for ContentguardsCoreRbacUpdate for application/x-www-form-urlencoded ContentType.
+type ContentguardsCoreRbacUpdateFormdataRequestBody = RBACContentGuard
+
+// ContentguardsCoreRbacUpdateMultipartRequestBody defines body for ContentguardsCoreRbacUpdate for multipart/form-data ContentType.
+type ContentguardsCoreRbacUpdateMultipartRequestBody = RBACContentGuard
+
+// ContentguardsCoreRbacAddRoleJSONRequestBody defines body for ContentguardsCoreRbacAddRole for application/json ContentType.
+type ContentguardsCoreRbacAddRoleJSONRequestBody = NestedRole
+
+// ContentguardsCoreRbacAddRoleFormdataRequestBody defines body for ContentguardsCoreRbacAddRole for application/x-www-form-urlencoded ContentType.
+type ContentguardsCoreRbacAddRoleFormdataRequestBody = NestedRole
+
+// ContentguardsCoreRbacAddRoleMultipartRequestBody defines body for ContentguardsCoreRbacAddRole for multipart/form-data ContentType.
+type ContentguardsCoreRbacAddRoleMultipartRequestBody = NestedRole
+
+// ContentguardsCoreRbacRemoveRoleJSONRequestBody defines body for ContentguardsCoreRbacRemoveRole for application/json ContentType.
+type ContentguardsCoreRbacRemoveRoleJSONRequestBody = NestedRole
+
+// ContentguardsCoreRbacRemoveRoleFormdataRequestBody defines body for ContentguardsCoreRbacRemoveRole for application/x-www-form-urlencoded ContentType.
+type ContentguardsCoreRbacRemoveRoleFormdataRequestBody = NestedRole
+
+// ContentguardsCoreRbacRemoveRoleMultipartRequestBody defines body for ContentguardsCoreRbacRemoveRole for multipart/form-data ContentType.
+type ContentguardsCoreRbacRemoveRoleMultipartRequestBody = NestedRole
+
 // DistributionsOstreeOstreeCreateJSONRequestBody defines body for DistributionsOstreeOstreeCreate for application/json ContentType.
 type DistributionsOstreeOstreeCreateJSONRequestBody = OstreeOstreeDistribution
 
@@ -2367,6 +2606,56 @@ type ClientInterface interface {
 	ContentguardsCoreHeaderRemoveRole(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreHeaderRemoveRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	ContentguardsCoreHeaderRemoveRoleWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreHeaderRemoveRoleFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ContentguardsCoreRbacList request
+	ContentguardsCoreRbacList(ctx context.Context, pulpDomain string, params *ContentguardsCoreRbacListParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ContentguardsCoreRbacCreateWithBody request with any body
+	ContentguardsCoreRbacCreateWithBody(ctx context.Context, pulpDomain string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ContentguardsCoreRbacCreate(ctx context.Context, pulpDomain string, body ContentguardsCoreRbacCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ContentguardsCoreRbacCreateWithFormdataBody(ctx context.Context, pulpDomain string, body ContentguardsCoreRbacCreateFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ContentguardsCoreRbacDelete request
+	ContentguardsCoreRbacDelete(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ContentguardsCoreRbacRead request
+	ContentguardsCoreRbacRead(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *ContentguardsCoreRbacReadParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ContentguardsCoreRbacPartialUpdateWithBody request with any body
+	ContentguardsCoreRbacPartialUpdateWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ContentguardsCoreRbacPartialUpdate(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacPartialUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ContentguardsCoreRbacPartialUpdateWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacPartialUpdateFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ContentguardsCoreRbacUpdateWithBody request with any body
+	ContentguardsCoreRbacUpdateWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ContentguardsCoreRbacUpdate(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ContentguardsCoreRbacUpdateWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacUpdateFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ContentguardsCoreRbacAddRoleWithBody request with any body
+	ContentguardsCoreRbacAddRoleWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ContentguardsCoreRbacAddRole(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacAddRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ContentguardsCoreRbacAddRoleWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacAddRoleFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ContentguardsCoreRbacListRoles request
+	ContentguardsCoreRbacListRoles(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *ContentguardsCoreRbacListRolesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ContentguardsCoreRbacMyPermissions request
+	ContentguardsCoreRbacMyPermissions(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *ContentguardsCoreRbacMyPermissionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ContentguardsCoreRbacRemoveRoleWithBody request with any body
+	ContentguardsCoreRbacRemoveRoleWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ContentguardsCoreRbacRemoveRole(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacRemoveRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ContentguardsCoreRbacRemoveRoleWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacRemoveRoleFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DistributionsOstreeOstreeList request
 	DistributionsOstreeOstreeList(ctx context.Context, pulpDomain string, params *DistributionsOstreeOstreeListParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -3188,6 +3477,246 @@ func (c *Client) ContentguardsCoreHeaderRemoveRole(ctx context.Context, pulpDoma
 
 func (c *Client) ContentguardsCoreHeaderRemoveRoleWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreHeaderRemoveRoleFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewContentguardsCoreHeaderRemoveRoleRequestWithFormdataBody(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacList(ctx context.Context, pulpDomain string, params *ContentguardsCoreRbacListParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacListRequest(c.Server, pulpDomain, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacCreateWithBody(ctx context.Context, pulpDomain string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacCreateRequestWithBody(c.Server, pulpDomain, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacCreate(ctx context.Context, pulpDomain string, body ContentguardsCoreRbacCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacCreateRequest(c.Server, pulpDomain, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacCreateWithFormdataBody(ctx context.Context, pulpDomain string, body ContentguardsCoreRbacCreateFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacCreateRequestWithFormdataBody(c.Server, pulpDomain, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacDelete(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacDeleteRequest(c.Server, pulpDomain, pulpId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacRead(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *ContentguardsCoreRbacReadParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacReadRequest(c.Server, pulpDomain, pulpId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacPartialUpdateWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacPartialUpdateRequestWithBody(c.Server, pulpDomain, pulpId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacPartialUpdate(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacPartialUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacPartialUpdateRequest(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacPartialUpdateWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacPartialUpdateFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacPartialUpdateRequestWithFormdataBody(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacUpdateWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacUpdateRequestWithBody(c.Server, pulpDomain, pulpId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacUpdate(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacUpdateRequest(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacUpdateWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacUpdateFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacUpdateRequestWithFormdataBody(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacAddRoleWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacAddRoleRequestWithBody(c.Server, pulpDomain, pulpId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacAddRole(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacAddRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacAddRoleRequest(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacAddRoleWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacAddRoleFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacAddRoleRequestWithFormdataBody(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacListRoles(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *ContentguardsCoreRbacListRolesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacListRolesRequest(c.Server, pulpDomain, pulpId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacMyPermissions(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *ContentguardsCoreRbacMyPermissionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacMyPermissionsRequest(c.Server, pulpDomain, pulpId, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacRemoveRoleWithBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacRemoveRoleRequestWithBody(c.Server, pulpDomain, pulpId, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacRemoveRole(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacRemoveRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacRemoveRoleRequest(c.Server, pulpDomain, pulpId, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ContentguardsCoreRbacRemoveRoleWithFormdataBody(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacRemoveRoleFormdataRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewContentguardsCoreRbacRemoveRoleRequestWithFormdataBody(c.Server, pulpDomain, pulpId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -6943,6 +7472,914 @@ func NewContentguardsCoreHeaderRemoveRoleRequestWithBody(server string, pulpDoma
 	}
 
 	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/contentguards/core/header/%s/remove_role/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewContentguardsCoreRbacListRequest generates requests for ContentguardsCoreRbacList
+func NewContentguardsCoreRbacListRequest(server string, pulpDomain string, params *ContentguardsCoreRbacListParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/contentguards/core/rbac/", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Limit != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "limit", runtime.ParamLocationQuery, *params.Limit); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Name != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "name", runtime.ParamLocationQuery, *params.Name); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NameContains != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "name__contains", runtime.ParamLocationQuery, *params.NameContains); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NameIcontains != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "name__icontains", runtime.ParamLocationQuery, *params.NameIcontains); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NameIexact != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "name__iexact", runtime.ParamLocationQuery, *params.NameIexact); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NameIn != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", false, "name__in", runtime.ParamLocationQuery, *params.NameIn); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NameIregex != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "name__iregex", runtime.ParamLocationQuery, *params.NameIregex); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NameIstartswith != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "name__istartswith", runtime.ParamLocationQuery, *params.NameIstartswith); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NameRegex != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "name__regex", runtime.ParamLocationQuery, *params.NameRegex); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.NameStartswith != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "name__startswith", runtime.ParamLocationQuery, *params.NameStartswith); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Offset != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "offset", runtime.ParamLocationQuery, *params.Offset); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Ordering != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", false, "ordering", runtime.ParamLocationQuery, *params.Ordering); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PulpHrefIn != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", false, "pulp_href__in", runtime.ParamLocationQuery, *params.PulpHrefIn); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.PulpIdIn != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", false, "pulp_id__in", runtime.ParamLocationQuery, *params.PulpIdIn); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Q != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "q", runtime.ParamLocationQuery, *params.Q); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.Fields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "fields", runtime.ParamLocationQuery, *params.Fields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ExcludeFields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "exclude_fields", runtime.ParamLocationQuery, *params.ExcludeFields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewContentguardsCoreRbacCreateRequest calls the generic ContentguardsCoreRbacCreate builder with application/json body
+func NewContentguardsCoreRbacCreateRequest(server string, pulpDomain string, body ContentguardsCoreRbacCreateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewContentguardsCoreRbacCreateRequestWithBody(server, pulpDomain, "application/json", bodyReader)
+}
+
+// NewContentguardsCoreRbacCreateRequestWithFormdataBody calls the generic ContentguardsCoreRbacCreate builder with application/x-www-form-urlencoded body
+func NewContentguardsCoreRbacCreateRequestWithFormdataBody(server string, pulpDomain string, body ContentguardsCoreRbacCreateFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewContentguardsCoreRbacCreateRequestWithBody(server, pulpDomain, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewContentguardsCoreRbacCreateRequestWithBody generates requests for ContentguardsCoreRbacCreate with any type of body
+func NewContentguardsCoreRbacCreateRequestWithBody(server string, pulpDomain string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/contentguards/core/rbac/", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewContentguardsCoreRbacDeleteRequest generates requests for ContentguardsCoreRbacDelete
+func NewContentguardsCoreRbacDeleteRequest(server string, pulpDomain string, pulpId openapi_types.UUID) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/contentguards/core/rbac/%s/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewContentguardsCoreRbacReadRequest generates requests for ContentguardsCoreRbacRead
+func NewContentguardsCoreRbacReadRequest(server string, pulpDomain string, pulpId openapi_types.UUID, params *ContentguardsCoreRbacReadParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/contentguards/core/rbac/%s/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Fields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "fields", runtime.ParamLocationQuery, *params.Fields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ExcludeFields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "exclude_fields", runtime.ParamLocationQuery, *params.ExcludeFields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewContentguardsCoreRbacPartialUpdateRequest calls the generic ContentguardsCoreRbacPartialUpdate builder with application/json body
+func NewContentguardsCoreRbacPartialUpdateRequest(server string, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacPartialUpdateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewContentguardsCoreRbacPartialUpdateRequestWithBody(server, pulpDomain, pulpId, "application/json", bodyReader)
+}
+
+// NewContentguardsCoreRbacPartialUpdateRequestWithFormdataBody calls the generic ContentguardsCoreRbacPartialUpdate builder with application/x-www-form-urlencoded body
+func NewContentguardsCoreRbacPartialUpdateRequestWithFormdataBody(server string, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacPartialUpdateFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewContentguardsCoreRbacPartialUpdateRequestWithBody(server, pulpDomain, pulpId, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewContentguardsCoreRbacPartialUpdateRequestWithBody generates requests for ContentguardsCoreRbacPartialUpdate with any type of body
+func NewContentguardsCoreRbacPartialUpdateRequestWithBody(server string, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/contentguards/core/rbac/%s/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewContentguardsCoreRbacUpdateRequest calls the generic ContentguardsCoreRbacUpdate builder with application/json body
+func NewContentguardsCoreRbacUpdateRequest(server string, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacUpdateJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewContentguardsCoreRbacUpdateRequestWithBody(server, pulpDomain, pulpId, "application/json", bodyReader)
+}
+
+// NewContentguardsCoreRbacUpdateRequestWithFormdataBody calls the generic ContentguardsCoreRbacUpdate builder with application/x-www-form-urlencoded body
+func NewContentguardsCoreRbacUpdateRequestWithFormdataBody(server string, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacUpdateFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewContentguardsCoreRbacUpdateRequestWithBody(server, pulpDomain, pulpId, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewContentguardsCoreRbacUpdateRequestWithBody generates requests for ContentguardsCoreRbacUpdate with any type of body
+func NewContentguardsCoreRbacUpdateRequestWithBody(server string, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/contentguards/core/rbac/%s/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PUT", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewContentguardsCoreRbacAddRoleRequest calls the generic ContentguardsCoreRbacAddRole builder with application/json body
+func NewContentguardsCoreRbacAddRoleRequest(server string, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacAddRoleJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewContentguardsCoreRbacAddRoleRequestWithBody(server, pulpDomain, pulpId, "application/json", bodyReader)
+}
+
+// NewContentguardsCoreRbacAddRoleRequestWithFormdataBody calls the generic ContentguardsCoreRbacAddRole builder with application/x-www-form-urlencoded body
+func NewContentguardsCoreRbacAddRoleRequestWithFormdataBody(server string, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacAddRoleFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewContentguardsCoreRbacAddRoleRequestWithBody(server, pulpDomain, pulpId, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewContentguardsCoreRbacAddRoleRequestWithBody generates requests for ContentguardsCoreRbacAddRole with any type of body
+func NewContentguardsCoreRbacAddRoleRequestWithBody(server string, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/contentguards/core/rbac/%s/add_role/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewContentguardsCoreRbacListRolesRequest generates requests for ContentguardsCoreRbacListRoles
+func NewContentguardsCoreRbacListRolesRequest(server string, pulpDomain string, pulpId openapi_types.UUID, params *ContentguardsCoreRbacListRolesParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/contentguards/core/rbac/%s/list_roles/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Fields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "fields", runtime.ParamLocationQuery, *params.Fields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ExcludeFields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "exclude_fields", runtime.ParamLocationQuery, *params.ExcludeFields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewContentguardsCoreRbacMyPermissionsRequest generates requests for ContentguardsCoreRbacMyPermissions
+func NewContentguardsCoreRbacMyPermissionsRequest(server string, pulpDomain string, pulpId openapi_types.UUID, params *ContentguardsCoreRbacMyPermissionsParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/contentguards/core/rbac/%s/my_permissions/", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.Fields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "fields", runtime.ParamLocationQuery, *params.Fields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.ExcludeFields != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "exclude_fields", runtime.ParamLocationQuery, *params.ExcludeFields); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewContentguardsCoreRbacRemoveRoleRequest calls the generic ContentguardsCoreRbacRemoveRole builder with application/json body
+func NewContentguardsCoreRbacRemoveRoleRequest(server string, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacRemoveRoleJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewContentguardsCoreRbacRemoveRoleRequestWithBody(server, pulpDomain, pulpId, "application/json", bodyReader)
+}
+
+// NewContentguardsCoreRbacRemoveRoleRequestWithFormdataBody calls the generic ContentguardsCoreRbacRemoveRole builder with application/x-www-form-urlencoded body
+func NewContentguardsCoreRbacRemoveRoleRequestWithFormdataBody(server string, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacRemoveRoleFormdataRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	bodyStr, err := runtime.MarshalForm(body, nil)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = strings.NewReader(bodyStr.Encode())
+	return NewContentguardsCoreRbacRemoveRoleRequestWithBody(server, pulpDomain, pulpId, "application/x-www-form-urlencoded", bodyReader)
+}
+
+// NewContentguardsCoreRbacRemoveRoleRequestWithBody generates requests for ContentguardsCoreRbacRemoveRole with any type of body
+func NewContentguardsCoreRbacRemoveRoleRequestWithBody(server string, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "pulp_domain", runtime.ParamLocationPath, pulpDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "pulp_id", runtime.ParamLocationPath, pulpId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/pulp/%s/api/v3/contentguards/core/rbac/%s/remove_role/", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -11667,6 +13104,56 @@ type ClientWithResponsesInterface interface {
 
 	ContentguardsCoreHeaderRemoveRoleWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreHeaderRemoveRoleFormdataRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreHeaderRemoveRoleResponse, error)
 
+	// ContentguardsCoreRbacListWithResponse request
+	ContentguardsCoreRbacListWithResponse(ctx context.Context, pulpDomain string, params *ContentguardsCoreRbacListParams, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacListResponse, error)
+
+	// ContentguardsCoreRbacCreateWithBodyWithResponse request with any body
+	ContentguardsCoreRbacCreateWithBodyWithResponse(ctx context.Context, pulpDomain string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacCreateResponse, error)
+
+	ContentguardsCoreRbacCreateWithResponse(ctx context.Context, pulpDomain string, body ContentguardsCoreRbacCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacCreateResponse, error)
+
+	ContentguardsCoreRbacCreateWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, body ContentguardsCoreRbacCreateFormdataRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacCreateResponse, error)
+
+	// ContentguardsCoreRbacDeleteWithResponse request
+	ContentguardsCoreRbacDeleteWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacDeleteResponse, error)
+
+	// ContentguardsCoreRbacReadWithResponse request
+	ContentguardsCoreRbacReadWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *ContentguardsCoreRbacReadParams, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacReadResponse, error)
+
+	// ContentguardsCoreRbacPartialUpdateWithBodyWithResponse request with any body
+	ContentguardsCoreRbacPartialUpdateWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacPartialUpdateResponse, error)
+
+	ContentguardsCoreRbacPartialUpdateWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacPartialUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacPartialUpdateResponse, error)
+
+	ContentguardsCoreRbacPartialUpdateWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacPartialUpdateFormdataRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacPartialUpdateResponse, error)
+
+	// ContentguardsCoreRbacUpdateWithBodyWithResponse request with any body
+	ContentguardsCoreRbacUpdateWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacUpdateResponse, error)
+
+	ContentguardsCoreRbacUpdateWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacUpdateResponse, error)
+
+	ContentguardsCoreRbacUpdateWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacUpdateFormdataRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacUpdateResponse, error)
+
+	// ContentguardsCoreRbacAddRoleWithBodyWithResponse request with any body
+	ContentguardsCoreRbacAddRoleWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacAddRoleResponse, error)
+
+	ContentguardsCoreRbacAddRoleWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacAddRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacAddRoleResponse, error)
+
+	ContentguardsCoreRbacAddRoleWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacAddRoleFormdataRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacAddRoleResponse, error)
+
+	// ContentguardsCoreRbacListRolesWithResponse request
+	ContentguardsCoreRbacListRolesWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *ContentguardsCoreRbacListRolesParams, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacListRolesResponse, error)
+
+	// ContentguardsCoreRbacMyPermissionsWithResponse request
+	ContentguardsCoreRbacMyPermissionsWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *ContentguardsCoreRbacMyPermissionsParams, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacMyPermissionsResponse, error)
+
+	// ContentguardsCoreRbacRemoveRoleWithBodyWithResponse request with any body
+	ContentguardsCoreRbacRemoveRoleWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacRemoveRoleResponse, error)
+
+	ContentguardsCoreRbacRemoveRoleWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacRemoveRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacRemoveRoleResponse, error)
+
+	ContentguardsCoreRbacRemoveRoleWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacRemoveRoleFormdataRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacRemoveRoleResponse, error)
+
 	// DistributionsOstreeOstreeListWithResponse request
 	DistributionsOstreeOstreeListWithResponse(ctx context.Context, pulpDomain string, params *DistributionsOstreeOstreeListParams, reqEditors ...RequestEditorFn) (*DistributionsOstreeOstreeListResponse, error)
 
@@ -12482,6 +13969,225 @@ func (r ContentguardsCoreHeaderRemoveRoleResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r ContentguardsCoreHeaderRemoveRoleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ContentguardsCoreRbacListResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *PaginatedRBACContentGuardResponseList
+}
+
+// Status returns HTTPResponse.Status
+func (r ContentguardsCoreRbacListResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ContentguardsCoreRbacListResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ContentguardsCoreRbacCreateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *RBACContentGuardResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ContentguardsCoreRbacCreateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ContentguardsCoreRbacCreateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ContentguardsCoreRbacDeleteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r ContentguardsCoreRbacDeleteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ContentguardsCoreRbacDeleteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ContentguardsCoreRbacReadResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RBACContentGuardResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ContentguardsCoreRbacReadResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ContentguardsCoreRbacReadResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ContentguardsCoreRbacPartialUpdateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RBACContentGuardResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ContentguardsCoreRbacPartialUpdateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ContentguardsCoreRbacPartialUpdateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ContentguardsCoreRbacUpdateResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RBACContentGuardResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ContentguardsCoreRbacUpdateResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ContentguardsCoreRbacUpdateResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ContentguardsCoreRbacAddRoleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *NestedRoleResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ContentguardsCoreRbacAddRoleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ContentguardsCoreRbacAddRoleResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ContentguardsCoreRbacListRolesResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ObjectRolesResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ContentguardsCoreRbacListRolesResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ContentguardsCoreRbacListRolesResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ContentguardsCoreRbacMyPermissionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *MyPermissionsResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ContentguardsCoreRbacMyPermissionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ContentguardsCoreRbacMyPermissionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ContentguardsCoreRbacRemoveRoleResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *NestedRoleResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r ContentguardsCoreRbacRemoveRoleResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ContentguardsCoreRbacRemoveRoleResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -13859,6 +15565,176 @@ func (c *ClientWithResponses) ContentguardsCoreHeaderRemoveRoleWithFormdataBodyW
 		return nil, err
 	}
 	return ParseContentguardsCoreHeaderRemoveRoleResponse(rsp)
+}
+
+// ContentguardsCoreRbacListWithResponse request returning *ContentguardsCoreRbacListResponse
+func (c *ClientWithResponses) ContentguardsCoreRbacListWithResponse(ctx context.Context, pulpDomain string, params *ContentguardsCoreRbacListParams, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacListResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacList(ctx, pulpDomain, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacListResponse(rsp)
+}
+
+// ContentguardsCoreRbacCreateWithBodyWithResponse request with arbitrary body returning *ContentguardsCoreRbacCreateResponse
+func (c *ClientWithResponses) ContentguardsCoreRbacCreateWithBodyWithResponse(ctx context.Context, pulpDomain string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacCreateResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacCreateWithBody(ctx, pulpDomain, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacCreateResponse(rsp)
+}
+
+func (c *ClientWithResponses) ContentguardsCoreRbacCreateWithResponse(ctx context.Context, pulpDomain string, body ContentguardsCoreRbacCreateJSONRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacCreateResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacCreate(ctx, pulpDomain, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacCreateResponse(rsp)
+}
+
+func (c *ClientWithResponses) ContentguardsCoreRbacCreateWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, body ContentguardsCoreRbacCreateFormdataRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacCreateResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacCreateWithFormdataBody(ctx, pulpDomain, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacCreateResponse(rsp)
+}
+
+// ContentguardsCoreRbacDeleteWithResponse request returning *ContentguardsCoreRbacDeleteResponse
+func (c *ClientWithResponses) ContentguardsCoreRbacDeleteWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacDeleteResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacDelete(ctx, pulpDomain, pulpId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacDeleteResponse(rsp)
+}
+
+// ContentguardsCoreRbacReadWithResponse request returning *ContentguardsCoreRbacReadResponse
+func (c *ClientWithResponses) ContentguardsCoreRbacReadWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *ContentguardsCoreRbacReadParams, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacReadResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacRead(ctx, pulpDomain, pulpId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacReadResponse(rsp)
+}
+
+// ContentguardsCoreRbacPartialUpdateWithBodyWithResponse request with arbitrary body returning *ContentguardsCoreRbacPartialUpdateResponse
+func (c *ClientWithResponses) ContentguardsCoreRbacPartialUpdateWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacPartialUpdateResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacPartialUpdateWithBody(ctx, pulpDomain, pulpId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacPartialUpdateResponse(rsp)
+}
+
+func (c *ClientWithResponses) ContentguardsCoreRbacPartialUpdateWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacPartialUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacPartialUpdateResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacPartialUpdate(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacPartialUpdateResponse(rsp)
+}
+
+func (c *ClientWithResponses) ContentguardsCoreRbacPartialUpdateWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacPartialUpdateFormdataRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacPartialUpdateResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacPartialUpdateWithFormdataBody(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacPartialUpdateResponse(rsp)
+}
+
+// ContentguardsCoreRbacUpdateWithBodyWithResponse request with arbitrary body returning *ContentguardsCoreRbacUpdateResponse
+func (c *ClientWithResponses) ContentguardsCoreRbacUpdateWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacUpdateResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacUpdateWithBody(ctx, pulpDomain, pulpId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacUpdateResponse(rsp)
+}
+
+func (c *ClientWithResponses) ContentguardsCoreRbacUpdateWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacUpdateJSONRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacUpdateResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacUpdate(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacUpdateResponse(rsp)
+}
+
+func (c *ClientWithResponses) ContentguardsCoreRbacUpdateWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacUpdateFormdataRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacUpdateResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacUpdateWithFormdataBody(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacUpdateResponse(rsp)
+}
+
+// ContentguardsCoreRbacAddRoleWithBodyWithResponse request with arbitrary body returning *ContentguardsCoreRbacAddRoleResponse
+func (c *ClientWithResponses) ContentguardsCoreRbacAddRoleWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacAddRoleResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacAddRoleWithBody(ctx, pulpDomain, pulpId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacAddRoleResponse(rsp)
+}
+
+func (c *ClientWithResponses) ContentguardsCoreRbacAddRoleWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacAddRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacAddRoleResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacAddRole(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacAddRoleResponse(rsp)
+}
+
+func (c *ClientWithResponses) ContentguardsCoreRbacAddRoleWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacAddRoleFormdataRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacAddRoleResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacAddRoleWithFormdataBody(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacAddRoleResponse(rsp)
+}
+
+// ContentguardsCoreRbacListRolesWithResponse request returning *ContentguardsCoreRbacListRolesResponse
+func (c *ClientWithResponses) ContentguardsCoreRbacListRolesWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *ContentguardsCoreRbacListRolesParams, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacListRolesResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacListRoles(ctx, pulpDomain, pulpId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacListRolesResponse(rsp)
+}
+
+// ContentguardsCoreRbacMyPermissionsWithResponse request returning *ContentguardsCoreRbacMyPermissionsResponse
+func (c *ClientWithResponses) ContentguardsCoreRbacMyPermissionsWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, params *ContentguardsCoreRbacMyPermissionsParams, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacMyPermissionsResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacMyPermissions(ctx, pulpDomain, pulpId, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacMyPermissionsResponse(rsp)
+}
+
+// ContentguardsCoreRbacRemoveRoleWithBodyWithResponse request with arbitrary body returning *ContentguardsCoreRbacRemoveRoleResponse
+func (c *ClientWithResponses) ContentguardsCoreRbacRemoveRoleWithBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacRemoveRoleResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacRemoveRoleWithBody(ctx, pulpDomain, pulpId, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacRemoveRoleResponse(rsp)
+}
+
+func (c *ClientWithResponses) ContentguardsCoreRbacRemoveRoleWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacRemoveRoleJSONRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacRemoveRoleResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacRemoveRole(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacRemoveRoleResponse(rsp)
+}
+
+func (c *ClientWithResponses) ContentguardsCoreRbacRemoveRoleWithFormdataBodyWithResponse(ctx context.Context, pulpDomain string, pulpId openapi_types.UUID, body ContentguardsCoreRbacRemoveRoleFormdataRequestBody, reqEditors ...RequestEditorFn) (*ContentguardsCoreRbacRemoveRoleResponse, error) {
+	rsp, err := c.ContentguardsCoreRbacRemoveRoleWithFormdataBody(ctx, pulpDomain, pulpId, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseContentguardsCoreRbacRemoveRoleResponse(rsp)
 }
 
 // DistributionsOstreeOstreeListWithResponse request returning *DistributionsOstreeOstreeListResponse
@@ -15303,6 +17179,256 @@ func ParseContentguardsCoreHeaderRemoveRoleResponse(rsp *http.Response) (*Conten
 	}
 
 	response := &ContentguardsCoreHeaderRemoveRoleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest NestedRoleResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseContentguardsCoreRbacListResponse parses an HTTP response from a ContentguardsCoreRbacListWithResponse call
+func ParseContentguardsCoreRbacListResponse(rsp *http.Response) (*ContentguardsCoreRbacListResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ContentguardsCoreRbacListResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest PaginatedRBACContentGuardResponseList
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseContentguardsCoreRbacCreateResponse parses an HTTP response from a ContentguardsCoreRbacCreateWithResponse call
+func ParseContentguardsCoreRbacCreateResponse(rsp *http.Response) (*ContentguardsCoreRbacCreateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ContentguardsCoreRbacCreateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest RBACContentGuardResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseContentguardsCoreRbacDeleteResponse parses an HTTP response from a ContentguardsCoreRbacDeleteWithResponse call
+func ParseContentguardsCoreRbacDeleteResponse(rsp *http.Response) (*ContentguardsCoreRbacDeleteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ContentguardsCoreRbacDeleteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseContentguardsCoreRbacReadResponse parses an HTTP response from a ContentguardsCoreRbacReadWithResponse call
+func ParseContentguardsCoreRbacReadResponse(rsp *http.Response) (*ContentguardsCoreRbacReadResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ContentguardsCoreRbacReadResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RBACContentGuardResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseContentguardsCoreRbacPartialUpdateResponse parses an HTTP response from a ContentguardsCoreRbacPartialUpdateWithResponse call
+func ParseContentguardsCoreRbacPartialUpdateResponse(rsp *http.Response) (*ContentguardsCoreRbacPartialUpdateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ContentguardsCoreRbacPartialUpdateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RBACContentGuardResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseContentguardsCoreRbacUpdateResponse parses an HTTP response from a ContentguardsCoreRbacUpdateWithResponse call
+func ParseContentguardsCoreRbacUpdateResponse(rsp *http.Response) (*ContentguardsCoreRbacUpdateResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ContentguardsCoreRbacUpdateResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RBACContentGuardResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseContentguardsCoreRbacAddRoleResponse parses an HTTP response from a ContentguardsCoreRbacAddRoleWithResponse call
+func ParseContentguardsCoreRbacAddRoleResponse(rsp *http.Response) (*ContentguardsCoreRbacAddRoleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ContentguardsCoreRbacAddRoleResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest NestedRoleResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseContentguardsCoreRbacListRolesResponse parses an HTTP response from a ContentguardsCoreRbacListRolesWithResponse call
+func ParseContentguardsCoreRbacListRolesResponse(rsp *http.Response) (*ContentguardsCoreRbacListRolesResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ContentguardsCoreRbacListRolesResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ObjectRolesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseContentguardsCoreRbacMyPermissionsResponse parses an HTTP response from a ContentguardsCoreRbacMyPermissionsWithResponse call
+func ParseContentguardsCoreRbacMyPermissionsResponse(rsp *http.Response) (*ContentguardsCoreRbacMyPermissionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ContentguardsCoreRbacMyPermissionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest MyPermissionsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseContentguardsCoreRbacRemoveRoleResponse parses an HTTP response from a ContentguardsCoreRbacRemoveRoleWithResponse call
+func ParseContentguardsCoreRbacRemoveRoleResponse(rsp *http.Response) (*ContentguardsCoreRbacRemoveRoleResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ContentguardsCoreRbacRemoveRoleResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
