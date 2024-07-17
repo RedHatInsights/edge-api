@@ -423,6 +423,10 @@ func GetUpdateTransactionRepoFile(w http.ResponseWriter, r *http.Request) {
 
 	// workaround to serve 303 instead of 404 for optional ostree files
 	baseFilename := filepath.Base(requestPath)
+	if extension := filepath.Ext(baseFilename); extension != "" {
+		baseFilename = extension
+	}
+
 	switch baseFilename {
 	case "summary", "summary.sig", ".commitmeta", "superblock":
 		logger.WithFields(log.Fields{
