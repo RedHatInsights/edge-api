@@ -138,7 +138,7 @@ var _ = Describe("Storage Router", func() {
 
 		Context("GetUpdateTransactionRepoFile", func() {
 			It("Should return the requested resource content", func() {
-				targetRepoFile := "summary.sig"
+				targetRepoFile := "thing.filez"
 				req, err := http.NewRequest("GET", fmt.Sprintf("/storage/update-repos/%d/%s", updateTransaction.ID, targetRepoFile), nil)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -159,6 +159,24 @@ var _ = Describe("Storage Router", func() {
 				respBody, err := io.ReadAll(httpTestRecorder.Body)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(string(respBody)).To(Equal(fileContent))
+			})
+
+			It("Should redirect to the requested resource content file", func() {
+				targetRepoFile := "summary.sig"
+				req, err := http.NewRequest("GET", fmt.Sprintf("/storage/update-repos/%d/content/%s", updateTransaction.ID, targetRepoFile), nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				url, err := url2.Parse(updateTransaction.Repo.URL)
+				Expect(err).ToNot(HaveOccurred())
+				targetPath := fmt.Sprintf("%s/%s", url.Path, targetRepoFile)
+				expectedURL := fmt.Sprintf("%s/%s?signature", url, targetRepoFile)
+				mockFilesService.EXPECT().GetSignedURL(targetPath).Return(expectedURL, nil)
+
+				httpTestRecorder := httptest.NewRecorder()
+				router.ServeHTTP(httpTestRecorder, req)
+
+				Expect(httpTestRecorder.Code).To(Equal(http.StatusSeeOther))
+				Expect(httpTestRecorder.Header()["Location"][0]).To(Equal(expectedURL))
 			})
 
 			It("should return error when the update transaction does not exists", func() {

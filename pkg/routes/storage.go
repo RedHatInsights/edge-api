@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	url2 "net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -420,12 +421,24 @@ func GetUpdateTransactionRepoFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.WithFields(log.Fields{
-		"orgID":               updateRepo.OrgID,
-		"updateTransactionID": updateRepo.ID,
-		"path":                requestPath,
-	}).Debug("return storage update transaction repo resource content")
-	serveStorageContent(w, r, requestPath)
+	// workaround to serve 303 instead of 404 for optional ostree files
+	baseFilename := filepath.Base(requestPath)
+	switch baseFilename {
+	case "summary", "summary.sig", ".commitmeta", "superblock":
+		logger.WithFields(log.Fields{
+			"orgID":               updateRepo.OrgID,
+			"updateTransactionID": updateRepo.ID,
+			"path":                requestPath,
+		}).Debug("redirected possible missing optional ostree file")
+		redirectToStorageSignedURL(w, r, requestPath)
+	default:
+		logger.WithFields(log.Fields{
+			"orgID":               updateRepo.OrgID,
+			"updateTransactionID": updateRepo.ID,
+			"path":                requestPath,
+		}).Debug("return storage update transaction repo resource content")
+		serveStorageContent(w, r, requestPath)
+	}
 }
 
 // storageImageCtx is a handler for storage image requests
