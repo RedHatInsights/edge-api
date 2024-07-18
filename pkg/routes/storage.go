@@ -423,7 +423,7 @@ func GetUpdateTransactionRepoFile(w http.ResponseWriter, r *http.Request) {
 
 	// workaround to serve 303 instead of 404 for optional ostree files
 	baseFilename := filepath.Base(requestPath)
-	if extension := filepath.Ext(baseFilename); extension != "" {
+	if extension := filepath.Ext(baseFilename); extension == ".commitmeta" {
 		baseFilename = extension
 	}
 
@@ -433,7 +433,7 @@ func GetUpdateTransactionRepoFile(w http.ResponseWriter, r *http.Request) {
 			"orgID":               updateRepo.OrgID,
 			"updateTransactionID": updateRepo.ID,
 			"path":                requestPath,
-		}).Debug("redirected possible missing optional ostree file")
+		}).Debug("redirected optional ostree file")
 		redirectToStorageSignedURL(w, r, requestPath)
 	default:
 		logger.WithFields(log.Fields{
