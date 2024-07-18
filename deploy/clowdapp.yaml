@@ -141,11 +141,11 @@ objects:
           value: ${SUBSCRIPTION_SERVER_URL}
         resources:
           limits:
-            cpu: ${{CPU_LIMIT}}
-            memory: ${MEMORY_LIMIT}
+            cpu: ${CPU_LIMIT_SERVICE}
+            memory: ${MEMORY_LIMIT_SERVICE}
           requests:
-            cpu: 500m
-            memory: 512Mi
+            cpu: ${CPU_REQUEST_SERVICE}
+            memory: ${MEMORY_REQUEST_SERVICE}
     - name: ibvents
       minReplicas: 1
       podSpec:
@@ -212,11 +212,11 @@ objects:
           value: ${SUBSCRIPTION_SERVER_URL}
         resources:
           limits:
-            cpu: 250m
-            memory: 256Mi
+            cpu: ${CPU_LIMIT_IBVENTS}
+            memory: ${MEMORY_LIMIT_IBVENTS}
           requests:
-            cpu: 125m
-            memory: 128Mi
+            cpu: ${CPU_REQUEST_IBVENTS}
+            memory: ${MEMORY_REQUEST_IBVENTS}
     jobs:
       - name: cleanup
         schedule: ${CLEANUP_SCHEDULE}
@@ -288,11 +288,11 @@ objects:
               value: ${SUBSCRIPTION_SERVER_URL}
           resources:
             limits:
-              cpu: 900m
-              memory: 2Gi
+              cpu: ${CPU_LIMIT_CLEANUP}
+              memory: ${MEMORY_LIMIT_CLEANUP}
             requests:
-              cpu: 400m
-              memory: 1Gi
+              cpu: ${CPU_REQUEST_CLEANUP}
+              memory: ${MEMORY_REQUEST_CLEANUP}
     objectStore:
     - ${EDGE_TARBALLS_BUCKET}
     - edge-central-pulp-s3
@@ -348,17 +348,36 @@ objects:
         SELECT uuid, org_id, deleted_at, current_hash, available_hash, last_seen, created_at
         FROM devices;
 parameters:
-- description: Cpu limit of service
-  name: CPU_LIMIT
-  required: false
-  value: "1"
+- name: CPU_REQUEST_SERVICE
+  value: 500m
+- name: CPU_LIMIT_SERVICE
+  value: 1000m
+- name: MEMORY_REQUEST_SERVICE
+  value: 256Mi
+- name: MEMORY_LIMIT_SERVICE
+  value: 2Gi
+
+- name: CPU_REQUEST_IBVENTS
+  value: 125m
+- name: CPU_LIMIT_IBVENTS
+  value: 250m
+- name: MEMORY_REQUEST_IBVENTS
+  value: 128Mi
+- name: MEMORY_LIMIT_IBVENTS
+  value: 512Mi
+
+- name: CPU_REQUEST_CLEANUP
+  value: 250m
+- name: CPU_LIMIT_CLEANUP
+  value: 500m
+- name: MEMORY_REQUEST_CLEANUP
+  value: 1Gi
+- name: MEMORY_LIMIT_CLEANUP
+  value: 2Gi
+
 - description: Location of readiness probe
   name: READINESS_URI
   value: "/"
-- description: Memory limit of service
-  name: MEMORY_LIMIT
-  required: false
-  value: 2Gi
 - description: Minimum number of edge-api pods to deploy
   name: MIN_REPLICAS
   required: false
