@@ -33,6 +33,7 @@ objects:
     deployments:
     - name: service
       minReplicas: ${{MIN_REPLICAS}}
+      maxReplicas: ${{MAX_REPLICAS}}
       webServices:
         public:
           enabled: true
@@ -147,7 +148,8 @@ objects:
             cpu: ${CPU_REQUEST_SERVICE}
             memory: ${MEMORY_REQUEST_SERVICE}
     - name: ibvents
-      minReplicas: 1
+      minReplicas: ${{MIN_REPLICAS_IBVENTS}}
+      maxReplicas: ${{MAX_REPLICAS_IBVENTS}}
       podSpec:
         image: ${IMAGE}:${IMAGE_TAG}
         command:
@@ -380,6 +382,18 @@ parameters:
   value: "/"
 - description: Minimum number of edge-api pods to deploy
   name: MIN_REPLICAS
+  required: false
+  value: "1"
+- description: Maximum number of edge-api pods to deploy
+  name: MAX_REPLICAS
+  required: false
+  value: "1"
+- description: Minimum number of ibvents pods to deploy
+  name: MIN_REPLICAS_IBVENTS
+  required: false
+  value: "1"
+- description: Maximum number of ibvents pods to deploy
+  name: MAX_REPLICAS_IBVENTS
   required: false
   value: "1"
 - description: Image tag
