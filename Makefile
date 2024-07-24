@@ -12,6 +12,7 @@ OCI_TOOL=$(shell command -v podman || command -v docker)
 IMAGE_TAG=$(shell git rev-parse --short=7 HEAD)
 
 EDGE_API_CONTAINER_TAG="quay.io/cloudservices/edge-api:$(IMAGE_TAG)"
+EDGE_API_DEV_CONTAINER_TAG="localhost/edge-api:dev-$(IMAGE_TAG)"
 
 TEST_CONTAINER_TAG="quay.io/fleet-management/libfdo-data:$(IMAGE_TAG)"
 
@@ -68,6 +69,13 @@ build-test-container:
 		--file "$(CONTAINERFILE_NAME)" \
 		--no-cache \
 		--tag "$(TEST_CONTAINER_TAG)" \
+		.
+
+build-dev-container:
+	$(OCI_TOOL) build \
+		--file "$(CONTAINERFILE_NAME)" \
+		--no-cache \
+		--tag "$(EDGE_API_DEV_CONTAINER_TAG)" \
 		.
 
 build:
