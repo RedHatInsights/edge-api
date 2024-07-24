@@ -29,7 +29,7 @@ func (ps *PulpService) DistributionsCreate(ctx context.Context, name, basePath, 
 		return nil, err
 	}
 
-	result, err := ps.DistributionsRead(ctx, ScanUUID(href))
+	result, err := ps.DistributionsRead(ctx, ScanUUID(&href))
 	if err != nil {
 		return nil, err
 	}

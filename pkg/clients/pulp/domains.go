@@ -80,7 +80,7 @@ func (ps *PulpService) DomainsList(ctx context.Context, nameFilter string) ([]Do
 		return nil, fmt.Errorf("unexpected response: %d, body: %s", resp.StatusCode(), string(resp.Body))
 	}
 
-	if resp.JSON200.Count >= DefaultPageSize {
+	if resp.JSON200.Count > DefaultPageSize {
 		return nil, fmt.Errorf("default page size too small: %d", resp.JSON200.Count)
 	}
 

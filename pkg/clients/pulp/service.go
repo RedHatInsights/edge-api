@@ -29,7 +29,7 @@ type PulpService struct {
 func NewPulpService(ctx context.Context) (*PulpService, error) {
 	dom, err := common.GetOrgIDFromContext(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("error getting org-id: %w", err)
+		return nil, fmt.Errorf("error getting orgID from the context: %w", err)
 	}
 
 	return NewPulpServiceWithDomain(ctx, "EDGE-"+dom)
@@ -57,7 +57,7 @@ func NewPulpServiceWithDomain(ctx context.Context, domain string) (*PulpService,
 }
 
 // NewPulpServiceDefaultDomain creates a new PulpService with the default domain. Use this client
-// only for domain creation.
+// only for domain creation. All subsequent operations should use the domain specific client.
 func NewPulpServiceDefaultDomain(ctx context.Context) (*PulpService, error) {
 	return NewPulpServiceWithDomain(ctx, "default")
 }
@@ -80,12 +80,15 @@ func (retries *BackoffDelay) Sleep() {
 	time.Sleep(duration)
 }
 
+// WaitForTask waits for the task to complete. It returns the created resource href if the task
+// is successful. If the task fails, it returns an error. If the task is cancelled, it returns an
+// error.
 func (ps *PulpService) WaitForTask(ctx context.Context, taskHref string) (string, error) {
 	var delay BackoffDelay
 	for {
 		delay.Sleep()
 
-		taskID := ScanUUID(taskHref)
+		taskID := ScanUUID(&taskHref)
 		trp := TasksReadParams{}
 		task, err := ps.cwr.TasksReadWithResponse(ctx, ps.dom, taskID, &trp, addAuthenticationHeader)
 		if err != nil {

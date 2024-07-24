@@ -81,6 +81,8 @@ type EdgeConfig struct {
 	PulpURL                    string                    `json:"pulp_url,omitempty"`
 	PulpUsername               string                    `json:"pulp_username,omitempty"`
 	PulpPassword               string                    `json:"pulp_password,omitempty"`
+	PulpContentUsername        string                    `json:"pulp_content_username,omitempty"`
+	PulpContentPassword        string                    `json:"pulp_content_password,omitempty"`
 	PulpIdentityName           string                    `json:"pulp_identity_name,omitempty"`
 	PulpProxyURL               string                    `json:"pulp_proxy_url,omitempty"`
 	PulpOauth2URL              string                    `json:"pulp_oauth2_url,omitempty"`
@@ -185,6 +187,8 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 	options.SetDefault("PulpURL", "http://pulp-service:8080")
 	options.SetDefault("PulpUsername", "edge-api-dev")
 	options.SetDefault("PulpPassword", "")
+	options.SetDefault("PulpContentUsername", "edge-content-dev")
+	options.SetDefault("PulpContentPassword", "")
 	options.SetDefault("PulpIdentityName", "edge-api-dev")
 	options.SetDefault("PulpProxyURL", "")
 	options.SetDefault("PulpOauth2URL", "https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token")
@@ -297,6 +301,8 @@ func CreateEdgeAPIConfig() (*EdgeConfig, error) {
 		PulpURL:                    options.GetString("PulpURL"),
 		PulpUsername:               options.GetString("PulpUsername"),
 		PulpPassword:               options.GetString("PulpPassword"),
+		PulpContentUsername:        options.GetString("PulpContentUsername"),
+		PulpContentPassword:        options.GetString("PulpContentPassword"),
 		PulpIdentityName:           options.GetString("PulpIdentityName"),
 		PulpProxyURL:               options.GetString("PulpProxyURL"),
 		PulpOauth2URL:              options.GetString("PulpOauth2URL"),

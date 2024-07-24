@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/redhatinsights/edge-api/pkg/ptr"
 )
 
 func TestScanUUID(t *testing.T) {
@@ -38,7 +39,8 @@ func TestScanUUID(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				actual := ScanUUID(tt.href)
+				// linter G601 workaround
+				actual := ScanUUID(ptr.To(tt.href))
 				if actual != tt.expected {
 					t.Errorf("scanUUID(%s): expected %v, actual %v", tt.href, tt.expected, actual)
 				}

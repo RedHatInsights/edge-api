@@ -5,11 +5,13 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/redhatinsights/edge-api/pkg/ptr"
 )
 
 func (ps *PulpService) RepositoriesCreate(ctx context.Context, name string) (*OstreeOstreeRepositoryResponse, error) {
 	body := OstreeOstreeRepository{
-		Name: name,
+		Name:         name,
+		ComputeDelta: ptr.To(true),
 	}
 	resp, err := ps.cwr.RepositoriesOstreeOstreeCreateWithResponse(ctx, ps.dom, body, addAuthenticationHeader)
 
@@ -44,7 +46,7 @@ func (ps *PulpService) RepositoriesImport(ctx context.Context, id uuid.UUID, rep
 		return nil, err
 	}
 
-	result, err := ps.RepositoriesRead(ctx, ScanUUID(href))
+	result, err := ps.RepositoriesRead(ctx, ScanUUID(&href))
 	if err != nil {
 		return nil, err
 	}
