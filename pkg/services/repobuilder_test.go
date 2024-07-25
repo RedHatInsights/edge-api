@@ -48,7 +48,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 	AfterEach(func() {
 		ctrl.Finish()
 	})
-	Describe("#ExtractVersionRepo", func() {
+	Describe("#CommitTarExtract", func() {
 
 		When("is valid", func() {
 			It("should extract the tar file", func() {
@@ -68,7 +68,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 
 				Expect(err).ToNot(HaveOccurred())
 
-				err = service.ExtractVersionRepo(commit, testTarFilePath, filePath)
+				err = service.CommitTarExtract(commit, testTarFilePath, filePath)
 
 				Expect(err).ToNot(HaveOccurred())
 
@@ -107,14 +107,14 @@ var _ = Describe("RepoBuilder Service Test", func() {
 			})
 
 			It("should fail when commit is nil", func() {
-				err := repoBuilder.ExtractVersionRepo(nil, testTarFile, filePath)
+				err := repoBuilder.CommitTarExtract(nil, testTarFile, filePath)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal("invalid Commit Provided: nil pointer"))
 			})
 
 			It("should fail when tar file does not exists", func() {
 				commit := &models.Commit{}
-				err := repoBuilder.ExtractVersionRepo(commit, tarFilePath, filePath)
+				err := repoBuilder.CommitTarExtract(commit, tarFilePath, filePath)
 				Expect(err).To(HaveOccurred())
 				expectedErrorMessage := fmt.Sprintf("open %s: no such file or directory", tarFilePath)
 				Expect(err.Error()).To(Equal(expectedErrorMessage))
@@ -132,14 +132,14 @@ var _ = Describe("RepoBuilder Service Test", func() {
 				expectedError := errors.New("extract error")
 				mockFilesService.EXPECT().GetExtractor().Return(mockExtractor)
 				mockExtractor.EXPECT().Extract(gomock.AssignableToTypeOf(&os.File{}), filePath).Return(expectedError)
-				err = repoBuilder.ExtractVersionRepo(commit, testTarFilePath, filePath)
+				err = repoBuilder.CommitTarExtract(commit, testTarFilePath, filePath)
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(Equal(expectedError))
 			})
 		})
 	})
 
-	Describe("#DownloadVersionRepo", func() {
+	Describe("#CommitTarDownload", func() {
 		var mockFilesService *mock_services.MockFilesService
 		var mockDownloaderService *mock_services.MockDownloader
 		var downloadService services.RepoBuilder
@@ -163,7 +163,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 					ImageBuildTarURL: fileURL}
 				mockDownloaderService.EXPECT().DownloadToPath(commit.ImageBuildTarURL, filepath.Join(fileDest, fileName)).Return(nil)
 				mockFilesService.EXPECT().GetDownloader().Return(mockDownloaderService)
-				n, err := downloadService.DownloadVersionRepo(commit, fileDest)
+				n, err := downloadService.CommitTarDownload(commit, fileDest)
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(n).ToNot(BeNil())
@@ -176,7 +176,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 				tarFilePath := filepath.Join(fileDest, tarFileName)
 				mockDownloaderService.EXPECT().DownloadToPath(commit.ImageBuildTarURL, tarFilePath).Return(nil)
 				mockFilesService.EXPECT().GetDownloader().Return(mockDownloaderService)
-				destinationFilePath, err := downloadService.DownloadVersionRepo(commit, fileDest)
+				destinationFilePath, err := downloadService.CommitTarDownload(commit, fileDest)
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(destinationFilePath).ToNot(BeEmpty())
@@ -190,7 +190,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 				mockDownloaderService.EXPECT().DownloadToPath(commit.ImageBuildTarURL, filepath.Join(fileDest, fileName)).Return(expectedError)
 				mockFilesService.EXPECT().GetDownloader().Return(mockDownloaderService)
 
-				_, err := downloadService.DownloadVersionRepo(commit, fileDest)
+				_, err := downloadService.CommitTarDownload(commit, fileDest)
 
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(Equal(expectedError))
@@ -199,7 +199,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 			It("should return error when commit is nil", func() {
 				expectedError := errors.New("invalid Commit Provided: nil pointer")
 
-				_, err := downloadService.DownloadVersionRepo(nil, fileDest)
+				_, err := downloadService.CommitTarDownload(nil, fileDest)
 
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(Equal(expectedError))
@@ -209,7 +209,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 		When("is valid external url", func() {
 			It("should download the repo", func() {
 				commit := &models.Commit{ExternalURL: true, ImageBuildTarURL: fileURL}
-				n, err := downloadService.DownloadVersionRepo(commit, fileDest)
+				n, err := downloadService.CommitTarDownload(commit, fileDest)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(n).To(Equal(fmt.Sprintf("%v%v", fileDest, fileName)))
 				err = os.RemoveAll(fileDest)
@@ -218,14 +218,14 @@ var _ = Describe("RepoBuilder Service Test", func() {
 
 			It("should return error when the downloads fails", func() {
 				commit := &models.Commit{ExternalURL: true, ImageBuildTarURL: "file url does not exist :("}
-				_, err := downloadService.DownloadVersionRepo(commit, fileDest)
+				_, err := downloadService.CommitTarDownload(commit, fileDest)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("first path segment in URL cannot contain colon"))
 			})
 		})
 	})
 
-	Describe("#UploadVersionRepo", func() {
+	Describe("#CommitTarUpload", func() {
 		var ctrl *gomock.Controller
 		var repoBuilder services.RepoBuilder
 		var mockFilesService *mock_services.MockFilesService
@@ -269,7 +269,7 @@ var _ = Describe("RepoBuilder Service Test", func() {
 			mockFilesService.EXPECT().GetUploader().Return(mockUploader)
 			mockUploader.EXPECT().UploadFile(tarFilePath, expectedUploadPath).Return(uploadURL, nil)
 
-			err := repoBuilder.UploadVersionRepo(commit, tarFilePath)
+			err := repoBuilder.CommitTarUpload(commit, tarFilePath)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(commit.ExternalURL).To(BeFalse())
 			Expect(commit.ImageBuildTarURL).To(Equal(uploadURL))
@@ -282,19 +282,19 @@ var _ = Describe("RepoBuilder Service Test", func() {
 			mockFilesService.EXPECT().GetUploader().Return(mockUploader)
 			mockUploader.EXPECT().UploadFile(tarFilePath, expectedUploadPath).Return("", expectedError)
 
-			err := repoBuilder.UploadVersionRepo(commit, tarFilePath)
+			err := repoBuilder.CommitTarUpload(commit, tarFilePath)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring(expectedError.Error()))
 		})
 
 		It("should fail if commit is nil", func() {
-			err := repoBuilder.UploadVersionRepo(nil, tarFilePath)
+			err := repoBuilder.CommitTarUpload(nil, tarFilePath)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("invalid Commit Provided: nil pointer"))
 		})
 
 		It("should fail if commit repoID  is nil", func() {
-			err := repoBuilder.UploadVersionRepo(&models.Commit{}, tarFilePath)
+			err := repoBuilder.CommitTarUpload(&models.Commit{}, tarFilePath)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("invalid Commit.RepoID Provided: nil pointer"))
 		})
@@ -997,8 +997,8 @@ func TestBuildUpdateRepoWithOldCommitsStaticDeltaError(t *testing.T) {
 	}
 }
 
-func TestBuildUpdateRepoWithOldCommitsExtractVersionRepoError(t *testing.T) {
-	// should return error when old commit ExtractVersionRepo fails
+func TestBuildUpdateRepoWithOldCommitsCommitTarExtractError(t *testing.T) {
+	// should return error when old commit CommitTarExtract fails
 	g := NewGomegaWithT(t)
 	currentDir, err := os.Getwd()
 	g.Expect(err).ToNot(HaveOccurred())
@@ -1087,7 +1087,7 @@ func TestBuildUpdateRepoWithOldCommitsExtractVersionRepoError(t *testing.T) {
 	_, err = os.Create(updateOldCommitTarFilePath)
 	g.Expect(err).ToNot(HaveOccurred())
 
-	expectedOldCommitRepoExtractError := errors.New("OldCommit ExtractVersionRepo error occurred")
+	expectedOldCommitRepoExtractError := errors.New("OldCommit CommitTarExtract error occurred")
 
 	// GetDownloader should be called two time , one time with the update target commit and one time with old commit
 	mockFilesService.EXPECT().GetDownloader().Return(mockDownloader).Times(2)
@@ -1110,8 +1110,8 @@ func TestBuildUpdateRepoWithOldCommitsExtractVersionRepoError(t *testing.T) {
 	g.Expect(err).To(Equal(expectedOldCommitRepoExtractError))
 }
 
-func TestBuildUpdateRepoWithOldCommitsDownloadVersionRepoError(t *testing.T) {
-	// should return error when ExtractVersionRepo fails
+func TestBuildUpdateRepoWithOldCommitsCommitTarDownloadError(t *testing.T) {
+	// should return error when CommitTarExtract fails
 	g := NewGomegaWithT(t)
 	currentDir, err := os.Getwd()
 	g.Expect(err).ToNot(HaveOccurred())
@@ -1200,7 +1200,7 @@ func TestBuildUpdateRepoWithOldCommitsDownloadVersionRepoError(t *testing.T) {
 	_, err = os.Create(updateOldCommitTarFilePath)
 	g.Expect(err).ToNot(HaveOccurred())
 
-	expectedOldCommitRepoDownloadError := errors.New("OldCommit DownloadVersionRepo error occurred")
+	expectedOldCommitRepoDownloadError := errors.New("OldCommit CommitTarDownload error occurred")
 
 	// GetDownloader should be called two time , one time with the update target commit and one time with old commit
 	mockFilesService.EXPECT().GetDownloader().Return(mockDownloader).Times(2)

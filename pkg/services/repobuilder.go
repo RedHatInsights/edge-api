@@ -28,9 +28,10 @@ var BuildCommand = exec.Command
 type RepoBuilderInterface interface {
 	BuildUpdateRepo(id uint) (*models.UpdateTransaction, error)
 	ImportRepo(r *models.Repo) (*models.Repo, error)
-	DownloadVersionRepo(c *models.Commit, dest string) (string, error)
-	ExtractVersionRepo(c *models.Commit, tarFileName string, dest string) error
-	UploadVersionRepo(c *models.Commit, tarFileName string) error
+	CommitTarDownload(c *models.Commit, dest string) (string, error)
+	CommitTarExtract(c *models.Commit, tarFileName string, dest string) error
+	CommitTarUpload(c *models.Commit, tarFileName string) error
+	CommitTarDelete(tarFileName string) error
 	RepoPullLocalStaticDeltas(u *models.Commit, o *models.Commit, uprepo string, oldrepo string) error
 }
 
@@ -157,7 +158,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		rb.log.WithField("static_delta_state", staticDeltaState).Info("UPGRADE: static delta state")
 
 		// download the commit tarfile
-		tarFileName, err := rb.DownloadVersionRepo(update.Commit, path)
+		tarFileName, err := rb.CommitTarDownload(update.Commit, path)
 		if err != nil {
 			rb.log.WithField("error", err.Error()).Error("Error downloading tar")
 			staticDeltaState.Status = models.StaticDeltaStatusError
@@ -171,7 +172,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 		rb.log.WithField("static_delta_state", staticDeltaState).Info("UPGRADE: static delta state")
 
 		// extract the tarfile to local FQ path
-		err = rb.ExtractVersionRepo(update.Commit, tarFileName, path)
+		err = rb.CommitTarExtract(update.Commit, tarFileName, path)
 		if err != nil {
 			rb.log.WithField("error", err.Error()).Error("Error extracting tar")
 			staticDeltaState.Status = models.StaticDeltaStatusError
@@ -185,6 +186,11 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 			"updateID":   update.ID,
 			"OldCommits": len(update.OldCommits)}).
 			Info("Old commits found to this commit")
+
+		err = rb.CommitTarDelete(tarFileName)
+		if err != nil {
+			rb.log.WithField("error", err.Error()).Error("Error deleting commit tarfile")
+		}
 
 		rb.log.WithField("static_delta_state", staticDeltaState).Info("UPGRADE: static delta state")
 
@@ -225,7 +231,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 				Info("Calculate diff from previous commit")
 			commit := commit // this will prevent implicit memory aliasing in the loop
 			stageCommitPath := filepath.Clean(filepath.Join(stagePath, commit.OSTreeCommit))
-			tarFileName, err := rb.DownloadVersionRepo(&commit, stageCommitPath)
+			tarFileName, err := rb.CommitTarDownload(&commit, stageCommitPath)
 			if err != nil {
 				rb.log.WithField("error", err.Error()).Error("Error downloading tar")
 				staticDeltaState.Status = models.StaticDeltaStatusError
@@ -238,7 +244,7 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 
 			rb.log.WithField("update_transaction", update).Info("UPGRADE: to_commit repo tarfile downloaded")
 
-			err = rb.ExtractVersionRepo(update.Commit, tarFileName, stageCommitPath)
+			err = rb.CommitTarExtract(update.Commit, tarFileName, stageCommitPath)
 			if err != nil {
 				rb.log.WithField("error", err.Error()).Error("Error extracting repo")
 				staticDeltaState.Status = models.StaticDeltaStatusError
@@ -247,6 +253,11 @@ func (rb *RepoBuilder) BuildUpdateRepo(id uint) (*models.UpdateTransaction, erro
 				}
 
 				return nil, err
+			}
+
+			err = rb.CommitTarDelete(tarFileName)
+			if err != nil {
+				rb.log.WithField("error", err.Error()).Error("Error deleting commit tarfile")
 			}
 
 			rb.log.WithField("update_transaction", update).Info("UPGRADE: to_commit repo tarfile extracted")
@@ -372,7 +383,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		return nil, err
 	}
 
-	tarFileName, err := rb.DownloadVersionRepo(&cmt, path)
+	tarFileName, err := rb.CommitTarDownload(&cmt, path)
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error downloading repo...")
 		r.Status = models.RepoStatusError
@@ -382,7 +393,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		}
 		return nil, fmt.Errorf("error downloading repo")
 	}
-	errUpload := rb.UploadVersionRepo(&cmt, tarFileName)
+	errUpload := rb.CommitTarUpload(&cmt, tarFileName)
 	if errUpload != nil {
 		rb.log.WithField("error", errUpload.Error()).Error("Error uploading repo...")
 		r.Status = models.RepoStatusError
@@ -392,7 +403,7 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		}
 		return nil, fmt.Errorf("error Upload repo repo :: %s", errUpload.Error())
 	}
-	err = rb.ExtractVersionRepo(&cmt, tarFileName, path)
+	err = rb.CommitTarExtract(&cmt, tarFileName, path)
 	if err != nil {
 		rb.log.WithField("error", err.Error()).Error("Error extracting repo")
 		r.Status = models.RepoStatusError
@@ -402,6 +413,12 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 		}
 		return nil, fmt.Errorf("error extracting repo :: %s", err.Error())
 	}
+
+	err = rb.CommitTarDelete(tarFileName)
+	if err != nil {
+		rb.log.WithField("error", err.Error()).Error("Error deleting commit tarfile")
+	}
+
 	// NOTE: This relies on the file path being cfg.RepoTempPath/models.Repo.ID/
 	repoURL, err := rb.FilesService.GetUploader().UploadRepo(filepath.Clean(filepath.Join(path, "repo")), strconv.FormatUint(uint64(r.ID), 10), "public-read")
 	if err != nil {
@@ -420,8 +437,8 @@ func (rb *RepoBuilder) ImportRepo(r *models.Repo) (*models.Repo, error) {
 	return r, nil
 }
 
-// DownloadVersionRepo Download and Extract the repo tarball to dest dir
-func (rb *RepoBuilder) DownloadVersionRepo(c *models.Commit, dest string) (string, error) {
+// CommitTarDownload downloads and extracts the repo tarball to dest dir
+func (rb *RepoBuilder) CommitTarDownload(c *models.Commit, dest string) (string, error) {
 	// ensure we weren't passed a nil pointer
 	if c == nil {
 		rb.log.Error("nil pointer to models.Commit provided")
@@ -482,7 +499,7 @@ func (rb *RepoBuilder) uploadTarRepo(orgID, imageName string, repoID int) (strin
 }
 
 // UploadVersionRepo uploads the repo tarball to the repository storage
-func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string) error {
+func (rb *RepoBuilder) CommitTarUpload(c *models.Commit, tarFileName string) error {
 	if c == nil {
 		rb.log.Error("nil pointer to models.Commit provided")
 		return errors.New("invalid Commit Provided: nil pointer")
@@ -511,7 +528,7 @@ func (rb *RepoBuilder) UploadVersionRepo(c *models.Commit, tarFileName string) e
 }
 
 // ExtractVersionRepo Download and Extract the repo tarball to dest dir
-func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, dest string) error {
+func (rb *RepoBuilder) CommitTarExtract(c *models.Commit, tarFileName string, dest string) error {
 	if c == nil {
 		rb.log.Error("nil pointer to models.Commit provided")
 		return errors.New("invalid Commit Provided: nil pointer")
@@ -533,12 +550,6 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 	}
 
 	rb.log.WithField("filepath", tarFileName).Debug("Unpacking tarball finished")
-
-	err = os.Remove(tarFileName)
-	if err != nil {
-		rb.log.WithField("error", err.Error()).Error("Error removing tar file")
-		return err
-	}
 
 	// Commenting this Block, as failing, and seems never was working, fixing this block will create a new commit with
 	// a new checksum that need to be recorded back to the current commit, this will also need to change the logic of
@@ -569,6 +580,16 @@ func (rb *RepoBuilder) ExtractVersionRepo(c *models.Commit, tarFileName string, 
 			}).Error("OSTree command failed")
 		}
 	*/
+	return nil
+}
+
+func (rb *RepoBuilder) CommitTarDelete(tarFileName string) error {
+	err := os.Remove(tarFileName)
+	if err != nil {
+		rb.log.WithField("error", err.Error()).Error("Error removing tar file")
+		return err
+	}
+
 	return nil
 }
 

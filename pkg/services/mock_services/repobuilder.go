@@ -49,33 +49,61 @@ func (mr *MockRepoBuilderInterfaceMockRecorder) BuildUpdateRepo(id interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BuildUpdateRepo", reflect.TypeOf((*MockRepoBuilderInterface)(nil).BuildUpdateRepo), id)
 }
 
-// DownloadVersionRepo mocks base method.
-func (m *MockRepoBuilderInterface) DownloadVersionRepo(c *models.Commit, dest string) (string, error) {
+// CommitTarDelete mocks base method.
+func (m *MockRepoBuilderInterface) CommitTarDelete(tarFileName string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DownloadVersionRepo", c, dest)
+	ret := m.ctrl.Call(m, "CommitTarDelete", tarFileName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CommitTarDelete indicates an expected call of CommitTarDelete.
+func (mr *MockRepoBuilderInterfaceMockRecorder) CommitTarDelete(tarFileName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CommitTarDelete", reflect.TypeOf((*MockRepoBuilderInterface)(nil).CommitTarDelete), tarFileName)
+}
+
+// CommitTarDownload mocks base method.
+func (m *MockRepoBuilderInterface) CommitTarDownload(c *models.Commit, dest string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CommitTarDownload", c, dest)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// DownloadVersionRepo indicates an expected call of DownloadVersionRepo.
-func (mr *MockRepoBuilderInterfaceMockRecorder) DownloadVersionRepo(c, dest interface{}) *gomock.Call {
+// CommitTarDownload indicates an expected call of CommitTarDownload.
+func (mr *MockRepoBuilderInterfaceMockRecorder) CommitTarDownload(c, dest interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadVersionRepo", reflect.TypeOf((*MockRepoBuilderInterface)(nil).DownloadVersionRepo), c, dest)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CommitTarDownload", reflect.TypeOf((*MockRepoBuilderInterface)(nil).CommitTarDownload), c, dest)
 }
 
-// ExtractVersionRepo mocks base method.
-func (m *MockRepoBuilderInterface) ExtractVersionRepo(c *models.Commit, tarFileName, dest string) error {
+// CommitTarExtract mocks base method.
+func (m *MockRepoBuilderInterface) CommitTarExtract(c *models.Commit, tarFileName, dest string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExtractVersionRepo", c, tarFileName, dest)
+	ret := m.ctrl.Call(m, "CommitTarExtract", c, tarFileName, dest)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// ExtractVersionRepo indicates an expected call of ExtractVersionRepo.
-func (mr *MockRepoBuilderInterfaceMockRecorder) ExtractVersionRepo(c, tarFileName, dest interface{}) *gomock.Call {
+// CommitTarExtract indicates an expected call of CommitTarExtract.
+func (mr *MockRepoBuilderInterfaceMockRecorder) CommitTarExtract(c, tarFileName, dest interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtractVersionRepo", reflect.TypeOf((*MockRepoBuilderInterface)(nil).ExtractVersionRepo), c, tarFileName, dest)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CommitTarExtract", reflect.TypeOf((*MockRepoBuilderInterface)(nil).CommitTarExtract), c, tarFileName, dest)
+}
+
+// CommitTarUpload mocks base method.
+func (m *MockRepoBuilderInterface) CommitTarUpload(c *models.Commit, tarFileName string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CommitTarUpload", c, tarFileName)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CommitTarUpload indicates an expected call of CommitTarUpload.
+func (mr *MockRepoBuilderInterfaceMockRecorder) CommitTarUpload(c, tarFileName interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CommitTarUpload", reflect.TypeOf((*MockRepoBuilderInterface)(nil).CommitTarUpload), c, tarFileName)
 }
 
 // ImportRepo mocks base method.
@@ -105,18 +133,4 @@ func (m *MockRepoBuilderInterface) RepoPullLocalStaticDeltas(u, o *models.Commit
 func (mr *MockRepoBuilderInterfaceMockRecorder) RepoPullLocalStaticDeltas(u, o, uprepo, oldrepo interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RepoPullLocalStaticDeltas", reflect.TypeOf((*MockRepoBuilderInterface)(nil).RepoPullLocalStaticDeltas), u, o, uprepo, oldrepo)
-}
-
-// UploadVersionRepo mocks base method.
-func (m *MockRepoBuilderInterface) UploadVersionRepo(c *models.Commit, tarFileName string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UploadVersionRepo", c, tarFileName)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UploadVersionRepo indicates an expected call of UploadVersionRepo.
-func (mr *MockRepoBuilderInterfaceMockRecorder) UploadVersionRepo(c, tarFileName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadVersionRepo", reflect.TypeOf((*MockRepoBuilderInterface)(nil).UploadVersionRepo), c, tarFileName)
 }
