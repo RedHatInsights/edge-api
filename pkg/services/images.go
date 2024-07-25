@@ -14,12 +14,10 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
-	"text/template"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -919,33 +917,12 @@ func (s *ImageService) AddUserInfo(image *models.Image) error {
 	destPath := "/var/tmp/"
 
 	downloadURL := image.Installer.ImageBuildISOURL
-	sshKey := image.Installer.SSHKey
-	username := image.Installer.Username
 	// Files that will be used to modify the ISO and will be cleaned
 	imageName := destPath + image.Name
-	kickstart := fmt.Sprintf("%sfinalKickstart-%s_%d.ks", destPath, image.OrgID, image.ID)
-	// TODO: in the future, org_id will be used as seen below:
-	// kickstart := fmt.Sprintf("%sfinalKickstart-%s_%d.ks", destPath, image.OrgID, image.ID)
 
 	err := s.downloadISO(imageName, downloadURL)
 	if err != nil {
 		return fmt.Errorf("error downloading ISO file :: %s", err.Error())
-	}
-
-	if !feature.DeprecateKickstartInjection.IsEnabled() {
-		s.log.Debug("Adding SSH Key to kickstart file...")
-		err = s.addSSHKeyToKickstart(sshKey, username, kickstart)
-		if err != nil {
-			return fmt.Errorf("error adding ssh key to kickstart file :: %s", err.Error())
-		}
-
-		s.log.Debug("Injecting the kickstart into image...")
-		err = s.exeInjectionScript(kickstart, imageName, image.ID)
-		if err != nil {
-			return fmt.Errorf("error executing fleetkick script :: %s", err.Error())
-		}
-	} else {
-		s.log.WithField("image_id", image.ID).Debug("kickstart injection into ISO was skipped")
 	}
 
 	s.log.Debug("Calculating the checksum for the ISO image...")
@@ -960,7 +937,7 @@ func (s *ImageService) AddUserInfo(image *models.Image) error {
 	}
 
 	s.log.Debug("Cleaning up temporary files...")
-	err = s.cleanFiles(kickstart, imageName, image.ID)
+	err = s.cleanFiles(imageName, image.ID)
 	if err != nil {
 		return fmt.Errorf("error cleaning files :: %s", err.Error())
 	}
@@ -973,41 +950,6 @@ func (s *ImageService) AddUserInfo(image *models.Image) error {
 type UnameSSH struct {
 	Sshkey   string
 	Username string
-}
-
-// Adds user provided ssh key to the kickstart file.
-func (s *ImageService) addSSHKeyToKickstart(sshKey string, username string, kickstart string) error {
-	cfg := config.Get()
-
-	td := UnameSSH{sshKey, username}
-
-	s.log.WithField("templatesPath", cfg.TemplatesPath).Debug("Opening file")
-	t, err := template.ParseFiles(path.Join(cfg.TemplatesPath, "templateKickstart.ks"))
-	if err != nil {
-		return err
-	}
-
-	s.log.WithField("kickstart", kickstart).Debug("Creating file")
-	file, err := os.Create(kickstart)
-	if err != nil {
-		return err
-	}
-
-	s.log.WithFields(log.Fields{
-		"username": username,
-		"sshKey":   sshKey,
-	}).Debug("Injecting username and key into template")
-	err = t.Execute(file, td)
-	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Failed adding username and sshkey on image")
-		return err
-	}
-	if err := file.Close(); err != nil {
-		s.log.WithField("error", err.Error()).Error("Failed closing file")
-		return err
-	}
-
-	return nil
 }
 
 // Download created ISO into the file system.
@@ -1061,16 +1003,7 @@ func (s *ImageService) uploadISO(image *models.Image, imageName string) error {
 }
 
 // Remove edited kickstart after use.
-func (s *ImageService) cleanFiles(kickstart string, isoName string, imageID uint) error {
-	if !feature.DeprecateKickstartInjection.IsEnabled() {
-		err := os.Remove(kickstart)
-		if err != nil {
-			s.log.WithField("error", err.Error()).Error("Error removing kickstart file")
-			return err
-		}
-		s.log.WithField("kickstart", kickstart).Debug("Kickstart file removed")
-	}
-
+func (s *ImageService) cleanFiles(isoName string, imageID uint) error {
 	err := os.Remove(isoName)
 	if err != nil {
 		s.log.WithField("error", err.Error()).Error("Error removing tmp iso")
@@ -1149,27 +1082,6 @@ func (s *ImageService) CheckImageName(name, orgID string) (bool, error) {
 		return false, result.Error
 	}
 	return imageFindByName != nil, nil
-}
-
-// Inject the custom kickstart into the iso via script.
-func (s *ImageService) exeInjectionScript(kickstart string, image string, imageID uint) error {
-	fleetBashScript := "/usr/local/bin/fleetkick.sh"
-	workDir := fmt.Sprintf("/var/tmp/workdir%d", imageID)
-	err := os.Mkdir(workDir, 0750)
-	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Error giving permissions to execute fleetkick")
-		return err
-	}
-
-	cmd := BuildCommand(fleetBashScript, kickstart, image, image, workDir)
-
-	output, err := cmd.Output()
-	if err != nil {
-		s.log.WithField("error", err.Error()).Error("Error executing fleetkick")
-		return err
-	}
-	s.log.WithField("output", output).Info("Fleetkick Output")
-	return nil
 }
 
 // Calculate the checksum of the final ISO.

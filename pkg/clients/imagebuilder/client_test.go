@@ -22,7 +22,6 @@ import (
 
 	"github.com/redhatinsights/edge-api/pkg/db"
 	"github.com/redhatinsights/edge-api/pkg/models"
-	feature "github.com/redhatinsights/edge-api/unleash/features"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/redhatinsights/edge-api/config"
@@ -87,10 +86,7 @@ var _ = Describe("Image Builder Client Test", func() {
 		os.Remove(dbName)
 		// restore the original image builder url
 		conf.ImageBuilderConfig.URL = originalImageBuilderURL
-		// disable passing user to image builder feature flag
-		err := os.Unsetenv(feature.DeprecateKickstartInjection.EnvVar)
-		Expect(err).ToNot(HaveOccurred())
-		err = os.Unsetenv(SUBSCRIPTION_BASE_URL)
+		err := os.Unsetenv(SUBSCRIPTION_BASE_URL)
 		Expect(err).ToNot(HaveOccurred())
 		err = os.Unsetenv(SUBSCRIPTION_SERVER_URL)
 		Expect(err).ToNot(HaveOccurred())
@@ -725,9 +721,6 @@ var _ = Describe("Image Builder Client Test", func() {
 	})
 
 	It("test compose installer with username and ssh-key", func() {
-		// enable feature flag
-		err := os.Setenv(feature.DeprecateKickstartInjection.EnvVar, "true")
-		Expect(err).ToNot(HaveOccurred())
 		installer := models.Installer{Username: faker.Username(), SSHKey: faker.UUIDHyphenated()}
 		composeJobID := "compose-job-id-returned-from-image-builder"
 		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -757,7 +750,7 @@ var _ = Describe("Image Builder Client Test", func() {
 			Commit:       &models.Commit{Arch: "x86_64", Repo: &models.Repo{}},
 			Installer:    &installer,
 		}
-		img, err = client.ComposeInstaller(img)
+		img, err := client.ComposeInstaller(img)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(img).ToNot(BeNil())
 		Expect(img.Installer.ComposeJobID).To(Equal(composeJobID))
@@ -765,9 +758,6 @@ var _ = Describe("Image Builder Client Test", func() {
 	})
 
 	It("test compose installer without username and ssh-key", func() {
-		// enable feature flag
-		err := os.Setenv(feature.DeprecateKickstartInjection.EnvVar, "true")
-		Expect(err).ToNot(HaveOccurred())
 		// install has no username and ssh-key
 		installer := models.Installer{}
 		composeJobID := "compose-job-id-returned-from-image-builder"
@@ -797,46 +787,7 @@ var _ = Describe("Image Builder Client Test", func() {
 			Commit:       &models.Commit{Arch: "x86_64", Repo: &models.Repo{}},
 			Installer:    &installer,
 		}
-		img, err = client.ComposeInstaller(img)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(img).ToNot(BeNil())
-		Expect(img.Installer.ComposeJobID).To(Equal(composeJobID))
-		Expect(img.Commit.ExternalURL).To(BeFalse())
-	})
-
-	It("test compose installer should not pass username and ssh-key when feature flag is disabled", func() {
-		// ensure feature flag disabled
-		err := os.Unsetenv(feature.DeprecateKickstartInjection.EnvVar)
-		Expect(err).ToNot(HaveOccurred())
-		installer := models.Installer{Username: faker.Username(), SSHKey: faker.UUIDHyphenated()}
-		composeJobID := "compose-job-id-returned-from-image-builder"
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			b, err := io.ReadAll(r.Body)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(b).ToNot(BeNil())
-			var req ComposeRequest
-			err = json.Unmarshal(b, &req)
-			Expect(err).ToNot(HaveOccurred())
-			// when feature flag is disabled the user and ssh key should not not be passed to image builder
-			Expect(len(req.Customizations.Users)).To(Equal(0))
-
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusCreated)
-			payload := fmt.Sprintf(`{"id": "%s"}`, composeJobID)
-			_, err = fmt.Fprintln(w, payload)
-			Expect(err).ToNot(HaveOccurred())
-		}))
-		defer ts.Close()
-		config.Get().ImageBuilderConfig.URL = ts.URL
-
-		pkgs := []models.Package{{Name: "vim"}, {Name: "ansible"}}
-		img := &models.Image{
-			Distribution: "rhel-8",
-			Packages:     pkgs,
-			Commit:       &models.Commit{Arch: "x86_64", Repo: &models.Repo{}},
-			Installer:    &installer,
-		}
-		img, err = client.ComposeInstaller(img)
+		img, err := client.ComposeInstaller(img)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(img).ToNot(BeNil())
 		Expect(img.Installer.ComposeJobID).To(Equal(composeJobID))

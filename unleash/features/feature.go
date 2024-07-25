@@ -106,11 +106,6 @@ var EdgeParityInventoryGroupsEnabled = &Flag{Name: "edgeParity.inventory-groups-
 // EdgeParityInventoryRbac is a feature flag for inventory rbac usage
 var EdgeParityInventoryRbac = &Flag{Name: "edgeParity.inventory-rbac", EnvVar: "FEATURE_INVENTORY_RBAC"}
 
-// USER, RHC, CUSTOMIZE KICKSTART FLAGS
-
-// DeprecateKickstartInjection replaces the user, custom installer, and ks injection feature flags
-var DeprecateKickstartInjection = &Flag{Name: "edge-management.deprecate_ks_injection", EnvVar: "FEATURE_DEPRECATE_KS_INJECTION"}
-
 // DB LOGGING FLAGS
 
 // SilentGormLogging toggles noisy logging from Gorm (using for tests during development on slow machines/connections
