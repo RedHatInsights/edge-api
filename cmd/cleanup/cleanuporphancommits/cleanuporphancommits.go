@@ -196,3 +196,24 @@ func CleanupAllOrphanCommits(s3Client *files.S3Client, gormDB *gorm.DB) error {
 	log.WithField("orphan_commits_count", commitsCount).Info("cleanup orphan commits finished")
 	return nil
 }
+
+func CleanupOrphanInstalledPackages(gormDB *gorm.DB) error {
+	if !feature.CleanUPOrphanCommits.IsEnabled() {
+		log.Warning("cleanup of orphan commits feature flag is disabled")
+		return ErrCleanupOrphanCommitsNotAvailable
+	}
+	if gormDB == nil {
+		gormDB = db.DB
+	}
+
+	// delete orphan installed packages
+	// delete from installed_packages where id not in (select installed_package_id from commit_installed_packages)
+	result := gormDB.Exec("DELETE FROM installed_packages WHERE id NOT IN (SELECT installed_package_id FROM commit_installed_packages)")
+	if result.Error != nil {
+		log.WithField("error", result.Error.Error()).Error("error occurred while deleting orphan installed packages")
+		return result.Error
+	}
+
+	log.WithField("installed_packages_deleted", result.RowsAffected).Info("orphan installed packages deleted successfully")
+	return nil
+}
