@@ -87,5 +87,10 @@ func main() {
 		mainErr = err
 	}
 
+	if err := cleanuporphancommits.CleanupOrphanInstalledPackages(db.DB); err != nil &&
+		err != cleanuporphancommits.ErrCleanupOrphanCommitsNotAvailable {
+		mainErr = err
+	}
+
 	flushLogAndExit(mainErr)
 }
