@@ -205,6 +205,26 @@ var _ = Describe("Cleanup orphan commits", func() {
 				err := db.DB.Unscoped().First(&commitWithImageAndUpdate).Error
 				Expect(err).ToNot(HaveOccurred())
 			})
+
+			// unfortunatelly not a single step, if we improve to single step, remove test
+			It("orphaned installed_packages still exists", func() {
+				var orphanedInstalledPackage []models.InstalledPackage
+				err := db.DB.Unscoped().Find(&orphanedInstalledPackage).Error
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(orphanedInstalledPackage)).To(Equal(2))
+			})
+
+			It("should cleanup orphan commits successfully", func() {
+				err := cleanuporphancommits.CleanupOrphanInstalledPackages(db.DB)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("orphaned installed_packages does not exist", func() {
+				var orphanedInstalledPackage []models.InstalledPackage
+				err := db.DB.Unscoped().Find(&orphanedInstalledPackage).Error
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(orphanedInstalledPackage)).To(Equal(0))
+			})
 		})
 	})
 })

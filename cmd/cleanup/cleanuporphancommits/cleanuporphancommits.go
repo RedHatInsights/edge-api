@@ -34,6 +34,10 @@ type OrphanCommitCandidate struct {
 	RepoStatus *string `json:"repo_status"`
 }
 
+type OrphanedInstalledPackageID struct {
+	ID uint `json:"id"`
+}
+
 func deleteCommit(commitCandidate *OrphanCommitCandidate) error {
 	logger := log.WithField("commit_id", commitCandidate.CommitID)
 	logger.Info("deleting commit")
@@ -208,7 +212,22 @@ func CleanupOrphanInstalledPackages(gormDB *gorm.DB) error {
 
 	// delete orphan installed packages
 	// delete from installed_packages where id not in (select installed_package_id from commit_installed_packages)
-	result := gormDB.Exec("DELETE FROM installed_packages WHERE id NOT IN (SELECT installed_package_id FROM commit_installed_packages)")
+	var orphans []OrphanedInstalledPackageID
+	subQuery := gormDB.Table("commit_installed_packages").Select("installed_package_id")
+	result := gormDB.Table("installed_packages").Where("id NOT IN (?)", subQuery).FindInBatches(&orphans, 1000, func(tx *gorm.DB, batch int) error {
+		log.WithField("batch", batch).Info("deleting orphan installed packages")
+		ids := make([]uint, tx.RowsAffected)
+		for i, orphan := range orphans {
+			ids[i] = orphan.ID
+		}
+		deleteRes := tx.Unscoped().Delete(&models.InstalledPackage{}, ids)
+		if deleteRes.Error != nil {
+			log.WithField("error", deleteRes.Error.Error()).Error("error occurred while deleting orphan installed packages")
+			return deleteRes.Error
+		}
+		log.WithField("batch", batch).WithField("deleted", deleteRes.RowsAffected).Info("orphan installed packages deleted successfully")
+		return nil
+	})
 	if result.Error != nil {
 		log.WithField("error", result.Error.Error()).Error("error occurred while deleting orphan installed packages")
 		return result.Error
