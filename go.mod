@@ -1,5 +1,7 @@
 module github.com/redhatinsights/edge-api
 
+go 1.21
+
 require (
 	github.com/Unleash/unleash-client-go/v4 v4.1.1
 	github.com/aws/aws-sdk-go v1.55.2
@@ -97,5 +99,3 @@ require (
 
 // fixes CVE-2023-44487
 replace google.golang.org/grpc => google.golang.org/grpc v1.58.3
-
-go 1.20
