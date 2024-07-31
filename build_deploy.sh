@@ -2,9 +2,6 @@
 
 set -exv
 
-export GOROOT="/opt/go/1.20.10"
-export PATH="${GOROOT}/bin:${PATH}"
-
 export PR_CHECK="false" # Only used when doing a PR check from Github.
 
 IMAGE="quay.io/cloudservices/edge-api"

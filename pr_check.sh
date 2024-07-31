@@ -1,8 +1,5 @@
 #!/bin/bash
 
-export GOROOT="/opt/go/1.20.10"
-export PATH="${GOROOT}/bin:${PATH}"
-
 export PR_CHECK="true" # Only used when doing a PR check from Github.
 
 export APP_NAME="edge"  # name of app-sre "application" folder this component lives in
